@@ -19,8 +19,10 @@
 
 #include <pxr/base/tf/hashmap.h>
 #include <pxr/base/vt/dictionary.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <functional>
 #include <memory>
@@ -64,6 +66,28 @@ private:
     EditRouterCb _cb;
 };
 
+// Edit router that route to a given layer for a given stage.
+class USDUFE_PUBLIC LayerPerStageEditRouter : public EditRouter
+{
+public:
+    LayerPerStageEditRouter() = default;
+    ~LayerPerStageEditRouter() override = default;
+
+    // Set which layer to use for the given stage. Erase the entry if teh layer handle is null.
+    void setLayerForStage(const PXR_NS::UsdStagePtr& stage, const PXR_NS::SdfLayerHandle& layer);
+
+    // Get the layer for teh given stage, if any.
+    PXR_NS::SdfLayerHandle getLayerForStage(const PXR_NS::UsdStagePtr& stage) const;
+
+    void
+    operator()(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData) override;
+
+private:
+    using StageToLayerMap = std::map<PXR_NS::UsdStagePtr, PXR_NS::SdfLayerHandle>;
+
+    StageToLayerMap _stageToLayerMap;
+};
+
 using EditRouters
     = PXR_NS::TfHashMap<PXR_NS::TfToken, EditRouter::Ptr, PXR_NS::TfToken::HashFunctor>;
 
@@ -97,6 +121,14 @@ getEditRouterEditTarget(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim&
 // Register an edit router for the argument operation.
 USDUFE_PUBLIC
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter);
+
+// Register an edit router for the given operation and stage that will route to the given layer.
+// Passing a null layer will deregister the router for the stage.
+USDUFE_PUBLIC
+void registerStageLayerEditRouter(
+    const PXR_NS::TfToken&        operation,
+    const PXR_NS::UsdStagePtr&    stage,
+    const PXR_NS::SdfLayerHandle& layer);
 
 // Restore the default edit router for the argument operation, overwriting
 // the currently-registered edit router.  Returns false if no such operation

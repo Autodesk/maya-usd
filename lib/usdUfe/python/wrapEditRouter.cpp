@@ -22,6 +22,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
+#include <exception>
 #include <iostream>
 
 using namespace boost::python;
@@ -130,6 +131,33 @@ AttributeEditRouterContextInit(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToke
     return new UsdUfe::AttributeEditRouterContext(prim, attributeName);
 }
 
+// Note: due to a limitation of boost::python, we cannot pass shared-pointer
+//       between Python and C++. See this stack overflow answer for an explanation:
+//       https://stackoverflow.com/questions/20825662/boost-python-argument-types-did-not-match-c-signature
+//
+//       That is why stages and layers are passed by raw C++ references and a
+//       smart pointer is created on-the-fly. Otherwise, the stage you pass it
+//       in Python would become invalid during the call.
+
+void registerStageLayerEditRouterFromLayerName(
+    const PXR_NS::TfToken& operation,
+    PXR_NS::UsdStage&      stage,
+    const std::string&     layerName)
+{
+    PXR_NS::UsdStageRefPtr stagePtr(&stage);
+    auto                   layer = PXR_NS::SdfLayer::Find(layerName);
+    UsdUfe::registerStageLayerEditRouter(operation, stagePtr, layer);
+}
+
+void registerStageLayerEditRouterFromLayer(
+    const PXR_NS::TfToken& operation,
+    PXR_NS::UsdStage&      stage,
+    PXR_NS::SdfLayer&      layer)
+{
+    PXR_NS::UsdStageRefPtr stagePtr(&stage);
+    return UsdUfe::registerStageLayerEditRouter(operation, stagePtr, PXR_NS::SdfLayerHandle(&layer));
+}
+
 } // namespace
 
 void wrapEditRouter()
@@ -145,6 +173,9 @@ void wrapEditRouter()
             return UsdUfe::registerEditRouter(
                 operation, std::make_shared<PyEditRouter>(editRouter));
         });
+
+    def("registerStageLayerEditRouter", &registerStageLayerEditRouterFromLayerName);
+    def("registerStageLayerEditRouter", &registerStageLayerEditRouterFromLayer);
 
     def("restoreDefaultEditRouter", &UsdUfe::restoreDefaultEditRouter);
 
