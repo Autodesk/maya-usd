@@ -162,7 +162,7 @@ class EditRoutingTestCase(unittest.TestCase):
         sn.clear()
         sn.append(self.b)
 
-    def _verifyEditRouterForCmd(self, operationName, cmdFunc, verifyFunc):
+    def _verifyEditRouterForCmd(self, operationName, cmdFunc, verifyFunc, useFastRouting=False):
         '''
         Test edit router functionality for the given operation name, using the given command and verifier.
         The B xform will be in the global selection and is assumed to be affected by the command.
@@ -171,7 +171,10 @@ class EditRoutingTestCase(unittest.TestCase):
         self.assertTrue(self.sessionLayer.empty)
  
         # Send visibility edits to the session layer.
-        mayaUsd.lib.registerEditRouter(operationName, routeCmdToSessionLayer)
+        if useFastRouting:
+            mayaUsd.lib.registerStageLayerEditRouter(operationName, self.stage, self.sessionLayer)
+        else:
+            mayaUsd.lib.registerEditRouter(operationName, routeCmdToSessionLayer)
  
         # Affect B via the command
         cmdFunc()
@@ -182,7 +185,7 @@ class EditRoutingTestCase(unittest.TestCase):
         # Verify the command was routed.
         verifyFunc(self.sessionLayer)
 
-    def testEditRouterForVisibilityCmd(self):
+    def _testEditRouterForVisibilityCmd(self, useFastRouting):
         '''
         Test edit router functionality for the set-visibility command.
         '''
@@ -201,9 +204,15 @@ class EditRoutingTestCase(unittest.TestCase):
             self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
                             filterUsdStr('over "B"\n{\n    token visibility = "invisible"\n}'))
             
-        self._verifyEditRouterForCmd('visibility', setVisibility, verifyVisibility)
+        self._verifyEditRouterForCmd('visibility', setVisibility, verifyVisibility, useFastRouting)
 
-    def testEditRouterForDuplicateCmd(self):
+    def testEditRouterForVisibilityCmd(self):
+        self._testEditRouterForVisibilityCmd(False)
+
+    def testEditRouterForVisibilityCmdWithFastRouting(self):
+        self._testEditRouterForVisibilityCmd(True)
+
+    def _testEditRouterForDuplicateCmd(self, useFastRouting):
         '''
         Test edit router functionality for the duplicate command.
         '''
@@ -221,7 +230,13 @@ class EditRoutingTestCase(unittest.TestCase):
             self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
                             filterUsdStr('def Xform "B1"\n{\n}'))
             
-        self._verifyEditRouterForCmd('duplicate', duplicate, verifyDuplicate)
+        self._verifyEditRouterForCmd('duplicate', duplicate, verifyDuplicate, useFastRouting)
+
+    def testEditRouterForDuplicateCmd(self):
+        self._testEditRouterForDuplicateCmd(False)
+
+    def testEditRouterForDuplicateCmdWithFastRouting(self):
+        self._testEditRouterForDuplicateCmd(True)
 
     def testEditRouterForParentCmd(self):
         '''
@@ -251,7 +266,7 @@ class EditRoutingTestCase(unittest.TestCase):
         # Check that any visibility changes were written to the session layer
         self.assertIsNotNone(sessionLayer.GetAttributeAtPath('/B.' + attributeName))
 
-    def testEditRouterForCommonAPITranslateCmd(self):
+    def _testEditRouterForCommonAPITranslateCmd(self, useFastRouting):
         '''
         Test edit router functionality for the common API translate commands.
         '''
@@ -263,7 +278,13 @@ class EditRoutingTestCase(unittest.TestCase):
         def verify(sessionLayer):
             self._verifyTransform(sessionLayer, 'xformOp:translate')
             
-        self._verifyEditRouterForCmd('transform', set, verify)
+        self._verifyEditRouterForCmd('transform', set, verify, useFastRouting)
+
+    def testEditRouterForCommonAPITranslateCmd(self):
+        self._testEditRouterForCommonAPITranslateCmd(False)
+
+    def testEditRouterForCommonAPITranslateCmdWithFastRouting(self):
+        self._testEditRouterForCommonAPITranslateCmd(True)
 
     def testEditRouterForCommonAPIRotateCmd(self):
         '''
