@@ -19,9 +19,9 @@
 #include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/fileio/utils/xformStack.h>
-#include <mayaUsd/ufe/RotationUtils.h>
-#include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/trf/RotationUtils.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dUndoableCommands.h>
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>

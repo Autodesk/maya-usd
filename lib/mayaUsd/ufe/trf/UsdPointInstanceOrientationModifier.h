@@ -17,7 +17,7 @@
 #define MAYAUSD_UFE_USD_POINT_INSTANCE_ORIENTATION_MODIFIER_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdPointInstanceModifierBase.h>
+#include <mayaUsd/ufe/trf/UsdPointInstanceModifierBase.h>
 
 #include <pxr/base/gf/quath.h>
 #include <pxr/pxr.h>

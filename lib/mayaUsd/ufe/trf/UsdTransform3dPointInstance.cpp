@@ -15,9 +15,9 @@
 //
 #include "UsdTransform3dPointInstance.h"
 
-#include <mayaUsd/ufe/UsdPointInstanceUndoableCommands.h>
-#include <mayaUsd/ufe/UsdTransform3dBase.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/trf/UsdPointInstanceUndoableCommands.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dBase.h>
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UsdSceneItem.h>

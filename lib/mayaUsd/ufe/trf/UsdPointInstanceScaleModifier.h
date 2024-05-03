@@ -17,7 +17,7 @@
 #define MAYAUSD_UFE_USD_POINT_INSTANCE_SCALE_MODIFIER_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdPointInstanceModifierBase.h>
+#include <mayaUsd/ufe/trf/UsdPointInstanceModifierBase.h>
 
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/pxr.h>

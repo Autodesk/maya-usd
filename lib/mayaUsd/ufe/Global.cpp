@@ -28,13 +28,13 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
-#include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
-#include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
-#include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
-#include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
-#include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dCommonAPI.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dFallbackMayaXformStack.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dMatrixOp.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dMayaXformStack.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dPointInstance.h>
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #define HAVE_PATH_MAPPING
@@ -56,8 +56,8 @@
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#include <mayaUsd/ufe/UsdTransform3dRead.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dRead.h>
 
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>

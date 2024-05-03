@@ -15,10 +15,10 @@
 //
 #include "UsdTransform3dMatrixOp.h"
 
-#include <mayaUsd/ufe/UsdSetXformOpUndoableCommandBase.h>
-#include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/ufe/XformOpUtils.h>
+#include <mayaUsd/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dSetObjectMatrix.h>
+#include <mayaUsd/ufe/trf/XformOpUtils.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>

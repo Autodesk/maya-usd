@@ -15,10 +15,10 @@
 //
 #include "UsdTransform3dFallbackMayaXformStack.h"
 
-#include <mayaUsd/ufe/RotationUtils.h>
-#include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/ufe/XformOpUtils.h>
+#include <mayaUsd/ufe/trf/RotationUtils.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dSetObjectMatrix.h>
+#include <mayaUsd/ufe/trf/XformOpUtils.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>

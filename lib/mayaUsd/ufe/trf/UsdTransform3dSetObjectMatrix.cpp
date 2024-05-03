@@ -17,7 +17,7 @@
 #include "UsdTransform3dSetObjectMatrix.h"
 
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/ufe/XformOpUtils.h>
+#include <mayaUsd/ufe/trf/XformOpUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

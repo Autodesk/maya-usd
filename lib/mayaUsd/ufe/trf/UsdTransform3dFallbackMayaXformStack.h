@@ -16,7 +16,7 @@
 #ifndef MAYAUSD_USDTRANSFORM3DFALLBACKMAYAXFORMSTACK_H
 #define MAYAUSD_USDTRANSFORM3DFALLBACKMAYAXFORMSTACK_H
 
-#include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dMayaXformStack.h>
 
 #include <usdUfe/ufe/UfeVersionCompat.h>
 

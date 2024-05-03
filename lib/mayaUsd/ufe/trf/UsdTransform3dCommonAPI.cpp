@@ -15,9 +15,9 @@
 //
 #include "UsdTransform3dCommonAPI.h"
 
-#include <mayaUsd/ufe/UsdSetXformOpUndoableCommandBase.h>
-#include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dUndoableCommands.h>
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>

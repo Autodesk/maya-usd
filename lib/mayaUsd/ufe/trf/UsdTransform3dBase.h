@@ -17,7 +17,7 @@
 #define MAYAUSD_USDTRANSFORM3DBASE_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdTransform3dReadImpl.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dReadImpl.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 

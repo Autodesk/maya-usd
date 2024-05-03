@@ -19,10 +19,10 @@
 #include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdPointInstanceOrientationModifier.h>
-#include <mayaUsd/ufe/UsdPointInstancePositionModifier.h>
-#include <mayaUsd/ufe/UsdPointInstanceScaleModifier.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/trf/UsdPointInstanceOrientationModifier.h>
+#include <mayaUsd/ufe/trf/UsdPointInstancePositionModifier.h>
+#include <mayaUsd/ufe/trf/UsdPointInstanceScaleModifier.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 

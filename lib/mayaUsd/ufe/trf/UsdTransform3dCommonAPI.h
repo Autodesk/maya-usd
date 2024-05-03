@@ -16,7 +16,7 @@
 #ifndef MAYAUSD_USDTRANSFORM3DCOMMONAPI_H
 #define MAYAUSD_USDTRANSFORM3DCOMMONAPI_H
 
-#include <mayaUsd/ufe/UsdTransform3dBase.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dBase.h>
 
 #include <usdUfe/ufe/UfeVersionCompat.h>
 
