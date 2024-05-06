@@ -86,7 +86,7 @@ Ufe::Vector3d UsdPointInstanceOrientationModifier::convertValueToUfe(const GfQua
 }
 
 /* override */
-PXR_NS::UsdAttribute UsdPointInstanceOrientationModifier::_getAttribute() const
+PXR_NS::UsdAttribute UsdPointInstanceOrientationModifier::getAttribute() const
 {
     UsdGeomPointInstancer pointInstancer = getPointInstancer();
     if (!pointInstancer) {

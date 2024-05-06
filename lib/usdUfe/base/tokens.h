@@ -47,6 +47,7 @@ namespace USDUFE_NS_DEF {
     ((RouteVisibility, "visibility"))                   \
     ((RouteAttribute, "attribute"))                     \
     ((RouteDelete, "delete"))                           \
+    ((RouteTransform, "transform"))                     \
                                                         \
 // clang-format on
 

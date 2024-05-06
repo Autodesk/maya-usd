@@ -308,37 +308,43 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const { return getScale(matrix());
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:translate")))
         return nullptr;
-    }
 
     return std::make_shared<MatrixOpTranslateUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:rotateXYZ")))
         return nullptr;
-    }
 
     return std::make_shared<MatrixOpRotateUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:scale")))
         return nullptr;
-    }
 
     return std::make_shared<MatrixOpScaleUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dMatrixOp::setMatrixCmd(const Ufe::Matrix4d& m)
 {
+    if (!isAttributeEditAllowed(_op.GetName()))
+        return nullptr;
+
     return std::make_shared<UsdSetMatrix4dUndoableCmd>(path(), m);
 }
 
-void UsdTransform3dMatrixOp::setMatrix(const Ufe::Matrix4d& m) { _op.Set(toUsd(m)); }
+void UsdTransform3dMatrixOp::setMatrix(const Ufe::Matrix4d& m)
+{
+    if (!isAttributeEditAllowed(_op.GetName()))
+        return;
+
+    _op.Set(toUsd(m));
+}
 
 Ufe::Matrix4d UsdTransform3dMatrixOp::matrix() const
 {

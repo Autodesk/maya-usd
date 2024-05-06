@@ -34,13 +34,17 @@ std::string handlePythonException()
     PyObject* val = nullptr;
     PyObject* tb = nullptr;
     PyErr_Fetch(&exc, &val, &tb);
+    if (!exc)
+        return "unknown Python exception";
+
     handle<> hexc(exc);
     handle<> hval(allow_null(val));
     handle<> htb(allow_null(tb));
     object   traceback(import("traceback"));
     object   format_exception_only(traceback.attr("format_exception_only"));
-    object   formatted_list = format_exception_only(hexc, hval);
+    object   formatted_list = val ? format_exception_only(hexc, hval) : format_exception_only(hexc);
     object   formatted = str("\n").join(formatted_list);
+
     return extract<std::string>(formatted);
 }
 

@@ -37,7 +37,7 @@ MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceScaleModifier);
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceScaleModifier);
 
 /* override */
-PXR_NS::UsdAttribute UsdPointInstanceScaleModifier::_getAttribute() const
+PXR_NS::UsdAttribute UsdPointInstanceScaleModifier::getAttribute() const
 {
     PXR_NS::UsdGeomPointInstancer pointInstancer = getPointInstancer();
     if (!pointInstancer) {

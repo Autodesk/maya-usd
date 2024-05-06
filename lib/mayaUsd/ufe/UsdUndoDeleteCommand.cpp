@@ -80,7 +80,12 @@ void UsdUndoDeleteCommand::execute()
     if (!routingEditTarget.IsNull()) {
         PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
 
-        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", true))
+        // Note: we allow stronger opinion when editing inside a reference or payload.
+        //       We detect this by the fact the ref/payload layer is non-local.
+        const bool isLocal = stage->HasLocalLayer(routingEditTarget.GetLayer());
+        const bool allowStronger = !isLocal;
+
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", allowStronger))
             return;
 
         if (!stage->RemovePrim(_prim.GetPath())) {

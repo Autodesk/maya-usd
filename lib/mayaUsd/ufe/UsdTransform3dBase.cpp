@@ -17,8 +17,13 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/base/tokens.h>
+#include <usdUfe/utils/editRouterContext.h>
+
 #include <pxr/usd/usdGeom/xformCache.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
+
+#include <maya/MGlobal.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -119,6 +124,38 @@ Ufe::Matrix4d UsdTransform3dBase::segmentInclusiveMatrix() const
 Ufe::Matrix4d UsdTransform3dBase::segmentExclusiveMatrix() const
 {
     return UsdTransform3dReadImpl::segmentExclusiveMatrix();
+}
+
+bool UsdTransform3dBase::isAttributeEditAllowed(const TfToken attrName) const
+{
+    return isAttributeEditAllowed(&attrName, 1);
+}
+
+bool UsdTransform3dBase::isAttributeEditAllowed(const TfToken* attrNames, int count) const
+{
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
+    std::string errMsg;
+
+    for (int i = 0; i < count; ++i) {
+        const TfToken&       attrName = attrNames[i];
+        PXR_NS::UsdAttribute attr;
+        if (!attrName.IsEmpty())
+            attr = prim().GetAttribute(attrName);
+        if (attr && !UsdUfe::isAttributeEditAllowed(attr, &errMsg)) {
+            MGlobal::displayError(errMsg.c_str());
+            return false;
+        } else if (!attr) {
+            // If the attribute does not exist, we will need to edit the xformOpOrder
+            // so check if we would be allowed to do that.
+            UsdGeomXformable xformable(prim());
+            if (!UsdUfe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+                MGlobal::displayError(errMsg.c_str());
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 } // namespace ufe
