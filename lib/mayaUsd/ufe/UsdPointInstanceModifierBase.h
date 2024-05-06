@@ -18,7 +18,9 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/vt/array.h>
@@ -143,7 +145,7 @@ public:
 
         const size_t instanceIndex = static_cast<size_t>(_instanceIndex);
 
-        PXR_NS::UsdAttribute usdAttr = _getAttribute();
+        PXR_NS::UsdAttribute usdAttr = getAttribute();
         if (!usdAttr) {
             return usdValue;
         }
@@ -215,7 +217,17 @@ public:
 
         _batch->usdValues[instanceIndex] = usdValue;
 
-        return writer ? usdAttr.Set(_batch->usdValues, usdTime) : true;
+        // If we're not the final command that will do the write,
+        // just return success.
+        if (!writer)
+            return true;
+
+        // If we're the final command that writes the batched values,
+        // then we need to do the edit routing.
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, usdAttr.GetPrim());
+
+        return usdAttr.Set(_batch->usdValues, usdTime);
     }
 
     // Join a point instancer batch.  Because objects of
@@ -251,6 +263,8 @@ public:
 
     virtual UsdValueType getDefaultUsdValue() const = 0;
 
+    virtual PXR_NS::UsdAttribute getAttribute() const = 0;
+
 protected:
     // Retrieve the active batches (one per point instancer path) for the
     // derived attribute type (i.e. position, orientation, or scale).  We keep
@@ -261,8 +275,6 @@ protected:
     // write both position and orientation).  At time of writing (26-Apr-2021)
     // no such command exists.
     virtual Batches& batches() = 0;
-
-    virtual PXR_NS::UsdAttribute _getAttribute() const = 0;
 
     virtual PXR_NS::UsdAttribute _createAttribute() = 0;
 
@@ -309,7 +321,7 @@ protected:
 
         const size_t numInstances = protoIndices.size();
 
-        PXR_NS::UsdAttribute usdAttr = _getAttribute();
+        PXR_NS::UsdAttribute usdAttr = getAttribute();
         if (!usdAttr || !usdAttr.HasAuthoredValue()) {
             usdAttr = _createAttribute();
             if (!usdAttr) {

@@ -19,7 +19,9 @@
 #include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -64,6 +66,8 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3d(x, y, z)));
         return true;
     }
@@ -107,9 +111,13 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
+
+    UsdPrim getPrim() const override { return _commonAPI.GetPrim(); }
 
 private:
     UsdGeomXformCommonAPI _commonAPI;
@@ -150,9 +158,13 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
+
+    UsdPrim getPrim() const override { return _commonAPI.GetPrim(); }
 
 private:
     UsdGeomXformCommonAPI _commonAPI;
@@ -193,9 +205,13 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
+
+    UsdPrim getPrim() const override { return _commonAPI.GetPrim(); }
 
 private:
     UsdGeomXformCommonAPI _commonAPI;
@@ -264,24 +280,30 @@ Ufe::Vector3d UsdTransform3dCommonAPI::scale() const
 
 void UsdTransform3dCommonAPI::translate(double x, double y, double z)
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
     _commonAPI.SetTranslate(GfVec3d(x, y, z), UsdTimeCode::Default());
 }
 
 void UsdTransform3dCommonAPI::rotate(double x, double y, double z)
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
     _commonAPI.SetRotate(
         GfVec3f(x, y, z), UsdGeomXformCommonAPI::RotationOrderXYZ, UsdTimeCode::Default());
 }
 
 void UsdTransform3dCommonAPI::scale(double x, double y, double z)
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
     _commonAPI.SetScale(GfVec3f(x, y, z), UsdTimeCode::Default());
 }
 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:translate"))) {
         return nullptr;
     }
 
@@ -290,7 +312,7 @@ UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:rotateXYZ"))) {
         return nullptr;
     }
 
@@ -299,7 +321,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, dou
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:scale"))) {
         return nullptr;
     }
 
@@ -309,7 +331,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, doubl
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::rotatePivotCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:translate:pivot"))) {
         return nullptr;
     }
 
@@ -318,6 +340,8 @@ UsdTransform3dCommonAPI::rotatePivotCmd(double x, double y, double z)
 
 void UsdTransform3dCommonAPI::rotatePivot(double x, double y, double z)
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
     _commonAPI.SetPivot(GfVec3f(x, y, z), UsdTimeCode::Default());
 }
 
@@ -340,9 +364,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::scalePivot() const { return rotatePivot()
 
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dCommonAPI::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))
-        || !UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))
-        || !UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    const TfToken attrs[]
+        = { TfToken("xformOp:translate"), TfToken("xformOp:rotateXYZ"), TfToken("xformOp:scale") };
+    if (!isAttributeEditAllowed(attrs, 3)) {
         return nullptr;
     }
 

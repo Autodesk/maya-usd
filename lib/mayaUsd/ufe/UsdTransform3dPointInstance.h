@@ -60,6 +60,8 @@ public:
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
+    bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr) const;
+
     UsdPointInstancePositionModifier    _positionModifier;
     UsdPointInstanceOrientationModifier _orientationModifier;
     UsdPointInstanceScaleModifier       _scaleModifier;
