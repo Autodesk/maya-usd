@@ -289,7 +289,11 @@ bool UsdMayaProxyDrawOverride::userSelect(
         return false;
     }
 
+#if HDX_API_VERSION >= 12
+    const GfVec3d& gfHitPoint = nearestHit->worldSpaceHitPoint;
+#else
     const GfVec3f& gfHitPoint = nearestHit->worldSpaceHitPoint;
+#endif
     hitPoint = MPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
 
     return true;

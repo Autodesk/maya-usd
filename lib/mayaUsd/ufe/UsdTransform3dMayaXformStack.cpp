@@ -546,8 +546,24 @@ UsdTransform3dMayaXformStack::translateRotatePivotCmd(double x, double y, double
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::rotatePivotTranslation() const
 {
-    return getVector3d<GfVec3f>(UsdGeomXformOp::GetOpName(
+    // Note: USD and Maya use different pivots: USD has a single pivot that is used
+    //       for both translation and scale, while Maya has separate ones. When working
+    //       in this Maya transform stack mode, the USD pivot is only used to move the
+    //       position of the manipulators, by returning it as part of this function.
+    //
+    //       Interestingly, this is correct and enough to both display the manip at the
+    //       correct position in the viewport *and* give the correct results. That's
+    //       because USD internally will apply its pivot and the manip will give the
+    //       correct value when manipulating.
+    Ufe::Vector3d commonPivot = getVector3d<GfVec3f>(
+        UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot));
+    Ufe::Vector3d mayaPivot = getVector3d<GfVec3f>(UsdGeomXformOp::GetOpName(
         UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxRotatePivotTranslate)));
+    mayaPivot.set(
+        mayaPivot.x() + commonPivot.x(),
+        mayaPivot.y() + commonPivot.y(),
+        mayaPivot.z() + commonPivot.z());
+    return mayaPivot;
 }
 
 Ufe::TranslateUndoableCommand::Ptr

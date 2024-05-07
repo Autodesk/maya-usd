@@ -74,6 +74,47 @@ void CxxEditRouter::operator()(
     _cb(context, routingData);
 }
 
+void LayerPerStageEditRouter::setLayerForStage(
+    const PXR_NS::UsdStagePtr&    stage,
+    const PXR_NS::SdfLayerHandle& layer)
+{
+    if (!stage)
+        return;
+
+    if (!layer)
+        _stageToLayerMap.erase(stage);
+    else
+        _stageToLayerMap[stage] = layer;
+}
+
+PXR_NS::SdfLayerHandle
+LayerPerStageEditRouter::getLayerForStage(const PXR_NS::UsdStagePtr& stage) const
+{
+    auto layerIter = _stageToLayerMap.find(stage);
+    if (layerIter == _stageToLayerMap.end())
+        return nullptr;
+
+    return layerIter->second;
+}
+
+void LayerPerStageEditRouter::operator()(
+    const PXR_NS::VtDictionary& context,
+    PXR_NS::VtDictionary&       routingData)
+{
+    const auto primIter = context.find(EditRoutingTokens->Prim);
+    if (primIter == context.end())
+        return;
+
+    const auto& value = primIter->second;
+    if (!value.IsHolding<PXR_NS::UsdPrim>())
+        return;
+
+    UsdPrim prim = value.Get<PXR_NS::UsdPrim>();
+    auto    layer = getLayerForStage(prim.GetStage());
+    if (layer)
+        routingData[EditRoutingTokens->Layer] = layer;
+}
+
 void registerDefaultEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter)
 {
     getRegisterdDefaultEditRouters()[operation] = editRouter;
@@ -103,6 +144,25 @@ EditRouters defaultEditRouters()
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter)
 {
     getRegisteredEditRouters()[operation] = editRouter;
+}
+
+void registerStageLayerEditRouter(
+    const PXR_NS::TfToken&        operation,
+    const PXR_NS::UsdStagePtr&    stage,
+    const PXR_NS::SdfLayerHandle& layer)
+{
+    if (!stage)
+        return;
+
+    auto router = getEditRouter(operation);
+    auto layerRouter = std::dynamic_pointer_cast<LayerPerStageEditRouter>(router);
+
+    if (!layerRouter) {
+        layerRouter = std::make_shared<LayerPerStageEditRouter>();
+        registerEditRouter(operation, layerRouter);
+    }
+
+    layerRouter->setLayerForStage(stage, layer);
 }
 
 bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation)
@@ -165,6 +225,11 @@ getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim
     if (!dstEditRouter)
         return nullptr;
 
+    // Optimize the case where we have a per-stage layer routing.
+    // This avoid creating dictionaries just to pass and receive a value.
+    if (auto layerRouter = std::dynamic_pointer_cast<LayerPerStageEditRouter>(dstEditRouter))
+        return layerRouter->getLayerForStage(prim.GetStage());
+
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
     context[EditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
@@ -188,6 +253,11 @@ getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrN
     if (!dstEditRouter)
         return nullptr;
 
+    // Optimize the case where we have a per-stage layer routing.
+    // This avoid creating dictionaries just to pass and receive a value.
+    if (auto layerRouter = std::dynamic_pointer_cast<LayerPerStageEditRouter>(dstEditRouter))
+        return layerRouter->getLayerForStage(prim.GetStage());
+
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
     context[EditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
@@ -207,9 +277,13 @@ PXR_NS::UsdEditTarget
 getEditRouterEditTarget(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim)
 {
     const auto dstEditRouter = getEditRouter(operation);
-    if (!dstEditRouter) {
+    if (!dstEditRouter)
         return PXR_NS::UsdEditTarget();
-    }
+
+    // Optimize the case where we have a per-stage layer routing.
+    // This avoid creating dictionaries just to pass and receive a value.
+    if (auto layerRouter = std::dynamic_pointer_cast<LayerPerStageEditRouter>(dstEditRouter))
+        return layerRouter->getLayerForStage(prim.GetStage());
 
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
