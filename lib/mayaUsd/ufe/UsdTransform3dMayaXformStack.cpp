@@ -29,6 +29,8 @@
 #include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/editRouterContext.h>
 
+#include <pxr/base/gf/math.h>
+
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>
 
@@ -108,6 +110,13 @@ const std::unordered_map<TfToken, UsdTransform3dMayaXformStack::OpNdx, TfToken::
         { TfToken("!invert!xformOp:translate:pivot"),
           UsdTransform3dMayaXformStack::NdxPivotInverse }
     };
+
+bool isAlmostZero(const Ufe::Vector3d& value)
+{
+    static const double epsilon = 0.0001;
+    return PXR_NS::GfIsClose(0., value.x(), epsilon) && PXR_NS::GfIsClose(0., value.y(), epsilon)
+        && PXR_NS::GfIsClose(0., value.z(), epsilon);
+}
 
 } // namespace
 
@@ -539,6 +548,26 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::scalePivot() const
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::translateRotatePivotCmd(double x, double y, double z)
 {
+    // Note: USD and Maya use different pivots: USD has a single pivot that is used
+    //       for both translation and scale, while Maya has separate ones. When working
+    //       in this Maya transform stack mode, the USD pivot affects the position of
+    //       the manipulators, so we need to take it into account here.
+    //
+    //       Otherwise, prim with USD-style picot won't work with the "center pivot"
+    //       command.
+    TfToken commonPivotName
+        = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot);
+    auto commonPivotAttr = prim().GetAttribute(commonPivotName);
+    if (commonPivotAttr && commonPivotAttr.HasAuthoredValue()) {
+        Ufe::Vector3d commonPivot = getVector3d<GfVec3f>(commonPivotName);
+        if (!isAlmostZero(commonPivot)) {
+            x = commonPivot.x() - x;
+            y = commonPivot.y() - y;
+            z = commonPivot.z() - z;
+            return setVector3dCmd(GfVec3f(x, y, z), commonPivotName);
+        }
+    }
+
     auto opSuffix = getOpSuffix(NdxRotatePivotTranslate);
     auto attrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, opSuffix);
     return setVector3dCmd(GfVec3f(x, y, z), attrName, opSuffix);
