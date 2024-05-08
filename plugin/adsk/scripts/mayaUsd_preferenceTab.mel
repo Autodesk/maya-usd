@@ -46,8 +46,8 @@ global proc mayaUsd_PrefFileFormatChanged()
 	}
 
 	// Update the clipboard file format to match the format here.
-
-	if (`optionVar -exists $saveLayerFormatArgBinaryOptionPref`) {
+	int $haveClipboardSupport = `python("import mayaUsd.ufe as mufe; callable(getattr(mufe, 'setClipboardFileFormat', None))")`;
+	if ($haveClipboardSupport && `optionVar -exists $saveLayerFormatArgBinaryOptionPref`) {
 		int $isBinary = `optionVar -q $saveLayerFormatArgBinaryOptionPref`;
 		string $formatTag = $isBinary ? "usdc" : "usda";
 		python("import mayaUsd.ufe as mufe; mufe.setClipboardFileFormat('" + $formatTag + "')");
