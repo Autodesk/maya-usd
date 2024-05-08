@@ -232,6 +232,22 @@ endif()
 include(cmake/compiler_config.cmake)
 
 #------------------------------------------------------------------------------
+# C++17 support
+#------------------------------------------------------------------------------
+# In cmake/compiler_config.cmake we set the C++ version to 17 when building with
+# USD 23.11 or greater to match USD.
+# Some features also require C++17 so disable them if they were enabled.
+if (USD_VERSION VERSION_LESS "0.23.11")
+    # The clipboard support was added in Ufe v6 and backported to Ufe v5.
+    # Compiling UsdUfe standalone with Ufe v5 will result in clipboard being
+    # enabled, but we must disable it here if USD version doesn't match C++ version.
+    if (UFE_CLIPBOARD_SUPPORT)
+        message(WARNING "Disabling Ufe clipboard support since it requires USD v23.11 and C++17")
+        set(UFE_CLIPBOARD_SUPPORT FALSE)
+    endif()
+endif()
+
+#------------------------------------------------------------------------------
 # gulrak filesystem
 #------------------------------------------------------------------------------
 if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
