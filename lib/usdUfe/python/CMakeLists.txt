@@ -26,12 +26,12 @@ target_sources(${PYTHON_TARGET_NAME}
 )
 
 if (UFE_CLIPBOARD_SUPPORT)
-    target_sources(${PROJECT_NAME}
+    target_sources(${PYTHON_TARGET_NAME}
         PRIVATE
             wrapClipboard.cpp
     )
 
-    target_compile_definitions(${PROJECT_NAME}
+    target_compile_definitions(${PYTHON_TARGET_NAME}
         PRIVATE
             UFE_CLIPBOARD_SUPPORT=1
     )
