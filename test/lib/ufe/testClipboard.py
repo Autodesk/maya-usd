@@ -52,6 +52,9 @@ class ClipboardHandlerTestCase(unittest.TestCase):
     def testClipboardCopyPaste(self):
         '''Basic test for the Clipboard copy/paste support.'''
 
+        # Verify that the method to set the clipboard format exists.
+        self.assertTrue(callable(getattr(mayaUsd.ufe, 'setClipboardFileFormat', None)))
+
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
         stage.DefinePrim('/Xform1', 'Xform')
