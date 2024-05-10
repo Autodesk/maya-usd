@@ -14,14 +14,14 @@ list(APPEND TEST_SCRIPT_FILES
     testVP2RenderDelegateUSDPreviewSurface.py
     testVP2RenderDelegateConsolidation.py
     testVP2RenderDelegatePerInstanceInheritedData.py
+    testVP2RenderDelegateBasisCurves.py
+    testVP2RenderDelegatePoints.py
     testVP2RenderDelegateUsdCamera.py
 )
 
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegateSelection.py
-        testVP2RenderDelegateBasisCurves.py
-        testVP2RenderDelegatePoints.py
         testVP2RenderDelegateUsdSkel.py
     )
 endif()
