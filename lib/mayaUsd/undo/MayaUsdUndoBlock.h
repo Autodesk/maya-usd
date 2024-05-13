@@ -33,7 +33,7 @@ class MAYAUSD_CORE_PUBLIC MayaUsdUndoBlock : public UsdUfe::UsdUndoBlock
 {
 public:
     MayaUsdUndoBlock();
-    ~MayaUsdUndoBlock();
+    ~MayaUsdUndoBlock() override;
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(MayaUsdUndoBlock);
 };
