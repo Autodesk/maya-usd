@@ -80,6 +80,9 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
 UsdMayaPrimWriter::ContextSupport
 MtlxUsd_BaseWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
+    if (!exportArgs.exportMaterials)
+        return ContextSupport::Unsupported;
+
     return exportArgs.convertMaterialsTo == TrMtlxTokens->conversionName
         ? ContextSupport::Supported
         : ContextSupport::Unsupported;

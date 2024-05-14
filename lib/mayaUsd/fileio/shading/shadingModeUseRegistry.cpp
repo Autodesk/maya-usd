@@ -346,6 +346,10 @@ private:
         UsdShadeMaterial* const                mat,
         SdfPathSet* const                      boundPrimPaths) override
     {
+        if (!context.GetExportArgs().exportMaterials) {
+            return;
+        }
+
         if (context.GetExportArgs().allMaterialConversions.empty()) {
             return;
         }
@@ -376,6 +380,9 @@ private:
         if (mat != nullptr) {
             *mat = material;
         }
+
+        if (!context.GetExportArgs().exportMaterials)
+            return;
 
         for (const TfToken& currentMaterialConversion :
              context.GetExportArgs().allMaterialConversions) {
