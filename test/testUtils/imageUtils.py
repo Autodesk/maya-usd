@@ -59,8 +59,8 @@ def snapshot(outputPath, width=400, height=None, hud=False, grid=False, camera=N
 
     # Some environments use legacy synColor transforms with 2022 and above.
     # Find whether the color config should be Raw or Raw legacy
-    # However depending on the MAYA_COLOR_MANAGEMENT_SYNCOLOR env var or the loaded
-    # configs, this may be under a different names. So procedurally find it.
+    # However depending on the loaded configs, this may be under a different
+    # names. So procedurally find it.
     colorTransforms = cmds.colorManagementPrefs(q=1, outputTransformNames=True)
     if "Raw" in colorTransforms:
         newColorTransform = "Raw"
