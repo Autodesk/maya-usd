@@ -36,7 +36,7 @@ class USDUFE_PUBLIC UsdUndoBlock
 {
 public:
     UsdUndoBlock(UsdUndoableItem* undoItem);
-    ~UsdUndoBlock();
+    virtual ~UsdUndoBlock();
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoBlock);
 
