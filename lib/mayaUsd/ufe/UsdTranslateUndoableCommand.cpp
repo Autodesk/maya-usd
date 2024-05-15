@@ -54,7 +54,7 @@ void UsdTranslateUndoableCommand::addEmptyAttribute()
 
 void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
 {
-    translateOp(prim(), path(), x, y, z);
+    UsdUfe::translateOp(prim(), path(), x, y, z);
 }
 
 //------------------------------------------------------------------------------

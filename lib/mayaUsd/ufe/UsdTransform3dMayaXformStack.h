@@ -61,10 +61,10 @@ public:
     typedef PXR_NS::VtValue (*CvtRotXYZToAttrFn)(double x, double y, double z);
     typedef bool (*SetXformOpOrderFn)(const PXR_NS::UsdGeomXformable&);
 
-    UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item);
+    UsdTransform3dMayaXformStack(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a UsdTransform3dMayaXformStack.
-    static UsdTransform3dMayaXformStack::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dMayaXformStack::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;

@@ -41,7 +41,7 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
             // MAYA-125854: Skip the descendant, it will get duplicated with the ancestor.
             continue;
         }
-        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        auto usdItem = downcast(item);
         if (!usdItem) {
             continue;
         }
@@ -71,8 +71,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
         auto duplicateCmd = UsdUndoDuplicateCommand::create(usdItem, _dstParentItem);
         duplicateCmd->execute();
 
-        _duplicatedItemsMap.emplace(
-            usdItem, std::dynamic_pointer_cast<UsdSceneItem>(duplicateCmd->sceneItem()));
+        _duplicatedItemsMap.emplace(usdItem, downcast(duplicateCmd->sceneItem()));
 
         PXR_NS::UsdPrim srcPrim = usdItem->prim();
         PXR_NS::UsdPrim dstPrim = duplicateCmd->duplicatedItem()->prim();

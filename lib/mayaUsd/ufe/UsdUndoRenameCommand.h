@@ -37,15 +37,17 @@ class MAYAUSD_CORE_PUBLIC UsdUndoRenameCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoRenameCommand> Ptr;
 
-    UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
+    UsdUndoRenameCommand(
+        const UsdUfe::UsdSceneItem::Ptr& srcItem,
+        const Ufe::PathComponent&        newName);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoRenameCommand);
 
     //! Create a UsdUndoRenameCommand from a USD scene item and UFE pathcomponent.
     static UsdUndoRenameCommand::Ptr
-    create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
+    create(const UsdUfe::UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
 
-    UsdSceneItem::Ptr renamedItem() const;
+    UsdUfe::UsdSceneItem::Ptr renamedItem() const;
     UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return renamedItem(); })
 
 private:
@@ -55,8 +57,8 @@ private:
     void undo() override;
     void redo() override;
 
-    UsdSceneItem::Ptr _ufeSrcItem;
-    UsdSceneItem::Ptr _ufeDstItem;
+    UsdUfe::UsdSceneItem::Ptr _ufeSrcItem;
+    UsdUfe::UsdSceneItem::Ptr _ufeDstItem;
 
     PXR_NS::UsdStageWeakPtr _stage;
     std::string             _newName;

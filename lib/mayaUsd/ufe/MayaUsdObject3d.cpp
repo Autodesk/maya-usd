@@ -23,13 +23,13 @@ namespace ufe {
 
 MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdObject3d, MayaUsdObject3d);
 
-MayaUsdObject3d::MayaUsdObject3d(const UsdSceneItem::Ptr& item)
+MayaUsdObject3d::MayaUsdObject3d(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdUfe::UsdObject3d(item)
 {
 }
 
 /*static*/
-MayaUsdObject3d::Ptr MayaUsdObject3d::create(const UsdSceneItem::Ptr& item)
+MayaUsdObject3d::Ptr MayaUsdObject3d::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<MayaUsdObject3d>(item);
 }
@@ -49,7 +49,7 @@ Ufe::BBox3d
 MayaUsdObject3d::adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTimeCode time) const
 {
     Ufe::BBox3d pulledBBox = getPulledPrimsBoundingBox(sceneItem()->path());
-    return combineUfeBBox(bbox, pulledBBox);
+    return UsdUfe::combineUfeBBox(bbox, pulledBBox);
 }
 
 } // namespace ufe

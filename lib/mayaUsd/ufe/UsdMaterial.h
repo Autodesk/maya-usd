@@ -34,12 +34,12 @@ class MAYAUSD_CORE_PUBLIC UsdMaterial : public Ufe::Material
 public:
     using Ptr = std::shared_ptr<UsdMaterial>;
 
-    UsdMaterial(const UsdSceneItem::Ptr& item);
+    UsdMaterial(const UsdUfe::UsdSceneItem::Ptr& item);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMaterial);
 
     //! Create a UsdMaterial.
-    static UsdMaterial::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdMaterial::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     std::vector<Ufe::SceneItem::Ptr> getMaterials() const override;
 
@@ -48,7 +48,7 @@ public:
 #endif
 
 private:
-    UsdSceneItem::Ptr _item;
+    UsdUfe::UsdSceneItem::Ptr _item;
 }; // UsdMaterial
 
 } // namespace ufe

@@ -15,6 +15,8 @@
 //
 #include "UsdSceneItemOpsHandler.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -32,7 +34,7 @@ UsdSceneItemOpsHandler::Ptr UsdSceneItemOpsHandler::create()
 
 Ufe::SceneItemOps::Ptr UsdSceneItemOpsHandler::sceneItemOps(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif

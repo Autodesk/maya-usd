@@ -16,6 +16,7 @@
 #include "UsdUndoAttributesCommands.h"
 
 #include <usdUfe/ufe/UsdAttributes.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
@@ -57,8 +58,7 @@ UsdAddAttributeCommand::Ptr UsdAddAttributeCommand::create(
 
 Ufe::Attribute::Ptr UsdAddAttributeCommand::attribute() const
 {
-    auto sceneItem
-        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
+    auto sceneItem = downcast(Ufe::Hierarchy::createItem(_sceneItemPath));
     return UsdAttributes(sceneItem).attribute(_name);
 }
 
@@ -67,8 +67,7 @@ void UsdAddAttributeCommand::setName(const std::string& newName) { _name = newNa
 void UsdAddAttributeCommand::executeImplementation()
 {
     // Validation has already been done. Just create the attribute.
-    auto sceneItem
-        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
+    auto sceneItem = downcast(Ufe::Hierarchy::createItem(_sceneItemPath));
     auto attrPtr = UsdAttributes::doAddAttribute(sceneItem, _name, _type);
 
     // Set the name, since it could have been changed in order to be unique.
@@ -107,8 +106,7 @@ UsdRemoveAttributeCommand::create(const UsdSceneItem::Ptr& sceneItem, const std:
 void UsdRemoveAttributeCommand::executeImplementation()
 {
     // Validation has already been done. Just remove the attribute.
-    auto sceneItem
-        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
+    auto sceneItem = downcast(Ufe::Hierarchy::createItem(_sceneItemPath));
     UsdAttributes::doRemoveAttribute(sceneItem, _name);
 }
 
@@ -146,8 +144,7 @@ UsdRenameAttributeCommand::Ptr UsdRenameAttributeCommand::create(
 void UsdRenameAttributeCommand::executeImplementation()
 {
     // Validation has already been done. Just rename the attribute.
-    auto sceneItem
-        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
+    auto sceneItem = downcast(Ufe::Hierarchy::createItem(_sceneItemPath));
     auto renamedAttr = UsdAttributes::doRenameAttribute(sceneItem, _originalName, _newName);
 
     // Set the new name, since it could have been changed in order to be unique.
@@ -158,8 +155,7 @@ void UsdRenameAttributeCommand::executeImplementation()
 
 Ufe::Attribute::Ptr UsdRenameAttributeCommand::attribute() const
 {
-    auto sceneItem
-        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_sceneItemPath));
+    auto sceneItem = downcast(Ufe::Hierarchy::createItem(_sceneItemPath));
     return UsdAttributes(sceneItem).attribute(_newName);
 }
 

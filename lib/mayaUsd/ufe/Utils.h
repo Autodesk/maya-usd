@@ -69,7 +69,7 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 
 MAYAUSD_CORE_PUBLIC
-UsdSceneItem::Ptr
+UsdUfe::UsdSceneItem::Ptr
 createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
 
 //! Returns a unique child name following the Maya standard naming rules.
@@ -122,9 +122,9 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
 
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
-inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
+inline UsdUfe::UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
 {
-    return std::dynamic_pointer_cast<UsdSceneItem>(item);
+    return std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
 }
 
 //! Copy the argument matrix into the return matrix.

@@ -30,17 +30,17 @@ MAYAUSD_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoCreateFromNodeDefComm
 
 UsdUndoCreateFromNodeDefCommand::UsdUndoCreateFromNodeDefCommand(
     const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
-    const UsdSceneItem::Ptr&            parentItem,
+    const UsdUfe::UsdSceneItem::Ptr&    parentItem,
     const Ufe::PathComponent&           name)
     : Ufe::InsertChildCommand()
     , _shaderNodeDef(shaderNodeDef)
-    , _addPrimCmd(UsdUndoAddNewPrimCommand::create(parentItem, name.string(), "Shader"))
+    , _addPrimCmd(UsdUfe::UsdUndoAddNewPrimCommand::create(parentItem, name.string(), "Shader"))
 {
 }
 
 UsdUndoCreateFromNodeDefCommand::Ptr UsdUndoCreateFromNodeDefCommand::create(
     const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
-    const UsdSceneItem::Ptr&            parentItem,
+    const UsdUfe::UsdSceneItem::Ptr&    parentItem,
     const Ufe::PathComponent&           name)
 {
     return std::make_shared<UsdUndoCreateFromNodeDefCommand>(shaderNodeDef, parentItem, name);
@@ -48,12 +48,12 @@ UsdUndoCreateFromNodeDefCommand::Ptr UsdUndoCreateFromNodeDefCommand::create(
 
 Ufe::SceneItem::Ptr UsdUndoCreateFromNodeDefCommand::insertedChild() const
 {
-    return UsdSceneItem::create(_addPrimCmd->newUfePath(), _addPrimCmd->newPrim());
+    return UsdUfe::UsdSceneItem::create(_addPrimCmd->newUfePath(), _addPrimCmd->newPrim());
 }
 
 void UsdUndoCreateFromNodeDefCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
     _addPrimCmd->execute();
     setIdAttr();
 }

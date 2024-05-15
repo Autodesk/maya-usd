@@ -18,6 +18,8 @@
 
 #include "private/Utils.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
@@ -34,7 +36,7 @@ template <class V> void UsdTRSUndoableCommandBase<V>::updateItem() const
 {
     if (!fItem) {
         auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(getPath());
-        fItem = std::dynamic_pointer_cast<UsdSceneItem>(ufeSceneItemPtr);
+        fItem = downcast(ufeSceneItemPtr);
     }
 }
 

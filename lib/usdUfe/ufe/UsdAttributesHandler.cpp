@@ -16,6 +16,7 @@
 #include "UsdAttributesHandler.h"
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 namespace USDUFE_NS_DEF {
 
@@ -33,7 +34,7 @@ UsdAttributesHandler::Ptr UsdAttributesHandler::create()
 
 Ufe::Attributes::Ptr UsdAttributesHandler::attributes(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif

@@ -59,7 +59,7 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
             // MAYA-125854: Skip the descendant, it will get duplicated with the ancestor.
             continue;
         }
-        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        auto usdItem = downcast(item);
         if (!usdItem) {
             continue;
         }
@@ -83,7 +83,7 @@ UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
 
 void UsdUndoDuplicateSelectionCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
     for (auto&& usdItem : _sourceItems) {
         // Need to create and execute. If we create all before executing any, then the collision

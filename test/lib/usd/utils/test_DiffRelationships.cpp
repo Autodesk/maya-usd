@@ -6,7 +6,9 @@
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace UsdUfe;
+using UsdUfe::compareRelationships;
+using UsdUfe::DiffResult;
+using UsdUfe::DiffResultPerPath;
 
 namespace {
 TfToken testRelName("test_rel");

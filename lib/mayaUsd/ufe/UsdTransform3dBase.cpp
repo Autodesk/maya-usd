@@ -34,7 +34,7 @@ namespace ufe {
 MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dReadImpl, UsdTransform3dBase);
 MAYAUSD_VERIFY_CLASS_BASE(Ufe::Transform3d, UsdTransform3dBase);
 
-UsdTransform3dBase::UsdTransform3dBase(const UsdSceneItem::Ptr& item)
+UsdTransform3dBase::UsdTransform3dBase(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dReadImpl(item)
     , Transform3d()
 {

@@ -39,7 +39,7 @@ public:
 
     UsdUndoCreateFromNodeDefCommand(
         const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
-        const UsdSceneItem::Ptr&            parentItem,
+        const UsdUfe::UsdSceneItem::Ptr&    parentItem,
         const Ufe::PathComponent&           name);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateFromNodeDefCommand);
@@ -47,7 +47,7 @@ public:
     //! Create a UsdUndoCreateFromNodeDefCommand from a USD scene item and a UFE path component.
     static UsdUndoCreateFromNodeDefCommand::Ptr create(
         const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
-        const UsdSceneItem::Ptr&            parentItem,
+        const UsdUfe::UsdSceneItem::Ptr&    parentItem,
         const Ufe::PathComponent&           name);
 
     Ufe::SceneItem::Ptr insertedChild() const override;
@@ -59,9 +59,9 @@ public:
 private:
     const PXR_NS::SdrShaderNodeConstPtr _shaderNodeDef;
 
-    std::shared_ptr<UsdUndoAddNewPrimCommand> _addPrimCmd;
+    std::shared_ptr<UsdUfe::UsdUndoAddNewPrimCommand> _addPrimCmd;
 
-    UsdUndoableItem _undoableItem;
+    UsdUfe::UsdUndoableItem _undoableItem;
 
     void setIdAttr();
 }; // UsdUndoCreateFromNodeDefCommand

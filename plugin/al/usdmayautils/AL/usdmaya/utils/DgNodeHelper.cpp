@@ -37,8 +37,6 @@
 
 #include <iostream>
 
-using namespace UsdUfe;
-
 namespace AL {
 namespace usdmaya {
 namespace utils {

@@ -13,7 +13,10 @@
 #include <algorithm>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace UsdUfe;
+
+using UsdUfe::MergeMissing;
+using UsdUfe::MergePrimsOptions;
+using UsdUfe::MergeVerbosity;
 
 namespace {
 

@@ -114,7 +114,8 @@
 #include <utility>
 #include <vector>
 
-using namespace MayaUsd;
+using MayaUsd::LayerManager;
+using MayaUsd::ProxyAccessor;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -823,7 +824,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     UsdStageRefPtr finalUsdStage;
     SdfPath        primPath;
 
-    LayerNameMap layerNameMap = MayaUsd::LayerManager::getLayerNameMap();
+    MayaUsd::LayerNameMap layerNameMap = LayerManager::getLayerNameMap();
 
     MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -1071,7 +1072,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     if (isIncomingStage) {
         std::vector<std::string> incomingLayers { sharedUsdStage->GetRootLayer()->GetIdentifier() };
-        _incomingLayers = getAllSublayers(incomingLayers, true);
+        _incomingLayers = UsdUfe::getAllSublayers(incomingLayers, true);
     } else {
         _incomingLayers.clear();
     }
@@ -1083,7 +1084,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // the hierarchy alive since the stage is gone and so they will get removed
         if (_unsharedStageRootLayer) {
             _unsharedStageRootSublayers.clear();
-            auto subLayers = getAllSublayerRefs(_unsharedStageRootLayer);
+            auto subLayers = UsdUfe::getAllSublayerRefs(_unsharedStageRootLayer);
             _unsharedStageRootSublayers.insert(
                 _unsharedStageRootSublayers.begin(), subLayers.begin(), subLayers.end());
         }
@@ -1118,7 +1119,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
 
             // If its a new layer (or wasn't remapped properly)
-            auto sublayerIds = getAllSublayers(_unsharedStageRootLayer);
+            auto sublayerIds = UsdUfe::getAllSublayers(_unsharedStageRootLayer);
             if (sublayerIds.find(inRootLayer->GetIdentifier()) == sublayerIds.end()) {
                 // Add new layer to subpaths
                 auto subLayers = _unsharedStageRootLayer->GetSubLayerPaths();
@@ -1179,7 +1180,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Note: it is possible the cached edit target layer is no longer valid,
             //       for example if it was deleted. Trying to set an invalid layer would
             //       throw an exception.
-            if (isLayerInStage(_targetLayer, *finalUsdStage)) {
+            if (UsdUfe::isLayerInStage(_targetLayer, *finalUsdStage)) {
                 finalUsdStage->SetEditTarget(_targetLayer);
             }
         }
@@ -1602,7 +1603,7 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 
-    Ufe::BBox3d pulledUfeBBox = ufe::getPulledPrimsBoundingBox(ufePath());
+    Ufe::BBox3d pulledUfeBBox = MayaUsd::ufe::getPulledPrimsBoundingBox(ufePath());
     if (!pulledUfeBBox.empty()) {
         GfBBox3d pulledBox(GfRange3d(
             GfVec3d(pulledUfeBBox.min.x(), pulledUfeBBox.min.y(), pulledUfeBBox.min.z()),
@@ -2083,7 +2084,7 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
     if (useLoadRulesHandling) {
         // Register with the load-rules handling used to transfer load rules
         // between the USD stage and a dynamic attribute on the proxy shape.
-        MayaUsdProxyShapeStageExtraData::addProxyShape(*this);
+        MayaUsd::MayaUsdProxyShapeStageExtraData::addProxyShape(*this);
     }
 }
 
@@ -2105,7 +2106,7 @@ MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
 
     // Deregister from the load-rules handling used to transfer load rules
     // between the USD stage and a dynamic attribute on the proxy shape.
-    MayaUsdProxyShapeStageExtraData::removeProxyShape(*this);
+    MayaUsd::MayaUsdProxyShapeStageExtraData::removeProxyShape(*this);
 
     g_proxyShapeInstancesCount -= 1;
 }
@@ -2154,7 +2155,7 @@ void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingCh
 
     // We're in a callback so undo items cannot be registered into an undoable command.
     // Mute the undo/redo for commands called from here.
-    OpUndoItemMuting muting;
+    MayaUsd::OpUndoItemMuting muting;
     copyLayerMutingToAttribute(*stage, *this);
 }
 

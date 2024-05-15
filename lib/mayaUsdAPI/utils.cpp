@@ -69,7 +69,7 @@ bool getUsdValue(
 Ufe::UndoableCommand::Ptr
 addNewMaterialCommand(const Ufe::SceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier)
 {
-    if (auto usdSceneItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem)) {
+    if (auto usdSceneItem = UsdUfe::downcast(parentItem)) {
         return MayaUsd::ufe::UsdUndoAddNewMaterialCommand::create(
             usdSceneItem, sdrShaderIdentifier);
     }
@@ -78,7 +78,7 @@ addNewMaterialCommand(const Ufe::SceneItem::Ptr& parentItem, const std::string& 
 
 Ufe::UndoableCommand::Ptr createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem)
 {
-    if (auto usdSceneItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem)) {
+    if (auto usdSceneItem = UsdUfe::downcast(parentItem)) {
         return MayaUsd::ufe::UsdUndoCreateMaterialsScopeCommand::create(usdSceneItem);
     }
     return nullptr;

@@ -16,6 +16,7 @@
 #include "UsdUIInfoHandler.h"
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/usd/sdf/listOp.h> // SdfReferenceListOp/SdfPayloadListOp/SdfPathListOp
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys
@@ -91,7 +92,7 @@ UsdUIInfoHandler::Ptr UsdUIInfoHandler::create() { return std::make_shared<UsdUI
 bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::CellInfo& info) const
 {
     bool              changed = false;
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    UsdSceneItem::Ptr usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif
@@ -161,7 +162,7 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
     }
 
     // Check if we have any composition meta data - if yes we display a special badge.
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (usdItem && usdItem->prim()) {
         // Variants
         if (!usdItem->prim().GetVariantSets().GetNames().empty()) {
@@ -191,7 +192,7 @@ std::string UsdUIInfoHandler::treeViewTooltip(const Ufe::SceneItem::Ptr& item) c
 {
     std::string tooltip;
 
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (usdItem && usdItem->prim()) {
         // Composition related metadata.
         bool                       needComma = false;

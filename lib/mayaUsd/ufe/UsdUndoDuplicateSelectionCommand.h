@@ -56,11 +56,11 @@ public:
     Ufe::SceneItem::Ptr targetItem(const Ufe::Path& sourcePath) const override;
 
 private:
-    UsdUndoableItem _undoableItem;
-    const bool      _copyExternalInputs;
+    UsdUfe::UsdUndoableItem _undoableItem;
+    const bool              _copyExternalInputs;
 
     // Transient list of items to duplicate. Needed by execute.
-    std::vector<UsdSceneItem::Ptr> _sourceItems;
+    std::vector<UsdUfe::UsdSceneItem::Ptr> _sourceItems;
 
     using CommandMap = std::unordered_map<Ufe::Path, UsdUndoDuplicateCommand::Ptr>;
     CommandMap _perItemCommands;

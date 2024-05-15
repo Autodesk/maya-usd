@@ -27,13 +27,13 @@ namespace ufe {
 
 MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdHierarchy, MayaUsdHierarchy);
 
-MayaUsdHierarchy::MayaUsdHierarchy(const UsdSceneItem::Ptr& item)
+MayaUsdHierarchy::MayaUsdHierarchy(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdUfe::UsdHierarchy(item)
 {
 }
 
 /*static*/
-MayaUsdHierarchy::Ptr MayaUsdHierarchy::create(const UsdSceneItem::Ptr& item)
+MayaUsdHierarchy::Ptr MayaUsdHierarchy::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<MayaUsdHierarchy>(item);
 }

@@ -98,7 +98,7 @@ bool UsdClipboardHandler::hasItemsToPaste_()
 
 bool UsdClipboardHandler::canBeCut_(const Ufe::SceneItem::Ptr& item)
 {
-    auto usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (!usdItem)
         return false;
 

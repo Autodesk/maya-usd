@@ -31,10 +31,10 @@ class MAYAUSD_CORE_PUBLIC MayaUsdObject3d : public UsdUfe::UsdObject3d
 public:
     using Ptr = std::shared_ptr<MayaUsdObject3d>;
 
-    MayaUsdObject3d(const UsdSceneItem::Ptr& item);
+    MayaUsdObject3d(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a MayaUsdObject3d.
-    static MayaUsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
+    static MayaUsdObject3d::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     // UsdObject3d overrides
     PXR_NS::TfTokenVector getPurposes(const Ufe::Path& path) const override;

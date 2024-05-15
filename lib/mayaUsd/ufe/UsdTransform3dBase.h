@@ -43,7 +43,7 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dBase
 public:
     typedef std::shared_ptr<UsdTransform3dBase> Ptr;
 
-    UsdTransform3dBase(const UsdSceneItem::Ptr& item);
+    UsdTransform3dBase(const UsdUfe::UsdSceneItem::Ptr& item);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dBase);
 
@@ -51,8 +51,11 @@ public:
     const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
 
-    inline UsdSceneItem::Ptr usdSceneItem() const { return UsdTransform3dReadImpl::usdSceneItem(); }
-    inline PXR_NS::UsdPrim   prim() const { return UsdTransform3dReadImpl::prim(); }
+    inline UsdUfe::UsdSceneItem::Ptr usdSceneItem() const
+    {
+        return UsdTransform3dReadImpl::usdSceneItem();
+    }
+    inline PXR_NS::UsdPrim prim() const { return UsdTransform3dReadImpl::prim(); }
 
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
     Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;

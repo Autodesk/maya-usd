@@ -41,9 +41,9 @@ public:
     typedef std::shared_ptr<UsdTransform3dRead> Ptr;
 
     //! Create a UsdTransform3dRead.
-    static UsdTransform3dRead::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dRead::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    UsdTransform3dRead(const UsdSceneItem::Ptr& item);
+    UsdTransform3dRead(const UsdUfe::UsdSceneItem::Ptr& item);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dRead);
 
@@ -51,8 +51,11 @@ public:
     const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
 
-    inline UsdSceneItem::Ptr usdSceneItem() const { return UsdTransform3dReadImpl::usdSceneItem(); }
-    inline PXR_NS::UsdPrim   prim() const { return UsdTransform3dReadImpl::prim(); }
+    inline UsdUfe::UsdSceneItem::Ptr usdSceneItem() const
+    {
+        return UsdTransform3dReadImpl::usdSceneItem();
+    }
+    inline PXR_NS::UsdPrim prim() const { return UsdTransform3dReadImpl::prim(); }
 
     Ufe::Matrix4d matrix() const override;
 

@@ -39,7 +39,7 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
     // common API xformOps (In case we have rotateX, rotateY or rotateZ ops)
     try {
         if (!UsdGeomXformCommonAPI(prim()))
-            convertToCompatibleCommonAPI(prim());
+            UsdUfe::convertToCompatibleCommonAPI(prim());
     } catch (...) {
         // Since Maya cannot catch this error at this moment, store it until we
         // actually rotate.
@@ -72,7 +72,7 @@ void UsdRotateUndoableCommand::addEmptyAttribute()
 
 void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 {
-    rotateOp(prim(), path(), x, y, z);
+    UsdUfe::rotateOp(prim(), path(), x, y, z);
 }
 
 //------------------------------------------------------------------------------

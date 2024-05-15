@@ -160,7 +160,8 @@ void MayaStagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
     // invalid stage.
     if (noticeStage) {
         // Track the edit target layer's state
-        UsdUndoManager::instance().trackLayerStates(noticeStage->GetEditTarget().GetLayer());
+        UsdUfe::UsdUndoManager::instance().trackLayerStates(
+            noticeStage->GetEditTarget().GetLayer());
     }
 
     setupListeners();

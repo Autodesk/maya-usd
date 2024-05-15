@@ -215,7 +215,7 @@ void PopulateSelection(
     }
 
     // Filter out non-USD items.
-    auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
+    auto usdItem = UsdUfe::downcast(item);
     if (!usdItem) {
         return;
     }
@@ -1231,7 +1231,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     //       so reset the flag after setting up the cursor, otherwise
     //       once one rendering would be long-duration, all of them
     //       would be flagged afterward.
-    WaitCursor waitCursor(_longDurationRendering);
+    UsdUfe::WaitCursor waitCursor(_longDurationRendering);
     _longDurationRendering = false;
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
