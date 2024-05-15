@@ -17,6 +17,7 @@
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 
 #include <usdUfe/undo/UsdUndoManager.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyNoticeWrapper.h>
@@ -36,8 +37,15 @@ namespace {
 class PythonUndoBlock
 {
 public:
+    PythonUndoBlock(UsdUndoableItem& item)
+        : _item(&item)
+        , _block(nullptr)
+    {
+    }
+
     PythonUndoBlock()
-        : _block(nullptr)
+        : _item(nullptr)
+        , _block(nullptr)
     {
     }
 
@@ -48,19 +56,17 @@ public:
         if (!TF_VERIFY(_block == nullptr)) {
             return;
         }
-        _block = std::make_unique<MayaUsd::MayaUsdUndoBlock>();
+        if (_item)
+            _block = std::make_unique<UsdUfe::UsdUndoBlock>(_item);
+        else
+            _block = std::make_unique<MayaUsd::MayaUsdUndoBlock>();
     }
 
-    void exit(object, object, object)
-    {
-        if (!TF_VERIFY(_block != nullptr)) {
-            return;
-        }
-        _block.reset();
-    }
+    void exit(object, object, object) { _block.reset(); }
 
 private:
-    std::unique_ptr<MayaUsd::MayaUsdUndoBlock> _block;
+    UsdUndoableItem*                      _item;
+    std::unique_ptr<UsdUfe::UsdUndoBlock> _block;
 };
 
 void _trackLayerStates(const SdfLayerHandle& layer)
@@ -80,10 +86,19 @@ void wrapUsdUndoManager()
             .staticmethod("trackLayerStates");
     }
 
+    // UsdUndoableItem
+    {
+        class_<UsdUndoableItem>("UsdUndoableItem")
+            .def("undo", &UsdUndoableItem::undo)
+            .def("redo", &UsdUndoableItem::redo);
+    }
+
     // UsdUndoBlock
     {
         typedef PythonUndoBlock This;
-        class_<This, boost::noncopyable>("UsdUndoBlock", init<>())
+        class_<This, boost::noncopyable>("UsdUndoBlock")
+            .def(init<>())
+            .def(init<UsdUndoableItem&>(arg("item")))
             .def("__enter__", &This::enter)
             .def("__exit__", &This::exit);
     }
