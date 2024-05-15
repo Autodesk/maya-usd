@@ -51,6 +51,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MRenderUtil.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
@@ -265,9 +266,27 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    std::string fileTextureName(fileTextureNamePlug.asString(&status).asChar());
+    const MString rawTextureName = fileTextureNamePlug.asString(&status);
     if (status != MS::kSuccess) {
         return;
+    }
+
+    // Resolve texture path à la file node
+    const MString exactTextureName = MRenderUtil::exactFileTextureName(
+        rawTextureName,
+        /* useFrameExt = */ false,
+        /* currentFrameExt = */ MString(),
+        depNodeFn.absoluteName(),
+        &status);
+    if (status != MS::kSuccess) {
+        return;
+    }
+
+    std::string fileTextureName(exactTextureName.asChar(), exactTextureName.length());
+
+    // Fallback to raw name if maya resolution failed, eg file was not found
+    if (fileTextureName.empty()) {
+        fileTextureName.assign(rawTextureName.asChar(), rawTextureName.length());
     }
 
     const MPlug tilingAttr
