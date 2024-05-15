@@ -419,13 +419,13 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
             surfaceNode = surfaceInput->getConnectedNode();
         }
     }
-    std::string surfaceNodeName;
+    std::string           surfaceNodeName;
     std::set<std::string> surfaceInputNames;
     if (surfaceNode) {
         surfaceNodeName = surfaceNode->getName();
         const auto nodeDef = surfaceNode->getNodeDef();
         if (nodeDef) {
-            for (auto const& surfaceInput: nodeDef->getActiveInputs()) {
+            for (auto const& surfaceInput : nodeDef->getActiveInputs()) {
                 surfaceInputNames.insert(surfaceInput->getName());
             }
         }
