@@ -411,6 +411,26 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
         _lightRigName = generateLightRig(_lightRigSource, *_glslShader, _fragmentName);
     }
 
+    // Get the root surfaceshader name and parameters:
+    auto surfaceNode = std::dynamic_pointer_cast<mx::Node>(_element);
+    if (surfaceNode && surfaceNode->getCategory() == "surfacematerial") {
+        const auto surfaceInput = surfaceNode->getInput("surfaceshader");
+        if (surfaceInput) {
+            surfaceNode = surfaceInput->getConnectedNode();
+        }
+    }
+    std::string surfaceNodeName;
+    std::set<std::string> surfaceInputNames;
+    if (surfaceNode) {
+        surfaceNodeName = surfaceNode->getName();
+        const auto nodeDef = surfaceNode->getNodeDef();
+        if (nodeDef) {
+            for (auto const& surfaceInput: nodeDef->getActiveInputs()) {
+                surfaceInputNames.insert(surfaceInput->getName());
+            }
+        }
+    }
+
     // Extract the input fragment parameter names along with their
     // associated element paths to allow for value binding.
     //
@@ -425,9 +445,23 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
 
         for (size_t i = 0; i < uniforms.size(); ++i) {
             const mx::ShaderPort* const port = uniforms[i];
-            const std::string&          path = port->getPath();
+            if (!port->getNode()) {
+                continue;
+            }
+            std::string path = port->getPath();
+            // MaterialX 1.38.10 will return empty path for the root shader.
+            // work around that. We know there is an associated node. No help
+            // from the Node* in the port though since this will be the N0
+            // ShaderGraph.
+            const std::string& variableName = port->getVariable();
+            if (path.empty() && surfaceInputNames.count(variableName)) {
+                // Assume it is the surface shader:
+                path.reserve(surfaceNodeName.size() + 1 + variableName.size());
+                path += surfaceNodeName;
+                path += "/";
+                path += variableName;
+            }
             if (!path.empty()) {
-                const std::string& variableName = port->getVariable();
                 if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
                     std::string textureName
                         = mx::OgsXmlGenerator::samplerToTextureName(variableName);
