@@ -92,7 +92,7 @@ class testVP2RenderDelegateCameras(imageUtils.ImageDiffingTestCase):
         cmds.rename('|stage', 'stage2')
 
         # switch color management view transfrom to verify that the proxy camera handles this properly
-        cmds.modelEditor('modelPanel4', edit=True, viewTransformName='Log')
+        cmds.modelEditor('modelPanel4', edit=True, viewTransformName='Log (sRGB)')
 
         # select the stage and compare images
         globalSelection.clear()
