@@ -381,9 +381,6 @@ private:
             *mat = material;
         }
 
-        if (!context.GetExportArgs().exportMaterials)
-            return;
-
         for (const TfToken& currentMaterialConversion :
              context.GetExportArgs().allMaterialConversions) {
 
