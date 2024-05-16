@@ -17,6 +17,7 @@
 #include "MayaUsdObject3dHandler.h"
 
 #include <mayaUsd/ufe/MayaUsdObject3d.h>
+#include <mayaUsd/ufe/Utils.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -36,7 +37,7 @@ MayaUsdObject3dHandler::Ptr MayaUsdObject3dHandler::create()
 Ufe::Object3d::Ptr MayaUsdObject3dHandler::object3d(const Ufe::SceneItem::Ptr& item) const
 {
     if (canCreateObject3dForItem(item)) {
-        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        auto usdItem = downcast(item);
         return MayaUsdObject3d::create(usdItem);
     }
     return nullptr;

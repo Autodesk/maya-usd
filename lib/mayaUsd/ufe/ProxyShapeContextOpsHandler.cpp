@@ -52,10 +52,10 @@ Ufe::ContextOps::Ptr ProxyShapeContextOpsHandler::contextOps(const Ufe::SceneIte
         // create one using the pseudo-root and our own path.
         PXR_NS::UsdStageWeakPtr stage = getStage(item->path());
         if (stage) {
-            auto               usdItem = UsdSceneItem::create(item->path(), stage->GetPseudoRoot());
-            auto               usdContextOpsHandler = MayaUsdContextOpsHandler::create();
-            auto               cOps = usdContextOpsHandler->contextOps(usdItem);
-            UsdContextOps::Ptr usdCOps = std::dynamic_pointer_cast<UsdContextOps>(cOps);
+            auto usdItem = UsdUfe::UsdSceneItem::create(item->path(), stage->GetPseudoRoot());
+            auto usdContextOpsHandler = MayaUsdContextOpsHandler::create();
+            auto cOps = usdContextOpsHandler->contextOps(usdItem);
+            auto usdCOps = std::dynamic_pointer_cast<UsdUfe::UsdContextOps>(cOps);
 
             // We explicitly set the context ops as a gateway type because we created a
             // new UsdSceneItem with a USD prim. Thus the scene item is no longer from

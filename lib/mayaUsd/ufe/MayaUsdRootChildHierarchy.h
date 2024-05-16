@@ -27,15 +27,15 @@ namespace ufe {
     This class modifies its base class implementation to return the Maya USD
     gateway node as parent of USD prims that are children of the USD root prim.
  */
-class MAYAUSD_CORE_PUBLIC MayaUsdRootChildHierarchy : public UsdRootChildHierarchy
+class MAYAUSD_CORE_PUBLIC MayaUsdRootChildHierarchy : public UsdUfe::UsdRootChildHierarchy
 {
 public:
     typedef std::shared_ptr<MayaUsdRootChildHierarchy> Ptr;
 
-    MayaUsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
+    MayaUsdRootChildHierarchy(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a MayaUsdRootChildHierarchy.
-    static MayaUsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
+    static MayaUsdRootChildHierarchy::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
 protected:
     // UsdHierarchy overrides

@@ -24,13 +24,14 @@ namespace ufe {
 
 MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdRootChildHierarchy, MayaUsdRootChildHierarchy);
 
-MayaUsdRootChildHierarchy::MayaUsdRootChildHierarchy(const UsdSceneItem::Ptr& item)
+MayaUsdRootChildHierarchy::MayaUsdRootChildHierarchy(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdRootChildHierarchy(item)
 {
 }
 
 /*static*/
-MayaUsdRootChildHierarchy::Ptr MayaUsdRootChildHierarchy::create(const UsdSceneItem::Ptr& item)
+MayaUsdRootChildHierarchy::Ptr
+MayaUsdRootChildHierarchy::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<MayaUsdRootChildHierarchy>(item);
 }

@@ -52,18 +52,18 @@ void UsdUndoDeleteCommand::execute()
     if (!_prim.IsValid())
         return;
 
-    enforceMutedLayer(_prim, "remove");
+    UsdUfe::enforceMutedLayer(_prim, "remove");
 
     UsdUfe::InAddOrDeleteOperation ad;
 
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
 #ifdef MAYA_ENABLE_NEW_PRIM_DELETE
     const auto& stage = _prim.GetStage();
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
     PXR_NS::UsdEditTarget routingEditTarget
-        = getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);
+        = UsdUfe::getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
     UsdUfe::UsdAttributes::removeAttributesConnections(_prim);
@@ -98,7 +98,7 @@ void UsdUndoDeleteCommand::execute()
         if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete"))
             return;
 
-        PrimSpecFunc deleteFunc
+        UsdUfe::PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
             if (!primSpec)
                 return;
@@ -111,7 +111,7 @@ void UsdUndoDeleteCommand::execute()
                 throw std::runtime_error(error);
             }
         };
-        applyToAllPrimSpecs(_prim, deleteFunc);
+        UsdUfe::applyToAllPrimSpecs(_prim, deleteFunc);
     }
 #else
     _prim.SetActive(false);

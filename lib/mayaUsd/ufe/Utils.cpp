@@ -128,11 +128,11 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
 }
 
-UsdSceneItem::Ptr
+UsdUfe::UsdSceneItem::Ptr
 createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
 {
     auto ufeSiblingPath = ufeSrcPath.sibling(Ufe::PathComponent(siblingName));
-    return UsdSceneItem::create(ufeSiblingPath, ufePathToPrim(ufeSiblingPath));
+    return UsdUfe::UsdSceneItem::create(ufeSiblingPath, ufePathToPrim(ufeSiblingPath));
 }
 
 std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name)
@@ -156,7 +156,7 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
         // Get the base name (removing the numerical suffix) so that we can compare
         // that to all the sibling names.
         std::string baseName, suffix;
-        splitNumericalSuffix(childName, baseName, suffix);
+        UsdUfe::splitNumericalSuffix(childName, baseName, suffix);
         int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
 
         std::string                 childBaseName;
@@ -165,7 +165,7 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
             // While iterating thru all the children look for ones that match
             // the base name of the input. When we find one check its numerical
             // suffix and store the greatest one.
-            splitNumericalSuffix(child.GetString(), childBaseName, suffix);
+            UsdUfe::splitNumericalSuffix(child.GetString(), childBaseName, suffix);
             if (baseName == childBaseName) {
                 int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
                 if (suffixValue > largestMatching.second) {
@@ -177,7 +177,7 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
         // By sending in the largest matching name (instead of the input name)
         // the unique name function will increment its numerical suffix by 1
         // and thus it will be unique and follow Maya naming standard.
-        childName = uniqueName(allChildrenNames, largestMatching.first);
+        childName = UsdUfe::uniqueName(allChildrenNames, largestMatching.first);
     }
     return childName;
 }

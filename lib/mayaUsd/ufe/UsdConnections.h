@@ -38,7 +38,7 @@ public:
     std::vector<Ufe::Connection::Ptr> allConnections() const override;
 
 private:
-    const UsdSceneItem::Ptr _sceneItem;
+    const UsdUfe::UsdSceneItem::Ptr _sceneItem;
 
 }; // UsdConnections
 

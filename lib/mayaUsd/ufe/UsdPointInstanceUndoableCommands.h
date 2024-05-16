@@ -55,7 +55,7 @@ public:
         , _prevValue(_modifier.getDefaultUsdValue())
         , _newValue(_prevValue)
     {
-        UsdSceneItem::Ptr item = downcast(this->sceneItem());
+        auto item = downcast(this->sceneItem());
         if (!item || !item->isPointInstance()) {
             return;
         }

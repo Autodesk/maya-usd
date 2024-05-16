@@ -32,10 +32,10 @@ class MAYAUSD_CORE_PUBLIC MayaUsdHierarchy : public UsdUfe::UsdHierarchy
 public:
     typedef std::shared_ptr<MayaUsdHierarchy> Ptr;
 
-    MayaUsdHierarchy(const UsdSceneItem::Ptr& item);
+    MayaUsdHierarchy(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a MayaUsdHierarchy.
-    static MayaUsdHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
+    static MayaUsdHierarchy::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
 protected:
     // UsdHierarchy overrides

@@ -35,12 +35,12 @@ public:
     typedef std::shared_ptr<UsdLight> Ptr;
 
     UsdLight() = default;
-    UsdLight(const UsdSceneItem::Ptr& item);
+    UsdLight(const UsdUfe::UsdSceneItem::Ptr& item);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdLight);
 
     //! Create a UsdLight.
-    static UsdLight::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdLight::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     inline PXR_NS::UsdPrim prim() const
     {
@@ -87,13 +87,13 @@ protected:
     std::shared_ptr<AreaInterface>        areaInterfaceImpl() override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr fItem;
 }; // UsdLight
 
 class UsdDirectionalInterface : public Ufe::Light::DirectionalInterface
 {
 public:
-    UsdDirectionalInterface(const UsdSceneItem::Ptr& item)
+    UsdDirectionalInterface(const UsdUfe::UsdSceneItem::Ptr& item)
         : fItem(item)
     {
     }
@@ -103,13 +103,13 @@ public:
     float                                 angle() const override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr fItem;
 };
 
 class UsdSphereInterface : public Ufe::Light::SphereInterface
 {
 public:
-    UsdSphereInterface(const UsdSceneItem::Ptr& item)
+    UsdSphereInterface(const UsdUfe::UsdSceneItem::Ptr& item)
         : fItem(item)
     {
     }
@@ -119,13 +119,13 @@ public:
     Ufe::Light::SphereProps                     sphereProps() const override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr fItem;
 };
 
 class UsdConeInterface : public Ufe::Light::ConeInterface
 {
 public:
-    UsdConeInterface(const UsdSceneItem::Ptr& item)
+    UsdConeInterface(const UsdUfe::UsdSceneItem::Ptr& item)
         : fItem(item)
     {
     }
@@ -136,13 +136,13 @@ public:
     Ufe::Light::ConeProps coneProps() const override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr fItem;
 };
 
 class UsdAreaInterface : public Ufe::Light::AreaInterface
 {
 public:
-    UsdAreaInterface(const UsdSceneItem::Ptr& item)
+    UsdAreaInterface(const UsdUfe::UsdSceneItem::Ptr& item)
         : fItem(item)
     {
     }
@@ -152,7 +152,7 @@ public:
     bool                                      normalize() const override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr fItem;
 };
 
 } // namespace ufe

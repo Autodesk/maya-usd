@@ -6,7 +6,9 @@
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace UsdUfe;
+using UsdUfe::compareDictionaries;
+using UsdUfe::DiffResult;
+using UsdUfe::DiffResultPerKey;
 
 //----------------------------------------------------------------------------------------------------------------------
 // Single-item tests.

@@ -71,8 +71,8 @@ MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoRenameCommand);
 */
 
 UsdUndoRenameCommand::UsdUndoRenameCommand(
-    const UsdSceneItem::Ptr&  srcItem,
-    const Ufe::PathComponent& newName)
+    const UsdUfe::UsdSceneItem::Ptr& srcItem,
+    const Ufe::PathComponent&        newName)
 #ifdef UFE_V4_FEATURES_AVAILABLE
     : Ufe::SceneItemResultUndoableCommand()
 #else
@@ -102,18 +102,19 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     // as the source item.
     const std::string validNewName = TfMakeValidIdentifier(newNameStr);
     if (validNewName != prim.GetName())
-        _newName = uniqueChildName(prim.GetParent(), validNewName);
+        _newName = UsdUfe::uniqueChildName(prim.GetParent(), validNewName);
     else
         _ufeDstItem = srcItem;
 }
 
-UsdUndoRenameCommand::Ptr
-UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
+UsdUndoRenameCommand::Ptr UsdUndoRenameCommand::create(
+    const UsdUfe::UsdSceneItem::Ptr& srcItem,
+    const Ufe::PathComponent&        newName)
 {
     return std::make_shared<UsdUndoRenameCommand>(srcItem, newName);
 }
 
-UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _ufeDstItem; }
+UsdUfe::UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _ufeDstItem; }
 
 namespace {
 
@@ -139,9 +140,9 @@ void sendNotificationToAllStageProxies(
         const Ufe::PathSegment& dstUsdSegment = dstPath.getSegments()[1];
         const Ufe::Path adjustedDstPath(Ufe::Path::Segments({ proxySegment, dstUsdSegment }));
 
-        UsdSceneItem::Ptr newItem = UsdSceneItem::create(adjustedDstPath, prim);
+        auto newItem = UsdUfe::UsdSceneItem::create(adjustedDstPath, prim);
 
-        sendNotification<Ufe::ObjectRename>(newItem, adjustedSrcPath);
+        UsdUfe::sendNotification<Ufe::ObjectRename>(newItem, adjustedSrcPath);
     }
 }
 
@@ -152,7 +153,7 @@ void doUsdRename(
     const Ufe::Path    srcPath,
     const Ufe::Path    dstPath)
 {
-    enforceMutedLayer(prim, "rename");
+    UsdUfe::enforceMutedLayer(prim, "rename");
 
     // 1- open a changeblock to delay sending notifications.
     // 2- update the Internal References paths (if any) first
@@ -174,14 +175,14 @@ void doUsdRename(
     {
         auto fromPath = SdfPath(srcPath.getSegments()[1].string());
         auto destPath = SdfPath(dstPath.getSegments()[1].string());
-        duplicateLoadRules(*stage, fromPath, destPath);
-        removeRulesForPath(*stage, fromPath);
+        UsdUfe::duplicateLoadRules(*stage, fromPath, destPath);
+        UsdUfe::removeRulesForPath(*stage, fromPath);
     }
 
     // Do the renaming in the target layer and all other applicable layers,
     // which, due to command restrictions that have been verified when the
     // command was created, should only be session layers.
-    PrimSpecFunc renameFunc
+    UsdUfe::PrimSpecFunc renameFunc
         = [&newName](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
         if (!primSpec->SetName(newName)) {
             const std::string error
@@ -191,16 +192,16 @@ void doUsdRename(
         }
     };
 
-    applyToAllPrimSpecs(prim, renameFunc);
+    UsdUfe::applyToAllPrimSpecs(prim, renameFunc);
 }
 
 void renameHelper(
-    const UsdStagePtr&       stage,
-    const UsdSceneItem::Ptr& ufeSrcItem,
-    const Ufe::Path&         srcPath,
-    UsdSceneItem::Ptr&       ufeDstItem,
-    const Ufe::Path&         dstPath,
-    const std::string&       newName)
+    const UsdStagePtr&               stage,
+    const UsdUfe::UsdSceneItem::Ptr& ufeSrcItem,
+    const Ufe::Path&                 srcPath,
+    UsdUfe::UsdSceneItem::Ptr&       ufeDstItem,
+    const Ufe::Path&                 dstPath,
+    const std::string&               newName)
 {
     // get the stage's default prim path
     auto defaultPrimPath = stage->GetDefaultPrim().GetPath();
@@ -255,13 +256,13 @@ void UsdUndoRenameCommand::renameUndo()
 
 void UsdUndoRenameCommand::undo()
 {
-    InPathChange pc;
+    UsdUfe::InPathChange pc;
     renameUndo();
 }
 
 void UsdUndoRenameCommand::redo()
 {
-    InPathChange pc;
+    UsdUfe::InPathChange pc;
     renameRedo();
 }
 

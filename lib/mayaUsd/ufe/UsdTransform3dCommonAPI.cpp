@@ -36,15 +36,17 @@ namespace {
 class CommonAPITranslateUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
-    CommonAPITranslateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
+    CommonAPITranslateUndoableCmd(
+        const UsdUfe::UsdSceneItem::Ptr& item,
+        const UsdTimeCode&               writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
         , _commonAPI(item->prim())
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpTranslate);
     }
 
@@ -81,15 +83,15 @@ MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPITranslateU
 class CommonAPIRotateUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
-    CommonAPIRotateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
+    CommonAPIRotateUndoableCmd(const UsdUfe::UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
         , _commonAPI(item->prim())
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpRotate);
     }
 
@@ -128,15 +130,15 @@ MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPIRotateUndo
 class CommonAPIScaleUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
-    CommonAPIScaleUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
+    CommonAPIScaleUndoableCmd(const UsdUfe::UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
         , _commonAPI(item->prim())
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpScale);
     }
 
@@ -175,15 +177,15 @@ MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPIScaleUndoa
 class CommonAPIPivotUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
-    CommonAPIPivotUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
+    CommonAPIPivotUndoableCmd(const UsdUfe::UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
         , _commonAPI(item->prim())
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpPivot);
     }
 
@@ -221,14 +223,14 @@ private:
 
 MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dCommonAPI);
 
-UsdTransform3dCommonAPI::UsdTransform3dCommonAPI(const UsdSceneItem::Ptr& item)
+UsdTransform3dCommonAPI::UsdTransform3dCommonAPI(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)
     , _commonAPI(prim())
 {
 }
 
 /* static */
-UsdTransform3dCommonAPI::Ptr UsdTransform3dCommonAPI::create(const UsdSceneItem::Ptr& item)
+UsdTransform3dCommonAPI::Ptr UsdTransform3dCommonAPI::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dCommonAPI>(item);
 }
@@ -394,8 +396,7 @@ UsdTransform3dCommonAPIHandler::create(const Ufe::Transform3dHandler::Ptr& nextH
 Ufe::Transform3d::Ptr
 UsdTransform3dCommonAPIHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }
@@ -412,8 +413,7 @@ Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
     const Ufe::SceneItem::Ptr&      item,
     const Ufe::EditTransform3dHint& hint) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }

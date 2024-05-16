@@ -57,7 +57,7 @@ public:
     std::shared_ptr<Ufe::Connection> connection() const override;
 
 private:
-    UsdUndoableItem                     _undoableItem;
+    UsdUfe::UsdUndoableItem             _undoableItem;
     std::unique_ptr<Ufe::AttributeInfo> _srcInfo;
     std::unique_ptr<Ufe::AttributeInfo> _dstInfo;
 }; // UsdUndoCreateConnectionCommand
@@ -83,7 +83,7 @@ public:
     void redo() override;
 
 private:
-    UsdUndoableItem                     _undoableItem;
+    UsdUfe::UsdUndoableItem             _undoableItem;
     std::unique_ptr<Ufe::AttributeInfo> _srcInfo;
     std::unique_ptr<Ufe::AttributeInfo> _dstInfo;
 }; // UsdUndoDeleteConnectionCommand

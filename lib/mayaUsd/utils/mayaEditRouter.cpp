@@ -21,6 +21,7 @@
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/mergePrims.h>
 
 #include <pxr/base/tf/callContext.h>
@@ -121,10 +122,10 @@ void createCachePrim(
                            : PXR_NS::UsdListPositionBackOfPrependList;
 
     if (asReference) {
-        SdfReference ref(dstLayerPath, dstPrimPath);
+        PXR_NS::SdfReference ref(dstLayerPath, dstPrimPath);
         cachePrim.GetReferences().AddReference(ref, position);
     } else {
-        SdfPayload payload(dstLayerPath, dstPrimPath);
+        PXR_NS::SdfPayload payload(dstLayerPath, dstPrimPath);
         cachePrim.GetPayloads().AddPayload(payload, position);
     }
 }
@@ -170,14 +171,15 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
         const std::string layerDirPath = MayaUsd::getTargetLayerFolder(stage);
         if (layerDirPath.empty()) {
             // Making the path relative is postponed until the containing layer is saved.
-            auto layer = getCurrentTargetLayer(stage);
-            UsdMayaUtilFileSystem::markPathAsPostponedRelative(layer, dstLayerPath);
+            auto layer = UsdUfe::getCurrentTargetLayer(stage);
+            PXR_NS::UsdMayaUtilFileSystem::markPathAsPostponedRelative(layer, dstLayerPath);
         } else {
             const auto relativePathAndSuccess
                 = PXR_NS::UsdMayaUtilFileSystem::makePathRelativeTo(dstLayerPath, layerDirPath);
             if (relativePathAndSuccess.second) {
                 relDistLayerPath = relativePathAndSuccess.first;
             } else {
+                PXR_NAMESPACE_USING_DIRECTIVE
                 TF_WARN(
                     "File name (%s) cannot be resolved as relative to the current edit target "
                     "layer, "
@@ -283,7 +285,7 @@ void registerMayaEditRouters()
 {
     UsdUfe::registerDefaultEditRouter(
         PXR_NS::MayaUsdEditRoutingTokens->RouteCacheToUSD,
-        std::make_shared<CxxEditRouter>(cacheMayaReference));
+        std::make_shared<UsdUfe::CxxEditRouter>(cacheMayaReference));
 }
 
 } // namespace MAYAUSD_NS_DEF

@@ -16,6 +16,7 @@
 #include "UsdCodeWrapperHandler.h"
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/editRouterContext.h>
 
 #include <ufe/selection.h>
@@ -41,10 +42,11 @@ public:
     void prelude(const std::string& /* subOperation */) override
     {
         if (_alreadyRouted) {
-            _editRouterContext = std::make_unique<OperationEditRouterContext>(_stage, _layer);
+            _editRouterContext
+                = std::make_unique<UsdUfe::OperationEditRouterContext>(_stage, _layer);
         } else {
             _editRouterContext
-                = std::make_unique<OperationEditRouterContext>(_operationName, _prim);
+                = std::make_unique<UsdUfe::OperationEditRouterContext>(_operationName, _prim);
             _stage = _editRouterContext->getStage();
             _layer = _editRouterContext->getLayer();
             _alreadyRouted = true;
@@ -57,7 +59,7 @@ private:
     static PXR_NS::UsdPrim findPrimInSelection(const Ufe::Selection& selection)
     {
         for (const Ufe::SceneItem::Ptr& item : selection) {
-            const auto usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+            const auto usdItem = UsdUfe::downcast(item);
             if (!usdItem)
                 continue;
             return usdItem->prim();
@@ -66,12 +68,13 @@ private:
         return {};
     }
 
-    PXR_NS::UsdPrim                             _prim;
-    PXR_NS::TfToken                             _operationName;
-    bool                                        _alreadyRouted = false;
-    PXR_NS::UsdStagePtr                         _stage;
-    PXR_NS::SdfLayerHandle                      _layer;
-    std::unique_ptr<OperationEditRouterContext> _editRouterContext;
+    PXR_NS::UsdPrim        _prim;
+    PXR_NS::TfToken        _operationName;
+    bool                   _alreadyRouted = false;
+    PXR_NS::UsdStagePtr    _stage;
+    PXR_NS::SdfLayerHandle _layer;
+
+    std::unique_ptr<UsdUfe::OperationEditRouterContext> _editRouterContext;
 };
 
 } // namespace

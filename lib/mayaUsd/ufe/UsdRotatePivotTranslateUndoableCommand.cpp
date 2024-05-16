@@ -17,6 +17,8 @@
 
 #include "private/Utils.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
@@ -39,17 +41,17 @@ UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(
         fNoPivotOp = true;
 
         // Add an empty pivot translate.
-        rotatePivotTranslateOp(prim(), fPath, 0, 0, 0);
+        UsdUfe::rotatePivotTranslateOp(prim(), fPath, 0, 0, 0);
     }
 
     fPivotAttrib = prim().GetAttribute(xpivot);
     fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
 }
 
-UsdSceneItem::Ptr UsdRotatePivotTranslateUndoableCommand::sceneItem() const
+UsdUfe::UsdSceneItem::Ptr UsdRotatePivotTranslateUndoableCommand::sceneItem() const
 {
     if (!fItem) {
-        fItem = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(fPath));
+        fItem = downcast(Ufe::Hierarchy::createItem(fPath));
     }
     return fItem;
 }
@@ -81,7 +83,7 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 
 bool UsdRotatePivotTranslateUndoableCommand::set(double x, double y, double z)
 {
-    rotatePivotTranslateOp(prim(), fPath, x, y, z);
+    UsdUfe::rotatePivotTranslateOp(prim(), fPath, x, y, z);
     return true;
 }
 

@@ -29,6 +29,7 @@
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleActiveCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -633,7 +634,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     // Unload:
     if (itemPath[0u] == kUSDUnloadItem) {
         for (auto& selItem : _bulkItems) {
-            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            auto usdItem = downcast(selItem);
             if (usdItem) {
                 auto cmd = std::make_shared<UsdUndoUnloadPayloadCommand>(usdItem->prim());
                 cmdList.emplace_back(cmd);
@@ -645,7 +646,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     // Load With Descendants:
     if (itemPath[0u] == kUSDLoadWithDescendantsItem) {
         for (auto& selItem : _bulkItems) {
-            UsdSceneItem::Ptr   usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            UsdSceneItem::Ptr   usdItem = downcast(selItem);
             const UsdLoadPolicy policy = (itemPath[0u] == kUSDLoadWithDescendantsItem)
                 ? UsdLoadWithDescendants
                 : UsdLoadWithoutDescendants;
@@ -665,7 +666,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
         auto object3dHndlr = UsdObject3dHandler::create();
         if (object3dHndlr) {
             for (auto& selItem : _bulkItems) {
-                UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+                auto usdItem = downcast(selItem);
                 if (usdItem) {
                     auto object3d = object3dHndlr->object3d(usdItem);
                     if (object3d) {
@@ -698,7 +699,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     const bool makeInactive = itemPath[0u] == kUSDDeactivatePrimItem;
     if (makeActive || makeInactive) {
         for (auto& selItem : _bulkItems) {
-            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            auto usdItem = downcast(selItem);
             if (usdItem) {
                 auto       prim = usdItem->prim();
                 const bool primIsActive = prim.IsActive();
@@ -716,7 +717,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     const bool unmarkInstanceable = itemPath[0u] == kUSDUnmarkAsInstanceableItem;
     if (markInstanceable || unmarkInstanceable) {
         for (auto& selItem : _bulkItems) {
-            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            auto usdItem = downcast(selItem);
             if (usdItem) {
                 auto       prim = usdItem->prim();
                 const bool primIsInstanceable = prim.IsInstanceable();

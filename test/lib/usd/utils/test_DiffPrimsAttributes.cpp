@@ -6,7 +6,9 @@
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace UsdUfe;
+using UsdUfe::comparePrimsAttributes;
+using UsdUfe::DiffResult;
+using UsdUfe::DiffResultPerToken;
 
 static TfToken testAttrName("test_attr");
 

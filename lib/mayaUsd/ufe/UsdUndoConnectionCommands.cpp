@@ -115,7 +115,7 @@ UsdUndoCreateConnectionCommand::Ptr UsdUndoCreateConnectionCommand::create(
 
 void UsdUndoCreateConnectionCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
     auto srcAttr = UsdUfe::attrFromUfeAttrInfo(*_srcInfo);
     auto srcUsdAttr = UsdUfe::usdAttrFromUfeAttr(srcAttr);
@@ -252,7 +252,7 @@ UsdUndoDeleteConnectionCommand::Ptr UsdUndoDeleteConnectionCommand::create(
 
 void UsdUndoDeleteConnectionCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
     auto srcAttr = UsdUfe::attrFromUfeAttrInfo(*_srcInfo);
     auto srcUsdAttr = UsdUfe::usdAttrFromUfeAttr(srcAttr);

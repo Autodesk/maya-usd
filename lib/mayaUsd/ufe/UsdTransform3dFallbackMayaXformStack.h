@@ -69,11 +69,11 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dFallbackMayaXformStack : public UsdTrans
 public:
     typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStack> Ptr;
 
-    UsdTransform3dFallbackMayaXformStack(const UsdSceneItem::Ptr& item);
+    UsdTransform3dFallbackMayaXformStack(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a UsdTransform3dFallbackMayaXformStack for the given item.  The argument
     //! transform ops must match a Maya transform stack.
-    static UsdTransform3dFallbackMayaXformStack::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dFallbackMayaXformStack::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 

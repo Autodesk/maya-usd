@@ -109,7 +109,7 @@ void clearClipboardMetadata(Ufe::SceneItemList& targetItems)
 
     // Remove ClipboardMetadata.
     for (auto& targetItem : targetItems) {
-        auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(targetItem);
+        auto usdItem = UsdUfe::downcast(targetItem);
 
         if (PXR_NS::UsdShadeMaterial(usdItem->prim()))
             continue;
@@ -124,7 +124,7 @@ void clearClipboardMetadata(Ufe::SceneItemList& targetItems)
 Ufe::SceneItem::Ptr renameItemUsingMetadata(Ufe::SceneItem::Ptr item)
 {
     if (item) {
-        auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
+        auto usdItem = UsdUfe::downcast(item);
         if (usdItem) {
             const auto newName
                 = usdItem->getGroupMetadata(std::string(kClipboardMetadata), std::string(kNodeName))
@@ -186,8 +186,7 @@ pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection
                 if (createCmd->sceneItem()) {
                     createdMaterials.push_back(createCmd->sceneItem());
                     compositeCmd->append(UsdUfe::UsdUndoDuplicateSelectionCommand::create(
-                        materialNamesMap.second,
-                        std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(createCmd->sceneItem())));
+                        materialNamesMap.second, UsdUfe::downcast(createCmd->sceneItem())));
                 }
             }
         }
@@ -198,7 +197,7 @@ pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection
 
     Ufe::SceneItemList pastedItems;
     for (const auto& materialItem : createdMaterials) {
-        auto       usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(materialItem);
+        auto       usdItem = UsdUfe::downcast(materialItem);
         const auto matHierarchy = Ufe::Hierarchy::hierarchy(materialItem);
         if (matHierarchy) {
             for (auto& child : matHierarchy->children()) {
@@ -321,7 +320,7 @@ void UsdCutClipboardCommand::execute()
 
     // Step 2. Delete the selected items.
     for (auto&& item : _selection) {
-        if (UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item)) {
+        if (auto usdItem = downcast(item)) {
             sceneItemOpsHandler->sceneItemOps(usdItem)->deleteItem();
         }
     }
@@ -345,7 +344,7 @@ UsdPasteClipboardCommand::UsdPasteClipboardCommand(
     : _clipboard(clipboard)
 {
     for (const auto& parentItem : dstParentItems) {
-        if (const auto usdParentItem = std::dynamic_pointer_cast<UsdSceneItem>(parentItem)) {
+        if (const auto usdParentItem = downcast(parentItem)) {
             _dstParentItems.push_back(usdParentItem);
         }
     }
@@ -356,7 +355,7 @@ UsdPasteClipboardCommand::UsdPasteClipboardCommand(
     const UsdClipboard::Ptr&   clipboard)
     : _clipboard(clipboard)
 {
-    if (const auto usdItem = std::dynamic_pointer_cast<UsdSceneItem>(dstParentItem)) {
+    if (const auto usdItem = downcast(dstParentItem)) {
         _dstParentItems.push_back(usdItem);
     }
 }

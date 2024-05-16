@@ -266,7 +266,7 @@ void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::Context
 }
 
 void assignExistingMaterialItems(
-    const UsdSceneItem::Ptr&         item,
+    const UsdUfe::UsdSceneItem::Ptr& item,
     const Ufe::ContextOps::ItemPath& itemPath,
     Ufe::ContextOps::Items&          items)
 {
@@ -346,7 +346,7 @@ void executeEditAsMaya(const Ufe::Path& path)
         "^1s \"^2s\"",
         MayaUsd::ufe::EditAsMayaCommand::commandName,
         Ufe::PathString::string(path).c_str());
-    WaitCursor wait;
+    UsdUfe::WaitCursor wait;
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
 }
 
@@ -356,7 +356,7 @@ void executeEditAsMayaOptions(const Ufe::Path& path)
     const char editAsMayaOptionsCommand[] = "mayaUsdMenu_EditAsMayaDataOptions";
     MString    script;
     script.format("^1s \"^2s\"", editAsMayaOptionsCommand, Ufe::PathString::string(path).c_str());
-    WaitCursor wait;
+    UsdUfe::WaitCursor wait;
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
 }
 #endif
@@ -367,13 +367,13 @@ namespace ufe {
 
 MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdContextOps, MayaUsdContextOps);
 
-MayaUsdContextOps::MayaUsdContextOps(const UsdSceneItem::Ptr& item)
+MayaUsdContextOps::MayaUsdContextOps(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdUfe::UsdContextOps(item)
 {
 }
 
 /*static*/
-MayaUsdContextOps::Ptr MayaUsdContextOps::create(const UsdSceneItem::Ptr& item)
+MayaUsdContextOps::Ptr MayaUsdContextOps::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<MayaUsdContextOps>(item);
 }
@@ -499,8 +499,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                         // Use a set to keep names alphabetically ordered and unique.
                         std::set<std::string> foundMaterials;
                         for (auto&& selItem : *globalSn) {
-                            UsdSceneItem::Ptr usdItem
-                                = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+                            auto usdItem = downcast(selItem);
                             if (!usdItem) {
                                 continue;
                             }
@@ -689,7 +688,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             "^1s \"^2s\" \"|world\"",
             DuplicateCommand::commandName,
             Ufe::PathString::string(path()).c_str());
-        WaitCursor wait;
+        UsdUfe::WaitCursor wait;
         MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
     } else if (itemPath[0] == kAddMayaReferenceItem) {
         if (!_prepareUSDReferenceTargetLayer(prim()))
@@ -787,7 +786,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
     if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         for (auto& selItem : _bulkItems) {
             // Only execute this menu item on items that have a direct binding relationship.
-            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            auto usdItem = downcast(selItem);
             if (usdItem) {
                 auto prim = usdItem->prim();
                 if (prim.HasAPI<UsdShadeMaterialBindingAPI>()) {

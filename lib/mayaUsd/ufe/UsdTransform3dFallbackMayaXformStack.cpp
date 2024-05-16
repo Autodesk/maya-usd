@@ -27,7 +27,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-using namespace MayaUsd::ufe;
+using MayaUsd::ufe::UsdTransform3dMayaXformStack;
 
 // Fallback Transform3d handler transform ops namespace components are:
 // "xformOp:<opType>:maya_fallback:<suffix>"
@@ -158,8 +158,7 @@ Ufe::Transform3d::Ptr createEditTransform3dImp(
     std::vector<UsdGeomXformOp>&                 xformOps,
     std::vector<UsdGeomXformOp>::const_iterator& firstFallbackOp)
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }
@@ -242,14 +241,14 @@ Ufe::Transform3d::Ptr createEditTransform3d(const Ufe::SceneItem::Ptr& item)
 MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dMayaXformStack, UsdTransform3dFallbackMayaXformStack);
 
 UsdTransform3dFallbackMayaXformStack::UsdTransform3dFallbackMayaXformStack(
-    const UsdSceneItem::Ptr& item)
+    const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dMayaXformStack(item)
 {
 }
 
 /* static */
 UsdTransform3dFallbackMayaXformStack::Ptr
-UsdTransform3dFallbackMayaXformStack::create(const UsdSceneItem::Ptr& item)
+UsdTransform3dFallbackMayaXformStack::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dFallbackMayaXformStack>(item);
 }

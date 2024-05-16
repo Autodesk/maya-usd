@@ -41,8 +41,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-using namespace MayaUsd;
-using namespace MayaUsd::ufe;
+using MayaUsd::ufe::UsdSetXformOpUndoableCommandBase;
 
 const char* getMatrixOp() { return std::getenv("MAYA_USD_MATRIX_XFORM_OP_NAME"); }
 
@@ -95,11 +94,11 @@ GfMatrix4d xformInv(
 }
 
 // Class for setMatrixCmd() implementation.
-class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
+class UsdSetMatrix4dUndoableCmd : public UsdUfe::UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
+        : UsdUfe::UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
         , _newM(newM)
     {
     }
@@ -144,10 +143,10 @@ public:
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
-        GfMatrix4d   matrix = _op.GetOpTransform(writeTime());
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
+        GfMatrix4d           matrix = _op.GetOpTransform(writeTime());
         _op.GetAttr().Set(matrix, writeTime());
     }
 
@@ -285,8 +284,8 @@ namespace ufe {
 MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dMatrixOp);
 
 UsdTransform3dMatrixOp::UsdTransform3dMatrixOp(
-    const UsdSceneItem::Ptr& item,
-    const UsdGeomXformOp&    op)
+    const UsdUfe::UsdSceneItem::Ptr& item,
+    const UsdGeomXformOp&            op)
     : UsdTransform3dBase(item)
     , _op(op)
 {
@@ -294,7 +293,7 @@ UsdTransform3dMatrixOp::UsdTransform3dMatrixOp(
 
 /* static */
 UsdTransform3dMatrixOp::Ptr
-UsdTransform3dMatrixOp::create(const UsdSceneItem::Ptr& item, const UsdGeomXformOp& op)
+UsdTransform3dMatrixOp::create(const UsdUfe::UsdSceneItem::Ptr& item, const UsdGeomXformOp& op)
 {
     return std::make_shared<UsdTransform3dMatrixOp>(item, op);
 }
@@ -394,8 +393,7 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
 {
     // We must create a Transform3d interface to edit the whole object,
     // e.g. setting the local transformation matrix for the complete object.
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }
@@ -443,8 +441,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
     const Ufe::SceneItem::Ptr&      item,
     const Ufe::EditTransform3dHint& hint) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }

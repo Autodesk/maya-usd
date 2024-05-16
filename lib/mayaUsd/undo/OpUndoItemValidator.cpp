@@ -48,7 +48,7 @@ bool OpUndoItemValidator::validateEmpty()
         return true;
 
     // Note: TF macros require to be in the PXR namespace.
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
     TF_CODING_ERROR("Undo item list not empty when starting to record or mute undo.");
 
     std::vector<std::string> names;
@@ -72,7 +72,7 @@ bool OpUndoItemValidator::validateItem(const OpUndoItem& item)
         return true;
 
     // Note: TF macros require to be in the PXR namespace.
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
     TF_CODING_ERROR(
         "Undo item %s created without any undo recorder nor undo muting.", item.getName().c_str());
     TF_CODING_ERROR(TfGetStackTrace().c_str());

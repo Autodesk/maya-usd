@@ -35,7 +35,7 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdTransform3dReadImpl
 {
 public:
-    UsdTransform3dReadImpl(const UsdSceneItem::Ptr& item);
+    UsdTransform3dReadImpl(const UsdUfe::UsdSceneItem::Ptr& item);
     ~UsdTransform3dReadImpl() = default;
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dReadImpl);
@@ -44,8 +44,8 @@ public:
     const Ufe::Path&    path() const { return fItem->path(); }
     Ufe::SceneItem::Ptr sceneItem() const { return fItem; }
 
-    inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
-    inline PXR_NS::UsdPrim   prim() const { return fPrim; }
+    inline UsdUfe::UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
+    inline PXR_NS::UsdPrim           prim() const { return fPrim; }
 
     Ufe::Matrix4d matrix() const;
 
@@ -53,8 +53,8 @@ public:
     Ufe::Matrix4d segmentExclusiveMatrix() const;
 
 private:
-    const UsdSceneItem::Ptr fItem;
-    PXR_NS::UsdPrim         fPrim;
+    const UsdUfe::UsdSceneItem::Ptr fItem;
+    PXR_NS::UsdPrim                 fPrim;
 
 }; // UsdTransform3dReadImpl
 

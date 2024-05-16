@@ -26,7 +26,7 @@ namespace ufe {
 
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdTransform3dReadImpl);
 
-UsdTransform3dReadImpl::UsdTransform3dReadImpl(const UsdSceneItem::Ptr& item)
+UsdTransform3dReadImpl::UsdTransform3dReadImpl(const UsdUfe::UsdSceneItem::Ptr& item)
     : fItem(item)
     , fPrim(item->prim())
 {
