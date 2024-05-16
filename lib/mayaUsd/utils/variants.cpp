@@ -89,7 +89,7 @@ getEditTargetForVariants(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfLayerHand
     }
 
 #ifdef MAYAUSD_DEBUG_EDIT_TARGET_FOR_VARIANTS
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
     TF_STATUS(
         "edit target for variants for %s: %s",
         prim.GetPath().GetText(),

@@ -47,11 +47,11 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dMatrixOp : public UsdTransform3dBase
 public:
     typedef std::shared_ptr<UsdTransform3dMatrixOp> Ptr;
 
-    UsdTransform3dMatrixOp(const UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
+    UsdTransform3dMatrixOp(const UsdUfe::UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
 
     //! Create a UsdTransform3dMatrixOp.
     static UsdTransform3dMatrixOp::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
+    create(const UsdUfe::UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;

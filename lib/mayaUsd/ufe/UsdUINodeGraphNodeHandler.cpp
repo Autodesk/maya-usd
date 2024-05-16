@@ -10,6 +10,8 @@
 
 #include "UsdUINodeGraphNode.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
 #include <pxr/usd/usdUI/nodeGraphNodeAPI.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -26,7 +28,7 @@ Ufe::UINodeGraphNode::Ptr
 UsdUINodeGraphNodeHandler::uiNodeGraphNode(const Ufe::SceneItem::Ptr& item) const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     TF_VERIFY(usdItem);
 
     const UsdPrim prim = usdItem->prim();

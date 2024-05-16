@@ -15,6 +15,8 @@
 //
 #include "UsdContextOpsHandler.h"
 
+#include <usdUfe/ufe/Utils.h>
+
 namespace USDUFE_NS_DEF {
 
 USDUFE_VERIFY_CLASS_SETUP(Ufe::ContextOpsHandler, UsdContextOpsHandler);
@@ -31,7 +33,7 @@ UsdContextOpsHandler::Ptr UsdContextOpsHandler::create()
 
 Ufe::ContextOps::Ptr UsdContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif

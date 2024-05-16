@@ -33,14 +33,14 @@ class MAYAUSD_CORE_PUBLIC UsdSceneItemOps : public Ufe::SceneItemOps
 public:
     typedef std::shared_ptr<UsdSceneItemOps> Ptr;
 
-    UsdSceneItemOps(const UsdSceneItem::Ptr& item);
+    UsdSceneItemOps(const UsdUfe::UsdSceneItem::Ptr& item);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSceneItemOps);
 
     //! Create a UsdSceneItemOps.
-    static UsdSceneItemOps::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdSceneItemOps::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    void                   setItem(const UsdSceneItem::Ptr& item);
+    void                   setItem(const UsdUfe::UsdSceneItem::Ptr& item);
     const Ufe::Path&       path() const;
     inline PXR_NS::UsdPrim prim() const
     {
@@ -69,7 +69,7 @@ public:
     //@}
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr fItem;
 
 }; // UsdSceneItemOps
 

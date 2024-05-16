@@ -50,14 +50,14 @@ class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoDuplicateCommand> Ptr;
 
-    UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem);
+    UsdUndoDuplicateCommand(const UsdUfe::UsdSceneItem::Ptr& srcItem);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateCommand);
 
     //! Create a UsdUndoDuplicateCommand from a USD prim and UFE path.
-    static UsdUndoDuplicateCommand::Ptr create(const UsdSceneItem::Ptr& srcItem);
+    static UsdUndoDuplicateCommand::Ptr create(const UsdUfe::UsdSceneItem::Ptr& srcItem);
 
-    UsdSceneItem::Ptr duplicatedItem() const;
+    UsdUfe::UsdSceneItem::Ptr duplicatedItem() const;
     UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); })
 
     void execute() override;
@@ -65,9 +65,9 @@ public:
     void redo() override;
 
 private:
-    UsdUndoableItem _undoableItem;
-    Ufe::Path       _ufeSrcPath;
-    PXR_NS::SdfPath _usdDstPath;
+    UsdUfe::UsdUndoableItem _undoableItem;
+    Ufe::Path               _ufeSrcPath;
+    PXR_NS::SdfPath         _usdDstPath;
 
     PXR_NS::SdfLayerHandle _srcLayer;
     PXR_NS::SdfLayerHandle _dstLayer;

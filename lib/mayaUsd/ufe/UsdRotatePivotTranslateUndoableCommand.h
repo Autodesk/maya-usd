@@ -60,14 +60,14 @@ public:
     }
 
 private:
-    UsdSceneItem::Ptr sceneItem() const;
+    UsdUfe::UsdSceneItem::Ptr sceneItem() const;
 
 private:
-    Ufe::Path                 fPath;
-    mutable UsdSceneItem::Ptr fItem { nullptr };
-    PXR_NS::UsdAttribute      fPivotAttrib;
-    PXR_NS::GfVec3f           fPrevPivotValue;
-    bool                      fNoPivotOp;
+    Ufe::Path                         fPath;
+    mutable UsdUfe::UsdSceneItem::Ptr fItem { nullptr };
+    PXR_NS::UsdAttribute              fPivotAttrib;
+    PXR_NS::GfVec3f                   fPrevPivotValue;
+    bool                              fNoPivotOp;
 
 }; // UsdRotatePivotTranslateUndoableCommand
 

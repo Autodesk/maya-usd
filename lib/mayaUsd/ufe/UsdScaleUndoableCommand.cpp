@@ -56,7 +56,7 @@ void UsdScaleUndoableCommand::addEmptyAttribute()
 
 void UsdScaleUndoableCommand::performImp(double x, double y, double z)
 {
-    scaleOp(prim(), path(), x, y, z);
+    UsdUfe::scaleOp(prim(), path(), x, y, z);
 }
 
 //------------------------------------------------------------------------------

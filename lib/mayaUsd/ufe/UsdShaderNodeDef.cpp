@@ -74,7 +74,8 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
         Ufe::Attribute::Type type = UsdUfe::usdTypeToUfe(property);
         attrs.emplace_back(Ufe::AttributeDef::create(name, type, defaultValue.str(), IOTYPE));
 #else
-        attrs.emplace_back(Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property)));
+        attrs.emplace_back(
+            Ufe::AttributeDef::ConstPtr(new UsdUfe::UsdShaderAttributeDef(property)));
 #endif
     }
     return attrs;
@@ -237,7 +238,7 @@ Ufe::AttributeDef::ConstPtr UsdShaderNodeDef::input(const std::string& name) con
 {
     TF_DEV_AXIOM(fShaderNodeDef);
     if (SdrShaderPropertyConstPtr property = fShaderNodeDef->GetShaderInput(TfToken(name))) {
-        return Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property));
+        return Ufe::AttributeDef::ConstPtr(new UsdUfe::UsdShaderAttributeDef(property));
     }
     return {};
 }
@@ -270,7 +271,7 @@ Ufe::AttributeDef::ConstPtr UsdShaderNodeDef::output(const std::string& name) co
 {
     TF_DEV_AXIOM(fShaderNodeDef);
     if (SdrShaderPropertyConstPtr property = fShaderNodeDef->GetShaderOutput(TfToken(name))) {
-        return Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property));
+        return Ufe::AttributeDef::ConstPtr(new UsdUfe::UsdShaderAttributeDef(property));
     }
     return {};
 }
@@ -344,7 +345,7 @@ Ufe::SceneItem::Ptr UsdShaderNodeDef::createNode(
     const Ufe::PathComponent& name) const
 {
     TF_DEV_AXIOM(fShaderNodeDef);
-    UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
+    auto parentItem = downcast(parent);
     if (parentItem) {
         UsdUndoCreateFromNodeDefCommand::Ptr cmd
             = UsdUndoCreateFromNodeDefCommand::create(fShaderNodeDef, parentItem, name.string());
@@ -361,7 +362,7 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
     const Ufe::PathComponent& name) const
 {
     TF_DEV_AXIOM(fShaderNodeDef);
-    UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
+    auto parentItem = downcast(parent);
     if (parentItem) {
         if (UsdUndoAddNewMaterialCommand::CompatiblePrim(parentItem)) {
             return UsdUndoAddNewMaterialCommand::create(

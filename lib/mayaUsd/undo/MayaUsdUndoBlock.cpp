@@ -41,7 +41,7 @@ MayaUsdUndoBlock::~MayaUsdUndoBlock()
 {
     // Will be decremented to 0 by our base class.
     if (depth() == 1) {
-        UsdUndoableItem undoItem;
+        UsdUfe::UsdUndoableItem undoItem;
         UsdUfe::UsdUndoManagerAccessor::transferEdits(undoItem);
         MayaUsdUndoBlockCmd::execute(undoItem);
 

@@ -27,19 +27,19 @@ namespace ufe {
 
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemOps, UsdSceneItemOps);
 
-UsdSceneItemOps::UsdSceneItemOps(const UsdSceneItem::Ptr& item)
+UsdSceneItemOps::UsdSceneItemOps(const UsdUfe::UsdSceneItem::Ptr& item)
     : Ufe::SceneItemOps()
     , fItem(item)
 {
 }
 
 /*static*/
-UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdSceneItem::Ptr& item)
+UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdSceneItemOps>(item);
 }
 
-void UsdSceneItemOps::setItem(const UsdSceneItem::Ptr& item) { fItem = item; }
+void UsdSceneItemOps::setItem(const UsdUfe::UsdSceneItem::Ptr& item) { fItem = item; }
 
 const Ufe::Path& UsdSceneItemOps::path() const { return fItem->path(); }
 

@@ -236,7 +236,7 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
         }
 #endif
         if (!filterInactive || child.IsActive()) {
-            children.emplace_back(UsdSceneItem::create(
+            children.emplace_back(UsdUfe::UsdSceneItem::create(
                 parentPath
                     + Ufe::PathSegment(
                         Ufe::PathComponent(child.GetName().GetString()), getUsdRunTimeId(), '/'),
@@ -254,9 +254,9 @@ Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
 {
     // UsdUndoInsertChildCommand expects a UsdSceneItem which wraps a prim, so
     // create one using the pseudo-root and our own path.
-    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+    auto usdItem = UsdUfe::UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 
-    return UsdUndoInsertChildCommand::create(usdItem, downcast(child), downcast(pos));
+    return UsdUfe::UsdUndoInsertChildCommand::create(usdItem, downcast(child), downcast(pos));
 }
 
 Ufe::SceneItem::Ptr
@@ -271,8 +271,8 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& n
 {
     Ufe::SceneItem::Ptr createdItem;
 
-    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
-    UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(usdItem, name.string());
+    auto usdItem = UsdUfe::UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+    auto cmd = UsdUfe::UsdUndoCreateGroupCommand::create(usdItem, name.string());
     if (cmd) {
         cmd->execute();
         createdItem = cmd->insertedChild();
@@ -287,9 +287,8 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
 {
     Ufe::SceneItem::Ptr createdItem;
 
-    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
-    UsdUndoCreateGroupCommand::Ptr cmd
-        = UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
+    auto usdItem = UsdUfe::UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+    auto cmd = UsdUfe::UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
     if (cmd) {
         cmd->execute();
         createdItem = cmd->insertedChild();
@@ -303,18 +302,18 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
 Ufe::InsertChildCommand::Ptr
 ProxyShapeHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 {
-    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+    auto usdItem = UsdUfe::UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 
-    return UsdUndoCreateGroupCommand::create(usdItem, name.string());
+    return UsdUfe::UsdUndoCreateGroupCommand::create(usdItem, name.string());
 }
 #else
 Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
     const Ufe::Selection&     selection,
     const Ufe::PathComponent& name) const
 {
-    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+    auto usdItem = UsdUfe::UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 
-    return UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
+    return UsdUfe::UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
 }
 #endif
 
@@ -328,7 +327,7 @@ ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
     }
 
     // create a reorder command and pass in the parent and its ordered children list
-    return UsdUndoReorderCommand::create(getUsdRootPrim(), orderedTokens);
+    return UsdUfe::UsdUndoReorderCommand::create(getUsdRootPrim(), orderedTokens);
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const

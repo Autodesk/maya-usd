@@ -3,7 +3,8 @@
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace UsdUfe;
+using UsdUfe::compareValues;
+using UsdUfe::DiffResult;
 
 //----------------------------------------------------------------------------------------------------------------------
 TEST(DiffValues, compareValuesEmpty)

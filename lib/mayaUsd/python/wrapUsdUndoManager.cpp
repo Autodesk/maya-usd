@@ -37,7 +37,7 @@ namespace {
 class PythonUndoBlock
 {
 public:
-    PythonUndoBlock(UsdUndoableItem& item)
+    PythonUndoBlock(UsdUfe::UsdUndoableItem& item)
         : _item(&item)
         , _block(nullptr)
     {
@@ -65,7 +65,7 @@ public:
     void exit(object, object, object) { _block.reset(); }
 
 private:
-    UsdUndoableItem*                      _item;
+    UsdUfe::UsdUndoableItem*              _item;
     std::unique_ptr<UsdUfe::UsdUndoBlock> _block;
 };
 
@@ -86,11 +86,11 @@ void wrapUsdUndoManager()
             .staticmethod("trackLayerStates");
     }
 
-    // UsdUndoableItem
+    // UsdUfe::UsdUndoableItem
     {
-        class_<UsdUndoableItem>("UsdUndoableItem")
-            .def("undo", &UsdUndoableItem::undo)
-            .def("redo", &UsdUndoableItem::redo);
+        class_<UsdUfe::UsdUndoableItem>("UsdUndoableItem")
+            .def("undo", &UsdUfe::UsdUndoableItem::undo)
+            .def("redo", &UsdUfe::UsdUndoableItem::redo);
     }
 
     // UsdUndoBlock
@@ -98,7 +98,7 @@ void wrapUsdUndoManager()
         typedef PythonUndoBlock This;
         class_<This, boost::noncopyable>("UsdUndoBlock")
             .def(init<>())
-            .def(init<UsdUndoableItem&>(arg("item")))
+            .def(init<UsdUfe::UsdUndoableItem&>(arg("item")))
             .def("__enter__", &This::enter)
             .def("__exit__", &This::exit);
     }

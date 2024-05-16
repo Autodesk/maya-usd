@@ -82,7 +82,7 @@ protected:
     // The attribute creation must be capture in the UsdUndoableItem by using a
     // UsdUndoBlock, so that removeOpIfNeeded and recreateOpIfNeeded can undo
     // and redo the attribute creation if needed.
-    virtual void createOpIfNeeded(UsdUndoableItem&) = 0;
+    virtual void createOpIfNeeded(UsdUfe::UsdUndoableItem&) = 0;
 
     // Get the attribute at the given time.
     virtual PXR_NS::VtValue getValue(const PXR_NS::UsdTimeCode& time) const = 0;
@@ -111,7 +111,7 @@ private:
     const PXR_NS::UsdTimeCode _writeTime;
     PXR_NS::VtValue           _initialOpValue;
     PXR_NS::VtValue           _newOpValue;
-    UsdUndoableItem           _opCreationUndo;
+    UsdUfe::UsdUndoableItem   _opCreationUndo;
     bool                      _isPrepared;
     bool                      _canUpdateValue;
     bool                      _opCreated;

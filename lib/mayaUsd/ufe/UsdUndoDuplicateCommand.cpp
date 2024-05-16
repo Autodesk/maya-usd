@@ -53,7 +53,7 @@ MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemResultUndoableCommand, UsdUndoDuplicate
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDuplicateCommand);
 #endif
 
-UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem)
+UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdUfe::UsdSceneItem::Ptr& srcItem)
 #ifdef UFE_V4_FEATURES_AVAILABLE
     : Ufe::SceneItemResultUndoableCommand()
 #else
@@ -64,7 +64,7 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     auto srcPrim = srcItem->prim();
     auto parentPrim = srcPrim.GetParent();
 
-    auto newName = uniqueChildName(parentPrim, srcPrim.GetName());
+    auto newName = UsdUfe::uniqueChildName(parentPrim, srcPrim.GetName());
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 
     auto primSpec = UsdUfe::getDefiningPrimSpec(srcPrim);
@@ -72,12 +72,13 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
         _srcLayer = primSpec->GetLayer();
 }
 
-UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(const UsdSceneItem::Ptr& srcItem)
+UsdUndoDuplicateCommand::Ptr
+UsdUndoDuplicateCommand::create(const UsdUfe::UsdSceneItem::Ptr& srcItem)
 {
     return std::make_shared<UsdUndoDuplicateCommand>(srcItem);
 }
 
-UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
+UsdUfe::UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 {
     return createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
 }
@@ -86,13 +87,13 @@ void UsdUndoDuplicateCommand::execute()
 {
     UsdUfe::InAddOrDeleteOperation ad;
 
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
     auto prim = ufePathToPrim(_ufeSrcPath);
     auto path = prim.GetPath();
     auto stage = prim.GetStage();
 
-    OperationEditRouterContext ctx(UsdUfe::EditRoutingTokens->RouteDuplicate, prim);
+    UsdUfe::OperationEditRouterContext ctx(UsdUfe::EditRoutingTokens->RouteDuplicate, prim);
     _dstLayer = stage->GetEditTarget().GetLayer();
 
     auto                               item = Ufe::Hierarchy::createItem(_ufeSrcPath);
@@ -102,7 +103,7 @@ void UsdUndoDuplicateCommand::execute()
     // The loaded state of a model is controlled by the load rules of the stage.
     // When duplicating a node, we want the new node to be in the same loaded
     // state.
-    duplicateLoadRules(*stage, path, _usdDstPath);
+    UsdUfe::duplicateLoadRules(*stage, path, _usdDstPath);
 
     // Make sure all necessary parent exists in the target layer, at least as over,
     // otherwise SdfCopySepc will fail.
@@ -111,7 +112,7 @@ void UsdUndoDuplicateCommand::execute()
     // Retrieve the local layers around where the prim is defined and order them
     // from weak to strong. That weak-to-strong order allows us to copy the weakest
     // opinions first, so that they will get over-written by the stronger opinions.
-    SdfPrimSpecHandleVector authLayerAndPaths = getDefiningPrimStack(prim);
+    SdfPrimSpecHandleVector authLayerAndPaths = UsdUfe::getDefiningPrimStack(prim);
     std::reverse(authLayerAndPaths.begin(), authLayerAndPaths.end());
 
     UsdUfe::MergePrimsOptions options;

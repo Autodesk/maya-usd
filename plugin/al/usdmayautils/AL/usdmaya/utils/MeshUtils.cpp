@@ -31,7 +31,7 @@
 
 #include <iostream>
 
-using namespace UsdUfe;
+using namespace UsdUfe; // used for typedefs from SIMD.h
 
 namespace AL {
 namespace usdmaya {

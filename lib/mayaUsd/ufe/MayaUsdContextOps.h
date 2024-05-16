@@ -37,10 +37,10 @@ public:
     typedef UsdUfe::UsdContextOps              Parent;
     typedef std::shared_ptr<MayaUsdContextOps> Ptr;
 
-    MayaUsdContextOps(const UsdSceneItem::Ptr& item);
+    MayaUsdContextOps(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a MayaUsdContextOps.
-    static MayaUsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
+    static MayaUsdContextOps::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     // UsdUfe::UsdContextOps overrides
     Items                     getItems(const ItemPath& itemPath) const override;

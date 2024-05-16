@@ -48,7 +48,7 @@ namespace ufe {
 
 MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dPointInstance);
 
-UsdTransform3dPointInstance::UsdTransform3dPointInstance(const UsdSceneItem::Ptr& item)
+UsdTransform3dPointInstance::UsdTransform3dPointInstance(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)
 {
     if (item != nullptr) {
@@ -59,7 +59,8 @@ UsdTransform3dPointInstance::UsdTransform3dPointInstance(const UsdSceneItem::Ptr
 }
 
 /* static */
-UsdTransform3dPointInstance::Ptr UsdTransform3dPointInstance::create(const UsdSceneItem::Ptr& item)
+UsdTransform3dPointInstance::Ptr
+UsdTransform3dPointInstance::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dPointInstance>(item);
 }
@@ -194,8 +195,7 @@ UsdTransform3dPointInstanceHandler::create(const Ufe::Transform3dHandler::Ptr& n
 Ufe::Transform3d::Ptr
 UsdTransform3dPointInstanceHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = downcast(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }
@@ -212,8 +212,7 @@ Ufe::Transform3d::Ptr UsdTransform3dPointInstanceHandler::editTransform3d(
     const Ufe::SceneItem::Ptr&      item,
     const Ufe::EditTransform3dHint& hint) const
 {
-    UsdSceneItem::Ptr usdItem = downcast(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }

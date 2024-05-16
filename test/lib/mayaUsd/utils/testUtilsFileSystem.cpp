@@ -4,7 +4,9 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace UsdMayaUtilFileSystem;
+using UsdMayaUtilFileSystem::getNumberSuffix;
+using UsdMayaUtilFileSystem::getNumberSuffixPosition;
+using UsdMayaUtilFileSystem::increaseNumberSuffix;
 
 TEST(ConvertLoadRules, getNumberSuffixPosition)
 {

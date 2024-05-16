@@ -671,8 +671,7 @@ UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
 #ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo)
 {
-    auto item
-        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(attrInfo.path()));
+    auto item = downcast(Ufe::Hierarchy::createItem(attrInfo.path()));
     if (!item) {
         TF_RUNTIME_ERROR("Invalid scene item.");
         return nullptr;
@@ -1262,7 +1261,7 @@ Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
 
 PXR_NS::SdrShaderNodeConstPtr usdShaderNodeFromSceneItem(const Ufe::SceneItem::Ptr& item)
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     PXR_NAMESPACE_USING_DIRECTIVE
     if (!TF_VERIFY(usdItem)) {
         return nullptr;

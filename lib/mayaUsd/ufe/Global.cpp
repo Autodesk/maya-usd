@@ -195,9 +195,12 @@ MStatus initialize()
     dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;
     dccFunctions.saveStageLoadRulesFn = MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules;
     dccFunctions.uniqueChildNameFn = MayaUsd::ufe::uniqueChildNameMayaStandard;
-    dccFunctions.displayMessageFn[static_cast<int>(MessageType::kInfo)] = displayInfoMessage;
-    dccFunctions.displayMessageFn[static_cast<int>(MessageType::kWarning)] = displayWarningMessage;
-    dccFunctions.displayMessageFn[static_cast<int>(MessageType::KError)] = displayErrorMessage;
+    dccFunctions.displayMessageFn[static_cast<int>(UsdUfe::MessageType::kInfo)]
+        = displayInfoMessage;
+    dccFunctions.displayMessageFn[static_cast<int>(UsdUfe::MessageType::kWarning)]
+        = displayWarningMessage;
+    dccFunctions.displayMessageFn[static_cast<int>(UsdUfe::MessageType::KError)]
+        = displayErrorMessage;
     dccFunctions.startWaitCursorFn = mayaStartWaitCursor;
     dccFunctions.stopWaitCursorFn = mayaStopWaitCursor;
     dccFunctions.defaultMaterialScopeNameFn = defaultMaterialsScopeName;

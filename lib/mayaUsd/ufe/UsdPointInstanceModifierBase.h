@@ -93,7 +93,7 @@ public:
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdPointInstanceModifierBase);
 
-    bool setSceneItem(const UsdSceneItem::Ptr& sceneItem)
+    bool setSceneItem(const UsdUfe::UsdSceneItem::Ptr& sceneItem)
     {
         _prim = PXR_NS::UsdPrim();
         _instanceIndex = -1;

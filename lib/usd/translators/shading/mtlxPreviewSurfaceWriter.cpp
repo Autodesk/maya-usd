@@ -40,8 +40,6 @@
 
 #include <unordered_map>
 
-using namespace MayaUsd;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // This is basically UsdMayaSymmetricShaderWriter but with a NodeGraph:
@@ -174,7 +172,7 @@ void MtlxUsd_PreviewSurfaceWriter::Write(const UsdTimeCode& usdTime)
         // them.
         VtValue value = UsdMayaWriteUtil::GetVtValue(
             attrPlug,
-            Converter::getUsdTypeName(attrPlug),
+            MayaUsd::Converter::getUsdTypeName(attrPlug),
             /* linearizeColors = */ false);
 
         input.Set(value, usdTime);

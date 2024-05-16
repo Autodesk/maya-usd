@@ -41,10 +41,10 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dCommonAPI : public UsdTransform3dBase
 public:
     typedef std::shared_ptr<UsdTransform3dCommonAPI> Ptr;
 
-    UsdTransform3dCommonAPI(const UsdSceneItem::Ptr& item);
+    UsdTransform3dCommonAPI(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a UsdTransform3dCommonAPI.
-    static UsdTransform3dCommonAPI::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dCommonAPI::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;

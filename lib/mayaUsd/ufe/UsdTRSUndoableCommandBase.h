@@ -89,11 +89,11 @@ protected:
 private:
     inline PXR_NS::UsdAttribute attribute() const { return prim().GetAttribute(attributeName()); }
 
-    mutable UsdSceneItem::Ptr fItem { nullptr };
-    V                         fPrevValue;
-    V                         fNewValue;
-    bool                      fOpAdded { false };
-    bool                      fDoneOnce { false };
+    mutable UsdUfe::UsdSceneItem::Ptr fItem { nullptr };
+    V                                 fPrevValue;
+    V                                 fNewValue;
+    bool                              fOpAdded { false };
+    bool                              fDoneOnce { false };
 
 }; // UsdTRSUndoableCommandBase
 

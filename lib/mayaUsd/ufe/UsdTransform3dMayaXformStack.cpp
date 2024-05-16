@@ -44,9 +44,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 using BaseUndoableCommand = Ufe::BaseUndoableCommand;
-using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&, UsdUndoableItem&)>;
+using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&, UsdUfe::UsdUndoableItem&)>;
 
-using namespace MayaUsd::ufe;
+using MayaUsd::ufe::UsdTransform3dMayaXformStack;
 
 // Type traits for GfVec precision.
 template <class V> struct OpPrecision
@@ -167,8 +167,7 @@ bool hasValidSuffix(const std::vector<UsdGeomXformOp>& xformOps)
 Ufe::Transform3d::Ptr
 createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransform3dFn)
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }
@@ -240,7 +239,7 @@ public:
     }
 
 protected:
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
         if (_op)
             return;
@@ -346,23 +345,23 @@ struct SceneItemHolder
 {
     SceneItemHolder(const BaseUndoableCommand& cmd)
     {
-        _sceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+        _sceneItem = downcast(cmd.sceneItem());
         if (!_sceneItem) {
             throw std::runtime_error("Cannot transform invalid scene item");
         }
     }
 
-    UsdSceneItem& item() const { return *_sceneItem; }
+    UsdUfe::UsdSceneItem& item() const { return *_sceneItem; }
 
 private:
-    std::shared_ptr<UsdSceneItem> _sceneItem;
+    UsdUfe::UsdSceneItem::Ptr _sceneItem;
 };
 
 } // namespace
 
 MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dMayaXformStack);
 
-UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item)
+UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)
     , _xformable(prim())
 {
@@ -373,7 +372,7 @@ UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdSceneItem::P
 
 /* static */
 UsdTransform3dMayaXformStack::Ptr
-UsdTransform3dMayaXformStack::create(const UsdSceneItem::Ptr& item)
+UsdTransform3dMayaXformStack::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dMayaXformStack>(item);
 }
@@ -446,14 +445,14 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 
     auto f
         = OpFunc([attrName, opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn()](
-                     const BaseUndoableCommand& cmd, UsdUndoableItem& undoableItem) {
+                     const BaseUndoableCommand& cmd, UsdUfe::UsdUndoableItem& undoableItem) {
               SceneItemHolder usdSceneItem(cmd);
 
               auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
               if (attr) {
                   return UsdGeomXformOp(attr);
               } else {
-                  UsdUndoBlock undoBlock(&undoableItem);
+                  UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
                   // Use notification guard, otherwise will generate one notification
                   // for the xform op add, and another for the reorder.
@@ -493,14 +492,14 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
     GfVec3f v(x, y, z);
     auto    f
         = OpFunc([attrName, opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn()](
-                     const BaseUndoableCommand& cmd, UsdUndoableItem& undoableItem) {
+                     const BaseUndoableCommand& cmd, UsdUfe::UsdUndoableItem& undoableItem) {
               SceneItemHolder usdSceneItem(cmd);
 
               auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
               if (attr) {
                   return UsdGeomXformOp(attr);
               } else {
-                  UsdUndoBlock undoBlock(&undoableItem);
+                  UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
                   UsdUfe::InTransform3dChange guard(cmd.path());
                   UsdGeomXformable            xformable(usdSceneItem.item().prim());
@@ -642,14 +641,14 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
         // [opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](const BaseUndoableCommand&
         // cmd) {
         [attrName, opSuffix, setXformOpOrderFn](
-            const BaseUndoableCommand& cmd, UsdUndoableItem& undoableItem) {
+            const BaseUndoableCommand& cmd, UsdUfe::UsdUndoableItem& undoableItem) {
             SceneItemHolder usdSceneItem(cmd);
 
             auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
             if (attr) {
                 return UsdGeomXformOp(attr);
             } else {
-                UsdUndoBlock undoBlock(&undoableItem);
+                UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
                 UsdUfe::InTransform3dChange guard(cmd.path());
                 UsdGeomXformable            xformable(usdSceneItem.item().prim());
@@ -680,7 +679,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 
     GfVec3f v(x, y, z);
     auto    f = OpFunc([pvtAttrName, pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn()](
-                        const BaseUndoableCommand& cmd, UsdUndoableItem& undoableItem) {
+                        const BaseUndoableCommand& cmd, UsdUfe::UsdUndoableItem& undoableItem) {
         SceneItemHolder usdSceneItem(cmd);
 
         auto attr = usdSceneItem.item().prim().GetAttribute(pvtAttrName);
@@ -696,7 +695,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
             // stack.  Use of SdfChangeBlock is discouraged when calling USD
             // APIs above Sdf, so use our own guard.
 
-            UsdUndoBlock                undoBlock(&undoableItem);
+            UsdUfe::UsdUndoBlock        undoBlock(&undoableItem);
             UsdUfe::InTransform3dChange guard(cmd.path());
             UsdGeomXformable            xformable(usdSceneItem.item().prim());
             auto p = xformable.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, pvtOpSuffix);
@@ -842,7 +841,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
     // According to USD docs, editing scene description via instance proxies and their properties is
     // not allowed.
     // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (usdItem->prim().IsInstanceProxy()) {
         MGlobal::displayError(
             MString("Authoring to the descendant of an instance [")

@@ -32,7 +32,7 @@ namespace ufe {
 
 template <typename ValueTypeIn>
 class SetValueUndoableCommandImpl
-    : public UsdUndoableCommand<Ufe::SetValueUndoableCommand<ValueTypeIn>>
+    : public UsdUfe::UsdUndoableCommand<Ufe::SetValueUndoableCommand<ValueTypeIn>>
 {
 public:
     using ValueTypeNonRef = typename std::remove_reference<ValueTypeIn>::type;
@@ -42,7 +42,7 @@ public:
     typedef std::function<void(const UsdPrim& prim, ValueTypeIn)> SetterFunc;
 
     SetValueUndoableCommandImpl(const Ufe::Path& path, const SetterFunc& sf)
-        : UsdUndoableCommand<Ufe::SetValueUndoableCommand<ValueTypeIn>>(path)
+        : UsdUfe::UsdUndoableCommand<Ufe::SetValueUndoableCommand<ValueTypeIn>>(path)
         , _setterFunc(sf)
     {
     }
@@ -57,8 +57,7 @@ public:
 
     void executeImplementation() override
     {
-        if (auto pItem
-            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
+        if (auto pItem = downcast(Ufe::BaseUndoableCommand::sceneItem())) {
             _setterFunc(pItem->prim(), _value);
         }
     }
@@ -70,13 +69,13 @@ private:
 
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Light, UsdLight);
 
-UsdLight::UsdLight(const UsdSceneItem::Ptr& item)
+UsdLight::UsdLight(const UsdUfe::UsdSceneItem::Ptr& item)
     : Light()
     , fItem(item)
 {
 }
 
-UsdLight::Ptr UsdLight::create(const UsdSceneItem::Ptr& item)
+UsdLight::Ptr UsdLight::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdLight>(item);
 }

@@ -292,7 +292,7 @@ MStatus ADSKMayaUSDMaterialBindingsCommand::doIt(const MArgList& argList)
     }
 
     if (parser.isFlagSet(kHasMaterialBindingFlag)) {
-        auto usdSceneItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(sceneItem);
+        auto usdSceneItem = UsdUfe::downcast(sceneItem);
         if (!usdSceneItem) {
             MGlobal::displayError("Invalid SceneItem:" + ufePathString);
             throw MS::kFailure;

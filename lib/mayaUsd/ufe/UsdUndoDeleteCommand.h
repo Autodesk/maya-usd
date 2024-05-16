@@ -46,8 +46,8 @@ public:
     void redo() override;
 
 private:
-    PXR_NS::UsdPrim _prim;
-    UsdUndoableItem _undoableItem;
+    PXR_NS::UsdPrim         _prim;
+    UsdUfe::UsdUndoableItem _undoableItem;
 
 }; // UsdUndoDeleteCommand
 
