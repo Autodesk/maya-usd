@@ -358,37 +358,17 @@ UsdMayaShadingModeExportContext::GetAssignments() const
 }
 
 static UsdPrim _GetMaterialParent(
-    const UsdStageRefPtr&                                    stage,
-    const TfToken&                                           materialsScopeName,
-    const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
+    const UsdStageRefPtr& stage,
+    const std::string&    defaultPrim,
+    const TfToken&        materialsScopeName)
 {
-    SdfPath commonAncestor;
-    TF_FOR_ALL(iter, assignments)
-    {
-        const SdfPath& assn = iter->boundPrimPath;
-        if (stage->GetPrimAtPath(assn)) {
-            if (commonAncestor.IsEmpty()) {
-                commonAncestor = assn;
-            } else {
-                commonAncestor = commonAncestor.GetCommonPrefix(assn);
-            }
-        }
-    }
+    SdfPath shaderExportLocation = SdfPath::AbsoluteRootPath();
 
-    if (commonAncestor.IsEmpty()) {
-        return UsdPrim();
-    }
+    if (!defaultPrim.empty())
+        shaderExportLocation = shaderExportLocation.AppendChild(TfToken(defaultPrim));
 
-    if (commonAncestor == SdfPath::AbsoluteRootPath()) {
-        return stage->GetPseudoRoot();
-    }
-
-    SdfPath shaderExportLocation = commonAncestor;
-    while (!shaderExportLocation.IsRootPrimPath()) {
-        shaderExportLocation = shaderExportLocation.GetParentPath();
-    }
-
-    shaderExportLocation = shaderExportLocation.AppendChild(materialsScopeName);
+    if (!materialsScopeName.IsEmpty())
+        shaderExportLocation = shaderExportLocation.AppendChild(materialsScopeName);
 
     return UsdGeomScope::Define(stage, shaderExportLocation).GetPrim();
 }
@@ -453,6 +433,49 @@ bool isSurfaceNodeType(const std::string& nodeType)
 
     return std::binary_search(sKnownSurfaces.cbegin(), sKnownSurfaces.cend(), nodeType);
 }
+
+std::string getMaterialName(
+    const std::string& materialName,
+    const MObject&     shadingEngine,
+    const MObject&     surfaceShader)
+{
+    if (!materialName.empty())
+        return materialName;
+
+    MFnDependencyNode fnDepNode;
+    if (fnDepNode.setObject(shadingEngine) != MS::kSuccess)
+        return materialName;
+
+    std::string sgName = fnDepNode.name().asChar();
+    std::smatch sgMatch;
+    // Is the SG name following the standard Maya naming protocol for a known surface nodeType?
+    if (!std::regex_match(sgName, sgMatch, _templatedRegex))
+        return sgName;
+
+    if (!isSurfaceNodeType(sgMatch[1].str()))
+        return sgName;
+
+    // Check if the surface shader has a more descriptive name
+    if (fnDepNode.setObject(surfaceShader) == MS::kSuccess) {
+        std::string surfName = fnDepNode.name().asChar();
+        std::smatch surfMatch;
+        if (std::regex_match(surfName, surfMatch, _templatedRegex)) {
+            // Surface node name is also templated. Check the nodeType part.
+            if (!isSurfaceNodeType(surfMatch[1].str())) {
+                // The surface is not named after a standard nodeType, so its name is more
+                // interesting:
+                sgName = surfName + "SG";
+            }
+        } else {
+            // Surface node is definitely more interesting since it does not follow a
+            // templated name:
+            sgName = surfName + "SG";
+        }
+    }
+
+    return sgName;
+}
+
 } // namespace
 
 UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
@@ -461,55 +484,21 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 {
     UsdPrim ret;
 
-    std::string materialName = name;
-    if (materialName.empty()) {
-        std::string sgName;
+    const std::string materialName
+        = UsdUfe::sanitizeName(getMaterialName(name, _shadingEngine, GetSurfaceShader()));
+    if (materialName.empty())
+        return UsdPrim();
 
-        MFnDependencyNode fnDepNode;
-        if (fnDepNode.setObject(_shadingEngine) == MS::kSuccess) {
-            sgName = fnDepNode.name().asChar();
-        } else {
-            return ret;
-        }
-        std::smatch sgMatch;
-        // Is the SG name following the standard Maya naming protocol for a known surface nodeType?
-        if (std::regex_match(sgName, sgMatch, _templatedRegex)
-            && isSurfaceNodeType(sgMatch[1].str())) {
-            // Check if the surface shader has a more descriptive name
-            if (fnDepNode.setObject(GetSurfaceShader()) == MS::kSuccess) {
-                std::string surfName = fnDepNode.name().asChar();
-                std::smatch surfMatch;
-                if (std::regex_match(surfName, surfMatch, _templatedRegex)) {
-                    // Surface node name is also templated. Check the nodeType part.
-                    if (!isSurfaceNodeType(surfMatch[1].str())) {
-                        // The surface is not named after a standard nodeType, so its name is more
-                        // interesting:
-                        sgName = surfName + "SG";
-                    }
-                } else {
-                    // Surface node is definitely more interesting since it does not follow a
-                    // templated name:
-                    sgName = surfName + "SG";
-                }
-            }
-        }
-
-        materialName = sgName.c_str();
-    }
-
-    materialName = UsdUfe::sanitizeName(materialName);
     UsdStageRefPtr stage = GetUsdStage();
-    if (UsdPrim materialParent
-        = _GetMaterialParent(stage, GetExportArgs().materialsScopeName, assignmentsToBind)) {
-        SdfPath          materialPath = materialParent.GetPath().AppendChild(TfToken(materialName));
-        UsdShadeMaterial material = UsdShadeMaterial::Define(GetUsdStage(), materialPath);
+    UsdPrim        materialParent = _GetMaterialParent(
+        stage, GetExportArgs().defaultPrim, GetExportArgs().materialsScopeName);
+    if (!materialParent)
+        return UsdPrim();
 
-        UsdPrim materialPrim = material.GetPrim();
+    SdfPath          materialPath = materialParent.GetPath().AppendChild(TfToken(materialName));
+    UsdShadeMaterial material = UsdShadeMaterial::Define(GetUsdStage(), materialPath);
 
-        return materialPrim;
-    }
-
-    return UsdPrim();
+    return material.GetPrim();
 }
 
 namespace {

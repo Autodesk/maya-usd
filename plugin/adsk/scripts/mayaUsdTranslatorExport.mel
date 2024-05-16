@@ -152,6 +152,11 @@ proc string mayaUsdTranslatorExport_AppendDefaultPrim(string $currentOptions, st
     if (`optionMenuGrp -exists exportDefaultPrim` == 0)
         return $currentOptions;
     
+    // If the first item, "None" is chosen, then we do *not* set the default prim.
+    int $index = `optionMenuGrp -q -select exportDefaultPrim`;
+    if ($index == 1)
+        return $currentOptions;    
+
     string $defaultPrim = `optionMenuGrp -q -value exportDefaultPrim`;
     return $currentOptions + ";" + $arg + "=" + $defaultPrim;
 }
@@ -1172,8 +1177,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 separator -style "none";
                 columnLayout -width 100 materialOptsCol2;
                     checkBoxGrp -v1 1 -label ""
-                        -label1 `getMayaUsdString("kExportMaterialsLbl")`
-                        -annotation `getMayaUsdString("kExportMaterialsAnn")`
+                        -label1 `getMayaUsdString("kExportMaterialsCBAnn")`
+                        -annotation `getMayaUsdString("kExportMaterialsCBAnn")`
                         -cc ("mayaUsdTranslatorExport_MaterialsCB")
                         exportMaterialsCheckBox;
                 setParent ..;
