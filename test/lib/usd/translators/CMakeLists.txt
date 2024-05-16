@@ -248,6 +248,7 @@ endforeach()
 # require a recent Maya preview release combined with a bleeding edge USD
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
     set(MTLX_TEST_SCRIPT_FILES
+        testUsdExportMaterialScope.py
         testUsdExportMaterialX.py
         testUsdImportMaterialX.py
 		testUsdExportFannedOutFileNodesMaterial.py
