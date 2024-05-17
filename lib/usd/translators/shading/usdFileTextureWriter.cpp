@@ -271,7 +271,7 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    // Resolve texture path à la file node
+    // Resolve texture path like a file node
     const MString exactTextureName = MRenderUtil::exactFileTextureName(
         rawTextureName,
         /* useFrameExt = */ false,
