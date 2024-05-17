@@ -27,6 +27,8 @@
 #include <pxr/usd/usdShade/nodeGraph.h>
 #include <pxr/usd/usdShade/shader.h>
 
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/sceneItemOps.h>
 
@@ -438,6 +440,8 @@ void UsdPasteClipboardCommand::execute()
         }
     };
 
+    Ufe::SceneItemList itemsToSelect;
+
     for (const auto& dstParentItem : _dstParentItems) {
         Ufe::PasteClipboardCommand::PasteInfo pasteInfo;
         pasteInfo.pasteTarget = dstParentItem->path();
@@ -484,10 +488,20 @@ void UsdPasteClipboardCommand::execute()
             appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
             auto tmpTargetItems = duplicateCmd->targetItems();
             _targetItems.insert(_targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+            itemsToSelect.insert(itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
         }
 
         // Add the paste info.
         _pasteInfos.push_back(std::move(pasteInfo));
+    }
+
+    if (!itemsToSelect.empty()) {
+        // Select the newly pasted items. This matches native DCC (ex: Maya) behavior.
+        Ufe::Selection pasteSelect;
+        for (const auto& item : itemsToSelect) {
+            pasteSelect.append(item);
+        }
+        Ufe::GlobalSelection::get()->replaceWith(pasteSelect);
     }
 
     // Remove ClipboardMetadata.
