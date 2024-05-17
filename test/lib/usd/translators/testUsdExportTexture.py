@@ -68,7 +68,7 @@ class testUsdExportTexture(unittest.TestCase):
 
         # Prepare texture path to be part of the project folder.
         # build the absolute texturePath, with an env var if requested
-        textureRoot = f'${PROJ_ENV_VAR_NAME}' if withEnvVar else projectFolder
+        textureRoot = ('$' + PROJ_ENV_VAR_NAME) if withEnvVar else projectFolder
         texturePath = os.path.join(textureRoot, 'sourceimages', 'grid.png')
         cmds.setAttr('file1.ftn', texturePath, edit=True, type='string')
 
