@@ -45,6 +45,7 @@ public:
     static constexpr auto kDefaultMeshSchemeFlag = "dms";
     static constexpr auto kDefaultUSDFormatFlag = "duf";
     static constexpr auto kExportColorSetsFlag = "cls";
+    static constexpr auto kExportMaterialsFlag = "mat";
     static constexpr auto kExportUVsFlag = "uvs";
     static constexpr auto kExportRelativeTexturesFlag = "rtx";
     static constexpr auto kEulerFilterFlag = "ef";

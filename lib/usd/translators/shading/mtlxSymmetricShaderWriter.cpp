@@ -151,6 +151,9 @@ void MtlxUsd_SymmetricShaderWriter::RegisterWriter(
 UsdMayaPrimWriter::ContextSupport
 MtlxUsd_SymmetricShaderWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
+    if (!exportArgs.exportMaterials)
+        return ContextSupport::Unsupported;
+
     if (exportArgs.convertMaterialsTo == TrMtlxTokens->conversionName) {
         return ContextSupport::Supported;
     }

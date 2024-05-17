@@ -116,6 +116,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportColorSets.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kExportMaterialsFlag,
+        UsdMayaJobExportArgsTokens->exportMaterials.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kStripNamespacesFlag,
         UsdMayaJobExportArgsTokens->stripNamespaces.GetText(),
         MSyntax::kBoolean);
