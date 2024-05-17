@@ -346,6 +346,10 @@ private:
         UsdShadeMaterial* const                mat,
         SdfPathSet* const                      boundPrimPaths) override
     {
+        if (!context.GetExportArgs().exportMaterials) {
+            return;
+        }
+
         if (context.GetExportArgs().allMaterialConversions.empty()) {
             return;
         }

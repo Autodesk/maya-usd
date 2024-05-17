@@ -532,6 +532,7 @@ void wrapJobExportArgs()
         .def_readonly(
             "exportCollectionBasedBindings", &UsdMayaJobExportArgs::exportCollectionBasedBindings)
         .def_readonly("exportColorSets", &UsdMayaJobExportArgs::exportColorSets)
+        .def_readonly("exportMaterials", &UsdMayaJobExportArgs::exportMaterials)
         .def_readonly("exportComponentTags", &UsdMayaJobExportArgs::exportComponentTags)
         .def_readonly("exportDefaultCameras", &UsdMayaJobExportArgs::exportDefaultCameras)
         .def_readonly("exportDisplayColor", &UsdMayaJobExportArgs::exportDisplayColor)

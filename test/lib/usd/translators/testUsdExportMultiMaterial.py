@@ -45,9 +45,14 @@ class testUsdExportMultiMaterial(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        inputPath = fixturesUtils.setUpClass(__file__)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
-        mayaFile = os.path.join(inputPath, 'UsdExportMultiMaterialTest',
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
+    def _export(self, exportMaterials=True):
+        mayaFile = os.path.join(self.inputPath, 'UsdExportMultiMaterialTest',
             'MultiMaterialTest.ma')
         cmds.file(mayaFile, force=True, open=True)
 
@@ -56,21 +61,21 @@ class testUsdExportMultiMaterial(unittest.TestCase):
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', 
             convertMaterialsTo=['MaterialX', 'UsdPreviewSurface', 'rendermanForMaya'],
-            materialsScopeName='Materials')
+            materialsScopeName='Materials',
+            exportMaterials=exportMaterials)
 
-        cls._stage = Usd.Stage.Open(usdFilePath)
-
-    @classmethod
-    def tearDownClass(cls):
-        standalone.uninitialize()
+        self._stage = Usd.Stage.Open(usdFilePath)
 
     def testStageOpens(self):
         '''
         Tests that the USD stage was opened successfully.
         '''
+        self._export()
         self.assertTrue(self._stage)
 
     def testMaterialScopeResolution(self):
+        self._export()
+
         # New default value as per USD Asset WG:
         self.assertEqual(mayaUsdLib.JobExportArgs.GetDefaultMaterialsScopeName(), "mtl")
 
@@ -89,6 +94,7 @@ class testUsdExportMultiMaterial(unittest.TestCase):
         '''
         Tests that all node ids are what we expect:
         '''
+        self._export()
 
         base_path = "/pCube{0}/Materials/{1}SG/{2}/{1}"
         to_test = [
@@ -112,13 +118,36 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             self.assertTrue(shader, prim_path)
             self.assertEqual(shader.GetIdAttr().Get(), id_attr)
 
+    def testDisableExportMaterials(self):
+        '''
+        Tests that turning export materials off globally prevent materials being exported
+        '''
+        self._export(exportMaterials=False)
+
+        to_test = [
+            # pCube1 has standard_surface, known to UsdPreviewSurface and MaterialX
+            (1, "standardSurface2", "UsdPreviewSurface", "UsdPreviewSurface"),
+            (1, "standardSurface2", "MaterialX", "ND_standard_surface_surfaceshader"),
+            # pCube2 has lambert, known to UsdPreviewSurface and RfM
+            (2, "lambert2", "UsdPreviewSurface", "UsdPreviewSurface"),
+            (2, "lambert2", "rendermanForMaya", "PxrMayaLambert"),
+            # pCube3 has UsdPreviewSurface, known to UsdPreviewSurface and MaterialX
+            (3, "usdPreviewSurface1", "UsdPreviewSurface", "UsdPreviewSurface"),
+            (3, "usdPreviewSurface1", "MaterialX", "ND_UsdPreviewSurface_surfaceshader"),
+        ]
+
+        base_path = "/pCube{0}/Materials"
+        for prim_idx in (1, 2, 3):
+            prim_path = base_path.format(prim_idx)
+
+            mat_prim = self._stage.GetPrimAtPath(prim_path)
+            self.assertFalse(mat_prim, prim_path)
+
     def testVarnameMerging(self):
         """
         Test that we produce a minimal number of UV readers and varname/varnameStr and that the
         connections are properly propagated across nodegraph boundaries.
         """
-        cmds.file(f=True, new=True)
-
         # Use a namespace, for testing name sanitization...
         cmds.namespace(add="M")
         cmds.namespace(set="M")

@@ -134,6 +134,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportBlendShapesLbl", "Blend Shapes");
     register("kExportColorSetsAnn", "Exports Maya Color Sets as USD primvars.");
     register("kExportColorSetsLbl", "Color Sets");
+    register("kExportMaterialsAnn", "If selected, material/shading data is included as part of the export.");
+    register("kExportMaterialsLbl", "Materials");
     register("kExportMeshesLbl", "Meshes");
     register("kExportMeshesAnn", "If selected, mesh geometry is extracted for USD export.");
     register("kExportCamerasLbl", "Cameras");
