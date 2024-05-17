@@ -152,7 +152,7 @@ class testUsdExportMaterialX(unittest.TestCase):
         self.assertTrue(stage)
 
         # Exploring this path:
-        base_path = "/pPlane1/Materials/standardSurface2SG"
+        base_path = "/Materials/standardSurface2SG"
 
         mesh_prim = stage.GetPrimAtPath('/pPlane1')
         self.assertTrue(mesh_prim)
@@ -231,7 +231,7 @@ class testUsdExportMaterialX(unittest.TestCase):
         self.assertEqual(shader.GetPath(),
                          ng_path + "/place2dTexture1")
 
-        base_path = "/pPlane{0}/Materials/standardSurface{1}SG/MayaNG_standardSurface{1}SG/{2}"
+        base_path = "/Materials/standardSurface{1}SG/MayaNG_standardSurface{1}SG/{2}"
         to_test = [
             (7, 8, "file7", "ND_image_float"),
             (6, 7, "file6", "ND_image_vector2"),
@@ -293,7 +293,7 @@ class testUsdExportMaterialX(unittest.TestCase):
         self.assertTrue(stage)
 
         # We should have a nice colorComposite1 node in the graph curtesy of the custom exporter:
-        prim = stage.GetPrimAtPath("/pPlane1/Materials/standardSurface2SG/MayaNG_standardSurface2SG/colorComposite1")
+        prim = stage.GetPrimAtPath("/Materials/standardSurface2SG/MayaNG_standardSurface2SG/colorComposite1")
         self.assertTrue(prim)
         shader = UsdShade.Shader(prim)
         self.assertTrue(shader)

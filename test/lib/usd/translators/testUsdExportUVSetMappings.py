@@ -77,7 +77,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         plane_prim = stage.GetPrimAtPath("/pPlane8")
         binding_api = UsdShade.MaterialBindingAPI(plane_prim)
         mat = binding_api.ComputeBoundMaterial()[0]
-        self.assertEqual(mat.GetPath(), "/pPlane8/Materials/blinn2SG")
+        self.assertEqual(mat.GetPath(), "/Materials/blinn2SG")
         self.assertFalse(mat.GetPrim().HasAuthoredSpecializes())
 
         # Gather some original information:
@@ -139,13 +139,13 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         setups results in USD data with material specializations:
         '''
         expected = [
-            ("/pPlane1", "/blinn1SG", "st", "st", "st"),
-            ("/pPlane2", "/blinn1SG", "st", "st", "st"),
-            ("/pPlane3", "/blinn1SG", "st", "st", "st"),
-            ("/pPlane4", "/blinn1SG", "st", "st", "st"),
-            ("/pPlane5", "/blinn1SG_st_st1_st2", "st", "st1", "st2"),
-            ("/pPlane6", "/blinn1SG_st1_st2_st", "st1", "st2", "st"),
-            ("/pPlane7", "/blinn1SG_st2_st_st1", "st2", "st", "st1"),
+            ("/pPlane1", "/Materials/blinn1SG", "st", "st", "st"),
+            ("/pPlane2", "/Materials/blinn1SG", "st", "st", "st"),
+            ("/pPlane3", "/Materials/blinn1SG", "st", "st", "st"),
+            ("/pPlane4", "/Materials/blinn1SG", "st", "st", "st"),
+            ("/pPlane5", "/Materials/blinn1SG_st_st1_st2", "st", "st1", "st2"),
+            ("/pPlane6", "/Materials/blinn1SG_st1_st2_st", "st1", "st2", "st"),
+            ("/pPlane7", "/Materials/blinn1SG_st2_st_st1", "st2", "st", "st1"),
         ]
         self.baseExportUVSetMappings({"preserveUVSetNames": False, "remapUVSetsTo": [['','']]}, expected)
 
@@ -154,13 +154,13 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         Tests those material specializations when we preserve the UV set names:
         '''
         expected = [
-            ("/pPlane1", '/blinn1SG_map1_map1_map1', 'map1', 'map1', 'map1'),
-            ("/pPlane2", '/blinn1SG', 'st1', 'st1', 'st1'),
-            ("/pPlane3", '/blinn1SG', 'st1', 'st1', 'st1'),
-            ("/pPlane4", '/blinn1SG_st2_st2_st2', 'st2', 'st2', 'st2'),
-            ("/pPlane5", '/blinn1SG_p5a_p5b_p5c', 'p5a', 'p5b', 'p5c'),
-            ("/pPlane6", '/blinn1SG_p62_p63_p61', 'p62', 'p63', 'p61'),
-            ("/pPlane7", '/blinn1SG_p7r_p7p_p7q', 'p7r', 'p7p', 'p7q'),
+            ("/pPlane1", '/Materials/blinn1SG_map1_map1_map1', 'map1', 'map1', 'map1'),
+            ("/pPlane2", '/Materials/blinn1SG', 'st1', 'st1', 'st1'),
+            ("/pPlane3", '/Materials/blinn1SG', 'st1', 'st1', 'st1'),
+            ("/pPlane4", '/Materials/blinn1SG_st2_st2_st2', 'st2', 'st2', 'st2'),
+            ("/pPlane5", '/Materials/blinn1SG_p5a_p5b_p5c', 'p5a', 'p5b', 'p5c'),
+            ("/pPlane6", '/Materials/blinn1SG_p62_p63_p61', 'p62', 'p63', 'p61'),
+            ("/pPlane7", '/Materials/blinn1SG_p7r_p7p_p7q', 'p7r', 'p7p', 'p7q'),
         ]
         self.baseExportUVSetMappings({"preserveUVSetNames": True, "remapUVSetsTo": [['','']]}, expected)
 
@@ -169,13 +169,13 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         Tests when remapping a few names:
         '''
         expected = [
-            ['/pPlane1', '/blinn1SG_mmap1_mmap1_mmap1', 'mmap1', 'mmap1', 'mmap1'],
-            ['/pPlane2', '/blinn1SG', 'sst1', 'sst1', 'sst1'],
-            ['/pPlane3', '/blinn1SG', 'sst1', 'sst1', 'sst1'],
-            ['/pPlane4', '/blinn1SG_st_st_st', 'st', 'st', 'st'],
-            ['/pPlane5', '/blinn1SG_st_st1_st2', 'st', 'st1', 'st2'],
-            ['/pPlane6', '/blinn1SG_st1_st2_st', 'st1', 'st2', 'st'],
-            ['/pPlane7', '/blinn1SG_st2_st_st1', 'st2', 'st', 'st1'],            
+            ['/pPlane1', '/Materials/blinn1SG_mmap1_mmap1_mmap1', 'mmap1', 'mmap1', 'mmap1'],
+            ['/pPlane2', '/Materials/blinn1SG', 'sst1', 'sst1', 'sst1'],
+            ['/pPlane3', '/Materials/blinn1SG', 'sst1', 'sst1', 'sst1'],
+            ['/pPlane4', '/Materials/blinn1SG_st_st_st', 'st', 'st', 'st'],
+            ['/pPlane5', '/Materials/blinn1SG_st_st1_st2', 'st', 'st1', 'st2'],
+            ['/pPlane6', '/Materials/blinn1SG_st1_st2_st', 'st1', 'st2', 'st'],
+            ['/pPlane7', '/Materials/blinn1SG_st2_st_st1', 'st2', 'st', 'st1'],            
         ]
         self.baseExportUVSetMappings({"preserveUVSetNames": False, "remapUVSetsTo": [['map1','mmap1'], ["st1", "sst1"]]}, expected)
 
@@ -197,7 +197,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
 
         stage = Usd.Stage.Open(usdFilePath)
 
-        materialPath = "/multi_uv/Materials/multi_uv_set_matSG"
+        materialPath = "/Materials/multi_uv_set_matSG"
         materialPrim = stage.GetPrimAtPath(materialPath)
         self.assertTrue(materialPrim, "Could not find material node at {}".format(materialPath))
         material = UsdShade.Material(materialPrim)

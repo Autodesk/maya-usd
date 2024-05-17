@@ -1177,7 +1177,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 separator -style "none";
                 columnLayout -width 100 materialOptsCol2;
                     checkBoxGrp -v1 1 -label ""
-                        -label1 `getMayaUsdString("kExportMaterialsCBAnn")`
+                        -label1 `getMayaUsdString("kExportMaterialsCBLbl")`
                         -annotation `getMayaUsdString("kExportMaterialsCBAnn")`
                         -cc ("mayaUsdTranslatorExport_MaterialsCB")
                         exportMaterialsCheckBox;
