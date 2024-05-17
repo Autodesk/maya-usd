@@ -63,9 +63,7 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
         self.assertTrue(self.stage)
 
     def _GetUsdMaterial(self, materialName):
-        modelPrimPath = Sdf.Path.absoluteRootPath.AppendChild(
-            'PxrUsdPreviewSurfaceExportTest')
-        materialsRootPrimPath = modelPrimPath.AppendChild(
+        materialsRootPrimPath = Sdf.Path.absoluteRootPath.AppendChild(
             UsdUtils.GetMaterialsScopeName())
         materialPrimPath = materialsRootPrimPath.AppendChild(materialName)
         materialPrim = self.stage.GetPrimAtPath(materialPrimPath)

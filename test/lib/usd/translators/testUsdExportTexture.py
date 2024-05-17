@@ -75,7 +75,7 @@ class testUsdExportTexture(unittest.TestCase):
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage, usdFilePath)
 
-        shaderWithTexturePrimPath = '/pCylinder1/Looks/initialShadingGroup/file1'
+        shaderWithTexturePrimPath = '/Looks/initialShadingGroup/file1'
         shaderWithTexturePrim = stage.GetPrimAtPath(shaderWithTexturePrimPath)
         self.assertTrue(shaderWithTexturePrim, shaderWithTexturePrimPath)
 

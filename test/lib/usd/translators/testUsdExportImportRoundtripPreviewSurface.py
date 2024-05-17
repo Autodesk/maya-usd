@@ -203,12 +203,12 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # Make sure paths are relative in the USD file. Joining the directory
         # that the USD file lives in with the texture path should point us at
         # a file that exists.
-        file_template = "/{}/Looks/{}/{}"
+        file_template = "/Looks/{}/{}"
         if convertTo == "MaterialX":
-            file_template = "/{0}/Looks/{1}/MayaNG_{1}/{2}"
+            file_template = "/Looks/{0}/MayaNG_{0}/{1}"
         stage = Usd.Stage.Open(usd_path)
         texture_prim = stage.GetPrimAtPath(
-            file_template.format(sphere_xform, material_sg, file_node))
+            file_template.format(material_sg, file_node))
         rel_texture_path = texture_prim.GetAttribute('inputs:file').Get().path
 
         usd_dir = os.path.dirname(usd_path)
@@ -417,7 +417,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         # We expect 2 primvar readers, and 2 st transforms:
         stage = Usd.Stage.Open(usd_path)
-        mat_path = "/pSphere1/Looks/ss01SG/"
+        mat_path = "/Looks/ss01SG/"
 
         # Here are the expected connections in the produced USD file:
         connections = [
@@ -572,12 +572,12 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         geomSubset = stage.GetPrimAtPath("/pCube1/left")
         geomSubset.GetAttribute("familyName").Set("materialBind")
         subsetBindAPI = UsdShade.MaterialBindingAPI.Apply(geomSubset.GetPrim())
-        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/pCube1/Looks/blueFaceSG")))
+        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/Looks/blueFaceSG")))
 
         meshBindAPI = UsdShade.MaterialBindingAPI(stage.GetPrimAtPath("/pCube1"))
         geomSubset = meshBindAPI.CreateMaterialBindSubset("newKidOnTheBlock", [1, 2], UsdGeom.Tokens.face)
         subsetBindAPI = UsdShade.MaterialBindingAPI.Apply(geomSubset.GetPrim())
-        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/pCube1/Looks/redFaceSG")))
+        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/Looks/redFaceSG")))
 
         # The "unassigned faced" were previously [1, 2, 3, 5]
         # We have assigned faces 1, 2, and 5 (left), so the only one remaining is 3:
@@ -691,11 +691,11 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         stage = Usd.Stage.Open(usd_path)
 
         # We have 7 materials that are named:
-        #    /pPlane6/Looks/standardSurface7SG/standardSurface7
-        surf_base = "/pPlane{0}/Looks/standardSurface{1}SG/standardSurface{1}"
+        #    /Looks/standardSurface7SG/standardSurface7
+        surf_base = "/Looks/standardSurface{1}SG/standardSurface{1}"
         # results for opacity are mostly connections to:
-        #    /pPlane6/Looks/standardSurface7SG/file6.outputs:a
-        cnx_base = "/pPlane{0}/Looks/standardSurface{1}SG/file{0}"
+        #    /Looks/standardSurface7SG/file6.outputs:a
+        cnx_base = "/Looks/standardSurface{1}SG/file{0}"
         # so we only need to expect a channel name:
         expected = ["r", "a", "r", "a", "g", "a", 0.4453652]
 

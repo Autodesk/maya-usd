@@ -357,12 +357,35 @@ UsdMayaShadingModeExportContext::GetAssignments() const
     return ret;
 }
 
-static UsdPrim _GetMaterialParent(
-    const UsdStageRefPtr& stage,
-    const std::string&    defaultPrim,
-    const TfToken&        materialsScopeName)
+static SdfPath _GetCommonAncestor(
+    const UsdStageRefPtr&                                    stage,
+    const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
 {
-    SdfPath shaderExportLocation = SdfPath::AbsoluteRootPath();
+    SdfPath commonAncestor;
+    TF_FOR_ALL(iter, assignments)
+    {
+        const SdfPath& assn = iter->boundPrimPath;
+        if (stage->GetPrimAtPath(assn)) {
+            if (commonAncestor.IsEmpty()) {
+                commonAncestor = assn;
+            } else {
+                commonAncestor = commonAncestor.GetCommonPrefix(assn);
+            }
+        }
+    }
+    return commonAncestor;
+}
+
+static UsdPrim _GetMaterialParent(
+    const UsdStageRefPtr&                                    stage,
+    const std::string&                                       defaultPrim,
+    const TfToken&                                           materialsScopeName,
+    const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
+{
+    SdfPath shaderExportLocation = _GetCommonAncestor(stage, assignments);
+
+    if (shaderExportLocation.IsEmpty())
+        shaderExportLocation = SdfPath::AbsoluteRootPath();
 
     if (!defaultPrim.empty())
         shaderExportLocation = shaderExportLocation.AppendChild(TfToken(defaultPrim));
@@ -482,6 +505,8 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     const AssignmentVector& assignmentsToBind,
     const std::string&      name) const
 {
+    static const AssignmentVector emptyAssignments;
+
     UsdPrim ret;
 
     const std::string materialName
@@ -489,9 +514,12 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     if (materialName.empty())
         return UsdPrim();
 
+    const AssignmentVector& assignments
+        = GetExportArgs().exportMaterialUnderPrim ? assignmentsToBind : emptyAssignments;
+
     UsdStageRefPtr stage = GetUsdStage();
     UsdPrim        materialParent = _GetMaterialParent(
-        stage, GetExportArgs().defaultPrim, GetExportArgs().materialsScopeName);
+        stage, GetExportArgs().defaultPrim, GetExportArgs().materialsScopeName, assignments);
     if (!materialParent)
         return UsdPrim();
 

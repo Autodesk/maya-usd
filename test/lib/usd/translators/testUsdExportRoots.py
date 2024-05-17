@@ -140,7 +140,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootTop_selNone(self):
         def validator(stage):
             self.assertPrim(stage, '/Top/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Top/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertPrim(stage, '/Top/OtherMid', 'Xform')
             self.assertPrim(stage, '/Top/Mid/OtherLowest', 'Xform')
@@ -158,7 +158,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootTop_selNone_worldspace(self):
         def validator(stage):
             self.assertPrim(stage, '/Top/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Top/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertPrim(stage, '/Top/OtherMid', 'Xform')
             self.assertPrim(stage, '/Top/Mid/OtherLowest', 'Xform')
@@ -176,7 +176,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootTop_selTop(self):
         def validator(stage):
             self.assertPrim(stage, '/Top/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Top/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertPrim(stage, '/Top/OtherMid', 'Xform')
             self.assertPrim(stage, '/Top/Mid/OtherLowest', 'Xform')
@@ -194,7 +194,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootTop_selMid(self):
         def validator(stage):
             self.assertPrim(stage, '/Top/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Top/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/Top/OtherMid')
             self.assertPrim(stage, '/Top/Mid/OtherLowest', 'Xform')
@@ -212,7 +212,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootTop_selCube(self):
         def validator(stage):
             self.assertPrim(stage, '/Top/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Top/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/Top/OtherMid')
             self.assertNotPrim(stage, '/Top/Mid/OtherLowest')
@@ -230,7 +230,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootMid_selNone(self):
         def validator(stage):
             self.assertPrim(stage, '/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Mid/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/OtherMid')
@@ -246,7 +246,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootMid_selNone_worldspace(self):
         def validator(stage):
             self.assertPrim(stage, '/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Mid/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/OtherMid')
@@ -264,7 +264,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootMid_selTop(self):
         def validator(stage):
             self.assertPrim(stage, '/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Mid/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/OtherMid')
@@ -280,7 +280,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootMid_selMid(self):
         def validator(stage):
             self.assertPrim(stage, '/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Mid/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/OtherMid')
@@ -296,7 +296,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootMid_selCube(self):
         def validator(stage):
             self.assertPrim(stage, '/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Mid/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/OtherMid')
@@ -312,7 +312,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootCube_selNone(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -326,7 +326,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootCube_selNone_worldspace(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -344,7 +344,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootCube_selTop(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -358,7 +358,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootCube_selMid(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -372,7 +372,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootCube_selCube(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -386,7 +386,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootEMPTY_selCube(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -400,7 +400,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootEMPTY_selCubeOtherLowest(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -414,7 +414,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootCubeOtherLowest_selNone(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -428,7 +428,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootCubeOtherLowest_selCube(self):
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/Mid')
             self.assertNotPrim(stage, '/OtherTop')
@@ -442,7 +442,7 @@ class testUsdExportRoot(unittest.TestCase):
     def testExportRoot_rootCubeOtherLowest_selCubeOtherLowest(self):
         def validator(stage):
             self.assertPrim(stage, '/Mid/Cube', 'Mesh')
-            self.assertPrim(stage, '/Mid/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/OtherMid')
@@ -459,13 +459,13 @@ class testUsdExportRoot(unittest.TestCase):
         # test that two objects from sibling hierarchies export correctly with materials
         def validator(stage):
             self.assertPrim(stage, '/Cube', 'Mesh')
-            self.assertPrim(stage, '/Cube/Looks/lambert2SG/lambert2', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert2SG/lambert2', 'Shader')
             self.assertNotPrim(stage, '/Top')
             self.assertNotPrim(stage, '/OtherTop')
             self.assertNotPrim(stage, '/OtherMid')
             self.assertNotPrim(stage, '/OtherLowest')
             self.assertPrim(stage, '/Cube1', 'Mesh')
-            self.assertPrim(stage, '/Cube1/Looks/lambert3SG/lambert3', 'Shader')
+            self.assertPrim(stage, '/Looks/lambert3SG/lambert3', 'Shader')
             self.assertPrimXform(stage, '/Cube', [
                 ('xformOp:translate', (0., 0., 3.)),
                 ('xformOp:rotateXYZ', (0., 45., 0.))])

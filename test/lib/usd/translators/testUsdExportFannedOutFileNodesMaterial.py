@@ -71,7 +71,7 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
         
-        base_path = "/pCube{0}/Materials/{1}SG/{2}/{1}"
+        base_path = "/Materials/{1}SG/{2}/{1}"
         to_test = [
             # pCube1 has lambert, known to UsdPreviewSurface
             (1, "lambert4", "UsdPreviewSurface", "UsdPreviewSurface"),

@@ -82,7 +82,7 @@ class testUsdExportCustomConverter(unittest.TestCase):
         # Make sure we have a Maya standardSurface material in the USD file:
         stage = Usd.Stage.Open(usd_path)
         material = stage.GetPrimAtPath(
-            "/pCube1/Looks/standardSurface2SG/standardSurface2")
+            "/Looks/standardSurface2SG/standardSurface2")
         shader = UsdShade.Shader(material)
         self.assertEqual(shader.GetIdAttr().Get(), "standardSurface")
 
