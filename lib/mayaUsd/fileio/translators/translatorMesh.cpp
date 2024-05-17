@@ -25,8 +25,6 @@
 
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 
-#include <maya/MColor.h>
-#include <maya/MColorArray.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDoubleArray.h>
 #include <maya/MFloatArray.h>
@@ -34,9 +32,7 @@
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MFnGeometryFilter.h>
 #include <maya/MFnMesh.h>
-#include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItMeshFaceVertex.h>

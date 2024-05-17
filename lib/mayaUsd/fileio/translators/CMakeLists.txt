@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         skelBindingsProcessor.cpp
+        translatorBlendShape.cpp
         translatorCamera.cpp
         translatorCurves.cpp
         translatorGprim.cpp
@@ -23,6 +24,7 @@ target_sources(${PROJECT_NAME}
 
 set(HEADERS
     skelBindingsProcessor.h
+    translatorBlendShape.h
     translatorCamera.h
     translatorCurves.h
     translatorGprim.h
