@@ -32,9 +32,7 @@ namespace MAYAUSD_NS_DEF {
 struct UsdMayaTranslatorBlendShape
 {
     MAYAUSD_CORE_PUBLIC
-    static bool Read(
-        const UsdPrim&            meshPrim,
-        UsdMayaPrimReaderContext* context);
+    static bool Read(const UsdPrim& meshPrim, UsdMayaPrimReaderContext* context);
 
     MAYAUSD_CORE_PUBLIC
     static bool ReadAnimations(
