@@ -94,6 +94,9 @@ class testUsdExportTexture(unittest.TestCase):
         self.assertEqual(os.path.isabs(exportedTexturePath.path), shouldBeAbsolute,
                          'The exported texture %s does not have the right relative mode' % exportedTexturePath)
 
+        self.assertTrue(os.path.exists(exportedTexturePath.resolvedPath),
+                        'The exported texture %s is not resolved by USD' % exportedTexturePath)
+
     def testExportRelativeTexture(self):
         '''
         Test that texture can be exported with relative paths for textures.
