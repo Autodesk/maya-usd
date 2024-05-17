@@ -61,7 +61,7 @@ class testUsdImportUVSets(unittest.TestCase):
                 actualUV = itMeshFV.getUV(uvSetName)
                 self.assertAlmostEqual(expectedUV, actualUV)
 
-            itMeshFV.next()
+            itMeshFV.next() # pylint: disable=next-method-called
             fvi += 1
 
         if expectedNumUVShells is not None:
@@ -79,7 +79,7 @@ class testUsdImportUVSets(unittest.TestCase):
         else:
             usdFile = os.path.join(cls.inputPath, "UsdImportUVSetsTest", "UsdImportUVSetsTest.usda")
 
-        cmds.usdImport(file=usdFile, shadingMode=[["none", "default"], ])
+        cmds.usdImport(file=usdFile, shadingMode=[["none", "default"], ], remapUVSetsTo=[['','']])
 
     @classmethod
     def tearDownClass(cls):
@@ -358,7 +358,7 @@ class testUsdImportUVSets(unittest.TestCase):
         # We also need to load it using the Maya file import command because
         # going through the usdImport command works fine but using the file
         # translator caused a crash.
-        cmds.file(usdFile, i=True)
+        cmds.file(usdFile, i=True, options="remapUVSetsTo=[['','']]")
 
         mayaCubeMesh = testUsdImportUVSets._GetMayaMesh('CreasedCubeShape')
 
@@ -392,6 +392,83 @@ class testUsdImportUVSets(unittest.TestCase):
 
         self._AssertUVSet(mayaCubeMesh, "st", expectedValues,
             expectedNumValues=14)
+
+    def testImportUVSetWithNameRemapping(self):
+        """
+        Tests the importing a mesh honors specified UVSet name remappings
+        """
+        if self.asFloat2: 
+            usdFile = os.path.join(self.inputPath, "UsdImportUVSetsFloatTest", "UsdImportUVSetsTest_Float.usda")
+        else:
+            usdFile = os.path.join(self.inputPath, "UsdImportUVSetsTest", "UsdImportUVSetsTest.usda")
+        cmds.file(new=True, force=True)
+        cmds.usdImport(file=usdFile, shadingMode=[["none", "default"], ], remapUVSetsTo=[['st','sst'],['map1','mmap1']])
+
+        mayaCubeMesh = testUsdImportUVSets._GetMayaMesh('DefaultUVSetCubeShape')
+
+        # These are the default UV values for a regular Maya polycube.
+        expectedValues = {
+            0: Gf.Vec2f(0.375, 0.0),
+            1: Gf.Vec2f(0.625, 0.0),
+            2: Gf.Vec2f(0.625, 0.25),
+            3: Gf.Vec2f(0.375, 0.25),
+            4: Gf.Vec2f(0.375, 0.25),
+            5: Gf.Vec2f(0.625, 0.25),
+            6: Gf.Vec2f(0.625, 0.5),
+            7: Gf.Vec2f(0.375, 0.5),
+            8: Gf.Vec2f(0.375, 0.5),
+            9: Gf.Vec2f(0.625, 0.5),
+            10: Gf.Vec2f(0.625, 0.75),
+            11: Gf.Vec2f(0.375, 0.75),
+            12: Gf.Vec2f(0.375, 0.75),
+            13: Gf.Vec2f(0.625, 0.75),
+            14: Gf.Vec2f(0.625, 1.0),
+            15: Gf.Vec2f(0.375, 1.0),
+            16: Gf.Vec2f(0.625, 0.0),
+            17: Gf.Vec2f(0.875, 0.0),
+            18: Gf.Vec2f(0.875, 0.25),
+            19: Gf.Vec2f(0.625, 0.25),
+            20: Gf.Vec2f(0.125, 0.0),
+            21: Gf.Vec2f(0.375, 0.0),
+            22: Gf.Vec2f(0.375, 0.25),
+            23: Gf.Vec2f(0.125, 0.25)
+        }
+
+        self._AssertUVSet(mayaCubeMesh, "sst", expectedValues,
+            expectedNumValues=14, expectedNumUVShells=1)
+
+        mayaCubeMesh = testUsdImportUVSets._GetMayaMesh('Map1UVSetCubeShape')
+
+        # These are the default UV values for a regular Maya polycube.
+        expectedValues = {
+            0: Gf.Vec2f(0.375, 0.0),
+            1: Gf.Vec2f(0.625, 0.0),
+            2: Gf.Vec2f(0.625, 0.25),
+            3: Gf.Vec2f(0.375, 0.25),
+            4: Gf.Vec2f(0.375, 0.25),
+            5: Gf.Vec2f(0.625, 0.25),
+            6: Gf.Vec2f(0.625, 0.5),
+            7: Gf.Vec2f(0.375, 0.5),
+            8: Gf.Vec2f(0.375, 0.5),
+            9: Gf.Vec2f(0.625, 0.5),
+            10: Gf.Vec2f(0.625, 0.75),
+            11: Gf.Vec2f(0.375, 0.75),
+            12: Gf.Vec2f(0.375, 0.75),
+            13: Gf.Vec2f(0.625, 0.75),
+            14: Gf.Vec2f(0.625, 1.0),
+            15: Gf.Vec2f(0.375, 1.0),
+            16: Gf.Vec2f(0.625, 0.0),
+            17: Gf.Vec2f(0.875, 0.0),
+            18: Gf.Vec2f(0.875, 0.25),
+            19: Gf.Vec2f(0.625, 0.25),
+            20: Gf.Vec2f(0.125, 0.0),
+            21: Gf.Vec2f(0.375, 0.0),
+            22: Gf.Vec2f(0.375, 0.25),
+            23: Gf.Vec2f(0.125, 0.25)
+        }
+
+        self._AssertUVSet(mayaCubeMesh, "mmap1", expectedValues,
+            expectedNumValues=14, expectedNumUVShells=1)
 
 
 if __name__ == '__main__':

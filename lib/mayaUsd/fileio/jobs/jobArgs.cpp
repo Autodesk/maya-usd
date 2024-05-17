@@ -1207,6 +1207,7 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
     , timeInterval(timeInterval)
     , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobImportArgsTokens->chaserArgs))
+    , remapUVSetsTo(_UVSetRemaps(userArgs, UsdMayaJobImportArgsTokens->remapUVSetsTo))
 {
 }
 
@@ -1301,8 +1302,9 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         d[UsdMayaJobImportArgsTokens->pullImportStage] = UsdStageRefPtr();
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = false;
-        d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
-        d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
+        d[UsdMayaJobImportArgsTokens->chaser] = std::vector<VtValue>();
+        d[UsdMayaJobImportArgsTokens->chaserArgs] = std::vector<VtValue>();
+        d[UsdMayaJobImportArgsTokens->remapUVSetsTo] = std::vector<VtValue>();
         d[UsdMayaJobImportArgsTokens->applyEulerFilter] = false;
 
         // plugInfo.json site defaults.
@@ -1361,9 +1363,9 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         const auto _usdStageRefPtr = VtValue(nullptr);
         const auto _string = VtValue(std::string());
         const auto _stringVector = VtValue(std::vector<VtValue>({ _string }));
-        const auto _stringTuplet = VtValue(std::vector<VtValue>({ _string, _string, _string }));
+        const auto _stringPair = VtValue(std::vector<VtValue>({ _string, _string }));
+        const auto _stringPairVector = VtValue(std::vector<VtValue>({ _stringPair }));
         const auto _stringTriplet = VtValue(std::vector<VtValue>({ _string, _string, _string }));
-        const auto _stringTupletVector = VtValue(std::vector<VtValue>({ _stringTuplet }));
         const auto _stringTripletVector = VtValue(std::vector<VtValue>({ _stringTriplet }));
 
         // Provide guide types for the parser:
@@ -1373,7 +1375,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->excludePrimvarNamespace] = _stringVector;
         d[UsdMayaJobImportArgsTokens->jobContext] = _stringVector;
         d[UsdMayaJobImportArgsTokens->metadata] = _stringVector;
-        d[UsdMayaJobImportArgsTokens->shadingMode] = _stringTupletVector;
+        d[UsdMayaJobImportArgsTokens->shadingMode] = _stringTripletVector;
         d[UsdMayaJobImportArgsTokens->preferredMaterial] = _string;
         d[UsdMayaJobImportArgsTokens->importInstances] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = _boolean;
@@ -1382,8 +1384,9 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->pullImportStage] = _usdStageRefPtr;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = _boolean;
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = _boolean;
-        d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
-        d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
+        d[UsdMayaJobImportArgsTokens->chaser] = _stringVector;
+        d[UsdMayaJobImportArgsTokens->chaserArgs] = _stringTripletVector;
+        d[UsdMayaJobImportArgsTokens->remapUVSetsTo] = _stringPairVector;
         d[UsdMayaJobImportArgsTokens->applyEulerFilter] = _boolean;
     });
 
@@ -1495,6 +1498,11 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
             out << "        Arg Name: " << argIter.first << ", Value: " << argIter.second
                 << std::endl;
         }
+    }
+
+    out << "remapUVSetsTo (" << importArgs.remapUVSetsTo.size() << ")" << std::endl;
+    for (const auto& remapIt : importArgs.remapUVSetsTo) {
+        out << "    " << remapIt.first << " -> " << remapIt.second << std::endl;
     }
 
     return out;

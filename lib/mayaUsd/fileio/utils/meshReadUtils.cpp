@@ -196,7 +196,11 @@ MIntArray getMayaFaceVertexAssignmentIds(
     return valueIds;
 }
 
-bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bool& firstUVPrimvar)
+bool assignUVSetPrimvarToMesh(
+    const UsdGeomPrimvar&                     primvar,
+    MFnMesh&                                  meshFn,
+    bool&                                     firstUVPrimvar,
+    const std::map<std::string, std::string>& uvSetNameRemappings)
 {
     const TfToken& primvarName = primvar.GetPrimvarName();
 
@@ -214,7 +218,12 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
     MString uvSetName(primvarName.GetText());
 
     TfToken originalName = UsdMayaRoundTripUtil::GetPrimVarMayaName(primvar);
-    if (!originalName.IsEmpty()) {
+    if (originalName.IsEmpty()) {
+        // Only honor the UVSet name remapping preferences if we did not find a
+        // cached value for the original Maya-based name, otherwise use that
+        // cached value
+        uvSetName = UsdMayaReadUtil::UVSetImportedName(primvarName, uvSetNameRemappings);
+    } else {
         uvSetName = originalName.GetText();
     }
 
@@ -594,10 +603,11 @@ void UsdMayaMeshReadUtils::setEmitNormalsTag(MFnMesh& meshFn, const bool emitNor
 }
 
 void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
-    const UsdGeomMesh&  mesh,
-    const MObject&      meshObj,
-    const TfToken::Set& excludePrimvarSet,
-    const TfToken::Set& excludePrivarNamespaceSet)
+    const UsdGeomMesh&                        mesh,
+    const MObject&                            meshObj,
+    const TfToken::Set&                       excludePrimvarSet,
+    const TfToken::Set&                       excludePrivarNamespaceSet,
+    const std::map<std::string, std::string>& uvSetNameRemappings)
 {
     if (meshObj.apiType() != MFn::kMesh) {
         return;
@@ -663,7 +673,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             // Otherwise, if env variable for reading Float2
             // as uv sets is turned on, we assume that Float2Array primvars
             // are UV sets.
-            if (!assignUVSetPrimvarToMesh(primvar, meshFn, firstUVPrimvar)) {
+            if (!assignUVSetPrimvarToMesh(primvar, meshFn, firstUVPrimvar, uvSetNameRemappings)) {
                 TF_WARN(
                     "Unable to retrieve and assign data for UV set <%s> on "
                     "mesh <%s>",
