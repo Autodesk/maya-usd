@@ -129,7 +129,6 @@ public:
         SdfPathSet* const boundPrimPaths) override {
         const UsdMayaShadingModeExportContext::AssignmentVector& assignments =
             context.GetAssignments();
-        if (assignments.empty()) { return; }
 
         UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments);
         context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
