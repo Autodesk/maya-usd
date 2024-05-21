@@ -16,8 +16,6 @@
 //
 #include "translatorBlendShape.h"
 
-#include "mayaUsd/undo/OpUndoItems.h"
-
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/vt/types.h>
 #include <pxr/usd/usd/common.h>
@@ -40,6 +38,40 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
+
+void _AddBlendShape(
+    MFnBlendShapeDeformer& blendShapeFn,
+    const MObject&         originalShape,
+    const MObject&         parentTransform,
+    const MPointArray&     originalPoints,
+    const VtIntArray&      pointIndices,
+    const std::string      name,
+    const VtVec3fArray     offsetArray,
+    int                    blendShapeTargetIndex,
+    float                  weight)
+{
+    MFnMesh ibMeshFn;
+    MStatus status;
+    auto    newShape = ibMeshFn.copy(originalShape, parentTransform, &status);
+
+    MPointArray ibPoints(originalPoints);
+    for (size_t pidx = 0; pidx < pointIndices.size(); ++pidx) {
+        int     index = pointIndices[pidx];
+        MPoint  original = originalPoints[index];
+        GfVec3f offset = offsetArray[pidx];
+
+        ibPoints.set(
+            MPoint(original.x + offset[0], original.y + offset[1], original.z + offset[2]), index);
+    }
+    ibMeshFn.setPoints(ibPoints);
+
+    MFnDependencyNode ibDepNodeFn;
+    ibDepNodeFn.setObject(newShape);
+    ibDepNodeFn.setName(MString(name.c_str()));
+
+    blendShapeFn.addTarget(originalShape, blendShapeTargetIndex, newShape, weight);
+    ibMeshFn.setIntermediateObject(true);
+}
 
 bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReaderContext* context)
 {
@@ -90,6 +122,7 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
     for (size_t targetIdx = 0; targetIdx < blendShapeTargets.size(); ++targetIdx) {
         const SdfPath     blendShapePath = blendShapeTargets[targetIdx];
         UsdSkelBlendShape blendShape(stage->GetPrimAtPath(blendShapePath));
+        std::string       blendShapeName = blendShape.GetPath().GetElementString();
 
         blendShape.GetOffsetsAttr().Get(&deltaPoints);
         if (deltaPoints.empty()) {
@@ -111,34 +144,18 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
             }
         }
 
-        // blendshape points initially identical to the original shape
-        MPointArray deformedPoints(originalPoints);
+        _AddBlendShape(
+            blendFn,
+            originalShape,
+            parentTransform,
+            originalPoints,
+            pointIndices,
+            blendShapeName,
+            deltaPoints,
+            targetIdx,
+            1.0f);
 
-        // Blendshapes don't necessarily offset all mesh points. Thus, first get the index
-        // of the point that it was changed and apply the offset to that point.
-        for (int pidx = 0; pidx < pointIndices.size(); ++pidx) {
-            int     index = pointIndices[pidx];
-            MPoint  original = originalPoints[index];
-            GfVec3f offset = deltaPoints[pidx];
-
-            deformedPoints.set(
-                MPoint(original.x + offset[0], original.y + offset[1], original.z + offset[2]),
-                index);
-        }
-
-        // create the new blendShape mesh with the applied offset
-        MFnMesh meshFn;
-        deformedMeshObject = meshFn.copy(originalShape, parentTransform, &status);
-        meshFn.setPoints(deformedPoints);
-
-        // rename the blendShape to match what is coming from the usd blendshape
-        MFnDependencyNode dpNodeFn;
-        dpNodeFn.setObject(deformedMeshObject);
-        dpNodeFn.setName(MString(blendShape.GetPath().GetElementString().c_str()));
-
-        // Include the main blendShape as default target weight of
-        blendFn.addTarget(originalShape, targetIdx, deformedMeshObject, 1.0f);
-        meshFn.setIntermediateObject(true);
+        // After adding the main blendShape - now add all the in-betweens
 
         const std::vector<UsdSkelInbetweenShape> inBetweens = blendShape.GetInbetweens();
         // no in-betweens, can continue to the next blendShape
@@ -146,38 +163,33 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
             continue;
         }
 
-        // After adding the main blendShape - now add all the in-betweens
-        MObject ibObject;
         for (size_t ib = 0; ib < inBetweens.size(); ++ib) {
             const auto&       currentInBetween = inBetweens[ib];
             const std::string inBetweenName = currentInBetween.GetAttr().GetName().GetString();
             float             ibWeight = 0.f;
             currentInBetween.GetWeight(&ibWeight);
 
-            VtVec3fArray inBetweenDeltaPoints, inBetweenDeltaNormals;
+            VtVec3fArray inBetweenDeltaPoints;
             currentInBetween.GetOffsets(&inBetweenDeltaPoints);
-
-            MFnMesh ibMeshFn;
-            ibObject = ibMeshFn.copy(originalShape, parentTransform, &status);
-
-            MPointArray ibPoints(originalPoints);
-            for (int pidx = 0; pidx < pointIndices.size(); ++pidx) {
-                int     index = pointIndices[pidx];
-                MPoint  original = originalPoints[index];
-                GfVec3f offset = inBetweenDeltaPoints[pidx];
-
-                ibPoints.set(
-                    MPoint(original.x + offset[0], original.y + offset[1], original.z + offset[2]),
-                    index);
+            if (inBetweenDeltaPoints.empty()) {
+                TF_RUNTIME_ERROR(
+                    "InBetween BlendShape <%s> for mesh <%s> has no delta points.",
+                    inBetweenName.c_str(),
+                    meshPrim.GetPath().GetText());
+                continue;
             }
-            ibMeshFn.setPoints(ibPoints);
 
-            MFnDependencyNode ibDepNodeFn;
-            ibDepNodeFn.setObject(ibObject);
-            ibDepNodeFn.setName(MString(inBetweenName.c_str()));
-
-            blendFn.addTarget(originalShape, targetIdx, ibObject, ibWeight);
-            ibMeshFn.setIntermediateObject(true);
+            // InBetween are new blendShapes added to the same target index
+            _AddBlendShape(
+                blendFn,
+                originalShape,
+                parentTransform,
+                originalPoints,
+                pointIndices,
+                inBetweenName,
+                inBetweenDeltaPoints,
+                targetIdx,
+                ibWeight);
         }
     }
     return true;
