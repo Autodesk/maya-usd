@@ -486,7 +486,8 @@ void UsdPasteClipboardCommand::execute()
             appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
             auto tmpTargetItems = duplicateCmd->targetItems();
             _targetItems.insert(_targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
-            _itemsToSelect.insert(_itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+            _itemsToSelect.insert(
+                _itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
         }
 
         // Add the paste info.

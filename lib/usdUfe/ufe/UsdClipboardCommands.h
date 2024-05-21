@@ -123,7 +123,7 @@ public:
     std::vector<PasteInfo> getPasteInfos() const override;
 
     // For selection of pasted items.
-    Ufe::SceneItemList     itemsToSelect() const { return _itemsToSelect; }
+    Ufe::SceneItemList itemsToSelect() const { return _itemsToSelect; }
 
 private:
     UsdUndoableItem _undoableItem;
