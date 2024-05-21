@@ -318,15 +318,13 @@ global proc mayaUsdTranslatorExport_MeshCB() {
     mayaUsdTranslatorExport_updateDefaultPrimList();
     int $enable = `checkBoxGrp -q -v1 exportMeshesCheckBox`;
     columnLayout -e -enable $enable meshExportOptsCol;
-    columnLayout -e -enable $enable materialOptsCol2;
-    mayaUsdTranslatorExport_MaterialsCB();
 }
 
 global proc mayaUsdTranslatorExport_MaterialsCB() {
     if (`checkBoxGrp -exists exportMaterialsCheckBox` == 0)
         return;
     
-    int $enable = (`checkBoxGrp -q -v1 exportMeshesCheckBox` && `checkBoxGrp -q -v1 exportMaterialsCheckBox`);
+    int $enable = `checkBoxGrp -q -v1 exportMaterialsCheckBox`;
     mayaUsdTranslatorExport_updateDefaultPrimList();
     columnLayout -e -enable $enable materialOptsCol;
 }

@@ -280,7 +280,14 @@ struct UsdMayaJobExportArgs
     const std::string pythonPerFrameCallback;
     const std::string pythonPostCallback;
 
+    // List of object to export that are DAG objects.
     const UsdMayaUtil::MDagPathSet dagPaths;
+
+    // Full list of objects that were initially requested to be
+    // exported. Contains the DAG object and also non-DAG objects,
+    // like materials.
+    const MSelectionList fullObjectList;
+
     /// The time samples at which to export animated data; the times must be
     /// monotonically non-decreasing.
     /// An empty list of time samples means that no animated (time-sampled)
@@ -311,6 +318,7 @@ struct UsdMayaJobExportArgs
     static UsdMayaJobExportArgs CreateFromDictionary(
         const VtDictionary&             userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
+        const MSelectionList&           fullList,
         const std::vector<double>&      timeSamples = std::vector<double>());
 
     /// Fills a VtDictionary from the given text-encoded options.
@@ -346,11 +354,21 @@ struct UsdMayaJobExportArgs
     MAYAUSD_CORE_PUBLIC
     std::string GetResolvedFileName() const;
 
+    // Verify if meshes are exported. (i.e not excluded by excludeExportTypes)
+    bool isExportingMeshes() const;
+
+    // Verify if cameras are exported. (i.e not excluded by excludeExportTypes)
+    bool isExportingCameras() const;
+
+    // Verify if lights are exported. (i.e not excluded by excludeExportTypes)
+    bool isExportingLights() const;
+
 private:
     MAYAUSD_CORE_PUBLIC
     UsdMayaJobExportArgs(
         const VtDictionary&             userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
+        const MSelectionList&           fullList,
         const std::vector<double>&      timeSamples = std::vector<double>());
 };
 

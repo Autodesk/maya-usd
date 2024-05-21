@@ -499,6 +499,38 @@ std::string getMaterialName(
     return sgName;
 }
 
+bool shouldExportMaterial(
+    const UsdMayaShadingModeExportContext::AssignmentVector& assignmentsToBind,
+    const MObject&                                           surfaceShader,
+    const UsdMayaJobExportArgs&                              exportArgs)
+{
+    // If export-selected is on, only export selected materials
+    // and materials that are assigned to exported meshes.
+    //
+    // In the future, we plan to make exporting assigned materials
+    // that were not selected an option instead.
+    if (exportArgs.exportSelected) {
+        if (assignmentsToBind.size() == 0) {
+            if (!exportArgs.fullObjectList.hasItem(surfaceShader)) {
+                return false;
+            }
+        }
+    } else {
+        // If not exporting selected, then if exporting meshes, we only export
+        // assigned materials for now to avoid exporting too many unwanted and
+        // unused materials.
+        //
+        // In the future, we plan to make exporting only assigned materials
+        // an option instead.
+        if (exportArgs.isExportingMeshes()) {
+            return assignmentsToBind.size() > 0;
+        }
+    }
+
+    // By default we export the material.
+    return true;
+}
+
 } // namespace
 
 UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
@@ -507,7 +539,10 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 {
     static const AssignmentVector emptyAssignments;
 
-    UsdPrim ret;
+    const UsdMayaJobExportArgs& exportArgs = GetExportArgs();
+
+    if (!shouldExportMaterial(assignmentsToBind, GetSurfaceShader(), exportArgs))
+        return UsdPrim();
 
     const std::string materialName
         = UsdUfe::sanitizeName(getMaterialName(name, _shadingEngine, GetSurfaceShader()));
@@ -515,11 +550,11 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
         return UsdPrim();
 
     const AssignmentVector& assignments
-        = GetExportArgs().exportMaterialUnderPrim ? assignmentsToBind : emptyAssignments;
+        = exportArgs.exportMaterialUnderPrim ? assignmentsToBind : emptyAssignments;
 
     UsdStageRefPtr stage = GetUsdStage();
     UsdPrim        materialParent = _GetMaterialParent(
-        stage, GetExportArgs().defaultPrim, GetExportArgs().materialsScopeName, assignments);
+        stage, exportArgs.defaultPrim, exportArgs.materialsScopeName, assignments);
     if (!materialParent)
         return UsdPrim();
 
