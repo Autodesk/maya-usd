@@ -558,7 +558,7 @@ bool assignConstantPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn)
         name.GetText(),
         /* wantNetworkedPlug = */ true,
         &status);
-    if (!status || plug.isNull()) {
+    if (primvarData.IsEmpty() || !status || plug.isNull()) {
         return false;
     }
 

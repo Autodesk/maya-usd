@@ -55,6 +55,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportCamera.py
     testUsdImportBasisCurves.py
     testUsdImportBatchNurbsCurves.py
+    testUsdImportBlendShapes.py
     testUsdImportLinearCurves.py
     testUsdImportHighDegreeNurbsCurves.py
     testUsdImportNurbsCurves.py
