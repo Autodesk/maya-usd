@@ -71,9 +71,11 @@ public:
 private:
     static void setSelection(const Ufe::Selection& newSelection)
     {
-        if (newSelection.empty())
-            return;
-        Ufe::GlobalSelection::get()->replaceWith(newSelection);
+        if (newSelection.empty()) {
+            Ufe::GlobalSelection::get()->clear();
+        } else {
+            Ufe::GlobalSelection::get()->replaceWith(newSelection);
+        }
     }
 
     Ufe::Selection _previousSelection;
