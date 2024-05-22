@@ -17,6 +17,7 @@
 #include "UsdClipboardHandler.h"
 
 #include <usdUfe/ufe/UsdClipboardCommands.h>
+#include <usdUfe/ufe/UsdUndoSelectAfterCommand.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/layers.h>
 
@@ -76,12 +77,14 @@ Ufe::UndoableCommand::Ptr UsdClipboardHandler::copyCmd_(const Ufe::Selection& se
 Ufe::PasteClipboardCommand::Ptr
 UsdClipboardHandler::pasteCmd_(const Ufe::SceneItem::Ptr& parentItem)
 {
-    return UsdPasteClipboardCommand::create(parentItem, _clipboard);
+    return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdPasteClipboardCommand>::create(
+        parentItem, _clipboard);
 }
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::pasteCmd_(const Ufe::Selection& parentItems)
 {
-    return UsdPasteClipboardCommand::create(parentItems, _clipboard);
+    return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdPasteClipboardCommand>::create(
+        parentItems, _clipboard);
 }
 
 bool UsdClipboardHandler::hasItemsToPaste_()

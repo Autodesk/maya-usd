@@ -91,6 +91,9 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         copiedSphereItem = ufeUtils.createItem(psPathStr + ',/Xform1/Sphere1')
         self.assertIsNotNone(copiedSphereItem)
 
+        # Clear the selection before pasting.
+        ufe.GlobalSelection.get().clear()
+
         # Paste (sphere from copy) into the xform1, it will get renamed
         # to Sphere1. The Xform1 parent should have one more child.
         pasteCmd = ch.pasteCmd_(xformItem)
@@ -118,6 +121,11 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         # No paste failures.
         self.assertEqual(0, len(pasteInfo[0].failedPastes))
 
+        # Verify that the pasted item is selected.
+        sn = ufe.GlobalSelection.get()
+        self.assertEqual(len(sn), 1)
+        self.assertTrue(sn.contains(pastedSphereItem.path()))
+
         # Undo the paste, copied sphere item should be gone and child count
         # should be back to original.
         pasteCmd.undo()
@@ -125,12 +133,22 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         pastedSphereItem = ufeUtils.createItem(psPathStr + ',/Xform1/Sphere2')
         self.assertIsNone(pastedSphereItem)
 
+        # The pasted sphere should no longer be selected, and the selection should
+        # be empty (since there was nothing selected before pasting).
+        sn = ufe.GlobalSelection.get()
+        self.assertEqual(len(sn), 0)
+
         # Redo the paste, pasted sphere will be back and child count should increase
         # by 1 again.
         pasteCmd.redo()
         self.assertEqual(nbChildren+1, len(xformHier.children()))
         pastedSphereItem = ufeUtils.createItem(psPathStr + ',/Xform1/Sphere2')
         self.assertIsNotNone(pastedSphereItem)
+
+        # Pasted sphere should again be selected.
+        sn = ufe.GlobalSelection.get()
+        self.assertEqual(len(sn), 1)
+        self.assertTrue(sn.contains(pastedSphereItem.path()))
 
     def testClipboardCutPaste(self):
         '''Basic test for the Clipboard cut/paste support.'''

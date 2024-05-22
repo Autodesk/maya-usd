@@ -440,8 +440,6 @@ void UsdPasteClipboardCommand::execute()
         }
     };
 
-    Ufe::SceneItemList itemsToSelect;
-
     for (const auto& dstParentItem : _dstParentItems) {
         Ufe::PasteClipboardCommand::PasteInfo pasteInfo;
         pasteInfo.pasteTarget = dstParentItem->path();
@@ -488,20 +486,12 @@ void UsdPasteClipboardCommand::execute()
             appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
             auto tmpTargetItems = duplicateCmd->targetItems();
             _targetItems.insert(_targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
-            itemsToSelect.insert(itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+            _itemsToSelect.insert(
+                _itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
         }
 
         // Add the paste info.
         _pasteInfos.push_back(std::move(pasteInfo));
-    }
-
-    if (!itemsToSelect.empty()) {
-        // Select the newly pasted items. This matches native DCC (ex: Maya) behavior.
-        Ufe::Selection pasteSelect;
-        for (const auto& item : itemsToSelect) {
-            pasteSelect.append(item);
-        }
-        Ufe::GlobalSelection::get()->replaceWith(pasteSelect);
     }
 
     // Remove ClipboardMetadata.
@@ -519,4 +509,15 @@ std::vector<Ufe::PasteClipboardCommand::PasteInfo> UsdPasteClipboardCommand::get
     return _pasteInfos;
 }
 
+Ufe::Selection getNewSelectionFromCommand(const UsdPasteClipboardCommand& cmd)
+{
+    Ufe::Selection newSelection;
+    if (!cmd.itemsToSelect().empty()) {
+        // Select the newly pasted items. This matches native DCC (ex: Maya) behavior.
+        for (const auto& item : cmd.itemsToSelect()) {
+            newSelection.append(item);
+        }
+    }
+    return newSelection;
+}
 } // namespace USDUFE_NS_DEF
