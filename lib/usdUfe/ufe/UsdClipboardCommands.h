@@ -122,6 +122,9 @@ public:
     Ufe::SceneItemList     targetItems() const override;
     std::vector<PasteInfo> getPasteInfos() const override;
 
+    // For selection of pasted items.
+    Ufe::SceneItemList itemsToSelect() const { return _itemsToSelect; }
+
 private:
     UsdUndoableItem _undoableItem;
 
@@ -131,6 +134,9 @@ private:
     // The target items.
     Ufe::SceneItemList _targetItems;
 
+    // The target items to select (after paste).
+    Ufe::SceneItemList _itemsToSelect;
+
     // The cmd gets the clipboard data when executed.
     UsdClipboard::Ptr _clipboard;
 
@@ -138,6 +144,10 @@ private:
     std::vector<Ufe::PasteClipboardCommand::PasteInfo> _pasteInfos;
 
 }; // UsdPasteClipboardCommand
+
+//! \brief Retrieve the desired selection after the command has executed.
+//         \see UsdUndoSelectAfterCommand.
+Ufe::Selection USDUFE_PUBLIC getNewSelectionFromCommand(const UsdPasteClipboardCommand& cmd);
 
 } // namespace USDUFE_NS_DEF
 
