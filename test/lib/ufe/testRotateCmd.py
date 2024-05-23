@@ -26,8 +26,11 @@ import usdUtils
 from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as om
+import mayaUsd.lib
 
 import ufe
+
+from pxr import UsdGeom
 
 from functools import partial
 from math import radians
@@ -221,6 +224,56 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         # Save the initial position to the memento list.
         expected = ball35Rotation()
+
+        self.runTestRotate(expected)
+
+    def testRotateUSDSingleAxis(self):
+        '''
+        Rotate USD object, read through the Transform3d interface.
+        Verify what happens when teh prim already has a single-axis rotation.
+        We expect to add a three-axis rotation to handle all three axis.
+        '''
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        cubePathStr = '/A'
+        cubePrim = stage.DefinePrim(cubePathStr, 'Cube')
+
+        def addSingleAxisRotation():
+            xformable = UsdGeom.Xformable(cubePrim)
+            op = xformable.AddRotateZOp(UsdGeom.XformOp.PrecisionFloat)
+            op.Set(0.)
+
+        addSingleAxisRotation()
+
+        # Select the cube to rotate it.
+        cubePath = ufe.Path([
+            mayaUtils.createUfePathSegment(psPathStr), 
+            usdUtils.createUfePathSegment(cubePathStr)])
+        cubeItem = ufe.Hierarchy.createItem(cubePath)
+
+        cmds.select(clear=True)
+        ufe.GlobalSelection.get().append(cubeItem)
+
+        # Create a Transform3d interface for it.
+        transform3d = ufe.Transform3d.transform3d(cubeItem)
+
+        def cubeRotation():
+            value = cubePrim.GetAttribute('xformOp:rotateXYZ').Get()
+            if value is None:
+                x, y, z = 0., 0., 0.
+            else:
+                x,y,z = value
+            return om.MEulerRotation(radians(x), radians(y), radians(z))
+
+        # Set up the callables that will retrieve the rotation.
+        self.runTimeRotation = cubeRotation
+        self.ufeRotation = partial(transform3dRotation, transform3d)
+
+        # Save the initial position to the memento list.
+        expected = cubeRotation()
 
         self.runTestRotate(expected)
 

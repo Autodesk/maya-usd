@@ -95,6 +95,7 @@ public:
 protected:
     bool                        hasOp(OpNdx ndx) const;
     PXR_NS::UsdGeomXformOp      getOp(OpNdx ndx) const;
+    virtual bool                isFallback() const;
     virtual SetXformOpOrderFn   getXformOpOrderFn() const;
     virtual PXR_NS::TfToken     getOpSuffix(OpNdx ndx) const;
     virtual PXR_NS::TfToken     getTRSOpSuffix() const;

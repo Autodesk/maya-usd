@@ -118,6 +118,17 @@ bool isAlmostZero(const Ufe::Vector3d& value)
         && PXR_NS::GfIsClose(0., value.z(), epsilon);
 }
 
+bool isThreeAxisRotation(TfToken attrName)
+{
+    static const std::set<TfToken> threeAxisNames({ TfToken("xformOp:rotateXYZ"),
+                                                    TfToken("xformOp:rotateXZY"),
+                                                    TfToken("xformOp:rotateYXZ"),
+                                                    TfToken("xformOp:rotateYZX"),
+                                                    TfToken("xformOp:rotateZXY"),
+                                                    TfToken("xformOp:rotateZYX") });
+    return threeAxisNames.find(attrName) != threeAxisNames.end();
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -423,15 +434,34 @@ UsdTransform3dMayaXformStack::translateCmd(double x, double y, double z)
         getTRSOpSuffix());
 }
 
+bool UsdTransform3dMayaXformStack::isFallback() const { return false; }
+
 Ufe::RotateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 {
     UsdGeomXformOp op;
     TfToken        attrName;
-    const bool     hasRotate = hasOp(NdxRotate);
+    bool           hasRotate = hasOp(NdxRotate);
     if (hasRotate) {
         op = getOp(NdxRotate);
         attrName = op.GetOpName();
+    }
+
+    // Rotation is special because there might already be a single-axis rotation
+    // attribute and we would fail to rotate on all three axis if we used it.
+    // Translation and scaling do no have these single-axis attributes, this is
+    // specific to rotations. (Why, oh why?)
+    //
+    // Detect that the attribute is single-axis and use a new three-axis attribute
+    // instead in this situation.
+    //
+    // OTOH, we must not do this when using the fallback implementation, which derives
+    // from this class and reuse its code. That is because the fallback implementation
+    // wants to preserve the original ops and add new ones after, so we must let it do
+    // its intended job.
+    if (!isThreeAxisRotation(attrName) && !isFallback()) {
+        attrName = TfToken("xformOp:rotateXYZ");
+        hasRotate = false;
     }
 
     // Return null command if the attribute edit is not allowed.

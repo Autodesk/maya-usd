@@ -330,6 +330,8 @@ UsdTransform3dFallbackMayaXformStack::getOrderedOps() const
     return orderedOps;
 }
 
+bool UsdTransform3dFallbackMayaXformStack::isFallback() const { return true; }
+
 // segmentInclusiveMatrix() from UsdTransform3dBase is fine.
 
 Ufe::Matrix4d UsdTransform3dFallbackMayaXformStack::segmentExclusiveMatrix() const
