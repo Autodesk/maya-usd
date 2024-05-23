@@ -32,24 +32,11 @@ class LayerTreeItem;
 // verifying that it would not be creating a recursion
 // bad paths are always allowed, because they could be custom URIs or future paths
 // used for Load Layers
+// in corner cases the parent layer is null, we assume its safe to add
 bool checkIfPathIsSafeToAdd(
     const QString&     in_errorTitle,
     LayerTreeItem*     in_parentItem,
     const std::string& in_pathToAdd);
-
-// check if it's safe to save an anon sublayer to the given path
-// and then does it.
-// stategy:
-// save the layer, then use the same logic as loadLayers to
-// see if it actually can add this path without creating a recursion
-// if that fails, delete the file we created.
-// for now, assumes an absolute input path
-bool saveSubLayer(
-    const QString&         in_errorTitle,
-    LayerTreeItem*         in_parentItem,
-    PXR_NS::SdfLayerRefPtr in_layer,
-    const std::string&     in_absolutePath,
-    const std::string&     in_formatTag);
 
 } // namespace UsdLayerEditor
 

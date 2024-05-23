@@ -15,6 +15,7 @@
 //
 #include "ProxyShapeHierarchy.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
@@ -208,7 +209,21 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
     auto               parentPath = fItem->path();
     Ufe::SceneItemList children;
     UFE_V3(std::string dagPathStr;)
+
+    const SdfPath primPath = getProxyShapePrimPath(fItem->path());
+    if (primPath.IsEmpty()) {
+        // An empty primPath means we're in a bad state.  We'll return true here
+        // without populating children.
+        return children;
+    }
+
     for (const auto& child : range) {
+        const SdfPath& childPath = child.GetPath();
+        const bool     isAncestorOrDescendant
+            = childPath.HasPrefix(primPath) || primPath.HasPrefix(childPath);
+        if (!isAncestorOrDescendant) {
+            continue;
+        }
 #ifdef UFE_V3_FEATURES_AVAILABLE
         if (MayaUsd::readPullInformation(child, dagPathStr)) {
             auto item = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));

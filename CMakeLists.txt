@@ -21,6 +21,7 @@ project(maya-usd)
 # options
 #------------------------------------------------------------------------------
 option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
+option(BUILD_MAYAUSDAPI_LIBRARY "Build the mayaUsdAPI subset library that provides a stable versioned interface to mayaUsd for external plugins." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
@@ -39,6 +40,35 @@ option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
+
+# Build-related information, expected to be passed in by the parent build.
+
+# Build number corresponding to this build
+#
+# This is used to report version information about the build number that
+# has produced this binary. When unset, the default value "0" is used
+# instead as this usually corresponds to developers local builds.
+set(MAYAUSD_BUILD_NUMBER "0" CACHE STRING "Build number corresponding to this build.")
+
+# Git commit hash corresponding to this build
+#
+# This is used to report version information of the Git commit has that
+# corresponds to a build. When unset, the default value DEVBLD is used
+# instead as this usually corresponds to a developers local build.
+set(MAYAUSD_GIT_COMMIT "DEVBLD" CACHE STRING "Git commit hash corresponding to this build.")
+
+# Git branch corresponding to this build
+#
+# This is used to report version information about the Git branch of a
+# build. When unset, the default value DEVBR is used instead as this
+# usually corresponds to developers local builds.
+set(MAYAUSD_GIT_BRANCH "DEVBR" CACHE STRING "Change set identifier corresponding to this build.")
+
+# MayaUsd cut-id
+
+# This is used to distinguish daily builds from one another. It is a
+# usually a combination of the date & git commit hash.
+set(MAYAUSD_CUT_ID "DEVBLD" CACHE STRING "MayaUsd cut-id corresponding to this build.")
 
 #------------------------------------------------------------------------------
 # internal flags to control build
@@ -92,6 +122,12 @@ if (BUILD_MAYAUSD_LIBRARY)
     include(cmake/mayausd_version.info)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
 endif()
+
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    include(cmake/mayausdapi_version.info)
+    set(MAYAUSDAPI_VERSION "${MAYAUSDAPI_MAJOR_VERSION}.${MAYAUSDAPI_MINOR_VERSION}.${MAYAUSDAPI_PATCH_LEVEL}")
+endif()
+
 
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_EXECUTABLE)
     SET(PYTHON_INCLUDE_DIRS "${PYTHON_INCLUDE_DIR}")
@@ -217,6 +253,11 @@ endif()
 add_subdirectory(lib)
 
 #------------------------------------------------------------------------------
+# tutorials
+#------------------------------------------------------------------------------
+add_subdirectory(tutorials/import-export-plugin-c++)
+
+#------------------------------------------------------------------------------
 # plugins
 #------------------------------------------------------------------------------
 if (BUILD_PXR_PLUGIN OR BUILD_AL_PLUGIN OR BUILD_ADSK_PLUGIN)
@@ -224,6 +265,14 @@ if (BUILD_PXR_PLUGIN OR BUILD_AL_PLUGIN OR BUILD_ADSK_PLUGIN)
         message(FATAL_ERROR "Building plugins requires MayaUsd core libraries.")
     endif()
 endif()
+
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    if (NOT BUILD_MAYAUSD_LIBRARY)
+        message(FATAL_ERROR "Building mayaUsdAPI library requires MayaUsd core libraries to be built, please enable BUILD_MAYAUSD_LIBRARY.")
+    endif()
+endif()
+
+
 
 if (BUILD_PXR_PLUGIN)
     add_subdirectory(plugin/pxr)

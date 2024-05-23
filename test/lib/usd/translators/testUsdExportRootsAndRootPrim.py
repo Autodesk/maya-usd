@@ -35,7 +35,7 @@ class testUsdExportRoot(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
         
-    def testExport_exportRoots_And_parentScope(self):
+    def testExport_exportRoots_And_rootPrim(self):
         cmds.file(new=True, force=True)
 
         r = cmds.sphere( name='pSphere1', polygon=1, r=10 )
@@ -44,13 +44,13 @@ class testUsdExportRoot(unittest.TestCase):
         usdFile_roots = os.path.abspath('roots.usda')
         cmds.mayaUSDExport(file=usdFile_roots, exportRoots=['|pSphere1'])
 
-        #Then run this command to check parentScope works:
+        #Then run this command to check rootPrim works:
         usdFile_parent = os.path.abspath('parent.usda')
-        cmds.mayaUSDExport(file=usdFile_parent, parentScope='/geo_GRP')
+        cmds.mayaUSDExport(file=usdFile_parent, rootPrim='/geo_GRP')
 
         # Then attempt this command with both flags to see the error:
         usdFile_both = os.path.abspath('both.usda')
-        cmds.mayaUSDExport(file=usdFile_both, exportRoots=['|pSphere1'], parentScope='/geo_GRP')
+        cmds.mayaUSDExport(file=usdFile_both, exportRoots=['|pSphere1'], rootPrim='/geo_GRP')
 
         self.assertTrue(filecmp.cmp(usdFile_parent, usdFile_both))
 

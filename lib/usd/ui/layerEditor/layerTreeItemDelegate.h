@@ -43,14 +43,6 @@ class LayerTreeItemDelegate : public QStyledItemDelegate
 public:
     LayerTreeItemDelegate(LayerTreeView* in_parent);
 
-    // API for LayerTreeView
-    // gets the rectangle of the item, adjusted for the tree indentation
-    QRect getAdjustedItemRect(LayerTreeItem const* item, QRect const& optionRect) const;
-    // gets the rectangle where the text is drawn
-    QRect getTextRect(QRect const& itemRect) const;
-    // get the rectangle for the "set current target" icon
-    QRect getTargetIconRect(QRect const& itemRect) const;
-
     // QStyledItemDelegate API
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index)
         const override;
@@ -72,6 +64,26 @@ public:
     void    clearPressedTarget() { _pressedTarget = nullptr; }
     QString lastHitAction() const { return _lastHitAction; }
     void    clearLastHitAction() { _lastHitAction = ""; }
+
+    // Common data used by many painting functions.
+    struct ItemPaintContext
+    {
+        const LayerTreeItem* item;
+        QRect                itemRect;
+        int                  itemRow;
+        bool                 isPressed;
+        bool                 isInvalid;
+        bool                 isMuted;
+        bool                 isLocked;
+        bool                 isSystemLocked;
+        bool                 isReadOnly;
+        bool                 isHover;
+        bool                 isSelected;
+        QColor               highlightColor;
+
+        mutable QString tooltip;
+        mutable bool    isHoverAction;
+    };
 
 protected:
     QPointer<LayerTreeView> _treeView;
@@ -95,53 +107,58 @@ protected:
     const int BOTTOM_GAP_OFFSET = DPIScale(2);
 
     const QColor ARROW_COLOR = QColor(189, 189, 189);
-    const int    ARROW_OFFSET = DPIScale(6);
-    const int    ARROW_AREA_WIDTH = DPIScale(24);
-    const int    EXPANDED_ARROW_OFFSET = DPIScale(3.0);
-    const int    COLLAPSED_ARROW_OFFSET = DPIScale(6.0);
-    QPointF      EXPANDED_ARROW[3] = { DPIScale(QPointF(0.0, 11.0)),
-                                  DPIScale(QPointF(10.0, 11.0)),
-                                  DPIScale(QPointF(5.0, 16.0)) };
-    QPointF      COLLAPSED_ARROW[3] = { DPIScale(QPointF(0.0, 8.0)),
-                                   DPIScale(QPointF(5.0, 13.0)),
-                                   DPIScale(QPointF(0.0, 18.0)) };
+    const int    ARROW_SIZE = DPIScale(6);
+    const int    ARROW_OFFSET = DPIScale(3);
+    const int    ARROW_AREA_WIDTH = DPIScale(16);
+    QPointF      EXPANDED_ARROW[3]
+        = { DPIScale(QPointF(0.0, 1.0)), DPIScale(QPointF(6.0, 1.0)), DPIScale(QPointF(3.0, 5.0)) };
+    QPointF COLLAPSED_ARROW[3]
+        = { DPIScale(QPointF(1.0, 0.0)), DPIScale(QPointF(1.0, 6.0)), DPIScale(QPointF(5.0, 3.0)) };
     // action icon area
-    const int ACTION_BORDER = DPIScale(2);
+    const int ACTION_BORDER = DPIScale(1);
     const int ICON_WIDTH = DPIScale(20);
     const int ACTION_WIDTH = ICON_WIDTH + (2 * ACTION_BORDER);
     const int WARNING_ICON_WIDTH = DPIScale(11);
-    const int ICON_TOP_OFFSET = DPIScale(4);
+    const int ICON_TOP_OFFSET = DPIScale(1);
 
     const int    CHECK_MARK_AREA_WIDTH = DPIScale(28);
-    const int    TEXT_LEFT_OFFSET = (ARROW_AREA_WIDTH + CHECK_MARK_AREA_WIDTH);
-    const int    TEXT_RIGHT_OFFSET = DPIScale(36);
-    const int    HIGHLIGHTED_FILL_OFFSET = DPIScale(1);
-    const double DISABLED_OPACITY = 0.6;
+    const int    TEXT_LEFT_OFFSET = (ARROW_AREA_WIDTH + CHECK_MARK_AREA_WIDTH) + DPIScale(2);
+    const int    HIGHLIGHTED_FILL_OFFSET = DPIScale(0);
+    const double DISABLED_OPACITY = 0.4;
+    const double HOVER_OPACITY = 0.4;
     QPixmap      DISABLED_BACKGROUND_IMAGE;
     QPixmap      DISABLED_HIGHLIGHT_IMAGE;
     QPixmap      TARGET_ON_IMAGES[3];
     QPixmap      TARGET_OFF_IMAGES[3];
     QPixmap      WARNING_IMAGE;
 
-    void paint_drawTarget(QPainter* painter, QRectC rect, Item item, Options option) const;
-    void paint_drawFill(
-        QPainter*     painter,
-        QRectC        rect,
-        Item          item,
-        bool          isHighlighted,
-        const QColor& highlightColor) const;
-    void paint_drawArrow(QPainter* painter, QRectC rect, Item item) const;
-    void paint_drawText(QPainter* painter, QRectC rect, Item item) const;
-    void paint_ActionIcons(QPainter* painter, QRectC rect, Item item, const QColor& highlightColor)
-        const;
-    void paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconCount) const;
+    // gets the rectangle of the item, adjusted for the tree indentation
+    QRect getAdjustedItemRect(LayerTreeItem const* item, QRect const& optionRect) const;
+    // get the rectangle for the "set current target" icon
+    QRect getTargetIconRect(QRect const& itemRect) const;
+    // gets the rectangle where the text is drawn
+    QRect getTextRect(const ItemPaintContext& ctx) const;
+    // gets the rectangle where the given action button is drawn
+    QRect getActionRect(const ItemPaintContext& ctx, LayerActionType actionType) const;
+    QRect getActionRect(const ItemPaintContext& ctx, const LayerActionInfo& action) const;
+
+    void paint_drawTarget(QPainter* painter, const ItemPaintContext& ctx, Options option) const;
+    void paint_drawFill(QPainter* painter, const ItemPaintContext& ctx, QRectC rect) const;
+    void paint_drawArrow(QPainter* painter, const ItemPaintContext& ctx) const;
+    void paint_drawText(QPainter* painter, const ItemPaintContext& ctx) const;
+    void paint_ActionIcon(
+        QPainter*               painter,
+        const ItemPaintContext& ctx,
+        LayerActionType         actionType) const;
+    void paint_ActionIcons(QPainter* painter, const ItemPaintContext& ctx) const;
     void paint_drawOneAction(
-        QPainter*              painter,
-        int                    left,
-        int                    top,
-        const LayerActionInfo& action,
-        const QColor&          highlightColor) const;
+        QPainter*               painter,
+        const QRect&            actionRect,
+        const LayerActionInfo&  action,
+        const ItemPaintContext& ctx) const;
     void drawStdIcon(QPainter* painter, int left, int top, const QPixmap& pixmap) const;
+    // Returns true if an action should appear as checked on a layer tree item.
+    bool actionAppearsChecked(const LayerActionInfo& actionInfo, const ItemPaintContext& ctx) const;
 };
 
 } // namespace UsdLayerEditor

@@ -6,6 +6,7 @@ set(TEST_SCRIPT_FILES
     testMayaUsdLayerEditorCommands.py
     testMayaUsdProxyAccessor.py
     testMayaUsdCacheId.py
+    testMayaUsdInfoCommand.py
 )
 
 # Interactive Unit test scripts.
@@ -99,3 +100,6 @@ endforeach()
 add_subdirectory(ufe)
 add_subdirectory(mayaUsd)
 add_subdirectory(usd)
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    add_subdirectory(mayaUsdAPI)
+endif()

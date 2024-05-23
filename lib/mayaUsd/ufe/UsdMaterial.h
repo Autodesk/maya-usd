@@ -50,7 +50,7 @@ public:
 
     std::vector<Ufe::SceneItem::Ptr> getMaterials() const override;
 
-#if (UFE_PREVIEW_VERSION_NUM >= 5003)
+#ifdef UFE_MATERIAL_HAS_HASMATERIAL
     bool hasMaterial() const override;
 #endif
 

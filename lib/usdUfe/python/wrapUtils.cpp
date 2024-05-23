@@ -80,6 +80,11 @@ int _ufePathToInstanceIndex(const std::string& ufePathString)
     return UsdUfe::ufePathToInstanceIndex(Ufe::PathString::path(ufePathString));
 }
 
+bool _isAnyLayerModifiable(const PXR_NS::UsdStageWeakPtr stage)
+{
+    return UsdUfe::isAnyLayerModifiable(stage);
+}
+
 bool _isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage)
 {
     return UsdUfe::isEditTargetLayerModifiable(stage);
@@ -114,6 +119,7 @@ void wrapUtils()
     def("stripInstanceIndexFromUfePath", _stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", _ufePathToPrim);
     def("ufePathToInstanceIndex", _ufePathToInstanceIndex);
+    def("isAnyLayerModifiable", _isAnyLayerModifiable);
     def("isEditTargetLayerModifiable", _isEditTargetLayerModifiable);
     def("getTime", _getTime);
     def("isAttributeEditAllowed", _isAttributeEditAllowed);

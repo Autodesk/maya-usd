@@ -119,6 +119,9 @@ bool checkIfPathIsSafeToAdd(
     // We can't allow the user to add a sublayer path that is the same as the item or one of its
     // parent. At this point I think it's safe to go the route of actually loading the layer and
     // checking if the handles were already loaded
+    if (in_parentItem == nullptr) {
+        return true;
+    }
 
     auto parentLayer = in_parentItem->layer();
 
@@ -160,58 +163,6 @@ bool checkIfPathIsSafeToAdd(
         in_pathToAdd.c_str());
     warningDialog(in_errorTitle, MQtUtil::toQString(msg));
     return false;
-}
-
-bool saveSubLayer(
-    const QString&         in_errorTitle,
-    LayerTreeItem*         in_parentItem,
-    PXR_NS::SdfLayerRefPtr in_layer,
-    const std::string&     in_absolutePath,
-    const std::string&     in_formatTag)
-{
-    std::string backupFileName;
-    QFileInfo   fileInfo(QString::fromStdString(in_absolutePath));
-    bool        fileError = false;
-    bool        success = false;
-    if (fileInfo.exists()) {
-        // backup existing file
-        backupFileName = in_absolutePath + ".backup";
-        remove(backupFileName.c_str());
-        if (rename(in_absolutePath.c_str(), backupFileName.c_str()) != 0) {
-            fileError = true;
-        }
-    }
-
-    if (!fileError) {
-        if (!MayaUsd::utils::saveLayerWithFormat(in_layer, in_absolutePath, in_formatTag)) {
-            fileError = true;
-        } else {
-            // parent item is null if we're saving the root later
-            if (in_parentItem != nullptr) {
-                success = checkIfPathIsSafeToAdd(in_errorTitle, in_parentItem, in_absolutePath);
-            } else {
-                success = true;
-            }
-        }
-    }
-
-    // place back the file on failure
-    if (!success && !backupFileName.empty()) {
-        remove(in_absolutePath.c_str());
-        rename(backupFileName.c_str(), in_absolutePath.c_str());
-    }
-
-    if (fileError) {
-        MString msg;
-        msg.format(
-            StringResources::getAsMString(StringResources::kErrorFailedToSaveFile),
-            in_absolutePath.c_str());
-
-        warningDialog(in_errorTitle, MQtUtil::toQString(msg));
-        return false;
-    }
-
-    return success;
 }
 
 } // namespace UsdLayerEditor

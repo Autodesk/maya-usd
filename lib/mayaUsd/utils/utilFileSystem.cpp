@@ -750,3 +750,56 @@ std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
     ghc::filesystem::path ext = p.extension();
     return ext.string();
 }
+
+UsdMayaUtilFileSystem::FileBackup::FileBackup(const std::string& filename)
+    : _filename(filename)
+{
+    backup();
+}
+
+UsdMayaUtilFileSystem::FileBackup::~FileBackup()
+{
+    // If commited, we don't restore the old file.
+    if (_commited)
+        return;
+
+    try {
+        restore();
+    } catch (...) {
+        // Don't allow exceptions out of a destructor.
+    }
+}
+
+std::string UsdMayaUtilFileSystem::FileBackup::getBackupFilename() const
+{
+    return _filename + ".backup";
+}
+
+void UsdMayaUtilFileSystem::FileBackup::backup()
+{
+    if (!ghc::filesystem::exists(ghc::filesystem::path(_filename)))
+        return;
+
+    const std::string backupFileName = getBackupFilename();
+    remove(backupFileName.c_str());
+    if (rename(_filename.c_str(), backupFileName.c_str()) != 0)
+        return;
+
+    _backed = true;
+}
+
+void UsdMayaUtilFileSystem::FileBackup::commit()
+{
+    // Once commited, the backup will not be put back into the original file.
+    _commited = true;
+}
+
+void UsdMayaUtilFileSystem::FileBackup::restore()
+{
+    if (!_backed)
+        return;
+
+    remove(_filename.c_str());
+    const std::string backupFileName = getBackupFilename();
+    rename(backupFileName.c_str(), _filename.c_str());
+}

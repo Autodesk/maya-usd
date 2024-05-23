@@ -4,6 +4,9 @@
 
 set(PLUGIN_ICONS
     out_mayaUsdProxyShape
+    menu_options
+    toggle_off
+    toggle_on
     USD_generic
     USD_stage
 )

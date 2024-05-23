@@ -250,7 +250,7 @@ std::string getNumberSuffix(const std::string& text);
 MAYAUSD_CORE_PUBLIC
 std::string increaseNumberSuffix(const std::string& text);
 
-/*! \brief returns the aboluste path relative to the maya file
+/*! \brief returns the absolute path relative to the Maya file
  */
 MAYAUSD_CORE_PUBLIC
 std::string resolveRelativePathWithinMayaContext(
@@ -273,10 +273,10 @@ bool pathAppendPath(std::string& a, const std::string& b);
 /**
  * Appends `b` to the path `a` and returns a path (by appending two input paths).
  *
- * @param a         A string that respresents the first path
- * @param b         A string that respresents the second path
+ * @param a         A string that represents the first path
+ * @param b         A string that represents the second path
  *
- * @return         the two paths joined by a seperator
+ * @return         the two paths joined by a separator
  */
 MAYAUSD_CORE_PUBLIC
 std::string appendPaths(const std::string& a, const std::string& b);
@@ -307,6 +307,30 @@ void pathRemoveExtension(std::string& filePath);
 
 MAYAUSD_CORE_PUBLIC
 std::string pathFindExtension(std::string& filePath);
+
+// Backup a file and restore it if not committed.
+class FileBackup
+{
+public:
+    FileBackup(const std::string& filename);
+    ~FileBackup();
+
+    // Once committed, the backup will not be put back into the original file.
+    void commit();
+
+    // Force restoration of the original file if successfully backed-up, even if committed.
+    void restore();
+
+    // Return the backup file name.
+    std::string getBackupFilename() const;
+
+public:
+    void backup();
+
+    std::string _filename;
+    bool        _backed = false;
+    bool        _commited = false;
+};
 
 } // namespace UsdMayaUtilFileSystem
 

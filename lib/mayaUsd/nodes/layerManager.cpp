@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#include <usdUfe/utils/layers.h>
+
 #include <pxr/base/arch/env.h>
 #include <pxr/base/tf/instantiateType.h>
 #include <pxr/base/tf/weakBase.h>
@@ -157,27 +159,19 @@ void convertAnonymousLayersRecursive(
 {
     auto currentTarget = stage->GetEditTarget().GetLayer();
 
-    MayaUsd::utils::LayerParent parentPtr;
-    if (stage->GetRootLayer() == layer) {
-        parentPtr._layerParent = nullptr;
-        parentPtr._proxyPath = basename;
-    } else if (stage->GetSessionLayer() == layer) {
-        parentPtr._layerParent = nullptr;
-        parentPtr._proxyPath = basename;
-    } else {
-        parentPtr._layerParent = layer;
-        parentPtr._proxyPath = basename;
-    }
-
     std::vector<std::string> sublayers = layer->GetSubLayerPaths();
     for (size_t i = 0, n = sublayers.size(); i < n; ++i) {
-        auto subL = layer->Find(sublayers[i]);
+        SdfLayerRefPtr subL = layer->Find(sublayers[i]);
         if (subL) {
             convertAnonymousLayersRecursive(subL, basename, stage);
 
             if (subL->IsAnonymous()) {
-                auto newLayer
-                    = MayaUsd::utils::saveAnonymousLayer(stage, subL, parentPtr, basename);
+                MayaUsd::utils::LayerParent subLayerParent;
+                subLayerParent._layerParent = layer;
+                subLayerParent._proxyPath = basename;
+
+                SdfLayerRefPtr newLayer
+                    = MayaUsd::utils::saveAnonymousLayer(stage, subL, subLayerParent, basename);
                 if (subL == currentTarget) {
                     stage->SetEditTarget(newLayer);
                 }
@@ -245,6 +239,10 @@ public:
     bool loadLayerManagerSelectedStage();
 
     SdfLayerHandle findLayer(std::string identifier) const;
+
+    LayerManager::LayerNameMap getLayerNameMap() const;
+
+    static bool isSaving() { return _isSavingMayaFile; }
 
 private:
     void registerCallbacks();
@@ -602,7 +600,14 @@ bool LayerDatabase::saveLayerManagerSelectedStage()
     if (!status)
         return false;
 
-    selectedStageHandle.setString(getSelectedStage().c_str());
+    // Note: when empty, we clear the the selected stage attribute so that the
+    //       attribute does not get written to the scene, which improve backward
+    //       compatibility.
+    const std::string stageName = getSelectedStage();
+    if (stageName.size() > 0)
+        selectedStageHandle.setString(stageName.c_str());
+    else
+        selectedStageHandle.setMObject(MObject::kNullObj);
 
     selectedStageHandle.setClean();
     dataBlock.setClean(lm->selectedStage);
@@ -728,6 +733,29 @@ struct SaveStageToMayaResult
     bool _stageHasDirtyLayers { false };
 };
 
+static void saveLayersToMayaFile(
+    MayaUsd::LayerManager* lm,
+    MArrayDataBuilder&     builder,
+    MayaUsdProxyShapeBase& proxyShape,
+    const SdfLayerHandle&  layer,
+    SaveStageToMayaResult& result)
+{
+    bool includeTopLayer = true;
+    auto allLayers = UsdUfe::getAllSublayerRefs(layer, includeTopLayer);
+    for (auto layer : allLayers) {
+        addLayerToBuilder(
+            lm,
+            builder,
+            layer,
+            layer->IsAnonymous(),
+            proxyShape.isIncomingLayer(layer->GetIdentifier()),
+            true);
+        if (layer->IsDirty()) {
+            result._stageHasDirtyLayers = true;
+        }
+    }
+}
+
 SaveStageToMayaResult saveStageToMayaFile(
     MayaUsd::LayerManager* lm,
     MArrayDataBuilder&     builder,
@@ -742,20 +770,11 @@ SaveStageToMayaResult saveStageToMayaFile(
 
     const MFnDependencyNode depNodeFn(proxyNode);
     MayaUsdProxyShapeBase*  pShape = static_cast<MayaUsdProxyShapeBase*>(depNodeFn.userNode());
+    if (!pShape)
+        return result;
 
-    SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
-    for (auto layer : allLayers) {
-        addLayerToBuilder(
-            lm,
-            builder,
-            layer,
-            layer->IsAnonymous(),
-            pShape->isIncomingLayer(layer->GetIdentifier()),
-            true);
-        if (layer->IsDirty()) {
-            result._stageHasDirtyLayers = true;
-        }
-    }
+    saveLayersToMayaFile(lm, builder, *pShape, stage->GetSessionLayer(), result);
+    saveLayersToMayaFile(lm, builder, *pShape, stage->GetRootLayer(), result);
 
     if (result._stageHasDirtyLayers) {
         setValueForAttr(
@@ -1083,6 +1102,19 @@ void LayerDatabase::cleanUpNewScene(void*)
     LayerDatabase::removeManagerNode();
 }
 
+LayerManager::LayerNameMap LayerDatabase::getLayerNameMap() const
+{
+    LayerManager::LayerNameMap nameMap;
+    for (const auto& idAndLayer : _idToLayer) {
+        const std::string& layerName = idAndLayer.first;
+        const std::string& currentName = idAndLayer.second->GetIdentifier();
+        if (currentName != layerName) {
+            nameMap[layerName] = currentName;
+        }
+    }
+    return nameMap;
+}
+
 bool LayerDatabase::remapSubLayerPaths(SdfLayerHandle parentLayer)
 {
     bool                     modifiedPaths = false;
@@ -1339,6 +1371,16 @@ SdfLayerHandle LayerManager::findLayer(std::string identifier)
 }
 
 /* static */
+LayerManager::LayerNameMap LayerManager::getLayerNameMap()
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+
+    LayerDatabase::loadLayersPostRead(nullptr);
+
+    return LayerDatabase::instance().getLayerNameMap();
+}
+
+/* static */
 void LayerManager::addSupportForNodeType(MTypeId type)
 {
     return LayerDatabase::instance().addSupportForNodeType(type);
@@ -1367,5 +1409,8 @@ std::string LayerManager::getSelectedStage()
     LayerDatabase::loadLayersPostRead(nullptr);
     return LayerDatabase::instance().getSelectedStage();
 }
+
+/* static */
+bool LayerManager::isSaving() { return LayerDatabase::isSaving(); }
 
 } // namespace MAYAUSD_NS_DEF

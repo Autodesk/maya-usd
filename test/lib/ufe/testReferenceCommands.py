@@ -93,5 +93,27 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.assertEqual(originalRootContents, filterUsdStr(self.stage.GetRootLayer().ExportToString()))
 
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Delete restriction on delete requires Maya 2023 or greater.')
+    def testDeletePrimContainingReference(self):
+        '''
+        Test adding a reference to a prim, then deleting that prim.
+        '''
+        # Get the session layer
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+
+        self.assertFalse(prim.HasAuthoredReferences())
+
+        referencedFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+        cmd = usdUfe.AddReferenceCommand(prim, referencedFile, True)
+
+        cmd.execute()
+        self.assertTrue(prim.HasAuthoredReferences())
+
+        # Delete the prim containing the reference. The ref should not block deletion.
+        cmds.delete("|stage1|stageShape1,/A")
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        self.assertFalse(prim)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

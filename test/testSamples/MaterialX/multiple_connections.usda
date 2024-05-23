@@ -101,5 +101,65 @@ def Material "Material1" (
             uniform float2 ui:nodegraph:node:pos = (-1.1293055, -3.50525)
         }
     }
+
+    def Shader "component_add"
+    {
+        uniform token info:id = "ND_add_color3"
+        color3f inputs:in1.connect = </Material1/combine1.outputs:out>
+    }
+
+    def Shader "constant1"
+    {
+        uniform token info:id = "ND_constant_color3"
+        color3f outputs:out
+    }
+
+    def Shader "separate1" (
+        customData = {
+            dictionary Autodesk = {
+                string hidden = "true"
+            }
+        }
+    )
+    {
+        uniform token info:id = "ND_separate3_color3"
+        color3f inputs:in.connect = </Material1/constant1.outputs:out>
+        float outputs:outg
+    }
+
+    def Shader "combine1" (
+        customData = {
+            dictionary Autodesk = {
+                string hidden = "true"
+            }
+        }
+    )
+    {
+        uniform token info:id = "ND_combine3_color3"
+        float inputs:in1.connect = </Material1/separate2.outputs:outg>
+        float inputs:in2.connect = </Material1/separate2.outputs:outb>
+        float inputs:in3.connect = </Material1/separate1.outputs:outg>
+        color3f outputs:out
+    }
+
+    def Shader "constant2"
+    {
+        uniform token info:id = "ND_constant_color3"
+        color3f outputs:out
+    }
+
+    def Shader "separate2" (
+        customData = {
+            dictionary Autodesk = {
+                string hidden = "true"
+            }
+        }
+    )
+    {
+        uniform token info:id = "ND_separate3_color3"
+        color3f inputs:in.connect = </Material1/constant2.outputs:out>
+        float outputs:outb
+        float outputs:outg
+    }
 }
 

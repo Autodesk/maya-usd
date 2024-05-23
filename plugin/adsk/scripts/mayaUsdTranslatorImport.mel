@@ -16,6 +16,323 @@
 //
 
 
+////////////////////////////////////////////////////////////////////////////
+//
+// Import context UI
+
+proc string[] mayaUsdTranslatorImport_getContextLabels()
+{
+    // Make sure they are in alphabetical order when creatign the UI,
+    // otherwise they are in a semi-random order, probably based on plugin
+    // load order or other internal details.
+    string $contextLabels[] = `mayaUSDListJobContexts -import`;
+    return `sort $contextLabels`;
+}
+
+proc string mayaUsdTranslatorImport_getContextOptionsCheckBoxName(string $jobContext)
+{
+    // Build the name of the checkbox used for a given plugin context configuration
+    return $jobContext + "ContextOptionsCheckBox";
+}
+
+proc int mayaUsdTranslatorImport_isContextOptionsEnabledByUser(string $jobContext)
+{
+    string $cbName = mayaUsdTranslatorImport_getContextOptionsCheckBoxName($jobContext);
+    string $currentToggle = `iconTextButton -query -image1 $cbName`;
+    return ($currentToggle == "toggle_on");
+}
+
+proc int mayaUsdTranslatorImport_isContextOptionsUISupported(string $contextLabel)
+{
+    return `mayaUSDListJobContexts -hasImportUI $contextLabel`;
+}
+
+proc string mayaUsdTranslatorImport_getContextOptionsButtonName(string $jobContext)
+{
+    // Build the name of the button used for a given plugin context configuration
+    return $jobContext + "ContextOptionsButton";
+}
+
+proc mayaUsdTranslatorImport_updateContextOptionButton(string $contextLabel, string $jobContext)
+{
+    string $buttonName = mayaUsdTranslatorImport_getContextOptionsButtonName($jobContext);
+    iconTextButton -edit -visible `mayaUsdTranslatorImport_isContextOptionsUISupported($contextLabel)` $buttonName;
+}
+
+proc string[] mayaUsdTranslatorImport_updateAllContextOptionButtons()
+{
+    string $jobContexts[];
+
+    string $contextLabels[] = mayaUsdTranslatorImport_getContextLabels();
+    for ($contextLabel in $contextLabels) {
+        // Note: we verify that the enabled context actually exists. Might be redundant, but
+        //       initially the list of enabled context comes from the saved ones from a previous
+        //       Maya session and the list of loaded plugins might have changed.
+        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
+        if ($jobContext == "")
+            continue;
+        stringArrayInsertAtIndex(255, $jobContexts, $jobContext);
+        mayaUsdTranslatorImport_updateContextOptionButton($contextLabel, $jobContext);
+    }
+
+    return $jobContexts;
+}
+
+global string $_mayaUsdTranslatorImport_contextLabel;
+global string $_mayaUsdTranslatorImport_parent;
+
+proc mayaUsdTranslatorImport_createContextOptions(string $parent, string $collapsedSections[])
+{
+    // Create the UI for each of the plugin context configuration.
+    string $contextLabels[] = mayaUsdTranslatorImport_getContextLabels();
+    if (size($contextLabels) == 0)
+        return;
+
+    // We need to cache the parent UI container and displayed section names
+    // so that the job context options UI callback can call mayaUsdTranslatorImport
+    // with the correct arguments.
+    global string $_mayaUsdTranslatorImport_parent;
+    $_mayaUsdTranslatorImport_parent = $parent;
+
+    int $collapse = stringArrayContains("context", $collapsedSections) ? true : false;
+    frameLayout
+        -label `getMayaUsdString("kImportPluginConfigLbl")`
+        -ann `getMayaUsdString("kImportPluginConfigAnn")`
+        -collapsable true -collapse $collapse contextFrameLayout;
+        separator -style "none";
+
+        // The goal of the layout code below is to have each plugin listed
+        // as if it were in a list view. That is we draw a darker background
+        // layout within which each plugin is a separate layout separated by
+        // a thin 1-pixel spacing.
+        //
+        // Note: setting the background color of a panel changes the color of
+        //       text in the panel. So rather than set the background color of
+        //       the columnLayout, we insert thin layouts around the plugin
+        //       row. So we insert one on top and bottom and on each side, and
+        //       these have a darker color to simulate a border.
+
+        int $width = 400;
+        int $rowHeight = 24;
+        float $color[3] = { 0.21, 0.21, 0.21 };
+
+        columnLayout
+            -width $width -rowSpacing 1 contextCol;
+
+            rowLayout -width $width -height 1 -backgroundColor $color[0] $color[1] $color[2];
+            setParent ..;
+
+            for ($contextLabel in $contextLabels) {
+                string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
+                string $cbName = mayaUsdTranslatorImport_getContextOptionsCheckBoxName($jobContext);
+                string $buttonName = mayaUsdTranslatorImport_getContextOptionsButtonName($jobContext);
+                string $tooltip = `mayaUSDListJobContexts -importAnnotation $contextLabel`;
+
+                rowLayout
+                    -width $width -height $rowHeight
+                    -numberOfColumns 5 -adjustableColumn 3
+                    -columnAttach 2 "left" 4
+                    -columnAttach 3 "left" 4
+                    -columnAttach 4 "right" 4
+                    -columnAlign5 "left" "left" "left" "right" "right";
+
+                    rowLayout -width 1 -height $rowHeight -backgroundColor $color[0] $color[1] $color[2];
+                    setParent ..;
+
+                    // Note: the button must be 2 pixels larger than the image.
+                    iconTextButton
+                        -image1 "toggle_off"
+                        -w 22 -h 16
+                        -style "iconOnly"
+                        -ann $tooltip -align "left"
+                        -labelOffset 2
+                        -command ("mayaUsdTranslatorImport_contextOptionsCheckBoxCB(\"" + $jobContext + "\")") $cbName;
+                    text -label $contextLabel -ann $tooltip -align "left";
+                    iconTextButton
+                        -w 16 -h 16 -style "iconAndTextVertical"
+                        -image1 "menu_options" -label "" -ann `getMayaUsdString("kImportPluginConfigButtonAnn")`
+                        -command ("mayaUsdTranslatorImport_contextOptionsButtonCB(\"" + $contextLabel + "\")") $buttonName;
+
+                    rowLayout -width 2 -height $rowHeight -backgroundColor $color[0] $color[1] $color[2];
+                    setParent ..;
+                    
+                setParent ..;
+
+                rowLayout -width $width -height 1 -backgroundColor $color[0] $color[1] $color[2];
+                setParent ..;
+            }
+        setParent ..; // columnLayout
+
+        // This is to provide some spacing below the last plugin row.
+        rowLayout -width $width -height 6;
+        setParent ..;
+
+    setParent ..; // frameLayout
+}
+
+proc mayaUsdTranslatorImport_enableContextOptions()
+{
+    // Enable all the UI for each of the plugin context configuration.
+    // They will be disabled if necessary by the fill-UI function below.
+    
+    string $contextLabels[] = mayaUsdTranslatorImport_getContextLabels();
+    if (size($contextLabels) == 0)
+        return;
+
+    for ($contextLabel in $contextLabels) {
+        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
+        string $cbName = mayaUsdTranslatorImport_getContextOptionsCheckBoxName($jobContext);
+        string $buttonName = mayaUsdTranslatorImport_getContextOptionsButtonName($jobContext);
+        iconTextButton -edit -enable 1 $cbName;
+        iconTextButton -edit -enable 1 $buttonName;
+    }
+}
+
+proc mayaUsdTranslatorImport_fillOptionsUIForcedByContextOptions()
+{
+    // Fill all the UI for all options based on the choices forced
+    // by each of the plugin context configuration.
+    //
+    // Forced options have their corresponding UI disabled since the import
+    // plugin now is in control of that option.
+    //
+    // Note: currently, we have no way to control the order of the import
+    //       plugins. If they have conflicting requirements, the conflicting
+    //       options will be set to the value set by the last import plugin
+    //       that sets those particular options.
+
+    string $contextLabels[] = mayaUsdTranslatorImport_getContextLabels();
+    if (size($contextLabels) == 0)
+        return;
+
+    mayaUsdTranslatorImport_EnableAllControls();
+
+    for ($contextLabel in $contextLabels) {
+        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
+        mayaUsdTranslatorImport_updateContextOptionButton($contextLabel, $jobContext);
+        if (mayaUsdTranslatorImport_isContextOptionsEnabledByUser($jobContext) == 0) {
+            //print("Import plugin " + $contextLabel + "(" + $jobContext + ") is off\n");
+            continue;
+        }
+
+        string $affectedOptions = `mayaUSDListJobContexts -importArguments $contextLabel`;
+        if ($affectedOptions != "") {
+            // Print affected options to help the user figure out what the import plugin is doing.
+            print("Options affected by " + $contextLabel + "(" + $jobContext + "): " + $affectedOptions + "\n");
+            mayaUsdTranslatorImport_SetFromOptions($affectedOptions, 0, 0);
+        }
+    }
+}
+
+proc mayaUsdTranslatorImport_fillContextOptionsUI(string $listOfJobContexts)
+{
+    // Fill the UI for each of the plugin context configuration with the data.
+
+    if (startsWith($listOfJobContexts, "[") && endsWith($listOfJobContexts, "]")) {
+        if (size($listOfJobContexts) > 2) {
+            $listOfJobContexts = substring($listOfJobContexts, 2, size($listOfJobContexts) - 1);
+        } else {
+            $listOfJobContexts = "";
+        }
+    }
+
+    string $jobContexts[] = mayaUsdTranslatorImport_updateAllContextOptionButtons();
+
+    string $enabledJobContexts[] = stringToStringArray($listOfJobContexts, ",");
+    for ($enabledJobContext in $enabledJobContexts) {
+        for ($jobContext in $jobContexts) {
+            if ($enabledJobContext == $jobContext) {
+                string $cbName = mayaUsdTranslatorImport_getContextOptionsCheckBoxName($jobContext);
+                iconTextButton -edit -image1 "toggle_on" $cbName;
+            }
+        }
+    }
+
+    mayaUsdTranslatorImport_fillOptionsUIForcedByContextOptions();
+}
+
+proc string mayaUsdTranslatorImport_queryContextOptionsUI(string $currentOptions, string $jobContextOptionName)
+{
+    // Query the UI for each of the plugin context configuration to extract the data.
+
+    string $contextLabels[] = mayaUsdTranslatorImport_getContextLabels();
+    if (size($contextLabels) == 0)
+        return $currentOptions;
+
+    string $enabledJobContexts[];
+
+    for ($contextLabel in $contextLabels) {
+        string $jobContext = `mayaUSDListJobContexts -jobContext $contextLabel`;
+        if ($jobContext == "")
+            continue;
+        if (mayaUsdTranslatorImport_isContextOptionsEnabledByUser($jobContext) == 0)
+            continue;
+        stringArrayInsertAtIndex(255, $enabledJobContexts, $jobContext);
+    }
+
+    if (size($enabledJobContexts) > 0) {
+        $currentOptions = $currentOptions + ";" + $jobContextOptionName + "=[" + stringArrayToString($enabledJobContexts, ",") + "]";
+    }
+
+    return $currentOptions;
+}
+
+global proc mayaUsdTranslatorImport_contextOptionsCheckBoxCB(string $jobContext)
+{
+    // Callback for the checkbox of each of the plugin context configuration.
+
+    // Note: for now, the design requires that the associated button be enabled.
+
+    string $cbName = mayaUsdTranslatorImport_getContextOptionsCheckBoxName($jobContext);
+    string $currentToggle = `iconTextButton -query -image1 $cbName`;
+    if ($currentToggle == "toggle_on")
+        $currentToggle = "toggle_off";
+    else
+        $currentToggle = "toggle_on";
+    iconTextButton -edit -image1 $currentToggle $cbName;
+
+    mayaUsdTranslatorImport_fillOptionsUIForcedByContextOptions();
+}
+
+global proc mayaUsdTranslatorImport_contextOptionsShowImportUI(string $optionsString)
+{
+    global string $_mayaUsdTranslatorImport_parent;
+    global string $_mayaUsdTranslatorImport_contextLabel;
+
+    string $newSettings = `mayaUSDListJobContexts -showImportUI
+        $_mayaUsdTranslatorImport_contextLabel $_mayaUsdTranslatorImport_parent $optionsString`;
+
+    string $jobContext = `mayaUSDListJobContexts -jobContext $_mayaUsdTranslatorImport_contextLabel`;
+    if ($jobContext == "")
+        return;
+
+    if (!mayaUsdTranslatorImport_isContextOptionsEnabledByUser($jobContext))
+        return;
+
+    // Fill the settings UI with the options from the import options UI.
+    mayaUsdTranslatorImport_fillOptionsUIForcedByContextOptions();
+}
+
+global proc mayaUsdTranslatorImport_contextOptionsButtonCB(string $contextLabel)
+{
+    // Callback for the "options" button of each of the plugin context configuration.
+    // Show the options dialog for the import plugin.
+    global string $_mayaUsdTranslatorImport_parent;
+    global string $_mayaUsdTranslatorImport_contextLabel;
+
+    $_mayaUsdTranslatorImport_contextLabel = $contextLabel;
+
+    // To show the opitons UI, we need to pass it the current set of options,
+    // so we call the main entry-point in "query" mode with a callback that
+    // will receive the settings and will show the UI.
+    mayaUsdTranslatorImport(
+        $_mayaUsdTranslatorImport_parent,
+        "query",
+        "",
+        "mayaUsdTranslatorImport_contextOptionsShowImportUI");
+}
+
+
 proc mayaUsdTranslatorImport_hideInfo()
 {
     if (`rowLayout -exists mayaUsd_NBPrimsInScopeRL`) 
@@ -43,32 +360,6 @@ proc mayaUsdTranslatorImport_showInfo()
     }
 }
 
-proc mayaUsdTranslatorImport_SetJobContextDropdown(string $arg) {
-    if (startsWith($arg, "[") && endsWith($arg, "]")) {
-        if (size($arg) > 2) {
-            $arg = substring($arg, 2, size($arg) - 1);
-        } else {
-            $arg = "";
-        }
-    }
-    string $enabledContexts[] = stringToStringArray($arg, ",");
-    if (size($enabledContexts) > 0) {
-        // Pick first element (in case we find many...)
-        string $enabledContext = $enabledContexts[0];
-        string $niceNames[] = `mayaUSDListJobContexts -import`;
-        for ($niceName in $niceNames) {
-            string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
-            if ($jobContext == $enabledContext) {
-                optionMenuGrp -e -value $niceName mayaUsdTranslator_jobContextPopup;
-                return;
-            }
-        }
-    }
-
-    // None is the default.
-    optionMenuGrp -e -select 1 mayaUsdTranslator_jobContextPopup;
-}
-
 global proc mayaUsdTranslatorImport_EnableAllControls() {
     // Restore all controls to fully interactive:
     checkBoxGrp -e -en 1 mayaUsdTranslator_MaterialsCheckBox;
@@ -77,11 +368,12 @@ global proc mayaUsdTranslatorImport_EnableAllControls() {
     checkBoxGrp -e -en 1 mayaUsdTranslator_AnimDataCheckBox;
     checkBoxGrp -e -en 1 mayaUsdTranslator_CustomFrameRangeCheckBox;
 
-    optionMenuGrp -e -en 1 mayaUsdTranslator_jobContextPopup;
     optionMenuGrp -e -en 1 mayaUsdTranslator_MaterialsConversionMenu;
     optionMenuGrp -e -en 1 mayaUsdTranslator_RelativeTexturesMenu;
 
     intFieldGrp -e -en1 1 -en2 1 mayaUsdTranslator_CustomFrameRange;
+
+    mayaUsdTranslatorImport_enableContextOptions();
 }
 
 global proc mayaUsdTranslatorImport_SetFromOptions(string $currentOptions, int $enable, int $processJobContext) {
@@ -122,23 +414,17 @@ global proc mayaUsdTranslatorImport_SetFromOptions(string $currentOptions, int $
             }
         }
         if ($jobContext != "" && $processJobContext == 1) {
-            mayaUsdTranslatorImport_SetJobContextDropdown($jobContext);
-            mayaUsdTranslatorImport_JobContextCB();
+            mayaUsdTranslatorImport_fillContextOptionsUI($jobContext);
+        } else {
+            mayaUsdTranslatorImport_updateAllContextOptionButtons();
         }
     }
 }
 
-global proc mayaUsdTranslatorImport_JobContextCB() {
-    mayaUsdTranslatorImport_EnableAllControls();
 
-    string $niceName = `optionMenuGrp -q -value mayaUsdTranslator_jobContextPopup`;
-    if ($niceName != `getMayaUsdString("kImportJobContextNoneLbl")`) {
-        string $affectedOptions = `mayaUSDListJobContexts -ig $niceName`;
-        if ($affectedOptions != "") {
-            mayaUsdTranslatorImport_SetFromOptions($affectedOptions, 0, 0);
-        }
-    }
-}
+////////////////////////////////////////////////////////////////////////////
+//
+// Import UI entry point
 
 global proc int mayaUsdTranslatorImport (string $parent,
                                  string $action,
@@ -156,7 +442,8 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //    $action - the action that is to be performed with this invocation of this proc.
 //        Valid options are:
 //        "query" - construct the options string and pass it to the resultCallback.
-//        "post" - post all the elf controls.
+//        "post" - post all the elf controls and fill the UI with the given settings.
+//        "fill" - fill the UI with the given settings.
 //        "fileselected" - a file was selected in the import dialog.
 //    $initialSettings - the current options string in effect at the time this script is invoked.
 //    $resultCallback - This is the proc to be called with the result string.
@@ -179,19 +466,6 @@ global proc int mayaUsdTranslatorImport (string $parent,
         int $columnSpacing = ($forEditAsMaya ? 12 : 5);
         string $menuAnnotation = ($forEditAsMaya ? "EditAsMayaOptions" : "ImportOptions");
         columnLayout -adj true -rs $columnSpacing -ann $menuAnnotation  mayaUsdTranslator_OptsCol;
-
-        optionMenuGrp -l  `getMayaUsdString("kImportJobContextLbl")` -cw 1 $cw1 -annotation `getMayaUsdString("kImportJobContextAnn")` -cc ("mayaUsdTranslatorImport_JobContextCB") mayaUsdTranslator_jobContextPopup;
-            menuItem -l `getMayaUsdString("kImportJobContextNoneLbl")` -ann "None";
-            string $contexts[] = `mayaUSDListJobContexts -import`;
-            for ($context in $contexts) {
-                string $ann = `mayaUSDListJobContexts -ia $context`;
-                menuItem -l $context -ann $ann;
-            }
-            if (size($contexts) == 0)
-            {
-                optionMenuGrp -e -vis 0 mayaUsdTranslator_jobContextPopup;
-            }
-
 
         if (`exists usdImportDialog` && !$forEditAsMaya)
         {
@@ -225,6 +499,9 @@ global proc int mayaUsdTranslatorImport (string $parent,
             // the Hierarchy View the first time.
             mayaUsdTranslatorImport_hideInfo();
         }
+
+        mayaUsdTranslatorImport_createContextOptions($parent, {});
+
 //        checkBoxGrp -label "Load Payloads: " -cw 1 $cw1 mayaUsdTranslator_LoadPayloadsCheckBox;
 //
 //        optionMenuGrp -label "Coordinate System: " -cw 1 $cw1 mayaUsdTranslator_CoordSystemOptionMenu;
@@ -300,11 +577,13 @@ global proc int mayaUsdTranslatorImport (string $parent,
         setParent ..;
 
         // Now set to current settings.
-        string $currentOptions = $initialSettings;
+        mayaUsdTranslatorImport($parent, "fill", $initialSettings, $resultCallback);
+        $bResult = 1;
 
+    } else if ($action == "fill") {
+        // Set to current settings.
         mayaUsdTranslatorImport_EnableAllControls();
-        mayaUsdTranslatorImport_SetFromOptions($currentOptions, 1, 1);
-
+        mayaUsdTranslatorImport_SetFromOptions($initialSettings, 1, 1);
         $bResult = 1;
 
     } else if ($action == "query") {
@@ -322,7 +601,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
             $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "endTime", 2, "mayaUsdTranslator_CustomFrameRange");
         }
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importUSDZTextures", "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
-        $currentOptions = mayaUsdTranslatorImport_AppendJobContexts($currentOptions, "jobContext");
+        $currentOptions = mayaUsdTranslatorImport_queryContextOptionsUI($currentOptions, "jobContext");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importInstances", "mayaUsdTranslator_ImportInstancesCheckBox");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
@@ -451,17 +730,6 @@ global proc string mayaUsdTranslatorImport_AppendMaterialsFromCheckBoxGrp(string
     } else {
         return $currentOptions + ";" + $arg + "=[[none,default]]";
     }
-}
-
-global proc string mayaUsdTranslatorImport_AppendJobContexts(string $currentOptions, string $arg) {
-    string $niceName = `optionMenuGrp -q -value mayaUsdTranslator_jobContextPopup`;
-    if ($niceName != `getMayaUsdString("kImportJobContextNoneLbl")`) {
-        string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
-        if ($jobContext != "") {
-            return $currentOptions + ";" + $arg + "=[" + $jobContext + "]";
-        }
-    }
-    return $currentOptions;
 }
 
 global proc string mayaUsdTranslatorImport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {

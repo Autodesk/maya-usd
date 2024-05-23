@@ -23,6 +23,7 @@ import ufeUtils
 import usdUtils
 
 from pxr import Gf
+from pxr import UsdGeom
 
 from maya import cmds
 from maya import standalone
@@ -118,6 +119,8 @@ class CameraTestCase(unittest.TestCase):
         self._TestFocusDistance(ufeCamera, usdCamera)
         self._TestClippingRange(ufeCamera, usdCamera)
         self._TestProjection(ufeCamera, usdCamera)
+        if(os.getenv('UFE_CAMERA_HAS_RENDERABLE', 'NOT-FOUND') in ('1', 'TRUE')):
+            self._TestRenderable(ufeCamera, usdCamera)
 
     def _TestClippingRange(self, ufeCamera, usdCamera):
         clippingAttr = usdCamera.GetAttribute('clippingRange')
@@ -255,6 +258,26 @@ class CameraTestCase(unittest.TestCase):
         # set the projection offset using USD
         usdAttr.Set("perspective")
         self.assertAlmostEqual(ufe.Camera.Perspective, ufeCamera.projection())
+        
+    def _TestRenderable(self, ufeCamera, usdCamera):
+        cam = UsdGeom.Imageable(usdCamera)
+        usdPurposeAttr = cam.GetPurposeAttr()
+        camAttributes = ufe.Attributes.attributes(ufeCamera.sceneItem())
+        purposeAttr = camAttributes.attribute('purpose')
+
+        self.assertTrue(ufeCamera.renderable())
+
+        # set the purpose to "guide" using UFE
+        purposeAttr.set("guide")
+        self.assertFalse(ufeCamera.renderable())
+
+        # set the purpose to "default" using USD
+        usdPurposeAttr.Set("default")
+        self.assertTrue(ufeCamera.renderable())
+        
+        # set the purpose to "render" using USD
+        usdPurposeAttr.Set("render")
+        self.assertTrue(ufeCamera.renderable())
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Python API only available in Maya 2023 or greater.')
     def testUsdCamera(self):

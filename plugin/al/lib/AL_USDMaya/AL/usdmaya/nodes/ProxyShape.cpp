@@ -41,6 +41,7 @@
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <mayaUsd/utils/variantFallbacks.h>
 
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/usd/prim.h>
@@ -153,7 +154,6 @@ MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
-MObject ProxyShape::m_variantFallbacks = MObject::kNullObj;
 MObject ProxyShape::m_visibleInReflections = MObject::kNullObj;
 MObject ProxyShape::m_visibleInRefractions = MObject::kNullObj;
 
@@ -666,9 +666,9 @@ MStatus ProxyShape::initialise()
             "assetResolverConfig",
             "arc",
             kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
-        m_variantFallbacks = addStringAttr(
+
+        inheritStringAttr(
             "variantFallbacks",
-            "vfs",
             kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
 
         AL_MAYA_CHECK_ERROR(attributeAffects(time(), outTime()), errorString);
@@ -680,7 +680,6 @@ MStatus ProxyShape::initialise()
             attributeAffects(m_populationMaskIncludePaths, outStageData()), errorString);
         AL_MAYA_CHECK_ERROR(attributeAffects(m_stageDataDirty, outStageData()), errorString);
         AL_MAYA_CHECK_ERROR(attributeAffects(m_assetResolverConfig, outStageData()), errorString);
-        AL_MAYA_CHECK_ERROR(attributeAffects(m_variantFallbacks, outStageData()), errorString);
         AL_MAYA_CHECK_ERROR(attributeAffects(m_pauseUpdates, outStageData()), errorString);
     } catch (const MStatus& status) {
         return status;
@@ -1247,8 +1246,9 @@ void ProxyShape::loadStage()
 
         // Save variant fallbacks from session layer to Maya node attribute
         if (m_stage) {
-            saveVariantFallbacks(
-                getVariantFallbacksFromLayer(m_stage->GetSessionLayer()), dataBlock);
+            MString fallbackString = getVariantFallbacksFromLayer(m_stage->GetSessionLayer());
+            MayaUsd::saveVariantFallbacks(
+                MayaUsd::convertVariantFallbackFromStr(fallbackString), *this);
         }
     } else {
         m_stage = UsdStageRefPtr();
@@ -1376,7 +1376,7 @@ void ProxyShape::loadStage()
 
             PcpVariantFallbackMap defaultVariantFallbacks;
             PcpVariantFallbackMap fallbacks(
-                updateVariantFallbacks(defaultVariantFallbacks, dataBlock));
+                MayaUsd::updateVariantFallbacks(defaultVariantFallbacks, *this));
             {
                 UsdStageCacheContext ctx(StageCache::Get());
 
@@ -1445,7 +1445,7 @@ void ProxyShape::loadStage()
 
             // reset only if the global variant fallbacks has been modified
             if (!fallbacks.empty()) {
-                saveVariantFallbacks(convertVariantFallbacksToStr(fallbacks), dataBlock);
+                MayaUsd::saveVariantFallbacks(fallbacks, *this);
                 // restore default value
                 UsdStage::SetGlobalVariantFallbacks(defaultVariantFallbacks);
             }
@@ -1661,7 +1661,7 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::setInternalValue %s\n", plug.name().asChar());
 
     if (plug == filePath() || plug == m_assetResolverConfig || plug == stageCacheId()
-        || plug == m_variantFallbacks) {
+        || plug == variantFallbacksPlug()) {
 
         // TODO: make m_filePath updates respect m_ignoringUpdates
 
@@ -1670,7 +1670,7 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
         // can't use dataHandle.datablock(), as this is a temporary datahandle
         MDataBlock datablock = forceCache();
 
-        if (plug == filePath() || plug == m_assetResolverConfig || plug == m_variantFallbacks) {
+        if (plug == filePath() || plug == m_assetResolverConfig || plug == variantFallbacksPlug()) {
             AL_MAYA_CHECK_ERROR_RETURN_VAL(
                 outputStringValue(datablock, plug, dataHandle.asString()),
                 false,

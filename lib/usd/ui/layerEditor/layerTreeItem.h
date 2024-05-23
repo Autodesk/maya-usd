@@ -25,6 +25,7 @@
 #include <QtGui/QStandardItem>
 
 #include <algorithm>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -46,19 +47,46 @@ enum class RebuildChildren
     No
 };
 
-struct LayerActionInfo
+enum LayerActionType
 {
-    QString _name;
-    QString _tooltip;
-    QPixmap _pixmap;
-    int     extraPadding = 0;
-    QColor  _borderColor;
-    bool    _checked = false;
+    None,
+    Mute,
+    Lock
 };
 
-typedef std::vector<std::string>    recursionDetection;
-typedef std::vector<LayerTreeItem*> LayerItemVector;
+enum LayerMasks
+{
+    LayerMasks_None = (1u << 0),     // 00000000
+    LayerMasks_Session = (1u << 1),  // 00000001
+    LayerMasks_Root = (1u << 2),     // 00000010
+    LayerMasks_SubLayer = (1u << 3), // 00000100
+};
 
+LayerMasks operator|(LayerMasks lhs, LayerMasks rhs);
+
+LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer);
+
+struct LayerActionInfo
+{
+    QString         _name;
+    QString         _tooltip;
+    QPixmap         _pixmap_off;
+    QPixmap         _pixmap_off_hover;
+    QPixmap         _pixmap_on;
+    QPixmap         _pixmap_on_hover;
+    int             _extraPadding = 0;
+    QColor          _borderColor;
+    bool            _checked = false;
+    LayerMasks      _layerMask = LayerMasks::LayerMasks_None;
+    LayerActionType _actionType;
+    int             _order = 0;
+};
+
+bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag);
+
+using recursionDetection = std::vector<std::string>;
+using LayerItemVector = std::vector<LayerTreeItem*>;
+using LayerActionDefinitions = std::map<LayerActionType, LayerActionInfo>;
 /**
  * @brief Implements one USD layer item in the treeview
  *
@@ -78,6 +106,12 @@ public:
 
     // refresh our data from the USD Layer
     void fetchData(RebuildChildren in_rebuild, RecursionDetector* in_recursionDetector = nullptr);
+
+    enum Roles
+    {
+        // Data role containing a boolean indicating if the mouse is over an action button.
+        kHoverActionRole = Qt::UserRole + 1
+    };
 
     // QStandardItem API
     int      type() const override;
@@ -99,7 +133,8 @@ public:
     bool isMuted() const;
     // check if this layer is muted, or any of its parent
     bool appearsMuted() const;
-    // check if this layer is readonly
+    // check if this layer is readonly (whether it is a shared layer or a sublayer of a shared
+    // stage)
     bool isReadOnly() const;
     // true if dirty, but look at needsSaving for UI feedback
     bool isDirty() const { return _layer ? _layer->IsDirty() : false; }
@@ -109,6 +144,20 @@ public:
     bool isMovable() const;
     // check if the layer is incoming (from a connection)
     bool isIncoming() const;
+    // is the layer locked?
+    bool isLocked() const;
+    // check if this layer appears locked. This means that the layer item itself
+    // may not be locked but by inference some of the action items of the layer
+    // can appear as locked if the parent is locked.
+    bool appearsLocked() const;
+    // is the layer system locked?
+    bool isSystemLocked() const;
+    // check if this layer appears system locked. This means that the layer item itself
+    // may not be system locked but by inference some of the action items of the layer
+    // can appear as locked if the parent is system locked.
+    bool appearsSystemLocked() const;
+    // Checks if this layer has any sub layers.
+    bool hasSubLayers() const;
 
     // used by draw delegate: returns how deep in the hierarchy we are
     int depth() const;
@@ -147,10 +196,8 @@ public:
     void                   clearLayer();
 
     // delegate Action API for command buttons
-    int getActionButtonCount() const { return (isSublayer() && !isInvalidLayer()) ? 1 : 0; }
-    // delegate Action API for command buttons
-    void getActionButton(int index, LayerActionInfo* out_info) const;
-    static const std::vector<LayerActionInfo>& actionButtonsDefinition();
+    void getActionButton(LayerActionType actionType, LayerActionInfo& out_info) const;
+    static const LayerActionDefinitions& actionButtonsDefinition();
 
 protected:
     PXR_NS::SdfLayerRefPtr _layer;
@@ -164,7 +211,7 @@ protected:
     bool                   _isSharedLayer;
     std::set<std::string>  _sharedLayers;
 
-    static std::vector<LayerActionInfo> _actionButtons;
+    static LayerActionDefinitions _actionButtons;
 
 protected:
     AbstractCommandHook* commandHook() const;

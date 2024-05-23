@@ -23,8 +23,10 @@
 #include "stringResources.h"
 
 #include <maya/MGlobal.h>
+#include <maya/MQtUtil.h>
 
 #include <QtGui/QColor>
+#include <QtGui/QCursor>
 #include <QtWidgets/QMenu>
 
 using namespace UsdLayerEditor;
@@ -37,7 +39,7 @@ struct CallMethodParams
 };
 
 namespace {
-QColor BLACK_BACKGROUND(43, 43, 43);
+QColor BLACK_BACKGROUND(55, 55, 55);
 
 typedef void (LayerTreeItem::*simpleLayerMethod)();
 
@@ -83,6 +85,7 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     setAcceptDrops(true);
     setDropIndicatorShown(true);
     setDragDropMode(QAbstractItemView::InternalMove);
+    updateMouseCursor();
 
     // custom row drawing
     _delegate = new LayerTreeItemDelegate(this);
@@ -106,12 +109,20 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     connect(this, &QTreeView::expanded, this, &LayerTreeView::onExpanded);
     connect(this, &QTreeView::collapsed, this, &LayerTreeView::onCollapsed);
 
-    // renderSetuplike API
-    auto actionButtons = LayerTreeItem::actionButtonsDefinition();
-    for (auto actionInfo : actionButtons) {
-        auto action = new QAction(actionInfo._name, this);
-        connect(action, &QAction::triggered, this, &LayerTreeView::onMuteLayerButtonPushed);
-        _actionButtons._staticActions.push_back(action);
+    auto buttonDefinitions = LayerTreeItem::actionButtonsDefinition();
+    auto muteActionIter = buttonDefinitions.find(LayerActionType::Mute);
+    if (muteActionIter != buttonDefinitions.end()) {
+        LayerActionInfo muteActionInfo = muteActionIter->second;
+        auto            muteAction = new QAction(muteActionInfo._name, this);
+        connect(muteAction, &QAction::triggered, this, &LayerTreeView::onMuteLayerButtonPushed);
+        _actionButtons._staticActions.push_back(muteAction);
+    }
+    auto lockActionIter = buttonDefinitions.find(LayerActionType::Lock);
+    if (lockActionIter != buttonDefinitions.end()) {
+        LayerActionInfo lockActionInfo = lockActionIter->second;
+        auto            lockAction = new QAction(lockActionInfo._name, this);
+        connect(lockAction, &QAction::triggered, this, &LayerTreeView::onLockLayerButtonPushed);
+        _actionButtons._staticActions.push_back(lockAction);
     }
 }
 
@@ -132,12 +143,18 @@ void LayerTreeView::selectLayerRquest(const QModelIndex& index)
 
 void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
 {
-    if (index.isValid()) {
-        auto layerTreeItem = layerItemFromIndex(index);
-        if (layerTreeItem->needsSaving()) {
-            layerTreeItem->saveEdits();
-        }
-    }
+    if (!index.isValid())
+        return;
+
+    auto layerTreeItem = layerItemFromIndex(index);
+    if (!layerTreeItem->needsSaving())
+        return;
+
+    // Note: system-locked layers cannot be saved.
+    if (layerTreeItem->isSystemLocked() || layerTreeItem->appearsSystemLocked())
+        return;
+
+    layerTreeItem->saveEdits();
 }
 
 bool LayerTreeView::shouldExpandOrCollapseAll() const
@@ -285,6 +302,8 @@ LayerItemVector LayerTreeView::getSelectedLayerItems() const
 
 void LayerTreeView::onAddParentLayer(const QString& undoName) const
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
     auto selection = getSelectedLayerItems();
 
     CallMethodParams params;
@@ -314,6 +333,8 @@ void LayerTreeView::onAddParentLayer(const QString& undoName) const
 
 void LayerTreeView::onMuteLayer(const QString& undoName) const
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
     auto selection = getSelectedLayerItems();
 
     CallMethodParams params;
@@ -329,8 +350,35 @@ void LayerTreeView::onMuteLayer(const QString& undoName) const
     }
 }
 
+void LayerTreeView::onLockLayer(const QString& undoName) const
+{
+    bool includeSubLayers = false;
+    onLockLayerAndSublayers(undoName, includeSubLayers);
+}
+
+void LayerTreeView::onLockLayerAndSublayers(const QString& undoName, bool includeSublayers) const
+{
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
+    auto selection = getSelectedLayerItems();
+
+    CallMethodParams params;
+    params.selection = &selection;
+    params.commandHook = _model->sessionState()->commandHook();
+    params.name = undoName;
+
+    bool isLocked = !currentLayerItem()->isLocked();
+
+    UndoContext context(params.commandHook, params.name);
+    for (auto item : *params.selection) {
+        item->parentModel()->toggleLockLayer(item, includeSublayers, &isLocked);
+    }
+}
+
 void LayerTreeView::callMethodOnSelection(const QString& undoName, simpleLayerMethod method)
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
     CallMethodParams params;
     auto             selection = getSelectedLayerItems();
     params.selection = &selection;
@@ -365,47 +413,6 @@ void LayerTreeView::paintEvent(QPaintEvent* event)
     }
 }
 
-bool LayerTreeView::event(QEvent* event)
-{
-    // override for dynamic tooltips
-    if (event->type() == QEvent::ToolTip) {
-        handleTooltips(dynamic_cast<QHelpEvent*>(event));
-        return true;
-    } else {
-        return PARENT_CLASS::event(event);
-    }
-}
-
-void LayerTreeView::handleTooltips(QHelpEvent* event)
-{
-    auto index = indexAt(event->pos());
-    if (index.isValid()) {
-        auto itemRect = visualRect(index);
-        auto layerTreeItem = _model->layerItemFromIndex(index);
-        itemRect = _delegate->getAdjustedItemRect(layerTreeItem, itemRect);
-        auto targetRect = _delegate->getTargetIconRect(itemRect);
-        auto textRect = _delegate->getTextRect(itemRect);
-        if (targetRect.contains(event->pos())) {
-            QString tip
-                = StringResources::getAsQString(StringResources::kSetLayerAsTargetLayerTooltip);
-            QToolTip::showText(event->globalPos(), tip);
-            return;
-        } else if (textRect.contains(event->pos())) {
-            QString tip;
-            if (layerTreeItem->isInvalidLayer()) {
-                tip = StringResources::getAsQString(StringResources::kPathNotFound)
-                    + layerTreeItem->subLayerPath().c_str();
-            } else {
-                tip = layerTreeItem->layer()->GetRealPath().c_str();
-            }
-            QToolTip::showText(event->globalPos(), tip);
-            return;
-        }
-    }
-    QToolTip::hideText();
-    event->ignore();
-}
-
 void LayerTreeView::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -422,9 +429,25 @@ void LayerTreeView::mousePressEvent(QMouseEvent* event)
     PARENT_CLASS::mousePressEvent(event);
 }
 
+void LayerTreeView::updateMouseCursor()
+{
+    // Note: special mouse cursor taken from Maya resources.
+    QString pixmapName = QtUtils::getDPIPixmapName(":/rmbMenu");
+    // Note: in Maya, the normal-sized pixmap name does not ends with _100,
+    //       so remove that ending if it is present.
+    pixmapName.remove("_100");
+    QPixmap pixmap(pixmapName);
+
+    const int hitX = MQtUtil::dpiScale(11);
+    const int hitY = MQtUtil::dpiScale(9);
+
+    setCursor(QCursor(pixmap, hitX, hitY));
+}
+
 // support for renderSetup-like action button API
 void LayerTreeView::mouseMoveEvent(QMouseEvent* event)
 {
+    updateMouseCursor();
 
     // dirty the tree view so it will repaint when mouse is over it
     // this is needed to change the icons when hovered over them
@@ -460,6 +483,8 @@ void LayerTreeView::mouseReleaseEvent(QMouseEvent* event)
 
 void LayerTreeView::keyPressEvent(QKeyEvent* event)
 {
+    DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
+
     if (event->type() == QEvent::KeyPress) {
         if (event->key() == Qt::Key_Delete) {
             CallMethodParams params;
@@ -499,6 +524,7 @@ QAction* LayerTreeView::getCurrentAction(
 void LayerTreeView::leaveEvent(QEvent* event)
 {
     //
+    updateMouseCursor();
     _delegate->clearLastHitAction();
 }
 
@@ -512,4 +538,14 @@ void LayerTreeView::onMuteLayerButtonPushed()
     update();
 }
 
+void LayerTreeView::onLockLayerButtonPushed()
+{
+    auto item = currentLayerItem();
+    if (item && !item->isSystemLocked()) {
+        bool includeSublayers = false;
+        item->parentModel()->toggleLockLayer(item, includeSublayers);
+    }
+    // need to force redraw of everything otherwise redraw isn't right
+    update();
+}
 } // namespace UsdLayerEditor

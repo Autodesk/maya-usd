@@ -10,6 +10,7 @@
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -27,16 +28,53 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 
 // delegate Action API for command buttons
-std::vector<LayerActionInfo> LayerTreeItem::_actionButtons;
+LayerActionDefinitions LayerTreeItem::_actionButtons;
 
-const std::vector<LayerActionInfo>& LayerTreeItem::actionButtonsDefinition()
+static void createPixmapPair(const QString& name, QPixmap& normal, QPixmap& hover)
+{
+    normal = utils->createPNGResPixmap(name);
+    hover = utils->createPNGResPixmap(name + QString("_hover"));
+}
+
+const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
 {
     if (_actionButtons.size() == 0) {
-        LayerActionInfo info;
-        info._name = "Mute Action";
-        info._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
-        info._pixmap = utils->createPNGResPixmap("RS_disable");
-        _actionButtons.push_back(info);
+        LayerActionInfo muteActionInfo;
+        muteActionInfo._name = "Mute Action";
+        muteActionInfo._order = 0;
+        muteActionInfo._actionType = LayerActionType::Mute;
+        muteActionInfo._layerMask = LayerMasks::LayerMasks_SubLayer;
+        muteActionInfo._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
+
+        createPixmapPair(
+            ":/UsdLayerEditor/LE_mute_off",
+            muteActionInfo._pixmap_off,
+            muteActionInfo._pixmap_off_hover);
+        createPixmapPair(
+            ":/UsdLayerEditor/LE_mute_on",
+            muteActionInfo._pixmap_on,
+            muteActionInfo._pixmap_on_hover);
+
+        _actionButtons.insert(std::make_pair(muteActionInfo._actionType, muteActionInfo));
+
+        LayerActionInfo lockActionInfo;
+        lockActionInfo._name = "Lock Action";
+        lockActionInfo._order = 1;
+        lockActionInfo._actionType = LayerActionType::Lock;
+        lockActionInfo._layerMask = static_cast<LayerMasks>(
+            LayerMasks::LayerMasks_SubLayer | LayerMasks::LayerMasks_Root);
+        lockActionInfo._tooltip = StringResources::getAsQString(StringResources::kLockUnlockLayer);
+
+        createPixmapPair(
+            ":/UsdLayerEditor/LE_lock_off",
+            lockActionInfo._pixmap_off,
+            lockActionInfo._pixmap_off_hover);
+        createPixmapPair(
+            ":/UsdLayerEditor/LE_lock_on",
+            lockActionInfo._pixmap_on,
+            lockActionInfo._pixmap_on_hover);
+
+        _actionButtons.insert(std::make_pair(lockActionInfo._actionType, lockActionInfo));
     }
     return _actionButtons;
 }
@@ -102,37 +140,15 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
     for (auto const path : subPaths) {
         std::string actualPath = SdfComputeAssetPathRelativeToLayer(_layer, path);
         auto        subLayer = SdfLayer::FindOrOpen(actualPath);
-        if (subLayer) {
-            if (recursionDetector->contains(subLayer->GetRealPath())) {
-                MString msg;
-                msg.format(
-                    StringResources::getAsMString(StringResources::kErrorRecursionDetected),
-                    subLayer->GetRealPath().c_str());
-                puts(msg.asChar());
-            } else {
-                auto item = new LayerTreeItem(
-                    subLayer,
-                    LayerType::SubLayer,
-                    path,
-                    &_incomingLayers,
-                    _isSharedStage,
-                    &_sharedLayers,
-                    recursionDetector);
-                appendRow(item);
-            }
-        } else {
-            MString msg;
-            msg.format(
-                StringResources::getAsMString(StringResources::kErrorDidNotFind),
-                std::string(path).c_str());
-            puts(msg.asChar());
+        if (!subLayer || !recursionDetector->contains(subLayer->GetRealPath())) {
             auto item = new LayerTreeItem(
                 subLayer,
                 LayerType::SubLayer,
                 path,
                 &_incomingLayers,
                 _isSharedStage,
-                &_sharedLayers);
+                &_sharedLayers,
+                recursionDetector);
             appendRow(item);
         }
     }
@@ -199,7 +215,7 @@ QVariant LayerTreeItem::data(int role) const
     case Qt::BackgroundRole: return QColor(71, 71, 71);
     case Qt::TextAlignmentRole:
         return (static_cast<int>(Qt::AlignLeft) + static_cast<int>(Qt::AlignVCenter));
-    case Qt::SizeHintRole: return QSize(0, DPIScale(30));
+    case Qt::SizeHintRole: return QSize(0, DPIScale(24));
     default: return QStandardItem::data(role);
     }
 }
@@ -252,18 +268,54 @@ bool LayerTreeItem::sublayerOfShared() const
     return false;
 }
 
-bool LayerTreeItem::isReadOnly() const
-{
-    return (_isSharedLayer || (_layer && !_layer->PermissionToEdit()));
-}
+bool LayerTreeItem::isReadOnly() const { return (_isSharedLayer) || sublayerOfShared(); }
 
 bool LayerTreeItem::isMovable() const
 {
     // Dragging the root layer, session and muted layer is not allowed.
-    return !isSessionLayer() && !isRootLayer() && !appearsMuted() && !sublayerOfShared();
+    return !isSessionLayer() && !isRootLayer() && !appearsMuted() && !sublayerOfShared()
+        && !isLocked() && !appearsLocked() && !isSystemLocked() && !appearsSystemLocked();
 }
 
 bool LayerTreeItem::isIncoming() const { return _isIncomingLayer; }
+
+bool LayerTreeItem::isLocked() const { return _layer && _layer->PermissionToEdit() == false; }
+
+bool LayerTreeItem::appearsLocked() const
+{
+    // Note: This is used to indicate that some of the actions
+    // cannot be performed on a layer whose parent is locked.
+    auto item = parentLayerItem();
+    if (item != nullptr) {
+        return item->isLocked();
+    }
+
+    return false;
+}
+
+bool LayerTreeItem::isSystemLocked() const
+{
+    // When a layer is being externally driven, it should appear as system-locked.
+    return MayaUsd::isLayerSystemLocked(_layer) || isReadOnly();
+}
+
+bool LayerTreeItem::appearsSystemLocked() const
+{
+    // Note: This is used to indicate that some of the actions cannot
+    // be performed on a layer whose parent is system-locked.
+    auto item = parentLayerItem();
+    if (item != nullptr) {
+        return item->isSystemLocked();
+    }
+    return false;
+}
+
+bool LayerTreeItem::hasSubLayers() const
+{
+    if (!_layer)
+        return false;
+    return _layer->GetNumSubLayerPaths() > 0;
+}
 
 bool LayerTreeItem::needsSaving() const
 {
@@ -285,10 +337,17 @@ bool LayerTreeItem::needsSaving() const
 }
 
 // delegate Action API for command buttons
-void LayerTreeItem::getActionButton(int index, LayerActionInfo* out_info) const
+void LayerTreeItem::getActionButton(LayerActionType actionType, LayerActionInfo& out_info) const
 {
-    *out_info = actionButtonsDefinition()[0];
-    out_info->_checked = isMuted();
+    auto actionButtons = actionButtonsDefinition();
+    auto iter = actionButtons.find(actionType);
+    if (iter != actionButtons.end()) {
+        out_info = iter->second;
+        if (actionType == Lock)
+            out_info._checked = isLocked();
+        else if (actionType == Mute)
+            out_info._checked = isMuted();
+    }
 }
 
 void LayerTreeItem::removeSubLayer()
@@ -377,77 +436,50 @@ void LayerTreeItem::saveEditsNoPrompt()
 // helper to save anon layers called by saveEdits()
 void LayerTreeItem::saveAnonymousLayer()
 {
-    // TODO: the code below is very similar to mayaUsd::utils::saveAnonymousLayer().
-    //       When fixing bug here or there, we need to fix it in the other. Refactor to have a
-    //       single copy.
+    SessionState* sessionState = parentModel()->sessionState();
 
-    auto sessionState = parentModel()->sessionState();
-
+    // the path we have is an absolute path
     std::string fileName;
-    if (sessionState->saveLayerUI(nullptr, &fileName, parentLayer())) {
+    if (!sessionState->saveLayerUI(nullptr, &fileName, parentLayer()))
+        return;
 
-        MayaUsd::utils::ensureUSDFileExtension(fileName);
+    MayaUsd::utils::ensureUSDFileExtension(fileName);
 
-        // the path we have is an absolute path
-        const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
-        std::string   formatTag = MayaUsd::utils::usdFormatArgOption();
-        if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
+    const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
 
-            const std::string absoluteFileName = fileName;
+    if (!checkIfPathIsSafeToAdd(dialogTitle, parentLayerItem(), fileName))
+        return;
 
-            // now replace the layer in the parent
-            if (isRootLayer()) {
-                if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
-                    fileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(fileName);
-                }
-                sessionState->rootLayerPathChanged(fileName);
-            } else {
-                auto parentItem = parentLayerItem();
-                auto parentLayer = parentItem ? parentItem->layer() : nullptr;
-                if (parentLayer) {
-                    if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()) {
-                        if (!parentLayer->IsAnonymous()) {
-                            fileName = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
-                                fileName, parentLayer);
-                        } else {
-                            UsdMayaUtilFileSystem::markPathAsPostponedRelative(
-                                parentLayer, fileName);
-                        }
-                    } else {
-                        UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(parentLayer, fileName);
-                    }
-                }
+    MayaUsd::utils::PathInfo pathInfo;
+    pathInfo.absolutePath = fileName;
+    pathInfo.savePathAsRelative = isRootLayer()
+        ? UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
+        : UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer();
+    pathInfo.customRelativeAnchor = ""; // TODO, see calculateParentLayerDir()
 
-                // Note: we need to open the layer with the absolute path. The relative path is only
-                //       used by the parent layer to refer to the sub-layer relative to itself. When
-                //       opening the layer in isolation, we need to use the absolute path. Failure
-                //       to do so will make finding the layer by its own identifier fail! A symptom
-                //       of this failure is that drag-and-drop in the Layer Manager UI fails
-                //       immediately after saving a layer with a relative path.
-                SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(absoluteFileName);
+    MayaUsd::utils::LayerParent layerParent;
+    layerParent._layerParent = parentLayer();
+    layerParent._proxyPath = sessionState->stageEntry()._proxyShapePath;
 
-                // Now replace the layer in the parent, using a relative path if requested.
-                if (newLayer) {
-                    bool setTarget = _isTargetLayer;
-                    auto model = parentModel();
-                    MayaUsd::utils::updateSubLayer(parentItem->layer(), layer(), fileName);
-                    if (setTarget) {
-                        auto stage = sessionState->stage();
-                        if (stage) {
-                            stage->SetEditTarget(newLayer);
-                        }
-                    }
-                    model->selectUsdLayerOnIdle(newLayer);
-                } else {
-                    QMessageBox::critical(
-                        nullptr,
-                        dialogTitle,
-                        StringResources::getAsQString(StringResources::kErrorFailedToReloadLayer));
-                }
-            }
-        }
+    std::string    errMsg;
+    std::string    formatTag = MayaUsd::utils::usdFormatArgOption();
+    SdfLayerRefPtr newLayer = MayaUsd::utils::saveAnonymousLayer(
+        sessionState->stage(), layer(), pathInfo, layerParent, formatTag, &errMsg);
+    if (!newLayer) {
+        warningDialog(dialogTitle, errMsg.c_str());
+        return;
     }
+
+    const std::string absoluteFileName = fileName;
+
+    // now replace the layer in the parent
+    if (isRootLayer())
+        sessionState->rootLayerPathChanged(fileName);
+
+    if (auto model = parentModel())
+        model->selectUsdLayerOnIdle(newLayer);
 }
+
 void LayerTreeItem::discardEdits()
 {
     if (isAnonymous() || !isDirty()) {
@@ -504,6 +536,7 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
                 UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(layer(), path);
             }
         }
+        context.hook()->refreshLayerSystemLock(layer(), true);
     }
 }
 
@@ -515,5 +548,27 @@ void LayerTreeItem::printLayer()
 }
 
 void LayerTreeItem::clearLayer() { commandHook()->clearLayer(layer()); }
+
+UsdLayerEditor::LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer)
+{
+    LayerMasks mask = LayerMasks::LayerMasks_None;
+    if (isRootLayer)
+        mask = mask | LayerMasks::LayerMasks_Root;
+    if (isSubLayer)
+        mask = mask | LayerMasks::LayerMasks_SubLayer;
+    if (isSessionLayer)
+        mask = mask | LayerMasks::LayerMasks_Session;
+    return mask;
+}
+
+LayerMasks operator|(LayerMasks lhs, LayerMasks rhs)
+{
+    return static_cast<LayerMasks>(unsigned(lhs) | unsigned(rhs));
+}
+
+bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag)
+{
+    return (actionInfo._layerMask & layerMaskFlag) != 0;
+}
 
 } // namespace UsdLayerEditor

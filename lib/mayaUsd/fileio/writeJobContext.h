@@ -209,7 +209,7 @@ private:
     std::map<MObjectHandle, std::pair<size_t, size_t>, MObjectHandleComp> _objectsToMasterWriters;
 
     UsdPrim mInstancesPrim;
-    SdfPath mParentScopePath;
+    SdfPath mRootPrimPath;
 
     std::unique_ptr<UsdMaya_SkelBindingsProcessor> _skelBindingsProcessor;
 

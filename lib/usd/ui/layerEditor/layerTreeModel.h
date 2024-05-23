@@ -86,6 +86,9 @@ public:
     // mute layer management
     void toggleMuteLayer(LayerTreeItem* item, bool* forcedState = nullptr);
 
+    // lock layer management
+    void toggleLockLayer(LayerTreeItem* item, bool includeSublayers, bool* forcedState = nullptr);
+
     // ask to select a layer in the near future
     void selectUsdLayerOnIdle(const PXR_NS::SdfLayerRefPtr& usdLayer);
 
@@ -136,7 +139,7 @@ protected:
 
     void rebuildModelOnIdle();
     bool _rebuildOnIdlePending = false;
-    void rebuildModel();
+    void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);
 

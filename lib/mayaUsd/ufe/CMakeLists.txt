@@ -89,6 +89,13 @@ if (UFE_MATERIALS_SUPPORT)
     PRIVATE
         UFE_MATERIALS_SUPPORT=1
     )
+
+    if (UFE_MATERIAL_HAS_HASMATERIAL)
+        target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_MATERIAL_HAS_HASMATERIAL=1
+        )
+    endif()
 endif()
 
 if (UFE_SCENE_SEGMENT_SUPPORT)
@@ -130,6 +137,13 @@ if (UFE_SCENEITEM_HAS_METADATA)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         UFE_SCENEITEM_HAS_METADATA=1
+    )
+endif()
+
+if (UFE_CONTEXTOPS_HAS_OPTIONBOX)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_CONTEXTOPS_HAS_OPTIONBOX=1
     )
 endif()
 

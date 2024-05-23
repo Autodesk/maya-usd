@@ -96,10 +96,11 @@ public:
     // menu callbacks
     void onAddParentLayer(const QString& undoName) const;
     void onMuteLayer(const QString& undoName) const;
+    void onLockLayer(const QString& undoName) const;
+    void onLockLayerAndSublayers(const QString& undoName, bool includeSublayers) const;
 
     // QWidgets overrides
     virtual void paintEvent(QPaintEvent* event) override;
-    virtual bool event(QEvent* event) override;
     virtual void keyPressEvent(QKeyEvent* event) override;
     virtual void mousePressEvent(QMouseEvent* event) override;
     virtual void mouseMoveEvent(QMouseEvent* event) override;
@@ -107,6 +108,8 @@ public:
     virtual void leaveEvent(QEvent* event) override;
 
 protected:
+    void updateMouseCursor();
+
     // slot:
     void onModelAboutToBeReset();
     void onModelReset();
@@ -114,6 +117,7 @@ protected:
     void onExpanded(const QModelIndex& index);
     void onCollapsed(const QModelIndex& index);
     void onMuteLayerButtonPushed();
+    void onLockLayerButtonPushed();
 
     bool shouldExpandOrCollapseAll() const;
     void expandChildren(const QModelIndex& index);
@@ -127,8 +131,6 @@ protected:
     LayerTreeItemDelegate*   _delegate;
 
     std::unique_ptr<LayerViewMemento> _cachedModelState;
-
-    void handleTooltips(QHelpEvent* event);
 
     // the mute button area has a different implementation than
     // the target button. It is based on Maya's renderSetup

@@ -33,6 +33,7 @@ target_sources(${TARGET_NAME}
         exportTranslator.cpp
         ProxyShape.cpp
         ProxyShapeListener.cpp
+        mayaUsdInfoCommand.cpp
 )
 
 if (CMAKE_UFE_V3_FEATURES_AVAILABLE)
@@ -86,6 +87,16 @@ else()
     target_link_libraries(${TARGET_NAME}
         PRIVATE
             mayaUsd
+    )
+endif()
+
+# The mayaUsd plugin does need the mayaUsdAPI library. However, other plugins that
+# depend on it have no way of locating it currently at runtime, so it has to be
+# preloaded.
+if(IS_MACOSX OR IS_LINUX)
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsdAPI
     )
 endif()
 

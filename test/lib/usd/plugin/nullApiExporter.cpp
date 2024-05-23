@@ -113,6 +113,22 @@ REGISTER_EXPORT_JOB_CONTEXT_FCT(
     return extraArgs;
 }
 
+REGISTER_EXPORT_JOB_CONTEXT_UI_FCT(Curly)
+{
+    VtDictionary forcedSettings;
+
+    forcedSettings[UsdMayaJobExportArgsTokens->defaultCameras] = false;
+
+    // Show that we can even make some part condition on the input settings.
+    auto iter = settings.find(UsdMayaJobExportArgsTokens->animation);
+    if (iter != settings.end() && iter->second.GetWithDefault(false)) {
+        forcedSettings[UsdMayaJobExportArgsTokens->startTime] = 3.33;
+        forcedSettings[UsdMayaJobExportArgsTokens->endTime] = 4.44;
+    }
+
+    return forcedSettings;
+}
+
 REGISTER_EXPORT_JOB_CONTEXT_FCT(Moe, "Moe's special", "Test coverage of error handling part funf")
 {
     VtDictionary extraArgs;
