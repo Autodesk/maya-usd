@@ -47,7 +47,7 @@ def updateDefaultPrimCandidates(excludeMesh, excludeLight, excludeCamera):
 
 def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeCamera):
     def _getRelatives(item):
-        listInfo = cmds.listRelatives(i, fullPath=True)
+        listInfo = cmds.listRelatives(item, fullPath=True)
         if not listInfo:
             return None
         return listInfo[0]
