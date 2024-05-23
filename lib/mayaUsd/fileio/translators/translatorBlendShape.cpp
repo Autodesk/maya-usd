@@ -26,6 +26,7 @@
 #include <pxr/usd/usdSkel/blendShape.h>
 #include <pxr/usd/usdSkel/root.h>
 
+#include <maya/MFloatVectorArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnGeometryFilter.h>
@@ -38,39 +39,58 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
-
 void _AddBlendShape(
     MFnBlendShapeDeformer& blendShapeFn,
     const MObject&         originalShape,
     const MObject&         parentTransform,
     const MPointArray&     originalPoints,
+    const GfVec3f*         originalNormals,
     const VtIntArray&      pointIndices,
     const std::string      name,
     const VtVec3fArray     offsetArray,
+    const VtVec3fArray&    normalsOffsetArray,
     int                    blendShapeTargetIndex,
     float                  weight)
 {
-    MFnMesh ibMeshFn;
+    MFnMesh blendShapeMeshFn;
     MStatus status;
-    auto    newShape = ibMeshFn.copy(originalShape, parentTransform, &status);
+    auto    newShape = blendShapeMeshFn.copy(originalShape, parentTransform, &status);
 
-    MPointArray ibPoints(originalPoints);
+    MPointArray deltaPoints(originalPoints);
     for (size_t pidx = 0; pidx < pointIndices.size(); ++pidx) {
+        // USD BlendShapes doesn't require to all points to have a delta.
+        // Thus, given the indicesArray, find the actual index (index) in the original shape that
+        // will be affected that the offset on that particular position.
         int     index = pointIndices[pidx];
         MPoint  original = originalPoints[index];
         GfVec3f offset = offsetArray[pidx];
 
-        ibPoints.set(
+        deltaPoints.set(
             MPoint(original.x + offset[0], original.y + offset[1], original.z + offset[2]), index);
     }
-    ibMeshFn.setPoints(ibPoints);
+    blendShapeMeshFn.setPoints(deltaPoints);
+
+    // Applying blendShape normals
+    if (!normalsOffsetArray.empty()) {
+        MFloatVectorArray deltaNormals(normalsOffsetArray.size());
+        for (size_t i = 0; i < normalsOffsetArray.size(); ++i) {
+            MFloatVector deltaNormal(
+                originalNormals[i][0], originalNormals[i][1], originalNormals[i][2]);
+
+            deltaNormal.x += normalsOffsetArray[i][0];
+            deltaNormal.y += normalsOffsetArray[i][1];
+            deltaNormal.z += normalsOffsetArray[i][2];
+            deltaNormals.set(deltaNormal, i);
+        }
+        blendShapeMeshFn.setNormals(deltaNormals);
+    }
 
     MFnDependencyNode ibDepNodeFn;
     ibDepNodeFn.setObject(newShape);
     ibDepNodeFn.setName(MString(name.c_str()));
 
     blendShapeFn.addTarget(originalShape, blendShapeTargetIndex, newShape, weight);
-    ibMeshFn.setIntermediateObject(true);
+    blendShapeMeshFn.setIntermediateObject(true);
 }
 
 bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReaderContext* context)
@@ -79,6 +99,8 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
         return false;
     }
 
+    // It's required that the meshPrim with the blendShapes already had it's equivalent Maya node
+    // created and properly registered by the writer
     MObject objToBlendShape = context->GetMayaNode(meshPrim.GetPath(), false);
     if (objToBlendShape.isNull()) {
         return true;
@@ -110,6 +132,12 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
     MPointArray originalPoints;
     originalMeshFn.getPoints(originalPoints);
     const size_t originalNumVertices = originalPoints.length();
+
+    // There's no easy way to access the mesh's original normals.
+    // This is how it's done in other places when those are needed.
+    const float* normals = originalMeshFn.getRawNormals(&status);
+    CHECK_MSTATUS_AND_RETURN(status, false)
+    const GfVec3f* originalNormals = reinterpret_cast<const GfVec3f*>(normals);
 
     MFnBlendShapeDeformer blendFn;
     const auto            blendShapeObj
@@ -149,11 +177,13 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
             originalShape,
             parentTransform,
             originalPoints,
+            originalNormals,
             pointIndices,
             blendShapeName,
             deltaPoints,
+            deltaNormals,
             targetIdx,
-            1.0f);
+            1.0f); // The original blendShape always has full weight of 1.0f
 
         // After adding the main blendShape - now add all the in-betweens
 
@@ -169,7 +199,7 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
             float             ibWeight = 0.f;
             currentInBetween.GetWeight(&ibWeight);
 
-            VtVec3fArray inBetweenDeltaPoints;
+            VtVec3fArray inBetweenDeltaPoints, inBetweenNormals;
             currentInBetween.GetOffsets(&inBetweenDeltaPoints);
             if (inBetweenDeltaPoints.empty()) {
                 TF_RUNTIME_ERROR(
@@ -179,15 +209,19 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
                 continue;
             }
 
+            currentInBetween.GetNormalOffsets(&inBetweenNormals);
+
             // InBetween are new blendShapes added to the same target index
             _AddBlendShape(
                 blendFn,
                 originalShape,
                 parentTransform,
                 originalPoints,
+                originalNormals,
                 pointIndices,
                 inBetweenName,
                 inBetweenDeltaPoints,
+                inBetweenNormals,
                 targetIdx,
                 ibWeight);
         }
@@ -222,6 +256,10 @@ bool UsdMayaTranslatorBlendShape::ReadAnimations(
     // So it's necessary to find the the indices only for those on the current mesh prim.
     for (const TfToken& token : skinnedBlendShapes) {
         const auto iter = std::find(animBlendShapes.begin(), animBlendShapes.end(), token);
+        // Couldn't find the blendShape token in the animation prim. Probably not animated
+        if (iter == animBlendShapes.end()) {
+            continue;
+        }
         const auto idx = static_cast<int>(std::distance(animBlendShapes.begin(), iter));
         if (idx >= 0) {
             correctBlendShapeIndices.emplace_back(idx);
