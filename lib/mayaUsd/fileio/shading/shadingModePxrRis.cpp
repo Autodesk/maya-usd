@@ -273,11 +273,11 @@ private:
         UsdShadeMaterial* const                mat,
         SdfPathSet* const                      boundPrimPaths) override
     {
-        const UsdMayaShadingModeExportContext::AssignmentVector& assignments
+        const UsdMayaShadingModeExportContext::AssignmentsInfo& assignments
             = context.GetAssignments();
 
         UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments);
-        context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
+        context.BindStandardMaterialPrim(materialPrim, assignments.assignments, boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
         if (!material) {
             return;

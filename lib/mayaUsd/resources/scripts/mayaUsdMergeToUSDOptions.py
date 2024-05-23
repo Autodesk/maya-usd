@@ -263,6 +263,7 @@ def getDefaultMergeToUSDOptionsDict():
         "exportDisplayColor":       1,
         "exportColorSets":          1,
         "exportMaterials":          1,
+        "exportAssignedMaterials":  1,
         "exportComponentTags":      1,
         "defaultMeshScheme":        "catmullClark",
         "animation":                1,
