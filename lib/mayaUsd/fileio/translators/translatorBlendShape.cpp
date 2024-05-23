@@ -52,6 +52,12 @@ void _AddBlendShape(
     int                    blendShapeTargetIndex,
     float                  weight)
 {
+    if (offsetArray.size() != pointIndices.size()) {
+        TF_RUNTIME_ERROR(
+            "BlendShape <%s> doesn't match the number of offset points.", name.c_str());
+        return;
+    }
+
     MFnMesh blendShapeMeshFn;
     MStatus status;
     auto    newShape = blendShapeMeshFn.copy(originalShape, parentTransform, &status);
