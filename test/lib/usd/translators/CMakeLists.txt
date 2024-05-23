@@ -24,7 +24,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportOpenLayer.py
     testUsdExportOverImport.py
     testUsdExportUsdPreviewSurface.py
-    testUsdExportParentScope.py
+    testUsdExportRootPrim.py
     testUsdExportTypes.py
 
     # To investigate: following test asserts in MFnParticleSystem, but passes.
@@ -41,7 +41,7 @@ set(TEST_SCRIPT_FILES
     # # XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdExportRfMLight.py
     testUsdExportRoots.py
-    testUsdExportRootsAndParentScope.py
+    testUsdExportRootsAndRootPrim.py
     testUsdExportSelection.py
     testUsdExportSelectionHierarchy.py
     testUsdExportSkeleton.py

@@ -636,6 +636,12 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , worldspace(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->worldspace))
     , writeDefaults(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->writeDefaults))
     , parentScope(extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->parentScope))
+    , rootPrim(extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->rootPrim))
+    , rootPrimType(extractToken(
+          userArgs,
+          UsdMayaJobExportArgsTokens->rootPrimType,
+          UsdMayaJobExportArgsTokens->scope,
+          { UsdMayaJobExportArgsTokens->xform }))
     , renderLayerMode(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->renderLayerMode,
@@ -735,7 +741,8 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "normalizeNurbs: " << TfStringify(exportArgs.normalizeNurbs) << std::endl
         << "preserveUVSetNames: " << TfStringify(exportArgs.preserveUVSetNames) << std::endl
         << "writeDefaults: " << TfStringify(exportArgs.writeDefaults) << std::endl
-        << "parentScope: " << exportArgs.parentScope << std::endl
+        << "parentScope: " << exportArgs.parentScope << std::endl // Deprecated
+        << "rootPrim: " << exportArgs.parentScope << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "disableModelKindProcessor: " << exportArgs.disableModelKindProcessor << std::endl
@@ -827,7 +834,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);
-        for (int i = 0; i < (int)optionList.length(); ++i) {
+        for (unsigned int i = 0; i < optionList.length(); ++i) {
             theOption.clear();
             optionList[i].split('=', theOption);
             if (theOption.length() != 2) {
@@ -902,8 +909,15 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
                         return MS::kFailure;
                     }
                 }
+
+                // Note: when round-tripping settings, some extra settings are not part
+                //       of the guiding dictionary. Ignore them.
+                const static bool reportError = false;
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
-                    argName, theOption[1].asChar(), UsdMayaJobExportArgs::GetGuideDictionary());
+                    argName,
+                    theOption[1].asChar(),
+                    UsdMayaJobExportArgs::GetGuideDictionary(),
+                    reportError);
             }
         }
     }
@@ -997,7 +1011,9 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->normalizeNurbs] = false;
         d[UsdMayaJobExportArgsTokens->preserveUVSetNames] = false;
         d[UsdMayaJobExportArgsTokens->writeDefaults] = false;
-        d[UsdMayaJobExportArgsTokens->parentScope] = std::string();
+        d[UsdMayaJobExportArgsTokens->parentScope] = std::string(); // Deprecated
+        d[UsdMayaJobExportArgsTokens->rootPrim] = std::string();
+        d[UsdMayaJobExportArgsTokens->rootPrimType] = UsdMayaJobExportArgsTokens->scope.GetString();
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->renderableOnly] = false;
@@ -1094,7 +1110,9 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->normalizeNurbs] = _boolean;
         d[UsdMayaJobExportArgsTokens->preserveUVSetNames] = _boolean;
         d[UsdMayaJobExportArgsTokens->writeDefaults] = _boolean;
-        d[UsdMayaJobExportArgsTokens->parentScope] = _string;
+        d[UsdMayaJobExportArgsTokens->parentScope] = _string; // Deprecated
+        d[UsdMayaJobExportArgsTokens->rootPrim] = _string;
+        d[UsdMayaJobExportArgsTokens->rootPrimType] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = _string;
         d[UsdMayaJobExportArgsTokens->renderableOnly] = _boolean;
@@ -1203,6 +1221,46 @@ UsdMayaJobImportArgs UsdMayaJobImportArgs::CreateFromDictionary(
     }
 
     return UsdMayaJobImportArgs(allUserArgs, importWithProxyShapes, timeInterval);
+}
+
+/* static */
+MStatus UsdMayaJobImportArgs::GetDictionaryFromEncodedOptions(
+    const MString& optionsString,
+    VtDictionary*  toFill)
+{
+    if (!toFill)
+        return MS::kFailure;
+
+    VtDictionary& userArgs = *toFill;
+
+    // Get the options
+    if (optionsString.length() > 0) {
+        MStringArray optionList;
+        MStringArray theOption;
+        optionsString.split(';', optionList);
+        for (unsigned int i = 0; i < optionList.length(); ++i) {
+            theOption.clear();
+            optionList[i].split('=', theOption);
+            if (theOption.length() != 2) {
+                continue;
+            }
+
+            // Note: if some argument needs special handling, do like in the
+            //       same function in the export version in UsdMayaJobExportArgs
+            std::string argName(theOption[0].asChar());
+
+            // Note: when round-tripping settings, some extra settings are not part
+            //       of the guiding dictionary. Ignore them.
+            const static bool reportError = false;
+            userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
+                argName,
+                theOption[1].asChar(),
+                UsdMayaJobImportArgs::GetGuideDictionary(),
+                reportError);
+        }
+    }
+
+    return MS::kSuccess;
 }
 
 /* static */

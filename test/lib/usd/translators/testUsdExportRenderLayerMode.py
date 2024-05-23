@@ -204,10 +204,10 @@ class testUsdExportRenderLayerMode(unittest.TestCase):
         # layer is active.
         self._VerifyModelingVariantMode(stage)
 
-    def testModelingVariantModeWithParentScope(self):
+    def testModelingVariantModeWithRootPrim(self):
         stage = self._GetExportedStage(self._GetDefaultRenderLayerName(),
                                        renderLayerMode='modelingVariant',
-                                       parentScope='newTopLevel')
+                                       rootPrim='newTopLevel')
 
         self._VerifyModelingVariantMode(
             stage,

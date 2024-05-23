@@ -90,6 +90,9 @@ public:
     Ufe::ProjectionUndoableCommand::Ptr projectionCmd(Ufe::Camera::Projection projection) override;
     Ufe::Camera::Projection             projection() const override;
 
+#ifdef UFE_CAMERA_HAS_RENDERABLE
+    bool renderable() const override;
+#endif // UFE_CAMERA_HAS_RENDERABLE
 private:
     UsdSceneItem::Ptr fItem;
 

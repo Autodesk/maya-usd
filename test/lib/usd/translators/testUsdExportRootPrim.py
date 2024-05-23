@@ -28,31 +28,41 @@ from pxr import Gf
 
 import fixturesUtils
 
-class testUsdExportParentScope(unittest.TestCase):
+class testUsdExportRootPrim(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
 
-        filePath = os.path.join(inputPath, "UsdExportParentScopeTest", "UsdExportParentScopeTest.ma")
+        filePath = os.path.join(inputPath, "UsdExportRootPrimTest", "UsdExportRootPrimTest.ma")
         cmds.file(filePath, force=True, open=True)
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testExportParentScope(self):
-        usdFile = os.path.abspath('UsdExportParentScope_testParentScope.usda')
+    def testExportRootPrim(self):
+        usdFile = os.path.abspath('UsdExportRootPrim_testRootPrim.usda')
         cmds.usdExport(mergeTransformAndShape=False, exportInstances=False,
-            shadingMode='none', parentScope='testScope', file=usdFile, frameRange=(1, 1))
+            shadingMode='none', rootPrim='testRoot', file=usdFile, frameRange=(1, 1))
 
         stage = Usd.Stage.Open(usdFile)
 
-        p = UsdGeom.Mesh.Get(stage, '/testScope/pSphere1/pSphereShape1')
+        p = UsdGeom.Mesh.Get(stage, '/testRoot/pSphere1/pSphereShape1')
         self.assertTrue(p.GetPrim().IsValid())
 
-    def testExportNoParentScope(self):
-        usdFile = os.path.abspath('UsdExportParentScope_testNoParentScope.usda')
+    def testExportRootPrimType(self):
+        usdFile = os.path.abspath('UsdExportRootPrim_testRootPrim.usda')
+        cmds.usdExport(mergeTransformAndShape=False, exportInstances=False,
+            shadingMode='none', rootPrim='testRoot', rootPrimType='xform', file=usdFile, frameRange=(1, 1))
+
+        stage = Usd.Stage.Open(usdFile)
+
+        p = UsdGeom.Mesh.Get(stage, '/testRoot')
+        self.assertEqual(p.GetPrim().GetPrimTypeInfo().GetTypeName(), "Xform")
+
+    def testExportNoRootPrim(self):
+        usdFile = os.path.abspath('UsdExportRootPrim_testNoRootPrim.usda')
         cmds.usdExport(mergeTransformAndShape=False, exportInstances=False,
             shadingMode='none', file=usdFile, frameRange=(1, 1))
 

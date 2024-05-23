@@ -31,12 +31,10 @@ import ufe
 import ufeUtils, testUtils
 
 import os
-import re
 import sys
 
 mayaSeparator = "|"
-
-prRe = re.compile('Preview Release ([0-9]+)')
+BASIC_CAMERA_DEFAULT_OFFSET = 28
 
 def loadPlugin(pluginName):
     """ 
@@ -250,43 +248,6 @@ def createSingleSphereMayaScene(directory=None):
     cmds.file(save=True, force=True, type='mayaAscii')
     return tempMayaFile
 
-def previewReleaseVersion():
-    '''Return the Maya Preview Release version.
-
-    If the version of Maya is 2019, returns 98 (no longer supported).
-
-    If the version of Maya is 2020, returns 110 (no longer supported).
-
-    If the version of Maya is 2022, returns 122.
-
-    If the version of Maya is 2023, returns 132.
-
-    If the version of Maya is 2024, returns 142.
-
-    If the version of Maya is current and is not a Preview Release, returns
-    sys.maxsize (a very large number).  If the environment variable
-    MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE is defined, return its value instead.
-    '''
-
-    if 'MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE' in os.environ:
-        return int(os.environ['MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE'])
-
-    majorVersion = int(cmds.about(majorVersion=True))
-    if majorVersion == 2019:
-        return 98
-    elif majorVersion == 2020:
-        return 110
-    elif majorVersion == 2022:
-        return 122
-    elif majorVersion == 2023:
-        return 132
-    elif majorVersion == 2024:
-        return 142
-
-    match = prRe.match(cmds.about(v=True))
-
-    return int(match.group(1)) if match else sys.maxsize
-
 def mayaMajorVersion():
     return int(cmds.about(majorVersion=True))
 
@@ -315,6 +276,14 @@ def activeModelPanel():
     for panel in cmds.getPanel(type="modelPanel"):
         if cmds.modelEditor(panel, q=1, av=1):
             return panel
+
+def setBasicCamera(offset=BASIC_CAMERA_DEFAULT_OFFSET):
+    """
+    Sets the camera in a similar position and rotation to the default ones.
+    An offset can be specified to change the distance of the camera from the origin.
+    """
+    cmds.setAttr('persp.translate', offset, .75 * offset, offset, type='float3')
+    cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
 
 class TestProxyShapeUpdateHandler:
     def __init__(self, proxyShapeName):

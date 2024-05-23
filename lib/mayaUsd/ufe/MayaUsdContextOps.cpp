@@ -408,7 +408,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
 
             Ufe::ContextItem item(kEditAsMayaOptionsItem, kEditAsMayaOptionsLabel);
-#if (UFE_PREVIEW_VERSION_NUM >= 5007)
+#ifdef UFE_CONTEXTOPS_HAS_OPTIONBOX
             item.setMetaData(Ufe::ContextItem::kIsOptionBox, true);
 #endif
             items.emplace_back(item);

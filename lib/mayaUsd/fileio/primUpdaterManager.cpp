@@ -26,6 +26,7 @@
 #endif
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
@@ -1657,6 +1658,10 @@ void PrimUpdaterManager::onProxyContentChanged(
     const MayaUsdProxyStageObjectsChangedNotice& proxyNotice)
 {
     if (_inPushPull) {
+        return;
+    }
+
+    if (LayerManager::isSaving()) {
         return;
     }
 

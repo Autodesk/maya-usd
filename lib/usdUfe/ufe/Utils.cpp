@@ -543,11 +543,11 @@ void applyCommandRestriction(
             continue;
         }
 
-        // one reason for skipping the reference is to not clash
+        // one reason for skipping the references and payloads is to not clash
         // with the over that may be created in the stage's sessionLayer.
         // another reason is that one should be able to edit a referenced prim that
         // either as over/def as long as it has a primSpec in the selected edit target layer.
-        if (spec->HasReferences()) {
+        if (spec->HasReferences() || spec->HasPayloads()) {
             break;
         }
 
@@ -822,6 +822,27 @@ void enforceAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     }
 }
 
+bool isAnyLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg /* = nullptr */)
+{
+    PXR_NS::SdfLayerHandleVector layers = stage->GetLayerStack(false);
+    for (auto layer : layers) {
+        if (!layer->IsMuted() && layer->PermissionToEdit()) {
+            return true;
+        }
+    }
+
+    if (errMsg) {
+        std::string err = TfStringPrintf(
+            "Cannot target any layers in the stage [%s] because the layers are either locked or "
+            "muted. Switching to session layer.",
+            stage->GetRootLayer()->GetIdentifier().c_str());
+
+        *errMsg = err;
+    }
+
+    return false;
+}
+
 bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg)
 {
     const auto editTarget = stage->GetEditTarget();
@@ -830,7 +851,7 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
     if (editLayer && !editLayer->PermissionToEdit()) {
         if (errMsg) {
             std::string err = TfStringPrintf(
-                "Cannot edit [%s] because it is read-only. Set PermissionToEdit = true to proceed.",
+                "Cannot edit [%s] because it is locked. Unlock it to proceed.",
                 editLayer->GetDisplayName().c_str());
 
             *errMsg = err;

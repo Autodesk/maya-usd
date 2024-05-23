@@ -117,6 +117,9 @@ void mayaStartWaitCursor()
 
 void mayaStopWaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 
+// Note: MayaUsd::ufe::getStage takes two parameters, so wrap it in a function taking only one.
+PXR_NS::UsdStageWeakPtr mayaGetStage(const Ufe::Path& path) { return MayaUsd::ufe::getStage(path); }
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -168,7 +171,7 @@ MStatus initialize()
 
     // Set the Maya specific functions required for the UsdUfe plugin to work correctly.
     UsdUfe::DCCFunctions dccFunctions;
-    dccFunctions.stageAccessorFn = MayaUsd::ufe::getStage;
+    dccFunctions.stageAccessorFn = mayaGetStage;
     dccFunctions.stagePathAccessorFn = MayaUsd::ufe::stagePath;
     dccFunctions.ufePathToPrimFn = MayaUsd::ufe::ufePathToPrim;
     dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;

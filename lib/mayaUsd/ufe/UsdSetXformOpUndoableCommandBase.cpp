@@ -21,68 +21,127 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-void warnUnimplemented(const char* msg) { TF_WARN("Illegal call to unimplemented %s", msg); }
-} // namespace
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-template <typename T>
-UsdSetXformOpUndoableCommandBase<T>::UsdSetXformOpUndoableCommandBase(
+UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
+    const PXR_NS::VtValue&     value,
+    const Ufe::Path&           path,
+    const PXR_NS::UsdTimeCode& writeTime)
+    : Ufe::SetVector3dUndoableCommand(path)
+    , _writeTime(writeTime)
+    , _newOpValue(value)
+    , _isPrepared(false)
+    , _canUpdateValue(true)
+    , _opCreated(false)
+{
+}
+
+UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
     const Ufe::Path&   path,
     const UsdTimeCode& writeTime)
-    : Ufe::SetVector3dUndoableCommand(path)
-    , _readTime(getTime(path)) // Always read from proxy shape time.
-    , _writeTime(writeTime)
+    : UsdSetXformOpUndoableCommandBase({}, path, writeTime)
 {
 }
 
-template <typename T> void UsdSetXformOpUndoableCommandBase<T>::execute()
+void UsdSetXformOpUndoableCommandBase::execute()
 {
-    warnUnimplemented("UsdSetXformOpUndoableCommandBase::execute()");
+    // Create the attribute and cache the initial value,
+    // if this is the first time we're executed, or redo
+    // the attribute creation.
+    recreateOpIfNeeded();
+
+    // Set the new value.
+    prepareAndSet(_newOpValue);
+    _canUpdateValue = true;
 }
 
-template <typename T> void UsdSetXformOpUndoableCommandBase<T>::undo()
+void UsdSetXformOpUndoableCommandBase::undo()
 {
-    if (_state == kInitial) {
-        // Spurious call from Maya, ignore.
-        _state = kInitialUndoCalled;
+    // If the command was never called at all, do nothing.
+    // Maya can start by calling undo.
+    if (!_isPrepared)
         return;
-    }
-    _undoableItem.undo();
-    _state = kUndone;
+
+    // Restore the initial value and potentially remove the creatd attributes.
+    setValue(_initialOpValue, _writeTime);
+    removeOpIfNeeded();
+    _canUpdateValue = false;
 }
 
-template <typename T> void UsdSetXformOpUndoableCommandBase<T>::redo()
+void UsdSetXformOpUndoableCommandBase::redo()
 {
-    warnUnimplemented("UsdSetXformOpUndoableCommandBase::redo()");
+    // Redo the attribute creation if the attribute was already created
+    // but then undone.
+    recreateOpIfNeeded();
+
+    // Set the new value, potentially creating the attribute if it
+    // did not exists or caching the initial value if this is the
+    // first time the command is executed, redone or undone.
+    prepareAndSet(_newOpValue);
+    _canUpdateValue = true;
 }
 
-template <typename T> void UsdSetXformOpUndoableCommandBase<T>::handleSet(const T& v)
+void UsdSetXformOpUndoableCommandBase::updateNewValue(const VtValue& v)
 {
-    if (_state == kInitialUndoCalled) {
-        // Spurious call from Maya, ignore.  Otherwise, we set a value that
-        // is identical to the previous, the UsdUndoBlock does not capture
-        // any invertFunc's, and subsequent undo() calls undo nothing.
-        _state = kInitial;
-    } else if (_state == kInitial) {
-        UsdUndoBlock undoBlock(&_undoableItem);
-        setValue(v);
-        _state = kExecute;
-    } else if (_state == kExecute) {
-        setValue(v);
-    } else if (_state == kUndone) {
-        _undoableItem.redo();
-        _state = kRedone;
-    }
+    // Redo the attribute creation if the attribute was already created
+    // but then undone.
+    recreateOpIfNeeded();
+
+    // Update the value that will be set.
+    if (_canUpdateValue)
+        _newOpValue = v;
+
+    // Set the new value, potentially creating the attribute if it
+    // did not exists or caching the initial value if this is the
+    // first time the command is executed, redone or undone.
+    prepareAndSet(_newOpValue);
+    _canUpdateValue = true;
 }
 
-// Explicit instantiation for transform ops that can be set from matrices and
-// vectors.
-template class UsdSetXformOpUndoableCommandBase<GfVec3f>;
-template class UsdSetXformOpUndoableCommandBase<GfVec3d>;
-template class UsdSetXformOpUndoableCommandBase<GfMatrix4d>;
+void UsdSetXformOpUndoableCommandBase::prepareAndSet(const VtValue& v)
+{
+    if (v.IsEmpty())
+        return;
+
+    prepareOpIfNeeded();
+    setValue(v, _writeTime);
+}
+
+void UsdSetXformOpUndoableCommandBase::prepareOpIfNeeded()
+{
+    if (_isPrepared)
+        return;
+
+    createOpIfNeeded(_opCreationUndo);
+    _initialOpValue = getValue(_writeTime);
+    _isPrepared = true;
+    _opCreated = true;
+}
+
+void UsdSetXformOpUndoableCommandBase::recreateOpIfNeeded()
+{
+    if (!_isPrepared)
+        return;
+
+    if (_opCreated)
+        return;
+
+    _opCreationUndo.redo();
+    _opCreated = true;
+}
+
+void UsdSetXformOpUndoableCommandBase::removeOpIfNeeded()
+{
+    if (!_isPrepared)
+        return;
+
+    if (!_opCreated)
+        return;
+
+    _opCreationUndo.undo();
+    _opCreated = false;
+}
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

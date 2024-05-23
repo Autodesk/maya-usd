@@ -1141,9 +1141,16 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
         }
 
         MString fragName, inputName, outputName;
-        MStatus status = fragmentManager->getColorManagementFragmentInfo(
-            colorSpace, fragName, inputName, outputName);
-        if (!status) {
+        if (!MayaUsd::ColorManagementPreferences::isUnknownColorSpace(colorSpace.asChar())) {
+            MStatus status = fragmentManager->getColorManagementFragmentInfo(
+                colorSpace, fragName, inputName, outputName);
+            if (!status) {
+                // Maya does not know about this color space. Remember that.
+                MayaUsd::ColorManagementPreferences::addUnknownColorSpace(colorSpace.asChar());
+                continue;
+            }
+        } else {
+            // Don't know how to handle that color space.
             continue;
         }
 
@@ -2700,14 +2707,19 @@ TfToken _RequiresColorManagement(
     }
 
     MString fragName, fragInput, fragOutput;
-    if (fragmentManager->getColorManagementFragmentInfo(
-            sourceColorSpace.c_str(), fragName, fragInput, fragOutput)) {
-        std::string untypedNodeDefId
-            = MaterialXMaya::OgsFragment::registerOCIOFragment(fragName.asChar());
-        if (!untypedNodeDefId.empty()) {
-            cmInputName = TfToken(fragInput.asChar());
-            cmOutputName = TfToken(fragOutput.asChar());
-            return TfToken((untypedNodeDefId + colorOutput->getType()));
+    if (!MayaUsd::ColorManagementPreferences::isUnknownColorSpace(sourceColorSpace)) {
+        if (fragmentManager->getColorManagementFragmentInfo(
+                sourceColorSpace.c_str(), fragName, fragInput, fragOutput)) {
+            std::string untypedNodeDefId
+                = MaterialXMaya::OgsFragment::registerOCIOFragment(fragName.asChar());
+            if (!untypedNodeDefId.empty()) {
+                cmInputName = TfToken(fragInput.asChar());
+                cmOutputName = TfToken(fragOutput.asChar());
+                return TfToken((untypedNodeDefId + colorOutput->getType()));
+            }
+        } else {
+            // Maya does not know about this color space. Remember that.
+            MayaUsd::ColorManagementPreferences::addUnknownColorSpace(sourceColorSpace);
         }
     }
 #else
@@ -3005,6 +3017,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
         }
 
         shaderInstance = shaderMgr->getFragmentShader(fragmentName, "outColor", true);
+        shaderInstance->addInputFragment("NwFaceCameraIfNAN", "output", "Nw");
 
         // Find named primvar readers:
         MStringArray parameterList;
@@ -3171,6 +3184,23 @@ HdVP2Material::CompiledNetwork::_CreateShaderInstance(const HdMaterialNetwork& m
     return shaderInstance;
 }
 
+/*! \brief  Sets whether the compiled network's shaders are transparent or not.
+ */
+MStatus HdVP2Material::CompiledNetwork::SetShaderIsTransparent(bool isTransparent)
+{
+    MStatus status;
+    if (_surfaceShader && status) {
+        status = _surfaceShader->setIsTransparent(isTransparent);
+    }
+    if (_frontFaceShader && status) {
+        status = _frontFaceShader->setIsTransparent(isTransparent);
+    }
+    if (_pointShader && status) {
+        status = _pointShader->setIsTransparent(isTransparent);
+    }
+    return status;
+}
+
 /*! \brief  Updates parameters for the surface shader.
  */
 void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
@@ -3192,7 +3222,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
 
     const bool matIsTransparent = _IsTransparent(mat);
     if (matIsTransparent != _surfaceShader->isTransparent()) {
-        _surfaceShader->setIsTransparent(matIsTransparent);
+        SetShaderIsTransparent(matIsTransparent);
     }
 
     for (const HdMaterialNode& node : mat.nodes) {

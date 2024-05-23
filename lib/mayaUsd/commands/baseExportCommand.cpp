@@ -155,7 +155,12 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportBlendShapes.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
-        kParentScopeFlag, UsdMayaJobExportArgsTokens->parentScope.GetText(), MSyntax::kString);
+        kParentScopeFlag,
+        UsdMayaJobExportArgsTokens->parentScope.GetText(),
+        MSyntax::kString); // Deprecated
+    syntax.addFlag(kRootPrimFlag, UsdMayaJobExportArgsTokens->rootPrim.GetText(), MSyntax::kString);
+    syntax.addFlag(
+        kRootPrimTypeFlag, UsdMayaJobExportArgsTokens->rootPrimType.GetText(), MSyntax::kString);
     syntax.addFlag(
         kRenderableOnlyFlag, UsdMayaJobExportArgsTokens->renderableOnly.GetText(), MSyntax::kNoArg);
     syntax.addFlag(

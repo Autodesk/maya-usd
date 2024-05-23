@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         layers.cpp
         loadRules.cpp
         loadRulesText.cpp
+		uiCallback.cpp
         usdUtils.cpp
         Utils.cpp
 )
@@ -20,6 +21,7 @@ set(HEADERS
     editRouterContext.h
     layers.h
     loadRules.h
+	uiCallback.h
     usdUtils.h
     Utils.h
 )

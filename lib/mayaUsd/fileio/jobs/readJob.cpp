@@ -676,6 +676,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
                     }
                 }
                 deletePrototypeMod.deleteNode(prototypeObject, false);
+                mNewNodeRegistry.erase(prototypePath.GetString());
             }
             prototypesLoop.loopAdvance();
         }

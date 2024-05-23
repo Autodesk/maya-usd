@@ -82,16 +82,38 @@ void UsdMayaJobContextRegistry::RegisterExportJobContext(
                     itFound->niceName.GetText());
             }
             // Fill the export part:
-            ContextInfo updatedInfo {
-                key,        itFound->niceName,          TfToken(description),
-                enablerFct, itFound->importDescription, itFound->importEnablerCallback
-            };
+            ContextInfo updatedInfo(*itFound);
+            updatedInfo.exportDescription = TfToken(description);
+            updatedInfo.exportEnablerCallback = enablerFct;
             _jobContextReg.erase(updatedInfo);
             _jobContextReg.insert(updatedInfo);
         } else {
             TF_CODING_ERROR("Multiple enablers for export job context %s", jobContext.c_str());
         }
     }
+}
+
+void UsdMayaJobContextRegistry::SetExportOptionsUI(
+    const std::string& jobContext,
+    UIFn               uiFct,
+    bool               fromPython)
+{
+    const ContextInfo key { TfToken(jobContext), {}, {}, {}, {}, {} };
+    auto              iter = _jobContextReg.find(key);
+    if (iter == _jobContextReg.end()) {
+        TF_CODING_ERROR("Export job context %s does not exists", jobContext.c_str());
+        return;
+    }
+
+    // Note: the container for the plugin info is a set so it cannot be modified.
+    //       We need to copy the entry, modify the copy, remove the old entry and
+    //       insert the newly updated entry.
+
+    ContextInfo updatedInfo(*iter);
+    updatedInfo.exportUICallback = uiFct;
+    UsdMaya_RegistryHelper::AddUnloader([key]() { _jobContextReg.erase(key); }, fromPython);
+    _jobContextReg.erase(iter);
+    _jobContextReg.insert(updatedInfo);
 }
 
 void UsdMayaJobContextRegistry::RegisterImportJobContext(
@@ -122,18 +144,38 @@ void UsdMayaJobContextRegistry::RegisterImportJobContext(
                     itFound->niceName.GetText());
             }
             // Fill the import part:
-            ContextInfo updatedInfo { key,
-                                      itFound->niceName,
-                                      itFound->exportDescription,
-                                      itFound->exportEnablerCallback,
-                                      TfToken(description),
-                                      enablerFct };
+            ContextInfo updatedInfo(*itFound);
+            updatedInfo.importDescription = TfToken(description);
+            updatedInfo.importEnablerCallback = enablerFct;
             _jobContextReg.erase(updatedInfo);
             _jobContextReg.insert(updatedInfo);
         } else {
             TF_CODING_ERROR("Multiple enablers for import job context %s", jobContext.c_str());
         }
     }
+}
+
+void UsdMayaJobContextRegistry::SetImportOptionsUI(
+    const std::string& jobContext,
+    UIFn               uiFct,
+    bool               fromPython)
+{
+    const ContextInfo key { TfToken(jobContext), {}, {}, {}, {}, {} };
+    auto              iter = _jobContextReg.find(key);
+    if (iter == _jobContextReg.end()) {
+        TF_CODING_ERROR("Import job context %s does not exist", jobContext.c_str());
+        return;
+    }
+
+    // Note: the container for the plugin info is a set so it cannot be modified.
+    //       We need to copy the entry, modify the copy, remove the old entry and
+    //       insert the newly updated entry.
+
+    ContextInfo updatedInfo(*iter);
+    updatedInfo.importUICallback = uiFct;
+    UsdMaya_RegistryHelper::AddUnloader([key]() { _jobContextReg.erase(key); }, fromPython);
+    _jobContextReg.erase(iter);
+    _jobContextReg.insert(updatedInfo);
 }
 
 TfTokenVector UsdMayaJobContextRegistry::_ListJobContexts()

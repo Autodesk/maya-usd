@@ -31,7 +31,7 @@ namespace ufe {
 
 namespace {
 
-class CommonAPITranslateUndoableCmd : public UsdSetXformOpUndoableCommandBase<GfVec3d>
+class CommonAPITranslateUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
     CommonAPITranslateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
@@ -40,11 +40,31 @@ public:
     {
     }
 
-    void setValue(const GfVec3d& v) override { _commonAPI.SetTranslate(v, writeTime()); }
+    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    {
+        UsdUndoBlock undoBlock(&undoableItem);
+        _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpTranslate);
+    }
+
+    void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
+    {
+        // Note: the value passed in is either the initial value returned
+        //       by the getValue function below or a new value passed to
+        //       the set function below. In both cases, we are guaranteed
+        //       that it will be a GfVec3d.
+        _commonAPI.SetTranslate(v.Get<GfVec3d>(), writeTime);
+    }
+
+    VtValue getValue(const UsdTimeCode& readTime) const override
+    {
+        GfVec3d translation;
+        _commonAPI.GetXformVectors(&translation, nullptr, nullptr, nullptr, nullptr, readTime);
+        return VtValue(translation);
+    }
 
     bool set(double x, double y, double z) override
     {
-        handleSet(GfVec3d(x, y, z));
+        updateNewValue(VtValue(GfVec3d(x, y, z)));
         return true;
     }
 
@@ -52,7 +72,7 @@ private:
     UsdGeomXformCommonAPI _commonAPI;
 };
 
-class CommonAPIRotateUndoableCmd : public UsdSetXformOpUndoableCommandBase<GfVec3f>
+class CommonAPIRotateUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
     CommonAPIRotateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
@@ -61,14 +81,31 @@ public:
     {
     }
 
-    void setValue(const GfVec3f& v) override
+    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
     {
-        _commonAPI.SetRotate(v, UsdGeomXformCommonAPI::RotationOrderXYZ, writeTime());
+        UsdUndoBlock undoBlock(&undoableItem);
+        _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpRotate);
+    }
+
+    void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
+    {
+        // Note: the value passed in is either the initial value returned
+        //       by the getValue function below or a new value passed to
+        //       the set function below. In both cases, we are guaranteed
+        //       that it will be a GfVec3f.
+        _commonAPI.SetRotate(v.Get<GfVec3f>(), UsdGeomXformCommonAPI::RotationOrderXYZ, writeTime);
+    }
+
+    VtValue getValue(const UsdTimeCode& readTime) const override
+    {
+        GfVec3f rotation;
+        _commonAPI.GetXformVectors(nullptr, &rotation, nullptr, nullptr, nullptr, readTime);
+        return VtValue(rotation);
     }
 
     bool set(double x, double y, double z) override
     {
-        handleSet(GfVec3f(x, y, z));
+        updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
 
@@ -76,7 +113,7 @@ private:
     UsdGeomXformCommonAPI _commonAPI;
 };
 
-class CommonAPIScaleUndoableCmd : public UsdSetXformOpUndoableCommandBase<GfVec3f>
+class CommonAPIScaleUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 
 public:
@@ -86,11 +123,31 @@ public:
     {
     }
 
-    void setValue(const GfVec3f& v) override { _commonAPI.SetScale(v, writeTime()); }
+    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    {
+        UsdUndoBlock undoBlock(&undoableItem);
+        _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpScale);
+    }
+
+    void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
+    {
+        // Note: the value passed in is either the initial value returned
+        //       by the getValue function below or a new value passed to
+        //       the set function below. In both cases, we are guaranteed
+        //       that it will be a GfVec3d.
+        _commonAPI.SetScale(v.Get<GfVec3f>(), writeTime);
+    }
+
+    VtValue getValue(const UsdTimeCode& readTime) const override
+    {
+        GfVec3f scale;
+        _commonAPI.GetXformVectors(nullptr, nullptr, &scale, nullptr, nullptr, readTime);
+        return VtValue(scale);
+    }
 
     bool set(double x, double y, double z) override
     {
-        handleSet(GfVec3f(x, y, z));
+        updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
 
@@ -98,7 +155,7 @@ private:
     UsdGeomXformCommonAPI _commonAPI;
 };
 
-class CommonAPIPivotUndoableCmd : public UsdSetXformOpUndoableCommandBase<GfVec3f>
+class CommonAPIPivotUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
     CommonAPIPivotUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
@@ -107,11 +164,31 @@ public:
     {
     }
 
-    void setValue(const GfVec3f& v) override { _commonAPI.SetPivot(v, writeTime()); }
+    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    {
+        UsdUndoBlock undoBlock(&undoableItem);
+        _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpPivot);
+    }
+
+    void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
+    {
+        // Note: the value passed in is either the initial value returned
+        //       by the getValue function below or a new value passed to
+        //       the set function below. In both cases, we are guaranteed
+        //       that it will be a GfVec3f.
+        _commonAPI.SetPivot(v.Get<GfVec3f>(), writeTime);
+    }
+
+    VtValue getValue(const UsdTimeCode& readTime) const override
+    {
+        GfVec3f pivot;
+        _commonAPI.GetXformVectors(nullptr, nullptr, nullptr, &pivot, nullptr, readTime);
+        return VtValue(pivot);
+    }
 
     bool set(double x, double y, double z) override
     {
-        handleSet(GfVec3f(x, y, z));
+        updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
 

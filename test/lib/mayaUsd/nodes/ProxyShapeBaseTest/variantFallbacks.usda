@@ -1,0 +1,56 @@
+#usda 1.0
+(
+    
+)
+
+
+def Xform "group"
+(
+    prepend variantSets = "geo"
+    
+)
+{
+    def Xform "GEO"
+    {
+    }
+	
+   variantSet "geo" = {
+        "base" {
+            over "GEO" (
+                payload = @meshRender.usda@
+            )
+            {
+            }
+
+        }
+      
+        "render_high" (
+            prepend variantSets = "geo_vis"
+        ) {
+            over "GEO" (
+                payload = @meshRender.usda@
+            )
+            {
+            }
+            variantSet "geo_vis" = {
+                "default" {
+
+                }
+                "preview" {
+                    over "GEO"
+                    {
+                        rel proxyPrim = </root/GEO_PROXY>
+                        uniform token purpose = "render"
+                    }
+
+                    def Xform "GEO_PROXY" (
+                        payload = @meshProxy.usda@
+                    )
+                    {
+                        uniform token purpose = "proxy"
+                    }
+                }
+            }
+        }       
+    }
+}

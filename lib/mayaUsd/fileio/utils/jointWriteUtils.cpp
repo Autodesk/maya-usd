@@ -116,7 +116,8 @@ void UsdMayaJointUtil::getJointHierarchyComponents(
 VtTokenArray UsdMayaJointUtil::getJointNames(
     const std::vector<MDagPath>& joints,
     const MDagPath&              rootDagPath,
-    bool                         stripNamespaces)
+    bool                         stripNamespaces,
+    const PcpMapFunction&        rootMapFunction)
 {
     MDagPath skelXformPath, jointHierarchyRootPath;
     getJointHierarchyComponents(rootDagPath, &skelXformPath, &jointHierarchyRootPath);
@@ -139,6 +140,13 @@ VtTokenArray UsdMayaJointUtil::getJointNames(
             jointHierarchyRootPath,
             /*mergeTransformAndShape*/ false,
             stripNamespaces);
+
+        if (!rootMapFunction.IsNull()) {
+            SdfPath mappedRootPath = rootMapFunction.MapSourceToTarget(rootPath);
+            if (!mappedRootPath.IsEmpty()) {
+                rootPath = mappedRootPath;
+            }
+        }
     }
 
     VtTokenArray result;
@@ -146,6 +154,13 @@ VtTokenArray UsdMayaJointUtil::getJointNames(
 
         SdfPath path = UsdMayaUtil::MDagPathToUsdPath(
             joint, /*mergeTransformAndShape*/ false, stripNamespaces);
+
+        if (!rootMapFunction.IsNull()) {
+            SdfPath mappedPath = rootMapFunction.MapSourceToTarget(path);
+            if (!mappedPath.IsEmpty()) {
+                path = mappedPath;
+            }
+        }
         result.push_back(path.MakeRelativePath(rootPath).GetToken());
     }
     return result;

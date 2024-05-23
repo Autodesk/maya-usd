@@ -38,8 +38,6 @@ namespace ufe {
 //------------------------------------------------------------------------------
 // Global variables & macros
 //------------------------------------------------------------------------------
-extern UsdStageMap g_StageMap;
-
 //------------------------------------------------------------------------------
 // MayaStagesSubject
 //------------------------------------------------------------------------------
@@ -150,7 +148,7 @@ void MayaStagesSubject::clearListeners()
     // - get their Dag paths.
     // - convert the Dag paths to UFE paths.
     // - get their stage.
-    g_StageMap.setDirty();
+    UsdStageMap::getInstance().setDirty();
 }
 
 void MayaStagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
@@ -176,7 +174,7 @@ void MayaStagesSubject::setupListeners()
     bool expectedState = false;
     if (stageSetGuardCount.compare_exchange_strong(expectedState, true)) {
         // We should have no listeners and stage map is dirty.
-        TF_VERIFY(g_StageMap.isDirty());
+        TF_VERIFY(UsdStageMap::getInstance().isDirty());
         TF_VERIFY(fStageListeners.empty());
 
         auto me = PXR_NS::TfCreateWeakPtr(this);

@@ -97,7 +97,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     (mergeTransformAndShape) \
     (normalizeNurbs) \
     (preserveUVSetNames) \
+    /* Deprecated and replaced by rootPrim */ \
     (parentScope) \
+    (rootPrim) \
+    (rootPrimType) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
     (renderableOnly) \
@@ -136,7 +139,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     /* geomSidedness values */ \
     (derived)                             \
     (single)                              \
-    ((double_, "double"))
+    ((double_, "double"))                 \
+    /* root prim type values */ \
+    (scope)							   \
+	(xform)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -238,7 +244,9 @@ struct UsdMayaJobExportArgs
 
     /// This is the path of the USD prim under which *all* prims will be
     /// authored.
-    const SdfPath      parentScope;
+    const SdfPath      parentScope; // Deprecated, use rootPrim instead.
+    const SdfPath      rootPrim;
+    const TfToken      rootPrimType;
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
     const bool         disableModelKindProcessor;
@@ -396,6 +404,14 @@ struct UsdMayaJobImportArgs
         const VtDictionary& userArgs,
         const bool          importWithProxyShapes = false,
         const GfInterval&   timeInterval = GfInterval::GetFullInterval());
+
+    /// Fills a VtDictionary from the given text-encoded options.
+    /// Issues runtime errors if some options contain values of the wrong format.
+    ///
+    /// The text encoding is in the form: name1=value1;name2=value2;...
+    MAYAUSD_CORE_PUBLIC
+    static MStatus
+    GetDictionaryFromEncodedOptions(const MString& optionsString, VtDictionary* toFill);
 
     /// Gets the default arguments dictionary for UsdMayaJobImportArgs.
     MAYAUSD_CORE_PUBLIC

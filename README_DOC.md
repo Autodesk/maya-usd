@@ -5,7 +5,9 @@
 
 ## Core Modules
 + [Common Plug-in Base Commands](lib/mayaUsd/commands/Readme.md)
-+ [Managing Translation Options](lib/mayaUsd/fileio/doc/Managing_export_options_via_JobContext_in_Python.md)
++ [Managing Translation (Import/Export) Options](lib/mayaUsd/fileio/doc/Managing_export_options_via_JobContext_in_Python.md)
++ [Example Import and Export Plugin in Python](tutorials/import-export-plugin/README.md)
++ [Example Import and Export Plugin in C++](tutorials/import-export-plugin-c++/README.md)
 + [SchemaAPI Translators](lib/mayaUsd/fileio/doc/SchemaAPI_Import_Export_in_Python.md)
 + [UFE Transform](lib/mayaUsd/ufe/UsdTransform3d.md)
 + [Undo/Redo Support](lib/mayaUsd/undo/README.md)
@@ -14,3 +16,5 @@
 + [Hydra For Maya](https://github.com/Autodesk/maya-usd/blob/release/maya-hydra/lib/mayaHydra/README.md)
 + [Layer Saving](lib/mayaUsd/nodes/Layer_Saving_Docs.md)
 + [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md)
++ [Layer Locking](doc/LayerLocking.md)
++ [Edit Routing](doc/EditRouting.md)

@@ -19,6 +19,8 @@
 
 #include "pxr/usd/sdf/layer.h"
 
+#include <mayaUsd/utils/layerLocking.h>
+
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QString>
@@ -33,7 +35,7 @@ typedef PXR_NS::UsdStageRefPtr UsdStage;
 class SessionState;
 
 /**
- * @brief The Abstact Command Hook contains all the methods which are used to modify USD layers and
+ * @brief The Abstract Command Hook contains all the methods which are used to modify USD layers and
  * stages. These methods will be "hooked" by the MayaCommandHook derived class to call maya mel
  * commands to do the work.
  *
@@ -79,6 +81,15 @@ public:
     // mute or unmute the given layer
     virtual void muteSubLayer(UsdLayer usdLayer, bool muteIt) = 0;
 
+    // Sets the lock state on a layer
+    virtual void
+    lockLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState, bool includeSubLayers)
+        = 0;
+
+    // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
+    // status.
+    virtual void refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers = false) = 0;
+
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     virtual void openUndoBracket(const QString& name) = 0;
@@ -100,8 +111,53 @@ public:
     // or has an owned root
     virtual bool isProxyShapeSharedStage(const std::string& proxyShapePath) = 0;
 
+    // Increase the count tracking if command executions are delayed.
+    void increaseDelayedCommands() { _delayCount += 1; }
+
+    // Decrease the count tracking if command executions are delayed.
+    void decreaseDelayedCommands()
+    {
+        _delayCount -= 1;
+        if (!areCommandsDelayed())
+            executeDelayedCommands();
+    }
+
+    // Verify if commands are currently delayed.
+    bool areCommandsDelayed() const { return _delayCount > 0; }
+
 protected:
+    virtual void executeDelayedCommands() = 0;
+
     SessionState* _sessionState;
+    int           _delayCount { 0 };
+};
+
+/**
+ * @brief When executing multiple commands, it may sometimes be necessary to delay.
+ *        the execution until all commands are issued. For example, when processing
+ *        multiple elements in the selection, but the command itself might change the
+ *        selection.
+ */
+class DelayAbstractCommandHook
+{
+public:
+    DelayAbstractCommandHook(AbstractCommandHook& hook)
+        : _hook(hook)
+    {
+        _hook.increaseDelayedCommands();
+    }
+
+    ~DelayAbstractCommandHook()
+    {
+        try {
+            _hook.decreaseDelayedCommands();
+        } catch (const std::exception&) {
+            // Ignore exceptions in destructor.
+        }
+    }
+
+private:
+    AbstractCommandHook& _hook;
 };
 
 class UndoContext

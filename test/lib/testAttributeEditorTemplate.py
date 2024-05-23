@@ -278,5 +278,44 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             AmplitudeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Amplitude')
             self.assertIsNotNone(AmplitudeControl, 'Could not find fractal3d1 "Amplitude" control')
 
+    def testAEConnectionsCustomControlWithComponents(self):
+        '''Test that connectionsCustomControlCreator in AE template navigates component connections correctly.'''
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('MaterialX', 'multiple_connections.usda')
+        testPath,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        # Select this prim which has an attribute with a connection.
+        cmds.select('|stage|stageShape,/Material1/component_add', r=True)
+
+        # Make sure the AE is visible.
+        import maya.mel
+        maya.mel.eval('openAEWindow')
+
+        # In the AE there is a formLayout for each USD prim type. We start
+        # by making sure we can find the one for Shader.
+        shaderFormLayout = self.attrEdFormLayoutName('Shader')
+        self.assertTrue(cmds.formLayout(shaderFormLayout, exists=True))
+        startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
+        self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
+        
+        if mayaUtils.mayaMajorVersion() > 2024:
+            # We should have a frameLayout called 'Shader: Add' in the template.
+            # If there is a scripting error in the template, this layout will be missing.
+            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Add')
+            self.assertIsNotNone(frameLayout, 'Could not find "Shader: Add" frameLayout')
+            
+            # We should also have an attribute called 'In1' which has component connections.
+            in1Label = self.searchForMayaControl(frameLayout, cmds.text, 'In1')
+            self.assertIsNotNone(in1Label, 'Could not find component_add "In1" control')
+
+            # We are interested in the popup menu which should lead to two constant nodes:
+            in1Text = in1Label.removesuffix("|nameTxt") + "|attrTypeFld"
+            popupMenu = in1Text + "|" + cmds.textField(in1Text, q=True, popupMenuArray=True)[0]
+            self.assertEqual(2, cmds.popupMenu(popupMenu, q=True, numberOfItems=True))
+            expectedLabels = ['constant1.outputs:out...', 'constant2.outputs:out...']
+            for menuItem in cmds.popupMenu(popupMenu, q=True, itemArray=True):
+                self.assertIn(cmds.menuItem(popupMenu + "|" + menuItem, q=True, l=True), expectedLabels)
+
+
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

@@ -82,89 +82,108 @@ void _FillPrimvarData(
     const VtArray<SRC_TYPE>& primvarData,
     const HdInterpolation&   primvarInterp)
 {
+    const unsigned int dataSize = primvarData.size();
+
     switch (primvarInterp) {
-    case HdInterpolationConstant:
+    case HdInterpolationConstant: {
+        SRC_TYPE value {};
+        if (dataSize > 0) {
+            value = primvarData[0];
+        } else {
+            TF_DEBUG(HDVP2_DEBUG_MESH)
+                .Msg(
+                    "Invalid Hydra prim '%s': "
+                    "primvar %s has %u elements, while its topology "
+                    "references face vertex index %u.\n",
+                    rprimId.asChar(),
+                    primvarName.GetText(),
+                    dataSize,
+                    0);
+        }
+
         for (size_t v = 0; v < numVertices; v++) {
             SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
                 reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-            *pointer = primvarData[0];
+            *pointer = value;
         }
         break;
+    }
     case HdInterpolationVarying:
     case HdInterpolationVertex:
-        if (numVertices <= renderingToSceneFaceVtxIds.size()) {
-            const unsigned int dataSize = primvarData.size();
-            for (size_t v = 0; v < numVertices; v++) {
-                unsigned int index = renderingToSceneFaceVtxIds[v];
-                if (index < dataSize) {
-                    SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
-                        reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                    *pointer = primvarData[index];
-                } else {
-                    TF_DEBUG(HDVP2_DEBUG_MESH)
-                        .Msg(
-                            "Invalid Hydra prim '%s': "
-                            "primvar %s has %u elements, while its topology "
-                            "references face vertex index %u.\n",
-                            rprimId.asChar(),
-                            primvarName.GetText(),
-                            dataSize,
-                            index);
-                }
-            }
-        } else {
-            TF_CODING_ERROR(
-                "Invalid Hydra prim '%s': "
-                "requires %zu vertices, while the number of elements in "
-                "renderingToSceneFaceVtxIds is %zu. Skipping primvar update.",
-                rprimId.asChar(),
-                numVertices,
-                renderingToSceneFaceVtxIds.size());
+        // The primvar has less data than needed, we issue a warning but
+        // don't skip update. Truncate the buffer to the lesser length.
+        if (numVertices > renderingToSceneFaceVtxIds.size()) {
+            TF_DEBUG(HDVP2_DEBUG_MESH)
+                .Msg(
+                    "Invalid Hydra prim '%s': "
+                    "requires %zu vertices, while the number of elements in "
+                    "renderingToSceneFaceVtxIds is %zu.",
+                    rprimId.asChar(),
+                    numVertices,
+                    renderingToSceneFaceVtxIds.size());
+            numVertices = renderingToSceneFaceVtxIds.size();
+        }
 
-            memset(vertexBuffer, 0, sizeof(DEST_TYPE) * numVertices);
+        for (size_t v = 0; v < numVertices; v++) {
+            unsigned int index = renderingToSceneFaceVtxIds[v];
+            if (index < dataSize) {
+                SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                    reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
+                *pointer = primvarData[index];
+            } else {
+                TF_DEBUG(HDVP2_DEBUG_MESH)
+                    .Msg(
+                        "Invalid Hydra prim '%s': "
+                        "primvar %s has %u elements, while its topology "
+                        "references face vertex index %u.\n",
+                        rprimId.asChar(),
+                        primvarName.GetText(),
+                        dataSize,
+                        index);
+            }
         }
         break;
     case HdInterpolationUniform: {
         const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
-        const size_t      numFaces = faceVertexCounts.size();
-        if (numFaces <= primvarData.size()) {
-            // The primvar has more data than needed, we issue a warning but
-            // don't skip update. Truncate the buffer to the expected length.
-            if (numFaces < primvarData.size()) {
-                TF_DEBUG(HDVP2_DEBUG_MESH)
-                    .Msg(
-                        "Invalid Hydra prim '%s': "
-                        "primvar %s has %zu elements, while its topology "
-                        "references only upto element index %zu.\n",
-                        rprimId.asChar(),
-                        primvarName.GetText(),
-                        primvarData.size(),
-                        numFaces);
-            }
+        size_t            numFaces = faceVertexCounts.size();
 
-            for (size_t f = 0, v = 0; f < numFaces; f++) {
-                const size_t faceVertexCount = faceVertexCounts[f];
-                const size_t faceVertexEnd = v + faceVertexCount;
-                for (; v < faceVertexEnd; v++) {
-                    SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
-                        reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                    *pointer = primvarData[f];
-                }
-            }
-        } else {
-            // The primvar has less data than needed. Issue warning and skip
-            // update like what is done in HdStMesh.
+        // The primvar has less data than needed, we issue a warning but
+        // don't skip update. Truncate the buffer to the lesser length.
+        if (numFaces > dataSize) {
             TF_DEBUG(HDVP2_DEBUG_MESH)
                 .Msg(
                     "Invalid Hydra prim '%s': "
-                    "primvar %s has only %zu elements, while its topology expects "
-                    "at least %zu elements. Skipping primvar update.\n",
+                    "primvar %s has only %u elements, while its topology expects "
+                    "at least %zu elements.\n",
                     rprimId.asChar(),
                     primvarName.GetText(),
-                    primvarData.size(),
+                    dataSize,
                     numFaces);
+            numFaces = dataSize;
+        }
 
-            memset(vertexBuffer, 0, sizeof(DEST_TYPE) * numVertices);
+        // The primvar has more data than needed, we issue a warning but
+        // don't skip update. Truncate the buffer to the expected length.
+        if (numFaces < dataSize) {
+            TF_DEBUG(HDVP2_DEBUG_MESH)
+                .Msg(
+                    "Invalid Hydra prim '%s': "
+                    "primvar %s has %u elements, while its topology "
+                    "references only upto element index %zu.\n",
+                    rprimId.asChar(),
+                    primvarName.GetText(),
+                    dataSize,
+                    numFaces);
+        }
+
+        for (size_t f = 0, v = 0; f < numFaces; f++) {
+            const size_t faceVertexCount = faceVertexCounts[f];
+            const size_t faceVertexEnd = v + faceVertexCount;
+            for (; v < faceVertexEnd; v++) {
+                SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                    reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
+                *pointer = primvarData[f];
+            }
         }
         break;
     }
@@ -174,46 +193,46 @@ void _FillPrimvarData(
         // from 0, thus we can save a lookup into the table. If the assumption
         // about the natural sequence is changed, we will need the lookup and
         // remap indices.
-        if (numVertices <= primvarData.size()) {
-            // If the primvar has more data than needed, we issue a warning,
-            // but don't skip the primvar update. Truncate the buffer to the
-            // expected length.
-            if (numVertices < primvarData.size()) {
-                TF_DEBUG(HDVP2_DEBUG_MESH)
-                    .Msg(
-                        "Invalid Hydra prim '%s': "
-                        "primvar %s has %zu elements, while its topology references "
-                        "only upto element index %zu.\n",
-                        rprimId.asChar(),
-                        primvarName.GetText(),
-                        primvarData.size(),
-                        numVertices);
-            }
 
-            if (channelOffset == 0 && std::is_same<DEST_TYPE, SRC_TYPE>::value) {
-                const void* source = static_cast<const void*>(primvarData.cdata());
-                memcpy(vertexBuffer, source, sizeof(DEST_TYPE) * numVertices);
-            } else {
-                for (size_t v = 0; v < numVertices; v++) {
-                    SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
-                        reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                    *pointer = primvarData[v];
-                }
-            }
-        } else {
-            // It is unexpected to have less data than we index into. Issue
-            // a warning and skip update.
+        // The primvar has less data than needed, we issue a warning but
+        // don't skip update. Truncate the buffer to the lesser length.
+        if (numVertices > dataSize) {
             TF_DEBUG(HDVP2_DEBUG_MESH)
                 .Msg(
                     "Invalid Hydra prim '%s': "
-                    "primvar %s has only %zu elements, while its topology expects "
-                    "at least %zu elements. Skipping primvar update.\n",
+                    "primvar %s has only %u elements, while its topology expects "
+                    "at least %zu elements.\n",
                     rprimId.asChar(),
                     primvarName.GetText(),
-                    primvarData.size(),
+                    dataSize,
                     numVertices);
+            numVertices = dataSize;
+        }
 
-            memset(vertexBuffer, 0, sizeof(DEST_TYPE) * numVertices);
+        // If the primvar has more data than needed, we issue a warning,
+        // but don't skip the primvar update. Truncate the buffer to the
+        // expected length.
+        if (numVertices < dataSize) {
+            TF_DEBUG(HDVP2_DEBUG_MESH)
+                .Msg(
+                    "Invalid Hydra prim '%s': "
+                    "primvar %s has %u elements, while its topology references "
+                    "only upto element index %zu.\n",
+                    rprimId.asChar(),
+                    primvarName.GetText(),
+                    dataSize,
+                    numVertices);
+        }
+
+        if (channelOffset == 0 && std::is_same<DEST_TYPE, SRC_TYPE>::value) {
+            const void* source = static_cast<const void*>(primvarData.cdata());
+            memcpy(vertexBuffer, source, sizeof(DEST_TYPE) * numVertices);
+        } else {
+            for (size_t v = 0; v < numVertices; v++) {
+                SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                    reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
+                *pointer = primvarData[v];
+            }
         }
         break;
     default:
@@ -963,6 +982,12 @@ void HdVP2Mesh::Sync(
 
             for (size_t i = 0; i < numFaceVertexIndices; i++) {
                 const int sceneFaceVtxId = faceVertexIndices[i];
+
+                // Scene index is actually greater than anticipated, increase the buffer size.
+                if (size_t(sceneFaceVtxId) >= _meshSharedData->_sceneToRenderingFaceVtxIds.size()) {
+                    _meshSharedData->_sceneToRenderingFaceVtxIds.resize(sceneFaceVtxId + 1, -1);
+                }
+
                 _meshSharedData->_sceneToRenderingFaceVtxIds[sceneFaceVtxId]
                     = i; // could check if the existing value is -1, but it doesn't matter.
                          // we just need to map to a vertex in the position buffer that has
@@ -990,6 +1015,11 @@ void HdVP2Mesh::Sync(
             // is important to fast rendering performance for dense mesh.
             for (size_t i = 0; i < numFaceVertexIndices; i++) {
                 const int sceneFaceVtxId = faceVertexIndices[i];
+
+                // Scene index is actually greater than anticipated, increase the buffer size.
+                if (size_t(sceneFaceVtxId) >= _meshSharedData->_sceneToRenderingFaceVtxIds.size()) {
+                    _meshSharedData->_sceneToRenderingFaceVtxIds.resize(sceneFaceVtxId + 1, -1);
+                }
 
                 int renderFaceVtxId = _meshSharedData->_sceneToRenderingFaceVtxIds[sceneFaceVtxId];
                 if (renderFaceVtxId < 0) {
@@ -1134,6 +1164,12 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
     // Sometimes we don't get dirty extent notification
     if (bits & (HdChangeTracker::DirtyPoints)) {
         bits |= HdChangeTracker::DirtyExtent;
+    }
+
+    // If the double-sidedness changes, dirty the material id
+    // to make it use the appropriate version of the material.
+    if (bits & (HdChangeTracker::DirtyDoubleSided)) {
+        bits |= HdChangeTracker::DirtyMaterialId;
     }
 
     _PropagateDirtyBitsCommon(bits, _reprs);
@@ -1763,9 +1799,14 @@ void HdVP2Mesh::_UpdateDrawItem(
                         != 0)) {
                     drawItemData._shaderIsFallback = true;
                 } else {
-                    const HdCullStyle           cullStyle = GetCullStyle(sceneDelegate);
+                    const HdCullStyle cullStyle = GetCullStyle(sceneDelegate);
+                    bool              useBackfaceCulling
+                        = (cullStyle == HdCullStyleDontCare && !IsDoubleSided(sceneDelegate))
+                        || (cullStyle == HdCullStyleBack)
+                        || (cullStyle == HdCullStyleBackUnlessDoubleSided
+                            && !IsDoubleSided(sceneDelegate));
                     MHWRender::MShaderInstance* shader = material->GetSurfaceShader(
-                        _GetMaterialNetworkToken(reprToken), cullStyle == HdCullStyleBack);
+                        _GetMaterialNetworkToken(reprToken), useBackfaceCulling);
                     if (shader != nullptr
                         && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                         drawItemData._shader = shader;

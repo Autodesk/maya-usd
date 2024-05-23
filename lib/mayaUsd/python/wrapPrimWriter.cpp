@@ -525,6 +525,7 @@ void wrapJobExportArgs()
             "defaultUSDFormat",
             make_getter(
                 &UsdMayaJobExportArgs::defaultUSDFormat, return_value_policy<return_by_value>()))
+        .def_readonly("defaultPrim", &UsdMayaJobExportArgs::defaultPrim)
         .def_readonly("eulerFilter", &UsdMayaJobExportArgs::eulerFilter)
         .def_readonly("excludeInvisible", &UsdMayaJobExportArgs::excludeInvisible)
         .def_readonly("exportBlendShapes", &UsdMayaJobExportArgs::exportBlendShapes)
@@ -551,6 +552,8 @@ void wrapJobExportArgs()
             make_getter(&UsdMayaJobExportArgs::exportSkin, return_value_policy<return_by_value>()))
         .def_readonly("exportVisibility", &UsdMayaJobExportArgs::exportVisibility)
         .def_readonly("file", &UsdMayaJobExportArgs::file)
+        .def_readonly("rootPrim", &UsdMayaJobExportArgs::rootPrim)
+        .def_readonly("rootPrimType", &UsdMayaJobExportArgs::rootPrimType)
         .add_property(
             "filteredTypeIds",
             make_getter(
@@ -586,6 +589,13 @@ void wrapJobExportArgs()
         .add_property(
             "parentScope",
             make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))
+        .add_property(
+            "rootPrim",
+            make_getter(&UsdMayaJobExportArgs::rootPrim, return_value_policy<return_by_value>()))
+        .add_property(
+            "rootPrimType",
+            make_getter(
+                &UsdMayaJobExportArgs::rootPrimType, return_value_policy<return_by_value>()))
         .def_readonly("pythonPerFrameCallback", &UsdMayaJobExportArgs::pythonPerFrameCallback)
         .def_readonly("pythonPostCallback", &UsdMayaJobExportArgs::pythonPostCallback)
         .add_property(

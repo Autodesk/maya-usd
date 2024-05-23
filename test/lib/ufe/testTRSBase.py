@@ -72,9 +72,9 @@ class TRSTestCaseBase(unittest.TestCase):
         # For a memento list of length n, n-1 redo operations sets us current.
         self.assertEqual(self.memento[0], self.snapshotRunTimeUFE())
         # Skip first
-        for m in self.memento[1:]:
+        for i in range(1, len(self.memento)):
             cmds.redo()
-            self.assertEqual(m, self.snapshotRunTimeUFE())
+            self.assertEqual(self.memento[i], self.snapshotRunTimeUFE(), 'Differing for memento %s of %s' % (i, len(self.memento)))
         
     def multiSelectRewindMemento(self, items):
         '''Undo through all items in memento.

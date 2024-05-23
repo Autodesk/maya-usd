@@ -19,6 +19,8 @@
 
 #include "abstractCommandHook.h"
 
+#include <vector>
+
 namespace UsdLayerEditor {
 
 /**
@@ -61,6 +63,14 @@ public:
     // mute or unmute the given layer
     void muteSubLayer(UsdLayer usdLayer, bool muteIt) override;
 
+    // lock, system-lock or unlock the given layer
+    void
+    lockLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState, bool includeSubLayers) override;
+
+    // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
+    // status.
+    void refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers = false) override;
+
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     void openUndoBracket(const QString& name) override;
@@ -84,6 +94,25 @@ public:
 
 protected:
     std::string proxyShapePath();
+
+    std::string executeMel(const std::string& commandString);
+    void        executePython(const std::string& commandString);
+
+    void executeDelayedCommands() override;
+
+    struct DelayedCommand
+    {
+        DelayedCommand(const std::string& cmd, bool isP)
+            : command(cmd)
+            , isPython(isP)
+        {
+        }
+
+        std::string command;
+        bool        isPython { false };
+    };
+
+    std::vector<DelayedCommand> _delayedCommands;
 };
 
 } // namespace UsdLayerEditor

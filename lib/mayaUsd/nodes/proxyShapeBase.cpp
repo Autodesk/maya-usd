@@ -27,6 +27,7 @@
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
@@ -34,6 +35,7 @@
 #include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <mayaUsd/utils/variantFallbacks.h>
 
 #include <usdUfe/utils/layers.h>
 
@@ -41,6 +43,7 @@
 #include <pxr/base/gf/range3d.h>
 #include <pxr/base/gf/ray.h>
 #include <pxr/base/gf/vec3d.h>
+#include <pxr/base/js/json.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/fileUtils.h>
 #include <pxr/base/tf/hash.h>
@@ -52,6 +55,7 @@
 #include <pxr/base/trace/trace.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/pcp/types.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
@@ -70,7 +74,6 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MDGContext.h>
 #include <maya/MDGContextGuard.h>
-#include <maya/MDagPath.h>
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MEvaluationNode.h>
@@ -89,7 +92,6 @@
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
-#include <maya/MNodeMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -125,6 +127,7 @@ const std::string  kAnonymousLayerName { "anonymousLayer1" };
 const std::string  kSessionLayerPostfix { "-session" };
 const std::string  kUnsharedStageLayerName { "unshareableLayer" };
 static const char* kMutedLayersAttrName = "mutedLayers";
+static const char* kLockedLayersAttrName = "lockedLayers";
 
 // ========================================================
 
@@ -156,6 +159,7 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
+MObject MayaUsdProxyShapeBase::lockedLayersAttr;
 // Change counter attributes
 MObject MayaUsdProxyShapeBase::updateCounterAttr;
 MObject MayaUsdProxyShapeBase::resyncCounterAttr;
@@ -163,6 +167,7 @@ MObject MayaUsdProxyShapeBase::resyncCounterAttr;
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
+MObject MayaUsdProxyShapeBase::variantFallbacksAttr;
 
 namespace {
 // utility function to extract the tag name from an anonymous layer.
@@ -379,6 +384,18 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(drawGuidePurposeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    variantFallbacksAttr = typedAttrFn.create(
+        "variantFallbacks", "vfs", MFnData::kString, MObject::kNullObj, &retValue);
+    typedAttrFn.setReadable(true);
+    typedAttrFn.setWritable(true);
+    typedAttrFn.setConnectable(true);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setAffectsAppearance(true);
+    typedAttrFn.setInternal(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(variantFallbacksAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     // outputs
     outTimeAttr = unitAttrFn.create("outTime", "otm", MFnUnitAttribute::kTime, 0.0, &retValue);
     unitAttrFn.setCached(false);
@@ -452,6 +469,15 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(mutedLayersAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    lockedLayersAttr = typedAttrFn.create(
+        kLockedLayersAttrName, "lockla", MFnData::kStringArray, MObject::kNullObj, &retValue);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setWritable(true);
+    typedAttrFn.setReadable(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(lockedLayersAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     //
     // add attribute dependencies
     //
@@ -509,6 +535,9 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(inStageDataCachedAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    retValue = attributeAffects(variantFallbacksAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     return retValue;
 }
 
@@ -554,16 +583,6 @@ void MayaUsdProxyShapeBase::enableProxyAccessor()
     _usdAccessor = ProxyAccessor::createAndRegister(*this);
 }
 
-void MayaUsdProxyShapeBase::renameCallback(MObject&, const MString&, void* clientData)
-{
-    auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
-    if (!proxyShape) {
-        return;
-    }
-
-    proxyShape->updateAncestorCallbacks();
-}
-
 void beforeSaveCallback(void* clientData)
 {
     auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
@@ -597,17 +616,15 @@ void MayaUsdProxyShapeBase::postConstructor()
 
     MayaUsdProxyStageInvalidateNotice(*this).Send();
 
-    updateAncestorCallbacks();
-
     if (_preSaveCallbackId == 0) {
         _preSaveCallbackId
             = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveCallback, this);
     }
 
-    if (_renameCallbackId == 0) {
-        MObject obj = thisMObject();
-        _renameCallbackId = MNodeMessage::addNameChangedCallback(obj, renameCallback, this);
-    }
+    MayaUsd::MayaNodeTypeObserver& shapeObserver = getProxyShapesObserver();
+    MayaUsd::MayaNodeObserver*     observer = shapeObserver.addObservedNode(thisMObject());
+    if (observer)
+        observer->addListener(*this);
 }
 
 /* virtual */
@@ -806,6 +823,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     UsdStageRefPtr finalUsdStage;
     SdfPath        primPath;
 
+    LayerNameMap layerNameMap = MayaUsd::LayerManager::getLayerNameMap();
+
     MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
@@ -852,7 +871,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     //       initial load set. Given that not loading payloads is the "lightest" version,
     //       that is what we request.
     //
-    //       Furthermore, for any statge that had its payload loaded or unloaded by the user
+    //       Furthermore, for any stage that had its payload loaded or unloaded by the user
     //       we keep the detailed load and unload state of all prims, so we would use the
     //       load-none mode anyway and apply the detailed rules afterward, and this is
     //       probably the common case for stages that actually contain payloads.
@@ -878,7 +897,17 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
         if (stageCached) {
             sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
-            isIncomingStage = true;
+
+            // Check what is the cache connected to
+            MStringArray result;
+            MGlobal::executeCommand(
+                ("listConnections -t shape -shapes on " + this->name()), result);
+
+            // The stage is only incoming if the cache is connected to a shape
+            if (stageCached && result.length()) {
+                isIncomingStage = true;
+            }
+
             // If the stage set by stage ID is not anonymous, set the filePath
             // attribute to it so that it can be reloaded when the Maya scene
             // is re-opened.
@@ -892,6 +921,10 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             //
             // Calculate from USD filepath and primPath and variantKey
             //
+
+            // Get variant fallback from the proxy shape and set it as Global Variant fallbacks.
+            PcpVariantFallbackMap defaultVariantFallbacks;
+            PcpVariantFallbackMap fallbacks(updateVariantFallbacks(defaultVariantFallbacks, *this));
 
             // Get input attr values
             const MString file = dataBlock.inputValue(filePathAttr, &retValue).asString();
@@ -1015,6 +1048,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                                       : sharedUsdStage->GetRootLayer());
                 }
             }
+            // Reset only if the global variant fallbacks has been modified
+            if (!fallbacks.empty()) {
+                saveVariantFallbacks(fallbacks, *this);
+                // Restore default value
+                UsdStage::SetGlobalVariantFallbacks(defaultVariantFallbacks);
+            }
         }
     }
 
@@ -1041,7 +1080,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     if (sharableStage) {
         // When we switch out of unshared we need to save this data so when the user toggles back
         // they get the same state they were in, but in order to this we have to keep the layers in
-        // the heirharchy alive since the stage is gone and so they will get removed
+        // the hierarchy alive since the stage is gone and so they will get removed
         if (_unsharedStageRootLayer) {
             _unsharedStageRootSublayers.clear();
             auto subLayers = getAllSublayerRefs(_unsharedStageRootLayer);
@@ -1064,7 +1103,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         } else {
 
             // Check if we need to remap the source
-            // At the moment we remap the old root with the new root  and we assumne that the root
+            // At the moment we remap the old root with the new root  and we assume that the root
             // is the first item in the referenced layers
             auto referencedLayers = MayaUsd::CustomLayerData::getStringArray(
                 _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
@@ -1122,17 +1161,23 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         }
 
         primPath = finalUsdStage->GetPseudoRoot().GetPath();
-        copyLayerMutingFromAttribute(*this, *finalUsdStage);
+
+        // EMSUSD-1087 Applying the lock permissions to layers should be done before the layer
+        // muting
+        copyLayerLockingFromAttribute(*this, layerNameMap, *finalUsdStage);
+
+        copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
+
         if (!_targetLayer)
             _targetLayer = getTargetLayerFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
         // Note: setting the target layer must be done after updateShareMode()
         //       because the session layer changes when switching between shared
-        //       and ushared and if the edit target was on the session layer,
+        //       and unshared and if the edit target was on the session layer,
         //      then the edit target is also updated by updateShareMode().
         if (_targetLayer) {
             // Note: it is possible the cached edit target layer is no longer valid,
-            //       for example if it was deleted. Tryig to set an invalid layer would
+            //       for example if it was deleted. Trying to set an invalid layer would
             //       throw an exception.
             if (isLayerInStage(_targetLayer, *finalUsdStage)) {
                 finalUsdStage->SetEditTarget(_targetLayer);
@@ -1273,17 +1318,17 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     }
 
     // Get the primPath
-    const MString primPath = dataBlock.inputValue(primPathAttr, &retValue).asString();
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    const SdfPath primPath = _GetPrimPath(dataBlock);
+    if (primPath.IsEmpty()) {
+        return MS::kFailure;
+    }
 
     // Get the prim
-    // If no primPath string specified, then use the pseudo-root.
-    UsdPrim     usdPrim;
-    std::string primPathStr(primPath.asChar(), primPath.length());
-    if (!primPathStr.empty()) {
-        SdfPath primPath(primPathStr);
-
-        // Validate assumption: primPath is descendent of passed-in stage primPath
+    UsdPrim usdPrim;
+    if (primPath == SdfPath::AbsoluteRootPath()) {
+        usdPrim = usdStage->GetPseudoRoot();
+    } else {
+        // Validate assumption: primPath is descendant of passed-in stage primPath
         //   Make sure that the primPath is a child of the passed in stage's primpath
         if (primPath.HasPrefix(inData->primPath)) {
             usdPrim = usdStage->GetPrimAtPath(primPath);
@@ -1295,8 +1340,6 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
                 primPath.GetText(),
                 inData->primPath.GetText());
         }
-    } else {
-        usdPrim = usdStage->GetPseudoRoot();
     }
 
     // Create the output outData
@@ -1309,7 +1352,7 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 
     // Set the outUsdStageData
     stageData->stage = usdStage;
-    stageData->primPath = usdPrim ? usdPrim.GetPath() : usdStage->GetPseudoRoot().GetPath();
+    stageData->primPath = primPath;
 
     //
     // set the data on the output plug
@@ -1552,8 +1595,10 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     const TfToken purpose3 = drawProxyPurpose ? UsdGeomTokens->proxy : TfToken();
     const TfToken purpose4 = drawGuidePurpose ? UsdGeomTokens->guide : TfToken();
 
+    // Compute the bound in "Usd World" space. This will apply the transform the
+    // referenced prim may have relative to the root of its Usd scene
     GfBBox3d allBox
-        = imageablePrim.ComputeUntransformedBound(currTime, purpose1, purpose2, purpose3, purpose4);
+        = imageablePrim.ComputeWorldBound(currTime, purpose1, purpose2, purpose3, purpose4);
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 
@@ -1815,6 +1860,29 @@ MStatus MayaUsdProxyShapeBase::setMutedLayers(const std::vector<std::string>& mu
                                                                               : MStatus::kFailure;
 }
 
+std::vector<std::string> MayaUsdProxyShapeBase::getLockedLayers() const
+{
+    MStatus           status;
+    MFnDependencyNode depNode(thisMObject(), &status);
+    CHECK_MSTATUS_AND_RETURN(status, std::vector<std::string>());
+
+    std::vector<std::string> locked;
+    UsdMayaWriteUtil::ReadMayaAttribute(depNode, kLockedLayersAttrName, &locked);
+    return locked;
+}
+
+MStatus MayaUsdProxyShapeBase::setLockedLayers(const std::vector<std::string>& locked)
+{
+    MStatus           status;
+    MFnDependencyNode depNode(thisMObject(), &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    MPlug         lockedLayersPlug = depNode.findPlug(lockedLayersAttr, true);
+    VtStringArray lockedArray(locked.begin(), locked.end());
+    return UsdMayaReadUtil::SetMayaAttr(lockedLayersPlug, VtValue(lockedArray)) ? MStatus::kSuccess
+                                                                                : MStatus::kFailure;
+}
+
 int MayaUsdProxyShapeBase::getComplexity() const
 {
     return _GetComplexity(const_cast<MayaUsdProxyShapeBase*>(this)->forceCache());
@@ -1870,6 +1938,11 @@ void MayaUsdProxyShapeBase::getDrawPurposeToggles(
     _GetDrawPurposeToggles(dataBlock, drawRenderPurpose, drawProxyPurpose, drawGuidePurpose);
 }
 
+SdfPath MayaUsdProxyShapeBase::getPrimPath() const
+{
+    return _GetPrimPath(const_cast<MayaUsdProxyShapeBase*>(this)->forceCache());
+}
+
 SdfPathVector MayaUsdProxyShapeBase::getExcludePrimPaths() const
 {
     return _GetExcludePrimPaths(const_cast<MayaUsdProxyShapeBase*>(this)->forceCache());
@@ -1878,6 +1951,26 @@ SdfPathVector MayaUsdProxyShapeBase::getExcludePrimPaths() const
 size_t MayaUsdProxyShapeBase::getExcludePrimPathsVersion() const
 {
     return _excludePrimPathsVersion;
+}
+
+SdfPath MayaUsdProxyShapeBase::_GetPrimPath(MDataBlock dataBlock) const
+{
+    MStatus       status = MS::kFailure;
+    const MString primPathStr = dataBlock.inputValue(primPathAttr, &status).asString();
+    if (!status) {
+        return SdfPath::EmptyPath();
+    }
+
+    if (primPathStr.length() == 0) {
+        return SdfPath::AbsoluteRootPath();
+    } else {
+        const SdfPath path(primPathStr.asChar());
+        if (path.IsAbsoluteRootOrPrimPath()) {
+            return path;
+        } else {
+            return SdfPath::EmptyPath();
+        }
+    }
 }
 
 SdfPathVector MayaUsdProxyShapeBase::_GetExcludePrimPaths(MDataBlock dataBlock) const
@@ -1964,6 +2057,13 @@ MDagPath MayaUsdProxyShapeBase::parentTransform()
     return proxyTransformPath;
 }
 
+/*static*/
+MayaUsd::MayaNodeTypeObserver& MayaUsdProxyShapeBase::getProxyShapesObserver()
+{
+    static MayaUsd::MayaNodeTypeObserver observer(MayaUsdProxyShapeBase::typeName);
+    return observer;
+}
+
 MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
     const bool enableUfeSelection,
     const bool useLoadRulesHandling)
@@ -1995,12 +2095,13 @@ MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
         _preSaveCallbackId = 0;
     }
 
-    if (_renameCallbackId != 0) {
-        MMessage::removeCallback(_renameCallbackId);
-        _renameCallbackId = 0;
-    }
-
-    clearAncestorCallbacks();
+    // Note: the addObservedNode was done in the postConstructor.
+    //       Removing a node that was not added is a safe no-op.
+    //
+    //       Also, removing the observed node automatically gets rid
+    //       of its listeners, so we don't have to call removeListener.
+    MayaUsd::MayaNodeTypeObserver& shapeObserver = getProxyShapesObserver();
+    shapeObserver.removeObservedNode(thisMObject());
 
     // Deregister from the load-rules handling used to transfer load rules
     // between the USD stage and a dynamic attribute on the proxy shape.
@@ -2188,73 +2289,20 @@ bool MayaUsdProxyShapeBase::closestPoint(
 
 bool MayaUsdProxyShapeBase::canMakeLive() const { return (bool)_sharedClosestPointDelegate; }
 
-void _proxyShapeAncestorPlugDirty(MObject& node, MPlug& plug, void* clientData)
+void MayaUsdProxyShapeBase::processPlugDirty(
+    MObject& /*observedNode*/,
+    MObject& /*dirtiedNode*/,
+    MPlug& plug,
+    bool   pathChanged)
 {
-    auto proxyShape = static_cast<MayaUsdProxyShapeBase*>(clientData);
-    if (proxyShape) {
-        proxyShape->onAncestorPlugDirty(plug);
-    }
-}
-
-void MayaUsdProxyShapeBase::clearAncestorCallbacks()
-{
-    for (auto cb : _ancestorCallbacks) {
-        MMessage::removeCallback(cb);
-    }
-
-    _ancestorCallbacks.clear();
-}
-
-void MayaUsdProxyShapeBase::updateAncestorCallbacks()
-{
-    clearAncestorCallbacks();
-
-    // Add our own callback
-    MObject obj = thisMObject();
-    _ancestorCallbacks.push_back(
-        MNodeMessage::addNodeDirtyPlugCallback(obj, _proxyShapeAncestorPlugDirty, this));
-
-    // Remember the path for which we are accumulating the callbacks
-    MDagPath ancestorPath;
-    MDagPath::getAPathTo(obj, ancestorPath);
-    _ancestorCallbacksPath = ancestorPath.fullPathName();
-
-    // Add callbacks for all the ancestors
-    for (ancestorPath.pop(); ancestorPath.isValid() && ancestorPath.length() > 0;
-         ancestorPath.pop()) {
-        MObject ancestorObj = ancestorPath.node();
-        _ancestorCallbacks.push_back(MNodeMessage::addNodeDirtyPlugCallback(
-            ancestorObj, _proxyShapeAncestorPlugDirty, this));
-    }
-}
-
-void MayaUsdProxyShapeBase::onAncestorPlugDirty(MPlug& plug)
-{
-    if (_inAncestorCallback) {
-        return;
-    }
-    _inAncestorCallback = true;
-
-    // If the proxy shape's path has changed, update ancestor callbacks
-    const MObject obj = thisMObject();
-    MDagPath      proxyShapePath;
-    MDagPath::getAPathTo(obj, proxyShapePath);
-    const bool pathChanged = (proxyShapePath.fullPathName() != _ancestorCallbacksPath);
-    if (pathChanged) {
-        updateAncestorCallbacks();
-    }
-
     // Some ancestor plugs affect proxy accessor plugs connected to EditAsMaya primitives
     // (like 'combinedVisibility'). Filter those and trigger proxy accessor recomputation.
     // Also make sure the stage is clean to prevent its wrong validation
     // inside ProxyAccessor::collectAccessorItems
     const auto plugName = plug.partialName();
-    const bool isAffecting = (plugName == "v" || plugName == "lodv");
-    if ((pathChanged || isAffecting) && forceCache().isClean(outStageDataAttr)) {
-        ProxyAccessor::forceCompute(_usdAccessor, obj);
-    }
-
-    _inAncestorCallback = false;
+    const bool isAffecting = (pathChanged || plugName == "v" || plugName == "lodv");
+    if (isAffecting && forceCache().isClean(outStageDataAttr))
+        ProxyAccessor::forceCompute(_usdAccessor, thisMObject());
 }
 
 Ufe::Path MayaUsdProxyShapeBase::ufePath() const
