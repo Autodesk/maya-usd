@@ -78,6 +78,7 @@ public:
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
+    bool                isFallback() const override;
     SetXformOpOrderFn   getXformOpOrderFn() const override;
     PXR_NS::TfToken     getOpSuffix(OpNdx ndx) const override;
     PXR_NS::TfToken     getTRSOpSuffix() const override;
