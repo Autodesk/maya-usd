@@ -1,5 +1,90 @@
 # Changelog
 
+<!--- Verify the new version number and update date to actual release date. --->
+## [v0.28.0] - 2024-05-23
+
+**Build:**
+* Update for USD v24.03 [#3684](https://github.com/Autodesk/maya-usd/pull/3684)
+* Fixup UFE_PREVIEW_NUM to use better Ufe cmake checks [#3673](https://github.com/Autodesk/maya-usd/pull/3673)
+* Update testMayaUsdInfoCommand.py [#3670](https://github.com/Autodesk/maya-usd/pull/3670)
+* Stage loading problems using MEL proc [#3667](https://github.com/Autodesk/maya-usd/pull/3667)
+* Use the Using Directive macro [#3628](https://github.com/Autodesk/maya-usd/pull/3628)
+* Minimal API needed by LookdevX to decouple from mayaUsd [#3608](https://github.com/Autodesk/maya-usd/pull/3608)
+* Link against mayaUsdAPI to preload it for other plugins [#3606](https://github.com/Autodesk/maya-usd/pull/3606)
+* Maya is no longer using a Preview Release number [#3602](https://github.com/Autodesk/maya-usd/pull/3602)
+* Enable "Implicit Namespace Packages" feature [#3581](https://github.com/Autodesk/maya-usd/pull/3581)
+
+**Translation Framework:**
+* Root Prim and Root Prim Type:
+    * Add the feature to set the root prim type on export [#3630](https://github.com/Autodesk/maya-usd/pull/3630)
+    * Disable root prim type UI when no root prim entered [#3708](https://github.com/Autodesk/maya-usd/pull/3708)
+    * Make rootPrimType persistent through exports [#3699](https://github.com/Autodesk/maya-usd/pull/3699)
+    * Make root prim persistent and update default prim accordingly [#3641](https://github.com/Autodesk/maya-usd/pull/3641)
+* Default Prim:
+    * Persist the default prim selection if its available [#3705](https://github.com/Autodesk/maya-usd/pull/3705)
+    * Expose all export options to chasers [#3698](https://github.com/Autodesk/maya-usd/pull/3698)
+    * Keep rootprim in default prim list when export options change [#3692](https://github.com/Autodesk/maya-usd/pull/3692)
+* Import/Export Plugin Configuration
+    * Hide unwanted export plugin options [#3710](https://github.com/Autodesk/maya-usd/pull/3710)
+    * Created import plugin config UI [#3676](https://github.com/Autodesk/maya-usd/pull/3676)
+    * Updated the export plugin configuration UI [#3655](https://github.com/Autodesk/maya-usd/pull/3655)
+* Support exporting a joint hierarchy inside a node tree to the root level [#3681](https://github.com/Autodesk/maya-usd/pull/3681)
+* Fix the issue caused duplicate as USD failed [#3601](https://github.com/Autodesk/maya-usd/pull/3601)
+* Call CanExport() per object instead of per export [#3592](https://github.com/Autodesk/maya-usd/pull/3592)
+
+**Workflow:**
+* Layer Locking:
+    * Prevent unlocking system-locked layer when unlocking parents [#3706](https://github.com/Autodesk/maya-usd/pull/3706)
+    * Update layer editor lock status after adding a layer [#3704](https://github.com/Autodesk/maya-usd/pull/3704)
+    * Adds a callback for RefreshSystemLock when a layer's lock status is changed [#3671](https://github.com/Autodesk/maya-usd/pull/3671)
+    * Fixed saving vs locked layers [#3669](https://github.com/Autodesk/maya-usd/pull/3669)
+    * Un-shared stage and its sublayers will appear as system lock [#3654](https://github.com/Autodesk/maya-usd/pull/3654)
+    * Fixes the issue where the lock state isn't applied from Maya file when the layer is both locked and muted [#3650](https://github.com/Autodesk/maya-usd/pull/3650)
+    * Adds the ability to lock layers and sublayers at once [#3646](https://github.com/Autodesk/maya-usd/pull/3646)
+    * Locked layer status persists between Maya sessions [#3638](https://github.com/Autodesk/maya-usd/pull/3638)
+    * Adds write permission checks to layer system-locking [#3626](https://github.com/Autodesk/maya-usd/pull/3626)
+    * Adds the ability to System-lock a layer [#3619](https://github.com/Autodesk/maya-usd/pull/3619)
+    * Added Locking mechanism to layers [#3595](https://github.com/Autodesk/maya-usd/pull/3595)
+* Allow deleting prims carrying a loaded payload [#3712](https://github.com/Autodesk/maya-usd/pull/3712)
+* When opening a file dependency in the AE, the dialog doesn't open to that path [#3709](https://github.com/Autodesk/maya-usd/pull/3709)
+* Layer Editor UI:
+    * Updates Layer Editor color visuals [#3685](https://github.com/Autodesk/maya-usd/pull/3685)
+    * Improve Layer Eidtor UI [#3649](https://github.com/Autodesk/maya-usd/pull/3649)
+    * Update the look of the Layer Editor [#3643](https://github.com/Autodesk/maya-usd/pull/3643)
+* Implement Ufe::Camera::renderable() for Maya Master (2026) [#3683](https://github.com/Autodesk/maya-usd/pull/3683)
+* Clear the selected stage layer database attribute when no stage selected [#3680](https://github.com/Autodesk/maya-usd/pull/3680)
+* Remove lingering invalid prims after adding prim under prim that is deactivated [#3679](https://github.com/Autodesk/maya-usd/pull/3679)
+* Targets the session layer when no other layers are modifiable [#3665](https://github.com/Autodesk/maya-usd/pull/3665)
+* Add support for getting native type via metadata [#3648](https://github.com/Autodesk/maya-usd/pull/3648)
+* Restrict UFE nodes according to proxyNode's primPath [#3640](https://github.com/Autodesk/maya-usd/pull/3640)
+* Better universal manipulator undo redo [#3615](https://github.com/Autodesk/maya-usd/pull/3615)
+* Keep Maya Ref valid after saving [#3609](https://github.com/Autodesk/maya-usd/pull/3609)
+* Fix the crash when editing as Maya an instanced object and then undoing the edit-as-Maya [#3593](https://github.com/Autodesk/maya-usd/pull/3593)
+
+**Render:**
+* Fix crash due to invalid shader [#3702](https://github.com/Autodesk/maya-usd/pull/3702)
+* Fix reading past the end of the buffer causing incorrect rendering and crash later on [#3663](https://github.com/Autodesk/maya-usd/pull/3663)
+* Add support for doubleSided attribute on USD prims in VP2 delegate [#3656](https://github.com/Autodesk/maya-usd/pull/3656)
+* Remember unknown color spaces [#3652](https://github.com/Autodesk/maya-usd/pull/3652)
+* Fix performance of instanceable prims [#3607](https://github.com/Autodesk/maya-usd/pull/3607)
+* Allowing meshes with insufficient primvars data size [#3586](https://github.com/Autodesk/maya-usd/pull/3586)
+
+**Documentation:**
+* Adding a C++ export plugin example [#3688](https://github.com/Autodesk/maya-usd/pull/3688)
+* Publish USD Branches [#3645](https://github.com/Autodesk/maya-usd/pull/3645)
+* Improve the undo/redo documentation [#3644](https://github.com/Autodesk/maya-usd/pull/3644)
+* Update codingGuidelines.md [#3633](https://github.com/Autodesk/maya-usd/pull/3633)
+
+**Miscellaneous:**
+* Layer editor icon scaling [#3715](https://github.com/Autodesk/maya-usd/pull/3715)
+* Fix the crash when attempting to save a USD file from USD Layer Editor [#3697](https://github.com/Autodesk/maya-usd/pull/3697)
+* Author references but do not have the UsdStage compose [#3696](https://github.com/Autodesk/maya-usd/pull/3696)
+* Fix image file attribute detection [#3693](https://github.com/Autodesk/maya-usd/pull/3693)
+* Dope Sheet : Error when right-click on channel set if USD plugin installed [#3691](https://github.com/Autodesk/maya-usd/pull/3691)
+* Fix conflict in shaders with MaterialX 1.38.9 [#3678](https://github.com/Autodesk/maya-usd/pull/3678)
+* Fix mistake in command name [#3668](https://github.com/Autodesk/maya-usd/pull/3668)
+* Allow Raw colorspace aliases in file texture validation [#3653](https://github.com/Autodesk/maya-usd/pull/3653)
+
 ## [v0.27.0] - 2024-02-06
 
 **Build:**
