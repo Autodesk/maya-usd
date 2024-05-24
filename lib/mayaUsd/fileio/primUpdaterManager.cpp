@@ -588,6 +588,11 @@ PushCustomizeSrc pushExport(
         1, VtValue(std::string(dagPath.partialPathName().asChar())));
     userArgs[UsdMayaJobExportArgsTokens->exportRoots] = rootPathString;
 
+    // This ensures the materials will be under the prim, so that
+    // when exported it is under the node being merged and will thus
+    // be merged too.
+    userArgs[UsdMayaJobExportArgsTokens->exportMaterialUnderPrim] = true;
+
     UsdMayaJobExportArgs jobArgs
         = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
     progressBar.advance();

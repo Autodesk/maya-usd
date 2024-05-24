@@ -70,9 +70,9 @@ class testUsdExportShadingInstanced(unittest.TestCase):
         """Tests that different shader bindings are correctly authored on
         instanced geometry."""
         worldPath = "/World" # Where collections are authored
-        redMat = "/World/Materials/blinn1SG"
+        redMat = "/Materials/blinn1SG"
         redPaths = ["/World/redCube", "/World/redSphere"]
-        blueMat = "/World/Materials/phong1SG"
+        blueMat = "/Materials/phong1SG"
         bluePaths = [
                 "/World/blueCube", "/World/blueSphere", "/World/blueSphere2"]
         instanceMasters = [
@@ -114,17 +114,17 @@ class testUsdExportShadingInstanced(unittest.TestCase):
         subset1 = shape.GetChild("initialShadingGroup")
         self.assertTrue(subset1)
         mat, _ = UsdShade.MaterialBindingAPI(subset1).ComputeBoundMaterial()
-        self.assertEqual(mat.GetPath(), "/World/Materials/initialShadingGroup")
+        self.assertEqual(mat.GetPath(), "/Materials/initialShadingGroup")
 
         subset2 = shape.GetChild("blinn1SG")
         self.assertTrue(subset2)
         mat, _ = UsdShade.MaterialBindingAPI(subset2).ComputeBoundMaterial()
-        self.assertEqual(mat.GetPath(), "/World/Materials/blinn1SG")
+        self.assertEqual(mat.GetPath(), "/Materials/blinn1SG")
 
     def testUninstancedGeom(self):
         """Tests a basic case of non-instanced geometry with bindings."""
         worldPath = "/World" # Where collections are authored
-        redMat = self._simpleStage.GetPrimAtPath("/World/Materials/blinn1SG")
+        redMat = self._simpleStage.GetPrimAtPath("/Materials/blinn1SG")
         uninstancedPrim = self._simpleStage.GetPrimAtPath("/World/notInstanced")
 
         self.assertFalse(uninstancedPrim.IsInstance())
@@ -137,7 +137,7 @@ class testUsdExportShadingInstanced(unittest.TestCase):
         """Tests that different shader bindings are correctly authored on
         instanced geometry within nested instances."""
         worldPath = "/World" # Where collections are authored
-        greenMat = "/World/Materials/blinn1SG"
+        greenMat = "/Materials/blinn1SG"
         greenPaths = [
                 "/World/SimpleInstance1/SimpleInstanceShape1",
                 "/World/ComplexA/NestedA/Base1/BaseShape1",
@@ -145,7 +145,7 @@ class testUsdExportShadingInstanced(unittest.TestCase):
                 "/World/Extra/Base3/BaseShape1",
                 "/World/ComplexB/NestedA/Base1/BaseShape1",
                 "/World/ComplexB/NestedB/Base1/BaseShape1"]
-        blueMat = "/World/Materials/blinn2SG"
+        blueMat = "/Materials/blinn2SG"
         bluePaths = [
                 "/World/SimpleInstance2/SimpleInstanceShape1",
                 "/World/ComplexA/NestedA/Base2/BaseShape1",

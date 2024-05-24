@@ -69,7 +69,7 @@ class testUsdExportRfMShaders(unittest.TestCase):
         material = materialBindingAPI.ComputeBoundMaterial()[0]
         self.assertTrue(material)
         materialPath = material.GetPath().pathString
-        self.assertEqual(materialPath, '/MarbleCube/Materials/MarbleCubeSG')
+        self.assertEqual(materialPath, '/Materials/MarbleCubeSG')
 
         # For USD 21.05 and later, GetInputs() and GetOutputs() take an
         # "onlyAuthored" argument that is True by default, so in that case
@@ -114,7 +114,7 @@ class testUsdExportRfMShaders(unittest.TestCase):
         '''
         Tests that only the attributes authored in Maya are exported to USD.
         '''
-        shaderPrimPath = '/MarbleCube/Materials/MarbleCubeSG/MarbleLambert'
+        shaderPrimPath = '/Materials/MarbleCubeSG/MarbleLambert'
         shaderPrim = self._stage.GetPrimAtPath(shaderPrimPath)
         self.assertTrue(shaderPrim)
         shader = UsdShade.Shader(shaderPrim)
@@ -143,7 +143,7 @@ class testUsdExportRfMShaders(unittest.TestCase):
         inputPlacementMatrix = shader.GetInput('placementMatrix')
         (connectableAPI, outputName, outputType) = inputPlacementMatrix.GetConnectedSource()
         self.assertEqual(connectableAPI.GetPath().pathString,
-            '/MarbleCube/Materials/MarbleCubeSG/MarbleCubePlace3dTexture')
+            '/Materials/MarbleCubeSG/MarbleCubePlace3dTexture')
         shaderId = shader.GetIdAttr().Get()
         self.assertEqual(shaderId, 'PxrMayaMarble')
         shaderOutputs = shader.GetOutputs()
