@@ -198,7 +198,7 @@ class testUsdExportEmptyXforms(unittest.TestCase):
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
 
-        present = ["/nurbsSphere1", "/nurbsSphere1/mtl", "/nurbsSphere1/mtl/initialShadingGroup"]
+        present = ["/nurbsSphere1", "/mtl", "/mtl/initialShadingGroup"]
         self._verifyPrims(stage, absent=createdPrims, present=present)
 
     def testExportExcludeEmptyButDefaultPrim(self):

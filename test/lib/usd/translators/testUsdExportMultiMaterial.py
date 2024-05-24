@@ -96,7 +96,7 @@ class testUsdExportMultiMaterial(unittest.TestCase):
         '''
         self._export()
 
-        base_path = "/pCube{0}/Materials/{1}SG/{2}/{1}"
+        base_path = "/Materials/{1}SG/{2}/{1}"
         to_test = [
             # pCube1 has standard_surface, known to UsdPreviewSurface and MaterialX
             (1, "standardSurface2", "UsdPreviewSurface", "UsdPreviewSurface"),
@@ -136,7 +136,7 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             (3, "usdPreviewSurface1", "MaterialX", "ND_UsdPreviewSurface_surfaceshader"),
         ]
 
-        base_path = "/pCube{0}/Materials"
+        base_path = "/Materials"
         for prim_idx in (1, 2, 3):
             prim_path = base_path.format(prim_idx)
 
@@ -203,7 +203,7 @@ class testUsdExportMultiMaterial(unittest.TestCase):
 
         # We expect 2 primvar readers, and 2 st transforms:
         stage = Usd.Stage.Open(usd_path)
-        mat_path = "/M_pSphere1/Looks/M_ss01SG"
+        mat_path = "/Looks/M_ss01SG"
 
         # Here are the expected connections in the produced USD file:
         connections = [
