@@ -42,8 +42,8 @@ struct UsdMayaReadUtil
     MAYAUSD_CORE_PUBLIC
     static bool ReadFloat2AsUV();
 
-    /// Returns the imported name of a UV set at \p uvIndex according to the renaming rule and the
-    /// current set of options.
+    /// Returns the imported name of a USD UV set with primvar name \p originalName
+    /// according to the renaming rule and the current set of options.
     ///
     /// \p originalName is the USD UV primvar name.
     /// \p uvSetRemaps is as defined by the -remapUVSetsTo import option and stored in
