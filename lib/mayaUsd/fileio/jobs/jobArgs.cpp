@@ -566,6 +566,7 @@ bool _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary
 UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary&             userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
+    const MSelectionList&           fullList,
     const std::vector<double>&      timeSamples)
     : compatibility(extractToken(
         userArgs,
@@ -690,6 +691,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           extractString(userArgs, UsdMayaJobExportArgsTokens->pythonPerFrameCallback))
     , pythonPostCallback(extractString(userArgs, UsdMayaJobExportArgsTokens->pythonPostCallback))
     , dagPaths(dagPaths)
+    , fullObjectList(fullList)
     , timeSamples(timeSamples)
     , rootMapFunction(PcpMapFunction::Create(
           _ExportRootsMap(
@@ -780,6 +782,15 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         out << "    " << dagPath.fullPathName().asChar() << std::endl;
     }
 
+    out << "fullObjectList (" << exportArgs.fullObjectList.length() << ")" << std::endl;
+    {
+        MStringArray names;
+        exportArgs.fullObjectList.getSelectionStrings(names);
+        for (unsigned i = 0; i < names.length(); ++i) {
+            out << "    " << names[i].asChar() << std::endl;
+        }
+    }
+
     out << "filteredTypeIds (" << exportArgs.filteredTypeIds.size() << ")" << std::endl;
     for (unsigned int id : exportArgs.filteredTypeIds) {
         out << "    " << id << ": " << MNodeClass(MTypeId(id)).typeName() << std::endl;
@@ -815,6 +826,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
 UsdMayaJobExportArgs UsdMayaJobExportArgs::CreateFromDictionary(
     const VtDictionary&             userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
+    const MSelectionList&           fullList,
     const std::vector<double>&      timeSamples)
 {
     VtDictionary allUserArgs = VtDictionaryOver(userArgs, GetDefaultDictionary());
@@ -827,7 +839,7 @@ UsdMayaJobExportArgs UsdMayaJobExportArgs::CreateFromDictionary(
             "Errors while processing export contexts. Using base export options.");
     }
 
-    return UsdMayaJobExportArgs(allUserArgs, dagPaths, timeSamples);
+    return UsdMayaJobExportArgs(allUserArgs, dagPaths, fullList, timeSamples);
 }
 
 /* static */
@@ -1169,6 +1181,35 @@ std::string UsdMayaJobExportArgs::GetResolvedFileName() const
     }
 
     return file;
+}
+
+static bool isExcluded(const UsdMayaJobExportArgs& args, const TfToken* tokens, size_t count)
+{
+    for (size_t i = 0; i < count; ++i)
+        if (args.excludeExportTypes.count(tokens[i]) > 0)
+            return true;
+    return false;
+}
+
+bool UsdMayaJobExportArgs::isExportingMeshes() const
+{
+    static const TfToken meshTokens[]
+        = { TfToken("Meshes"), TfToken("meshes"), TfToken("Mesh"), TfToken("mesh") };
+    return !isExcluded(*this, meshTokens, sizeof(meshTokens) / sizeof(meshTokens[0]));
+}
+
+bool UsdMayaJobExportArgs::isExportingCameras() const
+{
+    static const TfToken meshTokens[]
+        = { TfToken("Cameras"), TfToken("cameras"), TfToken("Camera"), TfToken("camera") };
+    return !isExcluded(*this, meshTokens, sizeof(meshTokens) / sizeof(meshTokens[0]));
+}
+
+bool UsdMayaJobExportArgs::isExportingLights() const
+{
+    static const TfToken meshTokens[]
+        = { TfToken("Lights"), TfToken("lights"), TfToken("Light"), TfToken("light") };
+    return !isExcluded(*this, meshTokens, sizeof(meshTokens) / sizeof(meshTokens[0]));
 }
 
 UsdMayaJobImportArgs::UsdMayaJobImportArgs(

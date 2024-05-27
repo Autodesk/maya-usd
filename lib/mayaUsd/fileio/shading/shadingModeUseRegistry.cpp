@@ -367,9 +367,6 @@ private:
 
         const UsdMayaShadingModeExportContext::AssignmentVector& assignments
             = context.GetAssignments();
-        if (assignments.empty()) {
-            return;
-        }
 
         UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments, std::string());
         UsdShadeMaterial material(materialPrim);

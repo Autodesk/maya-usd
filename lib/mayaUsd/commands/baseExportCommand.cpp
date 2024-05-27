@@ -431,8 +431,8 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
 
         const std::vector<double> timeSamples
             = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
-        UsdMayaJobExportArgs jobArgs
-            = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+        UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
+            userArgs, dagPaths, objSelList, timeSamples);
 
         std::unique_ptr<UsdMaya_WriteJob> writeJob = initializeWriteJob(jobArgs);
         if (!writeJob || !writeJob->Write(fileName, append)) {
