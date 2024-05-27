@@ -53,14 +53,14 @@ class MaterialCustomControl(object):
         hasLookdevX = self._hasLookdevX()
         graphIcon = 'LookdevX.png' if hasLookdevX else None
 
-        self.assignedMat = self._createTextField('material',  'kLabelAssignedMaterial', graphIcon)
+        self.assignedMat = self._createTextField('material',  'kLabelAssignedMaterial', graphIcon, 'kAnnShowMaterialInLookdevx')
         self.assignedMatMenu = self._createGraphMenu(self.assignedMat.button)
 
         self.strengthMenu = self._createDropDownField(
             'strength', 'kLabelMaterialStrength',
             ['kLabelWeakerMaterial', 'kLabelStrongerMaterial'])
                 
-        self.inheritedMat = self._createTextField('inherited', 'kLabelInheritedMaterial', graphIcon)
+        self.inheritedMat = self._createTextField('inherited', 'kLabelInheritedMaterial', graphIcon, 'kAnnShowMaterialInLookdevx')
         self.inheritedMatMenu = self._createGraphMenu(self.inheritedMat.button)
         
         # Note: icon image taken from Maya resources.
@@ -76,7 +76,7 @@ class MaterialCustomControl(object):
         '''
         return bool(cmds.pluginInfo('LookdevXMaya', query=True, loaded=True))
 
-    def _createTextField(self, longName, uiNameRes, image=None):
+    def _createTextField(self, longName, uiNameRes, image=None, imageTooltipRes=None):
         '''
         Create a disabled text field group and an optional image button with the correct label.
         '''
@@ -86,7 +86,8 @@ class MaterialCustomControl(object):
             cmds.text(label=uiLabel, annotation=uiLabel)
             textField = cmds.textField(annotation=uiLabel, editable=False, enableKeyboardFocus=True)
             if image:
-                button = cmds.symbolButton(enable=False, image=image)
+                imageTooltip = getMayaUsdLibString(imageTooltipRes) if imageTooltipRes else ''
+                button = cmds.symbolButton(enable=False, image=image, annotation=imageTooltip)
             else:
                 button = None
         return MaterialCustomControl.TextField(rowLayout, textField, button)
