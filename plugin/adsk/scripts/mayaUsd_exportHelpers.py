@@ -46,28 +46,39 @@ def updateDefaultPrimCandidates(excludeMesh, excludeLight, excludeCamera):
     return allItems
 
 def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeCamera):
+    def _getRelatives(item):
+        listInfo = cmds.listRelatives(i, fullPath=True)
+        if not listInfo:
+            return None
+        return listInfo[0]
+    
     allSelectedItems = cmds.ls(selection=True)
     allItems = set()
     for i in allSelectedItems:
-        path = cmds.listRelatives(i, fullPath=True)[0]
+        path = _getRelatives(i)
+        if not path:
+            continue
         root = path.split("|")[1]
         allItems.add(root)
 
     excludeSet = set()
+
+    def _addExclusions(nodeType):
+        nodes = cmds.ls(type=(nodeType), l=True)
+        for n in nodes:
+            path = _getRelatives(n)
+            if not path:
+                continue
+            excludeSet.add(path)
+
     if excludeMesh == "1":
-        meshes = cmds.ls(type=('mesh'), l=True)
-        for m in meshes:
-            excludeSet.add(cmds.listRelatives(m, parent=True)[0])
+        _addExclusions('mesh')
 
     if excludeLight == "1":
-        lights = cmds.ls(type=('light'), l=True)
-        for l in lights:
-            excludeSet.add(cmds.listRelatives(l, parent=True)[0])
+        _addExclusions('light')
     
     if excludeCamera == "1":
-        cameras = cmds.ls(type=('camera'), l=True)
-        for c in cameras:
-            excludeSet.add(cmds.listRelatives(c, parent=True)[0])
+        _addExclusions('camera')
 
     allItems = removeHiddenInOutliner(list(allItems - excludeSet))
     allItems.sort(key=natural_key)

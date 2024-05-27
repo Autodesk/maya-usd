@@ -406,18 +406,15 @@ bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
 
         const std::string mayaTypeName(depFn.typeName().asChar());
 
-        if ((mArgs.excludeExportTypes.count(TfToken("Meshes")) != 0)
-            || (mArgs.excludeExportTypes.count(TfToken("meshes")) != 0)) {
+        if (!mArgs.isExportingMeshes()) {
             if (mayaTypeName == "mesh")
                 return false;
         }
-        if ((mArgs.excludeExportTypes.count(TfToken("Cameras")) != 0)
-            || (mArgs.excludeExportTypes.count(TfToken("camera")) != 0)) {
+        if (!mArgs.isExportingCameras()) {
             if (mayaTypeName.find("camera") != std::string::npos)
                 return false;
         }
-        if ((mArgs.excludeExportTypes.count(TfToken("Lights")) != 0)
-            || (mArgs.excludeExportTypes.count(TfToken("light")) != 0)) {
+        if (!mArgs.isExportingLights()) {
             if (mayaTypeName.find("Light") != std::string::npos)
                 return false;
         }

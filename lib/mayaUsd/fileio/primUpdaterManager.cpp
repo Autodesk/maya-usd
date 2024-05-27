@@ -578,7 +578,9 @@ PushCustomizeSrc pushExport(
     fnDag.getPath(dagPath);
 
     UsdMayaUtil::MDagPathSet dagPaths;
+    MSelectionList           fullObjectList;
     dagPaths.insert(dagPath);
+    fullObjectList.add(dagPath);
 
     std::vector<double> timeSamples;
     UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
@@ -593,8 +595,8 @@ PushCustomizeSrc pushExport(
     // be merged too.
     userArgs[UsdMayaJobExportArgsTokens->exportMaterialUnderPrim] = true;
 
-    UsdMayaJobExportArgs jobArgs
-        = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+    UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
+        userArgs, dagPaths, fullObjectList, timeSamples);
     progressBar.advance();
 
     UsdMaya_WriteJob writeJob(jobArgs);
