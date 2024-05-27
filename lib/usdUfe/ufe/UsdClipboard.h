@@ -52,6 +52,10 @@ public:
     //! \return The clipboard data (aka the clipboard stage).
     PXR_NS::UsdStageWeakPtr getClipboardData();
 
+    //! \brief Should we paste the prims as a sibling of the copy?
+    bool pasteAsSibling() const { return _pasteAsSibling; }
+    void setPasteAsSibling();
+
     //! \brief Set the clipboard path, i.e. where the .usd should be exported and read from.
     //! \note The filename "UsdUfeClipboard.usd" will be appended to the input path.
     //! \param clipboardPath The new clipboard path.
@@ -84,6 +88,18 @@ private:
 
     //! \brief Remove the clipboard file by deleting it.
     void removeClipboardFile();
+
+    // When true, we paste as a sibling of copy rather than into the target.
+    bool _pasteAsSibling { true };
+
+    // Ufe selection changed observer. Used for paste as sibling detection.
+    class TufeSelectionObserver;
+    std::shared_ptr<TufeSelectionObserver> _ufeSelObserver;
+
+    // Keep track of selection changes after the copy command.
+    friend class UsdPasteClipboardCommandWithSelection;
+    bool _inSelectionGuard { false };
+    void ufeSelectionChanged();
 };
 
 } // namespace USDUFE_NS_DEF
