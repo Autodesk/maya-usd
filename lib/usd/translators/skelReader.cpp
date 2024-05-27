@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorBlendShape.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 
@@ -168,6 +169,17 @@ void UsdMayaPrimReaderSkelRoot::PostReadSubtree(UsdMayaPrimReaderContext& contex
             for (const auto& skinningQuery : binding.GetSkinningTargets()) {
 
                 const UsdPrim& skinnedPrim = skinningQuery.GetPrim();
+
+                // Add blendShapes first and their animations if any
+                MayaUsd::UsdMayaTranslatorBlendShape::Read(skinnedPrim, &context);
+                MayaUsd::UsdMayaTranslatorBlendShape::ReadAnimations(
+                    skinningQuery, skelQuery.GetAnimQuery(), context);
+
+                // Nothing else to do if there aren't any joints influences on the skinningQuery.
+                // It could be the case where the skinningQuery is only for blendShapes.
+                if (!skinningQuery.HasJointInfluences()) {
+                    continue;
+                }
 
                 // Get an ordering of the joints that matches the ordering of
                 // the binding.

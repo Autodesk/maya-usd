@@ -20,7 +20,6 @@
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/meshWriteUtils.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -33,10 +32,7 @@
 #include <maya/MAnimUtil.h>
 #include <maya/MApiNamespace.h>
 #include <maya/MFloatArray.h>
-#include <maya/MFloatPointArray.h>
-#include <maya/MFnAttribute.h>
 #include <maya/MFnBlendShapeDeformer.h>
-#include <maya/MFnComponentListData.h>
 #include <maya/MFnGeometryFilter.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPointArrayData.h>
@@ -255,7 +251,7 @@ MStatus mayaBlendShapeTriggerAllTargets(MObject& blendShape)
 /**
  * Gets information about available blend shapes for a given deformed mesh (i.e. final result)
  *
- * @param mesh                   The deformed mesh to find the blendshape info(s) for.
+ * @param deformedMesh                   The deformed mesh to find the blendShape info(s) for.
  *
  * @param outInfos               Storage for the result.
  *
@@ -315,14 +311,12 @@ MStatus mayaGetBlendShapeInfosForMesh(
         // NOTE: (yliangsiew) Because this can end up grabbing the wrong plug (i.e.
         // blendShape.weight[1]), we double-check here and advance the iterator if necessary.
         if (!outputGeomElemPlug.isElement()) {
-            itDg.next();
             continue;
         }
         MPlug outputGeomPlug = outputGeomElemPlug.array(&stat);
         CHECK_MSTATUS_AND_RETURN_IT(stat);
         MString outputGeomPlugName = outputGeomPlug.partialName(0, 0, 0, 0, 0, 1);
         if (outputGeomPlugName != "outputGeometry") {
-            itDg.next();
             continue;
         }
         unsigned int outputGeomPlugIdx = outputGeomElemPlug.logicalIndex();
