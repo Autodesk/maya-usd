@@ -706,7 +706,7 @@ GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& con
 
     const TypeDesc* outputType = TypeDesc::get(outputs[0]->getType());
 
-    if (implElement->isA<NodeGraph>() && *outputType != *Type::LIGHTSHADER
+    if (implElement->isA<NodeGraph>() && outputType->getName() != Type::LIGHTSHADER->getName()
         && !outputType->isClosure()) {
         // Use a compound implementation that can propagate UDIM inputs:
         impl = MayaCompoundNode::create();

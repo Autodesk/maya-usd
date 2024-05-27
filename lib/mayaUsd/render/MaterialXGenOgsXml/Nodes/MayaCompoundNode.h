@@ -18,7 +18,7 @@ public:
 
     void initialize(const InterfaceElement& element, GenContext& context) override;
 
-    void addInputs(ShaderNode& node, GenContext& context) const;
+    void addInputs(ShaderNode& node, GenContext& context) const override;
 
 protected:
     StringVec _propagatedInputs;
