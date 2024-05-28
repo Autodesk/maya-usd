@@ -395,7 +395,7 @@ static UsdPrim _GetMaterialParent(
     if (shaderExportLocation.IsEmpty())
         shaderExportLocation = SdfPath::AbsoluteRootPath();
 
-    if (!defaultPrim.empty())
+    if (!defaultPrim.empty() && defaultPrim != materialsScopeName)
         shaderExportLocation = shaderExportLocation.AppendChild(TfToken(defaultPrim));
 
     if (!materialsScopeName.IsEmpty())

@@ -38,31 +38,75 @@ class testUsdExportMesh(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testExportDefaultPrim(self):
-        cmds.file(self.testFile, force=True, open=True)
-        usdFile = os.path.abspath('UsdExportDefaultPrim.usda')
+    def testExportMeshDefaultPrim(self):
+        '''Export to USD with a mesh set as the default prim.'''
+        usdFile = os.path.abspath('UsdExportMeshDefaultPrim.usda')
 
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none', defaultPrim='pSphere1')
         
         stage = Usd.Stage.Open(usdFile)
-        self.assertEqual(stage.GetDefaultPrim().GetName(), 'pSphere1')
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+        self.assertEqual(defaultPrim.GetName(), 'pSphere1')
 
-        cmds.file(self.testFile, force=True, open=True)
+    def testExportLightDefaultPrim(self):
+        '''Export to USD with a light set as the default prim.'''
+        usdFile = os.path.abspath('UsdExportLightDefaultPrim.usda')
+
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none', defaultPrim='pointLight1')
         
         stage = Usd.Stage.Open(usdFile)
-        self.assertEqual(stage.GetDefaultPrim().GetName(), 'pointLight1')
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+        self.assertEqual(defaultPrim.GetName(), 'pointLight1')
 
-        # Test setting default prim with set parent scope on export
-        cmds.file(self.testFile, force=True, open=True)
-        usdFile = os.path.abspath('UsdExportDefaultPrim.usda')
+    def testExportRootScopeDefaultPrim(self):
+        '''Export to USD with a scope set as the default prim.'''
+        usdFile = os.path.abspath('UsdExportScopeDefaultPrim.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none', rootPrim='testScope', defaultPrim = 'testScope')
         
         stage = Usd.Stage.Open(usdFile)
-        self.assertEqual(stage.GetDefaultPrim().GetName(), 'testScope')
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+        self.assertEqual(defaultPrim.GetName(), 'testScope')
+
+    def testExportNoDefaultPrim(self):
+        '''Export to USD with no default prim.'''
+        usdFile = os.path.abspath('UsdExportScopeDefaultPrim.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none', defaultPrim=None)
+        
+        stage = Usd.Stage.Open(usdFile)
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertFalse(defaultPrim)
+
+    def testExportMaterialScopeDefaultPrim(self):
+        '''Export to USD with no default prim.'''
+        usdFile = os.path.abspath('UsdExportMaterialScopeDefaultPrim.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'], defaultPrim='mtl')
+        
+        stage = Usd.Stage.Open(usdFile)
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+        self.assertEqual(defaultPrim.GetName(), 'mtl')
+        self.assertFalse(stage.GetPrimAtPath('/mtl/mtl'))
+
+    def testExportNoMeshMaterialScopeDefaultPrim(self):
+        '''Export to USD with no default prim.'''
+        usdFile = os.path.abspath('UsdExportNoMeshMaterialScopeDefaultPrim.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'], defaultPrim='mtl',
+            excludeExportTypes=['Meshes'])
+        
+        stage = Usd.Stage.Open(usdFile)
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+        self.assertEqual(defaultPrim.GetName(), 'mtl')
+        self.assertFalse(stage.GetPrimAtPath('/mtl/mtl'))
 
 
 if __name__ == '__main__':

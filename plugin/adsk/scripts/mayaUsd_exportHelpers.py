@@ -1,4 +1,5 @@
 import maya.cmds as cmds
+import mayaUsd.lib
 import re
 from mayaUSDRegisterStrings import getMayaUsdString
 
@@ -83,3 +84,9 @@ def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeC
     allItems = removeHiddenInOutliner(list(allItems - excludeSet))
     allItems.sort(key=natural_key)
     return allItems
+
+def getDefaultMaterialScopeName():
+    '''
+    Retrieve the default material scope name.
+    '''
+    return  mayaUsd.lib.JobExportArgs.GetDefaultMaterialsScopeName()

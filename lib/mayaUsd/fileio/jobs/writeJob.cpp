@@ -490,15 +490,19 @@ bool UsdMaya_WriteJob::_FinishWriting()
 {
     MayaUsd::ProgressBarScope progressBar(7);
 
+    // Note: we must prune empty groups before retrieving the list
+    //       of root prims, otherwise we will use prims that will be
+    //       subsequently deleted.
+    _PruneEmpties();
+    progressBar.advance();
+
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
     // Write Variants (to first root prim path)
     UsdPrim usdRootPrim;
-    TfToken defaultPrim;
 
     if (!usdRootPrims.empty()) {
         usdRootPrim = *usdRootPrims.begin();
-        defaultPrim = usdRootPrim.GetName();
     }
 
     if (usdRootPrim && mRenderLayerObjs.length() > 1
@@ -511,7 +515,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
         //     This needs to be done since "local" values have stronger precedence
         //     than "variant" values, but "referencing" will cause the variant values
         //     to take precedence.
-        defaultPrim = _WriteVariants(usdRootPrim);
+        _WriteVariants(usdRootPrim);
     }
     progressBar.advance();
 
@@ -557,12 +561,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
     }
 
     if (!mJobCtx.mArgs.defaultPrim.empty()) {
-        defaultPrim = TfToken(mJobCtx.mArgs.defaultPrim);
-        mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
-    } else if (usdRootPrim) {
-        // We have already decided above that 'usdRootPrim' is the important
-        // prim for the export... usdVariantRootPrimPath
-        mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
+        mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(TfToken(mJobCtx.mArgs.defaultPrim));
     }
     progressBar.advance();
 
@@ -584,9 +583,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
     }
 
     _PostCallback();
-    progressBar.advance();
-
-    _PruneEmpties();
     progressBar.advance();
 
     TF_STATUS("Saving stage");

@@ -217,19 +217,23 @@ global proc mayaUsdTranslatorExport_setDefaultPrim(string $defaultPrimName) {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
     }
-    if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
-        return;
-    }
     // set the default prim if it's available
     catchQuiet(`optionMenuGrp -e -value $defaultPrimName exportDefaultPrim`);
 }
 
+proc int mayaUsdTranslatorExport_isCheckBoxOn(string $cbName)
+{
+    if (`checkBoxGrp -exists $cbName` == 0)
+        return 0;
+    
+    if (`checkBoxGrp -q -v1 $cbName` == 0)
+        return 0;
+
+    return 1;
+}
+
 global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
-        return;
-    }
-
-    if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
         return;
     }
 
@@ -247,9 +251,9 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
         }
     }
 
-    int $excludeMesh = (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 0);
-    int $excludeLight = (`checkBoxGrp -q -v1 exportLightsCheckBox` == 0);
-    int $excludeCamera = (`checkBoxGrp -q -v1 exportCamerasCheckBox` == 0);
+    int $excludeMesh = (mayaUsdTranslatorExport_isCheckBoxOn("exportMeshesCheckBox") == 0);
+    int $excludeLight = (mayaUsdTranslatorExport_isCheckBoxOn("exportLightsCheckBox") == 0);
+    int $excludeCamera = (mayaUsdTranslatorExport_isCheckBoxOn("exportCamerasCheckBox") == 0);
 
     string $allItems[];
     global int $exportAll;
@@ -258,6 +262,15 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
 
     } else{
         $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidatesFromSelection('" + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"')")`;
+    }
+
+    // Note: we only add the material scope if meshes are *not* listed.
+    int $includeMaterials = ($excludeMesh != 0) && (mayaUsdTranslatorExport_isCheckBoxOn("exportMaterialsCheckBox") != 0);
+    if ($includeMaterials) {
+        string $materialScopeName = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.getDefaultMaterialScopeName()")`;
+        if (size($materialScopeName) > 0) {
+            stringArrayInsertAtIndex(255, $allItems, $materialScopeName);
+        }
     }
 
     for($item in $allItems){
@@ -272,6 +285,9 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
 
 }
 
+// This is called to update the default prim drop-down with the
+// explicit root prim name entered by the user. If the explicit
+// name is empty, we fill teh default prim menu as usual.
 proc updateDefaultPrimOptionMenu(string $rootPrim) {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
