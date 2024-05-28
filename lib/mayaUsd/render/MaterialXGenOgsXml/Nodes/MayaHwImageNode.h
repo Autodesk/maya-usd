@@ -6,18 +6,17 @@
 #ifndef MAYA_MATERIALX_HWIMAGECODENODE_H
 #define MAYA_MATERIALX_HWIMAGECODENODE_H
 
-#include <MaterialXGenShader/Nodes/SourceCodeNode.h>
+#include <MaterialXGenShader/Nodes/HwImageNode.h>
 
 MATERIALX_NAMESPACE_BEGIN
 
-/// Extending the SourceCodeNode with requirements for image nodes.
-class MayaHwImageNode : public SourceCodeNode
+/// Extending the HwImageNode to propagate the inputs.
+class MayaHwImageNode : public HwImageNode
 {
 public:
     static ShaderNodeImplPtr create();
 
     void addInputs(ShaderNode& node, GenContext& context) const override;
-    void setValues(const Node& node, ShaderNode& shaderNode, GenContext& context) const override;
 };
 
 MATERIALX_NAMESPACE_END

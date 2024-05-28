@@ -9,7 +9,6 @@
 /// @file
 /// Shader graph class
 
-#include <MaterialXGenShader/Export.h>
 #include <MaterialXGenShader/ShaderGraph.h>
 
 MATERIALX_NAMESPACE_BEGIN
