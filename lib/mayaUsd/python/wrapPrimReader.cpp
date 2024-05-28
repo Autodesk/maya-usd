@@ -425,6 +425,15 @@ boost::python::object get_allChaserArgs(UsdMayaJobImportArgs& self)
     return boost::python::object(allChaserArgs);
 }
 
+boost::python::object get_remapUVSetsTo(UsdMayaJobImportArgs& self)
+{
+    boost::python::dict uvSetRemaps;
+    for (auto&& remap : self.remapUVSetsTo) {
+        uvSetRemaps[remap.first] = remap.second;
+    }
+    return boost::python::object(uvSetRemaps);
+}
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -458,6 +467,7 @@ void wrapJobImportArgs()
             make_getter(
                 &UsdMayaJobImportArgs::excludePrimvarNamespaces,
                 return_value_policy<TfPySequenceToSet>()))
+        .add_property("remapUVSetsTo", ::get_remapUVSetsTo)
         .def_readonly("importInstances", &UsdMayaJobImportArgs::importInstances)
         .def_readonly("importUSDZTextures", &UsdMayaJobImportArgs::importUSDZTextures)
         .def_readonly(

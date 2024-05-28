@@ -214,9 +214,10 @@ _GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderCo
 }
 
 static void _BindUVs(
-    const UsdGeomGprim& primSchema,
-    const MDagPath&     shapeDagPath,
-    const _UVBindings&  uvBindings)
+    const UsdMayaJobImportArgs& jobArguments,
+    const UsdGeomGprim&         primSchema,
+    const MDagPath&             shapeDagPath,
+    const _UVBindings&          uvBindings)
 {
     if (uvBindings.empty()) {
         return;
@@ -241,6 +242,14 @@ static void _BindUVs(
                 || (UsdMayaReadUtil::ReadFloat2AsUV()
                     && typeName == SdfValueTypeNames->Float2Array)) {
                 TfToken originalName = UsdMayaRoundTripUtil::GetPrimVarMayaName(primvar);
+                if (originalName.IsEmpty()) {
+                    // If we have no roundtripped original name, see if there
+                    // were any UVSet name remappings applied on import. We will
+                    // want to ignore that remapping here
+                    originalName = TfToken(UsdMayaReadUtil::UVSetImportedName(
+                                               primvar.GetPrimvarName(), jobArguments.remapUVSetsTo)
+                                               .asChar());
+                }
                 if (!originalName.IsEmpty()) {
                     for (unsigned int uvSetIndex = 1; uvSetIndex < uvSets.length(); uvSetIndex++) {
                         if (uvSets[uvSetIndex] == originalName.GetText()) {
@@ -274,11 +283,12 @@ static void _BindUVs(
 } // namespace
 
 static bool _AssignMaterialFaceSet(
-    const MObject&      shadingEngine,
-    const UsdGeomGprim& primSchema,
-    const MDagPath&     shapeDagPath,
-    const VtIntArray&   faceIndices,
-    const _UVBindings&  faceUVBindings)
+    const UsdMayaJobImportArgs& jobArguments,
+    const MObject&              shadingEngine,
+    const UsdGeomGprim&         primSchema,
+    const MDagPath&             shapeDagPath,
+    const VtIntArray&           faceIndices,
+    const _UVBindings&          faceUVBindings)
 {
     MStatus status;
 
@@ -303,7 +313,7 @@ static bool _AssignMaterialFaceSet(
                 "Could not add component to shadingEngine %s.", seFnSet.name().asChar());
             return false;
         }
-        _BindUVs(primSchema, shapeDagPath, faceUVBindings);
+        _BindUVs(jobArguments, primSchema, shapeDagPath, faceUVBindings);
     }
 
     return true;
@@ -355,7 +365,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 TF_RUNTIME_ERROR(
                     "Could not add shadingEngine for '%s'.", shapeDagPath.fullPathName().asChar());
             }
-            _BindUVs(primSchema, shapeDagPath, uvBindings);
+            _BindUVs(jobArguments, primSchema, shapeDagPath, uvBindings);
         }
 
         return true;
@@ -402,7 +412,12 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 geom, UsdGeomTokens->face, UsdShadeTokens->materialBind);
 #endif
             if (!_AssignMaterialFaceSet(
-                    shadingEngine, primSchema, shapeDagPath, unassignedIndices, uvBindings)) {
+                    jobArguments,
+                    shadingEngine,
+                    primSchema,
+                    shapeDagPath,
+                    unassignedIndices,
+                    uvBindings)) {
                 return false;
             }
         }
@@ -431,6 +446,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 subset.GetIndicesAttr().Get(&indices, UsdTimeCode::EarliestTime());
 
                 if (!_AssignMaterialFaceSet(
+                        jobArguments,
                         faceSubsetShadingEngine,
                         primSchema,
                         shapeDagPath,

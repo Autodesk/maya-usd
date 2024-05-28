@@ -54,6 +54,7 @@ public:
     static constexpr auto kUseAsAnimationCacheFlag = "uac";
     static constexpr auto kImportChaserFlag = "chr";
     static constexpr auto kImportChaserArgsFlag = "cha";
+    static constexpr auto kRemapUVSetsToFlag = "ruv";
     static constexpr auto kApplyEulerFilterFlag = "aef";
 
     // Short and Long forms of flags defined by this command itself:
