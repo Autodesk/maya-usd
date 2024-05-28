@@ -17,6 +17,8 @@
 
 #include <usdUfe/undo/UsdUndoBlock.h>
 
+#include <usdUfe/utils/editRouterContext.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
@@ -51,6 +53,8 @@ UsdUndoSetKindCommand::create(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken
 void UsdUndoSetKindCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
+
+    PrimMetadataEditRouterContext ctx(_prim, PXR_NS::SdfFieldKeys->Kind);
 
     PXR_NS::UsdModelAPI(_prim).SetKind(_kind);
 }
