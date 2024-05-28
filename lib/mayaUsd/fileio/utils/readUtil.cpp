@@ -67,6 +67,22 @@ bool UsdMayaReadUtil::ReadFloat2AsUV()
     return readFloat2AsUV;
 }
 
+/* static */
+MString UsdMayaReadUtil::UVSetImportedName(
+    const TfToken&                            originalName,
+    const std::map<std::string, std::string>& uvSetRemaps)
+{
+    MString setName(originalName.GetText());
+
+    auto it = uvSetRemaps.find(setName.asChar());
+    if (it != uvSetRemaps.end()) {
+        // Remap the UV set as specified
+        setName = it->second.c_str();
+    }
+
+    return setName;
+}
+
 MObject UsdMayaReadUtil::FindOrCreateMayaAttr(
     const SdfValueTypeName& typeName,
     const SdfVariability    variability,

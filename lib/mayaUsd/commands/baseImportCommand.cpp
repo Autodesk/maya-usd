@@ -105,6 +105,13 @@ MSyntax MayaUSDImportCommand::createSyntax()
     syntax.makeFlagMultiUse(kImportChaserArgsFlag);
 
     syntax.addFlag(
+        kRemapUVSetsToFlag,
+        UsdMayaJobImportArgsTokens->remapUVSetsTo.GetText(),
+        MSyntax::kString,
+        MSyntax::kString);
+    syntax.makeFlagMultiUse(kRemapUVSetsToFlag);
+
+    syntax.addFlag(
         kApplyEulerFilterFlag,
         UsdMayaJobImportArgsTokens->applyEulerFilter.GetText(),
         MSyntax::kBoolean);

@@ -50,4 +50,9 @@ const TfToken::Set& UsdMayaPrimReaderArgs::GetExcludePrimvarNamespaces() const
 
 bool UsdMayaPrimReaderArgs::GetUseAsAnimationCache() const { return _jobArgs.useAsAnimationCache; }
 
+const std::map<std::string, std::string>& UsdMayaPrimReaderArgs::GetUVSetNameRemappings() const
+{
+    return _jobArgs.remapUVSetsTo;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

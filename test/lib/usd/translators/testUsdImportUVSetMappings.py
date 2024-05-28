@@ -46,6 +46,7 @@ class testUsdImportUVSetMappings(unittest.TestCase):
         '''
         usd_path = os.path.join(self.test_dir, "UsdImportUVSetMappings.usda")
         options = ["shadingMode=[[useRegistry,UsdPreviewSurface]]",
+                   "remapUVSetsTo=[['','']]",
                    "primPath=/"]
         cmds.file(usd_path, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
@@ -88,7 +89,6 @@ class testUsdImportUVSetMappings(unittest.TestCase):
         for file_name, links in expected_links:
             links = set(links)
             self.assertEqual(set(cmds.uvLink(texture=file_name)), links)
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
