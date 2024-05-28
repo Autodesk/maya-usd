@@ -43,6 +43,7 @@ def mayaUsdLibRegisterStrings():
     register('kOpenImage', 'Open')
     register('kLabelMaterial', 'Material')
     register('kLabelAssignedMaterial', 'Assigned Material')
+    register('kAnnShowMaterialInLookdevx', 'Show in LookdevX')
     register('kLabelInheritedMaterial', 'Inherited Material')
     register('kLabelInheritedFromPrim', 'Inherited from Prim')
     register('kLabelInheriting', 'inheriting')
