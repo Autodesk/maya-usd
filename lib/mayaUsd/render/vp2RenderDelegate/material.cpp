@@ -1474,17 +1474,8 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
         return nullptr;
     }
 
-    // The UDIM scale and offset cannot be retrieved from a MTexture*, so we need to remember
-    // what was the result the last time we created one. This is required because a pointer
-    // in the global and local cache can go stale, while Maya still remembers about that
-    // texture.
-    static std::unordered_map<std::string, MFloatArray> kScaleOffsetCache;
     MHWRender::MTexture* texture = textureMgr->findTexture(path.c_str());
     if (texture) {
-        const auto scaleOffsetIt = kScaleOffsetCache.find(path);
-        if (scaleOffsetIt != kScaleOffsetCache.end()) {
-            uvScaleOffset = scaleOffsetIt->second;
-        }
         return texture;
     }
 
@@ -1565,8 +1556,6 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
         maxHeight,
         failedTilePaths,
         uvScaleOffset);
-
-    kScaleOffsetCache.emplace(path, uvScaleOffset);
 
     for (unsigned int i = 0; i < failedTilePaths.length(); i++) {
         TF_WARN("Failed to load <UDIM> texture tile %s", failedTilePaths[i].asChar());
@@ -2060,7 +2049,7 @@ HdVP2Material::~HdVP2Material()
     // Tell pending tasks or running tasks (if any) to terminate
     ClearPendingTasks();
 
-    if (!_IsDisabledAsyncTextureLoading() && !_localTextureMap.empty()) {
+    if (!_localTextureMap.empty()) {
         _TransientTexturePreserver::GetInstance().PreserveTextures(_localTextureMap);
     }
 }
