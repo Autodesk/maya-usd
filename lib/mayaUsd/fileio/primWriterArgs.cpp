@@ -24,12 +24,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdMayaPrimWriterArgs::UsdMayaPrimWriterArgs(
     const MDagPath&     dagPath,
     const bool          exportRefsAsInstanceable,
-    const TfToken::Set& excludeExportTypes,
-    const std::string&  defaultPrim)
+    const TfToken::Set& excludeExportTypes)
     : _dagPath(dagPath)
     , _exportRefsAsInstanceable(exportRefsAsInstanceable)
     , _excludeExportTypes(excludeExportTypes)
-    , _defaultPrim(defaultPrim)
 {
 }
 
