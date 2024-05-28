@@ -4,6 +4,7 @@
 //
 
 #include "MayaHwImageNode.h"
+
 #include "MayaShaderGraph.h"
 
 MATERIALX_NAMESPACE_BEGIN

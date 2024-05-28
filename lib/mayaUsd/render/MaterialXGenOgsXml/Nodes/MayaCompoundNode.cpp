@@ -4,6 +4,7 @@
 //
 
 #include "MayaCompoundNode.h"
+
 #include "MayaShaderGraph.h"
 
 #include <MaterialXGenShader/HwShaderGenerator.h>
