@@ -130,4 +130,31 @@ AttributeEditRouterContext::AttributeEditRouterContext(
 {
 }
 
+PXR_NS::SdfLayerHandle PrimMetadataEditRouterContext::getPrimMetadataLayer(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& metadataKeyPath)
+{
+    if (isTargetAlreadySet())
+        return nullptr;
+
+    return getPrimMetadataEditRouterLayer(prim, metadataName, metadataKeyPath);
+}
+
+PrimMetadataEditRouterContext::PrimMetadataEditRouterContext(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& metadataKeyPath)
+    : StackedEditRouterContext(
+        prim.GetStage(),
+        getPrimMetadataLayer(prim, metadataName, metadataKeyPath))
+{
+}
+
+PrimMetadataEditRouterContext::PrimMetadataEditRouterContext(
+    const PXR_NS::UsdStagePtr&    stage,
+    const PXR_NS::SdfLayerHandle& layer)
+    : StackedEditRouterContext(stage, layer)
+{
+}
 } // namespace USDUFE_NS_DEF
