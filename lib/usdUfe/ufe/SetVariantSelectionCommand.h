@@ -53,12 +53,13 @@ public:
     void undo() override;
 
 private:
-    const Ufe::Path       _path;
-    PXR_NS::UsdPrim       _prim;
-    PXR_NS::UsdVariantSet _varSet;
-    const std::string     _oldSelection;
-    const std::string     _newSelection;
-    Ufe::Selection        _savedSn; // For global selection save and restore.
+    const Ufe::Path        _path;
+    PXR_NS::UsdPrim        _prim;
+    PXR_NS::UsdVariantSet  _varSet;
+    const std::string      _oldSelection;
+    const std::string      _newSelection;
+    Ufe::Selection         _savedSn;  // For global selection save and restore.
+    PXR_NS::SdfLayerHandle _dstLayer; // To ensure consistent editTarget at undo.
 };
 
 } // namespace USDUFE_NS_DEF

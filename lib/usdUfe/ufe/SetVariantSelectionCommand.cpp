@@ -16,6 +16,7 @@
 #include "SetVariantSelectionCommand.h"
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/usd/usd/variantSets.h>
 
@@ -50,14 +51,19 @@ SetVariantSelectionCommand::SetVariantSelectionCommand(
 
 void SetVariantSelectionCommand::redo()
 {
+    const PXR_NS::TfToken metadataKeyPath(_varSet.GetName());
+
+    PrimMetadataEditRouterContext ctx(
+        _prim, PXR_NS::SdfFieldKeys->VariantSelection, metadataKeyPath);
+
     std::string errMsg;
     if (!UsdUfe::isPrimMetadataEditAllowed(
-            _prim,
-            PXR_NS::SdfFieldKeys->VariantSelection,
-            PXR_NS::TfToken(_varSet.GetName()),
-            &errMsg)) {
+            _prim, PXR_NS::SdfFieldKeys->VariantSelection, metadataKeyPath, &errMsg)) {
         throw std::runtime_error(errMsg.c_str());
     }
+
+    // Backup the destination layer for consistent undo.
+    _dstLayer = _prim.GetStage()->GetEditTarget().GetLayer();
 
     // Make a copy of the global selection, to restore it on undo.
     auto globalSn = Ufe::GlobalSelection::get();
@@ -69,6 +75,8 @@ void SetVariantSelectionCommand::redo()
 
 void SetVariantSelectionCommand::undo()
 {
+    PrimMetadataEditRouterContext ctx(_prim.GetStage(), _dstLayer);
+
     std::string errMsg;
     if (!UsdUfe::isPrimMetadataEditAllowed(
             _prim,
