@@ -47,6 +47,8 @@ void ClearSceneItemMetadataCommand::executeImplementation()
         const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
         if (_group.GetString().empty()) {
             // If this is not a grouped meta data, remove the key
+            PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData);
+
             prim.ClearCustomDataByKey(TfToken(_key));
         } else {
 
@@ -57,6 +59,8 @@ void ClearSceneItemMetadataCommand::executeImplementation()
                 if (!_key.empty()) {
                     PXR_NS::VtDictionary newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
                     if (newDict.find(_key) != newDict.end()) {
+                        PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, _group);
+
                         newDict.erase(_key);
 
                         // Set the new data.
@@ -65,6 +69,8 @@ void ClearSceneItemMetadataCommand::executeImplementation()
                 }
                 // Remove the group.
                 else {
+                    PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, _group);
+
                     prim.ClearCustomDataByKey(_group);
                 }
             }
