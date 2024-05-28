@@ -155,7 +155,7 @@ class testUsdImportXforms(unittest.TestCase):
         # Now write out a usd file with all our xforms...
         cmds.select(allNodes)
         usdPath = os.path.abspath('UsdImportMayaXformVariationsTest.usdc')
-        cmds.usdExport(selection=1, file=usdPath)
+        cmds.usdExport(selection=1, file=usdPath, defaultPrim='topPrim')
         
         # Now import, and make sure it round-trips as expected
         cmds.file(new=1, f=1)

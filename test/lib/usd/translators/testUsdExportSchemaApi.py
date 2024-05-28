@@ -97,7 +97,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         cmds.polySphere(r=1)
         usdFilePath = os.path.abspath('UsdExportSchemaApiTestBasic.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, 
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, defaultPrim='pSphere1',
                            jobContext=["Larry", "Curly", "Moe"])
 
         self.assertFalse(mark.IsClean())
@@ -121,7 +121,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         cmds.polySphere(r=1)
         usdFilePath = os.path.abspath('UsdExportSchemaApiTestBasic.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, 
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, defaultPrim='pSphere1',
                            jobContext=["NullAPI", "Moe"])
 
         self.assertFalse(mark.IsClean())
@@ -236,7 +236,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         # Export, but without enabling Bullet:
         usdFilePath = os.path.abspath('UsdExportSchemaApiTest_NoBullet.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath)
+        cmds.mayaUSDExport(mergeTransformAndShape=True, defaultPrim='pSphere1', file=usdFilePath)
 
         # Check that there are no Physics API schemas exported:
         stage = Usd.Stage.Open(usdFilePath)
@@ -246,7 +246,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         # Export, with Bullet:
         usdFilePath = os.path.abspath('UsdExportSchemaApiTest_WithBullet.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, defaultPrim='pSphere1',
                            jobContext=["Bullet"], frameRange=(1, 10))
 
         # Check that Physics API schemas did get exported:

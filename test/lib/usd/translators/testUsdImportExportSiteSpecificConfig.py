@@ -84,7 +84,7 @@ class testSiteSpecificConfig(unittest.TestCase):
 
         # Export scene, which should use site-specific settings and trigger the chaser:
         usd_file_path = os.path.join(self.temp_dir, "SiteSpecificFile.usda")
-        cmds.mayaUSDExport(file=usd_file_path)
+        cmds.mayaUSDExport(file=usd_file_path, defaultPrim='pCube1')
 
         # Import scene, which should use site-specific settings and trigger the chaser:
         cmds.mayaUSDImport(file=usd_file_path)

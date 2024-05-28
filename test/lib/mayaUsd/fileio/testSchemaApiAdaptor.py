@@ -413,7 +413,7 @@ class testSchemaApiAdaptor(unittest.TestCase):
         schemasToExport = ["PhysicsMassAPI", "PhysicsRigidBodyAPI"]
         # Export, with Bullet:
         usdFilePath = os.path.abspath('UsdExportSchemaApiTest_WithBullet.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, defaultPrim='pSphere1',
                            apiSchema=schemasToExport, frameRange=(1, 10))
 
         # Check that Physics API schemas did get exported:

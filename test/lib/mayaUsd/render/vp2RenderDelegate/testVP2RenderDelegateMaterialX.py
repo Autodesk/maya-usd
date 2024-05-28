@@ -232,7 +232,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.rotate(-90, 0, 0, 'persp')
         self.assertSnapshotClose('place2dTextureShowcase_Maya_render.png', 960, 960)
         usdFilePath = os.path.join(self._testDir, "place2dTextureShowcase.usda")
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, defaultPrim='locator1',
             shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
             materialsScopeName='Materials')
         xform, shape = mayaUtils.createProxyFromFile(usdFilePath)
@@ -261,7 +261,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.rotate(-90, 0, 0, 'persp')
         self.assertSnapshotClose('mtlxNodesShowcase_Maya_render.png', 960, 960)
         usdFilePath = os.path.join(self._testDir, "mtlxNodesShowcase.usda")
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, defaultPrim='locator1',
             shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
             materialsScopeName='Materials')
         xform, shape = mayaUtils.createProxyFromFile(usdFilePath)
@@ -410,12 +410,12 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
             cmds.setAttr(file_node + ".defaultColor", 0.5, 0.25, 0.125, type="double3")
 
         usdFilePath = os.path.join(self._testDir, "explicit_ocio_usd.usda")
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, defaultPrim='pPlane1',
             shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
             materialsScopeName='mtl')
 
         mtlxFilePath = os.path.join(self._testDir, "explicit_ocio_mtlx.usda")
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=mtlxFilePath,
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=mtlxFilePath, defaultPrim='pPlane1',
             shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
             materialsScopeName='mtl')
 

@@ -51,6 +51,7 @@ class testComponentTags(unittest.TestCase):
         cmds.mayaUSDExport(mergeTransformAndShape=True,
             file=usdFilePath,
             shadingMode='none',
+            defaultPrim='pSphere1',
             exportComponentTags=True)
 
         cmds.file(new=True, force=True)
@@ -74,6 +75,7 @@ class testComponentTags(unittest.TestCase):
         cmds.mayaUSDExport(mergeTransformAndShape=True,
             file=usdFilePath,
             shadingMode='none',
+            defaultPrim='pSphere1',
             exportComponentTags=False)
 
         cmds.file(new=True, force=True)

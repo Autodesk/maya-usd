@@ -348,6 +348,7 @@ class testUsdExportSkeleton(unittest.TestCase):
                 "worldspace": True,
                 "stripNamespaces" : True,
                 "shadingMode":"none",
+                "defaultPrim":"jointsGrp",
                 "exportRoots":("jointsGrp",),
                 "exportSkels":"auto",
             }

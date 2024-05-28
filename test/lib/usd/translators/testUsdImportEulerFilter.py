@@ -46,7 +46,7 @@ def build_skel_scene(out_file):
     cmds.setKeyframe('joint1.ry', v=-85.968, t=[1])
     cmds.setKeyframe('joint1.ry', v=-85.127, t=[2])
     
-    cmds.mayaUSDExport(file=out_file, skl='auto', skn='auto', fr=[1,2])
+    cmds.mayaUSDExport(file=out_file, skl='auto', skn='auto', fr=[1,2], defaultPrim='group')
     
     
 
@@ -60,7 +60,7 @@ def build_xform_scene(out_file):
     cmds.setKeyframe('pCube1.ry', v=-85.968, t=[1])
     cmds.setKeyframe('pCube1.ry', v=-85.127, t=[2])
 
-    cmds.mayaUSDExport(file=out_file, fr=[1,2])
+    cmds.mayaUSDExport(file=out_file, fr=[1,2], defaultPrim='pCube1')
 
 
 class testUsdImportEulerFilter(unittest.TestCase):

@@ -490,12 +490,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
 {
     MayaUsd::ProgressBarScope progressBar(7);
 
-    // Note: we must prune empty groups before retrieving the list
-    //       of root prims, otherwise we will use prims that will be
-    //       subsequently deleted.
-    _PruneEmpties();
-    progressBar.advance();
-
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
     // Write Variants (to first root prim path)
@@ -583,6 +577,9 @@ bool UsdMaya_WriteJob::_FinishWriting()
     }
 
     _PostCallback();
+    progressBar.advance();
+
+    _PruneEmpties();
     progressBar.advance();
 
     TF_STATUS("Saving stage");
