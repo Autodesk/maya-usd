@@ -12,6 +12,10 @@
 #include "Nodes/MayaTransformPointNodeGlsl.h"
 #include "Nodes/MayaTransformVectorNodeGlsl.h"
 #endif
+#ifdef FIX_NODEGRAPH_UDIM_SCALE_OFFSET
+#include "Nodes/MayaCompoundNode.h"
+#include "Nodes/MayaHwImageNode.h"
+#endif
 
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
@@ -203,7 +207,20 @@ GlslFragmentGenerator::GlslFragmentGenerator()
     registerImplementation(
         "IM_transformnormal_vector3_" + GlslShaderGenerator::TARGET,
         MayaTransformNormalNodeGlsl::create);
+#endif
 
+#ifdef FIX_NODEGRAPH_UDIM_SCALE_OFFSET
+    // Locally fixing the UV scale and offset for UDIMs. We will submit to 1.39 later.
+    StringVec elementNames;
+    elementNames = {
+        "IM_image_float_" + GlslShaderGenerator::TARGET,
+        "IM_image_color3_" + GlslShaderGenerator::TARGET,
+        "IM_image_color4_" + GlslShaderGenerator::TARGET,
+        "IM_image_vector2_" + GlslShaderGenerator::TARGET,
+        "IM_image_vector3_" + GlslShaderGenerator::TARGET,
+        "IM_image_vector4_" + GlslShaderGenerator::TARGET,
+    };
+    registerImplementation(elementNames, MayaHwImageNode::create);
 #endif
 
     for (auto&& implName : GlslOcioNodeImpl::getOCIOImplementations()) {
@@ -663,5 +680,45 @@ void GlslFragmentGenerator::emitVariableDeclaration(
             variable, qualifier, context, stage, assignValue);
     }
 }
+
+#ifdef FIX_NODEGRAPH_UDIM_SCALE_OFFSET
+// Locally fixing the UV scale and offset for UDIMs. We will submit to 1.39 later.
+ShaderNodeImplPtr
+GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& context) const
+{
+    InterfaceElementPtr implElement = nodedef.getImplementation(getTarget());
+    if (!implElement) {
+        return nullptr;
+    }
+
+    const string& name = implElement->getName();
+
+    // Check if it's created and cached already.
+    ShaderNodeImplPtr impl = context.findNodeImplementation(name);
+    if (impl) {
+        return impl;
+    }
+
+    vector<OutputPtr> outputs = nodedef.getActiveOutputs();
+    if (outputs.empty()) {
+        throw ExceptionShaderGenError("NodeDef '" + nodedef.getName() + "' has no outputs defined");
+    }
+
+    const TypeDesc* outputType = TypeDesc::get(outputs[0]->getType());
+
+    if (implElement->isA<NodeGraph>() && outputType->getName() != Type::LIGHTSHADER->getName()
+        && !outputType->isClosure()) {
+        // Use a compound implementation that can propagate UDIM inputs:
+        impl = MayaCompoundNode::create();
+        impl->initialize(*implElement, context);
+
+        // Cache it.
+        context.addNodeImplementation(name, impl);
+
+        return impl;
+    }
+    return GlslShaderGenerator::getImplementation(nodedef, context);
+}
+#endif
 
 MATERIALX_NAMESPACE_END
