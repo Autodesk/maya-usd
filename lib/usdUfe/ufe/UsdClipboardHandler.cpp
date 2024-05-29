@@ -22,7 +22,10 @@
 #include <usdUfe/utils/layers.h>
 
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdShade/connectableAPI.h>
+#include <pxr/usd/usdShade/nodeGraph.h>
+#include <pxr/usd/usdShade/shader.h>
 
 #include <algorithm>
 
@@ -66,8 +69,30 @@ UsdClipboardHandler::Ptr UsdClipboardHandler::create()
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::cutCmd_(const Ufe::Selection& selection)
 {
+    // Don't allow cutting (which also means copying) the items which cannot
+    // be cut.
+    Ufe::Selection allowedToBeCut;
+    for (const auto& item : selection) {
+        // EMSUSD-1126 - Cut a prim and not have it paste if the cut is restricted
+        auto       usdItem = downcast(item);
+        const auto prim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
+        if (!prim)
+            continue;
+
+        // As per the JIRA item for now, skip the special cut conditions
+        // on shaders and nodegraphs. These nodes are handled by special
+        // cases in LookdevX plugin.
+        if ((PXR_NS::UsdShadeNodeGraph(prim) || PXR_NS::UsdShadeShader(prim))
+            || canBeCut_(item)) {
+            allowedToBeCut.append(item);
+        }
+    }
+
+    if (allowedToBeCut.empty())
+        return {};
+
     return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdCutClipboardCommand>::create(
-        selection, _clipboard);
+        allowedToBeCut, _clipboard);
 }
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::copyCmd_(const Ufe::Selection& selection)

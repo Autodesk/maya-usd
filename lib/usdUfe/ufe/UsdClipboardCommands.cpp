@@ -316,7 +316,8 @@ void UsdCutClipboardCommand::execute()
 
     // Step 1. Copy the selected items to the Clipboard.
     auto copyClipboardCommand = UsdCopyClipboardCommand::create(_selection, _clipboard);
-    copyClipboardCommand->execute();
+    if (copyClipboardCommand)
+        copyClipboardCommand->execute();
 
     const auto& sceneItemOpsHandler
         = Ufe::RunTimeMgr::instance().sceneItemOpsHandler(UsdUfe::getUsdRunTimeId());
@@ -465,11 +466,13 @@ void UsdPasteClipboardCommand::execute()
             if (isMaterialsScope(dstParentItem)) {
                 auto duplicateCmd
                     = UsdUndoDuplicateSelectionCommand::create(clipboardMaterials, dstParentItem);
-                duplicateCmd->execute();
-                appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
-                auto tmpTargetItems = duplicateCmd->targetItems();
-                _targetItems.insert(
-                    _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                if (duplicateCmd) {
+                    duplicateCmd->execute();
+                    appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
+                    auto tmpTargetItems = duplicateCmd->targetItems();
+                    _targetItems.insert(
+                        _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                }
             } else {
                 appendToVector(clipboardMaterials, pasteInfo.failedPastes, true);
             }
@@ -486,11 +489,13 @@ void UsdPasteClipboardCommand::execute()
             } else if (PXR_NS::UsdShadeNodeGraph(dstParentItem->prim())) {
                 auto duplicateCmd
                     = UsdUndoDuplicateSelectionCommand::create(clipboardShaders, dstParentItem);
-                duplicateCmd->execute();
-                appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
-                auto tmpTargetItems = duplicateCmd->targetItems();
-                _targetItems.insert(
-                    _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                if (duplicateCmd) {
+                    duplicateCmd->execute();
+                    appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
+                    auto tmpTargetItems = duplicateCmd->targetItems();
+                    _targetItems.insert(
+                        _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                }
             } else {
                 appendToVector(clipboardShaders, pasteInfo.failedPastes, true);
             }
@@ -529,16 +534,18 @@ void UsdPasteClipboardCommand::execute()
 
                 auto duplicateCmd
                     = UsdUndoDuplicateSelectionCommand::create(clipboardPrims, pasteTarget);
-                duplicateCmd->execute();
-                appendToVector(
-                    duplicateCmd->targetItems(),
-                    pasteAsSibling ? extraPasteInfo.successfulPastes : pasteInfo.successfulPastes);
-                auto tmpTargetItems = duplicateCmd->targetItems();
-                _targetItems.insert(
-                    _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
-                _itemsToSelect.insert(
-                    _itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
-
+                if (duplicateCmd) {
+                    duplicateCmd->execute();
+                    appendToVector(
+                        duplicateCmd->targetItems(),
+                        pasteAsSibling ? extraPasteInfo.successfulPastes
+                                       : pasteInfo.successfulPastes);
+                    auto tmpTargetItems = duplicateCmd->targetItems();
+                    _targetItems.insert(
+                        _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                    _itemsToSelect.insert(
+                        _itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                }
                 if (pasteAsSibling) {
                     _pasteInfos.push_back(std::move(extraPasteInfo));
                 }
