@@ -82,8 +82,7 @@ Ufe::UndoableCommand::Ptr UsdClipboardHandler::cutCmd_(const Ufe::Selection& sel
         // As per the JIRA item for now, skip the special cut conditions
         // on shaders and nodegraphs. These nodes are handled by special
         // cases in LookdevX plugin.
-        if ((PXR_NS::UsdShadeNodeGraph(prim) || PXR_NS::UsdShadeShader(prim))
-            || canBeCut_(item)) {
+        if ((PXR_NS::UsdShadeNodeGraph(prim) || PXR_NS::UsdShadeShader(prim)) || canBeCut_(item)) {
             allowedToBeCut.append(item);
         }
     }
