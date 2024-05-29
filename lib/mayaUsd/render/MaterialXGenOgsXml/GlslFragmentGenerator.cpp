@@ -717,8 +717,9 @@ GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& con
         context.addNodeImplementation(name, impl);
 
         return impl;
-    } else if (implElement->isA<Implementation>() && !_implFactory.classRegistered(name) && !outputType->isClosure())
-    {
+    } else if (
+        implElement->isA<Implementation>() && !_implFactory.classRegistered(name)
+        && !outputType->isClosure()) {
         // Backporting 1.39 fix done in
         //  https://github.com/AcademySoftwareFoundation/MaterialX/pull/1754
         impl = MayaSourceCodeNode::create();

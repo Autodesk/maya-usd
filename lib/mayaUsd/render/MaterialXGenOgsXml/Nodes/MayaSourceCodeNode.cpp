@@ -17,21 +17,22 @@ void MayaSourceCodeNode::initialize(const InterfaceElement& element, GenContext&
     SourceCodeNode::initialize(element, context);
 
     // See if a resolved _sourceFilename is actually a library file name:
-    if (!_sourceFilename.isEmpty())
-    {
-        // Find the shortest relative sub path that the library resolver can find correctly, this is what emitLibraryInclude requires.
-        size_t pathIndex = 0;
+    if (!_sourceFilename.isEmpty()) {
+        // Find the shortest relative sub path that the library resolver can find correctly, this is
+        // what emitLibraryInclude requires.
+        size_t       pathIndex = 0;
         const size_t maxPathIndex = _sourceFilename.size() - 1;
 
-        FilePath relativePath = _sourceFilename[maxPathIndex - pathIndex];
+        FilePath       relativePath = _sourceFilename[maxPathIndex - pathIndex];
         const FilePath libraryPrefix = context.getOptions().libraryPrefix;
         while (pathIndex < maxPathIndex) {
-            FilePath fullFilename = libraryPrefix.isEmpty() ? relativePath : libraryPrefix / relativePath;
+            FilePath fullFilename
+                = libraryPrefix.isEmpty() ? relativePath : libraryPrefix / relativePath;
             if (context.resolveSourceFile(fullFilename, FilePath()) == _sourceFilename) {
                 break;
             }
             ++pathIndex;
-            relativePath = FilePath{_sourceFilename[maxPathIndex - pathIndex]} / relativePath;
+            relativePath = FilePath { _sourceFilename[maxPathIndex - pathIndex] } / relativePath;
         }
 
         if (pathIndex < maxPathIndex) {
@@ -41,7 +42,10 @@ void MayaSourceCodeNode::initialize(const InterfaceElement& element, GenContext&
     }
 }
 
-void MayaSourceCodeNode::emitFunctionDefinition(const ShaderNode& node, GenContext& context, ShaderStage& stage) const
+void MayaSourceCodeNode::emitFunctionDefinition(
+    const ShaderNode& node,
+    GenContext&       context,
+    ShaderStage&      stage) const
 {
     if (!_librarySourceFileName.isEmpty()) {
         DEFINE_SHADER_STAGE(stage, Stage::PIXEL)
