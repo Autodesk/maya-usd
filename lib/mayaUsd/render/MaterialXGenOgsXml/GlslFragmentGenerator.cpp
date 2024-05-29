@@ -15,6 +15,7 @@
 #ifdef FIX_NODEGRAPH_UDIM_SCALE_OFFSET
 #include "Nodes/MayaCompoundNode.h"
 #include "Nodes/MayaHwImageNode.h"
+#include "Nodes/MayaSourceCodeNode.h"
 #endif
 
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
@@ -710,6 +711,17 @@ GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& con
         && !outputType->isClosure()) {
         // Use a compound implementation that can propagate UDIM inputs:
         impl = MayaCompoundNode::create();
+        impl->initialize(*implElement, context);
+
+        // Cache it.
+        context.addNodeImplementation(name, impl);
+
+        return impl;
+    } else if (implElement->isA<Implementation>() && !_implFactory.classRegistered(name) && !outputType->isClosure())
+    {
+        // Backporting 1.39 fix done in
+        //  https://github.com/AcademySoftwareFoundation/MaterialX/pull/1754
+        impl = MayaSourceCodeNode::create();
         impl->initialize(*implElement, context);
 
         // Cache it.
