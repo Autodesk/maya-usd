@@ -219,7 +219,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         self._StartTest('grids_with_udims')
 
     @unittest.skipIf(getMaterialXVersion() < [1, 38, 8], 'The source code node fix backport is only for 1.38.8 and later')
-    def testUDIMsOnCustomImageNodes(self):
+    def testSourceCodeNodeBackport(self):
         cmds.file(force=True, new=True)
 
         cmds.move(0, 6, 0, 'persp')
