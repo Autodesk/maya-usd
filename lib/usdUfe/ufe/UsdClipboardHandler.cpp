@@ -66,7 +66,8 @@ UsdClipboardHandler::Ptr UsdClipboardHandler::create()
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::cutCmd_(const Ufe::Selection& selection)
 {
-    return UsdCutClipboardCommand::create(selection, _clipboard);
+    return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdCutClipboardCommand>::create(
+        selection, _clipboard);
 }
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::copyCmd_(const Ufe::Selection& selection)
@@ -74,17 +75,52 @@ Ufe::UndoableCommand::Ptr UsdClipboardHandler::copyCmd_(const Ufe::Selection& se
     return UsdCopyClipboardCommand::create(selection, _clipboard);
 }
 
+//! \brief Helper class to override the paste command execute
+class UsdPasteClipboardCommandWithSelection
+    : public UsdUndoSelectAfterCommand<UsdPasteClipboardCommand>
+{
+public:
+    using Parent = UsdUndoSelectAfterCommand<UsdPasteClipboardCommand>;
+    using ThisPtr = std::shared_ptr<UsdPasteClipboardCommandWithSelection>;
+
+    // Bring in base class constructors.
+    using Parent::Parent;
+
+    // Override the execute so we can set a selection guard to not erase the
+    // paste as sibling flag when the selection changes as a result of the
+    // paste command selecting the target(s).
+    void execute() override
+    {
+        _clipboard->_inSelectionGuard = true;
+        try {
+            Parent::execute();
+        } catch (...) {
+            _clipboard->_inSelectionGuard = false;
+            throw;
+        }
+        _clipboard->_inSelectionGuard = false;
+    }
+
+    static ThisPtr
+    create(const Ufe::SceneItem::Ptr& dstParentItem, const UsdClipboard::Ptr& clipboard)
+    {
+        return std::make_shared<UsdPasteClipboardCommandWithSelection>(dstParentItem, clipboard);
+    }
+    static ThisPtr create(const Ufe::Selection& dstParentItems, const UsdClipboard::Ptr& clipboard)
+    {
+        return std::make_shared<UsdPasteClipboardCommandWithSelection>(dstParentItems, clipboard);
+    }
+};
+
 Ufe::PasteClipboardCommand::Ptr
 UsdClipboardHandler::pasteCmd_(const Ufe::SceneItem::Ptr& parentItem)
 {
-    return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdPasteClipboardCommand>::create(
-        parentItem, _clipboard);
+    return UsdPasteClipboardCommandWithSelection::create(parentItem, _clipboard);
 }
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::pasteCmd_(const Ufe::Selection& parentItems)
 {
-    return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdPasteClipboardCommand>::create(
-        parentItems, _clipboard);
+    return UsdPasteClipboardCommandWithSelection::create(parentItems, _clipboard);
 }
 
 bool UsdClipboardHandler::hasItemsToPaste_()

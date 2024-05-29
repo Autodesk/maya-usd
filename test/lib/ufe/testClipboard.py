@@ -23,6 +23,7 @@ import mayaUsd
 import mayaUsd_createStageWithNewLayer
 
 from maya import standalone
+import maya.cmds as cmds
 
 import ufe
 
@@ -247,6 +248,23 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         pastedSphereItem = ufeUtils.createItem(psPathStr + ',/Xform1/Sphere1')
         self.assertIsNotNone(pastedSphereItem)
 
+    def testClipboardCutRemovedFromSelection(self):
+        '''Test that when we cut a selected item it is removed from selection list.'''
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Sphere1', 'Sphere')
+
+        # Select the sphere and cut it.
+        cmds.select(psPathStr + ',/Xform1/Sphere1')
+        cutCmd = ufe.ClipboardHandler.cutCmd(ufe.GlobalSelection.get())
+        self.assertIsNotNone(cutCmd)
+        cutCmd.execute()
+
+        # There sphere prim should not be selected.
+        self.assertTrue(ufe.GlobalSelection.get().empty())
+
     def testClipboardCopyPasteWithVariant(self):
         '''Basic test for the Clipboard copy/paste of prim with a variant.'''
 
@@ -304,6 +322,59 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         for name in objectVariantSet.GetNames():
             self.assertTrue(pastedVariantSet.HasVariantSet(name))
             self.assertEqual(objectVariantSet.GetVariantSelection(name), pastedVariantSet.GetVariantSelection(name))
+
+    def testClipboardMultiplePaste(self):
+        '''Test pasting multiple times.'''
+        
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Sphere1', 'Sphere')
+
+        # Copy the sphere item and test that we have an item to paste.
+        cmds.select(psPathStr + ',/Xform1/Sphere1')
+        ufe.ClipboardHandler.preCopy()
+        copyCmd = ufe.ClipboardHandler.copyCmd(ufe.GlobalSelection.get())
+        self.assertIsNotNone(copyCmd)
+        copyCmd.execute()
+
+        # Create new Xforms for pasting into.
+        stage.DefinePrim('/Xform2', 'Xform')
+        stage.DefinePrim('/Xform3', 'Xform')
+
+        # First select the xform and continously paste into the
+        # global selection, which will be changing for each paste.
+        # The paste command selects the newly pasted items. But there
+        # is special "paste as sibling" logic.
+        cmds.select(psPathStr + ',/Xform2')
+
+        # Paste into the new xform multiple times.
+        nbPastes = 10
+        for _ in range(nbPastes):
+            # Paste target is global selection each time which is changing.
+            pasteCmd = ufe.ClipboardHandler.pasteCmd(ufe.GlobalSelection.get())
+            self.assertIsNotNone(pasteCmd)
+            pasteCmd.execute()  # This pastes and select
+
+        # The xform2 should now have X number of children.
+        xformItem = ufeUtils.createItem(psPathStr + ',/Xform2')
+        self.assertIsNotNone(xformItem)
+        xformHier = ufe.Hierarchy.hierarchy(xformItem)
+        self.assertIsNotNone(xformHier)
+        self.assertEqual(nbPastes, len(xformHier.children()))
+
+        # Select a different target and paste into that.
+        cmds.select(psPathStr + ',/Xform3')
+        pasteCmd = ufe.ClipboardHandler.pasteCmd(ufe.GlobalSelection.get())
+        self.assertIsNotNone(pasteCmd)
+        pasteCmd.execute()
+
+        # That new target should now have one child and the other target
+        # still the same X number.
+        self.assertEqual(nbPastes, len(xformHier.children()))
+        xformItem = ufeUtils.createItem(psPathStr + ',/Xform3')
+        xformHier = ufe.Hierarchy.hierarchy(xformItem)
+        self.assertEqual(1, len(xformHier.children()))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
