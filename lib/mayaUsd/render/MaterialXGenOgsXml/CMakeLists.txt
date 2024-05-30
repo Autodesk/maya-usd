@@ -33,6 +33,7 @@ target_sources(${PROJECT_NAME}
         Nodes/MayaHwImageNode.cpp
         Nodes/MayaCompoundNode.cpp
         Nodes/MayaShaderGraph.cpp
+        Nodes/MayaSourceCodeNode.cpp
     )
 endif()
 
