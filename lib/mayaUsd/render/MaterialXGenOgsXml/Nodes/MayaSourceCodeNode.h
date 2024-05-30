@@ -17,13 +17,8 @@ class MayaSourceCodeNode : public SourceCodeNode
 public:
     static ShaderNodeImplPtr create();
 
-    void initialize(const InterfaceElement& element, GenContext& context) override;
-
     void emitFunctionDefinition(const ShaderNode& node, GenContext& context, ShaderStage& stage)
         const override;
-
-protected:
-    FilePath _librarySourceFileName;
 };
 
 MATERIALX_NAMESPACE_END
