@@ -589,6 +589,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportCollectionBasedBindings))
     , exportColorSets(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportColorSets))
     , exportMaterials(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterials))
+    , exportAssignedMaterials(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportAssignedMaterials))
     , exportMaterialUnderPrim(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialUnderPrim))
     , exportDefaultCameras(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->defaultCameras))
@@ -715,6 +717,8 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << TfStringify(exportArgs.exportCollectionBasedBindings) << std::endl
         << "exportColorSets: " << TfStringify(exportArgs.exportColorSets) << std::endl
         << "exportMaterials: " << TfStringify(exportArgs.exportMaterials) << std::endl
+        << "exportAssignedMaterials: " << TfStringify(exportArgs.exportAssignedMaterials)
+        << std::endl
         << "exportMaterialUnderPrim: " << TfStringify(exportArgs.exportMaterialUnderPrim)
         << std::endl
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
@@ -1005,6 +1009,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = false;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterials] = true;
+        d[UsdMayaJobExportArgsTokens->exportAssignedMaterials] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterialUnderPrim] = false;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = false;
         d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = true;
@@ -1109,6 +1114,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportMaterials] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportAssignedMaterials] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportMaterialUnderPrim] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = _boolean;

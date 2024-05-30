@@ -136,6 +136,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportColorSetsLbl", "Color Sets");
     register("kExportMaterialsCBAnn", "If selected, material/shading data is included as part of the export.");
     register("kExportMaterialsCBLbl", "Materials");
+    register("kExportAssignedMaterialsAnn", "If selected, only materials assigned to geometry will be exported.");
+    register("kExportAssignedMaterialsLbl", "Assigned Materials Only");
     register("kExportMeshesLbl", "Meshes");
     register("kExportMeshesAnn", "If selected, mesh geometry is extracted for USD export.");
     register("kExportCamerasLbl", "Cameras");
