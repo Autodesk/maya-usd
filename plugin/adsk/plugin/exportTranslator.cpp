@@ -101,7 +101,7 @@ MStatus UsdMayaExportTranslator::writer(
     // Materials are not DAG objects, so they won't show up in the returned
     // dagPaths, so we check the full object list instead.
     if (objSelList.isEmpty()) {
-        TF_WARN("Nohting to export. Skipping.");
+        TF_WARN("Nothing to export. Skipping.");
         return MS::kFailure;
     }
     progressBar.advance();

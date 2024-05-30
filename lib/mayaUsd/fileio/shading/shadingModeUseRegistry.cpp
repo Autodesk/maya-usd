@@ -365,10 +365,10 @@ private:
             return;
         }
 
-        const UsdMayaShadingModeExportContext::AssignmentVector& assignments
+        const UsdMayaShadingModeExportContext::AssignmentsInfo& assignments
             = context.GetAssignments();
 
-        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments, std::string());
+        UsdPrim          materialPrim = context.MakeStandardMaterialPrim(assignments);
         UsdShadeMaterial material(materialPrim);
         if (!material) {
             return;
@@ -422,7 +422,7 @@ private:
                 }
             }
         }
-        context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
+        context.BindStandardMaterialPrim(materialPrim, assignments.assignments, boundPrimPaths);
     }
 };
 

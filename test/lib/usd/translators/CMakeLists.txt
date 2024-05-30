@@ -251,6 +251,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
     set(MTLX_TEST_SCRIPT_FILES
         testUsdExportMaterialScope.py
         testUsdExportMaterialsOnly.py
+        testUsdExportAssignedMaterials.py
         testUsdExportMaterialX.py
         testUsdImportMaterialX.py
 		testUsdExportFannedOutFileNodesMaterial.py
