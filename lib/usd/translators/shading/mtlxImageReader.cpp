@@ -52,8 +52,6 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
-#include <ghc/filesystem.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MtlxUsd_ImageReader : public MtlxUsd_BaseReader
