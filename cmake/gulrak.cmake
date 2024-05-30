@@ -39,7 +39,8 @@ else()
     FetchContent_Declare(
         ${CONTENT_NAME}
         GIT_REPOSITORY https://github.com/gulrak/filesystem.git
-        GIT_TAG        4e21ab305794f5309a1454b4ae82ab9a0f5e0d25
+        GIT_TAG        v1.5.14
+        GIT_SHALLOW    TRUE
         USES_TERMINAL_DOWNLOAD TRUE
         GIT_CONFIG     advice.detachedHead=false
     )
