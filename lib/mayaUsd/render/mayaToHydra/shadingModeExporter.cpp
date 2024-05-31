@@ -130,7 +130,7 @@ public:
         const UsdMayaShadingModeExportContext::AssignmentsInfo& assignments =
             context.GetAssignments();
 
-        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments, hasAnyAssignment);
+        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments);
         context.BindStandardMaterialPrim(materialPrim, assignments.assignments, boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
         if (!material) { return; }
