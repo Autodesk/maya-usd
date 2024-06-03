@@ -222,7 +222,7 @@ public:
     static void           clearManagerNode(MayaUsd::LayerManager* lm);
     static void           removeManagerNode(MayaUsd::LayerManager* lm = nullptr);
 
-    bool getProxiesToSave(bool isExport);
+    bool getProxiesToSave(bool isExport, bool* hasAnyProxy);
     bool saveInteractionRequired();
     bool supportedNodeType(MTypeId type);
     void addSupportForNodeType(MTypeId type);
@@ -415,7 +415,8 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
 
     LayerDatabase::instance().saveLayerManagerSelectedStage();
 
-    if (LayerDatabase::instance().getProxiesToSave(isExport)) {
+    bool hasAnyProxy = false;
+    if (LayerDatabase::instance().getProxiesToSave(isExport, &hasAnyProxy)) {
 
         int dialogResult = true;
 
@@ -434,6 +435,9 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
     } else {
         *retCode = true;
     }
+
+    if (!hasAnyProxy)
+        removeManagerNode(nullptr);
 }
 
 void LayerDatabase::cleanupForWrite()
@@ -486,8 +490,11 @@ bool LayerDatabase::hasDirtyLayer() const
     return false;
 }
 
-bool LayerDatabase::getProxiesToSave(bool isExport)
+bool LayerDatabase::getProxiesToSave(bool isExport, bool* hasAnyProxy)
 {
+    if (hasAnyProxy)
+        *hasAnyProxy = false;
+
     bool checkSelection = isExport && (MFileIO::kExportTypeSelected == MFileIO::exportType());
     const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
 
@@ -499,6 +506,9 @@ bool LayerDatabase::getProxiesToSave(bool isExport)
         MObject mobj = iter.item();
         fn.setObject(mobj);
         if (!fn.isFromReferencedFile() && supportedNodeType(fn.typeId())) {
+            if (hasAnyProxy)
+                *hasAnyProxy = true;
+
             MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
             UsdStageRefPtr         stage = pShape ? pShape->getUsdStage() : nullptr;
             if (!stage) {
