@@ -26,7 +26,13 @@ macro(fetch_googletest)
         file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
 
         # Set some options used when compiling googletest.
-        set(CMAKE_CXX_STANDARD 11)
+
+        # USD updated to c++17 for USD v23.11
+        if(USD_VERSION VERSION_GREATER_EQUAL "0.23.11")
+            set(CMAKE_CXX_STANDARD 17)
+        else()
+            set(CMAKE_CXX_STANDARD 11)
+        endif()
         set(CMAKE_CXX_EXTENSIONS OFF)
         set(CMAKE_CXX_STANDARD_REQUIRED ON)
         if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
