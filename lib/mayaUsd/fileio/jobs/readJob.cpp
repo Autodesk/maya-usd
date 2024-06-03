@@ -59,8 +59,6 @@
 #include <maya/MStatus.h>
 #include <maya/MTime.h>
 
-#include <ghc/filesystem.hpp>
-
 #include <map>
 #include <string>
 #include <unordered_map>
