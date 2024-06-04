@@ -16,8 +16,8 @@
 #ifndef HD_VP2_RENDER_DELEGATE
 #define HD_VP2_RENDER_DELEGATE
 
-#include "render_param.h"
-#include "resource_registry.h"
+#include "renderParam.h"
+#include "resourceRegistry.h"
 #include "shader.h"
 
 #include <pxr/imaging/hd/renderDelegate.h>

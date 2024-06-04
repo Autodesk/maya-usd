@@ -5,13 +5,13 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         glslProgram.cpp
         utils.cpp
-        utils_legacy.cpp
+        utilsLegacy.cpp
 )
 
 set(HEADERS
     glslProgram.h
     utils.h
-    utils_legacy.h
+    utilsLegacy.h
 )
 
 # -----------------------------------------------------------------------------

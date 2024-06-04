@@ -16,7 +16,7 @@
 #ifndef HD_VP2_MAYA_PRIM_COMMON
 #define HD_VP2_MAYA_PRIM_COMMON
 
-#include "draw_item.h"
+#include "drawItem.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/types.h"
 
