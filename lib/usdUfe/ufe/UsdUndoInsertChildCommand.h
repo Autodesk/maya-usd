@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOINSERTCHILDCOMMAND_H
+#define USDUFE_USDUNDOINSERTCHILDCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
@@ -72,3 +73,5 @@ private:
 }; // UsdUndoInsertChildCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOINSERTCHILDCOMMAND_H

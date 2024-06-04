@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOABLECOMMAND_H
+#define USDUFE_USDUNDOABLECOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
@@ -206,3 +207,5 @@ private:
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOABLECOMMAND_H

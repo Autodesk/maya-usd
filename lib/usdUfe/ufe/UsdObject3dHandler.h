@@ -5,7 +5,8 @@
 // agreement provided at the time of installation or download, or which
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
-#pragma once
+#ifndef USDUFE_USDOBJECT3DHANDLER_H
+#define USDUFE_USDOBJECT3DHANDLER_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdObject3d.h>
@@ -39,3 +40,5 @@ public:
 }; // UsdObject3dHandler
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDOBJECT3DHANDLER_H

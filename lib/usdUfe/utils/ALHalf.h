@@ -24,7 +24,8 @@
 ///         methods to convert between half/float and half/double using the F16C conversion
 ///         intrinsics. To enable HW conversions, pass the compiler flag -mf16c to clang or gcc.
 //----------------------------------------------------------------------------------------------------------------------
-#pragma once
+#ifndef USDUFE_ALHALF_H
+#define USDUFE_ALHALF_H
 
 #include <usdUfe/base/api.h>
 
@@ -246,3 +247,5 @@ inline GfHalf double2half_1f(const double f) { return GfHalf(float(f)); }
 #endif
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_ALHALF_H

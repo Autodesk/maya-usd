@@ -5,7 +5,8 @@
 // agreement provided at the time of installation or download, or which
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
-#pragma once
+#ifndef MAYAUSD_USDMATERIALHANDLER_H
+#define MAYAUSD_USDMATERIALHANDLER_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdMaterial.h>
@@ -38,3 +39,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDMATERIALHANDLER_H

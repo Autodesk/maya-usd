@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_EDITROUTER_H
+#define USDUFE_EDITROUTER_H
 
 #include <usdUfe/base/api.h>
 
@@ -150,3 +151,5 @@ void registerDefaultEditRouter(const PXR_NS::TfToken&, const EditRouter::Ptr&);
 EditRouters defaultEditRouters();
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_EDITROUTER_H

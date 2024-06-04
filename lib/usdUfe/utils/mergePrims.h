@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_MERGEPRIMS_H
+#define USDUFE_MERGEPRIMS_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/utils/mergePrimsOptions.h>
@@ -56,3 +57,5 @@ bool mergePrims(
     const PXR_NS::SdfPath&        dstPath);
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_MERGEPRIMS_H

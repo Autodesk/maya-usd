@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDHIERARCHY_H
+#define USDUFE_USDHIERARCHY_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
@@ -105,3 +106,5 @@ private:
 }; // UsdHierarchy
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDHIERARCHY_H

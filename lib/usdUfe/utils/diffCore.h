@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_DIFFCORE_H
+#define USDUFE_DIFFCORE_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/utils/ALHalf.h>
@@ -498,3 +499,5 @@ bool compareRGBAArray(
 
 //----------------------------------------------------------------------------------------------------------------------
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_DIFFCORE_H

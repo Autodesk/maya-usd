@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_STAGESSUBJECT_H
+#define USDUFE_STAGESSUBJECT_H
 
 #include <usdUfe/base/api.h>
 
@@ -102,3 +103,5 @@ public:
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_STAGESSUBJECT_H
