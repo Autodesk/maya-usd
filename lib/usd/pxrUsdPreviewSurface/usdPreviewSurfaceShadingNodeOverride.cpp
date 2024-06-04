@@ -30,7 +30,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-const MString _transparencyParameter = "dummyTransparency"; //!< Transparency parameter
+const MString KtansparencyParameter = "dummyTransparency"; //!< Transparency parameter
 }
 
 /* static */
@@ -64,7 +64,7 @@ MString PxrMayaUsdPreviewSurfaceShadingNodeOverride::primaryColorParameter() con
 MString PxrMayaUsdPreviewSurfaceShadingNodeOverride::transparencyParameter() const
 {
     // See getCustomMappings() implementation for more details.
-    return _transparencyParameter;
+    return KtansparencyParameter;
 }
 
 /* virtual */
@@ -97,7 +97,7 @@ void PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(
     // means to disable transparency). Note the "opacity" parameter of the shader
     // fragment carries the alpha value that is actually used in shading.
     MHWRender::MAttributeParameterMapping transparencyMapping(
-        _transparencyParameter, "outTransparencyOn", true, true);
+        KtansparencyParameter, "outTransparencyOn", true, true);
     mappings.append(transparencyMapping);
 }
 

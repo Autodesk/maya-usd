@@ -79,12 +79,12 @@ inline const TfTokenVector& _SupportedBprimTypes()
     return r;
 }
 
-const MString _diffuseColorParameterName = "diffuseColor"; //!< Shader parameter name
-const MString _solidColorParameterName = "solidColor";     //!< Shader parameter name
-const MString _diffuseParameterName = "diffuse";           //!< Shader parameter name
-const MString _pointSizeParameterName = "pointSize";       //!< Shader parameter name
-const MString _curveBasisParameterName = "curveBasis";     //!< Shader parameter name
-const MString _structOutputName = "outSurfaceFinal"; //!< Output struct name of the fallback shader
+const MString kDiffuseColorParameterName = "diffuseColor"; //!< Shader parameter name
+const MString kSolidColorParameterName = "solidColor";     //!< Shader parameter name
+const MString kDiffuseParameterName = "diffuse";           //!< Shader parameter name
+const MString kPointSizeParameterName = "pointSize";       //!< Shader parameter name
+const MString kCurveBasisParameterName = "curveBasis";     //!< Shader parameter name
+const MString kStructOutputName = "outSurfaceFinal"; //!< Output struct name of the fallback shader
 
 //! Enum class for fallback shader types
 enum class FallbackShaderType
@@ -191,32 +191,32 @@ public:
 
         _3dCPVSolidShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dCPVSolidShader);
         if (TF_VERIFY(_3dCPVSolidShader)) {
-            _3dCPVSolidShader->setParameter(_diffuseParameterName, 1.0f);
+            _3dCPVSolidShader->setParameter(kDiffuseParameterName, 1.0f);
         }
 
         _3dCPVFatPointShader
             = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dCPVFatPointShader);
         if (TF_VERIFY(_3dCPVFatPointShader)) {
-            _3dCPVFatPointShader->setParameter(_diffuseParameterName, 1.0f);
+            _3dCPVFatPointShader->setParameter(kDiffuseParameterName, 1.0f);
 
             constexpr float size[] = { 5.0, 5.0 };
-            _3dCPVFatPointShader->setParameter(_pointSizeParameterName, size);
+            _3dCPVFatPointShader->setParameter(kPointSizeParameterName, size);
         }
 
         for (size_t i = 0; i < FallbackShaderTypeCount; i++) {
             MHWRender::MShaderInstance* shader
-                = shaderMgr->getFragmentShader(_cpvFallbackShaderNames[i], _structOutputName, true);
+                = shaderMgr->getFragmentShader(_cpvFallbackShaderNames[i], kStructOutputName, true);
 
             if (TF_VERIFY(shader)) {
                 FallbackShaderType type = static_cast<FallbackShaderType>(i);
                 const auto         it = _curveBasisParameterValueMapping.find(type);
                 if (it != _curveBasisParameterValueMapping.end()) {
-                    shader->setParameter(_curveBasisParameterName, it->second);
+                    shader->setParameter(kCurveBasisParameterName, it->second);
                 }
                 if (type == FallbackShaderType::kPoints) {
                     shader->addInputFragment("PointsGeometry", "GPUStage", "GPUStage");
                 }
-                shader->setParameter(_diffuseParameterName, 1.0f);
+                shader->setParameter(kDiffuseParameterName, 1.0f);
             }
 
             _fallbackCPVShaders[i] = shader;
@@ -274,10 +274,10 @@ public:
 
             if (TF_VERIFY(shader)) {
                 const float solidColor[] = { color.r, color.g, color.b, color.a };
-                shader->setParameter(_solidColorParameterName, solidColor);
+                shader->setParameter(kSolidColorParameterName, solidColor);
 
                 constexpr float size[] = { 5.0, 5.0 };
-                shader->setParameter(_pointSizeParameterName, size);
+                shader->setParameter(kPointSizeParameterName, size);
 
                 // Insert instance we just created
                 _3dFatPointShaders._map[color] = shader;
@@ -325,7 +325,7 @@ public:
 
             if (TF_VERIFY(shader)) {
                 const float solidColor[] = { color.r, color.g, color.b, color.a };
-                shader->setParameter(_solidColorParameterName, solidColor);
+                shader->setParameter(kSolidColorParameterName, solidColor);
 
                 // Insert instance we just created
                 _3dSolidShaders._map[color] = shader;
@@ -386,12 +386,12 @@ public:
                 = renderer ? renderer->getShaderManager() : nullptr;
             if (TF_VERIFY(shaderMgr)) {
                 shader = shaderMgr->getFragmentShader(
-                    _fallbackShaderNames[index], _structOutputName, true);
+                    _fallbackShaderNames[index], kStructOutputName, true);
 
                 if (TF_VERIFY(shader)) {
                     const auto it = _curveBasisParameterValueMapping.find(type);
                     if (it != _curveBasisParameterValueMapping.end()) {
-                        shader->setParameter(_curveBasisParameterName, it->second);
+                        shader->setParameter(kCurveBasisParameterName, it->second);
                     }
                     if (type == FallbackShaderType::kPoints) {
                         shader->addInputFragment("PointsGeometry", "GPUStage", "GPUStage");
@@ -404,7 +404,7 @@ public:
         // Insert the new shader instance
         if (TF_VERIFY(shader)) {
             float diffuseColor[] = { color.r, color.g, color.b, color.a };
-            shader->setParameter(_diffuseColorParameterName, diffuseColor);
+            shader->setParameter(kDiffuseColorParameterName, diffuseColor);
             shaderMap._map[color] = shader;
         }
 
