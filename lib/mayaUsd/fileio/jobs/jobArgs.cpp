@@ -562,6 +562,18 @@ bool _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary
     return canMergeContexts;
 }
 
+bool _GetEncodedArg(const MString& option, std::string& argName, MString& argValue)
+{
+    MStringArray theOption;
+    option.split('=', theOption);
+    if (theOption.length() < 1)
+        return false;
+
+    argName = theOption[0].asChar();
+    argValue = theOption.length() > 1 ? theOption[1] : MString();
+    return true;
+}
+
 } // namespace
 UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary&             userArgs,
@@ -760,6 +772,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "writeDefaults: " << TfStringify(exportArgs.writeDefaults) << std::endl
         << "parentScope: " << exportArgs.parentScope << std::endl // Deprecated
         << "rootPrim: " << exportArgs.parentScope << std::endl
+        << "defaultPrim: " << TfStringify(exportArgs.defaultPrim) << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "disableModelKindProcessor: " << exportArgs.disableModelKindProcessor << std::endl
@@ -859,27 +872,27 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
     // Get the options
     if (optionsString.length() > 0) {
         MStringArray optionList;
-        MStringArray theOption;
+        std::string  argName;
+        MString      argValue;
         optionsString.split(';', optionList);
         for (unsigned int i = 0; i < optionList.length(); ++i) {
-            theOption.clear();
-            optionList[i].split('=', theOption);
-            if (theOption.length() != 2) {
-                // We allow an empty string to be passed to exportRoots. We must process it here.
-                if (theOption.length() == 1
-                    && theOption[0] == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
+            if (!_GetEncodedArg(optionList[i], argName, argValue))
+                continue;
+
+            // We allow an empty string to be passed to exportRoots. We must process it here.
+            if (argName == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
+                if (argValue.length() == 0) {
                     std::vector<VtValue> userArgVals;
                     userArgVals.push_back(VtValue(""));
                     userArgs[UsdMayaJobExportArgsTokens->exportRoots] = userArgVals;
+                    continue;
                 }
-                continue;
             }
 
-            std::string argName(theOption[0].asChar());
             if (argName == "filterTypes") {
                 std::vector<VtValue> userArgVals;
                 MStringArray         filteredTypes;
-                theOption[1].split(',', filteredTypes);
+                argValue.split(',', filteredTypes);
                 unsigned int nbTypes = filteredTypes.length();
                 for (unsigned int idxType = 0; idxType < nbTypes; ++idxType) {
                     const std::string filteredType = filteredTypes[idxType].asChar();
@@ -889,7 +902,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
             } else if (argName == "frameSample") {
                 std::vector<double> samples;
                 MStringArray        samplesStrings;
-                theOption[1].split(' ', samplesStrings);
+                argValue.split(' ', samplesStrings);
                 unsigned int nbSams = samplesStrings.length();
                 for (unsigned int sam = 0; sam < nbSams; ++sam) {
                     if (samplesStrings[sam].isDouble()) {
@@ -900,7 +913,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
                 userArgs[argName] = samples;
             } else if (argName == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
                 MStringArray exportRootStrings;
-                theOption[1].split(',', exportRootStrings);
+                argValue.split(',', exportRootStrings);
 
                 std::vector<VtValue> userArgVals;
 
@@ -924,7 +937,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
                 userArgs[argName] = userArgVals;
             } else {
                 if (argName == "shadingMode") {
-                    TfToken shadingMode(theOption[1].asChar());
+                    TfToken shadingMode(argValue.asChar());
                     if (!shadingMode.IsEmpty()
                         && UsdMayaShadingModeRegistry::GetInstance().GetExporter(shadingMode)
                             == nullptr
@@ -942,7 +955,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
                 const static bool reportError = false;
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
                     argName,
-                    theOption[1].asChar(),
+                    argValue.asChar(),
                     UsdMayaJobExportArgs::GetGuideDictionary(),
                     reportError);
             }
@@ -1301,25 +1314,19 @@ MStatus UsdMayaJobImportArgs::GetDictionaryFromEncodedOptions(
     // Get the options
     if (optionsString.length() > 0) {
         MStringArray optionList;
-        MStringArray theOption;
+        std::string  argName;
+        MString      argValue;
         optionsString.split(';', optionList);
         for (unsigned int i = 0; i < optionList.length(); ++i) {
-            theOption.clear();
-            optionList[i].split('=', theOption);
-            if (theOption.length() != 2) {
+            if (!_GetEncodedArg(optionList[i], argName, argValue))
                 continue;
-            }
-
-            // Note: if some argument needs special handling, do like in the
-            //       same function in the export version in UsdMayaJobExportArgs
-            std::string argName(theOption[0].asChar());
 
             // Note: when round-tripping settings, some extra settings are not part
             //       of the guiding dictionary. Ignore them.
             const static bool reportError = false;
             userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
                 argName,
-                theOption[1].asChar(),
+                argValue.asChar(),
                 UsdMayaJobImportArgs::GetGuideDictionary(),
                 reportError);
         }
