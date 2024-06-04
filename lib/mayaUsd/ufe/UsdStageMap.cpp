@@ -156,8 +156,8 @@ void UsdStageMap::addItem(const Ufe::Path& path)
         return;
     }
 
-    fPathToObject[path] = proxyShape;
-    fStageToObject[stage] = proxyShape;
+    _pathToObject[path] = proxyShape;
+    _stageToObject[stage] = proxyShape;
 }
 
 UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path, bool rebuildCacheIfNeeded)
@@ -179,21 +179,21 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
     const auto& singleSegmentPath
         = path.nbSegments() == 1 ? path : Ufe::Path(path.getSegments()[0]);
 
-    auto iter = fPathToObject.find(singleSegmentPath);
+    auto iter = _pathToObject.find(singleSegmentPath);
 
     if (rebuildCacheIfNeeded && !wasRebuilt) {
-        if (iter == std::end(fPathToObject)) {
+        if (iter == std::end(_pathToObject)) {
             for (const auto& psn : ProxyShapeHandler::getAllNames()) {
                 auto psPath = toPath(psn);
-                if (fPathToObject.find(psPath) == std::end(fPathToObject)) {
+                if (_pathToObject.find(psPath) == std::end(_pathToObject)) {
                     addItem(psPath);
                 }
             }
-            iter = fPathToObject.find(singleSegmentPath);
+            iter = _pathToObject.find(singleSegmentPath);
         }
     }
 
-    if (iter == std::end(fPathToObject)) {
+    if (iter == std::end(_pathToObject)) {
         TF_DEBUG(MAYAUSD_STAGEMAP).Msg("Failed to find %s\n", path.string().c_str());
         return MObject();
     }
@@ -203,7 +203,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
     // If the cached object itself is invalid then remove it from the map.
     if (!object.isValid()) {
         TF_DEBUG(MAYAUSD_STAGEMAP).Msg("Found invalid object for %s\n", path.string().c_str());
-        fPathToObject.erase(singleSegmentPath);
+        _pathToObject.erase(singleSegmentPath);
         return MObject();
     }
 
@@ -216,10 +216,10 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
         // there is a cache hit when there should not be. Update the entry in
         // fPathToObject so that the key path is the current object path and
         // return an invalidobject to signify we did not find the proxy shape.
-        fPathToObject.erase(singleSegmentPath);
+        _pathToObject.erase(singleSegmentPath);
         if (!objectPath.empty())
-            fPathToObject[objectPath] = object;
-        TF_VERIFY(std::end(fPathToObject) == fPathToObject.find(singleSegmentPath));
+            _pathToObject[objectPath] = object;
+        TF_VERIFY(std::end(_pathToObject) == _pathToObject.find(singleSegmentPath));
         TF_DEBUG(MAYAUSD_STAGEMAP)
             .Msg(
                 "Found non-matching path %s vs %s for UFE %s\n",
@@ -247,8 +247,8 @@ Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
     rebuildIfDirty();
 
     // A stage is bound to a single Dag proxy shape.
-    auto iter = fStageToObject.find(stage);
-    if (iter != std::end(fStageToObject))
+    auto iter = _stageToObject.find(stage);
+    if (iter != std::end(_stageToObject))
         return firstPath(iter->second);
     return Ufe::Path();
 }
@@ -258,7 +258,7 @@ UsdStageMap::StageSet UsdStageMap::allStages()
     rebuildIfDirty();
 
     StageSet stages;
-    for (auto it = fPathToObject.begin(); it != fPathToObject.end();
+    for (auto it = _pathToObject.begin(); it != _pathToObject.end();
          /* no ++it here, we manually move it in the loop */) {
         const auto&      pair = *it;
         const Ufe::Path& path = pair.first;
@@ -278,14 +278,14 @@ UsdStageMap::StageSet UsdStageMap::allStages()
 
 void UsdStageMap::setDirty()
 {
-    fPathToObject.clear();
-    fStageToObject.clear();
-    fDirty = true;
+    _pathToObject.clear();
+    _stageToObject.clear();
+    _dirty = true;
 }
 
 bool UsdStageMap::rebuildIfDirty()
 {
-    if (!fDirty)
+    if (!_dirty)
         return false;
 
     for (const auto& psn : ProxyShapeHandler::getAllNames()) {
@@ -293,8 +293,8 @@ bool UsdStageMap::rebuildIfDirty()
     }
 
     TF_DEBUG(MAYAUSD_STAGEMAP)
-        .Msg("Rebuilt stage map, found %d proxy shapes\n", int(fStageToObject.size()));
-    fDirty = false;
+        .Msg("Rebuilt stage map, found %d proxy shapes\n", int(_stageToObject.size()));
+    _dirty = false;
     return true;
 }
 

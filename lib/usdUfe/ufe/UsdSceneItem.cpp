@@ -40,7 +40,7 @@ USDUFE_VERIFY_CLASS_SETUP(Ufe::SceneItem, UsdSceneItem);
 
 UsdSceneItem::UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim, int instanceIndex)
     : Ufe::SceneItem(path)
-    , fPrim(prim)
+    , _prim(prim)
     , _instanceIndex(instanceIndex)
 {
 }
@@ -56,17 +56,17 @@ UsdSceneItem::create(const Ufe::Path& path, const UsdPrim& prim, int instanceInd
 // Ufe::SceneItem overrides
 //------------------------------------------------------------------------------
 
-std::string UsdSceneItem::nodeType() const { return fPrim ? fPrim.GetTypeName() : std::string(); }
+std::string UsdSceneItem::nodeType() const { return _prim ? _prim.GetTypeName() : std::string(); }
 
 std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
     std::vector<std::string> strAncestorTypes;
 
-    if (!fPrim)
+    if (!_prim)
         return strAncestorTypes;
 
     // Get the actual schema type from the prim definition.
-    const TfType& schemaType = fPrim.GetPrimTypeInfo().GetSchemaType();
+    const TfType& schemaType = _prim.GetPrimTypeInfo().GetSchemaType();
     if (!schemaType) {
         // No schema type, return empty ancestor types.
         return strAncestorTypes;

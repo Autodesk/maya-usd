@@ -102,7 +102,7 @@ public:
         const PXR_NS::UsdPrim& prim,
         int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
 
-    const PXR_NS::UsdPrim& prim() const { return fPrim; }
+    const PXR_NS::UsdPrim& prim() const { return _prim; }
 
     int instanceIndex() const { return _instanceIndex; }
 
@@ -112,7 +112,7 @@ public:
     // PointInstancer and its instanceIndex is non-negative.
     bool isPointInstance() const
     {
-        return (fPrim && fPrim.IsA<PXR_NS::UsdGeomPointInstancer>() && _instanceIndex >= 0);
+        return (_prim && _prim.IsA<PXR_NS::UsdGeomPointInstancer>() && _instanceIndex >= 0);
     }
 
     // Ufe::SceneItem overrides
@@ -165,7 +165,7 @@ public:
 #endif // UFE_SCENEITEM_HAS_METADATA
 
 private:
-    PXR_NS::UsdPrim fPrim;
+    PXR_NS::UsdPrim _prim;
     const int       _instanceIndex;
 }; // UsdSceneItem
 

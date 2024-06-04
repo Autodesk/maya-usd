@@ -35,7 +35,7 @@ MAYAUSD_VERIFY_CLASS_SETUP(Ufe::CameraHandler, ProxyShapeCameraHandler);
 
 ProxyShapeCameraHandler::ProxyShapeCameraHandler(const Ufe::CameraHandler::Ptr& mayaCameraHandler)
     : Ufe::CameraHandler()
-    , fMayaCameraHandler(mayaCameraHandler)
+    , _mayaCameraHandler(mayaCameraHandler)
 {
 }
 
@@ -51,7 +51,7 @@ ProxyShapeCameraHandler::create(const Ufe::CameraHandler::Ptr& mayaCameraHandler
 //------------------------------------------------------------------------------
 Ufe::Camera::Ptr ProxyShapeCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
 {
-    return fMayaCameraHandler ? fMayaCameraHandler->camera(item) : nullptr;
+    return _mayaCameraHandler ? _mayaCameraHandler->camera(item) : nullptr;
 }
 
 Ufe::Selection ProxyShapeCameraHandler::find_(const Ufe::Path& path) const
@@ -64,7 +64,7 @@ Ufe::Selection ProxyShapeCameraHandler::find_(const Ufe::Path& path) const
         TF_VERIFY(stage);
         return UsdUfe::UsdCameraHandler::find(path, path, stage->GetPseudoRoot());
     }
-    return fMayaCameraHandler ? fMayaCameraHandler->find(path) : Ufe::Selection();
+    return _mayaCameraHandler ? _mayaCameraHandler->find(path) : Ufe::Selection();
 }
 
 } // namespace ufe

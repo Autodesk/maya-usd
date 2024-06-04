@@ -30,7 +30,7 @@ USDUFE_VERIFY_CLASS_SETUP(Ufe::Camera, UsdCamera);
 
 UsdCamera::UsdCamera(const UsdSceneItem::Ptr& item)
     : Camera()
-    , fItem(item)
+    , _item(item)
 {
 }
 
@@ -88,9 +88,9 @@ float convertToTenthOfStageUnits(float value, double valueUnits, const PXR_NS::U
 
 } // namespace
 
-const Ufe::Path& UsdCamera::path() const { return fItem->path(); }
+const Ufe::Path& UsdCamera::path() const { return _item->path(); }
 
-Ufe::SceneItem::Ptr UsdCamera::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr UsdCamera::sceneItem() const { return _item; }
 
 Ufe::HorizontalApertureUndoableCommand::Ptr UsdCamera::horizontalApertureCmd(float value)
 {

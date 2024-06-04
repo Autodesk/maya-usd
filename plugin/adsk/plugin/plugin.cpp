@@ -228,7 +228,7 @@ MStatus initializePlugin(MObject obj)
     status = MayaUsd::USDImportDialogCmd::initialize(plugin);
     if (!status) {
         MString err("registerCommand");
-        err += MayaUsd::USDImportDialogCmd::fsName;
+        err += MayaUsd::USDImportDialogCmd::name;
         status.perror(err);
     }
 #endif
@@ -319,7 +319,7 @@ MStatus uninitializePlugin(MObject obj)
     status = MayaUsd::USDImportDialogCmd::finalize(plugin);
     if (!status) {
         MString err("deregisterCommand");
-        err += MayaUsd::USDImportDialogCmd::fsName;
+        err += MayaUsd::USDImportDialogCmd::name;
         status.perror(err);
     }
 #endif

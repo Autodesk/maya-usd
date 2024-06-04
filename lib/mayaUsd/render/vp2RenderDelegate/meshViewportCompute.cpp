@@ -135,7 +135,7 @@ void MeshViewportCompute::reset()
     _renderingToSceneFaceVtxIdsGPU.reset();
     _sceneToRenderingFaceVtxIdsGPU.reset();
 
-    fRenderGeom = nullptr;
+    _renderGeom = nullptr;
 
     _positionVertexBufferGPU = nullptr;
     _normalVertexBufferGPU = nullptr;
@@ -375,13 +375,13 @@ void MeshViewportCompute::findRenderGeometry(MRenderItem& renderItem)
         "MeshViewportCompute:findRenderGeometry");
 
     MGeometry* renderGeometry = renderItem.geometry();
-    if (fRenderGeom && (fRenderGeom != renderGeometry)) {
+    if (_renderGeom && (_renderGeom != renderGeometry)) {
         _positionVertexBufferGPU = nullptr;
         _normalVertexBufferGPU = nullptr;
         _colorVertexBufferGPU = nullptr;
-        fRenderGeom = nullptr;
+        _renderGeom = nullptr;
     }
-    fRenderGeom = renderGeometry;
+    _renderGeom = renderGeometry;
 }
 
 void MeshViewportCompute::createConsolidatedOSDTables(MRenderItem& renderItem)
@@ -579,9 +579,9 @@ void MeshViewportCompute::createConsolidatedOSDTables(MRenderItem& renderItem)
                 MProfiler::kColorD_L1,
                 "MeshViewportCompute:createTriangleIndexBuffer");
 
-            MIndexBuffer* indexBuffer = fRenderGeom->indexBuffer(0);
+            MIndexBuffer* indexBuffer = _renderGeom->indexBuffer(0);
             if (!indexBuffer) {
-                indexBuffer = fRenderGeom->createIndexBuffer(MGeometry::kInt32);
+                indexBuffer = _renderGeom->createIndexBuffer(MGeometry::kInt32);
             }
             // The new size of the index buffer needs to be 50% larger than the patch table size
             // when the patch table is quads.
@@ -605,7 +605,7 @@ void MeshViewportCompute::createConsolidatedOSDTables(MRenderItem& renderItem)
         int patchSize
             = _patchTable ? _patchTable->GetPatchArrayDescriptor(0).GetNumControlVertices() : 0;
         TF_VERIFY(patchSize == 3);
-        MIndexBuffer* indexBuffer = fRenderGeom->indexBuffer(0);
+        MIndexBuffer* indexBuffer = _renderGeom->indexBuffer(0);
         void*         indexData = indexBuffer->acquire(ptableSize, true);
         memcpy(indexData, firstIndex, ptableSize * sizeof(int));
         indexBuffer->commit(indexData);
@@ -628,8 +628,8 @@ void MeshViewportCompute::findVertexBuffers(MRenderItem& renderItem)
         MProfiler::kColorD_L2,
         "MeshViewportCompute:findVertexBuffers");
 
-    for (int bufferIndex = 0; bufferIndex < fRenderGeom->vertexBufferCount(); bufferIndex++) {
-        MVertexBuffer* renderBuffer = fRenderGeom->vertexBuffer(bufferIndex);
+    for (int bufferIndex = 0; bufferIndex < _renderGeom->vertexBufferCount(); bufferIndex++) {
+        MVertexBuffer* renderBuffer = _renderGeom->vertexBuffer(bufferIndex);
         TF_VERIFY(renderBuffer->resourceHandle());
         const MVertexBufferDescriptor& descriptor = renderBuffer->descriptor();
 
@@ -663,7 +663,7 @@ void MeshViewportCompute::findVertexBuffers(MRenderItem& renderItem)
         const MHWRender::MVertexBufferDescriptor vbDesc(
             "", MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
 
-        _normalVertexBufferGPU = fRenderGeom->createVertexBuffer(vbDesc);
+        _normalVertexBufferGPU = _renderGeom->createVertexBuffer(vbDesc);
     }
 
     GLuint* normalBufferResourceHandle = (GLuint*)_normalVertexBufferGPU->resourceHandle();
