@@ -17,9 +17,8 @@
 #ifndef LAYERTREEITEM_H
 #define LAYERTREEITEM_H
 
-#include "pxr/usd/sdf/layer.h"
-
 #include <pxr/usd/sdf/declareHandles.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtGui/QStandardItem>

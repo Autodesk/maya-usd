@@ -17,10 +17,9 @@
 #ifndef ABSTRACTCOMMANDHOOK_H
 #define ABSTRACTCOMMANDHOOK_H
 
-#include "pxr/usd/sdf/layer.h"
-
 #include <mayaUsd/utils/layerLocking.h>
 
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QString>
