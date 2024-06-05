@@ -11,7 +11,7 @@ Before building the project, consult the following table to ensure you use the r
 |        Required       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
 |    Operating System   |       Windows 10/11        | High Sierra (10.13)<br>Mojave (10.14)<br>Catalina (10.15)<br>Big Sur (11.2.x)<br>Monterey (12.6) | CentOS 7/8<br>RHEL 8.6<br>Rocky 8.6    |
-|   Compiler Requirement| Maya 2022 (VS 2017/2019)<br>Maya 2023 (VS 2019)<br>Maya 2024 (VS 2022)<br>Maya 2025 (VS 2022) | Maya 2022 (Xcode 10.2.1)<br>Maya 2023 (Xcode 10.2.1)<br>Maya 2024 (Xcode 13.4)<br>Maya 2025 (Xcode 14.3) | Maya 2022 (gcc 6.3.1/9.3.1)<br>Maya 2023 (gcc 9.3.1)<br>Maya 2024 (gcc 11.2.1)<br>Maya 2024 (gcc 11.2.1) |
+|   Compiler Requirement| Maya 2022 (VS 2017/2019)<br>Maya 2023 (VS 2019)<br>Maya 2024 (VS 2022)<br>Maya 2025 (VS 2022) | Maya 2022 (Xcode 10.2.1)<br>Maya 2023 (Xcode 10.2.1)<br>Maya 2024 (Xcode 13.4)<br>Maya 2025 (Xcode 14.3) | Maya 2022 (gcc 6.3.1/9.3.1)<br>Maya 2023 (gcc 9.3.1)<br>Maya 2024 (gcc 11.2.1)<br>Maya 2025 (gcc 11.2.1) |
 | CMake Version (min/max) |        3.13 - 3.17      |                              3.13 - 3.17                     |           3.13 - 3.17       |
 |         Python        | 2.7.15/3.7.7/3.9.7/3.10/3.11 |               2.7.15/3.7.7/3.9.7/3.10/3.11                | 2.7.15/3.7.7/3.9.7/3.10/3.11 |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              | PyYAML, PySide, PyOpenGL, Jinja2 |
@@ -21,7 +21,7 @@ Before building the project, consult the following table to ensure you use the r
 
 |        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
-|          Qt           | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2 | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2 | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3 |
+|          Qt           | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3 | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3 | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3 |
 
 ***NOTE:*** Visit the online Maya developer help document under ***Setting up your build environment*** for additional compiler requirements on different platforms.
 
