@@ -627,9 +627,15 @@ void processPushExtras(
     const SdfPath&                            srcRootPath,
     const SdfPath&                            dstRootPath)
 {
-    for (const auto& srcPaths : srcDagPathMap) {
-        const auto dstPrimPath = srcPaths.first.ReplacePrefix(srcRootPath, dstRootPath);
-        pushExtras.processItem(srcPaths.second, dstPrimPath);
+    if (srcRootPath == dstRootPath) {
+        for (const auto& srcPaths : srcDagPathMap) {
+            pushExtras.processItem(srcPaths.second, srcPaths.first);
+        }
+    } else {
+        for (const auto& srcPaths : srcDagPathMap) {
+            const auto dstPrimPath = srcPaths.first.ReplacePrefix(srcRootPath, dstRootPath);
+            pushExtras.processItem(srcPaths.second, dstPrimPath);
+        }
     }
 }
 
