@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOCREATEGROUPCOMMAND_H
+#define USDUFE_USDUNDOCREATEGROUPCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -67,3 +68,5 @@ private:
 }; // UsdUndoCreateGroupCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOCREATEGROUPCOMMAND_H

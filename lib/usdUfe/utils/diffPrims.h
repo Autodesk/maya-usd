@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_DIFFPRIMS_H
+#define USDUFE_DIFFPRIMS_H
 
 #include <usdUfe/base/api.h>
 
@@ -357,3 +358,5 @@ template <class MAP> inline DiffResult computeOverallResult(const MAP& subResult
 }
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_DIFFPRIMS_H

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DUNDOABLECOMMANDS_H
+#define MAYAUSD_USDTRANSFORM3DUNDOABLECOMMANDS_H
 
 #include <mayaUsd/base/api.h>
 
@@ -52,3 +53,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DUNDOABLECOMMANDS_H

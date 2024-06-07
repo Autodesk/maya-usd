@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_UFE_UTILS_H
+#define USDUFE_UFE_UTILS_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -421,3 +422,5 @@ USDUFE_PUBLIC
 UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item);
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_UFE_UTILS_H

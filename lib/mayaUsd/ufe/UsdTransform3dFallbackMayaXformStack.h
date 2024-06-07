@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DFALLBACKMAYAXFORMSTACK_H
+#define MAYAUSD_USDTRANSFORM3DFALLBACKMAYAXFORMSTACK_H
 
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 
@@ -116,3 +117,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DFALLBACKMAYAXFORMSTACK_H

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDSHADERATTRIBUTEDEF_H
+#define USDUFE_USDSHADERATTRIBUTEDEF_H
 
 #include <usdUfe/base/api.h>
 
@@ -67,3 +68,5 @@ private:
 }; // UsdShaderAttributeDef
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDSHADERATTRIBUTEDEF_H
