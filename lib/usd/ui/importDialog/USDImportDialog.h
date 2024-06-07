@@ -100,26 +100,26 @@ protected:
     void applyOptions();
 
     // The options for the dialog.
-    USDImportDialogOptions fOptions;
+    USDImportDialogOptions _options;
 
     // Reference to the Qt UI View of the dialog:
-    std::unique_ptr<Ui::ImportDialog> fUI;
+    std::unique_ptr<Ui::ImportDialog> _uiView;
 
     // Reference to the Model holding the structure of the USD file hierarchy:
-    std::unique_ptr<TreeModel> fTreeModel;
+    std::unique_ptr<TreeModel> _treeModel;
     // Reference to the Proxy Model used to sort and filter the USD file hierarchy:
-    std::unique_ptr<QSortFilterProxyModel> fProxyModel;
+    std::unique_ptr<QSortFilterProxyModel> _proxyModel;
     // Reference to the delegate we set on the tree view:
-    std::unique_ptr<ItemDelegate> fItemDelegate;
+    std::unique_ptr<ItemDelegate> _itemDelegate;
 
     // Reference to the USD Stage holding the list of Prims which could be imported:
-    UsdStageRefPtr fStage;
+    UsdStageRefPtr _stage;
 
     // The filename for the USD stage we opened.
-    std::string fFilename;
+    std::string _filename;
 
     // The root prim path.
-    mutable std::string fRootPrimPath;
+    mutable std::string _rootPrimPath;
 };
 
 } // namespace MAYAUSD_NS_DEF

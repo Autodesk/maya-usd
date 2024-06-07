@@ -69,7 +69,7 @@ protected:
     inline PXR_NS::UsdPrim prim() const
     {
         updateItem();
-        return fItem->prim();
+        return _item->prim();
     };
 
     // Hooks to be implemented by the derived class: name of the attribute set
@@ -89,11 +89,11 @@ protected:
 private:
     inline PXR_NS::UsdAttribute attribute() const { return prim().GetAttribute(attributeName()); }
 
-    mutable UsdUfe::UsdSceneItem::Ptr fItem { nullptr };
-    V                                 fPrevValue;
-    V                                 fNewValue;
-    bool                              fOpAdded { false };
-    bool                              fDoneOnce { false };
+    mutable UsdUfe::UsdSceneItem::Ptr _item { nullptr };
+    V                                 _prevValue;
+    V                                 _newValue;
+    bool                              _opAdded { false };
+    bool                              _doneOnce { false };
 
 }; // UsdTRSUndoableCommandBase
 

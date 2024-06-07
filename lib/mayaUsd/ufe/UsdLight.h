@@ -45,8 +45,8 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -87,14 +87,14 @@ protected:
     std::shared_ptr<AreaInterface>        areaInterfaceImpl() override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 }; // UsdLight
 
 class UsdDirectionalInterface : public Ufe::Light::DirectionalInterface
 {
 public:
     UsdDirectionalInterface(const UsdUfe::UsdSceneItem::Ptr& item)
-        : fItem(item)
+        : _item(item)
     {
     }
 
@@ -103,14 +103,14 @@ public:
     float                                 angle() const override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdSphereInterface : public Ufe::Light::SphereInterface
 {
 public:
     UsdSphereInterface(const UsdUfe::UsdSceneItem::Ptr& item)
-        : fItem(item)
+        : _item(item)
     {
     }
 
@@ -119,14 +119,14 @@ public:
     Ufe::Light::SphereProps                     sphereProps() const override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdConeInterface : public Ufe::Light::ConeInterface
 {
 public:
     UsdConeInterface(const UsdUfe::UsdSceneItem::Ptr& item)
-        : fItem(item)
+        : _item(item)
     {
     }
 
@@ -136,14 +136,14 @@ public:
     Ufe::Light::ConeProps coneProps() const override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdAreaInterface : public Ufe::Light::AreaInterface
 {
 public:
     UsdAreaInterface(const UsdUfe::UsdSceneItem::Ptr& item)
-        : fItem(item)
+        : _item(item)
     {
     }
 
@@ -152,7 +152,7 @@ public:
     bool                                      normalize() const override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 } // namespace ufe

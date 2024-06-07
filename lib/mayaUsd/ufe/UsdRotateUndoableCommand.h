@@ -63,9 +63,9 @@ private:
     PXR_NS::TfToken attributeName() const override { return rotXYZ; }
     void            performImp(double x, double y, double z) override;
     void            addEmptyAttribute() override;
-    bool            cannotInit() const override { return bool(fFailedInit); }
+    bool            cannotInit() const override { return bool(_failedInit); }
 
-    std::exception_ptr fFailedInit;
+    std::exception_ptr _failedInit;
 
 }; // UsdRotateUndoableCommand
 

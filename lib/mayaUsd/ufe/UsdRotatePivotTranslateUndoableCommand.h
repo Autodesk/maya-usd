@@ -53,8 +53,8 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -63,11 +63,11 @@ private:
     UsdUfe::UsdSceneItem::Ptr sceneItem() const;
 
 private:
-    Ufe::Path                         fPath;
-    mutable UsdUfe::UsdSceneItem::Ptr fItem { nullptr };
-    PXR_NS::UsdAttribute              fPivotAttrib;
-    PXR_NS::GfVec3f                   fPrevPivotValue;
-    bool                              fNoPivotOp;
+    Ufe::Path                         _path;
+    mutable UsdUfe::UsdSceneItem::Ptr _item { nullptr };
+    PXR_NS::UsdAttribute              _pivotAttrib;
+    PXR_NS::GfVec3f                   _prevPivotValue;
+    bool                              _noPivotOp;
 
 }; // UsdRotatePivotTranslateUndoableCommand
 

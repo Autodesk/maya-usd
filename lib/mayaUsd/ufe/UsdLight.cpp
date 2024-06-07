@@ -71,7 +71,7 @@ MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Light, UsdLight);
 
 UsdLight::UsdLight(const UsdUfe::UsdSceneItem::Ptr& item)
     : Light()
-    , fItem(item)
+    , _item(item)
 {
 }
 
@@ -84,9 +84,9 @@ UsdLight::Ptr UsdLight::create(const UsdUfe::UsdSceneItem::Ptr& item)
 // Ufe::Light overrides
 //------------------------------------------------------------------------------
 
-const Ufe::Path& UsdLight::path() const { return fItem->path(); }
+const Ufe::Path& UsdLight::path() const { return _item->path(); }
 
-Ufe::SceneItem::Ptr UsdLight::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr UsdLight::sceneItem() const { return _item; }
 
 Ufe::Light::Type UsdLight::type() const
 {
@@ -323,15 +323,15 @@ void setLightAngle(const UsdPrim& prim, float attrVal)
 
 Ufe::Light::AngleUndoableCommand::Ptr UsdDirectionalInterface::angleCmd(float la)
 {
-    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<float>>(fItem->path(), setLightAngle);
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<float>>(_item->path(), setLightAngle);
 
     pCmd->set(la);
     return pCmd;
 }
 
-void UsdDirectionalInterface::angle(float la) { setLightAngle(fItem->prim(), la); }
+void UsdDirectionalInterface::angle(float la) { setLightAngle(_item->prim(), la); }
 
-float UsdDirectionalInterface::angle() const { return getLightAngle(fItem->prim()); }
+float UsdDirectionalInterface::angle() const { return getLightAngle(_item->prim()); }
 
 Ufe::Light::SphereProps getLightSphereProps(const UsdPrim& prim)
 {
@@ -356,7 +356,7 @@ Ufe::Light::SpherePropsUndoableCommand::Ptr
 UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light::SphereProps&>>(
-        fItem->path(), setLightSphereProps);
+        _item->path(), setLightSphereProps);
 
     pCmd->set(Ufe::Light::SphereProps { radius, asPoint });
     return pCmd;
@@ -364,12 +364,12 @@ UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
 
 void UsdSphereInterface::sphereProps(float radius, bool asPoint)
 {
-    setLightSphereProps(fItem->prim(), Ufe::Light::SphereProps { radius, asPoint });
+    setLightSphereProps(_item->prim(), Ufe::Light::SphereProps { radius, asPoint });
 }
 
 Ufe::Light::SphereProps UsdSphereInterface::sphereProps() const
 {
-    return getLightSphereProps(fItem->prim());
+    return getLightSphereProps(_item->prim());
 }
 
 Ufe::Light::ConeProps getLightConeProps(const UsdPrim& prim)
@@ -402,7 +402,7 @@ Ufe::Light::ConePropsUndoableCommand::Ptr
 UsdConeInterface::conePropsCmd(float focus, float angle, float softness)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light::ConeProps&>>(
-        fItem->path(), setLightConeProps);
+        _item->path(), setLightConeProps);
 
     pCmd->set(Ufe::Light::ConeProps { focus, angle, softness });
     return pCmd;
@@ -410,12 +410,12 @@ UsdConeInterface::conePropsCmd(float focus, float angle, float softness)
 
 void UsdConeInterface::coneProps(float focus, float angle, float softness)
 {
-    setLightConeProps(fItem->prim(), Ufe::Light::ConeProps { focus, angle, softness });
+    setLightConeProps(_item->prim(), Ufe::Light::ConeProps { focus, angle, softness });
 }
 
 Ufe::Light::ConeProps UsdConeInterface::coneProps() const
 {
-    return getLightConeProps(fItem->prim());
+    return getLightConeProps(_item->prim());
 }
 
 bool getLightNormalize(const UsdPrim& prim)
@@ -439,34 +439,34 @@ void setLightNormalize(const UsdPrim& prim, bool attrVal)
 Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl)
 {
     auto pCmd
-        = std::make_shared<SetValueUndoableCommandImpl<bool>>(fItem->path(), setLightNormalize);
+        = std::make_shared<SetValueUndoableCommandImpl<bool>>(_item->path(), setLightNormalize);
 
     pCmd->set(nl);
     return pCmd;
 }
 
-void UsdAreaInterface::normalize(bool ln) { setLightNormalize(fItem->prim(), ln); }
+void UsdAreaInterface::normalize(bool ln) { setLightNormalize(_item->prim(), ln); }
 
-bool UsdAreaInterface::normalize() const { return getLightNormalize(fItem->prim()); }
+bool UsdAreaInterface::normalize() const { return getLightNormalize(_item->prim()); }
 
 std::shared_ptr<Ufe::Light::DirectionalInterface> UsdLight::directionalInterfaceImpl()
 {
-    return std::make_shared<UsdDirectionalInterface>(fItem);
+    return std::make_shared<UsdDirectionalInterface>(_item);
 }
 
 std::shared_ptr<Ufe::Light::SphereInterface> UsdLight::sphereInterfaceImpl()
 {
-    return std::make_shared<UsdSphereInterface>(fItem);
+    return std::make_shared<UsdSphereInterface>(_item);
 }
 
 std::shared_ptr<Ufe::Light::ConeInterface> UsdLight::coneInterfaceImpl()
 {
-    return std::make_shared<UsdConeInterface>(fItem);
+    return std::make_shared<UsdConeInterface>(_item);
 }
 
 std::shared_ptr<Ufe::Light::AreaInterface> UsdLight::areaInterfaceImpl()
 {
-    return std::make_shared<UsdAreaInterface>(fItem);
+    return std::make_shared<UsdAreaInterface>(_item);
 }
 
 } // namespace ufe

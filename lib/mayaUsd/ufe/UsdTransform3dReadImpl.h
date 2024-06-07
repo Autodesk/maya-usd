@@ -41,11 +41,11 @@ public:
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dReadImpl);
 
     // Ufe::Transform3d overrides
-    const Ufe::Path&    path() const { return fItem->path(); }
-    Ufe::SceneItem::Ptr sceneItem() const { return fItem; }
+    const Ufe::Path&    path() const { return _item->path(); }
+    Ufe::SceneItem::Ptr sceneItem() const { return _item; }
 
-    inline UsdUfe::UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
-    inline PXR_NS::UsdPrim           prim() const { return fPrim; }
+    inline UsdUfe::UsdSceneItem::Ptr usdSceneItem() const { return _item; }
+    inline PXR_NS::UsdPrim           prim() const { return _prim; }
 
     Ufe::Matrix4d matrix() const;
 
@@ -53,8 +53,8 @@ public:
     Ufe::Matrix4d segmentExclusiveMatrix() const;
 
 private:
-    const UsdUfe::UsdSceneItem::Ptr fItem;
-    PXR_NS::UsdPrim                 fPrim;
+    const UsdUfe::UsdSceneItem::Ptr _item;
+    PXR_NS::UsdPrim                 _prim;
 
 }; // UsdTransform3dReadImpl
 

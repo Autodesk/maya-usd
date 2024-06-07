@@ -45,8 +45,8 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -69,7 +69,7 @@ public:
     //@}
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 
 }; // UsdSceneItemOps
 

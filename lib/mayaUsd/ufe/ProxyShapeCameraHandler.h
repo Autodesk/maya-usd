@@ -41,7 +41,7 @@ public:
     Ufe::Selection find_(const Ufe::Path& path) const override;
 
 private:
-    Ufe::CameraHandler::Ptr fMayaCameraHandler;
+    Ufe::CameraHandler::Ptr _mayaCameraHandler;
 
 }; // ProxyShapeCameraHandler
 

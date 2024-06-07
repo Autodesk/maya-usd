@@ -43,7 +43,7 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
     } catch (...) {
         // Since Maya cannot catch this error at this moment, store it until we
         // actually rotate.
-        fFailedInit = std::current_exception(); // capture
+        _failedInit = std::current_exception(); // capture
     }
 }
 
@@ -58,7 +58,7 @@ UsdRotateUndoableCommand::create(const Ufe::Path& path, double x, double y, doub
 void UsdRotateUndoableCommand::undo()
 {
     // Check if initialization went ok.
-    if (!fFailedInit) {
+    if (!_failedInit) {
         UsdTRSUndoableCommandBase::undoImp();
     }
 }
@@ -82,8 +82,8 @@ void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 bool UsdRotateUndoableCommand::set(double x, double y, double z)
 {
     // Fail early - Initialization did not go as expected.
-    if (fFailedInit) {
-        std::rethrow_exception(fFailedInit);
+    if (_failedInit) {
+        std::rethrow_exception(_failedInit);
     }
     perform(x, y, z);
     return true;

@@ -77,9 +77,9 @@ UsdUIInfoHandler::UsdUIInfoHandler()
     : Ufe::UIInfoHandler()
 {
     // Initialize to invalid values.
-    fInvisibleColor[0] = -1.;
-    fInvisibleColor[1] = -1.;
-    fInvisibleColor[2] = -1.;
+    _invisibleColor[0] = -1.;
+    _invisibleColor[1] = -1.;
+    _invisibleColor[2] = -1.;
 }
 
 /*static*/
@@ -100,11 +100,11 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
         if (!usdItem->prim().IsActive()) {
             changed = true;
             info.fontStrikeout = true;
-            if (fInvisibleColor[0] >= 0) {
+            if (_invisibleColor[0] >= 0) {
                 info.textFgColor.set(
-                    static_cast<float>(fInvisibleColor[0]),
-                    static_cast<float>(fInvisibleColor[1]),
-                    static_cast<float>(fInvisibleColor[2]));
+                    static_cast<float>(_invisibleColor[0]),
+                    static_cast<float>(_invisibleColor[1]),
+                    static_cast<float>(_invisibleColor[2]));
             } else {
                 // Default color (dark gray) if none provided.
                 info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);

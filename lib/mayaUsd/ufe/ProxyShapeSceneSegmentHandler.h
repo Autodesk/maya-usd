@@ -50,7 +50,7 @@ public:
     bool isGateway_(const Ufe::Path& path) const override;
 
 private:
-    Ufe::SceneSegmentHandler::Ptr fMayaSceneSegmentHandler;
+    Ufe::SceneSegmentHandler::Ptr _mayaSceneSegmentHandler;
 
 }; // ProxyShapeSceneSegmentHandler
 

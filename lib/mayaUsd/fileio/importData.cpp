@@ -28,21 +28,21 @@ MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ImportData);
 constexpr const char* kRootPrimPath = "/";
 
 ImportData::ImportData()
-    : fLoadSet(UsdStage::InitialLoadSet::LoadAll)
-    , fRootPrimPath(kRootPrimPath)
-    , fPrimsInScopeCount(0)
-    , fSwitchedVariantCount(0)
-    , fApplyEulerFilter(false)
+    : _loadSet(UsdStage::InitialLoadSet::LoadAll)
+    , _rootPrimPath(kRootPrimPath)
+    , _primsInScopeCount(0)
+    , _switchedVariantCount(0)
+    , _applyEulerFilter(false)
 {
 }
 
 ImportData::ImportData(const std::string& f)
-    : fLoadSet(UsdStage::InitialLoadSet::LoadAll)
-    , fRootPrimPath(kRootPrimPath)
-    , fFilename(f)
-    , fPrimsInScopeCount(0)
-    , fSwitchedVariantCount(0)
-    , fApplyEulerFilter(false)
+    : _loadSet(UsdStage::InitialLoadSet::LoadAll)
+    , _rootPrimPath(kRootPrimPath)
+    , _filename(f)
+    , _primsInScopeCount(0)
+    , _switchedVariantCount(0)
+    , _applyEulerFilter(false)
 {
 }
 
@@ -58,95 +58,95 @@ const ImportData& ImportData::cinstance() { return instance(); }
 
 void ImportData::clearData()
 {
-    fLoadSet = UsdStage::InitialLoadSet::LoadAll;
+    _loadSet = UsdStage::InitialLoadSet::LoadAll;
     UsdStagePopulationMask tmpPopMask;
-    fPopMask.swap(tmpPopMask);
-    fRootVariants.clear();
-    fPrimVariants.clear();
-    fFilename.clear();
-    fRootPrimPath = kRootPrimPath;
-    fPrimsInScopeCount = 0;
-    fSwitchedVariantCount = 0;
+    _popMask.swap(tmpPopMask);
+    _rootVariants.clear();
+    _primVariants.clear();
+    _filename.clear();
+    _rootPrimPath = kRootPrimPath;
+    _primsInScopeCount = 0;
+    _switchedVariantCount = 0;
 }
 
 bool ImportData::empty() const
 {
     // If we don't have a filename set then we are empty.
-    return fFilename.empty();
+    return _filename.empty();
 }
 
-const std::string& ImportData::filename() const { return fFilename; }
+const std::string& ImportData::filename() const { return _filename; }
 
 void ImportData::setFilename(const std::string& f)
 {
     // If the input filename doesn't match what we have stored (empty or not) we
     // clear the data because it doesn't belong to the new file.
-    if (fFilename != f)
+    if (_filename != f)
         clearData();
-    fFilename = f;
+    _filename = f;
 }
 
-const std::string& ImportData::rootPrimPath() const { return fRootPrimPath; }
+const std::string& ImportData::rootPrimPath() const { return _rootPrimPath; }
 
-void ImportData::setRootPrimPath(const std::string& primPath) { fRootPrimPath = primPath; }
+void ImportData::setRootPrimPath(const std::string& primPath) { _rootPrimPath = primPath; }
 
-bool ImportData::hasPopulationMask() const { return !fPopMask.IsEmpty(); }
+bool ImportData::hasPopulationMask() const { return !_popMask.IsEmpty(); }
 
-void ImportData::setApplyEulerFilter(bool value) { fApplyEulerFilter = value; }
+void ImportData::setApplyEulerFilter(bool value) { _applyEulerFilter = value; }
 
-bool ImportData::applyEulerFilter() const { return fApplyEulerFilter; }
+bool ImportData::applyEulerFilter() const { return _applyEulerFilter; }
 
-const UsdStagePopulationMask& ImportData::stagePopulationMask() const { return fPopMask; }
+const UsdStagePopulationMask& ImportData::stagePopulationMask() const { return _popMask; }
 
-void ImportData::setStagePopulationMask(const UsdStagePopulationMask& mask) { fPopMask = mask; }
+void ImportData::setStagePopulationMask(const UsdStagePopulationMask& mask) { _popMask = mask; }
 
 void ImportData::setStagePopulationMask(UsdStagePopulationMask&& mask)
 {
-    fPopMask = std::move(mask);
+    _popMask = std::move(mask);
 }
 
-UsdStage::InitialLoadSet ImportData::stageInitialLoadSet() const { return fLoadSet; }
+UsdStage::InitialLoadSet ImportData::stageInitialLoadSet() const { return _loadSet; }
 
-void ImportData::setStageInitialLoadSet(UsdStage::InitialLoadSet loadSet) { fLoadSet = loadSet; }
+void ImportData::setStageInitialLoadSet(UsdStage::InitialLoadSet loadSet) { _loadSet = loadSet; }
 
 bool ImportData::hasVariantSelections() const
 {
-    return !(fRootVariants.empty() && fPrimVariants.empty());
+    return !(_rootVariants.empty() && _primVariants.empty());
 }
 
-const SdfVariantSelectionMap& ImportData::rootVariantSelections() const { return fRootVariants; }
+const SdfVariantSelectionMap& ImportData::rootVariantSelections() const { return _rootVariants; }
 
 const ImportData::PrimVariantSelections& ImportData::primVariantSelections() const
 {
-    return fPrimVariants;
+    return _primVariants;
 }
 
 void ImportData::setRootVariantSelections(const SdfVariantSelectionMap& vars)
 {
-    fRootVariants = vars;
+    _rootVariants = vars;
 }
 
 void ImportData::setRootVariantSelections(SdfVariantSelectionMap&& vars)
 {
-    fRootVariants = std::move(vars);
+    _rootVariants = std::move(vars);
 }
 
 void ImportData::setPrimVariantSelections(const PrimVariantSelections& vars)
 {
-    fPrimVariants = vars;
+    _primVariants = vars;
 }
 
 void ImportData::setPrimVariantSelections(PrimVariantSelections&& vars)
 {
-    fPrimVariants = std::move(vars);
+    _primVariants = std::move(vars);
 }
 
-void ImportData::setPrimsInScopeCount(int count) { fPrimsInScopeCount = count; }
+void ImportData::setPrimsInScopeCount(int count) { _primsInScopeCount = count; }
 
-void ImportData::setSwitchedVariantCount(int count) { fSwitchedVariantCount = count; }
+void ImportData::setSwitchedVariantCount(int count) { _switchedVariantCount = count; }
 
-int ImportData::primsInScopeCount() const { return fPrimsInScopeCount; }
+int ImportData::primsInScopeCount() const { return _primsInScopeCount; }
 
-int ImportData::switchedVariantCount() const { return fSwitchedVariantCount; }
+int ImportData::switchedVariantCount() const { return _switchedVariantCount; }
 
 } // namespace MAYAUSD_NS_DEF
