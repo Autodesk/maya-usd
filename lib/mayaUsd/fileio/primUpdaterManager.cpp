@@ -593,7 +593,7 @@ PushCustomizeSrc pushExport(
     // This ensures the materials will be under the prim, so that
     // when exported it is under the node being merged and will thus
     // be merged too.
-    userArgs[UsdMayaJobExportArgsTokens->exportMaterialUnderPrim] = true;
+    userArgs[UsdMayaJobExportArgsTokens->legacyMaterialScope] = true;
 
     UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
         userArgs, dagPaths, fullObjectList, timeSamples);
