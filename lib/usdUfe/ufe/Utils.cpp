@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/UsdAttributes.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/trf/XformOpUtils.h>
 #include <usdUfe/utils/editability.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
@@ -115,6 +116,8 @@ UsdUfe::UniqueChildNameFn          gUniqueChildNameFn = nullptr;
 UsdUfe::WaitCursorFn               gStartWaitCursorFn = nullptr;
 UsdUfe::WaitCursorFn               gStopWaitCursorFn = nullptr;
 UsdUfe::DefaultMaterialScopeNameFn gGetDefaultMaterialScopeNameFn = nullptr;
+UsdUfe::ExtractTRSFn               gExtractTRSFn = nullptr;
+UsdUfe::Transform3dMatrixOpNameFn  gTransform3dMatrixOpNameFn = nullptr;
 
 UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
     = { nullptr };
@@ -466,7 +469,7 @@ void displayMessage(MessageType type, const std::string& msg)
         switch (type) {
         case MessageType::kInfo: TF_STATUS(msg); break;
         case MessageType::kWarning: TF_WARN(msg); break;
-        case MessageType::KError: TF_RUNTIME_ERROR(msg); break;
+        case MessageType::kError: TF_RUNTIME_ERROR(msg); break;
         default: break;
         }
     }
@@ -1184,6 +1187,31 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
     return true;
 }
 
+//! Copy the argument matrix into the return matrix.
+Ufe::Matrix4d toUfe(const PXR_NS::GfMatrix4d& src)
+{
+    Ufe::Matrix4d dst;
+    std::memcpy(&dst.matrix[0][0], src.GetArray(), sizeof(double) * 16);
+    return dst;
+}
+
+//! Copy the argument matrix into the return matrix.
+PXR_NS::GfMatrix4d toUsd(const Ufe::Matrix4d& src)
+{
+    PXR_NS::GfMatrix4d dst;
+    std::memcpy(dst.GetArray(), &src.matrix[0][0], sizeof(double) * 16);
+    return dst;
+}
+
+//! Copy the argument vector into the return vector.
+Ufe::Vector3d toUfe(const PXR_NS::GfVec3d& src) { return Ufe::Vector3d(src[0], src[1], src[2]); }
+
+//! Copy the argument vector into the return vector.
+PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
+{
+    return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
+}
+
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
 {
     // Filter the src selection, removing items below the filterPath
@@ -1330,6 +1358,18 @@ std::string defaultMaterialScopeName()
                                           : kDefaultMaterialScopeName;
 }
 
+void setTransform3dMatrixOpNameFn(Transform3dMatrixOpNameFn fn)
+{
+    // This function is allowed to be null in which case there is
+    // no special transform3d matrix op name.
+    gTransform3dMatrixOpNameFn = fn;
+}
+
+const char* getTransform3dMatrixOpName()
+{
+    return gTransform3dMatrixOpNameFn ? gTransform3dMatrixOpNameFn() : nullptr;
+}
+
 UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item)
 {
     if (!item) {
@@ -1347,6 +1387,22 @@ UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item)
     }
 
     return prim.GetTypeName() == kMaterial ? UsdSceneItem::create(path, prim) : nullptr;
+}
+
+void setExtractTRSFn(ExtractTRSFn fn)
+{
+    // This function is allowed to be null in which case, a default
+    // implementation will be used.
+    gExtractTRSFn = fn;
+}
+
+void extractTRS(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s)
+{
+    if (gExtractTRSFn) {
+        gExtractTRSFn(m, t, r, s);
+    } else {
+        UsdUfe::internal::getTRS(m, t, r, s);
+    }
 }
 
 } // namespace USDUFE_NS_DEF

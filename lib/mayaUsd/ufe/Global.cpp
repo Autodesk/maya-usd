@@ -28,13 +28,15 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
-#include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
-#include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
-#include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
-#include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
-#include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dFallbackMayaXformStack.h>
+#include <mayaUsd/ufe/trf/UsdTransform3dMayaXformStack.h>
+#include <mayaUsd/ufe/trf/XformOpUtils.h>
+
+#include <usdUfe/ufe/trf/UsdTransform3dCommonAPI.h>
+#include <usdUfe/ufe/trf/UsdTransform3dMatrixOp.h>
+#include <usdUfe/ufe/trf/UsdTransform3dPointInstance.h>
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #define HAVE_PATH_MAPPING
@@ -56,8 +58,9 @@
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#include <mayaUsd/ufe/UsdTransform3dRead.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
+
+#include <usdUfe/ufe/trf/UsdTransform3dRead.h>
 
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
 #include <mayaUsd/ufe/UsdBatchOpsHandler.h>
@@ -91,6 +94,7 @@
 #include <ufe/runTimeMgr.h>
 
 #include <cassert>
+#include <cstdlib>
 #include <string>
 #if UFE_CLIPBOARD_SUPPORT
 #include <ghc/filesystem.hpp>
@@ -133,6 +137,8 @@ std::string defaultMaterialsScopeName()
 {
     return UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
 }
+
+const char* getTransform3dMatrixOpName() { return std::getenv("MAYA_USD_MATRIX_XFORM_OP_NAME"); }
 
 void displayInfoMessage(const std::string& msg) { MGlobal::displayInfo(msg.c_str()); }
 void displayWarningMessage(const std::string& msg) { MGlobal::displayWarning(msg.c_str()); }
@@ -199,11 +205,13 @@ MStatus initialize()
         = displayInfoMessage;
     dccFunctions.displayMessageFn[static_cast<int>(UsdUfe::MessageType::kWarning)]
         = displayWarningMessage;
-    dccFunctions.displayMessageFn[static_cast<int>(UsdUfe::MessageType::KError)]
+    dccFunctions.displayMessageFn[static_cast<int>(UsdUfe::MessageType::kError)]
         = displayErrorMessage;
     dccFunctions.startWaitCursorFn = mayaStartWaitCursor;
     dccFunctions.stopWaitCursorFn = mayaStopWaitCursor;
     dccFunctions.defaultMaterialScopeNameFn = defaultMaterialsScopeName;
+    dccFunctions.extractTRSFn = MayaUsd::ufe::extractTRS;
+    dccFunctions.transform3dMatrixOpNameFn = getTransform3dMatrixOpName;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
@@ -276,14 +284,10 @@ MStatus initialize()
     runTimeMgr.setCameraHandler(g_MayaRtid, proxyShapeCameraHandler);
 #endif
 
-    // USD has a very flexible data model to support 3d transformations --- see
-    // https://graphics.pixar.com/usd/docs/api/class_usd_geom_xformable.html
+    // Note: see UsdUfe::initialize() method lib/usdUfe/ufe/Global.cpp
     //
-    // To map this flexibility into a UFE Transform3d handler, we set up a
-    // chain of responsibility
-    // https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern
-    // for Transform3d interface creation, from least important to most
-    // important:
+    // In MayaUsd we add in two extra Maya transform handlers:
+    //
     // - Perform operations on a Maya transform stack appended to the existing
     //   transform stack (fallback).
     // - Perform operations on a 4x4 matrix transform op.
@@ -292,14 +296,14 @@ MStatus initialize()
     // - If the object is a point instance, use the point instance handler.
     Ufe::Transform3dHandler::Ptr lastHandler
         = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
-    lastHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(lastHandler);
-    lastHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(lastHandler);
+    lastHandler = UsdUfe::UsdTransform3dMatrixOpHandler::create(lastHandler);
+    lastHandler = UsdUfe::UsdTransform3dCommonAPIHandler::create(lastHandler);
     lastHandler = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(lastHandler);
-    lastHandler = MayaUsd::ufe::UsdTransform3dPointInstanceHandler::create(lastHandler);
+    lastHandler = UsdUfe::UsdTransform3dPointInstanceHandler::create(lastHandler);
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    lastHandler = MayaUsd::ufe::UsdTransform3dReadHandler::create(lastHandler);
+    lastHandler = UsdUfe::UsdTransform3dReadHandler::create(lastHandler);
 #endif
-    handlers.transform3dHandler = lastHandler;
+    usdUfeHandlers.transform3dHandler = lastHandler;
 
     // Initialize UsdUfe which will register all the default handlers
     // and the overrides we provide.
@@ -307,12 +311,9 @@ MStatus initialize()
     g_StagesSubject = MayaStagesSubject::create();
     auto usdRtid = UsdUfe::initialize(dccFunctions, usdUfeHandlers, g_StagesSubject);
 
-    // TEMP (UsdUfe)
     // Can only call Ufe::RunTimeMgr::register_() once for a given runtime name.
     // UsdUfe does that (in the call to initialize), so we must individually
     // register all the other handlers.
-    if (handlers.transform3dHandler)
-        runTimeMgr.setTransform3dHandler(usdRtid, handlers.transform3dHandler);
     if (handlers.sceneItemOpsHandler)
         runTimeMgr.setSceneItemOpsHandler(usdRtid, handlers.sceneItemOpsHandler);
     if (handlers.object3dHandler)

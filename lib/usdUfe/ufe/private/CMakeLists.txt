@@ -4,7 +4,6 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         UfeNotifGuard.cpp
-        Utils.cpp
 )
 
 
@@ -18,6 +17,5 @@ target_sources(${PROJECT_NAME}
 #
 set(HEADERS
     UfeNotifGuard.h
-    Utils.h
 )
 mayaUsd_promoteHeaderList(HEADERS ${HEADERS} BASEDIR ${PROJECT_NAME} SUBDIR mayaUsd/private)

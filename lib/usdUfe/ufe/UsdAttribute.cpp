@@ -551,7 +551,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        displayMessage(MessageType::KError, errMsg);
+        displayMessage(MessageType::kError, errMsg);
         return nullptr;
     }
 
@@ -619,7 +619,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        displayMessage(MessageType::KError, errMsg);
+        displayMessage(MessageType::kError, errMsg);
         return nullptr;
     }
 
@@ -683,7 +683,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumToken::setCmd(const std::string& value
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        displayMessage(MessageType::KError, errMsg);
+        displayMessage(MessageType::kError, errMsg);
         return nullptr;
     }
 
@@ -712,7 +712,7 @@ template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(con
 {
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        displayMessage(MessageType::KError, errMsg);
+        displayMessage(MessageType::kError, errMsg);
         return nullptr;
     }
 
@@ -951,7 +951,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeString::setCmd(const std::string& value)
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        displayMessage(MessageType::KError, errMsg);
+        displayMessage(MessageType::kError, errMsg);
         return nullptr;
     }
 
@@ -1009,7 +1009,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeToken::setCmd(const std::string& value)
 
     const std::string errMsg = isEditAllowedMsg();
     if (!errMsg.empty()) {
-        displayMessage(MessageType::KError, errMsg);
+        displayMessage(MessageType::kError, errMsg);
         return nullptr;
     }
 
