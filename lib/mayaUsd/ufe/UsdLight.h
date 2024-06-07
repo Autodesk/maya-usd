@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDLIGHT_H
+#define MAYAUSD_USDLIGHT_H
 
 #include <mayaUsd/base/api.h>
 
@@ -157,3 +158,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDLIGHT_H

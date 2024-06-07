@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDCONTEXTOPSHANDLER_H
+#define USDUFE_USDCONTEXTOPSHANDLER_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdContextOps.h>
@@ -40,3 +41,5 @@ public:
 }; // UsdContextOpsHandler
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDCONTEXTOPSHANDLER_H

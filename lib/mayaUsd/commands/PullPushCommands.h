@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PULLPUSHCOMMANDS_H
+#define MAYAUSD_PULLPUSHCOMMANDS_H
 
 #ifndef PXRUSDMAYA_PULLPUSHCOMMANDS_H
 #define PXRUSDMAYA_PULLPUSHCOMMANDS_H
@@ -183,3 +184,5 @@ private:
 } // namespace MAYAUSD_NS_DEF
 
 #endif /* PXRUSDMAYA_PULLPUSHCOMMANDS_H */
+
+#endif // MAYAUSD_PULLPUSHCOMMANDS_H

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_UFEVERSIONCOMPAT_H
+#define USDUFE_UFEVERSIONCOMPAT_H
 
 // Make sure ufe.h is included, if it hasn't been already.
 #include <ufe/ufe.h>
@@ -28,3 +29,5 @@
 #if !defined(UFE_V4_FEATURES_AVAILABLE) && !defined(UFE_V4)
 #define UFE_V4(...)
 #endif
+
+#endif // USDUFE_UFEVERSIONCOMPAT_H

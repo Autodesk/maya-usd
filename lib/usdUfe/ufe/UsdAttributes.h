@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDATTRIBUTES_H
+#define USDUFE_USDATTRIBUTES_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdAttribute.h>
@@ -97,3 +98,5 @@ private:
 }; // UsdAttributes
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDATTRIBUTES_H

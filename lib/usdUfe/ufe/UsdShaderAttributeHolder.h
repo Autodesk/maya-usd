@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDSHADERATTRIBUTEHOLDER_H
+#define USDUFE_USDSHADERATTRIBUTEHOLDER_H
 
 #include <usdUfe/ufe/UsdAttributeHolder.h>
 
@@ -75,3 +76,5 @@ private:
 }; // UsdShaderAttributeHolder
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDSHADERATTRIBUTEHOLDER_H

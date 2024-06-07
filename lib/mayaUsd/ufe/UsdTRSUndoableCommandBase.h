@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRSUNDOABLECOMMANDBASE_H
+#define MAYAUSD_USDTRSUNDOABLECOMMANDBASE_H
 
 #include <mayaUsd/base/api.h>
 
@@ -107,3 +108,5 @@ template <class T> struct MakeSharedEnabler : public T
 };
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRSUNDOABLECOMMANDBASE_H

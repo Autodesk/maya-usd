@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_SIMD_H
+#define USDUFE_SIMD_H
 
 #ifdef _WIN32
 #define ALIGN16(X) __declspec(align(16)) X
@@ -558,3 +559,5 @@ inline f128 loadmask3f(const void* const ptr, size_t count)
 #endif
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_SIMD_H

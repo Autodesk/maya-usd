@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDSTAGEMAP_H
+#define MAYAUSD_USDSTAGEMAP_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
@@ -135,3 +136,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDSTAGEMAP_H

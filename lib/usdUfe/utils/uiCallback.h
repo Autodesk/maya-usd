@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_UICALLBACK_H
+#define USDUFE_UICALLBACK_H
 
 #include <usdUfe/base/api.h>
 
@@ -60,3 +61,5 @@ USDUFE_PUBLIC
 void unregisterUICallback(const PXR_NS::TfToken& operation, const UICallback::Ptr& uiCallback);
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_UICALLBACK_H

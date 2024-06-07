@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_MERGEPRIMSOPTIONS_H
+#define USDUFE_MERGEPRIMSOPTIONS_H
 
 #include <usdUfe/base/api.h>
 
@@ -203,3 +204,5 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_DECLARE_PUBLIC_TOKENS(MergeOptionsTokens, USDUFE_PUBLIC, USDUFE_MERGE_OPTIONS_TOKENS);
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_MERGEPRIMSOPTIONS_H

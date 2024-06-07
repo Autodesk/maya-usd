@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MATERIALUPDATER_H
+#define MATERIALUPDATER_H
 
 #include <mayaUsd/fileio/primUpdater.h>
 
@@ -37,3 +38,5 @@ public:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // MATERIALUPDATER_H

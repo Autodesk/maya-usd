@@ -5,7 +5,8 @@
 // agreement provided at the time of installation or download, or which
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
-#pragma once
+#ifndef USDUFE_USDOBJECT3D_H
+#define USDUFE_USDOBJECT3D_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -66,3 +67,5 @@ private:
 }; // UsdObject3d
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDOBJECT3D_H

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDCONTEXTOPS_H
+#define USDUFE_USDCONTEXTOPS_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -145,3 +146,5 @@ private:
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDCONTEXTOPS_H

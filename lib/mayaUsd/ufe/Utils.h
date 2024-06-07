@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_UFE_UTILS_H
+#define MAYAUSD_UFE_UTILS_H
 
 #include <mayaUsd/base/api.h>
 
@@ -194,3 +195,5 @@ Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_UFE_UTILS_H

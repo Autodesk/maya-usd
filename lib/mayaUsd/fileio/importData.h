@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSD_IMPORTDATA_H
+#define MAYAUSD_IMPORTDATA_H
 
 #include <mayaUsd/base/api.h>
 
@@ -140,3 +141,5 @@ private:
 };
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_IMPORTDATA_H

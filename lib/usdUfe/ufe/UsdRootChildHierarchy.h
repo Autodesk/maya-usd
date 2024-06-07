@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDROOTCHILDHIERARCHY_H
+#define USDUFE_USDROOTCHILDHIERARCHY_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdHierarchy.h>
@@ -43,3 +44,5 @@ public:
 }; // UsdRootChildHierarchy
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDROOTCHILDHIERARCHY_H

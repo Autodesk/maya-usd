@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSD_H
+#define MAYAUSD_H
 
 #define MAYAUSD_MAJOR_VERSION ${MAYAUSD_MAJOR_VERSION}
 #define MAYAUSD_MINOR_VERSION ${MAYAUSD_MINOR_VERSION}
@@ -87,3 +88,5 @@ static_assert(!std::is_move_constructible<TypeName>::value, \
               "Class should NOT be move constructible");    \
 static_assert(!std::is_move_assignable<TypeName>::value,    \
               "Class should NOT be move assignable");
+
+#endif // MAYAUSD_H

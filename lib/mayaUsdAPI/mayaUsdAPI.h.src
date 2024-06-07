@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDAPI_H
+#define MAYAUSDAPI_H
 
 #define MAYAUSDAPI_MAJOR_VERSION ${MAYAUSDAPI_MAJOR_VERSION}
 #define MAYAUSDAPI_MINOR_VERSION ${MAYAUSDAPI_MINOR_VERSION}
@@ -45,3 +46,5 @@ using namespace MAYAUSDAPI_VERSIONED_NS;
 #else
 #define MAYAUSDAPI_NS_DEF MAYAUSDAPI_VERSIONED_NS
 #endif
+
+#endif // MAYAUSDAPI_H

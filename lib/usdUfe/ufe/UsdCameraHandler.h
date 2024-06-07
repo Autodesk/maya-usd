@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDCAMERAHANDLER_H
+#define USDUFE_USDCAMERAHANDLER_H
 
 #include <usdUfe/base/api.h>
 
@@ -49,3 +50,5 @@ public:
 }; // UsdCameraHandler
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDCAMERAHANDLER_H

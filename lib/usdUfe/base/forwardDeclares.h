@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef USDUFE_FORWARDDECLARES_H
+#define USDUFE_FORWARDDECLARES_H
 
 #include <usdUfe/base/api.h>
 
@@ -41,3 +42,5 @@ PXR_NAMESPACE_CLOSE_SCOPE
 namespace USDUFE_NS_DEF {
 typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_FORWARDDECLARES_H

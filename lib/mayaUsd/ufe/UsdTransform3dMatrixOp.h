@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DMATRIXOP_H
+#define MAYAUSD_USDTRANSFORM3DMATRIXOP_H
 
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 
@@ -99,3 +100,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DMATRIXOP_H
