@@ -86,12 +86,12 @@ private:
     createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range, bool filterInactive) const;
 
 private:
-    Ufe::SceneItem::Ptr        fItem;
-    Hierarchy::Ptr             fMayaHierarchy;
-    Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
+    Ufe::SceneItem::Ptr        _item;
+    Hierarchy::Ptr             _mayaHierarchy;
+    Ufe::HierarchyHandler::Ptr _mayaHierarchyHandler;
 
     // The root prim is initialized on first use and therefore mutable.
-    mutable PXR_NS::UsdPrim fUsdRootPrim;
+    mutable PXR_NS::UsdPrim _usdRootPrim;
 }; // ProxyShapeHierarchy
 
 } // namespace ufe

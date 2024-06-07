@@ -51,7 +51,7 @@ public:
     bool isUndoable() const override;
 
 protected:
-    OpUndoItemList fUndoItemList;
+    OpUndoItemList _undoItemList;
 };
 
 //------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ private:
     // Make sure callers need to call creator().
     EditAsMayaCommand();
 
-    Ufe::Path fPath;
+    Ufe::Path _path;
 };
 
 //------------------------------------------------------------------------------
@@ -175,8 +175,8 @@ private:
     // Make sure callers need to call creator().
     DuplicateCommand();
 
-    Ufe::Path fSrcPath;
-    Ufe::Path fDstPath;
+    Ufe::Path _srcPath;
+    Ufe::Path _dstPath;
 };
 
 } // namespace ufe

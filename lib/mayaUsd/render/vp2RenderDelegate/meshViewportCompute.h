@@ -160,7 +160,7 @@ private:
     std::unique_ptr<MHWRender::MVertexBuffer> _sceneToRenderingFaceVtxIdsGPU;
 
     // Geometry information
-    MGeometry* fRenderGeom { nullptr };
+    MGeometry* _renderGeom { nullptr };
     // Buffers in MGeometry.
     MVertexBuffer* _positionVertexBufferGPU { nullptr }; // not owned by *this, owned by fRenderGeom
     MVertexBuffer* _normalVertexBufferGPU { nullptr };   // not owned by *this, owned by fRenderGeom

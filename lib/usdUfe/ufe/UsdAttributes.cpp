@@ -77,13 +77,13 @@ USDUFE_VERIFY_CLASS_SETUP(Ufe::Attributes, UsdAttributes);
 
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
     : UFE_ATTRIBUTES_BASE()
-    , fItem(item)
+    , _item(item)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     if (!TF_VERIFY(item)) {
         throw std::runtime_error("Invalid attributes object");
     }
-    fPrim = item->prim();
+    _prim = item->prim();
 }
 
 /*static*/
@@ -97,7 +97,7 @@ UsdAttributes::Ptr UsdAttributes::create(const UsdSceneItem::Ptr& item)
 // Ufe::Attributes overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr UsdAttributes::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr UsdAttributes::sceneItem() const { return _item; }
 
 // Returns whether the given op is an inverse operation. i.e, it starts with "!invert!".
 // Note: sizeof(invertPrefix) includes the final nul terminator, so we must subtract one.
@@ -120,13 +120,13 @@ static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
     // If we've already created an attribute for this name, just return the type.
-    auto iter = fUsdAttributes.find(name);
-    if (iter != std::end(fUsdAttributes))
+    auto iter = _usdAttributes.find(name);
+    if (iter != std::end(_usdAttributes))
         return iter->second->type();
 
         // Shader definitions always win over created UsdAttributes:
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    PXR_NS::SdrShaderPropertyConstPtr shaderProp = _GetSdrPropertyAndType(fItem, name).first;
+    PXR_NS::SdrShaderPropertyConstPtr shaderProp = _GetSdrPropertyAndType(_item, name).first;
     if (shaderProp) {
         return UsdShaderAttributeDef(shaderProp).type();
     }
@@ -134,7 +134,7 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 
     // See if a UsdAttribute can be wrapped:
     PXR_NS::TfToken      tok(name);
-    PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
+    PXR_NS::UsdAttribute usdAttr = _GetAttributeType(_prim, name);
     if (usdAttr.IsValid()) {
         return usdTypeToUfe(usdAttr);
     }
@@ -149,8 +149,8 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     }
 
     // If we've already created an attribute for this name, just return it.
-    auto iter = fUsdAttributes.find(name);
-    if (iter != std::end(fUsdAttributes))
+    auto iter = _usdAttributes.find(name);
+    if (iter != std::end(_usdAttributes))
         return iter->second;
 
         // Use a map of constructors to reduce the number of string comparisons. Since the naming
@@ -210,15 +210,15 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
     // The shader definition always wins over a created attribute:
-    auto shaderPropAndType = _GetSdrPropertyAndType(fItem, name);
+    auto shaderPropAndType = _GetSdrPropertyAndType(_item, name);
     if (shaderPropAndType.first) {
         auto ctorIt = ctorMap.find(usdTypeToUfe(shaderPropAndType.first));
         UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
         if (ctorIt != ctorMap.end()) {
             newAttr = ctorIt->second(
-                fItem,
+                _item,
                 UsdShaderAttributeHolder::create(
-                    fPrim, shaderPropAndType.first, shaderPropAndType.second));
+                    _prim, shaderPropAndType.first, shaderPropAndType.second));
         }
     }
 #endif
@@ -226,7 +226,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     if (!newAttr) {
         // No attribute for the input name was found -> create one.
         PXR_NS::TfToken      tok(name);
-        PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
+        PXR_NS::UsdAttribute usdAttr = _GetAttributeType(_prim, name);
         if (!usdAttr.IsValid()) {
             return nullptr;
         }
@@ -235,16 +235,16 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         auto ctorIt = ctorMap.find(newAttrType);
         UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
         if (ctorIt != ctorMap.end())
-            newAttr = ctorIt->second(fItem, UsdAttributeHolder::create(usdAttr));
+            newAttr = ctorIt->second(_item, UsdAttributeHolder::create(usdAttr));
     }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
     // If this is a Usd attribute (cannot change) then we cache it for future access.
-    if (!canRemoveAttribute(fItem, name)) {
-        fUsdAttributes[name] = newAttr;
+    if (!canRemoveAttribute(_item, name)) {
+        _usdAttributes[name] = newAttr;
     }
 #else
-    fUsdAttributes[name] = newAttr;
+    _usdAttributes[name] = newAttr;
 #endif
 
     return newAttr;
@@ -256,7 +256,7 @@ std::vector<std::string> UsdAttributes::attributeNames() const
     std::set<std::string>    nameSet;
     std::string              name;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    PXR_NS::SdrShaderNodeConstPtr shaderNode = usdShaderNodeFromSceneItem(fItem);
+    PXR_NS::SdrShaderNodeConstPtr shaderNode = usdShaderNodeFromSceneItem(_item);
     if (shaderNode) {
         auto addAttributeNames
             = [&names, &nameSet, &name](
@@ -271,8 +271,8 @@ std::vector<std::string> UsdAttributes::attributeNames() const
         addAttributeNames(shaderNode->GetOutputNames(), PXR_NS::UsdShadeAttributeType::Output);
     }
 #endif
-    if (fPrim) {
-        auto primAttrs = fPrim.GetAttributes();
+    if (_prim) {
+        auto primAttrs = _prim.GetAttributes();
         for (const auto& attr : primAttrs) {
             name = attr.GetName();
             if (nameSet.find(name) == nameSet.end()) {
@@ -286,11 +286,11 @@ std::vector<std::string> UsdAttributes::attributeNames() const
 bool UsdAttributes::hasAttribute(const std::string& name) const
 {
     PXR_NS::TfToken tkName(name);
-    if (fPrim.HasAttribute(tkName)) {
+    if (_prim.HasAttribute(tkName)) {
         return true;
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    if (_GetSdrPropertyAndType(fItem, name).first) {
+    if (_GetSdrPropertyAndType(_item, name).first) {
         return true;
     }
 #endif
@@ -301,16 +301,16 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
 Ufe::AddAttributeUndoableCommand::Ptr
 UsdAttributes::addAttributeCmd(const std::string& name, const Ufe::Attribute::Type& type)
 {
-    return UsdAddAttributeCommand::create(fItem, name, type);
+    return UsdAddAttributeCommand::create(_item, name, type);
 }
 Ufe::UndoableCommand::Ptr UsdAttributes::removeAttributeCmd(const std::string& name)
 {
-    return UsdRemoveAttributeCommand::create(fItem, name);
+    return UsdRemoveAttributeCommand::create(_item, name);
 }
 Ufe::RenameAttributeUndoableCommand::Ptr
 UsdAttributes::renameAttributeCmd(const std::string& originalName, const std::string& newName)
 {
-    return UsdRenameAttributeCommand::create(fItem, originalName, newName);
+    return UsdRenameAttributeCommand::create(_item, originalName, newName);
 }
 #endif
 
@@ -747,13 +747,13 @@ Ufe::Attribute::Ptr UsdAttributes::doRenameAttribute(
 #ifdef UFE_ATTRIBUTES_GET_ENUMS
 UFE_ATTRIBUTES_BASE::Enums UsdAttributes::getEnums(const std::string& attrName) const
 {
-    auto shaderPropAndType = _GetSdrPropertyAndType(fItem, attrName);
+    auto shaderPropAndType = _GetSdrPropertyAndType(_item, attrName);
     if (shaderPropAndType.first) {
         const auto shaderPropertyHolder = UsdShaderAttributeHolder(
-            fItem->prim(), shaderPropAndType.first, shaderPropAndType.second);
+            _item->prim(), shaderPropAndType.first, shaderPropAndType.second);
         return shaderPropertyHolder.getEnums();
     } else {
-        PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fItem->prim(), attrName);
+        PXR_NS::UsdAttribute usdAttr = _GetAttributeType(_item->prim(), attrName);
         if (usdAttr.IsValid()) {
             const auto attrHolder = UsdAttributeHolder { usdAttr };
             return attrHolder.getEnums();

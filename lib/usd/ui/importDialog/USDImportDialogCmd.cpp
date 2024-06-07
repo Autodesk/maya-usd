@@ -46,7 +46,7 @@
 
 namespace MAYAUSD_NS_DEF {
 
-const MString USDImportDialogCmd::fsName("usdImportDialog");
+const MString USDImportDialogCmd::name("usdImportDialog");
 
 namespace {
 
@@ -101,11 +101,11 @@ QWidget* findParentWindow(const MString& controlName)
 MStatus USDImportDialogCmd::initialize(MFnPlugin& plugin)
 {
     return plugin.registerCommand(
-        fsName, USDImportDialogCmd::creator, USDImportDialogCmd::createSyntax);
+        name, USDImportDialogCmd::creator, USDImportDialogCmd::createSyntax);
 }
 
 /*static*/
-MStatus USDImportDialogCmd::finalize(MFnPlugin& plugin) { return plugin.deregisterCommand(fsName); }
+MStatus USDImportDialogCmd::finalize(MFnPlugin& plugin) { return plugin.deregisterCommand(name); }
 
 /*static*/
 void* USDImportDialogCmd::creator() { return new USDImportDialogCmd(); }

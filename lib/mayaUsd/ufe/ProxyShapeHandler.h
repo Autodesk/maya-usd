@@ -47,7 +47,7 @@ public:
     static std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
 
 private:
-    static const std::string fMayaUsdGatewayNodeType;
+    static const std::string mayaUsdGatewayNodeType;
 
 }; // ProxyShapeHandler
 

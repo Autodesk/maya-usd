@@ -56,7 +56,7 @@ public:
     Ufe::Hierarchy::ChildFilter childFilter() const override;
 
 private:
-    Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
+    Ufe::HierarchyHandler::Ptr _mayaHierarchyHandler;
 
 }; // ProxyShapeHierarchyHandler
 

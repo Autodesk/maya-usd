@@ -46,7 +46,7 @@ template <typename Body> class HdVP2TaskCommitBody final : public HdVP2TaskCommi
     //! Private constructor to force usage of construct method & allocation with
     //! scalable allocator.
     HdVP2TaskCommitBody(const Body& body)
-        : fBody(body)
+        : _body(body)
     {
     }
 
@@ -54,7 +54,7 @@ public:
     ~HdVP2TaskCommitBody() override = default;
 
     //! Execute body task.
-    void operator()() override { fBody(); }
+    void operator()() override { _body(); }
 
     //! Objects of this type are allocated with tbb_allocator.
     //! Release the memory using same allocator by calling destroy method.
@@ -74,7 +74,7 @@ public:
     }
 
 private:
-    Body fBody; //!< Function object providing execution "body" for this task
+    Body _body; //!< Function object providing execution "body" for this task
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

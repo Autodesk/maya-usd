@@ -56,7 +56,7 @@ public:
 
 protected:
     // Derived classes can set this color to override the default invisible color.
-    std::array<double, 3> fInvisibleColor;
+    std::array<double, 3> _invisibleColor;
 }; // UsdUIInfoHandler
 
 } // namespace USDUFE_NS_DEF

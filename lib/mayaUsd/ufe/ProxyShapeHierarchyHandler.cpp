@@ -29,7 +29,7 @@ MAYAUSD_VERIFY_CLASS_SETUP(Ufe::HierarchyHandler, ProxyShapeHierarchyHandler);
 ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(
     const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
     : Ufe::HierarchyHandler()
-    , fMayaHierarchyHandler(mayaHierarchyHandler)
+    , _mayaHierarchyHandler(mayaHierarchyHandler)
 {
 }
 
@@ -47,15 +47,15 @@ ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarc
 Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
     if (isAGatewayType(item->nodeType())) {
-        return ProxyShapeHierarchy::create(fMayaHierarchyHandler, item);
+        return ProxyShapeHierarchy::create(_mayaHierarchyHandler, item);
     } else {
-        return fMayaHierarchyHandler->hierarchy(item);
+        return _mayaHierarchyHandler->hierarchy(item);
     }
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path) const
 {
-    return fMayaHierarchyHandler->createItem(path);
+    return _mayaHierarchyHandler->createItem(path);
 }
 
 Ufe::Hierarchy::ChildFilter ProxyShapeHierarchyHandler::childFilter() const

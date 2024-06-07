@@ -83,7 +83,7 @@ public:
 
     //! Returns the check state of this tree item.
     //! Only valid for kLoad type.
-    TreeItem::CheckState checkState() const { return fCheckState; }
+    TreeItem::CheckState checkState() const { return _checkState; }
     const QPixmap&       checkImage() const;
 
     //! Sets the checkstate of this tree item.
@@ -92,7 +92,7 @@ public:
 
     //! Returns true if the variant selection for this item was modified.
     //! Only valid for kVariants type.
-    bool variantSelectionModified() const { return fVariantSelectionModified; }
+    bool variantSelectionModified() const { return _variantSelectionModified; }
 
     //! Special flag set when the variant selection (of this item) is modified.
     //! Only valid for kVariants type.
@@ -100,7 +100,7 @@ public:
 
     //! Reset the flag that is set to track if the variant selection has been modified.
     //! Only valid for kVariants type.
-    void resetVariantSelectionModified() { fVariantSelectionModified = false; }
+    void resetVariantSelectionModified() { _variantSelectionModified = false; }
 
 private:
     void           initializeItem(bool isDefaultPrim);
@@ -108,21 +108,21 @@ private:
 
 protected:
     // The USD Prim that the item represents in the TreeModel.
-    UsdPrim fPrim;
+    UsdPrim _prim;
 
     // The column of this item.
-    Column fColumn;
+    Column _column;
 
     // For the LOAD column, the check state.
-    CheckState fCheckState;
+    CheckState _checkState;
 
     // Special flag set when the variant selection was modified.
-    bool fVariantSelectionModified;
+    bool _variantSelectionModified;
 
-    static const QPixmap* fsCheckBoxOn;
-    static const QPixmap* fsCheckBoxOnDisabled;
-    static const QPixmap* fsCheckBoxOff;
-    static const QPixmap* fsCheckBoxOffDisabled;
+    static const QPixmap* checkBoxOn;
+    static const QPixmap* checkBoxOnDisabled;
+    static const QPixmap* checkBoxOff;
+    static const QPixmap* checkBoxOffDisabled;
 };
 
 } // namespace MAYAUSD_NS_DEF

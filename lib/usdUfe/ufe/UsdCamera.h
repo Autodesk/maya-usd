@@ -45,8 +45,8 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -89,7 +89,7 @@ public:
     bool renderable() const override;
 #endif // UFE_CAMERA_HAS_RENDERABLE
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdSceneItem::Ptr _item;
 
 }; // UsdCamera
 

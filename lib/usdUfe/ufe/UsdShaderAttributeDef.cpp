@@ -35,37 +35,37 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 UsdShaderAttributeDef::UsdShaderAttributeDef(const SdrShaderPropertyConstPtr& shaderAttributeDef)
     : Ufe::AttributeDef()
-    , fShaderAttributeDef(shaderAttributeDef)
+    , _shaderAttributeDef(shaderAttributeDef)
 {
-    if (!TF_VERIFY(fShaderAttributeDef)) {
+    if (!TF_VERIFY(_shaderAttributeDef)) {
         throw std::runtime_error("Invalid shader attribute definition");
     }
 }
 
 std::string UsdShaderAttributeDef::name() const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
-    return fShaderAttributeDef->GetName().GetString();
+    TF_DEV_AXIOM(_shaderAttributeDef);
+    return _shaderAttributeDef->GetName().GetString();
 }
 
 std::string UsdShaderAttributeDef::type() const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
-    return usdTypeToUfe(fShaderAttributeDef);
+    TF_DEV_AXIOM(_shaderAttributeDef);
+    return usdTypeToUfe(_shaderAttributeDef);
 }
 
 std::string UsdShaderAttributeDef::defaultValue() const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(_shaderAttributeDef);
     std::ostringstream defaultValue;
-    defaultValue << fShaderAttributeDef->GetDefaultValue();
+    defaultValue << _shaderAttributeDef->GetDefaultValue();
     return defaultValue.str();
 }
 
 Ufe::AttributeDef::IOType UsdShaderAttributeDef::ioType() const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
-    return fShaderAttributeDef->IsOutput() ? Ufe::AttributeDef::OUTPUT_ATTR
+    TF_DEV_AXIOM(_shaderAttributeDef);
+    return _shaderAttributeDef->IsOutput() ? Ufe::AttributeDef::OUTPUT_ATTR
                                            : Ufe::AttributeDef::INPUT_ATTR;
 }
 
@@ -166,12 +166,12 @@ static const MetadataMap _metaMap = {
 
 Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(_shaderAttributeDef);
 
 #ifdef UFE_HAS_NATIVE_TYPE_METADATA
     if (key == Ufe::AttributeDef::kNativeType) {
         // We return the Sdf type as that is more meaningful than the Sdr type.
-        const auto sdfTypeTuple = fShaderAttributeDef->GetTypeAsSdfType();
+        const auto sdfTypeTuple = _shaderAttributeDef->GetTypeAsSdfType();
         if (sdfTypeTuple.second.IsEmpty()) {
             return Ufe::Value(sdfTypeTuple.first.GetAsToken().GetString());
         } else {
@@ -180,13 +180,13 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
     }
 #endif
 
-    const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
+    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
     }
 
-    const NdrTokenMap& hints = fShaderAttributeDef->GetHints();
+    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
     it = hints.find(TfToken(key));
     if (it != hints.cend()) {
         return Ufe::Value(it->second);
@@ -194,7 +194,7 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 
     MetadataMap::const_iterator itMapper = _metaMap.find(key);
     if (itMapper != _metaMap.end()) {
-        return itMapper->second(*fShaderAttributeDef);
+        return itMapper->second(*_shaderAttributeDef);
     }
 
     return {};
@@ -202,7 +202,7 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 
 bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(_shaderAttributeDef);
 
 #ifdef UFE_HAS_NATIVE_TYPE_METADATA
     if (key == Ufe::AttributeDef::kNativeType) {
@@ -210,20 +210,20 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
     }
 #endif
 
-    const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
+    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return true;
     }
 
-    const NdrTokenMap& hints = fShaderAttributeDef->GetHints();
+    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
     it = hints.find(TfToken(key));
     if (it != hints.cend()) {
         return true;
     }
 
     MetadataMap::const_iterator itMapper = _metaMap.find(key);
-    if (itMapper != _metaMap.end() && !itMapper->second(*fShaderAttributeDef).empty()) {
+    if (itMapper != _metaMap.end() && !itMapper->second(*_shaderAttributeDef).empty()) {
         return true;
     }
 

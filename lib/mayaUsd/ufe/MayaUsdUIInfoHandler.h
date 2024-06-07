@@ -49,7 +49,7 @@ private:
     //       to be compatible with MMessage callback API.
     static void onColorChanged(void*);
 
-    MCallbackId fColorChangedCallbackId = 0;
+    MCallbackId _colorChangedCallbackId = 0;
 }; // MayaUsdUIInfoHandler
 
 } // namespace ufe

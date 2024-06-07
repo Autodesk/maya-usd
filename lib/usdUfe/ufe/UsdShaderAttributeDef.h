@@ -58,11 +58,11 @@ public:
 
     inline const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty() const
     {
-        return fShaderAttributeDef;
+        return _shaderAttributeDef;
     }
 
 private:
-    const PXR_NS::SdrShaderPropertyConstPtr fShaderAttributeDef;
+    const PXR_NS::SdrShaderPropertyConstPtr _shaderAttributeDef;
 
 }; // UsdShaderAttributeDef
 
