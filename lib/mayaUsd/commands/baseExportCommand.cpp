@@ -124,8 +124,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportAssignedMaterials.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
-        kExportMaterialUnderPrimFlag,
-        UsdMayaJobExportArgsTokens->exportMaterialUnderPrim.GetText(),
+        kLegacyMaterialScopeFlag,
+        UsdMayaJobExportArgsTokens->legacyMaterialScope.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
         kStripNamespacesFlag,

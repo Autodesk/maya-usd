@@ -1352,6 +1352,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         // Append the final excludeExportTypes options to the options list
         $currentOptions = $currentOptions + ";" + "excludeExportTypes=[" + $excludeExportTypes + "]";
 
+        // Make sure we use the new material scope logic, not the legacy one.
+        $currentOptions = $currentOptions + ";legacyMaterialScope=0";
+
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
 
