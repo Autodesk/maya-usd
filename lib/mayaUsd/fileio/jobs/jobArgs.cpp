@@ -603,8 +603,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , exportMaterials(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterials))
     , exportAssignedMaterials(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportAssignedMaterials))
-    , exportMaterialUnderPrim(
-          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialUnderPrim))
+    , legacyMaterialScope(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->legacyMaterialScope))
     , exportDefaultCameras(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->defaultCameras))
     , exportDisplayColor(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportDisplayColor))
     , exportDistanceUnit(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportDistanceUnit))
@@ -731,8 +730,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportMaterials: " << TfStringify(exportArgs.exportMaterials) << std::endl
         << "exportAssignedMaterials: " << TfStringify(exportArgs.exportAssignedMaterials)
         << std::endl
-        << "exportMaterialUnderPrim: " << TfStringify(exportArgs.exportMaterialUnderPrim)
-        << std::endl
+        << "legacyMaterialScope: " << TfStringify(exportArgs.legacyMaterialScope) << std::endl
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
         << "exportDisplayColor: " << TfStringify(exportArgs.exportDisplayColor) << std::endl
         << "exportDistanceUnit: " << TfStringify(exportArgs.exportDistanceUnit) << std::endl
@@ -1023,7 +1021,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterials] = true;
         d[UsdMayaJobExportArgsTokens->exportAssignedMaterials] = true;
-        d[UsdMayaJobExportArgsTokens->exportMaterialUnderPrim] = false;
+        d[UsdMayaJobExportArgsTokens->legacyMaterialScope] = false;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = false;
         d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = true;
         d[UsdMayaJobExportArgsTokens->exportInstances] = true;
@@ -1128,7 +1126,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->exportColorSets] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportMaterials] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportAssignedMaterials] = _boolean;
-        d[UsdMayaJobExportArgsTokens->exportMaterialUnderPrim] = _boolean;
+        d[UsdMayaJobExportArgsTokens->legacyMaterialScope] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportInstances] = _boolean;

@@ -146,7 +146,7 @@ def _fillDuplicateAsUsdDataOptionsDialog(subLayout, optionsText, action):
     cmds.setParent(subLayout)
     mel.eval(
         '''
-        mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output", "{optionsText}", "")
+        mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output;duplicate", "{optionsText}", "")
         '''.format(optionsText=optionsText, subLayout=subLayout, action=action))
 
 def _helpDuplicateAsUsdDataOptions(data=None):

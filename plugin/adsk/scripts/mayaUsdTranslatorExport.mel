@@ -18,6 +18,7 @@
 global string $gMayaUsdTranslatorExport_SectionNames[];
 global int $exportAll;
 global int $gMayaUsdTranslatorExport_useShadingRegistry = 1;
+global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 0;
 
 proc string stringRemoveSuffix(string $object, string $suffix)
 {
@@ -326,9 +327,11 @@ global proc mayaUsdTranslatorExport_MeshCB() {
     if (`checkBoxGrp -exists exportMeshesCheckBox` == 0)
         return;
     
-    mayaUsdTranslatorExport_updateDefaultPrimList();
     int $enable = `checkBoxGrp -q -v1 exportMeshesCheckBox`;
     columnLayout -e -enable $enable meshExportOptsCol;
+
+    mayaUsdTranslatorExport_MaterialsCB();
+    mayaUsdTranslatorExport_updateDefaultPrimList();
 }
 
 global proc mayaUsdTranslatorExport_MaterialsCB() {
@@ -336,6 +339,20 @@ global proc mayaUsdTranslatorExport_MaterialsCB() {
         return;
     
     int $enable = `checkBoxGrp -q -v1 exportMaterialsCheckBox`;
+
+    // If materials export is linked to meshes export, then we disable
+    // all materials-related check-boxes when meshes are off. This is
+    // used in duplicate-to-USD to not duplicate materials without meshes.
+    global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes;
+    if ($gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes) {
+        int $meshesEnable = `checkBoxGrp -q -v1 exportMeshesCheckBox`;
+        columnLayout -e -enable $meshesEnable materialOptsCol2;
+        columnLayout -e -enable $meshesEnable materialOptsCol;
+        if ($meshesEnable == 0) {
+            $enable = 0;
+        }
+    }
+
     mayaUsdTranslatorExport_updateDefaultPrimList();
     columnLayout -e -enable $enable materialOptsCol;
 }
@@ -1066,6 +1083,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
     // check for export option box window first, if it doesn't exist means user opened the main export window
     global string $gOptionBox;
     global int $exportAll;
+    global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes;
+
     if (`window -exists $gOptionBox`) {
         string $title = `window -query -title $gOptionBox`;
         if ($title == `uiRes("m_fileOptions.kExportAllOptions")`) {
@@ -1284,6 +1303,12 @@ global proc int mayaUsdTranslatorExport (string $parent,
             setParent ..;
         }
 
+        if (stringArrayContains("duplicate", $sectionNames)) {
+            $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 1;
+        } else {
+            $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 0;
+        }
+
         $bResult = 1;
 
     } else if ($action == "query") {
@@ -1351,6 +1376,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         // Append the final excludeExportTypes options to the options list
         $currentOptions = $currentOptions + ";" + "excludeExportTypes=[" + $excludeExportTypes + "]";
+
+        // Make sure we use the new material scope logic, not the legacy one.
+        $currentOptions = $currentOptions + ";legacyMaterialScope=0";
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
