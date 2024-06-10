@@ -795,6 +795,11 @@ class AETemplate(object):
                 else:
                     if self.attrS.attribute(item):
                         self.addControls([item])
+    def isRamp(self):
+        runTimeMgr = ufe.RunTimeMgr.instance()
+        nodeDefHandler = runTimeMgr.nodeDefHandler(self.item.runTimeId())
+        nodeDef = nodeDefHandler.definition(self.item)
+        return nodeDef and nodeDef.type() == "ND_adsk_ramp"
 
     def createShaderAttributesSection(self):
         """Use an AEShaderLayout tool to populate the shader section"""
@@ -804,6 +809,10 @@ class AETemplate(object):
         # Hide all outputs:
         for name in self.attrS.attributeNames:
             if UsdShade.Utils.GetBaseNameAndType(name)[1] == UsdShade.AttributeType.Output:
+                self.suppress(name)
+        # Hide ramp attrs:
+        if self.isRamp():
+            for name in self.attrS.attributeNames:
                 self.suppress(name)
         # Build a layout from USD metadata:
         layout = AEShaderLayout(self.item).get()
