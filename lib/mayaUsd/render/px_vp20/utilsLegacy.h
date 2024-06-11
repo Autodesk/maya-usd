@@ -16,8 +16,6 @@
 #ifndef PXVP20_UTILS_LEGACY_H
 #define PXVP20_UTILS_LEGACY_H
 
-/// \file px_vp20/utils_legacy.h
-
 #include <mayaUsd/base/api.h>
 
 #include <pxr/base/gf/matrix4d.h>
