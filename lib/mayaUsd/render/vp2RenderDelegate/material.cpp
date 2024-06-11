@@ -18,7 +18,7 @@
 #include "debugCodes.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderNode.h"
-#include "render_delegate.h"
+#include "renderDelegate.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>

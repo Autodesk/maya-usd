@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "draw_item.h"
+#include "drawItem.h"
 
-#include "render_delegate.h"
+#include "renderDelegate.h"
 
 #include <pxr/imaging/hd/mesh.h>
 

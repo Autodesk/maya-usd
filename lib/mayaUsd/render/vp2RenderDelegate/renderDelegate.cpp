@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "render_delegate.h"
+#include "renderDelegate.h"
 
 #include "basisCurves.h"
 #include "bboxGeom.h"
@@ -22,7 +22,7 @@
 #include "material.h"
 #include "mesh.h"
 #include "points.h"
-#include "render_pass.h"
+#include "renderPass.h"
 #include "tokens.h"
 
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>

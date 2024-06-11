@@ -21,14 +21,14 @@ target_sources(${TARGET_NAME}
         jointWriter.cpp
         lightReader.cpp
         lightRfMWriter.cpp
-        lightRfMWriter_PxrMeshLight.cpp
+        lightRfMWriterPxrMeshLight.cpp
         lightWriter.cpp
         locatorWriter.cpp
         materialReader.cpp
         mayaReferenceReader.cpp
         meshReader.cpp
         meshWriter.cpp
-        meshWriter_BlendShapes.cpp
+        meshWriterBlendShapes.cpp
         nurbsCurvesReader.cpp
         nurbsCurveWriter.cpp
         nurbsPatchReader.cpp

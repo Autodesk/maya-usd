@@ -19,7 +19,7 @@
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
 
 #include "mesh.h"
-#include "render_delegate.h"
+#include "renderDelegate.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
