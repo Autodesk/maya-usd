@@ -53,6 +53,7 @@ class testUsdExportMaterialScope(unittest.TestCase):
             shadingMode='useRegistry', 
             convertMaterialsTo=['UsdPreviewSurface'],
             materialsScopeName='Materials',
+            legacyMaterialScope=False,
             defaultPrim=defaultPrim)
 
         self._stage = Usd.Stage.Open(self._usdFilePath)

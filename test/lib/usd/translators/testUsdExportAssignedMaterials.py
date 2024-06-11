@@ -62,6 +62,7 @@ class testUsdExportAssignedMaterials(unittest.TestCase):
             defaultPrim='top_group',
             exportMaterials=True,
             exportAssignedMaterials=False,
+            legacyMaterialScope=False,
             selection=bool(selection),
             excludeExportTypes=[] if exportMeshes else ['Meshes'])
 

@@ -58,7 +58,8 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         usdFilePath += ".usda"
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
-            materialsScopeName='Materials', **extraOptions)
+            materialsScopeName='Materials', legacyMaterialScope=False,
+            **extraOptions)
 
         stage = Usd.Stage.Open(usdFilePath)
 
@@ -193,7 +194,8 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
                            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
                            preserveUVSetNames=False, remapUVSetsTo=[['','']], 
-                           materialsScopeName='Materials', selection=True)
+                           materialsScopeName='Materials', legacyMaterialScope=False,
+                           selection=True)
 
         stage = Usd.Stage.Open(usdFilePath)
 

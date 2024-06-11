@@ -59,6 +59,7 @@ class testUsdExportMaterialsOnly(unittest.TestCase):
             shadingMode='useRegistry', 
             convertMaterialsTo=['UsdPreviewSurface'],
             materialsScopeName='Materials',
+            legacyMaterialScope=False,
             defaultPrim='top_group',
             exportMaterials=True,
             selection=bool(selection),
