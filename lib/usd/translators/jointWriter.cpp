@@ -15,7 +15,6 @@
 //
 #include "jointWriter.h"
 
-#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>
@@ -32,7 +31,6 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/pathTable.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdSkel/animation.h>
@@ -45,10 +43,8 @@
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMatrixData.h>
-#include <maya/MFnSkinCluster.h>
 #include <maya/MFnTransform.h>
 #include <maya/MGlobal.h>
-#include <maya/MItDag.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -388,22 +384,6 @@ static bool _GetJointLocalTransforms(
     return true;
 }
 
-/// Returns true if the joint's transform definitely matches its rest transform
-/// over all exported frames.
-static bool _JointMatchesRestPose(
-    size_t                 jointIdx,
-    const MDagPath&        dagPath,
-    const VtMatrix4dArray& xforms,
-    const VtMatrix4dArray& restXforms,
-    bool                   exportingAnimation)
-{
-    if (exportingAnimation && _IsTransformNodeAnimated(dagPath))
-        return false;
-    else if (jointIdx < xforms.size())
-        return GfIsClose(xforms[jointIdx], restXforms[jointIdx], 1e-8);
-    return false;
-}
-
 /// Given the list of USD joint names and dag paths, returns the joints that
 /// (1) are moved from their rest poses or (2) have animation, if we are going
 /// to export animation.
@@ -445,11 +425,8 @@ static void _GetAnimatedJoints(
         const TfToken&  jointName = usdJointNames[i];
         const MDagPath& dagPath = jointDagPaths[i];
 
-        if (!_JointMatchesRestPose(
-                i, jointDagPaths[i], localXforms, restXforms, exportingAnimation)) {
-            animatedJointNames->push_back(jointName);
-            animatedJointPaths->push_back(dagPath);
-        }
+        animatedJointNames->push_back(jointName);
+        animatedJointPaths->push_back(dagPath);
     }
 }
 
