@@ -408,6 +408,10 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
     // Create something reasonable for rest transforms
     VtMatrix4dArray restXforms;
     GfMatrix4d      rootXf = _GetJointWorldTransform(_jointHierarchyRootPath);
+    // Setting the skel rest transform as the inverse of the current joint transform.
+    // The inverse of the bind pose would be the ideal scenario here, however joints without a bind
+    // pose or not linked to a skin cluster would have the identity and wouldn't be represented
+    // correctly.
     if (_GetJointLocalTransforms(_topology, _joints, rootXf, &restXforms)) {
         UsdMayaWriteUtil::SetAttribute(
             _skel.GetRestTransformsAttr(),

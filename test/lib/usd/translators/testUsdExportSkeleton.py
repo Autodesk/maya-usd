@@ -165,8 +165,12 @@ class testUsdExportSkeleton(unittest.TestCase):
             Vt.Matrix4dArray([Gf.Matrix4d(1.0)]))
         self.assertEqual(skeleton.GetJointsAttr().Get(),
             Vt.TokenArray(['joint1']))
-        self.assertEqual(skeleton.GetRestTransformsAttr().Get(),
-            Vt.Matrix4dArray([Gf.Matrix4d(1.0)]))
+        self.assertEqual(
+            skeleton.GetRestTransformsAttr().Get(),
+            Vt.Matrix4dArray([
+                Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 5, 0, 1) )
+            ])
+        )
 
         self.assertTrue(skeleton.GetPrim().HasAPI(UsdSkel.BindingAPI))
         skelBindingAPI = UsdSkel.BindingAPI(skeleton)
@@ -240,12 +244,12 @@ class testUsdExportSkeleton(unittest.TestCase):
         self.assertEqual(
             skeleton.GetRestTransformsAttr().Get(),
             Vt.Matrix4dArray([
-                Gf.Matrix4d( (-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1) ),
-                Gf.Matrix4d( (0, -1, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0), (-3, 0, 0, 1) ),
-                Gf.Matrix4d( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 2, 1) ),
-                Gf.Matrix4d( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 2, 0, 1) ),
+                Gf.Matrix4d((0.5000000000000001, 0, -0.8660254037844386, 0), (0, 1, 0, 0), (0.8660254037844386, 0, 0.5000000000000001, 0), (-8, 1, 7, 1)),
+                Gf.Matrix4d((1, 0, 0, 0), (2.7755575615628914e-17, 0.8660254037844387, 0.4999999999999999, 0), (0, -0.49999999999999994, 0.8660254037844388, 0), (-3, 0, 1.2300000000000004, 1)),
+                Gf.Matrix4d((0.7071067811865475, 0.7071067811865476, 2.7755575615628914e-17, 0), (-0.4999999999999999, 0.4999999999999999, 0.7071067811865475, 0), (0.5, -0.4999999999999999, 0.7071067811865475, 0), (-5.0000000000000036, 5, 13.000000000000004, 1)),
+                Gf.Matrix4d((0.9999999999999999, -5.551115123125783e-17, -1.3877787807814457e-17, 0), (5.551115123125783e-17, -2.7755575615628914e-17, 0.9999999999999998, 0), (5.551115123125783e-17, -1, 2.7755575615628914e-17, 0), (-1.7763568394002505e-15, 2, 4.440892098500626e-16, 1)),
             ])
-        )        
+        )
 
     def testSkelWithJointsAtSceneRoot(self):
         """
@@ -322,14 +326,14 @@ class testUsdExportSkeleton(unittest.TestCase):
         stage = Usd.Stage.Open(usdFile)
 
         skeleton = UsdSkel.Skeleton.Get(stage, '/joint_grp/joint1')
-        self.assertEqual(skeleton.GetRestTransformsAttr().Get(),
+        self.assertEqual(skeleton.GetBindTransformsAttr().Get(),
             Vt.Matrix4dArray(
                 # If we're not correlating using logical indices correctly, we may get this
                 # matrix in here somehwere (which we shouldn't):
                 # Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (777, 888, 999, 1) ),
                 [Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 2, 1) ),
-                 Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 3, 0, 1) ),
-                 Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 0, 0, 1) )]))
+                 Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 3, 2, 1) ),
+                 Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 3, 2, 1) )]))
     
     def testPartialSkeletonExport(self):
         """
