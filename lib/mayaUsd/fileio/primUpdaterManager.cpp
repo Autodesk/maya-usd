@@ -611,13 +611,32 @@ PushCustomizeSrc pushExport(
     auto usdPathToDagPathMap = std::make_shared<UsdPathToDagPathMap>();
     for (const auto& v : writeJob.GetDagPathToUsdPathMap()) {
         usdPathToDagPathMap->insert(UsdPathToDagPathMap::value_type(v.second, v.first));
-        context._pushExtras.processItem(v.first, v.second);
     }
 
     std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc) = usdPathToDagPathMap;
     progressBar.advance();
 
     return pushCustomizeSrc;
+}
+
+//------------------------------------------------------------------------------
+//
+void processPushExtras(
+    const MayaUsd::ufe::ReplicateExtrasToUSD& pushExtras,
+    const UsdPathToDagPathMap&                srcDagPathMap,
+    const SdfPath&                            srcRootPath,
+    const SdfPath&                            dstRootPath)
+{
+    if (srcRootPath == dstRootPath) {
+        for (const auto& srcPaths : srcDagPathMap) {
+            pushExtras.processItem(srcPaths.second, srcPaths.first);
+        }
+    } else {
+        for (const auto& srcPaths : srcDagPathMap) {
+            const auto dstPrimPath = srcPaths.first.ReplacePrefix(srcRootPath, dstRootPath);
+            pushExtras.processItem(srcPaths.second, dstPrimPath);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1094,10 +1113,18 @@ bool PrimUpdaterManager::mergeToUsd(
     auto pushCustomizeSrc = pushExport(pulledPath, depNodeFn.object(), context);
     progressBar.advance();
 
+    const auto& srcDagPathMap = std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc);
+
+    if (TF_VERIFY(srcDagPathMap)) {
+        const auto& srcRootPath = std::get<SdfPath>(pushCustomizeSrc);
+        const auto  dstRootPath = getDstSdfPath(pulledPath, srcRootPath, isCopy);
+        processPushExtras(context._pushExtras, *srcDagPathMap, srcRootPath, dstRootPath);
+    }
+
     // 2) Traverse the in-memory layer, creating a prim updater for each prim,
     // and call Push for each updater.  Build a new context with the USD path
     // to Maya path mapping information.
-    context.SetUsdPathToDagPathMap(std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
+    context.SetUsdPathToDagPathMap(srcDagPathMap);
 
     if (!isCopy) {
         if (!FunctionUndoItem::execute(
@@ -1630,6 +1657,12 @@ bool PrimUpdaterManager::duplicate(
         // destination paths.
         const SdfPath srcParentPath = srcRootPath.GetParentPath();
         const SdfPath dstParentPath = dstParentPrim.GetPath();
+
+        const auto& srcPathMapPtr = std::get<UsdPathToDagPathMapPtr>(pushExportOutput);
+
+        if (TF_VERIFY(srcPathMapPtr)) {
+            processPushExtras(context._pushExtras, *srcPathMapPtr, srcParentPath, dstParentPath);
+        }
 
         CopyLayerPrimsOptions options;
         options.progressBar = &progressBar;
