@@ -15,9 +15,8 @@
 //
 #include "UsdUndoAddNewPrimCommand.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 

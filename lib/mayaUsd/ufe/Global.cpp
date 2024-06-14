@@ -15,8 +15,6 @@
 //
 #include "Global.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
@@ -34,6 +32,7 @@
 #include <mayaUsd/ufe/trf/UsdTransform3dMayaXformStack.h>
 #include <mayaUsd/ufe/trf/XformOpUtils.h>
 
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/trf/UsdTransform3dCommonAPI.h>
 #include <usdUfe/ufe/trf/UsdTransform3dMatrixOp.h>
 #include <usdUfe/ufe/trf/UsdTransform3dPointInstance.h>

@@ -15,9 +15,8 @@
 //
 #include "UsdAttribute.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <usdUfe/ufe/StagesSubject.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/usdUtils.h>

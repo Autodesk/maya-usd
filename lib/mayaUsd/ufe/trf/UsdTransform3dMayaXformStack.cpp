@@ -15,13 +15,12 @@
 //
 #include "UsdTransform3dMayaXformStack.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/trf/RotationUtils.h>
 
 #include <usdUfe/base/tokens.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
 #include <usdUfe/ufe/trf/UsdTransform3dUndoableCommands.h>

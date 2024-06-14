@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Autodesk
+// Copyright 2024 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef UFENOTIFGUARD_H
-#define UFENOTIFGUARD_H
+#ifndef USDUFE_UFENOTIFGUARD_H
+#define USDUFE_UFENOTIFGUARD_H
 
 #include <usdUfe/base/api.h>
 
@@ -29,7 +29,6 @@ namespace USDUFE_NS_DEF {
 // This simple guard class can be used within a single scope, but does not have
 // recursive scope capability.
 
-// TEMP (UsdUfe) - export this class so it can be used by mayaUsd/ufe
 class USDUFE_PUBLIC InPathChange
 {
 public:
@@ -54,7 +53,6 @@ private:
 //
 // This simple guard class can be used within a single scope.
 
-// ***** TEMP ***** export this class so it can be used by mayaUsd/ufe
 class USDUFE_PUBLIC InSetAttribute
 {
 public:
@@ -74,7 +72,6 @@ private:
 // This simple guard class can be used within a single scope, but does not have
 // recursive scope capability.
 
-// TEMP (UsdUfe) - export this class so it can be used by mayaUsd/ufe
 class USDUFE_PUBLIC InAddOrDeleteOperation
 {
 public:
@@ -95,7 +92,6 @@ private:
 // recursive scope capability.  On guard exit, will send a Transform3d
 // notification.
 
-// TEMP (UsdUfe) - export this class so it can be used by mayaUsd/ufe
 class USDUFE_PUBLIC InTransform3dChange
 {
 public:
@@ -109,4 +105,4 @@ public:
 
 } // namespace USDUFE_NS_DEF
 
-#endif // UFENOTIFGUARD_H
+#endif // USDUFE_UFENOTIFGUARD_H
