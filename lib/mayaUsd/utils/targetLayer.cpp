@@ -72,7 +72,7 @@ bool setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
 
 namespace {
 
-const char targetLayerAttrName[] = "usdStageTargetLayer";
+const char kTargetLayerAttrName[] = "usdStageTargetLayer";
 
 } // namespace
 
@@ -83,19 +83,19 @@ MStatus copyTargetLayerToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxySh
         return MS::kFailure;
 
     MFnDependencyNode depNode(proxyObj);
-    if (!hasDynamicAttribute(depNode, targetLayerAttrName))
-        createDynamicAttribute(depNode, targetLayerAttrName);
+    if (!hasDynamicAttribute(depNode, kTargetLayerAttrName))
+        createDynamicAttribute(depNode, kTargetLayerAttrName);
 
     MString targetLayerText = convertTargetLayerToText(stage);
 
     // Don't set the attribute if it already has the same value to avoid
     // update loops.
     MString previousTargetLayerText;
-    getDynamicAttribute(depNode, targetLayerAttrName, previousTargetLayerText);
+    getDynamicAttribute(depNode, kTargetLayerAttrName, previousTargetLayerText);
     if (previousTargetLayerText == targetLayerText)
         return MS::kSuccess;
 
-    MStatus status = setDynamicAttribute(depNode, targetLayerAttrName, targetLayerText);
+    MStatus status = setDynamicAttribute(depNode, kTargetLayerAttrName, targetLayerText);
 
     return status;
 }
@@ -109,10 +109,10 @@ MString getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape)
         return targetLayerText;
 
     MFnDependencyNode depNode(proxyObj);
-    if (!hasDynamicAttribute(depNode, targetLayerAttrName))
+    if (!hasDynamicAttribute(depNode, kTargetLayerAttrName))
         return targetLayerText;
 
-    getDynamicAttribute(depNode, targetLayerAttrName, targetLayerText);
+    getDynamicAttribute(depNode, kTargetLayerAttrName, targetLayerText);
     return targetLayerText;
 }
 
