@@ -34,7 +34,7 @@ using MayaUsd::ufe::UsdTransform3dMayaXformStack;
 // The "maya_fallback" namespace component is not optional, but the rest of the
 // suffix remains optional.
 #define FB_CMPT "maya_fallback"
-const TfToken fallbackComponent(FB_CMPT);
+const TfToken kFallbackComponent(FB_CMPT);
 
 // UsdMayaXformStack::FindOpIndex() requires an inconvenient isInvertedTwin
 // argument, various rotate transform op equivalences in a separate
@@ -109,7 +109,7 @@ std::vector<UsdGeomXformOp>::const_iterator
 findFirstFallbackOp(const std::vector<UsdGeomXformOp>& ops)
 {
     return std::find_if(ops.begin(), ops.end(), [](const UsdGeomXformOp& op) {
-        return op.GetOpName().GetString().find(fallbackComponent.GetText()) != std::string::npos;
+        return op.GetOpName().GetString().find(kFallbackComponent.GetText()) != std::string::npos;
     });
 }
 
@@ -271,7 +271,7 @@ TfToken UsdTransform3dFallbackMayaXformStack::getOpSuffix(OpNdx ndx) const
     return opSuffix.at(ndx);
 }
 
-TfToken UsdTransform3dFallbackMayaXformStack::getTRSOpSuffix() const { return fallbackComponent; }
+TfToken UsdTransform3dFallbackMayaXformStack::getTRSOpSuffix() const { return kFallbackComponent; }
 
 UsdTransform3dMayaXformStack::CvtRotXYZFromAttrFn
 UsdTransform3dFallbackMayaXformStack::getCvtRotXYZFromAttrFn(const TfToken& opName) const

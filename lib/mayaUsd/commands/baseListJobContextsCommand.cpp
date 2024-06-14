@@ -68,17 +68,17 @@ MString convertDictionaryToText(const VtDictionary& settings)
     return optionsStream.str().c_str();
 }
 
-const char* _exportStr = "export";
-const char* _exportAnnotationStr = "exportAnnotation";
-const char* _exportArgumentsStr = "exportArguments";
-const char* _hasExportUIStr = "hasExportUI";
-const char* _showExportUIStr = "showExportUI";
-const char* _hasImportUIStr = "hasImportUI";
-const char* _showImportUIStr = "showImportUI";
-const char* _importStr = "import";
-const char* _importAnnotationStr = "importAnnotation";
-const char* _importArgumentsStr = "importArguments";
-const char* _jobContextStr = "jobContext";
+const char* kEexportStr = "export";
+const char* kExportAnnotationStr = "exportAnnotation";
+const char* kExportArgumentsStr = "exportArguments";
+const char* kHasExportUIStr = "hasExportUI";
+const char* kShowExportUIStr = "showExportUI";
+const char* kHasImportUIStr = "hasImportUI";
+const char* kShowImportUIStr = "showImportUI";
+const char* kImportStr = "import";
+const char* kImportAnnotationStr = "importAnnotation";
+const char* kImportArgumentsStr = "importArguments";
+const char* kJobContextStr = "jobContext";
 } // namespace
 
 MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
@@ -90,37 +90,37 @@ MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
         return status;
     }
 
-    if (argData.isFlagSet(_exportStr)) {
+    if (argData.isFlagSet(kEexportStr)) {
         for (auto const& c : UsdMayaJobContextRegistry::ListJobContexts()) {
             auto const& info = UsdMayaJobContextRegistry::GetJobContextInfo(c);
             if (info.exportEnablerCallback) {
                 appendToResult(info.niceName.GetText());
             }
         }
-    } else if (argData.isFlagSet(_exportAnnotationStr)) {
-        auto const& info = _GetInfo(argData, _exportAnnotationStr);
+    } else if (argData.isFlagSet(kExportAnnotationStr)) {
+        auto const& info = _GetInfo(argData, kExportAnnotationStr);
         if (!info.jobContext.IsEmpty()) {
             setResult(info.exportDescription.GetText());
         }
-    } else if (argData.isFlagSet(_exportArgumentsStr)) {
-        auto const& info = _GetInfo(argData, _exportArgumentsStr);
+    } else if (argData.isFlagSet(kExportArgumentsStr)) {
+        auto const& info = _GetInfo(argData, kExportArgumentsStr);
         if (info.exportEnablerCallback) {
             setResult(convertDictionaryToText(info.exportEnablerCallback()));
         }
-    } else if (argData.isFlagSet(_hasExportUIStr)) {
-        auto const& info = _GetInfo(argData, _hasExportUIStr);
+    } else if (argData.isFlagSet(kHasExportUIStr)) {
+        auto const& info = _GetInfo(argData, kHasExportUIStr);
         setResult(bool(info.exportUICallback != nullptr));
-    } else if (argData.isFlagSet(_showExportUIStr)) {
-        auto const& info = _GetInfo(argData, _showExportUIStr);
+    } else if (argData.isFlagSet(kShowExportUIStr)) {
+        auto const& info = _GetInfo(argData, kShowExportUIStr);
         if (!info.exportUICallback)
             return MS::kInvalidParameter;
 
         MString parentUIStr;
-        if (argData.getFlagArgument(_showExportUIStr, 1, parentUIStr) != MS::kSuccess)
+        if (argData.getFlagArgument(kShowExportUIStr, 1, parentUIStr) != MS::kSuccess)
             return MS::kInvalidParameter;
 
         MString settingsStr;
-        if (argData.getFlagArgument(_showExportUIStr, 2, settingsStr) != MS::kSuccess)
+        if (argData.getFlagArgument(kShowExportUIStr, 2, settingsStr) != MS::kSuccess)
             return MS::kInvalidParameter;
 
         VtDictionary inputSettings;
@@ -130,20 +130,20 @@ MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
 
         setResult(convertDictionaryToText(
             info.exportUICallback(info.jobContext, parentUIStr.asChar(), inputSettings)));
-    } else if (argData.isFlagSet(_hasImportUIStr)) {
-        auto const& info = _GetInfo(argData, _hasImportUIStr);
+    } else if (argData.isFlagSet(kHasImportUIStr)) {
+        auto const& info = _GetInfo(argData, kHasImportUIStr);
         setResult(bool(info.importUICallback != nullptr));
-    } else if (argData.isFlagSet(_showImportUIStr)) {
-        auto const& info = _GetInfo(argData, _showImportUIStr);
+    } else if (argData.isFlagSet(kShowImportUIStr)) {
+        auto const& info = _GetInfo(argData, kShowImportUIStr);
         if (!info.importUICallback)
             return MS::kInvalidParameter;
 
         MString parentUIStr;
-        if (argData.getFlagArgument(_showImportUIStr, 1, parentUIStr) != MS::kSuccess)
+        if (argData.getFlagArgument(kShowImportUIStr, 1, parentUIStr) != MS::kSuccess)
             return MS::kInvalidParameter;
 
         MString settingsStr;
-        if (argData.getFlagArgument(_showImportUIStr, 2, settingsStr) != MS::kSuccess)
+        if (argData.getFlagArgument(kShowImportUIStr, 2, settingsStr) != MS::kSuccess)
             return MS::kInvalidParameter;
 
         VtDictionary inputSettings;
@@ -153,25 +153,25 @@ MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
 
         setResult(convertDictionaryToText(
             info.importUICallback(info.jobContext, parentUIStr.asChar(), inputSettings)));
-    } else if (argData.isFlagSet(_importStr)) {
+    } else if (argData.isFlagSet(kImportStr)) {
         for (auto const& c : UsdMayaJobContextRegistry::ListJobContexts()) {
             auto const& info = UsdMayaJobContextRegistry::GetJobContextInfo(c);
             if (info.importEnablerCallback) {
                 appendToResult(info.niceName.GetText());
             }
         }
-    } else if (argData.isFlagSet(_importAnnotationStr)) {
-        auto const& info = _GetInfo(argData, _importAnnotationStr);
+    } else if (argData.isFlagSet(kImportAnnotationStr)) {
+        auto const& info = _GetInfo(argData, kImportAnnotationStr);
         if (!info.jobContext.IsEmpty()) {
             setResult(info.importDescription.GetText());
         }
-    } else if (argData.isFlagSet(_importArgumentsStr)) {
-        auto const& info = _GetInfo(argData, _importArgumentsStr);
+    } else if (argData.isFlagSet(kImportArgumentsStr)) {
+        auto const& info = _GetInfo(argData, kImportArgumentsStr);
         if (info.importEnablerCallback) {
             setResult(convertDictionaryToText(info.importEnablerCallback()));
         }
-    } else if (argData.isFlagSet(_jobContextStr)) {
-        auto const& info = _GetInfo(argData, _jobContextStr);
+    } else if (argData.isFlagSet(kJobContextStr)) {
+        auto const& info = _GetInfo(argData, kJobContextStr);
         if (!info.jobContext.IsEmpty()) {
             setResult(info.jobContext.GetText());
         }

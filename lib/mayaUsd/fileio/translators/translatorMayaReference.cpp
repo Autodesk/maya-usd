@@ -155,7 +155,7 @@ const bool useLegacyMayaRefNaming(const UsdPrim& prim)
     return prim.GetTypeName() != MayaReference;
 }
 
-const TfToken MayaReferenceNodeName("MayaReferenceNodeName");
+const TfToken kMayaReferenceNodeName("MayaReferenceNodeName");
 
 MStatus setMayaRefCustomAttribute(const UsdPrim& prim, const MFnReference& refDependNode)
 {
@@ -167,7 +167,7 @@ MStatus setMayaRefCustomAttribute(const UsdPrim& prim, const MFnReference& refDe
 
     // Always have to try to create the attribute to make sure it is in the prim scope and not
     // inherited. If it was already created, it will be used.
-    UsdAttribute attr = prim.CreateAttribute(MayaReferenceNodeName, SdfValueTypeNames->String);
+    UsdAttribute attr = prim.CreateAttribute(kMayaReferenceNodeName, SdfValueTypeNames->String);
     if (!attr.Set(refDependNode.name().asChar()))
         return MS::kFailure;
 
@@ -176,7 +176,7 @@ MStatus setMayaRefCustomAttribute(const UsdPrim& prim, const MFnReference& refDe
 
 MString GetMayaRefCustomAttribute(const UsdPrim& prim)
 {
-    UsdAttribute attr = prim.GetAttribute(MayaReferenceNodeName);
+    UsdAttribute attr = prim.GetAttribute(kMayaReferenceNodeName);
     if (!attr)
         return MString();
 
@@ -227,15 +227,15 @@ MStatus UnloadMayaReferenceWithUndo(const MObject& referenceObject)
     return LoadOrUnloadMayaReferenceWithUndo(referenceObject, false);
 }
 
-const TfToken namespaceNamePrimAttrName = TfToken("mayaNamespace");
-const TfToken referenceNameAttrName = TfToken("mayaReference");
-const TfToken mergeNamespacesOnClashAttrName = TfToken("mergeNamespacesOnClash");
+const TfToken kNamespaceNamePrimAttrName = TfToken("mayaNamespace");
+const TfToken kReferenceNameAttrName = TfToken("mayaReference");
+const TfToken kMergeNamespacesOnClashAttrName = TfToken("mergeNamespacesOnClash");
 
 // Get the namespace attribute from prim
 MString namespaceFromPrim(const UsdPrim& prim)
 {
     std::string ns;
-    if (UsdAttribute namespaceAttribute = prim.GetAttribute(namespaceNamePrimAttrName)) {
+    if (UsdAttribute namespaceAttribute = prim.GetAttribute(kNamespaceNamePrimAttrName)) {
         TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
             .Msg(
                 "MayaReferenceLogic::update Checking namespace on prim \"%s\".\n",
@@ -607,7 +607,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     MStatus      status;
     SdfAssetPath mayaReferenceAssetPath;
     // Check to see if we have a valid Maya reference node name
-    UsdAttribute mayaReferenceNodeName = prim.GetAttribute(referenceNameAttrName);
+    UsdAttribute mayaReferenceNodeName = prim.GetAttribute(kReferenceNameAttrName);
     mayaReferenceNodeName.Get(&mayaReferenceAssetPath);
     MString unresolvedPath(mayaReferenceAssetPath.GetAssetPath().c_str());
     MString mayaReferencePath(mayaReferenceAssetPath.GetResolvedPath().c_str());
@@ -629,7 +629,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
         .Msg(
             "MayaReferenceLogic::update Looking for attribute on \"%s\".\"%s\"\n",
             prim.GetTypeName().GetText(),
-            namespaceNamePrimAttrName.GetText());
+            kNamespaceNamePrimAttrName.GetText());
 
     MFnDagNode parentDag(parent, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -652,7 +652,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     if (refNode.isNull()) {
         bool mergeNamespacesOnClash = false;
         if (UsdAttribute mergeNamespacesOnClashAttribute
-            = prim.GetAttribute(mergeNamespacesOnClashAttrName)) {
+            = prim.GetAttribute(kMergeNamespacesOnClashAttrName)) {
             mergeNamespacesOnClashAttribute.Get(&mergeNamespacesOnClash);
         }
 
