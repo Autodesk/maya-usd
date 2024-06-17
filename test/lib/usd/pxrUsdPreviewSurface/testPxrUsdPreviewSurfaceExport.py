@@ -48,7 +48,7 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
 
         cmds.loadPlugin('mayaUsdPlugin', quiet=True)
         cmds.file(usdFilePath, force=True,
-                  options="shadingMode=useRegistry;mergeTransformAndShape=1",
+                  options="shadingMode=useRegistry;mergeTransformAndShape=1;legacyMaterialScope=0",
                   typ="USD Export", pr=True, ea=True)
 
         cmds.file(defaultExtensions=defaultExtSetting)

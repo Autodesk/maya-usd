@@ -131,7 +131,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         export_options = [
             "shadingMode=useRegistry",
             "convertMaterialsTo=[{}]".format(convertTo),
-            "mergeTransformAndShape=1"
+            "mergeTransformAndShape=1",
+            "legacyMaterialScope=0"
         ]
 
         cmds.file(usd_path, force=True,
@@ -413,7 +414,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True,
             file=usd_path,
             shadingMode='useRegistry',
-            exportDisplayColor=True)
+            exportDisplayColor=True,
+            legacyMaterialScope=False)
 
         # We expect 2 primvar readers, and 2 st transforms:
         stage = Usd.Stage.Open(usd_path)
@@ -474,14 +476,16 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                 shadingMode='useRegistry',
                 exportDisplayColor=False,
                 exportCollectionBasedBindings=True,
-                exportComponentTags=True)
+                exportComponentTags=True,
+                legacyMaterialScope=False)
         else:
             usd_path = os.path.abspath('CubeWithAssignedFaces.usda')
             cmds.usdExport(mergeTransformAndShape=True,
                 file=usd_path,
                 shadingMode='useRegistry',
                 exportDisplayColor=False,
-                exportComponentTags=True)
+                exportComponentTags=True,
+                legacyMaterialScope=False)
 
         stage = Usd.Stage.Open(usd_path)
 
@@ -686,7 +690,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         usd_path = os.path.abspath('OpacityRoundtripTest.usda')
         cmds.usdExport(mergeTransformAndShape=True,
                        file=usd_path,
-                       shadingMode='useRegistry')
+                       shadingMode='useRegistry',
+                       legacyMaterialScope=False)
 
         stage = Usd.Stage.Open(usd_path)
 

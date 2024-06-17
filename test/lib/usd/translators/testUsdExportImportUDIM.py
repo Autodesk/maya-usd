@@ -52,7 +52,7 @@ class testUsdExportImportUDIM(unittest.TestCase):
         usd_file = os.path.abspath('UsdExportUDIMTest.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usd_file,
             shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
-            materialsScopeName='Materials')
+            materialsScopeName='Materials', legacyMaterialScope=False)
 
         stage = Usd.Stage.Open(usd_file)
         self.assertTrue(stage)
