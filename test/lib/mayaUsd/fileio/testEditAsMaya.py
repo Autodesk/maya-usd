@@ -29,7 +29,7 @@ import ufeUtils
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import Usd, UsdGeom, Gf, Sdf
+from pxr import Usd, UsdGeom, Gf, Sdf, Vt
 
 from maya import cmds
 from maya import standalone
@@ -42,6 +42,7 @@ import unittest
 from testUtils import assertVectorAlmostEqual
 
 import os
+import sys
 
 class EditAsMayaTestCase(unittest.TestCase):
     '''Test edit as Maya: bring USD data into Maya to edit.
@@ -54,6 +55,8 @@ class EditAsMayaTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
+        sys.path.append(cls.inputPath)
 
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
@@ -161,6 +164,28 @@ class EditAsMayaTestCase(unittest.TestCase):
             aMayaItem = ufe.GlobalSelection.get().front()
             aMayaPath = aMayaItem.path()
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaPath)))
+
+    def testEditAsMayaPreserveUsdSkel(self):
+        '''Test that edit does not change the usd skel prim data.'''
+
+        path = os.path.join(self.inputPath, "skelCube.usda")
+
+        proxyShapeDagPath, usdStage = mayaUtils.createProxyFromFile(path)
+        childrenTokensBefore = usdStage.GetPrimAtPath("/Root").GetChildrenNames()
+
+        proxyRoot = proxyShapeDagPath + ",/Root"
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(proxyRoot))
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(proxyRoot))
+
+        aMayaItem = ufe.GlobalSelection.get().front()
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaItem.path())))
+
+        expectedChildren = Vt.TokenArray([
+            "Skeleton",
+            "Animation",
+            "Cube",
+            "Looks"])
+        self.assertEqual(expectedChildren, usdStage.GetPrimAtPath("/Root").GetChildrenNames())
 
     def testEditAsMayaPreserveTimeline(self):
         '''Test that edit does not change the timeline start and end.'''
