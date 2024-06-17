@@ -17,10 +17,11 @@
 #define HD_VP2_MAYA_PRIM_COMMON
 
 #include "drawItem.h"
-#include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/types.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
+#include <pxr/imaging/hd/changeTracker.h>
+#include <pxr/imaging/hd/types.h>
 
 #include <maya/MHWGeometry.h>
 
