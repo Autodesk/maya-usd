@@ -17,12 +17,10 @@
 //
 #include "jointWriteUtils.h"
 
-#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -34,7 +32,6 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/primvar.h>
-#include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdUtils/pipeline.h>
@@ -46,15 +43,12 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MGlobal.h>
-#include <maya/MIntArray.h>
 #include <maya/MItDag.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
-#include <maya/MUintArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -490,12 +484,28 @@ MObject UsdMayaJointUtil::writeSkinningData(
     }
 
     UsdMayaJointUtil::warnForPostDeformationTransform(usdPath, dagPath, skinCluster);
+
+    // When editing 'Edit USD as maya data', some invisible nodes are created on the maya side.
+    // Those extra nodes are added to the hierarchy. Thus, the skeleton path is the wrong one for
+    // those cases.
+    const SdfPathVector primPrefixes = primSchema.GetPath().GetPrefixes();
     SdfPath jointRootPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
+    const SdfPathVector jointPrefixes = jointRootPath.GetPrefixes();
+
+    // Iterate over all prefix in order to find the common root and remove the extra paths
+    for (const SdfPath& path : jointPrefixes) {
+        if (path.GetNameToken() == primPrefixes[0].GetNameToken()) {
+            jointRootPath
+                = jointRootPath.ReplacePrefix(path.GetParentPath(), SdfPath::AbsoluteRootPath());
+            break;
+        }
+    }
+
     if (skelPath.IsEmpty()) {
         skelPath = jointRootPath;
     } else {
-        // SdfPath can only append relative path, so remove the '/' at the first index
-        skelPath = jointRootPath.ReplacePrefix(SdfPath("/"), skelPath);
+        // If there was a skelPath already defined by the user, append it to the jointRootPath
+        skelPath = jointRootPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), skelPath);
     }
 
     // Export will create a Skeleton at the location corresponding to
