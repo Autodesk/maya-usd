@@ -17,9 +17,11 @@
 #ifndef ABSTRACTCOMMANDHOOK_H
 #define ABSTRACTCOMMANDHOOK_H
 
+// Needs to come first when used with VS2017 and Qt5.
+#include "pxr/usd/sdf/layer.h"
+
 #include <mayaUsd/utils/layerLocking.h>
 
-#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QString>
