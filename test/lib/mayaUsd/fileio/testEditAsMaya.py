@@ -29,7 +29,7 @@ import ufeUtils
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import Usd, UsdGeom, Gf, Sdf, Vt
+from pxr import Usd, UsdGeom, Gf, Sdf, Vt, UsdSkel
 
 from maya import cmds
 from maya import standalone
@@ -171,21 +171,22 @@ class EditAsMayaTestCase(unittest.TestCase):
         path = os.path.join(self.inputPath, "skelCube.usda")
 
         proxyShapeDagPath, usdStage = mayaUtils.createProxyFromFile(path)
-        childrenTokensBefore = usdStage.GetPrimAtPath("/Root").GetChildrenNames()
 
         proxyRoot = proxyShapeDagPath + ",/Root"
         self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(proxyRoot))
         self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(proxyRoot))
 
         aMayaItem = ufe.GlobalSelection.get().front()
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaItem.path())))
+        options = { "writeDefaults": True, "exportSkels": "auto", "exportSkin": "auto" }
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaItem.path()), options))
 
-        expectedChildren = Vt.TokenArray([
-            "Skeleton",
-            "Animation",
-            "Cube",
-            "Looks"])
-        self.assertEqual(expectedChildren, usdStage.GetPrimAtPath("/Root").GetChildrenNames())
+        meshPrim = usdStage.GetPrimAtPath('/Root/Cube')
+        skelPrim = usdStage.GetPrimAtPath('/Root/Skeleton')
+        self.assertTrue(skelPrim)
+        self.assertTrue(meshPrim)
+        meshBinding = UsdSkel.BindingAPI.Get(usdStage, meshPrim.GetPath())
+        self.assertTrue(meshBinding)
+        self.assertTrue(meshBinding.GetSkeletonRel().GetTargets()[0], skelPrim.GetPath())
 
     def testEditAsMayaPreserveTimeline(self):
         '''Test that edit does not change the timeline start and end.'''
