@@ -466,6 +466,37 @@ public:
         _userCache._primvars[id] = primvars;
         return true;
     }
+
+    /*! \brief  Returns the cached renamed parameters associated with a shader entry.
+                Will return nullptr if there are no renamed parameters associated with the shader
+       id.
+    */
+    const HdVP2ShaderCache::StringMap* GetRenamedParametersFromCache(const TfToken& id)
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_userCache._mutex, false /*write*/);
+
+        const auto it = _userCache._renamedParameters.find(id);
+
+        return (it != _userCache._renamedParameters.cend() ? &it->second : nullptr);
+    }
+
+    /*! \brief  Adds the renamed parameters associated with a shader id to the cache.
+     */
+    bool AddRenamedParametersToCache(
+        const TfToken&                     id,
+        const HdVP2ShaderCache::StringMap& renamedParameters)
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_userCache._mutex, false /*write*/);
+
+        const auto it = _userCache._renamedParameters.find(id);
+        if (it != _userCache._renamedParameters.cend()) {
+            return false;
+        }
+
+        lock.upgrade_to_writer();
+        _userCache._renamedParameters[id] = renamedParameters;
+        return true;
+    }
 #endif
 
     void OnMayaExit()
@@ -995,6 +1026,25 @@ bool HdVP2RenderDelegate::AddPrimvarsToCache(const TfToken& id, const TfTokenVec
 {
     return sShaderCache.AddPrimvarsToCache(id, primvars);
 }
+
+/*! \brief  Returns the cached renamed parameters associated with a shader entry.
+            Will return nullptr if there are no renamed parameters associated with the shader id.
+ */
+const HdVP2ShaderCache::StringMap*
+HdVP2RenderDelegate::GetRenamedParametersFromCache(const TfToken& id)
+{
+    return sShaderCache.GetRenamedParametersFromCache(id);
+}
+
+/*! \brief  Adds the renamed parameters associated with a shader id to the cache.
+ */
+bool HdVP2RenderDelegate::AddRenamedParametersToCache(
+    const TfToken&                     id,
+    const HdVP2ShaderCache::StringMap& renamedParameters)
+{
+    return sShaderCache.AddRenamedParametersToCache(id, renamedParameters);
+}
+
 #endif
 
 /*! \brief  Returns a fallback shader instance when no material is bound.

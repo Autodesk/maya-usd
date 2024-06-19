@@ -368,6 +368,60 @@ std::string generateLightRig(
 
     return fragmentName;
 }
+
+// Need to find back renamed parameters and map them to their original names:
+std::string getOriginalName(const std::string& parameterName, const mx::NodeDefPtr& shaderNodeDef)
+{
+    if (!shaderNodeDef) {
+        return parameterName;
+    }
+
+    if (shaderNodeDef->getInput(parameterName)) {
+        return parameterName;
+    }
+
+    // Here we try to find back the original name in case it conflicted with an identifier (like
+    // "mix") A one level cache will help reduce churn:
+    static std::string           gLastNodeDef;
+    static std::set<std::string> gParameters;
+
+    if (gLastNodeDef != shaderNodeDef->getName()) {
+        gParameters.clear();
+        for (auto const& input : shaderNodeDef->getActiveInputs()) {
+            gParameters.insert(input->getName());
+        }
+        gLastNodeDef = shaderNodeDef->getName();
+    }
+
+    auto it = gParameters.lower_bound(parameterName);
+
+    if (it != gParameters.end() && *it == parameterName) {
+        return *it;
+    }
+
+    // Need to check the element just before to see if it is a substring of parameterName:
+    if (it == gParameters.begin()) {
+        return {};
+    }
+
+    --it;
+    if (parameterName.rfind(*it, 0) != 0) {
+        // Does not begin with that name
+        return {};
+    }
+
+    // Check that the remainder of the string only digits:
+    for (size_t i = it->length(); i < parameterName.length(); ++i) {
+        if (!std::isdigit(parameterName.at(i))) {
+            // Not a digit:
+            return {};
+        }
+    }
+
+    // Found a valid parameter name that was renamed by shadergen:
+    return *it;
+}
+
 } // anonymous namespace
 
 OgsFragment::OgsFragment(mx::ElementPtr element, const mx::FileSearchPath& librarySearchPath)
@@ -419,16 +473,11 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
             surfaceNode = surfaceInput->getConnectedNode();
         }
     }
-    std::string           surfaceNodeName;
-    std::set<std::string> surfaceInputNames;
+    std::string    surfaceNodeName;
+    mx::NodeDefPtr surfaceNodeDef;
     if (surfaceNode) {
         surfaceNodeName = surfaceNode->getName();
-        const auto nodeDef = surfaceNode->getNodeDef();
-        if (nodeDef) {
-            for (auto const& surfaceInput : nodeDef->getActiveInputs()) {
-                surfaceInputNames.insert(surfaceInput->getName());
-            }
-        }
+        surfaceNodeDef = surfaceNode->getNodeDef();
     }
 
     // Extract the input fragment parameter names along with their
@@ -454,12 +503,16 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
             // from the Node* in the port though since this will be the N0
             // ShaderGraph.
             const std::string& variableName = port->getVariable();
-            if (path.empty() && surfaceInputNames.count(variableName)) {
+            if (path.empty()) {
                 // Assume it is the surface shader:
+                const std::string& originalName = getOriginalName(variableName, surfaceNodeDef);
+                if (originalName.empty()) {
+                    continue;
+                }
                 path.reserve(surfaceNodeName.size() + 1 + variableName.size());
                 path += surfaceNodeName;
                 path += "/";
-                path += variableName;
+                path += originalName;
             }
             if (!path.empty()) {
                 if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {

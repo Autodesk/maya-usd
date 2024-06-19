@@ -184,6 +184,8 @@ private:
         // MaterialX-only at the moment, but will be used for UsdPreviewSurface when the upgrade to
         // HdMaterialNetwork2 is complete.
         size_t _topoHash = 0;
+        HdVP2ShaderCache::StringMap
+            _renamedParameters; //!< Keep track of parameters that were renamed.
 
         void _ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMaterialNetwork2& inNet);
         MHWRender::MShaderInstance* _CreateMaterialXShaderInstance(

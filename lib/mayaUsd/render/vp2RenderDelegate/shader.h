@@ -69,6 +69,11 @@ struct HdVP2ShaderCache
 #ifdef WANT_MATERIALX_BUILD
     //! Primvars registry
     std::unordered_map<TfToken, TfTokenVector, TfToken::HashFunctor> _primvars;
+
+    //! Map of renamed parameters. Happens if the parameter name is a forbidden keyword in the
+    //! shading language.
+    using StringMap = std::map<std::string, MString>;
+    std::unordered_map<TfToken, StringMap, TfToken::HashFunctor> _renamedParameters;
 #endif
 
     //! Synchronization used to protect concurrent read from serial writes
