@@ -52,7 +52,6 @@ GfQuath UsdPointInstanceOrientationModifier::convertValueToUsd(const Ufe::Vector
         * PXR_NS::GfRotation(GfVec3d::YAxis(), eulerXYZ[1])
         * PXR_NS::GfRotation(GfVec3d::ZAxis(), eulerXYZ[2]);
 
-    auto            usdQuaternionD = rotD.GetQuaternion();
     PXR_NS::GfQuath usdQuatD(rotD.GetQuat());
     return usdQuatD;
 }

@@ -393,7 +393,8 @@ UsdTransform3dCommonAPIHandler::transform3d(const Ufe::SceneItem::Ptr& item) con
     // responsibility.
     auto commonAPI = UsdGeomXformCommonAPI(usdItem->prim());
 
-    return commonAPI ? UsdTransform3dCommonAPI::create(usdItem) : _nextHandler->transform3d(item);
+    return commonAPI ? UsdTransform3dCommonAPI::create(usdItem)
+                     : _nextHandler ? _nextHandler->transform3d(item) : nullptr;
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
@@ -411,7 +412,7 @@ Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
     auto commonAPI = UsdGeomXformCommonAPI(usdItem->prim());
 
     return commonAPI ? UsdTransform3dCommonAPI::create(usdItem)
-                     : _nextHandler->editTransform3d(item, hint);
+                     : _nextHandler ? _nextHandler->editTransform3d(item, hint) : nullptr;
 }
 
 } // namespace USDUFE_NS_DEF

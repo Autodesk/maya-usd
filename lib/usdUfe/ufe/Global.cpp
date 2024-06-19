@@ -135,8 +135,7 @@ Ufe::Rtid initialize(
         // - Perform operations on a 4x4 matrix transform op.
         // - Perform operations using the USD common transform API.
         // - If the object is a point instance, use the point instance handler.
-        Ufe::Transform3dHandler::Ptr lastHandler
-            = UsdTransform3dMatrixOpHandler::create(lastHandler);
+        Ufe::Transform3dHandler::Ptr lastHandler = UsdTransform3dMatrixOpHandler::create(nullptr);
         lastHandler = UsdTransform3dCommonAPIHandler::create(lastHandler);
         lastHandler = UsdTransform3dPointInstanceHandler::create(lastHandler);
 #ifdef UFE_V4_FEATURES_AVAILABLE

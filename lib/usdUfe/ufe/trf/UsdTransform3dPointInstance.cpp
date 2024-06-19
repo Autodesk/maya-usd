@@ -193,7 +193,7 @@ UsdTransform3dPointInstanceHandler::transform3d(const Ufe::SceneItem::Ptr& item)
     }
 
     if (!usdItem->isPointInstance()) {
-        return _nextHandler->transform3d(item);
+        return _nextHandler ? _nextHandler->transform3d(item) : nullptr;
     }
 
     return UsdTransform3dPointInstance::create(usdItem);
@@ -210,7 +210,7 @@ Ufe::Transform3d::Ptr UsdTransform3dPointInstanceHandler::editTransform3d(
     }
 
     if (!usdItem->isPointInstance()) {
-        return _nextHandler->editTransform3d(item, hint);
+        return _nextHandler ? _nextHandler->editTransform3d(item, hint) : nullptr;
     }
 
     return UsdTransform3dPointInstance::create(usdItem);

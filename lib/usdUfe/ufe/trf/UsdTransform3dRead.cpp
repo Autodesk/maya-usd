@@ -88,7 +88,7 @@ bool isUsdScope(const UsdSceneItem& usdItem)
 /* override */
 Ufe::Transform3d::Ptr UsdTransform3dReadHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    return _nextHandler->transform3d(item);
+    return _nextHandler ? _nextHandler->transform3d(item) : nullptr;
 }
 
 /* override */
@@ -97,7 +97,7 @@ UsdTransform3dReadHandler::transform3dRead(const Ufe::SceneItem::Ptr& item) cons
 {
     auto usdItem = downcast(item);
     if (!usdItem || !isUsdScope(*usdItem))
-        return _nextHandler->transform3dRead(item);
+        return _nextHandler ? _nextHandler->transform3dRead(item) : nullptr;
 
     return UsdTransform3dRead::create(usdItem);
 }
@@ -107,7 +107,7 @@ Ufe::Transform3d::Ptr UsdTransform3dReadHandler::editTransform3d(
     const Ufe::SceneItem::Ptr&      item,
     const Ufe::EditTransform3dHint& hint) const
 {
-    return _nextHandler->editTransform3d(item, hint);
+    return _nextHandler ? _nextHandler->editTransform3d(item, hint) : nullptr;
 }
 
 } // namespace USDUFE_NS_DEF

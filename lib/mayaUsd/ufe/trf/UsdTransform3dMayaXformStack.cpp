@@ -854,7 +854,8 @@ UsdTransform3dMayaXformStackHandler::create(const Ufe::Transform3dHandler::Ptr& 
 Ufe::Transform3d::Ptr
 UsdTransform3dMayaXformStackHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    return createTransform3d(item, [&]() { return _nextHandler->transform3d(item); });
+    return createTransform3d(
+        item, [&]() { return _nextHandler ? _nextHandler->transform3d(item) : nullptr; });
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
@@ -885,7 +886,8 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
         return nullptr;
     }
 
-    return createTransform3d(item, [&]() { return _nextHandler->editTransform3d(item, hint); });
+    return createTransform3d(
+        item, [&]() { return _nextHandler ? _nextHandler->editTransform3d(item, hint) : nullptr; });
 }
 
 } // namespace ufe

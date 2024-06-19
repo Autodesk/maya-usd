@@ -408,7 +408,7 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
 
     // If no matrix was found, pass on to the next handler.
     if (i == xformOps.cend()) {
-        return _nextHandler->transform3d(item);
+        return _nextHandler ? _nextHandler->transform3d(item) : nullptr;
     }
 
     // If we've found a matrix op, but there is a more local non-matrix op in
@@ -419,7 +419,7 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
     //   Since matrix ops don't support pivot edits, a fallback Maya stack will
     //   be added, and from that point on the fallback Maya stack must be used.
     if (findNonMatrix(i, xformOps)) {
-        return _nextHandler->transform3d(item);
+        return _nextHandler ? _nextHandler->transform3d(item) : nullptr;
     }
 
     // At this point we know we have a matrix op to transform, and that it is
@@ -464,7 +464,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
 
     // If no matrix was found, pass on to the next handler.
     if (i == xformOps.cend()) {
-        return _nextHandler->editTransform3d(item, hint);
+        return _nextHandler ? _nextHandler->editTransform3d(item, hint) : nullptr;
     }
 
     // If we've found a matrix op, but there is a more local non-matrix op in
@@ -476,10 +476,11 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
     //   be added, and from that point on the fallback Maya stack must be used.
     //
     // Also, pass pivot edits on to the next handler, since we can't handle them.
-    return (findNonMatrix(i, xformOps) || (hint.type() == Ufe::EditTransform3dHint::RotatePivot)
-            || (hint.type() == Ufe::EditTransform3dHint::ScalePivot))
-        ? _nextHandler->editTransform3d(item, hint)
-        : UsdTransform3dMatrixOp::create(usdItem, *i);
+    if (findNonMatrix(i, xformOps) || (hint.type() == Ufe::EditTransform3dHint::RotatePivot)
+        || (hint.type() == Ufe::EditTransform3dHint::ScalePivot)) {
+        return _nextHandler ? _nextHandler->editTransform3d(item, hint) : nullptr;
+    }
+    return UsdTransform3dMatrixOp::create(usdItem, *i);
 }
 
 } // namespace USDUFE_NS_DEF
