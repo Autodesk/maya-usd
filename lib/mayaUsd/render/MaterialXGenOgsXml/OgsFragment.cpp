@@ -17,6 +17,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
+#include <cctype>
 #include <iostream>
 
 namespace MaterialXMaya {
