@@ -72,7 +72,7 @@ struct HdVP2ShaderCache
 
     //! Map of renamed parameters. Happens if the parameter name is a forbidden keyword in the
     //! shading language.
-    using StringMap = std::map<std::string, MString>;
+    using StringMap = std::unordered_map<std::string, MString>;
     std::unordered_map<TfToken, StringMap, TfToken::HashFunctor> _renamedParameters;
 #endif
 
