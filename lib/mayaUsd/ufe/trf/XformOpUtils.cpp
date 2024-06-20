@@ -20,6 +20,8 @@
 #include <maya/MTransformationMatrix.h>
 #include <maya/MVector.h>
 
+#include <cstring>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
