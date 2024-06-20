@@ -19,6 +19,7 @@
 #include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/hierarchy.h>
+#include <ufe/pathString.h>
 #include <ufe/runTimeMgr.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -116,6 +117,12 @@ bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
     PXR_NS::UsdStageWeakPtr stage = getStage(path, rebuildCacheIfNeeded);
     return stage ? true
                  : _mayaSceneSegmentHandler ? _mayaSceneSegmentHandler->isGateway_(path) : false;
+}
+
+Ufe::Path ProxyShapeSceneSegmentHandler::rootSceneSegmentRootPath_() const
+{
+    auto mayaRootPath = Ufe::PathString::path("|world");
+    return mayaRootPath;
 }
 
 } // namespace ufe
