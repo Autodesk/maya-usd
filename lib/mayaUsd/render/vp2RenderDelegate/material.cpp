@@ -2887,6 +2887,11 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
         if (cachedPrimvars) {
             _requiredPrimvars = *cachedPrimvars;
         }
+        const HdVP2ShaderCache::StringMap* cachedRenamedParameters
+            = renderDelegate->GetRenamedParametersFromCache(shaderCacheID);
+        if (cachedRenamedParameters) {
+            _renamedParameters = *cachedRenamedParameters;
+        }
         return shaderInstance;
     }
 
@@ -3034,7 +3039,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
             }
         }
 
-        // Fixup inputs that were renamed because they conflicted with reserved keywords:
+        // Remember inputs that were renamed because they conflicted with reserved keywords:
         for (const auto& namePair : ogsFragment.getPathInputMap()) {
             std::string path = namePair.first;
             std::string input = namePair.second;
@@ -3051,7 +3056,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 if (foundOriginal != std::string::npos) {
                     MString uniqueName(input.c_str());
                     input = input.substr(0, foundOriginal + originalName.size());
-                    shaderInstance->renameParameter(uniqueName, input.c_str());
+                    _renamedParameters.emplace(input, uniqueName);
                 }
             }
         }
@@ -3085,6 +3090,9 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
     if (shaderInstance) {
         renderDelegate->AddShaderToCache(shaderCacheID, *shaderInstance);
         renderDelegate->AddPrimvarsToCache(shaderCacheID, _requiredPrimvars);
+        if (!_renamedParameters.empty()) {
+            renderDelegate->AddRenamedParametersToCache(shaderCacheID, _renamedParameters);
+        }
     }
 
     return shaderInstance;
@@ -3285,6 +3293,13 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             const VtValue& value = entry.second;
 
             MString paramName = nodeName + token.GetText();
+
+#ifdef WANT_MATERIALX_BUILD
+            const auto itRename = _renamedParameters.find(paramName.asChar());
+            if (itRename != _renamedParameters.end()) {
+                paramName = itRename->second;
+            }
+#endif
 
             MStatus status = MStatus::kFailure;
 

@@ -153,6 +153,10 @@ public:
 #ifdef WANT_MATERIALX_BUILD
     const TfTokenVector* GetPrimvarsFromCache(const TfToken& id);
     bool                 AddPrimvarsToCache(const TfToken& id, const TfTokenVector& primvars);
+    const HdVP2ShaderCache::StringMap* GetRenamedParametersFromCache(const TfToken& id);
+    bool                               AddRenamedParametersToCache(
+                                      const TfToken&                     id,
+                                      const HdVP2ShaderCache::StringMap& renamedParameters);
 #endif
 
     const MHWRender::MSamplerState* GetSamplerState(const MHWRender::MSamplerStateDesc& desc) const;
