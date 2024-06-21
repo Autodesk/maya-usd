@@ -28,6 +28,7 @@ import maya.mel as mel
 import maya.cmds as cmds
 import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 
@@ -44,15 +45,15 @@ from maya.OpenMaya import MGlobal
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
-from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf, Sdr, Sdf
+from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf, Sdr, Sdf, Gf
 
 nameTxt = 'nameTxt'
 attrValueFld = 'attrValueFld'
 attrTypeFld = 'attrTypeFld'
 
-# Helper class to push/pop the Attribute Editor Template. This makes
-# sure that controls are aligned properly.
 class AEUITemplate:
+    '''Helper class to push/pop the Attribute Editor Template. This makes
+    sure that controls are aligned properly.'''
     def __enter__(self):
         cmds.setUITemplate('attributeEditorTemplate', pst=True)
         return self
@@ -76,10 +77,11 @@ def _queueEditorRefresh():
     cmds.evalDeferred(_refreshEditor, low=True)
     _editorRefreshQueued = True
 
-# Custom control, but does not have any UI. Instead we use
-# this control to be notified from UFE when any attribute has changed
-# so we can update the AE. 
+
 class UfeAttributesObserver(ufe.Observer):
+    '''Custom control, but does not have any UI. Instead we use
+    this control to be notified from UFE when any attribute has changed
+    so we can update the AE.'''
     _watchedAttrs = {
         # This is to fix refresh issue when transform is added to a prim.
         UsdGeom.Tokens.xformOpOrder,
@@ -134,9 +136,8 @@ class UfeConnectionChangedObserver(ufe.Observer):
         # Nothing needed here since we don't create any UI.
         pass
 
-
 class MetaDataCustomControl(object):
-    # Custom control for all prim metadata we want to display.
+    '''Custom control for all prim metadata we want to display.'''
     def __init__(self, item, prim, useNiceName):
         # In Maya 2022.1 we need to hold onto the Ufe SceneItem to make
         # sure it doesn't go stale. This is not needed in latest Maya.
@@ -268,9 +269,8 @@ class MetaDataCustomControl(object):
                 cmds.checkBoxGrp(self.instan, edit=True, value1=self.prim.IsInstanceable())
                 cmds.error(str(ex))
 
-# Custom control for all array attribute.
 class ArrayCustomControl(AttributeCustomControl):
-
+    '''Custom control for all array attribute.'''
     if hasAEPopupMenu:
         class ArrayAEPopup(attributes.AEPopupMenu):
             '''Override the attribute AEPopupMenu so we can add extra menu items.
@@ -364,8 +364,8 @@ def showEditorForUSDPrim(usdPrimPathStr):
     # Simple helper to open the AE on input prim.
     mel.eval('evalDeferred "showEditor(\\\"%s\\\")"' % usdPrimPathStr)
 
-# Custom control for all attributes that have connections.
 class ConnectionsCustomControl(AttributeCustomControl):
+    '''Custom control for all attributes that have connections.'''
     def __init__(self, ufeItem, ufeAttr, prim, attrName, useNiceName):
         super(ConnectionsCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
         self.path = ufeItem.path()
@@ -449,14 +449,13 @@ class ConnectionsCustomControl(AttributeCustomControl):
         # varying, so we don't need to implement the replace.
         pass
 
-
 class NoticeListener(object):
-    # Inserted as a custom control, but does not have any UI. Instead we use
-    # this control to be notified from USD when any metadata has changed
-    # so we can update the AE fields.
-    def __init__(self, prim, metadataControls):
+    '''Inserted as a custom control, but does not have any UI. Instead we use
+    this control to be notified from USD when the prim has changed
+    so we can update the AE fields.'''
+    def __init__(self, prim, aeControls):
         self.prim = prim
-        self.metadataControls = metadataControls
+        self.aeControls = aeControls
 
     def onCreate(self, *args):
         self.listener = Tf.Notice.Register(Usd.Notice.ObjectsChanged,
@@ -475,9 +474,9 @@ class NoticeListener(object):
 
     def __OnPrimsChanged(self, notice, sender):
         if notice.HasChangedFields(self.prim):
-            # Iterate thru all the metadata controls (we were given when created) and
+            # Iterate thru all the AE controls (we were given when created) and
             # call the refresh method (if it exists).
-            for ctrl in self.metadataControls:
+            for ctrl in self.aeControls:
                 if hasattr(ctrl, 'refresh'):
                     ctrl.refresh()
 
@@ -660,6 +659,124 @@ class AEShaderLayout(object):
             folderIndex[groups].items.append(attributeInfo.name)
         return self._attributeLayout
 
+class DisplayCustomDataControl(object):
+    '''Custom control for adding in extra display custom data.'''
+    def __init__(self, item, prim):
+        super(DisplayCustomDataControl, self).__init__()
+        self.item = item
+        self.prim = prim
+
+        # Check whether Ufe has the scene item meta data support.
+        self.useMetadata = hasattr(ufe.SceneItem, "getGroupMetadata") and hasattr(ufe.Value, "typeName")
+
+    @property
+    def GROUP(self):
+        # When using meta data we use a special group name which will automatically
+        # write to the session layer.
+        return 'SessionLayer-Autodesk' if self.useMetadata else 'Autodesk'
+
+    @property
+    def USE_OUTLINER_COLOR(self):
+        # To be more generic and not Maya specific we write out the custom data
+        # as "Text Color" instead of "Outliner Color".
+        key = 'Use Text Color'
+        return key if self.useMetadata else (self.GROUP + ':' + key)
+
+    @property
+    def OUTLINER_COLOR(self):
+        key = 'Text Color'
+        return key if self.useMetadata else (self.GROUP + ':' + key)
+
+    def onCreate(self, *args):
+        '''Add two fields for outliner color to match Maya objects.'''
+        l1 = mel.eval('uiRes(\"m_AEdagNodeCommon.kUseOutlinerColor\");')
+        l2 = mel.eval('uiRes(\"m_AEdagNodeCommon.kOutlinerColor\");')
+        self.useOutlinerColor = cmds.checkBoxGrp(label1=l1, ncb=1,
+                                                 ann=getMayaUsdLibString('kUseOutlinerColorAnn'),
+                                                 cc1=self._onUseOutlinerColorChanged)
+        self.outlinerColor = cmds.colorSliderGrp(label=l2,
+                                                 ann=getMayaUsdLibString('kOutlinerColorAnn'),
+                                                 cc=self._onOutlinerColorChanged)
+
+        # Update all the custom data controls.
+        self.refresh()
+
+    def onReplace(self, *args):
+        pass
+
+    def clear(self):
+        cmds.checkBoxGrp(self.useOutlinerColor, edit=True, v1=False)
+        cmds.colorSliderGrp(self.outlinerColor, edit=True, rgb=(0,0,0))
+
+    def refresh(self):
+        try:
+            if self.useMetadata:
+                # Use Ufe SceneItem metadata to get values.
+                useOutlinerColor = self.item.getGroupMetadata(self.GROUP, self.USE_OUTLINER_COLOR)
+                if not useOutlinerColor.empty() and (useOutlinerColor.typeName() == 'bool'):
+                    cmds.checkBoxGrp(self.useOutlinerColor, edit=True, v1=bool(useOutlinerColor))
+
+                outlinerColor = self.item.getGroupMetadata(self.GROUP, self.OUTLINER_COLOR)
+                if not outlinerColor.empty() and (outlinerColor.typeName() == "ufe.Vector3d"):
+                    # Color is stored as double3 USD custom data.
+                    clr = ufe.Vector3d(outlinerColor)
+                    cmds.colorSliderGrp(self.outlinerColor, edit=True,
+                                        rgb=(clr.x(), clr.y(), clr.z()))
+            else:
+                # Get the custom data directly from USD.
+                useOutlinerColor = self.prim.GetCustomDataByKey(self.USE_OUTLINER_COLOR)
+                if useOutlinerColor is not None and isinstance(useOutlinerColor, bool):
+                    cmds.checkBoxGrp(self.useOutlinerColor, edit=True, v1=useOutlinerColor)
+
+                outlinerColor = self.prim.GetCustomDataByKey(self.OUTLINER_COLOR)
+                if outlinerColor is not None and isinstance(outlinerColor, Gf.Vec3d):
+                    # Color is stored as double3 USD custom data.
+                    cmds.colorSliderGrp(self.outlinerColor, edit=True,
+                                        rgb=(outlinerColor[0], outlinerColor[1], outlinerColor[2]))
+        except:
+            self.clear()
+
+    def _updateTextColorChanged(self):
+        '''Update the text color custom data for this prim based on the values
+        set in the two fields.'''
+        currEditTarget = None
+        try:
+            if self.useMetadata:
+                useTextColor = cmds.checkBoxGrp(self.useOutlinerColor, query=True, v1=True)
+                rgb = cmds.colorSliderGrp(self.outlinerColor, query=True, rgbValue=True)
+
+                # Get ufe commands for the two metadata.
+                cmd1 = self.item.setGroupMetadataCmd(self.GROUP, self.USE_OUTLINER_COLOR, useTextColor)
+                ufeVec = ufe.Vector3d(rgb[0], rgb[1], rgb[2])
+                cmd2 = self.item.setGroupMetadataCmd(self.GROUP, self.OUTLINER_COLOR, ufe.Value(ufeVec))
+
+                # Create ufe composite command from both commands above and execute it.
+                cmd = ufe.CompositeUndoableCommand([cmd1, cmd2])
+                ufeCmd.execute(cmd)
+            else:
+                with mayaUsdLib.UsdUndoBlock():
+                    # As initially decided write out the color custom data to the session layer.
+                    stage = self.prim.GetStage()
+                    currEditTarget = stage.GetEditTarget()
+                    stage.SetEditTarget(stage.GetSessionLayer())
+
+                    # Get the value of "Use Outliner Color" checkbox and set in custom data.
+                    useTextColor = cmds.checkBoxGrp(self.useOutlinerColor, query=True, v1=True)
+                    self.prim.SetCustomDataByKey(self.USE_OUTLINER_COLOR, useTextColor)
+
+                    # Get the value of "Outliner Color" color slider and set in custom data.
+                    rgb = cmds.colorSliderGrp(self.outlinerColor, query=True, rgbValue=True)
+                    self.prim.SetCustomDataByKey(self.OUTLINER_COLOR, Gf.Vec3d(rgb[0], rgb[1], rgb[2]))
+        finally:
+            if currEditTarget is not None:
+                stage.SetEditTarget(currEditTarget)
+
+    def _onUseOutlinerColorChanged(self, value):
+        self._updateTextColorChanged()
+
+    def _onOutlinerColorChanged(self, value):
+        self._updateTextColorChanged()
+
 # SchemaBase template class for categorization of the attributes.
 # We no longer use the base class ufeAeTemplate.Template as we want to control
 # the placement of the metadata at the bottom (after extra attributes).
@@ -754,26 +871,27 @@ class AETemplate(object):
         name is a pretty name used in the UI.'''
 
         # List of special rules for adjusting the base schema names.
-        prefixToAdjust = {
-            'UsdAbc' : '',
-            'UsdGeomGprim' : 'GeometricPrim',
-            'UsdGeom' : '',
-            'UsdHydra' : '',
-            'UsdImagingGL' : '',
-            'UsdLux' : '',
-            'UsdMedia' : '',
-            'UsdRender' : '',
-            'UsdRi' : '',
-            'UsdShade' : '',
-            'UsdSkelAnimation' : 'SkelAnimation',
-            'UsdSkelBlendShape': 'BlendShape',
-            'UsdSkelSkeleton': 'Skeleton',
-            'UsdSkelRoot' : 'SkelRoot', 
-            'UsdUI' : '',
-            'UsdUtils' : '',
-            'UsdVol' : ''
-        }
-        for p, r in prefixToAdjust.items():
+        prefixToAdjust = [
+            ('UsdAbc', ''),
+            ('UsdGeomGprim', 'GeometricPrim'),
+            ('UsdGeomImageable', mel.eval('uiRes(\"m_AEdagNodeTemplate.kDisplay\");')),
+            ('UsdGeom', ''),
+            ('UsdHydra', ''),
+            ('UsdImagingGL', ''),
+            ('UsdLux', ''),
+            ('UsdMedia', ''),
+            ('UsdRender', ''),
+            ('UsdRi', ''),
+            ('UsdShade', ''),
+            ('UsdSkelAnimation', 'SkelAnimation'),
+            ('UsdSkelBlendShape', 'BlendShape'),
+            ('UsdSkelSkeleton', 'Skeleton'),
+            ('UsdSkelRoot', 'SkelRoot'), 
+            ('UsdUI', ''),
+            ('UsdUtils', ''),
+            ('UsdVol', '')
+        ]
+        for p, r in prefixToAdjust:
             if schemaTypeName.startswith(p):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
@@ -853,6 +971,14 @@ class AETemplate(object):
             t3dObs = UfeAttributesObserver(self.item)
             self.defineCustom(t3dObs)
 
+    def createDisplaySection(self, sectionName, attrsToAdd):
+        with ufeAeTemplate.Layout(self, sectionName, collapse=True):
+            self.addControls(attrsToAdd)
+            customDataControl = DisplayCustomDataControl(self.item, self.prim)
+            usdNoticeControl = NoticeListener(self.prim, [customDataControl])
+            self.defineCustom(customDataControl)
+            self.defineCustom(usdNoticeControl)
+
     def createMetadataSection(self):
         # We don't use createSection() because these are metadata (not attributes).
         with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelMetadata'), collapse=True):
@@ -860,7 +986,6 @@ class AETemplate(object):
             usdNoticeControl = NoticeListener(self.prim, [metaDataControl])
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
-
 
     def createCustomExtraAttrs(self):
         # We are not using the maya default "Extra Attributes" section
@@ -981,6 +1106,8 @@ class AETemplate(object):
                 # We have a special case when building the Xformable section.
                 elif schemaTypeName == 'UsdGeomXformable':
                     self.createTransformAttributesSection(sectionName, attrsToAdd)
+                elif schemaTypeName == 'UsdGeomImageable':
+                    self.createDisplaySection(sectionName, attrsToAdd)
                 else:
                     sectionsToCollapse = ['Curves', 'Point Based', 'Geometric Prim', 'Boundable',
                                           'Imageable', 'Field Asset', 'Light']
