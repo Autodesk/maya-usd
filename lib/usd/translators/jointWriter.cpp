@@ -15,6 +15,7 @@
 //
 #include "jointWriter.h"
 
+#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>

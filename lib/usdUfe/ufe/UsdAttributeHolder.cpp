@@ -15,9 +15,7 @@
 //
 #include "UsdAttributeHolder.h"
 
-#include "Utils.h"
-#include "private/UfeNotifGuard.h"
-
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/Utils.h>

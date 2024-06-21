@@ -128,34 +128,6 @@ inline UsdUfe::UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
     return std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
 }
 
-//! Copy the argument matrix into the return matrix.
-inline Ufe::Matrix4d toUfe(const PXR_NS::GfMatrix4d& src)
-{
-    Ufe::Matrix4d dst;
-    std::memcpy(&dst.matrix[0][0], src.GetArray(), sizeof(double) * 16);
-    return dst;
-}
-
-//! Copy the argument matrix into the return matrix.
-inline PXR_NS::GfMatrix4d toUsd(const Ufe::Matrix4d& src)
-{
-    PXR_NS::GfMatrix4d dst;
-    std::memcpy(dst.GetArray(), &src.matrix[0][0], sizeof(double) * 16);
-    return dst;
-}
-
-//! Copy the argument vector into the return vector.
-inline Ufe::Vector3d toUfe(const PXR_NS::GfVec3d& src)
-{
-    return Ufe::Vector3d(src[0], src[1], src[2]);
-}
-
-//! Copy the argument vector into the return vector.
-inline PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
-{
-    return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
-}
-
 class ReplicateExtrasFromUSD
 {
 public:

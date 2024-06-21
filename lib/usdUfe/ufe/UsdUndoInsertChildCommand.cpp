@@ -16,9 +16,8 @@
 
 #include "UsdUndoInsertChildCommand.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <usdUfe/base/tokens.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>

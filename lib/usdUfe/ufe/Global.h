@@ -26,6 +26,7 @@
 #include <ufe/hierarchyHandler.h>
 #include <ufe/object3dHandler.h>
 #include <ufe/rtid.h>
+#include <ufe/transform3dHandler.h>
 #include <ufe/uiInfoHandler.h>
 
 #include <string>
@@ -55,6 +56,8 @@ struct USDUFE_PUBLIC DCCFunctions
     IsRootChildFn              isRootChildFn = nullptr;
     UniqueChildNameFn          uniqueChildNameFn = nullptr;
     DefaultMaterialScopeNameFn defaultMaterialScopeNameFn = nullptr;
+    Transform3dMatrixOpNameFn  transform3dMatrixOpNameFn = nullptr;
+    ExtractTRSFn               extractTRSFn = nullptr;
     DisplayMessageFn displayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
 
     // Optional: nothing will be done if no function is supplied.
@@ -72,8 +75,8 @@ struct USDUFE_PUBLIC DCCFunctions
 struct USDUFE_PUBLIC Handlers
 {
     // Ufe v1 handlers
-    Ufe::HierarchyHandler::Ptr hierarchyHandler;
-    //     Ufe::Transform3dHandler::Ptr  transform3dHandler;
+    Ufe::HierarchyHandler::Ptr   hierarchyHandler;
+    Ufe::Transform3dHandler::Ptr transform3dHandler;
     //     Ufe::SceneItemOpsHandler::Ptr sceneItemOpsHandler;
 
     // Ufe v2 handlers
