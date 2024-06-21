@@ -1,0 +1,54 @@
+//
+// Copyright 2021 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#ifndef USDUFE_USDTRANSFORM3DUNDOABLECOMMANDS_H
+#define USDUFE_USDTRANSFORM3DUNDOABLECOMMANDS_H
+
+#include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UsdUndoableCommand.h>
+
+#include <ufe/baseUndoableCommands.h>
+#include <ufe/types.h>
+
+namespace USDUFE_NS_DEF {
+
+//! \brief Class for Ufe::Transform3d::setMatrixCmd() implementation.
+//
+// This class provides the implementation for Ufe::Transform3d::setMatrixCmd()
+// derived classes, with undo / redo support.
+//
+class USDUFE_PUBLIC UsdSetMatrix4dUndoableCommand
+    : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
+{
+public:
+    UsdSetMatrix4dUndoableCommand(const Ufe::Path& path, const Ufe::Matrix4d& newM);
+
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSetMatrix4dUndoableCommand);
+
+    // No-op: for example, Maya does not set matrices through interactive manipulation.
+    bool set(const Ufe::Matrix4d&) override;
+
+protected:
+    void executeImplementation() override;
+
+private:
+    Ufe::Vector3d _newT;
+    Ufe::Vector3d _newR;
+    Ufe::Vector3d _newS;
+};
+
+} // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDTRANSFORM3DUNDOABLECOMMANDS_H

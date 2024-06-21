@@ -9,7 +9,7 @@
 + [Example Import and Export Plugin in Python](tutorials/import-export-plugin/README.md)
 + [Example Import and Export Plugin in C++](tutorials/import-export-plugin-c++/README.md)
 + [SchemaAPI Translators](lib/mayaUsd/fileio/doc/SchemaAPI_Import_Export_in_Python.md)
-+ [UFE Transform](lib/mayaUsd/ufe/UsdTransform3d.md)
++ [UFE Transform](lib/usdUfe/ufe/trf/UsdTransform3d.md)
 + [Undo/Redo Support](lib/mayaUsd/undo/README.md)
 + [MaterialX](doc/MaterialX.md)
 + [MaterialX Code Gen](lib/mayaUsd/render/MaterialXGenOgsXml/README.md)

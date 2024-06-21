@@ -15,9 +15,8 @@
 //
 #include "StagesSubject.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdCamera.h>
 #include <usdUfe/ufe/Utils.h>

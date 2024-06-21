@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}
         Global.cpp
         SetVariantSelectionCommand.cpp
         StagesSubject.cpp
+        UfeNotifGuard.cpp
         UsdAttribute.cpp
         UsdAttributeHolder.cpp
         UsdAttributes.cpp
@@ -109,6 +110,7 @@ set(HEADERS
     Global.h
     SetVariantSelectionCommand.h
     StagesSubject.h
+    UfeNotifGuard.h
     UfeVersionCompat.h
     UsdAttribute.h
     UsdAttributeHolder.h
@@ -178,6 +180,8 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     )
 endif()
 
+add_subdirectory(trf)
+
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
@@ -189,8 +193,3 @@ mayaUsd_promoteHeaderList(HEADERS ${HEADERS} BASEDIR ${PROJECT_NAME} SUBDIR ufe)
 install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ufe
 )
-
-# -----------------------------------------------------------------------------
-# subdirectories
-# -----------------------------------------------------------------------------
-add_subdirectory(private)

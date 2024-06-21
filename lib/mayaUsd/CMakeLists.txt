@@ -224,11 +224,6 @@ target_include_directories(${PROJECT_NAME}
         ${PXR_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
         ${CMAKE_BINARY_DIR}/include
-
-    PRIVATE
-        # TEMP (UsdUfe) - this one is temporary during the transition to UsdUfe.
-        # See lib\usdUfe\ufe\private\CMakeLists.txt
-        ${CMAKE_BINARY_DIR}/include/usdUfe/mayaUsd
 )
 
 # -----------------------------------------------------------------------------

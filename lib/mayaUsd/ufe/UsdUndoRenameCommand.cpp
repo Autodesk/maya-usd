@@ -15,12 +15,11 @@
 //
 #include "UsdUndoRenameCommand.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
