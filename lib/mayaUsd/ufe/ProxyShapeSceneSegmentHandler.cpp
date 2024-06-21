@@ -22,6 +22,8 @@
 #include <ufe/pathString.h>
 #include <ufe/runTimeMgr.h>
 
+#include <maya/MGlobal.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -121,8 +123,10 @@ bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
 
 Ufe::Path ProxyShapeSceneSegmentHandler::rootSceneSegmentRootPath() const
 {
-    auto mayaRootPath = Ufe::PathString::path("|world");
-    return mayaRootPath;
+    const auto*       pyCommand = "import maya.api.OpenMaya as om; it = om.MItDag(); root = "
+                                  "it.currentItem(); om.MFnDependencyNode(root).name();";
+    const std::string mayaRootPath = MGlobal::executePythonCommandStringResult(pyCommand).asChar();
+    return Ufe::PathString::path(mayaRootPath);
 }
 
 } // namespace ufe
