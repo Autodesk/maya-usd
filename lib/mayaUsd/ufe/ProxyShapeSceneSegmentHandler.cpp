@@ -119,7 +119,7 @@ bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
                  : _mayaSceneSegmentHandler ? _mayaSceneSegmentHandler->isGateway_(path) : false;
 }
 
-Ufe::Path ProxyShapeSceneSegmentHandler::rootSceneSegmentRootPath_() const
+Ufe::Path ProxyShapeSceneSegmentHandler::rootSceneSegmentRootPath() const
 {
     auto mayaRootPath = Ufe::PathString::path("|world");
     return mayaRootPath;
