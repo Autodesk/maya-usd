@@ -19,10 +19,10 @@
 #include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/hierarchy.h>
-#include <ufe/pathString.h>
 #include <ufe/runTimeMgr.h>
 
-#include <maya/MGlobal.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MItDag.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -123,10 +123,12 @@ bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
 
 Ufe::Path ProxyShapeSceneSegmentHandler::rootSceneSegmentRootPath() const
 {
-    const auto*       pyCommand = "import maya.api.OpenMaya as om; it = om.MItDag(); root = "
-                                  "it.currentItem(); om.MFnDependencyNode(root).name();";
-    const std::string mayaRootPath = MGlobal::executePythonCommandStringResult(pyCommand).asChar();
-    return Ufe::PathString::path(mayaRootPath);
+    MItDag it;
+    auto              root = it.currentItem();
+    MFnDependencyNode rootNode(root);
+    std::string       rootName(rootNode.name().asChar());
+    Ufe::Path         rootPath(Ufe::PathSegment(rootName, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+    return rootPath;
 }
 
 } // namespace ufe
