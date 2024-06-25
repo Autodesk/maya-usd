@@ -154,6 +154,14 @@ if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
     )
 endif()
 
+
+if (UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH=1
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE

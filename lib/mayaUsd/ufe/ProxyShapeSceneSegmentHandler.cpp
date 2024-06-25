@@ -121,6 +121,7 @@ bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
                  : _mayaSceneSegmentHandler ? _mayaSceneSegmentHandler->isGateway_(path) : false;
 }
 
+#ifdef UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH
 Ufe::Path ProxyShapeSceneSegmentHandler::rootSceneSegmentRootPath() const
 {
     MItDag it;
@@ -130,6 +131,7 @@ Ufe::Path ProxyShapeSceneSegmentHandler::rootSceneSegmentRootPath() const
     Ufe::Path         rootPath(Ufe::PathSegment(rootName, MayaUsd::ufe::getMayaRunTimeId(), '|'));
     return rootPath;
 }
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

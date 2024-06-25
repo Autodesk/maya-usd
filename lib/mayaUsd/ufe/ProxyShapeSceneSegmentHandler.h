@@ -49,7 +49,10 @@ public:
     UFE_V4(Ufe::Selection findGatewayItems_(const Ufe::Path& path, Ufe::Rtid nestedRtid)
                const override;)
     bool isGateway_(const Ufe::Path& path) const override;
+
+#ifdef UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH
     Ufe::Path rootSceneSegmentRootPath() const override;
+#endif // UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH
 
 private:
     Ufe::SceneSegmentHandler::Ptr _mayaSceneSegmentHandler;
