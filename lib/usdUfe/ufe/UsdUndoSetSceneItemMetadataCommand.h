@@ -51,6 +51,9 @@ public:
     void executeImplementation() override;
 
 private:
+    void setKeyMetadata();
+    void setGroupMetadata();
+
     const PXR_NS::UsdStageWeakPtr _stage;
     const PXR_NS::SdfPath         _primPath;
     const PXR_NS::TfToken         _group;
