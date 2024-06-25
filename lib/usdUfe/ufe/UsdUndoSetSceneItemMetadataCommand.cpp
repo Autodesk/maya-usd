@@ -16,16 +16,18 @@
 
 #include "UsdUndoSetSceneItemMetadataCommand.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 
-#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/editContext.h>
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/undoableCommand.h>
+
+#include <exception>
 
 namespace USDUFE_NS_DEF {
 
@@ -58,30 +60,39 @@ SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
 {
 }
 
+void SetSceneItemMetadataCommand::setKeyMetadata()
+{
+    const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+
+    // If this is not a grouped metadata, set the _value directly on the _key
+    prim.SetCustomDataByKey(TfToken(_key), ufeValueToVtValue(_value));
+}
+
+void SetSceneItemMetadataCommand::setGroupMetadata()
+{
+    const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+
+    PXR_NS::TfToken fullKey(_group + std::string(":") + _key);
+
+    // When targeting the private "AutSessionLayerAutodeskodesk" metadata group,
+    // we always write in the session layer.
+    if (_group == MetadataTokens->SessionLayerAutodesk) {
+        PXR_NS::UsdEditContext editCtx(_stage, _stage->GetSessionLayer());
+        prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
+    } else {
+        prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
+    }
+}
+
 void SetSceneItemMetadataCommand::executeImplementation()
 {
-    if (_stage) {
-        const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+    if (!_stage)
+        return;
 
-        if (_group.GetString().empty()) {
-            // If this is not a grouped metadata, set the _value directly on the _key
-            prim.SetCustomDataByKey(TfToken(_key), ufeValueToVtValue(_value));
-        } else {
-            PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
-
-            PXR_NS::VtDictionary newDict;
-            if (!data.IsEmpty()) {
-                if (data.IsHolding<PXR_NS::VtDictionary>()) {
-                    newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
-                } else {
-                    return;
-                }
-            }
-
-            newDict[_key] = ufeValueToVtValue(_value);
-            prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
-        }
-    }
+    if (_group.empty())
+        setKeyMetadata();
+    else
+        setGroupMetadata();
 }
 
 } // namespace USDUFE_NS_DEF

@@ -149,6 +149,9 @@ public:
     //! \param key The key to set the value on
     //! \param value The value for the key
     //! \return UndoableCommandPtr for the set action
+    //! \note when the group is "SessionLayer-Autdesk", this set-metadata command
+    //!       targets the session layer automatically. This is done so that UFE
+    //!       users can place metadata on the session layer.
     Ufe::UndoableCommandPtr setGroupMetadataCmd(
         const std::string& group,
         const std::string& key,
@@ -159,6 +162,9 @@ public:
     //! \param group The group to clear
     //! \param key The key to clear
     //! \return UndoableCommandPtr for the clear action
+    //! \note when the group is "SessionLayer-Autdesk", the clear metadata command
+    //!       targets the session layer automatically. This is done so that UFE
+    //!       users can clear metadata from the session layer.
     Ufe::UndoableCommandPtr
     clearGroupMetadataCmd(const std::string& group, const std::string& key = "") override;
 

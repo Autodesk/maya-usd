@@ -30,6 +30,10 @@ namespace USDUFE_NS_DEF {
 
 //! \brief Undoable command to set meta data on a scene item as custom data
 //
+// Note that when the group is "SessionLayer-Autdesk", this set-metadata
+// command targets the session layer automatically. This is done so that
+// UFE users can place metadata on the session layer.
+//
 
 class USDUFE_PUBLIC SetSceneItemMetadataCommand
     : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
@@ -51,9 +55,12 @@ public:
     void executeImplementation() override;
 
 private:
+    void setKeyMetadata();
+    void setGroupMetadata();
+
     const PXR_NS::UsdStageWeakPtr _stage;
     const PXR_NS::SdfPath         _primPath;
-    const PXR_NS::TfToken         _group;
+    const std::string             _group;
     const std::string             _key;
     const Ufe::Value              _value;
 };

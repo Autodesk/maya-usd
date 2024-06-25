@@ -28,6 +28,10 @@ namespace USDUFE_NS_DEF {
 
 //! \brief Undoable command to clear the meta data that is set on a scene item
 //
+// Note that when the group is "SessionLayer-Autdesk", this clear command
+// targets the session layer automatically. This is done so that UFE users
+// can clear metadata from the session layer.
+//
 
 class USDUFE_PUBLIC ClearSceneItemMetadataCommand
     : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
@@ -45,7 +49,7 @@ public:
 private:
     const PXR_NS::UsdStageWeakPtr _stage;
     const PXR_NS::SdfPath         _primPath;
-    const PXR_NS::TfToken         _group;
+    const std::string             _group;
     const std::string             _key;
 };
 
