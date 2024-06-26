@@ -46,6 +46,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportSelectionHierarchy.py
     testUsdExportSkeleton.py
     testUsdExportSkin.py
+    testUsdExportStagesAsRefs.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py
     testUsdExportTexture.py

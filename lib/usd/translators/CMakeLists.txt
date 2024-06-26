@@ -37,6 +37,7 @@ target_sources(${TARGET_NAME}
         plugin.cpp
         scopeReader.cpp
         skelReader.cpp
+        stageWriter.cpp
         strokeWriter.cpp
         xformReader.cpp
 )

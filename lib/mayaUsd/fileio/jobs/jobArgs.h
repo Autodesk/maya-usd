@@ -88,6 +88,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportVisibility) \
     (jobContext) \
     (exportComponentTags) \
+    (exportStagesAsRefs) \
     (file) \
     (filterTypes) \
     (ignoreWarnings) \
@@ -227,6 +228,7 @@ struct UsdMayaJobExportArgs
     const bool        exportBlendShapes;
     const bool        exportVisibility;
     const bool        exportComponentTags;
+    const bool        exportStagesAsRefs;
     const std::string file;
     const bool        ignoreWarnings;
     const bool        includeEmptyTransforms;
