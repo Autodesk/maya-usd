@@ -273,6 +273,33 @@ getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrN
     return _extractLayer(found->second);
 }
 
+PXR_NS::SdfLayerHandle getPrimMetadataEditRouterLayer(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& metadataKeyPath)
+{
+    static const PXR_NS::TfToken metadataOp(EditRoutingTokens->RoutePrimMetadata);
+
+    const EditRouter::Ptr dstEditRouter = getEditRouter(metadataOp);
+    if (!dstEditRouter)
+        return nullptr;
+
+    PXR_NS::VtDictionary context;
+    PXR_NS::VtDictionary routingData;
+    context[EditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
+    context[EditRoutingTokens->Operation] = metadataOp;
+    context[EditRoutingTokens->KeyPath] = PXR_NS::VtValue(metadataKeyPath);
+    context[metadataOp] = PXR_NS::VtValue(metadataName);
+    (*dstEditRouter)(context, routingData);
+
+    // Try to retrieve the layer from the routing data.
+    const auto found = routingData.find(EditRoutingTokens->Layer);
+    if (found == routingData.end())
+        return nullptr;
+
+    return _extractLayer(found->second);
+}
+
 PXR_NS::UsdEditTarget
 getEditRouterEditTarget(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim)
 {

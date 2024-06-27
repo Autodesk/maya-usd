@@ -131,6 +131,14 @@ AttributeEditRouterContextInit(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToke
     return new UsdUfe::AttributeEditRouterContext(prim, attributeName);
 }
 
+UsdUfe::PrimMetadataEditRouterContext* PrimMetadataEditRouterContextInit(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& metadataKeyPath = {})
+{
+    return new UsdUfe::PrimMetadataEditRouterContext(prim, metadataName, metadataKeyPath);
+}
+
 // Note: due to a limitation of boost::python, we cannot pass shared-pointer
 //       between Python and C++. See this stack overflow answer for an explanation:
 //       https://stackoverflow.com/questions/20825662/boost-python-argument-types-did-not-match-c-signature
@@ -189,4 +197,8 @@ void wrapEditRouter()
     using AttrThis = UsdUfe::AttributeEditRouterContext;
     class_<AttrThis, boost::noncopyable>("AttributeEditRouterContext", no_init)
         .def("__init__", make_constructor(AttributeEditRouterContextInit));
+
+    using PrimMdThis = UsdUfe::PrimMetadataEditRouterContext;
+    class_<PrimMdThis, boost::noncopyable>("PrimMetadataEditRouterContext", no_init)
+        .def("__init__", make_constructor(PrimMetadataEditRouterContextInit));
 }

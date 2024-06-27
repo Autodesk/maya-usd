@@ -17,6 +17,8 @@
 #include "UsdUndoSetSceneItemMetadataCommand.h"
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
@@ -65,6 +67,8 @@ void SetSceneItemMetadataCommand::executeImplementation()
 
         if (_group.GetString().empty()) {
             // If this is not a grouped metadata, set the _value directly on the _key
+            PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData);
+
             prim.SetCustomDataByKey(TfToken(_key), ufeValueToVtValue(_value));
         } else {
             PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
@@ -77,6 +81,8 @@ void SetSceneItemMetadataCommand::executeImplementation()
                     return;
                 }
             }
+
+            PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData, _group);
 
             newDict[_key] = ufeValueToVtValue(_value);
             prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));

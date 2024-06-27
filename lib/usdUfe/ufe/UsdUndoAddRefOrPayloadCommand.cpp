@@ -15,6 +15,8 @@
 //
 #include "UsdUndoAddRefOrPayloadCommand.h"
 
+#include <usdUfe/utils/editRouterContext.h>
+
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
@@ -94,10 +96,16 @@ void UsdUndoAddRefOrPayloadCommand::executeImplementation()
     if (_isPayload) {
         SdfPayload  payload(_filePath, primPath);
         UsdPayloads primPayloads = _prim.GetPayloads();
+
+        PrimMetadataEditRouterContext ctx(_prim, SdfFieldKeys->Payload);
+
         primPayloads.AddPayload(payload, _listPos);
     } else {
         SdfReference  ref(_filePath, primPath);
         UsdReferences primRefs = _prim.GetReferences();
+
+        PrimMetadataEditRouterContext ctx(_prim, SdfFieldKeys->References);
+
         primRefs.AddReference(ref, _listPos);
     }
 }

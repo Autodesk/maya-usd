@@ -111,6 +111,14 @@ USDUFE_PUBLIC
 PXR_NS::SdfLayerHandle
 getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
 
+// Retrieve the layer for the prim metadata operation. If no edit router for the
+// "primMetadata" operation is found, a nullptr is returned.
+USDUFE_PUBLIC
+PXR_NS::SdfLayerHandle getPrimMetadataEditRouterLayer(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& metadataKeyPath);
+
 // Utility function that returns a UsdEditTarget for the argument operation.
 // If no edit router exists for that operation, a null UsdEditTarget is returned.
 // The edit router is given the prim in the context with key "prim", and is
