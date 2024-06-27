@@ -16,16 +16,19 @@
 
 #include "UsdUndoSetSceneItemMetadataCommand.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 
-#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/editContext.h>
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/undoableCommand.h>
+
+#include <exception>
 
 namespace USDUFE_NS_DEF {
 
@@ -58,30 +61,53 @@ SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
 {
 }
 
-void SetSceneItemMetadataCommand::executeImplementation()
+void SetSceneItemMetadataCommand::setKeyMetadata()
 {
-    if (_stage) {
-        const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+    const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
 
-        if (_group.GetString().empty()) {
-            // If this is not a grouped metadata, set the _value directly on the _key
-            prim.SetCustomDataByKey(TfToken(_key), ufeValueToVtValue(_value));
-        } else {
-            PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
+    // If this is not a grouped metadata, set the _value directly on the _key
+    prim.SetCustomDataByKey(TfToken(_key), ufeValueToVtValue(_value));
+}
 
-            PXR_NS::VtDictionary newDict;
-            if (!data.IsEmpty()) {
-                if (data.IsHolding<PXR_NS::VtDictionary>()) {
-                    newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
-                } else {
-                    return;
-                }
+void SetSceneItemMetadataCommand::setGroupMetadata()
+{
+    const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+
+    PXR_NS::VtDictionary newDict;
+    {
+        PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
+        if (!data.IsEmpty()) {
+            if (!data.IsHolding<PXR_NS::VtDictionary>()) {
+                std::string errMsg = TfStringPrintf(
+                    "Metadata [%s] on prim [%s] is not a dictionary.",
+                    _group.GetString().c_str(),
+                    prim.GetName().GetString().c_str());
+                throw std::runtime_error(errMsg);
             }
-
-            newDict[_key] = ufeValueToVtValue(_value);
-            prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
+            newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
         }
     }
+
+    // When targeting the private "Autodesk" metadata group, we always
+    // write in the session layer.
+    PXR_NS::UsdEditTarget target = _stage->GetEditTarget();
+    if (_group == MetadataTokens->Autodesk)
+        target = PXR_NS::UsdEditTarget(_stage->GetSessionLayer());
+    PXR_NS::UsdEditContext editCtx(_stage, target);
+
+    newDict[_key] = ufeValueToVtValue(_value);
+    prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
+}
+
+void SetSceneItemMetadataCommand::executeImplementation()
+{
+    if (!_stage)
+        return;
+
+    if (_group.GetString().empty())
+        setKeyMetadata();
+    else
+        setGroupMetadata();
 }
 
 } // namespace USDUFE_NS_DEF
