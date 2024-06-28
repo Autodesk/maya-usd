@@ -640,6 +640,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , exportBlendShapes(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportBlendShapes))
     , exportVisibility(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportVisibility))
     , exportComponentTags(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportComponentTags))
+    , exportStagesAsRefs(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->exportStagesAsRefs))
     , file(extractString(userArgs, UsdMayaJobExportArgsTokens->file))
     , ignoreWarnings(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->ignoreWarnings))
     , includeEmptyTransforms(
@@ -750,6 +751,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportBlendShapes: " << TfStringify(exportArgs.exportBlendShapes) << std::endl
         << "exportVisibility: " << TfStringify(exportArgs.exportVisibility) << std::endl
         << "exportComponentTags: " << TfStringify(exportArgs.exportComponentTags) << std::endl
+        << "exportStagesAsRefs: " << TfStringify(exportArgs.exportStagesAsRefs) << std::endl
         << "file: " << exportArgs.file << std::endl
         << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl
         << "includeEmptyTransforms: " << TfStringify(exportArgs.includeEmptyTransforms)
@@ -1039,6 +1041,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
             = UsdMayaJobExportArgsTokens->automatic.GetString();
         d[UsdMayaJobExportArgsTokens->exportVisibility] = true;
         d[UsdMayaJobExportArgsTokens->exportComponentTags] = true;
+        d[UsdMayaJobExportArgsTokens->exportStagesAsRefs] = true;
         d[UsdMayaJobExportArgsTokens->file] = std::string();
         d[UsdMayaJobExportArgsTokens->filterTypes] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = false;
@@ -1142,6 +1145,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->exportRelativeTextures] = _string;
         d[UsdMayaJobExportArgsTokens->exportVisibility] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportComponentTags] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportStagesAsRefs] = _boolean;
         d[UsdMayaJobExportArgsTokens->file] = _string;
         d[UsdMayaJobExportArgsTokens->filterTypes] = _stringVector;
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = _boolean;
