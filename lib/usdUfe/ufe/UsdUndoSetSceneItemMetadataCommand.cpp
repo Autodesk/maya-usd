@@ -20,7 +20,6 @@
 #include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/usd/usd/editContext.h>
 
@@ -73,21 +72,6 @@ void SetSceneItemMetadataCommand::setGroupMetadata()
 {
     const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
 
-    PXR_NS::VtDictionary newDict;
-    {
-        PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
-        if (!data.IsEmpty()) {
-            if (!data.IsHolding<PXR_NS::VtDictionary>()) {
-                std::string errMsg = TfStringPrintf(
-                    "Metadata [%s] on prim [%s] is not a dictionary.",
-                    _group.GetString().c_str(),
-                    prim.GetName().GetString().c_str());
-                throw std::runtime_error(errMsg);
-            }
-            newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
-        }
-    }
-
     // When targeting the private "Autodesk" metadata group, we always
     // write in the session layer.
     PXR_NS::UsdEditTarget target = _stage->GetEditTarget();
@@ -95,8 +79,8 @@ void SetSceneItemMetadataCommand::setGroupMetadata()
         target = PXR_NS::UsdEditTarget(_stage->GetSessionLayer());
     PXR_NS::UsdEditContext editCtx(_stage, target);
 
-    newDict[_key] = ufeValueToVtValue(_value);
-    prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
+    PXR_NS::TfToken fullKey(_group + std::string(":") + _key);
+    prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
 }
 
 void SetSceneItemMetadataCommand::executeImplementation()
@@ -104,7 +88,7 @@ void SetSceneItemMetadataCommand::executeImplementation()
     if (!_stage)
         return;
 
-    if (_group.GetString().empty())
+    if (_group.empty())
         setKeyMetadata();
     else
         setGroupMetadata();

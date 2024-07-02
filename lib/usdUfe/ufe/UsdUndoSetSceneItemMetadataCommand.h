@@ -56,7 +56,7 @@ private:
 
     const PXR_NS::UsdStageWeakPtr _stage;
     const PXR_NS::SdfPath         _primPath;
-    const PXR_NS::TfToken         _group;
+    const std::string             _group;
     const std::string             _key;
     const Ufe::Value              _value;
 };

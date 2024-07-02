@@ -258,5 +258,140 @@ class MetadataTestCase(unittest.TestCase):
         self.assertEqual(len(stage.GetSessionLayer().rootPrims), 1)
 
 
+    def testGroupMetadataMultiLayers(self):
+        '''Test prim group metadata composition between multiple layers.'''
+        # Create a capsule.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShape).GetStage()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        cmd = proxyShapeContextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+
+        executedCmds = []
+        undoneCmds = []
+                
+        def setValue(name, value):
+            cmd = capsuleItem.setGroupMetadataCmd(groupName, name, value)
+            cmd.execute()
+            executedCmds.append(cmd)
+
+        def clearValue(name):
+            cmd = capsuleItem.clearGroupMetadataCmd(groupName, name)
+            cmd.execute()
+            executedCmds.append(cmd)
+
+        def undoLastCmd():
+            self.assertGreater(len(executedCmds), 0)
+            undoneCmds.append(executedCmds.pop())
+            undoneCmds[-1].undo()
+
+        def redoLastCmd():
+            self.assertGreater(len(undoneCmds), 0)
+            executedCmds.append(undoneCmds.pop())
+            executedCmds[-1].redo()
+
+        def verifyValue(name, expectedValue):
+            expectedType = type(expectedValue)
+            actualValue = capsuleItem.getGroupMetadata(groupName, name)
+            actualType = type(actualValue)
+            try:
+                self.assertEqual(expectedType(actualValue), expectedValue,
+                                'Expected %s value %s(%s), got %s(%s)' %
+                                (name, expectedType, expectedValue, actualType, actualValue))
+            except Exception:
+                self.fail(
+                    'Expected %s value %s(%s), got %s(%s)' %
+                    (name, expectedType, expectedValue, actualType, actualValue))
+                
+        def verifyLayer(layer, expectedContents=None, rejectedContents=None):
+            actualContents = layer.ExportToString()
+            if expectedContents:
+                for ec in expectedContents:
+                    self.assertIn(ec, actualContents)
+            if rejectedContents:
+                for rc in rejectedContents:
+                    self.assertNotIn(rc, actualContents)
+
+        # Data used in test.
+        groupName = 'this group'
+        sessionMetaName = 'in-session'
+        sessionValue = 5.1
+        rootMetaName = 'in-root'
+        rootValue = 33
+        modifiedRootValue = 'changed-to-string'
+
+        # Test for non-existing metadata.
+        self.assertEqual(capsuleItem.getGroupMetadata(groupName, sessionMetaName), ufe.Value())
+        self.assertEqual(capsuleItem.getGroupMetadata(groupName, rootMetaName), ufe.Value())
+        verifyLayer(stage.GetSessionLayer(), rejectedContents=[sessionMetaName, rootMetaName])
+        verifyLayer(stage.GetRootLayer(), rejectedContents=[sessionMetaName, rootMetaName])
+
+        # Set metadata in the session layer and verify it changed
+        stage.SetEditTarget(stage.GetSessionLayer())
+        setValue(sessionMetaName, sessionValue)
+        verifyValue(sessionMetaName, sessionValue)
+        verifyLayer(stage.GetSessionLayer(), expectedContents=[sessionMetaName], rejectedContents=[rootMetaName])
+        verifyLayer(stage.GetRootLayer(), rejectedContents=[sessionMetaName, rootMetaName])
+
+        # Set metadata in the root layer and verify it changed
+        stage.SetEditTarget(stage.GetRootLayer())
+        setValue(rootMetaName, rootValue)
+        verifyValue(rootMetaName, rootValue)
+        verifyLayer(stage.GetSessionLayer(), expectedContents=[sessionMetaName], rejectedContents=[rootMetaName])
+        verifyLayer(stage.GetRootLayer(), expectedContents=[rootMetaName], rejectedContents=[sessionMetaName])
+
+        # Verify the session metadata is still accessible.
+        verifyValue(sessionMetaName, sessionValue)
+
+        # Set the root metadata in the session layer and verify it changed
+        stage.SetEditTarget(stage.GetSessionLayer())
+        setValue(rootMetaName, modifiedRootValue)
+        verifyValue( rootMetaName, modifiedRootValue)
+        verifyValue(sessionMetaName, sessionValue)
+        verifyLayer(stage.GetSessionLayer(), expectedContents=[sessionMetaName, rootMetaName])
+        verifyLayer(stage.GetRootLayer(), expectedContents=[rootMetaName], rejectedContents=[sessionMetaName])
+
+        # Undo of setting root-in-session and verify the old root value is back.
+        undoLastCmd()
+        verifyValue(sessionMetaName, sessionValue)
+        verifyValue(rootMetaName, rootValue)
+        verifyLayer(stage.GetSessionLayer(), expectedContents=[sessionMetaName], rejectedContents=[rootMetaName])
+        verifyLayer(stage.GetRootLayer(), expectedContents=[rootMetaName], rejectedContents=[sessionMetaName])
+
+        # Redo of setting root-in-session and verify the bew root value is restored.
+        redoLastCmd()
+        verifyValue(sessionMetaName, sessionValue)
+        verifyValue(rootMetaName, modifiedRootValue)
+        verifyLayer(stage.GetSessionLayer(), expectedContents=[sessionMetaName, rootMetaName])
+        verifyLayer(stage.GetRootLayer(), expectedContents=[rootMetaName], rejectedContents=[sessionMetaName])
+
+        # Undo again so that there is only one value in teh session layer.
+        undoLastCmd()
+        verifyValue(sessionMetaName, sessionValue)
+        verifyValue(rootMetaName, rootValue)
+        verifyLayer(stage.GetSessionLayer(), expectedContents=[sessionMetaName], rejectedContents=[rootMetaName])
+        verifyLayer(stage.GetRootLayer(), expectedContents=[rootMetaName], rejectedContents=[sessionMetaName])
+
+        # Clear the session value, verify the root value is not in the session layer
+        clearValue(sessionMetaName)
+        verifyValue(sessionMetaName, ufe.Value())
+        verifyValue(rootMetaName, rootValue)
+        verifyLayer(stage.GetSessionLayer(), rejectedContents=[sessionMetaName, rootMetaName])
+        verifyLayer(stage.GetRootLayer(), expectedContents=[rootMetaName], rejectedContents=[sessionMetaName])
+
+        # Undo the clear value and verify there is a value in the session layer.
+        undoLastCmd()
+        verifyValue(sessionMetaName, sessionValue)
+        verifyValue(rootMetaName, rootValue)
+        verifyLayer(stage.GetSessionLayer(), expectedContents=[sessionMetaName], rejectedContents=[rootMetaName])
+        verifyLayer(stage.GetRootLayer(), expectedContents=[rootMetaName], rejectedContents=[sessionMetaName])
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

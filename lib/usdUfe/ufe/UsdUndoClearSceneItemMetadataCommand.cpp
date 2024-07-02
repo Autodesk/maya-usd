@@ -16,10 +16,12 @@
 
 #include "UsdUndoClearSceneItemMetadataCommand.h"
 
+#include <usdUfe/base/tokens.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/editContext.h>
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
@@ -45,29 +47,20 @@ void ClearSceneItemMetadataCommand::executeImplementation()
 {
     if (_stage) {
         const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-        if (_group.GetString().empty()) {
+        if (_group.empty()) {
             // If this is not a grouped meta data, remove the key
             prim.ClearCustomDataByKey(TfToken(_key));
         } else {
 
-            const PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
+            // When targeting the private "Autodesk" metadata group, we always
+            // write in the session layer.
+            PXR_NS::UsdEditTarget target = _stage->GetEditTarget();
+            if (_group == MetadataTokens->Autodesk)
+                target = PXR_NS::UsdEditTarget(_stage->GetSessionLayer());
+            PXR_NS::UsdEditContext editCtx(_stage, target);
 
-            if (!data.IsEmpty() && data.IsHolding<PXR_NS::VtDictionary>()) {
-                // Remove the key and its value.
-                if (!_key.empty()) {
-                    PXR_NS::VtDictionary newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
-                    if (newDict.find(_key) != newDict.end()) {
-                        newDict.erase(_key);
-
-                        // Set the new data.
-                        prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
-                    }
-                }
-                // Remove the group.
-                else {
-                    prim.ClearCustomDataByKey(_group);
-                }
-            }
+            PXR_NS::TfToken fullKey(_group + std::string(":") + _key);
+            prim.ClearCustomDataByKey(fullKey);
         }
     }
 }
