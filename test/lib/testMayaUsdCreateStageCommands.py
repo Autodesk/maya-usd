@@ -113,7 +113,7 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         Create a stage with a new layer using the command exposed by a Python wrapper.
         '''
 
-        stageUfePathStr = mayaUsd.ufe.createStageWithNewLayer("|world")
+        stageUfePathStr = mayaUsd.ufe.createStageWithNewLayer("")
         self.assertIsNotNone(stageUfePathStr)
 
         stageUfePath = ufe.PathString.path(stageUfePathStr)

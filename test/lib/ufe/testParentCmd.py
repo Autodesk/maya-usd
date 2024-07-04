@@ -113,7 +113,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(shapeSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(shapeSegment)))
 
         # check GetLayerStack behavior
         self.assertEqual(stage.GetEditTarget().GetLayer(),
@@ -203,7 +203,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(shapeSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(shapeSegment)))
 
         # check GetLayerStack behavior
         self.assertEqual(stage.GetEditTarget().GetLayer(),
@@ -312,7 +312,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(shapeSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(shapeSegment)))
 
         # check GetLayerStack behavior
         self.assertEqual(stage.GetEditTarget().GetLayer(),
@@ -872,7 +872,7 @@ class ParentCmdTestCase(unittest.TestCase):
             sphereItem = ufe.Hierarchy.createItem(spherePath)
 
             # get the USD stage
-            stage = mayaUsd.ufe.getStage(str(shapeSegment))
+            stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(shapeSegment)))
 
             # check GetLayerStack behavior
             self.assertEqual(stage.GetEditTarget().GetLayer(),
@@ -957,7 +957,7 @@ class ParentCmdTestCase(unittest.TestCase):
             childrenPre = parent.children()
 
             # get the USD stage
-            stage = mayaUsd.ufe.getStage(str(shapeSegment))
+            stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(shapeSegment)))
 
             # check GetLayerStack behavior
             self.assertEqual(stage.GetEditTarget().GetLayer(),

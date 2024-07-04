@@ -21,6 +21,7 @@ import maya.cmds as cmds
 
 from pxr import Tf, Usd, UsdGeom, Gf
 
+import ufe
 import mayaUsd.lib as mayaUsdLib
 import mayaUtils
 import ufeUtils
@@ -162,7 +163,7 @@ class TestUsdUndoManager(unittest.TestCase):
         self.assertEqual(cmds.undoInfo(q=True), 0)
         
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
         
