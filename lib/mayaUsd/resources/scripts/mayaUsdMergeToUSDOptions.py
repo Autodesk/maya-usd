@@ -215,7 +215,7 @@ def _fillMergeToUSDOptionsDialog(target, subLayout, optionsText, action):
     optionsText = mayaUsdOptions.setAnimateOption(target, optionsText)
     mel.eval(
         '''
-        mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output", "{optionsText}", "")
+        mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output;mergeToUSD", "{optionsText}", "")
         '''.format(optionsText=optionsText, subLayout=subLayout, action=action))
 
 def _helpMergeToUSDOptions(data=None):
@@ -265,6 +265,7 @@ def getDefaultMergeToUSDOptionsDict():
         "exportMaterials":          1,
         "exportAssignedMaterials":  1,
         "exportComponentTags":      1,
+        "exportStagesAsRefs":       1,
         "defaultMeshScheme":        "catmullClark",
         "animation":                1,
         "eulerFilter":              0,

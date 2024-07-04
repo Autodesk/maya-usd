@@ -16,7 +16,7 @@ def removeHiddenInOutliner(allItems):
     '''Filter and return a list of Maya items to remove those hidden in the outliner.'''
     return [item for item in allItems if not isHiddenInOutliner(item)]
 
-def updateDefaultPrimCandidates(excludeMesh, excludeLight, excludeCamera):
+def updateDefaultPrimCandidates(excludeMesh, excludeLight, excludeCamera, excludeStage):
     allItems = cmds.ls(assemblies=True)
     excludeList = []
     if excludeMesh == "1":
@@ -42,11 +42,17 @@ def updateDefaultPrimCandidates(excludeMesh, excludeLight, excludeCamera):
 
         allItems = list(set(allItems) - set(startup_cameras))
     
+    if excludeStage == "1":
+        stages = cmds.ls(type=('mayaUsdProxyShape'), l=True)
+        for st in stages:
+            excludeList.append(st)
+            excludeList.append(cmds.listRelatives(st, parent=True)[0])
+    
     allItems = removeHiddenInOutliner(list(set(allItems) - set(excludeList)))
     allItems.sort(key=natural_key)
     return allItems
 
-def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeCamera):
+def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeCamera, excludeStage):
     def _getRelatives(item):
         listInfo = cmds.listRelatives(item, fullPath=True)
         if not listInfo:
@@ -64,9 +70,11 @@ def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeC
 
     excludeSet = set()
 
-    def _addExclusions(nodeType):
+    def _addExclusions(nodeType, excludeParent=False):
         nodes = cmds.ls(type=(nodeType), l=True)
         for n in nodes:
+            if excludeParent:
+                excludeSet.add(cmds.listRelatives(n, parent=True)[0])
             path = _getRelatives(n)
             if not path:
                 continue
@@ -80,6 +88,9 @@ def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeC
     
     if excludeCamera == "1":
         _addExclusions('camera')
+
+    if excludeStage == "1":
+        _addExclusions('mayaUsdProxyShape', excludeParent=True)
 
     allItems = removeHiddenInOutliner(list(allItems - excludeSet))
     allItems.sort(key=natural_key)
