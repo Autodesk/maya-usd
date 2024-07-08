@@ -756,6 +756,53 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertListEqual(list(stage.GetRootLayer().subLayerPaths), [subLayer.identifier])
         verifyTargetLayer(stage)
 
+    def testStageAnonymousSubLayerAsTargetLayer(self):
+        '''
+        Verify that stage preserve the anonymous sub layer edit target layer when a scene is reloaded.
+        '''
+        # Create new scene
+        cmds.file(new=True, force=True)
+
+        # Create an empty scene
+        shapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(shapePath).GetStage()
+
+        stage.SetEditTarget(stage.GetSessionLayer())
+
+        # Add a sub-layer and target it.
+        subLayer = Sdf.Layer.CreateAnonymous()
+        stage.GetSessionLayer().subLayerPaths.append(subLayer.identifier)
+        stage.SetEditTarget(subLayer)
+
+        def verifyTargetLayer(stage):
+            self.assertNotEqual(stage.GetSessionLayer().identifier, stage.GetEditTarget().GetLayer().identifier)
+            self.assertNotEqual(stage.GetRootLayer().identifier, stage.GetEditTarget().GetLayer().identifier)
+
+        verifyTargetLayer(stage)
+
+        # Save and re-open
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
+            # Save the dirty layer along with Maya scene
+            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+            tempMayaFile = os.path.join(testDir, 'StageAnonymousSubLayerAsTargetLayer.ma')
+            cmds.file(rename=tempMayaFile)
+            cmds.file(save=True, force=True)
+
+            # Save the Maya scene.
+            cmds.file(new=True, force=True)
+            cmds.file(tempMayaFile, open=True)
+
+            stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
+            self.assertEqual(len(list(stage.GetSessionLayer().subLayerPaths)), 1)
+            verifyTargetLayer(stage)
+
+            subLayer = stage.GetSessionLayer().subLayerPaths[0]
+
+            self.assertTrue(Sdf.Layer.IsAnonymousLayerIdentifier(subLayer))
+            self.assertEqual(stage.GetEditTarget().GetLayer().identifier, subLayer)
+
+            cmds.file(new=True, force=True)
+
     def testStageAnonymousRootLayerInMaya(self):
         '''
         Verify that stage preserve the anonymous root layer of the stage when a scene is reloaded.

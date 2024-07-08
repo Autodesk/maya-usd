@@ -1178,7 +1178,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         UsdEditTarget editTarget;
         if (!_targetLayer) {
-            editTarget = getEditTargetFromAttribute(*this, *finalUsdStage);
+            editTarget = getEditTargetFromAttribute(*this, layerNameMap, *finalUsdStage);
             if (editTarget.IsValid()) {
                 _targetLayer = editTarget.GetLayer();
             }

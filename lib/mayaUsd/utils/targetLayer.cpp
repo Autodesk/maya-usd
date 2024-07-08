@@ -97,12 +97,20 @@ MString convertTargetLayerToText(const PXR_NS::UsdStage& stage)
     return text;
 }
 
-PXR_NS::SdfLayerHandle getTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
+PXR_NS::SdfLayerHandle
+getTargetLayerFromText(const LayerNameMap& nameMap, PXR_NS::UsdStage& stage, const MString& text)
 {
     if (text.length() == 0)
         return {};
 
-    const std::string layerId(text.asChar());
+    std::string layerId(text.asChar());
+
+    // Remap the anonymous layer names when reloaded.
+    auto iter = nameMap.find(layerId);
+    if (iter != nameMap.end()) {
+        layerId = iter->second;
+    }
+
     for (const auto& layer : stage.GetUsedLayers())
         if (layer->GetIdentifier() == layerId)
             return layer;
@@ -112,7 +120,9 @@ PXR_NS::SdfLayerHandle getTargetLayerFromText(PXR_NS::UsdStage& stage, const MSt
 
 bool setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
 {
-    PXR_NS::SdfLayerHandle layer = getTargetLayerFromText(stage, text);
+    // Note: It's assumeing the layer id is known (in text form) when
+    //       setting from text, thus no need to pass a `LayerNameMap` for lookup
+    PXR_NS::SdfLayerHandle layer = getTargetLayerFromText({}, stage, text);
     if (!layer)
         return false;
 
@@ -181,11 +191,13 @@ MString getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape)
     return targetLayerText;
 }
 
-PXR_NS::SdfLayerHandle
-getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
+PXR_NS::SdfLayerHandle getTargetLayerFromAttribute(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const LayerNameMap&          nameMap,
+    PXR_NS::UsdStage&            stage)
 {
     const MString layerId = getTargetLayerFromAttribute(proxyShape);
-    return getTargetLayerFromText(stage, layerId);
+    return getTargetLayerFromText(nameMap, stage, layerId);
 }
 
 MStatus
@@ -195,8 +207,10 @@ copyTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::Us
     return setTargetLayerFromText(stage, targetLayerText) ? MS::kSuccess : MS::kNotFound;
 }
 
-PXR_NS::UsdEditTarget
-getEditTargetFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
+PXR_NS::UsdEditTarget getEditTargetFromAttribute(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const LayerNameMap&          nameMap,
+    PXR_NS::UsdStage&            stage)
 {
     MObject proxyObj = proxyShape.thisMObject();
     if (proxyObj.isNull()) {
@@ -213,7 +227,7 @@ getEditTargetFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdS
         return {};
     }
 
-    PXR_NS::SdfLayerHandle layer = getTargetLayerFromText(stage, targetLayerText);
+    PXR_NS::SdfLayerHandle layer = getTargetLayerFromText(nameMap, stage, targetLayerText);
     if (!layer) {
         // No layer found, either not accessible or missing
         return {};
