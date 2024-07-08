@@ -72,14 +72,15 @@ void SetSceneItemMetadataCommand::setGroupMetadata()
 {
     const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
 
-    PXR_NS::TfToken fullKey(_group + std::string(":") + _key);
-
-    // When targeting the private "AutSessionLayerAutodeskodesk" metadata group,
-    // we always write in the session layer.
-    if (_group == MetadataTokens->SessionLayerAutodesk) {
+    // When the group name starts with "SessionLayer-", remove that prefix
+    // and write in the session layer.
+    std::string prefixlessGroupName;
+    if (isSessionLayerGroupMetadata(_group, &prefixlessGroupName)) {
         PXR_NS::UsdEditContext editCtx(_stage, _stage->GetSessionLayer());
+        PXR_NS::TfToken        fullKey(prefixlessGroupName + std::string(":") + _key);
         prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
     } else {
+        PXR_NS::TfToken fullKey(_group + std::string(":") + _key);
         prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
     }
 }

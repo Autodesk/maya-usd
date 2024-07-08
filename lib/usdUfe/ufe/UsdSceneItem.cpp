@@ -117,21 +117,20 @@ Ufe::UndoableCommandPtr UsdSceneItem::clearMetadataCmd(const std::string& key)
 
 Ufe::Value UsdSceneItem::getGroupMetadata(const std::string& group, const std::string& key) const
 {
-    PXR_NS::VtValue data = prim().GetCustomDataByKey(PXR_NS::TfToken(group));
-    if (data.IsEmpty()) {
-        return Ufe::Value();
+    if (group.empty()) {
+        return vtValueToUfeValue(prim().GetCustomDataByKey(TfToken(key)));
+    } else {
+        // When the group name starts with "SessionLayer-", remove that prefix.
+        // That is done to mirror what is done when writing.
+        std::string prefixlessGroupName;
+        if (isSessionLayerGroupMetadata(group, &prefixlessGroupName)) {
+            PXR_NS::TfToken fullKey(prefixlessGroupName + std::string(":") + key);
+            return vtValueToUfeValue(prim().GetCustomDataByKey(fullKey));
+        } else {
+            PXR_NS::TfToken fullKey(group + std::string(":") + key);
+            return vtValueToUfeValue(prim().GetCustomDataByKey(fullKey));
+        }
     }
-
-    if (!data.IsHolding<PXR_NS::VtDictionary>()) {
-        return Ufe::Value();
-    }
-
-    PXR_NS::VtValue value;
-    if (TfMapLookup(data.UncheckedGet<PXR_NS::VtDictionary>(), key, &value)) {
-        return vtValueToUfeValue(value);
-    }
-
-    return Ufe::Value();
 }
 
 Ufe::UndoableCommandPtr UsdSceneItem::setGroupMetadataCmd(

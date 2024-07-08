@@ -79,7 +79,6 @@ TF_DECLARE_PUBLIC_TOKENS(GenericTokens, USDUFE_PUBLIC, USDUFE_GENERIC_TOKENS);
     ((Lock, "mayaLock"))                                 \
     /* Group metadata name for private Autodesk data */  \
     ((Autodesk, "Autodesk"))                             \
-    ((SessionLayerAutodesk, "SessionLayer-Autodesk"))    \
     /* Metadata for UI queries                        */ \
     ((UIName, "uiname"))                                 \
     ((UIFolder, "uifolder"))                             \

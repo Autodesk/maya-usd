@@ -66,7 +66,7 @@ endif()
 
 if (UFE_SCENEITEM_HAS_METADATA)
     list(APPEND TEST_SCRIPT_FILES
-        testMetadata.py
+        testSceneItemMetadata.py
     )
 endif()
 
