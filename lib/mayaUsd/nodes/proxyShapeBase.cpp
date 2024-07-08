@@ -1169,8 +1169,14 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
 
-        if (!_targetLayer)
-            _targetLayer = getTargetLayerFromAttribute(*this, *finalUsdStage);
+        UsdEditTarget editTarget;
+        if (!_targetLayer) {
+            editTarget = getEditTargetFromAttribute(*this, *finalUsdStage);
+            if (editTarget.IsValid()) {
+                _targetLayer = editTarget.GetLayer();
+            }
+        }
+
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
         // Note: setting the target layer must be done after updateShareMode()
         //       because the session layer changes when switching between shared
@@ -1180,9 +1186,13 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Note: it is possible the cached edit target layer is no longer valid,
             //       for example if it was deleted. Trying to set an invalid layer would
             //       throw an exception.
-            if (UsdUfe::isLayerInStage(_targetLayer, *finalUsdStage)) {
-                finalUsdStage->SetEditTarget(_targetLayer);
+            if (UsdUfe::isLayerInStage(_targetLayer, *finalUsdStage)
+                && _targetLayer != editTarget.GetLayer()) {
+                editTarget = UsdEditTarget(_targetLayer);
             }
+        }
+        if (editTarget.IsValid()) {
+            finalUsdStage->SetEditTarget(editTarget);
         }
     }
 

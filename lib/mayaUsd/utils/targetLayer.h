@@ -20,6 +20,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MApiNamespace.h>
@@ -75,6 +76,13 @@ copyTargetLayerToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase&
 MAYAUSD_CORE_PUBLIC
 MStatus
 copyTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage);
+
+/*! \brief get the edit target from data in the corresponding attribute of the proxy shape if it
+ * exists on the given stage, the edit target layer could be a local layer or non local layer.
+ */
+MAYAUSD_CORE_PUBLIC
+PXR_NS::UsdEditTarget
+getEditTargetFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage);
 
 } // namespace MAYAUSD_NS_DEF
 
