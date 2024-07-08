@@ -1048,6 +1048,15 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                         targetSession ? sharedUsdStage->GetSessionLayer()
                                       : sharedUsdStage->GetRootLayer());
                 }
+
+                // Update file path attribute to match the correct root layer id if it was anonymous
+                if (!fileString.empty() && SdfLayer::IsAnonymousLayerIdentifier(fileString)) {
+                    if (rootLayer->IsAnonymous() && rootLayer->GetIdentifier() != fileString) {
+                        MDataHandle outDataHandle = dataBlock.outputValue(filePathAttr, &retValue);
+                        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+                        outDataHandle.set(MString(rootLayer->GetIdentifier().c_str()));
+                    }
+                }
             }
             // Reset only if the global variant fallbacks has been modified
             if (!fallbacks.empty()) {
