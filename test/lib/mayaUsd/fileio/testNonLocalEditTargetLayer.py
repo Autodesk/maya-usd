@@ -99,24 +99,116 @@ class NonLocalEditTargetLayer(unittest.TestCase):
             # Save and reopen the maya file
             cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
 
+            # Case 1: no muting nor locking parent layer
             tempMayaFile = os.path.join(testDir, 'SaveNonLocalEditTargetLayer.ma')
             cmds.file(rename=tempMayaFile)
             cmds.file(save=True, force=True, type='mayaAscii')
 
-            # Reopen the saved scene
+            # Case 2: lock parent layer, no muting
+            subLayerPath = os.path.join(testDir, 'data', 'outer_sub_layer.usda')
+            subLayer = Sdf.Find(subLayerPath)
+            self.assertIn(subLayer, stage.GetLayerStack())
+            mayaUsd.lib.lockLayer(proxyShapePath, subLayer)
+
+            tempMayaFileParentLocked = os.path.join(testDir, 'SaveNonLocalEditTargetLayer_ParentLocked.ma')
+            cmds.file(rename=tempMayaFileParentLocked)
+            cmds.file(save=True, force=True, type='mayaAscii')
+
+            # Case 3: mute parent layer, no locking
+            subLayer = Sdf.Find(subLayerPath)
+            mayaUsd.lib.unlockLayer(proxyShapePath, subLayer)
+            stage.MuteLayer(subLayer.identifier)
+            tempMayaFileParentMuted = os.path.join(testDir, 'SaveNonLocalEditTargetLayer_ParentMuted.ma')
+            cmds.file(rename=tempMayaFileParentMuted)
+            cmds.file(save=True, force=True, type='mayaAscii')
+
+            # Case 4: mute and lock parent layer
+            stage.UnmuteLayer(subLayerPath)
+            subLayer = Sdf.Find(subLayerPath)
+            mayaUsd.lib.lockLayer(proxyShapePath, subLayer)
+            stage.MuteLayer(subLayer.identifier)
+            tempMayaFileParentMutedLocked = os.path.join(testDir, 'SaveNonLocalEditTargetLayer_ParentMutedLocked.ma')
+            cmds.file(rename=tempMayaFileParentMutedLocked)
+            cmds.file(save=True, force=True, type='mayaAscii')
+
+            # Verify case 1
             cmds.file(force=True, new=True)
             cmds.file(tempMayaFile, open=True, force=True)
             self.assertTrue(cmds.ls(proxyShapePath))
-
             stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
             self.assertTrue(stage)
-
             # Verify edit target layer id
             self.assertEqual(stage.GetEditTarget().GetLayer().identifier, targetLayerId)
-
             # Verify the prim that created in the edit target layer
             self.assertTrue(stage.GetPrimAtPath('/root/group/sphere/group/newXform'))
-            return stage
+            subLayer = Sdf.Layer.FindOrOpen(subLayerPath)
+            self.assertIsNotNone(subLayer)
+            # Verify the layer was reloaded but not muted nor locked
+            self.assertFalse(stage.IsLayerMuted(subLayer.identifier))
+            self.assertFalse(mayaUsd.lib.isLayerLocked(subLayer))
+            if saveLocation == 2:
+                # Saving mode 2 writes the dirty layers in Maya scene, thus the USD layers
+                # are still in *dirty* status after reopening
+                self.assertTrue(stage.GetEditTarget().GetLayer().dirty)
+
+            # Verify case 2: parent layer locked
+            cmds.file(force=True, new=True)
+            cmds.file(tempMayaFileParentLocked, open=True, force=True)
+            self.assertTrue(cmds.ls(proxyShapePath))
+            stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+            self.assertTrue(stage)
+            # Verify edit target layer id
+            self.assertEqual(stage.GetEditTarget().GetLayer().identifier, targetLayerId)
+            # Parent layer locked, the prim is still accessible
+            self.assertTrue(stage.GetPrimAtPath('/root/group/sphere/group/newXform'))
+            subLayer = Sdf.Layer.FindOrOpen(subLayerPath)
+            self.assertIsNotNone(subLayer)
+            # Verify the layer was reloaded as locked and not muted
+            self.assertFalse(stage.IsLayerMuted(subLayer.identifier))
+            self.assertTrue(mayaUsd.lib.isLayerLocked(subLayer))
+            if saveLocation == 2:
+                # Saving mode 2 writes the dirty layers in Maya scene, thus the USD layers
+                # are still in *dirty* status after reopening
+                self.assertTrue(stage.GetEditTarget().GetLayer().dirty)
+
+            # Verify case 3: parent layer muted
+            cmds.file(force=True, new=True)
+            cmds.file(tempMayaFileParentMuted, open=True, force=True)
+            self.assertTrue(cmds.ls(proxyShapePath))
+            stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+            self.assertTrue(stage)
+            # Verify edit target layer id
+            self.assertEqual(stage.GetEditTarget().GetLayer().identifier, targetLayerId)
+            # Parent layer muted, the prim is not accessible
+            self.assertFalse(stage.GetPrimAtPath('/root/group/sphere/group/newXform'))
+            subLayer = Sdf.Layer.FindOrOpen(subLayerPath)
+            self.assertIsNotNone(subLayer)
+            # Verify the layer was reloaded as muted and not locked
+            self.assertTrue(stage.IsLayerMuted(subLayer.identifier))
+            self.assertFalse(mayaUsd.lib.isLayerLocked(subLayer))
+            # The dirty layer was muted before saving, the layer manager won't be able
+            # to find the dirty layer (the nested layer) thus the content won't be saved.
+            self.assertFalse(stage.GetEditTarget().GetLayer().dirty)
+
+            # Verify case 4: parent layer muted and locked
+            cmds.file(force=True, new=True)
+            cmds.file(tempMayaFileParentMutedLocked, open=True, force=True)
+            self.assertTrue(cmds.ls(proxyShapePath))
+            stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+            self.assertTrue(stage)
+            # Verify edit target layer id
+            self.assertEqual(stage.GetEditTarget().GetLayer().identifier, targetLayerId)
+            # Parent layer muted, the prim is not accessible
+            self.assertFalse(stage.GetPrimAtPath('/root/group/sphere/group/newXform'))
+            subLayer = Sdf.Layer.FindOrOpen(subLayerPath)
+            self.assertIsNotNone(subLayer)
+            # Verify the layer was reloaded as muted
+            self.assertTrue(stage.IsLayerMuted(subLayer.identifier))
+            # Verify the layer was reloaded as locked
+            self.assertTrue(mayaUsd.lib.isLayerLocked(subLayer))
+            # The dirty layer was muted before saving, the layer manager won't be able
+            # to find the dirty layer (the nested layer) thus the content won't be saved.
+            self.assertFalse(stage.GetEditTarget().GetLayer().dirty)
 
     def testNonLocalEditTargetLayerInUSD(self):
         '''
@@ -128,10 +220,7 @@ class NonLocalEditTargetLayer(unittest.TestCase):
         '''
         Test saving and restoring non local edit target layer, dirty layers are saved in Maya.
         '''
-        stage = self._runTestNonLocalEditTargetLayer(2)
-        # Saving mode 2 writes the dirty layers in Maya scene, thus the USD layers
-        # are still in *dirty* status after reopening
-        self.assertTrue(stage.GetEditTarget().GetLayer().dirty)
+        self._runTestNonLocalEditTargetLayer(2)
 
 
 if __name__ == '__main__':

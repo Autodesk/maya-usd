@@ -214,6 +214,11 @@ getEditTargetFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdS
     }
 
     PXR_NS::SdfLayerHandle layer = getTargetLayerFromText(stage, targetLayerText);
+    if (!layer) {
+        // No layer found, either not accessible or missing
+        return {};
+    }
+
     if (stage.HasLocalLayer(layer)) {
         // Exit early if the layer in local layer stack
         return layer;

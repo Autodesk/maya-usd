@@ -1167,8 +1167,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // muting
         copyLayerLockingFromAttribute(*this, layerNameMap, *finalUsdStage);
 
-        copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
-
         UsdEditTarget editTarget;
         if (!_targetLayer) {
             editTarget = getEditTargetFromAttribute(*this, *finalUsdStage);
@@ -1194,6 +1192,11 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         if (editTarget.IsValid()) {
             finalUsdStage->SetEditTarget(editTarget);
         }
+
+        // Note: muting layer needs to be done after setting edit target layer
+        //       because the target layer could be the muted layer itself,
+        //       or one of the nested layers of a muted layer
+        copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
     }
 
     // Set the outUsdStageData
