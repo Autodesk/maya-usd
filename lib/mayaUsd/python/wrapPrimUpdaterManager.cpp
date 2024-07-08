@@ -94,10 +94,13 @@ bool duplicate(
     const std::string&  dstUfePathString,
     const VtDictionary& userArgs = VtDictionary())
 {
-    Ufe::Path src = Ufe::PathString::path(srcUfePathString);
-    Ufe::Path dst = Ufe::PathString::path(dstUfePathString);
+    // Either input string is allowed to be null (but not both).
+    Ufe::Path src
+        = srcUfePathString.empty() ? Ufe::Path() : Ufe::PathString::path(srcUfePathString);
+    Ufe::Path dst
+        = dstUfePathString.empty() ? Ufe::Path() : Ufe::PathString::path(dstUfePathString);
 
-    if (src.empty() || dst.empty())
+    if (src.empty() && dst.empty())
         return false;
 
     return PrimUpdaterManager::getInstance().duplicate(src, dst, userArgs);

@@ -115,7 +115,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # validate the default edit target to be the Rootlayer.
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
         
@@ -151,7 +151,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # validate the default edit target to be the Rootlayer.
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
         
@@ -190,7 +190,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # validate the default edit target to be the Rootlayer.
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
         
@@ -229,7 +229,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # retrieve the stage
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
 
         newLayerName = 'Layer_1'
@@ -272,7 +272,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # validate the default edit target to be the Rootlayer.
         mayaPathSegment = mayaUtils.createUfePathSegment('|Variant_usd|Variant_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
         
@@ -305,7 +305,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # validate the default edit target to be the Rootlayer.
         mayaPathSegment = mayaUtils.createUfePathSegment('|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
         
@@ -338,7 +338,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # add child defined on a new layer
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
 
         newLayerName = 'Layer_1'
@@ -388,7 +388,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # add child defined on session layer
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         
         stage.SetEditTarget(stage.GetSessionLayer())
@@ -535,7 +535,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # validate the default edit target to be the Rootlayer.
         mayaPathSegment = mayaUtils.createUfePathSegment('|TreeRef_usd|TreeRef_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/leaf_ref_1').HasAuthoredReferences())

@@ -98,22 +98,42 @@ MSyntax createSyntaxWithUfeArgs(int paramCount)
 bool isPrimPath(const Ufe::Path& path) { return ufePathToPrim(path).IsValid(); }
 
 // Parse the indexed argument as text.
-MStatus parseTextArg(const MArgParser& argParser, int index, MString& outputText)
+MStatus parseTextArg(
+    const MArgParser& argParser,
+    int               index,
+    MString&          outputText,
+    const bool        allowEmpty = false)
 {
-    argParser.getCommandArgument(index, outputText);
-    if (outputText.length() <= 0)
+    MStatus st;
+    st = argParser.getCommandArgument(index, outputText);
+    CHECK_MSTATUS_AND_RETURN_IT(st);
+
+    // Note: when requested, we allow the outputText string to be empty
+    //       (input string to command was empty string). In that case
+    //       it will mean the Maya (hidden) world node.
+    if (!allowEmpty && outputText.length() <= 0)
         return MS::kNotFound;
 
     return MS::kSuccess;
 }
 
 // Parse the indexed argument as a UFE path.
-MStatus parseUfePathArg(const MArgParser& argParser, int index, Ufe::Path& outputPath)
+MStatus parseUfePathArg(
+    const MArgParser& argParser,
+    int               index,
+    Ufe::Path&        outputPath,
+    const bool        allowEmpty = false)
 {
     MString text;
-    MStatus status = parseTextArg(argParser, index, text);
-    if (MS::kSuccess != status)
-        return status;
+    MStatus status = parseTextArg(argParser, index, text, allowEmpty);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    // Note: when requested we allow the Ufe outputPath to be empty
+    //       which will mean the Maya (hidden) world node.
+    if (allowEmpty && (text.length() == 0)) {
+        outputPath = Ufe::Path();
+        return MS::kSuccess;
+    }
 
     return parseArgAsUfePath(text, outputPath);
 }
@@ -122,13 +142,11 @@ MStatus parseDagPathArg(const MArgParser& argParser, int index, MDagPath& output
 {
     MString text;
     MStatus status = parseTextArg(argParser, index, text);
-    if (MS::kSuccess != status)
-        return status;
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MObject obj;
     status = PXR_NS::UsdMayaUtil::GetMObjectByName(text, obj);
-    if (status != MStatus::kSuccess)
-        return status;
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     return MDagPath::getAPathTo(obj, outputDagPath);
 }
@@ -185,12 +203,10 @@ MStatus EditAsMayaCommand::doIt(const MArgList& argList)
 
     MStatus    status = MS::kSuccess;
     MArgParser argParser(syntax(), argList, &status);
-    if (status != MS::kSuccess)
-        return status;
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = parseUfePathArg(argParser, 0, _path);
-    if (status != MS::kSuccess)
-        return reportError(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     if (!isPrimPath(_path))
         return reportError(MS::kInvalidParameter);
@@ -247,11 +263,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
 
     MStatus    status = MS::kSuccess;
     MArgParser argParser(syntax(), argList, &status);
-    if (status != MS::kSuccess)
-        return status;
-
-    if (status != MStatus::kSuccess)
-        return status;
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MDagPath dagPath;
     status = parseDagPathArg(argParser, 0, dagPath);
@@ -275,8 +287,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (exportOptions.length() > 0) {
         status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
             exportOptions, &userArgs);
-        if (status != MS::kSuccess)
-            return status;
+        CHECK_MSTATUS_AND_RETURN_IT(status);
     }
 
     if (argData.isFlagSet(kIgnoreVariantsFlag)) {
@@ -338,8 +349,7 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
 
     MStatus    status = MS::kSuccess;
     MArgParser argParser(syntax(), argList, &status);
-    if (status != MS::kSuccess)
-        return status;
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MString nodeName;
     status = parseTextArg(argParser, 0, nodeName);
@@ -416,14 +426,13 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
 
     MStatus    status = MS::kSuccess;
     MArgParser argParser(syntax(), argList, &status);
-    if (status != MS::kSuccess)
-        return status;
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = parseUfePathArg(argParser, 0, _srcPath);
     if (status != MS::kSuccess)
         return reportError(status);
 
-    status = parseUfePathArg(argParser, 1, _dstPath);
+    status = parseUfePathArg(argParser, 1, _dstPath, true /*allowEmpty*/);
     if (status != MS::kSuccess)
         return reportError(status);
 
@@ -435,8 +444,7 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     if (exportOptions.length() > 0) {
         status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
             exportOptions, &userArgs);
-        if (status != MS::kSuccess)
-            return status;
+        CHECK_MSTATUS_AND_RETURN_IT(status);
     }
 
     // Scope the undo item recording so we can undo on failure.
@@ -455,12 +463,19 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
             // - Maya duplicate to USD: we always duplicate directly under the
             //   proxy shape, so add a single path component USD path segment.
             // - USD duplicate to Maya: no path segment to add.
-            Ufe::Path childPath = (_srcPath.runTimeId() == getMayaRunTimeId())
-                ?
+            Ufe::Path childPath;
+            if (_srcPath.runTimeId() == getMayaRunTimeId()) {
                 // Maya duplicate to USD
-                _dstPath + Ufe::PathSegment(_srcPath.back(), getUsdRunTimeId(), '/')
+                auto ps = Ufe::PathSegment(_srcPath.back(), getUsdRunTimeId(), '/');
+                childPath = _dstPath.empty() ? ps : _dstPath + ps;
+            } else {
                 // USD duplicate to Maya
-                : _dstPath + _srcPath.back();
+                if (_dstPath.empty()) {
+                    childPath = Ufe::PathString::path("|" + _srcPath.back().string());
+                } else {
+                    childPath = _dstPath + _srcPath.back();
+                }
+            }
 
             Ufe::Selection sn;
             sn.append(Ufe::Hierarchy::createItem(childPath));
