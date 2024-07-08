@@ -554,10 +554,7 @@ using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
 using PushCustomizeSrc
     = std::tuple<SdfPath, UsdStageRefPtr, SdfLayerRefPtr, UsdPathToDagPathMapPtr>;
 
-PushCustomizeSrc pushExport(
-    const Ufe::Path&                 ufePulledPath,
-    const MObject&                   mayaObject,
-    const UsdMayaPrimUpdaterContext& context)
+PushCustomizeSrc pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterContext& context)
 {
     MayaUsd::ProgressBarScope progressBar(3);
 
@@ -1110,7 +1107,7 @@ bool PrimUpdaterManager::mergeToUsd(
     //    per-prim customization.
 
     // 1) Perform the export to the temporary layer.
-    auto pushCustomizeSrc = pushExport(pulledPath, depNodeFn.object(), context);
+    auto pushCustomizeSrc = pushExport(depNodeFn.object(), context);
     progressBar.advance();
 
     const auto& srcDagPathMap = std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc);
@@ -1560,8 +1557,10 @@ bool PrimUpdaterManager::duplicate(
     const Ufe::Path&    dstPath,
     const VtDictionary& userArgs)
 {
-    MayaUsdProxyShapeBase* srcProxyShape = MayaUsd::ufe::getProxyShape(srcPath);
-    MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dstPath);
+    MayaUsdProxyShapeBase* srcProxyShape
+        = srcPath.empty() ? nullptr : MayaUsd::ufe::getProxyShape(srcPath);
+    MayaUsdProxyShapeBase* dstProxyShape
+        = dstPath.empty() ? nullptr : MayaUsd::ufe::getProxyShape(dstPath);
 
     PushPullScope scopeIt(_inPushPull);
 
@@ -1583,7 +1582,7 @@ bool PrimUpdaterManager::duplicate(
         // Set destination of duplicate. The Maya world MDagPath is not valid,
         // so don't try to validate the path if it is the world root.
         MDagPath pullParentPath;
-        if (!MayaUsd::ufe::isMayaWorldPath(dstPath)) {
+        if (!MayaUsd::ufe::isMayaWorldPath(dstPath) && !dstPath.empty()) {
             pullParentPath = MayaUsd::ufe::ufeToDagPath(dstPath);
             if (!pullParentPath.isValid()) {
                 return false;
@@ -1632,7 +1631,7 @@ bool PrimUpdaterManager::duplicate(
         UsdMayaPrimUpdaterContext context(dstProxyShape->getTime(), dstStage, ctxArgs);
 
         // Export out to a temporary layer.
-        auto        pushExportOutput = pushExport(srcPath, dagPath.node(), context);
+        auto        pushExportOutput = pushExport(dagPath.node(), context);
         const auto& srcRootPath = std::get<SdfPath>(pushExportOutput);
         if (srcRootPath.IsEmpty()) {
             return false;

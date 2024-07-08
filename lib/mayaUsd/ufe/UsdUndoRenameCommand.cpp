@@ -37,6 +37,7 @@
 #include <ufe/log.h>
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
+#include <ufe/pathString.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
@@ -123,7 +124,6 @@ void sendNotificationToAllStageProxies(
     const Ufe::Path&   srcPath,
     const Ufe::Path&   dstPath)
 {
-    const Ufe::Rtid mayaId = getMayaRunTimeId();
     for (const std::string& proxyName : ProxyShapeHandler::getAllNames()) {
         UsdStagePtr proxyStage = ProxyShapeHandler::dagPathToStage(proxyName);
         if (proxyStage != stage)
@@ -131,7 +131,8 @@ void sendNotificationToAllStageProxies(
 
         // For all the proxy shapes that are mapping the same stage, we need to fixup the
         // Ufe path since they have different Ufe Paths because it contains proxy shape name.
-        const Ufe::PathSegment proxySegment(std::string("|world") + proxyName, mayaId, '|');
+        auto proxyNamePath = Ufe::PathString::path(proxyName);
+        auto proxySegment = proxyNamePath.getSegments()[0];
 
         const Ufe::PathSegment& srcUsdSegment = srcPath.getSegments()[1];
         const Ufe::Path adjustedSrcPath(Ufe::Path::Segments({ proxySegment, srcUsdSegment }));
