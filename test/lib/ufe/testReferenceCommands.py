@@ -11,6 +11,8 @@ import unittest
 import usdUtils
 import testUtils
 from usdUtils import filterUsdStr
+import shutil
+import os
 
 #####################################################################
 #
@@ -55,6 +57,40 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.b = ufe.Hierarchy.createItem(bPath)
  
         cmds.select(clear=True)
+
+    def testReloadReferencesCommands(self):
+        '''
+        Test reload by openning the file being referenced, making changes to it,
+        then checking if the changes were properly propagated.
+        '''
+
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        self.assertFalse(prim.HasAuthoredReferences())
+
+        # Added a file with nested reference so that can also be tested
+        referencedFile = testUtils.getTestScene('twoSpheres', 'spheres_ref.usda')
+        cmd = usdUfe.AddReferenceCommand(prim, referencedFile, True)
+        cmd.execute()
+        self.assertTrue(prim.HasAuthoredReferences())
+
+        spherePrimPath = "|stage1|stageShape1,/A/sphere"
+        xformPrimPath = "|stage1|stageShape1,/A/test"
+        sphereXformPrim = mayaUsd.ufe.ufePathToPrim(xformPrimPath)
+        spherePrim = mayaUsd.ufe.ufePathToPrim(spherePrimPath)
+
+        self.assertTrue(spherePrim.IsValid())
+        self.assertFalse(sphereXformPrim.IsValid())
+
+        # replace sphere file with a different version so that the "reload" can be tested
+        newFile = testUtils.getTestScene('twoSpheres', 'spherexform.usda')
+        oldFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+        shutil.copyfile(newFile, oldFile)
+
+        reloadCmd = usdUfe.ReloadReferenceCommand(prim)
+        reloadCmd.execute()
+
+        newSphereXformPrim = mayaUsd.ufe.ufePathToPrim(xformPrimPath)
+        self.assertTrue(newSphereXformPrim.IsValid())
 
     def testAddAndClearReferenceCommands(self):
         '''
