@@ -462,6 +462,11 @@ void setTransform3dMatrixOpNameFn(Transform3dMatrixOpNameFn fn);
 USDUFE_PUBLIC
 const char* getTransform3dMatrixOpName();
 
+//! Verify if the metadata group name has the session prefix and provide the prefix-less group name.
+//! \note the prefix-less name is only filled when returning true.
+USDUFE_PUBLIC
+bool isSessionLayerGroupMetadata(const std::string& groupName, std::string* adjustedGroupName);
+
 } // namespace USDUFE_NS_DEF
 
 #endif // USDUFE_UFE_UTILS_H

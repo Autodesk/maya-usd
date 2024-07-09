@@ -64,6 +64,12 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if (UFE_SCENEITEM_HAS_METADATA)
+    list(APPEND TEST_SCRIPT_FILES
+        testSceneItemMetadata.py
+    )
+endif()
+
 if (UFE_SCENE_SEGMENT_SUPPORT)
     list(APPEND TEST_SCRIPT_FILES
         testSceneSegment.py
