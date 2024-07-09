@@ -32,8 +32,9 @@ void UsdLayerEditor::initialize()
     }
 }
 
-MayaUsd::BatchSaveResult
-UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<MayaUsd::StageSavingInfo>& infos)
+MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
+    const std::vector<MayaUsd::StageSavingInfo>& infos,
+    bool                                         isExporting)
 {
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
         auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
@@ -59,7 +60,7 @@ UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<MayaUsd::StageSaving
             }
 
             if (showConfirmDgl) {
-                UsdLayerEditor::SaveLayersDialog dlg(nullptr, infos);
+                UsdLayerEditor::SaveLayersDialog dlg(nullptr, infos, isExporting);
 
                 // The SaveLayers dialog only handles choosing new names for anonymous layers and
                 // making sure that they are remapped correctly in either their parent layer or by

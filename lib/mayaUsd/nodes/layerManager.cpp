@@ -652,7 +652,7 @@ bool LayerDatabase::saveUsd(bool isExport)
             result = kPartiallyCompleted;
             opt = MayaUsd::utils::kSaveToMayaSceneFile;
         } else if (_batchSaveDelegate && _proxiesToSave.size() > 0) {
-            result = _batchSaveDelegate(_proxiesToSave);
+            result = _batchSaveDelegate(_proxiesToSave, isExport);
         }
 
         // kAbort: we should abort and return false, which Maya will take as
