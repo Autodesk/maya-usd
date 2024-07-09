@@ -60,8 +60,7 @@ class ReferenceCommandsTestCase(unittest.TestCase):
 
     def testReloadReferencesCommands(self):
         '''
-        Test reload by openning the file being referenced, making changes to it,
-        then checking if the changes were properly propagated.
+        Test reload prim by simulating external changes happening to the reference.
         '''
 
         prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
@@ -73,10 +72,8 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         cmd.execute()
         self.assertTrue(prim.HasAuthoredReferences())
 
-        spherePrimPath = "|stage1|stageShape1,/A/sphere"
-        xformPrimPath = "|stage1|stageShape1,/A/test"
-        sphereXformPrim = mayaUsd.ufe.ufePathToPrim(xformPrimPath)
-        spherePrim = mayaUsd.ufe.ufePathToPrim(spherePrimPath)
+        spherePrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/sphere")
+        sphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
 
         self.assertTrue(spherePrim.IsValid())
         self.assertFalse(sphereXformPrim.IsValid())
@@ -89,7 +86,7 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         reloadCmd = usdUfe.ReloadReferenceCommand(prim)
         reloadCmd.execute()
 
-        newSphereXformPrim = mayaUsd.ufe.ufePathToPrim(xformPrimPath)
+        newSphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
         self.assertTrue(newSphereXformPrim.IsValid())
 
     def testAddAndClearReferenceCommands(self):

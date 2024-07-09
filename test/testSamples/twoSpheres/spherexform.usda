@@ -19,6 +19,3 @@ def Xform "sphereXform"
         double radius = 2
     }
 }
-
-
-
