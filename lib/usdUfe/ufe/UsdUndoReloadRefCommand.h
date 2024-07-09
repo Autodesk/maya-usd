@@ -42,4 +42,3 @@ private:
 } // namespace USDUFE_NS_DEF
 
 #endif /* USD_UFE_RELOAD_REFERENCE_COMMAND */
-
