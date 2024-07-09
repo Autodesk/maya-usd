@@ -77,6 +77,8 @@ TF_DECLARE_PUBLIC_TOKENS(GenericTokens, USDUFE_PUBLIC, USDUFE_GENERIC_TOKENS);
     /* value cannot be changed.                       */ \
     /* TEMP (UsdUfe) - look at replacing mayaLock     */ \
     ((Lock, "mayaLock"))                                 \
+    /* Group metadata name for private Autodesk data */  \
+    ((Autodesk, "Autodesk"))                             \
     /* Metadata for UI queries                        */ \
     ((UIName, "uiname"))                                 \
     ((UIFolder, "uifolder"))                             \

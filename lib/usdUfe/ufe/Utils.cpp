@@ -1405,4 +1405,16 @@ void extractTRS(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe:
     }
 }
 
+bool isSessionLayerGroupMetadata(const std::string& groupName, std::string* adjustedGroupName)
+{
+    static std::string sessionLayerPrefix("SessionLayer-");
+    if (groupName.rfind(sessionLayerPrefix, 0) != 0)
+        return false;
+
+    if (adjustedGroupName)
+        *adjustedGroupName = groupName.substr(sessionLayerPrefix.size());
+
+    return true;
+}
+
 } // namespace USDUFE_NS_DEF

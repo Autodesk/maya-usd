@@ -36,7 +36,7 @@ void initialize();
 
 MAYAUSD_UI_PUBLIC
 MayaUsd::BatchSaveResult
-batchSaveLayersUIDelegate(const std::vector<MayaUsd::StageSavingInfo>& infos);
+batchSaveLayersUIDelegate(const std::vector<MayaUsd::StageSavingInfo>& infos, bool isExporting);
 
 } // namespace UsdLayerEditor
 
