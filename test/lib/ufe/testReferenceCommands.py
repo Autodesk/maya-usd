@@ -62,32 +62,28 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         '''
         Test reload prim by simulating external changes happening to the reference.
         '''
-        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
-        stage = prim.GetStage()
-        self.assertFalse(prim.HasAuthoredReferences())
+
+        # paths to the files used in this test
+        newFile = testUtils.getTestScene('twoSpheres', 'spherexform.usda')
+        oldFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+        bkFile = testUtils.getTestScene('twoSpheres', 'sphere_bk.usda')
+        referencedFile = testUtils.getTestScene('twoSpheres', 'spheres_ref.usda')
+
+        # make sure that the test file has the original content
+        shutil.copyfile(bkFile, oldFile)
 
         # Added a file with nested reference so that can also be tested
-        referencedFile = testUtils.getTestScene('twoSpheres', 'spheres_ref.usda')
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
         cmd = usdUfe.AddReferenceCommand(prim, referencedFile, True)
         cmd.execute()
-        self.assertTrue(prim.HasAuthoredReferences())
 
         spherePrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/sphere")
         sphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
 
         self.assertTrue(spherePrim.IsValid())
-
-        # make sure to clean up the prim in case tests are using the same folder
-        if sphereXformPrim.IsValid():
-            stage.RemovePrim(sphereXformPrim.GetPath())
-            stage.GetRootLayer().Save(True)
-
-        sphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
         self.assertFalse(sphereXformPrim.IsValid())
 
         # replace sphere file with a different version so that the "reload" can be tested
-        newFile = testUtils.getTestScene('twoSpheres', 'spherexform.usda')
-        oldFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
         shutil.copyfile(newFile, oldFile)
 
         reloadCmd = usdUfe.ReloadReferenceCommand(prim)
