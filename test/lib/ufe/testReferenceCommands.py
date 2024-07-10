@@ -78,7 +78,7 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.assertTrue(spherePrim.IsValid())
         # make sure to clean up the prim in case tests are using the same folder
         if sphereXformPrim.IsValid():
-            prim.GetStage().RemovePrim(sphereXformPrim)
+            prim.GetStage().RemovePrim(sphereXformPrim.GetPath())
             prim.GetStage().Save()
         self.assertFalse(sphereXformPrim.IsValid())
 
