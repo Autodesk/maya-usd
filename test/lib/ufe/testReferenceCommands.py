@@ -76,12 +76,15 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         sphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
 
         self.assertTrue(spherePrim.IsValid())
+        # make sure to clean up the prim in case tests are using the same folder
+        if sphereXformPrim.IsValid():
+            prim.GetStage().RemovePrim(sphereXformPrim)
+            prim.GetStage().Save()
         self.assertFalse(sphereXformPrim.IsValid())
 
         # replace sphere file with a different version so that the "reload" can be tested
         newFile = testUtils.getTestScene('twoSpheres', 'spherexform.usda')
         oldFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
-        backupFile = testUtils.getTestScene('twoSpheres', 'sphere_bk.usda')
         shutil.copyfile(newFile, oldFile)
 
         reloadCmd = usdUfe.ReloadReferenceCommand(prim)
@@ -89,7 +92,6 @@ class ReferenceCommandsTestCase(unittest.TestCase):
 
         newSphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
         self.assertTrue(newSphereXformPrim.IsValid())
-        shutil.copyfile(backupFile, oldFile)
 
     def testAddAndClearReferenceCommands(self):
         '''
