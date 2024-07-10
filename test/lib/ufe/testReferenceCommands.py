@@ -62,8 +62,8 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         '''
         Test reload prim by simulating external changes happening to the reference.
         '''
-
         prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        stage = prim.GetStage()
         self.assertFalse(prim.HasAuthoredReferences())
 
         # Added a file with nested reference so that can also be tested
@@ -76,10 +76,13 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         sphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
 
         self.assertTrue(spherePrim.IsValid())
+
         # make sure to clean up the prim in case tests are using the same folder
         if sphereXformPrim.IsValid():
-            prim.GetStage().RemovePrim(sphereXformPrim.GetPath())
-            prim.GetStage().Save()
+            stage.RemovePrim(sphereXformPrim.GetPath())
+            stage.GetRootLayer().Save(True)
+
+        sphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
         self.assertFalse(sphereXformPrim.IsValid())
 
         # replace sphere file with a different version so that the "reload" can be tested
