@@ -66,15 +66,12 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         # paths to the files used in this test
         newFile = testUtils.getTestScene('twoSpheres', 'spherexform.usda')
         oldFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
-        bkFile = testUtils.getTestScene('twoSpheres', 'sphere_bk.usda')
-        referencedFile = testUtils.getTestScene('twoSpheres', 'spheres_ref.usda')
-
-        # make sure that the test file has the original content
-        shutil.copyfile(bkFile, oldFile)
+        bkFile  = testUtils.getTestScene('twoSpheres', 'sphere_bk.usda')
+        refFile = testUtils.getTestScene('twoSpheres', 'spheres_ref.usda')
 
         # Added a file with nested reference so that can also be tested
         prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
-        cmd = usdUfe.AddReferenceCommand(prim, referencedFile, True)
+        cmd = usdUfe.AddReferenceCommand(prim, refFile, True)
         cmd.execute()
 
         spherePrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/sphere")
@@ -91,6 +88,9 @@ class ReferenceCommandsTestCase(unittest.TestCase):
 
         newSphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
         self.assertTrue(newSphereXformPrim.IsValid())
+
+        # make sure to revert changes to the test file with original content
+        shutil.copyfile(bkFile, oldFile)
 
     def testAddAndClearReferenceCommands(self):
         '''
