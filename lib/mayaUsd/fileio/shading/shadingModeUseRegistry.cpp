@@ -715,6 +715,26 @@ private:
             }
 
             if (!mayaAttr.isNull()) {
+                // Connecting the R component of a color to a color should be possible. Check
+                // if there is a compatible parent in case of type mismatch.
+                MFnAttribute srcFnAttr(srcAttr.attribute());
+                MFnAttribute mayaFnAttr(mayaAttr.attribute());
+                if (!srcFnAttr.acceptsAttribute(mayaFnAttr)) {
+                    if (srcAttr.isChild()) {
+                        const auto srcParentPlug = srcAttr.parent();
+                        const auto srcParentAttr = MFnAttribute(srcParentPlug);
+                        if (srcParentAttr.acceptsAttribute(mayaFnAttr)) {
+                            srcAttr = srcParentPlug;
+                        }
+                    } else if (mayaAttr.isChild()) {
+                        const auto mayaParentPlug = mayaAttr.parent();
+                        const auto mayaParentAttr = MFnAttribute(mayaParentPlug);
+                        if (srcFnAttr.acceptsAttribute(mayaParentAttr)) {
+                            mayaAttr = mayaParentPlug;
+                        }
+                    }
+                }
+
                 UsdMayaUtil::Connect(srcAttr, mayaAttr, false);
             }
         }

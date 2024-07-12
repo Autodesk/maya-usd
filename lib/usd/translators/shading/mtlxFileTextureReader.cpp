@@ -63,6 +63,9 @@ public:
     bool TraverseUnconnectableInput(const TfToken& usdAttrName) override;
 
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
+
+private:
+    bool _isMonochrome = false;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_READER(MayaND_fileTexture_float, MtlxUsd_FileTextureReader)
@@ -85,6 +88,9 @@ bool MtlxUsd_FileTextureReader::Read(UsdMayaPrimReaderContext& context)
     if (!shaderSchema) {
         return false;
     }
+
+    const auto output = shaderSchema.GetOutput(TrMayaTokens->outColor);
+    _isMonochrome = output.GetTypeName() == SdfValueTypeNames->Float;
 
     MString mayaNodeName = prim.GetName().GetText();
     MObject mayaObject;
@@ -195,6 +201,10 @@ TfToken MtlxUsd_FileTextureReader::GetMayaNameForUsdAttrName(const TfToken& usdA
 
     if (attrType == UsdShadeAttributeType::Output
         && (usdPortName == TrMayaTokens->outColor || usdPortName == TrMayaTokens->outAlpha)) {
+
+        if (usdPortName == TrMayaTokens->outColor && _isMonochrome) {
+            return TrMayaTokens->outColorR;
+        }
         return usdPortName;
     }
 
