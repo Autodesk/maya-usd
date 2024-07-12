@@ -95,6 +95,7 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         reloadCmd = usdUfe.ReloadReferenceCommand(prim)
         reloadCmd.execute()
 
+        newSphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
         self.assertTrue(newSphereXformPrim.IsValid())
 
 
