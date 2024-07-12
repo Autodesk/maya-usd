@@ -123,7 +123,7 @@ class CenterPivotTestCase(unittest.TestCase):
 
     def testCenterPivotWithUSDPivot(self):
         '''
-        Test centering the pivot when teh USD file has a USD-style pivot,
+        Test centering the pivot when the USD file has a USD-style pivot,
         not a Maya-style pivot.
 
         UFE Feature : Transform3d
@@ -174,7 +174,7 @@ class CenterPivotTestCase(unittest.TestCase):
 
         verifyCubeUSDPivots(
             [2., -3., -1.],     # translate rotate pivot
-            [7., 7., 8.],       # translate pivot (equivalent to translate rotate translate pivot)
+            [7., 7., 8.],       # USD translate pivot (equivalent to translate rotate translate pivot)
             [2., -3., -1.],     # translate scale pivot
             [0., 0., 0.]        # translate scale translate pivot
         )
@@ -187,11 +187,14 @@ class CenterPivotTestCase(unittest.TestCase):
             assertVectorAlmostEqual(self, cubeUfeT3d.scalePivot().vector,             tsPivot)
             assertVectorAlmostEqual(self, cubeUfeT3d.scalePivotTranslation().vector,  tstPivot)
 
+        # Note: when going through UFE, the USD translate pivot is added to the Maya
+        #       pivots (translate and scale). So the USD translate pivot that was verified
+        #       above to be [7., 7., 8.] is instead added toe the other pivot values.
         verifyCubeUFEPivots(
-            [2., -3., -1.],     # translate rotate pivot
-            [7., 7., 8.],       # translate rotate translate pivot
-            [2., -3., -1.],     # translate scale pivot
-            [0., 0., 0.]        # translate scale translate pivot
+            [9., 4., 7.],     # translate rotate pivot
+            [0., 0., 0.],     # translate rotate translate pivot
+            [9., 4., 7.],     # translate scale pivot
+            [0., 0., 0.]      # translate scale translate pivot
         )
 
         # Select the prim.

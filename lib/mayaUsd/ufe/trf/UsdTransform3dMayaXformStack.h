@@ -113,7 +113,11 @@ protected:
         const PXR_NS::TfToken& attrName,
         const PXR_NS::TfToken& opSuffix = PXR_NS::TfToken());
 
+    bool isPivotConversionNeeded() const;
+    void convertToMayaPivotIfNeeded();
+
     PXR_NS::UsdGeomXformable _xformable;
+    bool                     _needPivotConversion { false };
 
 private:
     Ufe::TranslateUndoableCommand::Ptr
