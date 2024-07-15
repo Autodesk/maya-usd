@@ -29,7 +29,7 @@ USDUFE_VERIFY_CLASS_SETUP(UsdUndoableCommand<Ufe::UndoableCommand>, UsdUndoReloa
 
 void _getPrimLayers(const PXR_NS::UsdPrim& prim, SdfLayerHandleSet& layersSet)
 {
-    for (const auto& node : prim.GetPrimIndex().GetNodeRange(PcpRangeTypeWeakerThanRoot)) {
+    for (const auto node : prim.GetPrimIndex().GetNodeRange(PcpRangeTypeWeakerThanRoot)) {
         for (const auto& layer : node.GetLayerStack()->GetLayers()) {
             layersSet.insert(layer);
         }
