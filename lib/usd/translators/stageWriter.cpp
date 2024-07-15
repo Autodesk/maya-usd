@@ -36,8 +36,6 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 
-#include <ghc/filesystem.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
