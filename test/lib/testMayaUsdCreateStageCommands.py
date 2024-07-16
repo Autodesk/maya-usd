@@ -150,7 +150,7 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         # With fix    = '|world|world'
         worldPath = ufe.PathString.path('|world')
         if str(worldPath) == '|world':
-            self.skipTest('Requires Maya for hidden world node.')
+            self.skipTest('Requires Maya fix for hidden world node.')
 
         # Create a proxy shape with empty stage to start with.
         import mayaUsd_createStageWithNewLayer
