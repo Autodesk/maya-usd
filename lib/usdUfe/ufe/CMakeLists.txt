@@ -33,6 +33,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoInsertChildCommand.cpp
         UsdUndoLongDurationCommand.cpp
         UsdUndoPayloadCommand.cpp
+        UsdUndoReloadRefCommand.cpp
         UsdUndoReorderCommand.cpp
         UsdUndoSelectAfterCommand.cpp
         UsdUndoSetKindCommand.cpp
@@ -137,6 +138,7 @@ set(HEADERS
     UsdUndoInsertChildCommand.h
     UsdUndoLongDurationCommand.h
     UsdUndoPayloadCommand.h
+    UsdUndoReloadRefCommand.h
     UsdUndoReorderCommand.h
     UsdUndoSelectAfterCommand.h
     UsdUndoSetKindCommand.h
