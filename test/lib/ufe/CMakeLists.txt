@@ -179,6 +179,8 @@ foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
         INTERACTIVE
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_SCRIPT ${script}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
     # Add a ctest label to these tests for easy filtering.
