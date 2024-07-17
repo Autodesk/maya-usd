@@ -431,6 +431,8 @@ MStatus finalize(bool exiting)
     g_MayaUIInfoHandler.reset();
 #endif
 
+    UsdUfe::clearAllEditRouters();
+
     MMessage::removeCallback(gExitingCbId);
 
     return MS::kSuccess;

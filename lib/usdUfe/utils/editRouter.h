@@ -147,6 +147,12 @@ void restoreAllDefaultEditRouters();
 USDUFE_PUBLIC
 void registerDefaultEditRouter(const PXR_NS::TfToken&, const EditRouter::Ptr&);
 
+// Clear all registered edit routers.
+// Mostly only used on exit to ensure edit routers are cleared to avoid order of destruction
+// problems.
+USDUFE_PUBLIC
+void clearAllEditRouters();
+
 // Return built-in default edit routers.
 EditRouters defaultEditRouters();
 
