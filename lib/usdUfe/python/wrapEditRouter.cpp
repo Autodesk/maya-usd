@@ -55,9 +55,16 @@ public:
     PyEditRouter(PyObject* pyCallable)
         : _pyCb(pyCallable)
     {
+        if (_pyCb)
+            Py_INCREF(_pyCb);
     }
 
-    ~PyEditRouter() override { }
+    ~PyEditRouter() override
+    {
+        PXR_NS::TfPyLock pyLock;
+        if (_pyCb)
+            Py_DECREF(_pyCb);
+    }
 
     void operator()(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData) override
     {
@@ -181,6 +188,8 @@ void wrapEditRouter()
     def("restoreDefaultEditRouter", &UsdUfe::restoreDefaultEditRouter);
 
     def("restoreAllDefaultEditRouters", &UsdUfe::restoreAllDefaultEditRouters);
+
+    def("clearAllEditRouters", &UsdUfe::clearAllEditRouters);
 
     using OpThis = UsdUfe::OperationEditRouterContext;
     class_<OpThis, boost::noncopyable>("OperationEditRouterContext", no_init)

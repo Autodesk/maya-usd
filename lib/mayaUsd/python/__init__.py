@@ -13,6 +13,7 @@ from usdUfe import registerEditRouter
 from usdUfe import registerStageLayerEditRouter
 from usdUfe import restoreDefaultEditRouter
 from usdUfe import restoreAllDefaultEditRouters
+from usdUfe import clearAllEditRouters
 from usdUfe import OperationEditRouterContext
 from usdUfe import AttributeEditRouterContext
 from usdUfe import registerUICallback
