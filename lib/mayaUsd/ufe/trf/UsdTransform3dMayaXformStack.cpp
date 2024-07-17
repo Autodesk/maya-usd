@@ -441,25 +441,25 @@ void UsdTransform3dMayaXformStack::convertToMayaPivotIfNeeded()
     }
 
     // Adjust possibly existing Maya rotate pivot by the common pivot.
+    // Note: must explicitly qualify the call to rotatePivot because
+    //       the overload on this class hides the other.
     {
         Ufe::Vector3d currentPivotValue = rotatePivot();
-        auto          cmd = rotatePivotCmd(
+        Ufe::Transform3d::rotatePivot(
             currentPivotValue.x() + commonPivotValue[0],
             currentPivotValue.y() + commonPivotValue[1],
             currentPivotValue.z() + commonPivotValue[2]);
-        if (cmd)
-            cmd->execute();
     }
 
     // Adjust possibly existing Maya scale pivot by the common pivot.
+    // Note: must explicitly qualify the call to scalePivot because
+    //       the overload on this class hides the other.
     {
         Ufe::Vector3d currentPivotValue = scalePivot();
-        auto          cmd = scalePivotCmd(
+        Ufe::Transform3d::scalePivot(
             currentPivotValue.x() + commonPivotValue[0],
             currentPivotValue.y() + commonPivotValue[1],
             currentPivotValue.z() + commonPivotValue[2]);
-        if (cmd)
-            cmd->execute();
     }
 }
 
