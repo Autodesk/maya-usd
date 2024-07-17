@@ -576,6 +576,28 @@ void MayaUsdProxyShapeBase::SetClosestPointDelegate(ClosestPointDelegate delegat
     _sharedClosestPointDelegate = delegate;
 }
 
+/* static */
+void MayaUsdProxyShapeBase::attributeChanged(
+    MNodeMessage::AttributeMessage msg,
+    MPlug&                         plug,
+    MPlug&                         otherPlug,
+    void*                          clientData)
+{
+    // Check if the model path has changed.
+    if (msg & MNodeMessage::AttributeMessage::kAttributeSet) {
+        if (plug.attribute() == MayaUsdProxyShapeBase::filePathAttr) {
+            MayaUsdProxyShapeBase* srcProxyShapeBase
+                = static_cast<MayaUsdProxyShapeBase*>(clientData);
+            MDataBlock dataBlock = srcProxyShapeBase->forceCache();
+
+            MGlobal::displayInfo("filePathAttr is being set");
+            MDataHandle outDataHandle
+                = dataBlock.outputValue(MayaUsdProxyShapeBase::filePathAttr);
+            outDataHandle.set(MString(std::string("./someUsdFileInWorkingDir.usda").c_str()));
+        }
+    }
+}
+
 /* virtual */
 bool MayaUsdProxyShapeBase::GetObjectSoftSelectEnabled() const { return false; }
 
@@ -2086,6 +2108,48 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
         // between the USD stage and a dynamic attribute on the proxy shape.
         MayaUsd::MayaUsdProxyShapeStageExtraData::addProxyShape(*this);
     }
+
+    // Register a callback for when the file path changes.
+    MObject obj = thisMObject();
+    mAttrChangedCallbackId = MNodeMessage::addAttributeChangedCallback(
+        obj, MayaUsdProxyShapeBase::attributeChanged, this);
+}
+
+MStringArray MayaUsdProxyShapeBase::getFilesToArchive(
+    bool shortName,
+    bool unresolvedName,
+    bool markCouldBeImageSequence) const
+{
+    MStringArray files;
+    MStatus      status = MS::kSuccess;
+
+    MFnDependencyNode depNode(thisMObject(), &status);
+
+    MPlug filePathPlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathAttr);
+    MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
+
+    MString fileName = filePathPlug.asString(&status);
+    MString tmpName = MString(std::string("./someUsdFileInWorkingDir.usda").c_str());
+
+    /*
+    if (fileName.length() > 0)
+        files.append(fileName);
+
+    */
+    files.append(tmpName);
+    return files;
+}
+
+void MayaUsdProxyShapeBase::getExternalContent(MExternalContentInfoTable& table) const
+{
+    addExternalContentForFileAttr(table, filePathAttr);
+    MPxNode::getExternalContent(table);
+}
+
+void MayaUsdProxyShapeBase::setExternalContent(const MExternalContentLocationTable& table)
+{
+    setExternalContentForFileAttr(filePathAttr, table);
+    MPxNode::setExternalContent(table);
 }
 
 /* virtual */
@@ -2107,6 +2171,9 @@ MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
     // Deregister from the load-rules handling used to transfer load rules
     // between the USD stage and a dynamic attribute on the proxy shape.
     MayaUsd::MayaUsdProxyShapeStageExtraData::removeProxyShape(*this);
+    
+    // Deregister the callback.
+    MMessage::removeCallback(mAttrChangedCallbackId);
 
     g_proxyShapeInstancesCount -= 1;
 }

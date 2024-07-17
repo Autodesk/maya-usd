@@ -39,6 +39,7 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 #include <ufe/ufe.h>
+#include <maya/MNodeMessage.h>
 
 #include <map>
 
@@ -164,6 +165,14 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     static void SetClosestPointDelegate(ClosestPointDelegate delegate);
+
+    MAYAUSD_CORE_PUBLIC
+    static void attributeChanged(
+        MNodeMessage::AttributeMessage msg,
+        MPlug&                         plug,
+        MPlug&                         otherPlug,
+        void*                          clientData);
+
 
     // UsdMayaUsdPrimProvider overrides:
     /**
@@ -309,6 +318,19 @@ public:
     /// Returns the observer for all proxy shapes instance.
     MAYAUSD_CORE_PUBLIC
     static MayaUsd::MayaNodeTypeObserver& getProxyShapesObserver();
+
+    // File management
+    MAYAUSD_CORE_PUBLIC
+    MStringArray getFilesToArchive(
+        bool shortName,
+        bool unresolvedName,
+        bool markCouldBeImageSequence) const override;
+
+    MAYAUSD_CORE_PUBLIC
+    void getExternalContent(MExternalContentInfoTable& table) const override;
+
+    MAYAUSD_CORE_PUBLIC
+    void setExternalContent(const MExternalContentLocationTable& table) override;
 
 protected:
     MAYAUSD_CORE_PUBLIC
@@ -459,6 +481,8 @@ private:
     std::set<std::string> _incomingLayers;
 
     MCallbackId _preSaveCallbackId = 0;
+
+    MCallbackId mAttrChangedCallbackId;
 
 public:
     // Counter for the number of times compute is re-entered
