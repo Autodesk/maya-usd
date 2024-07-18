@@ -28,6 +28,7 @@ set(TEST_SCRIPT_FILES
     testRotateCmd.py
     testRotateCmdUndoRedo.py
     testRotatePivot.py
+    testPivotConversion.py
     testScaleCmd.py
     testSceneItem.py
     testSelection.py
