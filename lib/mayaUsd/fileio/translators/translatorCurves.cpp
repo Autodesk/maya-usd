@@ -155,11 +155,54 @@ bool UsdMayaTranslatorCurves::Create(
                     &curveRanges); // not animatable or actually used....
             }
 
-            const int curveDegree = curveOrders[curveIndex] - 1;
-            const int pointCount = curveVertexCounts[curveIndex];
+            if (curveIndex >= curveOrders.size()) {
+                TF_RUNTIME_ERROR(
+                    "Curve index goes beyond the curve orders array end (%d >= %d) in <%s>. "
+                    "Skipping...",
+                    (int)curveIndex,
+                    (int)curveOrders.size(),
+                    prim.GetPath().GetText());
+                return false;
+            }
 
-            // The USD NURBS curve schema (UsdGeomNurbsCurves) defines the number
-            // of knots as: # points + degree + 1.
+            const int curveDegree = curveOrders[curveIndex] - 1;
+            if (curveDegree < 1) {
+                TF_RUNTIME_ERROR(
+                    "Curve curve degree is invalid (%d) in <%s>. Skipping...",
+                    curveDegree,
+                    prim.GetPath().GetText());
+                return false;
+            }
+
+            // Note: curveIndex is already limited by curveVertexCounts.size() fro the loop.
+            const int pointCount = curveVertexCounts[curveIndex];
+            if (pointCount <= 0) {
+                TF_RUNTIME_ERROR(
+                    "Invalid point count (%d) in <%s>. Skipping...",
+                    pointCount,
+                    prim.GetPath().GetText());
+                return false;
+            }
+
+            // Fill in missing knots.
+            if (curveKnots.size() < (size_t)coffset + pointCount + curveDegree + 1) {
+                int toBeFilledStartIndex = curveKnots.size();
+                curveKnots.resize(coffset + pointCount + curveDegree + 1);
+                int knotIdx = (toBeFilledStartIndex > 0) ? curveKnots[toBeFilledStartIndex - 1] : 0;
+                for (size_t i = toBeFilledStartIndex; i < curveKnots.size(); ++i) {
+                    if (i < (size_t)curveDegree)
+                        curveKnots[i] = 0.;
+                    else if (i > curveKnots.size() - curveDegree)
+                        curveKnots[i] = pointCount - 1;
+                    else {
+                        if (curveDegree > 0)
+                            if (i % curveDegree == 0)
+                                ++knotIdx;
+                        curveKnots[i] = double(knotIdx);
+                    }
+                }
+            }
+
             auto usdKnotStart = curveKnots.begin() + coffset;
             auto usdKnotEnd = usdKnotStart + pointCount + curveDegree + 1;
 
