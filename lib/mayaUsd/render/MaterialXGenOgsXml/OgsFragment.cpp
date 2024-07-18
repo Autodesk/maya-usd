@@ -1,7 +1,5 @@
 #include "OgsFragment.h"
 
-#include "MaterialXCore/Types.h"
-
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslFragmentGenerator.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
@@ -12,8 +10,6 @@
 #include <MaterialXGenShader/GenContext.h>
 #include <MaterialXGenShader/Util.h>
 
-#include <unordered_map>
-
 #ifdef MATERIALX_BUILD_CROSS
 #include <MaterialXCross/Cross.h>
 #endif
@@ -23,6 +19,7 @@
 
 #include <cctype>
 #include <iostream>
+#include <unordered_map>
 
 namespace MaterialXMaya {
 namespace {
