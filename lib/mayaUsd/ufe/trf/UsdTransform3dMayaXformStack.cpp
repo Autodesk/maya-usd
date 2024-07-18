@@ -374,9 +374,92 @@ MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdTransform3dBase, UsdTransform3dMayaXformSt
 UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdUfe::UsdTransform3dBase(item)
     , _xformable(prim())
+    , _needPivotConversion(isPivotConversionNeeded())
 {
     if (!TF_VERIFY(_xformable)) {
         throw std::runtime_error("Invalid scene item for transform stack");
+    }
+}
+
+bool UsdTransform3dMayaXformStack::isPivotConversionNeeded() const
+{
+    // Note: USD and Maya use different pivots: USD has a single pivot that is used
+    //       for both translation and scale, while Maya has separate ones. When working
+    //       in this Maya transform stack mode, the USD pivot affects the position of
+    //       the manipulators, so we need to convert it to a Maya-style pivot.
+    //       Otherwise, prim with USD-style pivot won't work with the "center pivot"
+    //       command. They would also not work well with the universal manipulator.
+    TfToken pivotName
+        = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot);
+    auto pivotAttr = prim().GetAttribute(pivotName);
+    if (!pivotAttr)
+        return false;
+
+    if (!pivotAttr.HasAuthoredValue())
+        return false;
+
+    Ufe::Vector3d pivot = getVector3d<GfVec3f>(pivotName);
+    if (isAlmostZero(pivot))
+        return false;
+
+    return true;
+}
+
+void UsdTransform3dMayaXformStack::convertToMayaPivotIfNeeded()
+{
+    if (!_needPivotConversion)
+        return;
+
+    // Note: must reset flag immediately because we call functions that would trigger
+    //       conversion again, resulting in infinite recursion.
+    _needPivotConversion = false;
+
+    // Extract and clear the USD common pivot. The exiesting pivot can be authored
+    // with any precision, so we need to convert it if needed.
+    GfVec3f commonPivotValue;
+    {
+        TfToken pivotName
+            = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot);
+        UsdAttribute pivotAttr = prim().GetAttribute(pivotName);
+
+        VtValue currentValue;
+        if (!pivotAttr.Get(&currentValue, getTime(path())))
+            return;
+
+        if (currentValue.IsHolding<GfVec3f>()) {
+            commonPivotValue = currentValue.UncheckedGet<GfVec3f>();
+        } else if (currentValue.IsHolding<GfVec3d>()) {
+            auto val = currentValue.UncheckedGet<GfVec3d>();
+            commonPivotValue.Set(val[0], val[1], val[2]);
+        } else if (currentValue.IsHolding<GfVec3h>()) {
+            auto val = currentValue.UncheckedGet<GfVec3h>();
+            commonPivotValue.Set(val[0], val[1], val[2]);
+        } else {
+            commonPivotValue.Set(0, 0, 0);
+        }
+        pivotAttr.Set(GfVec3f(0, 0, 0));
+    }
+
+    // Adjust possibly existing Maya rotate pivot by the common pivot.
+    // Note: must explicitly qualify the call to rotatePivot because
+    //       the overload on this class hides the other.
+    {
+        Ufe::Vector3d currentPivotValue = rotatePivot();
+        Ufe::Transform3d::rotatePivot(
+            currentPivotValue.x() + commonPivotValue[0],
+            currentPivotValue.y() + commonPivotValue[1],
+            currentPivotValue.z() + commonPivotValue[2]);
+    }
+
+    // Adjust possibly existing Maya scale pivot by the common pivot.
+    // Note: must explicitly qualify the call to scalePivot because
+    //       the overload on this class hides the other.
+    {
+        Ufe::Vector3d currentPivotValue = scalePivot();
+        Ufe::Transform3d::scalePivot(
+            currentPivotValue.x() + commonPivotValue[0],
+            currentPivotValue.y() + commonPivotValue[1],
+            currentPivotValue.z() + commonPivotValue[2]);
     }
 }
 
@@ -438,6 +521,8 @@ bool UsdTransform3dMayaXformStack::isFallback() const { return false; }
 Ufe::RotateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 {
+    convertToMayaPivotIfNeeded();
+
     UsdGeomXformOp op;
     TfToken        attrName;
     bool           hasRotate = hasOp(NdxRotate);
@@ -506,6 +591,8 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, double y, double z)
 {
+    convertToMayaPivotIfNeeded();
+
     UsdGeomXformOp op;
     TfToken        attrName;
     if (hasOp(NdxScale)) {
@@ -552,49 +639,59 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::rotatePivotCmd(double x, double y, double z)
 {
+    convertToMayaPivotIfNeeded();
+
     return pivotCmd(getOpSuffix(NdxRotatePivot), x, y, z);
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::rotatePivot() const
 {
-    return getVector3d<GfVec3f>(
+    Ufe::Vector3d mayaPivot = getVector3d<GfVec3f>(
         UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxRotatePivot)));
+
+    if (_needPivotConversion) {
+        Ufe::Vector3d commonPivot = getVector3d<GfVec3f>(
+            UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot));
+
+        mayaPivot = Ufe::Vector3d(
+            commonPivot.x() + mayaPivot.x(),
+            commonPivot.y() + mayaPivot.y(),
+            commonPivot.z() + mayaPivot.z());
+    }
+
+    return mayaPivot;
 }
 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::scalePivotCmd(double x, double y, double z)
 {
+    convertToMayaPivotIfNeeded();
+
     return pivotCmd(getOpSuffix(NdxScalePivot), x, y, z);
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::scalePivot() const
 {
-    return getVector3d<GfVec3f>(
+    Ufe::Vector3d mayaPivot = getVector3d<GfVec3f>(
         UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxScalePivot)));
+
+    if (_needPivotConversion) {
+        Ufe::Vector3d commonPivot = getVector3d<GfVec3f>(
+            UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot));
+
+        mayaPivot = Ufe::Vector3d(
+            commonPivot.x() + mayaPivot.x(),
+            commonPivot.y() + mayaPivot.y(),
+            commonPivot.z() + mayaPivot.z());
+    }
+
+    return mayaPivot;
 }
 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::translateRotatePivotCmd(double x, double y, double z)
 {
-    // Note: USD and Maya use different pivots: USD has a single pivot that is used
-    //       for both translation and scale, while Maya has separate ones. When working
-    //       in this Maya transform stack mode, the USD pivot affects the position of
-    //       the manipulators, so we need to take it into account here.
-    //
-    //       Otherwise, prim with USD-style picot won't work with the "center pivot"
-    //       command.
-    TfToken commonPivotName
-        = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot);
-    auto commonPivotAttr = prim().GetAttribute(commonPivotName);
-    if (commonPivotAttr && commonPivotAttr.HasAuthoredValue()) {
-        Ufe::Vector3d commonPivot = getVector3d<GfVec3f>(commonPivotName);
-        if (!isAlmostZero(commonPivot)) {
-            x = commonPivot.x() - x;
-            y = commonPivot.y() - y;
-            z = commonPivot.z() - z;
-            return setVector3dCmd(GfVec3f(x, y, z), commonPivotName);
-        }
-    }
+    convertToMayaPivotIfNeeded();
 
     auto opSuffix = getOpSuffix(NdxRotatePivotTranslate);
     auto attrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, opSuffix);
@@ -603,29 +700,15 @@ UsdTransform3dMayaXformStack::translateRotatePivotCmd(double x, double y, double
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::rotatePivotTranslation() const
 {
-    // Note: USD and Maya use different pivots: USD has a single pivot that is used
-    //       for both translation and scale, while Maya has separate ones. When working
-    //       in this Maya transform stack mode, the USD pivot is only used to move the
-    //       position of the manipulators, by returning it as part of this function.
-    //
-    //       Interestingly, this is correct and enough to both display the manip at the
-    //       correct position in the viewport *and* give the correct results. That's
-    //       because USD internally will apply its pivot and the manip will give the
-    //       correct value when manipulating.
-    Ufe::Vector3d commonPivot = getVector3d<GfVec3f>(
-        UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot));
-    Ufe::Vector3d mayaPivot = getVector3d<GfVec3f>(UsdGeomXformOp::GetOpName(
+    return getVector3d<GfVec3f>(UsdGeomXformOp::GetOpName(
         UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxRotatePivotTranslate)));
-    mayaPivot.set(
-        mayaPivot.x() + commonPivot.x(),
-        mayaPivot.y() + commonPivot.y(),
-        mayaPivot.z() + commonPivot.z());
-    return mayaPivot;
 }
 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::translateScalePivotCmd(double x, double y, double z)
 {
+    convertToMayaPivotIfNeeded();
+
     auto opSuffix = getOpSuffix(NdxScalePivotTranslate);
     auto attrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, opSuffix);
     return setVector3dCmd(GfVec3f(x, y, z), attrName, opSuffix);
@@ -748,6 +831,8 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 Ufe::SetMatrix4dUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
 {
+    convertToMayaPivotIfNeeded();
+
     // Note: UsdSetMatrix4dUndoableCommand uses separate calls to translate, rotate and scale,
     //       so check those 3 attributes.
     const TfToken attrs[]
@@ -865,11 +950,11 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
     // MAYA-109190: Moved the IsInstanceProxy() check here since it was causing the
     // camera framing not properly be applied.
     //
-    // HS January 15, 2021: After speaking with Pierre, there is a more robust solution to move this
-    // check entirely from here.
+    // HS January 15, 2021: After speaking with Pierre, there is a more robust solution to move
+    // this check entirely from here.
 
-    // According to USD docs, editing scene description via instance proxies and their properties is
-    // not allowed.
+    // According to USD docs, editing scene description via instance proxies and their
+    // properties is not allowed.
     // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
     auto usdItem = downcast(item);
     if (usdItem->prim().IsInstanceProxy()) {
