@@ -2542,10 +2542,12 @@ void UsdMayaUtil::AddMayaExtents(GfBBox3d& bbox, const UsdPrim& root, const UsdT
 SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
 {
     // TODO: Replace hard-coded materials with dynamically generated list.
-    static const std::set<TfToken> vettedSurfaces = { TfToken("ND_standard_surface_surfaceshader"),
-                                                      TfToken("ND_gltf_pbr_surfaceshader"),
-                                                      TfToken("ND_UsdPreviewSurface_surfaceshader"),
-                                                      TfToken("UsdPreviewSurface") };
+    static const std::set<TfToken> vettedSurfaces
+        = { TfToken("ND_standard_surface_surfaceshader"),
+            TfToken("ND_gltf_pbr_surfaceshader"),
+            TfToken("ND_UsdPreviewSurface_surfaceshader"),
+            TfToken("UsdPreviewSurface"),
+            TfToken("ND_open_pbr_surface_surfaceshader") };
 
     SdrShaderNodePtrVec surfaceShaderNodeDefs;
 
