@@ -64,10 +64,19 @@ def getDagAndPrimFromUfe(ufeObject):
 def getSelectedDagAndPrim():    
     return getDagAndPrimFromUfe(getUfeSelection())
 
+def _sdfPathToAccessPlugNameSuffix(sdfPath):
+    return re.sub(r'[^a-zA-Z0-9_]',r'_', str(sdfPath))
+
 def getAccessPlugName(sdfPath):
-    plugNameValueAttr = 'AP_' + re.sub(r'[^a-zA-Z0-9_]',r'_',str(sdfPath))
+    plugNameValueAttr = 'AP_' + _sdfPathToAccessPlugNameSuffix(sdfPath)
     
     return plugNameValueAttr
+
+def _isAccessPlugName(plugName, usdAttrName, plugArrayIndex=None):
+    attrSuffix = _sdfPathToAccessPlugNameSuffix("." + usdAttrName) if usdAttrName != "" else ""
+    if plugArrayIndex is not None:
+        attrSuffix += r'\[{}\]'.format(plugArrayIndex)
+    return re.match(r'^AP_' + r'[a-zA-Z0-9_]+' + attrSuffix + r'$', plugName) is not None
 
 def isUfeUsdPath(ufeObject):
     segmentCount = ufeObject.path().nbSegments()
@@ -244,6 +253,50 @@ def connectParentChildAttr(parentAttr, childDagPath, attrName, connect):
     else:
         cmds.disconnectAttr(parentAttr, childAttr)
 
+def unparentItems(ufeChildren):
+    identityMatrix = (
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    )
+
+    for ufeChild in ufeChildren:
+        if isUfeUsdPath(ufeChild):
+            print("Unparenting of USD is NOT implemented here")
+            continue
+
+        childDagPath = getDagAndPrimFromUfe(ufeChild)[0]
+        toDisconnect = []
+        # Collect parenting connections.
+        for dagAttrName, defaultValue, usdAttrName, plugArrayIndex in (
+            ("offsetParentMatrix", identityMatrix, "", 0),
+            ("lodVisibility", True, "combinedVisibility", None)
+        ):
+            srcAttr = cmds.connectionInfo(childDagPath + "." + dagAttrName, sfd=True)
+            if srcAttr is not None:
+                shapeName, _, attrName = srcAttr.partition(".")
+                if isGatewayNode(shapeName):
+                    if _isAccessPlugName(attrName, usdAttrName, plugArrayIndex):
+                        toDisconnect.append(
+                            (srcAttr, childDagPath, dagAttrName, defaultValue)
+                        )
+        if toDisconnect == []:
+            continue
+
+        print('Unparenting "{}"'.format(childDagPath))
+
+        # Disconnect, reset child, and remove unused proxy accessor plugs.
+        for parentAttr, childDagPath, childAttr, defaultValue in toDisconnect:
+            connectParentChildAttr(parentAttr, childDagPath, childAttr, False)
+
+            childPlug = childDagPath + "." + childAttr
+            typeArg = {"type": "matrix"} if cmds.getAttr(childPlug, type=True) == "matrix" else {}
+            cmds.setAttr(childPlug, defaultValue, **typeArg)
+
+            if not cmds.connectionInfo(parentAttr, isSource=True):
+                cmds.deleteAttr(parentAttr)
+
 def parentItems(ufeChildren, ufeParent, connect=True):
     if not isUfeUsdPath(ufeParent):
         print("This method implements parenting under USD prim. Please provide UFE-USD item for ufeParent")
@@ -270,7 +323,7 @@ def parentItems(ufeChildren, ufeParent, connect=True):
         # Cannot use 'visibility' here because it's already used by orphan manager
         connectParentChildAttr(parentVisibilityAttr, childDagPath, 'lodVisibility', connect)
 
-def __parent(doParenting):
+def __parent(doParenting, forceUnparenting=False):
    ufeSelection = iter(ufe.GlobalSelection.get())
    ufeSelectionList = []
    for ufeItem in ufeSelection:
@@ -287,10 +340,13 @@ def __parent(doParenting):
    ufeParent = ufeSelectionList[-1]
    ufeChildren = ufeSelectionList[:-1]
    
+   if forceUnparenting:
+      unparentItems(ufeChildren)
+   
    parentItems(ufeChildren, ufeParent, doParenting)
 
-def parent():
-    __parent(True)
+def parent(force=False):
+    __parent(True, forceUnparenting=force)
 
 def unparent():
     __parent(False)
