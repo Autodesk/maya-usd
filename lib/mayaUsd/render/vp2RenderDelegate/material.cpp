@@ -178,6 +178,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (transmission)
     (transparency)
     (alpha)
+    (transmission_weight)
+    (geometry_opacity)
     (useSpecularWorkflow)
     (st)
     (varname)
@@ -1293,11 +1295,11 @@ bool _IsTransparent(const HdMaterialNetwork& network)
 {
     using OpaqueTestPair = std::pair<TfToken, float>;
     using OpaqueTestPairList = std::vector<OpaqueTestPair>;
-    const OpaqueTestPairList inputPairList = { { _tokens->opacity, 1.0f },
-                                               { _tokens->existence, 1.0f },
-                                               { _tokens->alpha, 1.0f },
-                                               { _tokens->transmission, 0.0f },
-                                               { _tokens->transparency, 0.0f } };
+    const OpaqueTestPairList inputPairList
+        = { { _tokens->opacity, 1.0f },         { _tokens->existence, 1.0f },
+            { _tokens->alpha, 1.0f },           { _tokens->transmission, 0.0f },
+            { _tokens->transparency, 0.0f },    { _tokens->transmission_weight, 0.0f },
+            { _tokens->geometry_opacity, 1.0f } };
 
     const HdMaterialNode& surfaceShader = network.nodes.back();
 
