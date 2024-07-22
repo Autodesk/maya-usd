@@ -233,6 +233,8 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
         return;
     }
 
+    string $currentDefaultPrim = `optionMenuGrp -q -value exportDefaultPrim`;
+
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
     menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
@@ -276,10 +278,16 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
         menuItem -parent ($menuName + "|OptionMenu") -l $item;
     }
 
-    // If there are default prim candidates, select the first prim
-    // Use index 2 here because the first one will always be None
     if(size($allItems) > 0){
-        optionMenuGrp -e -select 2 exportDefaultPrim;
+        if(size($currentDefaultPrim) != 0){
+            // set the default prim back if it's available
+            catchQuiet(`optionMenuGrp -e -value $currentDefaultPrim exportDefaultPrim`);
+        }
+        else{
+            // If there are default prim candidates, select the first prim
+            // Use index 2 here because the first one will always be None
+            optionMenuGrp -e -select 2 exportDefaultPrim;
+        }
     }
 
 }
@@ -291,10 +299,11 @@ proc updateDefaultPrimOptionMenu(string $rootPrim) {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
     }
-    optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
-    string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
-    menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
+
     if(size($rootPrim) > 0){
+        optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
+        string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
+        menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
         menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
         optionMenuGrp -e -select 2 exportDefaultPrim;
     } else {
