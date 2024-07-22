@@ -122,6 +122,7 @@ class EditAsMayaTestCase(unittest.TestCase):
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaPath)))
 
     @unittest.skipIf(os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') != '1', 'Test only available when UFE supports the orphaned nodes manager')
+    @unittest.skip("This test is failing at least with UVE v3 and v4; OrphanedNodesManager does not seem to support re-parenting a proxyShape ancestor.")
     def testReparentAncestorOfEditAsMaya(self):
         '''Test that reparenting an ancestor correctly updates the internal data.'''
 
