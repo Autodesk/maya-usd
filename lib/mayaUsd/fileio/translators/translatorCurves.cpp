@@ -174,7 +174,7 @@ bool UsdMayaTranslatorCurves::Create(
                 return false;
             }
 
-            // Note: curveIndex is already limited by curveVertexCounts.size() fro the loop.
+            // Note: curveIndex is already limited by curveVertexCounts.size() from the loop.
             const int pointCount = curveVertexCounts[curveIndex];
             if (pointCount <= 0) {
                 TF_RUNTIME_ERROR(
@@ -185,20 +185,40 @@ bool UsdMayaTranslatorCurves::Create(
             }
 
             // Fill in missing knots.
-            if (curveKnots.size() < (size_t)coffset + pointCount + curveDegree + 1) {
-                int toBeFilledStartIndex = curveKnots.size();
-                curveKnots.resize(coffset + pointCount + curveDegree + 1);
-                int knotIdx = (toBeFilledStartIndex > 0) ? curveKnots[toBeFilledStartIndex - 1] : 0;
+            //
+            // The USD NURBS curve schema (UsdGeomNurbsCurves) defines the number
+            // of knots as: # spans + 2 * degree + 1.
+            //
+            // But the array of points is already equal to # spans + degree. So the
+            // number of knots is # point + degree + 1
+            //
+            // The fist few knots (equal in number to the degree) must be equal
+            // and the same applies to the last knots.
+            const size_t requiredKnotCount = pointCount + curveDegree + 1;
+            if (curveKnots.size() < coffset + requiredKnotCount) {
+                // The knots array might already contain knots, so we're going to
+                // keep the existing ones and only fill the necessary missing ones.
+                // So calculate from which index we must start to fill.
+                const size_t toBeFilledStartIndex = (curveKnots.size() > coffset)
+                    ? size_t(curveKnots.size() - coffset)
+                    : size_t(0);
+
+                curveKnots.resize(coffset + requiredKnotCount);
+
+                // Knot index start value, initialize to last knots if available,
+                // otehrwise start at zero.
+                size_t knotIdx = (toBeFilledStartIndex > 0)
+                    ? size_t(curveKnots[coffset + toBeFilledStartIndex - 1])
+                    : size_t(0);
+
                 for (size_t i = toBeFilledStartIndex; i < curveKnots.size(); ++i) {
                     if (i < (size_t)curveDegree)
-                        curveKnots[i] = 0.;
+                        curveKnots[coffset + i] = knotIdx;
                     else if (i > curveKnots.size() - curveDegree)
-                        curveKnots[i] = pointCount - 1;
+                        curveKnots[coffset + i] = pointCount - 1;
                     else {
-                        if (curveDegree > 0)
-                            if (i % curveDegree == 0)
-                                ++knotIdx;
-                        curveKnots[i] = double(knotIdx);
+                        ++knotIdx;
+                        curveKnots[coffset + i] = double(knotIdx);
                     }
                 }
             }
