@@ -83,9 +83,10 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 target_include_directories(${PROJECT_NAME}
     PRIVATE
+        ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         ${CMAKE_BINARY_DIR}/include
-        )
+)
 
 # -----------------------------------------------------------------------------
 # link libraries

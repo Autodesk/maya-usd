@@ -74,7 +74,7 @@ target_compile_definitions(AL_USDMayaSchemas
 
 target_include_directories(AL_USDMayaSchemas 
   PUBLIC
-    ${USD_INCLUDE_DIR}
+    ${PXR_INCLUDE_DIRS}
 )
 
 # Hamed 2019 

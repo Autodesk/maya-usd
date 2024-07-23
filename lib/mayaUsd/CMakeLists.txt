@@ -219,10 +219,13 @@ mayaUsd_compile_config(${PROJECT_NAME})
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${PROJECT_NAME} 
-    PUBLIC
-        ${MAYA_INCLUDE_DIRS}
+    SYSTEM PUBLIC
         ${PXR_INCLUDE_DIRS}
+        ${MAYA_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
+)
+target_include_directories(${PROJECT_NAME} 
+    PUBLIC
         ${CMAKE_BINARY_DIR}/include
 )
 

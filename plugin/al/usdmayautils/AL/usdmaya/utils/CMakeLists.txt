@@ -73,8 +73,12 @@ target_link_libraries(${USDMAYA_UTILS_LIBRARY_NAME}
 
 target_include_directories(${USDMAYA_UTILS_LIBRARY_NAME} 
     PUBLIC
-    ${USDMAYAUTILS_INCLUDE_LOCATION}
-    ${USD_INCLUDE_DIR}
+        ${USDMAYAUTILS_INCLUDE_LOCATION}
+)
+target_include_directories(${USDMAYA_UTILS_LIBRARY_NAME} 
+    SYSTEM PUBLIC
+        ${PXR_INCLUDE_DIRS}
+        ${MAYA_INCLUDE_DIRS}
 )
 
 # install the public headers
