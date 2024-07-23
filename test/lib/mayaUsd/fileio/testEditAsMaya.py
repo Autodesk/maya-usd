@@ -122,7 +122,6 @@ class EditAsMayaTestCase(unittest.TestCase):
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaPath)))
 
     @unittest.skipIf(os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') != '1', 'Test only available when UFE supports the orphaned nodes manager')
-    @unittest.skip("This test is failing at least with UVE v3 and v4; OrphanedNodesManager does not seem to support re-parenting a proxyShape ancestor.")
     def testReparentAncestorOfEditAsMaya(self):
         '''Test that reparenting an ancestor correctly updates the internal data.'''
 
@@ -153,12 +152,17 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         # Note: the parent command changes the selection, so preserve and restore it.
         selToPreserve = ufe.GlobalSelection.get().front()
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits("A"))
         cmds.parent("stage1", locName)
         ufe.GlobalSelection.get().clear()
         ufe.GlobalSelection.get().append(selToPreserve)
 
+        # Edit "A" Prim as Maya data.
         aUsdUfePathStr = "|" + locName + aUsdUfePathStr
-        validateEditAsMayaMetadata()
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+            validateEditAsMayaMetadata()
 
         # Verify we can merge "A" Maya data after the rename of the stage.
         with mayaUsd.lib.OpUndoItemList():
