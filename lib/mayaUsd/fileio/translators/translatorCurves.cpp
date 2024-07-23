@@ -199,7 +199,7 @@ bool UsdMayaTranslatorCurves::Create(
                 // The knots array might already contain knots, so we're going to
                 // keep the existing ones and only fill the necessary missing ones.
                 // So calculate from which index we must start to fill.
-                const size_t toBeFilledStartIndex = (curveKnots.size() > coffset)
+                const size_t toBeFilledStartIndex = (curveKnots.size() > size_t(coffset))
                     ? size_t(curveKnots.size() - coffset)
                     : size_t(0);
 
@@ -215,7 +215,7 @@ bool UsdMayaTranslatorCurves::Create(
                     if (i < (size_t)curveDegree)
                         curveKnots[coffset + i] = knotIdx;
                     else if (i > curveKnots.size() - curveDegree)
-                        curveKnots[coffset + i] = pointCount - 1;
+                        curveKnots[coffset + i] = knotIdx;
                     else {
                         ++knotIdx;
                         curveKnots[coffset + i] = double(knotIdx);
