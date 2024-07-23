@@ -230,7 +230,7 @@ global proc mayaUSDRegisterStrings()
     register("kExportVisibilityLbl", "Visibility");
     register("kExportDefaultPrimLbl", "Default Prim");
     register("kExportDefaultPrimNoneLbl", "None");
-    register("kExportDefaultPrimAnn", "Default Prim");
+    register("kExportDefaultPrimAnn", "As part of its metadata, each USD stage can identify a default prim.\nThis is the primitive that is referenced in if you reference in a file.");
 
     // All strings for import dialog:
     register("kImportAnimationDataLbl", "Animation Data");
