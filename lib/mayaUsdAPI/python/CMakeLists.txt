@@ -47,9 +47,9 @@ mayaUsd_compile_config(${PYTHON_TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_include_directories(${PROJECT_NAME} 
     PUBLIC
+        ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
-        ${PXR_INCLUDE_DIRS}
         ${CMAKE_BINARY_DIR}/include
 )
 
