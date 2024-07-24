@@ -71,7 +71,8 @@ class testUsdExportCustomConverter(unittest.TestCase):
         options = ["shadingMode=useRegistry",
                    "convertMaterialsTo=[maya]",
                    "mergeTransformAndShape=1",
-                   "legacyMaterialScope=0"]
+                   "legacyMaterialScope=0",
+                   "defaultPrim=None"]
 
         default_ext_setting = cmds.file(q=True, defaultExtensions=True)
         cmds.file(defaultExtensions=False)

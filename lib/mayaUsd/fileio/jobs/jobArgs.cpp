@@ -707,6 +707,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , dagPaths(dagPaths)
     , fullObjectList(fullList)
     , timeSamples(timeSamples)
+    , exportRoots(extractVector<std::string>(userArgs, UsdMayaJobExportArgsTokens->exportRoots))
     , rootMapFunction(PcpMapFunction::Create(
           _ExportRootsMap(
               userArgs,

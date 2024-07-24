@@ -41,7 +41,7 @@ class testUsdExportMaterialScope(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def _export(self, mayaFileName, defaultPrim=''):
+    def _export(self, mayaFileName, defaultPrim='None'):
         self._mayaFile = os.path.join(self.inputPath, 'UsdExportMaterialScopeTest', mayaFileName)
         cmds.file(self._mayaFile, force=True, open=True)
 

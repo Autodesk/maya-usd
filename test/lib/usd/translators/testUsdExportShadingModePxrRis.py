@@ -40,7 +40,7 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         usdFilePath = os.path.abspath('MarbleCube.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='pxrRis', materialsScopeName='Materials',
-            legacyMaterialScope=False)
+            legacyMaterialScope=False, defaultPrim='None')
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
