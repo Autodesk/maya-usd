@@ -82,6 +82,7 @@
 #include <pxr/imaging/hdSt/udimTextureObject.h>
 #include <pxr/imaging/hio/image.h>
 
+#include <boost/functional/hash.hpp>
 #include <ghc/filesystem.hpp>
 #include <tbb/parallel_for.h>
 
