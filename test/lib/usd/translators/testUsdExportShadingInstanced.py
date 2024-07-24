@@ -44,7 +44,8 @@ class testUsdExportShadingInstanced(unittest.TestCase):
                 exportCollectionBasedBindings=True,
                 exportMaterialCollections=True,
                 materialCollectionsPath="/World",
-                legacyMaterialScope=False)
+                legacyMaterialScope=False,
+                defaultPrim='None')
 
         cls._simpleStage = Usd.Stage.Open(usdFilePath)
 
@@ -59,7 +60,8 @@ class testUsdExportShadingInstanced(unittest.TestCase):
                 exportCollectionBasedBindings=True,
                 exportMaterialCollections=True,
                 materialCollectionsPath="/World",
-                legacyMaterialScope=False)
+                legacyMaterialScope=False,
+                defaultPrim='None')
 
         cls._nestedStage = Usd.Stage.Open(usdFilePath)
 

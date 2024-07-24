@@ -78,7 +78,8 @@ class testUsdExportTexture(unittest.TestCase):
 
         with testUtils.TemporaryEnvironmentVariable(PROJ_ENV_VAR_NAME, projectFolder):
             cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, 
-                exportRelativeTextures=relativeMode, legacyMaterialScope=False)
+                exportRelativeTextures=relativeMode, legacyMaterialScope=False,
+                defaultPrim='None')
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage, usdFilePath)

@@ -59,6 +59,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
             materialsScopeName='Materials', legacyMaterialScope=False,
+            defaultPrim='None',
             **extraOptions)
 
         stage = Usd.Stage.Open(usdFilePath)
@@ -195,7 +196,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
                            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
                            preserveUVSetNames=False, remapUVSetsTo=[['','']], 
                            materialsScopeName='Materials', legacyMaterialScope=False,
-                           selection=True)
+                           defaultPrim='None', selection=True)
 
         stage = Usd.Stage.Open(usdFilePath)
 

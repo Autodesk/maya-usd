@@ -287,7 +287,8 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         usd_file_path = os.path.join(self.temp_dir, "UsdPreviewSurfaceExportTest.usda")
         cmds.mayaUSDExport(
             mergeTransformAndShape=True, file=usd_file_path, 
-            legacyMaterialScope=False, shadingMode="useRegistry"
+            legacyMaterialScope=False, shadingMode="useRegistry",
+            defaultPrim='None'
         )
 
         stage = Usd.Stage.Open(usd_file_path)
@@ -336,7 +337,8 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         usd_file_path = os.path.join(self.temp_dir, "UsdPreviewSurfaceExportTest.usda")
         cmds.mayaUSDExport(
             mergeTransformAndShape=True, file=usd_file_path, 
-            legacyMaterialScope=False, shadingMode="useRegistry"
+            legacyMaterialScope=False, shadingMode="useRegistry",
+            defaultPrim='None'
         )
 
         stage = Usd.Stage.Open(usd_file_path)
