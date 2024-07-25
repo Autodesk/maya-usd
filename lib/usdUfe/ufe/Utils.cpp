@@ -49,6 +49,10 @@
 #include <ufe/attributeInfo.h>
 #endif // UFE_V4_FEATURES_AVAILABLE
 
+#ifdef UFE_V5_FEATURES_AVAILABLE
+#include <ufe/value.h>
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -1244,6 +1248,19 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
     return dst;
 }
 
+#ifdef UFE_VALUE_SUPPORTS_VECTOR_AND_COLOR
+template <class USD_TYPE, class UFE_TYPE>
+PXR_NS::VtValue convertUfeVectorToUsd(const Ufe::Value& ufeValue)
+{
+    auto     ufeVec = ufeValue.get<UFE_TYPE>();
+    USD_TYPE usdVec;
+    for (std::size_t i = 0; i < ufeVec.vector.size(); ++i) {
+        usdVec[i] = ufeVec.vector[i];
+    }
+    return PXR_NS::VtValue(usdVec);
+}
+#endif
+
 #ifdef UFE_SCENEITEM_HAS_METADATA
 PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue)
 {
@@ -1258,12 +1275,45 @@ PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue)
         usdValue = ufeValue.get<double>();
     else if (ufeValue.isType<std::string>())
         usdValue = ufeValue.get<std::string>();
+#ifdef UFE_VALUE_SUPPORTS_VECTOR_AND_COLOR
+    else if (ufeValue.isType<Ufe::Vector2i>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec2i, Ufe::Vector2i>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector2f>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec2f, Ufe::Vector2f>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector2d>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec2d, Ufe::Vector2d>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector3i>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec3i, Ufe::Vector3i>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector3f>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec3f, Ufe::Vector3f>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector3d>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec3d, Ufe::Vector3d>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector4i>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec4i, Ufe::Vector4i>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector4f>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec4f, Ufe::Vector4f>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector4d>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec4d, Ufe::Vector4d>(ufeValue);
+#endif
     else {
         TF_CODING_ERROR(kErrorMsgInvalidValueType);
     }
 
     return usdValue;
 }
+
+#ifdef UFE_VALUE_SUPPORTS_VECTOR_AND_COLOR
+template <class UFE_TYPE, class USD_TYPE>
+Ufe::Value convertUsdVectorToUfe(const PXR_NS::VtValue& vtValue)
+{
+    auto     usdVec = vtValue.Get<USD_TYPE>();
+    UFE_TYPE ufeVec;
+    for (std::size_t i = 0; i < USD_TYPE::dimension; ++i) {
+        ufeVec.vector[i] = usdVec[i];
+    }
+    return Ufe::Value(ufeVec);
+}
+#endif
 
 Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
 {
@@ -1279,6 +1329,26 @@ Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
         return Ufe::Value(vtValue.Get<std::string>());
     else if (vtValue.IsHolding<PXR_NS::TfToken>())
         return Ufe::Value(vtValue.Get<PXR_NS::TfToken>().GetString());
+#ifdef UFE_VALUE_SUPPORTS_VECTOR_AND_COLOR
+    else if (vtValue.IsHolding<PXR_NS::GfVec2i>())
+        return convertUsdVectorToUfe<Ufe::Vector2i, PXR_NS::GfVec2i>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec2f>())
+        return convertUsdVectorToUfe<Ufe::Vector2f, PXR_NS::GfVec2f>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec2d>())
+        return convertUsdVectorToUfe<Ufe::Vector2d, PXR_NS::GfVec2d>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec3i>())
+        return convertUsdVectorToUfe<Ufe::Vector3i, PXR_NS::GfVec3i>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec3f>())
+        return convertUsdVectorToUfe<Ufe::Vector3f, PXR_NS::GfVec3f>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec3d>())
+        return convertUsdVectorToUfe<Ufe::Vector3d, PXR_NS::GfVec3d>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec4i>())
+        return convertUsdVectorToUfe<Ufe::Vector4i, PXR_NS::GfVec4i>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec4f>())
+        return convertUsdVectorToUfe<Ufe::Vector4f, PXR_NS::GfVec4f>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec4d>())
+        return convertUsdVectorToUfe<Ufe::Vector4d, PXR_NS::GfVec4d>(vtValue);
+#endif
     else {
         std::stringstream ss;
         ss << vtValue;
