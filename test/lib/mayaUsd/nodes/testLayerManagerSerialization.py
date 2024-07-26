@@ -260,7 +260,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath = ufe.PathString.path(proxyShape)
 
-        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
 
         newPrimPath = "/ChangeInRoot"
         stage.DefinePrim(newPrimPath, "xform")
@@ -290,7 +290,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath = ufe.PathString.path(proxyShape)
 
-        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
 
         newPrimPath = "/ChangeInRoot"
         stage.DefinePrim(newPrimPath, "xform")

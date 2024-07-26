@@ -59,11 +59,11 @@ std::string prettifyName(const std::string& name)
         }
     }
     // Manual substitutions for custom capitalisations. Will be searched as case-insensitive.
-    static const std::unordered_map<std::string, std::string> subs = {
-        { "usd", "USD" },
-        { "mtlx", "MaterialX" },
-        { "gltf pbr", "glTF PBR" },
-    };
+    static const std::unordered_map<std::string, std::string> subs
+        = { { "usd", "USD" },
+            { "mtlx", "MaterialX" },
+            { "gltf pbr", "glTF PBR" },
+            { "Open Pbr Surface", "OpenPBR Surface" } };
 
     static const auto subRegexes = []() {
         std::vector<std::pair<std::regex, std::string>> regexes;

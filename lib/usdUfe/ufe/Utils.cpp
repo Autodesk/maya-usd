@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/UsdAttributes.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/trf/XformOpUtils.h>
 #include <usdUfe/utils/editability.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
@@ -47,6 +48,10 @@
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <ufe/attributeInfo.h>
 #endif // UFE_V4_FEATURES_AVAILABLE
+
+#ifdef UFE_V5_FEATURES_AVAILABLE
+#include <ufe/value.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -115,6 +120,8 @@ UsdUfe::UniqueChildNameFn          gUniqueChildNameFn = nullptr;
 UsdUfe::WaitCursorFn               gStartWaitCursorFn = nullptr;
 UsdUfe::WaitCursorFn               gStopWaitCursorFn = nullptr;
 UsdUfe::DefaultMaterialScopeNameFn gGetDefaultMaterialScopeNameFn = nullptr;
+UsdUfe::ExtractTRSFn               gExtractTRSFn = nullptr;
+UsdUfe::Transform3dMatrixOpNameFn  gTransform3dMatrixOpNameFn = nullptr;
 
 UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
     = { nullptr };
@@ -466,7 +473,7 @@ void displayMessage(MessageType type, const std::string& msg)
         switch (type) {
         case MessageType::kInfo: TF_STATUS(msg); break;
         case MessageType::kWarning: TF_WARN(msg); break;
-        case MessageType::KError: TF_RUNTIME_ERROR(msg); break;
+        case MessageType::kError: TF_RUNTIME_ERROR(msg); break;
         default: break;
         }
     }
@@ -1184,6 +1191,31 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
     return true;
 }
 
+//! Copy the argument matrix into the return matrix.
+Ufe::Matrix4d toUfe(const PXR_NS::GfMatrix4d& src)
+{
+    Ufe::Matrix4d dst;
+    std::memcpy(&dst.matrix[0][0], src.GetArray(), sizeof(double) * 16);
+    return dst;
+}
+
+//! Copy the argument matrix into the return matrix.
+PXR_NS::GfMatrix4d toUsd(const Ufe::Matrix4d& src)
+{
+    PXR_NS::GfMatrix4d dst;
+    std::memcpy(dst.GetArray(), &src.matrix[0][0], sizeof(double) * 16);
+    return dst;
+}
+
+//! Copy the argument vector into the return vector.
+Ufe::Vector3d toUfe(const PXR_NS::GfVec3d& src) { return Ufe::Vector3d(src[0], src[1], src[2]); }
+
+//! Copy the argument vector into the return vector.
+PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
+{
+    return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
+}
+
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
 {
     // Filter the src selection, removing items below the filterPath
@@ -1216,6 +1248,19 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
     return dst;
 }
 
+#ifdef UFE_VALUE_SUPPORTS_VECTOR_AND_COLOR
+template <class USD_TYPE, class UFE_TYPE>
+PXR_NS::VtValue convertUfeVectorToUsd(const Ufe::Value& ufeValue)
+{
+    auto     ufeVec = ufeValue.get<UFE_TYPE>();
+    USD_TYPE usdVec;
+    for (std::size_t i = 0; i < ufeVec.vector.size(); ++i) {
+        usdVec[i] = ufeVec.vector[i];
+    }
+    return PXR_NS::VtValue(usdVec);
+}
+#endif
+
 #ifdef UFE_SCENEITEM_HAS_METADATA
 PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue)
 {
@@ -1230,12 +1275,45 @@ PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue)
         usdValue = ufeValue.get<double>();
     else if (ufeValue.isType<std::string>())
         usdValue = ufeValue.get<std::string>();
+#ifdef UFE_VALUE_SUPPORTS_VECTOR_AND_COLOR
+    else if (ufeValue.isType<Ufe::Vector2i>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec2i, Ufe::Vector2i>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector2f>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec2f, Ufe::Vector2f>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector2d>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec2d, Ufe::Vector2d>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector3i>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec3i, Ufe::Vector3i>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector3f>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec3f, Ufe::Vector3f>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector3d>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec3d, Ufe::Vector3d>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector4i>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec4i, Ufe::Vector4i>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector4f>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec4f, Ufe::Vector4f>(ufeValue);
+    else if (ufeValue.isType<Ufe::Vector4d>())
+        return convertUfeVectorToUsd<PXR_NS::GfVec4d, Ufe::Vector4d>(ufeValue);
+#endif
     else {
         TF_CODING_ERROR(kErrorMsgInvalidValueType);
     }
 
     return usdValue;
 }
+
+#ifdef UFE_VALUE_SUPPORTS_VECTOR_AND_COLOR
+template <class UFE_TYPE, class USD_TYPE>
+Ufe::Value convertUsdVectorToUfe(const PXR_NS::VtValue& vtValue)
+{
+    auto     usdVec = vtValue.Get<USD_TYPE>();
+    UFE_TYPE ufeVec;
+    for (std::size_t i = 0; i < USD_TYPE::dimension; ++i) {
+        ufeVec.vector[i] = usdVec[i];
+    }
+    return Ufe::Value(ufeVec);
+}
+#endif
 
 Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
 {
@@ -1251,6 +1329,26 @@ Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
         return Ufe::Value(vtValue.Get<std::string>());
     else if (vtValue.IsHolding<PXR_NS::TfToken>())
         return Ufe::Value(vtValue.Get<PXR_NS::TfToken>().GetString());
+#ifdef UFE_VALUE_SUPPORTS_VECTOR_AND_COLOR
+    else if (vtValue.IsHolding<PXR_NS::GfVec2i>())
+        return convertUsdVectorToUfe<Ufe::Vector2i, PXR_NS::GfVec2i>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec2f>())
+        return convertUsdVectorToUfe<Ufe::Vector2f, PXR_NS::GfVec2f>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec2d>())
+        return convertUsdVectorToUfe<Ufe::Vector2d, PXR_NS::GfVec2d>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec3i>())
+        return convertUsdVectorToUfe<Ufe::Vector3i, PXR_NS::GfVec3i>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec3f>())
+        return convertUsdVectorToUfe<Ufe::Vector3f, PXR_NS::GfVec3f>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec3d>())
+        return convertUsdVectorToUfe<Ufe::Vector3d, PXR_NS::GfVec3d>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec4i>())
+        return convertUsdVectorToUfe<Ufe::Vector4i, PXR_NS::GfVec4i>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec4f>())
+        return convertUsdVectorToUfe<Ufe::Vector4f, PXR_NS::GfVec4f>(vtValue);
+    else if (vtValue.IsHolding<PXR_NS::GfVec4d>())
+        return convertUsdVectorToUfe<Ufe::Vector4d, PXR_NS::GfVec4d>(vtValue);
+#endif
     else {
         std::stringstream ss;
         ss << vtValue;
@@ -1330,6 +1428,18 @@ std::string defaultMaterialScopeName()
                                           : kDefaultMaterialScopeName;
 }
 
+void setTransform3dMatrixOpNameFn(Transform3dMatrixOpNameFn fn)
+{
+    // This function is allowed to be null in which case there is
+    // no special transform3d matrix op name.
+    gTransform3dMatrixOpNameFn = fn;
+}
+
+const char* getTransform3dMatrixOpName()
+{
+    return gTransform3dMatrixOpNameFn ? gTransform3dMatrixOpNameFn() : nullptr;
+}
+
 UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item)
 {
     if (!item) {
@@ -1347,6 +1457,34 @@ UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item)
     }
 
     return prim.GetTypeName() == kMaterial ? UsdSceneItem::create(path, prim) : nullptr;
+}
+
+void setExtractTRSFn(ExtractTRSFn fn)
+{
+    // This function is allowed to be null in which case, a default
+    // implementation will be used.
+    gExtractTRSFn = fn;
+}
+
+void extractTRS(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s)
+{
+    if (gExtractTRSFn) {
+        gExtractTRSFn(m, t, r, s);
+    } else {
+        UsdUfe::internal::getTRS(m, t, r, s);
+    }
+}
+
+bool isSessionLayerGroupMetadata(const std::string& groupName, std::string* adjustedGroupName)
+{
+    static std::string sessionLayerPrefix("SessionLayer-");
+    if (groupName.rfind(sessionLayerPrefix, 0) != 0)
+        return false;
+
+    if (adjustedGroupName)
+        *adjustedGroupName = groupName.substr(sessionLayerPrefix.size());
+
+    return true;
 }
 
 } // namespace USDUFE_NS_DEF

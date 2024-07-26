@@ -15,13 +15,12 @@
 //
 #include "UsdUndoMaterialCommands.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/ufe/UsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 

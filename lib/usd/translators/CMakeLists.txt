@@ -37,6 +37,7 @@ target_sources(${TARGET_NAME}
         plugin.cpp
         scopeReader.cpp
         skelReader.cpp
+        stageWriter.cpp
         strokeWriter.cpp
         xformReader.cpp
 )
@@ -66,6 +67,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
     PRIVATE
+        ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         ${CMAKE_BINARY_DIR}
 )

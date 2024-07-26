@@ -115,18 +115,16 @@ class RenameTestCase(unittest.TestCase):
         usdSegment = usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")
 
         ball35Path = ufe.Path([mayaSegment, usdSegment])
-        ball35PathStr = ','.join(
-            [str(segment) for segment in ball35Path.segments])
 
         # Because of difference in Python binding systems (pybind11 for UFE,
         # Boost Python for mayaUsd and USD), need to pass in strings to
         # mayaUsd functions.  Multi-segment UFE paths need to have
         # comma-separated segments.
-        def assertStageAndPrimAccess(proxyShapeSegment, primUfePathStr, primSegment):
+        def assertStageAndPrimAccess(proxyShapeSegment, primUfePath, primSegment):
             proxyShapePathStr = ufe.PathString.string(ufe.Path(proxyShapeSegment))
 
             stage     = mayaUsd.ufe.getStage(proxyShapePathStr)
-            prim      = mayaUsd.ufe.ufePathToPrim(primUfePathStr)
+            prim      = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(primUfePath))
             stagePath = mayaUsd.ufe.stagePath(stage)
 
             self.assertIsNotNone(stage)
@@ -134,7 +132,7 @@ class RenameTestCase(unittest.TestCase):
             self.assertTrue(prim.IsValid())
             self.assertEqual(str(prim.GetPath()), str(primSegment))
 
-        assertStageAndPrimAccess(mayaSegment, ball35PathStr, usdSegment)
+        assertStageAndPrimAccess(mayaSegment, ball35Path, usdSegment)
 
         # Rename the proxy shape node itself.  Stage and prim access should
         # still be valid, with the new path.
@@ -144,10 +142,8 @@ class RenameTestCase(unittest.TestCase):
         self.assertEqual(len(cmds.ls('potato')), 1)
 
         ball35Path = ufe.Path([mayaSegment, usdSegment])
-        ball35PathStr = ','.join(
-            [str(segment) for segment in ball35Path.segments])
 
-        assertStageAndPrimAccess(mayaSegment, ball35PathStr, usdSegment)
+        assertStageAndPrimAccess(mayaSegment, ball35Path, usdSegment)
 
     def testRename(self):
         '''
@@ -168,7 +164,7 @@ class RenameTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(treebaseItem)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # by default edit target is set to the Rootlayer.
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
@@ -235,7 +231,7 @@ class RenameTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(cylinderItem)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # check GetLayerStack behavior
         self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
@@ -312,7 +308,7 @@ class RenameTestCase(unittest.TestCase):
 
         # Maya UFE segment and USD stage, needed in various places below.
         mayaPathSegment = mayaUtils.createUfePathSegment('|transform1|proxyShape1')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # Setup the load rules:
         #     /Props is unloaded
@@ -405,7 +401,7 @@ class RenameTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(ball35Item)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # check GetLayerStack behavior
         self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
@@ -481,7 +477,7 @@ class RenameTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(getItem(oldName))
 
         # Get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # Add an opinion about the cylinder in the session layer
         stage.SetEditTarget(stage.GetSessionLayer())
@@ -530,7 +526,7 @@ class RenameTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(geoItem)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # rename "/apple/payload/geo" to "/apple/payload/geo_renamed"
         # expect the exception happens
@@ -575,7 +571,7 @@ class RenameTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(trunkItem)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # by default edit target is set to the Rootlayer.
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
@@ -618,7 +614,7 @@ class RenameTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(usdSphereItem)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # by default edit target is set to the Rootlayer.
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
@@ -713,7 +709,7 @@ class RenameTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(cylinderItem)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # set the edit target to the root layer
         stage.SetEditTarget(stage.GetRootLayer())
@@ -747,7 +743,7 @@ class RenameTestCase(unittest.TestCase):
 
         # stage
         mayaPathSegment = mayaUtils.createUfePathSegment('|Variant_usd|Variant_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # first check that we have a VariantSets
         objectPrim = stage.GetPrimAtPath('/objects')
@@ -809,7 +805,7 @@ class RenameTestCase(unittest.TestCase):
 
         # stage
         mayaPathSegment = mayaUtils.createUfePathSegment('|CompositionArcs_usd|CompositionArcs_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # first check for ArcType, nodePath values. I am only interested in the composition Arc other than "root".
         compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_A'))

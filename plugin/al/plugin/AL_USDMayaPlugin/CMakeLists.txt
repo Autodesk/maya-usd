@@ -28,6 +28,7 @@ target_link_libraries(${PXR_PACKAGE}
 
 target_include_directories(${PXR_PACKAGE}
     PRIVATE
+        ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         "../../lib/AL_USDMaya"
 )

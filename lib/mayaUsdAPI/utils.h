@@ -70,6 +70,9 @@ Ufe::UndoableCommand::Ptr createMaterialsScopeCommand(const Ufe::SceneItem::Ptr&
 
 /*! Returns a Ufe command that can create a new Usd stage with a new layer.
  *  The returned command is not executed; it is up to the caller to call execute().
+ *
+ * \param [in] parentItem Item to parent the new stage to, can be null in which case the
+ *                        new stage gets parented under the Maya world node.
  */
 MAYAUSD_API_PUBLIC
 Ufe::UndoableCommand::Ptr createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem);

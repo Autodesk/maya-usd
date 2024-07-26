@@ -54,6 +54,8 @@ def mayaUsdLibRegisterStrings():
     register('kLabelStrongerMaterial', 'Stronger than descendants')
     register('kTooltipInheritedStrength', 'This setting cannot be changed on this prim due to the strength setting on an ancestor')
     register('kLabelMaterialNewTab', 'New Tab...')
+    register('kUseOutlinerColorAnn', 'Apply the Outliner color to the display of the prim name in the Outliner.')
+    register('kOutlinerColorAnn', 'The color of the text displayed in the Outliner.')
 
     # mayaUsdAddMayaReference.py
     register('kErrorGroupPrimExists', 'Group prim "^1s" already exists under "^2s". Choose prim name other than "^1s" to proceed.')

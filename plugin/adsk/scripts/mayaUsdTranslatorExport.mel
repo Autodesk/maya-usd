@@ -233,6 +233,8 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
         return;
     }
 
+    string $currentDefaultPrim = `optionMenuGrp -q -value exportDefaultPrim`;
+
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
     menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
@@ -250,14 +252,17 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
     int $excludeMesh = (mayaUsdTranslatorExport_isCheckBoxOn("exportMeshesCheckBox") == 0);
     int $excludeLight = (mayaUsdTranslatorExport_isCheckBoxOn("exportLightsCheckBox") == 0);
     int $excludeCamera = (mayaUsdTranslatorExport_isCheckBoxOn("exportCamerasCheckBox") == 0);
+    int $excludeStage = (mayaUsdTranslatorExport_isCheckBoxOn("exportStagesAsRefsCheckBox") == 0);
 
     string $allItems[];
     global int $exportAll;
     if($exportAll){
-        $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidates('" + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"')")`;
+        $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidates('"
+            + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"', '" + $excludeStage +"')")`;
 
     } else{
-        $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidatesFromSelection('" + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"')")`;
+        $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidatesFromSelection('"
+            + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"', '" + $excludeStage +"')")`;
     }
 
     // Note: we only add the material scope if meshes are *not* listed.
@@ -273,10 +278,16 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
         menuItem -parent ($menuName + "|OptionMenu") -l $item;
     }
 
-    // If there are default prim candidates, select the first prim
-    // Use index 2 here because the first one will always be None
     if(size($allItems) > 0){
-        optionMenuGrp -e -select 2 exportDefaultPrim;
+        if(size($currentDefaultPrim) != 0){
+            // set the default prim back if it's available
+            catchQuiet(`optionMenuGrp -e -value $currentDefaultPrim exportDefaultPrim`);
+        }
+        else{
+            // If there are default prim candidates, select the first prim
+            // Use index 2 here because the first one will always be None
+            optionMenuGrp -e -select 2 exportDefaultPrim;
+        }
     }
 
 }
@@ -288,10 +299,11 @@ proc updateDefaultPrimOptionMenu(string $rootPrim) {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
     }
-    optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
-    string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
-    menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
+
     if(size($rootPrim) > 0){
+        optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
+        string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
+        menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
         menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
         optionMenuGrp -e -select 2 exportDefaultPrim;
     } else {
@@ -331,6 +343,10 @@ global proc mayaUsdTranslatorExport_MeshCB() {
     columnLayout -e -enable $enable meshExportOptsCol;
 
     mayaUsdTranslatorExport_MaterialsCB();
+    mayaUsdTranslatorExport_updateDefaultPrimList();
+}
+
+global proc mayaUsdTranslatorExport_StagesAsRefsCB() {
     mayaUsdTranslatorExport_updateDefaultPrimList();
 }
 
@@ -904,6 +920,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportAssignedMaterialsCheckBox");
             } else if ($optionBreakDown[0] == "exportComponentTags") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportComponentTagsCheckBox");
+            } else if ($optionBreakDown[0] == "exportStagesAsRefs") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportStagesAsRefsCheckBox");
             } else if ($optionBreakDown[0] == "jobContext" && $processJobContext == 1) {
                 // Must be kept last, and only done on main options:
                 $listOfJobContexts = $optionBreakDown[1];
@@ -993,8 +1011,10 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
     // Set visibility for anim widgets (but do not update the start/end time to playback range
     // as they will be set by the caller).
     mayaUsdTranslatorExport_AnimationCB();
-    if ($enable)
+    if ($enable) {
         mayaUsdTranslatorExport_MaterialsCB();
+        mayaUsdTranslatorExport_StagesAsRefsCB();
+    }
 }
 
 proc string[] parseActionSectionNames(string $sections, string $out_expandedSections[], string $out_collapsedSections[])
@@ -1084,7 +1104,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
     global string $gOptionBox;
     global int $exportAll;
     global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes;
-
+    
     if (`window -exists $gOptionBox`) {
         string $title = `window -query -title $gOptionBox`;
         if ($title == `uiRes("m_fileOptions.kExportAllOptions")`) {
@@ -1123,6 +1143,20 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $collapsedSections[];
         string $sectionNames[] = parseActionSectionNames($sections, $expandedSections, $collapsedSections);
             
+        // Adjust options related to which operation is being done:
+        // export, duplicate-to-USD or merge=to-USD.
+        int $canExportStagesAsRefs = 1;
+        $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 0;
+        
+        if (stringArrayContains("duplicate", $sectionNames)) {
+            $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 1;
+            $canExportStagesAsRefs = 0;
+        }
+
+        if (stringArrayContains("mergeToUSD", $sectionNames)) {
+            $canExportStagesAsRefs = 0;
+        }
+
         setParent $parent;
 
         columnLayout -adj true usdOptsCol;
@@ -1299,14 +1333,15 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kExportWorldspaceLbl")` -annotation `getMayaUsdString("kExportWorldspaceAnn")` worldspaceCheckBox;
 
+                if ($canExportStagesAsRefs) {
+                    checkBoxGrp -label "" -label1 `getMayaUsdString("kExportStagesAsRefsLbl")`
+                        -annotation `getMayaUsdString("kExportStagesAsRefsAnn")`
+                        -cc ("mayaUsdTranslatorExport_StagesAsRefsCB") 
+                        -value1 1 exportStagesAsRefsCheckBox;
+                }
+
                 separator -style "none";
             setParent ..;
-        }
-
-        if (stringArrayContains("duplicate", $sectionNames)) {
-            $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 1;
-        } else {
-            $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 0;
         }
 
         $bResult = 1;
@@ -1368,6 +1403,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "includeEmptyTransforms", "includeEmptyTransformsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "worldspace", "worldspaceCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportStagesAsRefs", "exportStagesAsRefsCheckBox");
         }
 
         if (stringArrayContains("context", $sectionNames)) {

@@ -126,5 +126,13 @@ class SceneSegmentTestCase(unittest.TestCase):
         result = handler.findGatewayItems(proxyShapeParentPath, otherRunTimeId)
         self.assertTrue(result.empty())
 
+    @unittest.skipIf(os.getenv('UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH', 'NOT-FOUND') not in ('1', "TRUE"), 'Test requires UFE SceneSegmentHandler rootSceneSegmentRootPath()')
+    def testRootSceneSegmentRootPath(self):
+        proxyShapePath = ufe.PathString.path('|stage|stageShape')
+        handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(proxyShapePath.runTimeId())
+        rootPath = handler.rootSceneSegmentRootPath()
+
+        self.assertEqual(str(rootPath), "|world", "The scene root path is not correct")
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

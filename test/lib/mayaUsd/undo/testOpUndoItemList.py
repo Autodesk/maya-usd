@@ -63,7 +63,7 @@ class OpUndoItemListTestCase(unittest.TestCase):
         # Duplicate USD data as Maya data, placing it under the root.
         with undoList:
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-                aUsdUfePathStr, '|world'))
+                aUsdUfePathStr, ''))
 
         # Verify the command worked and undo items were captured.
         def hasDuplicatedObjects():

@@ -14,35 +14,15 @@ target_sources(${PROJECT_NAME}
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
-        RotationUtils.cpp
-        UsdPointInstanceOrientationModifier.cpp
-        UsdPointInstancePositionModifier.cpp
-        UsdPointInstanceScaleModifier.cpp
-        UsdRotatePivotTranslateUndoableCommand.cpp
-        UsdRotateUndoableCommand.cpp
-        UsdScaleUndoableCommand.cpp
         UsdSceneItemOps.cpp
         UsdSceneItemOpsHandler.cpp
-        UsdSetXformOpUndoableCommandBase.cpp
         UsdStageMap.cpp
-        UsdTRSUndoableCommandBase.cpp
-        UsdTransform3dBase.cpp
-        UsdTransform3dCommonAPI.cpp
-        UsdTransform3dFallbackMayaXformStack.cpp
-        UsdTransform3dMatrixOp.cpp
-        UsdTransform3dMayaXformStack.cpp
-        UsdTransform3dPointInstance.cpp
-        UsdTransform3dReadImpl.cpp
-        UsdTransform3dSetObjectMatrix.cpp
-        UsdTransform3dUndoableCommands.cpp
-        UsdTranslateUndoableCommand.cpp
         UsdUIUfeObserver.cpp
         UsdUndoDeleteCommand.cpp
         UsdUndoDuplicateCommand.cpp
         UsdUndoMaterialCommands.cpp
         UsdUndoRenameCommand.cpp
         Utils.cpp
-        XformOpUtils.cpp
         moduleDeps.cpp
 )
 
@@ -154,6 +134,14 @@ if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
     )
 endif()
 
+
+if (UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH=1
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
@@ -165,7 +153,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             UsdConnectionHandler.cpp
             UsdUINodeGraphNode.cpp
             UsdUINodeGraphNodeHandler.cpp
-            UsdTransform3dRead.cpp
             UsdUndoConnectionCommands.cpp
             UsdUndoCreateStageWithNewLayerCommand.cpp
     )
@@ -183,37 +170,15 @@ set(HEADERS
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
-    RotationUtils.h
-    UsdPointInstanceModifierBase.h
-    UsdPointInstanceOrientationModifier.h
-    UsdPointInstancePositionModifier.h
-    UsdPointInstanceScaleModifier.h
-    UsdPointInstanceUndoableCommands.h
-    UsdRotatePivotTranslateUndoableCommand.h
-    UsdRotateUndoableCommand.h
-    UsdScaleUndoableCommand.h
     UsdSceneItemOps.h
     UsdSceneItemOpsHandler.h
-    UsdSetXformOpUndoableCommandBase.h
     UsdStageMap.h
-    UsdTRSUndoableCommandBase.h
-    UsdTransform3dBase.h
-    UsdTransform3dCommonAPI.h
-    UsdTransform3dFallbackMayaXformStack.h
-    UsdTransform3dMatrixOp.h
-    UsdTransform3dMayaXformStack.h
-    UsdTransform3dPointInstance.h
-    UsdTransform3dReadImpl.h
-    UsdTransform3dSetObjectMatrix.h
-    UsdTransform3dUndoableCommands.h
-    UsdTranslateUndoableCommand.h
     UsdUIUfeObserver.h
     UsdUndoDeleteCommand.h
     UsdUndoDuplicateCommand.h
     UsdUndoMaterialCommands.h
     UsdUndoRenameCommand.h
     Utils.h
-    XformOpUtils.h
 )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
@@ -274,11 +239,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         UsdConnectionHandler.h
         UsdUINodeGraphNode.h
         UsdUINodeGraphNodeHandler.h
-        UsdTransform3dRead.h
         UsdUndoConnectionCommands.h
         UsdUndoCreateStageWithNewLayerCommand.h
     )
 endif()
+
+add_subdirectory(trf)
 
 # -----------------------------------------------------------------------------
 # promote headers

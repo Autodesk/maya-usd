@@ -31,16 +31,14 @@
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
+#include <usdUfe/ufe/UsdUndoReloadRefCommand.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/sdr/registry.h>
-#include <pxr/usd/sdr/shaderNode.h>
-#include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
@@ -48,13 +46,11 @@
 
 #include <maya/MGlobal.h>
 #include <ufe/globalSelection.h>
-#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/selectionUndoableCommands.h>
 
-#include <algorithm>
 #include <cassert>
 #include <map>
 #include <utility>
@@ -96,10 +92,14 @@ static constexpr char kAddNewMaterialLabel[] = "Add New Material";
 static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
 static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material";
 #endif
-static constexpr char kAddRefOrPayloadLabel[] = "Add USD Reference/Payload...";
+static constexpr char kAddRefOrPayloadLabel[] = "Add...";
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
-const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear All USD References/Payloads...";
+const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear...";
 const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPayloads";
+const constexpr char  kReloadReferenceLabel[] = "Reload";
+const constexpr char  kReloadReferenceItem[] = "Reload";
+static constexpr char kUSDReferenceItem[] = "Reference";
+static constexpr char kUSDReferenceLabel[] = "Reference";
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 //! \brief Create a working Material and select it:
@@ -426,9 +426,10 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         items.insert(items.end(), baseItems.begin(), baseItems.end());
 
         if (!_isAGatewayType) {
-            items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
-            items.emplace_back(kClearAllRefsOrPayloadsItem, kClearAllRefsOrPayloadsLabel);
+            items.emplace_back(
+                kUSDReferenceItem, kUSDReferenceLabel, Ufe::ContextItem::kHasChildren);
         }
+
         if (!_isAGatewayType) {
             // Top level item - Bind/unbind existing materials
             bool materialSeparatorsAdded = false;
@@ -529,6 +530,13 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         } else if (itemPath[0] == kAssignExistingMaterialItem) {
             assignExistingMaterialItems(_item, itemPath, items);
 #endif
+        } else if (itemPath[0] == kUSDReferenceItem) {
+            items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
+            auto prim = _item->prim();
+            if (prim.HasAuthoredReferences() || prim.HasAuthoredPayloads()) {
+                items.emplace_back(kReloadReferenceItem, kReloadReferenceLabel);
+                items.emplace_back(kClearAllRefsOrPayloadsItem, kClearAllRefsOrPayloadsLabel);
+            }
         }
     } // Top-level items
     return items;
@@ -608,74 +616,88 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     }
 #endif
 
-    if (itemPath[0] == kAddRefOrPayloadItem) {
-        if (!_prepareUSDReferenceTargetLayer(prim()))
-            return nullptr;
+    if (itemPath.size() == 2u && itemPath[0] == kUSDReferenceItem) {
+        if (itemPath[1] == kAddRefOrPayloadItem) {
+            if (!_prepareUSDReferenceTargetLayer(prim()))
+                return nullptr;
 
-        MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
-        if (fileRef.length() == 0)
-            return nullptr;
+            MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
+            if (fileRef.length() == 0)
+                return nullptr;
 
-        const std::string path
-            = makeUSDReferenceFilePathRelativeIfRequested(UsdMayaUtil::convert(fileRef), prim());
-        if (path.empty())
-            return nullptr;
+            const std::string path = makeUSDReferenceFilePathRelativeIfRequested(
+                UsdMayaUtil::convert(fileRef), prim());
+            if (path.empty())
+                return nullptr;
 
-        const std::string primPath = UsdMayaUtilFileSystem::getReferencedPrimPath();
-        const bool        asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
-        const bool        prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
-        if (asRef) {
-            return std::make_shared<UsdUfe::UsdUndoAddReferenceCommand>(
-                prim(), path, primPath, prepend);
-        } else {
-            Ufe::UndoableCommand::Ptr preloadCmd;
-            const bool                preload = UsdMayaUtilFileSystem::wantPayloadLoaded();
-            if (preload) {
-                preloadCmd = std::make_shared<UsdUfe::UsdUndoLoadPayloadCommand>(
-                    prim(), UsdLoadWithDescendants);
+            const std::string primPath = UsdMayaUtilFileSystem::getReferencedPrimPath();
+            const bool        asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
+            const bool        prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
+            if (asRef) {
+                return std::make_shared<UsdUfe::UsdUndoAddReferenceCommand>(
+                    prim(), path, primPath, prepend);
             } else {
-                preloadCmd = std::make_shared<UsdUfe::UsdUndoUnloadPayloadCommand>(prim());
+                Ufe::UndoableCommand::Ptr preloadCmd;
+                const bool                preload = UsdMayaUtilFileSystem::wantPayloadLoaded();
+                if (preload) {
+                    preloadCmd = std::make_shared<UsdUfe::UsdUndoLoadPayloadCommand>(
+                        prim(), UsdLoadWithDescendants);
+                } else {
+                    preloadCmd = std::make_shared<UsdUfe::UsdUndoUnloadPayloadCommand>(prim());
+                }
+
+                auto payloadCmd = std::make_shared<UsdUfe::UsdUndoAddPayloadCommand>(
+                    prim(), path, primPath, prepend);
+
+                auto compoCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+                compoCmd->append(preloadCmd);
+                compoCmd->append(payloadCmd);
+
+                return compoCmd;
+            }
+        } else if (itemPath[1] == kClearAllRefsOrPayloadsItem) {
+            if (_item->path().empty())
+                return nullptr;
+            MString itemName = _item->path().back().string().c_str();
+
+            MString cmd;
+            cmd.format(
+                "import mayaUsdClearRefsOrPayloadsOptions; "
+                "mayaUsdClearRefsOrPayloadsOptions.showClearRefsOrPayloadsOptions(r'''^1s''')",
+                itemName);
+            MStringArray results;
+            MGlobal::executePythonCommand(cmd, results);
+            if (MString("Clear") != results[0])
+                return nullptr;
+            std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
+            for (const MString& res : results) {
+                if (res == "references") {
+                    if (!compositeCmd) {
+                        compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+                    }
+                    compositeCmd->append(
+                        std::make_shared<UsdUfe::UsdUndoClearReferencesCommand>(prim()));
+                } else if (res == "payloads") {
+                    if (!compositeCmd) {
+                        compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+                    }
+                    compositeCmd->append(
+                        std::make_shared<UsdUfe::UsdUndoClearPayloadsCommand>(prim()));
+                }
+            }
+            return compositeCmd;
+        } else if (itemPath[1] == kReloadReferenceItem) {
+            if (_item->path().empty()) {
+                return nullptr;
             }
 
-            auto payloadCmd = std::make_shared<UsdUfe::UsdUndoAddPayloadCommand>(
-                prim(), path, primPath, prepend);
-
-            auto compoCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
-            compoCmd->append(preloadCmd);
-            compoCmd->append(payloadCmd);
-
-            return compoCmd;
-        }
-    } else if (itemPath[0] == kClearAllRefsOrPayloadsItem) {
-        if (_item->path().empty())
-            return nullptr;
-        MString itemName = _item->path().back().string().c_str();
-
-        MString cmd;
-        cmd.format(
-            "import mayaUsdClearRefsOrPayloadsOptions; "
-            "mayaUsdClearRefsOrPayloadsOptions.showClearRefsOrPayloadsOptions(r'''^1s''')",
-            itemName);
-        MStringArray results;
-        MGlobal::executePythonCommand(cmd, results);
-        if (MString("Clear") != results[0])
-            return nullptr;
-        std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
-        for (const MString& res : results) {
-            if (res == "references") {
-                if (!compositeCmd) {
-                    compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
-                }
-                compositeCmd->append(
-                    std::make_shared<UsdUfe::UsdUndoClearReferencesCommand>(prim()));
-            } else if (res == "payloads") {
-                if (!compositeCmd) {
-                    compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
-                }
-                compositeCmd->append(std::make_shared<UsdUfe::UsdUndoClearPayloadsCommand>(prim()));
+            std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
+            if (!compositeCmd) {
+                compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
             }
+            compositeCmd->append(std::make_shared<UsdUfe::UsdUndoReloadRefCommand>(prim()));
+            return compositeCmd;
         }
-        return compositeCmd;
     }
 #ifdef UFE_V3_FEATURES_AVAILABLE
     else if (itemPath[0] == kEditAsMayaItem) {
@@ -683,9 +705,10 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath[0] == kEditAsMayaOptionsItem) {
         executeEditAsMayaOptions(path());
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
+        // Note: empty string for target means Maya (hidden) world node.
         MString script;
         script.format(
-            "^1s \"^2s\" \"|world\"",
+            "^1s \"^2s\" \"\"",
             DuplicateCommand::commandName,
             Ufe::PathString::string(path()).c_str());
         UsdUfe::WaitCursor wait;

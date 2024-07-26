@@ -281,7 +281,7 @@ class DiscardEditsTestCase(unittest.TestCase):
         mayaUtils.openAppleBiteScene()
 
         mayaPathSegment = mayaUtils.createUfePathSegment('|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
         self.assertTrue(stage)
         
         usdPathSegment = usdUtils.createUfePathSegment('/apple/payload/geo/skin')

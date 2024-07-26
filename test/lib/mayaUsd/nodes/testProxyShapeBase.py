@@ -88,7 +88,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(str(proxyShapeHier.children()[0].nodeName()), "Capsule1")
 
         # validate session name and anonymous tag name 
-        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
         self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
         self.assertEqual(True, "-session" in stage.GetSessionLayer().identifier)
@@ -122,7 +122,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(childName, "Capsule1")
 
         # validate session name and anonymous tag name 
-        duplStage = mayaUsd.ufe.getStage(str(ufe.PathString.path('|stage2|stageShape2')))
+        duplStage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.PathString.path('|stage2|stageShape2')))
         self.assertEqual(duplStage.GetLayerStack()[0], duplStage.GetSessionLayer())
         self.assertEqual(duplStage.GetEditTarget().GetLayer(), duplStage.GetRootLayer())
         self.assertEqual(True, "-session" in duplStage.GetSessionLayer().identifier)
@@ -228,7 +228,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(treebaseItem).children()))
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # by default edit target is set to the Rootlayer.
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
@@ -259,7 +259,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(childName, "TreeBase")
 
         # validate session name and anonymous tag name 
-        duplStage = mayaUsd.ufe.getStage(str(ufe.PathString.path('|Tree_usd1|Tree_usd1Shape')))
+        duplStage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.PathString.path('|Tree_usd1|Tree_usd1Shape')))
         self.assertEqual(duplStage.GetLayerStack()[0], duplStage.GetSessionLayer())
         self.assertEqual(duplStage.GetEditTarget().GetLayer(), duplStage.GetRootLayer())
         self.assertEqual(True, "-session" in duplStage.GetSessionLayer().identifier)

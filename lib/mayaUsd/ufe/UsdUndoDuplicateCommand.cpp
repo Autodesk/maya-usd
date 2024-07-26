@@ -15,13 +15,12 @@
 //
 #include "UsdUndoDuplicateCommand.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/loadRules.h>
 
 #include <usdUfe/base/tokens.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>

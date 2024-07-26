@@ -464,15 +464,15 @@ static Ufe::BBox3d transformBBox(const PXR_NS::GfMatrix4d& matrix, const Ufe::BB
 {
     Ufe::BBox3d transformed(bbox);
 
-    transformed.min = toUfe(matrix.Transform(toUsd(bbox.min)));
-    transformed.max = toUfe(matrix.Transform(toUsd(bbox.max)));
+    transformed.min = UsdUfe::toUfe(matrix.Transform(UsdUfe::toUsd(bbox.min)));
+    transformed.max = UsdUfe::toUfe(matrix.Transform(UsdUfe::toUsd(bbox.max)));
 
     return transformed;
 }
 
 static Ufe::BBox3d transformBBox(const Ufe::Matrix4d& matrix, const Ufe::BBox3d& bbox)
 {
-    return transformBBox(toUsd(matrix), bbox);
+    return transformBBox(UsdUfe::toUsd(matrix), bbox);
 }
 
 static Ufe::BBox3d transformBBox(Ufe::SceneItem::Ptr& item, const Ufe::BBox3d& bbox)
