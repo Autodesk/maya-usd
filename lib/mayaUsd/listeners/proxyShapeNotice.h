@@ -78,6 +78,21 @@ private:
     const UsdNotice::ObjectsChanged& _notice;
 };
 
+class MayaUsdProxyStageStageContentsChangedNotice : public MayaUsdProxyStageBaseNotice
+{
+public:
+    MAYAUSD_CORE_PUBLIC
+    MayaUsdProxyStageStageContentsChangedNotice(
+        const MayaUsdProxyShapeBase&           proxy,
+        const UsdNotice::StageContentsChanged& notice);
+
+    MAYAUSD_CORE_PUBLIC
+    const UsdNotice::StageContentsChanged& GetNotice() const;
+
+private:
+    const UsdNotice::StageContentsChanged& _notice;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

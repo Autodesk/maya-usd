@@ -64,6 +64,19 @@ const UsdNotice::ObjectsChanged& ProxyStageObjectsChangedNotice::GetNotice() con
     return _notice;
 }
 
+ProxyStageStageContentsChangedNotice::ProxyStageStageContentsChangedNotice(
+    MObject                                proxyObj,
+    const UsdNotice::StageContentsChanged& notice)
+    : ProxyStageBaseNotice(proxyObj)
+    , _notice(notice)
+{
+}
+
+const UsdNotice::StageContentsChanged& ProxyStageStageContentsChangedNotice::GetNotice() const
+{
+    return _notice;
+}
+
 TF_INSTANTIATE_TYPE(ProxyStageBaseNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 TF_INSTANTIATE_TYPE(ProxyStageSetNotice, TfType::CONCRETE, TF_1_PARENT(ProxyStageBaseNotice));
 TF_INSTANTIATE_TYPE(
@@ -72,6 +85,10 @@ TF_INSTANTIATE_TYPE(
     TF_1_PARENT(ProxyStageBaseNotice));
 TF_INSTANTIATE_TYPE(
     ProxyStageObjectsChangedNotice,
+    TfType::CONCRETE,
+    TF_1_PARENT(ProxyStageBaseNotice));
+TF_INSTANTIATE_TYPE(
+    ProxyStageStageContentsChangedNotice,
     TfType::CONCRETE,
     TF_1_PARENT(ProxyStageBaseNotice));
 
@@ -88,6 +105,7 @@ public:
         TfNotice::Register(ptr, &MayaUsdProxyShapeNoticeListener::_StageSet);
         TfNotice::Register(ptr, &MayaUsdProxyShapeNoticeListener::_StageInvalidate);
         TfNotice::Register(ptr, &MayaUsdProxyShapeNoticeListener::_ObjectsChanged);
+        TfNotice::Register(ptr, &MayaUsdProxyShapeNoticeListener::_StageContentsChanged);
     }
 
     //! Singleton access
@@ -115,6 +133,14 @@ private:
     void _ObjectsChanged(const MayaUsdProxyStageObjectsChangedNotice& notice)
     {
         ProxyStageObjectsChangedNotice(notice.GetProxyShape().thisMObject(), notice.GetNotice())
+            .Send();
+    }
+
+    //! Listen to the MayaUsdProxyStageStageContentsChangedNotice and forward the mayaUsdAPI
+    //! ProxyStageStageContentsChangedNotice
+    void _StageContentsChanged(const MayaUsdProxyStageStageContentsChangedNotice& notice)
+    {
+        ProxyStageStageContentsChangedNotice(notice.GetProxyShape().thisMObject(), notice.GetNotice())
             .Send();
     }
 };

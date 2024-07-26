@@ -36,6 +36,10 @@ TF_INSTANTIATE_TYPE(
     MayaUsdProxyStageObjectsChangedNotice,
     TfType::CONCRETE,
     TF_1_PARENT(MayaUsdProxyStageBaseNotice));
+TF_INSTANTIATE_TYPE(
+    MayaUsdProxyStageStageContentsChangedNotice,
+    TfType::CONCRETE,
+    TF_1_PARENT(MayaUsdProxyStageBaseNotice));
 
 MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice(const MayaUsdProxyShapeBase& proxy)
     : _proxy(proxy)
@@ -65,6 +69,19 @@ MayaUsdProxyStageObjectsChangedNotice::MayaUsdProxyStageObjectsChangedNotice(
 }
 
 const UsdNotice::ObjectsChanged& MayaUsdProxyStageObjectsChangedNotice::GetNotice() const
+{
+    return _notice;
+}
+
+MayaUsdProxyStageStageContentsChangedNotice::MayaUsdProxyStageStageContentsChangedNotice(
+    const MayaUsdProxyShapeBase&           proxy,
+    const UsdNotice::StageContentsChanged& notice)
+    : MayaUsdProxyStageBaseNotice(proxy)
+    , _notice(notice)
+{
+}
+
+const UsdNotice::StageContentsChanged& MayaUsdProxyStageStageContentsChangedNotice::GetNotice() const
 {
     return _notice;
 }

@@ -97,6 +97,7 @@ public:
 
 private:
     void ObjectsChanged(const MayaUsdProxyStageObjectsChangedNotice& notice);
+    void StageContentsChanged(const MayaUsdProxyStageStageContentsChangedNotice& notice);
 
     void StageSet(const MayaUsdProxyStageSetNotice& notice);
 

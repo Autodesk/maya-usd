@@ -91,6 +91,26 @@ private:
     const PXR_NS::UsdNotice::ObjectsChanged& _notice;
 };
 
+//! \brief Notice sent when some stage contents changed in the Usd stage from the mayaUsd proxy shape node
+//! \class ProxyStageBaseNotice
+class ProxyStageStageContentsChangedNotice : public ProxyStageBaseNotice
+{
+public:
+    //! Constructor
+    MAYAUSD_API_PUBLIC
+    ProxyStageStageContentsChangedNotice(
+        MObject                                        proxyObj,
+        const PXR_NS::UsdNotice::StageContentsChanged& notice);
+
+    //! Get the UsdNotice::StageContentsChanged
+    MAYAUSD_API_PUBLIC
+    const PXR_NS::UsdNotice::StageContentsChanged& GetNotice() const;
+
+private:
+    //! The UsdNotice::StageContentsChanged
+    const PXR_NS::UsdNotice::StageContentsChanged& _notice;
+};
+
 } // End of namespace MAYAUSDAPI_NS_DEF
 
 #endif // MAYAUSD_API_PROXYSTAGE_NOTICE_H

@@ -2145,6 +2145,7 @@ void MayaUsdProxyShapeBase::_OnStageContentsChanged(const UsdNotice::StageConten
     // If the USD stage this proxy represents changes without Maya's knowledge,
     // we need to inform Maya that the shape is dirty and needs to be redrawn.
     MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+    MayaUsdProxyStageStageContentsChangedNotice(*this, notice).Send();
 }
 
 void MayaUsdProxyShapeBase::_OnLayerMutingChanged(const UsdNotice::LayerMutingChanged& notice)
