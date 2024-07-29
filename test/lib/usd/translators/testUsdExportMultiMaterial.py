@@ -63,7 +63,8 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             convertMaterialsTo=['MaterialX', 'UsdPreviewSurface', 'rendermanForMaya'],
             materialsScopeName='Materials',
             exportMaterials=exportMaterials,
-            legacyMaterialScope=False)
+            legacyMaterialScope=False,
+            defaultPrim='None')
 
         self._stage = Usd.Stage.Open(usdFilePath)
 
@@ -201,7 +202,8 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             shadingMode='useRegistry',
             convertMaterialsTo=['MaterialX', 'UsdPreviewSurface'],
             materialsScopeName='Looks',
-            legacyMaterialScope=False)
+            legacyMaterialScope=False,
+            defaultPrim='None')
 
         # We expect 2 primvar readers, and 2 st transforms:
         stage = Usd.Stage.Open(usd_path)

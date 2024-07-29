@@ -51,7 +51,8 @@ class testUsdExportUVTransforms(unittest.TestCase):
 
         usd_file_path = os.path.join(cls.temp_dir, "UsdExportUVTransforms.usda")
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usd_file_path,
-                           shadingMode='useRegistry', legacyMaterialScope=False)
+                           shadingMode='useRegistry', legacyMaterialScope=False,
+                           defaultPrim='None')
 
         cls.stage = Usd.Stage.Open(usd_file_path)
 

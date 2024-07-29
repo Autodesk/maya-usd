@@ -66,7 +66,7 @@ class testExportFannedOutFileNodesMaterial(unittest.TestCase):
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', 
             convertMaterialsTo=['MaterialX', 'UsdPreviewSurface'],
-            materialsScopeName='Materials', legacyMaterialScope=False)
+            materialsScopeName='Materials', legacyMaterialScope=False, defaultPrim="None")
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)

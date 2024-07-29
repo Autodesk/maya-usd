@@ -247,7 +247,8 @@ class testUsdExportSchemaApi(unittest.TestCase):
         # Export, with Bullet:
         usdFilePath = os.path.abspath('UsdExportSchemaApiTest_WithBullet.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-                           jobContext=["Bullet"], frameRange=(1, 10))
+                           jobContext=["Bullet"], frameRange=(1, 10),
+                           defaultPrim='pSphere1')
 
         # Check that Physics API schemas did get exported:
         stage = Usd.Stage.Open(usdFilePath)
