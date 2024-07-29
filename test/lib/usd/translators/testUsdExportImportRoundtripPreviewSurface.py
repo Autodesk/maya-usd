@@ -132,7 +132,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             "shadingMode=useRegistry",
             "convertMaterialsTo=[{}]".format(convertTo),
             "mergeTransformAndShape=1",
-            "legacyMaterialScope=0"
+            "legacyMaterialScope=0",
+            "defaultPrim=None"
         ]
 
         cmds.file(usd_path, force=True,
@@ -415,7 +416,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             file=usd_path,
             shadingMode='useRegistry',
             exportDisplayColor=True,
-            legacyMaterialScope=False)
+            legacyMaterialScope=False,
+            defaultPrim="None")
 
         # We expect 2 primvar readers, and 2 st transforms:
         stage = Usd.Stage.Open(usd_path)
@@ -477,7 +479,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                 exportDisplayColor=False,
                 exportCollectionBasedBindings=True,
                 exportComponentTags=True,
-                legacyMaterialScope=False)
+                legacyMaterialScope=False,
+                defaultPrim='pCube1')
         else:
             usd_path = os.path.abspath('CubeWithAssignedFaces.usda')
             cmds.usdExport(mergeTransformAndShape=True,
@@ -485,7 +488,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                 shadingMode='useRegistry',
                 exportDisplayColor=False,
                 exportComponentTags=True,
-                legacyMaterialScope=False)
+                legacyMaterialScope=False,
+                defaultPrim='pCube1')
 
         stage = Usd.Stage.Open(usd_path)
 
@@ -576,12 +580,12 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         geomSubset = stage.GetPrimAtPath("/pCube1/left")
         geomSubset.GetAttribute("familyName").Set("materialBind")
         subsetBindAPI = UsdShade.MaterialBindingAPI.Apply(geomSubset.GetPrim())
-        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/Looks/blueFaceSG")))
+        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/pCube1/Looks/blueFaceSG")))
 
         meshBindAPI = UsdShade.MaterialBindingAPI(stage.GetPrimAtPath("/pCube1"))
         geomSubset = meshBindAPI.CreateMaterialBindSubset("newKidOnTheBlock", [1, 2], UsdGeom.Tokens.face)
         subsetBindAPI = UsdShade.MaterialBindingAPI.Apply(geomSubset.GetPrim())
-        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/Looks/redFaceSG")))
+        subsetBindAPI.Bind(UsdShade.Material(stage.GetPrimAtPath("/pCube1/Looks/redFaceSG")))
 
         # The "unassigned faced" were previously [1, 2, 3, 5]
         # We have assigned faces 1, 2, and 5 (left), so the only one remaining is 3:
@@ -691,7 +695,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True,
                        file=usd_path,
                        shadingMode='useRegistry',
-                       legacyMaterialScope=False)
+                       legacyMaterialScope=False,
+                       defaultPrim='None')
 
         stage = Usd.Stage.Open(usd_path)
 

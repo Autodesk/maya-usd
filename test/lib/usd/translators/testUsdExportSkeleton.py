@@ -357,7 +357,7 @@ class testUsdExportSkeleton(unittest.TestCase):
                 "stripNamespaces" : True,
                 "shadingMode":"none",
                 "exportRoots":("jointsGrp",),
-                "exportSkels":"auto",
+                "exportSkels":"auto"
             }
             cmds.mayaUSDExport(**kwargs)
                 
