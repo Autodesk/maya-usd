@@ -1029,6 +1029,10 @@ bool PrimUpdaterManager::mergeToUsd(
 
     auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
+    // Note: when merging to USD, we don't want to automatically authors a USD kind
+    //       on the root prim.
+    ctxArgs[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = true;
+
     auto       updaterArgs = UsdMayaPrimUpdaterArgs::createFromDictionary(ctxArgs);
     auto       mayaPath = usdToMaya(pulledPath);
     auto       mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
@@ -1579,6 +1583,10 @@ bool PrimUpdaterManager::duplicate(
         // to configure the updater
         ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
 
+        // Note: when copying, we don't want to automatically authors a USD kind
+        //       on the root prim.
+        ctxArgs[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = true;
+
         // Set destination of duplicate. The Maya world MDagPath is not valid,
         // so don't try to validate the path if it is the world root.
         MDagPath pullParentPath;
@@ -1614,6 +1622,10 @@ bool PrimUpdaterManager::duplicate(
         MayaUsd::ProgressBarScope progressBar(6, "Duplicating to USD");
 
         auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
+
+        // Note: when copying, we don't want to automatically authors a USD kind
+        //       on the root prim.
+        ctxArgs[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = true;
 
         const UsdStageRefPtr  dstStage = dstProxyShape->getUsdStage();
         const SdfLayerHandle& layer = dstStage->GetEditTarget().GetLayer();
