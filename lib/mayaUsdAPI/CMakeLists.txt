@@ -22,15 +22,27 @@ add_library(${PROJECT_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        clipboard.cpp
+        contextOps.cpp
+        global.cpp
         proxyStage.cpp
         proxyShapeNotice.cpp
+        render.cpp
+        ufeHandlers.cpp
+        undo.cpp
         utils.cpp
 )
 
 set(HEADERS
     api.h
+    clipboard.h
+    contextOps.h
+    global.h
     proxyStage.h
+    ufeHandlers.h
     proxyShapeNotice.h
+    render.h
+    undo.h
     utils.h
 )
 
