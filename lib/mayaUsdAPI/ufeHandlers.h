@@ -18,11 +18,14 @@
 
 #include <mayaUsdAPI/api.h>
 
-#include <ufe/connectionHandler.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/nodeDefHandler.h>
 #include <ufe/sceneItemOpsHandler.h>
 #include <ufe/uiNodeGraphNodeHandler.h>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <ufe/connectionHandler.h>
+#endif
 
 namespace MAYAUSDAPI_NS_DEF {
 
@@ -31,8 +34,10 @@ namespace MAYAUSDAPI_NS_DEF {
 MAYAUSD_API_PUBLIC
 Ufe::UINodeGraphNodeHandler::Ptr createUsdUINodeGraphNodeHandler();
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 MAYAUSD_API_PUBLIC
 Ufe::ConnectionHandler::Ptr createUsdConnectionHandler();
+#endif
 
 MAYAUSD_API_PUBLIC
 Ufe::NodeDefHandler::Ptr createUsdShaderNodeDefHandler();

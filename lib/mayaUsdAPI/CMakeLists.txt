@@ -22,7 +22,6 @@ add_library(${PROJECT_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        clipboard.cpp
         contextOps.cpp
         global.cpp
         proxyStage.cpp
@@ -35,7 +34,6 @@ target_sources(${PROJECT_NAME}
 
 set(HEADERS
     api.h
-    clipboard.h
     contextOps.h
     global.h
     proxyStage.h
@@ -45,6 +43,16 @@ set(HEADERS
     undo.h
     utils.h
 )
+
+if (UFE_CLIPBOARD_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            clipboard.cpp
+    )
+    list(APPEND HEADERS
+        clipboard.h
+    )
+endif()
 
 #------------------------------------------------------------------------------
 # modules and definitions

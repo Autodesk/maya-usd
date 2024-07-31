@@ -16,12 +16,15 @@
 
 #include "ufeHandlers.h"
 
-#include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
 
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdConnectionHandler.h>
+#endif
 
 namespace MAYAUSDAPI_NS_DEF {
 
@@ -30,10 +33,12 @@ Ufe::UINodeGraphNodeHandler::Ptr createUsdUINodeGraphNodeHandler()
     return MayaUsd::ufe::UsdUINodeGraphNodeHandler::create();
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::ConnectionHandler::Ptr createUsdConnectionHandler()
 {
     return MayaUsd::ufe::UsdConnectionHandler::create();
 }
+#endif
 
 Ufe::NodeDefHandler::Ptr createUsdShaderNodeDefHandler()
 {
