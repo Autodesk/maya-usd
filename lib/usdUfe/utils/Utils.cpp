@@ -42,13 +42,16 @@ std::string prettifyName(const std::string& name)
             if ((i > 0 && (i < (nbChars - 1))
                  && (!std::isupper(name[i + 1]) && !std::isdigit(name[i + 1])))
                 || std::islower(name[i - 1])) {
-                prettyName += ' ';
+                if (prettyName.size() > 0 && prettyName.back() != ' ') {
+                    prettyName += ' ';
+                }
             }
             prettyName += nextLetter;
             capitalizeNext = false;
         } else if (name[i] == '_' || name[i] == ':') {
-            if (prettyName.size() > 0)
+            if (prettyName.size() > 0 && prettyName.back() != ' ') {
                 prettyName += " ";
+            }
             capitalizeNext = true;
         } else {
             if (capitalizeNext) {
@@ -62,8 +65,20 @@ std::string prettifyName(const std::string& name)
     static const std::unordered_map<std::string, std::string> subs
         = { { "usd", "USD" },
             { "mtlx", "MaterialX" },
-            { "gltf pbr", "glTF PBR" },
-            { "Open Pbr Surface", "OpenPBR Surface" } };
+            { "gltf", "glTF" },
+            { "pbr", "PBR" },
+            { "bsdf", "BSDF" },
+            { "brdf", "BRDF" },
+            { "edf", "EDF" },
+            { "vdf", "VDF" },
+            { "ior", "IOR" },
+            { "srgb", "sRGB" },
+            { "to", "to" },
+            { "pbrlib", "PBR Library" },
+            { "stdlib", "Standard Library" },
+            { "s rg bto", "sRGB to" },
+            { "ace scg", "ACEScg" },
+            { "Open Pbr", "OpenPBR" } };
 
     static const auto subRegexes = []() {
         std::vector<std::pair<std::regex, std::string>> regexes;

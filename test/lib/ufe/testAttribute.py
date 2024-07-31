@@ -1912,7 +1912,7 @@ class AttributeTestCase(unittest.TestCase):
         materialItem = rootHier.children()[0]
         
         surfDef = ufe.NodeDef.definition(materialItem.runTimeId(), "ND_standard_surface_surfaceshader")
-        self.assertEqual(str(surfDef.getMetadata("uiname")), "standard_surface")
+        self.assertEqual(str(surfDef.getMetadata("uiname")), "Standard Surface")
         self.assertEqual(str(surfDef.getMetadata("doc")), "Autodesk standard surface shader")
 
         cmd = surfDef.createNodeCmd(materialItem, ufe.PathComponent("MySurf"))
@@ -1984,11 +1984,30 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdUfe.prettifyName("standardSurface"), "Standard Surface")
         self.assertEqual(mayaUsdUfe.prettifyName("USDPreviewSurface"), "USD Preview Surface")
         self.assertEqual(mayaUsdUfe.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
-        self.assertEqual(mayaUsdUfe.prettifyName("ior"), "Ior")
+        self.assertEqual(mayaUsdUfe.prettifyName("ior"), "IOR")
         self.assertEqual(mayaUsdUfe.prettifyName("IOR"), "IOR")
         self.assertEqual(mayaUsdUfe.prettifyName("specular_IOR"), "Specular IOR")
         self.assertEqual(mayaUsdUfe.prettifyName("HwPtexTexture"), "Hw Ptex Texture")
         self.assertEqual(mayaUsdUfe.prettifyName("fluid2D"), "Fluid2D")
+        # In "_to_USD" we have both an explicit "_" and a lower to upper case
+        # transition. This caused a double space to be inserted but is now fixed.
+        self.assertEqual(mayaUsdUfe.prettifyName("standard_surface_to_UsdPreviewSurface"), "Standard Surface to USD Preview Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("standard_surface_to_gltf_pbr"), "Standard Surface to glTF PBR")
+        self.assertEqual(mayaUsdUfe.prettifyName("artistic_ior"), "Artistic IOR")
+        self.assertEqual(mayaUsdUfe.prettifyName("stdlib"), "Standard Library")
+        self.assertEqual(mayaUsdUfe.prettifyName("pbrlib"), "PBR Library")
+        self.assertEqual(mayaUsdUfe.prettifyName("burley_diffuse_bsdf"), "Burley Diffuse BSDF")
+        self.assertEqual(mayaUsdUfe.prettifyName("uniform_edf"), "Uniform EDF")
+        self.assertEqual(mayaUsdUfe.prettifyName("anisotropic_vdf"), "Anisotropic VDF")
+        self.assertEqual(mayaUsdUfe.prettifyName("gltf_colorimage"), "glTF Colorimage")
+        self.assertEqual(mayaUsdUfe.prettifyName("disney_brdf_2012"), "Disney BRDF 2012")
+        self.assertEqual(mayaUsdUfe.prettifyName("open_pbr_surface"), "OpenPBR Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("open_pbr_anisotropy"), "OpenPBR Anisotropy")
+        # Using camelCase mixed with acronyms is the prettyfier worst scenario.
+        # We have one series of MaterialX nodes using this in MayaUSD.
+        self.assertEqual(mayaUsdUfe.prettifyName("sRGBtoACEScg"), "sRGB to ACEScg")
+        self.assertEqual(mayaUsdUfe.prettifyName("srgb_displayp3_to_lin_rec709"), "sRGB Displayp3 to Lin Rec709")
+        
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdUfe.prettifyName("Dx11Shader"), "Dx11Shader")
         # Explicit substitutions

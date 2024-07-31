@@ -328,7 +328,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(frameLayout, 'Could not find "Alpha" frameLayout')
         
         # We should also have custom enum control for 'Inputs Alpha Mode'.
-        InputsAlphaModeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Alpha  Mode')
+        InputsAlphaModeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Alpha Mode')
         self.assertIsNotNone(InputsAlphaModeControl, 'Could not find gltf_pbr1 "Alpha Mode" control')
 
     def testAEConnectionsCustomControl(self):

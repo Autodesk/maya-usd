@@ -15,6 +15,7 @@
 //
 #include "Utils.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/UsdAttributes.h>
@@ -605,7 +606,13 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
                 const auto portType = UsdShadeUtils::GetBaseNameAndType(usdAttr.GetName()).second;
                 if (portType == UsdShadeAttributeType::Input) {
                     const auto input = UsdShadeInput(usdAttr);
-                    if (!input.GetSdrMetadataByKey(TfToken("enum")).empty()) {
+                    if (!input.GetSdrMetadataByKey(UsdUfe::MetadataTokens->UIEnumLabels).empty()) {
+                        return Ufe::Attribute::kEnumString;
+                    }
+                    // Enum tokens can also be found at the Sdf level:
+                    auto sdfAttr
+                        = TfStatic_cast<SdfAttributeSpecHandle>(usdAttr.GetPropertyStack().front());
+                    if (sdfAttr->HasAllowedTokens()) {
                         return Ufe::Attribute::kEnumString;
                     }
                 }

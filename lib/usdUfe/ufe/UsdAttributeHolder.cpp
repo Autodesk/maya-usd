@@ -31,6 +31,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <unordered_set>
+
 namespace {
 #ifdef UFE_V3_FEATURES_AVAILABLE
 
@@ -59,17 +61,58 @@ bool setUsdAttrMetadata(
 
     UsdUfe::AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
 
+    // These metadata have a USD equivalent. Use it to stay compatible with other DCCs:
+    static const auto knownUSDMetadata
+        = std::unordered_set<std::string> { UsdUfe::MetadataTokens->UIDoc,
+                                            UsdUfe::MetadataTokens->UIEnumLabels,
+                                            UsdUfe::MetadataTokens->UIName,
+                                            UsdUfe::MetadataTokens->UIFolder };
+
     PXR_NS::TfToken tok(key);
     if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
         if (PXR_NS::UsdShadeInput::IsInput(attr)) {
             PXR_NS::UsdShadeInput input(attr);
-            input.SetSdrMetadataByKey(tok, value.get<std::string>());
-            return true;
+            if (knownUSDMetadata.count(key)) {
+                // Cleanup known USD metadata previously set as SdrMetadata
+                input.ClearSdrMetadataByKey(tok);
+            } else {
+                input.SetSdrMetadataByKey(tok, value.get<std::string>());
+                return true;
+            }
         } else if (PXR_NS::UsdShadeOutput::IsOutput(attr)) {
             PXR_NS::UsdShadeOutput output(attr);
-            output.SetSdrMetadataByKey(tok, value.get<std::string>());
-            return true;
+            if (knownUSDMetadata.count(key)) {
+                // Cleanup known USD metadata previously set as SdrMetadata
+                output.ClearSdrMetadataByKey(tok);
+            } else {
+                output.SetSdrMetadataByKey(tok, value.get<std::string>());
+                return true;
+            }
         }
+    }
+
+    if (key == UsdUfe::MetadataTokens->UIDoc) {
+        attr.SetDocumentation(value.get<std::string>());
+        return true;
+    } else if (key == UsdUfe::MetadataTokens->UIEnumLabels) {
+        auto       sdfAttr = TfStatic_cast<SdfAttributeSpecHandle>(attr.GetPropertyStack().front());
+        const auto enumStrings = UsdUfe::splitString(value.get<std::string>(), ", ");
+        VtTokenArray allowedTokens;
+        allowedTokens.reserve(enumStrings.size());
+        for (const auto& tokenString : enumStrings) {
+            allowedTokens.push_back(TfToken(tokenString));
+        }
+        sdfAttr->SetAllowedTokens(allowedTokens);
+        return true;
+    } else if (key == UsdUfe::MetadataTokens->UIFolder) {
+        // Translate '|' to ':'.
+        std::string group = value.get<std::string>();
+        std::replace(group.begin(), group.end(), '|', ':');
+        attr.SetDisplayGroup(group);
+        return true;
+    } else if (key == UsdUfe::MetadataTokens->UIName) {
+        attr.SetDisplayName(value.get<std::string>());
+        return true;
     }
 
     // We must convert the Ufe::Value to VtValue for storage in Usd.
@@ -248,6 +291,32 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
                 return Ufe::Value((lock == GenericTokens->On) ? true : false);
             return Ufe::Value();
         }
+
+        // Handle metadata known to USD under a different key/API.
+        if (key == UsdUfe::MetadataTokens->UIDoc && _usdAttr.HasAuthoredDocumentation()) {
+            return Ufe::Value(_usdAttr.GetDocumentation());
+        } else if (key == UsdUfe::MetadataTokens->UIEnumLabels) {
+            auto sdfAttr
+                = TfStatic_cast<SdfAttributeSpecHandle>(_usdAttr.GetPropertyStack().front());
+            if (sdfAttr->HasAllowedTokens()) {
+                std::string enumstrings;
+                for (auto const& tok : sdfAttr->GetAllowedTokens()) {
+                    if (!enumstrings.empty()) {
+                        enumstrings += ", ";
+                    }
+                    enumstrings += tok.GetString();
+                }
+                return Ufe::Value(enumstrings);
+            }
+        } else if (key == UsdUfe::MetadataTokens->UIFolder && _usdAttr.HasAuthoredDisplayGroup()) {
+            std::string uifolder = _usdAttr.GetDisplayGroup();
+            // Translate ':' to '|'.
+            std::replace(uifolder.begin(), uifolder.end(), ':', '|');
+            return Ufe::Value(uifolder);
+        } else if (key == UsdUfe::MetadataTokens->UIName && _usdAttr.HasAuthoredDisplayName()) {
+            return Ufe::Value(_usdAttr.GetDisplayName());
+        }
+
         PXR_NS::TfToken tok(key);
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
             if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
@@ -593,10 +662,29 @@ UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
         // connecting a shader enum property.
         PXR_NS::UsdShadeNodeGraph ngPrim(_usdAttr.GetPrim());
         if (ngPrim && PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+            auto getEnumLabels = [](auto const& i) {
+                std::vector<std::string> retVal;
+
+                if (i.HasSdrMetadataByKey(UsdUfe::MetadataTokens->UIEnumLabels)) {
+                    const auto enumLabels
+                        = i.GetSdrMetadataByKey(UsdUfe::MetadataTokens->UIEnumLabels);
+                    retVal = splitString(enumLabels, ", ");
+                } else {
+                    // Enum tokens can also be found at the Sdf level:
+                    auto sdfAttr = TfStatic_cast<SdfAttributeSpecHandle>(
+                        i.GetAttr().GetPropertyStack().front());
+                    if (sdfAttr->HasAllowedTokens()) {
+                        for (auto const& t : sdfAttr->GetAllowedTokens()) {
+                            retVal.push_back(t);
+                        }
+                    }
+                }
+                return retVal;
+            };
             const auto shaderInput = PXR_NS::UsdShadeInput { _usdAttr };
-            const auto enumLabels = shaderInput.GetSdrMetadataByKey(PXR_NS::TfToken("enum"));
-            const auto enumValues = shaderInput.GetSdrMetadataByKey(PXR_NS::TfToken("enumvalues"));
-            const std::vector<std::string> allLabels = splitString(enumLabels, ", ");
+            const auto enumValues
+                = shaderInput.GetSdrMetadataByKey(UsdUfe::MetadataTokens->UIEnumValues);
+            const std::vector<std::string> allLabels = getEnumLabels(shaderInput);
             std::vector<std::string>       allValues = splitString(enumValues, ", ");
 
             if (!allValues.empty() && allValues.size() != allLabels.size()) {
