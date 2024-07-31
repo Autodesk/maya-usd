@@ -8,6 +8,10 @@ def Xform "sphereXform"
     double3 xformOp:translate = (10, 0, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 
+    def Xform "test"
+    {
+    }
+
     def Sphere "sphere"
     {
         float3[] extent = [(-2, -2, -2), (2, 2, 2)]
