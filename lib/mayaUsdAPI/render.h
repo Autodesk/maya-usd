@@ -62,6 +62,11 @@ namespace OgsFragment {
 // Forward declarations
 struct OgsFragmentImpl;
 
+// Implements transparency detection for some known types and then
+// delegates to MaterialX for complex ones.
+MAYAUSD_API_PUBLIC
+bool isTransparentSurface(const MaterialX::ElementPtr& element);
+
 // Derive a matrix4 parameter name from a matrix3 parameter name.
 // Required because OGS doesn't support matrix3 parameters.
 MAYAUSD_API_PUBLIC

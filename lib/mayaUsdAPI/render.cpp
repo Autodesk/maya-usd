@@ -57,6 +57,11 @@ void setPrimaryUVSetName(const std::string& val)
 
 namespace OgsFragment {
 
+bool isTransparentSurface(const MaterialX::ElementPtr& element)
+{
+    return MaterialXMaya::OgsFragment::isTransparentSurface(element);
+}
+
 std::string getMatrix4Name(const std::string& matrix3Name)
 {
     return MaterialXMaya::OgsFragment::getMatrix4Name(matrix3Name);
