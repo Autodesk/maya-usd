@@ -602,6 +602,7 @@ void UsdMayaTranslatorXformable::Read(
                 "Unable to successfully decompose matrix at USD prim <%s>",
                 xformSchema.GetPath().GetText());
         }
+        resetsXformStack = true;
     }
 
     if (resetsXformStack) {
