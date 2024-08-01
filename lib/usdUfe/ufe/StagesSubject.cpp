@@ -387,6 +387,12 @@ StagesSubject::~StagesSubject() { }
 /*static*/
 StagesSubject::RefPtr StagesSubject::create() { return TfCreateRefPtr(new StagesSubject); }
 
+PXR_NS::TfNotice::Key StagesSubject::registerStage(const PXR_NS::UsdStageRefPtr& stage)
+{
+    auto me = PXR_NS::TfCreateWeakPtr(this);
+    return TfNotice::Register(me, &StagesSubject::stageChanged, stage);
+}
+
 void StagesSubject::stageChanged(
     UsdNotice::ObjectsChanged const& notice,
     UsdStageWeakPtr const&           sender)

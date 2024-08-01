@@ -22,17 +22,37 @@ add_library(${PROJECT_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        contextOps.cpp
+        global.cpp
         proxyStage.cpp
         proxyShapeNotice.cpp
+        render.cpp
+        ufeHandlers.cpp
+        undo.cpp
         utils.cpp
 )
 
 set(HEADERS
     api.h
+    contextOps.h
+    global.h
     proxyStage.h
+    ufeHandlers.h
     proxyShapeNotice.h
+    render.h
+    undo.h
     utils.h
 )
+
+if (UFE_CLIPBOARD_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            clipboard.cpp
+    )
+    list(APPEND HEADERS
+        clipboard.h
+    )
+endif()
 
 #------------------------------------------------------------------------------
 # modules and definitions
@@ -56,11 +76,19 @@ target_compile_definitions(${PROJECT_NAME}
         MFB_PACKAGE_NAME="${PROJECT_NAME}"
         MFB_ALT_PACKAGE_NAME="${PROJECT_NAME}"
         MFB_PACKAGE_MODULE="${PROJECT_NAME}"
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         # this flag is needed when building for Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
+
+# When the cmake var is set also set another cmake var for the corresponding
+# define. So in mayaUsdAPI.h.src we can configure it correctly. This is used
+# when building the MayaUsdAPI project and for any clients that are using it.
+if (CMAKE_WANT_MATERIALX_BUILD)
+    set(WANT_MATERIALX_BUILD ON)
+endif()
 
 set(SRCFILE ${CMAKE_CURRENT_SOURCE_DIR}/mayaUsdAPI.h.src)
 set(DSTFILE ${CMAKE_BINARY_DIR}/include/mayaUsdAPI/mayaUsdAPI.h)
