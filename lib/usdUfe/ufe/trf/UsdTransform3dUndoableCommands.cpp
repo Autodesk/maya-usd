@@ -16,7 +16,9 @@
 
 #include "UsdTransform3dUndoableCommands.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <ufe/transform3d.h>
 
@@ -40,9 +42,13 @@ bool UsdSetMatrix4dUndoableCommand::set(const Ufe::Matrix4d&)
 
 void UsdSetMatrix4dUndoableCommand::executeImplementation()
 {
+    OperationEditRouterContext editContext(
+        EditRoutingTokens->RouteTransform, ufePathToPrim(path()));
+
     // transform3d() and editTransform3d() are equivalent for a normal Maya
     // transform stack, but not for a fallback Maya transform stack, and
     // both can be edited by this command.
+
     auto t3d = Ufe::Transform3d::editTransform3d(sceneItem());
     if (!TF_VERIFY(t3d)) {
         return;

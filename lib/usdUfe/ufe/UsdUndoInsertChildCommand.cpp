@@ -24,6 +24,7 @@
 #include <usdUfe/utils/editRouterContext.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
+#include <usdUfe/utils/mergePrims.h>
 #include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/token.h>
@@ -163,82 +164,80 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
     return std::make_shared<MakeSharedEnabler<UsdUndoInsertChildCommand>>(parent, child, pos);
 }
 
-static void doUsdInsertion(
-    const UsdStagePtr&    stage,
-    const SdfLayerHandle& srcLayer,
-    const SdfPath&        srcUsdPath,
-    const SdfLayerHandle& dstLayer,
-    const SdfPath&        dstUsdPath)
-{
-    SdfJustCreatePrimInLayer(dstLayer, dstUsdPath.GetParentPath());
-    if (!SdfCopySpec(srcLayer, srcUsdPath, dstLayer, dstUsdPath)) {
-        const std::string error = TfStringPrintf(
-            "Insert child command: moving prim \"%s\" to \"%s\" with SdfCopySpec() failed.",
-            srcUsdPath.GetString().c_str(),
-            dstUsdPath.GetString().c_str());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
-    }
-}
-
 static void doInsertion(
     const SdfPath&   srcUsdPath,
     const Ufe::Path& srcUfePath,
     const SdfPath&   dstUsdPath,
     const Ufe::Path& dstUfePath)
 {
-    // We must retrieve the item every time we are called since it could be stale.
-    // We need to get the USD prim from the UFE path.
-    const UsdPrim     srcPrim = ufePathToPrim(srcUfePath);
-    const UsdStagePtr stage = srcPrim.GetStage();
+    UsdUfe::InAddOrDeleteOperation ad;
+
+    UsdPrim        srcPrim = ufePathToPrim(srcUfePath);
+    UsdStageRefPtr stage = srcPrim.GetStage();
 
     // Enforce the edit routing for the insert-child command in order to find
     // the target layer. The edit router context sets the edit target of the
     // stage of the given prim, if it gets routed.
     OperationEditRouterContext ctx(UsdUfe::EditRoutingTokens->RouteParent, srcPrim);
-    const SdfLayerHandle&      dstLayer = srcPrim.GetStage()->GetEditTarget().GetLayer();
+    const SdfLayerHandle&      dstLayer = stage->GetEditTarget().GetLayer();
 
     enforceMutedLayer(srcPrim, "reparent");
+    
+    // TODO: the replication of extra information is missing in UsdUfe.
+    //       In MayaUsd, MayaUsd::ufe::ReplicateExtrasToUSD duplicates
+    //       the Maya display layer information. This is not supported
+    //       in UsdUfe at the moment. See the UsdUndoDuplicateCommand,
+    //       which is still in MayaUsd for an example of how it is done.
 
-    int affectedLayersCount = 0;
+    // Note: the USD duplication code below is similar to the one in
+    //       UsdUndoDuplicateCommand, except it targets an arbitrary
+    //       destination location. This is why the duplicate command
+    //       could not be used directly as a sub-command.
 
-    // Do the insertion from the source layer to the target layer.
-    {
-        PrimLayerFunc insertionFunc
-            = [stage, srcUsdPath, dstLayer, dstUsdPath](
-                  const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
-                  doUsdInsertion(stage, layer, srcUsdPath, dstLayer, dstUsdPath);
-              };
+    // Make sure all necessary parents exist in the target layer, at least as over,
+    // otherwise SdfCopySepc will fail.
+    SdfJustCreatePrimInLayer(dstLayer, dstUsdPath.GetParentPath());
 
-        const bool includeTopLayer = true;
-        const auto rootLayers = getAllSublayerRefs(stage->GetRootLayer(), includeTopLayer);
-        affectedLayersCount += applyToSomeLayersWithOpinions(srcPrim, rootLayers, insertionFunc);
-    }
-
-    // Do the insertion in all other applicable layers, which, due to the command
-    // restrictions that have been verified when the command was created, should
-    // only be session layers.
-    {
-        PrimLayerFunc insertionFunc
-            = [stage, srcUsdPath, dstUsdPath](
-                  const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
-                  doUsdInsertion(stage, layer, srcUsdPath, layer, dstUsdPath);
-              };
-
-        const bool includeTopLayer = true;
-        const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
-        affectedLayersCount += applyToSomeLayersWithOpinions(srcPrim, sessionLayers, insertionFunc);
-    }
+    // Retrieve the local layers around where the prim is defined and order them
+    // from weak to strong. That weak-to-strong order allows us to copy the weakest
+    // opinions first, so that they will get over-written by the stronger opinions.
+    SdfPrimSpecHandleVector authLayerAndPaths = UsdUfe::getDefiningPrimStack(srcPrim);
+    std::reverse(authLayerAndPaths.begin(), authLayerAndPaths.end());
 
     // If no local layers were affected, then it means the prim is not local.
     // It probably is inside a reference and we do not support reparent from within
     // reference at this point. Report the error and abort the command.
-    if (0 == affectedLayersCount) {
+    if (0 == authLayerAndPaths.size()) {
         const std::string error = TfStringPrintf(
             "Cannot reparent prim \"%s\" because we found no local layer containing it.",
             srcPrim.GetPath().GetText());
         TF_WARN("%s", error.c_str());
         throw std::runtime_error(error);
+    }
+
+    UsdUfe::MergePrimsOptions options;
+    options.verbosity = UsdUfe::MergeVerbosity::None;
+    options.mergeChildren = true;
+    bool isFirst = true;
+
+    for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
+        const auto layer = layerAndPath->GetLayer();
+        const auto path = layerAndPath->GetPath();
+        const bool result = isFirst
+            ? SdfCopySpec(layer, path, dstLayer, dstUsdPath)
+            : UsdUfe::mergePrims(stage, layer, path, stage, dstLayer, dstUsdPath, options);
+
+        if (!result) {
+            const std::string error = TfStringPrintf(
+                "Insert child command: moving prim \"%s\" to \"%s\" failed in layer \"%s\".",
+                srcUsdPath.GetString().c_str(),
+                dstUsdPath.GetString().c_str(),
+                layer->GetDisplayName().c_str());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
+
+        isFirst = false;
     }
 
     // Remove all scene descriptions for the source path and its subtree in the source layer.
@@ -256,18 +255,7 @@ static void doInsertion(
               }
           };
 
-    affectedLayersCount = applyToAllLayersWithOpinions(srcPrim, removeFunc);
-
-    // If no local layers were affected, then it means the prim is not local.
-    // It probably is inside a reference and we do not support reparent from within
-    // reference at this point. Report the error and abort the command.
-    if (0 == affectedLayersCount) {
-        const std::string error = TfStringPrintf(
-            "Cannot reparent prim \"%s\" because we found no local layer containing it.",
-            srcPrim.GetPath().GetText());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
-    }
+    applyToAllLayersWithOpinions(srcPrim, removeFunc);
 }
 
 static void

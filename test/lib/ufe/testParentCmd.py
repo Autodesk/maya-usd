@@ -1156,6 +1156,53 @@ class ParentCmdTestCase(unittest.TestCase):
         newRootCapsuleUSDPath = subXFormName + rootCapsuleName
         self.assertTrue(stage.GetPrimAtPath(newRootCapsuleUSDPath))
 
+    def testParentMultiLayers(self):
+        '''
+        Verify that parenting a prim defined in multiple layers work.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create an empty stage with a sub-layer
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        # Create an xform and a capsule in the root layer.
+        xformName = "/xf"
+        xformUFEPathStr = proxyShapePathStr + "," + xformName
+        xformPrim = stage.DefinePrim(xformName, 'Xform')
+        self.assertTrue(xformPrim)
+
+        rootCapsuleName = '/RootCapsule'
+        rootCapsuleUFEPath = proxyShapePathStr + "," + rootCapsuleName
+        rootCapsulePrim = stage.DefinePrim(rootCapsuleName, 'Capsule')
+        self.assertTrue(rootCapsulePrim)
+        
+        # Move the capsule while targeting the session layer.
+        sessionLayer = stage.GetSessionLayer()
+        with Usd.EditContext(stage, sessionLayer):
+            capsulePath = ufe.PathString.path(rootCapsuleUFEPath)
+            capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+
+            sn = ufe.GlobalSelection.get()
+            sn.clear()
+            sn.append(capsuleItem)
+
+            cmds.move(0, -5, 0, r=True, os=True, wd=True)
+
+        with Usd.EditContext(stage, sessionLayer):
+            cmds.parent(rootCapsuleUFEPath, xformUFEPathStr)
+
+        newRootCapsuleUSDPath = xformName + rootCapsuleName
+        self.assertTrue(stage.GetPrimAtPath(newRootCapsuleUSDPath))
+        self.assertIsNotNone(sessionLayer.GetPrimAtPath(newRootCapsuleUSDPath))
+        # Make sure we did not get a partial parenting, that the "over" in the sesssion
+        # layer had been raplaced by a "def Capsule"
+        self.assertEqual(sessionLayer.GetPrimAtPath(newRootCapsuleUSDPath).typeName, "Capsule")
+
+        rootLayer = stage.GetRootLayer()
+        self.assertIsNone(rootLayer.GetPrimAtPath(newRootCapsuleUSDPath))
+
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentShader(self):
         '''Shaders can only have NodeGraphs and Materials as parent.'''
