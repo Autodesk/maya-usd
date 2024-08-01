@@ -83,10 +83,9 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
 
-# When the cmake var is set also set a cmake var which corresonds to the
-# also set a cmake var for the corresponding define. So in mayaUsdAPI.h.src
-# we can configure it correctly. This is used when building the API project
-# here and for any clients that are using the API.
+# When the cmake var is set also set another cmake var for the corresponding
+# define. So in mayaUsdAPI.h.src we can configure it correctly. This is used
+# when building the MayaUsdAPI project and for any clients that are using it.
 if (CMAKE_WANT_MATERIALX_BUILD)
     set(WANT_MATERIALX_BUILD ON)
 endif()
