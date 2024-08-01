@@ -47,4 +47,11 @@ using namespace MAYAUSDAPI_VERSIONED_NS;
 #define MAYAUSDAPI_NS_DEF MAYAUSDAPI_VERSIONED_NS
 #endif
 
+// Any MayaUsd cmake defines that are used in the MayaUsdAPI project
+// must be added here so that clients using the API will have the
+// needed defines.
+#ifndef WANT_MATERIALX_BUILD
+#cmakedefine WANT_MATERIALX_BUILD
+#endif
+
 #endif // MAYAUSDAPI_H

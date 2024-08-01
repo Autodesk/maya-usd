@@ -65,6 +65,8 @@ public:
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(StagesSubject);
 
+    PXR_NS::TfNotice::Key registerStage(const PXR_NS::UsdStageRefPtr&);
+
     // Ufe notification helpers - send notification trapping any exception.
     void sendObjectAdd(const Ufe::SceneItem::Ptr& sceneItem) const;
     void sendObjectPostDelete(const Ufe::SceneItem::Ptr& sceneItem) const;

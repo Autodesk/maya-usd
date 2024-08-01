@@ -179,4 +179,11 @@ std::string getUsdRunTimeName() { return kUSDRunTimeName; }
 
 Ufe::Rtid getUsdRunTimeId() { return g_USDRtid; }
 
+//! Connect a stage to USD notifications.
+USDUFE_PUBLIC
+TfNotice::Key registerStage(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return g_DefaultStagesSubject->registerStage(stage);
+}
+
 } // namespace USDUFE_NS_DEF
