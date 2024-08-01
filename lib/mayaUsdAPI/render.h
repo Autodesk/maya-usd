@@ -18,13 +18,16 @@
 
 #include <mayaUsdAPI/api.h>
 
+#include <string>
+
+#ifdef WANT_MATERIALX_BUILD
 #include <MaterialXCore/Document.h>
 #include <MaterialXCore/Element.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXFormat/File.h>
 
 #include <memory>
-#include <string>
+#endif
 
 namespace MAYAUSDAPI_NS_DEF {
 
@@ -40,6 +43,8 @@ MAYAUSD_API_PUBLIC
 std::string getFileRule(const std::string& path);
 
 } // namespace ColorManagementPreferences
+
+#ifdef WANT_MATERIALX_BUILD
 
 namespace OgsXmlGenerator {
 
@@ -122,6 +127,8 @@ private:
 };
 
 } // namespace ShaderGenUtil
+
+#endif // WANT_MATERIALX_BUILD
 
 } // namespace MAYAUSDAPI_NS_DEF
 

@@ -16,10 +16,13 @@
 
 #include "render.h"
 
+#include <mayaUsd/render/vp2RenderDelegate/colorManagementPreferences.h>
+
+#ifdef WANT_MATERIALX_BUILD
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsFragment.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/ShaderGenUtil.h>
-#include <mayaUsd/render/vp2RenderDelegate/colorManagementPreferences.h>
+#endif
 
 namespace MAYAUSDAPI_NS_DEF {
 
@@ -33,6 +36,8 @@ std::string getFileRule(const std::string& path)
 }
 
 } // namespace ColorManagementPreferences
+
+#ifdef WANT_MATERIALX_BUILD
 
 namespace OgsXmlGenerator {
 
@@ -161,5 +166,7 @@ const std::string& TopoNeutralGraph::getMaterialName()
 }
 
 } // namespace ShaderGenUtil
+
+#endif // WANT_MATERIALX_BUILD
 
 } // namespace MAYAUSDAPI_NS_DEF

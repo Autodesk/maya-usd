@@ -76,11 +76,20 @@ target_compile_definitions(${PROJECT_NAME}
         MFB_PACKAGE_NAME="${PROJECT_NAME}"
         MFB_ALT_PACKAGE_NAME="${PROJECT_NAME}"
         MFB_PACKAGE_MODULE="${PROJECT_NAME}"
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         # this flag is needed when building for Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
+
+# When the cmake var is set also set a cmake var which corresonds to the
+# also set a cmake var for the corresponding define. So in mayaUsdAPI.h.src
+# we can configure it correctly. This is used when building the API project
+# here and for any clients that are using the API.
+if (CMAKE_WANT_MATERIALX_BUILD)
+    set(WANT_MATERIALX_BUILD ON)
+endif()
 
 set(SRCFILE ${CMAKE_CURRENT_SOURCE_DIR}/mayaUsdAPI.h.src)
 set(DSTFILE ${CMAKE_BINARY_DIR}/include/mayaUsdAPI/mayaUsdAPI.h)
