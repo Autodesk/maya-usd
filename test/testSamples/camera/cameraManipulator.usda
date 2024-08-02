@@ -1,0 +1,11 @@
+#usda 1.0
+
+def Camera "Camera1"
+{
+    float3 xformOp:rotateXYZ = (0, 0, 0)
+    double3 xformOp:translate = (0, 0, 0)
+    float3 xformOp:translate:rotatePivot = (0, 0, 0)
+    float3 xformOp:translate:rotatePivotTranslate = (0, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:rotatePivotTranslate", "xformOp:translate:rotatePivot", "xformOp:rotateXYZ", "!invert!xformOp:translate:rotatePivot"]
+}
+
