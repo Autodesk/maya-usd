@@ -353,10 +353,10 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
         
         if mayaUtils.mayaMajorVersion() > 2024:
-            # We should have a frameLayout called 'Shader: Fractal3d' in the template.
+            # We should have a frameLayout called 'Shader: 3D Fractal Noise' in the template.
             # If there is a scripting error in the template, this layout will be missing.
-            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Fractal3d')
-            self.assertIsNotNone(frameLayout, 'Could not find "Shader: Fractal3d" frameLayout')
+            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: 3D Fractal Noise')
+            self.assertIsNotNone(frameLayout, 'Could not find "Shader: 3D Fractal Noise" frameLayout')
             
             # We should also have an attribute called 'Amplitude' which has a connection.
             AmplitudeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Amplitude')

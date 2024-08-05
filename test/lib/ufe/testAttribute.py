@@ -1637,6 +1637,114 @@ class AttributeTestCase(unittest.TestCase):
         runMetadataUndoRedo(float, 65.78, 0.567)
         runMetadataUndoRedo(str, 'New doc from command', 'New doc starting value')
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testMetadata is only available in UFE v3 or greater.')
+    def testUsdNativeMetadata(self):
+        '''Test metadata that are native to USD.'''
+        cmds.file(new=True, force=True)
+
+        # Create a capsule.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        cmd = proxyShapeContextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+
+        # Get the native attribute:
+        capsulePrim = usdUtils.getPrimFromSceneItem(capsuleItem)
+        self.assertIsNotNone(capsulePrim)
+
+        contextOps = ufe.ContextOps.contextOps(capsuleItem)
+        cmdPS = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmdPS)
+        ufeCmd.execute(cmdPS)
+
+        # Get material prim and surface output:
+        materialPrim = UsdShade.MaterialBindingAPI(capsulePrim).GetDirectBinding().GetMaterial()
+        self.assertIsNotNone(materialPrim)
+        materialUsdOutput = materialPrim.GetOutput("surface").GetAttr()
+        self.assertIsNotNone(materialUsdOutput)
+
+        # Get UFE equivalents:
+        materialPath = ufe.PathString.path('%s,%s' % (proxyShape, materialPrim.GetPath().pathString))
+        self.assertIsNotNone(materialPath)
+        materialItem = ufe.Hierarchy.createItem(materialPath)
+        self.assertIsNotNone(materialItem)
+        materialAttrs = ufe.Attributes.attributes(materialItem)
+        materialUfeOutput = materialAttrs.attribute("outputs:surface")
+
+        # Make sure none of the metadata is currently set:
+        self.assertFalse(materialUsdOutput.HasAuthoredDocumentation())
+        self.assertFalse(materialUsdOutput.HasMetadata('allowedTokens'))
+        self.assertFalse(materialUsdOutput.HasAuthoredDisplayGroup())
+        self.assertFalse(materialUsdOutput.HasAuthoredDisplayName())
+
+        # See if UFE confirms:
+        self.assertFalse(materialUfeOutput.hasMetadata("doc"))
+        self.assertFalse(materialUfeOutput.hasMetadata("enum"))
+        self.assertFalse(materialUfeOutput.hasMetadata("uifolder"))
+        self.assertTrue(materialUfeOutput.hasMetadata("uiname")) # Always true...
+
+        # Can't clear metadata that does not exist:
+        self.assertFalse(materialUfeOutput.clearMetadata("doc"))
+        self.assertFalse(materialUfeOutput.clearMetadata("enum"))
+        self.assertFalse(materialUfeOutput.clearMetadata("uifolder"))
+        self.assertFalse(materialUfeOutput.clearMetadata("uiname"))
+
+        oldUIName = str(materialUfeOutput.getMetadata("uiname"))
+        self.assertEqual(oldUIName, "Surface")
+
+        # Now set metadata via UFE
+        self.assertTrue(materialUfeOutput.setMetadata("doc", "Hello World!"))
+        self.assertTrue(materialUfeOutput.setMetadata("enum", "A, B C, D,E"))
+        self.assertTrue(materialUfeOutput.setMetadata("uifolder", "Top|Mid|Low"))
+        self.assertTrue(materialUfeOutput.setMetadata("uiname", "Best Surface Ever"))
+
+        # See if it stuck as native:
+        self.assertTrue(materialUsdOutput.HasAuthoredDocumentation())
+        self.assertEqual(materialUsdOutput.GetDocumentation(), "Hello World!")
+        self.assertTrue(materialUsdOutput.HasMetadata('allowedTokens'))
+        self.assertEqual(materialUsdOutput.GetMetadata('allowedTokens'), ["A", "B C", "D", "E"])
+        self.assertTrue(materialUsdOutput.HasAuthoredDisplayGroup())
+        self.assertEqual(materialUsdOutput.GetDisplayGroup(), "Top:Mid:Low")
+        self.assertTrue(materialUsdOutput.HasAuthoredDisplayName())
+        self.assertEqual(materialUsdOutput.GetDisplayName(), "Best Surface Ever")
+
+        # See if it stuck as UFE:
+        self.assertTrue(materialUfeOutput.hasMetadata("doc"))
+        self.assertEqual(str(materialUfeOutput.getMetadata("doc")), "Hello World!")
+        self.assertTrue(materialUfeOutput.hasMetadata("enum"))
+        self.assertEqual(str(materialUfeOutput.getMetadata("enum")), "A, B C, D, E")
+        self.assertTrue(materialUfeOutput.hasMetadata("uifolder"))
+        self.assertEqual(str(materialUfeOutput.getMetadata("uifolder")), "Top|Mid|Low")
+        self.assertTrue(materialUfeOutput.hasMetadata("uiname")) # Always true...
+        self.assertEqual(str(materialUfeOutput.getMetadata("uiname")), "Best Surface Ever")
+
+        # Clear metadata:
+        self.assertTrue(materialUfeOutput.clearMetadata("doc"))
+        self.assertTrue(materialUfeOutput.clearMetadata("enum"))
+        self.assertTrue(materialUfeOutput.clearMetadata("uifolder"))
+        self.assertTrue(materialUfeOutput.clearMetadata("uiname"))
+
+        # Make it worked:
+        self.assertFalse(materialUsdOutput.HasAuthoredDocumentation())
+        self.assertFalse(materialUsdOutput.HasMetadata('allowedTokens'))
+        self.assertFalse(materialUsdOutput.HasAuthoredDisplayGroup())
+        self.assertFalse(materialUsdOutput.HasAuthoredDisplayName())
+
+        # See if UFE confirms:
+        self.assertFalse(materialUfeOutput.hasMetadata("doc"))
+        self.assertFalse(materialUfeOutput.hasMetadata("enum"))
+        self.assertFalse(materialUfeOutput.hasMetadata("uifolder"))
+        self.assertTrue(materialUfeOutput.hasMetadata("uiname")) # Always true...
+
+        # Back to a regular surface
+        self.assertEqual(str(materialUfeOutput.getMetadata("uiname")), oldUIName)
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testAttributeLock is only available in UFE v3 or greater.')
     def testAttributeLock(self):
         '''Test attribute lock/unlock.'''
@@ -1984,7 +2092,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdUfe.prettifyName("standardSurface"), "Standard Surface")
         self.assertEqual(mayaUsdUfe.prettifyName("USDPreviewSurface"), "USD Preview Surface")
         self.assertEqual(mayaUsdUfe.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
-        self.assertEqual(mayaUsdUfe.prettifyName("ior"), "IOR")
+        self.assertEqual(mayaUsdUfe.prettifyName("ior"), "Ior")
         self.assertEqual(mayaUsdUfe.prettifyName("IOR"), "IOR")
         self.assertEqual(mayaUsdUfe.prettifyName("specular_IOR"), "Specular IOR")
         self.assertEqual(mayaUsdUfe.prettifyName("HwPtexTexture"), "Hw Ptex Texture")
@@ -1994,19 +2102,19 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(mayaUsdUfe.prettifyName("standard_surface_to_UsdPreviewSurface"), "Standard Surface to USD Preview Surface")
         self.assertEqual(mayaUsdUfe.prettifyName("standard_surface_to_gltf_pbr"), "Standard Surface to glTF PBR")
         self.assertEqual(mayaUsdUfe.prettifyName("artistic_ior"), "Artistic IOR")
-        self.assertEqual(mayaUsdUfe.prettifyName("stdlib"), "Standard Library")
-        self.assertEqual(mayaUsdUfe.prettifyName("pbrlib"), "PBR Library")
+        self.assertEqual(mayaUsdUfe.prettifyName("stdlib"), "Standard")
+        self.assertEqual(mayaUsdUfe.prettifyName("pbrlib"), "PBR")
         self.assertEqual(mayaUsdUfe.prettifyName("burley_diffuse_bsdf"), "Burley Diffuse BSDF")
         self.assertEqual(mayaUsdUfe.prettifyName("uniform_edf"), "Uniform EDF")
         self.assertEqual(mayaUsdUfe.prettifyName("anisotropic_vdf"), "Anisotropic VDF")
-        self.assertEqual(mayaUsdUfe.prettifyName("gltf_colorimage"), "glTF Colorimage")
+        self.assertEqual(mayaUsdUfe.prettifyName("gltf_colorimage"), "glTF Color Image")
         self.assertEqual(mayaUsdUfe.prettifyName("disney_brdf_2012"), "Disney BRDF 2012")
         self.assertEqual(mayaUsdUfe.prettifyName("open_pbr_surface"), "OpenPBR Surface")
         self.assertEqual(mayaUsdUfe.prettifyName("open_pbr_anisotropy"), "OpenPBR Anisotropy")
         # Using camelCase mixed with acronyms is the prettyfier worst scenario.
         # We have one series of MaterialX nodes using this in MayaUSD.
         self.assertEqual(mayaUsdUfe.prettifyName("sRGBtoACEScg"), "sRGB to ACEScg")
-        self.assertEqual(mayaUsdUfe.prettifyName("srgb_displayp3_to_lin_rec709"), "sRGB Displayp3 to Lin Rec709")
+        self.assertEqual(mayaUsdUfe.prettifyName("srgb_displayp3_to_lin_rec709"), "sRGB Display P3 to Linear Rec. 709")
         
         # This is as expected as we do not insert space on digit<->alpha transitions:
         self.assertEqual(mayaUsdUfe.prettifyName("Dx11Shader"), "Dx11Shader")

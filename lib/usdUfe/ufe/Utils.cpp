@@ -30,6 +30,7 @@
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/pcp/site.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -610,9 +611,7 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
                         return Ufe::Attribute::kEnumString;
                     }
                     // Enum tokens can also be found at the Sdf level:
-                    auto sdfAttr
-                        = TfStatic_cast<SdfAttributeSpecHandle>(usdAttr.GetPropertyStack().front());
-                    if (sdfAttr->HasAllowedTokens()) {
+                    if (usdAttr.HasMetadata(SdfFieldKeys->AllowedTokens)) {
                         return Ufe::Attribute::kEnumString;
                     }
                 }
