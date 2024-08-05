@@ -18,7 +18,6 @@
 global string $gMayaUsdTranslatorExport_SectionNames[];
 global int $exportAll;
 global int $gMayaUsdTranslatorExport_useShadingRegistry = 1;
-global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 0;
 
 proc string stringRemoveSuffix(string $object, string $suffix)
 {
@@ -355,19 +354,6 @@ global proc mayaUsdTranslatorExport_MaterialsCB() {
         return;
     
     int $enable = `checkBoxGrp -q -v1 exportMaterialsCheckBox`;
-
-    // If materials export is linked to meshes export, then we disable
-    // all materials-related check-boxes when meshes are off. This is
-    // used in duplicate-to-USD to not duplicate materials without meshes.
-    global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes;
-    if ($gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes) {
-        int $meshesEnable = `checkBoxGrp -q -v1 exportMeshesCheckBox`;
-        columnLayout -e -enable $meshesEnable materialOptsCol2;
-        columnLayout -e -enable $meshesEnable materialOptsCol;
-        if ($meshesEnable == 0) {
-            $enable = 0;
-        }
-    }
 
     mayaUsdTranslatorExport_updateDefaultPrimList();
     columnLayout -e -enable $enable materialOptsCol;
@@ -1103,7 +1089,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
     // check for export option box window first, if it doesn't exist means user opened the main export window
     global string $gOptionBox;
     global int $exportAll;
-    global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes;
     
     if (`window -exists $gOptionBox`) {
         string $title = `window -query -title $gOptionBox`;
@@ -1146,10 +1131,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
         // Adjust options related to which operation is being done:
         // export, duplicate-to-USD or merge=to-USD.
         int $canExportStagesAsRefs = 1;
-        $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 0;
         
         if (stringArrayContains("duplicate", $sectionNames)) {
-            $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 1;
             $canExportStagesAsRefs = 0;
         }
 

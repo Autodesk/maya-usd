@@ -361,12 +361,15 @@ struct UsdMayaJobExportArgs
     std::string GetResolvedFileName() const;
 
     // Verify if meshes are exported. (i.e not excluded by excludeExportTypes)
+    MAYAUSD_CORE_PUBLIC
     bool isExportingMeshes() const;
 
     // Verify if cameras are exported. (i.e not excluded by excludeExportTypes)
+    MAYAUSD_CORE_PUBLIC
     bool isExportingCameras() const;
 
     // Verify if lights are exported. (i.e not excluded by excludeExportTypes)
+    MAYAUSD_CORE_PUBLIC
     bool isExportingLights() const;
 
 private:
