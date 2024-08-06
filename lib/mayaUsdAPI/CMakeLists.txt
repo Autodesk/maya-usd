@@ -52,6 +52,11 @@ if (UFE_CLIPBOARD_SUPPORT)
     list(APPEND HEADERS
         clipboard.h
     )
+
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_CLIPBOARD_SUPPORT=1
+    )
 endif()
 
 #------------------------------------------------------------------------------
