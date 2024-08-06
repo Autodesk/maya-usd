@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRSUNDOABLECOMMANDBASE_H
+#define MAYAUSD_USDTRSUNDOABLECOMMANDBASE_H
 
 #include <mayaUsd/base/api.h>
 
@@ -69,7 +70,7 @@ protected:
     inline PXR_NS::UsdPrim prim() const
     {
         updateItem();
-        return fItem->prim();
+        return _item->prim();
     };
 
     // Hooks to be implemented by the derived class: name of the attribute set
@@ -89,11 +90,11 @@ protected:
 private:
     inline PXR_NS::UsdAttribute attribute() const { return prim().GetAttribute(attributeName()); }
 
-    mutable UsdSceneItem::Ptr fItem { nullptr };
-    V                         fPrevValue;
-    V                         fNewValue;
-    bool                      fOpAdded { false };
-    bool                      fDoneOnce { false };
+    mutable UsdUfe::UsdSceneItem::Ptr _item { nullptr };
+    V                                 _prevValue;
+    V                                 _newValue;
+    bool                              _opAdded { false };
+    bool                              _doneOnce { false };
 
 }; // UsdTRSUndoableCommandBase
 
@@ -107,3 +108,5 @@ template <class T> struct MakeSharedEnabler : public T
 };
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRSUNDOABLECOMMANDBASE_H

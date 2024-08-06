@@ -578,7 +578,9 @@ PushCustomizeSrc pushExport(
     fnDag.getPath(dagPath);
 
     UsdMayaUtil::MDagPathSet dagPaths;
+    MSelectionList           fullObjectList;
     dagPaths.insert(dagPath);
+    fullObjectList.add(dagPath);
 
     std::vector<double> timeSamples;
     UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
@@ -588,8 +590,13 @@ PushCustomizeSrc pushExport(
         1, VtValue(std::string(dagPath.partialPathName().asChar())));
     userArgs[UsdMayaJobExportArgsTokens->exportRoots] = rootPathString;
 
-    UsdMayaJobExportArgs jobArgs
-        = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+    // This ensures the materials will be under the prim, so that
+    // when exported it is under the node being merged and will thus
+    // be merged too.
+    userArgs[UsdMayaJobExportArgsTokens->legacyMaterialScope] = true;
+
+    UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
+        userArgs, dagPaths, fullObjectList, timeSamples);
     progressBar.advance();
 
     UsdMaya_WriteJob writeJob(jobArgs);
@@ -954,6 +961,8 @@ void executeAdditionalCommands(const UsdMayaPrimUpdaterContext& context)
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(PrimUpdaterManager);
+
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(PrimUpdaterManager);
 
 PrimUpdaterManager::PrimUpdaterManager()
 #ifdef HAS_ORPHANED_NODES_MANAGER

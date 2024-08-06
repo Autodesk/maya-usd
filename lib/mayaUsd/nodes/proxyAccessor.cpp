@@ -52,6 +52,8 @@
 
 namespace MAYAUSD_NS_DEF {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProxyAccessor);
+
 /*! /brief  Scoped object setting up compute context for accessor
 
     Proxy accessor supports nested compute that allows injecting DG dependencies to USD. More
@@ -115,8 +117,7 @@ public:
     //! \brief  Restore will handle changing context pointer in the accessor to the state before
     ~ComputeContext() { _accessor._inCompute = _restoreState; }
 
-    ComputeContext(const ComputeContext&) = delete;
-    ComputeContext& operator=(const ComputeContext&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ComputeContext);
 
 private:
     //! Remember context pointer at the creation of this object
@@ -140,6 +141,8 @@ public:
     //! Proxy share transform matrix
     MMatrix _proxyInclusiveMatrix;
 };
+
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ComputeContext);
 
 namespace {
 //! Profiler category for proxy accessor events
@@ -348,7 +351,7 @@ void ProxyAccessor::collectAccessorItems(MObject node)
 
             item.converter = Converter::find(typeName, false);
         } else {
-            UsdAttribute attribute = prim.GetAttribute(item.property);
+            PXR_NS::UsdAttribute attribute = prim.GetAttribute(item.property);
 
             if (!attribute.IsDefined()) {
                 TF_DEBUG(USDMAYA_PROXYACCESSOR)
@@ -529,7 +532,7 @@ MStatus ProxyAccessor::computeInput(
     if (item.property.IsEmpty() || !item.converter)
         return MS::kFailure;
 
-    UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
+    PXR_NS::UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
 
     if (!itemAttribute.IsDefined()) {
         TF_CODING_ERROR(
@@ -612,7 +615,7 @@ MStatus ProxyAccessor::computeOutput(
 
         itemDataHandle.set(visible ? 1 : 0);
     } else if (item.converter) {
-        UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
+        PXR_NS::UsdAttribute itemAttribute = itemPrim.GetAttribute(item.property);
 
         // cache this! expensive call
         if (!itemAttribute.IsDefined()) {
@@ -711,8 +714,9 @@ MStatus ProxyAccessor::stageChanged(const MObject& node, const UsdNotice::Object
                 SdfPath        changedPrimPath = changedPath.GetAbsoluteRootOrPrimPath();
                 const UsdPrim& changedPrim = stage->GetPrimAtPath(changedPrimPath);
 
-                const TfToken& changedPropertyToken = changedPath.GetNameToken();
-                UsdAttribute   changedAttribute = changedPrim.GetAttribute(changedPropertyToken);
+                const TfToken&       changedPropertyToken = changedPath.GetNameToken();
+                PXR_NS::UsdAttribute changedAttribute
+                    = changedPrim.GetAttribute(changedPropertyToken);
 
                 converter->convert(changedAttribute, changedPlug, args);
 

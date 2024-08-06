@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PROXYSHAPECAMERAHANDLER_H
+#define MAYAUSD_PROXYSHAPECAMERAHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -29,13 +30,8 @@ public:
     typedef std::shared_ptr<ProxyShapeCameraHandler> Ptr;
 
     ProxyShapeCameraHandler(const Ufe::CameraHandler::Ptr&);
-    ~ProxyShapeCameraHandler();
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeCameraHandler(const ProxyShapeCameraHandler&) = delete;
-    ProxyShapeCameraHandler& operator=(const ProxyShapeCameraHandler&) = delete;
-    ProxyShapeCameraHandler(ProxyShapeCameraHandler&&) = delete;
-    ProxyShapeCameraHandler& operator=(ProxyShapeCameraHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeCameraHandler);
 
     //! Create a ProxyShapeCameraHandler from a UFE camera handler.
     static ProxyShapeCameraHandler::Ptr create(const Ufe::CameraHandler::Ptr&);
@@ -46,9 +42,11 @@ public:
     Ufe::Selection find_(const Ufe::Path& path) const override;
 
 private:
-    Ufe::CameraHandler::Ptr fMayaCameraHandler;
+    Ufe::CameraHandler::Ptr _mayaCameraHandler;
 
 }; // ProxyShapeCameraHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PROXYSHAPECAMERAHANDLER_H

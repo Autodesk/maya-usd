@@ -96,7 +96,7 @@ void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
 
 } // namespace
 
-const QPixmap* TreeModel::fsDefaultPrimImage = nullptr;
+const QPixmap* TreeModel::defaultPrimImage = nullptr;
 
 TreeModel::TreeModel(
     const IMayaMQtUtil&           mayaQtUtil,
@@ -104,13 +104,13 @@ TreeModel::TreeModel(
     const USDImportDialogOptions& options,
     QObject*                      parent /*= nullptr*/) noexcept
     : ParentClass { parent }
-    , fImportData { importData }
-    , fMayaQtUtil { mayaQtUtil }
-    , fShowVariants(options.showVariants)
-    , fShowRoot(options.showRoot)
+    , _importData { importData }
+    , _mayaQtUtil { mayaQtUtil }
+    , _showVariants(options.showVariants)
+    , _showRoot(options.showRoot)
 {
-    if (!fsDefaultPrimImage) {
-        fsDefaultPrimImage = fMayaQtUtil.createPixmap(":/ImportDialog/defaultPrim.png");
+    if (!defaultPrimImage) {
+        defaultPrimImage = _mayaQtUtil.createPixmap(":/ImportDialog/defaultPrim.png");
     }
 }
 
@@ -224,7 +224,7 @@ void TreeModel::fillPrimVariantSelections(
     ImportData::PrimVariantSelections& primVariantSelections,
     const QModelIndex&                 parent)
 {
-    if (!fShowVariants)
+    if (!_showVariants)
         return;
 
     for (int r = 0; r < rowCount(parent); ++r) {
@@ -260,7 +260,7 @@ void TreeModel::fillPrimVariantSelections(
 
 void TreeModel::openPersistentEditors(QTreeView* tv, const QModelIndex& parent)
 {
-    if (!fShowVariants)
+    if (!_showVariants)
         return;
 
     for (int r = 0; r < rowCount(parent); ++r) {
@@ -374,7 +374,7 @@ void TreeModel::countCheckedItems(
             || TreeItem::CheckState::kChecked_Disabled == state) {
             nbChecked++;
 
-            if (fShowVariants) {
+            if (_showVariants) {
                 // We are only counting modified variants of in-scope prims
                 QModelIndex variantChildIndex = this->index(r, TreeItem::kColumnVariants, parent);
                 item = static_cast<TreeItem*>(itemFromIndex(variantChildIndex));
@@ -413,13 +413,13 @@ void TreeModel::onItemClicked(TreeItem* item)
 
 void TreeModel::resetVariants()
 {
-    if (!fShowVariants)
+    if (!_showVariants)
         return;
 
     resetAllVariants(this, QModelIndex());
 }
 
 /*static*/
-const QPixmap* TreeModel::getDefaultPrimPixmap() { return fsDefaultPrimImage; }
+const QPixmap* TreeModel::getDefaultPrimPixmap() { return defaultPrimImage; }
 
 } // namespace MAYAUSD_NS_DEF

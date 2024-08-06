@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSD_IMPORTDATA_H
+#define MAYAUSD_IMPORTDATA_H
 
 #include <mayaUsd/base/api.h>
 
@@ -48,13 +49,7 @@ public:
     ImportData();
     ImportData(const std::string& f);
 
-    //@{
-    //! No copy or move constructor/assignment.
-    ImportData(const ImportData&) = delete;
-    ImportData& operator=(const ImportData&) = delete;
-    ImportData(ImportData&&) = delete;
-    ImportData& operator=(ImportData&&) = delete;
-    //@}
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ImportData);
 
     //! Clears all the stored data.
     void clearData();
@@ -133,16 +128,18 @@ public:
     //@}
 
 private:
-    UsdStagePopulationMask   fPopMask;
-    UsdStage::InitialLoadSet fLoadSet;
-    SdfVariantSelectionMap   fRootVariants;
-    PrimVariantSelections    fPrimVariants;
-    std::string              fRootPrimPath;
-    std::string              fFilename;
+    UsdStagePopulationMask   _popMask;
+    UsdStage::InitialLoadSet _loadSet;
+    SdfVariantSelectionMap   _rootVariants;
+    PrimVariantSelections    _primVariants;
+    std::string              _rootPrimPath;
+    std::string              _filename;
 
-    int  fPrimsInScopeCount;
-    int  fSwitchedVariantCount;
-    bool fApplyEulerFilter;
+    int  _primsInScopeCount;
+    int  _switchedVariantCount;
+    bool _applyEulerFilter;
 };
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_IMPORTDATA_H

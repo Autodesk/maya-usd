@@ -82,4 +82,20 @@ std::string prettifyName(const std::string& name)
     return prettyName;
 }
 
+std::vector<std::string> splitString(const std::string& str, const std::string& separators)
+{
+    std::vector<std::string> split;
+
+    std::string::size_type lastPos = str.find_first_not_of(separators, 0);
+    std::string::size_type pos = str.find_first_of(separators, lastPos);
+
+    while (pos != std::string::npos || lastPos != std::string::npos) {
+        split.push_back(str.substr(lastPos, pos - lastPos));
+        lastPos = str.find_first_not_of(separators, pos);
+        pos = str.find_first_of(separators, lastPos);
+    }
+
+    return split;
+}
+
 } // namespace USDUFE_NS_DEF

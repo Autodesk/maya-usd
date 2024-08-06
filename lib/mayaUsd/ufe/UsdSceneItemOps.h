@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDSCENEITEMOPS_H
+#define MAYAUSD_USDSCENEITEMOPS_H
 
 #include <mayaUsd/base/api.h>
 
@@ -33,25 +34,20 @@ class MAYAUSD_CORE_PUBLIC UsdSceneItemOps : public Ufe::SceneItemOps
 public:
     typedef std::shared_ptr<UsdSceneItemOps> Ptr;
 
-    UsdSceneItemOps(const UsdSceneItem::Ptr& item);
-    ~UsdSceneItemOps() override;
+    UsdSceneItemOps(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    // Delete the copy/move constructors assignment operators.
-    UsdSceneItemOps(const UsdSceneItemOps&) = delete;
-    UsdSceneItemOps& operator=(const UsdSceneItemOps&) = delete;
-    UsdSceneItemOps(UsdSceneItemOps&&) = delete;
-    UsdSceneItemOps& operator=(UsdSceneItemOps&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSceneItemOps);
 
     //! Create a UsdSceneItemOps.
-    static UsdSceneItemOps::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdSceneItemOps::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    void                   setItem(const UsdSceneItem::Ptr& item);
+    void                   setItem(const UsdUfe::UsdSceneItem::Ptr& item);
     const Ufe::Path&       path() const;
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -74,9 +70,11 @@ public:
     //@}
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 
 }; // UsdSceneItemOps
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDSCENEITEMOPS_H

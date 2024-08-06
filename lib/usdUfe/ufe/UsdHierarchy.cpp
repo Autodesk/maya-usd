@@ -119,13 +119,13 @@ UsdPrimSiblingRange getUSDFilteredChildren(
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Hierarchy, UsdHierarchy);
+
 UsdHierarchy::UsdHierarchy(const UsdSceneItem::Ptr& item)
     : Ufe::Hierarchy()
-    , fItem(item)
+    , _item(item)
 {
 }
-
-UsdHierarchy::~UsdHierarchy() { }
 
 /*static*/
 UsdHierarchy::Ptr UsdHierarchy::create(const UsdSceneItem::Ptr& item)
@@ -133,17 +133,17 @@ UsdHierarchy::Ptr UsdHierarchy::create(const UsdSceneItem::Ptr& item)
     return std::make_shared<UsdHierarchy>(item);
 }
 
-void UsdHierarchy::setItem(const UsdSceneItem::Ptr& item) { fItem = item; }
+void UsdHierarchy::setItem(const UsdSceneItem::Ptr& item) { _item = item; }
 
-const Ufe::Path& UsdHierarchy::path() const { return fItem->path(); }
+const Ufe::Path& UsdHierarchy::path() const { return _item->path(); }
 
-UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const { return fItem; }
+UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const { return _item; }
 
 //------------------------------------------------------------------------------
 // Ufe::Hierarchy overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const { return _item; }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 
@@ -177,14 +177,14 @@ bool UsdHierarchy::hasChildren() const
     // I don't have data that proves we need to worry about performance in here,
     // so going after maintainability.
     const bool isFilteringInactive = false;
-    return !createUFEChildList(getUSDFilteredChildren(fItem), isFilteringInactive).empty();
+    return !createUFEChildList(getUSDFilteredChildren(_item), isFilteringInactive).empty();
 }
 
 #endif
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
-    return createUFEChildList(getUSDFilteredChildren(fItem), true /*filterInactive*/);
+    return createUFEChildList(getUSDFilteredChildren(_item), true /*filterInactive*/);
 }
 
 Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter) const
@@ -196,7 +196,7 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
         const bool             showInactive = childFilter.front().value;
         Usd_PrimFlagsPredicate flags
             = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : UsdUfePrimDefaultPredicate;
-        return createUFEChildList(getUSDFilteredChildren(fItem, flags), !showInactive);
+        return createUFEChildList(getUSDFilteredChildren(_item, flags), !showInactive);
     }
 
     UFE_LOG("Unknown child filter");
@@ -227,7 +227,7 @@ UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool filterIn
             continue;
 
         if (!filterInactive || child.IsActive()) {
-            children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+            children.emplace_back(UsdSceneItem::create(_item->path() + child.GetName(), child));
         }
     }
     return children;
@@ -242,19 +242,19 @@ Ufe::SceneItem::Ptr UsdHierarchy::parent() const
     // from point instances up to their PointInstancer.
     UsdPrim p = prim();
     if (p.IsValid())
-        return UsdSceneItem::create(fItem->path().pop(), p.GetParent());
+        return UsdSceneItem::create(_item->path().pop(), p.GetParent());
     else
-        return Hierarchy::createItem(fItem->path().pop());
+        return Hierarchy::createItem(_item->path().pop());
 }
 
 Ufe::InsertChildCommand::Ptr
 UsdHierarchy::insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
 {
     // Changing the hierarchy of inactive items is not allowed.
-    if (!fItem->prim().IsActive())
+    if (!_item->prim().IsActive())
         return nullptr;
 
-    return UsdUndoInsertChildCommand::create(fItem, downcast(child), downcast(pos));
+    return UsdUndoInsertChildCommand::create(_item, downcast(child), downcast(pos));
 }
 
 Ufe::SceneItem::Ptr
@@ -273,7 +273,7 @@ Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) co
 {
     Ufe::SceneItem::Ptr createdItem = nullptr;
 
-    UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(fItem, name.string());
+    UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(_item, name.string());
     if (cmd) {
         cmd->execute();
         createdItem = cmd->insertedChild();
@@ -288,7 +288,7 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
     Ufe::SceneItem::Ptr createdItem = nullptr;
 
     UsdUndoCreateGroupCommand::Ptr cmd
-        = UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
+        = UsdUndoCreateGroupCommand::create(_item, selection, name.string());
     if (cmd) {
         cmd->execute();
         createdItem = cmd->insertedChild();
@@ -301,13 +301,13 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::InsertChildCommand::Ptr UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 {
-    return UsdUndoCreateGroupCommand::create(fItem, name.string());
+    return UsdUndoCreateGroupCommand::create(_item, name.string());
 }
 #else
 Ufe::UndoableCommand::Ptr
 UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
-    return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
+    return UsdUndoCreateGroupCommand::create(_item, selection, name.string());
 }
 #endif
 
@@ -315,7 +315,7 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
 {
     // Default parent for USD nodes is the pseudo-root of their stage, which is
     // represented by the proxy shape.
-    auto path = fItem->path();
+    auto path = _item->path();
 #if !defined(NDEBUG)
     assert(path.nbSegments() == 2);
 #endif
@@ -332,13 +332,13 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& ord
     }
 
     // create a reorder command and pass in the parent and its reordered children list
-    return UsdUndoReorderCommand::create(fItem->prim(), orderedTokens);
+    return UsdUndoReorderCommand::create(_item->prim(), orderedTokens);
 }
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::UndoableCommand::Ptr UsdHierarchy::ungroupCmd() const
 {
-    return UsdUndoUngroupCommand::create(fItem);
+    return UsdUndoUngroupCommand::create(_item);
 }
 #endif // UFE_V3_FEATURES_AVAILABLE
 

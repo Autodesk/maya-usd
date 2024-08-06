@@ -34,14 +34,14 @@ Ufe::Vector3d toVector3d(const PXR_NS::GfVec3d& v) { return Ufe::Vector3d(v[0], 
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Object3d, UsdObject3d);
+
 UsdObject3d::UsdObject3d(const UsdSceneItem::Ptr& item)
     : Ufe::Object3d()
-    , fItem(item)
-    , fPrim(item->prim())
+    , _item(item)
+    , _prim(item->prim())
 {
 }
-
-UsdObject3d::~UsdObject3d() { }
 
 /*static*/
 UsdObject3d::Ptr UsdObject3d::create(const UsdSceneItem::Ptr& item)
@@ -70,7 +70,7 @@ UsdObject3d::adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTimeCod
 // Ufe::Object3d overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr UsdObject3d::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr UsdObject3d::sceneItem() const { return _item; }
 
 Ufe::BBox3d UsdObject3d::boundingBox() const
 {
@@ -90,7 +90,7 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // UsdGeomImageable::ComputeUntransformedBound() just calls
     // UsdGeomBBoxCache, so do this here as well.
     auto time = getTime(path);
-    auto bbox = PXR_NS::UsdGeomBBoxCache(time, purposes).ComputeUntransformedBound(fPrim);
+    auto bbox = PXR_NS::UsdGeomBBoxCache(time, purposes).ComputeUntransformedBound(_prim);
 
     // Adjust extents for this runtime.
     adjustBBoxExtents(bbox, time);
@@ -105,7 +105,7 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
 bool UsdObject3d::visibility() const
 {
     PXR_NS::TfToken visibilityToken;
-    auto            visAttr = PXR_NS::UsdGeomImageable(fPrim).GetVisibilityAttr();
+    auto            visAttr = PXR_NS::UsdGeomImageable(_prim).GetVisibilityAttr();
     visAttr.Get(&visibilityToken);
 
     return visibilityToken != PXR_NS::UsdGeomTokens->invisible;
@@ -113,15 +113,15 @@ bool UsdObject3d::visibility() const
 
 void UsdObject3d::setVisibility(bool vis)
 {
-    AttributeEditRouterContext ctx(fPrim, PXR_NS::UsdGeomTokens->visibility);
+    AttributeEditRouterContext ctx(_prim, PXR_NS::UsdGeomTokens->visibility);
 
-    vis ? PXR_NS::UsdGeomImageable(fPrim).MakeVisible()
-        : PXR_NS::UsdGeomImageable(fPrim).MakeInvisible();
+    vis ? PXR_NS::UsdGeomImageable(_prim).MakeVisible()
+        : PXR_NS::UsdGeomImageable(_prim).MakeInvisible();
 }
 
 Ufe::UndoableCommand::Ptr UsdObject3d::setVisibleCmd(bool vis)
 {
-    return UsdUndoVisibleCommand::create(fPrim, vis);
+    return UsdUndoVisibleCommand::create(_prim, vis);
 }
 
 } // namespace USDUFE_NS_DEF

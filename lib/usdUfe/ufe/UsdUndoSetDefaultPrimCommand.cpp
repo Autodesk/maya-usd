@@ -25,13 +25,13 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoSetDefaultPrimCommand);
+
 UsdUndoSetDefaultPrimCommand::UsdUndoSetDefaultPrimCommand(const UsdPrim& prim)
     : Ufe::UndoableCommand()
     , _prim(prim)
 {
 }
-
-UsdUndoSetDefaultPrimCommand::~UsdUndoSetDefaultPrimCommand() { }
 
 void UsdUndoSetDefaultPrimCommand::execute()
 {

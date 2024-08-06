@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -138,7 +140,7 @@ private:
         // well.  currently, when we re-import, we don't get the display color so
         // it shows up as black.
 
-        const TfToken shaderPrimName(UsdMayaUtil::SanitizeName(depNode.name().asChar()));
+        const TfToken shaderPrimName(UsdUfe::sanitizeName(depNode.name().asChar()));
         const SdfPath shaderPath = materialPrim.GetPath().AppendChild(shaderPrimName);
         if (processedPaths->count(shaderPath) == 1u) {
             return stage->GetPrimAtPath(shaderPath);
@@ -271,14 +273,11 @@ private:
         UsdShadeMaterial* const                mat,
         SdfPathSet* const                      boundPrimPaths) override
     {
-        const UsdMayaShadingModeExportContext::AssignmentVector& assignments
+        const UsdMayaShadingModeExportContext::AssignmentsInfo& assignments
             = context.GetAssignments();
-        if (assignments.empty()) {
-            return;
-        }
 
         UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments);
-        context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
+        context.BindStandardMaterialPrim(materialPrim, assignments.assignments, boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
         if (!material) {
             return;

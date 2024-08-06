@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDSHADERNODEDEFHANDLER_H
+#define MAYAUSD_USDSHADERNODEDEFHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -30,14 +31,9 @@ class MAYAUSD_CORE_PUBLIC UsdShaderNodeDefHandler : public Ufe::NodeDefHandler
 public:
     typedef std::shared_ptr<UsdShaderNodeDefHandler> Ptr;
 
-    UsdShaderNodeDefHandler();
-    ~UsdShaderNodeDefHandler();
+    UsdShaderNodeDefHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdShaderNodeDefHandler(const UsdShaderNodeDefHandler&) = delete;
-    UsdShaderNodeDefHandler& operator=(const UsdShaderNodeDefHandler&) = delete;
-    UsdShaderNodeDefHandler(UsdShaderNodeDefHandler&&) = delete;
-    UsdShaderNodeDefHandler& operator=(UsdShaderNodeDefHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderNodeDefHandler);
 
     //! Create a UsdShaderNodeDefHandler.
     static Ptr create();
@@ -63,3 +59,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDSHADERNODEDEFHANDLER_H

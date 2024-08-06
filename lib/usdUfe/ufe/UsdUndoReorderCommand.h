@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOREORDERCOMMAND_H
+#define USDUFE_USDUNDOREORDERCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
@@ -33,13 +34,8 @@ public:
     UsdUndoReorderCommand(
         const PXR_NS::UsdPrim&              parentPrim,
         const std::vector<PXR_NS::TfToken>& orderedTokens);
-    ~UsdUndoReorderCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoReorderCommand(const UsdUndoReorderCommand&) = delete;
-    UsdUndoReorderCommand& operator=(const UsdUndoReorderCommand&) = delete;
-    UsdUndoReorderCommand(UsdUndoReorderCommand&&) = delete;
-    UsdUndoReorderCommand& operator=(UsdUndoReorderCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoReorderCommand);
 
     //! Create a UsdUndoReorderCommand
     static UsdUndoReorderCommand::Ptr
@@ -57,3 +53,5 @@ private:
 }; // UsdUndoReorderCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOREORDERCOMMAND_H

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDROOTCHILDHIERARCHY_H
+#define USDUFE_USDROOTCHILDHIERARCHY_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdHierarchy.h>
@@ -31,13 +32,8 @@ public:
     typedef std::shared_ptr<UsdRootChildHierarchy> Ptr;
 
     UsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
-    ~UsdRootChildHierarchy() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdRootChildHierarchy(const UsdRootChildHierarchy&) = delete;
-    UsdRootChildHierarchy& operator=(const UsdRootChildHierarchy&) = delete;
-    UsdRootChildHierarchy(UsdRootChildHierarchy&&) = delete;
-    UsdRootChildHierarchy& operator=(UsdRootChildHierarchy&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRootChildHierarchy);
 
     //! Create a UsdRootChildHierarchy.
     static UsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
@@ -48,3 +44,5 @@ public:
 }; // UsdRootChildHierarchy
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDROOTCHILDHIERARCHY_H

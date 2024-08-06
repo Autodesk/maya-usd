@@ -41,8 +41,6 @@ public:
     {
     }
 
-    ~UsdPointInstanceScaleModifier() override = default;
-
     PXR_NS::GfVec3f convertValueToUsd(const Ufe::Vector3d& ufeValue) const override
     {
         return PXR_NS::GfVec3f(ufeValue.x(), ufeValue.y(), ufeValue.z());
@@ -60,9 +58,9 @@ public:
 
     Batches& batches() override;
 
-protected:
-    PXR_NS::UsdAttribute _getAttribute() const override;
+    PXR_NS::UsdAttribute getAttribute() const override;
 
+protected:
     PXR_NS::UsdAttribute _createAttribute() override;
 };
 

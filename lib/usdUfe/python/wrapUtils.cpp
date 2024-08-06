@@ -16,6 +16,7 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/Utils.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -103,7 +104,7 @@ bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
 
 void wrapUtils()
 {
-    // Because mayaUsd and UFE have incompatible Python bindings that do not
+    // Because UsdUfe and UFE have incompatible Python bindings that do not
     // know about each other (provided by Boost Python and pybind11,
     // respectively), we cannot pass in or return UFE objects such as Ufe::Path
     // here, and are forced to use strings.  Use the tentative string
@@ -122,5 +123,6 @@ void wrapUtils()
     def("isAnyLayerModifiable", _isAnyLayerModifiable);
     def("isEditTargetLayerModifiable", _isEditTargetLayerModifiable);
     def("getTime", _getTime);
+    def("prettifyName", &UsdUfe::prettifyName);
     def("isAttributeEditAllowed", _isAttributeEditAllowed);
 }

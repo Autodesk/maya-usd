@@ -17,8 +17,10 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/usdUtils.h>
 
@@ -26,19 +28,19 @@
 #include <pxr/usd/usd/editContext.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdAttributes.h>
+#include <usdUfe/ufe/UsdAttributes.h>
 #endif
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDeleteCommand);
 
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim)
     : Ufe::UndoableCommand()
     , _prim(prim)
 {
 }
-
-UsdUndoDeleteCommand::~UsdUndoDeleteCommand() { }
 
 UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const PXR_NS::UsdPrim& prim)
 {
@@ -50,30 +52,57 @@ void UsdUndoDeleteCommand::execute()
     if (!_prim.IsValid())
         return;
 
-    enforceMutedLayer(_prim, "remove");
+    UsdUfe::enforceMutedLayer(_prim, "remove");
 
     UsdUfe::InAddOrDeleteOperation ad;
 
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
 #ifdef MAYA_ENABLE_NEW_PRIM_DELETE
     const auto& stage = _prim.GetStage();
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
-    if (UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete")) {
+    PXR_NS::UsdEditTarget routingEditTarget
+        = UsdUfe::getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        UsdAttributes::removeAttributesConnections(_prim);
+    UsdUfe::UsdAttributes::removeAttributesConnections(_prim);
 #endif
-        // Let removeAttributesConnections be run first as it will also cleanup
-        // attributes that were authored only to be the destination of a connection.
-        if (!UsdUfe::cleanReferencedPath(_prim)) {
-            const std::string error = TfStringPrintf(
-                "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
+    // Let removeAttributesConnections be run first as it will also cleanup
+    // attributes that were authored only to be the destination of a connection.
+    if (!UsdUfe::cleanReferencedPath(_prim)) {
+        const std::string error = TfStringPrintf(
+            "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
+        TF_WARN("%s", error.c_str());
+        throw std::runtime_error(error);
+    }
+
+    if (!routingEditTarget.IsNull()) {
+        PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
+
+        // Note: we allow stronger opinion when editing inside a reference or payload.
+        //       We detect this by the fact the ref/payload layer is non-local.
+        const bool isLocal = stage->HasLocalLayer(routingEditTarget.GetLayer());
+        const bool allowStronger = !isLocal;
+
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", allowStronger))
+            return;
+
+        if (!stage->RemovePrim(_prim.GetPath())) {
+            const std::string error
+                = TfStringPrintf("Failed to delete prim \"%s\".", _prim.GetPath().GetText());
             TF_WARN("%s", error.c_str());
             throw std::runtime_error(error);
         }
-        PrimSpecFunc deleteFunc
+    } else {
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete"))
+            return;
+
+        UsdUfe::PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
+            if (!primSpec)
+                return;
+
             PXR_NS::UsdEditContext ctx(stage, primSpec->GetLayer());
             if (!stage->RemovePrim(prim.GetPath())) {
                 const std::string error
@@ -82,7 +111,7 @@ void UsdUndoDeleteCommand::execute()
                 throw std::runtime_error(error);
             }
         };
-        applyToAllPrimSpecs(_prim, deleteFunc);
+        UsdUfe::applyToAllPrimSpecs(_prim, deleteFunc);
     }
 #else
     _prim.SetActive(false);

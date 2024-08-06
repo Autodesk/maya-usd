@@ -19,9 +19,11 @@
 #include <pxr/base/tf/pyStaticTokens.h>
 #include <pxr/pxr.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 void wrapTokens()
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("EditRoutingTokens", EditRoutingTokens, USDUFE_EDIT_ROUTING_TOKENS);
+    PXR_NAMESPACE_USING_DIRECTIVE
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "EditRoutingTokens", UsdUfe::EditRoutingTokens, USDUFE_EDIT_ROUTING_TOKENS);
+    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdUfe::GenericTokens, USDUFE_GENERIC_TOKENS);
+    TF_PY_WRAP_PUBLIC_TOKENS("MetadataTokens", UsdUfe::MetadataTokens, USDUFE_METADATA_TOKENS);
 }

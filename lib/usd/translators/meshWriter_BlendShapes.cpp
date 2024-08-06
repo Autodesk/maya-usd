@@ -20,7 +20,6 @@
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/meshWriteUtils.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -33,10 +32,7 @@
 #include <maya/MAnimUtil.h>
 #include <maya/MApiNamespace.h>
 #include <maya/MFloatArray.h>
-#include <maya/MFloatPointArray.h>
-#include <maya/MFnAttribute.h>
 #include <maya/MFnBlendShapeDeformer.h>
-#include <maya/MFnComponentListData.h>
 #include <maya/MFnGeometryFilter.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPointArrayData.h>
@@ -48,7 +44,6 @@
 #include <maya/MStatus.h>
 
 #include <algorithm>
-#include <complex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -256,7 +251,7 @@ MStatus mayaBlendShapeTriggerAllTargets(MObject& blendShape)
 /**
  * Gets information about available blend shapes for a given deformed mesh (i.e. final result)
  *
- * @param mesh                   The deformed mesh to find the blendshape info(s) for.
+ * @param deformedMesh                   The deformed mesh to find the blendShape info(s) for.
  *
  * @param outInfos               Storage for the result.
  *
@@ -316,14 +311,12 @@ MStatus mayaGetBlendShapeInfosForMesh(
         // NOTE: (yliangsiew) Because this can end up grabbing the wrong plug (i.e.
         // blendShape.weight[1]), we double-check here and advance the iterator if necessary.
         if (!outputGeomElemPlug.isElement()) {
-            itDg.next();
             continue;
         }
         MPlug outputGeomPlug = outputGeomElemPlug.array(&stat);
         CHECK_MSTATUS_AND_RETURN_IT(stat);
         MString outputGeomPlugName = outputGeomPlug.partialName(0, 0, 0, 0, 0, 1);
         if (outputGeomPlugName != "outputGeometry") {
-            itDg.next();
             continue;
         }
         unsigned int outputGeomPlugIdx = outputGeomElemPlug.logicalIndex();
@@ -672,6 +665,17 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     MString                   curTargetNameMStr;
                     MString                   curTargetLongNameMStr;
                     if (!targetMesh.isNull()) {
+                        MFnDagNode dagNode(targetMesh);
+                        MString    nodeName;
+                        if (dagNode.parentCount() > 0) {
+                            MFnDagNode parentDagNode(dagNode.parent(0));
+                            curTargetNameMStr
+                                = UsdMayaUtil::GetUniqueNameOfDagNode(parentDagNode.object());
+                            curTargetLongNameMStr = curTargetNameMStr;
+                        } else {
+                            curTargetNameMStr = UsdMayaUtil::GetUniqueNameOfDagNode(targetMesh);
+                            curTargetLongNameMStr = curTargetNameMStr;
+                        }
                         // NOTE: (yliangsiew) Because UsdSkelBlendShape does not
                         // support animated targets (the `normalOffsets` and
                         // `offsets` attributes are defined as uniforms), we cannot
@@ -684,11 +688,6 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                                 "connections first before attempting to export.");
                             return MObject::kNullObj;
                         }
-                        curTargetNameMStr = UsdMayaUtil::GetUniqueNameOfDagNode(targetMesh);
-                        curTargetLongNameMStr = MString(curTargetNameMStr);
-                        stat = mayaPrefixBlendShapeTargetNameForUSD(
-                            curTargetLongNameMStr, blendShapeInfo.blendShapeDeformer);
-                        CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                     } else {
                         MFnDependencyNode fnNode(blendShapeInfo.blendShapeDeformer, &stat);
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
@@ -719,10 +718,11 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         // UsdSkelBlendShape stores _all_ the target names across the
                         // entire file in a single array for the animation samples.)
                         curTargetLongNameMStr = MString(curTargetNameMStr);
-                        stat = mayaPrefixBlendShapeTargetNameForUSD(
-                            curTargetLongNameMStr, blendShapeInfo.blendShapeDeformer);
-                        CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                     }
+
+                    stat = mayaPrefixBlendShapeTargetNameForUSD(
+                        curTargetLongNameMStr, blendShapeInfo.blendShapeDeformer);
+                    CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
 
                     TF_VERIFY(curTargetNameMStr.length() != 0);
                     std::string curTargetName

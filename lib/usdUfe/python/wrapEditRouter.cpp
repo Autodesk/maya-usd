@@ -22,6 +22,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
+#include <exception>
 #include <iostream>
 
 using namespace boost::python;
@@ -34,13 +35,17 @@ std::string handlePythonException()
     PyObject* val = nullptr;
     PyObject* tb = nullptr;
     PyErr_Fetch(&exc, &val, &tb);
+    if (!exc)
+        return "unknown Python exception";
+
     handle<> hexc(exc);
     handle<> hval(allow_null(val));
     handle<> htb(allow_null(tb));
     object   traceback(import("traceback"));
     object   format_exception_only(traceback.attr("format_exception_only"));
-    object   formatted_list = format_exception_only(hexc, hval);
+    object   formatted_list = val ? format_exception_only(hexc, hval) : format_exception_only(hexc);
     object   formatted = str("\n").join(formatted_list);
+
     return extract<std::string>(formatted);
 }
 
@@ -64,7 +69,7 @@ public:
         if (!PyCallable_Check(_pyCb)) {
             return;
         }
-        boost::python::object dictObject(routingData);
+        boost::python::dict dictObject(routingData);
         try {
             call<void>(_pyCb, context, dictObject);
         } catch (const boost::python::error_already_set&) {
@@ -77,9 +82,36 @@ public:
             TF_WARN("%s", ex.what());
             throw;
         }
-        boost::python::extract<PXR_NS::VtDictionary> extractedDict(dictObject);
-        if (extractedDict.check()) {
-            routingData = extractedDict;
+
+        // Extract keys and values individually so that we can extract
+        // PXR_NS::UsdEditTarget correctly from PXR_NS::TfPyObjWrapper.
+        const boost::python::object items = dictObject.items();
+        for (boost::python::ssize_t i = 0; i < len(items); ++i) {
+
+            boost::python::extract<std::string> keyExtractor(items[i][0]);
+            if (!keyExtractor.check()) {
+                continue;
+            }
+
+            boost::python::extract<PXR_NS::VtValue> valueExtractor(items[i][1]);
+            if (!valueExtractor.check()) {
+                continue;
+            }
+
+            auto vtvalue = valueExtractor();
+
+            if (vtvalue.IsHolding<PXR_NS::TfPyObjWrapper>()) {
+                const auto wrapper = vtvalue.Get<PXR_NS::TfPyObjWrapper>();
+
+                PXR_NS::TfPyLock                              lock;
+                boost::python::extract<PXR_NS::UsdEditTarget> editTargetExtractor(wrapper.Get());
+                if (editTargetExtractor.check()) {
+                    auto editTarget = editTargetExtractor();
+                    routingData[keyExtractor()] = PXR_NS::VtValue(editTarget);
+                }
+            } else {
+                routingData[keyExtractor()] = vtvalue;
+            }
         }
     }
 
@@ -99,6 +131,34 @@ AttributeEditRouterContextInit(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToke
     return new UsdUfe::AttributeEditRouterContext(prim, attributeName);
 }
 
+// Note: due to a limitation of boost::python, we cannot pass shared-pointer
+//       between Python and C++. See this stack overflow answer for an explanation:
+//       https://stackoverflow.com/questions/20825662/boost-python-argument-types-did-not-match-c-signature
+//
+//       That is why stages and layers are passed by raw C++ references and a
+//       smart pointer is created on-the-fly. Otherwise, the stage you pass it
+//       in Python would become invalid during the call.
+
+void registerStageLayerEditRouterFromLayerName(
+    const PXR_NS::TfToken& operation,
+    PXR_NS::UsdStage&      stage,
+    const std::string&     layerName)
+{
+    PXR_NS::UsdStageRefPtr stagePtr(&stage);
+    auto                   layer = PXR_NS::SdfLayer::Find(layerName);
+    UsdUfe::registerStageLayerEditRouter(operation, stagePtr, layer);
+}
+
+void registerStageLayerEditRouterFromLayer(
+    const PXR_NS::TfToken& operation,
+    PXR_NS::UsdStage&      stage,
+    PXR_NS::SdfLayer&      layer)
+{
+    PXR_NS::UsdStageRefPtr stagePtr(&stage);
+    return UsdUfe::registerStageLayerEditRouter(
+        operation, stagePtr, PXR_NS::SdfLayerHandle(&layer));
+}
+
 } // namespace
 
 void wrapEditRouter()
@@ -114,6 +174,9 @@ void wrapEditRouter()
             return UsdUfe::registerEditRouter(
                 operation, std::make_shared<PyEditRouter>(editRouter));
         });
+
+    def("registerStageLayerEditRouter", &registerStageLayerEditRouterFromLayerName);
+    def("registerStageLayerEditRouter", &registerStageLayerEditRouterFromLayer);
 
     def("restoreDefaultEditRouter", &UsdUfe::restoreDefaultEditRouter);
 

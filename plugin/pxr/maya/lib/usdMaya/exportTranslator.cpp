@@ -77,7 +77,8 @@ MStatus UsdMayaExportTranslator::writer(
     std::vector<double> timeSamples;
     UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
 
-    auto jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+    auto jobArgs
+        = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, objSelList, timeSamples);
     bool append = false;
 
     UsdMaya_WriteJob writeJob(jobArgs);

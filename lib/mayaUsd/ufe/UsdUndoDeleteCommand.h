@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDUNDODELETECOMMAND_H
+#define MAYAUSD_USDUNDODELETECOMMAND_H
 
 #include <mayaUsd/base/api.h>
 
@@ -35,13 +36,8 @@ public:
     typedef std::shared_ptr<UsdUndoDeleteCommand> Ptr;
 
     UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim);
-    ~UsdUndoDeleteCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoDeleteCommand(const UsdUndoDeleteCommand&) = delete;
-    UsdUndoDeleteCommand& operator=(const UsdUndoDeleteCommand&) = delete;
-    UsdUndoDeleteCommand(UsdUndoDeleteCommand&&) = delete;
-    UsdUndoDeleteCommand& operator=(UsdUndoDeleteCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDeleteCommand);
 
     //! Create a UsdUndoDeleteCommand from a USD prim.
     static UsdUndoDeleteCommand::Ptr create(const PXR_NS::UsdPrim& prim);
@@ -51,10 +47,12 @@ public:
     void redo() override;
 
 private:
-    PXR_NS::UsdPrim _prim;
-    UsdUndoableItem _undoableItem;
+    PXR_NS::UsdPrim         _prim;
+    UsdUfe::UsdUndoableItem _undoableItem;
 
 }; // UsdUndoDeleteCommand
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDUNDODELETECOMMAND_H

@@ -15,11 +15,13 @@
 //
 
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdAttribute.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdConnections.h>
 
+#include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/usdUtils.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoConnectionCommands.h>
 #endif
@@ -42,37 +44,6 @@ namespace ufe {
 //
 
 namespace {
-
-UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
-{
-    if (!attr) {
-        TF_RUNTIME_ERROR("Invalid attribute.");
-        return nullptr;
-    }
-
-    if (attr->sceneItem()->runTimeId() != getUsdRunTimeId()) {
-        TF_RUNTIME_ERROR(
-            "Invalid runtime identifier for the attribute '" + attr->name() + "' in the node '"
-            + Ufe::PathString::string(attr->sceneItem()->path()) + "'.");
-        return nullptr;
-    }
-
-    return dynamic_cast<UsdAttribute*>(attr.get());
-}
-
-bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
-{
-    PXR_NS::SdfPathVector connectedAttrs;
-    dstUsdAttr.GetConnections(&connectedAttrs);
-
-    for (PXR_NS::SdfPath path : connectedAttrs) {
-        if (path == srcUsdAttr.GetPath()) {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 PXR_NS::SdrShaderNodeConstPtr
 _GetShaderNodeDef(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName)
@@ -131,12 +102,7 @@ void _SendStrongConnectionChangeNotification(const UsdPrim& usdPrim)
 
 #endif
 
-UsdConnectionHandler::UsdConnectionHandler()
-    : Ufe::ConnectionHandler()
-{
-}
-
-UsdConnectionHandler::~UsdConnectionHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::ConnectionHandler, UsdConnectionHandler);
 
 UsdConnectionHandler::Ptr UsdConnectionHandler::create()
 {
@@ -174,11 +140,11 @@ bool UsdConnectionHandler::createConnection(
     const Ufe::Attribute::Ptr& srcAttr,
     const Ufe::Attribute::Ptr& dstAttr) const
 {
-    UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
-    UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
+    auto srcUsdAttr = UsdUfe::usdAttrFromUfeAttr(srcAttr);
+    auto dstUsdAttr = UsdUfe::usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr
-        || isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+        || UsdUfe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return false;
     }
 
@@ -261,11 +227,11 @@ bool UsdConnectionHandler::deleteConnection(
     const Ufe::Attribute::Ptr& srcAttr,
     const Ufe::Attribute::Ptr& dstAttr) const
 {
-    UsdAttribute* srcUsdAttr = usdAttrFromUfeAttr(srcAttr);
-    UsdAttribute* dstUsdAttr = usdAttrFromUfeAttr(dstAttr);
+    auto srcUsdAttr = UsdUfe::usdAttrFromUfeAttr(srcAttr);
+    auto dstUsdAttr = UsdUfe::usdAttrFromUfeAttr(dstAttr);
 
     if (!srcUsdAttr || !dstUsdAttr
-        || !isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
+        || !UsdUfe::isConnected(srcUsdAttr->usdAttribute(), dstUsdAttr->usdAttribute())) {
         return false;
     }
 

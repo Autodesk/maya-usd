@@ -374,8 +374,8 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             _skelInputMesh = MObject();
 
         } else {
-
-            SdfPath skelPath;
+            // Make sure to use the user's root prim if they selected when exporting
+            SdfPath skelPath = _GetExportArgs().rootPrim;
             _skelInputMesh = UsdMayaJointUtil::writeSkinningData(
                 primSchema,
                 GetUsdPath(),

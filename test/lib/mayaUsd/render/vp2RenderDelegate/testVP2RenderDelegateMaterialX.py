@@ -33,6 +33,10 @@ import ufe
 import os
 import unittest
 
+def getMaterialXVersion():
+    """Return as a tuple of int since we hit 1.38.10 and it
+       causes issues with string comparisons"""
+    return [int(i) for i in os.getenv('MATERIALX_VERSION', '1.38.0').split(".")]    
 
 class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
     """
@@ -97,7 +101,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
             suffix = "_ocio"
 
         # MaterialX 1.38.8 has a new triplanar node with superior blending
-        if os.getenv('MATERIALX_VERSION', '1.38.0') >= '1.38.8':
+        if getMaterialXVersion() >= [1, 38, 8]:
             suffix += "_blended"
 
         mayaUtils.loadPlugin("mayaUsdPlugin")
@@ -145,7 +149,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
             prim.RemoveProperty(attrName)
             self.assertSnapshotClose('delete_attr_test_%s.png' % attrName.split(":")[1])
 
-    @unittest.skipIf(os.getenv('MATERIALX_VERSION', '1.38.0') < '1.38.4', 'Test has a glTf PBR surface only found in MaterialX 1.38.4 and later.')
+    @unittest.skipIf(getMaterialXVersion() < [1, 38, 4], 'Test has a glTf PBR surface only found in MaterialX 1.38.4 and later.')
     def testTransparency(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
@@ -201,6 +205,30 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.modelEditor(panel, edit=True, displayTextures=True)
 
         self._StartTest('grid_with_udims')
+
+    @unittest.skipIf(getMaterialXVersion() < [1, 38, 8], 'The workaround for UDIMs is only for 1.38.8 and later')
+    def testUDIMsOnCustomImageNodes(self):
+        cmds.file(force=True, new=True)
+
+        cmds.move(0, 6, 0, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        self._StartTest('grids_with_udims')
+
+    @unittest.skipIf(getMaterialXVersion() < [1, 38, 8], 'The source code node fix backport is only for 1.38.8 and later')
+    def testSourceCodeNodeBackport(self):
+        cmds.file(force=True, new=True)
+
+        cmds.move(0, 6, 0, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True)
+
+        self._StartTest('grid_with_smoothsteps')
 
     def testMayaPlace2dTexture(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")

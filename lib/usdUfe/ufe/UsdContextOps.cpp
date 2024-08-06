@@ -29,6 +29,7 @@
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleActiveCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -177,7 +178,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
 
 //! \brief Get groups of concrete schema prim types to list dynamically in the UI
 static const std::vector<UsdUfe::SchemaTypeGroup>
-getConcretePrimTypes(bool sorted, const UsdContextOps::SchemaNameMap& schemaPluginNiceNames)
+getConcretePrimTypes(bool sorted, const UsdUfe::UsdContextOps::SchemaNameMap& schemaPluginNiceNames)
 {
     std::vector<UsdUfe::SchemaTypeGroup> groups;
 
@@ -241,6 +242,8 @@ getConcretePrimTypes(bool sorted, const UsdContextOps::SchemaNameMap& schemaPlug
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::ContextOps, UsdContextOps);
+
 std::vector<SchemaTypeGroup> UsdContextOps::schemaTypeGroups = {};
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
@@ -248,8 +251,6 @@ UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
 {
     setItem(item);
 }
-
-UsdContextOps::~UsdContextOps() { }
 
 /*static*/
 UsdContextOps::Ptr UsdContextOps::create(const UsdSceneItem::Ptr& item)
@@ -633,7 +634,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     // Unload:
     if (itemPath[0u] == kUSDUnloadItem) {
         for (auto& selItem : _bulkItems) {
-            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            auto usdItem = downcast(selItem);
             if (usdItem) {
                 auto cmd = std::make_shared<UsdUndoUnloadPayloadCommand>(usdItem->prim());
                 cmdList.emplace_back(cmd);
@@ -645,7 +646,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     // Load With Descendants:
     if (itemPath[0u] == kUSDLoadWithDescendantsItem) {
         for (auto& selItem : _bulkItems) {
-            UsdSceneItem::Ptr   usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            UsdSceneItem::Ptr   usdItem = downcast(selItem);
             const UsdLoadPolicy policy = (itemPath[0u] == kUSDLoadWithDescendantsItem)
                 ? UsdLoadWithDescendants
                 : UsdLoadWithoutDescendants;
@@ -665,7 +666,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
         auto object3dHndlr = UsdObject3dHandler::create();
         if (object3dHndlr) {
             for (auto& selItem : _bulkItems) {
-                UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+                auto usdItem = downcast(selItem);
                 if (usdItem) {
                     auto object3d = object3dHndlr->object3d(usdItem);
                     if (object3d) {
@@ -698,7 +699,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     const bool makeInactive = itemPath[0u] == kUSDDeactivatePrimItem;
     if (makeActive || makeInactive) {
         for (auto& selItem : _bulkItems) {
-            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            auto usdItem = downcast(selItem);
             if (usdItem) {
                 auto       prim = usdItem->prim();
                 const bool primIsActive = prim.IsActive();
@@ -716,7 +717,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     const bool unmarkInstanceable = itemPath[0u] == kUSDUnmarkAsInstanceableItem;
     if (markInstanceable || unmarkInstanceable) {
         for (auto& selItem : _bulkItems) {
-            UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+            auto usdItem = downcast(selItem);
             if (usdItem) {
                 auto       prim = usdItem->prim();
                 const bool primIsInstanceable = prim.IsInstanceable();
@@ -753,14 +754,10 @@ UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
     return schemaPluginNiceNames;
 }
 
-static_assert(
-    std::has_virtual_destructor<Ufe::CompositeUndoableCommand>::value,
-    "Destructor not virtual");
-static_assert(
-    std::is_base_of<
-        UsdBulkEditCompositeUndoableCommand::Parent,
-        UsdBulkEditCompositeUndoableCommand>::value,
-    "Verify base class");
+USDUFE_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(Ufe::CompositeUndoableCommand);
+USDUFE_VERIFY_CLASS_BASE(
+    UsdBulkEditCompositeUndoableCommand::Parent,
+    UsdBulkEditCompositeUndoableCommand);
 
 void UsdBulkEditCompositeUndoableCommand::execute()
 {

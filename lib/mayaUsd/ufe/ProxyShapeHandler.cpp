@@ -27,14 +27,16 @@ namespace ufe {
 //------------------------------------------------------------------------------
 // Global variables
 //------------------------------------------------------------------------------
-const std::string ProxyShapeHandler::fMayaUsdGatewayNodeType = "mayaUsdProxyShapeBase";
+const std::string ProxyShapeHandler::mayaUsdGatewayNodeType = "mayaUsdProxyShapeBase";
 
 //------------------------------------------------------------------------------
 // ProxyShapeHandler
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProxyShapeHandler);
+
 /*static*/
-const std::string& ProxyShapeHandler::gatewayNodeType() { return fMayaUsdGatewayNodeType; }
+const std::string& ProxyShapeHandler::gatewayNodeType() { return mayaUsdGatewayNodeType; }
 
 /*static*/
 std::vector<std::string> ProxyShapeHandler::getAllNames()
@@ -42,7 +44,7 @@ std::vector<std::string> ProxyShapeHandler::getAllNames()
     std::vector<std::string> names;
     MString                  cmd;
     MStringArray             result;
-    cmd.format("ls -type ^1s -long", fMayaUsdGatewayNodeType.c_str());
+    cmd.format("ls -type ^1s -long", mayaUsdGatewayNodeType.c_str());
     if (MS::kSuccess == MGlobal::executeCommand(cmd, result)) {
         names.reserve(result.length());
         for (MString& name : result) {

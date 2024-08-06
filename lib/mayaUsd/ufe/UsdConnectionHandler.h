@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDCONNECTIONHANDLER_H
+#define MAYAUSD_USDCONNECTIONHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -30,17 +31,9 @@ public:
     typedef std::shared_ptr<UsdConnectionHandler> Ptr;
 
     //! Constructor.
-    UsdConnectionHandler();
-    //! Destructor.
-    ~UsdConnectionHandler() override;
+    UsdConnectionHandler() = default;
 
-    //@{
-    // Delete the copy/move constructors assignment operators.
-    UsdConnectionHandler(const UsdConnectionHandler&) = delete;
-    UsdConnectionHandler& operator=(const UsdConnectionHandler&) = delete;
-    UsdConnectionHandler(UsdConnectionHandler&&) = delete;
-    UsdConnectionHandler& operator=(UsdConnectionHandler&&) = delete;
-    //@}
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdConnectionHandler);
 
     static UsdConnectionHandler::Ptr create();
 
@@ -70,3 +63,5 @@ protected:
 }; // UsdConnectionHandler
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDCONNECTIONHANDLER_H

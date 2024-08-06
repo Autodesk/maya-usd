@@ -38,8 +38,6 @@
 
 #include <unordered_map>
 
-using namespace MayaUsd;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -227,7 +225,7 @@ void MaterialXTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTim
         // them.
         VtValue value = UsdMayaWriteUtil::GetVtValue(
             attrPlug,
-            Converter::getUsdTypeName(attrPlug),
+            MayaUsd::Converter::getUsdTypeName(attrPlug),
             /* linearizeColors = */ false);
 
         input.Set(value, usdTime);

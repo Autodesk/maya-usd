@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_STAGESSUBJECT_H
+#define USDUFE_STAGESSUBJECT_H
 
 #include <usdUfe/base/api.h>
 
@@ -62,11 +63,7 @@ public:
     //! Create the StagesSubject.
     static StagesSubject::RefPtr create();
 
-    // Delete the copy/move constructors assignment operators.
-    StagesSubject(const StagesSubject&) = delete;
-    StagesSubject& operator=(const StagesSubject&) = delete;
-    StagesSubject(StagesSubject&&) = delete;
-    StagesSubject& operator=(StagesSubject&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(StagesSubject);
 
     // Ufe notification helpers - send notification trapping any exception.
     void sendObjectAdd(const Ufe::SceneItem::Ptr& sceneItem) const;
@@ -102,12 +99,9 @@ public:
     AttributeChangedNotificationGuard();
     ~AttributeChangedNotificationGuard();
 
-    //@{
-    //! Cannot be copied or assigned.
-    AttributeChangedNotificationGuard(const AttributeChangedNotificationGuard&) = delete;
-    const AttributeChangedNotificationGuard& operator&(const AttributeChangedNotificationGuard&)
-        = delete;
-    //@}
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(AttributeChangedNotificationGuard);
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_STAGESSUBJECT_H

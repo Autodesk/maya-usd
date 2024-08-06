@@ -13,15 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_UFE_UTILS_H
+#define USDUFE_UFE_UTILS_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdr/shaderNode.h>
+#include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <ufe/attribute.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/types.h>
@@ -37,11 +41,15 @@
 
 UFE_NS_DEF
 {
+    class Attribute;
+    class AttributeInfo;
     class PathSegment;
     class Selection;
 }
 
 namespace USDUFE_NS_DEF {
+
+class UsdAttribute;
 
 // DCC specific accessor functions.
 typedef PXR_NS::UsdStageWeakPtr (*StageAccessorFn)(const Ufe::Path&);
@@ -52,7 +60,9 @@ typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::strin
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
 typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+typedef void (*DisplayMessageFn)(const std::string& msg);
 typedef void (*WaitCursorFn)();
+typedef std::string (*DefaultMaterialScopeNameFn)();
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -114,7 +124,7 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 
 //! Set the DCC specific USD attribute is locked test function.
 //! Use of this function is optional, if one is not supplied then
-//! default value (false) will be returned by accessor function.
+//! a default test function will be used.
 USDUFE_PUBLIC
 void setIsAttributeLockedFn(IsAttributeLockedFn fn);
 
@@ -191,6 +201,51 @@ std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::str
 USDUFE_PUBLIC
 PXR_NS::SdfPath uniqueChildPath(const PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path);
 
+USDUFE_PUBLIC
+Ufe::Path appendToUsdPath(const Ufe::Path& path, const std::string& name);
+
+//! Returns true if \p item is a materials scope.
+USDUFE_PUBLIC
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item);
+
+//! Support message types.
+enum class MessageType
+{
+    kInfo,    // Displays an information message, default = TF_STATUS
+    kWarning, // Displays a warning message, default = TF_WARN
+    KError,   // Displays a error message, default = TF_RUNTIME_ERROR
+
+    nbTypes
+};
+
+//! Set the DCC specific "displayMessage" functions.
+//! Use of these functions is optional, if not supplied then default
+//! TF_ message functions from USD will be used.
+USDUFE_PUBLIC
+void setDisplayMessageFn(const DisplayMessageFn fns[static_cast<int>(MessageType::nbTypes)]);
+
+//! Displays a message of the given type using a DCC message function (if provided)
+//! otherwise displays using a USD default message function (for each type)..
+USDUFE_PUBLIC
+void displayMessage(MessageType type, const std::string& msg);
+
+USDUFE_PUBLIC
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr);
+
+USDUFE_PUBLIC
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty);
+
+USDUFE_PUBLIC
+PXR_NS::SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType);
+
+USDUFE_PUBLIC
+UsdAttribute* usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr);
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+USDUFE_PUBLIC
+Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo);
+#endif // UFE_V4_FEATURES_AVAILABLE
+
 //! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
@@ -222,6 +277,12 @@ USDUFE_PUBLIC PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue);
 //! Converts a VtValue to a UFE Value
 USDUFE_PUBLIC Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue);
 #endif // UFE_V3_FEATURES_AVAILABLE
+
+//! Returns the Sdr shader node for the given SceneItem. If the
+//! definition associated with the scene item's type is not found, a
+//! nullptr is returned.
+USDUFE_PUBLIC
+PXR_NS::SdrShaderNodeConstPtr usdShaderNodeFromSceneItem(const Ufe::SceneItem::Ptr& item);
 
 //------------------------------------------------------------------------------
 // Verify edit restrictions.
@@ -339,12 +400,27 @@ struct USDUFE_PUBLIC WaitCursor
             stopWaitCursor();
     }
 
-    WaitCursor(const WaitCursor&) = delete;
-    WaitCursor(WaitCursor&&) = delete;
-    WaitCursor& operator=(const WaitCursor&) = delete;
-    WaitCursor& operator=(WaitCursor&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(WaitCursor);
 
     const bool _showCursor;
 };
 
+//! Set the DCC specific default material scope name function.
+//! Use of this function is optional, if one is not supplied then
+//! a default name will be used.
+
+USDUFE_PUBLIC
+void setDefaultMaterialScopeNameFn(DefaultMaterialScopeNameFn fn);
+
+//! Returns the default material scope name.
+USDUFE_PUBLIC
+std::string defaultMaterialScopeName();
+
+// Search the parent Material of the item, comparing the type name.
+// In the case item is a material, return item itself.
+USDUFE_PUBLIC
+UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item);
+
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_UFE_UTILS_H

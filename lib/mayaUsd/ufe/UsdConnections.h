@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDCONNECTIONS_H
+#define MAYAUSD_USDCONNECTIONS_H
 
 #include <mayaUsd/base/api.h>
 
@@ -30,24 +31,19 @@ public:
     typedef std::shared_ptr<UsdConnections> Ptr;
 
     UsdConnections(const Ufe::SceneItem::Ptr& item);
-    ~UsdConnections() override;
 
-    //@{
-    // Delete the copy/move constructors assignment operators.
-    UsdConnections(const UsdConnections&) = delete;
-    UsdConnections& operator=(const UsdConnections&) = delete;
-    UsdConnections(UsdConnections&&) = delete;
-    UsdConnections& operator=(UsdConnections&&) = delete;
-    //@}
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdConnections);
 
     static UsdConnections::Ptr create(const Ufe::SceneItem::Ptr& item);
 
     std::vector<Ufe::Connection::Ptr> allConnections() const override;
 
 private:
-    const UsdSceneItem::Ptr _sceneItem;
+    const UsdUfe::UsdSceneItem::Ptr _sceneItem;
 
 }; // UsdConnections
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDCONNECTIONS_H

@@ -18,6 +18,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoAddRefOrPayloadCommand, UsdUndoAddPayloadCommand);
+
 UsdUndoAddPayloadCommand::UsdUndoAddPayloadCommand(
     const PXR_NS::UsdPrim& prim,
     const std::string&     filePath,

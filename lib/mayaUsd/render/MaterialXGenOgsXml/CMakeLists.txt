@@ -22,6 +22,21 @@ target_sources(${PROJECT_NAME}
 )
 endif()
 
+if(MaterialX_VERSION VERSION_GREATER_EQUAL "1.38.8")
+# Locally fixing the UV scale and offset for UDIMs. We will submit to 1.39 later.
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    FIX_NODEGRAPH_UDIM_SCALE_OFFSET
+    )
+target_sources(${PROJECT_NAME} 
+    PRIVATE
+        Nodes/MayaHwImageNode.cpp
+        Nodes/MayaCompoundNode.cpp
+        Nodes/MayaShaderGraph.cpp
+        Nodes/MayaSourceCodeNode.cpp
+    )
+endif()
+
 set(HEADERS
     CombinedMaterialXVersion.h
     GlslFragmentGenerator.h

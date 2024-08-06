@@ -26,16 +26,16 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdMaterial::UsdMaterial(const UsdSceneItem::Ptr& item)
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Material, UsdMaterial);
+
+UsdMaterial::UsdMaterial(const UsdUfe::UsdSceneItem::Ptr& item)
     : Ufe::Material()
     , _item(item)
 {
 }
 
-UsdMaterial::~UsdMaterial() { }
-
 /*static*/
-UsdMaterial::Ptr UsdMaterial::create(const UsdSceneItem::Ptr& item)
+UsdMaterial::Ptr UsdMaterial::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdMaterial>(item);
 }
@@ -87,7 +87,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
         const auto ufePath = Ufe::Path({ stagePathSegments[0], materialPathSegments[0] });
 
         // Now we have the full path to the material's SceneItem.
-        materials.push_back(UsdSceneItem::create(ufePath, materialPrim));
+        materials.push_back(UsdUfe::UsdSceneItem::create(ufePath, materialPrim));
     }
 
     return materials;

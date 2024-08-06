@@ -98,13 +98,16 @@ MStatus UsdMayaExportTranslator::writer(
     }
     GetFilteredSelectionToExport(exportSelected, objSelList, dagPaths);
 
-    if (dagPaths.empty()) {
-        TF_WARN("No DAG nodes to export. Skipping.");
-        return MS::kSuccess;
+    // Materials are not DAG objects, so they won't show up in the returned
+    // dagPaths, so we check the full object list instead.
+    if (objSelList.isEmpty()) {
+        TF_WARN("Nothing to export. Skipping.");
+        return MS::kFailure;
     }
     progressBar.advance();
 
-    auto jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+    auto jobArgs
+        = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, objSelList, timeSamples);
     bool append = false;
     progressBar.advance();
 

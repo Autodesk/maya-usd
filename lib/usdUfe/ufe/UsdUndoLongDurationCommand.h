@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOLONGDURATIONCOMMAND_H
+#define USDUFE_USDUNDOLONGDURATIONCOMMAND_H
 
 #include <usdUfe/base/api.h>
 
@@ -29,6 +30,8 @@ class USDUFE_PUBLIC UsdUndoLongDurationCommand : public Ufe::CompositeUndoableCo
 public:
     using Parent = Ufe::CompositeUndoableCommand;
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoLongDurationCommand);
+
     //! Create the long-duration composite command and append the argument commands to it.
     //! \return Pointer to the long-duration composite undoable command.
     static std::shared_ptr<UsdUndoLongDurationCommand>
@@ -36,13 +39,10 @@ public:
 
     //@{
     //! Constructors.
-    UsdUndoLongDurationCommand();
+    UsdUndoLongDurationCommand() = default;
     UsdUndoLongDurationCommand(std::initializer_list<Ptr> undoableCommands);
     UsdUndoLongDurationCommand(const std::list<Ptr>& undoableCommands);
-
     //@}
-    //! Destructor.
-    ~UsdUndoLongDurationCommand() override;
 
     //! Calls execute() on each command in the list, in forward order.
     void execute() override;
@@ -55,3 +55,5 @@ public:
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOLONGDURATIONCOMMAND_H

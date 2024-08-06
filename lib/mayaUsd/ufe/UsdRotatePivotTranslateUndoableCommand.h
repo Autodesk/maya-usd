@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDROTATEPIVOTTRANSLATEUNDOABLECOMMAND_H
+#define MAYAUSD_USDROTATEPIVOTTRANSLATEUNDOABLECOMMAND_H
 
 #include <mayaUsd/base/api.h>
 
@@ -38,15 +39,8 @@ public:
     typedef std::shared_ptr<UsdRotatePivotTranslateUndoableCommand> Ptr;
 
     UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path);
-    ~UsdRotatePivotTranslateUndoableCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdRotatePivotTranslateUndoableCommand(const UsdRotatePivotTranslateUndoableCommand&) = delete;
-    UsdRotatePivotTranslateUndoableCommand& operator=(const UsdRotatePivotTranslateUndoableCommand&)
-        = delete;
-    UsdRotatePivotTranslateUndoableCommand(UsdRotatePivotTranslateUndoableCommand&&) = delete;
-    UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&)
-        = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRotatePivotTranslateUndoableCommand);
 
     //! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene
     //! item.
@@ -60,23 +54,25 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
 
 private:
-    UsdSceneItem::Ptr sceneItem() const;
+    UsdUfe::UsdSceneItem::Ptr sceneItem() const;
 
 private:
-    Ufe::Path                 fPath;
-    mutable UsdSceneItem::Ptr fItem { nullptr };
-    PXR_NS::UsdAttribute      fPivotAttrib;
-    PXR_NS::GfVec3f           fPrevPivotValue;
-    bool                      fNoPivotOp;
+    Ufe::Path                         _path;
+    mutable UsdUfe::UsdSceneItem::Ptr _item { nullptr };
+    PXR_NS::UsdAttribute              _pivotAttrib;
+    PXR_NS::GfVec3f                   _prevPivotValue;
+    bool                              _noPivotOp;
 
 }; // UsdRotatePivotTranslateUndoableCommand
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDROTATEPIVOTTRANSLATEUNDOABLECOMMAND_H

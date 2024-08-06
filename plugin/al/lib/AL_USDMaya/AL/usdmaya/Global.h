@@ -18,7 +18,7 @@
 #include "AL/event/EventHandler.h"
 #include "AL/usdmaya/Api.h"
 
-#include <mayaUsdUtils/ForwardDeclares.h>
+#include <usdUfe/base/forwardDeclares.h>
 
 namespace AL {
 namespace usdmaya {

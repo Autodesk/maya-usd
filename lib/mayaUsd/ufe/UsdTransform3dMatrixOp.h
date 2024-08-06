@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DMATRIXOP_H
+#define MAYAUSD_USDTRANSFORM3DMATRIXOP_H
 
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 
@@ -47,12 +48,11 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dMatrixOp : public UsdTransform3dBase
 public:
     typedef std::shared_ptr<UsdTransform3dMatrixOp> Ptr;
 
-    UsdTransform3dMatrixOp(const UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
-    ~UsdTransform3dMatrixOp() override = default;
+    UsdTransform3dMatrixOp(const UsdUfe::UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
 
     //! Create a UsdTransform3dMatrixOp.
     static UsdTransform3dMatrixOp::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
+    create(const UsdUfe::UsdSceneItem::Ptr& item, const PXR_NS::UsdGeomXformOp& op);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;
@@ -100,3 +100,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DMATRIXOP_H

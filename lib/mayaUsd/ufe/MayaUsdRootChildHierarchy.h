@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_MAYAUSDROOTCHILDHIERARCHY_H
+#define MAYAUSD_MAYAUSDROOTCHILDHIERARCHY_H
 
 #include <mayaUsd/base/api.h>
 
@@ -27,22 +28,15 @@ namespace ufe {
     This class modifies its base class implementation to return the Maya USD
     gateway node as parent of USD prims that are children of the USD root prim.
  */
-class MAYAUSD_CORE_PUBLIC MayaUsdRootChildHierarchy : public UsdRootChildHierarchy
+class MAYAUSD_CORE_PUBLIC MayaUsdRootChildHierarchy : public UsdUfe::UsdRootChildHierarchy
 {
 public:
     typedef std::shared_ptr<MayaUsdRootChildHierarchy> Ptr;
 
-    MayaUsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
-    ~MayaUsdRootChildHierarchy() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdRootChildHierarchy(const MayaUsdRootChildHierarchy&) = delete;
-    MayaUsdRootChildHierarchy& operator=(const MayaUsdRootChildHierarchy&) = delete;
-    MayaUsdRootChildHierarchy(MayaUsdRootChildHierarchy&&) = delete;
-    MayaUsdRootChildHierarchy& operator=(MayaUsdRootChildHierarchy&&) = delete;
+    MayaUsdRootChildHierarchy(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a MayaUsdRootChildHierarchy.
-    static MayaUsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
+    static MayaUsdRootChildHierarchy::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
 protected:
     // UsdHierarchy overrides
@@ -55,3 +49,5 @@ protected:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_MAYAUSDROOTCHILDHIERARCHY_H

@@ -17,12 +17,16 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SetVector3dUndoableCommand, UsdSetXformOpUndoableCommandBase);
 
 UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
     const PXR_NS::VtValue&     value,
@@ -46,6 +50,9 @@ UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
 
 void UsdSetXformOpUndoableCommandBase::execute()
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+
     // Create the attribute and cache the initial value,
     // if this is the first time we're executed, or redo
     // the attribute creation.
@@ -63,6 +70,9 @@ void UsdSetXformOpUndoableCommandBase::undo()
     if (!_isPrepared)
         return;
 
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+
     // Restore the initial value and potentially remove the creatd attributes.
     setValue(_initialOpValue, _writeTime);
     removeOpIfNeeded();
@@ -71,6 +81,9 @@ void UsdSetXformOpUndoableCommandBase::undo()
 
 void UsdSetXformOpUndoableCommandBase::redo()
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+
     // Redo the attribute creation if the attribute was already created
     // but then undone.
     recreateOpIfNeeded();
@@ -80,6 +93,12 @@ void UsdSetXformOpUndoableCommandBase::redo()
     // first time the command is executed, redone or undone.
     prepareAndSet(_newOpValue);
     _canUpdateValue = true;
+}
+
+UsdPrim UsdSetXformOpUndoableCommandBase::getPrim() const
+{
+    // Convert the UFE path to the corresponding USD prim.
+    return UsdUfe::ufePathToPrim(path());
 }
 
 void UsdSetXformOpUndoableCommandBase::updateNewValue(const VtValue& v)

@@ -151,10 +151,10 @@ MString parseTextArg(const MArgDatabase& argData, const char* flag, const MStrin
 bool PullPushBaseCommand::isUndoable() const { return true; }
 
 // MPxCommand API to redo the command.
-MStatus PullPushBaseCommand::redoIt() { return fUndoItemList.redo() ? MS::kSuccess : MS::kFailure; }
+MStatus PullPushBaseCommand::redoIt() { return _undoItemList.redo() ? MS::kSuccess : MS::kFailure; }
 
 // MPxCommand API to undo the command.
-MStatus PullPushBaseCommand::undoIt() { return fUndoItemList.undo() ? MS::kSuccess : MS::kFailure; }
+MStatus PullPushBaseCommand::undoIt() { return _undoItemList.undo() ? MS::kSuccess : MS::kFailure; }
 
 //------------------------------------------------------------------------------
 // EditAsMayaCommand
@@ -188,24 +188,24 @@ MStatus EditAsMayaCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return status;
 
-    status = parseUfePathArg(argParser, 0, fPath);
+    status = parseUfePathArg(argParser, 0, _path);
     if (status != MS::kSuccess)
         return reportError(status);
 
-    if (!isPrimPath(fPath))
+    if (!isPrimPath(_path))
         return reportError(MS::kInvalidParameter);
 
     // Scope the undo item recording so we can undo on failure.
     {
-        OpUndoItemRecorder undoRecorder(fUndoItemList);
+        OpUndoItemRecorder undoRecorder(_undoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        status = manager.editAsMaya(fPath) ? MS::kSuccess : MS::kFailure;
+        status = manager.editAsMaya(_path) ? MS::kSuccess : MS::kFailure;
     }
 
     // Undo potentially partially-made edit-as-Maya on failure.
     if (status != MS::kSuccess)
-        fUndoItemList.undo();
+        _undoItemList.undo();
 
     return status;
 }
@@ -287,7 +287,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
 
     // Scope the undo item recording so we can undo on failure.
     {
-        OpUndoItemRecorder undoRecorder(fUndoItemList);
+        OpUndoItemRecorder undoRecorder(_undoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
         status = manager.mergeToUsd(dagNode, pulledPath, userArgs) ? MS::kSuccess : MS::kFailure;
@@ -304,7 +304,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
 
     // Undo potentially partially-made merge-to-USD on failure.
     if (status != MS::kSuccess)
-        fUndoItemList.undo();
+        _undoItemList.undo();
 
     return status;
 }
@@ -353,7 +353,7 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
 
     // Scope the undo item recording so we can undo on failure.
     {
-        OpUndoItemRecorder undoRecorder(fUndoItemList);
+        OpUndoItemRecorder undoRecorder(_undoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
         status = manager.discardEdits(dagPath) ? MS::kSuccess : MS::kFailure;
@@ -375,7 +375,7 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
 
     // Undo potentially partially-made discard-edit on failure.
     if (status != MS::kSuccess)
-        fUndoItemList.undo();
+        _undoItemList.undo();
 
     return status;
 }
@@ -419,11 +419,11 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return status;
 
-    status = parseUfePathArg(argParser, 0, fSrcPath);
+    status = parseUfePathArg(argParser, 0, _srcPath);
     if (status != MS::kSuccess)
         return reportError(status);
 
-    status = parseUfePathArg(argParser, 1, fDstPath);
+    status = parseUfePathArg(argParser, 1, _dstPath);
     if (status != MS::kSuccess)
         return reportError(status);
 
@@ -441,10 +441,10 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
 
     // Scope the undo item recording so we can undo on failure.
     {
-        OpUndoItemRecorder undoRecorder(fUndoItemList);
+        OpUndoItemRecorder undoRecorder(_undoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        status = manager.duplicate(fSrcPath, fDstPath, userArgs) ? MS::kSuccess : MS::kFailure;
+        status = manager.duplicate(_srcPath, _dstPath, userArgs) ? MS::kSuccess : MS::kFailure;
 
         if (status == MS::kSuccess) {
             // Select the duplicate.
@@ -455,12 +455,12 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
             // - Maya duplicate to USD: we always duplicate directly under the
             //   proxy shape, so add a single path component USD path segment.
             // - USD duplicate to Maya: no path segment to add.
-            Ufe::Path childPath = (fSrcPath.runTimeId() == getMayaRunTimeId())
+            Ufe::Path childPath = (_srcPath.runTimeId() == getMayaRunTimeId())
                 ?
                 // Maya duplicate to USD
-                fDstPath + Ufe::PathSegment(fSrcPath.back(), getUsdRunTimeId(), '/')
+                _dstPath + Ufe::PathSegment(_srcPath.back(), getUsdRunTimeId(), '/')
                 // USD duplicate to Maya
-                : fDstPath + fSrcPath.back();
+                : _dstPath + _srcPath.back();
 
             Ufe::Selection sn;
             sn.append(Ufe::Hierarchy::createItem(childPath));
@@ -475,7 +475,7 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
 
     // Undo potentially partially-made duplicate on failure.
     if (status != MS::kSuccess)
-        fUndoItemList.undo();
+        _undoItemList.undo();
 
     return status;
 }

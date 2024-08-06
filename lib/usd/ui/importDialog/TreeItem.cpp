@@ -25,22 +25,22 @@
 
 namespace MAYAUSD_NS_DEF {
 
-const QPixmap* TreeItem::fsCheckBoxOn = nullptr;
-const QPixmap* TreeItem::fsCheckBoxOnDisabled = nullptr;
-const QPixmap* TreeItem::fsCheckBoxOff = nullptr;
-const QPixmap* TreeItem::fsCheckBoxOffDisabled = nullptr;
+const QPixmap* TreeItem::checkBoxOn = nullptr;
+const QPixmap* TreeItem::checkBoxOnDisabled = nullptr;
+const QPixmap* TreeItem::checkBoxOff = nullptr;
+const QPixmap* TreeItem::checkBoxOffDisabled = nullptr;
 
 TreeItem::TreeItem(const UsdPrim& prim, bool isDefaultPrim, Column column) noexcept
     : ParentClass()
-    , fPrim(prim)
-    , fColumn(column)
-    , fCheckState(CheckState::kChecked_Disabled)
-    , fVariantSelectionModified(false)
+    , _prim(prim)
+    , _column(column)
+    , _checkState(CheckState::kChecked_Disabled)
+    , _variantSelectionModified(false)
 {
     initializeItem(isDefaultPrim);
 }
 
-UsdPrim TreeItem::prim() const { return fPrim; }
+UsdPrim TreeItem::prim() const { return _prim; }
 
 int TreeItem::type() const { return ParentClass::ItemType::UserType; }
 
@@ -67,53 +67,53 @@ const QPixmap* TreeItem::createPixmap(const char* pixmapURL) const
 
 const QPixmap& TreeItem::checkImage() const
 {
-    if (fsCheckBoxOn == nullptr) {
-        fsCheckBoxOn = createPixmap(":/ImportDialog/checkboxOn.png");
-        fsCheckBoxOnDisabled = createPixmap(":/ImportDialog/checkboxOnDisabled.png");
-        fsCheckBoxOff = createPixmap(":/ImportDialog/checkboxOff.png");
-        fsCheckBoxOffDisabled = createPixmap(":/ImportDialog/checkboxOffDisabled.png");
+    if (checkBoxOn == nullptr) {
+        checkBoxOn = createPixmap(":/ImportDialog/checkboxOn.png");
+        checkBoxOnDisabled = createPixmap(":/ImportDialog/checkboxOnDisabled.png");
+        checkBoxOff = createPixmap(":/ImportDialog/checkboxOff.png");
+        checkBoxOffDisabled = createPixmap(":/ImportDialog/checkboxOffDisabled.png");
     }
 
-    switch (fCheckState) {
-    case CheckState::kChecked: return *fsCheckBoxOn;
-    case CheckState::kChecked_Disabled: return *fsCheckBoxOnDisabled;
-    case CheckState::kUnchecked: return *fsCheckBoxOff;
-    case CheckState::kUnchecked_Disabled: return *fsCheckBoxOffDisabled;
-    default: return *fsCheckBoxOffDisabled;
+    switch (_checkState) {
+    case CheckState::kChecked: return *checkBoxOn;
+    case CheckState::kChecked_Disabled: return *checkBoxOnDisabled;
+    case CheckState::kUnchecked: return *checkBoxOff;
+    case CheckState::kUnchecked_Disabled: return *checkBoxOffDisabled;
+    default: return *checkBoxOffDisabled;
     }
 }
 
 void TreeItem::setCheckState(TreeItem::CheckState st)
 {
-    assert(fColumn == kColumnLoad);
-    if (fColumn == kColumnLoad)
-        fCheckState = st;
+    assert(_column == kColumnLoad);
+    if (_column == kColumnLoad)
+        _checkState = st;
 }
 
 void TreeItem::setVariantSelectionModified()
 {
-    assert(fColumn == kColumnVariants);
-    if (fColumn == kColumnVariants)
-        fVariantSelectionModified = true;
+    assert(_column == kColumnVariants);
+    if (_column == kColumnVariants)
+        _variantSelectionModified = true;
 }
 
 void TreeItem::initializeItem(bool isDefaultPrim)
 {
-    switch (fColumn) {
-    case kColumnLoad: fCheckState = CheckState::kChecked_Disabled; break;
+    switch (_column) {
+    case kColumnLoad: _checkState = CheckState::kChecked_Disabled; break;
     case kColumnName:
-        if (fPrim.IsPseudoRoot())
+        if (_prim.IsPseudoRoot())
             setText("Root");
         else
-            setText(QString::fromStdString(fPrim.GetName().GetString()));
+            setText(QString::fromStdString(_prim.GetName().GetString()));
         if (isDefaultPrim) {
             if (const QPixmap* pixmap = TreeModel::getDefaultPrimPixmap())
                 setData(*pixmap, Qt::DecorationRole);
         }
         break;
-    case kColumnType: setText(QString::fromStdString(fPrim.GetTypeName().GetString())); break;
+    case kColumnType: setText(QString::fromStdString(_prim.GetTypeName().GetString())); break;
     case kColumnVariants: {
-        if (fPrim.HasVariantSets()) {
+        if (_prim.HasVariantSets()) {
             // We set a special role flag when this prim has variant sets.
             // So we know when to create the label and combo box(es) for the variant
             // sets and to override the drawing in the styled item delegate.

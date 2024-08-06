@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOCLEARDEFAULTPRIMCOMMAND_H
+#define USDUFE_USDUNDOCLEARDEFAULTPRIMCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
@@ -31,13 +32,8 @@ public:
     // Public for std::make_shared() access, use create() instead.
     UsdUndoClearDefaultPrimCommand(const PXR_NS::UsdPrim& prim);
     UsdUndoClearDefaultPrimCommand(const PXR_NS::UsdStageRefPtr& stage);
-    ~UsdUndoClearDefaultPrimCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoClearDefaultPrimCommand(const UsdUndoClearDefaultPrimCommand&) = delete;
-    UsdUndoClearDefaultPrimCommand& operator=(const UsdUndoClearDefaultPrimCommand&) = delete;
-    UsdUndoClearDefaultPrimCommand(UsdUndoClearDefaultPrimCommand&&) = delete;
-    UsdUndoClearDefaultPrimCommand& operator=(UsdUndoClearDefaultPrimCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoClearDefaultPrimCommand);
 
     void execute() override;
     void undo() override;
@@ -51,3 +47,5 @@ private:
 }; // UsdUndoClearDefaultPrimCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOCLEARDEFAULTPRIMCOMMAND_H

@@ -20,6 +20,8 @@
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(UsdUndoableCommand<Ufe::UndoableCommand>, UsdUndoClearPayloadsCommand);
+
 UsdUndoClearPayloadsCommand::UsdUndoClearPayloadsCommand(const PXR_NS::UsdPrim& prim)
     : _prim(prim)
 {

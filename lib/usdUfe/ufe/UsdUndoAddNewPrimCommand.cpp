@@ -24,23 +24,14 @@
 #include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
 
-namespace {
-
-Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
-{
-    Ufe::Path newUfePath;
-    if (1 == path.getSegments().size()) {
-        newUfePath
-            = path + Ufe::PathSegment(Ufe::PathComponent(name), UsdUfe::getUsdRunTimeId(), '/');
-    } else {
-        newUfePath = path + name;
-    }
-    return newUfePath;
-}
-
-} // namespace
-
 namespace USDUFE_NS_DEF {
+
+// Ensure that UsdUndoAddNewPrimCommand is properly setup.
+#ifdef UFE_V4_FEATURES_AVAILABLE
+USDUFE_VERIFY_CLASS_SETUP(Ufe::SceneItemResultUndoableCommand, UsdUndoAddNewPrimCommand);
+#else
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoAddNewPrimCommand);
+#endif
 
 UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
     const UsdSceneItem::Ptr& usdSceneItem,
@@ -64,8 +55,8 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
         // Append the parent path and the requested name into a full ufe path.
         // Append a '1' to new primitives names if the name does not end with a digit.
         _newUfePath = splitNumericalSuffix(name, base, suffixStr)
-            ? appendToPath(ufePath, name)
-            : appendToPath(ufePath, name + '1');
+            ? appendToUsdPath(ufePath, name)
+            : appendToUsdPath(ufePath, name + '1');
 
         // Ensure the requested name is unique.
         auto newPrimName
@@ -73,7 +64,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
 
         // If the name had to change then we need to update the full ufe path.
         if (name != newPrimName) {
-            _newUfePath = appendToPath(ufePath, newPrimName);
+            _newUfePath = appendToUsdPath(ufePath, newPrimName);
         }
 
         // Build (and store) the usd path for the new prim with the unique name.

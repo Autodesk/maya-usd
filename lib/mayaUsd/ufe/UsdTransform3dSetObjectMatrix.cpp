@@ -24,11 +24,13 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dSetObjectMatrix);
+
 UsdTransform3dSetObjectMatrix::UsdTransform3dSetObjectMatrix(
     const Ufe::Transform3d::Ptr& wrapped,
     const PXR_NS::GfMatrix4d&    mlInv,
     const PXR_NS::GfMatrix4d&    mrInv)
-    : UsdTransform3dBase(std::dynamic_pointer_cast<UsdSceneItem>(wrapped->sceneItem()))
+    : UsdTransform3dBase(downcast(wrapped->sceneItem()))
     , _wrapped(wrapped)
     , _mlInv(mlInv)
     , _mrInv(mrInv)

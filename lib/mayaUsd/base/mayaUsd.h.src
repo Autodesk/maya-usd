@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSD_H
+#define MAYAUSD_H
 
 #define MAYAUSD_MAJOR_VERSION ${MAYAUSD_MAJOR_VERSION}
 #define MAYAUSD_MINOR_VERSION ${MAYAUSD_MINOR_VERSION}
@@ -44,3 +45,48 @@ namespace MAYAUSD_NS {
 #else
 #define MAYAUSD_NS_DEF MAYAUSD_VERSIONED_NS
 #endif
+
+// A macro to disallow the copy/move constructors and assignment operators.
+#define MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(TypeName) \
+    TypeName(const TypeName&) = delete;                     \
+    TypeName& operator=(const TypeName&) = delete;          \
+    TypeName(TypeName&&) = delete;                          \
+    TypeName& operator=(TypeName&&) = delete;
+
+// A macro to verify that a class is setup correctly using the macro above.
+#define MAYAUSD_VERIFY_CLASS_SETUP(Base, TypeName)          \
+static_assert(std::is_base_of<Base, TypeName>::value,       \
+              "Class base not set correctly");              \
+static_assert(std::has_virtual_destructor<TypeName>::value, \
+              "Class should have a virtual destructor");    \
+static_assert(!std::is_copy_constructible<TypeName>::value, \
+              "Class should NOT be copy constructible");    \
+static_assert(!std::is_copy_assignable<TypeName>::value,    \
+              "Class should NOT be copy assignable");       \
+static_assert(!std::is_move_constructible<TypeName>::value, \
+              "Class should NOT be move constructible");    \
+static_assert(!std::is_move_assignable<TypeName>::value,    \
+              "Class should NOT be move assignable");
+
+// A macro to verify that a class base is setup correctly.
+#define MAYAUSD_VERIFY_CLASS_BASE(Base, TypeName)           \
+static_assert(std::is_base_of<Base, TypeName>::value,       \
+              "Class base not set correctly");
+
+// A macro to verify that a class has a virtual destructor.
+#define MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(TypeName)   \
+static_assert(std::has_virtual_destructor<TypeName>::value, \
+              "Class should have a virtual destructor");
+
+// A macro to verify that a class is not copyable or movable.
+#define MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(TypeName)     \
+static_assert(!std::is_copy_constructible<TypeName>::value, \
+              "Class should NOT be copy constructible");    \
+static_assert(!std::is_copy_assignable<TypeName>::value,    \
+              "Class should NOT be copy assignable");       \
+static_assert(!std::is_move_constructible<TypeName>::value, \
+              "Class should NOT be move constructible");    \
+static_assert(!std::is_move_assignable<TypeName>::value,    \
+              "Class should NOT be move assignable");
+
+#endif // MAYAUSD_H

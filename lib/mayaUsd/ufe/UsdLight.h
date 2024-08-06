@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDLIGHT_H
+#define MAYAUSD_USDLIGHT_H
 
 #include <mayaUsd/base/api.h>
 
@@ -34,24 +35,19 @@ class MAYAUSD_CORE_PUBLIC UsdLight : public Ufe::Light
 public:
     typedef std::shared_ptr<UsdLight> Ptr;
 
-    UsdLight();
-    UsdLight(const UsdSceneItem::Ptr& item);
-    ~UsdLight() override = default;
+    UsdLight() = default;
+    UsdLight(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    // Delete the copy/move constructors assignment operators.
-    UsdLight(const UsdLight&) = delete;
-    UsdLight& operator=(const UsdLight&) = delete;
-    UsdLight(UsdLight&&) = delete;
-    UsdLight& operator=(UsdLight&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdLight);
 
     //! Create a UsdLight.
-    static UsdLight::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdLight::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -92,14 +88,14 @@ protected:
     std::shared_ptr<AreaInterface>        areaInterfaceImpl() override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 }; // UsdLight
 
 class UsdDirectionalInterface : public Ufe::Light::DirectionalInterface
 {
 public:
-    UsdDirectionalInterface(const UsdSceneItem::Ptr& item)
-        : fItem(item)
+    UsdDirectionalInterface(const UsdUfe::UsdSceneItem::Ptr& item)
+        : _item(item)
     {
     }
 
@@ -108,14 +104,14 @@ public:
     float                                 angle() const override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdSphereInterface : public Ufe::Light::SphereInterface
 {
 public:
-    UsdSphereInterface(const UsdSceneItem::Ptr& item)
-        : fItem(item)
+    UsdSphereInterface(const UsdUfe::UsdSceneItem::Ptr& item)
+        : _item(item)
     {
     }
 
@@ -124,14 +120,14 @@ public:
     Ufe::Light::SphereProps                     sphereProps() const override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdConeInterface : public Ufe::Light::ConeInterface
 {
 public:
-    UsdConeInterface(const UsdSceneItem::Ptr& item)
-        : fItem(item)
+    UsdConeInterface(const UsdUfe::UsdSceneItem::Ptr& item)
+        : _item(item)
     {
     }
 
@@ -141,14 +137,14 @@ public:
     Ufe::Light::ConeProps coneProps() const override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdAreaInterface : public Ufe::Light::AreaInterface
 {
 public:
-    UsdAreaInterface(const UsdSceneItem::Ptr& item)
-        : fItem(item)
+    UsdAreaInterface(const UsdUfe::UsdSceneItem::Ptr& item)
+        : _item(item)
     {
     }
 
@@ -157,8 +153,10 @@ public:
     bool                                      normalize() const override;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDLIGHT_H

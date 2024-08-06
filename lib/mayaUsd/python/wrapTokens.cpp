@@ -25,7 +25,6 @@ void wrapTokens()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("OptionVarTokens", MayaUsdOptionVars, MAYA_USD_OPTIONVAR_TOKENS);
     TF_PY_WRAP_PUBLIC_TOKENS("MetadataTokens", MayaUsdMetadata, MAYA_USD_METADATA_TOKENS);
-    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", MayaUsdTokens, MAYA_USD_GENERIC_TOKENS);
     TF_PY_WRAP_PUBLIC_TOKENS(
         "EditRoutingTokens", MayaUsdEditRoutingTokens, MAYA_USD_EDIT_ROUTING_TOKENS);
 }

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_MAYAUSDOBJECT3D_H
+#define MAYAUSD_MAYAUSDOBJECT3D_H
 
 #include <mayaUsd/base/api.h>
 
@@ -31,17 +32,10 @@ class MAYAUSD_CORE_PUBLIC MayaUsdObject3d : public UsdUfe::UsdObject3d
 public:
     using Ptr = std::shared_ptr<MayaUsdObject3d>;
 
-    MayaUsdObject3d(const UsdSceneItem::Ptr& item);
-    ~MayaUsdObject3d() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdObject3d(const MayaUsdObject3d&) = delete;
-    MayaUsdObject3d& operator=(const MayaUsdObject3d&) = delete;
-    MayaUsdObject3d(MayaUsdObject3d&&) = delete;
-    MayaUsdObject3d& operator=(MayaUsdObject3d&&) = delete;
+    MayaUsdObject3d(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a MayaUsdObject3d.
-    static MayaUsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
+    static MayaUsdObject3d::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     // UsdObject3d overrides
     PXR_NS::TfTokenVector getPurposes(const Ufe::Path& path) const override;
@@ -53,3 +47,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_MAYAUSDOBJECT3D_H

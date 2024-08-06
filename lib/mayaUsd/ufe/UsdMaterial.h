@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDMATERIAL_H
+#define MAYAUSD_USDMATERIAL_H
 
 #include <mayaUsd/base/api.h>
 
@@ -34,19 +35,12 @@ class MAYAUSD_CORE_PUBLIC UsdMaterial : public Ufe::Material
 public:
     using Ptr = std::shared_ptr<UsdMaterial>;
 
-    UsdMaterial(const UsdSceneItem::Ptr& item);
-    ~UsdMaterial() override;
+    UsdMaterial(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    //@{
-    //! Delete the copy/move constructors assignment operators.
-    UsdMaterial(const UsdMaterial&) = delete;
-    UsdMaterial& operator=(const UsdMaterial&) = delete;
-    UsdMaterial(UsdMaterial&&) = delete;
-    UsdMaterial& operator=(UsdMaterial&&) = delete;
-    //@}
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMaterial);
 
     //! Create a UsdMaterial.
-    static UsdMaterial::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdMaterial::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     std::vector<Ufe::SceneItem::Ptr> getMaterials() const override;
 
@@ -55,8 +49,10 @@ public:
 #endif
 
 private:
-    UsdSceneItem::Ptr _item;
+    UsdUfe::UsdSceneItem::Ptr _item;
 }; // UsdMaterial
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDMATERIAL_H

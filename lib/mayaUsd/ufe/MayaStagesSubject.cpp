@@ -35,6 +35,8 @@ std::atomic_bool stageSetGuardCount { false };
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::StagesSubject, MayaStagesSubject);
+
 //------------------------------------------------------------------------------
 // Global variables & macros
 //------------------------------------------------------------------------------
@@ -52,16 +54,16 @@ MayaStagesSubject::MayaStagesSubject()
     setInNewScene(false);
 
     MStatus res;
-    fCbIds.append(
+    _cbIds.append(
         MSceneMessage::addCallback(MSceneMessage::kBeforeNew, beforeNewCallback, this, &res));
     CHECK_MSTATUS(res);
-    fCbIds.append(
+    _cbIds.append(
         MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, beforeOpenCallback, this, &res));
     CHECK_MSTATUS(res);
-    fCbIds.append(
+    _cbIds.append(
         MSceneMessage::addCallback(MSceneMessage::kAfterOpen, afterOpenCallback, this, &res));
     CHECK_MSTATUS(res);
-    fCbIds.append(
+    _cbIds.append(
         MSceneMessage::addCallback(MSceneMessage::kAfterNew, afterNewCallback, this, &res));
     CHECK_MSTATUS(res);
 
@@ -72,8 +74,8 @@ MayaStagesSubject::MayaStagesSubject()
 
 MayaStagesSubject::~MayaStagesSubject()
 {
-    MMessage::removeCallbacks(fCbIds);
-    fCbIds.clear();
+    MMessage::removeCallbacks(_cbIds);
+    _cbIds.clear();
 }
 
 /*static*/
@@ -82,12 +84,12 @@ MayaStagesSubject::RefPtr MayaStagesSubject::create()
     return TfCreateRefPtr(new MayaStagesSubject);
 }
 
-bool MayaStagesSubject::isInNewScene() const { return fIsInNewScene; }
+bool MayaStagesSubject::isInNewScene() const { return _isInNewScene; }
 
 void MayaStagesSubject::setInNewScene(bool b)
 {
-    fIsInNewScene = b;
-    fInvalidStages.clear();
+    _isInNewScene = b;
+    _invalidStages.clear();
 }
 
 /*static*/
@@ -133,14 +135,14 @@ void MayaStagesSubject::clearListeners()
     // to minimize cost of observation.  However, since observation is
     // frequent, we won't implement this for now.  PPT, 22-Dec-2017.
     std::for_each(
-        std::begin(fStageListeners),
-        std::end(fStageListeners),
+        std::begin(_stageListeners),
+        std::end(_stageListeners),
         [](StageListenerMap::value_type element) {
             for (auto& noticeKey : element.second) {
                 TfNotice::Revoke(noticeKey);
             }
         });
-    fStageListeners.clear();
+    _stageListeners.clear();
 
     // Set up our stage to proxy shape UFE path (and reverse)
     // mapping.  We do this with the following steps:
@@ -158,7 +160,8 @@ void MayaStagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
     // invalid stage.
     if (noticeStage) {
         // Track the edit target layer's state
-        UsdUndoManager::instance().trackLayerStates(noticeStage->GetEditTarget().GetLayer());
+        UsdUfe::UsdUndoManager::instance().trackLayerStates(
+            noticeStage->GetEditTarget().GetLayer());
     }
 
     setupListeners();
@@ -175,7 +178,7 @@ void MayaStagesSubject::setupListeners()
     if (stageSetGuardCount.compare_exchange_strong(expectedState, true)) {
         // We should have no listeners and stage map is dirty.
         TF_VERIFY(UsdStageMap::getInstance().isDirty());
-        TF_VERIFY(fStageListeners.empty());
+        TF_VERIFY(_stageListeners.empty());
 
         auto me = PXR_NS::TfCreateWeakPtr(this);
         for (auto stage : ProxyShapeHandler::getAllStages()) {
@@ -183,18 +186,18 @@ void MayaStagesSubject::setupListeners()
             noticeKeys[0] = TfNotice::Register(me, &MayaStagesSubject::stageChanged, stage);
             noticeKeys[1]
                 = TfNotice::Register(me, &MayaStagesSubject::stageEditTargetChanged, stage);
-            fStageListeners[stage] = noticeKeys;
+            _stageListeners[stage] = noticeKeys;
         }
 
         // Now we can send the notifications about stage change.
-        for (auto& path : fInvalidStages) {
+        for (auto& path : _invalidStages) {
             Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(path);
             if (sceneItem) {
                 sendSubtreeInvalidate(sceneItem);
             }
         }
 
-        fInvalidStages.clear();
+        _invalidStages.clear();
 
         stageSetGuardCount = false;
     }
@@ -208,7 +211,7 @@ void MayaStagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotic
     if (!p.empty()) {
         // We can't send notification to clients from dirty propagation.
         // Delay it till the new stage is actually set during compute.
-        fInvalidStages.insert(p);
+        _invalidStages.insert(p);
     }
 }
 

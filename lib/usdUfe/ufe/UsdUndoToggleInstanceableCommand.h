@@ -34,6 +34,8 @@ class USDUFE_PUBLIC UsdUndoToggleInstanceableCommand
 public:
     UsdUndoToggleInstanceableCommand(const PXR_NS::UsdPrim& prim);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoToggleInstanceableCommand);
+
 protected:
     void executeImplementation() override;
 

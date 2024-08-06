@@ -34,13 +34,8 @@ public:
     typedef std::shared_ptr<UsdUIInfoHandler> Ptr;
 
     UsdUIInfoHandler();
-    ~UsdUIInfoHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUIInfoHandler(const UsdUIInfoHandler&) = delete;
-    UsdUIInfoHandler& operator=(const UsdUIInfoHandler&) = delete;
-    UsdUIInfoHandler(UsdUIInfoHandler&&) = delete;
-    UsdUIInfoHandler& operator=(UsdUIInfoHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUIInfoHandler);
 
     //! Create a UsdUIInfoHandler.
     static UsdUIInfoHandler::Ptr create();
@@ -61,7 +56,7 @@ public:
 
 protected:
     // Derived classes can set this color to override the default invisible color.
-    std::array<double, 3> fInvisibleColor;
+    std::array<double, 3> _invisibleColor;
 }; // UsdUIInfoHandler
 
 } // namespace USDUFE_NS_DEF

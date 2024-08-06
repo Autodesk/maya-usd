@@ -36,11 +36,7 @@ public:
     InPathChange() { inGuard = true; }
     ~InPathChange() { inGuard = false; }
 
-    // Delete the copy/move constructors assignment operators.
-    InPathChange(const InPathChange&) = delete;
-    InPathChange& operator=(const InPathChange&) = delete;
-    InPathChange(InPathChange&&) = delete;
-    InPathChange& operator=(InPathChange&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(InPathChange);
 
     static bool inPathChange() { return inGuard; }
 
@@ -65,11 +61,7 @@ public:
     InSetAttribute() { inGuard += 1; }
     ~InSetAttribute() { inGuard -= 1; }
 
-    // Delete the copy/move constructors assignment operators.
-    InSetAttribute(const InSetAttribute&) = delete;
-    InSetAttribute& operator=(const InSetAttribute&) = delete;
-    InSetAttribute(InSetAttribute&&) = delete;
-    InSetAttribute& operator=(InSetAttribute&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(InSetAttribute);
 
     static bool inSetAttribute() { return inGuard > 0; }
 
@@ -89,11 +81,7 @@ public:
     InAddOrDeleteOperation() { inGuard = true; }
     ~InAddOrDeleteOperation() { inGuard = false; }
 
-    // Delete the copy/move constructors assignment operators.
-    InAddOrDeleteOperation(const InAddOrDeleteOperation&) = delete;
-    InAddOrDeleteOperation& operator=(const InAddOrDeleteOperation&) = delete;
-    InAddOrDeleteOperation(InAddOrDeleteOperation&&) = delete;
-    InAddOrDeleteOperation& operator=(InAddOrDeleteOperation&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(InAddOrDeleteOperation);
 
     static bool inAddOrDeleteOperation() { return inGuard; }
 
@@ -114,11 +102,7 @@ public:
     InTransform3dChange(const Ufe::Path& path);
     ~InTransform3dChange();
 
-    // Delete the copy/move constructors assignment operators.
-    InTransform3dChange(const InTransform3dChange&) = delete;
-    InTransform3dChange& operator=(const InTransform3dChange&) = delete;
-    InTransform3dChange(InTransform3dChange&&) = delete;
-    InTransform3dChange& operator=(InTransform3dChange&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(InTransform3dChange);
 
     static bool inTransform3dChange();
 };

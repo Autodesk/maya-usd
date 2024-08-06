@@ -40,10 +40,7 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         standalone.uninitialize()
 
     def _GetUsdMaterial(self, stage, materialName):
-        modelPrimPath = Sdf.Path.absoluteRootPath.AppendChild(
-            "UsdPreviewSurfaceExportTest"
-        )
-        materialsRootPrimPath = modelPrimPath.AppendChild(
+        materialsRootPrimPath = Sdf.Path.absoluteRootPath.AppendChild(
             UsdUtils.GetMaterialsScopeName()
         )
         materialPrimPath = materialsRootPrimPath.AppendChild(materialName)

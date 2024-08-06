@@ -34,8 +34,8 @@ global proc mayaUsd_PrefSaveMayaSceneFilesChanged()
 
 global proc mayaUsd_PrefFileFormatChanged()
 {
+	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
 	if (`radioButtonGrp -exists usdPrefSaveFileFormat`) {
-		string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
 		int $sel = `radioButtonGrp -q -select usdPrefSaveFileFormat`;
 		optionVar -iv $saveLayerFormatArgBinaryOptionPref ($sel == 1);	// Button 1 is binary
 	}
@@ -43,6 +43,14 @@ global proc mayaUsd_PrefFileFormatChanged()
 		string $confirmExistingFileSaveOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.ConfirmExistingFileSave")`;
 		int $v = `checkBoxGrp -q -v1 usdPrefConfirmExistFileSave`;
 		optionVar -iv $confirmExistingFileSaveOptionPref $v;
+	}
+
+	// Update the clipboard file format to match the format here.
+	int $haveClipboardSupport = `python("import mayaUsd.ufe as mufe; callable(getattr(mufe, 'setClipboardFileFormat', None))")`;
+	if ($haveClipboardSupport && `optionVar -exists $saveLayerFormatArgBinaryOptionPref`) {
+		int $isBinary = `optionVar -q $saveLayerFormatArgBinaryOptionPref`;
+		string $formatTag = $isBinary ? "usdc" : "usda";
+		python("import mayaUsd.ufe as mufe; mufe.setClipboardFileFormat('" + $formatTag + "')");
 	}
 }
 

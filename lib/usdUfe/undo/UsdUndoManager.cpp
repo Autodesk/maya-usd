@@ -23,6 +23,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdUndoManager);
+USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdUndoManagerAccessor);
+
 UsdUndoManager& UsdUndoManager::instance()
 {
     static UsdUndoManager undoManager;

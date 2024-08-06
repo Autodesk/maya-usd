@@ -18,6 +18,8 @@
 
 #include "private/Utils.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
@@ -26,15 +28,15 @@ namespace ufe {
 
 template <class V>
 UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(double x, double y, double z)
-    : fNewValue(x, y, z)
+    : _newValue(x, y, z)
 {
 }
 
 template <class V> void UsdTRSUndoableCommandBase<V>::updateItem() const
 {
-    if (!fItem) {
+    if (!_item) {
         auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(getPath());
-        fItem = std::dynamic_pointer_cast<UsdSceneItem>(ufeSceneItemPtr);
+        _item = downcast(ufeSceneItemPtr);
     }
 }
 
@@ -46,11 +48,11 @@ template <class V> void UsdTRSUndoableCommandBase<V>::initialize()
 
     // If prim does not have the attribute, add it.
     if (!prim().HasAttribute(attributeName())) {
-        fOpAdded = true;
+        _opAdded = true;
         addEmptyAttribute();
     }
 
-    attribute().Get(&fPrevValue);
+    attribute().Get(&_prevValue);
 }
 
 template <class V> void UsdTRSUndoableCommandBase<V>::undoImp()
@@ -59,11 +61,11 @@ template <class V> void UsdTRSUndoableCommandBase<V>::undoImp()
     // its item after their own undo() or redo(). Setting it back to nullptr is safer because it
     // means that the next time the command is used, it will be forced to create a new item from the
     // path, or the command will crash on a null pointer.
-    fItem = nullptr;
+    _item = nullptr;
 
     updateItem();
 
-    attribute().Set(fPrevValue);
+    attribute().Set(_prevValue);
     // Todo : We would want to remove the xformOp
     // (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
@@ -74,26 +76,26 @@ template <class V> void UsdTRSUndoableCommandBase<V>::redoImp()
     // its item after their own undo() or redo(). Setting it back to nullptr is safer because it
     // means that the next time the command is used, it will be forced to create a new item from the
     // path, or the command will crash on a null pointer.
-    fItem = nullptr;
+    _item = nullptr;
 
     updateItem();
 
     // We must go through conversion to the common transform API by calling
     // perform(), otherwise we get "Empty typeName" USD assertions for rotate
     // and scale.  Once that is done, we can simply set the attribute directly.
-    if (fDoneOnce) {
-        attribute().Set(fNewValue);
+    if (_doneOnce) {
+        attribute().Set(_newValue);
         return;
     }
 
-    perform(fNewValue[0], fNewValue[1], fNewValue[2]);
+    perform(_newValue[0], _newValue[1], _newValue[2]);
 }
 
 template <class V> void UsdTRSUndoableCommandBase<V>::perform(double x, double y, double z)
 {
-    fNewValue = V(x, y, z);
+    _newValue = V(x, y, z);
     performImp(x, y, z);
-    fDoneOnce = true;
+    _doneOnce = true;
 }
 
 template <class V> bool UsdTRSUndoableCommandBase<V>::cannotInit() const { return false; }

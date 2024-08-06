@@ -70,6 +70,9 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportBlendShapes) \
     (exportCollectionBasedBindings) \
     (exportColorSets) \
+    (exportMaterials) \
+    (exportAssignedMaterials) \
+    (legacyMaterialScope) \
     (exportDisplayColor) \
     (exportDistanceUnit) \
     (exportInstances) \
@@ -88,6 +91,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (file) \
     (filterTypes) \
     (ignoreWarnings) \
+    (includeEmptyTransforms) \
     (kind) \
     (disableModelKindProcessor) \
     (materialCollectionsPath) \
@@ -168,6 +172,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (importRelativeTextures) \
     (pullImportStage) \
     (preserveTimeline) \
+    (remapUVSetsTo) \
     /* values for import relative textures */ \
     (automatic) \
     (absolute) \
@@ -203,6 +208,9 @@ struct UsdMayaJobExportArgs
     /// per-gprim bindings.
     const bool        exportCollectionBasedBindings;
     const bool        exportColorSets;
+    const bool        exportMaterials;
+    const bool        exportAssignedMaterials;
+    const bool        legacyMaterialScope;
     const bool        exportDefaultCameras;
     const bool        exportDisplayColor;
     const bool        exportDistanceUnit;
@@ -221,6 +229,7 @@ struct UsdMayaJobExportArgs
     const bool        exportComponentTags;
     const std::string file;
     const bool        ignoreWarnings;
+    const bool        includeEmptyTransforms;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of
@@ -274,7 +283,14 @@ struct UsdMayaJobExportArgs
     const std::string pythonPerFrameCallback;
     const std::string pythonPostCallback;
 
+    // List of object to export that are DAG objects.
     const UsdMayaUtil::MDagPathSet dagPaths;
+
+    // Full list of objects that were initially requested to be
+    // exported. Contains the DAG object and also non-DAG objects,
+    // like materials.
+    const MSelectionList fullObjectList;
+
     /// The time samples at which to export animated data; the times must be
     /// monotonically non-decreasing.
     /// An empty list of time samples means that no animated (time-sampled)
@@ -305,6 +321,7 @@ struct UsdMayaJobExportArgs
     static UsdMayaJobExportArgs CreateFromDictionary(
         const VtDictionary&             userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
+        const MSelectionList&           fullList,
         const std::vector<double>&      timeSamples = std::vector<double>());
 
     /// Fills a VtDictionary from the given text-encoded options.
@@ -340,11 +357,21 @@ struct UsdMayaJobExportArgs
     MAYAUSD_CORE_PUBLIC
     std::string GetResolvedFileName() const;
 
+    // Verify if meshes are exported. (i.e not excluded by excludeExportTypes)
+    bool isExportingMeshes() const;
+
+    // Verify if cameras are exported. (i.e not excluded by excludeExportTypes)
+    bool isExportingCameras() const;
+
+    // Verify if lights are exported. (i.e not excluded by excludeExportTypes)
+    bool isExportingLights() const;
+
 private:
     MAYAUSD_CORE_PUBLIC
     UsdMayaJobExportArgs(
         const VtDictionary&             userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
+        const MSelectionList&           fullList,
         const std::vector<double>&      timeSamples = std::vector<double>());
 };
 
@@ -388,6 +415,8 @@ struct UsdMayaJobImportArgs
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
     const std::map<std::string, ChaserArgs> allChaserArgs;
+
+    const std::map<std::string, std::string> remapUVSetsTo;
 
     /// Get the current material conversion.
     MAYAUSD_CORE_PUBLIC

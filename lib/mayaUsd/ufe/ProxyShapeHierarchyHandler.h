@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PROXYSHAPEHIERARCHYHANDLER_H
+#define MAYAUSD_PROXYSHAPEHIERARCHYHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -43,13 +44,8 @@ public:
     typedef std::shared_ptr<ProxyShapeHierarchyHandler> Ptr;
 
     ProxyShapeHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
-    ~ProxyShapeHierarchyHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeHierarchyHandler(const ProxyShapeHierarchyHandler&) = delete;
-    ProxyShapeHierarchyHandler& operator=(const ProxyShapeHierarchyHandler&) = delete;
-    ProxyShapeHierarchyHandler(ProxyShapeHierarchyHandler&&) = delete;
-    ProxyShapeHierarchyHandler& operator=(ProxyShapeHierarchyHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeHierarchyHandler);
 
     //! Create a ProxyShapeHierarchyHandler from a UFE hierarchy handler.
     static ProxyShapeHierarchyHandler::Ptr
@@ -61,9 +57,11 @@ public:
     Ufe::Hierarchy::ChildFilter childFilter() const override;
 
 private:
-    Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
+    Ufe::HierarchyHandler::Ptr _mayaHierarchyHandler;
 
 }; // ProxyShapeHierarchyHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PROXYSHAPEHIERARCHYHANDLER_H

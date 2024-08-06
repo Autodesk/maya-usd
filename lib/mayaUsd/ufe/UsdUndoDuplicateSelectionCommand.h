@@ -42,13 +42,8 @@ public:
     UsdUndoDuplicateSelectionCommand(
         const Ufe::Selection&       selection,
         const Ufe::ValueDictionary& duplicateOptions);
-    ~UsdUndoDuplicateSelectionCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoDuplicateSelectionCommand(const UsdUndoDuplicateSelectionCommand&) = delete;
-    UsdUndoDuplicateSelectionCommand& operator=(const UsdUndoDuplicateSelectionCommand&) = delete;
-    UsdUndoDuplicateSelectionCommand(UsdUndoDuplicateSelectionCommand&&) = delete;
-    UsdUndoDuplicateSelectionCommand& operator=(UsdUndoDuplicateSelectionCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateSelectionCommand);
 
     //! Create a UsdUndoDuplicateSelectionCommand from a USD prim and UFE path.
     static Ptr
@@ -61,11 +56,11 @@ public:
     Ufe::SceneItem::Ptr targetItem(const Ufe::Path& sourcePath) const override;
 
 private:
-    UsdUndoableItem _undoableItem;
-    const bool      _copyExternalInputs;
+    UsdUfe::UsdUndoableItem _undoableItem;
+    const bool              _copyExternalInputs;
 
     // Transient list of items to duplicate. Needed by execute.
-    std::vector<UsdSceneItem::Ptr> _sourceItems;
+    std::vector<UsdUfe::UsdSceneItem::Ptr> _sourceItems;
 
     using CommandMap = std::unordered_map<Ufe::Path, UsdUndoDuplicateCommand::Ptr>;
     CommandMap _perItemCommands;

@@ -48,6 +48,9 @@ class testVP2RenderDelegatePoints(imageUtils.ImageDiffingTestCase):
 
         cls._testDir = os.path.abspath('.')
 
+        mayaVer = int(cmds.about(majorVersion=True))
+        cls._suffix = '-2022' if mayaVer <= 2022 else ''
+
     def assertSnapshotClose(self, imageName):
         baselineImage = os.path.join(self._baselineDir, imageName)
         snapshotImage = os.path.join(self._testDir, imageName)
@@ -66,9 +69,9 @@ class testVP2RenderDelegatePoints(imageUtils.ImageDiffingTestCase):
     def _RunTest(self, selection):
         globalSelection = ufe.GlobalSelection.get()
         cmds.setAttr('stageShape.cplx', 1)
-        self.assertSnapshotClose('%s_unselected.png' % (self._testName))
+        self.assertSnapshotClose('%s_unselected%s.png' % (self._testName, self._suffix))
         globalSelection.replaceWith(selection)
-        self.assertSnapshotClose('%s_selected.png' % (self._testName))
+        self.assertSnapshotClose('%s_selected%s.png' % (self._testName, self._suffix))
         globalSelection.clear()
 
     def _GetSceneItem(self, mayaPathString, usdPathString):

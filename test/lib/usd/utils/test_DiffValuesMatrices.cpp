@@ -1,4 +1,4 @@
-#include <mayaUsdUtils/DiffPrims.h>
+#include <usdUfe/utils/diffPrims.h>
 
 #include <pxr/base/gf/matrix3d.h>
 #include <pxr/base/gf/matrix4d.h>
@@ -8,7 +8,8 @@
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace MayaUsdUtils;
+using UsdUfe::compareValues;
+using UsdUfe::DiffResult;
 
 namespace {
 GfMatrix2d m2d1(1, 12, 15, 16);

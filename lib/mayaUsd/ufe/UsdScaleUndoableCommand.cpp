@@ -20,6 +20,10 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdScaleUndoableCommand is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTRSUndoableCommandBase<PXR_NS::GfVec3f>, UsdScaleUndoableCommand);
+MAYAUSD_VERIFY_CLASS_BASE(Ufe::ScaleUndoableCommand, UsdScaleUndoableCommand);
+
 PXR_NS::TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
@@ -31,8 +35,6 @@ UsdScaleUndoableCommand::UsdScaleUndoableCommand(
     , UsdTRSUndoableCommandBase(x, y, z)
 {
 }
-
-UsdScaleUndoableCommand::~UsdScaleUndoableCommand() { }
 
 /*static*/
 UsdScaleUndoableCommand::Ptr
@@ -54,7 +56,7 @@ void UsdScaleUndoableCommand::addEmptyAttribute()
 
 void UsdScaleUndoableCommand::performImp(double x, double y, double z)
 {
-    scaleOp(prim(), path(), x, y, z);
+    UsdUfe::scaleOp(prim(), path(), x, y, z);
 }
 
 //------------------------------------------------------------------------------

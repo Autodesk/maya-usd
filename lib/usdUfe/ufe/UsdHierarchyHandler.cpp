@@ -24,12 +24,7 @@
 
 namespace USDUFE_NS_DEF {
 
-UsdHierarchyHandler::UsdHierarchyHandler()
-    : Ufe::HierarchyHandler()
-{
-}
-
-UsdHierarchyHandler::~UsdHierarchyHandler() { }
+USDUFE_VERIFY_CLASS_SETUP(Ufe::HierarchyHandler, UsdHierarchyHandler);
 
 /*static*/
 UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
@@ -44,7 +39,7 @@ UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
 Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (!TF_VERIFY(usdItem)) {
         return nullptr;
     }

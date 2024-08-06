@@ -22,6 +22,8 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/vec3f.h>
@@ -49,6 +51,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MRenderUtil.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
@@ -124,6 +127,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 UsdMayaPrimWriter::ContextSupport
 PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
+    if (!exportArgs.exportMaterials)
+        return ContextSupport::Unsupported;
+
     if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
         return ContextSupport::Supported;
     }
@@ -263,9 +269,27 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    std::string fileTextureName(fileTextureNamePlug.asString(&status).asChar());
+    const MString rawTextureName = fileTextureNamePlug.asString(&status);
     if (status != MS::kSuccess) {
         return;
+    }
+
+    // Resolve texture path like a file node
+    const MString exactTextureName = MRenderUtil::exactFileTextureName(
+        rawTextureName,
+        /* useFrameExt = */ false,
+        /* currentFrameExt = */ MString(),
+        depNodeFn.absoluteName(),
+        &status);
+    if (status != MS::kSuccess) {
+        return;
+    }
+
+    std::string fileTextureName(exactTextureName.asChar(), exactTextureName.length());
+
+    // Fallback to raw name if maya resolution failed, eg file was not found
+    if (fileTextureName.empty()) {
+        fileTextureName.assign(rawTextureName.asChar(), rawTextureName.length());
     }
 
     const MPlug tilingAttr
@@ -593,7 +617,7 @@ void PxrUsdTranslators_FileTextureWriter::WriteTransform2dNode(
     if (primvarReaderShaderPath.GetName() == _tokens->PrimvarReaderShaderName.GetString()) {
         usdUvTransformName = TfStringPrintf(
             "%s_%s",
-            UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()).c_str(),
+            UsdUfe::sanitizeName(depNodeFn.name().asChar()).c_str(),
             _tokens->UsdTransform2dShaderName.GetText());
 
     } else {
@@ -695,7 +719,7 @@ PxrUsdTranslators_FileTextureWriter::getPlace2DTexturePath(const MFnDependencyNo
         MPlug source = plug.source(&status);
         if (status == MS::kSuccess && !source.isNull()) {
             MFnDependencyNode sourceNode(source.node());
-            usdUvTextureName = UsdMayaUtil::SanitizeName(sourceNode.name().asChar());
+            usdUvTextureName = UsdUfe::sanitizeName(sourceNode.name().asChar());
         }
     }
 

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DBASE_H
+#define MAYAUSD_USDTRANSFORM3DBASE_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTransform3dReadImpl.h>
@@ -37,27 +38,25 @@ namespace ufe {
 // could be changed to use the current time, using getTime(path()).
 
 class MAYAUSD_CORE_PUBLIC UsdTransform3dBase
-    : private UsdTransform3dReadImpl
+    : protected UsdTransform3dReadImpl
     , public Ufe::Transform3d
 {
 public:
     typedef std::shared_ptr<UsdTransform3dBase> Ptr;
 
-    UsdTransform3dBase(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dBase() override = default;
+    UsdTransform3dBase(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    // Delete the copy/move constructors assignment operators.
-    UsdTransform3dBase(const UsdTransform3dBase&) = delete;
-    UsdTransform3dBase& operator=(const UsdTransform3dBase&) = delete;
-    UsdTransform3dBase(UsdTransform3dBase&&) = delete;
-    UsdTransform3dBase& operator=(UsdTransform3dBase&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dBase);
 
     // Ufe::Transform3d overrides
     const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
 
-    inline UsdSceneItem::Ptr usdSceneItem() const { return UsdTransform3dReadImpl::usdSceneItem(); }
-    inline PXR_NS::UsdPrim   prim() const { return UsdTransform3dReadImpl::prim(); }
+    inline UsdUfe::UsdSceneItem::Ptr usdSceneItem() const
+    {
+        return UsdTransform3dReadImpl::usdSceneItem();
+    }
+    inline PXR_NS::UsdPrim prim() const { return UsdTransform3dReadImpl::prim(); }
 
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
     Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;
@@ -82,7 +81,13 @@ public:
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
+protected:
+    // Check if the attribute edit is allowed inside the edit context.
+    bool isAttributeEditAllowed(const PXR_NS::TfToken attrName) const;
+    bool isAttributeEditAllowed(const PXR_NS::TfToken* attrNames, int count) const;
 }; // UsdTransform3dBase
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DBASE_H

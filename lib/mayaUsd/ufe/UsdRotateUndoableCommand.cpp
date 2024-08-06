@@ -20,6 +20,10 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdRotateUndoableCommand is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTRSUndoableCommandBase<PXR_NS::GfVec3f>, UsdRotateUndoableCommand);
+MAYAUSD_VERIFY_CLASS_BASE(Ufe::RotateUndoableCommand, UsdRotateUndoableCommand);
+
 PXR_NS::TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
 
 UsdRotateUndoableCommand::UsdRotateUndoableCommand(
@@ -35,15 +39,13 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
     // common API xformOps (In case we have rotateX, rotateY or rotateZ ops)
     try {
         if (!UsdGeomXformCommonAPI(prim()))
-            convertToCompatibleCommonAPI(prim());
+            UsdUfe::convertToCompatibleCommonAPI(prim());
     } catch (...) {
         // Since Maya cannot catch this error at this moment, store it until we
         // actually rotate.
-        fFailedInit = std::current_exception(); // capture
+        _failedInit = std::current_exception(); // capture
     }
 }
-
-UsdRotateUndoableCommand::~UsdRotateUndoableCommand() { }
 
 UsdRotateUndoableCommand::Ptr
 UsdRotateUndoableCommand::create(const Ufe::Path& path, double x, double y, double z)
@@ -56,7 +58,7 @@ UsdRotateUndoableCommand::create(const Ufe::Path& path, double x, double y, doub
 void UsdRotateUndoableCommand::undo()
 {
     // Check if initialization went ok.
-    if (!fFailedInit) {
+    if (!_failedInit) {
         UsdTRSUndoableCommandBase::undoImp();
     }
 }
@@ -70,7 +72,7 @@ void UsdRotateUndoableCommand::addEmptyAttribute()
 
 void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 {
-    rotateOp(prim(), path(), x, y, z);
+    UsdUfe::rotateOp(prim(), path(), x, y, z);
 }
 
 //------------------------------------------------------------------------------
@@ -80,8 +82,8 @@ void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 bool UsdRotateUndoableCommand::set(double x, double y, double z)
 {
     // Fail early - Initialization did not go as expected.
-    if (fFailedInit) {
-        std::rethrow_exception(fFailedInit);
+    if (_failedInit) {
+        std::rethrow_exception(_failedInit);
     }
     perform(x, y, z);
     return true;

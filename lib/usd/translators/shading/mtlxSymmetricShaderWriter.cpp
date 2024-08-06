@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
@@ -149,6 +151,9 @@ void MtlxUsd_SymmetricShaderWriter::RegisterWriter(
 UsdMayaPrimWriter::ContextSupport
 MtlxUsd_SymmetricShaderWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
+    if (!exportArgs.exportMaterials)
+        return ContextSupport::Unsupported;
+
     if (exportArgs.convertMaterialsTo == TrMtlxTokens->conversionName) {
         return ContextSupport::Supported;
     }
@@ -176,7 +181,7 @@ MtlxUsd_SymmetricShaderWriter::MtlxUsd_SymmetricShaderWriter(
         }
 
         nodePath = nodegraphSchema.GetPath().AppendChild(
-            TfToken(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar())));
+            TfToken(UsdUfe::sanitizeName(depNodeFn.name().asChar())));
     }
     UsdShadeShader shaderSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);
     if (!TF_VERIFY(

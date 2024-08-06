@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_MAYAUSDCONTEXTOPS_H
+#define MAYAUSD_MAYAUSDCONTEXTOPS_H
 
 #include <mayaUsd/base/api.h>
 
@@ -37,17 +38,10 @@ public:
     typedef UsdUfe::UsdContextOps              Parent;
     typedef std::shared_ptr<MayaUsdContextOps> Ptr;
 
-    MayaUsdContextOps(const UsdSceneItem::Ptr& item);
-    ~MayaUsdContextOps() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdContextOps(const MayaUsdContextOps&) = delete;
-    MayaUsdContextOps& operator=(const MayaUsdContextOps&) = delete;
-    MayaUsdContextOps(MayaUsdContextOps&&) = delete;
-    MayaUsdContextOps& operator=(MayaUsdContextOps&&) = delete;
+    MayaUsdContextOps(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a MayaUsdContextOps.
-    static MayaUsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
+    static MayaUsdContextOps::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     // UsdUfe::UsdContextOps overrides
     Items                     getItems(const ItemPath& itemPath) const override;
@@ -62,3 +56,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_MAYAUSDCONTEXTOPS_H

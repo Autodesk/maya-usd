@@ -42,6 +42,7 @@ class PrimUpdaterManager : public PXR_NS::TfWeakBase
 {
 public:
     MAYAUSD_CORE_PUBLIC
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(PrimUpdaterManager);
     ~PrimUpdaterManager();
 
     /// \brief merges edited Maya data into its corresponding USD stage.
@@ -86,9 +87,6 @@ public:
 
 private:
     PrimUpdaterManager();
-
-    PrimUpdaterManager(PrimUpdaterManager&) = delete;
-    PrimUpdaterManager(PrimUpdaterManager&&) = delete;
 
     bool discardPrimEdits(const Ufe::Path& pulledPath);
     bool discardOrphanedEdits(const MDagPath& dagPath, const Ufe::Path& pulledPath);

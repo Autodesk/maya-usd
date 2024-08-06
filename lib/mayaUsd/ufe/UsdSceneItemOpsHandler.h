@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDSCENEITEMOPSHANDLER_H
+#define MAYAUSD_USDSCENEITEMOPSHANDLER_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItemOps.h>
@@ -29,14 +30,9 @@ class MAYAUSD_CORE_PUBLIC UsdSceneItemOpsHandler : public Ufe::SceneItemOpsHandl
 public:
     typedef std::shared_ptr<UsdSceneItemOpsHandler> Ptr;
 
-    UsdSceneItemOpsHandler();
-    ~UsdSceneItemOpsHandler() override;
+    UsdSceneItemOpsHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdSceneItemOpsHandler(const UsdSceneItemOpsHandler&) = delete;
-    UsdSceneItemOpsHandler& operator=(const UsdSceneItemOpsHandler&) = delete;
-    UsdSceneItemOpsHandler(UsdSceneItemOpsHandler&&) = delete;
-    UsdSceneItemOpsHandler& operator=(UsdSceneItemOpsHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSceneItemOpsHandler);
 
     //! Create a UsdSceneItemOpsHandler.
     static UsdSceneItemOpsHandler::Ptr create();
@@ -47,3 +43,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDSCENEITEMOPSHANDLER_H

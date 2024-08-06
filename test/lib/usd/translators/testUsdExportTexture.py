@@ -26,7 +26,9 @@ import os
 import unittest
 
 import fixturesUtils
+import testUtils
 
+PROJ_ENV_VAR_NAME = "_MAYA_USD_EXPORT_TEXTURE_TEST_PATH"
 
 class testUsdExportTexture(unittest.TestCase):
 
@@ -47,16 +49,17 @@ class testUsdExportTexture(unittest.TestCase):
         return os.path.join(outputFolder, 'TextureTest.usda')
 
     def tearDown(self):
-        usdFilePath = self.getUsdFilePath()
         try:
-            if os.path.exists(usdFilePath):
-                os.remove(usdFilePath)
+            # Cleanup the output folder added for the test. We don't want
+            # to leave extra files around in the test source directory.
+            outputFolder = os.path.dirname(self.getUsdFilePath())
+            import shutil
+            shutil.rmtree(outputFolder)
         except Exception:
             # Don't let cleanup errors fail the test.
-            # We're removing the output file only to be nice, it is not mandatory.
             pass
 
-    def runTextureTest(self, relativeMode):
+    def runTextureTest(self, relativeMode, withEnvVar):
         projectFolder = os.path.join(self.inputPath, 'UsdExportTextureTest', 'rel_project')
         mayaScenePath = os.path.join(projectFolder, 'scenes', 'TextureTest.ma')
         cmds.file(mayaScenePath, force=True, open=True)
@@ -65,17 +68,21 @@ class testUsdExportTexture(unittest.TestCase):
         cmds.workspace(projectFolder, openWorkspace=True)
 
         # Prepare texture path to be part of the project folder.
-        texturePath = os.path.join(projectFolder, 'sourceimages', 'grid.png')
+        # build the absolute texturePath, with an env var if requested
+        textureRoot = ('$' + PROJ_ENV_VAR_NAME) if withEnvVar else projectFolder
+        texturePath = os.path.join(textureRoot, 'sourceimages', 'grid.png')
         cmds.setAttr('file1.ftn', texturePath, edit=True, type='string')
 
-        # Export to USD.
+        # Export to USD, ensuring envvar is set if it is used by texture  path
         usdFilePath = self.getUsdFilePath()
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, exportRelativeTextures=relativeMode)
+
+        with testUtils.TemporaryEnvironmentVariable(PROJ_ENV_VAR_NAME, projectFolder):
+            cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, exportRelativeTextures=relativeMode)
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage, usdFilePath)
 
-        shaderWithTexturePrimPath = '/pCylinder1/Looks/initialShadingGroup/file1'
+        shaderWithTexturePrimPath = '/Looks/initialShadingGroup/file1'
         shaderWithTexturePrim = stage.GetPrimAtPath(shaderWithTexturePrimPath)
         self.assertTrue(shaderWithTexturePrim, shaderWithTexturePrimPath)
 
@@ -88,24 +95,48 @@ class testUsdExportTexture(unittest.TestCase):
         self.assertEqual(os.path.isabs(exportedTexturePath.path), shouldBeAbsolute,
                          'The exported texture %s does not have the right relative mode' % exportedTexturePath)
 
+        self.assertTrue(os.path.exists(exportedTexturePath.resolvedPath),
+                        'The exported texture %s is not resolved by USD' % exportedTexturePath)
+
     def testExportRelativeTexture(self):
         '''
         Test that texture can be exported with relative paths for textures.
         '''
-        self.runTextureTest('relative')
+        self.runTextureTest('relative', withEnvVar=False)
 
     def testExportAbsoluteTexture(self):
         '''
         Test that texture can be exported with absolute paths for textures.
         '''
-        self.runTextureTest('absolute')
+        self.runTextureTest('absolute', withEnvVar=False)
 
     def testExportAutomaticTexture(self):
         '''
         Test that texture can be exported with automatic reltive or absolute
         paths for textures.
         '''
-        self.runTextureTest('automatic')
+        self.runTextureTest('automatic', withEnvVar=False)
+
+    def testExportRelativeTextureWithEnvVar(self):
+        '''
+        Test that texture path with an environment variable expansion can be
+        exported with relative paths for textures.
+        '''
+        self.runTextureTest('relative', withEnvVar=True)
+
+    def testExportAbsoluteTextureWithEnvVar(self):
+        '''
+        Test that texture path with an environment variable expansion can be
+        exported with absolute paths for textures.
+        '''
+        self.runTextureTest('absolute', withEnvVar=True)
+
+    def testExportAutomaticTextureWithEnvVar(self):
+        '''
+        Test that texture path with an environment variable expansion can be
+        exported with automatic relative or absolute paths for textures.
+        '''
+        self.runTextureTest('automatic', withEnvVar=True)
 
 
 if __name__ == '__main__':

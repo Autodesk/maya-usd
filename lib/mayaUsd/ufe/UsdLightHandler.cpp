@@ -17,6 +17,8 @@
 
 #include "UsdLight.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usdLux/lightAPI.h>
@@ -24,18 +26,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdLightHandler::UsdLightHandler()
-    : Ufe::LightHandler()
-{
-}
-
-UsdLightHandler::~UsdLightHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::LightHandler, UsdLightHandler);
 
 UsdLightHandler::Ptr UsdLightHandler::create() { return std::make_shared<UsdLightHandler>(); }
 
 Ufe::Light::Ptr UsdLightHandler::light(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif

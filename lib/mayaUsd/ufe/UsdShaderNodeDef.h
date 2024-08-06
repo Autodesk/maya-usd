@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDSHADERNODEDEF_H
+#define MAYAUSD_USDSHADERNODEDEF_H
 
 #include <mayaUsd/base/api.h>
 
@@ -34,13 +35,8 @@ public:
     static constexpr char kNodeDefCategorySurface[] = "Surface";
 
     UsdShaderNodeDef(const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef);
-    ~UsdShaderNodeDef();
 
-    // Delete the copy/move constructors assignment operators.
-    UsdShaderNodeDef(const UsdShaderNodeDef&) = delete;
-    UsdShaderNodeDef& operator=(const UsdShaderNodeDef&) = delete;
-    UsdShaderNodeDef(UsdShaderNodeDef&&) = delete;
-    UsdShaderNodeDef& operator=(UsdShaderNodeDef&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderNodeDef);
 
 #ifndef UFE_V4_FEATURES_AVAILABLE
     //! \return The type of the shader node definition.
@@ -148,14 +144,16 @@ public:
     static Ufe::NodeDefs definitions(const std::string& category);
 
 private:
-    const PXR_NS::SdrShaderNodeConstPtr fShaderNodeDef;
+    const PXR_NS::SdrShaderNodeConstPtr _shaderNodeDef;
 #ifndef UFE_V4_FEATURES_AVAILABLE
-    const std::string             fType;
-    const Ufe::ConstAttributeDefs fInputs;
-    const Ufe::ConstAttributeDefs fOutputs;
+    const std::string             _type;
+    const Ufe::ConstAttributeDefs _inputs;
+    const Ufe::ConstAttributeDefs _outputs;
 #endif
 
 }; // UsdShaderNodeDef
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDSHADERNODEDEF_H

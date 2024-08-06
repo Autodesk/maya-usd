@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_SETVARIANTSELECTIONCOMMAND_H
+#define USDUFE_SETVARIANTSELECTIONCOMMAND_H
 
 #include <usdUfe/base/api.h>
 
@@ -34,6 +35,8 @@ class USDUFE_PUBLIC SetVariantSelectionCommand : public Ufe::UndoableCommand
 public:
     using Ptr = std::shared_ptr<SetVariantSelectionCommand>;
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(SetVariantSelectionCommand);
+
     //! Create a SetVariantSelectionCommand. Does not execute it.
     static SetVariantSelectionCommand::Ptr create(
         const Ufe::Path&       path,
@@ -47,18 +50,10 @@ public:
         const std::string&     variantName,
         const std::string&     variantSelection);
 
-    ~SetVariantSelectionCommand() override;
-
     void redo() override;
     void undo() override;
 
 private:
-    // Delete the copy/move constructors assignment operators.
-    SetVariantSelectionCommand(const SetVariantSelectionCommand&) = delete;
-    SetVariantSelectionCommand& operator=(const SetVariantSelectionCommand&) = delete;
-    SetVariantSelectionCommand(SetVariantSelectionCommand&&) = delete;
-    SetVariantSelectionCommand& operator=(SetVariantSelectionCommand&&) = delete;
-
     const Ufe::Path       _path;
     PXR_NS::UsdPrim       _prim;
     PXR_NS::UsdVariantSet _varSet;
@@ -68,3 +63,5 @@ private:
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_SETVARIANTSELECTIONCOMMAND_H

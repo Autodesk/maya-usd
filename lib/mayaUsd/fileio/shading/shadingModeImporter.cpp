@@ -15,6 +15,8 @@
 //
 #include "shadingModeImporter.h"
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -100,7 +102,7 @@ UsdMayaShadingModeImportContext::GetShadingEngineName(const std::string& surface
         shadingEngineName = _shadeMaterial.GetPrim().GetName();
     } else if (_boundPrim) {
         // We have no material, so we definitely want to use the surfaceNodeName here:
-        shadingEngineName = TfToken(UsdMayaUtil::SanitizeName(surfaceNodeName + "SG").c_str());
+        shadingEngineName = TfToken(UsdUfe::sanitizeName(surfaceNodeName + "SG").c_str());
     }
 
     return shadingEngineName;

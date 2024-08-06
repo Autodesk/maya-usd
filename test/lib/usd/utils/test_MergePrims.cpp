@@ -1,4 +1,4 @@
-#include <mayaUsdUtils/MergePrims.h>
+#include <usdUfe/utils/mergePrims.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/tf/type.h>
@@ -13,7 +13,10 @@
 #include <algorithm>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace MayaUsdUtils;
+
+using UsdUfe::MergeMissing;
+using UsdUfe::MergePrimsOptions;
+using UsdUfe::MergeVerbosity;
 
 namespace {
 

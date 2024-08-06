@@ -24,12 +24,16 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTransform3dRead::Ptr UsdTransform3dRead::create(const UsdSceneItem::Ptr& item)
+// Ensure that UsdTransform3dRead is properly setup.
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Transform3dRead, UsdTransform3dRead);
+MAYAUSD_VERIFY_CLASS_BASE(UsdTransform3dReadImpl, UsdTransform3dRead);
+
+UsdTransform3dRead::Ptr UsdTransform3dRead::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dRead>(item);
 }
 
-UsdTransform3dRead::UsdTransform3dRead(const UsdSceneItem::Ptr& item)
+UsdTransform3dRead::UsdTransform3dRead(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dReadImpl(item)
     , Transform3dRead()
 {
@@ -58,6 +62,8 @@ Ufe::Matrix4d UsdTransform3dRead::segmentExclusiveMatrix() const
 // UsdTransform3dReadHandler
 //------------------------------------------------------------------------------
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Transform3dHandler, UsdTransform3dReadHandler);
+
 UsdTransform3dReadHandler::UsdTransform3dReadHandler(
     const Ufe::Transform3dHandler::Ptr& nextHandler)
     : Ufe::Transform3dHandler()
@@ -74,7 +80,7 @@ UsdTransform3dReadHandler::create(const Ufe::Transform3dHandler::Ptr& nextHandle
 
 namespace {
 
-bool isUsdScope(const UsdSceneItem& usdItem)
+bool isUsdScope(const UsdUfe::UsdSceneItem& usdItem)
 {
     // Test the type of the USD prim, verify it is a scope.
     return PXR_NS::UsdGeomScope(usdItem.prim()) && !PXR_NS::UsdGeomXformable(usdItem.prim());
@@ -92,8 +98,7 @@ Ufe::Transform3d::Ptr UsdTransform3dReadHandler::transform3d(const Ufe::SceneIte
 Ufe::Transform3dRead::Ptr
 UsdTransform3dReadHandler::transform3dRead(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = downcast(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem || !isUsdScope(*usdItem))
         return _nextHandler->transform3dRead(item);
 

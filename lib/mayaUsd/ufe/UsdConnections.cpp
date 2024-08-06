@@ -34,19 +34,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Connections, UsdConnections);
+
 UsdConnections::UsdConnections(const Ufe::SceneItem::Ptr& item)
     : Ufe::Connections()
 #if !defined(NDEBUG)
-    , _sceneItem(std::static_pointer_cast<UsdSceneItem>(item))
+    , _sceneItem(std::static_pointer_cast<UsdUfe::UsdSceneItem>(item))
 #else
-    , _sceneItem(std::dynamic_pointer_cast<UsdSceneItem>(item))
+    , _sceneItem(UsdUfe::downcast(item))
 #endif
 {
     // Note: TF_VERIFY emits a TF_CODING_ERROR.
     TF_VERIFY(_sceneItem);
 }
-
-UsdConnections::~UsdConnections() { }
 
 UsdConnections::Ptr UsdConnections::create(const Ufe::SceneItem::Ptr& item)
 {

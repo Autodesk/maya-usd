@@ -393,7 +393,7 @@ void OrphanedNodesManager::handleOp(const Ufe::SceneCompositeNotification::Op& o
         // USD sends resync changes (UFE subtree invalidate) on the
         // pseudo-root itself.  Since the pseudo-root has no payload or
         // variant, ignore these.
-        auto parentUsdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem);
+        auto parentUsdItem = MayaUsd::ufe::downcast(parentItem);
         if (!parentUsdItem) {
             return;
         }
@@ -603,7 +603,7 @@ bool OrphanedNodesManager::setOrphaned(
 
     // Note: if we are called due to the user deleting the stage, then the stage
     //       will be invalid, don't treat this as an error.
-    UsdStagePtr stage = getStage(pulledPrimPath);
+    UsdStagePtr stage = UsdUfe::getStage(pulledPrimPath);
     if (!stage)
         return true;
 
@@ -651,8 +651,7 @@ void OrphanedNodesManager::recursiveSwitch(
     if (trieNode->hasData()) {
         TF_VERIFY(trieNode->empty());
 
-        auto pulledNode
-            = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(Ufe::Hierarchy::createItem(ufePath));
+        auto pulledNode = MayaUsd::ufe::downcast(Ufe::Hierarchy::createItem(ufePath));
         if (!TF_VERIFY(pulledNode)) {
             return;
         }

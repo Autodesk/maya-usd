@@ -25,13 +25,13 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoUngroupCommand);
+
 UsdUndoUngroupCommand::UsdUndoUngroupCommand(const UsdSceneItem::Ptr& groupItem)
     : Ufe::UndoableCommand()
     , _groupItem(groupItem)
 {
 }
-
-UsdUndoUngroupCommand::~UsdUndoUngroupCommand() { }
 
 UsdUndoUngroupCommand::Ptr UsdUndoUngroupCommand::create(const UsdSceneItem::Ptr& groupItem)
 {

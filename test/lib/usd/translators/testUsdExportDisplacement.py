@@ -77,9 +77,7 @@ class testUsdExportDisplacementShaders(unittest.TestCase):
             material = mat_binding.ComputeBoundMaterial()[0]
             self.assertTrue(material)
             material_path = material.GetPath().pathString
-            self.assertEqual(material_path,
-                             '/pPlane%i/Materials/blinn%iSG' % (suffix,
-                                                                suffix))
+            self.assertEqual(material_path, '/Materials/blinn%iSG' % suffix)
 
             self.assertTrue(material.ComputeSurfaceSource())
             self.assertTrue(material.ComputeDisplacementSource())

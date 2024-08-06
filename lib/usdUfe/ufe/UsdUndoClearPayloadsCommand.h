@@ -31,6 +31,8 @@ class USDUFE_PUBLIC UsdUndoClearPayloadsCommand : public UsdUndoableCommand<Ufe:
 public:
     UsdUndoClearPayloadsCommand(const PXR_NS::UsdPrim& prim);
 
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoClearPayloadsCommand);
+
 protected:
     void executeImplementation() override;
 

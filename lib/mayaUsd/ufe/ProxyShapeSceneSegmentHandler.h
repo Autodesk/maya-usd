@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PROXYSHAPESCENESEGMENTHANDLER_H
+#define MAYAUSD_PROXYSHAPESCENESEGMENTHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -36,13 +37,8 @@ public:
     typedef std::shared_ptr<ProxyShapeSceneSegmentHandler> Ptr;
 
     ProxyShapeSceneSegmentHandler(const Ufe::SceneSegmentHandler::Ptr& mayaSceneSegmentHandler);
-    ~ProxyShapeSceneSegmentHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeSceneSegmentHandler(const ProxyShapeSceneSegmentHandler&) = delete;
-    ProxyShapeSceneSegmentHandler& operator=(const ProxyShapeSceneSegmentHandler&) = delete;
-    ProxyShapeSceneSegmentHandler(ProxyShapeSceneSegmentHandler&&) = delete;
-    ProxyShapeSceneSegmentHandler& operator=(ProxyShapeSceneSegmentHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeSceneSegmentHandler);
 
     //! Create a ProxyShapeSceneSegmentHandler from a UFE scene segment handler.
     static ProxyShapeSceneSegmentHandler::Ptr
@@ -55,9 +51,11 @@ public:
     bool isGateway_(const Ufe::Path& path) const override;
 
 private:
-    Ufe::SceneSegmentHandler::Ptr fMayaSceneSegmentHandler;
+    Ufe::SceneSegmentHandler::Ptr _mayaSceneSegmentHandler;
 
 }; // ProxyShapeSceneSegmentHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PROXYSHAPESCENESEGMENTHANDLER_H

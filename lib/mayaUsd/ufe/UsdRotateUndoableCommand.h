@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDROTATEUNDOABLECOMMAND_H
+#define MAYAUSD_USDROTATEUNDOABLECOMMAND_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
@@ -38,10 +39,7 @@ class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand
 public:
     typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
 
-    UsdRotateUndoableCommand(const UsdRotateUndoableCommand&) = delete;
-    UsdRotateUndoableCommand& operator=(const UsdRotateUndoableCommand&) = delete;
-    UsdRotateUndoableCommand(UsdRotateUndoableCommand&&) = delete;
-    UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdRotateUndoableCommand);
 
     //! Create a UsdRotateUndoableCommand from a UFE scene path.  The command is
     //! not executed.
@@ -59,7 +57,6 @@ public:
 protected:
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.
     UsdRotateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
-    ~UsdRotateUndoableCommand() override;
 
 private:
     static PXR_NS::TfToken rotXYZ;
@@ -67,11 +64,13 @@ private:
     PXR_NS::TfToken attributeName() const override { return rotXYZ; }
     void            performImp(double x, double y, double z) override;
     void            addEmptyAttribute() override;
-    bool            cannotInit() const override { return bool(fFailedInit); }
+    bool            cannotInit() const override { return bool(_failedInit); }
 
-    std::exception_ptr fFailedInit;
+    std::exception_ptr _failedInit;
 
 }; // UsdRotateUndoableCommand
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDROTATEUNDOABLECOMMAND_H

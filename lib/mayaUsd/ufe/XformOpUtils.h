@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_UFE_XFORMOPUTILS_H
+#define MAYAUSD_UFE_XFORMOPUTILS_H
 
 #include <mayaUsd/mayaUsd.h>
 
@@ -69,3 +70,5 @@ void getTRS(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vec
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_UFE_XFORMOPUTILS_H

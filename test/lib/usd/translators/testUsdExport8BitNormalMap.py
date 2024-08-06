@@ -105,7 +105,7 @@ class testExport8BitNormalMap(unittest.TestCase):
         self.assertTrue(os.path.isfile(out_file))
 
         stage = Usd.Stage.Open(out_file)
-        shader = UsdShade.Shader.Get(stage, '/ref_pPlane1/Looks/ref_usdPreviewSurface1SG/ref_file1')
+        shader = UsdShade.Shader.Get(stage, '/Looks/ref_usdPreviewSurface1SG/ref_file1')
         
         self.assertEqual(Gf.Vec4f(-1, -1, -1, 0), shader.GetInput('bias').Get())
         self.assertEqual(Gf.Vec4f(2, 2, 2, 1), shader.GetInput('scale').Get())

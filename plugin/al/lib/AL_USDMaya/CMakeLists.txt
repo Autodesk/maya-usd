@@ -185,7 +185,6 @@ target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    mayaUsdUtils
     AL_USDTransaction
     ar 
     gf 
@@ -206,6 +205,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
     mayaUsd
+    usdUfe
     ${UFE_LIBRARY}
     ghc_filesystem
 )

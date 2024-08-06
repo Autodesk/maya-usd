@@ -532,6 +532,8 @@ void wrapJobExportArgs()
         .def_readonly(
             "exportCollectionBasedBindings", &UsdMayaJobExportArgs::exportCollectionBasedBindings)
         .def_readonly("exportColorSets", &UsdMayaJobExportArgs::exportColorSets)
+        .def_readonly("exportMaterials", &UsdMayaJobExportArgs::exportMaterials)
+        .def_readonly("exportAssignedMaterials", &UsdMayaJobExportArgs::exportAssignedMaterials)
         .def_readonly("exportComponentTags", &UsdMayaJobExportArgs::exportComponentTags)
         .def_readonly("exportDefaultCameras", &UsdMayaJobExportArgs::exportDefaultCameras)
         .def_readonly("exportDisplayColor", &UsdMayaJobExportArgs::exportDisplayColor)
@@ -563,6 +565,7 @@ void wrapJobExportArgs()
             make_getter(
                 &UsdMayaJobExportArgs::geomSidedness, return_value_policy<return_by_value>()))
         .def_readonly("ignoreWarnings", &UsdMayaJobExportArgs::ignoreWarnings)
+        .def_readonly("includeEmptyTransforms", &UsdMayaJobExportArgs::includeEmptyTransforms)
         .add_property(
             "includeAPINames",
             make_getter(

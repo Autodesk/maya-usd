@@ -18,7 +18,9 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/vt/array.h>
@@ -89,7 +91,9 @@ public:
 
     virtual ~UsdPointInstanceModifierBase() = default;
 
-    bool setSceneItem(const UsdSceneItem::Ptr& sceneItem)
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdPointInstanceModifierBase);
+
+    bool setSceneItem(const UsdUfe::UsdSceneItem::Ptr& sceneItem)
     {
         _prim = PXR_NS::UsdPrim();
         _instanceIndex = -1;
@@ -141,7 +145,7 @@ public:
 
         const size_t instanceIndex = static_cast<size_t>(_instanceIndex);
 
-        PXR_NS::UsdAttribute usdAttr = _getAttribute();
+        PXR_NS::UsdAttribute usdAttr = getAttribute();
         if (!usdAttr) {
             return usdValue;
         }
@@ -213,7 +217,17 @@ public:
 
         _batch->usdValues[instanceIndex] = usdValue;
 
-        return writer ? usdAttr.Set(_batch->usdValues, usdTime) : true;
+        // If we're not the final command that will do the write,
+        // just return success.
+        if (!writer)
+            return true;
+
+        // If we're the final command that writes the batched values,
+        // then we need to do the edit routing.
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, usdAttr.GetPrim());
+
+        return usdAttr.Set(_batch->usdValues, usdTime);
     }
 
     // Join a point instancer batch.  Because objects of
@@ -249,6 +263,8 @@ public:
 
     virtual UsdValueType getDefaultUsdValue() const = 0;
 
+    virtual PXR_NS::UsdAttribute getAttribute() const = 0;
+
 protected:
     // Retrieve the active batches (one per point instancer path) for the
     // derived attribute type (i.e. position, orientation, or scale).  We keep
@@ -260,13 +276,11 @@ protected:
     // no such command exists.
     virtual Batches& batches() = 0;
 
-    virtual PXR_NS::UsdAttribute _getAttribute() const = 0;
-
     virtual PXR_NS::UsdAttribute _createAttribute() = 0;
 
     PXR_NS::UsdAttribute _getOrCreateAttribute()
     {
-        // XXX: Needed for Tf error message macros.
+        // Needed for Tf error message macros.
         PXR_NAMESPACE_USING_DIRECTIVE
 
         // Get the size of the prototype indices array. If we need to create
@@ -307,7 +321,7 @@ protected:
 
         const size_t numInstances = protoIndices.size();
 
-        PXR_NS::UsdAttribute usdAttr = _getAttribute();
+        PXR_NS::UsdAttribute usdAttr = getAttribute();
         if (!usdAttr || !usdAttr.HasAuthoredValue()) {
             usdAttr = _createAttribute();
             if (!usdAttr) {

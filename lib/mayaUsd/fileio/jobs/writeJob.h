@@ -73,6 +73,9 @@ private:
     /// Writes the root prim variants based on the Maya render layers.
     TfToken _WriteVariants(const UsdPrim& usdRootPrim);
 
+    /// Remove empty xform and scope recursively if the options to include them is off.
+    void _PruneEmpties();
+
     /// Creates a usdz package from the write job's current USD stage.
     void _CreatePackage() const;
 

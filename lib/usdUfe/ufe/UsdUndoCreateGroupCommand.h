@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOCREATEGROUPCOMMAND_H
+#define USDUFE_USDUNDOCREATEGROUPCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -37,13 +38,8 @@ public:
         const Ufe::Selection& selection,
 #endif
         const Ufe::PathComponent& name);
-    ~UsdUndoCreateGroupCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoCreateGroupCommand(const UsdUndoCreateGroupCommand&) = delete;
-    UsdUndoCreateGroupCommand& operator=(const UsdUndoCreateGroupCommand&) = delete;
-    UsdUndoCreateGroupCommand(UsdUndoCreateGroupCommand&&) = delete;
-    UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateGroupCommand);
 
     //! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
     static UsdUndoCreateGroupCommand::Ptr create(
@@ -72,3 +68,5 @@ private:
 }; // UsdUndoCreateGroupCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOCREATEGROUPCOMMAND_H
