@@ -33,7 +33,7 @@ public:
     static MStatus initialize(MFnPlugin&);
     static MStatus finalize(MFnPlugin&);
 
-    static const MString fsName;
+    static const MString name;
 
     static void*   creator();
     static MSyntax createSyntax();

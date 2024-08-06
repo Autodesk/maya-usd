@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDHIERARCHY_H
+#define USDUFE_USDHIERARCHY_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
@@ -36,13 +37,8 @@ public:
     typedef std::shared_ptr<UsdHierarchy> Ptr;
 
     UsdHierarchy(const UsdSceneItem::Ptr& item);
-    ~UsdHierarchy() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdHierarchy(const UsdHierarchy&) = delete;
-    UsdHierarchy& operator=(const UsdHierarchy&) = delete;
-    UsdHierarchy(UsdHierarchy&&) = delete;
-    UsdHierarchy& operator=(UsdHierarchy&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdHierarchy);
 
     //! Create a UsdHierarchy.
     static UsdHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
@@ -52,8 +48,8 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -105,8 +101,10 @@ private:
     createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range, bool filterInactive) const;
 
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdSceneItem::Ptr _item;
 
 }; // UsdHierarchy
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDHIERARCHY_H

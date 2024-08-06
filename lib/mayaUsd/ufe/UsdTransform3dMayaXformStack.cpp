@@ -23,9 +23,13 @@
 #include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
+#include <usdUfe/utils/editRouterContext.h>
+
+#include <pxr/base/gf/math.h>
 
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>
@@ -40,9 +44,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 using BaseUndoableCommand = Ufe::BaseUndoableCommand;
-using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&, UsdUndoableItem&)>;
+using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&, UsdUfe::UsdUndoableItem&)>;
 
-using namespace MayaUsd::ufe;
+using MayaUsd::ufe::UsdTransform3dMayaXformStack;
 
 // Type traits for GfVec precision.
 template <class V> struct OpPrecision
@@ -107,6 +111,24 @@ const std::unordered_map<TfToken, UsdTransform3dMayaXformStack::OpNdx, TfToken::
           UsdTransform3dMayaXformStack::NdxPivotInverse }
     };
 
+bool isAlmostZero(const Ufe::Vector3d& value)
+{
+    static const double epsilon = 0.0001;
+    return PXR_NS::GfIsClose(0., value.x(), epsilon) && PXR_NS::GfIsClose(0., value.y(), epsilon)
+        && PXR_NS::GfIsClose(0., value.z(), epsilon);
+}
+
+bool isThreeAxisRotation(TfToken attrName)
+{
+    static const std::set<TfToken> threeAxisNames({ TfToken("xformOp:rotateXYZ"),
+                                                    TfToken("xformOp:rotateXZY"),
+                                                    TfToken("xformOp:rotateYXZ"),
+                                                    TfToken("xformOp:rotateYZX"),
+                                                    TfToken("xformOp:rotateZXY"),
+                                                    TfToken("xformOp:rotateZYX") });
+    return threeAxisNames.find(attrName) != threeAxisNames.end();
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -156,8 +178,7 @@ bool hasValidSuffix(const std::vector<UsdGeomXformOp>& xformOps)
 Ufe::Transform3d::Ptr
 createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransform3dFn)
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }
@@ -229,7 +250,7 @@ public:
     }
 
 protected:
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
         if (_op)
             return;
@@ -271,6 +292,8 @@ private:
     OpFunc         _opFunc;
 };
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, UsdTRSUndoableCmdBase);
+
 // UsdRotatePivotTranslateUndoableCmd uses hard-coded USD common transform API
 // single pivot attribute name, not reusable.
 template <class V> class UsdVecOpUndoableCmd : public UsdTRSUndoableCmdBase
@@ -288,6 +311,9 @@ public:
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+
         VtValue v;
         v = V(x, y, z);
         updateNewValue(v);
@@ -312,6 +338,9 @@ public:
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+
         VtValue v;
         v = _cvtRotXYZToAttr(x, y, z);
         updateNewValue(v);
@@ -327,21 +356,23 @@ struct SceneItemHolder
 {
     SceneItemHolder(const BaseUndoableCommand& cmd)
     {
-        _sceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+        _sceneItem = downcast(cmd.sceneItem());
         if (!_sceneItem) {
             throw std::runtime_error("Cannot transform invalid scene item");
         }
     }
 
-    UsdSceneItem& item() const { return *_sceneItem; }
+    UsdUfe::UsdSceneItem& item() const { return *_sceneItem; }
 
 private:
-    std::shared_ptr<UsdSceneItem> _sceneItem;
+    UsdUfe::UsdSceneItem::Ptr _sceneItem;
 };
 
 } // namespace
 
-UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item)
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dMayaXformStack);
+
+UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)
     , _xformable(prim())
 {
@@ -352,7 +383,7 @@ UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdSceneItem::P
 
 /* static */
 UsdTransform3dMayaXformStack::Ptr
-UsdTransform3dMayaXformStack::create(const UsdSceneItem::Ptr& item)
+UsdTransform3dMayaXformStack::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dMayaXformStack>(item);
 }
@@ -403,21 +434,38 @@ UsdTransform3dMayaXformStack::translateCmd(double x, double y, double z)
         getTRSOpSuffix());
 }
 
+bool UsdTransform3dMayaXformStack::isFallback() const { return false; }
+
 Ufe::RotateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 {
     UsdGeomXformOp op;
     TfToken        attrName;
-    const bool     hasRotate = hasOp(NdxRotate);
+    bool           hasRotate = hasOp(NdxRotate);
     if (hasRotate) {
         op = getOp(NdxRotate);
         attrName = op.GetOpName();
     }
 
+    // Rotation is special because there might already be a single-axis rotation
+    // attribute and we would fail to rotate on all three axis if we used it.
+    // Translation and scaling do no have these single-axis attributes, this is
+    // specific to rotations. (Why, oh why?)
+    //
+    // Detect that the attribute is single-axis and use a new three-axis attribute
+    // instead in this situation.
+    //
+    // OTOH, we must not do this when using the fallback implementation, which derives
+    // from this class and reuse its code. That is because the fallback implementation
+    // wants to preserve the original ops and add new ones after, so we must let it do
+    // its intended job.
+    if (!isThreeAxisRotation(attrName) && !isFallback()) {
+        attrName = TfToken("xformOp:rotateXYZ");
+        hasRotate = false;
+    }
+
     // Return null command if the attribute edit is not allowed.
-    std::string errMsg;
-    if (!isAttributeEditAllowed(attrName, errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
+    if (!isAttributeEditAllowed(attrName)) {
         return nullptr;
     }
 
@@ -427,14 +475,14 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 
     auto f
         = OpFunc([attrName, opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn()](
-                     const BaseUndoableCommand& cmd, UsdUndoableItem& undoableItem) {
+                     const BaseUndoableCommand& cmd, UsdUfe::UsdUndoableItem& undoableItem) {
               SceneItemHolder usdSceneItem(cmd);
 
               auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
               if (attr) {
                   return UsdGeomXformOp(attr);
               } else {
-                  UsdUndoBlock undoBlock(&undoableItem);
+                  UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
                   // Use notification guard, otherwise will generate one notification
                   // for the xform op add, and another for the reorder.
@@ -467,23 +515,21 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
     }
 
     // Return null command if the attribute edit is not allowed.
-    std::string errMsg;
-    if (!isAttributeEditAllowed(attrName, errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
+    if (!isAttributeEditAllowed(attrName)) {
         return nullptr;
     }
 
     GfVec3f v(x, y, z);
     auto    f
         = OpFunc([attrName, opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn()](
-                     const BaseUndoableCommand& cmd, UsdUndoableItem& undoableItem) {
+                     const BaseUndoableCommand& cmd, UsdUfe::UsdUndoableItem& undoableItem) {
               SceneItemHolder usdSceneItem(cmd);
 
               auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
               if (attr) {
                   return UsdGeomXformOp(attr);
               } else {
-                  UsdUndoBlock undoBlock(&undoableItem);
+                  UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
                   UsdUfe::InTransform3dChange guard(cmd.path());
                   UsdGeomXformable            xformable(usdSceneItem.item().prim());
@@ -531,6 +577,26 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::scalePivot() const
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::translateRotatePivotCmd(double x, double y, double z)
 {
+    // Note: USD and Maya use different pivots: USD has a single pivot that is used
+    //       for both translation and scale, while Maya has separate ones. When working
+    //       in this Maya transform stack mode, the USD pivot affects the position of
+    //       the manipulators, so we need to take it into account here.
+    //
+    //       Otherwise, prim with USD-style picot won't work with the "center pivot"
+    //       command.
+    TfToken commonPivotName
+        = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot);
+    auto commonPivotAttr = prim().GetAttribute(commonPivotName);
+    if (commonPivotAttr && commonPivotAttr.HasAuthoredValue()) {
+        Ufe::Vector3d commonPivot = getVector3d<GfVec3f>(commonPivotName);
+        if (!isAlmostZero(commonPivot)) {
+            x = commonPivot.x() - x;
+            y = commonPivot.y() - y;
+            z = commonPivot.z() - z;
+            return setVector3dCmd(GfVec3f(x, y, z), commonPivotName);
+        }
+    }
+
     auto opSuffix = getOpSuffix(NdxRotatePivotTranslate);
     auto attrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, opSuffix);
     return setVector3dCmd(GfVec3f(x, y, z), attrName, opSuffix);
@@ -538,8 +604,24 @@ UsdTransform3dMayaXformStack::translateRotatePivotCmd(double x, double y, double
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::rotatePivotTranslation() const
 {
-    return getVector3d<GfVec3f>(UsdGeomXformOp::GetOpName(
+    // Note: USD and Maya use different pivots: USD has a single pivot that is used
+    //       for both translation and scale, while Maya has separate ones. When working
+    //       in this Maya transform stack mode, the USD pivot is only used to move the
+    //       position of the manipulators, by returning it as part of this function.
+    //
+    //       Interestingly, this is correct and enough to both display the manip at the
+    //       correct position in the viewport *and* give the correct results. That's
+    //       because USD internally will apply its pivot and the manip will give the
+    //       correct value when manipulating.
+    Ufe::Vector3d commonPivot = getVector3d<GfVec3f>(
+        UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, UsdGeomTokens->pivot));
+    Ufe::Vector3d mayaPivot = getVector3d<GfVec3f>(UsdGeomXformOp::GetOpName(
         UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxRotatePivotTranslate)));
+    mayaPivot.set(
+        mayaPivot.x() + commonPivot.x(),
+        mayaPivot.y() + commonPivot.y(),
+        mayaPivot.z() + commonPivot.z());
+    return mayaPivot;
 }
 
 Ufe::TranslateUndoableCommand::Ptr
@@ -577,9 +659,7 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
     const TfToken& opSuffix)
 {
     // Return null command if the attribute edit is not allowed.
-    std::string errMsg;
-    if (!isAttributeEditAllowed(attrName, errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
+    if (!isAttributeEditAllowed(attrName)) {
         return nullptr;
     }
 
@@ -591,14 +671,14 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
         // [opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](const BaseUndoableCommand&
         // cmd) {
         [attrName, opSuffix, setXformOpOrderFn](
-            const BaseUndoableCommand& cmd, UsdUndoableItem& undoableItem) {
+            const BaseUndoableCommand& cmd, UsdUfe::UsdUndoableItem& undoableItem) {
             SceneItemHolder usdSceneItem(cmd);
 
             auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
             if (attr) {
                 return UsdGeomXformOp(attr);
             } else {
-                UsdUndoBlock undoBlock(&undoableItem);
+                UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
                 UsdUfe::InTransform3dChange guard(cmd.path());
                 UsdGeomXformable            xformable(usdSceneItem.item().prim());
@@ -623,15 +703,13 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
     auto pvtAttrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, pvtOpSuffix);
 
     // Return null command if the attribute edit is not allowed.
-    std::string errMsg;
-    if (!isAttributeEditAllowed(pvtAttrName, errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
+    if (!isAttributeEditAllowed(pvtAttrName)) {
         return nullptr;
     }
 
     GfVec3f v(x, y, z);
     auto    f = OpFunc([pvtAttrName, pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn()](
-                        const BaseUndoableCommand& cmd, UsdUndoableItem& undoableItem) {
+                        const BaseUndoableCommand& cmd, UsdUfe::UsdUndoableItem& undoableItem) {
         SceneItemHolder usdSceneItem(cmd);
 
         auto attr = usdSceneItem.item().prim().GetAttribute(pvtAttrName);
@@ -647,7 +725,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
             // stack.  Use of SdfChangeBlock is discouraged when calling USD
             // APIs above Sdf, so use our own guard.
 
-            UsdUndoBlock                undoBlock(&undoableItem);
+            UsdUfe::UsdUndoBlock        undoBlock(&undoableItem);
             UsdUfe::InTransform3dChange guard(cmd.path());
             UsdGeomXformable            xformable(usdSceneItem.item().prim());
             auto p = xformable.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, pvtOpSuffix);
@@ -671,6 +749,13 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 Ufe::SetMatrix4dUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
 {
+    // Note: UsdSetMatrix4dUndoableCommand uses separate calls to translate, rotate and scale,
+    //       so check those 3 attributes.
+    const TfToken attrs[]
+        = { TfToken("xformOp:translate"), TfToken("xformOp:rotateXYZ"), TfToken("xformOp:scale") };
+    if (!isAttributeEditAllowed(attrs, 3))
+        return nullptr;
+
     return std::make_shared<UsdSetMatrix4dUndoableCommand>(path(), m);
 }
 
@@ -747,27 +832,11 @@ UsdTransform3dMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName) const
     return cvt.at(opName);
 }
 
-bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(
-    const PXR_NS::TfToken attrName,
-    std::string&          errMsg) const
-{
-    PXR_NS::UsdAttribute attr;
-    if (!attrName.IsEmpty())
-        attr = prim().GetAttribute(attrName);
-    if (attr && !UsdUfe::isAttributeEditAllowed(attr, &errMsg)) {
-        return false;
-    } else if (!attr) {
-        UsdGeomXformable xformable(prim());
-        if (!UsdUfe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-            return false;
-        }
-    }
-    return true;
-}
-
 //------------------------------------------------------------------------------
 // UsdTransform3dMayaXformStackHandler
 //------------------------------------------------------------------------------
+
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Transform3dHandler, UsdTransform3dMayaXformStackHandler);
 
 UsdTransform3dMayaXformStackHandler::UsdTransform3dMayaXformStackHandler(
     const Ufe::Transform3dHandler::Ptr& nextHandler)
@@ -802,7 +871,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
     // According to USD docs, editing scene description via instance proxies and their properties is
     // not allowed.
     // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (usdItem->prim().IsInstanceProxy()) {
         MGlobal::displayError(
             MString("Authoring to the descendant of an instance [")

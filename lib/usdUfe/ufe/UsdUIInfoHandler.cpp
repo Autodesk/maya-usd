@@ -16,6 +16,7 @@
 #include "UsdUIInfoHandler.h"
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/usd/sdf/listOp.h> // SdfReferenceListOp/SdfPayloadListOp/SdfPathListOp
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys
@@ -70,16 +71,16 @@ void addMetadataCount(
 
 namespace USDUFE_NS_DEF {
 
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UIInfoHandler, UsdUIInfoHandler);
+
 UsdUIInfoHandler::UsdUIInfoHandler()
     : Ufe::UIInfoHandler()
 {
     // Initialize to invalid values.
-    fInvisibleColor[0] = -1.;
-    fInvisibleColor[1] = -1.;
-    fInvisibleColor[2] = -1.;
+    _invisibleColor[0] = -1.;
+    _invisibleColor[1] = -1.;
+    _invisibleColor[2] = -1.;
 }
-
-UsdUIInfoHandler::~UsdUIInfoHandler() { }
 
 /*static*/
 UsdUIInfoHandler::Ptr UsdUIInfoHandler::create() { return std::make_shared<UsdUIInfoHandler>(); }
@@ -91,7 +92,7 @@ UsdUIInfoHandler::Ptr UsdUIInfoHandler::create() { return std::make_shared<UsdUI
 bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::CellInfo& info) const
 {
     bool              changed = false;
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    UsdSceneItem::Ptr usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif
@@ -99,11 +100,11 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
         if (!usdItem->prim().IsActive()) {
             changed = true;
             info.fontStrikeout = true;
-            if (fInvisibleColor[0] >= 0) {
+            if (_invisibleColor[0] >= 0) {
                 info.textFgColor.set(
-                    static_cast<float>(fInvisibleColor[0]),
-                    static_cast<float>(fInvisibleColor[1]),
-                    static_cast<float>(fInvisibleColor[2]));
+                    static_cast<float>(_invisibleColor[0]),
+                    static_cast<float>(_invisibleColor[1]),
+                    static_cast<float>(_invisibleColor[2]));
             } else {
                 // Default color (dark gray) if none provided.
                 info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
@@ -161,7 +162,7 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
     }
 
     // Check if we have any composition meta data - if yes we display a special badge.
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (usdItem && usdItem->prim()) {
         // Variants
         if (!usdItem->prim().GetVariantSets().GetNames().empty()) {
@@ -191,7 +192,7 @@ std::string UsdUIInfoHandler::treeViewTooltip(const Ufe::SceneItem::Ptr& item) c
 {
     std::string tooltip;
 
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (usdItem && usdItem->prim()) {
         // Composition related metadata.
         bool                       needComma = false;

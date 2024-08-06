@@ -7,6 +7,10 @@ target_sources(${PROJECT_NAME}
         Global.cpp
         SetVariantSelectionCommand.cpp
         StagesSubject.cpp
+        UsdAttribute.cpp
+        UsdAttributeHolder.cpp
+        UsdAttributes.cpp
+        UsdAttributesHandler.cpp
         UsdCamera.cpp
         UsdCameraHandler.cpp
         UsdContextOps.cpp
@@ -47,11 +51,20 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdShaderAttributeDef.cpp
+            UsdShaderAttributeHolder.cpp
+            UsdUndoAttributesCommands.cpp
+    )
+endif()
+
 if (UFE_SCENEITEM_HAS_METADATA)
     target_sources(${PROJECT_NAME}
         PRIVATE
-			UsdUndoClearSceneItemMetadataCommand.cpp
-			UsdUndoSetSceneItemMetadataCommand.cpp
+            UsdUndoClearSceneItemMetadataCommand.cpp
+            UsdUndoSetSceneItemMetadataCommand.cpp
     )
 endif()
 
@@ -62,11 +75,45 @@ if (UFE_CAMERA_HAS_RENDERABLE)
     )
 endif()
 
+if (UFE_CLIPBOARD_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdClipboard.cpp
+            UsdClipboardCommands.cpp
+            UsdClipboardHandler.cpp
+            UsdUndoDuplicateCommand.cpp
+            UsdUndoDuplicateSelectionCommand.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_CLIPBOARD_SUPPORT=1
+    )
+endif()
+
+if (UFE_ATTRIBUTES_GET_ENUMS)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_ATTRIBUTES_GET_ENUMS=1
+    )
+endif()
+
+if (UFE_HAS_NATIVE_TYPE_METADATA)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HAS_NATIVE_TYPE_METADATA=1
+    )
+endif()
+
 set(HEADERS
     Global.h
     SetVariantSelectionCommand.h
     StagesSubject.h
     UfeVersionCompat.h
+    UsdAttribute.h
+    UsdAttributeHolder.h
+    UsdAttributes.h
+    UsdAttributesHandler.h
     UsdCamera.h
     UsdCameraHandler.h
     UsdContextOps.h
@@ -110,6 +157,24 @@ if (UFE_SCENEITEM_HAS_METADATA)
     list(APPEND HEADERS
 		UsdUndoClearSceneItemMetadataCommand.h
 		UsdUndoSetSceneItemMetadataCommand.h
+    )
+endif()
+
+if (UFE_CLIPBOARD_SUPPORT)
+    list(APPEND HEADERS
+        UsdClipboard.h
+        UsdClipboardCommands.h
+        UsdClipboardHandler.h
+        UsdUndoDuplicateCommand.h
+        UsdUndoDuplicateSelectionCommand.h
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    list(APPEND HEADERS
+        UsdShaderAttributeDef.h
+        UsdShaderAttributeHolder.h
+        UsdUndoAttributesCommands.h
     )
 endif()
 

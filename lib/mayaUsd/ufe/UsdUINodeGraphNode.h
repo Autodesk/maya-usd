@@ -33,16 +33,12 @@ class MAYAUSD_CORE_PUBLIC UsdUINodeGraphNode
 public:
     typedef std::shared_ptr<UsdUINodeGraphNode> Ptr;
 
-    UsdUINodeGraphNode(const UsdSceneItem::Ptr& item);
-    ~UsdUINodeGraphNode() override = default;
+    UsdUINodeGraphNode(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    UsdUINodeGraphNode(const UsdUINodeGraphNode&) = delete;
-    UsdUINodeGraphNode& operator=(const UsdUINodeGraphNode&) = delete;
-    UsdUINodeGraphNode(UsdUINodeGraphNode&&) = delete;
-    UsdUINodeGraphNode& operator=(UsdUINodeGraphNode&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUINodeGraphNode);
 
     //! Create a UsdUINodeGraphNode.
-    static UsdUINodeGraphNode::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdUINodeGraphNode::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     // Ufe::UsdUINodeGraphNode overrides
     Ufe::SceneItem::Ptr       sceneItem() const override;
@@ -67,7 +63,7 @@ private:
         Size
     };
 
-    class SetPosOrSizeCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+    class SetPosOrSizeCommand : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
     {
     public:
         SetPosOrSizeCommand(
@@ -85,7 +81,7 @@ private:
     };
 
 #ifdef UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR
-    class SetDisplayColorCommand : public UsdUndoableCommand<Ufe::UndoableCommand>
+    class SetDisplayColorCommand : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
     {
     public:
         SetDisplayColorCommand(const PXR_NS::UsdPrim& prim, const Ufe::Color3f& newColor);
@@ -99,7 +95,7 @@ private:
     };
 #endif
 
-    UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 
     bool          hasPosOrSize(CoordType coordType) const;
     Ufe::Vector2f getPosOrSize(CoordType coordType) const;

@@ -22,15 +22,16 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MayaUsdRootChildHierarchy::MayaUsdRootChildHierarchy(const UsdSceneItem::Ptr& item)
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdRootChildHierarchy, MayaUsdRootChildHierarchy);
+
+MayaUsdRootChildHierarchy::MayaUsdRootChildHierarchy(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdRootChildHierarchy(item)
 {
 }
 
-MayaUsdRootChildHierarchy::~MayaUsdRootChildHierarchy() { }
-
 /*static*/
-MayaUsdRootChildHierarchy::Ptr MayaUsdRootChildHierarchy::create(const UsdSceneItem::Ptr& item)
+MayaUsdRootChildHierarchy::Ptr
+MayaUsdRootChildHierarchy::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<MayaUsdRootChildHierarchy>(item);
 }

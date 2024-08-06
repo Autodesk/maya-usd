@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDSCALEUNDOABLECOMMAND_H
+#define MAYAUSD_USDSCALEUNDOABLECOMMAND_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
@@ -36,10 +37,7 @@ class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand
 public:
     typedef std::shared_ptr<UsdScaleUndoableCommand> Ptr;
 
-    UsdScaleUndoableCommand(const UsdScaleUndoableCommand&) = delete;
-    UsdScaleUndoableCommand& operator=(const UsdScaleUndoableCommand&) = delete;
-    UsdScaleUndoableCommand(UsdScaleUndoableCommand&&) = delete;
-    UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdScaleUndoableCommand);
 
     //! Create a UsdScaleUndoableCommand from a UFE scene path.  The command is
     //! not executed.
@@ -55,7 +53,6 @@ public:
 protected:
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
     UsdScaleUndoableCommand(const Ufe::Path& path, double x, double y, double z);
-    ~UsdScaleUndoableCommand() override;
 
 private:
     static PXR_NS::TfToken scaleTok;
@@ -68,3 +65,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDSCALEUNDOABLECOMMAND_H

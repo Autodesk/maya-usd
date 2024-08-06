@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDCAMERAHANDLER_H
+#define USDUFE_USDCAMERAHANDLER_H
 
 #include <usdUfe/base/api.h>
 
@@ -29,14 +30,9 @@ class USDUFE_PUBLIC UsdCameraHandler : public Ufe::CameraHandler
 public:
     typedef std::shared_ptr<UsdCameraHandler> Ptr;
 
-    UsdCameraHandler();
-    ~UsdCameraHandler();
+    UsdCameraHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdCameraHandler(const UsdCameraHandler&) = delete;
-    UsdCameraHandler& operator=(const UsdCameraHandler&) = delete;
-    UsdCameraHandler(UsdCameraHandler&&) = delete;
-    UsdCameraHandler& operator=(UsdCameraHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdCameraHandler);
 
     //! Create a UsdCameraHandler.
     static UsdCameraHandler::Ptr create();
@@ -54,3 +50,5 @@ public:
 }; // UsdCameraHandler
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDCAMERAHANDLER_H

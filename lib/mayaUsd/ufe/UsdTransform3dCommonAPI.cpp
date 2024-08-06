@@ -19,7 +19,9 @@
 #include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -34,15 +36,17 @@ namespace {
 class CommonAPITranslateUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
-    CommonAPITranslateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
+    CommonAPITranslateUndoableCmd(
+        const UsdUfe::UsdSceneItem::Ptr& item,
+        const UsdTimeCode&               writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
         , _commonAPI(item->prim())
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpTranslate);
     }
 
@@ -64,6 +68,8 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3d(x, y, z)));
         return true;
     }
@@ -72,18 +78,20 @@ private:
     UsdGeomXformCommonAPI _commonAPI;
 };
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPITranslateUndoableCmd);
+
 class CommonAPIRotateUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
-    CommonAPIRotateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
+    CommonAPIRotateUndoableCmd(const UsdUfe::UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
         , _commonAPI(item->prim())
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpRotate);
     }
 
@@ -105,27 +113,32 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
+
+    UsdPrim getPrim() const override { return _commonAPI.GetPrim(); }
 
 private:
     UsdGeomXformCommonAPI _commonAPI;
 };
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPIRotateUndoableCmd);
+
 class CommonAPIScaleUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
-
 public:
-    CommonAPIScaleUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
+    CommonAPIScaleUndoableCmd(const UsdUfe::UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
         , _commonAPI(item->prim())
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpScale);
     }
 
@@ -147,26 +160,32 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
+
+    UsdPrim getPrim() const override { return _commonAPI.GetPrim(); }
 
 private:
     UsdGeomXformCommonAPI _commonAPI;
 };
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdSetXformOpUndoableCommandBase, CommonAPIScaleUndoableCmd);
+
 class CommonAPIPivotUndoableCmd : public UsdSetXformOpUndoableCommandBase
 {
 public:
-    CommonAPIPivotUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
+    CommonAPIPivotUndoableCmd(const UsdUfe::UsdSceneItem::Ptr& item, const UsdTimeCode& writeTime)
         : UsdSetXformOpUndoableCommandBase(item->path(), writeTime)
         , _commonAPI(item->prim())
     {
     }
 
-    void createOpIfNeeded(UsdUndoableItem& undoableItem) override
+    void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
-        UsdUndoBlock undoBlock(&undoableItem);
+        UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpPivot);
     }
 
@@ -188,9 +207,13 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
     }
+
+    UsdPrim getPrim() const override { return _commonAPI.GetPrim(); }
 
 private:
     UsdGeomXformCommonAPI _commonAPI;
@@ -198,14 +221,16 @@ private:
 
 } // namespace
 
-UsdTransform3dCommonAPI::UsdTransform3dCommonAPI(const UsdSceneItem::Ptr& item)
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dCommonAPI);
+
+UsdTransform3dCommonAPI::UsdTransform3dCommonAPI(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)
     , _commonAPI(prim())
 {
 }
 
 /* static */
-UsdTransform3dCommonAPI::Ptr UsdTransform3dCommonAPI::create(const UsdSceneItem::Ptr& item)
+UsdTransform3dCommonAPI::Ptr UsdTransform3dCommonAPI::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dCommonAPI>(item);
 }
@@ -257,24 +282,30 @@ Ufe::Vector3d UsdTransform3dCommonAPI::scale() const
 
 void UsdTransform3dCommonAPI::translate(double x, double y, double z)
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
     _commonAPI.SetTranslate(GfVec3d(x, y, z), UsdTimeCode::Default());
 }
 
 void UsdTransform3dCommonAPI::rotate(double x, double y, double z)
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
     _commonAPI.SetRotate(
         GfVec3f(x, y, z), UsdGeomXformCommonAPI::RotationOrderXYZ, UsdTimeCode::Default());
 }
 
 void UsdTransform3dCommonAPI::scale(double x, double y, double z)
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
     _commonAPI.SetScale(GfVec3f(x, y, z), UsdTimeCode::Default());
 }
 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:translate"))) {
         return nullptr;
     }
 
@@ -283,7 +314,7 @@ UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:rotateXYZ"))) {
         return nullptr;
     }
 
@@ -292,7 +323,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, dou
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:scale"))) {
         return nullptr;
     }
 
@@ -302,7 +333,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, doubl
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::rotatePivotCmd(double x, double y, double z)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
+    if (!isAttributeEditAllowed(TfToken("xformOp:translate:pivot"))) {
         return nullptr;
     }
 
@@ -311,6 +342,8 @@ UsdTransform3dCommonAPI::rotatePivotCmd(double x, double y, double z)
 
 void UsdTransform3dCommonAPI::rotatePivot(double x, double y, double z)
 {
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
     _commonAPI.SetPivot(GfVec3f(x, y, z), UsdTimeCode::Default());
 }
 
@@ -333,9 +366,9 @@ Ufe::Vector3d UsdTransform3dCommonAPI::scalePivot() const { return rotatePivot()
 
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dCommonAPI::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    if (!UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))
-        || !UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))
-        || !UsdUfe::isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+    const TfToken attrs[]
+        = { TfToken("xformOp:translate"), TfToken("xformOp:rotateXYZ"), TfToken("xformOp:scale") };
+    if (!isAttributeEditAllowed(attrs, 3)) {
         return nullptr;
     }
 
@@ -363,8 +396,7 @@ UsdTransform3dCommonAPIHandler::create(const Ufe::Transform3dHandler::Ptr& nextH
 Ufe::Transform3d::Ptr
 UsdTransform3dCommonAPIHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }
@@ -381,8 +413,7 @@ Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
     const Ufe::SceneItem::Ptr&      item,
     const Ufe::EditTransform3dHint& hint) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }

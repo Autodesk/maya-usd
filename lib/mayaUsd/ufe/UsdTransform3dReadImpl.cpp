@@ -24,9 +24,11 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTransform3dReadImpl::UsdTransform3dReadImpl(const UsdSceneItem::Ptr& item)
-    : fItem(item)
-    , fPrim(item->prim())
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdTransform3dReadImpl);
+
+UsdTransform3dReadImpl::UsdTransform3dReadImpl(const UsdUfe::UsdSceneItem::Ptr& item)
+    : _item(item)
+    , _prim(item->prim())
 {
 }
 
@@ -50,13 +52,13 @@ Ufe::Matrix4d UsdTransform3dReadImpl::matrix() const
 Ufe::Matrix4d UsdTransform3dReadImpl::segmentInclusiveMatrix() const
 {
     UsdGeomXformCache xformCache(getTime(path()));
-    return toUfe(xformCache.GetLocalToWorldTransform(fPrim));
+    return toUfe(xformCache.GetLocalToWorldTransform(_prim));
 }
 
 Ufe::Matrix4d UsdTransform3dReadImpl::segmentExclusiveMatrix() const
 {
     UsdGeomXformCache xformCache(getTime(path()));
-    return toUfe(xformCache.GetParentToWorldTransform(fPrim));
+    return toUfe(xformCache.GetParentToWorldTransform(_prim));
 }
 
 } // namespace ufe

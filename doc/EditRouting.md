@@ -166,6 +166,44 @@ import mayaUsd.lib
 mayaUsd.lib.restoreAllDefaultEditRouters()
 ```
 
+## Fast Edit Routing
+
+There is another way to route edits designed to make routing faster for the
+common simple case where a command should always be routed to the same layer.
+This is called fast edit routing. It is used by calling a different function
+to register the route: `registerStageLayerEditRouter`. This function takes
+the name of the operation to route, a stage and a layer and will route that
+operation to the given layer.
+
+The advantage is that it avoids creating temporary dictionaries to ask where
+to route the edits, is pure C++ code and thus is optimized even when used from
+Python. If you want to always route a given operation to the same layer for a
+given stage, that is the recommended way of doing it.
+
+Here is an example of routing the transform commands in Python using the fast
+edit routing:
+
+```Python
+import mayaUsd.lib
+
+def getStage():
+    '''
+    Here we hard-code the stage, but a more sphoisticated script
+    would select the stage using some mechanism, like UI or
+    based on notifications when a stage is created.
+    '''
+    psPathStr = "|stage1|stageShape1"
+    return mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+def getLayer(stage):
+    '''Here we route to the session layer, but any known layer could be used.'''
+    return stage.GetSessionLayer()
+
+stage = getStage()
+layer = getLayer(stage)
+mayaUsd.lib.registerStageLayerEditRouter('transform', stage, layer)
+```
+
 ## Canceling commands
 
 It is possible to prevent a command from executing instead of simply routing to

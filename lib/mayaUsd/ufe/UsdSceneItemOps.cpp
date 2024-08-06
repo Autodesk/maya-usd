@@ -25,29 +25,29 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdSceneItemOps::UsdSceneItemOps(const UsdSceneItem::Ptr& item)
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemOps, UsdSceneItemOps);
+
+UsdSceneItemOps::UsdSceneItemOps(const UsdUfe::UsdSceneItem::Ptr& item)
     : Ufe::SceneItemOps()
-    , fItem(item)
+    , _item(item)
 {
 }
 
-UsdSceneItemOps::~UsdSceneItemOps() { }
-
 /*static*/
-UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdSceneItem::Ptr& item)
+UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdSceneItemOps>(item);
 }
 
-void UsdSceneItemOps::setItem(const UsdSceneItem::Ptr& item) { fItem = item; }
+void UsdSceneItemOps::setItem(const UsdUfe::UsdSceneItem::Ptr& item) { _item = item; }
 
-const Ufe::Path& UsdSceneItemOps::path() const { return fItem->path(); }
+const Ufe::Path& UsdSceneItemOps::path() const { return _item->path(); }
 
 //------------------------------------------------------------------------------
 // Ufe::SceneItemOps overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const { return _item; }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmdNoExecute()
@@ -77,13 +77,13 @@ bool UsdSceneItemOps::deleteItem()
 #ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::SceneItemResultUndoableCommand::Ptr UsdSceneItemOps::duplicateItemCmdNoExecute()
 {
-    return UsdUndoDuplicateCommand::create(fItem);
+    return UsdUndoDuplicateCommand::create(_item);
 }
 #endif
 
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()
 {
-    auto duplicateCmd = UsdUndoDuplicateCommand::create(fItem);
+    auto duplicateCmd = UsdUndoDuplicateCommand::create(_item);
     duplicateCmd->execute();
     return Ufe::Duplicate(duplicateCmd->duplicatedItem(), duplicateCmd);
 }
@@ -98,20 +98,20 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::duplicateItem()
 Ufe::SceneItemResultUndoableCommand::Ptr
 UsdSceneItemOps::renameItemCmdNoExecute(const Ufe::PathComponent& newName)
 {
-    return UsdUndoRenameCommand::create(fItem, newName);
+    return UsdUndoRenameCommand::create(_item, newName);
 }
 #endif
 
 Ufe::Rename UsdSceneItemOps::renameItemCmd(const Ufe::PathComponent& newName)
 {
-    auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
+    auto renameCmd = UsdUndoRenameCommand::create(_item, newName);
     renameCmd->execute();
     return Ufe::Rename(renameCmd->renamedItem(), renameCmd);
 }
 
 Ufe::SceneItem::Ptr UsdSceneItemOps::renameItem(const Ufe::PathComponent& newName)
 {
-    auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
+    auto renameCmd = UsdUndoRenameCommand::create(_item, newName);
     renameCmd->execute();
     return renameCmd->renamedItem();
 }

@@ -70,8 +70,8 @@ public:
         const QModelIndex&                 parent);
     void openPersistentEditors(QTreeView* tv, const QModelIndex& parent);
 
-    const ImportData*   importData() const { return fImportData; }
-    const IMayaMQtUtil& mayaQtUtil() const { return fMayaQtUtil; }
+    const ImportData*   importData() const { return _importData; }
+    const IMayaMQtUtil& mayaQtUtil() const { return _mayaQtUtil; }
 
     void onItemClicked(TreeItem* item);
 
@@ -103,17 +103,17 @@ public Q_SLOTS:
 
 private:
     // Extra import data, if any to set the initial state of dialog from.
-    const ImportData* fImportData;
+    const ImportData* _importData;
 
     // Special interface we can use to perform Maya Qt utilities (such as Pixmap loading).
-    const IMayaMQtUtil& fMayaQtUtil;
+    const IMayaMQtUtil& _mayaQtUtil;
 
-    bool fShowVariants;
-    bool fShowRoot;
+    bool _showVariants;
+    bool _showRoot;
 
     // Need to be in the tree model becasue we need to create it before
     // the tree item have their model set.
-    static const QPixmap* fsDefaultPrimImage;
+    static const QPixmap* defaultPrimImage;
 };
 
 } // namespace MAYAUSD_NS_DEF

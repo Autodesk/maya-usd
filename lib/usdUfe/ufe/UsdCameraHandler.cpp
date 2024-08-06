@@ -31,12 +31,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
 
-UsdCameraHandler::UsdCameraHandler()
-    : Ufe::CameraHandler()
-{
-}
-
-UsdCameraHandler::~UsdCameraHandler() { }
+USDUFE_VERIFY_CLASS_SETUP(Ufe::CameraHandler, UsdCameraHandler);
 
 /*static*/
 UsdCameraHandler::Ptr UsdCameraHandler::create() { return std::make_shared<UsdCameraHandler>(); }
@@ -46,7 +41,7 @@ UsdCameraHandler::Ptr UsdCameraHandler::create() { return std::make_shared<UsdCa
 //------------------------------------------------------------------------------
 Ufe::Camera::Ptr UsdCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     TF_VERIFY(usdItem);
 
     // Test if this item is a camera. If not, then we cannot create a camera

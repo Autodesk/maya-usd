@@ -26,6 +26,8 @@
 #include <mayaUsd/utils/json.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/iterator.h>
@@ -232,10 +234,10 @@ MObject UsdMayaShadingModeExportContext::GetDisplacementShader() const
     return _GetShaderFromShadingEngine(_shadingEngine, _displacementShaderPlugName);
 }
 
-UsdMayaShadingModeExportContext::AssignmentVector
+UsdMayaShadingModeExportContext::AssignmentsInfo
 UsdMayaShadingModeExportContext::GetAssignments() const
 {
-    AssignmentVector ret;
+    AssignmentsInfo ret;
 
     MStatus           status;
     MFnDependencyNode seDepNode(_shadingEngine, &status);
@@ -298,11 +300,19 @@ UsdMayaShadingModeExportContext::GetAssignments() const
         MDagPath dagPath = allDagPaths[instanceNumber];
         TF_VERIFY(dagPath.instanceNumber() == instanceNumber);
 #endif
-
         MFnDagNode dagNode(dagPath, &status);
         if (!status) {
             continue;
         }
+
+        ret.hasAnyAssignment = true;
+
+        // Note: the connections will be to the mesh, but the selection often
+        //       contains the transform above the mesh or a higher-up ancestor,
+        //       so also check the ancestors of the mesh.
+        for (MDagPath walkUpPath(dagPath); walkUpPath.length() > 0; walkUpPath.pop())
+            if (GetExportArgs().fullObjectList.hasItem(walkUpPath))
+                ret.hasAnyAssignmentInSelection = true;
 
         auto iter = _dagPathToUsdMap.find(dagPath);
         if (iter == _dagPathToUsdMap.end()) {
@@ -348,16 +358,15 @@ UsdMayaShadingModeExportContext::GetAssignments() const
                     faceIndices.push_back(faceIt.index());
                 }
             }
-            ret.push_back(Assignment {
+            ret.assignments.push_back(Assignment {
                 usdPath, faceIndices, TfToken(dagNode.name().asChar()), dagNode.object() });
         }
     }
     return ret;
 }
 
-static UsdPrim _GetMaterialParent(
+static SdfPath _GetCommonAncestor(
     const UsdStageRefPtr&                                    stage,
-    const TfToken&                                           materialsScopeName,
     const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
 {
     SdfPath commonAncestor;
@@ -372,21 +381,45 @@ static UsdPrim _GetMaterialParent(
             }
         }
     }
+    return commonAncestor;
+}
 
-    if (commonAncestor.IsEmpty()) {
+static UsdPrim _GetLegacyMaterialParent(
+    const UsdStageRefPtr&                                    stage,
+    const TfToken&                                           materialsScopeName,
+    const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
+{
+    SdfPath shaderExportLocation = _GetCommonAncestor(stage, assignments);
+
+    if (shaderExportLocation.IsEmpty()) {
         return UsdPrim();
     }
 
-    if (commonAncestor == SdfPath::AbsoluteRootPath()) {
+    if (shaderExportLocation == SdfPath::AbsoluteRootPath()) {
         return stage->GetPseudoRoot();
     }
 
-    SdfPath shaderExportLocation = commonAncestor;
     while (!shaderExportLocation.IsRootPrimPath()) {
         shaderExportLocation = shaderExportLocation.GetParentPath();
     }
 
     shaderExportLocation = shaderExportLocation.AppendChild(materialsScopeName);
+
+    return UsdGeomScope::Define(stage, shaderExportLocation).GetPrim();
+}
+
+static UsdPrim _GetMaterialParent(
+    const UsdStageRefPtr& stage,
+    const std::string&    defaultPrim,
+    const TfToken&        materialsScopeName)
+{
+    SdfPath shaderExportLocation = SdfPath::AbsoluteRootPath();
+
+    if (!defaultPrim.empty() && defaultPrim != materialsScopeName && defaultPrim != "None")
+        shaderExportLocation = shaderExportLocation.AppendChild(TfToken(defaultPrim));
+
+    if (!materialsScopeName.IsEmpty())
+        shaderExportLocation = shaderExportLocation.AppendChild(materialsScopeName);
 
     return UsdGeomScope::Define(stage, shaderExportLocation).GetPrim();
 }
@@ -451,63 +484,104 @@ bool isSurfaceNodeType(const std::string& nodeType)
 
     return std::binary_search(sKnownSurfaces.cbegin(), sKnownSurfaces.cend(), nodeType);
 }
+
+std::string getMaterialName(
+    const std::string& materialName,
+    const MObject&     shadingEngine,
+    const MObject&     surfaceShader)
+{
+    if (!materialName.empty())
+        return materialName;
+
+    MFnDependencyNode fnDepNode;
+    if (fnDepNode.setObject(shadingEngine) != MS::kSuccess)
+        return materialName;
+
+    std::string sgName = fnDepNode.name().asChar();
+    std::smatch sgMatch;
+    // Is the SG name following the standard Maya naming protocol for a known surface nodeType?
+    if (!std::regex_match(sgName, sgMatch, _templatedRegex))
+        return sgName;
+
+    if (!isSurfaceNodeType(sgMatch[1].str()))
+        return sgName;
+
+    // Check if the surface shader has a more descriptive name
+    if (fnDepNode.setObject(surfaceShader) == MS::kSuccess) {
+        std::string surfName = fnDepNode.name().asChar();
+        std::smatch surfMatch;
+        if (std::regex_match(surfName, surfMatch, _templatedRegex)) {
+            // Surface node name is also templated. Check the nodeType part.
+            if (!isSurfaceNodeType(surfMatch[1].str())) {
+                // The surface is not named after a standard nodeType, so its name is more
+                // interesting:
+                sgName = surfName + "SG";
+            }
+        } else {
+            // Surface node is definitely more interesting since it does not follow a
+            // templated name:
+            sgName = surfName + "SG";
+        }
+    }
+
+    return sgName;
+}
+
+bool shouldExportMaterial(
+    const UsdMayaShadingModeExportContext::AssignmentsInfo& assignmentsInfo,
+    const MObject&                                          surfaceShader,
+    const UsdMayaJobExportArgs&                             exportArgs)
+{
+    // The export-assigned-materials flag means to remove materials
+    // that are not assigned to any meshes. (We take into consideration
+    // even meshes that are not exported.)
+    if (exportArgs.exportAssignedMaterials) {
+        if (!assignmentsInfo.hasAnyAssignment) {
+            return false;
+        }
+    }
+
+    // In export-selected mode, ony export selected materials.
+    // Materials of exported meshes are also added to the selection.
+    if (exportArgs.exportSelected) {
+        if (assignmentsInfo.hasAnyAssignmentInSelection) {
+            return true;
+        }
+        return exportArgs.fullObjectList.hasItem(surfaceShader);
+    } else {
+        // In export-all mode, export all materials by default.
+        return true;
+    }
+}
+
 } // namespace
 
 UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
-    const AssignmentVector& assignmentsToBind,
-    const std::string&      name) const
+    const AssignmentsInfo& assignmentsInfo,
+    const std::string&     name) const
 {
-    UsdPrim ret;
+    const UsdMayaJobExportArgs& exportArgs = GetExportArgs();
 
-    std::string materialName = name;
-    if (materialName.empty()) {
-        std::string sgName;
+    if (!shouldExportMaterial(assignmentsInfo, GetSurfaceShader(), exportArgs))
+        return UsdPrim();
 
-        MFnDependencyNode fnDepNode;
-        if (fnDepNode.setObject(_shadingEngine) == MS::kSuccess) {
-            sgName = fnDepNode.name().asChar();
-        } else {
-            return ret;
-        }
-        std::smatch sgMatch;
-        // Is the SG name following the standard Maya naming protocol for a known surface nodeType?
-        if (std::regex_match(sgName, sgMatch, _templatedRegex)
-            && isSurfaceNodeType(sgMatch[1].str())) {
-            // Check if the surface shader has a more descriptive name
-            if (fnDepNode.setObject(GetSurfaceShader()) == MS::kSuccess) {
-                std::string surfName = fnDepNode.name().asChar();
-                std::smatch surfMatch;
-                if (std::regex_match(surfName, surfMatch, _templatedRegex)) {
-                    // Surface node name is also templated. Check the nodeType part.
-                    if (!isSurfaceNodeType(surfMatch[1].str())) {
-                        // The surface is not named after a standard nodeType, so its name is more
-                        // interesting:
-                        sgName = surfName + "SG";
-                    }
-                } else {
-                    // Surface node is definitely more interesting since it does not follow a
-                    // templated name:
-                    sgName = surfName + "SG";
-                }
-            }
-        }
+    const std::string materialName
+        = UsdUfe::sanitizeName(getMaterialName(name, _shadingEngine, GetSurfaceShader()));
+    if (materialName.empty())
+        return UsdPrim();
 
-        materialName = sgName.c_str();
-    }
-
-    materialName = UsdMayaUtil::SanitizeName(materialName);
     UsdStageRefPtr stage = GetUsdStage();
-    if (UsdPrim materialParent
-        = _GetMaterialParent(stage, GetExportArgs().materialsScopeName, assignmentsToBind)) {
-        SdfPath          materialPath = materialParent.GetPath().AppendChild(TfToken(materialName));
-        UsdShadeMaterial material = UsdShadeMaterial::Define(GetUsdStage(), materialPath);
+    UsdPrim        materialParent = exportArgs.legacyMaterialScope
+        ? _GetLegacyMaterialParent(
+            stage, exportArgs.materialsScopeName, assignmentsInfo.assignments)
+        : _GetMaterialParent(stage, exportArgs.defaultPrim, exportArgs.materialsScopeName);
+    if (!materialParent)
+        return UsdPrim();
 
-        UsdPrim materialPrim = material.GetPrim();
+    SdfPath          materialPath = materialParent.GetPath().AppendChild(TfToken(materialName));
+    UsdShadeMaterial material = UsdShadeMaterial::Define(GetUsdStage(), materialPath);
 
-        return materialPrim;
-    }
-
-    return UsdPrim();
+    return material.GetPrim();
 }
 
 namespace {

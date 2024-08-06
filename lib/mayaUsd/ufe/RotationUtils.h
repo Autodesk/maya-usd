@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_ROTATIONUTILS_H
+#define MAYAUSD_ROTATIONUTILS_H
 
 #include <mayaUsd/mayaUsd.h>
 
@@ -120,3 +121,5 @@ inline Ufe::Vector3d fromZ(const PXR_NS::VtValue& value)
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_ROTATIONUTILS_H

@@ -13,12 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_UFE_GLOBAL_H
+#define USDUFE_UFE_GLOBAL_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/StagesSubject.h>
 #include <usdUfe/ufe/Utils.h>
 
+#include <ufe/attributesHandler.h>
 #include <ufe/cameraHandler.h>
 #include <ufe/contextOpsHandler.h>
 #include <ufe/hierarchyHandler.h>
@@ -27,6 +29,10 @@
 #include <ufe/uiInfoHandler.h>
 
 #include <string>
+
+#if UFE_CLIPBOARD_SUPPORT
+#include <ufe/clipboardHandler.h>
+#endif
 
 namespace USDUFE_NS_DEF {
 
@@ -44,10 +50,12 @@ struct USDUFE_PUBLIC DCCFunctions
     TimeAccessorFn      timeAccessorFn = nullptr;
 
     // Optional: default values will be used if no function is supplied.
-    IsAttributeLockedFn  isAttributeLockedFn = nullptr;
-    SaveStageLoadRulesFn saveStageLoadRulesFn = nullptr;
-    IsRootChildFn        isRootChildFn = nullptr;
-    UniqueChildNameFn    uniqueChildNameFn = nullptr;
+    IsAttributeLockedFn        isAttributeLockedFn = nullptr;
+    SaveStageLoadRulesFn       saveStageLoadRulesFn = nullptr;
+    IsRootChildFn              isRootChildFn = nullptr;
+    UniqueChildNameFn          uniqueChildNameFn = nullptr;
+    DefaultMaterialScopeNameFn defaultMaterialScopeNameFn = nullptr;
+    DisplayMessageFn displayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
 
     // Optional: nothing will be done if no function is supplied.
     WaitCursorFn startWaitCursorFn = nullptr;
@@ -69,7 +77,7 @@ struct USDUFE_PUBLIC Handlers
     //     Ufe::SceneItemOpsHandler::Ptr sceneItemOpsHandler;
 
     // Ufe v2 handlers
-    //     Ufe::AttributesHandler::Ptr   attributesHandler;
+    Ufe::AttributesHandler::Ptr attributesHandler;
     Ufe::Object3dHandler::Ptr   object3dHandler;
     Ufe::ContextOpsHandler::Ptr contextOpsHandler;
     Ufe::UIInfoHandler::Ptr     uiInfoHandler;
@@ -86,6 +94,10 @@ struct USDUFE_PUBLIC Handlers
 //     Ufe::ConnectionHandler::Ptr      connectionHandler;
 //     Ufe::UINodeGraphNodeHandler::Ptr uiNodeGraphNodeHandler;
 //     Ufe::BatchOpsHandler::Ptr        batchOpsHandler;
+#endif
+
+#if UFE_CLIPBOARD_SUPPORT
+    Ufe::ClipboardHandler::Ptr clipboardHandler;
 #endif
 };
 
@@ -116,3 +128,5 @@ USDUFE_PUBLIC
 Ufe::Rtid getUsdRunTimeId();
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_UFE_GLOBAL_H

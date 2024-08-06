@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PULLEDOBJECTHIERARCHY_H
+#define MAYAUSD_PULLEDOBJECTHIERARCHY_H
 
 #include <mayaUsd/base/api.h>
 
@@ -42,11 +43,7 @@ public:
         const Ufe::SceneItem::Ptr&        item,
         const Ufe::Path&                  pulledPath);
 
-    // Delete the copy/move constructors assignment operators.
-    PulledObjectHierarchy(const PulledObjectHierarchy&) = delete;
-    PulledObjectHierarchy& operator=(const PulledObjectHierarchy&) = delete;
-    PulledObjectHierarchy(PulledObjectHierarchy&&) = delete;
-    PulledObjectHierarchy& operator=(PulledObjectHierarchy&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(PulledObjectHierarchy);
 
     //! Create a PulledObjectHierarchy from a UFE hierarchy handler.
     static PulledObjectHierarchy::Ptr create(
@@ -86,3 +83,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PULLEDOBJECTHIERARCHY_H

@@ -136,7 +136,8 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext& context)
         mesh,
         meshRead.meshObject(),
         _GetArgs().GetExcludePrimvarNames(),
-        _GetArgs().GetExcludePrimvarNamespaces());
+        _GetArgs().GetExcludePrimvarNamespaces(),
+        _GetArgs().GetUVSetNameRemappings());
 
     // assign invisible faces
     UsdMayaMeshReadUtils::assignInvisibleFaces(mesh, meshRead.meshObject());

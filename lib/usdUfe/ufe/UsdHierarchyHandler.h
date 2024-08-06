@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDHIERARCHYHANDLER_H
+#define USDUFE_USDHIERARCHYHANDLER_H
 
 #include <usdUfe/base/api.h>
 
@@ -34,14 +35,9 @@ class USDUFE_PUBLIC UsdHierarchyHandler : public Ufe::HierarchyHandler
 public:
     typedef std::shared_ptr<UsdHierarchyHandler> Ptr;
 
-    UsdHierarchyHandler();
-    ~UsdHierarchyHandler() override;
+    UsdHierarchyHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdHierarchyHandler(const UsdHierarchyHandler&) = delete;
-    UsdHierarchyHandler& operator=(const UsdHierarchyHandler&) = delete;
-    UsdHierarchyHandler(UsdHierarchyHandler&&) = delete;
-    UsdHierarchyHandler& operator=(UsdHierarchyHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdHierarchyHandler);
 
     //! Create a UsdHierarchyHandler.
     static UsdHierarchyHandler::Ptr create();
@@ -53,3 +49,5 @@ public:
 }; // UsdHierarchyHandler
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDHIERARCHYHANDLER_H

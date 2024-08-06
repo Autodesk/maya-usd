@@ -107,6 +107,46 @@ class TestUsdUndoManager(unittest.TestCase):
         # expect to have 2 items on the undo queue
         self.assertEqual(cmds.undoInfo(q=True), nbCmds+2)
 
+    def testManualUndoRedo(self):
+        '''
+            Test that we can use an explicit UsdUndoableItem and undo/redo it.
+        '''
+        # start with a new file
+        cmds.file(force=True, new=True)
+
+        # get pseudo root prim
+        defaultPrim = self.stage.GetPseudoRoot()
+
+        # get the current number of commands on the undo queue
+        nbCmds = cmds.undoInfo(q=True)
+        self.assertEqual(cmds.undoInfo(q=True), 0)
+
+        self.assertEqual(len(defaultPrim.GetChildren()), 0)
+
+        # create undo block
+        undoItem = mayaUsdLib.UsdUndoableItem()
+        with mayaUsdLib.UsdUndoBlock(undoItem):
+            prim = self.stage.DefinePrim('/World', 'Sphere')
+            self.assertTrue(bool(prim))
+
+        # check number of children under the root
+        self.assertEqual(len(defaultPrim.GetChildren()), 1)
+
+        # Verify the change were *not* put into Maya undo queue.
+        self.assertEqual(cmds.undoInfo(q=True), nbCmds)
+
+        # undo
+        undoItem.undo()
+
+        # check number of children under the root
+        self.assertEqual(len(defaultPrim.GetChildren()), 0)
+
+        # redo
+        undoItem.redo()
+
+        # check number of children under the root
+        self.assertEqual(len(defaultPrim.GetChildren()), 1)
+
     def testRemovePrims(self):
         '''
             Test delete prims

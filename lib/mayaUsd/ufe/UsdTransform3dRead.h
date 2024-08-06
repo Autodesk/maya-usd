@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DREAD_H
+#define MAYAUSD_USDTRANSFORM3DREAD_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTransform3dReadImpl.h>
@@ -41,23 +42,21 @@ public:
     typedef std::shared_ptr<UsdTransform3dRead> Ptr;
 
     //! Create a UsdTransform3dRead.
-    static UsdTransform3dRead::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dRead::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    UsdTransform3dRead(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dRead() override = default;
+    UsdTransform3dRead(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    // Delete the copy/move constructors assignment operators.
-    UsdTransform3dRead(const UsdTransform3dRead&) = delete;
-    UsdTransform3dRead& operator=(const UsdTransform3dRead&) = delete;
-    UsdTransform3dRead(UsdTransform3dRead&&) = delete;
-    UsdTransform3dRead& operator=(UsdTransform3dRead&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dRead);
 
     // Ufe::Transform3d overrides
     const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
 
-    inline UsdSceneItem::Ptr usdSceneItem() const { return UsdTransform3dReadImpl::usdSceneItem(); }
-    inline PXR_NS::UsdPrim   prim() const { return UsdTransform3dReadImpl::prim(); }
+    inline UsdUfe::UsdSceneItem::Ptr usdSceneItem() const
+    {
+        return UsdTransform3dReadImpl::usdSceneItem();
+    }
+    inline PXR_NS::UsdPrim prim() const { return UsdTransform3dReadImpl::prim(); }
 
     Ufe::Matrix4d matrix() const override;
 
@@ -72,6 +71,8 @@ public:
     using Ptr = std::shared_ptr<UsdTransform3dReadHandler>;
 
     UsdTransform3dReadHandler(const Ufe::Transform3dHandler::Ptr& nextHandler);
+
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dReadHandler);
 
     //! Create a UsdTransform3dReadHandler.
     static Ptr create(const Ufe::Transform3dHandler::Ptr& nextHandler);
@@ -90,3 +91,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DREAD_H

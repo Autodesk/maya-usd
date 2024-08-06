@@ -24,7 +24,7 @@
 
 namespace USDUFE_NS_DEF {
 
-// Tokens for edit routing in UsdUfe
+// Tokens for edit routing:
 //
 // clang-format off
 #define USDUFE_EDIT_ROUTING_TOKENS                    \
@@ -38,6 +38,7 @@ namespace USDUFE_NS_DEF {
     ((Operation, "operation"))                          \
     /* Stage received in the context of some router  */ \
     ((Stage, "stage"))                                  \
+    ((EditTarget, "editTarget"))                        \
                                                         \
     /* Routing operations                            */ \
                                                         \
@@ -45,12 +46,46 @@ namespace USDUFE_NS_DEF {
     ((RouteDuplicate, "duplicate"))                     \
     ((RouteVisibility, "visibility"))                   \
     ((RouteAttribute, "attribute"))                     \
+    ((RouteDelete, "delete"))                           \
+    ((RouteTransform, "transform"))                     \
                                                         \
 // clang-format on
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DECLARE_PUBLIC_TOKENS(EditRoutingTokens, USDUFE_PUBLIC, USDUFE_EDIT_ROUTING_TOKENS);
+
+// Generic tokens:
+//
+// clang-format off
+#define USDUFE_GENERIC_TOKENS                          \
+    /* Metadata value to inherit the value from a     */ \
+    /* parent prim. Used in selectability.            */ \
+    ((Inherit, "inherit"))                               \
+    /* Metadata value to turn on or off a feature.    */ \
+    /* Used in selectability and lock, for example.   */ \
+    ((On, "on"))                                         \
+    ((Off, "off")) // clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(GenericTokens, USDUFE_PUBLIC, USDUFE_GENERIC_TOKENS);
+
+// Tokens that are used as metadata on prim and attributes:
+//
+// clang-format off
+#define USDUFE_METADATA_TOKENS                         \
+    /* Locking attribute metadata. A locked attribute */ \
+    /* value cannot be changed.                       */ \
+    /* TEMP (UsdUfe) - look at replacing mayaLock     */ \
+    ((Lock, "mayaLock"))                                 \
+    /* Metadata for UI queries                        */ \
+    ((UIName, "uiname"))                                 \
+    ((UIFolder, "uifolder"))                             \
+    ((UIMin, "uimin"))                                   \
+    ((UIMax, "uimax"))                                   \
+    ((UISoftMin, "uisoftmin"))                           \
+    ((UISoftMax, "uisoftmax")) // clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(MetadataTokens, USDUFE_PUBLIC, USDUFE_METADATA_TOKENS);
 
 } // namespace USDUFE_NS_DEF
 

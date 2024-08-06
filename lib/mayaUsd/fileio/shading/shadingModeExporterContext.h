@@ -90,17 +90,30 @@ public:
     /// Vector of assignments.
     typedef std::vector<Assignment> AssignmentVector;
 
+    // Information about the material assignments.
+    struct AssignmentsInfo
+    {
+        /// Assignments for this material.
+        std::vector<Assignment> assignments;
+        /// Flag indicating if the material has any assigments,
+        /// even to meshes that are not being exported.
+        bool hasAnyAssignment = false;
+        /// Flag indicating if the material has any assignments to a
+        /// mesh that was in the selection, even if meshes are not exported.
+        bool hasAnyAssignmentInSelection = false;
+    };
+
     /// Returns a vector of binding assignments associated with the shading
     /// engine.
     MAYAUSD_CORE_PUBLIC
-    AssignmentVector GetAssignments() const;
+    AssignmentsInfo GetAssignments() const;
 
     /// Use this function to create a UsdShadeMaterial prim at a "standard"
     /// location computed by browsing the \p assignmentsToBind
     MAYAUSD_CORE_PUBLIC
     UsdPrim MakeStandardMaterialPrim(
-        const AssignmentVector& assignmentsToBind,
-        const std::string&      name = std::string()) const;
+        const AssignmentsInfo& assignmentsInfo,
+        const std::string&     name = std::string()) const;
 
     /// Use this function to bind a UsdShadeMaterial prim to all assignments provided.
     ///

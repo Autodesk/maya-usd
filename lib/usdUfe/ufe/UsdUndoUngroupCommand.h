@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOUNGROUPCOMMAND_H
+#define USDUFE_USDUNDOUNGROUPCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -30,13 +31,8 @@ public:
     using Ptr = std::shared_ptr<UsdUndoUngroupCommand>;
 
     UsdUndoUngroupCommand(const UsdSceneItem::Ptr& groupItem);
-    ~UsdUndoUngroupCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoUngroupCommand(const UsdUndoUngroupCommand&) = delete;
-    UsdUndoUngroupCommand& operator=(const UsdUndoUngroupCommand&) = delete;
-    UsdUndoUngroupCommand(UsdUndoUngroupCommand&&) = delete;
-    UsdUndoUngroupCommand& operator=(UsdUndoUngroupCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoUngroupCommand);
 
     //! Create a UsdUndoUngroupCommand.
     static UsdUndoUngroupCommand::Ptr create(const UsdSceneItem::Ptr& groupItem);
@@ -54,3 +50,5 @@ private:
 }; // UsdUndoUngroupCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOUNGROUPCOMMAND_H

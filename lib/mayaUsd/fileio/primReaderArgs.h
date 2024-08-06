@@ -65,6 +65,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool GetUseAsAnimationCache() const;
 
+    MAYAUSD_CORE_PUBLIC
+    const std::map<std::string, std::string>& GetUVSetNameRemappings() const;
+
     bool ShouldImportUnboundShaders() const
     {
         // currently this is disabled.

@@ -55,6 +55,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportCamera.py
     testUsdImportBasisCurves.py
     testUsdImportBatchNurbsCurves.py
+    testUsdImportBlendShapes.py
     testUsdImportLinearCurves.py
     testUsdImportHighDegreeNurbsCurves.py
     testUsdImportNurbsCurves.py
@@ -248,6 +249,10 @@ endforeach()
 # require a recent Maya preview release combined with a bleeding edge USD
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
     set(MTLX_TEST_SCRIPT_FILES
+        testUsdExportMaterialScope.py
+        testUsdExportMaterialScopeLegacy.py
+        testUsdExportMaterialsOnly.py
+        testUsdExportAssignedMaterials.py
         testUsdExportMaterialX.py
         testUsdImportMaterialX.py
 		testUsdExportFannedOutFileNodesMaterial.py
@@ -302,3 +307,9 @@ mayaUsd_add_test(testUsdImportExportSiteSpecificConfig
 )
 set_property(TEST testUsdImportExportSiteSpecificConfig APPEND PROPERTY LABELS translators)
 
+mayaUsd_add_test(testUsdExportEmptyXforms
+    PYTHON_MODULE testUsdExportEmptyXforms
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/ExportEmptyConfig"
+)

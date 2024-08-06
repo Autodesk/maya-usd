@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DCOMMONAPI_H
+#define MAYAUSD_USDTRANSFORM3DCOMMONAPI_H
 
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 
@@ -41,11 +42,10 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dCommonAPI : public UsdTransform3dBase
 public:
     typedef std::shared_ptr<UsdTransform3dCommonAPI> Ptr;
 
-    UsdTransform3dCommonAPI(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dCommonAPI() override = default;
+    UsdTransform3dCommonAPI(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a UsdTransform3dCommonAPI.
-    static UsdTransform3dCommonAPI::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dCommonAPI::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;
@@ -100,3 +100,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DCOMMONAPI_H

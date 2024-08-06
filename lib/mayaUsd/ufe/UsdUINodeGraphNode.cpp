@@ -15,6 +15,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+// Ensure that UsdUINodeGraphNode is properly setup.
+#ifdef UFE_V4_1_FEATURES_AVAILABLE
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNode_v4_1, UsdUINodeGraphNode);
+#else
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNode, UsdUINodeGraphNode);
+#endif
+
 UsdUINodeGraphNode::SetPosOrSizeCommand::SetPosOrSizeCommand(
     CoordType              coordType,
     const PXR_NS::UsdPrim& prim,
@@ -80,17 +87,17 @@ void UsdUINodeGraphNode::SetDisplayColorCommand::executeImplementation()
 }
 #endif // UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR
 
-UsdUINodeGraphNode::UsdUINodeGraphNode(const UsdSceneItem::Ptr& item)
-    : fItem(item)
+UsdUINodeGraphNode::UsdUINodeGraphNode(const UsdUfe::UsdSceneItem::Ptr& item)
+    : _item(item)
 {
 }
 
-UsdUINodeGraphNode::Ptr UsdUINodeGraphNode::create(const UsdSceneItem::Ptr& item)
+UsdUINodeGraphNode::Ptr UsdUINodeGraphNode::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdUINodeGraphNode>(item);
 }
 
-Ufe::SceneItem::Ptr UsdUINodeGraphNode::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr UsdUINodeGraphNode::sceneItem() const { return _item; }
 
 bool UsdUINodeGraphNode::hasPosition() const { return hasPosOrSize(CoordType::Position); }
 
@@ -99,7 +106,7 @@ Ufe::Vector2f UsdUINodeGraphNode::getPosition() const { return getPosOrSize(Coor
 Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setPositionCmd(const Ufe::Vector2f& pos)
 {
     return std::make_shared<SetPosOrSizeCommand>(
-        CoordType::Position, fItem ? fItem->prim() : PXR_NS::UsdPrim(), pos);
+        CoordType::Position, _item ? _item->prim() : PXR_NS::UsdPrim(), pos);
 }
 
 #ifdef UFE_UINODEGRAPHNODE_HAS_SIZE
@@ -110,14 +117,14 @@ Ufe::Vector2f UsdUINodeGraphNode::getSize() const { return getPosOrSize(CoordTyp
 Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setSizeCmd(const Ufe::Vector2f& size)
 {
     return std::make_shared<SetPosOrSizeCommand>(
-        CoordType::Size, fItem ? fItem->prim() : PXR_NS::UsdPrim(), size);
+        CoordType::Size, _item ? _item->prim() : PXR_NS::UsdPrim(), size);
 }
 #endif
 
 #ifdef UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR
 bool UsdUINodeGraphNode::hasDisplayColor() const
 {
-    const PXR_NS::UsdPrim               prim = fItem->prim();
+    const PXR_NS::UsdPrim               prim = _item->prim();
     const PXR_NS::UsdUINodeGraphNodeAPI displayColorApi(prim);
     if (!displayColorApi)
         return false;
@@ -133,7 +140,7 @@ bool UsdUINodeGraphNode::hasDisplayColor() const
 
 Ufe::Color3f UsdUINodeGraphNode::getDisplayColor() const
 {
-    const PXR_NS::UsdPrim               prim = fItem->prim();
+    const PXR_NS::UsdPrim               prim = _item->prim();
     const PXR_NS::UsdUINodeGraphNodeAPI displayColorApi(prim);
     if (displayColorApi) {
         const PXR_NS::UsdAttribute attr = displayColorApi.GetDisplayColorAttr();
@@ -151,14 +158,14 @@ Ufe::Color3f UsdUINodeGraphNode::getDisplayColor() const
 
 Ufe::UndoableCommand::Ptr UsdUINodeGraphNode::setDisplayColorCmd(const Ufe::Color3f& color)
 {
-    return std::make_shared<SetDisplayColorCommand>(fItem->prim(), color);
+    return std::make_shared<SetDisplayColorCommand>(_item->prim(), color);
 }
 #endif
 
 bool UsdUINodeGraphNode::hasPosOrSize(CoordType coordType) const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    const UsdPrim         prim = fItem->prim();
+    const UsdPrim         prim = _item->prim();
     UsdUINodeGraphNodeAPI posApi(prim);
     if (!posApi) {
         return false;
@@ -176,7 +183,7 @@ bool UsdUINodeGraphNode::hasPosOrSize(CoordType coordType) const
 Ufe::Vector2f UsdUINodeGraphNode::getPosOrSize(CoordType coordType) const
 {
     if (hasPosOrSize(coordType)) {
-        const PXR_NS::UsdPrim               prim = fItem->prim();
+        const PXR_NS::UsdPrim               prim = _item->prim();
         const PXR_NS::UsdUINodeGraphNodeAPI posApi(prim);
         const PXR_NS::UsdAttribute          attr
             = coordType == CoordType::Position ? posApi.GetPosAttr() : posApi.GetSizeAttr();

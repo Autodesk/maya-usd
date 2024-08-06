@@ -425,27 +425,38 @@ private:
         //! The combined instancer index version and instance index change count the last time
         //! _Execute was called
         unsigned int _instanceIndex { 0 };
+#ifdef USD_HAS_TRACKER_INSTANCE_COUNT
+        //! The instance count the last time _Execute was called
+        unsigned int _instanceCount { 0 };
+#endif
 
         void sync(const HdChangeTracker& tracker)
         {
             _renderTag = tracker.GetRenderTagVersion();
             _visibility = tracker.GetVisibilityChangeCount();
             _instanceIndex = tracker.GetInstancerIndexVersion();
+#ifdef USD_HAS_TRACKER_INSTANCE_COUNT
+            _instanceCount = tracker.GetInstanceIndicesChangeCount();
+#endif
         }
 
-        bool renderTagValid(const HdChangeTracker& tracker)
+        bool renderTagValid(const HdChangeTracker& tracker) const
         {
             return _renderTag == tracker.GetRenderTagVersion();
         }
 
-        bool visibilityValid(const HdChangeTracker& tracker)
+        bool visibilityValid(const HdChangeTracker& tracker) const
         {
             return _visibility == tracker.GetVisibilityChangeCount();
         }
 
-        bool instanceIndexValid(const HdChangeTracker& tracker)
+        bool instanceIndexValid(const HdChangeTracker& tracker) const
         {
-            return _instanceIndex == tracker.GetInstancerIndexVersion();
+            return _instanceIndex == tracker.GetInstancerIndexVersion()
+#ifdef USD_HAS_TRACKER_INSTANCE_COUNT
+                && _instanceCount == tracker.GetInstanceIndicesChangeCount()
+#endif
+                ;
         }
 
         void reset()
@@ -453,6 +464,9 @@ private:
             _renderTag = 0;
             _visibility = 0;
             _instanceIndex = 0;
+#ifdef USD_HAS_TRACKER_INSTANCE_COUNT
+            _instanceCount = 0;
+#endif
         }
     };
     HdChangeTrackerVersions _changeVersions;

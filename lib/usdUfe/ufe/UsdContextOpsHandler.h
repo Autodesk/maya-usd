@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDCONTEXTOPSHANDLER_H
+#define USDUFE_USDCONTEXTOPSHANDLER_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdContextOps.h>
@@ -28,14 +29,9 @@ class USDUFE_PUBLIC UsdContextOpsHandler : public Ufe::ContextOpsHandler
 public:
     typedef std::shared_ptr<UsdContextOpsHandler> Ptr;
 
-    UsdContextOpsHandler();
-    ~UsdContextOpsHandler() override;
+    UsdContextOpsHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdContextOpsHandler(const UsdContextOpsHandler&) = delete;
-    UsdContextOpsHandler& operator=(const UsdContextOpsHandler&) = delete;
-    UsdContextOpsHandler(UsdContextOpsHandler&&) = delete;
-    UsdContextOpsHandler& operator=(UsdContextOpsHandler&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdContextOpsHandler);
 
     //! Create a UsdContextOpsHandler.
     static UsdContextOpsHandler::Ptr create();
@@ -45,3 +41,5 @@ public:
 }; // UsdContextOpsHandler
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDCONTEXTOPSHANDLER_H

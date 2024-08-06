@@ -188,45 +188,64 @@ if(TARGET hdMtlx)
     endif()
 endif()
 
-if(MAYA_APP_VERSION VERSION_GREATER 2024)
-    # First look for Qt6 in the Maya devkit.
-    # The Qt6 archive in the Maya devkit contains everything needed for the normal cmake find_package.
-    set(CMAKE_PREFIX_PATH "${MAYA_DEVKIT_LOCATION}/Qt")
-    find_package(Qt6 6.5 COMPONENTS Core Gui Widgets QUIET)
-endif()
-if (Qt6_FOUND)
-    message(STATUS "Found Qt6 in Maya devkit, building with Qt ${Qt6_VERSION} features enabled.")
-    set(Qt_FOUND TRUE)
-else()
-    # If we didn't find Qt6 in Maya devkit, search again, but for Qt5 this time.
-    # Minimum version required is 5.15 (Maya 2022/2023/2024).
-    # This will find Qt in the Maya devkit using a custom find package.
-    # So the version will match Maya we are building for.
-    find_package(Maya_Qt 5.15 COMPONENTS Core Gui Widgets QUIET)
-    if (Maya_Qt_FOUND)
-        message(STATUS "Found Qt5 in Maya devkit, building with Qt ${MAYA_QT_VERSION} features enabled.")
-        set(Qt_FOUND TRUE)
-    endif()
-endif()
-    
-if(NOT Qt_FOUND)
-    message(SEND_ERROR "Could not find Qt in Maya devkit directory: ${MAYA_DEVKIT_LOCATION}.")
+# Only need Qt when building MayaUsd (i.e. Qt not needed for UsdUfe standalone build).
+if(BUILD_MAYAUSD_LIBRARY)
     if(MAYA_APP_VERSION VERSION_GREATER 2024)
-        message(STATUS "  You must extract Qt.tar.gz")
+        # First look for Qt6 in the Maya devkit.
+        # The Qt6 archive in the Maya devkit contains everything needed for the normal cmake find_package.
+        set(CMAKE_PREFIX_PATH "${MAYA_DEVKIT_LOCATION}/Qt")
+        find_package(Qt6 6.5 COMPONENTS Core Gui Widgets QUIET)
+    endif()
+    if (Qt6_FOUND)
+        message(STATUS "Found Qt6 in Maya devkit, building with Qt ${Qt6_VERSION} features enabled.")
+        set(Qt_FOUND TRUE)
     else()
-        if (IS_WINDOWS)
-            message(STATUS "  In Maya devkit you must extract include/qt_5.15.2_vc14-include.zip")
-        else()
-            message(STATUS "  In Maya devkit you must extract include/qt_5.15.2-include.tar.gz")
+        # If we didn't find Qt6 in Maya devkit, search again, but for Qt5 this time.
+        # Minimum version required is 5.15 (Maya 2022/2023/2024).
+        # This will find Qt in the Maya devkit using a custom find package.
+        # So the version will match Maya we are building for.
+        find_package(Maya_Qt 5.15 COMPONENTS Core Gui Widgets QUIET)
+        if (Maya_Qt_FOUND)
+            message(STATUS "Found Qt5 in Maya devkit, building with Qt ${MAYA_QT_VERSION} features enabled.")
+            set(Qt_FOUND TRUE)
         endif()
     endif()
-    message(FATAL_ERROR "Cannot build MayaUsd without Qt.")
+
+    if(NOT Qt_FOUND)
+        message(SEND_ERROR "Could not find Qt in Maya devkit directory: ${MAYA_DEVKIT_LOCATION}.")
+        if(MAYA_APP_VERSION VERSION_GREATER 2024)
+            message(STATUS "  You must extract Qt.tar.gz")
+        else()
+            if (IS_WINDOWS)
+                message(STATUS "  In Maya devkit you must extract include/qt_5.15.2_vc14-include.zip")
+            else()
+                message(STATUS "  In Maya devkit you must extract include/qt_5.15.2-include.tar.gz")
+            endif()
+        endif()
+        message(FATAL_ERROR "Cannot build MayaUsd without Qt.")
+    endif()
 endif()
 
 #------------------------------------------------------------------------------
 # compiler configuration
 #------------------------------------------------------------------------------
 include(cmake/compiler_config.cmake)
+
+#------------------------------------------------------------------------------
+# C++17 support
+#------------------------------------------------------------------------------
+# In cmake/compiler_config.cmake we set the C++ version to 17 when building with
+# USD 23.11 or greater to match USD.
+# Some features also require C++17 so disable them if they were enabled.
+if (USD_VERSION VERSION_LESS "0.23.11")
+    # The clipboard support was added in Ufe v6 and backported to Ufe v5.
+    # Compiling UsdUfe standalone with Ufe v5 will result in clipboard being
+    # enabled, but we must disable it here if USD version doesn't match C++ version.
+    if (UFE_CLIPBOARD_SUPPORT)
+        message(WARNING "Disabling Ufe clipboard support since it requires USD v23.11 and C++17")
+        set(UFE_CLIPBOARD_SUPPORT FALSE)
+    endif()
+endif()
 
 #------------------------------------------------------------------------------
 # gulrak filesystem
@@ -255,7 +274,9 @@ add_subdirectory(lib)
 #------------------------------------------------------------------------------
 # tutorials
 #------------------------------------------------------------------------------
-add_subdirectory(tutorials/import-export-plugin-c++)
+if (BUILD_MAYAUSD_LIBRARY)
+    add_subdirectory(tutorials/import-export-plugin-c++)
+endif()
 
 #------------------------------------------------------------------------------
 # plugins
@@ -271,8 +292,6 @@ if (BUILD_MAYAUSDAPI_LIBRARY)
         message(FATAL_ERROR "Building mayaUsdAPI library requires MayaUsd core libraries to be built, please enable BUILD_MAYAUSD_LIBRARY.")
     endif()
 endif()
-
-
 
 if (BUILD_PXR_PLUGIN)
     add_subdirectory(plugin/pxr)

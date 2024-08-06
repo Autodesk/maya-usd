@@ -45,6 +45,9 @@ public:
     static constexpr auto kDefaultMeshSchemeFlag = "dms";
     static constexpr auto kDefaultUSDFormatFlag = "duf";
     static constexpr auto kExportColorSetsFlag = "cls";
+    static constexpr auto kExportMaterialsFlag = "mat";
+    static constexpr auto kExportAssignedMaterialsFlag = "ama";
+    static constexpr auto kLegacyMaterialScopeFlag = "lms";
     static constexpr auto kExportUVsFlag = "uvs";
     static constexpr auto kExportRelativeTexturesFlag = "rtx";
     static constexpr auto kEulerFilterFlag = "ef";
@@ -97,6 +100,7 @@ public:
     static constexpr auto kMetersPerUnit = "mpu";
     static constexpr auto kExcludeExportTypesFlag = "eet";
     static constexpr auto kDefaultPrimFlag = "dp";
+    static constexpr auto kIncludeEmptyTransformsFlag = "iet";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";

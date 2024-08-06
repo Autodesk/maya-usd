@@ -54,6 +54,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdMayaPrimWriter::ContextSupport
 PxrUsdTranslators_MaterialWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
+    if (!exportArgs.exportMaterials)
+        return ContextSupport::Unsupported;
+
     if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
         return ContextSupport::Supported;
     }

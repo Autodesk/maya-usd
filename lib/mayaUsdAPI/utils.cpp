@@ -23,7 +23,10 @@
 #endif
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <mayaUsdUtils/MergePrims.h>
+
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/mergePrims.h>
+#include <usdUfe/utils/usdUtils.h>
 
 namespace MAYAUSDAPI_NS_DEF {
 
@@ -31,12 +34,12 @@ Ufe::Rtid getMayaRunTimeId() { return MayaUsd::ufe::getMayaRunTimeId(); }
 
 bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
 {
-    return MayaUsd::ufe::isConnected(srcUsdAttr, dstUsdAttr);
+    return UsdUfe::isConnected(srcUsdAttr, dstUsdAttr);
 }
 
 PXR_NS::UsdStageWeakPtr usdStage(const Ufe::Attribute::Ptr& attribute)
 {
-    if (auto usdAttribute = std::dynamic_pointer_cast<MayaUsd::ufe::UsdAttribute>(attribute)) {
+    if (auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(attribute)) {
         return usdAttribute->usdPrim().GetStage();
     }
     return nullptr;
@@ -44,7 +47,7 @@ PXR_NS::UsdStageWeakPtr usdStage(const Ufe::Attribute::Ptr& attribute)
 
 PXR_NS::SdfValueTypeName usdAttributeType(const Ufe::Attribute::Ptr& attribute)
 {
-    if (auto usdAttribute = std::dynamic_pointer_cast<MayaUsd::ufe::UsdAttribute>(attribute)) {
+    if (auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(attribute)) {
         return usdAttribute->usdAttributeType();
     }
     return PXR_NS::SdfValueTypeName();
@@ -55,7 +58,7 @@ bool getUsdValue(
     PXR_NS::VtValue&           value,
     PXR_NS::UsdTimeCode        time)
 {
-    if (auto usdAttribute = std::dynamic_pointer_cast<MayaUsd::ufe::UsdAttribute>(attribute)) {
+    if (auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(attribute)) {
         return usdAttribute->get(value, time);
     }
     return false;
@@ -66,7 +69,7 @@ bool getUsdValue(
 Ufe::UndoableCommand::Ptr
 addNewMaterialCommand(const Ufe::SceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier)
 {
-    if (auto usdSceneItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem)) {
+    if (auto usdSceneItem = UsdUfe::downcast(parentItem)) {
         return MayaUsd::ufe::UsdUndoAddNewMaterialCommand::create(
             usdSceneItem, sdrShaderIdentifier);
     }
@@ -75,7 +78,7 @@ addNewMaterialCommand(const Ufe::SceneItem::Ptr& parentItem, const std::string& 
 
 Ufe::UndoableCommand::Ptr createMaterialsScopeCommand(const Ufe::SceneItem::Ptr& parentItem)
 {
-    if (auto usdSceneItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(parentItem)) {
+    if (auto usdSceneItem = UsdUfe::downcast(parentItem)) {
         return MayaUsd::ufe::UsdUndoCreateMaterialsScopeCommand::create(usdSceneItem);
     }
     return nullptr;
@@ -88,10 +91,7 @@ Ufe::UndoableCommand::Ptr createStageWithNewLayerCommand(const Ufe::SceneItem::P
 
 #endif
 
-bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
-{
-    return MayaUsd::ufe::isMaterialsScope(item);
-}
+bool isMaterialsScope(const Ufe::SceneItem::Ptr& item) { return UsdUfe::isMaterialsScope(item); }
 
 bool isAGatewayType(const std::string& mayaNodeType)
 {
@@ -106,10 +106,7 @@ bool mergePrims(
     const PXR_NS::SdfLayerRefPtr& dstLayer,
     const PXR_NS::SdfPath&        dstPath)
 {
-    MayaUsdUtils::MergePrimsOptions options;
-    options.verbosity = MayaUsdUtils::MergeVerbosity::None;
-    return MayaUsdUtils::mergePrims(
-        srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath, options);
+    return UsdUfe::mergePrims(srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath);
 }
 
 std::string getDir(const std::string& fullFilePath)

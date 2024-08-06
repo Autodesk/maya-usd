@@ -76,5 +76,6 @@
 // clang-format on
 
 // Convenience symbol versioning include: because api.h is widely
-// included, this reduces the need to explicitly include mayaUsd.h.
+// included, this reduces the need to explicitly include usdUfe.h & mayaUsd.h.
+#include <usdUfe/usdUfe.h>
 #include <mayaUsd/mayaUsd.h>

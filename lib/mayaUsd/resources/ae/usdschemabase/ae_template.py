@@ -17,10 +17,10 @@ from .custom_image_control import customImageControlCreator
 from .attribute_custom_control import getNiceAttributeName
 from .attribute_custom_control import cleanAndFormatTooltip
 from .attribute_custom_control import AttributeCustomControl
+from .material_custom_control import MaterialCustomControl
 
 import collections
 import fnmatch
-from functools import partial
 import re
 import ufe
 import usdUfe
@@ -78,9 +78,16 @@ def _queueEditorRefresh():
 
 # Custom control, but does not have any UI. Instead we use
 # this control to be notified from UFE when any attribute has changed
-# so we can update the AE. This is to fix refresh issue
-# when transform is added to a prim.
+# so we can update the AE. 
 class UfeAttributesObserver(ufe.Observer):
+    _watchedAttrs = {
+        # This is to fix refresh issue when transform is added to a prim.
+        UsdGeom.Tokens.xformOpOrder,
+        # This is to fix refresh issue when an existing material is assigned
+        # to the prim when it already had a another material.
+        UsdShade.Tokens.materialBinding,
+    }
+
     def __init__(self, item):
         super(UfeAttributesObserver, self).__init__()
         self._item = item
@@ -91,7 +98,7 @@ class UfeAttributesObserver(ufe.Observer):
     def __call__(self, notification):
         refreshEditor = False
         if isinstance(notification, ufe.AttributeValueChanged):
-            if notification.name() == UsdGeom.Tokens.xformOpOrder:
+            if notification.name() in UfeAttributesObserver._watchedAttrs:
                 refreshEditor = True
         if hasattr(ufe, "AttributeAdded") and isinstance(notification, ufe.AttributeAdded):
             refreshEditor = True
@@ -126,6 +133,7 @@ class UfeConnectionChangedObserver(ufe.Observer):
     def onReplace(self, *args):
         # Nothing needed here since we don't create any UI.
         pass
+
 
 class MetaDataCustomControl(object):
     # Custom control for all prim metadata we want to display.
@@ -199,7 +207,7 @@ class MetaDataCustomControl(object):
             for k in allMetadata:
                 # All extra metadata is for display purposes only - it is not editable, but we
                 # allow keyboard focus so you copy the value.
-                mdLabel = mayaUsdLib.Util.prettifyName(k) if self.useNiceName else k
+                mdLabel = mayaUsdUfe.prettifyName(k) if self.useNiceName else k
                 self.extraMetadata[k] = cmds.textFieldGrp(label=mdLabel, editable=False, enableKeyboardFocus=True)
 
         # Update all metadata values.
@@ -552,7 +560,7 @@ class AEShaderLayout(object):
         if not label:
             label = nodeDef.GetFamily()
 
-        self._attributeLayout = AEShaderLayout.Group(self._attributeLayout.name + ": " + mayaUsdLib.Util.prettifyName(label))
+        self._attributeLayout = AEShaderLayout.Group(self._attributeLayout.name + ": " + mayaUsdUfe.prettifyName(label))
 
         # Best option: Use ordering metadata found the Sdr properties:
         hasMetadataOrdering = False
@@ -669,6 +677,7 @@ class AETemplate(object):
         self.attrS = ufe.Attributes.attributes(self.item)
         self.addedAttrs = []
         self.suppressedAttrs = []
+        self.hasConnectionObserver = False
 
         self.showArrayAttributes = False
         if cmds.optionVar(exists="mayaUSD_AEShowArrayAttributes"):
@@ -769,7 +778,7 @@ class AETemplate(object):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        schemaTypeName = mayaUsdLib.Util.prettifyName(schemaTypeName)
+        schemaTypeName = mayaUsdUfe.prettifyName(schemaTypeName)
 
         # if the schema name ends with "api" or "API", trim it.
         if schemaTypeName.endswith("api") or schemaTypeName.endswith("API"):
@@ -786,20 +795,37 @@ class AETemplate(object):
                 else:
                     if self.attrS.attribute(item):
                         self.addControls([item])
+    def isRamp(self):
+        runTimeMgr = ufe.RunTimeMgr.instance()
+        nodeDefHandler = runTimeMgr.nodeDefHandler(self.item.runTimeId())
+        nodeDef = nodeDefHandler.definition(self.item)
+        return nodeDef and nodeDef.type() == "ND_adsk_ramp"
 
     def createShaderAttributesSection(self):
         """Use an AEShaderLayout tool to populate the shader section"""
-        # Add a custom control to monitor for connection changed.
-        cnxObs = UfeConnectionChangedObserver(self.item)
-        self.defineCustom(cnxObs)
+        # Add a custom control to monitor for connection changed
+        # in order for the UI to update itself when the shader is modified.
+        self.addConnectionObserver()
         # Hide all outputs:
         for name in self.attrS.attributeNames:
             if UsdShade.Utils.GetBaseNameAndType(name)[1] == UsdShade.AttributeType.Output:
+                self.suppress(name)
+        # Hide ramp attrs:
+        if self.isRamp():
+            for name in self.attrS.attributeNames:
                 self.suppress(name)
         # Build a layout from USD metadata:
         layout = AEShaderLayout(self.item).get()
         if layout:
             self.addShaderLayout(layout)
+
+    def addConnectionObserver(self):
+        '''Add a connection observer if one has not yet been added.'''
+        if self.hasConnectionObserver:
+            return
+        self.hasConnectionObserver = True
+        obs = UfeConnectionChangedObserver(self.item)
+        self.defineCustom(obs)
 
     def createTransformAttributesSection(self, sectionName, attrsToAdd):
         # Get the xformOp order and add those attributes (in order)
@@ -920,9 +946,23 @@ class AETemplate(object):
 
         self.suppressArrayAttribute()
 
+        # Track if we already added a connection observer.
+        self.hasConnectionObserver = False
+
+        # Material has NodeGraph as base. We want to process once for both schema types:
+        hasProcessedMaterial = False
+
+        # We want material to be either after the mesh section of the Xformable section,
+        # whichever comes first, so that it is not too far down in the AE.
+        self.addedMaterialSection = False
+        primTypeName = self.sectionNameFromSchema(self.prim.GetTypeName())
+        def addMatSection():
+            if not self.addedMaterialSection:
+                self.addedMaterialSection = True
+                self.createMaterialAttributeSection()
+
         # We use UFE for the ancestor node types since it caches the
         # results by node type.
-        hasProcessedMaterial = False
         for schemaType in self.item.ancestorNodeTypes():
             schemaType = usdSch.GetTypeFromName(schemaType)
             schemaTypeName = schemaType.typeName
@@ -936,6 +976,8 @@ class AETemplate(object):
                     # Shader attributes are special
                     self.createShaderAttributesSection()
                     hasProcessedMaterial = True
+                    # Note: don't show the material section for materials.
+                    self.addedMaterialSection = True
                 # We have a special case when building the Xformable section.
                 elif schemaTypeName == 'UsdGeomXformable':
                     self.createTransformAttributesSection(sectionName, attrsToAdd)
@@ -944,6 +986,25 @@ class AETemplate(object):
                                           'Imageable', 'Field Asset', 'Light']
                     collapse = sectionName in sectionsToCollapse
                     self.createSection(sectionName, attrsToAdd, collapse)
+
+                if sectionName == primTypeName:
+                    addMatSection()
+        
+        # In case there was neither a Mesh nor Xformable section, add material section now.
+        addMatSection()        
+
+    def createMaterialAttributeSection(self):
+        if not UsdShade.MaterialBindingAPI.CanApply(self.prim):
+            return
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        mat, _ = matAPI.ComputeBoundMaterial()
+        if not mat:
+            return
+        layoutName = getMayaUsdLibString('kLabelMaterial')
+        collapse = False
+        with ufeAeTemplate.Layout(self, layoutName, collapse):
+            createdControl = MaterialCustomControl(self.item, self.prim, self.useNiceName)
+            self.defineCustom(createdControl)
 
     def suppressArrayAttribute(self):
         # Suppress all array attributes.

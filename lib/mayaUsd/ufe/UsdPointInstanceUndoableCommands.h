@@ -55,7 +55,7 @@ public:
         , _prevValue(_modifier.getDefaultUsdValue())
         , _newValue(_prevValue)
     {
-        UsdSceneItem::Ptr item = downcast(this->sceneItem());
+        auto item = downcast(this->sceneItem());
         if (!item || !item->isPointInstance()) {
             return;
         }
@@ -69,7 +69,7 @@ public:
         _newValue = _prevValue;
     }
 
-    ~UsdPointInstanceUndoableCommandBase() override = default;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdPointInstanceUndoableCommandBase);
 
     // Ufe::UndoableCommand overrides.
     void undo() override
@@ -130,9 +130,11 @@ public:
         : BaseClass(path, writeTime)
     {
     }
-
-    ~UsdPointInstanceTranslateUndoableCommand() override = default;
 };
+
+// Ensure that UsdPointInstanceTranslateUndoableCommand is properly setup.
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceTranslateUndoableCommand);
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceTranslateUndoableCommand);
 
 /// Undoable command for rotating USD point instances.
 ///
@@ -156,9 +158,11 @@ public:
         : BaseClass(path, writeTime)
     {
     }
-
-    ~UsdPointInstanceRotateUndoableCommand() override = default;
 };
+
+// Ensure that UsdPointInstanceRotateUndoableCommand is properly setup.
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceRotateUndoableCommand);
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceRotateUndoableCommand);
 
 /// Undoable command for scaling USD point instances.
 ///
@@ -182,9 +186,11 @@ public:
         : BaseClass(path, writeTime)
     {
     }
-
-    ~UsdPointInstanceScaleUndoableCommand() override = default;
 };
+
+// Ensure that UsdPointInstanceScaleUndoableCommand is properly setup.
+MAYAUSD_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdPointInstanceScaleUndoableCommand);
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdPointInstanceScaleUndoableCommand);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

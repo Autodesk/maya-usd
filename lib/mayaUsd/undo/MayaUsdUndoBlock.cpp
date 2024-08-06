@@ -26,6 +26,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
+MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(MayaUsdUndoBlock);
+
 const MString MayaUsdUndoBlockCmd::commandName { "undoBlockCmd" };
 
 UsdUfe::UsdUndoableItem MayaUsdUndoBlockCmd::argUndoItem;
@@ -39,7 +41,7 @@ MayaUsdUndoBlock::~MayaUsdUndoBlock()
 {
     // Will be decremented to 0 by our base class.
     if (depth() == 1) {
-        UsdUndoableItem undoItem;
+        UsdUfe::UsdUndoableItem undoItem;
         UsdUfe::UsdUndoManagerAccessor::transferEdits(undoItem);
         MayaUsdUndoBlockCmd::execute(undoItem);
 

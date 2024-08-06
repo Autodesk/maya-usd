@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DUNDOABLECOMMANDS_H
+#define MAYAUSD_USDTRANSFORM3DUNDOABLECOMMANDS_H
 
 #include <mayaUsd/base/api.h>
 
@@ -36,7 +37,7 @@ class MAYAUSD_CORE_PUBLIC UsdSetMatrix4dUndoableCommand
 public:
     UsdSetMatrix4dUndoableCommand(const Ufe::Path& path, const Ufe::Matrix4d& newM);
 
-    ~UsdSetMatrix4dUndoableCommand() override;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSetMatrix4dUndoableCommand);
 
     // No-op: Maya does not set matrices through interactive manipulation.
     bool set(const Ufe::Matrix4d&) override;
@@ -52,3 +53,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DUNDOABLECOMMANDS_H

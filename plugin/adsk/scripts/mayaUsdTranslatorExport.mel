@@ -17,6 +17,8 @@
 
 global string $gMayaUsdTranslatorExport_SectionNames[];
 global int $exportAll;
+global int $gMayaUsdTranslatorExport_useShadingRegistry = 1;
+global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 0;
 
 proc string stringRemoveSuffix(string $object, string $suffix)
 {
@@ -211,11 +213,19 @@ global proc mayaUsdTranslatorExport_setDefaultPrim(string $defaultPrimName) {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
     }
-    if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
-        return;
-    }
     // set the default prim if it's available
     catchQuiet(`optionMenuGrp -e -value $defaultPrimName exportDefaultPrim`);
+}
+
+proc int mayaUsdTranslatorExport_isCheckBoxOn(string $cbName)
+{
+    if (`checkBoxGrp -exists $cbName` == 0)
+        return 0;
+    
+    if (`checkBoxGrp -q -v1 $cbName` == 0)
+        return 0;
+
+    return 1;
 }
 
 global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
@@ -223,12 +233,23 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
         return;
     }
 
-    if ((`checkBoxGrp -exists exportMeshesCheckBox` == 0)||(`checkBoxGrp -exists exportLightsCheckBox` == 0)||(`checkBoxGrp -exists exportCamerasCheckBox` == 0)){
-        return;
+    optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
+    string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
+    menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
+
+    // check if there's a root prim defined, if so it should be the only item in list
+    if (`textFieldGrp -exists rootPrimField` != 0){
+        string $rootPrim = `textFieldGrp -q -text rootPrimField`;
+        if(size($rootPrim) > 0){
+            menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
+            optionMenuGrp -e -select 2 exportDefaultPrim;
+            return;
+        }
     }
-    int $excludeMesh = (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 0);
-    int $excludeLight = (`checkBoxGrp -q -v1 exportLightsCheckBox` == 0);
-    int $excludeCamera = (`checkBoxGrp -q -v1 exportCamerasCheckBox` == 0);
+
+    int $excludeMesh = (mayaUsdTranslatorExport_isCheckBoxOn("exportMeshesCheckBox") == 0);
+    int $excludeLight = (mayaUsdTranslatorExport_isCheckBoxOn("exportLightsCheckBox") == 0);
+    int $excludeCamera = (mayaUsdTranslatorExport_isCheckBoxOn("exportCamerasCheckBox") == 0);
 
     string $allItems[];
     global int $exportAll;
@@ -238,15 +259,13 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
     } else{
         $allItems = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.updateDefaultPrimCandidatesFromSelection('" + $excludeMesh + "','" + $excludeLight + "', '" + $excludeCamera +"')")`;
     }
-    optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
-    string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
-    menuItem -parent ($menuName + "|OptionMenu") -l `getMayaUsdString("kExportDefaultPrimNoneLbl")`;
 
-    // check if there's a root prim defined, if so add to list
-    if (`textFieldGrp -exists rootPrimField` != 0){
-        string $rootPrim = `textFieldGrp -q -text rootPrimField`;
-        if(size($rootPrim) > 0){
-            menuItem -parent ($menuName + "|OptionMenu") -l $rootPrim;
+    // Note: we only add the material scope if meshes are *not* listed.
+    int $includeMaterials = ($excludeMesh != 0) && (mayaUsdTranslatorExport_isCheckBoxOn("exportMaterialsCheckBox") != 0);
+    if ($includeMaterials) {
+        string $materialScopeName = `python("import mayaUsd_exportHelpers; mayaUsd_exportHelpers.getDefaultMaterialScopeName()")`;
+        if (size($materialScopeName) > 0) {
+            stringArrayInsertAtIndex(255, $allItems, $materialScopeName);
         }
     }
 
@@ -262,6 +281,9 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
 
 }
 
+// This is called to update the default prim drop-down with the
+// explicit root prim name entered by the user. If the explicit
+// name is empty, we fill teh default prim menu as usual.
 proc updateDefaultPrimOptionMenu(string $rootPrim) {
     if (`optionMenuGrp -exists exportDefaultPrim` == 0){
         return;
@@ -305,9 +327,34 @@ global proc mayaUsdTranslatorExport_MeshCB() {
     if (`checkBoxGrp -exists exportMeshesCheckBox` == 0)
         return;
     
+    int $enable = `checkBoxGrp -q -v1 exportMeshesCheckBox`;
+    columnLayout -e -enable $enable meshExportOptsCol;
+
+    mayaUsdTranslatorExport_MaterialsCB();
     mayaUsdTranslatorExport_updateDefaultPrimList();
-    columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) meshExportOptsCol;
-    columnLayout -e -enable (`checkBoxGrp -q -v1 exportMeshesCheckBox` == 1) materialOptsCol;
+}
+
+global proc mayaUsdTranslatorExport_MaterialsCB() {
+    if (`checkBoxGrp -exists exportMaterialsCheckBox` == 0)
+        return;
+    
+    int $enable = `checkBoxGrp -q -v1 exportMaterialsCheckBox`;
+
+    // If materials export is linked to meshes export, then we disable
+    // all materials-related check-boxes when meshes are off. This is
+    // used in duplicate-to-USD to not duplicate materials without meshes.
+    global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes;
+    if ($gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes) {
+        int $meshesEnable = `checkBoxGrp -q -v1 exportMeshesCheckBox`;
+        columnLayout -e -enable $meshesEnable materialOptsCol2;
+        columnLayout -e -enable $meshesEnable materialOptsCol;
+        if ($meshesEnable == 0) {
+            $enable = 0;
+        }
+    }
+
+    mayaUsdTranslatorExport_updateDefaultPrimList();
+    columnLayout -e -enable $enable materialOptsCol;
 }
 
 proc string[] mayaUsdTranslatorExport_getContextLabels()
@@ -702,25 +749,24 @@ proc mayaUsdTranslatorExport_DisableConvertMaterialsToCheckboxes() {
 }
 
 proc string mayaUsdTranslatorExport_AppendConvertMaterialsTo(string $currentOptions, string $arg) {
+    global int $gMayaUsdTranslatorExport_useShadingRegistry;
+    if ($gMayaUsdTranslatorExport_useShadingRegistry == 0) {
+        return $currentOptions + ";shadingMode=none";    
+    }
+
     string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
     string $enabledConversions[];
-    int $allDisabled = 1;
     for ($conversion in $conversions) {
         string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
         string $widget = $opt + "_ConvertMaterialsToCheckBox";
         if (`checkBoxGrp -exists $widget` == 0)
             continue;
-        if (`checkBoxGrp -q -en $widget` == 1) {
-            $allDisabled = 0;
-        }
         if (`checkBoxGrp -q -v1 $widget` == 1) {
             stringArrayInsertAtIndex(255, $enabledConversions, $opt);
         }
     }
-    if ($allDisabled == 0) {
-        return $currentOptions + ";shadingMode=useRegistry;" + $arg + "=[" + stringArrayToString($enabledConversions, ",") + "]";
-    }
-    return $currentOptions + ";shadingMode=none";    
+
+    return $currentOptions + ";shadingMode=useRegistry;" + $arg + "=[" + stringArrayToString($enabledConversions, ",") + "]";
 }
 
 global proc mayaUsdTranslatorExport_EnableAllControls() {
@@ -762,12 +808,14 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
     }
 
     if (stringArrayContains("materials", $sectionNames)) {
+        checkBoxGrp -e -en 1 exportMaterialsCheckBox;
         string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
         for ($conversion in $conversions) {
             string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
             string $widgetName = $opt + "_ConvertMaterialsToCheckBox";
             checkBoxGrp -e -en 1 $widgetName;
         }
+        checkBoxGrp -e -en 1 exportAssignedMaterialsCheckBox;
         optionMenuGrp -e -en 1 exportRelativeTexturesPopup;
     }
 
@@ -777,6 +825,7 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
         optionMenuGrp -e -en 1 exportInstancesPopup;
         checkBoxGrp -e -en 1 exportVisibilityCheckBox;
         checkBoxGrp -e -en 1 mergeTransformAndShapeCheckBox;
+        checkBoxGrp -e -en 1 includeEmptyTransformsCheckBox;
         checkBoxGrp -e -en 1 includeNamespacesCheckBox;
         checkBoxGrp -e -en 1 worldspaceCheckBox;
     }
@@ -787,6 +836,10 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
 }
 
 global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $enable, int $processJobContext) {
+    // By default, we use the shader registry until told otherwise.
+    global int $gMayaUsdTranslatorExport_useShadingRegistry;
+    $gMayaUsdTranslatorExport_useShadingRegistry = 1;
+
     string $optionList[];
     string $optionBreakDown[];
     string $listOfJobContexts = "";
@@ -810,6 +863,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
 
         int $hasRootPrim = 0;
         string $defaultPrimName = "";
+
+        string $supportedMaterials = "";
 
         string $excludeTypes;
         for ($index = 0; $index < size($optionList); $index++) {
@@ -843,6 +898,10 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 }
             } else if ($optionBreakDown[0] == "exportColorSets") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportColorSetsCheckBox");
+            } else if ($optionBreakDown[0] == "exportMaterials") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportMaterialsCheckBox");
+            } else if ($optionBreakDown[0] == "exportAssignedMaterials") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportAssignedMaterialsCheckBox");
             } else if ($optionBreakDown[0] == "exportComponentTags") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportComponentTagsCheckBox");
             } else if ($optionBreakDown[0] == "jobContext" && $processJobContext == 1) {
@@ -877,8 +936,9 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "defaultPrim") {
                 $defaultPrimName = $optionBreakDown[1];
             } else if ($optionBreakDown[0] == "convertMaterialsTo") {
-                mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1], $enable, $processJobContext);
+                $supportedMaterials = $optionBreakDown[1];
             } else if ($optionBreakDown[0] == "shadingMode" && $optionBreakDown[1] != "useRegistry") {
+                $gMayaUsdTranslatorExport_useShadingRegistry = 0;
                 $supportsMultiExport = 0;
             } else if ($optionBreakDown[0] == "exportDisplayColor") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportDisplayColorCheckBox");
@@ -888,12 +948,16 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportVisibilityCheckBox");
             } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "mergeTransformAndShapeCheckBox");
+            } else if ($optionBreakDown[0] == "includeEmptyTransforms") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "includeEmptyTransformsCheckBox");
             } else if ($optionBreakDown[0] == "stripNamespaces") {
                 mayaUsdTranslatorExport_SetOppositeCheckbox($optionBreakDown[1], $enable, "includeNamespacesCheckBox");
             } else if ($optionBreakDown[0] == "worldspace") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "worldspaceCheckBox");
             }
         }
+
+        mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($supportedMaterials, $enable, $processJobContext);
 
         // We now know if we export nurbs curves or not and if forced by the job context:
         if ($contextForcesFilterTypes == 1) {
@@ -929,6 +993,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
     // Set visibility for anim widgets (but do not update the start/end time to playback range
     // as they will be set by the caller).
     mayaUsdTranslatorExport_AnimationCB();
+    if ($enable)
+        mayaUsdTranslatorExport_MaterialsCB();
 }
 
 proc string[] parseActionSectionNames(string $sections, string $out_expandedSections[], string $out_collapsedSections[])
@@ -1017,6 +1083,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
     // check for export option box window first, if it doesn't exist means user opened the main export window
     global string $gOptionBox;
     global int $exportAll;
+    global int $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes;
+
     if (`window -exists $gOptionBox`) {
         string $title = `window -query -title $gOptionBox`;
         if ($title == `uiRes("m_fileOptions.kExportAllOptions")`) {
@@ -1138,6 +1206,14 @@ global proc int mayaUsdTranslatorExport (string $parent,
             int $collapse = stringArrayContains("materials", $collapsedSections) ? true : false;
             frameLayout -label `getMayaUsdString("kExportFrameMaterialsLbl")` -collapsable true -collapse $collapse -ann `getMayaUsdString("kExportMaterialsAnn")` materialsFrameLayout;
                 separator -style "none";
+                columnLayout -width 100 materialOptsCol2;
+                    checkBoxGrp -v1 1 -label ""
+                        -label1 `getMayaUsdString("kExportMaterialsCBLbl")`
+                        -annotation `getMayaUsdString("kExportMaterialsCBAnn")`
+                        -cc ("mayaUsdTranslatorExport_MaterialsCB")
+                        exportMaterialsCheckBox;
+                setParent ..;
+
                 columnLayout -width 100 materialOptsCol;
                     string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
                     for ($conversion in $conversions) {
@@ -1149,6 +1225,11 @@ global proc int mayaUsdTranslatorExport (string $parent,
                             -label "" -label1 $conversion -annotation $ann
                             $widgetName;
                     }
+
+                    checkBoxGrp -v1 1 -label ""
+                        -label1 `getMayaUsdString("kExportAssignedMaterialsLbl")`
+                        -annotation `getMayaUsdString("kExportAssignedMaterialsAnn")`
+                        exportAssignedMaterialsCheckBox;
 
                     optionMenuGrp -l `getMayaUsdString("kExportRelativeTexturesLbl")` -annotation `getMayaUsdString("kExportRelativeTexturesAnn")` exportRelativeTexturesPopup;
                         // The annotation will be used to assign value to token exportRelativeTextures, so lower case is used
@@ -1211,12 +1292,21 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kExportMergeShapesLbl")`
                     -annotation `getMayaUsdString("kExportMergeShapesAnn")` mergeTransformAndShapeCheckBox;
 
+                checkBoxGrp -label "" -label1 `getMayaUsdString("kExportIncludeEmptyTransformsLbl")` -value1 1
+                    -annotation `getMayaUsdString("kExportIncludeEmptyTransformsAnn")` includeEmptyTransformsCheckBox;
+
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kExportNamespacesLbl")` -annotation `getMayaUsdString("kExportNamespacesAnn")` includeNamespacesCheckBox;
 
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kExportWorldspaceLbl")` -annotation `getMayaUsdString("kExportWorldspaceAnn")` worldspaceCheckBox;
 
                 separator -style "none";
             setParent ..;
+        }
+
+        if (stringArrayContains("duplicate", $sectionNames)) {
+            $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 1;
+        } else {
+            $gMayaUsdTranslatorExport_MaterialsOnlyIfMeshes = 0;
         }
 
         $bResult = 1;
@@ -1263,7 +1353,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("materials", $sectionNames)) {
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportMaterials", "exportMaterialsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendConvertMaterialsTo($currentOptions, "convertMaterialsTo");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportAssignedMaterials", "exportAssignedMaterialsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "exportRelativeTextures", "exportRelativeTexturesPopup");
         }
 
@@ -1273,6 +1365,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendFromBoolPopup($currentOptions, "exportInstances", "exportInstancesPopup");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "includeEmptyTransforms", "includeEmptyTransformsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "worldspace", "worldspaceCheckBox");
         }
@@ -1283,6 +1376,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         // Append the final excludeExportTypes options to the options list
         $currentOptions = $currentOptions + ";" + "excludeExportTypes=[" + $excludeExportTypes + "]";
+
+        // Make sure we use the new material scope logic, not the legacy one.
+        $currentOptions = $currentOptions + ";legacyMaterialScope=0";
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

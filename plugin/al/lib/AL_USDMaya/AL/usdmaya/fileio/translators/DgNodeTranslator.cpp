@@ -19,7 +19,7 @@
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 
-#include <mayaUsdUtils/SIMD.h>
+#include <usdUfe/utils/SIMD.h>
 
 #include <maya/MFloatMatrix.h>
 #include <maya/MFnCompoundAttribute.h>

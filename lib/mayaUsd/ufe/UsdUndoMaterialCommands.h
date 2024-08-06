@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDUNDOMATERIALCOMMANDS_H
+#define MAYAUSD_USDUNDOMATERIALCOMMANDS_H
 
 #include <mayaUsd/base/api.h>
 
@@ -47,22 +48,17 @@ public:
     static bool CompatiblePrim(const Ufe::SceneItem::Ptr& item);
 
     BindMaterialUndoableCommand(Ufe::Path primPath, const PXR_NS::SdfPath& materialPath);
-    ~BindMaterialUndoableCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    BindMaterialUndoableCommand(const BindMaterialUndoableCommand&) = delete;
-    BindMaterialUndoableCommand& operator=(const BindMaterialUndoableCommand&) = delete;
-    BindMaterialUndoableCommand(BindMaterialUndoableCommand&&) = delete;
-    BindMaterialUndoableCommand& operator=(BindMaterialUndoableCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(BindMaterialUndoableCommand);
 
     void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    Ufe::Path       _primPath;
-    PXR_NS::SdfPath _materialPath;
-    UsdUndoableItem _undoableItem;
+    Ufe::Path               _primPath;
+    PXR_NS::SdfPath         _materialPath;
+    UsdUfe::UsdUndoableItem _undoableItem;
 };
 
 //! \brief UnbindMaterialUndoableCommand
@@ -74,19 +70,15 @@ public:
     UnbindMaterialUndoableCommand(Ufe::Path primPath);
     ~UnbindMaterialUndoableCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UnbindMaterialUndoableCommand(const UnbindMaterialUndoableCommand&) = delete;
-    UnbindMaterialUndoableCommand& operator=(const UnbindMaterialUndoableCommand&) = delete;
-    UnbindMaterialUndoableCommand(UnbindMaterialUndoableCommand&&) = delete;
-    UnbindMaterialUndoableCommand& operator=(UnbindMaterialUndoableCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UnbindMaterialUndoableCommand);
 
     void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    Ufe::Path       _primPath;
-    UsdUndoableItem _undoableItem;
+    Ufe::Path               _primPath;
+    UsdUfe::UsdUndoableItem _undoableItem;
 };
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -97,23 +89,19 @@ public:
     typedef std::shared_ptr<UsdUndoAssignNewMaterialCommand> Ptr;
 
     UsdUndoAssignNewMaterialCommand(
-        const UsdSceneItem::Ptr& parentItem,
-        const std::string&       sdrShaderIdentifier);
+        const UsdUfe::UsdSceneItem::Ptr& parentItem,
+        const std::string&               sdrShaderIdentifier);
     UsdUndoAssignNewMaterialCommand(
         const Ufe::Selection& parentItems,
         const std::string&    sdrShaderIdentifier);
     ~UsdUndoAssignNewMaterialCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoAssignNewMaterialCommand(const UsdUndoAssignNewMaterialCommand&) = delete;
-    UsdUndoAssignNewMaterialCommand& operator=(const UsdUndoAssignNewMaterialCommand&) = delete;
-    UsdUndoAssignNewMaterialCommand(UsdUndoAssignNewMaterialCommand&&) = delete;
-    UsdUndoAssignNewMaterialCommand& operator=(UsdUndoAssignNewMaterialCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAssignNewMaterialCommand);
 
     //! Create a UsdUndoAssignNewMaterialCommand that creates a new material based on
     //! \p sdrShaderIdentifier and assigns it to \p parentItem
     static UsdUndoAssignNewMaterialCommand::Ptr
-    create(const UsdSceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier);
+    create(const UsdUfe::UsdSceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier);
     //! Create a UsdUndoAssignNewMaterialCommand that creates a new material based on
     //! \p sdrShaderIdentifier and assigns it to multiple \p parentItems
     static UsdUndoAssignNewMaterialCommand::Ptr
@@ -143,20 +131,16 @@ public:
     typedef std::shared_ptr<UsdUndoAddNewMaterialCommand> Ptr;
 
     UsdUndoAddNewMaterialCommand(
-        const UsdSceneItem::Ptr& parentItem,
-        const std::string&       sdrShaderIdentifier);
+        const UsdUfe::UsdSceneItem::Ptr& parentItem,
+        const std::string&               sdrShaderIdentifier);
     ~UsdUndoAddNewMaterialCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoAddNewMaterialCommand(const UsdUndoAddNewMaterialCommand&) = delete;
-    UsdUndoAddNewMaterialCommand& operator=(const UsdUndoAddNewMaterialCommand&) = delete;
-    UsdUndoAddNewMaterialCommand(UsdUndoAddNewMaterialCommand&&) = delete;
-    UsdUndoAddNewMaterialCommand& operator=(UsdUndoAddNewMaterialCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAddNewMaterialCommand);
 
     //! Create a UsdUndoAddNewMaterialCommand that creates a new material based on
     //! \p sdrShaderIdentifier and adds it as child of \p parentItem
     static UsdUndoAddNewMaterialCommand::Ptr
-    create(const UsdSceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier);
+    create(const UsdUfe::UsdSceneItem::Ptr& parentItem, const std::string& sdrShaderIdentifier);
 
     Ufe::SceneItem::Ptr insertedChild() const override;
 
@@ -173,8 +157,8 @@ private:
     Ufe::Path         _parentPath;
     const std::string _nodeId;
 
-    UsdUndoAddNewPrimCommand::Ptr        _createMaterialCmd;
-    UsdUndoCreateFromNodeDefCommand::Ptr _createShaderCmd;
+    UsdUfe::UsdUndoAddNewPrimCommand::Ptr _createMaterialCmd;
+    UsdUndoCreateFromNodeDefCommand::Ptr  _createShaderCmd;
 
 }; // UsdUndoAddNewMaterialCommand
 
@@ -187,20 +171,16 @@ class MAYAUSD_CORE_PUBLIC UsdUndoCreateMaterialsScopeCommand
 public:
     typedef std::shared_ptr<UsdUndoCreateMaterialsScopeCommand> Ptr;
 
-    UsdUndoCreateMaterialsScopeCommand(const UsdSceneItem::Ptr& parentItem);
+    UsdUndoCreateMaterialsScopeCommand(const UsdUfe::UsdSceneItem::Ptr& parentItem);
     ~UsdUndoCreateMaterialsScopeCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoCreateMaterialsScopeCommand(const UsdUndoCreateMaterialsScopeCommand&) = delete;
-    UsdUndoCreateMaterialsScopeCommand& operator=(const UsdUndoCreateMaterialsScopeCommand&)
-        = delete;
-    UsdUndoCreateMaterialsScopeCommand(UsdUndoCreateMaterialsScopeCommand&&) = delete;
-    UsdUndoCreateMaterialsScopeCommand& operator=(UsdUndoCreateMaterialsScopeCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateMaterialsScopeCommand);
 
     //! Create a UsdUndoCreateMaterialsScopeCommand that creates a new materials scope under \p
     //! parentItem. If there already is a materials scope under \p parentItem, the command will
     //! not create a new materials scope but simply point to the existing one.
-    static UsdUndoCreateMaterialsScopeCommand::Ptr create(const UsdSceneItem::Ptr& parentItem);
+    static UsdUndoCreateMaterialsScopeCommand::Ptr
+    create(const UsdUfe::UsdSceneItem::Ptr& parentItem);
 
     Ufe::SceneItem::Ptr sceneItem() const override;
 
@@ -211,12 +191,13 @@ public:
 private:
     void markAsFailed();
 
-    UsdSceneItem::Ptr   _parentItem;
-    Ufe::SceneItem::Ptr _insertedChild;
-
-    UsdUndoableItem _undoableItem;
+    UsdUfe::UsdSceneItem::Ptr _parentItem;
+    Ufe::SceneItem::Ptr       _insertedChild;
+    UsdUfe::UsdUndoableItem   _undoableItem;
 }; // UsdUndoCreateMaterialsScopeCommand
 #endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDUNDOMATERIALCOMMANDS_H

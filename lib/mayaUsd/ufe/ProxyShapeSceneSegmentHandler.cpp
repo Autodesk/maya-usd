@@ -43,14 +43,14 @@ void findUsdGatewayItems(const Ufe::Path& path, Ufe::Selection& result)
 
 } // namespace
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneSegmentHandler, ProxyShapeSceneSegmentHandler);
+
 ProxyShapeSceneSegmentHandler::ProxyShapeSceneSegmentHandler(
     const Ufe::SceneSegmentHandler::Ptr& mayaSceneSegmentHandler)
     : Ufe::SceneSegmentHandler()
-    , fMayaSceneSegmentHandler(mayaSceneSegmentHandler)
+    , _mayaSceneSegmentHandler(mayaSceneSegmentHandler)
 {
 }
-
-ProxyShapeSceneSegmentHandler::~ProxyShapeSceneSegmentHandler() { }
 
 /*static*/
 ProxyShapeSceneSegmentHandler::Ptr
@@ -66,8 +66,8 @@ ProxyShapeSceneSegmentHandler::create(const Ufe::SceneSegmentHandler::Ptr& mayaS
 Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path) const
 {
     // Handle other gateway node types that MayaUSD is not aware of
-    Ufe::Selection result = fMayaSceneSegmentHandler
-        ? fMayaSceneSegmentHandler->findGatewayItems_(path)
+    Ufe::Selection result = _mayaSceneSegmentHandler
+        ? _mayaSceneSegmentHandler->findGatewayItems_(path)
         : Ufe::Selection();
 
     // Find the MayaUSD proxyShapes
@@ -89,8 +89,8 @@ ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path, Ufe::Rti
     if (nestedRtid != getUsdRunTimeId()) {
         // `nestedRtid` is used as a filter. If it doesn't match the MayaUSD runtime ID, the method
         // can return early.
-        return fMayaSceneSegmentHandler
-            ? fMayaSceneSegmentHandler->findGatewayItems_(path, nestedRtid)
+        return _mayaSceneSegmentHandler
+            ? _mayaSceneSegmentHandler->findGatewayItems_(path, nestedRtid)
             : Ufe::Selection();
     }
 
@@ -115,7 +115,7 @@ bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
     const bool              rebuildCacheIfNeeded = false;
     PXR_NS::UsdStageWeakPtr stage = getStage(path, rebuildCacheIfNeeded);
     return stage ? true
-                 : fMayaSceneSegmentHandler ? fMayaSceneSegmentHandler->isGateway_(path) : false;
+                 : _mayaSceneSegmentHandler ? _mayaSceneSegmentHandler->isGateway_(path) : false;
 }
 
 } // namespace ufe

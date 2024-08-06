@@ -24,6 +24,8 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -115,7 +117,7 @@ MtlxUsd_Place2dTextureWriter::MtlxUsd_Place2dTextureWriter(
 
     SdfPath nodegraphPath = nodegraphSchema.GetPath();
     SdfPath p2dTexPath
-        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar())));
+        = nodegraphPath.AppendChild(TfToken(UsdUfe::sanitizeName(depNodeFn.name().asChar())));
 
     UsdShadeShader p2dTexSchema = UsdShadeShader::Define(GetUsdStage(), p2dTexPath);
     if (!TF_VERIFY(
@@ -149,8 +151,8 @@ MtlxUsd_Place2dTextureWriter::MtlxUsd_Place2dTextureWriter(
     readerName += _tokens->PrimvarReaderSuffix.GetText();
 
     // Only create a geompropvalue reader if there is no place2dtexture connected:
-    SdfPath primvarReaderPath = nodegraphSchema.GetPath().AppendChild(
-        TfToken(UsdMayaUtil::SanitizeName(readerName.asChar())));
+    SdfPath primvarReaderPath
+        = nodegraphSchema.GetPath().AppendChild(TfToken(UsdUfe::sanitizeName(readerName.asChar())));
 
     if (!GetUsdStage()->GetPrimAtPath(primvarReaderPath)) {
         UsdShadeShader primvarReaderSchema

@@ -157,6 +157,9 @@ void _ValidateNormalMap(const MPlug& shadingNodePlug)
 UsdMayaPrimWriter::ContextSupport
 PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
+    if (!exportArgs.exportMaterials)
+        return ContextSupport::Unsupported;
+
     if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
         return ContextSupport::Supported;
     }

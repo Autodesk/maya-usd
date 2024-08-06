@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DSETOBJECTMATRIX_H
+#define MAYAUSD_USDTRANSFORM3DSETOBJECTMATRIX_H
 
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 
@@ -97,7 +98,6 @@ public:
         const Ufe::Transform3d::Ptr& wrapped,
         const PXR_NS::GfMatrix4d&    mlInv,
         const PXR_NS::GfMatrix4d&    mrInv);
-    ~UsdTransform3dSetObjectMatrix() override = default;
 
     //! Create a UsdTransform3dSetObjectMatrix.
     static UsdTransform3dSetObjectMatrix::Ptr create(
@@ -132,3 +132,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DSETOBJECTMATRIX_H

@@ -40,11 +40,10 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dPointInstance : public UsdTransform3dBas
 public:
     using Ptr = std::shared_ptr<UsdTransform3dPointInstance>;
 
-    UsdTransform3dPointInstance(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dPointInstance() override = default;
+    UsdTransform3dPointInstance(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a UsdTransform3dPointInstance.
-    static UsdTransform3dPointInstance::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dPointInstance::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;
@@ -61,6 +60,8 @@ public:
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
+    bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr) const;
+
     UsdPointInstancePositionModifier    _positionModifier;
     UsdPointInstanceOrientationModifier _orientationModifier;
     UsdPointInstanceScaleModifier       _scaleModifier;

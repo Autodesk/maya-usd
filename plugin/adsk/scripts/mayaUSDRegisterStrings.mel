@@ -134,6 +134,10 @@ global proc mayaUSDRegisterStrings()
     register("kExportBlendShapesLbl", "Blend Shapes");
     register("kExportColorSetsAnn", "Exports Maya Color Sets as USD primvars.");
     register("kExportColorSetsLbl", "Color Sets");
+    register("kExportMaterialsCBAnn", "If selected, material/shading data is included as part of the export.");
+    register("kExportMaterialsCBLbl", "Materials");
+    register("kExportAssignedMaterialsAnn", "If selected, only materials assigned to geometry will be exported.");
+    register("kExportAssignedMaterialsLbl", "Assigned Materials Only");
     register("kExportMeshesLbl", "Meshes");
     register("kExportMeshesAnn", "If selected, mesh geometry is extracted for USD export.");
     register("kExportCamerasLbl", "Cameras");
@@ -177,6 +181,11 @@ global proc mayaUSDRegisterStrings()
     register("kExportMaterialsDefaultScopeName", "mtl");
     register("kExportMergeShapesAnn", "Merges Maya transform and shape nodes into a single USD prim.");
     register("kExportMergeShapesLbl", "Merge Transform and Shape Nodes");
+    register("kExportIncludeEmptyTransformsAnn", "If selected, transforms that don't contain objects other\n" +
+                                                 "than transforms will be included as part of the export\n" +
+                                                 "(ex: empty groups, or groups that contain empty groups,\n" +
+                                                 "and so on).");
+    register("kExportIncludeEmptyTransformsLbl", "Include Empty Transforms");
     register("kExportNamespacesAnn", "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1");
     register("kExportNamespacesLbl", "Include Namespaces");
     register("kExportWorldspaceAnn", "Exports the root prims with their worldspace transform instead of their local transform.");

@@ -1980,25 +1980,25 @@ class AttributeTestCase(unittest.TestCase):
 
     def testNamePrettification(self):
         '''Test the name prettification routine.'''
-        self.assertEqual(mayaUsdLib.Util.prettifyName("standard_surface"), "Standard Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("standardSurface"), "Standard Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("USDPreviewSurface"), "USD Preview Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("ior"), "Ior")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("IOR"), "IOR")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("specular_IOR"), "Specular IOR")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("HwPtexTexture"), "Hw Ptex Texture")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("fluid2D"), "Fluid2D")
+        self.assertEqual(mayaUsdUfe.prettifyName("standard_surface"), "Standard Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("standardSurface"), "Standard Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("USDPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("xformOp:rotateXYZ"), "Xform Op Rotate XYZ")
+        self.assertEqual(mayaUsdUfe.prettifyName("ior"), "Ior")
+        self.assertEqual(mayaUsdUfe.prettifyName("IOR"), "IOR")
+        self.assertEqual(mayaUsdUfe.prettifyName("specular_IOR"), "Specular IOR")
+        self.assertEqual(mayaUsdUfe.prettifyName("HwPtexTexture"), "Hw Ptex Texture")
+        self.assertEqual(mayaUsdUfe.prettifyName("fluid2D"), "Fluid2D")
         # This is as expected as we do not insert space on digit<->alpha transitions:
-        self.assertEqual(mayaUsdLib.Util.prettifyName("Dx11Shader"), "Dx11Shader")
+        self.assertEqual(mayaUsdUfe.prettifyName("Dx11Shader"), "Dx11Shader")
         # Explicit substitutions
-        self.assertEqual(mayaUsdLib.Util.prettifyName("UsdPreviewSurface"), "USD Preview Surface")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("mtlx"), "MaterialX")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("gltf_pbr"), "glTF PBR")
+        self.assertEqual(mayaUsdUfe.prettifyName("UsdPreviewSurface"), "USD Preview Surface")
+        self.assertEqual(mayaUsdUfe.prettifyName("mtlx"), "MaterialX")
+        self.assertEqual(mayaUsdUfe.prettifyName("gltf_pbr"), "glTF PBR")
         # Caps tests
-        self.assertEqual(mayaUsdLib.Util.prettifyName("ALLCAPS"), "ALLCAPS")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("MixedCAPS"), "Mixed CAPS")
-        self.assertEqual(mayaUsdLib.Util.prettifyName("CAPS10"), "CAPS10")
+        self.assertEqual(mayaUsdUfe.prettifyName("ALLCAPS"), "ALLCAPS")
+        self.assertEqual(mayaUsdUfe.prettifyName("MixedCAPS"), "Mixed CAPS")
+        self.assertEqual(mayaUsdUfe.prettifyName("CAPS10"), "CAPS10")
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMetadataChanged(self):
@@ -2067,6 +2067,38 @@ class AttributeTestCase(unittest.TestCase):
             self.assertIsNotNone(attr)
             self.assertEqual(attr.getMetadata("uiname"), niceName)
 
+    @unittest.skipUnless(hasattr(ufe.AttributeFloat, "isDefault"), 'Requires default value support')
+    def testDefaultValue(self):
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")
+        testDagPath, testStage = mayaUtils.createProxyFromFile(testFile)
+        mayaPathSegment = mayaUtils.createUfePathSegment(testDagPath)
+        usdPathSegment = usdUtils.createUfePathSegment("/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1")
+        shaderPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        shaderItem = ufe.Hierarchy.createItem(shaderPath)
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+
+        self.assertTrue(shaderAttrs.hasAttribute("inputs:roughness"))
+        shaderAttr = shaderAttrs.attribute("inputs:roughness")
+        self.assertAlmostEqual(shaderAttr.get(), 0.5)
+        self.assertTrue(shaderAttr.isDefault())
+        shaderAttr.set(0.75)
+        self.assertAlmostEqual(shaderAttr.get(), 0.75)        
+        self.assertFalse(shaderAttr.isDefault())
+        shaderAttr.reset()
+        self.assertAlmostEqual(shaderAttr.get(), 0.5)
+        self.assertTrue(shaderAttr.isDefault())
+
+        self.assertTrue(shaderAttrs.hasAttribute("inputs:emissiveColor"))
+        shaderAttr = shaderAttrs.attribute("inputs:emissiveColor")
+        self.assertAlmostEqual(shaderAttr.get().r(), 0)
+        self.assertTrue(shaderAttr.isDefault())
+        shaderAttr.set(ufe.Color3f(0.75, 0.75, 0.75))
+        self.assertAlmostEqual(shaderAttr.get().r(), 0.75)        
+        self.assertFalse(shaderAttr.isDefault())
+        shaderAttr.reset()
+        self.assertAlmostEqual(shaderAttr.get().r(), 0)
+        self.assertTrue(shaderAttr.isDefault())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

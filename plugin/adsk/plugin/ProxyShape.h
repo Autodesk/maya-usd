@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef ASDK_PLUGIN_PROXYSHAPE_H
+#define ASDK_PLUGIN_PROXYSHAPE_H
 
 #include "base/api.h"
 
@@ -53,3 +54,5 @@ private:
 };
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif // ASDK_PLUGIN_PROXYSHAPE_H

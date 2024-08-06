@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOVISIBLECOMMAND_H
+#define USDUFE_USDUNDOVISIBLECOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
@@ -32,13 +33,8 @@ public:
 
     // Public for std::make_shared() access, use create() instead.
     UsdUndoVisibleCommand(const PXR_NS::UsdPrim& prim, bool vis);
-    ~UsdUndoVisibleCommand() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoVisibleCommand(const UsdUndoVisibleCommand&) = delete;
-    UsdUndoVisibleCommand& operator=(const UsdUndoVisibleCommand&) = delete;
-    UsdUndoVisibleCommand(UsdUndoVisibleCommand&&) = delete;
-    UsdUndoVisibleCommand& operator=(UsdUndoVisibleCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoVisibleCommand);
 
     //! Create a UsdUndoVisibleCommand object
     static UsdUndoVisibleCommand::Ptr create(const PXR_NS::UsdPrim& prim, bool vis);
@@ -57,3 +53,5 @@ private:
 }; // UsdUndoVisibleCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOVISIBLECOMMAND_H

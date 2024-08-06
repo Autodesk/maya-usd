@@ -20,7 +20,7 @@
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include <mayaUsdUtils/DiffCore.h>
+#include <usdUfe/utils/diffCore.h>
 
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdUtils/pipeline.h>
@@ -405,7 +405,7 @@ uint32_t diffNurbsCurve(
         const size_t        numPoints = dataPoints.size();
         const float* const  usdPoints = (const float* const)dataPoints.cdata();
         const double* const mayaCVs = (const double* const) & controlVertices[0];
-        if (!MayaUsdUtils::compareArray3Dto4D(usdPoints, mayaCVs, numPoints, numControlVertices)) {
+        if (!UsdUfe::compareArray3Dto4D(usdPoints, mayaCVs, numPoints, numControlVertices)) {
             result |= kCurvePoints;
         }
     }
@@ -450,7 +450,7 @@ uint32_t diffNurbsCurve(
         const size_t        numMayaKnots = knots.length();
         const double* const usdKnots = (const double* const)dataKnots.cdata();
         const double* const mayaKnots = (const double* const) & knots[0];
-        if (!MayaUsdUtils::compareArray(usdKnots, mayaKnots, numKnots, numMayaKnots)) {
+        if (!UsdUfe::compareArray(usdKnots, mayaKnots, numKnots, numMayaKnots)) {
             result |= kKnots;
         }
     }
@@ -461,7 +461,7 @@ uint32_t diffNurbsCurve(
         VtArray<GfVec2d> dataRanges;
         usdCurves.GetRangesAttr().Get(&dataRanges);
         const float* const usdRanges = (const float* const)dataRanges.cdata();
-        if (dataRanges.size() != 1 || !MayaUsdUtils::compareArray(usdRanges, knotDomain, 2, 2)) {
+        if (dataRanges.size() != 1 || !UsdUfe::compareArray(usdRanges, knotDomain, 2, 2)) {
             result |= kRanges;
         }
     }
@@ -489,7 +489,7 @@ uint32_t diffNurbsCurve(
                 const size_t        numMayaWidth = widthArray.length();
                 const float* const  usdWidths = dataWidths.cdata();
                 const double* const mayaWidth = &widthArray[0];
-                if (!MayaUsdUtils::compareArray(usdWidths, mayaWidth, numUsdWidths, numMayaWidth)) {
+                if (!UsdUfe::compareArray(usdWidths, mayaWidth, numUsdWidths, numMayaWidth)) {
                     result |= kWidths;
                 }
             } else if (

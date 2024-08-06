@@ -25,6 +25,8 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -50,10 +52,9 @@
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MRenderUtil.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-
-#include <ghc/filesystem.hpp>
 
 #include <regex>
 
@@ -117,7 +118,7 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
 
     SdfPath nodegraphPath = nodegraphSchema.GetPath();
     SdfPath texPath
-        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar())));
+        = nodegraphPath.AppendChild(TfToken(UsdUfe::sanitizeName(depNodeFn.name().asChar())));
 
     // Create a image shader as the "primary" shader for this writer.
     UsdShadeShader texSchema = UsdShadeShader::Define(GetUsdStage(), texPath);
@@ -175,7 +176,7 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     MString fileTextureName = depNodeFn.name();
     fileTextureName += _tokens->fileTextureSuffix.GetText();
     SdfPath fileTexturePath
-        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(fileTextureName.asChar())));
+        = nodegraphPath.AppendChild(TfToken(UsdUfe::sanitizeName(fileTextureName.asChar())));
 
     UsdShadeShader fileTextureSchema = UsdShadeShader::Define(GetUsdStage(), fileTexturePath);
     _fileTexturePrim = fileTextureSchema.GetPrim();
@@ -290,9 +291,27 @@ void MtlxUsd_FileWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    std::string fileTextureName(fileTextureNamePlug.asString(&status).asChar());
+    const MString rawTextureName = fileTextureNamePlug.asString(&status);
     if (status != MS::kSuccess) {
         return;
+    }
+
+    // Resolve texture path like a file node
+    const MString exactTextureName = MRenderUtil::exactFileTextureName(
+        rawTextureName,
+        /* useFrameExt = */ false,
+        /* currentFrameExt = */ MString(),
+        depNodeFn.absoluteName(),
+        &status);
+    if (status != MS::kSuccess) {
+        return;
+    }
+
+    std::string fileTextureName(exactTextureName.asChar(), exactTextureName.length());
+
+    // Fallback to raw name if maya resolution failed, eg file was not found
+    if (fileTextureName.empty()) {
+        fileTextureName.assign(rawTextureName.asChar(), rawTextureName.length());
     }
 
     const MPlug tilingAttr

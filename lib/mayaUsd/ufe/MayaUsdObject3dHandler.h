@@ -12,7 +12,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
+#ifndef MAYAUSD_MAYAUSDOBJECT3DHANDLER_H
+#define MAYAUSD_MAYAUSDOBJECT3DHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -30,14 +31,7 @@ class MAYAUSD_CORE_PUBLIC MayaUsdObject3dHandler : public UsdUfe::UsdObject3dHan
 public:
     typedef std::shared_ptr<MayaUsdObject3dHandler> Ptr;
 
-    MayaUsdObject3dHandler();
-    ~MayaUsdObject3dHandler() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdObject3dHandler(const MayaUsdObject3dHandler&) = delete;
-    MayaUsdObject3dHandler& operator=(const MayaUsdObject3dHandler&) = delete;
-    MayaUsdObject3dHandler(MayaUsdObject3dHandler&&) = delete;
-    MayaUsdObject3dHandler& operator=(MayaUsdObject3dHandler&&) = delete;
+    MayaUsdObject3dHandler() = default;
 
     //! Create a MayaUsdObject3dHandler.
     static MayaUsdObject3dHandler::Ptr create();
@@ -49,3 +43,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_MAYAUSDOBJECT3DHANDLER_H

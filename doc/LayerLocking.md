@@ -143,7 +143,7 @@ This can be done by calling the following function which uses a MEL script to ca
     
 Note that if there isn't a change in the write permissions, no actions are taken. In order to track the changes due to system-lock refresh, you can use `mayaUsd.lib.registerUICallback` to get notified about the system lock changes due to refreshSystemLock:
 
-    def refreshSystemLockCallback(context, callbackData):
+    def exampleCallback(context, callbackData):
         # Get the proxy shape path
         proxyShapePath = context.get('proxyShapePath')
         # Get the list of affected layers

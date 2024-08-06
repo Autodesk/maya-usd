@@ -54,11 +54,7 @@ public:
 
     ~ProgressBarScope();
 
-    // Delete the copy/move constructors assignment operators.
-    ProgressBarScope(const ProgressBarScope&) = delete;
-    ProgressBarScope& operator=(const ProgressBarScope&) = delete;
-    ProgressBarScope(ProgressBarScope&&) = delete;
-    ProgressBarScope& operator=(ProgressBarScope&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProgressBarScope);
 
     // Add the input number of steps to the current range.
     void addSteps(int nbSteps);
@@ -97,11 +93,7 @@ class MAYAUSD_CORE_PUBLIC ProgressBarLoopScope : public ProgressBarScope
 public:
     ProgressBarLoopScope(const int nbLoopSteps);
 
-    // Delete the copy/move constructors assignment operators.
-    ProgressBarLoopScope(const ProgressBarLoopScope&) = delete;
-    ProgressBarLoopScope& operator=(const ProgressBarLoopScope&) = delete;
-    ProgressBarLoopScope(ProgressBarLoopScope&&) = delete;
-    ProgressBarLoopScope& operator=(ProgressBarLoopScope&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProgressBarLoopScope);
 
     // Advance the current progress of the loop by 1 step if we have
     // run thru the required number of loop iterations.

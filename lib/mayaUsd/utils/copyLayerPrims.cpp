@@ -380,7 +380,7 @@ void renameTargetingPath(
         rel.SetTargets(targets);
     } else {
         // Retrieve the attribute so we can modify its targets.
-        UsdAttribute attr = prim.GetAttributeAtPath(targetingPath);
+        auto attr = prim.GetAttributeAtPath(targetingPath);
         if (attr) {
             // Modify all targets that were using the old path to now use the new path.
             SdfPathVector targets;

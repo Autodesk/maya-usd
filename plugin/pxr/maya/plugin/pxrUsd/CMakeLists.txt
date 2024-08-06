@@ -53,4 +53,5 @@ pxr_register_test(testPxrUsdAlembicChaser
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+        WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )

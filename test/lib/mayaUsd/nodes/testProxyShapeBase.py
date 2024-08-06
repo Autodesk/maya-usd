@@ -982,7 +982,7 @@ class testProxyShapeBase(unittest.TestCase):
         stageCache = UsdUtils.StageCache.Get()
         with Usd.StageCacheContext(stageCache):
             cachedStage = Usd.Stage.Open(self.usdFilePath)
-            
+
         stageId = stageCache.GetId(cachedStage).ToLongInt()
         shapeNode = cmds.createNode('mayaUsdProxyShape')
         cmds.setAttr('{}.stageCacheId'.format(shapeNode), stageId)
@@ -994,15 +994,19 @@ class testProxyShapeBase(unittest.TestCase):
         cmds.move(0, 0, 2, r=True)
 
         # Make sure shareStage is ON
-        assert cmds.getAttr('{}.{}'.format(shapeNode,"shareStage"))
+        self.assertTrue(cmds.getAttr('{}.{}'.format(shapeNode,"shareStage")))
 
         # Make sure there is no connection to inStageData
-        assert not cmds.listConnections('{}.inStageData'.format(shapeNode), s=True, d=False)
+        self.assertIsNone(cmds.listConnections('{}.inStageData'.format(shapeNode), s=True, d=False))
 
         cmds.select(cmds.listRelatives(fullPath, p=True)[0], r=True)
 
         with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
             pathToSave = "{}/CubeModel.ma".format(testDir)
+
+            # Make sure to save USD back to Maya file, so that the USD test
+            # file we loaded (from source folder) isn't modified.
+            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
 
             cmds.file(rename=pathToSave)
             cmds.file(save=True, force=True, type='mayaAscii')
@@ -1012,12 +1016,12 @@ class testProxyShapeBase(unittest.TestCase):
 
             stage = mayaUsd.lib.GetPrim(fullPath).GetStage()
             prim = stage.GetPrimAtPath('/CubeModel')
-            assert prim.IsValid()
-            
+            self.assertTrue(prim.IsValid())
+
             # Verify we get the saved changes we did 
             xform = UsdGeom.Xformable(prim)
             translate = xform.GetOrderedXformOps()[0].Get()
-            assert translate[2] == 2
+            self.assertEqual(translate[2], 2)
 
     def testRegisterFilePathEditor(self):
         '''
@@ -1100,6 +1104,10 @@ class testProxyShapeBase(unittest.TestCase):
 
         with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
             pathToSave = "{}/testSavingVariantFallbacks.ma".format(testDir)
+
+            # Make sure to save USD back to Maya file, so that the USD test
+            # file we loaded (from source folder) isn't modified.
+            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
 
             cmds.file(rename=pathToSave)
             cmds.file(save=True, force=True, type='mayaAscii')

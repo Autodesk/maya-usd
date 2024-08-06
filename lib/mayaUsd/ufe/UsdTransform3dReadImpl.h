@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DREADIMPL_H
+#define MAYAUSD_USDTRANSFORM3DREADIMPL_H
 
 #include <mayaUsd/base/api.h>
 
@@ -35,21 +36,17 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdTransform3dReadImpl
 {
 public:
-    UsdTransform3dReadImpl(const UsdSceneItem::Ptr& item);
+    UsdTransform3dReadImpl(const UsdUfe::UsdSceneItem::Ptr& item);
     ~UsdTransform3dReadImpl() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdTransform3dReadImpl(const UsdTransform3dReadImpl&) = delete;
-    UsdTransform3dReadImpl& operator=(const UsdTransform3dReadImpl&) = delete;
-    UsdTransform3dReadImpl(UsdTransform3dReadImpl&&) = delete;
-    UsdTransform3dReadImpl& operator=(UsdTransform3dReadImpl&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dReadImpl);
 
     // Ufe::Transform3d overrides
-    const Ufe::Path&    path() const { return fItem->path(); }
-    Ufe::SceneItem::Ptr sceneItem() const { return fItem; }
+    const Ufe::Path&    path() const { return _item->path(); }
+    Ufe::SceneItem::Ptr sceneItem() const { return _item; }
 
-    inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
-    inline PXR_NS::UsdPrim   prim() const { return fPrim; }
+    inline UsdUfe::UsdSceneItem::Ptr usdSceneItem() const { return _item; }
+    inline PXR_NS::UsdPrim           prim() const { return _prim; }
 
     Ufe::Matrix4d matrix() const;
 
@@ -57,10 +54,12 @@ public:
     Ufe::Matrix4d segmentExclusiveMatrix() const;
 
 private:
-    const UsdSceneItem::Ptr fItem;
-    PXR_NS::UsdPrim         fPrim;
+    const UsdUfe::UsdSceneItem::Ptr _item;
+    PXR_NS::UsdPrim                 _prim;
 
 }; // UsdTransform3dReadImpl
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DREADIMPL_H

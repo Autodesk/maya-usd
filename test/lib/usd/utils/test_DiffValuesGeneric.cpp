@@ -1,9 +1,10 @@
-#include <mayaUsdUtils/DiffPrims.h>
+#include <usdUfe/utils/diffPrims.h>
 
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace MayaUsdUtils;
+using UsdUfe::compareValues;
+using UsdUfe::DiffResult;
 
 //----------------------------------------------------------------------------------------------------------------------
 TEST(DiffValuesGeneric, boolCompareValuesSame)

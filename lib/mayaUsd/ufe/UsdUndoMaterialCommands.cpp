@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/sdr/registry.h>
@@ -41,6 +42,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, BindMaterialUndoableCommand);
+
 namespace {
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -49,7 +52,7 @@ bool connectShaderToMaterial(
     UsdPrim             materialPrim,
     const std::string&  nodeId)
 {
-    auto shaderUsdItem = std::dynamic_pointer_cast<UsdSceneItem>(shaderItem);
+    auto shaderUsdItem = downcast(shaderItem);
     if (!shaderUsdItem) {
         return false;
     }
@@ -201,8 +204,6 @@ BindMaterialUndoableCommand::BindMaterialUndoableCommand(
     }
 }
 
-BindMaterialUndoableCommand::~BindMaterialUndoableCommand() { }
-
 void BindMaterialUndoableCommand::undo() { _undoableItem.undo(); }
 
 void BindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
@@ -211,7 +212,7 @@ void BindMaterialUndoableCommand::execute()
 {
     // All validations were done in the CTOR: proceed.
 
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
     auto             prim = ufePathToPrim(_primPath);
     UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
@@ -245,7 +246,7 @@ void UnbindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
 
 void UnbindMaterialUndoableCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
     auto prim = ufePathToPrim(_primPath);
     auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
@@ -257,8 +258,8 @@ const std::string UnbindMaterialUndoableCommand::commandName("Unassign Material"
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
-    const UsdSceneItem::Ptr& parentItem,
-    const std::string&       nodeId)
+    const UsdUfe::UsdSceneItem::Ptr& parentItem,
+    const std::string&               nodeId)
     : Ufe::InsertChildCommand()
     , _nodeId(nodeId)
     , _cmds(std::make_shared<Ufe::CompositeUndoableCommand>())
@@ -279,7 +280,7 @@ UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
     , _cmds(std::make_shared<Ufe::CompositeUndoableCommand>())
 {
     for (const auto& parentItem : parentItems) {
-        const UsdSceneItem::Ptr usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(parentItem);
+        const auto usdSceneItem = downcast(parentItem);
         if (!usdSceneItem || !usdSceneItem->prim().IsActive())
             continue;
 
@@ -292,8 +293,8 @@ UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
 UsdUndoAssignNewMaterialCommand::~UsdUndoAssignNewMaterialCommand() { }
 
 UsdUndoAssignNewMaterialCommand::Ptr UsdUndoAssignNewMaterialCommand::create(
-    const UsdSceneItem::Ptr& parentItem,
-    const std::string&       nodeId)
+    const UsdUfe::UsdSceneItem::Ptr& parentItem,
+    const std::string&               nodeId)
 {
     // Changing the hierarchy of invalid items is not allowed.
     if (!parentItem || !parentItem->prim().IsActive())
@@ -346,7 +347,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         // 1. Create the Scope "materials" if it does not exist:
         //
         auto stageItem
-            = UsdSceneItem::create(MayaUsd::ufe::stagePath(stage), stage->GetPseudoRoot());
+            = UsdUfe::UsdSceneItem::create(MayaUsd::ufe::stagePath(stage), stage->GetPseudoRoot());
         auto createMaterialsScopeCmd = UsdUndoCreateMaterialsScopeCommand::create(stageItem);
         if (!createMaterialsScopeCmd) {
             markAsFailed();
@@ -378,8 +379,8 @@ void UsdUndoAssignNewMaterialCommand::execute()
             markAsFailed();
             return;
         }
-        auto scopeItem = std::dynamic_pointer_cast<UsdSceneItem>(materialsScope);
-        auto createMaterialCmd = UsdUndoAddNewPrimCommand::create(
+        auto scopeItem = downcast(materialsScope);
+        auto createMaterialCmd = UsdUfe::UsdUndoAddNewPrimCommand::create(
             scopeItem, shaderNodeDef->GetFamily().GetString(), "Material");
         if (!createMaterialCmd) {
             markAsFailed();
@@ -397,8 +398,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         //
         // 3. Create the Shader:
         //
-        UsdSceneItem::Ptr materialItem
-            = std::dynamic_pointer_cast<UsdSceneItem>(createMaterialCmd->sceneItem());
+        auto materialItem = downcast(createMaterialCmd->sceneItem());
         auto createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
             shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
         if (!createShaderCmd) {
@@ -426,8 +426,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         // 5. Bind the material to all selected primitives in the stage:
         //
         for (const auto& parentPath : selectedPaths) {
-            auto parentItem
-                = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(parentPath));
+            auto parentItem = downcast(Ufe::Hierarchy::createItem(parentPath));
             if (!parentItem) {
                 markAsFailed();
                 return;
@@ -492,8 +491,8 @@ void UsdUndoAssignNewMaterialCommand::markAsFailed()
 }
 
 UsdUndoAddNewMaterialCommand::UsdUndoAddNewMaterialCommand(
-    const UsdSceneItem::Ptr& parentItem,
-    const std::string&       nodeId)
+    const UsdUfe::UsdSceneItem::Ptr& parentItem,
+    const std::string&               nodeId)
     : Ufe::InsertChildCommand()
     , _parentPath((parentItem && parentItem->prim().IsActive()) ? parentItem->path() : Ufe::Path())
     , _nodeId(nodeId)
@@ -502,8 +501,9 @@ UsdUndoAddNewMaterialCommand::UsdUndoAddNewMaterialCommand(
 
 UsdUndoAddNewMaterialCommand::~UsdUndoAddNewMaterialCommand() { }
 
-UsdUndoAddNewMaterialCommand::Ptr
-UsdUndoAddNewMaterialCommand::create(const UsdSceneItem::Ptr& parentItem, const std::string& nodeId)
+UsdUndoAddNewMaterialCommand::Ptr UsdUndoAddNewMaterialCommand::create(
+    const UsdUfe::UsdSceneItem::Ptr& parentItem,
+    const std::string&               nodeId)
 {
     // Changing the hierarchy of invalid items is not allowed.
     if (!parentItem || !parentItem->prim().IsActive())
@@ -523,7 +523,7 @@ Ufe::SceneItem::Ptr UsdUndoAddNewMaterialCommand::insertedChild() const
 bool UsdUndoAddNewMaterialCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& target)
 {
     // Must be a materials scope.
-    return isMaterialsScope(target);
+    return UsdUfe::isMaterialsScope(target);
 }
 
 void UsdUndoAddNewMaterialCommand::execute()
@@ -547,9 +547,8 @@ void UsdUndoAddNewMaterialCommand::execute()
         return;
     }
 
-    auto scopeItem
-        = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(_parentPath));
-    _createMaterialCmd = UsdUndoAddNewPrimCommand::create(
+    auto scopeItem = downcast(Ufe::Hierarchy::createItem(_parentPath));
+    _createMaterialCmd = UsdUfe::UsdUndoAddNewPrimCommand::create(
         scopeItem, shaderNodeDef->GetFamily().GetString(), "Material");
     if (!_createMaterialCmd) {
         return;
@@ -564,7 +563,7 @@ void UsdUndoAddNewMaterialCommand::execute()
     //
     // Create the Shader:
     //
-    auto materialItem = std::dynamic_pointer_cast<UsdSceneItem>(_createMaterialCmd->sceneItem());
+    auto materialItem = downcast(_createMaterialCmd->sceneItem());
     _createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
         shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
     if (!_createShaderCmd) {
@@ -623,7 +622,7 @@ void UsdUndoAddNewMaterialCommand::markAsFailed()
 }
 
 UsdUndoCreateMaterialsScopeCommand::UsdUndoCreateMaterialsScopeCommand(
-    const UsdSceneItem::Ptr& parentItem)
+    const UsdUfe::UsdSceneItem::Ptr& parentItem)
     : _parentItem(nullptr)
     , _insertedChild(nullptr)
 {
@@ -637,7 +636,7 @@ UsdUndoCreateMaterialsScopeCommand::UsdUndoCreateMaterialsScopeCommand(
 UsdUndoCreateMaterialsScopeCommand::~UsdUndoCreateMaterialsScopeCommand() { }
 
 UsdUndoCreateMaterialsScopeCommand::Ptr
-UsdUndoCreateMaterialsScopeCommand::create(const UsdSceneItem::Ptr& parentItem)
+UsdUndoCreateMaterialsScopeCommand::create(const UsdUfe::UsdSceneItem::Ptr& parentItem)
 {
     // Changing the hierarchy of invalid items is not allowed.
     if (!parentItem || !parentItem->prim().IsActive())
@@ -652,7 +651,7 @@ void UsdUndoCreateMaterialsScopeCommand::execute()
 {
     UsdUfe::InAddOrDeleteOperation ad;
 
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
     if (_insertedChild || !_parentItem) {
         return;
@@ -660,14 +659,15 @@ void UsdUndoCreateMaterialsScopeCommand::execute()
 
     // The AddNewPrimCommand automatically appends a "1" to the name, so it cannot create a
     // scope with the desired name directly. Create a scope and rename it afterwards.
-    auto createScopeCmd = UsdUndoAddNewPrimCommand::create(_parentItem, "ScopeName", "Scope");
+    auto createScopeCmd
+        = UsdUfe::UsdUndoAddNewPrimCommand::create(_parentItem, "ScopeName", "Scope");
     if (!createScopeCmd) {
         markAsFailed();
         return;
     }
     createScopeCmd->execute();
 
-    auto scopeItem = std::dynamic_pointer_cast<UsdSceneItem>(createScopeCmd->sceneItem());
+    auto scopeItem = downcast(createScopeCmd->sceneItem());
     auto materialsScopeName = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
     auto renameCmd = UsdUndoRenameCommand::create(scopeItem, materialsScopeName);
     if (!renameCmd) {

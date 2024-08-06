@@ -37,8 +37,6 @@
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
-using namespace MayaUsd;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class PxrUsdTranslators_DisplacementShaderWriter : public UsdMayaShaderWriter
@@ -135,7 +133,7 @@ void PxrUsdTranslators_DisplacementShaderWriter::Write(const UsdTimeCode& usdTim
         return;
     }
 
-    auto shaderInputTypeName = Converter::getUsdTypeName(displacementPlug);
+    auto shaderInputTypeName = MayaUsd::Converter::getUsdTypeName(displacementPlug);
 
     VtValue value = UsdMayaWriteUtil::GetVtValue(displacementPlug, shaderInputTypeName, false);
 
@@ -155,6 +153,9 @@ void PxrUsdTranslators_DisplacementShaderWriter::Write(const UsdTimeCode& usdTim
 UsdMayaPrimWriter::ContextSupport
 PxrUsdTranslators_DisplacementShaderWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
+    if (!exportArgs.exportMaterials)
+        return ContextSupport::Unsupported;
+
     if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
         return ContextSupport::Supported;
     }

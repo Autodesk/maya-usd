@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDUNDODUPLICATECOMMAND_H
+#define MAYAUSD_USDUNDODUPLICATECOMMAND_H
 
 #include <mayaUsd/base/api.h>
 
@@ -50,19 +51,14 @@ class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoDuplicateCommand> Ptr;
 
-    UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem);
-    ~UsdUndoDuplicateCommand() override;
+    UsdUndoDuplicateCommand(const UsdUfe::UsdSceneItem::Ptr& srcItem);
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoDuplicateCommand(const UsdUndoDuplicateCommand&) = delete;
-    UsdUndoDuplicateCommand& operator=(const UsdUndoDuplicateCommand&) = delete;
-    UsdUndoDuplicateCommand(UsdUndoDuplicateCommand&&) = delete;
-    UsdUndoDuplicateCommand& operator=(UsdUndoDuplicateCommand&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateCommand);
 
     //! Create a UsdUndoDuplicateCommand from a USD prim and UFE path.
-    static UsdUndoDuplicateCommand::Ptr create(const UsdSceneItem::Ptr& srcItem);
+    static UsdUndoDuplicateCommand::Ptr create(const UsdUfe::UsdSceneItem::Ptr& srcItem);
 
-    UsdSceneItem::Ptr duplicatedItem() const;
+    UsdUfe::UsdSceneItem::Ptr duplicatedItem() const;
     UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); })
 
     void execute() override;
@@ -70,9 +66,9 @@ public:
     void redo() override;
 
 private:
-    UsdUndoableItem _undoableItem;
-    Ufe::Path       _ufeSrcPath;
-    PXR_NS::SdfPath _usdDstPath;
+    UsdUfe::UsdUndoableItem _undoableItem;
+    Ufe::Path               _ufeSrcPath;
+    PXR_NS::SdfPath         _usdDstPath;
 
     PXR_NS::SdfLayerHandle _srcLayer;
     PXR_NS::SdfLayerHandle _dstLayer;
@@ -81,3 +77,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDUNDODUPLICATECOMMAND_H

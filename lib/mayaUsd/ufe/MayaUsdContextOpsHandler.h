@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_MAYAUSDCONTEXTOPSHANDLER_H
+#define MAYAUSD_MAYAUSDCONTEXTOPSHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -28,14 +29,7 @@ class MAYAUSD_CORE_PUBLIC MayaUsdContextOpsHandler : public UsdUfe::UsdContextOp
 public:
     typedef std::shared_ptr<MayaUsdContextOpsHandler> Ptr;
 
-    MayaUsdContextOpsHandler();
-    ~MayaUsdContextOpsHandler() override;
-
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdContextOpsHandler(const MayaUsdContextOpsHandler&) = delete;
-    MayaUsdContextOpsHandler& operator=(const MayaUsdContextOpsHandler&) = delete;
-    MayaUsdContextOpsHandler(MayaUsdContextOpsHandler&&) = delete;
-    MayaUsdContextOpsHandler& operator=(MayaUsdContextOpsHandler&&) = delete;
+    MayaUsdContextOpsHandler() = default;
 
     //! Create a MayaUsdContextOpsHandler.
     static MayaUsdContextOpsHandler::Ptr create();
@@ -46,3 +40,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_MAYAUSDCONTEXTOPSHANDLER_H

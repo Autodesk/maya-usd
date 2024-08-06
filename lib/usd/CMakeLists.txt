@@ -21,8 +21,6 @@ add_subdirectory(pxrUsdPreviewSurface)
 add_subdirectory(translators)
 add_subdirectory(schemas)
 
-add_subdirectory(utils)
-
 if(Qt_FOUND)
     add_subdirectory(ui)
 endif()

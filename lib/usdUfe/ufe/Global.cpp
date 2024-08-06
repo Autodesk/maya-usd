@@ -15,6 +15,7 @@
 //
 #include "Global.h"
 
+#include <usdUfe/ufe/UsdAttributesHandler.h>
 #include <usdUfe/ufe/UsdCameraHandler.h>
 #include <usdUfe/ufe/UsdContextOpsHandler.h>
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
@@ -24,6 +25,10 @@
 #include <pxr/base/tf/diagnostic.h>
 
 #include <ufe/runTimeMgr.h>
+
+#if UFE_CLIPBOARD_SUPPORT
+#include <usdUfe/ufe/UsdClipboardHandler.h>
+#endif
 
 #ifndef UFE_V2_FEATURES_AVAILABLE
 #error "Compiling usdUfe library with Ufe v1 is no longer supported."
@@ -80,6 +85,9 @@ Ufe::Rtid initialize(
         UsdUfe::setIsRootChildFn(dccFunctions.isRootChildFn);
     if (dccFunctions.uniqueChildNameFn)
         UsdUfe::setUniqueChildNameFn(dccFunctions.uniqueChildNameFn);
+    if (dccFunctions.defaultMaterialScopeNameFn)
+        UsdUfe::setDefaultMaterialScopeNameFn(dccFunctions.defaultMaterialScopeNameFn);
+    UsdUfe::setDisplayMessageFn(dccFunctions.displayMessageFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {
@@ -89,6 +97,8 @@ Ufe::Rtid initialize(
     // Copy all the input handlers into the Ufe handler struct and
     // create any default ones which are null.
     Ufe::RunTimeMgr::Handlers rtHandlers;
+    rtHandlers.attributesHandler
+        = handlers.attributesHandler ? handlers.attributesHandler : UsdAttributesHandler::create();
     rtHandlers.hierarchyHandler
         = handlers.hierarchyHandler ? handlers.hierarchyHandler : UsdHierarchyHandler::create();
     rtHandlers.object3dHandler
@@ -102,6 +112,15 @@ Ufe::Rtid initialize(
 
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, rtHandlers);
     TF_VERIFY(g_USDRtid != 0);
+
+    // Handlers to register separately since they may or may not be contained within
+    // the Ufe Handlers struct. But they are always guaranteed to have a set method.
+#if UFE_CLIPBOARD_SUPPORT
+    auto cbhndlr
+        = handlers.clipboardHandler ? handlers.clipboardHandler : UsdClipboardHandler::create();
+    Ufe::RunTimeMgr::instance().setClipboardHandler(g_USDRtid, cbhndlr);
+#endif
+
     return g_USDRtid;
 }
 

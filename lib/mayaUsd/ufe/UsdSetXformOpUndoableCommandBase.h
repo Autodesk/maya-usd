@@ -13,13 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDSETXFORMOPUNDOABLECOMMANDBASE_H
+#define MAYAUSD_USDSETXFORMOPUNDOABLECOMMANDBASE_H
 
 #include <mayaUsd/base/api.h>
 
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <ufe/transform3dUndoableCommands.h>
@@ -64,6 +66,8 @@ public:
         const PXR_NS::UsdTimeCode& writeTime);
     UsdSetXformOpUndoableCommandBase(const Ufe::Path& path, const PXR_NS::UsdTimeCode& writeTime);
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSetXformOpUndoableCommandBase);
+
     // Ufe::UndoableCommand overrides.
     void execute() override;
     void undo() override;
@@ -71,12 +75,15 @@ public:
 
     PXR_NS::UsdTimeCode writeTime() const { return _writeTime; }
 
+    // Retrieve the USD prim affected by the command.
+    virtual PXR_NS::UsdPrim getPrim() const;
+
 protected:
     // Create the XformOp attributes if they do not exists.
     // The attribute creation must be capture in the UsdUndoableItem by using a
     // UsdUndoBlock, so that removeOpIfNeeded and recreateOpIfNeeded can undo
     // and redo the attribute creation if needed.
-    virtual void createOpIfNeeded(UsdUndoableItem&) = 0;
+    virtual void createOpIfNeeded(UsdUfe::UsdUndoableItem&) = 0;
 
     // Get the attribute at the given time.
     virtual PXR_NS::VtValue getValue(const PXR_NS::UsdTimeCode& time) const = 0;
@@ -105,7 +112,7 @@ private:
     const PXR_NS::UsdTimeCode _writeTime;
     PXR_NS::VtValue           _initialOpValue;
     PXR_NS::VtValue           _newOpValue;
-    UsdUndoableItem           _opCreationUndo;
+    UsdUfe::UsdUndoableItem   _opCreationUndo;
     bool                      _isPrepared;
     bool                      _canUpdateValue;
     bool                      _opCreated;
@@ -113,3 +120,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDSETXFORMOPUNDOABLECOMMANDBASE_H

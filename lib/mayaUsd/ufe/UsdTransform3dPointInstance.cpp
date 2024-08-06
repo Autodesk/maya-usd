@@ -19,7 +19,9 @@
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/quath.h>
@@ -32,6 +34,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 
+#include <maya/MGlobal.h>
 #include <ufe/transform3dHandler.h>
 #include <ufe/transform3dUndoableCommands.h>
 #include <ufe/types.h>
@@ -43,7 +46,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTransform3dPointInstance::UsdTransform3dPointInstance(const UsdSceneItem::Ptr& item)
+MAYAUSD_VERIFY_CLASS_SETUP(UsdTransform3dBase, UsdTransform3dPointInstance);
+
+UsdTransform3dPointInstance::UsdTransform3dPointInstance(const UsdUfe::UsdSceneItem::Ptr& item)
     : UsdTransform3dBase(item)
 {
     if (item != nullptr) {
@@ -54,7 +59,8 @@ UsdTransform3dPointInstance::UsdTransform3dPointInstance(const UsdSceneItem::Ptr
 }
 
 /* static */
-UsdTransform3dPointInstance::Ptr UsdTransform3dPointInstance::create(const UsdSceneItem::Ptr& item)
+UsdTransform3dPointInstance::Ptr
+UsdTransform3dPointInstance::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dPointInstance>(item);
 }
@@ -78,6 +84,9 @@ Ufe::Vector3d UsdTransform3dPointInstance::scale() const { return _scaleModifier
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dPointInstance::translateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(_positionModifier.getAttribute()))
+        return nullptr;
+
     return std::make_shared<UsdPointInstanceTranslateUndoableCommand>(
         path(), UsdTimeCode::Default());
 }
@@ -85,12 +94,18 @@ UsdTransform3dPointInstance::translateCmd(double x, double y, double z)
 /* override */
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dPointInstance::rotateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(_orientationModifier.getAttribute()))
+        return nullptr;
+
     return std::make_shared<UsdPointInstanceRotateUndoableCommand>(path(), UsdTimeCode::Default());
 }
 
 /* override */
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dPointInstance::scaleCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(_scaleModifier.getAttribute()))
+        return nullptr;
+
     return std::make_shared<UsdPointInstanceScaleUndoableCommand>(path(), UsdTimeCode::Default());
 }
 
@@ -135,6 +150,29 @@ Ufe::Matrix4d UsdTransform3dPointInstance::segmentExclusiveMatrix() const
     return UsdTransform3dBase::segmentInclusiveMatrix();
 }
 
+bool UsdTransform3dPointInstance::isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr) const
+{
+
+    UsdUfe::OperationEditRouterContext editContext(
+        UsdUfe::EditRoutingTokens->RouteTransform, prim());
+    std::string errMsg;
+
+    if (attr && !UsdUfe::isAttributeEditAllowed(attr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return false;
+    } else if (!attr) {
+        // If the attribute does not exist, we will need to edit the xformOpOrder
+        // so check if we would be allowed to do that.
+        UsdGeomXformable xformable(prim());
+        if (!UsdUfe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+            MGlobal::displayError(errMsg.c_str());
+            return false;
+        }
+    }
+
+    return true;
+}
+
 //------------------------------------------------------------------------------
 // UsdTransform3dPointInstanceHandler
 //------------------------------------------------------------------------------
@@ -157,8 +195,7 @@ UsdTransform3dPointInstanceHandler::create(const Ufe::Transform3dHandler::Ptr& n
 Ufe::Transform3d::Ptr
 UsdTransform3dPointInstanceHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = downcast(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }
@@ -175,8 +212,7 @@ Ufe::Transform3d::Ptr UsdTransform3dPointInstanceHandler::editTransform3d(
     const Ufe::SceneItem::Ptr&      item,
     const Ufe::EditTransform3dHint& hint) const
 {
-    UsdSceneItem::Ptr usdItem = downcast(item);
-
+    auto usdItem = downcast(item);
     if (!usdItem) {
         return nullptr;
     }

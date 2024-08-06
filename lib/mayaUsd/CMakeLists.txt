@@ -63,20 +63,6 @@ if(DEFINED UFE_PREVIEW_VERSION_NUM)
     )
 endif()
 
-if (UFE_HAS_DISPLAY_NAME)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_HAS_DISPLAY_NAME=1
-    )
-endif()
-
-if (UFE_HAS_NATIVE_TYPE_METADATA)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_HAS_NATIVE_TYPE_METADATA=1
-    )
-endif()
-
 message(STATUS "MAYA_HAS_DEFAULT_MATERIAL_API is ${MAYA_HAS_DEFAULT_MATERIAL_API}")
 if (MAYA_HAS_DEFAULT_MATERIAL_API)
     target_compile_definitions(${PROJECT_NAME}
@@ -157,11 +143,11 @@ if (MAYA_HAS_GET_MEMBER_PATHS)
     )
 endif()
 
-message(STATUS "USD_HAS_COLOR4_SDR_SUPPORT is ${USD_HAS_COLOR4_SDR_SUPPORT}")
-if (USD_HAS_COLOR4_SDR_SUPPORT)
+message(STATUS "USD_HAS_TRACKER_INSTANCE_COUNT is ${USD_HAS_TRACKER_INSTANCE_COUNT}")
+if (USD_HAS_TRACKER_INSTANCE_COUNT)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
-        USD_HAS_COLOR4_SDR_SUPPORT=1
+        USD_HAS_TRACKER_INSTANCE_COUNT=1
     )
 endif()
 
@@ -193,6 +179,13 @@ if (MAYA_LIGHTAPI_VERSION GREATER_EQUAL 2)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
             MAYA_LIGHTAPI_VERSION_2=${MAYA_LIGHTAPI_VERSION}
+    )
+endif()
+
+if (UFE_CLIPBOARD_SUPPORT)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_CLIPBOARD_SUPPORT=1
     )
 endif()
 
@@ -267,7 +260,6 @@ target_link_libraries(${PROJECT_NAME}
         vt
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
-        mayaUsdUtils
         usdUfe
     PRIVATE
         ghc_filesystem

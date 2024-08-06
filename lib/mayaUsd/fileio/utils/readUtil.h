@@ -42,6 +42,16 @@ struct UsdMayaReadUtil
     MAYAUSD_CORE_PUBLIC
     static bool ReadFloat2AsUV();
 
+    /// Returns the imported name of a USD UV set with primvar name \p originalName
+    /// according to the renaming rule and the current set of options.
+    ///
+    /// \p originalName is the USD UV primvar name.
+    /// \p uvSetRemaps is as defined by the -remapUVSetsTo import option and stored in
+    /// UsdMayaJobImportArgs::remapUVSetsTo.
+    static MString UVSetImportedName(
+        const TfToken&                            originalName,
+        const std::map<std::string, std::string>& uvSetRemaps);
+
     /// Given the \p typeName and \p variability, try to create a Maya attribute
     /// on \p depNode with the name \p attrName.
     /// If the \p typeName isn't supported by this function, raises a runtime

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DFALLBACKMAYAXFORMSTACK_H
+#define MAYAUSD_USDTRANSFORM3DFALLBACKMAYAXFORMSTACK_H
 
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 
@@ -69,16 +70,16 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dFallbackMayaXformStack : public UsdTrans
 public:
     typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStack> Ptr;
 
-    UsdTransform3dFallbackMayaXformStack(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dFallbackMayaXformStack() override = default;
+    UsdTransform3dFallbackMayaXformStack(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a UsdTransform3dFallbackMayaXformStack for the given item.  The argument
     //! transform ops must match a Maya transform stack.
-    static UsdTransform3dFallbackMayaXformStack::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dFallbackMayaXformStack::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
+    bool                isFallback() const override;
     SetXformOpOrderFn   getXformOpOrderFn() const override;
     PXR_NS::TfToken     getOpSuffix(OpNdx ndx) const override;
     PXR_NS::TfToken     getTRSOpSuffix() const override;
@@ -101,6 +102,8 @@ public:
 
     UsdTransform3dFallbackMayaXformStackHandler();
 
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dFallbackMayaXformStackHandler);
+
     //! Create a UsdTransform3dFallbackMayaXformStackHandler.
     static Ptr create();
 
@@ -114,3 +117,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DFALLBACKMAYAXFORMSTACK_H

@@ -35,6 +35,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SelectionUndoableCommand, UsdUndoDuplicateSelectionCommand);
+
 namespace {
 
 bool shouldConnectExternalInputs(const Ufe::ValueDictionary& duplicateOptions)
@@ -57,15 +59,13 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
             // MAYA-125854: Skip the descendant, it will get duplicated with the ancestor.
             continue;
         }
-        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        auto usdItem = downcast(item);
         if (!usdItem) {
             continue;
         }
         _sourceItems.push_back(usdItem);
     }
 }
-
-UsdUndoDuplicateSelectionCommand::~UsdUndoDuplicateSelectionCommand() { }
 
 UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
     const Ufe::Selection&       selection,
@@ -83,7 +83,7 @@ UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
 
 void UsdUndoDuplicateSelectionCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
     for (auto&& usdItem : _sourceItems) {
         // Need to create and execute. If we create all before executing any, then the collision

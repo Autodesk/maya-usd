@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_EDITASMAYACOMMAND_H
+#define MAYAUSD_EDITASMAYACOMMAND_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/undo/OpUndoItemList.h>
@@ -32,7 +33,8 @@ public:
 
     //! Construct and destruct a EditAsMayaCommand. Does not execute it.
     EditAsMayaUfeCommand(const Ufe::Path& path);
-    ~EditAsMayaUfeCommand() override;
+
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(EditAsMayaUfeCommand);
 
     //! Create a EditAsMayaCommand. Does not execute it.
     static EditAsMayaUfeCommand::Ptr create(const Ufe::Path& path);
@@ -42,15 +44,11 @@ public:
     void redo() override;
 
 private:
-    // Delete the copy/move constructors assignment operators.
-    EditAsMayaUfeCommand(const EditAsMayaUfeCommand&) = delete;
-    EditAsMayaUfeCommand& operator=(const EditAsMayaUfeCommand&) = delete;
-    EditAsMayaUfeCommand(EditAsMayaUfeCommand&&) = delete;
-    EditAsMayaUfeCommand& operator=(EditAsMayaUfeCommand&&) = delete;
-
     OpUndoItemList _undoItemList;
     Ufe::Path      _path;
 };
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_EDITASMAYACOMMAND_H

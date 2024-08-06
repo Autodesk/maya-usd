@@ -71,6 +71,9 @@ UsdMayaPrimWriter::ContextSupport UsdMayaSymmetricShaderWriter::CanExport(
     const UsdMayaJobExportArgs& exportArgs,
     const TfToken&              materialConversionName)
 {
+    if (!exportArgs.exportMaterials)
+        return ContextSupport::Unsupported;
+
     if (materialConversionName.IsEmpty()
         || exportArgs.convertMaterialsTo == materialConversionName) {
         return ContextSupport::Supported;

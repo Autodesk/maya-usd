@@ -25,6 +25,8 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
+#include <usdUfe/utils/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -121,7 +123,7 @@ private:
             return nullptr;
         }
 
-        const TfToken shaderUsdPrimName(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()));
+        const TfToken shaderUsdPrimName(UsdUfe::sanitizeName(depNodeFn.name().asChar()));
 
         const SdfPath shaderUsdPath = parentPath.AppendChild(shaderUsdPrimName);
 
@@ -344,6 +346,10 @@ private:
         UsdShadeMaterial* const                mat,
         SdfPathSet* const                      boundPrimPaths) override
     {
+        if (!context.GetExportArgs().exportMaterials) {
+            return;
+        }
+
         if (context.GetExportArgs().allMaterialConversions.empty()) {
             return;
         }
@@ -359,13 +365,10 @@ private:
             return;
         }
 
-        const UsdMayaShadingModeExportContext::AssignmentVector& assignments
+        const UsdMayaShadingModeExportContext::AssignmentsInfo& assignments
             = context.GetAssignments();
-        if (assignments.empty()) {
-            return;
-        }
 
-        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments, std::string());
+        UsdPrim          materialPrim = context.MakeStandardMaterialPrim(assignments);
         UsdShadeMaterial material(materialPrim);
         if (!material) {
             return;
@@ -419,7 +422,7 @@ private:
                 }
             }
         }
-        context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
+        context.BindStandardMaterialPrim(materialPrim, assignments.assignments, boundPrimPaths);
     }
 };
 

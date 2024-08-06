@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_UFE_UTILS_H
+#define MAYAUSD_UFE_UTILS_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdAttribute.h>
 
+#include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 
@@ -25,7 +26,6 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 
@@ -70,7 +70,7 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 
 MAYAUSD_CORE_PUBLIC
-UsdSceneItem::Ptr
+UsdUfe::UsdSceneItem::Ptr
 createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
 
 //! Returns a unique child name following the Maya standard naming rules.
@@ -80,10 +80,6 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
 bool isAGatewayType(const std::string& mayaNodeType);
-
-//! Returns true if \p item is a materials scope.
-MAYAUSD_CORE_PUBLIC
-bool isMaterialsScope(const Ufe::SceneItem::Ptr& item);
 
 MAYAUSD_CORE_PUBLIC
 Ufe::Path dagPathToUfe(const MDagPath& dagPath);
@@ -126,37 +122,10 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
 
-//! Check if the src and dst attributes are connected.
-//! \return True, if they are connected.
-MAYAUSD_CORE_PUBLIC
-bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr);
-
-//! Check if a source connection property is allowed to be removed.
-//! \return True, if the property can be removed.
-MAYAUSD_CORE_PUBLIC
-bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr);
-
-//! Check if a destination connection property is allowed to be removed.
-//! \return True, if the property can be removed.
-MAYAUSD_CORE_PUBLIC
-bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr);
-
-MAYAUSD_CORE_PUBLIC
-Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr);
-
-MAYAUSD_CORE_PUBLIC
-Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty);
-
-MAYAUSD_CORE_PUBLIC
-PXR_NS::SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType);
-
-PXR_NS::VtValue
-vtValueFromString(const PXR_NS::SdfValueTypeName& typeName, const std::string& strValue);
-
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
-inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
+inline UsdUfe::UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
 {
-    return std::dynamic_pointer_cast<UsdSceneItem>(item);
+    return std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
 }
 
 //! Copy the argument matrix into the return matrix.
@@ -186,10 +155,6 @@ inline PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
 {
     return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
 }
-
-//! Splits a string by each specified separator.
-MAYAUSD_CORE_PUBLIC
-std::vector<std::string> splitString(const std::string& str, const std::string& separators);
 
 class ReplicateExtrasFromUSD
 {
@@ -230,3 +195,5 @@ Ufe::BBox3d getPulledPrimsBoundingBox(const Ufe::Path& path);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_UFE_UTILS_H

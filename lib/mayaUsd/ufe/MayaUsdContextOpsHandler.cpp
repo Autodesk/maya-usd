@@ -17,16 +17,12 @@
 #include "MayaUsdContextOpsHandler.h"
 
 #include <mayaUsd/ufe/MayaUsdContextOps.h>
+#include <mayaUsd/ufe/Utils.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MayaUsdContextOpsHandler::MayaUsdContextOpsHandler()
-    : UsdUfe::UsdContextOpsHandler()
-{
-}
-
-MayaUsdContextOpsHandler::~MayaUsdContextOpsHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdContextOpsHandler, MayaUsdContextOpsHandler);
 
 /*static*/
 MayaUsdContextOpsHandler::Ptr MayaUsdContextOpsHandler::create()
@@ -40,7 +36,7 @@ MayaUsdContextOpsHandler::Ptr MayaUsdContextOpsHandler::create()
 
 Ufe::ContextOps::Ptr MayaUsdContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr& item) const
 {
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif

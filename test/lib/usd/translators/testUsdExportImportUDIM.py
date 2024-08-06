@@ -57,7 +57,7 @@ class testUsdExportImportUDIM(unittest.TestCase):
         stage = Usd.Stage.Open(usd_file)
         self.assertTrue(stage)
 
-        shader_prim = stage.GetPrimAtPath('/pPlane1/Materials/lambert2SG/file1')
+        shader_prim = stage.GetPrimAtPath('/Materials/lambert2SG/file1')
         self.assertTrue(shader_prim)
 
         shader = UsdShade.Shader(shader_prim)

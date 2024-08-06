@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDLIGHTHANDLER_H
+#define MAYAUSD_USDLIGHTHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -28,14 +29,9 @@ class MAYAUSD_CORE_PUBLIC UsdLightHandler : public Ufe::LightHandler
 public:
     typedef std::shared_ptr<UsdLightHandler> Ptr;
 
-    UsdLightHandler();
-    ~UsdLightHandler();
+    UsdLightHandler() = default;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdLightHandler(const UsdLightHandler&) = delete;
-    UsdLightHandler& operator=(const UsdLightHandler&) = delete;
-    UsdLightHandler(UsdLightHandler&&) = delete;
-    UsdLightHandler& operator=(UsdLightHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdLightHandler);
 
     //! Create a UsdLightHandler.
     static UsdLightHandler::Ptr create();
@@ -47,3 +43,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDLIGHTHANDLER_H

@@ -250,7 +250,7 @@ QLayout* VariantsEditorWidget::createVariantSet(
 
     QLabel* lbl = new QLabel(varName);
     layout->addWidget(lbl);
-    fVariantLabels.append(lbl);
+    _variantLabels.append(lbl);
 
     QString    varSel = varNames.takeFirst();
     QComboBox* cb = new QComboBox;
@@ -280,7 +280,7 @@ QLayout* VariantsEditorWidget::createVariantSet(
     cb->installEventFilter(this);
 
     layout->addWidget(cb);
-    fVariantCombos.append(cb);
+    _variantCombos.append(cb);
 
     return layout;
 }
@@ -288,7 +288,7 @@ QLayout* VariantsEditorWidget::createVariantSet(
 QStringList VariantsEditorWidget::variantNames() const
 {
     QStringList names;
-    for (auto lbl : fVariantLabels) {
+    for (auto lbl : _variantLabels) {
         names.append(lbl->text());
     }
     return names;
@@ -297,7 +297,7 @@ QStringList VariantsEditorWidget::variantNames() const
 QStringList VariantsEditorWidget::variantSelections() const
 {
     QStringList sels;
-    for (auto cb : fVariantCombos) {
+    for (auto cb : _variantCombos) {
         sels.append(cb->currentText());
     }
     return sels;
@@ -305,12 +305,12 @@ QStringList VariantsEditorWidget::variantSelections() const
 
 void VariantsEditorWidget::setVariantSelections(const QStringList& varSel)
 {
-    assert(varSel.count() == fVariantCombos.count());
-    if (varSel.count() != fVariantCombos.count())
+    assert(varSel.count() == _variantCombos.count());
+    if (varSel.count() != _variantCombos.count())
         return;
 
     for (int i = 0; i < varSel.count(); ++i) {
-        fVariantCombos.at(i)->setCurrentText(varSel.at(i));
+        _variantCombos.at(i)->setCurrentText(varSel.at(i));
     }
 }
 

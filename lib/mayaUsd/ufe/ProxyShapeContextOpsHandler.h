@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PROXYSHAPECONTEXTOPSHANDLER_H
+#define MAYAUSD_PROXYSHAPECONTEXTOPSHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -39,13 +40,8 @@ public:
     typedef std::shared_ptr<ProxyShapeContextOpsHandler> Ptr;
 
     ProxyShapeContextOpsHandler(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
-    ~ProxyShapeContextOpsHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeContextOpsHandler(const ProxyShapeContextOpsHandler&) = delete;
-    ProxyShapeContextOpsHandler& operator=(const ProxyShapeContextOpsHandler&) = delete;
-    ProxyShapeContextOpsHandler(ProxyShapeContextOpsHandler&&) = delete;
-    ProxyShapeContextOpsHandler& operator=(ProxyShapeContextOpsHandler&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeContextOpsHandler);
 
     //! Create a ProxyShapeContextOpsHandler from a UFE hierarchy handler.
     static ProxyShapeContextOpsHandler::Ptr
@@ -61,3 +57,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PROXYSHAPECONTEXTOPSHANDLER_H

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PROXYSHAPEHIERARCHY_H
+#define MAYAUSD_PROXYSHAPEHIERARCHY_H
 
 #include <mayaUsd/base/api.h>
 
@@ -39,13 +40,8 @@ public:
     typedef std::shared_ptr<ProxyShapeHierarchy> Ptr;
 
     ProxyShapeHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
-    ~ProxyShapeHierarchy() override;
 
-    // Delete the copy/move constructors assignment operators.
-    ProxyShapeHierarchy(const ProxyShapeHierarchy&) = delete;
-    ProxyShapeHierarchy& operator=(const ProxyShapeHierarchy&) = delete;
-    ProxyShapeHierarchy(ProxyShapeHierarchy&&) = delete;
-    ProxyShapeHierarchy& operator=(ProxyShapeHierarchy&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeHierarchy);
 
     //! Create a ProxyShapeHierarchy from a UFE hierarchy handler.
     static ProxyShapeHierarchy::Ptr create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
@@ -91,13 +87,15 @@ private:
     createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range, bool filterInactive) const;
 
 private:
-    Ufe::SceneItem::Ptr        fItem;
-    Hierarchy::Ptr             fMayaHierarchy;
-    Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
+    Ufe::SceneItem::Ptr        _item;
+    Hierarchy::Ptr             _mayaHierarchy;
+    Ufe::HierarchyHandler::Ptr _mayaHierarchyHandler;
 
     // The root prim is initialized on first use and therefore mutable.
-    mutable PXR_NS::UsdPrim fUsdRootPrim;
+    mutable PXR_NS::UsdPrim _usdRootPrim;
 }; // ProxyShapeHierarchy
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PROXYSHAPEHIERARCHY_H

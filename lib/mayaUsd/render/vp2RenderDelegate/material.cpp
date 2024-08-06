@@ -2049,7 +2049,7 @@ HdVP2Material::~HdVP2Material()
     // Tell pending tasks or running tasks (if any) to terminate
     ClearPendingTasks();
 
-    if (!_IsDisabledAsyncTextureLoading() && !_localTextureMap.empty()) {
+    if (!_localTextureMap.empty()) {
         _TransientTexturePreserver::GetInstance().PreserveTextures(_localTextureMap);
     }
 }

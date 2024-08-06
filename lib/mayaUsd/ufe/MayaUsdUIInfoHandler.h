@@ -36,12 +36,6 @@ public:
     MayaUsdUIInfoHandler();
     ~MayaUsdUIInfoHandler() override;
 
-    // Delete the copy/move constructors assignment operators.
-    MayaUsdUIInfoHandler(const MayaUsdUIInfoHandler&) = delete;
-    MayaUsdUIInfoHandler& operator=(const MayaUsdUIInfoHandler&) = delete;
-    MayaUsdUIInfoHandler(MayaUsdUIInfoHandler&&) = delete;
-    MayaUsdUIInfoHandler& operator=(MayaUsdUIInfoHandler&&) = delete;
-
     //! Create a MayaUsdUIInfoHandler.
     static MayaUsdUIInfoHandler::Ptr create();
 
@@ -55,7 +49,7 @@ private:
     //       to be compatible with MMessage callback API.
     static void onColorChanged(void*);
 
-    MCallbackId fColorChangedCallbackId = 0;
+    MCallbackId _colorChangedCallbackId = 0;
 }; // MayaUsdUIInfoHandler
 
 } // namespace ufe

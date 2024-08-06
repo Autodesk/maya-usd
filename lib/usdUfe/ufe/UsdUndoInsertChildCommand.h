@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOINSERTCHILDCOMMAND_H
+#define USDUFE_USDUNDOINSERTCHILDCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
@@ -33,13 +34,7 @@ class USDUFE_PUBLIC UsdUndoInsertChildCommand : public Ufe::InsertChildCommand
 public:
     using Ptr = std::shared_ptr<UsdUndoInsertChildCommand>;
 
-    ~UsdUndoInsertChildCommand() override;
-
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoInsertChildCommand(const UsdUndoInsertChildCommand&) = delete;
-    UsdUndoInsertChildCommand& operator=(const UsdUndoInsertChildCommand&) = delete;
-    UsdUndoInsertChildCommand(UsdUndoInsertChildCommand&&) = delete;
-    UsdUndoInsertChildCommand& operator=(UsdUndoInsertChildCommand&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoInsertChildCommand);
 
     //! Create a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
     //! pos argument is ignored, and only append is supported.
@@ -78,3 +73,5 @@ private:
 }; // UsdUndoInsertChildCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOINSERTCHILDCOMMAND_H

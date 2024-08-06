@@ -1,4 +1,4 @@
-#include <mayaUsdUtils/DiffPrims.h>
+#include <usdUfe/utils/diffPrims.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -6,7 +6,8 @@
 #include <gtest/gtest.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-using namespace MayaUsdUtils;
+using UsdUfe::compareAttributes;
+using UsdUfe::DiffResult;
 
 //----------------------------------------------------------------------------------------------------------------------
 TEST(DiffAttributes, compareAttributesEmpty)

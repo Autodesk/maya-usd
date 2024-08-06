@@ -36,11 +36,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdUIInfoHandler, MayaUsdUIInfoHandler);
+
 MayaUsdUIInfoHandler::MayaUsdUIInfoHandler()
     : UsdUfe::UsdUIInfoHandler()
 {
     // Register a callback to invalidate the invisible color.
-    fColorChangedCallbackId = MEventMessage::addEventCallback(
+    _colorChangedCallbackId = MEventMessage::addEventCallback(
         "DisplayRGBColorChanged", onColorChanged, reinterpret_cast<void*>(this));
 
     // Immediately update the invisible color to get a starting current value.
@@ -50,8 +52,8 @@ MayaUsdUIInfoHandler::MayaUsdUIInfoHandler()
 MayaUsdUIInfoHandler::~MayaUsdUIInfoHandler()
 {
     // Unregister the callback used to invalidate the invisible color.
-    if (fColorChangedCallbackId)
-        MMessage::removeCallback(fColorChangedCallbackId);
+    if (_colorChangedCallbackId)
+        MMessage::removeCallback(_colorChangedCallbackId);
 }
 
 /*static*/
@@ -76,7 +78,7 @@ void MayaUsdUIInfoHandler::updateInvisibleColor()
     MGlobal::executeCommand("displayRGBColor -q \"outlinerInvisibleColor\"", color);
 
     if (color.length() == 3) {
-        color.get(fInvisibleColor.data());
+        color.get(_invisibleColor.data());
     }
 }
 

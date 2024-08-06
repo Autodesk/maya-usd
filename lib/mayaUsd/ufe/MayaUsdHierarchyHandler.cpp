@@ -17,6 +17,7 @@
 
 #include <mayaUsd/ufe/MayaUsdHierarchy.h>
 #include <mayaUsd/ufe/MayaUsdRootChildHierarchy.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
@@ -24,12 +25,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MayaUsdHierarchyHandler::MayaUsdHierarchyHandler()
-    : UsdUfe::UsdHierarchyHandler()
-{
-}
-
-MayaUsdHierarchyHandler::~MayaUsdHierarchyHandler() { }
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdHierarchyHandler, MayaUsdHierarchyHandler);
 
 /*static*/
 MayaUsdHierarchyHandler::Ptr MayaUsdHierarchyHandler::create()
@@ -44,7 +40,7 @@ MayaUsdHierarchyHandler::Ptr MayaUsdHierarchyHandler::create()
 Ufe::Hierarchy::Ptr MayaUsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    auto usdItem = downcast(item);
     if (!TF_VERIFY(usdItem)) {
         return nullptr;
     }

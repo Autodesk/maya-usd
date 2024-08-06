@@ -121,6 +121,7 @@ pxr_register_test(testUsdExportAssembly
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdExportAssembly"
     TESTENV testUsdExportAssembly
     ENV ${TEST_ENV}
+    WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 pxr_install_test_dir(
@@ -132,6 +133,7 @@ pxr_register_test(testUsdExportAssemblyEdits
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdExportAssemblyEdits"
     TESTENV testUsdExportAssemblyEdits
     ENV ${TEST_ENV}
+    WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 pxr_install_test_dir(
@@ -154,6 +156,7 @@ pxr_register_test(testUsdExportPointInstancer
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdExportPointInstancer"
     TESTENV testUsdExportPointInstancer
     ENV ${TEST_ENV}
+    WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 pxr_install_test_dir(
@@ -187,6 +190,7 @@ pxr_register_test(testUsdMayaGetVariantSetSelections
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaGetVariantSetSelections"
     TESTENV testUsdMayaGetVariantSetSelections
     ENV ${TEST_ENV}
+    WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 pxr_install_test_dir(
@@ -198,6 +202,7 @@ pxr_register_test(testUsdMayaModelKindProcessor
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaModelKindProcessor"
     TESTENV testUsdMayaModelKindProcessor
     ENV ${TEST_ENV}
+    WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 pxr_install_test_dir(
@@ -209,6 +214,7 @@ pxr_register_test(testUsdMayaReferenceAssemblyEdits
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaReferenceAssemblyEdits"
     TESTENV testUsdMayaReferenceAssemblyEdits
     ENV ${TEST_ENV}
+    WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 pxr_install_test_dir(
@@ -220,6 +226,7 @@ pxr_register_test(testUsdReferenceAssemblyChangeRepresentations
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdReferenceAssemblyChangeRepresentations"
     TESTENV testUsdReferenceAssemblyChangeRepresentations
     ENV ${TEST_ENV}
+    WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 pxr_install_test_dir(

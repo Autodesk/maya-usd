@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDCONTEXTOPS_H
+#define USDUFE_USDCONTEXTOPS_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -52,13 +53,8 @@ public:
     typedef std::shared_ptr<UsdContextOps> Ptr;
 
     UsdContextOps(const UsdSceneItem::Ptr& item);
-    ~UsdContextOps() override;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdContextOps(const UsdContextOps&) = delete;
-    UsdContextOps& operator=(const UsdContextOps&) = delete;
-    UsdContextOps(UsdContextOps&&) = delete;
-    UsdContextOps& operator=(UsdContextOps&&) = delete;
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdContextOps);
 
     //! Create a UsdContextOps.
     static UsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
@@ -150,3 +146,5 @@ private:
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDCONTEXTOPS_H

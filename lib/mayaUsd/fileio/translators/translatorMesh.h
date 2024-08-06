@@ -16,7 +16,8 @@
 // Modifications copyright (C) 2020 Autodesk
 //
 
-#pragma once
+#ifndef MAYAUSD_TRANSLATORMESH_H
+#define MAYAUSD_TRANSLATORMESH_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
@@ -48,10 +49,7 @@ public:
 
     ~TranslatorMeshRead() = default;
 
-    TranslatorMeshRead(const TranslatorMeshRead&) = delete;
-    TranslatorMeshRead& operator=(const TranslatorMeshRead&) = delete;
-    TranslatorMeshRead(TranslatorMeshRead&&) = delete;
-    TranslatorMeshRead& operator=(TranslatorMeshRead&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(TranslatorMeshRead);
 
     MObject meshObject() const;
 
@@ -89,10 +87,7 @@ public:
 
     ~TranslatorMeshWrite() = default;
 
-    TranslatorMeshWrite(const TranslatorMeshWrite&) = delete;
-    TranslatorMeshWrite& operator=(const TranslatorMeshWrite&) = delete;
-    TranslatorMeshWrite(TranslatorMeshWrite&&) = delete;
-    TranslatorMeshWrite& operator=(TranslatorMeshWrite&&) = delete;
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(TranslatorMeshWrite);
 
     UsdGeomMesh usdMesh() const;
 
@@ -101,3 +96,5 @@ private:
 };
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_TRANSLATORMESH_H

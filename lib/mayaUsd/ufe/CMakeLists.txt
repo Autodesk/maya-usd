@@ -15,10 +15,6 @@ target_sources(${PROJECT_NAME}
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
         RotationUtils.cpp
-        UsdAttribute.cpp
-        UsdAttributeHolder.cpp
-        UsdAttributes.cpp
-        UsdAttributesHandler.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
         UsdPointInstanceScaleModifier.cpp
@@ -124,22 +120,6 @@ if (UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR)
     )
 endif()
 
-
-if (UFE_ATTRIBUTES_GET_ENUMS)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_ATTRIBUTES_GET_ENUMS=1
-    )
-endif()
-
-
-if (UFE_SCENEITEM_HAS_METADATA)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_SCENEITEM_HAS_METADATA=1
-    )
-endif()
-
 if (UFE_CONTEXTOPS_HAS_OPTIONBOX)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
@@ -179,15 +159,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         PRIVATE
             UsdShaderNodeDef.cpp
             UsdShaderNodeDefHandler.cpp
-            UsdShaderAttributeDef.cpp
-            UsdShaderAttributeHolder.cpp
             UsdUndoCreateFromNodeDefCommand.cpp
             ProxyShapeCameraHandler.cpp
             UsdConnections.cpp
             UsdConnectionHandler.cpp
             UsdUINodeGraphNode.cpp
             UsdUINodeGraphNodeHandler.cpp
-            UsdUndoAttributesCommands.cpp
             UsdTransform3dRead.cpp
             UsdUndoConnectionCommands.cpp
             UsdUndoCreateStageWithNewLayerCommand.cpp
@@ -207,10 +184,6 @@ set(HEADERS
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
     RotationUtils.h
-    UsdAttribute.h
-    UsdAttributeHolder.h
-    UsdAttributes.h
-    UsdAttributesHandler.h
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h
@@ -295,15 +268,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdShaderNodeDef.h
         UsdShaderNodeDefHandler.h
-        UsdShaderAttributeDef.h
-        UsdShaderAttributeHolder.h
         UsdUndoCreateFromNodeDefCommand.h
         ProxyShapeCameraHandler.h
         UsdConnections.h
         UsdConnectionHandler.h
         UsdUINodeGraphNode.h
         UsdUINodeGraphNodeHandler.h
-        UsdUndoAttributesCommands.h
         UsdTransform3dRead.h
         UsdUndoConnectionCommands.h
         UsdUndoCreateStageWithNewLayerCommand.h

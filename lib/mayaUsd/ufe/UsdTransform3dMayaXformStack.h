@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDTRANSFORM3DMAYAXFORMSTACK_H
+#define MAYAUSD_USDTRANSFORM3DMAYAXFORMSTACK_H
 
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 
@@ -61,11 +62,10 @@ public:
     typedef PXR_NS::VtValue (*CvtRotXYZToAttrFn)(double x, double y, double z);
     typedef bool (*SetXformOpOrderFn)(const PXR_NS::UsdGeomXformable&);
 
-    UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item);
-    ~UsdTransform3dMayaXformStack() override = default;
+    UsdTransform3dMayaXformStack(const UsdUfe::UsdSceneItem::Ptr& item);
 
     //! Create a UsdTransform3dMayaXformStack.
-    static UsdTransform3dMayaXformStack::Ptr create(const UsdSceneItem::Ptr& item);
+    static UsdTransform3dMayaXformStack::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;
@@ -96,6 +96,7 @@ public:
 protected:
     bool                        hasOp(OpNdx ndx) const;
     PXR_NS::UsdGeomXformOp      getOp(OpNdx ndx) const;
+    virtual bool                isFallback() const;
     virtual SetXformOpOrderFn   getXformOpOrderFn() const;
     virtual PXR_NS::TfToken     getOpSuffix(OpNdx ndx) const;
     virtual PXR_NS::TfToken     getTRSOpSuffix() const;
@@ -116,8 +117,6 @@ protected:
 private:
     Ufe::TranslateUndoableCommand::Ptr
     pivotCmd(const PXR_NS::TfToken& pvtOpSuffix, double x, double y, double z);
-
-    bool isAttributeEditAllowed(const PXR_NS::TfToken attrName, std::string& errMsg) const;
 }; // UsdTransform3dMayaXformStack
 
 //! \brief Factory to create a UsdTransform3dMayaXformStack interface object.
@@ -131,6 +130,8 @@ public:
     typedef std::shared_ptr<UsdTransform3dMayaXformStackHandler> Ptr;
 
     UsdTransform3dMayaXformStackHandler(const Ufe::Transform3dHandler::Ptr& nextHandler);
+
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdTransform3dMayaXformStackHandler);
 
     //! Create a UsdTransform3dMayaXformStackHandler.
     static Ptr create(const Ufe::Transform3dHandler::Ptr& nextHandler);
@@ -148,3 +149,5 @@ private:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDTRANSFORM3DMAYAXFORMSTACK_H
