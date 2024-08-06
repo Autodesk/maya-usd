@@ -94,11 +94,21 @@ public:
     MAYAUSD_CORE_PUBLIC
     void SetTimeSampleMultiplier(double multiplier);
 
+    /// \brief Set the if we are importing as edit as Maya
+    MAYAUSD_CORE_PUBLIC
+    void SetIfresetXform(bool resetXform);
+
+    /// \Get the if we are importing as edit as Maya
+    MAYAUSD_CORE_PUBLIC
+    bool GetIfresetXform() const;
+
     ~UsdMayaPrimReaderContext() { }
 
 private:
     bool   _prune;
     double _timeSampleMultiplier;
+    // Added a boolean for
+    bool _resetXform;
 
     // used to keep track of prims that are created.
     // for undo/redo

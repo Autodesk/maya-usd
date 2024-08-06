@@ -602,7 +602,10 @@ void UsdMayaTranslatorXformable::Read(
                 "Unable to successfully decompose matrix at USD prim <%s>",
                 xformSchema.GetPath().GetText());
         }
-        resetsXformStack = true;
+        if (context->GetIfresetXform()) {
+            // This is to solve the issue that when edit as maya on an instanced prim it moves away
+            resetsXformStack = true;
+        }
     }
 
     if (resetsXformStack) {
