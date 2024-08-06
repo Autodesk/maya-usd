@@ -288,7 +288,7 @@ UsdTimeCode getTime(const Ufe::Path& path)
 
     // Proxy shape node should not be null.
     auto proxyShape = UsdStageMap::getInstance().proxyShapeNode(path);
-    if (!TF_VERIFY(proxyShape)) {
+    if (proxyShape == nullptr) {
         return UsdTimeCode::Default();
     }
 
