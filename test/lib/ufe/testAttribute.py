@@ -1637,9 +1637,10 @@ class AttributeTestCase(unittest.TestCase):
         runMetadataUndoRedo(float, 65.78, 0.567)
         runMetadataUndoRedo(str, 'New doc from command', 'New doc starting value')
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testMetadata is only available in UFE v3 or greater.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'testUsdNativeMetadata is only available in UFE v4 or greater.')
     def testUsdNativeMetadata(self):
-        '''Test metadata that are native to USD.'''
+        '''Test metadata that are native to USD. 
+           Requires material assignment in context ops, which appeared in UFE v4'''
         cmds.file(new=True, force=True)
 
         # Create a capsule.
@@ -1730,7 +1731,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertTrue(materialUfeOutput.clearMetadata("uifolder"))
         self.assertTrue(materialUfeOutput.clearMetadata("uiname"))
 
-        # Make it worked:
+        # Make sure it worked:
         self.assertFalse(materialUsdOutput.HasAuthoredDocumentation())
         self.assertFalse(materialUsdOutput.HasMetadata('allowedTokens'))
         self.assertFalse(materialUsdOutput.HasAuthoredDisplayGroup())

@@ -50,8 +50,20 @@ bool setUsdNativeMetadata(
         // not recommended.
         return false;
     }
+
+    // It is possible we are dealing with a legacy scene where the data was stored in SdrMetadata.
+    const auto clearKnownSdrMetadata = [](auto const& a, auto const& k) {
+        if (UsdShadeInput::IsInput(a)) {
+            UsdShadeInput(a).ClearSdrMetadataByKey(TfToken(k));
+        }
+        if (UsdShadeOutput::IsOutput(a)) {
+            UsdShadeOutput(a).ClearSdrMetadataByKey(TfToken(k));
+        }
+    };
+
     if (key == UsdUfe::MetadataTokens->UIDoc) {
         attr.SetDocumentation(value.get<std::string>());
+        clearKnownSdrMetadata(attr, key);
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIEnumLabels) {
         const auto   enumStrings = UsdUfe::splitString(value.get<std::string>(), ",");
@@ -61,6 +73,7 @@ bool setUsdNativeMetadata(
             allowedTokens.push_back(TfToken(TfStringTrim(tokenString, " ")));
         }
         attr.SetMetadata(SdfFieldKeys->AllowedTokens, allowedTokens);
+        clearKnownSdrMetadata(attr, key);
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIFolder) {
         // Translate '|' to ':'.
@@ -72,9 +85,11 @@ bool setUsdNativeMetadata(
         std::string group = value.get<std::string>();
         std::replace(group.begin(), group.end(), '|', ':');
         attr.SetDisplayGroup(group);
+        clearKnownSdrMetadata(attr, key);
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIName) {
         attr.SetDisplayName(value.get<std::string>());
+        clearKnownSdrMetadata(attr, key);
         return true;
     }
 
@@ -139,7 +154,10 @@ Ufe::Value getUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::str
     return retVal;
 }
 
-// Returns true if handled, and set cleared on success
+// When clearing metadata we have two boolean states to return:
+//   1- Did we handle the key: returned by value
+//   2- If we handled the key, did we actually clear the value. Returned by reference in the
+//   "cleared" variable.
 bool clearUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::string& key, bool& cleared)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
@@ -201,38 +219,21 @@ bool setUsdAttrMetadata(
 
     UsdUfe::AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
 
-    // These metadata have a USD equivalent. Use it to stay compatible with other DCCs:
-    static const auto knownUSDMetadata
-        = std::unordered_set<std::string> { UsdUfe::MetadataTokens->UIDoc,
-                                            UsdUfe::MetadataTokens->UIEnumLabels,
-                                            UsdUfe::MetadataTokens->UIName,
-                                            UsdUfe::MetadataTokens->UIFolder };
+    if (setUsdNativeMetadata(attr, key, value)) {
+        return true;
+    }
 
     PXR_NS::TfToken tok(key);
     if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
         if (PXR_NS::UsdShadeInput::IsInput(attr)) {
             PXR_NS::UsdShadeInput input(attr);
-            if (knownUSDMetadata.count(key)) {
-                // Cleanup known USD metadata previously set as SdrMetadata
-                input.ClearSdrMetadataByKey(tok);
-            } else {
-                input.SetSdrMetadataByKey(tok, value.get<std::string>());
-                return true;
-            }
+            input.SetSdrMetadataByKey(tok, value.get<std::string>());
+            return true;
         } else if (PXR_NS::UsdShadeOutput::IsOutput(attr)) {
             PXR_NS::UsdShadeOutput output(attr);
-            if (knownUSDMetadata.count(key)) {
-                // Cleanup known USD metadata previously set as SdrMetadata
-                output.ClearSdrMetadataByKey(tok);
-            } else {
-                output.SetSdrMetadataByKey(tok, value.get<std::string>());
-                return true;
-            }
+            output.SetSdrMetadataByKey(tok, value.get<std::string>());
+            return true;
         }
-    }
-
-    if (setUsdNativeMetadata(attr, key, value)) {
-        return true;
     }
 
     // We must convert the Ufe::Value to VtValue for storage in Usd.
