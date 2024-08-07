@@ -18,7 +18,9 @@
 
 #include <mayaUsd/utils/traverseLayer.h>
 
+#include <pxr/usd/kind/registry.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usd/modelAPI.h>
 
 #include <maya/MGlobal.h>
 
@@ -162,6 +164,19 @@ bool isAlreadyCopied(const SdfPath& pathToVerify, MayaUsd::CopyLayerPrimsResult&
     return false;
 }
 
+bool isPrimType(const UsdStageRefPtr& stage, const SdfPath& path, const TfToken& desiredType)
+{
+    UsdPrim prim = stage->GetPrimAtPath(path);
+    if (!prim)
+        return false;
+    return prim.GetTypeName() == desiredType;
+}
+
+bool isPrimScope(const UsdStageRefPtr& stage, const SdfPath& path)
+{
+    return isPrimType(stage, path, TfToken("Scope"));
+}
+
 // Prim hierarchy traverser (a function called for every SdfSpec starting
 // from a prim to be copied, recursively) that copies each prim encountered
 // and optionally adds the targets of relationships to the list of other paths
@@ -227,10 +242,40 @@ bool copyTraverser(
         return true;
     }
 
-    // Make the destination path unique and make sure parent prims
-    // exists in the destination.
+    // Make sure parent prims exists in the destination.
     const SdfPath origDstPath = pathToCopy.ReplacePrefix(srcParentPath, dstParentPath);
     replicateMissingAncestors(srcStage, pathToCopy, dstStage, origDstPath);
+
+    // If we allow merging scope and the top prim is a scope, then copy the children
+    // instead.
+    const bool canBeMerged = options.mergeScopes && isPrimScope(srcStage, pathToCopy)
+        && isPrimScope(dstStage, origDstPath);
+    if (canBeMerged) {
+        UsdPrim srcPrim = srcStage->GetPrimAtPath(pathToCopy);
+        for (const UsdPrim& childPrim : srcPrim.GetChildren()) {
+            const SdfPath& srcChildParentPath = pathToCopy;
+            const SdfPath& dstChildParentPath = origDstPath;
+            const SdfPath  childPathToCopy = childPrim.GetPath();
+            if (!copyTraverser(
+                    srcStage,
+                    srcLayer,
+                    srcChildParentPath,
+                    dstStage,
+                    dstLayer,
+                    dstChildParentPath,
+                    otherPathsToCopy,
+                    options,
+                    childPathToCopy,
+                    result)) {
+                return false;
+            }
+        }
+
+        // Since we've copied the children already, don't execute the rest of this function.
+        return true;
+    }
+
+    // Make the destination path unique.
     const SdfPath dstPath = UsdUfe::uniqueChildPath(*dstStage, origDstPath);
 
     // Record the copy and the potential renaming.

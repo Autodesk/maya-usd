@@ -1657,6 +1657,10 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
         //       on the root prim.
         ctxArgs[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = true;
 
+        // Setting the export-selected flag will allow filtering materials so that
+        // only materials in the prim selected to be copied will be included.
+        ctxArgs[UsdMayaJobExportArgsTokens->exportSelected] = true;
+
         const UsdStageRefPtr  dstStage = dstProxyShape->getUsdStage();
         const SdfLayerHandle& layer = dstStage->GetEditTarget().GetLayer();
         if (!layer->IsAnonymous())
@@ -1705,6 +1709,7 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
 
         CopyLayerPrimsOptions options;
         options.progressBar = &progressBar;
+        options.mergeScopes = true;
 
         CopyLayerPrimsResult copyResult = copyLayerPrims(
             srcStage,
