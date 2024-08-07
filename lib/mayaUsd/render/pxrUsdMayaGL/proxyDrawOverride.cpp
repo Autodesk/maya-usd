@@ -96,7 +96,7 @@ UsdMayaProxyDrawOverride::transform(const MDagPath& objPath, const MDagPath& cam
         GfMatrix4d rootXform(transform.matrix);
 
         MayaUsdProxyShapeBase* pShape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
-        if (pShape and pShape->usdPrim().GetPath() != SdfPath::AbsoluteRootPath()) {
+        if (pShape && pShape->usdPrim().GetPath() != SdfPath::AbsoluteRootPath()) {
             // If we're not computing the transform of the root of the Usd
             // scene, apply the usdPrim transform from within the scene
             const UsdTimeCode timeCode = pShape->getTime();
