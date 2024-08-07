@@ -74,14 +74,13 @@ class CustomCompositeCmd(ufe.CompositeUndoableCommand):
     # composite command and its sub-commands.
     customOpName = 'custom'
 
-    def __init__(self, prim, sceneItem):
+    def __init__(self, prim, subCmd):
         super().__init__()
         self._prim = prim
         # Note: the edit router must be kept alive in a variable to affect
         #       subsequent code, in particular the creation of sub-commands.
         ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
-        o3d = ufe.Object3d.object3d(sceneItem)
-        self.append(o3d.setVisibleCmd(False))
+        self.append(subCmd)
 
     def execute(self):
         # Note: the edit router must be kept alive in a variable to affect
@@ -605,8 +604,12 @@ class EditRoutingTestCase(unittest.TestCase):
         mayaUsd.lib.registerEditRouter('visibility', routeCmdToSessionLayer)
         mayaUsd.lib.registerEditRouter('custom', routeCmdToRootLayer)
  
-        # try to affect B via the command, should be prevented
-        compCmd = CustomCompositeCmd(self.prim, self.b)
+        # try to affect B via the command, should be prevented.
+        # Use three levels of edit routing to fully test nested routing.
+        o3d = ufe.Object3d.object3d(self.b)
+        subCmd = o3d.setVisibleCmd(False)
+        compCmd = CustomCompositeCmd(self.prim, subCmd)
+        compCmd = CustomCompositeCmd(self.prim, compCmd)
         compCmd.execute()
  
         # Check that nothing was written to the session layer
@@ -633,7 +636,9 @@ class EditRoutingTestCase(unittest.TestCase):
                          filterUsdStr('def Xform "A"\n{\n}\ndef Xform "B"\n{\n}'))
  
         # try to affect B via the command, should be prevented
-        compCmd = CustomCompositeCmd(self.prim, self.b)
+        o3d = ufe.Object3d.object3d(self.b)
+        subCmd = o3d.setVisibleCmd(False)
+        compCmd = CustomCompositeCmd(self.prim, subCmd)
         compCmd.execute()
  
         # Check that nothing was written to the session layer

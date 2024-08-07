@@ -81,6 +81,9 @@ TF_DECLARE_PUBLIC_TOKENS(GenericTokens, USDUFE_PUBLIC, USDUFE_GENERIC_TOKENS);
     ((Autodesk, "Autodesk"))                             \
     /* Metadata for UI queries                        */ \
     ((UIName, "uiname"))                                 \
+    ((UIDoc, "doc"))                                     \
+    ((UIEnumLabels, "enum"))                             \
+    ((UIEnumValues, "enumvalues"))                       \
     ((UIFolder, "uifolder"))                             \
     ((UIMin, "uimin"))                                   \
     ((UIMax, "uimax"))                                   \
