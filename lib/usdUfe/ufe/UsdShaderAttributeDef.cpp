@@ -79,7 +79,7 @@ static const MetadataMap _metaMap = {
           return !p.GetLabel().IsEmpty() ? p.GetLabel().GetString()
                                          : UsdUfe::prettifyName(p.GetName().GetString());
       } },
-    { "doc",
+    { UsdUfe::MetadataTokens->UIDoc,
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetHelp().empty() ? p.GetHelp() : Ufe::Value();
       } },
@@ -87,7 +87,7 @@ static const MetadataMap _metaMap = {
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetPage().IsEmpty() ? p.GetPage().GetString() : Ufe::Value();
       } },
-    { "enum",
+    { UsdUfe::MetadataTokens->UIEnumLabels,
       [](const PXR_NS::SdrShaderProperty& p) {
           std::string r;
           for (auto&& opt : p.GetOptions()) {
@@ -98,7 +98,7 @@ static const MetadataMap _metaMap = {
           }
           return !r.empty() ? r : Ufe::Value();
       } },
-    { "enumvalues",
+    { UsdUfe::MetadataTokens->UIEnumValues,
       [](const PXR_NS::SdrShaderProperty& p) {
           std::string r;
           for (auto&& opt : p.GetOptions()) {

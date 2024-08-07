@@ -15,6 +15,7 @@
 //
 #include "StagesSubject.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
@@ -338,6 +339,18 @@ void processAttributeChanges(
                         metadataKeys.insert(newMetadataKey);
                     }
                 }
+            } else if (infoChanged.first == SdfFieldKeys->AllowedTokens) {
+                sendMetadataChanged = true;
+                metadataKeys.insert(UsdUfe::MetadataTokens->UIEnumLabels);
+            } else if (infoChanged.first == SdfFieldKeys->Documentation) {
+                sendMetadataChanged = true;
+                metadataKeys.insert(UsdUfe::MetadataTokens->UIDoc);
+            } else if (infoChanged.first == SdfFieldKeys->DisplayGroup) {
+                sendMetadataChanged = true;
+                metadataKeys.insert(UsdUfe::MetadataTokens->UIFolder);
+            } else if (infoChanged.first == SdfFieldKeys->DisplayName) {
+                sendMetadataChanged = true;
+                metadataKeys.insert(UsdUfe::MetadataTokens->UIName);
             }
         }
     }
