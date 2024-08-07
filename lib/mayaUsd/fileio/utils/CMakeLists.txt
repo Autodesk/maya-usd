@@ -19,6 +19,7 @@ if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
     target_sources(${PROJECT_NAME}
         PRIVATE
             orphanedNodesManagerUtil.cpp
+            proxyAccessorUtil.cpp
     )
 endif()
 
@@ -38,6 +39,7 @@ set(HEADERS
 if(UFE_TRIE_NODE_HAS_CHILDREN_COMPONENTS_ACCESSOR)
     list(APPEND HEADERS
         orphanedNodesManagerUtil.h
+        proxyAccessorUtil.h
     )
 endif()
 

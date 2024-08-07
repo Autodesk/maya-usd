@@ -18,7 +18,7 @@
 
 import fixturesUtils
 
-from usdUtils import createSimpleXformScene
+from usdUtils import createSimpleXformScene, createDuoXformScene
 
 from maya import OpenMaya as OM
 from maya import OpenMayaAnim as OMA
@@ -152,18 +152,82 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         # Note: the parent command changes the selection, so preserve and restore it.
         selToPreserve = ufe.GlobalSelection.get().front()
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits("A"))
         cmds.parent("stage1", locName)
         ufe.GlobalSelection.get().clear()
         ufe.GlobalSelection.get().append(selToPreserve)
 
+        # Edit "A" Prim as Maya data.
         aUsdUfePathStr = "|" + locName + aUsdUfePathStr
-        validateEditAsMayaMetadata()
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+            validateEditAsMayaMetadata()
 
         # Verify we can merge "A" Maya data after the rename of the stage.
         with mayaUsd.lib.OpUndoItemList():
             aMayaItem = ufe.GlobalSelection.get().front()
             aMayaPath = aMayaItem.path()
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(ufe.PathString.string(aMayaPath)))
+
+    @unittest.skipIf(os.getenv('HAS_ORPHANED_NODES_MANAGER', '0') != '1', 'Test only available when UFE supports the orphaned nodes manager')
+    def testReparentUsdAncestorOfEditAsMaya(self):
+        '''Test that reparenting an usd ancestor correctly updates the internal data.'''
+        def validateEditAsMayaMetadata(mayaItem, ufePathStr):
+            mayaPath = mayaItem.path()
+            self.assertEqual(mayaPath.nbSegments(), 1)
+            mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(mayaItem)
+            fromHostUfePath = mayaToUsd.fromHost(mayaPath)
+            self.assertEqual(ufe.PathString.string(fromHostUfePath), ufePathStr)
+            dagPath = om.MSelectionList().add(ufe.PathString.string(mayaPath)).getDagPath(0)
+            pullUfePath = cmds.getAttr(str(dagPath) + ".Pull_UfePath")
+            self.assertEqual(pullUfePath, ufePathStr)
+            self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(ufePathStr))
+
+        def verifyDagXformAndVis(dagPath, expectedXlation, expectedVis):
+            mXformMatrix = om.MTransformationMatrix(dagPath.inclusiveMatrix())
+            mXlation = mXformMatrix.translation(om.MSpace.kObject)
+            assertVectorAlmostEqual(self, mXlation, expectedXlation)
+            self.assertEqual(dagPath.isVisible(), expectedVis)
+
+        (ps,
+         aXlateOp, aUsdXlation, aUsdUfePathStr, _, _,
+         bXlateOp, bUsdXlation, bUsdUfePathStr, _, _) = createDuoXformScene()
+
+        proxyShapePathStr = ufe.PathString.string(ps.path())
+        stage = mayaUsd.ufe.getStage(proxyShapePathStr)
+        editedPrim = stage.DefinePrim("/A/Edited", "Xform")
+
+        with mayaUsd.lib.OpUndoItemList():
+            editedUfePathStr = "{},{}".format(proxyShapePathStr, editedPrim.GetPath())
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(editedUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(editedUfePathStr))
+
+        editedMayaItem = ufe.GlobalSelection.get().front()
+        editedMayaPathStr = ufe.PathString.string(editedMayaItem.path())
+        editedDagPath = om.MSelectionList().add(editedMayaPathStr).getDagPath(0)
+
+        verifyDagXformAndVis(editedDagPath, aUsdXlation, True)
+        validateEditAsMayaMetadata(editedMayaItem, editedUfePathStr)
+
+        # Reparent /A under /B
+        cmds.parent(aUsdUfePathStr, bUsdUfePathStr)
+
+        # Make /B invisible and translate it.
+        bPrim = mayaUsd.ufe.ufePathToPrim(bUsdUfePathStr)
+        UsdGeom.Imageable(bPrim).CreateVisibilityAttr().Set(UsdGeom.Tokens.invisible)
+
+        bOffset = Gf.Vec3d(100, 100, 100)
+        bXlateOp.Set(bXlateOp.Get() + bOffset)
+
+        # After reparent "/A/Edited" xform is conserved and inherits b offset
+        # /B invisibility is also inherited.
+        verifyDagXformAndVis(editedDagPath, aUsdXlation + bOffset, False)
+        validateEditAsMayaMetadata(editedMayaItem, bUsdUfePathStr + "/A/Edited")
+
+        # Verify we can merge "Edited" Maya data after the reparent
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(editedMayaPathStr))
 
     def testEditAsMayaPreserveUsdSkel(self):
         '''Test that edit does not change the usd skel prim data.'''
