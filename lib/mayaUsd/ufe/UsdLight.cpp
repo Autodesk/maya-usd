@@ -102,7 +102,8 @@ Ufe::Light::Type UsdLight::type() const
                                                               : Ufe::Light::Point;
     }
 
-    return Ufe::Light::Invalid;
+    // In case of unknown light type, fallback to point light
+    return Ufe::Light::Point;
 }
 
 float getLightIntensity(const UsdPrim& prim)
