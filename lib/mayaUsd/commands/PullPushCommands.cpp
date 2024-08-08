@@ -452,9 +452,9 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
         OpUndoItemRecorder undoRecorder(_undoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        status = manager.duplicate(_srcPath, _dstPath, userArgs) ? MS::kSuccess : MS::kFailure;
+        auto  dstUfePaths = manager.duplicate(_srcPath, _dstPath, userArgs);
 
-        if (status == MS::kSuccess) {
+        if (dstUfePaths.size() > 0) {
             // Select the duplicate.
             //
             // If the duplicate src is Maya, the duplicate child of the
@@ -463,22 +463,12 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
             // - Maya duplicate to USD: we always duplicate directly under the
             //   proxy shape, so add a single path component USD path segment.
             // - USD duplicate to Maya: no path segment to add.
-            Ufe::Path childPath;
-            if (_srcPath.runTimeId() == getMayaRunTimeId()) {
-                // Maya duplicate to USD
-                auto ps = Ufe::PathSegment(_srcPath.back(), getUsdRunTimeId(), '/');
-                childPath = _dstPath.empty() ? ps : _dstPath + ps;
-            } else {
-                // USD duplicate to Maya
-                if (_dstPath.empty()) {
-                    childPath = Ufe::PathString::path("|" + _srcPath.back().string());
-                } else {
-                    childPath = _dstPath + _srcPath.back();
-                }
-            }
-
+            const Ufe::Path& childPath = dstUfePaths[0];
+            auto             childItem = Ufe::Hierarchy::createItem(childPath);
+            if (!childItem)
+                return MS::kFailure;
             Ufe::Selection sn;
-            sn.append(Ufe::Hierarchy::createItem(childPath));
+            sn.append(childItem);
             // It is appropriate to use the overload that uses the global list,
             // as the undo recorder will transfer the items on the global list
             // to fUndoItemList.

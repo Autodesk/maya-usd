@@ -89,7 +89,7 @@ bool discardEdits(const std::string& nodeName)
     return PrimUpdaterManager::getInstance().discardEdits(dagPath);
 }
 
-bool duplicate(
+std::string duplicate(
     const std::string&  srcUfePathString,
     const std::string&  dstUfePathString,
     const VtDictionary& userArgs = VtDictionary())
@@ -101,9 +101,13 @@ bool duplicate(
         = dstUfePathString.empty() ? Ufe::Path() : Ufe::PathString::path(dstUfePathString);
 
     if (src.empty() && dst.empty())
-        return false;
+        return {};
 
-    return PrimUpdaterManager::getInstance().duplicate(src, dst, userArgs);
+    auto dstUfePaths = PrimUpdaterManager::getInstance().duplicate(src, dst, userArgs);
+    if (dstUfePaths.size() <= 0)
+        return {};
+
+    return Ufe::PathString::string(dstUfePaths[0]);
 }
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(duplicate_overloads, duplicate, 2, 3)
