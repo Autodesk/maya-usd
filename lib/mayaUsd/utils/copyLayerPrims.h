@@ -36,6 +36,11 @@ struct CopyLayerPrimsOptions
     // and the targets of the relations will also get copied.
     bool followRelationships = true;
 
+    // When enabled, if a scope collides with an existing scope, don't
+    // rename the scope, merge them instead. This allows copying multiple
+    // items under the same base tree without multiplying the tree branches.
+    bool mergeScopes = false;
+
     // Optional progress bar.
     MayaUsd::ProgressBarScope* progressBar = nullptr;
 };

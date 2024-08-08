@@ -29,7 +29,7 @@ import mayaUsd.ufe
 
 from pxr import UsdGeom, Gf
 
-from maya import cmds
+from maya import cmds, mel
 from maya import standalone
 from maya.api import OpenMaya as om
 
@@ -416,6 +416,34 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertTrue(looksPrim.IsValid())
         spherePrim = stage.GetPrimAtPath("/pSphere1")
         self.assertFalse(spherePrim.IsValid())
+
+
+    def testDuplicateSelection(self):
+        '''Duplicate a Maya sphere and cone both in selection by calling the MEL script used in the UI.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)[0]
+        cone = cmds.polyCone(r=1)[0]
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # Select both
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        # Duplicate Maya data as USD data, will use the selection.
+        mel.eval('''source mayaUsd_pluginUICreation.mel''')
+        mel.eval('''source mayaUsdMenu.mel''')
+        mel.eval('''mayaUsdMenu_duplicateToUSD("%s", "%s")''' % (psPathStr, sphere))
+
+        # Verify that the copied sphere has a look (material) prim.
+        spherePrim = stage.GetPrimAtPath("/%s" % sphere)
+        self.assertTrue(spherePrim.IsValid())
+        conePrim = stage.GetPrimAtPath("/%s" % cone)
+        self.assertTrue(conePrim.IsValid())
 
 
     def testDuplicateUsingOptions(self):
