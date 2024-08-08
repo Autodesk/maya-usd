@@ -96,8 +96,8 @@ void UsdMayaPrimReaderContext::SetTimeSampleMultiplier(double multiplier)
     _timeSampleMultiplier = multiplier;
 };
 
-void UsdMayaPrimReaderContext::SetIfresetXform(bool resetXform) { _resetXform = resetXform; };
+void UsdMayaPrimReaderContext::SetForceResetXform(bool resetXform) { _resetXform = resetXform; };
 
-bool UsdMayaPrimReaderContext::GetIfresetXform() const { return _resetXform; };
+bool UsdMayaPrimReaderContext::GetForceResetXform() const { return _resetXform; };
 
 PXR_NAMESPACE_CLOSE_SCOPE
