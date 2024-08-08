@@ -96,11 +96,11 @@ public:
 
     /// \brief Set the if we are importing as edit as Maya
     MAYAUSD_CORE_PUBLIC
-    void SetIfresetXform(bool resetXform);
+    void SetForceResetXform(bool resetXform);
 
     /// \Get the if we are importing as edit as Maya
     MAYAUSD_CORE_PUBLIC
-    bool GetIfresetXform() const;
+    bool GetForceResetXform() const;
 
     ~UsdMayaPrimReaderContext() { }
 
