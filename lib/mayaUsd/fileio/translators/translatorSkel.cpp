@@ -1169,6 +1169,19 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
     std::string skinClusterName = TfStringPrintf("skinCluster_%s", primToSkin.GetName().GetText());
     status = dgMod.renameNode(skinCluster, MString(skinClusterName.c_str()));
 
+    // Check if the skinning method on the mesh is dualQuaternion (classicLinear is default)
+    TfToken skinningMethod;
+    if (skinningQuery.GetPrim()
+            .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
+            .Get(&skinningMethod)
+        && skinningMethod == UsdSkelTokens->dualQuaternion) {
+        MFnSkinCluster skinClusterFn(skinCluster, &status);
+        if (status == MS::kSuccess) {
+            MPlug skinMethodPlug = skinClusterFn.findPlug("skinningMethod");
+            skinMethodPlug.setInt(1); // Dual quaternion
+        }
+    }
+
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     MObject groupId = dgMod.createNode(_MayaTokens->groupIdType, &status);

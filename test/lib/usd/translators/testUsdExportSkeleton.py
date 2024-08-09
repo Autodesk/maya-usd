@@ -281,6 +281,7 @@ class testUsdExportSkeleton(unittest.TestCase):
 
         meshPrim = stage.GetPrimAtPath('/testSkel/pCube1')
         self.assertTrue(meshPrim)
+        self.assertTrue(meshPrim.GetAttribute("primvars:skel:skinningMethod").Get() == "dualQuaternion")
 
         binding = UsdSkel.BindingAPI.Get(stage, meshPrim.GetPath())
         self.assertTrue(binding)

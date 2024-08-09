@@ -17,12 +17,10 @@
 //
 #include "jointWriteUtils.h"
 
-#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/flexibleSparseValueWriter.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -34,7 +32,6 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/primvar.h>
-#include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdUtils/pipeline.h>
@@ -46,15 +43,12 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MGlobal.h>
-#include <maya/MIntArray.h>
 #include <maya/MItDag.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
-#include <maya/MUintArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -501,6 +495,15 @@ MObject UsdMayaJointUtil::writeSkinningData(
     // Export will create a Skeleton at the location corresponding to
     // the root joint. Configure this mesh to be bound to the same skel.
     bindingAPI.CreateSkeletonRel().SetTargets({ skelPath });
+
+    // Get the skinning method from the skin cluster and set it on the mesh prim
+    MPlug skinMethodPlug = skinCluster.findPlug("skinningMethod");
+    if (skinMethodPlug.asInt() > 0) {
+        // Use linear as default skinning method, change to dual quaternion for the others
+        bindingAPI.GetPrim()
+            .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
+            .Set(UsdSkelTokens->dualQuaternion);
+    }
 
     return inMeshObj;
 }
