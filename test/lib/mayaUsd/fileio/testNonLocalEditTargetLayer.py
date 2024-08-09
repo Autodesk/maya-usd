@@ -76,8 +76,7 @@ class NonLocalEditTargetLayer(unittest.TestCase):
         # For this particular case, the layer should be the deepest "nested_reference_geo.usda" layer
         targetLayer = primNode.layerStack.identifier.rootLayer
         self.assertTrue(targetLayer)
-        targetLayerId = targetLayer.identifier
-        self.assertEqual(targetLayerId, os.path.join(testDir, 'data', 'nested_reference_geo.usda'))
+        self.assertEqual(targetLayer.realPath, os.path.join(testDir, 'data', 'nested_reference_geo.usda'))
         # Verify target layer that it is **not** in stage layer stack
         self.assertNotIn(targetLayer, stage.GetLayerStack())
         # Verify current edit target layer is not the target layer
@@ -113,8 +112,8 @@ class NonLocalEditTargetLayer(unittest.TestCase):
         stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
         self.assertTrue(stage)
         # Verify edit target layer id
-        # The layer id should equal to the file path
-        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, targetLayerPath)
+        # The layer real path should equal to the file path
+        self.assertEqual(stage.GetEditTarget().GetLayer().realPath, targetLayerPath)
 
         return stage
 
