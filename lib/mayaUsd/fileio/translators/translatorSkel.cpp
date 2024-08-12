@@ -1180,7 +1180,7 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
 #else
             .GetAttribute(TfToken("primvars:skel:skinningMethod"))
             .Get(&skinningMethod)
-        && skinningMethod == TfToken("dualQuaternion") {
+        && skinningMethod == TfToken("dualQuaternion")) {
 #endif
         MFnSkinCluster skinClusterFn(skinCluster, &status);
         if (status == MS::kSuccess) {
