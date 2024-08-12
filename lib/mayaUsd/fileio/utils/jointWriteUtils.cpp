@@ -505,9 +505,6 @@ MObject UsdMayaJointUtil::writeSkinningData(
 #if PXR_VERSION > 2211
             .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
             .Set(UsdSkelTokens->dualQuaternion);
-#else
-            .GetAttribute(TfToken("primvars:skel:skinningMethod"))
-            .Set(TfToken("dualQuaternion"));
 #endif
     }
 
