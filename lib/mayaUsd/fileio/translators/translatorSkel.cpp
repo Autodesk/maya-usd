@@ -1175,11 +1175,13 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
             .GetPrim()
 #if PXR_VERSION > 2211
             .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
-#else
-            .GetAttribute(TfToken("primvars:skel:skinningMethod"))
-#endif
             .Get(&skinningMethod)
         && skinningMethod == UsdSkelTokens->dualQuaternion) {
+#else
+            .GetAttribute(TfToken("primvars:skel:skinningMethod"))
+            .Get(&skinningMethod)
+        && skinningMethod == TfToken("dualQuaternion") {
+#endif
         MFnSkinCluster skinClusterFn(skinCluster, &status);
         if (status == MS::kSuccess) {
             MPlug skinMethodPlug = skinClusterFn.findPlug("skinningMethod");
