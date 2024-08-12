@@ -1171,8 +1171,13 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
 
     // Check if the skinning method on the mesh is dualQuaternion (classicLinear is default)
     TfToken skinningMethod;
-    if (skinningQuery.GetPrim()
+    if (skinningQuery
+            .GetPrim()
+#if PXR_VERSION > 2211
             .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
+#else
+            .GetAttribute(TfToken("primvars:skel:skinningMethod"))
+#endif
             .Get(&skinningMethod)
         && skinningMethod == UsdSkelTokens->dualQuaternion) {
         MFnSkinCluster skinClusterFn(skinCluster, &status);

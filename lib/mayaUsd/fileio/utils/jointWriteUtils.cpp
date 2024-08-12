@@ -500,9 +500,15 @@ MObject UsdMayaJointUtil::writeSkinningData(
     MPlug skinMethodPlug = skinCluster.findPlug("skinningMethod");
     if (skinMethodPlug.asInt() > 0) {
         // Use linear as default skinning method, change to dual quaternion for the others
-        bindingAPI.GetPrim()
+        bindingAPI
+            .GetPrim()
+#if PXR_VERSION > 2211
             .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
             .Set(UsdSkelTokens->dualQuaternion);
+#else
+            .GetAttribute(TfToken("primvars:skel:skinningMethod"))
+            .Set(TfToken("dualQuaternion"));
+#endif
     }
 
     return inMeshObj;
