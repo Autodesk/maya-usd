@@ -282,15 +282,33 @@ class testUsdExportSkeleton(unittest.TestCase):
         meshPrim = stage.GetPrimAtPath('/testSkel/pCube1')
         self.assertTrue(meshPrim)
 
-        usdVer = Usd.GetVersion()
-        if usdVer > (0, 22, 3):
-            self.assertTrue(meshPrim.GetAttribute("primvars:skel:skinningMethod").Get() == "dualQuaternion")
-
         binding = UsdSkel.BindingAPI.Get(stage, meshPrim.GetPath())
         self.assertTrue(binding)
 
         skeleton = UsdSkel.Skeleton.Get(stage, '/testSkel/joint1')
         self.assertTrue(skeleton)
+
+    @unittest.skipUnless(Usd.GetVersion() > (0, 22, 11), 'Requires a recent USD version')
+    def testSkelExportSkinningMethod(self):
+        """
+        Test if we correctly exported the proper skinned method for mesh
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonAtSceneRoot.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFile = os.path.abspath('UsdExportSkinningMethodTest.usda')
+
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, rootPrimType='xform', exportSkin='auto',
+            exportSkels="auto", rootPrim="testSkel", defaultPrim="testSkel")
+
+        stage = Usd.Stage.Open(usdFile)
+
+        meshPrim = stage.GetPrimAtPath('/testSkel/pCube1')
+        self.assertTrue(meshPrim)
+
+        usdVer = Usd.GetVersion()
+        if usdVer > (0, 22, 3):
+            self.assertTrue(meshPrim.GetAttribute("primvars:skel:skinningMethod").Get() == "dualQuaternion")
 
     def testSkelForSegfault(self):
         """
