@@ -305,10 +305,7 @@ class testUsdExportSkeleton(unittest.TestCase):
 
         meshPrim = stage.GetPrimAtPath('/testSkel/pCube1')
         self.assertTrue(meshPrim)
-
-        usdVer = Usd.GetVersion()
-        if usdVer > (0, 22, 3):
-            self.assertTrue(meshPrim.GetAttribute("primvars:skel:skinningMethod").Get() == "dualQuaternion")
+        self.assertTrue(meshPrim.GetAttribute("primvars:skel:skinningMethod").Get() == "dualQuaternion")
 
     def testSkelForSegfault(self):
         """
