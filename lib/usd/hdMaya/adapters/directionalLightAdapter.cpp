@@ -50,7 +50,7 @@ public:
     {
         // Directional lights point toward -Z, but we need the opposite
         // for the position so the light acts as a directional light.
-        const auto direction = GfVec4f(0.0, 0.0, 1.0, 0.0) * GetTransform();
+        const GfVec4f direction(GfVec4f(0.0, 0.0, 1.0, 0.0) * GetTransform());
         light.SetHasShadow(true);
         light.SetPosition({ direction[0], direction[1], direction[2], 0.0f });
     }
