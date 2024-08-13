@@ -18,10 +18,9 @@
 
 import unittest
 
-from maya import cmds
 from pxr import Plug, Tf
 
-import sys
+import mayaUtils
 
 class MayaUsdPlugVersionCheckTestCase(unittest.TestCase):
     """
@@ -34,12 +33,7 @@ class MayaUsdPlugVersionCheckTestCase(unittest.TestCase):
         
         # Loading the plugin will trigger registration of plugins from MAYA_PXR_PLUGINPATH_NAME
         # path
-        try:
-            if not cmds.pluginInfo( "mayaUsdPlugin", loaded=True, query=True):
-                cmds.loadPlugin( "mayaUsdPlugin", quiet = True )
-        except Exception:
-            print(sys.exc_info()[1])
-            print("Unable to load mayaUsdPlugin")
+        self.assertTrue(mayaUtils.loadPlugin('mayaUsdPlugin'))
 
         # All test plugins derive from _TestPlugBase<1>
         base1Subclasses = Tf.Type.FindByName('_TestPlugBase<1>').GetAllDerivedTypes()
