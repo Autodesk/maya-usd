@@ -288,7 +288,7 @@ class testUsdExportSkeleton(unittest.TestCase):
         skeleton = UsdSkel.Skeleton.Get(stage, '/testSkel/joint1')
         self.assertTrue(skeleton)
 
-    @unittest.skipUnless(Usd.GetVersion() > (0, 22, 11), 'Requires a recent USD version')
+    @unittest.skipUnless(Usd.GetVersion() > (0, 22, 11), 'SkinningMethod requires USD version 23 and above')
     def testSkelExportSkinningMethod(self):
         """
         Test if we correctly exported the proper skinned method for mesh
