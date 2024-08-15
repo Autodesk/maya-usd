@@ -512,6 +512,17 @@ MObject UsdMayaJointUtil::writeSkinningData(
     // the root joint. Configure this mesh to be bound to the same skel.
     bindingAPI.CreateSkeletonRel().SetTargets({ skelPath });
 
+#if PXR_VERSION > 2211
+    // Get the skinning method from the skin cluster and set it on the mesh prim
+    MPlug skinMethodPlug = skinCluster.findPlug("skinningMethod");
+    if (skinMethodPlug.asInt() > 0) {
+        // Use linear as default skinning method, change to dual quaternion for the others
+        bindingAPI.GetPrim()
+            .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
+            .Set(UsdSkelTokens->dualQuaternion);
+    }
+#endif
+
     return inMeshObj;
 }
 
