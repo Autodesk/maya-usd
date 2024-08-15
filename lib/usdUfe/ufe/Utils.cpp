@@ -537,7 +537,11 @@ Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderPropert
 {
     Ufe::Attribute::Type retVal = Ufe::Attribute::kInvalid;
 
+#if PXR_VERSION <= 2408
     const SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
+#else
+    const SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().GetSdfType();
+#endif
     if (typeName.GetHash() == SdfValueTypeNames->Token.GetHash()) {
         static const TokenToSdfTypeMap tokenTypeToSdfType
             = { { SdrPropertyTypes->Int, SdfValueTypeNames->Int },
@@ -552,7 +556,11 @@ Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderPropert
                 { SdrPropertyTypes->Vector, SdfValueTypeNames->Vector3f },
                 { SdrPropertyTypes->Matrix, SdfValueTypeNames->Matrix4d } };
         TokenToSdfTypeMap::const_iterator it
+#if PXR_VERSION <= 2408
             = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
+#else
+            = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().GetNdrType());
+#endif
         if (it != tokenTypeToSdfType.end()) {
             retVal = _UsdTypeToUfe(it->second);
         } else {
