@@ -185,57 +185,57 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
         } else {
             return Ufe::Value(sdfTypeIndicator.GetNdrType().GetString());
         }
-    }
 #endif
-
-        const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
-        auto               it = metadata.find(TfToken(key));
-        if (it != metadata.cend()) {
-            return Ufe::Value(it->second);
-        }
-
-        const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
-        it = hints.find(TfToken(key));
-        if (it != hints.cend()) {
-            return Ufe::Value(it->second);
-        }
-
-        MetadataMap::const_iterator itMapper = _metaMap.find(key);
-        if (itMapper != _metaMap.end()) {
-            return itMapper->second(*_shaderAttributeDef);
-        }
-
-        return {};
     }
 
-    bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
-    {
-        TF_DEV_AXIOM(_shaderAttributeDef);
+    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
+    auto               it = metadata.find(TfToken(key));
+    if (it != metadata.cend()) {
+        return Ufe::Value(it->second);
+    }
+
+    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
+    it = hints.find(TfToken(key));
+    if (it != hints.cend()) {
+        return Ufe::Value(it->second);
+    }
+
+    MetadataMap::const_iterator itMapper = _metaMap.find(key);
+    if (itMapper != _metaMap.end()) {
+        return itMapper->second(*_shaderAttributeDef);
+    }
+
+    return {};
+}
+
+bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
+{
+    TF_DEV_AXIOM(_shaderAttributeDef);
 
 #ifdef UFE_HAS_NATIVE_TYPE_METADATA
-        if (key == Ufe::AttributeDef::kNativeType) {
-            return true;
-        }
+    if (key == Ufe::AttributeDef::kNativeType) {
+        return true;
+    }
 #endif
 
-        const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
-        auto               it = metadata.find(TfToken(key));
-        if (it != metadata.cend()) {
-            return true;
-        }
-
-        const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
-        it = hints.find(TfToken(key));
-        if (it != hints.cend()) {
-            return true;
-        }
-
-        MetadataMap::const_iterator itMapper = _metaMap.find(key);
-        if (itMapper != _metaMap.end() && !itMapper->second(*_shaderAttributeDef).empty()) {
-            return true;
-        }
-
-        return false;
+    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
+    auto               it = metadata.find(TfToken(key));
+    if (it != metadata.cend()) {
+        return true;
     }
+
+    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
+    it = hints.find(TfToken(key));
+    if (it != hints.cend()) {
+        return true;
+    }
+
+    MetadataMap::const_iterator itMapper = _metaMap.find(key);
+    if (itMapper != _metaMap.end() && !itMapper->second(*_shaderAttributeDef).empty()) {
+        return true;
+    }
+
+    return false;
+}
 
 } // namespace USDUFE_NS_DEF
