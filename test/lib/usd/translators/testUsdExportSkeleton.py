@@ -296,6 +296,31 @@ class testUsdExportSkeleton(unittest.TestCase):
         skeleton = UsdSkel.Skeleton.Get(stage, '/testSkel/joint1')
         self.assertTrue(skeleton)
 
+    @unittest.skipUnless(Usd.GetVersion() > (0, 22, 11), 'SkinningMethod requires USD version 23 and above')
+    def testSkelExportSkinningMethod(self):
+        """
+        Test if we correctly exported the proper skinned method for mesh
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonAtSceneRoot.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        # change the skinning method, so that it can be tested in usd
+        skinClusterName="skinCluster1"
+        selectionList = OM.MSelectionList()
+        selectionList.add(skinClusterName)
+        skinCluster = OM.MFnDependencyNode(selectionList.getDependNode(0))
+        cmds.setAttr("%s.skinningMethod"%skinClusterName, 1) # 1 == dual quaternion
+
+        usdFile = os.path.abspath('UsdExportSkinningMethodTest.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, rootPrimType='xform', exportSkin='auto',
+            exportSkels="auto", rootPrim="testSkel", defaultPrim="testSkel")
+
+        stage = Usd.Stage.Open(usdFile)
+
+        meshPrim = stage.GetPrimAtPath('/testSkel/pCube1')
+        self.assertTrue(meshPrim)
+        self.assertTrue(meshPrim.GetAttribute("primvars:skel:skinningMethod").Get() == "dualQuaternion")
+
     def testSkelForSegfault(self):
         """
         Certain skeletons cause heap corruption and segfaulting when exported multiple times.
