@@ -210,11 +210,6 @@ set(MAYA_LIBS_TO_FIND
     cgGL
     clew
 )
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-    list(APPEND MAYA_LIBS_TO_FIND tbb_debug)
-else()
-    list(APPEND MAYA_LIBS_TO_FIND tbb)
-endif()
 
 foreach(MAYA_LIB ${MAYA_LIBS_TO_FIND})
     find_library(MAYA_${MAYA_LIB}_LIBRARY
