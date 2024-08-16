@@ -185,8 +185,9 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
         } else {
             return Ufe::Value(sdfTypeIndicator.GetNdrType().GetString());
         }
-#endif
+#endif // PXR_VERSION
     }
+#endif // UFE_HAS_NATIVE_TYPE_METADATA
 
     const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
