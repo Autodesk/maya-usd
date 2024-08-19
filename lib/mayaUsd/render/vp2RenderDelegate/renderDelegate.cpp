@@ -38,7 +38,6 @@
 
 #include <maya/MProfiler.h>
 
-#include <tbb/reader_writer_lock.h>
 #include <tbb/spin_rw_mutex.h>
 
 #include <unordered_map>
