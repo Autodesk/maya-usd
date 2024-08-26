@@ -730,11 +730,6 @@ proc mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes(string $arg, int $e
 
         if(stringArrayFind($opt, 0, $enabledConversions) != -1) {
             checkBoxGrp -e -v1 true -en $enable $widget;
-        } else {
-            if ($processJobContext == 0) {
-                // A job context will not turn off selected options.
-                checkBoxGrp -e -v1 false $widget;
-            }
         }
     }
 }
