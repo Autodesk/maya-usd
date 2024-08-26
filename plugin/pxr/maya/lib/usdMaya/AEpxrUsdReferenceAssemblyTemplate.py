@@ -20,13 +20,15 @@ from maya import cmds
 from maya import mel
 
 import functools
+from contextlib import contextmanager
 
 
 # ========================================================================
 # CONTEXT MANAGERS
 # ========================================================================
 
-class EditorTemplateBeginScrollLayout( object ):
+@contextmanager
+def EditorTemplateBeginScrollLayout():
     '''Add beginLayout/endLayout commands for the context block
 
     Example:
@@ -34,53 +36,49 @@ class EditorTemplateBeginScrollLayout( object ):
             with EditorTemplateBeginLayout('MyLayout', collapse=True)
                 cmds.editorTemplate(addControl='filePath')
     '''
-    def __init__(self):
-        pass
-    def __enter__(self):
-        cmds.editorTemplate(beginScrollLayout=True)
-    def __exit__(self, type, value, traceback):
-        cmds.editorTemplate(endScrollLayout=True)
+    cmds.editorTemplate(beginScrollLayout=True)
+    yield()
+    cmds.editorTemplate(endScrollLayout=True)
 
 
-class EditorTemplateBeginLayout( object ):
+@contextmanager
+def EditorTemplateBeginLayout(name, collapse=True):
     '''Add beginLayout/endLayout commands for the context block
 
     Example:
         with EditorTemplateBeginLayout('MyLayout', collapse=True):
             cmds.editorTemplate(addControl='filePath')
     '''
-    def __init__(self, name, collapse=True):
-        self.name = name
-        self.collapse = collapse
-    def __enter__(self):
-        cmds.editorTemplate(beginLayout=self.name, collapse=self.collapse)
-    def __exit__(self, type, value, traceback):
-        cmds.editorTemplate(endLayout=True)
+    cmds.editorTemplate(beginLayout=name, collapse=collapse)
+    yield()
+    cmds.editorTemplate(endLayout=True)
 
 
-class SetUITemplatePushTemplate( object ):
+@contextmanager
+def SetUITemplatePushTemplate():
     '''Add setUITemplate push/pop commands for the context block
 
     Example:
         with SetUITemplatePushTemplate():
             ...
     '''
-    def __init__(self):
-        pass
-    def __enter__(self):
-        cmds.setUITemplate('attributeEditorTemplate', pushTemplate=True)
-    def __exit__(self, type, value, traceback):
-        cmds.setUITemplate(popTemplate=True)
+    cmds.setUITemplate('attributeEditorTemplate', pushTemplate=True)
+    yield()
+    cmds.setUITemplate(popTemplate=True)
 
+
+@contextmanager
+def RowLayout(*args, **kwargs):
+    cmds.rowLayout(*args, **kwargs)
+    yield()
+    cmds.setParent('..')
 
 # ========================================================================
 
-def variantSets_changeCommmand(unused, omg, node, variantSetName):
+def variantSets_changeCommmand(unused, omg, node, variantSetName, authorVarSelFn):
     val = cmds.optionMenuGrp(omg, q=True, value=True)
-    variantAttr = 'usdVariantSet_%s'%variantSetName
-    if not cmds.attributeQuery(variantAttr, node=node, exists=True):
-        cmds.addAttr(node, ln=variantAttr, dt='string', internalSet=True)
-    cmds.setAttr('%s.%s'%(node,variantAttr), val, type='string')
+
+    authorVarSelFn(node, variantSetName, val)
 
     # Add the resolved variant selection as a UI label
     resolvedVariant = ''
@@ -103,7 +101,7 @@ def variantSets_Replace(nodeAttr, new):
     origParent = cmds.setParent(q=True)
 
     frameLayoutName = 'AEpxrUsdReferenceAssemblyTemplate_variantSets_Layout'
-    if new == True:
+    if new:
         cmds.frameLayout(frameLayoutName, label='VariantSets', collapse=False)
     else:
         cmds.setParent(frameLayoutName)
@@ -114,65 +112,133 @@ def variantSets_Replace(nodeAttr, new):
         for child in children:
             cmds.deleteUI(child)
 
-    # Calculate some parameters
-    node = nodeAttr.split('.', 1)[0]
-
-    # Create variantSetsDict
-    variantSetsDict = {}
-    usdPrim = UsdMaya.GetPrim(node)
-    from pxr import Usd, UsdUtils
-
-    regVarSetNames = [regVarSet.name
-            for regVarSet in UsdUtils.GetRegisteredVariantSets()]
-
-    if usdPrim:
-        variantSets = usdPrim.GetVariantSets()
-        variantSetNames = variantSets.GetNames()
-        for variantSetName in variantSetNames:
-
-            if regVarSetNames and (variantSetName not in regVarSetNames):
-                continue
-
-            usdVariant = usdPrim.GetVariantSet(variantSetName)
-            if not usdVariant:
-                continue
-            usdVariantChoices = usdVariant.GetVariantNames()
-            usdVariantSelection = usdVariant.GetVariantSelection()
-            variantSetsDict[variantSetName] = {
-                'variants' : usdVariantChoices,
-                'selection' : usdVariantSelection,
-                }
-            # Handle override
-            variantAttrName = 'usdVariantSet_%s'%variantSetName
-            if cmds.attributeQuery(variantAttrName, node=node, exists=True):
-                variantSetPlgVal = cmds.getAttr('%s.%s'%(node, variantAttrName))
-                if variantSetPlgVal:
-                    variantSetsDict[variantSetName]['override'] = variantSetPlgVal
-                variantSetsDict[variantSetName]['settable'] = cmds.getAttr('%s.%s'%(node, variantAttrName), settable=True)
-
-    # Construct the UI from the variantSetsDict
-    for variantSetName,variantSetDict in variantSetsDict.items():
-        variantResolved = variantSetDict.get('selection', '')
-        variantOverride = variantSetDict.get('override', '')
-        variantSetChoices = [''] + variantSetDict['variants']
-        variantSettable = variantSetDict.get('settable', True)
-
-        omg = cmds.optionMenuGrp(
-            label=variantSetName,
-            enable=variantSettable,
-            extraLabel=variantResolved)
-        for choice in variantSetChoices:
-            cmds.menuItem(label=choice)
-
-        try:
-            cmds.optionMenuGrp(omg, e=True, value=variantOverride)
-        except RuntimeError:
-            cmds.warning('Invalid choice %r for %r'%(variantOverride, variantSetName))
-
-        cmds.optionMenuGrp(omg, e=True, changeCommand=functools.partial(variantSets_changeCommmand, omg=omg, node=node, variantSetName=variantSetName))
+    global _setupVariantSetsFn
+    if _setupVariantSetsFn:
+        _setupVariantSetsFn(nodeAttr)
 
     # Restore the original parent
     cmds.setParent(origParent)
+
+
+def DefaultSetupVariantSetsInAE(nodeAttr):
+    SetupRegisteredVariantSetsInAE(nodeAttr, DefaultSetupVariantSetInAE)
+
+
+def DefaultSetupVariantSetInAE(node, usdVariantSet):
+    SetupVariantSetInAE(node, usdVariantSet, AuthorVariantSelectionFromAE)
+
+
+_regVarSetNames = None
+def _GetRegisteredVariantSetNames():
+    global _regVarSetNames
+    if _regVarSetNames is None:
+        from pxr import UsdUtils
+        _regVarSetNames = [regVarSet.name
+                for regVarSet in UsdUtils.GetRegisteredVariantSets()]
+    return _regVarSetNames
+
+
+def _IsRegisteredVariantSet(node, usdVariantSet):
+    '''
+    Returns True if there are no registered variantSets OR there are registered
+    variantSets and usdVariantSet is one of them.
+    '''
+    regVarSetNames = _GetRegisteredVariantSetNames()
+    if not regVarSetNames:
+        # no registered variant sets.  just accept all of them.
+        return True
+
+    return usdVariantSet.GetName() in regVarSetNames
+
+
+def SetupRegisteredVariantSetsInAE(nodeAttr, variantSetSetupFn):
+    '''
+    Sets up the attribute editor to show all registered variantSets in the attribute editor.
+
+    For each registered variant, it will call variantSetSetupFn.
+    '''
+    _SetupVariantSetsInAE(nodeAttr, _IsRegisteredVariantSet, variantSetSetupFn)
+
+
+def _SetupVariantSetsInAE(nodeAttr, variantSetFilterFn, variantSetSetupFn):
+    node = nodeAttr.split('.', 1)[0]
+
+    usdPrim = UsdMaya.GetPrim(node)
+    if not usdPrim:
+        return
+
+    for variantSetName in usdPrim.GetVariantSets().GetNames():
+        usdVariantSet = usdPrim.GetVariantSet(variantSetName)
+        if not variantSetFilterFn(node, usdVariantSet):
+            continue
+        variantSetSetupFn(node, usdVariantSet)
+
+
+def _GetVariantSetInfoFromNode(node, variantSetName):
+    '''
+    Returns (override, settable) for the variantSetName on node.
+    '''
+    variantAttrName = 'usdVariantSet_%s' % variantSetName
+    override = ''
+    settable = True
+    if cmds.attributeQuery(variantAttrName, node=node, exists=True):
+        variantSetPlgVal = cmds.getAttr('%s.%s' % (node, variantAttrName))
+        if variantSetPlgVal:
+            override = variantSetPlgVal
+        settable = cmds.getAttr('%s.%s' % (node, variantAttrName), settable=True)
+    return override, settable
+
+
+def SetupVariantSetInAE(node, usdVariantSet, authorVarSelFn):
+    variantSetName = usdVariantSet.GetName()
+    variantResolved = usdVariantSet.GetVariantSelection()
+    # we prepend '' to the choices so that an empty override doesn't end up
+    # picking the first one which can be misleading.
+    variantSetChoices = [''] + usdVariantSet.GetVariantNames()
+    variantOverride, variantSettable = _GetVariantSetInfoFromNode(node, variantSetName)
+
+    omg = cmds.optionMenuGrp(
+        label=variantSetName,
+        enable=variantSettable,
+        extraLabel=variantResolved)
+    for choice in variantSetChoices:
+        cmds.menuItem(label=choice)
+
+    try:
+        cmds.optionMenuGrp(omg, e=True, value=variantOverride)
+    except RuntimeError:
+        cmds.warning('Invalid choice %r for %r' % (variantOverride, variantSetName))
+
+    cmds.optionMenuGrp(omg, e=True, 
+        changeCommand=functools.partial(
+            variantSets_changeCommmand, 
+            omg=omg, node=node, variantSetName=variantSetName,
+            authorVarSelFn=authorVarSelFn))
+
+
+def AuthorVariantSelectionFromAE(node, variantSetName, variantSelection):
+    variantAttr = 'usdVariantSet_%s' % variantSetName
+    if not cmds.attributeQuery(variantAttr, node=node, exists=True):
+        cmds.addAttr(node, ln=variantAttr, dt='string', internalSet=True)
+    cmds.setAttr('%s.%s' % (node,variantAttr), variantSelection, type='string')
+
+
+_setupVariantSetsFn = DefaultSetupVariantSetsInAE
+def RegisterSetupVariantSetsFunction(setupVariantSetsFn):
+    '''
+    Sets the function that is used to populate the attribute editor for Usd
+    Prim's variantSets.
+
+    To reset this, you can pass in `DefaultSetupVariantSetsInAE`.
+
+    For custom implementations, see
+    - SetupRegisteredVariantSetsInAE
+    - SetupVariantSetInAE
+    - AuthorVariantSelectionFromAE
+    '''
+    global _setupVariantSetsFn
+    _setupVariantSetsFn = setupVariantSetsFn
+
 
 # ====================================================================
 
@@ -184,14 +250,12 @@ def filePath_Replace_replace(nodeAttr):
     filePath_Replace(nodeAttr, new=False)
 
 def filePath_Replace(nodeAttr, new):
-    frameLayoutName = 'AEpxrUsdReferenceAssemblyTemplate_filePath_Layout'
-    if new == True:
+    if new:
         with SetUITemplatePushTemplate():
-            cmds.rowLayout(numberOfColumns=3)
-            cmds.text(label='File Path')
-            cmds.textField('usdFilePathField')
-            cmds.symbolButton('usdFileBrowserButton', image='navButtonBrowse.xpm')
-            cmds.setParent('..')
+            with RowLayout(numberOfColumns=3):
+                cmds.text(label='File Path')
+                cmds.textField('usdFilePathField')
+                cmds.symbolButton('usdFileBrowserButton', image='navButtonBrowse.xpm')
 
     def tmpShowUsdFilePathBrowser(*args):
         filePaths = cmds.fileDialog2(
@@ -208,7 +272,7 @@ def filePath_Replace(nodeAttr, new):
 
 def editorTemplate(nodeName):
     with EditorTemplateBeginScrollLayout():
-        mel.eval('AEtransformMain "%s"'%nodeName)
+        mel.eval('AEtransformMain "%s"' % nodeName)
         
         with EditorTemplateBeginLayout('Usd', collapse=False):
             # Maya 2022 changed the syntax of the callCustom attribute
@@ -241,9 +305,8 @@ def editorTemplate(nodeName):
                 cmds.editorTemplate(
                     '',
                     callCustom=[variantSets_Replace_new, variantSets_Replace_replace])
-            #cmds.editorTemplate('variantSets', addControl=True)
 
-        mel.eval('AEtransformNoScroll "%s"'%nodeName)
+        mel.eval('AEtransformNoScroll "%s"' % nodeName)
         cmds.editorTemplate(addExtraControls=True)
         
         # suppresses attributes
