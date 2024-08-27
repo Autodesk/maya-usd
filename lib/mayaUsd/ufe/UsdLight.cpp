@@ -20,8 +20,12 @@
 
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/domeLight.h>
 #include <pxr/usd/usdLux/lightAPI.h>
+#include <pxr/usd/usdLux/portalLight.h>
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
@@ -70,7 +74,7 @@ private:
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Light, UsdLight);
 
 UsdLight::UsdLight(const UsdUfe::UsdSceneItem::Ptr& item)
-    : Light()
+    : Light_v5_5()
     , _item(item)
 {
 }
@@ -94,12 +98,18 @@ Ufe::Light::Type UsdLight::type() const
 
     if (usdPrim.IsA<UsdLuxDistantLight>()) {
         return Ufe::Light::Directional;
-    } else if (usdPrim.IsA<UsdLuxRectLight>()) {
+    } else if (usdPrim.IsA<UsdLuxRectLight>() || usdPrim.IsA<UsdLuxPortalLight>()) {
         return Ufe::Light::Area;
     } else if (usdPrim.IsA<UsdLuxSphereLight>()) {
         const UsdLuxShapingAPI shapingAPI(usdPrim);
         return shapingAPI.GetShapingConeAngleAttr().IsValid() ? Ufe::Light::Spot
-                                                              : Ufe::Light::Point;
+                                                              : Ufe::Light::Sphere;
+    } else if (usdPrim.IsA<UsdLuxCylinderLight>()) {
+        return Ufe::Light::Cylinder;
+    } else if (usdPrim.IsA<UsdLuxDiskLight>()) {
+        return Ufe::Light::Disk;
+    } else if (usdPrim.IsA<UsdLuxDomeLight>()) {
+        return Ufe::Light::Dome;
     }
 
     // In case of unknown light type, fallback to point light
@@ -446,6 +456,82 @@ Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl
     return pCmd;
 }
 
+Ufe::Light_v5_5::VolumeProps getLightVolumeProps(const UsdPrim& prim)
+{
+
+    Ufe::Light_v5_5::VolumeProps cp;
+
+    return cp;
+}
+
+void setLightVolumeProps(const UsdPrim& prim, const Ufe::Light_v5_5::VolumeProps& attrVal)
+{
+    const UsdLuxSphereLight    lightSchema(prim);
+    const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
+
+    lightAttribute.Set(attrVal.radius);
+}
+
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+void UsdCylinderInterface::volumeProps(float radius, float length)
+{
+    setLightVolumeProps(_item->prim(), Ufe::Light_v5_5::VolumeProps { radius, length });
+}
+void UsdDiskInterface::volumeProps(float radius)
+{
+    setLightVolumeProps(_item->prim(), Ufe::Light_v5_5::VolumeProps { radius });
+}
+
+void UsdDomeInterface::volumeProps(float radius)
+{
+    setLightVolumeProps(_item->prim(), Ufe::Light_v5_5::VolumeProps { radius });
+}
+
+// Cylinder Light
+Ufe::Light_v5_5::VolumeProps UsdCylinderInterface::volumeProps() const
+{
+    return getLightVolumeProps(_item->prim());
+}
+
+Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr
+UsdCylinderInterface::volumePropsCmd(float radius, float length)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light_v5_5::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+    pCmd->set(Ufe::Light_v5_5::VolumeProps { radius, length });
+    return pCmd;
+}
+
+// Disk Light
+Ufe::Light_v5_5::VolumeProps UsdDiskInterface::volumeProps() const
+{
+    return getLightVolumeProps(_item->prim());
+}
+
+Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr UsdDiskInterface::volumePropsCmd(float radius)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light_v5_5::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+
+    pCmd->set(Ufe::Light_v5_5::VolumeProps { radius, 0 });
+    return pCmd;
+}
+
+// Dome light
+Ufe::Light_v5_5::VolumeProps UsdDomeInterface::volumeProps() const
+{
+    return getLightVolumeProps(_item->prim());
+}
+
+Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr UsdDomeInterface::volumePropsCmd(float radius)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light_v5_5::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+
+    pCmd->set(Ufe::Light_v5_5::VolumeProps { radius, 0 });
+    return pCmd;
+}
+
 void UsdAreaInterface::normalize(bool ln) { setLightNormalize(_item->prim(), ln); }
 
 bool UsdAreaInterface::normalize() const { return getLightNormalize(_item->prim()); }
@@ -469,6 +555,22 @@ std::shared_ptr<Ufe::Light::AreaInterface> UsdLight::areaInterfaceImpl()
 {
     return std::make_shared<UsdAreaInterface>(_item);
 }
+
+std::shared_ptr<Ufe::Light_v5_5::CylinderInterface> UsdLight::cylinderInterfaceImpl()
+{
+    return std::make_shared<UsdCylinderInterface>(_item);
+}
+
+std::shared_ptr<Ufe::Light_v5_5::DiskInterface> UsdLight::diskInterfaceImpl()
+{
+    return std::make_shared<UsdDiskInterface>(_item);
+}
+
+std::shared_ptr<Ufe::Light_v5_5::DomeInterface> UsdLight::domeInterfaceImpl()
+{
+    return std::make_shared<UsdDomeInterface>(_item);
+}
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

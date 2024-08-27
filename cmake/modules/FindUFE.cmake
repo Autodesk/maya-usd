@@ -135,6 +135,13 @@ set(UFE_LIGHTS_SUPPORT FALSE CACHE INTERNAL "ufeLights")
 if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/lightHandler.h")
     set(UFE_LIGHTS_SUPPORT TRUE CACHE INTERNAL "ufeLights")
     message(STATUS "Maya has UFE lights API")
+
+    set(UFE_VOLUME_LIGHTS_SUPPORT FALSE CACHE INTERNAL "ufeVolumeLights")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/light.h UFE_HAS_API REGEX "VolumeInterface")
+    if(UFE_HAS_API)
+        set(UFE_VOLUME_LIGHTS_SUPPORT TRUE CACHE INTERNAL "ufeVolumeLights")
+        message(STATUS "Maya has UFE VolumeLights API")
+    endif()
 endif()
 
 set(UFE_MATERIALS_SUPPORT FALSE CACHE INTERNAL "ufeMaterials")
