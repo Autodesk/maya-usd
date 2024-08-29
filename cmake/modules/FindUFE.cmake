@@ -72,6 +72,8 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
         set(UFE_PREVIEW_VERSION_NUM 5017)
     elseif(UFE_VERSION VERSION_EQUAL "5.1.0")
         set(UFE_PREVIEW_VERSION_NUM 5100)
+    elseif(UFE_VERSION VERSION_EQUAL "5.5.0")
+        set(UFE_PREVIEW_VERSION_NUM 5500)
     endif()
 
     file(STRINGS
@@ -137,7 +139,7 @@ if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/lightHandler.h")
     message(STATUS "Maya has UFE lights API")
 
     set(UFE_VOLUME_LIGHTS_SUPPORT FALSE CACHE INTERNAL "ufeVolumeLights")
-    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/light.h UFE_HAS_API REGEX "VolumeInterface")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/light.h UFE_HAS_API REGEX "Light_v5_5")
     if(UFE_HAS_API)
         set(UFE_VOLUME_LIGHTS_SUPPORT TRUE CACHE INTERNAL "ufeVolumeLights")
         message(STATUS "Maya has UFE VolumeLights API")

@@ -29,6 +29,7 @@ from maya import standalone
 from maya.api import OpenMaya as om
 
 import ufe
+import os
 
 from functools import partial
 import unittest
@@ -96,7 +97,12 @@ class LightTestCase(unittest.TestCase):
     def _TestPointLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
-        self.assertEqual(ufeLight.type(), ufe.Light.Point)
+        if (os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'TRUE'):
+            # In Light_v5_4, point light will be treated as a special kind of sphere light
+            # the gizmo will be handled in Maya
+            self.assertEqual(ufeLight.type(), ufe.Light.Sphere)
+        else:
+            self.assertEqual(ufeLight.type(), ufe.Light.Point)
         self._TestIntensity(ufeLight, usdLight)
         self._TestDiffuse(ufeLight, usdLight)
         self._TestSpecular(ufeLight, usdLight)
@@ -136,8 +142,30 @@ class LightTestCase(unittest.TestCase):
         self._TestAreaProps(ufeLight, usdLight)
         self.assertEqual(None, ufeLight.coneInterface())
         self.assertEqual(None, ufeLight.sphereInterface())
-        self.assertEqual(None, ufeLight.directionalInterface())    
+        self.assertEqual(None, ufeLight.directionalInterface())
 
+    # Test Light_v5_5
+    def _TestCylinderLight(self, ufeLight, usdLight):
+        # Trust that the USD API works correctly, validate that UFE gives us
+        # the same answers
+        self.assertEqual(ufeLight.type(), ufe.Light.Cylinder)
+        self.assertEqual(None, ufeLight.diskInterface())
+        self.assertEqual(None, ufeLight.domeInterface())
+   
+    def _TestDiskLight(self, ufeLight, usdLight):
+        # Trust that the USD API works correctly, validate that UFE gives us
+        # the same answers
+        self.assertEqual(ufeLight.type(), ufe.Light.Disk)
+        self.assertEqual(None, ufeLight.cylinderInterface())
+        self.assertEqual(None, ufeLight.domeInterface())
+
+    def _TestDomeLight(self, ufeLight, usdLight):
+        # Trust that the USD API works correctly, validate that UFE gives us
+        # the same answers
+        self.assertEqual(ufeLight.type(), ufe.Light.Dome)
+        self.assertEqual(None, ufeLight.cylinderInterface())
+        self.assertEqual(None, ufeLight.diskInterface())
+    
     def _TestIntensity(self, ufeLight, usdLight):
         usdAttr = usdLight.GetAttribute('inputs:intensity')
         self.assertAlmostEqual(usdAttr.Get(), ufeLight.intensity())
@@ -250,6 +278,38 @@ class LightTestCase(unittest.TestCase):
         ufeAreaLight = ufe.Light.light(arealightItem)
         usdAreaLight = usdUtils.getPrimFromSceneItem(arealightItem)
         self._TestAreaLight(ufeAreaLight, usdAreaLight)
+
+    @unittest.skipUnless(os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'TRUE', 'UFE has volume light support.')
+    def testUsdLight_v5_5(self):
+        self._StartTest('SimpleLight')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
+        # test cylinder light
+        cylinderlightUsdPathSegment = usdUtils.createUfePathSegment('/lights/cylinderLight')
+        cylinderlightPath = ufe.Path([mayaPathSegment, cylinderlightUsdPathSegment])
+        cylinderlightItem = ufe.Hierarchy.createItem(cylinderlightPath)
+
+        light_v5_5 = ufe.Light_v5_5()
+        ufeCylinderLight = light_v5_5.light(cylinderlightItem)
+        usdCylinderLight = usdUtils.getPrimFromSceneItem(cylinderlightItem)
+        self._TestCylinderLight(ufeCylinderLight, usdCylinderLight)
+
+        # test disk light
+        disklightUsdPathSegment = usdUtils.createUfePathSegment('/lights/diskLight')
+        disklightPath = ufe.Path([mayaPathSegment, disklightUsdPathSegment])
+        disklightItem = ufe.Hierarchy.createItem(disklightPath)
+
+        ufeDiskLight = ufe.Light_v5_5.light(disklightItem)
+        usdDiskLight = usdUtils.getPrimFromSceneItem(disklightItem)
+        self._TestDiskLight(ufeDiskLight, usdDiskLight)
+
+        # test dome light
+        domelightUsdPathSegment = usdUtils.createUfePathSegment('/lights/domeLight')
+        domelightPath = ufe.Path([mayaPathSegment, domelightUsdPathSegment])
+        domelightItem = ufe.Hierarchy.createItem(domelightPath)
+
+        ufeDomeLight = ufe.Light_v5_5.light(domelightItem)
+        usdDomeLight = usdUtils.getPrimFromSceneItem(domelightItem)
+        self._TestDomeLight(ufeDomeLight, usdDomeLight)
 
 
 if __name__ == '__main__':

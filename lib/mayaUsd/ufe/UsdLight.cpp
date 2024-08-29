@@ -98,12 +98,24 @@ Ufe::Light::Type UsdLight::type() const
 
     if (usdPrim.IsA<UsdLuxDistantLight>()) {
         return Ufe::Light::Directional;
-    } else if (usdPrim.IsA<UsdLuxRectLight>() || usdPrim.IsA<UsdLuxPortalLight>()) {
+    } else if (
+        usdPrim.IsA<UsdLuxRectLight>()
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+        || usdPrim.IsA<UsdLuxPortalLight>()) {
+#else
+    ) {
+#endif
         return Ufe::Light::Area;
     } else if (usdPrim.IsA<UsdLuxSphereLight>()) {
         const UsdLuxShapingAPI shapingAPI(usdPrim);
         return shapingAPI.GetShapingConeAngleAttr().IsValid() ? Ufe::Light::Spot
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
                                                               : Ufe::Light::Sphere;
+#else
+                                                              : Ufe::Light::Point;
+#endif
+
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
     } else if (usdPrim.IsA<UsdLuxCylinderLight>()) {
         return Ufe::Light::Cylinder;
     } else if (usdPrim.IsA<UsdLuxDiskLight>()) {
@@ -111,7 +123,7 @@ Ufe::Light::Type UsdLight::type() const
     } else if (usdPrim.IsA<UsdLuxDomeLight>()) {
         return Ufe::Light::Dome;
     }
-
+#endif
     // In case of unknown light type, fallback to point light
     return Ufe::Light::Point;
 }
@@ -375,6 +387,9 @@ UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
 
 void UsdSphereInterface::sphereProps(float radius, bool asPoint)
 {
+    if (asPoint) {
+        radius = 0.0f;
+    }
     setLightSphereProps(_item->prim(), Ufe::Light::SphereProps { radius, asPoint });
 }
 
@@ -456,12 +471,35 @@ Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl
     return pCmd;
 }
 
-Ufe::Light_v5_5::VolumeProps getLightVolumeProps(const UsdPrim& prim)
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+
+Ufe::Light_v5_5::VolumeProps getLightCylinderVolumeProps(const UsdPrim& prim)
+{
+    const UsdLuxCylinderLight    lightSchema(prim);
+    const PXR_NS::UsdAttribute radiusAttribute = lightSchema.GetRadiusAttr();
+    const PXR_NS::UsdAttribute lengthAttribute = lightSchema.GetLengthAttr();
+
+    Ufe::Light_v5_5::VolumeProps vp;
+    radiusAttribute.Get(&vp.radius);
+    lengthAttribute.Get(&vp.length);
+    return vp;
+}
+
+Ufe::Light_v5_5::VolumeProps getLightDiskVolumeProps(const UsdPrim& prim)
+{
+    const UsdLuxDiskLight  lightSchema(prim);
+    const PXR_NS::UsdAttribute radiusAttribute = lightSchema.GetRadiusAttr();
+
+    Ufe::Light_v5_5::VolumeProps vp;
+    radiusAttribute.Get(&vp.radius);
+    return vp;
+}
+
+Ufe::Light_v5_5::VolumeProps getLightDomeVolumeProps(const UsdPrim& prim)
 {
 
-    Ufe::Light_v5_5::VolumeProps cp;
-
-    return cp;
+    Ufe::Light_v5_5::VolumeProps vp;
+    return vp;
 }
 
 void setLightVolumeProps(const UsdPrim& prim, const Ufe::Light_v5_5::VolumeProps& attrVal)
@@ -472,7 +510,6 @@ void setLightVolumeProps(const UsdPrim& prim, const Ufe::Light_v5_5::VolumeProps
     lightAttribute.Set(attrVal.radius);
 }
 
-#ifdef UFE_VOLUME_LIGHTS_SUPPORT
 void UsdCylinderInterface::volumeProps(float radius, float length)
 {
     setLightVolumeProps(_item->prim(), Ufe::Light_v5_5::VolumeProps { radius, length });
@@ -490,7 +527,7 @@ void UsdDomeInterface::volumeProps(float radius)
 // Cylinder Light
 Ufe::Light_v5_5::VolumeProps UsdCylinderInterface::volumeProps() const
 {
-    return getLightVolumeProps(_item->prim());
+    return getLightCylinderVolumeProps(_item->prim());
 }
 
 Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr
@@ -505,7 +542,7 @@ UsdCylinderInterface::volumePropsCmd(float radius, float length)
 // Disk Light
 Ufe::Light_v5_5::VolumeProps UsdDiskInterface::volumeProps() const
 {
-    return getLightVolumeProps(_item->prim());
+    return getLightDiskVolumeProps(_item->prim());
 }
 
 Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr UsdDiskInterface::volumePropsCmd(float radius)
@@ -520,7 +557,7 @@ Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr UsdDiskInterface::volumePropsCm
 // Dome light
 Ufe::Light_v5_5::VolumeProps UsdDomeInterface::volumeProps() const
 {
-    return getLightVolumeProps(_item->prim());
+    return getLightDomeVolumeProps(_item->prim());
 }
 
 Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr UsdDomeInterface::volumePropsCmd(float radius)
