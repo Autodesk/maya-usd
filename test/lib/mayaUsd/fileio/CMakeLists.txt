@@ -4,6 +4,7 @@ set(TEST_SCRIPT_FILES
     testPrimReader.py
     testPrimWriter.py
     testExportChaser.py
+    testExportChaserJobContext.py
     testImportChaser.py
     testImportWithNamespace.py
     testJobContextRegistry.py
