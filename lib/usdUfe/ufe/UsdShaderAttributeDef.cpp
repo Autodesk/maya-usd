@@ -171,14 +171,23 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 #ifdef UFE_HAS_NATIVE_TYPE_METADATA
     if (key == Ufe::AttributeDef::kNativeType) {
         // We return the Sdf type as that is more meaningful than the Sdr type.
+#if PXR_VERSION <= 2408
         const auto sdfTypeTuple = _shaderAttributeDef->GetTypeAsSdfType();
         if (sdfTypeTuple.second.IsEmpty()) {
             return Ufe::Value(sdfTypeTuple.first.GetAsToken().GetString());
         } else {
             return Ufe::Value(sdfTypeTuple.second.GetString());
         }
+#else
+        const auto sdfTypeIndicator = _shaderAttributeDef->GetTypeAsSdfType();
+        if (sdfTypeIndicator.HasSdfType()) {
+            return Ufe::Value(sdfTypeIndicator.GetSdfType().GetAsToken().GetString());
+        } else {
+            return Ufe::Value(sdfTypeIndicator.GetNdrType().GetString());
+        }
+#endif // PXR_VERSION
     }
-#endif
+#endif // UFE_HAS_NATIVE_TYPE_METADATA
 
     const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
