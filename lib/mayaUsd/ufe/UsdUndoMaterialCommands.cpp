@@ -82,7 +82,12 @@ bool connectShaderToMaterial(
         return false;
     }
     UsdShadeOutput shaderOutput = shaderPrim.CreateOutput(
-        shaderOutputDef->GetName(), shaderOutputDef->GetTypeAsSdfType().first);
+        shaderOutputDef->GetName(),
+#if PXR_VERSION <= 2408
+        shaderOutputDef->GetTypeAsSdfType().first);
+#else
+        shaderOutputDef->GetTypeAsSdfType().GetSdfType());
+#endif
     if (!shaderOutput) {
         return false;
     }
