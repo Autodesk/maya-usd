@@ -932,7 +932,8 @@ void LayerDatabase::convertAnonymousLayers(
         const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == root);
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
-        if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
+        const bool  isRelative = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+        if (isRelative) {
             newFileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(newFileName);
         }
         if (!MayaUsd::utils::saveLayerWithFormat(root, newFileName)) {
@@ -944,7 +945,11 @@ void LayerDatabase::convertAnonymousLayers(
 
         SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(newFileName);
         MayaUsd::utils::setNewProxyPath(
-            pShape->name(), UsdMayaUtil::convert(newFileName), newLayer, wasTargetLayer);
+            pShape->name(),
+            UsdMayaUtil::convert(newFileName),
+            isRelative ? MayaUsd::utils::kProxyPathRelative : MayaUsd::utils::kProxyPathAbsolute,
+            newLayer,
+            wasTargetLayer);
     }
 
     SdfLayerHandle session = stage->GetSessionLayer();
