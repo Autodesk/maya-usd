@@ -98,8 +98,8 @@ class LightTestCase(unittest.TestCase):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
         if (os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'TRUE'):
-            # In Light_v5_4, point light will be treated as a special kind of sphere light
-            # the gizmo will be handled in Maya
+            # With Ufe volume light support point light will be treated as a special kind of
+            # sphere light where the gizmo will be handled in Maya.
             self.assertEqual(ufeLight.type(), ufe.Light.Sphere)
         else:
             self.assertEqual(ufeLight.type(), ufe.Light.Point)
@@ -144,7 +144,7 @@ class LightTestCase(unittest.TestCase):
         self.assertEqual(None, ufeLight.sphereInterface())
         self.assertEqual(None, ufeLight.directionalInterface())
 
-    # Test Light_v5_5
+    # Test VolumeLight support
     def _TestCylinderLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
@@ -280,7 +280,7 @@ class LightTestCase(unittest.TestCase):
         self._TestAreaLight(ufeAreaLight, usdAreaLight)
 
     @unittest.skipUnless(os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'TRUE', 'UFE has volume light support.')
-    def testUsdLight_v5_5(self):
+    def testUsdVolumeLights(self):
         self._StartTest('SimpleLight')
         mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
         # test cylinder light
@@ -288,8 +288,10 @@ class LightTestCase(unittest.TestCase):
         cylinderlightPath = ufe.Path([mayaPathSegment, cylinderlightUsdPathSegment])
         cylinderlightItem = ufe.Hierarchy.createItem(cylinderlightPath)
 
-        light_v5_5 = ufe.Light_v5_5()
-        ufeCylinderLight = light_v5_5.light(cylinderlightItem)
+        if (hasattr(ufe, "Light_v5_5")):
+            ufeCylinderLight = ufe.Light_v5_5.light(cylinderlightItem)
+        else:
+            ufeCylinderLight = ufe.light.light(cylinderlightItem)
         usdCylinderLight = usdUtils.getPrimFromSceneItem(cylinderlightItem)
         self._TestCylinderLight(ufeCylinderLight, usdCylinderLight)
 
@@ -298,7 +300,10 @@ class LightTestCase(unittest.TestCase):
         disklightPath = ufe.Path([mayaPathSegment, disklightUsdPathSegment])
         disklightItem = ufe.Hierarchy.createItem(disklightPath)
 
-        ufeDiskLight = ufe.Light_v5_5.light(disklightItem)
+        if (hasattr(ufe, "Light_v5_5")):
+            ufeDiskLight = ufe.Light_v5_5.light(disklightItem)
+        else:
+            ufeDiskLight = ufe.Light.light(disklightItem)
         usdDiskLight = usdUtils.getPrimFromSceneItem(disklightItem)
         self._TestDiskLight(ufeDiskLight, usdDiskLight)
 
@@ -307,7 +312,10 @@ class LightTestCase(unittest.TestCase):
         domelightPath = ufe.Path([mayaPathSegment, domelightUsdPathSegment])
         domelightItem = ufe.Hierarchy.createItem(domelightPath)
 
-        ufeDomeLight = ufe.Light_v5_5.light(domelightItem)
+        if (hasattr(ufe, "Light_v5_5")):
+            ufeDomeLight = ufe.Light_v5_5.light(domelightItem)
+        else:
+            ufeDomeLight = ufe.Light.light(domelightItem)
         usdDomeLight = usdUtils.getPrimFromSceneItem(domelightItem)
         self._TestDomeLight(ufeDomeLight, usdDomeLight)
 

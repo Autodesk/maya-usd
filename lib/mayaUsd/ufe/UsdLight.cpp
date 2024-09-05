@@ -74,7 +74,7 @@ private:
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Light, UsdLight);
 
 UsdLight::UsdLight(const UsdUfe::UsdSceneItem::Ptr& item)
-    : Light_v5_5()
+    : UFE_LIGHT_BASE()
     , _item(item)
 {
 }
@@ -122,8 +122,8 @@ Ufe::Light::Type UsdLight::type() const
         return Ufe::Light::Disk;
     } else if (usdPrim.IsA<UsdLuxDomeLight>()) {
         return Ufe::Light::Dome;
-    }
 #endif
+    }
     // In case of unknown light type, fallback to point light
     return Ufe::Light::Point;
 }
@@ -473,36 +473,35 @@ Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl
 
 #ifdef UFE_VOLUME_LIGHTS_SUPPORT
 
-Ufe::Light_v5_5::VolumeProps getLightCylinderVolumeProps(const UsdPrim& prim)
+UFE_LIGHT_BASE::VolumeProps getLightCylinderVolumeProps(const UsdPrim& prim)
 {
-    const UsdLuxCylinderLight    lightSchema(prim);
+    const UsdLuxCylinderLight  lightSchema(prim);
     const PXR_NS::UsdAttribute radiusAttribute = lightSchema.GetRadiusAttr();
     const PXR_NS::UsdAttribute lengthAttribute = lightSchema.GetLengthAttr();
 
-    Ufe::Light_v5_5::VolumeProps vp;
+    UFE_LIGHT_BASE::VolumeProps vp;
     radiusAttribute.Get(&vp.radius);
     lengthAttribute.Get(&vp.length);
     return vp;
 }
 
-Ufe::Light_v5_5::VolumeProps getLightDiskVolumeProps(const UsdPrim& prim)
+UFE_LIGHT_BASE::VolumeProps getLightDiskVolumeProps(const UsdPrim& prim)
 {
-    const UsdLuxDiskLight  lightSchema(prim);
+    const UsdLuxDiskLight      lightSchema(prim);
     const PXR_NS::UsdAttribute radiusAttribute = lightSchema.GetRadiusAttr();
 
-    Ufe::Light_v5_5::VolumeProps vp;
+    UFE_LIGHT_BASE::VolumeProps vp;
     radiusAttribute.Get(&vp.radius);
     return vp;
 }
 
-Ufe::Light_v5_5::VolumeProps getLightDomeVolumeProps(const UsdPrim& prim)
+UFE_LIGHT_BASE::VolumeProps getLightDomeVolumeProps(const UsdPrim& prim)
 {
-
-    Ufe::Light_v5_5::VolumeProps vp;
+    UFE_LIGHT_BASE::VolumeProps vp;
     return vp;
 }
 
-void setLightVolumeProps(const UsdPrim& prim, const Ufe::Light_v5_5::VolumeProps& attrVal)
+void setLightVolumeProps(const UsdPrim& prim, const UFE_LIGHT_BASE::VolumeProps& attrVal)
 {
     const UsdLuxSphereLight    lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
@@ -512,62 +511,63 @@ void setLightVolumeProps(const UsdPrim& prim, const Ufe::Light_v5_5::VolumeProps
 
 void UsdCylinderInterface::volumeProps(float radius, float length)
 {
-    setLightVolumeProps(_item->prim(), Ufe::Light_v5_5::VolumeProps { radius, length });
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius, length });
 }
 void UsdDiskInterface::volumeProps(float radius)
 {
-    setLightVolumeProps(_item->prim(), Ufe::Light_v5_5::VolumeProps { radius });
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius });
 }
 
 void UsdDomeInterface::volumeProps(float radius)
 {
-    setLightVolumeProps(_item->prim(), Ufe::Light_v5_5::VolumeProps { radius });
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius });
 }
 
 // Cylinder Light
-Ufe::Light_v5_5::VolumeProps UsdCylinderInterface::volumeProps() const
+UFE_LIGHT_BASE::VolumeProps UsdCylinderInterface::volumeProps() const
 {
     return getLightCylinderVolumeProps(_item->prim());
 }
 
-Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr
 UsdCylinderInterface::volumePropsCmd(float radius, float length)
 {
-    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light_v5_5::VolumeProps&>>(
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
         _item->path(), setLightVolumeProps);
-    pCmd->set(Ufe::Light_v5_5::VolumeProps { radius, length });
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, length });
     return pCmd;
 }
 
 // Disk Light
-Ufe::Light_v5_5::VolumeProps UsdDiskInterface::volumeProps() const
+UFE_LIGHT_BASE::VolumeProps UsdDiskInterface::volumeProps() const
 {
     return getLightDiskVolumeProps(_item->prim());
 }
 
-Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr UsdDiskInterface::volumePropsCmd(float radius)
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr UsdDiskInterface::volumePropsCmd(float radius)
 {
-    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light_v5_5::VolumeProps&>>(
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
         _item->path(), setLightVolumeProps);
 
-    pCmd->set(Ufe::Light_v5_5::VolumeProps { radius, 0 });
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, 0 });
     return pCmd;
 }
 
 // Dome light
-Ufe::Light_v5_5::VolumeProps UsdDomeInterface::volumeProps() const
+UFE_LIGHT_BASE::VolumeProps UsdDomeInterface::volumeProps() const
 {
     return getLightDomeVolumeProps(_item->prim());
 }
 
-Ufe::Light_v5_5::VolumePropsUndoableCommand::Ptr UsdDomeInterface::volumePropsCmd(float radius)
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr UsdDomeInterface::volumePropsCmd(float radius)
 {
-    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light_v5_5::VolumeProps&>>(
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
         _item->path(), setLightVolumeProps);
 
-    pCmd->set(Ufe::Light_v5_5::VolumeProps { radius, 0 });
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, 0 });
     return pCmd;
 }
+#endif
 
 void UsdAreaInterface::normalize(bool ln) { setLightNormalize(_item->prim(), ln); }
 
@@ -593,17 +593,18 @@ std::shared_ptr<Ufe::Light::AreaInterface> UsdLight::areaInterfaceImpl()
     return std::make_shared<UsdAreaInterface>(_item);
 }
 
-std::shared_ptr<Ufe::Light_v5_5::CylinderInterface> UsdLight::cylinderInterfaceImpl()
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+std::shared_ptr<UFE_LIGHT_BASE::CylinderInterface> UsdLight::cylinderInterfaceImpl()
 {
     return std::make_shared<UsdCylinderInterface>(_item);
 }
 
-std::shared_ptr<Ufe::Light_v5_5::DiskInterface> UsdLight::diskInterfaceImpl()
+std::shared_ptr<UFE_LIGHT_BASE::DiskInterface> UsdLight::diskInterfaceImpl()
 {
     return std::make_shared<UsdDiskInterface>(_item);
 }
 
-std::shared_ptr<Ufe::Light_v5_5::DomeInterface> UsdLight::domeInterfaceImpl()
+std::shared_ptr<UFE_LIGHT_BASE::DomeInterface> UsdLight::domeInterfaceImpl()
 {
     return std::make_shared<UsdDomeInterface>(_item);
 }
