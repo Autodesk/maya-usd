@@ -189,6 +189,7 @@ class NonLocalEditTargetLayer(unittest.TestCase):
             # Case 3: mute parent layer, no locking
             subLayerPath = os.path.join(testDir, 'data', 'outer_sub_layer.usda')
             subLayer = Sdf.Layer.Find(subLayerPath)
+            subLayerPath = subLayer.identifier
             stage.MuteLayer(subLayer.identifier)
 
             # Save and reopen the maya file
