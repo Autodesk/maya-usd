@@ -86,6 +86,7 @@ std::string _getMaterialXUIName(const std::string& nodename)
         { "noise2d", "2D Perlin Noise" },
         { "noise3d", "3D Perlin Noise" },
         { "normalmap", "Normal Map" },
+        { "OpenPBR", "OpenPBR" },
         { "open_pbr_anisotropy", "OpenPBR Anisotropy" },
         { "open_pbr_surface", "OpenPBR Surface" },
         { "open_pbr_surface_to_standard_surface", "OpenPBR Surface to Standard Surface" },
