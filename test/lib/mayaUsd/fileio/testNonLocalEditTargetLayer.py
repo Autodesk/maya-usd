@@ -19,7 +19,7 @@
 import os
 import unittest
 import shutil
-import pathlib
+import os.path
 
 from pxr import Usd, Sdf
 
@@ -32,6 +32,9 @@ import fixturesUtils
 import testUtils
 import mayaUtils
 
+def normalizePath(path):
+    '''Make sure a path is comparable to another.'''
+    return os.path.normcase(os.path.normpath(os.path.realpath(path)))
 
 class NonLocalEditTargetLayer(unittest.TestCase):
     '''
@@ -77,7 +80,7 @@ class NonLocalEditTargetLayer(unittest.TestCase):
         # For this particular case, the layer should be the deepest "nested_reference_geo.usda" layer
         targetLayer = primNode.layerStack.identifier.rootLayer
         self.assertTrue(targetLayer)
-        self.assertEqual(pathlib.Path(targetLayer.realPath), pathlib.Path(os.path.join(testDir, 'data', 'nested_reference_geo.usda')))
+        self.assertEqual(normalizePath(targetLayer.realPath), normalizePath(os.path.join(testDir, 'data', 'nested_reference_geo.usda')))
         # Verify target layer that it is **not** in stage layer stack
         self.assertNotIn(targetLayer, stage.GetLayerStack())
         # Verify current edit target layer is not the target layer
@@ -114,7 +117,7 @@ class NonLocalEditTargetLayer(unittest.TestCase):
         self.assertTrue(stage)
         # Verify edit target layer id
         # The layer real path should equal to the file path
-        self.assertEqual(pathlib.Path(stage.GetEditTarget().GetLayer().realPath), pathlib.Path(targetLayerPath))
+        self.assertEqual(normalizePath(stage.GetEditTarget().GetLayer().realPath), normalizePath(targetLayerPath))
 
         return stage
 
