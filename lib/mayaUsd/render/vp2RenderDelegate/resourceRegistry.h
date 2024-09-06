@@ -37,10 +37,12 @@ public:
     //! \brief  Execute commit tasks (called by render delegate)
     void Commit()
     {
-        HdVP2TaskCommit* commitTask;
+        HdVP2TaskCommit* commitTask { nullptr };
         while (_commitTasks.try_pop(commitTask)) {
-            (*commitTask)();
-            commitTask->destroy();
+            if (nullptr != commitTask) {
+                (*commitTask)();
+                commitTask->destroy();
+            }
         }
     }
 
