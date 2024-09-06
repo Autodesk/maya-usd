@@ -446,6 +446,41 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertTrue(conePrim.IsValid())
 
 
+    def testDuplicateGroupedSelection(self):
+        '''Duplicate a Maya sphere and cone both in a group and in selection by calling the MEL script used in the UI.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)[0]
+        cone = cmds.polyCone(r=1)[0]
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # Select both and group them
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        cmds.group()
+
+        # Select both again
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        # Duplicate Maya data as USD data, will use the selection.
+        mel.eval('''source mayaUsd_pluginUICreation.mel''')
+        mel.eval('''source mayaUsdMenu.mel''')
+        mel.eval('''mayaUsdMenu_duplicateToUSD("%s", "%s")''' % (psPathStr, sphere))
+
+        # Verify that the copied sphere has a look (material) prim.
+        spherePrim = stage.GetPrimAtPath("/%s" % sphere)
+        self.assertTrue(spherePrim.IsValid())
+        conePrim = stage.GetPrimAtPath("/%s" % cone)
+        self.assertTrue(conePrim.IsValid())
+
+
     def testDuplicateUsingOptions(self):
         '''Duplicate a Maya sphere using options to merge with or without materials.'''
 
