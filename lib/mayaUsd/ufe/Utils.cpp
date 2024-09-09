@@ -437,7 +437,7 @@ void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const RenamedPat
     // Replicate display layer membership
     for (const auto& entry : _primToLayerMap) {
         if (entry.second.hasFn(MFn::kDisplayLayer)) {
-            auto usdPrimPath = entry.first;
+            SdfPath usdPrimPath = entry.first;
             for (const auto& oldAndNew : renamed) {
                 const PXR_NS::SdfPath& oldPrefix = oldAndNew.first;
                 if (!usdPrimPath.HasPrefix(oldPrefix))
@@ -446,6 +446,11 @@ void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const RenamedPat
                 const PXR_NS::SdfPath& newPrefix = oldAndNew.second;
                 usdPrimPath = usdPrimPath.ReplacePrefix(oldPrefix, newPrefix);
             }
+
+            // Avoid trying to manipulate the virtual absolute root. It will trigger
+            // exceptions which can affect Python scripts and testing.
+            if (usdPrimPath.IsAbsoluteRootPath())
+                continue;
 
             auto                primPath = UsdUfe::usdPathToUfePathSegment(usdPrimPath);
             Ufe::Path::Segments segments { stagePath.getSegments()[0], primPath };

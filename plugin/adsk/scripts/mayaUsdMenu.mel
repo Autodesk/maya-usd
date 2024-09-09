@@ -708,7 +708,7 @@ global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
     }
 
     for ($item in $bulkObjects) {
-        string $exportOptions = `python("import mayaUsdDuplicateAsUsdDataOptions; import mayaUsdOptions; mayaUsdOptions.setAnimateOption('''" + $obj + "''', mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText())")`;
+        string $exportOptions = `python("import mayaUsdDuplicateAsUsdDataOptions; import mayaUsdOptions; mayaUsdOptions.setAnimateOption('''" + $item + "''', mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText())")`;
         mayaUsdDuplicate -exportOptions $exportOptions $item $proxy;
     }
 }

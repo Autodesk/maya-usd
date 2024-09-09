@@ -1734,8 +1734,21 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
         executeAdditionalCommands(context);
         progressBar.advance();
 
-        const Ufe::PathSegment pathSegment
-            = UsdUfe::usdPathToUfePathSegment(pushExportResult.srcRootPath);
+        SdfPath finalUsdPath(pushExportResult.srcRootPath);
+        {
+            auto copiedIt = copyResult.copiedPaths.find(finalUsdPath);
+            if (copiedIt != copyResult.copiedPaths.end()) {
+                finalUsdPath = copiedIt->second;
+            }
+        }
+        {
+            auto renamedIt = copyResult.renamedPaths.find(finalUsdPath);
+            if (renamedIt != copyResult.renamedPaths.end()) {
+                finalUsdPath = renamedIt->second;
+            }
+        }
+
+        Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(finalUsdPath);
         return { Ufe::Path(dstPath + pathSegment) };
     }
 
