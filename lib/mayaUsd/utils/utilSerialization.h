@@ -64,6 +64,33 @@ enum USDUnsavedEditsOption
 MAYAUSD_CORE_PUBLIC
 USDUnsavedEditsOption serializeUsdEditsLocationOption();
 
+/*! \brief Return if the relative-path plug is set to true on the proxy shape.
+ */
+MAYAUSD_CORE_PUBLIC
+bool isProxyShapePathRelative(MayaUsdProxyShapeBase& proxyShape);
+
+/*! \brief File path mode for the setNewProxyPath and isProxyPathModeRelative functions.
+ *         kProxyPathRelative makes the file path relative to the Maya scene.
+ *         kProxyPathAbsolute makes the file path absolute.
+ *         kProxyPathFollowProxyShape reads the relative-path plug of the proxy shape
+ *                                    to decide.
+ *         kProxyPathFollowOptionVar reads the mayaUsd_MakePathRelativeToSceneFile
+ *                                   options to decide.
+ */
+enum ProxyPathMode
+{
+    kProxyPathRelative,
+    kProxyPathAbsolute,
+    kProxyPathFollowProxyShape,
+    kProxyPathFollowOptionVar
+};
+
+/*! \brief Convert the proxy path mode into a boolean telling if the path should be relative.
+ *  \note the proxy node name is only required for the kProxyPathFollowProxyShape mode.
+ */
+MAYAUSD_CORE_PUBLIC
+bool isProxyPathModeRelative(ProxyPathMode proxyPathMode, const MString& proxyNodeName);
+
 /*! \brief Utility function to update the file path attribute on the proxy shape
     when an anonymous root layer gets exported to disk. Also optionally updates
     the target layer if the anonymous layer was the target layer.
@@ -72,6 +99,7 @@ MAYAUSD_CORE_PUBLIC
 void setNewProxyPath(
     const MString&        proxyNodeName,
     const MString&        newValue,
+    ProxyPathMode         proxyPathMode,
     const SdfLayerRefPtr& layer,
     bool                  isTargetLayer);
 

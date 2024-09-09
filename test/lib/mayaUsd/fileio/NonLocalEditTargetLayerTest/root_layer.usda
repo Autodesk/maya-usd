@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+    subLayers = [
+        @./outer_sub_layer.usda@
+    ]
+)
+
+def "root"
+{
+}

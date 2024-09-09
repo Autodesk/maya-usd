@@ -472,7 +472,7 @@ void LayerDatabase::updateLayerManagers()
 bool LayerDatabase::hasDirtyLayer() const
 {
     for (const auto& info : _proxiesToSave) {
-        SdfLayerHandleVector allLayers = info.stage->GetLayerStack(true);
+        SdfLayerHandleVector allLayers = info.stage->GetUsedLayers(true);
         for (auto layer : allLayers) {
             if (layer->IsDirty()) {
                 return true;
@@ -480,7 +480,7 @@ bool LayerDatabase::hasDirtyLayer() const
         }
     }
     for (const auto& info : _internalProxiesToSave) {
-        SdfLayerHandleVector allLayers = info.stage->GetLayerStack(true);
+        SdfLayerHandleVector allLayers = info.stage->GetUsedLayers(true);
         for (auto layer : allLayers) {
             if (layer->IsDirty()) {
                 return true;
@@ -530,7 +530,7 @@ bool LayerDatabase::getProxiesToSave(bool isExport, bool* hasAnyProxy)
                 // so we can put them back in the same spot). So doesn't matter if its incoming or
                 // not, we need to save.
                 if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
-                    SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
+                    SdfLayerHandleVector allLayers = stage->GetUsedLayers(true);
                     for (auto layer : allLayers) {
                         if (layer->IsDirty()) {
                             StageSavingInfo info;
@@ -743,16 +743,19 @@ struct SaveStageToMayaResult
     bool _stageHasDirtyLayers { false };
 };
 
-static void saveLayersToMayaFile(
+template <typename T, typename IgnoreLayerFn>
+void saveLayersToMayaFile(
+    const T&&              allLayers,
+    const IgnoreLayerFn&&  ignoreLayerFn,
     MayaUsd::LayerManager* lm,
     MArrayDataBuilder&     builder,
     MayaUsdProxyShapeBase& proxyShape,
-    const SdfLayerHandle&  layer,
     SaveStageToMayaResult& result)
 {
-    bool includeTopLayer = true;
-    auto allLayers = UsdUfe::getAllSublayerRefs(layer, includeTopLayer);
     for (auto layer : allLayers) {
+        if (ignoreLayerFn(layer)) {
+            continue;
+        }
         addLayerToBuilder(
             lm,
             builder,
@@ -783,8 +786,43 @@ SaveStageToMayaResult saveStageToMayaFile(
     if (!pShape)
         return result;
 
-    saveLayersToMayaFile(lm, builder, *pShape, stage->GetSessionLayer(), result);
-    saveLayersToMayaFile(lm, builder, *pShape, stage->GetRootLayer(), result);
+    std::unordered_set<std::string> localLayerIds;
+
+    // Save session layer and its sublayers
+    saveLayersToMayaFile(
+        UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), true),
+        [&localLayerIds](const auto& layer) {
+            localLayerIds.emplace(layer->GetIdentifier());
+            return false;
+        },
+        lm,
+        builder,
+        *pShape,
+        result);
+
+    // Save root layer and its sublayers
+    saveLayersToMayaFile(
+        UsdUfe::getAllSublayerRefs(stage->GetRootLayer(), true),
+        [&localLayerIds](const auto& layer) {
+            localLayerIds.emplace(layer->GetIdentifier());
+            return false;
+        },
+        lm,
+        builder,
+        *pShape,
+        result);
+
+    // Save non local layers (reference layers and sub layers in reference layers),
+    // skip those have been saved previously from local stack
+    saveLayersToMayaFile(
+        stage->GetUsedLayers(true),
+        [&localLayerIds](const auto& layer) {
+            return localLayerIds.find(layer->GetIdentifier()) != localLayerIds.cend();
+        },
+        lm,
+        builder,
+        *pShape,
+        result);
 
     if (result._stageHasDirtyLayers) {
         setValueForAttr(
@@ -895,9 +933,10 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
                     continue;
                 }
                 convertAnonymousLayers(pShape, mobj, info.stage);
-                SdfLayerHandleVector allLayers = info.stage->GetLayerStack(false);
+                const auto& sessionLayer = info.stage->GetSessionLayer();
+                const auto& allLayers = info.stage->GetUsedLayers(true);
                 for (auto layer : allLayers) {
-                    if (layer->PermissionToSave()) {
+                    if (layer != sessionLayer && layer->PermissionToSave()) {
                         if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
                             MString errMsg;
                             MString layerName(layer->GetDisplayName().c_str());
@@ -932,7 +971,8 @@ void LayerDatabase::convertAnonymousLayers(
         const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == root);
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
-        if (UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()) {
+        const bool  isRelative = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+        if (isRelative) {
             newFileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(newFileName);
         }
         if (!MayaUsd::utils::saveLayerWithFormat(root, newFileName)) {
@@ -944,7 +984,11 @@ void LayerDatabase::convertAnonymousLayers(
 
         SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(newFileName);
         MayaUsd::utils::setNewProxyPath(
-            pShape->name(), UsdMayaUtil::convert(newFileName), newLayer, wasTargetLayer);
+            pShape->name(),
+            UsdMayaUtil::convert(newFileName),
+            isRelative ? MayaUsd::utils::kProxyPathRelative : MayaUsd::utils::kProxyPathAbsolute,
+            newLayer,
+            wasTargetLayer);
     }
 
     SdfLayerHandle session = stage->GetSessionLayer();

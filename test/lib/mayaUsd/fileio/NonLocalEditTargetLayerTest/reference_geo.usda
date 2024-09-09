@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def Xform "root"
+{
+    def Xform "group"
+    {
+        def Xform "sphere" (
+            kind = "component"
+            prepend references = @./nested_reference_geo.usda@
+        )
+        {
+        }
+    }
+}
