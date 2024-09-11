@@ -121,27 +121,14 @@ target_include_directories(${PROJECT_NAME}
 # -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        ar
         gf
-        hd
-        hdx
-        js
-        kind
-        plug
         sdf
         tf
-        trace
         usd
         usdGeom
         usdImaging
-        usdImagingGL
-        usdLux
-        usdRender
-        usdRi
         usdShade
-        usdSkel
         usdUtils
-        usdUI
         vt
         ${UFE_LIBRARY}
 )
