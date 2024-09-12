@@ -20,8 +20,12 @@
 
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/domeLight.h>
 #include <pxr/usd/usdLux/lightAPI.h>
+#include <pxr/usd/usdLux/portalLight.h>
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
@@ -70,7 +74,7 @@ private:
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Light, UsdLight);
 
 UsdLight::UsdLight(const UsdUfe::UsdSceneItem::Ptr& item)
-    : Light()
+    : UFE_LIGHT_BASE()
     , _item(item)
 {
 }
@@ -94,14 +98,32 @@ Ufe::Light::Type UsdLight::type() const
 
     if (usdPrim.IsA<UsdLuxDistantLight>()) {
         return Ufe::Light::Directional;
-    } else if (usdPrim.IsA<UsdLuxRectLight>()) {
+    } else if (
+        usdPrim.IsA<UsdLuxRectLight>()
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+        || usdPrim.IsA<UsdLuxPortalLight>()) {
+#else
+    ) {
+#endif
         return Ufe::Light::Area;
     } else if (usdPrim.IsA<UsdLuxSphereLight>()) {
         const UsdLuxShapingAPI shapingAPI(usdPrim);
         return shapingAPI.GetShapingConeAngleAttr().IsValid() ? Ufe::Light::Spot
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+                                                              : Ufe::Light::Sphere;
+#else
                                                               : Ufe::Light::Point;
-    }
+#endif
 
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+    } else if (usdPrim.IsA<UsdLuxCylinderLight>()) {
+        return Ufe::Light::Cylinder;
+    } else if (usdPrim.IsA<UsdLuxDiskLight>()) {
+        return Ufe::Light::Disk;
+    } else if (usdPrim.IsA<UsdLuxDomeLight>()) {
+        return Ufe::Light::Dome;
+#endif
+    }
     // In case of unknown light type, fallback to point light
     return Ufe::Light::Point;
 }
@@ -365,6 +387,9 @@ UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
 
 void UsdSphereInterface::sphereProps(float radius, bool asPoint)
 {
+    if (asPoint) {
+        radius = 0.0f;
+    }
     setLightSphereProps(_item->prim(), Ufe::Light::SphereProps { radius, asPoint });
 }
 
@@ -446,6 +471,104 @@ Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl
     return pCmd;
 }
 
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+
+UFE_LIGHT_BASE::VolumeProps getLightCylinderVolumeProps(const UsdPrim& prim)
+{
+    const UsdLuxCylinderLight  lightSchema(prim);
+    const PXR_NS::UsdAttribute radiusAttribute = lightSchema.GetRadiusAttr();
+    const PXR_NS::UsdAttribute lengthAttribute = lightSchema.GetLengthAttr();
+
+    UFE_LIGHT_BASE::VolumeProps vp;
+    radiusAttribute.Get(&vp.radius);
+    lengthAttribute.Get(&vp.length);
+    return vp;
+}
+
+UFE_LIGHT_BASE::VolumeProps getLightDiskVolumeProps(const UsdPrim& prim)
+{
+    const UsdLuxDiskLight      lightSchema(prim);
+    const PXR_NS::UsdAttribute radiusAttribute = lightSchema.GetRadiusAttr();
+
+    UFE_LIGHT_BASE::VolumeProps vp;
+    radiusAttribute.Get(&vp.radius);
+    return vp;
+}
+
+UFE_LIGHT_BASE::VolumeProps getLightDomeVolumeProps(const UsdPrim& prim)
+{
+    UFE_LIGHT_BASE::VolumeProps vp;
+    return vp;
+}
+
+void setLightVolumeProps(const UsdPrim& prim, const UFE_LIGHT_BASE::VolumeProps& attrVal)
+{
+    const UsdLuxSphereLight    lightSchema(prim);
+    const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
+
+    lightAttribute.Set(attrVal.radius);
+}
+
+void UsdCylinderInterface::volumeProps(float radius, float length)
+{
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius, length });
+}
+void UsdDiskInterface::volumeProps(float radius)
+{
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius });
+}
+
+void UsdDomeInterface::volumeProps(float radius)
+{
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius });
+}
+
+// Cylinder Light
+UFE_LIGHT_BASE::VolumeProps UsdCylinderInterface::volumeProps() const
+{
+    return getLightCylinderVolumeProps(_item->prim());
+}
+
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr
+UsdCylinderInterface::volumePropsCmd(float radius, float length)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, length });
+    return pCmd;
+}
+
+// Disk Light
+UFE_LIGHT_BASE::VolumeProps UsdDiskInterface::volumeProps() const
+{
+    return getLightDiskVolumeProps(_item->prim());
+}
+
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr UsdDiskInterface::volumePropsCmd(float radius)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, 0 });
+    return pCmd;
+}
+
+// Dome light
+UFE_LIGHT_BASE::VolumeProps UsdDomeInterface::volumeProps() const
+{
+    return getLightDomeVolumeProps(_item->prim());
+}
+
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr UsdDomeInterface::volumePropsCmd(float radius)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, 0 });
+    return pCmd;
+}
+#endif
+
 void UsdAreaInterface::normalize(bool ln) { setLightNormalize(_item->prim(), ln); }
 
 bool UsdAreaInterface::normalize() const { return getLightNormalize(_item->prim()); }
@@ -469,6 +592,23 @@ std::shared_ptr<Ufe::Light::AreaInterface> UsdLight::areaInterfaceImpl()
 {
     return std::make_shared<UsdAreaInterface>(_item);
 }
+
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+std::shared_ptr<UFE_LIGHT_BASE::CylinderInterface> UsdLight::cylinderInterfaceImpl()
+{
+    return std::make_shared<UsdCylinderInterface>(_item);
+}
+
+std::shared_ptr<UFE_LIGHT_BASE::DiskInterface> UsdLight::diskInterfaceImpl()
+{
+    return std::make_shared<UsdDiskInterface>(_item);
+}
+
+std::shared_ptr<UFE_LIGHT_BASE::DomeInterface> UsdLight::domeInterfaceImpl()
+{
+    return std::make_shared<UsdDomeInterface>(_item);
+}
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

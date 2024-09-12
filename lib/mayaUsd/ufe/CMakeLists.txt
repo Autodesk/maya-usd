@@ -52,6 +52,12 @@ if (UFE_LIGHTS_SUPPORT)
     PRIVATE
         UFE_LIGHTS_SUPPORT=1
     )
+    if (UFE_VOLUME_LIGHTS_SUPPORT)
+        target_compile_definitions(${PROJECT_NAME}
+    	    PRIVATE
+                UFE_VOLUME_LIGHTS_SUPPORT=1
+        )
+    endif()
 endif()
 
 if (UFE_MATERIALS_SUPPORT)
