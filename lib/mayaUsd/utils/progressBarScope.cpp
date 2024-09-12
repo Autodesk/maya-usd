@@ -78,7 +78,14 @@ ProgressBarScope::~ProgressBarScope()
     // If we created the MComputation we end and delete it.
     if (_created) {
         // Verify that we advances the number of steps added.
-        if (progBar->progress() != totalStepsAdded) {
+        const int progress = progBar->progress();
+
+        // `progress == -1` means the query failed.
+        //
+        // The "did not advance" warning below is not necessarily relevant -- we
+        // may have advanced the correct number of steps, but the `progBar`
+        // failed for other reasons, for example, running without the UI.
+        if (progress != -1 && progress != totalStepsAdded) {
             TF_WARN("ProgressBarScope: did not advance progress bar correct number of steps.");
         }
         totalStepsAdded = 0;
