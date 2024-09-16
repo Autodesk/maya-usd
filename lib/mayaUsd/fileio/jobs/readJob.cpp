@@ -191,7 +191,7 @@ UsdMaya_ReadJob::UsdMaya_ReadJob(
 
 UsdMaya_ReadJob::~UsdMaya_ReadJob() { }
 
-bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths, const bool resetXform)
+bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 {
     // When we are called from PrimUpdaterManager we should already have
     // a computation scope. If we are called from elsewhere don't show any
@@ -408,9 +408,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths, const bool rese
         }
     }
 
-    // Pass the flag resetXform to DoImport to fix the issue that when edit as Maya on prototype
-    // prims we have duplicated transforms
-    DoImport(range, usdRootPrim, resetXform);
+    DoImport(range, usdRootPrim);
     progressBar.advance();
 
     // NOTE: (yliangsiew) Storage to later pass on to `PostImport` for import chasers.
@@ -487,12 +485,9 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths, const bool rese
     return (status == MS::kSuccess);
 }
 
-bool UsdMaya_ReadJob::DoImport(
-    UsdPrimRange&  rootRange,
-    const UsdPrim& usdRootPrim,
-    const bool     resetXform)
+bool UsdMaya_ReadJob::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
-    return _DoImport(rootRange, usdRootPrim, resetXform);
+    return _DoImport(rootRange, usdRootPrim);
 }
 
 bool UsdMaya_ReadJob::OverridePrimReader(
@@ -511,7 +506,6 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
     UsdMayaPrimReaderContext& readCtx,
     _PrimReaderMap&           primReaderMap)
 {
-    const bool     resetXform = readCtx.GetForceResetXform();
     const UsdPrim& prim = *primIt;
     // The iterator will hit each prim twice. IsPostVisit tells us if
     // this is the pre-visit (Read) step or post-visit (PostReadSubtree)
@@ -521,9 +515,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
         // specified one.
         auto primReaderIt = primReaderMap.find(prim.GetPath());
         if (primReaderIt != primReaderMap.end()) {
-            const bool resetXform = readCtx.GetForceResetXform();
             primReaderIt->second->PostReadSubtree(readCtx);
-            readCtx.SetForceResetXform(resetXform);
         }
     } else {
         // This is the normal Read step (pre-visit).
@@ -538,7 +530,6 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
                 TempNodeTrackerScope scope(readCtx);
-                readCtx.SetForceResetXform(resetXform);
                 primReader->Read(readCtx);
                 if (primReader->HasPostReadSubtree()) {
                     primReaderMap[prim.GetPath()] = primReader;
@@ -612,13 +603,11 @@ void UsdMaya_ReadJob::_ImportPrototype(
     UsdMayaPrimReaderContext& readCtx)
 {
     _PrimReaderMap     primReaderMap;
-    const bool         resetXform = readCtx.GetForceResetXform();
     const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(prototype);
     for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
         const UsdPrim&           prim = *primIt;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
-        readCtx.SetForceResetXform(resetXform);
         if (prim.IsInstance()) {
             _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
         } else {
@@ -627,10 +616,7 @@ void UsdMaya_ReadJob::_ImportPrototype(
     }
 }
 
-bool UsdMaya_ReadJob::_DoImport(
-    UsdPrimRange&  rootRange,
-    const UsdPrim& usdRootPrim,
-    const bool     resetXform)
+bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
     const bool buildInstances = mArgs.importInstances;
 
@@ -655,7 +641,6 @@ bool UsdMaya_ReadJob::_DoImport(
             const UsdPrim&           prim = *primIt;
             UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
             readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
-            readCtx.SetForceResetXform(resetXform);
 
             if (buildInstances && prim.IsInstance()) {
                 _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
@@ -672,7 +657,6 @@ bool UsdMaya_ReadJob::_DoImport(
         MDGModifier              deletePrototypeMod;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
-        readCtx.SetForceResetXform(resetXform);
 
         auto                          prototypes = usdRootPrim.GetStage()->GetPrototypes();
         const int                     loopSize = prototypes.size();

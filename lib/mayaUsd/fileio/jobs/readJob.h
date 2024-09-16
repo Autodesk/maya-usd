@@ -49,7 +49,7 @@ public:
     /// Reads the USD stage specified by the job file name and prim path.
     /// Newly-created DAG paths are inserted into the vector \p addedDagPaths.
     MAYAUSD_CORE_PUBLIC
-    bool Read(std::vector<MDagPath>* addedDagPaths, const bool resetXform = false);
+    bool Read(std::vector<MDagPath>* addedDagPaths);
 
     /// Redoes a previous Read() operation after Undo() has been called.
     /// If Undo() hasn't been called, does nothing.
@@ -77,8 +77,7 @@ protected:
     using _PrimReaderMap = std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr, SdfPath::Hash>;
 
     MAYAUSD_CORE_PUBLIC
-    virtual bool
-    DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim, const bool isEdityAsMaya = false);
+    virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
     // Hook for derived classes to override the prim reader.  Returns true if
     // override was done, false otherwise.  Implementation in this class
@@ -94,7 +93,7 @@ protected:
     // Engine method for DoImport().  Covers the functionality of a regular
     // usdImport.
     MAYAUSD_CORE_PUBLIC
-    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim, const bool resetXform = false);
+    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
     // Hook for derived classes to perform processing before import.
     // Method in this class is a no-op.
