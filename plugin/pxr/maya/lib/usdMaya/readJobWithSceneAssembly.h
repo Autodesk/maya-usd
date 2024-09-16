@@ -33,8 +33,7 @@ public:
     ~UsdMaya_ReadJobWithSceneAssembly();
 
 private:
-    bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim, const bool resetXform = false)
-        override;
+    bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim) override;
     bool OverridePrimReader(
         const UsdPrim&               usdRootPrim,
         const UsdPrim&               prim,
