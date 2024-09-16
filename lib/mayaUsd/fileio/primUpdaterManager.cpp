@@ -294,8 +294,7 @@ using PullImportPaths = std::vector<std::pair<MDagPath, Ufe::Path>>;
 PullImportPaths pullImport(
     const Ufe::Path&                 ufePulledPath,
     const UsdPrim&                   pulledPrim,
-    const UsdMayaPrimUpdaterContext& context,
-    const bool                       resetXform = false)
+    const UsdMayaPrimUpdaterContext& context)
 {
     MayaUsd::ProgressBarScope progressBar(9);
 
@@ -333,7 +332,7 @@ PullImportPaths pullImport(
     std::vector<MDagPath> addedDagPaths;
 
     // Execute the command, which can succeed but import nothing.
-    bool success = readJob->Read(&addedDagPaths, resetXform);
+    bool success = readJob->Read(&addedDagPaths);
     if (!success || addedDagPaths.size() == 0) {
         TF_WARN("Nothing to edit in the selection.");
         return PullImportPaths();
@@ -1285,7 +1284,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     //    each, for per-prim customization.
 
     // 1) Perform the import
-    PullImportPaths importedPaths = pullImport(path, pulledPrim, context, true);
+    PullImportPaths importedPaths = pullImport(path, pulledPrim, context);
     if (importedPaths.empty()) {
         return false;
     }
@@ -1630,7 +1629,7 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
         context._pullExtras.initRecursive(Ufe::Hierarchy::createItem(srcPath));
         progressBar.advance();
 
-        PullImportPaths importedPaths = pullImport(srcPath, srcPrim, context, true);
+        PullImportPaths importedPaths = pullImport(srcPath, srcPrim, context);
         progressBar.advance();
 
         scopeIt.end();
