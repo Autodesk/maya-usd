@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PROXYSHAPESCENESEGMENTHANDLER_H
+#define MAYAUSD_PROXYSHAPESCENESEGMENTHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -49,10 +50,16 @@ public:
                const override;)
     bool isGateway_(const Ufe::Path& path) const override;
 
+#ifdef UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH
+    Ufe::Path rootSceneSegmentRootPath() const override;
+#endif // UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH
+
 private:
-    Ufe::SceneSegmentHandler::Ptr fMayaSceneSegmentHandler;
+    Ufe::SceneSegmentHandler::Ptr _mayaSceneSegmentHandler;
 
 }; // ProxyShapeSceneSegmentHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PROXYSHAPESCENESEGMENTHANDLER_H

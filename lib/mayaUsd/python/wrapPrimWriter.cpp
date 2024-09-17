@@ -533,7 +533,9 @@ void wrapJobExportArgs()
             "exportCollectionBasedBindings", &UsdMayaJobExportArgs::exportCollectionBasedBindings)
         .def_readonly("exportColorSets", &UsdMayaJobExportArgs::exportColorSets)
         .def_readonly("exportMaterials", &UsdMayaJobExportArgs::exportMaterials)
+        .def_readonly("exportAssignedMaterials", &UsdMayaJobExportArgs::exportAssignedMaterials)
         .def_readonly("exportComponentTags", &UsdMayaJobExportArgs::exportComponentTags)
+        .def_readonly("exportStagesAsRefs", &UsdMayaJobExportArgs::exportStagesAsRefs)
         .def_readonly("exportDefaultCameras", &UsdMayaJobExportArgs::exportDefaultCameras)
         .def_readonly("exportDisplayColor", &UsdMayaJobExportArgs::exportDisplayColor)
         .def_readonly("exportDistanceUnit", &UsdMayaJobExportArgs::exportDistanceUnit)
@@ -541,8 +543,15 @@ void wrapJobExportArgs()
         .def_readonly("exportMaterialCollections", &UsdMayaJobExportArgs::exportMaterialCollections)
         .def_readonly("exportMeshUVs", &UsdMayaJobExportArgs::exportMeshUVs)
         .def_readonly("exportNurbsExplicitUV", &UsdMayaJobExportArgs::exportNurbsExplicitUV)
-        .def_readonly("exportRelativeTextures", &UsdMayaJobExportArgs::exportRelativeTextures)
-        .def_readonly("referenceObjectMode", &UsdMayaJobExportArgs::referenceObjectMode)
+        .add_property(
+            "exportRelativeTextures",
+            make_getter(
+                &UsdMayaJobExportArgs::exportRelativeTextures,
+                return_value_policy<return_by_value>()))
+        .add_property(
+            "referenceObjectMode",
+            make_getter(
+                &UsdMayaJobExportArgs::referenceObjectMode, return_value_policy<return_by_value>()))
         .def_readonly("exportRefsAsInstanceable", &UsdMayaJobExportArgs::exportRefsAsInstanceable)
         .def_readonly("exportSelected", &UsdMayaJobExportArgs::exportSelected)
         .add_property(

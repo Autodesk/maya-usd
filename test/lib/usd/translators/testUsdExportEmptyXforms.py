@@ -176,7 +176,7 @@ class testUsdExportEmptyXforms(unittest.TestCase):
 
         usdFilePath = os.path.abspath('UsdExportExcludeEmptyTest.usda')
         cmds.select('null1')
-        self._exportToUSD(usdFilePath, includeEmpties)
+        self._exportToUSD(usdFilePath, includeEmpties, defaultPrimPath="None")
         
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
@@ -193,7 +193,7 @@ class testUsdExportEmptyXforms(unittest.TestCase):
 
         usdFilePath = os.path.abspath('UsdExportExcludeEmptyTest.usda')
         cmds.select('null1')
-        self._exportToUSD(usdFilePath, includeEmpties)
+        self._exportToUSD(usdFilePath, includeEmpties, defaultPrimPath="None")
         
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)

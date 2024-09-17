@@ -37,104 +37,104 @@ USDImportDialog::USDImportDialog(
     const IMayaMQtUtil&           mayaQtUtil,
     QWidget*                      parent /*= nullptr*/)
     : QDialog { parent }
-    , fOptions(options)
-    , fUI { new Ui::ImportDialog() }
-    , fStage { UsdStage::Open(filename, UsdStage::InitialLoadSet::LoadAll) }
-    , fFilename { filename }
-    , fRootPrimPath("/")
+    , _options(options)
+    , _uiView { new Ui::ImportDialog() }
+    , _stage { UsdStage::Open(filename, UsdStage::InitialLoadSet::LoadAll) }
+    , _filename { filename }
+    , _rootPrimPath("/")
 {
-    if (!fStage)
+    if (!_stage)
         throw std::invalid_argument("Invalid filename passed to USD Import Dialog");
 
-    fUI->setupUi(this);
+    _uiView->setupUi(this);
     applyOptions();
 
     // If we were given some import data we will only use it if it matches our
     // input filename. In the case where the user opened dialog, clicked Apply and
     // then reopens the dialog we want to reset the dialog to the previous state.
     const ImportData* matchingImportData = nullptr;
-    if ((importData != nullptr) && (fFilename == importData->filename())
+    if ((importData != nullptr) && (_filename == importData->filename())
         && importData->rootPrimPath().size() > 0) {
-        fRootPrimPath = importData->rootPrimPath();
+        _rootPrimPath = importData->rootPrimPath();
         matchingImportData = importData;
-    } else if (!fOptions.showRoot && fStage) {
-        UsdPrim defPrim = fStage->GetDefaultPrim();
+    } else if (!_options.showRoot && _stage) {
+        UsdPrim defPrim = _stage->GetDefaultPrim();
         if (defPrim.IsValid())
-            fRootPrimPath = defPrim.GetPath().GetAsString();
+            _rootPrimPath = defPrim.GetPath().GetAsString();
     }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    int minW = fUI->nbPrimsInScopeLabel->fontMetrics().horizontalAdvance("12345");
+    int minW = _uiView->nbPrimsInScopeLabel->fontMetrics().horizontalAdvance("12345");
 #else
-    int minW = fUI->nbPrimsInScopeLabel->fontMetrics().width("12345");
+    int minW = _uiView->nbPrimsInScopeLabel->fontMetrics().width("12345");
 #endif
 
-    fUI->nbPrimsInScopeLabel->setMinimumWidth(minW);
-    fUI->nbVariantsChangedLabel->setMinimumWidth(minW);
+    _uiView->nbPrimsInScopeLabel->setMinimumWidth(minW);
+    _uiView->nbVariantsChangedLabel->setMinimumWidth(minW);
 
     // These calls must come after the UI is initialized via "setupUi()":
     int nbItems = 0;
-    fTreeModel = TreeModelFactory::createFromStage(
-        fStage, mayaQtUtil, matchingImportData, fOptions, this, &nbItems);
-    fProxyModel = std::unique_ptr<QSortFilterProxyModel>(new QSortFilterProxyModel(this));
+    _treeModel = TreeModelFactory::createFromStage(
+        _stage, mayaQtUtil, matchingImportData, _options, this, &nbItems);
+    _proxyModel = std::unique_ptr<QSortFilterProxyModel>(new QSortFilterProxyModel(this));
     QObject::connect(
-        fTreeModel.get(), SIGNAL(checkedStateChanged(int)), this, SLOT(onCheckedStateChanged(int)));
+        _treeModel.get(), SIGNAL(checkedStateChanged(int)), this, SLOT(onCheckedStateChanged(int)));
     QObject::connect(
-        fTreeModel.get(),
+        _treeModel.get(),
         SIGNAL(modifiedVariantCountChanged(int)),
         this,
         SLOT(onModifiedVariantsChanged(int)));
 
     // Set the root prim path in the tree model. This will set the default check states.
-    fTreeModel->setRootPrimPath(fRootPrimPath);
+    _treeModel->setRootPrimPath(_rootPrimPath);
 
     // Configure the TreeView of the dialog:
-    fProxyModel->setSourceModel(fTreeModel.get());
+    _proxyModel->setSourceModel(_treeModel.get());
 #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
-    fProxyModel->setRecursiveFilteringEnabled(true);
+    _proxyModel->setRecursiveFilteringEnabled(true);
 #endif
-    fProxyModel->setDynamicSortFilter(false);
-    fProxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
-    fUI->treeView->setModel(fProxyModel.get());
-    fUI->treeView->setTreePosition(TreeItem::kColumnName);
-    fUI->treeView->setAlternatingRowColors(true);
-    fUI->treeView->setSelectionMode(QAbstractItemView::SingleSelection);
+    _proxyModel->setDynamicSortFilter(false);
+    _proxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+    _uiView->treeView->setModel(_proxyModel.get());
+    _uiView->treeView->setTreePosition(TreeItem::kColumnName);
+    _uiView->treeView->setAlternatingRowColors(true);
+    _uiView->treeView->setSelectionMode(QAbstractItemView::SingleSelection);
     QObject::connect(
-        fUI->treeView,
+        _uiView->treeView,
         SIGNAL(clicked(const QModelIndex&)),
         this,
         SLOT(onItemClicked(const QModelIndex&)));
     QObject::connect(
-        fUI->actionReset_File, SIGNAL(triggered(bool)), this, SLOT(onResetFileTriggered()));
+        _uiView->actionReset_File, SIGNAL(triggered(bool)), this, SLOT(onResetFileTriggered()));
     QObject::connect(
-        fUI->actionHelp_on_Hierarchy_View,
+        _uiView->actionHelp_on_Hierarchy_View,
         SIGNAL(triggered(bool)),
         this,
         SLOT(onHierarchyViewHelpTriggered()));
 
-    QHeaderView* header = fUI->treeView->header();
+    QHeaderView* header = _uiView->treeView->header();
 
     header->setStretchLastSection(true);
     header->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-    fItemDelegate = std::unique_ptr<ItemDelegate>(new ItemDelegate(fUI->treeView));
+    _itemDelegate = std::unique_ptr<ItemDelegate>(new ItemDelegate(_uiView->treeView));
     QObject::connect(
-        fItemDelegate.get(),
+        _itemDelegate.get(),
         SIGNAL(variantModified()),
-        fTreeModel.get(),
+        _treeModel.get(),
         SLOT(updateModifiedVariantCount()));
 
     // Set our item delegate on the treeview so we can customize the drawing of
     // the variant sets.
-    fUI->treeView->setItemDelegate(fItemDelegate.get());
+    _uiView->treeView->setItemDelegate(_itemDelegate.get());
 
     // Must be done AFTER we set our item delegate
-    fTreeModel->openPersistentEditors(fUI->treeView, QModelIndex());
+    _treeModel->openPersistentEditors(_uiView->treeView, QModelIndex());
 
     // This request to expand the tree to a default depth of 3 should come after the creation
     // of the editors since it can trigger calls to things like sizeHint before we've put any of
     // the variant set UI in place.
-    fUI->treeView->expandToDepth(3);
+    _uiView->treeView->expandToDepth(3);
 
     // Set some initial widths for the tree view columns.
     const int     kLoadWidth = mayaQtUtil.dpiScale(25);
@@ -143,33 +143,33 @@ USDImportDialog::USDImportDialog(
     header->setMinimumSectionSize(kLoadWidth);
     header->resizeSection(TreeItem::kColumnLoad, kLoadWidth);
     header->resizeSection(TreeItem::kColumnName, kNameWidth);
-    if (fOptions.showVariants) {
+    if (_options.showVariants) {
         header->resizeSection(TreeItem::kColumnType, kTypeWidth);
     }
     header->setSectionResizeMode(0, QHeaderView::Fixed);
 
     // Display the full path of the file to import:
-    fUI->usdFilePath->setText(QString::fromStdString(fFilename));
+    _uiView->usdFilePath->setText(QString::fromStdString(_filename));
 
     // Make sure the "Import" button is enabled.
-    fUI->applyButton->setEnabled(true);
+    _uiView->applyButton->setEnabled(true);
 }
 
 void USDImportDialog::applyOptions()
 {
-    if (fOptions.title.size() > 0) {
-        setWindowTitle(fOptions.title.c_str());
+    if (_options.title.size() > 0) {
+        setWindowTitle(_options.title.c_str());
     }
 
-    if (fOptions.helpLabel.size() > 0) {
-        fUI->actionHelp_on_Hierarchy_View->setText(
-            QCoreApplication::translate("ImportDialog", fOptions.helpLabel.c_str(), nullptr));
+    if (_options.helpLabel.size() > 0) {
+        _uiView->actionHelp_on_Hierarchy_View->setText(
+            QCoreApplication::translate("ImportDialog", _options.helpLabel.c_str(), nullptr));
     }
 
-    fUI->nbVariantsChanged->setVisible(fOptions.showVariants);
-    fUI->nbVariantsChangedLabel->setVisible(fOptions.showVariants);
+    _uiView->nbVariantsChanged->setVisible(_options.showVariants);
+    _uiView->nbVariantsChangedLabel->setVisible(_options.showVariants);
 
-    fUI->selectPrims->setVisible(fOptions.showHeaderMessage);
+    _uiView->selectPrims->setVisible(_options.showHeaderMessage);
 }
 
 USDImportDialog::~USDImportDialog()
@@ -190,28 +190,28 @@ bool USDImportDialog::execute()
     return exec() == QDialog::Accepted;
 }
 
-const std::string& USDImportDialog::filename() const { return fFilename; }
+const std::string& USDImportDialog::filename() const { return _filename; }
 
 const std::string& USDImportDialog::rootPrimPath() const
 {
     std::string rootPrimPath;
-    fTreeModel->getRootPrimPath(rootPrimPath, QModelIndex());
+    _treeModel->getRootPrimPath(rootPrimPath, QModelIndex());
     if (!rootPrimPath.empty())
-        fRootPrimPath = rootPrimPath;
-    return fRootPrimPath;
+        _rootPrimPath = rootPrimPath;
+    return _rootPrimPath;
 }
 
 UsdStagePopulationMask USDImportDialog::stagePopulationMask() const
 {
     UsdStagePopulationMask stagePopulationMask;
-    fTreeModel->fillStagePopulationMask(stagePopulationMask, QModelIndex());
+    _treeModel->fillStagePopulationMask(stagePopulationMask, QModelIndex());
     return stagePopulationMask;
 }
 
 ImportData::PrimVariantSelections USDImportDialog::primVariantSelections() const
 {
     ImportData::PrimVariantSelections varSels;
-    fTreeModel->fillPrimVariantSelections(varSels, QModelIndex());
+    _treeModel->fillPrimVariantSelections(varSels, QModelIndex());
     return varSels;
 }
 
@@ -223,29 +223,29 @@ UsdStage::InitialLoadSet USDImportDialog::stageInitialLoadSet() const
 void USDImportDialog::onItemClicked(const QModelIndex& index)
 {
     TreeItem* item
-        = static_cast<TreeItem*>(fTreeModel->itemFromIndex(fProxyModel->mapToSource(index)));
+        = static_cast<TreeItem*>(_treeModel->itemFromIndex(_proxyModel->mapToSource(index)));
     if (item != nullptr) {
         // When user checks a prim that is in a collapsed state, then that prim
         // gets checked-enabled and it expands to show its immediate children.
-        fTreeModel->onItemClicked(item);
-        if (!fUI->treeView->isExpanded(index)) {
+        _treeModel->onItemClicked(item);
+        if (!_uiView->treeView->isExpanded(index)) {
             if (item->checkState() == TreeItem::CheckState::kChecked)
-                fUI->treeView->expand(index);
+                _uiView->treeView->expand(index);
         }
     }
 }
 
 void USDImportDialog::onResetFileTriggered()
 {
-    if (nullptr != fTreeModel) {
-        fTreeModel->resetVariants();
-        fTreeModel->setRootPrimPath(fRootPrimPath);
+    if (nullptr != _treeModel) {
+        _treeModel->resetVariants();
+        _treeModel->setRootPrimPath(_rootPrimPath);
     }
 }
 
 void USDImportDialog::onHierarchyViewHelpTriggered()
 {
-    MString url = fOptions.helpURL.size() > 0 ? fOptions.helpURL.c_str() : "UsdHierarchyView";
+    MString url = _options.helpURL.size() > 0 ? _options.helpURL.c_str() : "UsdHierarchyView";
     MString cmd;
     cmd.format("from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD('^1s');", url);
     MGlobal::executePythonCommand(cmd);
@@ -255,21 +255,24 @@ void USDImportDialog::onCheckedStateChanged(int nbChecked)
 {
     QString nbLabel;
     nbLabel.setNum(nbChecked);
-    fUI->nbPrimsInScopeLabel->setText(nbLabel);
+    _uiView->nbPrimsInScopeLabel->setText(nbLabel);
 }
 
 void USDImportDialog::onModifiedVariantsChanged(int nbModified)
 {
     QString nbLabel;
     nbLabel.setNum(nbModified);
-    fUI->nbVariantsChangedLabel->setText(nbLabel);
+    _uiView->nbVariantsChangedLabel->setText(nbLabel);
 }
 
-int USDImportDialog::primsInScopeCount() const { return fUI->nbPrimsInScopeLabel->text().toInt(); }
+int USDImportDialog::primsInScopeCount() const
+{
+    return _uiView->nbPrimsInScopeLabel->text().toInt();
+}
 
 int USDImportDialog::switchedVariantCount() const
 {
-    return fUI->nbVariantsChangedLabel->text().toInt();
+    return _uiView->nbVariantsChangedLabel->text().toInt();
 }
 
 } // namespace MAYAUSD_NS_DEF

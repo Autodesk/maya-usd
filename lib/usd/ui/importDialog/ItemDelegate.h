@@ -121,8 +121,8 @@ private:
         QStringList&        varNames);
 
 private:
-    QList<QLabel*>    fVariantLabels;
-    QList<QComboBox*> fVariantCombos;
+    QList<QLabel*>    _variantLabels;
+    QList<QComboBox*> _variantCombos;
 
 }; // VariantsEditorWidget
 

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDATTRIBUTES_H
+#define USDUFE_USDATTRIBUTES_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdAttribute.h>
@@ -89,11 +90,13 @@ public:
 #endif
 
 private:
-    UsdSceneItem::Ptr fItem;
-    PXR_NS::UsdPrim   fPrim;
+    UsdSceneItem::Ptr _item;
+    PXR_NS::UsdPrim   _prim;
 
     typedef std::unordered_map<std::string, Ufe::Attribute::Ptr> AttributeMap;
-    AttributeMap                                                 fUsdAttributes;
+    AttributeMap                                                 _usdAttributes;
 }; // UsdAttributes
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDATTRIBUTES_H

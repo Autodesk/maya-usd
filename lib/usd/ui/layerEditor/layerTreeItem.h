@@ -17,6 +17,7 @@
 #ifndef LAYERTREEITEM_H
 #define LAYERTREEITEM_H
 
+// Needs to come first when used with VS2017 and Qt5.
 #include "pxr/usd/sdf/layer.h"
 
 #include <pxr/usd/sdf/declareHandles.h>

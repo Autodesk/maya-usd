@@ -1,0 +1,85 @@
+#usda 1.0
+
+def Scope "mtl"
+{
+    def Material "standard_surface1"
+    {
+        token outputs:mtlx:surface.connect = </mtl/standard_surface1/standard_surface1.outputs:out>
+
+        def Shader "standard_surface1"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            float inputs:base = 0
+            float inputs:emission = 1
+            color3f inputs:emission_color.connect = </mtl/standard_surface1/smoothstep_color3.outputs:out>
+            float inputs:specular = 0
+            token outputs:out
+        }
+
+        def Shader "ramplr1"
+        {
+            uniform token info:id = "ND_ramplr_color3"
+            float2 inputs:texcoord.connect = </mtl/standard_surface1/smoothstep_vector2.outputs:out>
+            color3f inputs:valuel = (0, 0, 0)
+            color3f inputs:valuer = (1, 1, 1)
+            color3f outputs:out
+        }
+
+        def Shader "smoothstep_color3"
+        {
+            uniform token info:id = "ND_smoothstep_color3FA"
+            float inputs:high = 0.65256
+            color3f inputs:in.connect = </mtl/standard_surface1/ramplr1.outputs:out>
+            float inputs:low = 0.2569
+            color3f outputs:out
+        }
+
+        def Shader "geompropvalue1"
+        {
+            uniform token info:id = "ND_geompropvalue_vector2"
+            string inputs:geomprop = "st"
+            float2 outputs:out
+        }
+
+        def Shader "smoothstep_vector2"
+        {
+            uniform token info:id = "ND_smoothstep_vector2FA"
+            float inputs:high = 0.6007
+            float2 inputs:in.connect = </mtl/standard_surface1/geompropvalue1.outputs:out>
+            float inputs:low = 0.1067
+            float inputs:low.connect = </mtl/standard_surface1/smoothstep_float.outputs:out>
+            float2 outputs:out
+        }
+
+        def Shader "smoothstep_float"
+        {
+            uniform token info:id = "ND_smoothstep_float"
+            float inputs:in = 0.3527
+            float outputs:out
+        }
+    }
+}
+
+def Mesh "pPlane2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/standard_surface1>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    token visibility = "inherited"
+}
+

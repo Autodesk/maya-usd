@@ -360,7 +360,7 @@ class Object3dTestCase(unittest.TestCase):
         object3d = ufe.Object3d.object3d(capsuleItem)
 
         # stage / primSpec
-        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
         primSpec = stage.GetEditTarget().GetPrimSpecForScenePath('/Capsule1');
 
         # initially capsuleItem should be visible.
@@ -428,7 +428,7 @@ class Object3dTestCase(unittest.TestCase):
         cylinderPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(cylinderPath))
 
         # stage / primSpec
-        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
         primSpecCapsule = stage.GetEditTarget().GetPrimSpecForScenePath('/Capsule1');
         primSpecCylinder = stage.GetEditTarget().GetPrimSpecForScenePath('/Cylinder1');
 

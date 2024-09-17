@@ -406,7 +406,8 @@ void MayaSessionState::rootLayerPathChanged(std::string const& in_path)
     if (!_currentStageEntry._proxyShapePath.empty()) {
         MString proxyShape(_currentStageEntry._proxyShapePath.c_str());
         MString newValue(in_path.c_str());
-        MayaUsd::utils::setNewProxyPath(proxyShape, newValue, nullptr, false);
+        MayaUsd::utils::setNewProxyPath(
+            proxyShape, newValue, MayaUsd::utils::kProxyPathFollowProxyShape, nullptr, false);
     }
 }
 

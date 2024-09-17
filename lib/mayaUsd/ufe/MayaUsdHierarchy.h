@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_MAYAUSDHIERARCHY_H
+#define MAYAUSD_MAYAUSDHIERARCHY_H
 
 #include <mayaUsd/base/api.h>
 
@@ -58,3 +59,5 @@ bool mayaUsdHierarchyChildrenHook(
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_MAYAUSDHIERARCHY_H

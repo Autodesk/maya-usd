@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_STAGESSUBJECT_H
+#define USDUFE_STAGESSUBJECT_H
 
 #include <usdUfe/base/api.h>
 
@@ -64,6 +65,8 @@ public:
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(StagesSubject);
 
+    PXR_NS::TfNotice::Key registerStage(const PXR_NS::UsdStageRefPtr&);
+
     // Ufe notification helpers - send notification trapping any exception.
     void sendObjectAdd(const Ufe::SceneItem::Ptr& sceneItem) const;
     void sendObjectPostDelete(const Ufe::SceneItem::Ptr& sceneItem) const;
@@ -102,3 +105,5 @@ public:
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_STAGESSUBJECT_H

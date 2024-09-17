@@ -6,7 +6,7 @@ target_sources(${PROJECT_NAME}
         basisCurves.cpp
         bboxGeom.cpp
         debugCodes.cpp
-        draw_item.cpp
+        drawItem.cpp
         extComputation.cpp
         instancer.cpp
         material.cpp
@@ -16,8 +16,8 @@ target_sources(${PROJECT_NAME}
         points.cpp
         proxyRenderDelegate.cpp
         colorManagementPreferences.cpp
-        render_delegate.cpp
-        render_param.cpp
+        renderDelegate.cpp
+        renderParam.cpp
         sampler.cpp
         shader.cpp
         tokens.cpp

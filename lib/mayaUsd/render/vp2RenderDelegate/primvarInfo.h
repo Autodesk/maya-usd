@@ -16,7 +16,7 @@
 #ifndef HD_VP2_PRIMVARINFO
 #define HD_VP2_PRIMVARINFO
 
-#include "draw_item.h"
+#include "drawItem.h"
 #include "meshViewportCompute.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>

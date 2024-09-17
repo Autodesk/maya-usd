@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_UFE_UTILS_H
+#define USDUFE_UFE_UTILS_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -62,6 +63,9 @@ typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const
 typedef void (*DisplayMessageFn)(const std::string& msg);
 typedef void (*WaitCursorFn)();
 typedef std::string (*DefaultMaterialScopeNameFn)();
+typedef void (
+    *ExtractTRSFn)(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s);
+typedef const char* (*Transform3dMatrixOpNameFn)();
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -212,7 +216,7 @@ enum class MessageType
 {
     kInfo,    // Displays an information message, default = TF_STATUS
     kWarning, // Displays a warning message, default = TF_WARN
-    KError,   // Displays a error message, default = TF_RUNTIME_ERROR
+    kError,   // Displays a error message, default = TF_RUNTIME_ERROR
 
     nbTypes
 };
@@ -258,6 +262,22 @@ inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
 {
     return std::dynamic_pointer_cast<UsdSceneItem>(item);
 }
+
+//! Copy the argument matrix into the return matrix.
+USDUFE_PUBLIC
+Ufe::Matrix4d toUfe(const PXR_NS::GfMatrix4d& src);
+
+//! Copy the argument matrix into the return matrix.
+USDUFE_PUBLIC
+PXR_NS::GfMatrix4d toUsd(const Ufe::Matrix4d& src);
+
+//! Copy the argument vector into the return vector.
+USDUFE_PUBLIC
+Ufe::Vector3d toUfe(const PXR_NS::GfVec3d& src);
+
+//! Copy the argument vector into the return vector.
+USDUFE_PUBLIC
+PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src);
 
 //! Filter a source selection by removing descendants of filterPath.
 USDUFE_PUBLIC
@@ -420,4 +440,33 @@ std::string defaultMaterialScopeName();
 USDUFE_PUBLIC
 UsdSceneItem::Ptr getParentMaterial(const UsdSceneItem::Ptr& item);
 
+//! Set the DCC specific extract TRS (Translate/Rotate/Scale)
+//! function "extractTRS".
+//! Use of this function is optional, if one is not supplied then
+//! a default one will be used (that uses USD API to extract).
+USDUFE_PUBLIC
+void setExtractTRSFn(ExtractTRSFn fn);
+
+//! Extract the TRS (Translate/Rotate/Scale) from the input matrix.
+USDUFE_PUBLIC
+void extractTRS(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s);
+
+//! Set the DCC function that is used to obtain a transform3d matrix
+//! op name. Use of this function is optional. If one is not supplied
+//! then no special transform3d matrix op name will be used.
+USDUFE_PUBLIC
+void setTransform3dMatrixOpNameFn(Transform3dMatrixOpNameFn fn);
+
+//! Return the transform3d matrix op name to be used.
+//! By default nullptr is returned.
+USDUFE_PUBLIC
+const char* getTransform3dMatrixOpName();
+
+//! Verify if the metadata group name has the session prefix and provide the prefix-less group name.
+//! \note the prefix-less name is only filled when returning true.
+USDUFE_PUBLIC
+bool isSessionLayerGroupMetadata(const std::string& groupName, std::string* adjustedGroupName);
+
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_UFE_UTILS_H

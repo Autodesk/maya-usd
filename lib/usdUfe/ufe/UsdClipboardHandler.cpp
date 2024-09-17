@@ -22,7 +22,10 @@
 #include <usdUfe/utils/layers.h>
 
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdShade/connectableAPI.h>
+#include <pxr/usd/usdShade/nodeGraph.h>
+#include <pxr/usd/usdShade/shader.h>
 
 #include <algorithm>
 
@@ -66,7 +69,29 @@ UsdClipboardHandler::Ptr UsdClipboardHandler::create()
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::cutCmd_(const Ufe::Selection& selection)
 {
-    return UsdCutClipboardCommand::create(selection, _clipboard);
+    // Don't allow cutting (which also means copying) the items which cannot
+    // be cut.
+    Ufe::Selection allowedToBeCut;
+    for (const auto& item : selection) {
+        // EMSUSD-1126 - Cut a prim and not have it paste if the cut is restricted
+        auto       usdItem = downcast(item);
+        const auto prim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
+        if (!prim)
+            continue;
+
+        // As per the JIRA item for now, skip the special cut conditions
+        // on shaders and nodegraphs. These nodes are handled by special
+        // cases in LookdevX plugin.
+        if ((PXR_NS::UsdShadeNodeGraph(prim) || PXR_NS::UsdShadeShader(prim)) || canBeCut_(item)) {
+            allowedToBeCut.append(item);
+        }
+    }
+
+    if (allowedToBeCut.empty())
+        return {};
+
+    return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdCutClipboardCommand>::create(
+        allowedToBeCut, _clipboard);
 }
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::copyCmd_(const Ufe::Selection& selection)
@@ -74,17 +99,52 @@ Ufe::UndoableCommand::Ptr UsdClipboardHandler::copyCmd_(const Ufe::Selection& se
     return UsdCopyClipboardCommand::create(selection, _clipboard);
 }
 
+//! \brief Helper class to override the paste command execute
+class UsdPasteClipboardCommandWithSelection
+    : public UsdUndoSelectAfterCommand<UsdPasteClipboardCommand>
+{
+public:
+    using Parent = UsdUndoSelectAfterCommand<UsdPasteClipboardCommand>;
+    using ThisPtr = std::shared_ptr<UsdPasteClipboardCommandWithSelection>;
+
+    // Bring in base class constructors.
+    using Parent::Parent;
+
+    // Override the execute so we can set a selection guard to not erase the
+    // paste as sibling flag when the selection changes as a result of the
+    // paste command selecting the target(s).
+    void execute() override
+    {
+        _clipboard->_inSelectionGuard = true;
+        try {
+            Parent::execute();
+        } catch (...) {
+            _clipboard->_inSelectionGuard = false;
+            throw;
+        }
+        _clipboard->_inSelectionGuard = false;
+    }
+
+    static ThisPtr
+    create(const Ufe::SceneItem::Ptr& dstParentItem, const UsdClipboard::Ptr& clipboard)
+    {
+        return std::make_shared<UsdPasteClipboardCommandWithSelection>(dstParentItem, clipboard);
+    }
+    static ThisPtr create(const Ufe::Selection& dstParentItems, const UsdClipboard::Ptr& clipboard)
+    {
+        return std::make_shared<UsdPasteClipboardCommandWithSelection>(dstParentItems, clipboard);
+    }
+};
+
 Ufe::PasteClipboardCommand::Ptr
 UsdClipboardHandler::pasteCmd_(const Ufe::SceneItem::Ptr& parentItem)
 {
-    return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdPasteClipboardCommand>::create(
-        parentItem, _clipboard);
+    return UsdPasteClipboardCommandWithSelection::create(parentItem, _clipboard);
 }
 
 Ufe::UndoableCommand::Ptr UsdClipboardHandler::pasteCmd_(const Ufe::Selection& parentItems)
 {
-    return UsdUfe::UsdUndoSelectAfterCommand<UsdUfe::UsdPasteClipboardCommand>::create(
-        parentItems, _clipboard);
+    return UsdPasteClipboardCommandWithSelection::create(parentItems, _clipboard);
 }
 
 bool UsdClipboardHandler::hasItemsToPaste_()

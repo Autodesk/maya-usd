@@ -85,9 +85,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
-const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
-const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
+const MTypeId kMayaUsdPreviewSurface_typeId(0x58000096);
+const MString kMayaUsdPreviewSurface_typeName("usdPreviewSurface");
+const MString kMayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
 
 template <typename T> void registerCommandCheck(MFnPlugin& plugin)
 {
@@ -118,11 +118,11 @@ MStatus registerStringResources()
 
 TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
 {
-    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(MayaUsdPreviewSurface_typeName);
+    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(kMayaUsdPreviewSurface_typeName);
 };
 TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 {
-    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(MayaUsdPreviewSurface_typeName);
+    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(kMayaUsdPreviewSurface_typeName);
 };
 
 MAYAUSD_PLUGIN_PUBLIC
@@ -228,16 +228,16 @@ MStatus initializePlugin(MObject obj)
     status = MayaUsd::USDImportDialogCmd::initialize(plugin);
     if (!status) {
         MString err("registerCommand");
-        err += MayaUsd::USDImportDialogCmd::fsName;
+        err += MayaUsd::USDImportDialogCmd::name;
         status.perror(err);
     }
 #endif
 
     status = PxrMayaUsdPreviewSurfacePlugin::initialize(
         plugin,
-        MayaUsdPreviewSurface_typeName,
-        MayaUsdPreviewSurface_typeId,
-        MayaUsdPreviewSurface_registrantId);
+        kMayaUsdPreviewSurface_typeName,
+        kMayaUsdPreviewSurface_typeId,
+        kMayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     plugin.registerUI(
@@ -301,9 +301,9 @@ MStatus uninitializePlugin(MObject obj)
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,
-        MayaUsdPreviewSurface_typeName,
-        MayaUsdPreviewSurface_typeId,
-        MayaUsdPreviewSurface_registrantId);
+        kMayaUsdPreviewSurface_typeName,
+        kMayaUsdPreviewSurface_typeId,
+        kMayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
@@ -319,7 +319,7 @@ MStatus uninitializePlugin(MObject obj)
     status = MayaUsd::USDImportDialogCmd::finalize(plugin);
     if (!status) {
         MString err("deregisterCommand");
-        err += MayaUsd::USDImportDialogCmd::fsName;
+        err += MayaUsd::USDImportDialogCmd::name;
         status.perror(err);
     }
 #endif

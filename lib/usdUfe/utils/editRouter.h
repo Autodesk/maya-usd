@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_EDITROUTER_H
+#define USDUFE_EDITROUTER_H
 
 #include <usdUfe/base/api.h>
 
@@ -154,7 +155,15 @@ void restoreAllDefaultEditRouters();
 USDUFE_PUBLIC
 void registerDefaultEditRouter(const PXR_NS::TfToken&, const EditRouter::Ptr&);
 
+// Clear all registered edit routers.
+// Mostly only used on exit to ensure edit routers are cleared to avoid order of destruction
+// problems.
+USDUFE_PUBLIC
+void clearAllEditRouters();
+
 // Return built-in default edit routers.
 EditRouters defaultEditRouters();
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_EDITROUTER_H

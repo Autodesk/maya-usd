@@ -56,8 +56,6 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <ghc/filesystem.hpp>
-
 #include <regex>
 
 PXR_NAMESPACE_OPEN_SCOPE

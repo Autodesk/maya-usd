@@ -78,6 +78,11 @@ public:
 
     static const string MATRIX3_TO_MATRIX4_POSTFIX;
 
+#ifdef FIX_NODEGRAPH_UDIM_SCALE_OFFSET
+    // Locally fixing the UV scale and offset for UDIMs. We will submit to 1.39 later.
+    ShaderNodeImplPtr getImplementation(const NodeDef& nodedef, GenContext& context) const override;
+#endif
+
 protected:
     static void toVec3(const TypeDesc* type, string& variable);
 };

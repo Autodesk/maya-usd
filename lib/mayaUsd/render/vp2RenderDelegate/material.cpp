@@ -18,7 +18,7 @@
 #include "debugCodes.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderNode.h"
-#include "render_delegate.h"
+#include "renderDelegate.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
@@ -82,6 +82,7 @@
 #include <pxr/imaging/hdSt/udimTextureObject.h>
 #include <pxr/imaging/hio/image.h>
 
+#include <boost/functional/hash.hpp>
 #include <ghc/filesystem.hpp>
 #include <tbb/parallel_for.h>
 
@@ -178,6 +179,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (transmission)
     (transparency)
     (alpha)
+    (transmission_weight)
+    (geometry_opacity)
     (useSpecularWorkflow)
     (st)
     (varname)
@@ -1293,11 +1296,11 @@ bool _IsTransparent(const HdMaterialNetwork& network)
 {
     using OpaqueTestPair = std::pair<TfToken, float>;
     using OpaqueTestPairList = std::vector<OpaqueTestPair>;
-    const OpaqueTestPairList inputPairList = { { _tokens->opacity, 1.0f },
-                                               { _tokens->existence, 1.0f },
-                                               { _tokens->alpha, 1.0f },
-                                               { _tokens->transmission, 0.0f },
-                                               { _tokens->transparency, 0.0f } };
+    const OpaqueTestPairList inputPairList
+        = { { _tokens->opacity, 1.0f },         { _tokens->existence, 1.0f },
+            { _tokens->alpha, 1.0f },           { _tokens->transmission, 0.0f },
+            { _tokens->transparency, 0.0f },    { _tokens->transmission_weight, 0.0f },
+            { _tokens->geometry_opacity, 1.0f } };
 
     const HdMaterialNode& surfaceShader = network.nodes.back();
 
@@ -2049,7 +2052,7 @@ HdVP2Material::~HdVP2Material()
     // Tell pending tasks or running tasks (if any) to terminate
     ClearPendingTasks();
 
-    if (!_IsDisabledAsyncTextureLoading() && !_localTextureMap.empty()) {
+    if (!_localTextureMap.empty()) {
         _TransientTexturePreserver::GetInstance().PreserveTextures(_localTextureMap);
     }
 }
@@ -2887,6 +2890,11 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
         if (cachedPrimvars) {
             _requiredPrimvars = *cachedPrimvars;
         }
+        const HdVP2ShaderCache::StringMap* cachedRenamedParameters
+            = renderDelegate->GetRenamedParametersFromCache(shaderCacheID);
+        if (cachedRenamedParameters) {
+            _renamedParameters = *cachedRenamedParameters;
+        }
         return shaderInstance;
     }
 
@@ -3034,7 +3042,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
             }
         }
 
-        // Fixup inputs that were renamed because they conflicted with reserved keywords:
+        // Remember inputs that were renamed because they conflicted with reserved keywords:
         for (const auto& namePair : ogsFragment.getPathInputMap()) {
             std::string path = namePair.first;
             std::string input = namePair.second;
@@ -3051,7 +3059,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 if (foundOriginal != std::string::npos) {
                     MString uniqueName(input.c_str());
                     input = input.substr(0, foundOriginal + originalName.size());
-                    shaderInstance->renameParameter(uniqueName, input.c_str());
+                    _renamedParameters.emplace(input, uniqueName);
                 }
             }
         }
@@ -3085,6 +3093,9 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
     if (shaderInstance) {
         renderDelegate->AddShaderToCache(shaderCacheID, *shaderInstance);
         renderDelegate->AddPrimvarsToCache(shaderCacheID, _requiredPrimvars);
+        if (!_renamedParameters.empty()) {
+            renderDelegate->AddRenamedParametersToCache(shaderCacheID, _renamedParameters);
+        }
     }
 
     return shaderInstance;
@@ -3285,6 +3296,13 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
             const VtValue& value = entry.second;
 
             MString paramName = nodeName + token.GetText();
+
+#ifdef WANT_MATERIALX_BUILD
+            const auto itRename = _renamedParameters.find(paramName.asChar());
+            if (itRename != _renamedParameters.end()) {
+                paramName = itRename->second;
+            }
+#endif
 
             MStatus status = MStatus::kFailure;
 

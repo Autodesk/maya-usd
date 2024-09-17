@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PROXYSHAPECAMERAHANDLER_H
+#define MAYAUSD_PROXYSHAPECAMERAHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -41,9 +42,11 @@ public:
     Ufe::Selection find_(const Ufe::Path& path) const override;
 
 private:
-    Ufe::CameraHandler::Ptr fMayaCameraHandler;
+    Ufe::CameraHandler::Ptr _mayaCameraHandler;
 
 }; // ProxyShapeCameraHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PROXYSHAPECAMERAHANDLER_H

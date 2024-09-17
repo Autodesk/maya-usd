@@ -41,6 +41,7 @@ class testUsdExportMaterialsOnly(unittest.TestCase):
     def _export(self, exportMeshes=False, selection=None):
         '''
         Export the Maya scene with or without meshes and restricted to the selection or not.
+        In all case, only materials assigned to meshes ae exported. (Because it is the default.)
         Then open the exported USD file.
         '''
         mayaFileName  = 'one-group.ma'
@@ -58,6 +59,7 @@ class testUsdExportMaterialsOnly(unittest.TestCase):
             shadingMode='useRegistry', 
             convertMaterialsTo=['UsdPreviewSurface'],
             materialsScopeName='Materials',
+            legacyMaterialScope=False,
             defaultPrim='top_group',
             exportMaterials=True,
             selection=bool(selection),
@@ -101,8 +103,7 @@ class testUsdExportMaterialsOnly(unittest.TestCase):
     def testExportMeshesAndMaterials(self):
         '''
         Test that we can export meshes and materials and find both.
-        When exporting like this, only assigned materials are exported.
-        (Will change in the near future with a new export option.)
+        Only assigned materials are exported.
         '''
         self._export(exportMeshes=True)
 
@@ -125,7 +126,8 @@ class testUsdExportMaterialsOnly(unittest.TestCase):
 
     def testExportSelectedMeshAndMaterial(self):
         '''
-        Test that we can export one selected mesh and another material and find both.
+        Test that we can export one selected mesh and another material and find both,
+        including the material of the mesh, even though it was not selected.
         '''
         self._export(exportMeshes=True, selection=['pSphere1', 'standardSurface4'])
 
@@ -158,13 +160,12 @@ class testUsdExportMaterialsOnly(unittest.TestCase):
     def testExportMaterialsOnly(self):
         '''
         Test that we can export only materials.
-        In this case, all materials are exported, even if unused.
+        Only assigned materials are exported.
         No mesh should be found in the exported file.
         '''
         self._export(exportMeshes=False)
 
         expectedMtlAndShaderPaths = [
-            ('/top_group/Materials/initialShadingGroup', None),
             ('/top_group/Materials/standardSurface2SG', 'standardSurface2'),
             ('/top_group/Materials/standardSurface3SG', 'standardSurface3'),
             ('/top_group/Materials/standardSurface4SG', 'standardSurface4'),
@@ -183,7 +184,7 @@ class testUsdExportMaterialsOnly(unittest.TestCase):
     def testExportSelectedMaterialsOnly(self):
         '''
         Test that we can export only the selected materials.
-        In this case, all materials are exported, even if unused.
+        Only assigned materials are exported.
         No mesh should be found in the exported file.
         '''
         self._export(exportMeshes=False, selection=['standardSurface2', 'standardSurface4'])
@@ -197,6 +198,66 @@ class testUsdExportMaterialsOnly(unittest.TestCase):
         excludedMtlAndShaderPaths = [
             ('/top_group/Materials/initialShadingGroup', None),
             ('/top_group/Materials/standardSurface3SG', None),
+            ('/top_group/Materials/standardSurface5SG', None),
+        ]
+        self._verifyMaterials(excludedMtlAndShaderPaths, expectPresent=False)
+
+        excludedMeshPaths = [
+            '/top_group/group1/pSphere1',
+            '/top_group/group1/pCube1',
+            '/top_group/group2/pCone1',
+            '/top_group/pCylinder1',
+        ]
+        self._verifyMeshes(excludedMeshPaths, expectPresent=False)
+
+    def testExportMaterialsOnlySelectAncestor(self):
+        '''
+        Test that we can export materials of all the meshes under the selected group,
+        even when those meshes are not exported.
+        Only assigned materials are exported.
+        No mesh should be found in the exported file.
+        '''
+        self._export(exportMeshes=False, selection=['group1'])
+
+        expectedMtlAndShaderPaths = [
+            ('/top_group/Materials/standardSurface2SG', 'standardSurface2'),
+            ('/top_group/Materials/standardSurface3SG', 'standardSurface3'),
+        ]
+        self._verifyMaterials(expectedMtlAndShaderPaths)
+
+        excludedMtlAndShaderPaths = [
+            ('/top_group/Materials/initialShadingGroup', None),
+            ('/top_group/Materials/standardSurface4SG', None),
+            ('/top_group/Materials/standardSurface5SG', None),
+        ]
+        self._verifyMaterials(excludedMtlAndShaderPaths, expectPresent=False)
+
+        excludedMeshPaths = [
+            '/top_group/group1/pSphere1',
+            '/top_group/group1/pCube1',
+            '/top_group/group2/pCone1',
+            '/top_group/pCylinder1',
+        ]
+        self._verifyMeshes(excludedMeshPaths, expectPresent=False)
+
+    def testExportSelectedMaterialsOnlyWithMeshSelection(self):
+        '''
+        Test that we can export only the materials of the selected mesh without
+        exporting meshes.
+        Only assigned materials are exported.
+        No mesh should be found in the exported file.
+        '''
+        self._export(exportMeshes=False, selection=['pSphere1'])
+
+        expectedMtlAndShaderPaths = [
+            ('/top_group/Materials/standardSurface3SG', 'standardSurface3'),
+        ]
+        self._verifyMaterials(expectedMtlAndShaderPaths)
+
+        excludedMtlAndShaderPaths = [
+            ('/top_group/Materials/initialShadingGroup', None),
+            ('/top_group/Materials/standardSurface2SG', None),
+            ('/top_group/Materials/standardSurface4SG', None),
             ('/top_group/Materials/standardSurface5SG', None),
         ]
         self._verifyMaterials(excludedMtlAndShaderPaths, expectPresent=False)

@@ -1,6 +1,77 @@
 # Changelog
+## [v0.29.0] - 2024-07-31
 
-<!--- Verify the new version number and update date to actual release date. --->
+**Build:**
+* MayaUsd: Code cleanup - No pragma once [#3811](https://github.com/Autodesk/maya-usd/pull/3811)
+* Fix tests that are modifying source folder [#3802](https://github.com/Autodesk/maya-usd/pull/3802)
+* Update googletest & gulrak (filesystem) [#3800](https://github.com/Autodesk/maya-usd/pull/3800)
+* Remove "using namespace UsdUfe" from api.h [#3770](https://github.com/Autodesk/maya-usd/pull/3770)
+* Fix all test that relied on syncolor [#3763](https://github.com/Autodesk/maya-usd/pull/3763)
+* UsdUfe: create standalone builds for MaxUsd [#3757](https://github.com/Autodesk/maya-usd/pull/3757)
+* Fix Pixar plugin for USD v24.03 [#3689](https://github.com/Autodesk/maya-usd/pull/3689)
+
+**Translation Framework:**
+* Export Material:
+  * Suport legacy metarial scope mode [#3810](https://github.com/Autodesk/maya-usd/pull/3810)
+  * Material scope as default prim [#3801](https://github.com/Autodesk/maya-usd/pull/3801)
+  * Export assigned materials [#3786](https://github.com/Autodesk/maya-usd/pull/3786)
+  * Export materials without meshes [#3785](https://github.com/Autodesk/maya-usd/pull/3785)
+  * Export material scope [#3774](https://github.com/Autodesk/maya-usd/pull/3774)
+  * Export materials checkbox [#3768](https://github.com/Autodesk/maya-usd/pull/3768)
+* Add remapUVSetsTo option to UsdImport [#3776](https://github.com/Autodesk/maya-usd/pull/3776)
+* Add support to import Usd Blendshape as Maya blendshapes [#3775](https://github.com/Autodesk/maya-usd/pull/3775)
+* Add support for env var expansions in file node writers [#3769](https://github.com/Autodesk/maya-usd/pull/3769)
+* Only contain rootprim in defaultprim list if its available [#3759](https://github.com/Autodesk/maya-usd/pull/3759)
+* Add flag to export empty transform [#3741](https://github.com/Autodesk/maya-usd/pull/3741)
+* Fixed an issue exporting USD skel with new root option [#3729](https://github.com/Autodesk/maya-usd/pull/3729)
+* Fix blendshape names by using parent node instead of mesh shape[#3703](https://github.com/Autodesk/maya-usd/pull/3703)
+
+**Workflow:**
+* Copy Paste: 
+  * Cut a prim and not have it paste if the cut is restricted [#3793](https://github.com/Autodesk/maya-usd/pull/3793)
+  * Support copy and then paste a prim as a sibling [#3791](https://github.com/Autodesk/maya-usd/pull/3791)
+  * Pasted prims should be selected [#3777](https://github.com/Autodesk/maya-usd/pull/3777)
+  * MayaUSD clipboard error messages when opening up preferences window [#3758](https://github.com/Autodesk/maya-usd/pull/3758)
+  * Implement Copy\paste capabilities on USD Data [#3661](https://github.com/Autodesk/maya-usd/pull/3661)
+* Fix rotation when prim already single-axis rotation [#3756](https://github.com/Autodesk/maya-usd/pull/3756)
+* Fix center pivot command [#3755](https://github.com/Autodesk/maya-usd/pull/3755)
+* Fast Python routing [#3753](https://github.com/Autodesk/maya-usd/pull/3753)
+* Fix the position of the Maya manipulators when USD pivot are used instead of Maya pivots. [#3752](https://github.com/Autodesk/maya-usd/pull/3752)
+* Extend the delete cmd edit routing [#3747](https://github.com/Autodesk/maya-usd/pull/3747)
+* Edit routing for transform commands [#3746](https://github.com/Autodesk/maya-usd/pull/3746)
+* Material binding strength in AE [#3736](https://github.com/Autodesk/maya-usd/pull/3736)
+* Material custom control for AE [#3731](https://github.com/Autodesk/maya-usd/pull/3731)
+* Repaint layer editor when layer muting changes [#3725](https://github.com/Autodesk/maya-usd/pull/3725)
+* Fix layer editor refresh when reloading from AE [#3722](https://github.com/Autodesk/maya-usd/pull/3722)
+* Add default value concept to USD datamodel for UFE [#3721](https://github.com/Autodesk/maya-usd/pull/3721)
+* Filter items hidden in the outliner [#3719](https://github.com/Autodesk/maya-usd/pull/3719)
+* Payload command undo to restore payload rules [#3714](https://github.com/Autodesk/maya-usd/pull/3714)
+* Support EditRouter in delete command [#3695](https://github.com/Autodesk/maya-usd/pull/3695)
+
+**Render:**
+* Backport MaterialX 1.39 fix for source code node [#3795](https://github.com/Autodesk/maya-usd/pull/3795)
+* Fix UDIMs for custom textures [#3787](https://github.com/Autodesk/maya-usd/pull/3787)
+* Remove down cast of world space hit point in HdxPickHit [#3754](https://github.com/Autodesk/maya-usd/pull/3754)
+* Instance selection highlight [#3744](https://github.com/Autodesk/maya-usd/pull/3744)
+
+**Documentation:**
+* Create SECURITY.md [#3806](https://github.com/Autodesk/maya-usd/pull/3806)
+* Improve the undo/redo documentation [#3764](https://github.com/Autodesk/maya-usd/pull/3764)
+* Minor fixes on AL migration guide, updated the Maya doc links to be 2025 [#3738](https://github.com/Autodesk/maya-usd/pull/3738)
+* Migration guide from AL_USDMaya to Autodesk's MayaUSD [#3735](https://github.com/Autodesk/maya-usd/pull/3735)
+
+**Miscellaneous:**
+* Hides ramp attributes in AE Template [#3812](https://github.com/Autodesk/maya-usd/pull/3812)
+* Disable material in sync with meshes when duplicating [#3805](https://github.com/Autodesk/maya-usd/pull/3805)
+* Don't depend on MayaUSD if not using it [#3794](https://github.com/Autodesk/maya-usd/pull/3794)
+* Add tooltip for lookdevx button in material section in AE [#3788](https://github.com/Autodesk/maya-usd/pull/3788)
+* Update for a change in MaterialX 1.38.10 [#3771](https://github.com/Autodesk/maya-usd/pull/3771)
+* Graph the material in LookdevX [#3740](https://github.com/Autodesk/maya-usd/pull/3740)
+* UsdUfe: Move Ufe::Attributes interface implementation [#3737](https://github.com/Autodesk/maya-usd/pull/3737)
+* Early out of fn if the required 'pxrUsd' plugin isn't loaded [#3724](https://github.com/Autodesk/maya-usd/pull/3724)
+* Wrap the 'unilinearizeColors' parameter [#3723](https://github.com/Autodesk/maya-usd/pull/3723)
+* Fix incorrect version check in test [#3720](https://github.com/Autodesk/maya-usd/pull/3720)
+
 ## [v0.28.0] - 2024-05-23
 
 **Build:**

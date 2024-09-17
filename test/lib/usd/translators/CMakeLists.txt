@@ -46,6 +46,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportSelectionHierarchy.py
     testUsdExportSkeleton.py
     testUsdExportSkin.py
+    testUsdExportStagesAsRefs.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py
     testUsdExportTexture.py
@@ -124,6 +125,7 @@ foreach(script ${TEST_SCRIPT_FILES})
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENV
             "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
     # Add a ctest label to these tests for easy filtering.
@@ -151,6 +153,8 @@ foreach(script ${TEST_SCRIPT_FILES_WITH_MATERIAL_SCOPE})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
     # Add a ctest label to these tests for easy filtering.
@@ -165,6 +169,7 @@ mayaUsd_add_test(testUsdExportUVSets
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdExportUVSets APPEND PROPERTY LABELS translators)
 
@@ -173,6 +178,7 @@ mayaUsd_add_test(testUsdExportUVSetsFloat
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=1"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdExportUVSetsFloat APPEND PROPERTY LABELS translators)
 
@@ -182,6 +188,7 @@ mayaUsd_add_test(testUsdExportUVSetMappings
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
         "MAYAUSD_PROVIDE_DEFAULT_TEXCOORD_PRIMVAR_NAME=1"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdExportUVSetMappings APPEND PROPERTY LABELS translators)
 
@@ -190,6 +197,7 @@ mayaUsd_add_test(testUsdImportUVSets
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_READ_FLOAT2_AS_UV=0"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdImportUVSets APPEND PROPERTY LABELS translators)
 
@@ -198,6 +206,7 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_READ_FLOAT2_AS_UV=1"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdImportUVSetsFloat APPEND PROPERTY LABELS translators)
 
@@ -207,6 +216,7 @@ mayaUsd_add_test(testUsdImportChaser
     ENV
         "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
         "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdImportChaser APPEND PROPERTY LABELS translators)
 
@@ -239,6 +249,7 @@ foreach(template_script ${CUSTOM_TEST_SCRIPT_FILES})
                 "INPUT_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
                 "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}"
                 "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
                 )
         set_property(TEST ${target} APPEND PROPERTY LABELS translators)
     endforeach()
@@ -250,7 +261,9 @@ endforeach()
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
     set(MTLX_TEST_SCRIPT_FILES
         testUsdExportMaterialScope.py
+        testUsdExportMaterialScopeLegacy.py
         testUsdExportMaterialsOnly.py
+        testUsdExportAssignedMaterials.py
         testUsdExportMaterialX.py
         testUsdImportMaterialX.py
 		testUsdExportFannedOutFileNodesMaterial.py
@@ -260,6 +273,8 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
         mayaUsd_add_test(${target}
             PYTHON_MODULE ${target}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         )
 
         # Add a ctest label to these tests for easy filtering.
@@ -270,6 +285,8 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
         mayaUsd_add_test(testUsdExportMultiMaterial
             PYTHON_MODULE testUsdExportMultiMaterial
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         )
         set_property(TEST testUsdExportMultiMaterial APPEND PROPERTY LABELS translators)
     endif()
@@ -282,6 +299,7 @@ mayaUsd_add_test(testUsdMayaListShadingModesCommand
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdMayaListShadingModesCommand APPEND PROPERTY LABELS translators)
 
@@ -294,6 +312,7 @@ mayaUsd_add_test(testUsdExportSchemaApi
     ENV
         "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
         "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/nullApiExporter"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdExportSchemaApi APPEND PROPERTY LABELS translators)
 
@@ -302,6 +321,7 @@ mayaUsd_add_test(testUsdImportExportSiteSpecificConfig
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/SiteSpecificConfig"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdImportExportSiteSpecificConfig APPEND PROPERTY LABELS translators)
 
@@ -310,4 +330,5 @@ mayaUsd_add_test(testUsdExportEmptyXforms
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/ExportEmptyConfig"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDSHADERATTRIBUTEDEF_H
+#define USDUFE_USDSHADERATTRIBUTEDEF_H
 
 #include <usdUfe/base/api.h>
 
@@ -58,12 +59,14 @@ public:
 
     inline const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty() const
     {
-        return fShaderAttributeDef;
+        return _shaderAttributeDef;
     }
 
 private:
-    const PXR_NS::SdrShaderPropertyConstPtr fShaderAttributeDef;
+    const PXR_NS::SdrShaderPropertyConstPtr _shaderAttributeDef;
 
 }; // UsdShaderAttributeDef
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDSHADERATTRIBUTEDEF_H

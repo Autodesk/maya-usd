@@ -1,5 +1,5 @@
 #
-# Copyright 2021 Autodesk
+# Copyright 2024 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 include(FetchContent)
 
-set(CONTENT_NAME gulrak)
-
 set(FETCHCONTENT_QUIET OFF)
 
 # GULRAK_SOURCE_DIR : Set this to the directory where you have cloned gulrak filesystem repo, 
@@ -26,23 +24,18 @@ if(DEFINED GULRAK_SOURCE_DIR)
     file(TO_CMAKE_PATH "${GULRAK_SOURCE_DIR}" GULRAK_SOURCE_DIR)
     message(STATUS "**** Building Gulrak From " ${GULRAK_SOURCE_DIR})
     FetchContent_Declare(
-        ${CONTENT_NAME}
+        gulrak
         URL ${GULRAK_SOURCE_DIR}
     )
 
-    string(TOUPPER ${CONTENT_NAME} UPPERGULARK)
-    mark_as_advanced(FETCHCONTENT_SOURCE_DIR_${UPPERGULARK})
+    mark_as_advanced(FETCHCONTENT_SOURCE_DIR_GULRAK)
     mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_${UPPERGULARK})
-
 else()
     message(STATUS "**** Building Gulrak From Github Repository.")
     FetchContent_Declare(
-        ${CONTENT_NAME}
-        GIT_REPOSITORY https://github.com/gulrak/filesystem.git
-        GIT_TAG        4e21ab305794f5309a1454b4ae82ab9a0f5e0d25
-        USES_TERMINAL_DOWNLOAD TRUE
-        GIT_CONFIG     advice.detachedHead=false
+        gulrak
+        URL https://github.com/gulrak/filesystem/archive/refs/tags/v1.5.14.zip
     )
 endif()
 
-FetchContent_MakeAvailable(${CONTENT_NAME})
+FetchContent_MakeAvailable(gulrak)

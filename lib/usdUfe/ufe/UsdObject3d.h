@@ -5,7 +5,8 @@
 // agreement provided at the time of installation or download, or which
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
-#pragma once
+#ifndef USDUFE_USDOBJECT3D_H
+#define USDUFE_USDOBJECT3D_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -36,7 +37,7 @@ public:
     //! Create a UsdObject3d.
     static UsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
 
-    PXR_NS::UsdPrim prim() const { return fPrim; }
+    PXR_NS::UsdPrim prim() const { return _prim; }
 
     // DCC specific helpers:
 
@@ -60,9 +61,11 @@ public:
     Ufe::UndoableCommand::Ptr setVisibleCmd(bool vis) override;
 
 private:
-    UsdSceneItem::Ptr fItem;
-    PXR_NS::UsdPrim   fPrim;
+    UsdSceneItem::Ptr _item;
+    PXR_NS::UsdPrim   _prim;
 
 }; // UsdObject3d
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDOBJECT3D_H

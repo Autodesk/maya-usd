@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_SETVARIANTSELECTIONCOMMAND_H
+#define USDUFE_SETVARIANTSELECTIONCOMMAND_H
 
 #include <usdUfe/base/api.h>
 
@@ -63,3 +64,5 @@ private:
 };
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_SETVARIANTSELECTIONCOMMAND_H

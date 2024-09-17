@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOCLEARDEFAULTPRIMCOMMAND_H
+#define USDUFE_USDUNDOCLEARDEFAULTPRIMCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
@@ -46,3 +47,5 @@ private:
 }; // UsdUndoClearDefaultPrimCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOCLEARDEFAULTPRIMCOMMAND_H

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDCAMERA_H
+#define USDUFE_USDCAMERA_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -45,8 +46,8 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -89,8 +90,10 @@ public:
     bool renderable() const override;
 #endif // UFE_CAMERA_HAS_RENDERABLE
 private:
-    UsdSceneItem::Ptr fItem;
+    UsdSceneItem::Ptr _item;
 
 }; // UsdCamera
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDCAMERA_H

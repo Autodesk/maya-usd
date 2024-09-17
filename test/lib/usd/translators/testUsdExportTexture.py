@@ -49,13 +49,14 @@ class testUsdExportTexture(unittest.TestCase):
         return os.path.join(outputFolder, 'TextureTest.usda')
 
     def tearDown(self):
-        usdFilePath = self.getUsdFilePath()
         try:
-            if os.path.exists(usdFilePath):
-                os.remove(usdFilePath)
+            # Cleanup the output folder added for the test. We don't want
+            # to leave extra files around in the test source directory.
+            outputFolder = os.path.dirname(self.getUsdFilePath())
+            import shutil
+            shutil.rmtree(outputFolder)
         except Exception:
             # Don't let cleanup errors fail the test.
-            # We're removing the output file only to be nice, it is not mandatory.
             pass
 
     def runTextureTest(self, relativeMode, withEnvVar):
@@ -76,7 +77,9 @@ class testUsdExportTexture(unittest.TestCase):
         usdFilePath = self.getUsdFilePath()
 
         with testUtils.TemporaryEnvironmentVariable(PROJ_ENV_VAR_NAME, projectFolder):
-            cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, exportRelativeTextures=relativeMode)
+            cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, 
+                exportRelativeTextures=relativeMode, legacyMaterialScope=False,
+                defaultPrim='None')
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage, usdFilePath)

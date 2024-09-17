@@ -31,6 +31,7 @@
 #include <ufe/observableSelection.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/sceneItemOps.h>
+#include <ufe/selectionUndoableCommands.h>
 
 namespace {
 
@@ -315,14 +316,18 @@ void UsdCutClipboardCommand::execute()
 
     // Step 1. Copy the selected items to the Clipboard.
     auto copyClipboardCommand = UsdCopyClipboardCommand::create(_selection, _clipboard);
-    copyClipboardCommand->execute();
+    if (copyClipboardCommand)
+        copyClipboardCommand->execute();
 
     const auto& sceneItemOpsHandler
         = Ufe::RunTimeMgr::instance().sceneItemOpsHandler(UsdUfe::getUsdRunTimeId());
 
-    // Step 2. Delete the selected items.
+    auto ufeSn = Ufe::GlobalSelection::get();
+
+    // Step 2. Deselect then delete the selected items.
     for (auto&& item : _selection) {
         if (auto usdItem = downcast(item)) {
+            Ufe::SelectionRemoveItem::createAndExecute(ufeSn, item);
             sceneItemOpsHandler->sceneItemOps(usdItem)->deleteItem();
         }
     }
@@ -331,6 +336,13 @@ void UsdCutClipboardCommand::execute()
 void UsdCutClipboardCommand::undo() { _undoableItem.undo(); }
 
 void UsdCutClipboardCommand::redo() { _undoableItem.redo(); }
+
+Ufe::Selection getNewSelectionFromCommand(const UsdCutClipboardCommand& cmd)
+{
+    // Just keep the same selection (the cut items were already removed).
+    Ufe::Selection sel(*Ufe::GlobalSelection::get());
+    return sel;
+}
 
 // Ensure that UsdPasteClipboardCommand is properly setup.
 static_assert(std::is_base_of<Ufe::UndoableCommand, UsdPasteClipboardCommand>::value);
@@ -440,6 +452,12 @@ void UsdPasteClipboardCommand::execute()
         }
     };
 
+    // EMSUSD-1122 - As a user, I'd like to copy and then paste a prim as a sibling
+    // If the selection hasn't changed between the copy and the paste, then we'll
+    // paste into the parent of each destination parent item.
+    // Note: for now only applies to regular prims (not the materials or shaders).
+    bool pasteAsSibling = _clipboard->pasteAsSibling();
+
     for (const auto& dstParentItem : _dstParentItems) {
         Ufe::PasteClipboardCommand::PasteInfo pasteInfo;
         pasteInfo.pasteTarget = dstParentItem->path();
@@ -448,11 +466,13 @@ void UsdPasteClipboardCommand::execute()
             if (isMaterialsScope(dstParentItem)) {
                 auto duplicateCmd
                     = UsdUndoDuplicateSelectionCommand::create(clipboardMaterials, dstParentItem);
-                duplicateCmd->execute();
-                appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
-                auto tmpTargetItems = duplicateCmd->targetItems();
-                _targetItems.insert(
-                    _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                if (duplicateCmd) {
+                    duplicateCmd->execute();
+                    appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
+                    auto tmpTargetItems = duplicateCmd->targetItems();
+                    _targetItems.insert(
+                        _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                }
             } else {
                 appendToVector(clipboardMaterials, pasteInfo.failedPastes, true);
             }
@@ -469,29 +489,75 @@ void UsdPasteClipboardCommand::execute()
             } else if (PXR_NS::UsdShadeNodeGraph(dstParentItem->prim())) {
                 auto duplicateCmd
                     = UsdUndoDuplicateSelectionCommand::create(clipboardShaders, dstParentItem);
-                duplicateCmd->execute();
-                appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
-                auto tmpTargetItems = duplicateCmd->targetItems();
-                _targetItems.insert(
-                    _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                if (duplicateCmd) {
+                    duplicateCmd->execute();
+                    appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
+                    auto tmpTargetItems = duplicateCmd->targetItems();
+                    _targetItems.insert(
+                        _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                }
             } else {
                 appendToVector(clipboardShaders, pasteInfo.failedPastes, true);
             }
         }
 
         if (!clipboardPrims.empty()) {
-            auto duplicateCmd
-                = UsdUndoDuplicateSelectionCommand::create(clipboardPrims, dstParentItem);
-            duplicateCmd->execute();
-            appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
-            auto tmpTargetItems = duplicateCmd->targetItems();
-            _targetItems.insert(_targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
-            _itemsToSelect.insert(
-                _itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+            UsdSceneItem::Ptr pasteTarget = dstParentItem;
+            if (pasteAsSibling) {
+                auto hier = Ufe::Hierarchy::hierarchy(dstParentItem);
+                auto parentItem = hier ? hier->parent() : nullptr;
+                auto newPasteTarget = downcast(parentItem);
+                if (newPasteTarget) {
+                    pasteTarget = newPasteTarget;
+                } else {
+                    pasteAsSibling = false;
+                }
+            }
+
+            // When pasting as sibling we have changed the paste target to the parent
+            // which means we might have the same parent as one of the other paste targets.
+            // We don't want to paste twice to that same parent.
+            bool skipThisTarget = false;
+            for (const auto& prevPasteInto : _pasteInfos) {
+                if (prevPasteInto.pasteTarget == pasteTarget->path()) {
+                    skipThisTarget = true;
+                    break;
+                }
+            }
+
+            if (!skipThisTarget) {
+                // When pasting as sibling we'll use an extra paste info since
+                // the paste target is different.
+                Ufe::PasteClipboardCommand::PasteInfo extraPasteInfo;
+                if (pasteAsSibling)
+                    extraPasteInfo.pasteTarget = pasteTarget->path();
+
+                auto duplicateCmd
+                    = UsdUndoDuplicateSelectionCommand::create(clipboardPrims, pasteTarget);
+                if (duplicateCmd) {
+                    duplicateCmd->execute();
+                    appendToVector(
+                        duplicateCmd->targetItems(),
+                        pasteAsSibling ? extraPasteInfo.successfulPastes
+                                       : pasteInfo.successfulPastes);
+                    auto tmpTargetItems = duplicateCmd->targetItems();
+                    _targetItems.insert(
+                        _targetItems.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                    _itemsToSelect.insert(
+                        _itemsToSelect.end(), tmpTargetItems.begin(), tmpTargetItems.end());
+                }
+                if (pasteAsSibling) {
+                    _pasteInfos.push_back(std::move(extraPasteInfo));
+                }
+            }
         }
 
         // Add the paste info.
         _pasteInfos.push_back(std::move(pasteInfo));
+    }
+
+    if (!pasteAsSibling) {
+        _clipboard->setPasteAsSibling();
     }
 
     // Remove ClipboardMetadata.
@@ -520,4 +586,5 @@ Ufe::Selection getNewSelectionFromCommand(const UsdPasteClipboardCommand& cmd)
     }
     return newSelection;
 }
+
 } // namespace USDUFE_NS_DEF

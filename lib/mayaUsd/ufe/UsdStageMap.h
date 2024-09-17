@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDSTAGEMAP_H
+#define MAYAUSD_USDSTAGEMAP_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
@@ -87,7 +88,7 @@ public:
     void setDirty();
 
     //! Returns true if the stage map is dirty (meaning it needs to be filled in).
-    bool isDirty() const { return fDirty; }
+    bool isDirty() const { return _dirty; }
 
 private:
     UsdStageMap();
@@ -127,11 +128,13 @@ private:
     // We keep two maps for fast lookup when there are many proxy shapes.
     using PathToObject = std::unordered_map<Ufe::Path, MObjectHandle>;
     using StageToObject = PXR_NS::TfHashMap<PXR_NS::UsdStageWeakPtr, MObjectHandle, PXR_NS::TfHash>;
-    PathToObject  fPathToObject;
-    StageToObject fStageToObject;
-    bool          fDirty { true };
+    PathToObject  _pathToObject;
+    StageToObject _stageToObject;
+    bool          _dirty { true };
 
 }; // UsdStageMap
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDSTAGEMAP_H

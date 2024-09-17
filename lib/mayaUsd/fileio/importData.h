@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSD_IMPORTDATA_H
+#define MAYAUSD_IMPORTDATA_H
 
 #include <mayaUsd/base/api.h>
 
@@ -127,16 +128,18 @@ public:
     //@}
 
 private:
-    UsdStagePopulationMask   fPopMask;
-    UsdStage::InitialLoadSet fLoadSet;
-    SdfVariantSelectionMap   fRootVariants;
-    PrimVariantSelections    fPrimVariants;
-    std::string              fRootPrimPath;
-    std::string              fFilename;
+    UsdStagePopulationMask   _popMask;
+    UsdStage::InitialLoadSet _loadSet;
+    SdfVariantSelectionMap   _rootVariants;
+    PrimVariantSelections    _primVariants;
+    std::string              _rootPrimPath;
+    std::string              _filename;
 
-    int  fPrimsInScopeCount;
-    int  fSwitchedVariantCount;
-    bool fApplyEulerFilter;
+    int  _primsInScopeCount;
+    int  _switchedVariantCount;
+    bool _applyEulerFilter;
 };
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_IMPORTDATA_H

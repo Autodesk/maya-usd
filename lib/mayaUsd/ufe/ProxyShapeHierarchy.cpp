@@ -48,11 +48,12 @@ namespace {
 // Note: UsdPrimIsActive is handled differently because pulled objects
 //       are set inactive (to hide them from Rendering), so we handle
 //       them differently.
-const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate = UsdPrimIsDefined && !UsdPrimIsAbstract;
+const Usd_PrimFlagsConjunction kMayaUsdPrimDefaultPredicate
+    = UsdPrimIsDefined && !UsdPrimIsAbstract;
 
 UsdPrimSiblingRange getUSDFilteredChildren(
     const UsdPrim&               prim,
-    const Usd_PrimFlagsPredicate pred = MayaUsdPrimDefaultPredicate)
+    const Usd_PrimFlagsPredicate pred = kMayaUsdPrimDefaultPredicate)
 {
     // Since the equivalent of GetChildren is
     // GetFilteredChildren( UsdPrimDefaultPredicate ),
@@ -73,7 +74,7 @@ MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Hierarchy, ProxyShapeHierarchy);
 
 ProxyShapeHierarchy::ProxyShapeHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
     : Ufe::Hierarchy()
-    , fMayaHierarchyHandler(mayaHierarchyHandler)
+    , _mayaHierarchyHandler(mayaHierarchyHandler)
 {
 }
 
@@ -99,33 +100,33 @@ void ProxyShapeHierarchy::setItem(const Ufe::SceneItem::Ptr& item)
     // Our USD root prim is from the stage, which is from the item. So if we are
     // changing the item, it's possible that we won't have the same stage (and
     // thus the same root prim). To be safe, clear our stored root prim.
-    if (fItem != item) {
-        fUsdRootPrim = UsdPrim();
+    if (_item != item) {
+        _usdRootPrim = UsdPrim();
     }
-    fItem = item;
-    fMayaHierarchy = fMayaHierarchyHandler->hierarchy(item);
+    _item = item;
+    _mayaHierarchy = _mayaHierarchyHandler->hierarchy(item);
 }
 
 const UsdPrim& ProxyShapeHierarchy::getUsdRootPrim() const
 {
-    if (!fUsdRootPrim.IsValid()) {
+    if (!_usdRootPrim.IsValid()) {
         // FIXME During AL_usdmaya_ProxyShapeImport, nodes (both Maya
         // and USD) are being added (e.g. the proxy shape itself), but
         // there is no stage yet, and there is no way to detect that a
         // proxy shape import command is under way.  PPT, 28-Sep-2018.
-        UsdStageWeakPtr stage = getStage(fItem->path());
+        UsdStageWeakPtr stage = getStage(_item->path());
         if (stage) {
-            fUsdRootPrim = stage->GetPseudoRoot();
+            _usdRootPrim = stage->GetPseudoRoot();
         }
     }
-    return fUsdRootPrim;
+    return _usdRootPrim;
 }
 
 //------------------------------------------------------------------------------
 // Ufe::Hierarchy overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::sceneItem() const { return fItem; }
+Ufe::SceneItem::Ptr ProxyShapeHierarchy::sceneItem() const { return _item; }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 
@@ -191,7 +192,7 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
         // See uniqueChildName() for explanation of USD filter predicate.
         const bool             showInactive = childFilter.front().value;
         Usd_PrimFlagsPredicate flags
-            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : MayaUsdPrimDefaultPredicate;
+            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : kMayaUsdPrimDefaultPredicate;
         return createUFEChildList(getUSDFilteredChildren(rootPrim, flags), !showInactive);
     }
 
@@ -206,11 +207,11 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
     // We must create selection items for our children.  These will have as
     // path the path of the proxy shape, with a single path segment of a
     // single component appended to it.
-    auto               parentPath = fItem->path();
+    auto               parentPath = _item->path();
     Ufe::SceneItemList children;
     UFE_V3(std::string dagPathStr;)
 
-    const SdfPath primPath = getProxyShapePrimPath(fItem->path());
+    const SdfPath primPath = getProxyShapePrimPath(_item->path());
     if (primPath.IsEmpty()) {
         // An empty primPath means we're in a bad state.  We'll return true here
         // without populating children.
@@ -246,7 +247,7 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
     return children;
 }
 
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const { return fMayaHierarchy->parent(); }
+Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const { return _mayaHierarchy->parent(); }
 
 Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,

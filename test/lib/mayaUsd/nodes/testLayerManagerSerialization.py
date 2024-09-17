@@ -142,6 +142,24 @@ class testLayerManagerSerialization(unittest.TestCase):
         self.assertEqual(
             sessionSavedStatus, stage.GetPrimAtPath(newPrimPath).IsValid())
 
+    def testSaveWithoutStage(self):
+        '''
+        Verify that when saving a Maya scene, if no stage have been created then
+        the scene does not depends on teh MayaUSD plugin.
+        '''
+        self._currentTestDir = tempfile.mkdtemp(prefix='testSaveWithoutStage')
+        self._tempMayaFile = os.path.join(
+            self._currentTestDir, 'EmptySerializationTest.ma')
+        cmds.file(new=True, force=True)
+        cmds.file(rename=self._tempMayaFile)
+        cmds.file(save=True, force=True, type='mayaAscii')
+        cmds.file(new=True, force=True)
+        for i, line in enumerate(open(self._tempMayaFile)):
+            self.assertFalse('mayaUsdPlugin' in line,
+                             'Found mayaUSdPlugin depedency in line %d of %s' % (i+1, self._tempMayaFile))
+
+        shutil.rmtree(self._currentTestDir)
+
     def testSaveAllToMaya(self):
         '''
         Verify that all USD edits are save into the Maya file.
@@ -242,7 +260,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath = ufe.PathString.path(proxyShape)
 
-        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
 
         newPrimPath = "/ChangeInRoot"
         stage.DefinePrim(newPrimPath, "xform")
@@ -272,7 +290,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath = ufe.PathString.path(proxyShape)
 
-        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
 
         newPrimPath = "/ChangeInRoot"
         stage.DefinePrim(newPrimPath, "xform")

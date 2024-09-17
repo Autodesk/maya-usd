@@ -46,12 +46,14 @@ public:
     static constexpr auto kDefaultUSDFormatFlag = "duf";
     static constexpr auto kExportColorSetsFlag = "cls";
     static constexpr auto kExportMaterialsFlag = "mat";
-    static constexpr auto kExportMaterialUnderPrimFlag = "mup";
+    static constexpr auto kExportAssignedMaterialsFlag = "ama";
+    static constexpr auto kLegacyMaterialScopeFlag = "lms";
     static constexpr auto kExportUVsFlag = "uvs";
     static constexpr auto kExportRelativeTexturesFlag = "rtx";
     static constexpr auto kEulerFilterFlag = "ef";
     static constexpr auto kExportVisibilityFlag = "vis";
     static constexpr auto kExportComponentTagsFlag = "tag";
+    static constexpr auto kExportStagesAsRefsFlag = "sar";
     static constexpr auto kIgnoreWarningsFlag = "ign";
     static constexpr auto kExportInstancesFlag = "ein";
     static constexpr auto kWriteDefaults = "wd";

@@ -249,7 +249,7 @@ class DeleteCmdTestCase(unittest.TestCase):
             ball34PathString,
             "|transform1|proxyShape1,/Room_set/Props/Ball_34")
 
-        # Test that "|world" prefix is optional for multi-segment paths.
+        # Test that "|world" prefix is not required for multi-segment paths.
         ball35PathString = "|transform1|proxyShape1,/Room_set/Props/Ball_35"
 
         ufeObs.reset()

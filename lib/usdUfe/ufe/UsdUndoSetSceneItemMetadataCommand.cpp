@@ -16,18 +16,20 @@
 
 #include "UsdUndoSetSceneItemMetadataCommand.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
 
-#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/editContext.h>
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/undoableCommand.h>
+
+#include <exception>
 
 namespace USDUFE_NS_DEF {
 
@@ -60,34 +62,43 @@ SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
 {
 }
 
+void SetSceneItemMetadataCommand::setKeyMetadata()
+{
+    const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+    const PXR_NS::TfToken key(_key);
+
+    // If this is not a grouped metadata, set the _value directly on the _key
+    PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData, key);
+    prim.SetCustomDataByKey(key, ufeValueToVtValue(_value));
+}
+
+void SetSceneItemMetadataCommand::setGroupMetadata()
+{
+    const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+
+    // When the group name starts with "SessionLayer-", remove that prefix
+    // and write in the session layer.
+    std::string prefixlessGroupName;
+    if (isSessionLayerGroupMetadata(_group, &prefixlessGroupName)) {
+        PXR_NS::UsdEditContext editCtx(_stage, _stage->GetSessionLayer());
+        PXR_NS::TfToken        fullKey(prefixlessGroupName + std::string(":") + _key);
+        prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
+    } else {
+        PXR_NS::TfToken               fullKey(_group + std::string(":") + _key);
+        PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData, fullKey);
+        prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
+    }
+}
+
 void SetSceneItemMetadataCommand::executeImplementation()
 {
-    if (_stage) {
-        const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+    if (!_stage)
+        return;
 
-        if (_group.GetString().empty()) {
-            // If this is not a grouped metadata, set the _value directly on the _key
-            PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData);
-
-            prim.SetCustomDataByKey(TfToken(_key), ufeValueToVtValue(_value));
-        } else {
-            PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
-
-            PXR_NS::VtDictionary newDict;
-            if (!data.IsEmpty()) {
-                if (data.IsHolding<PXR_NS::VtDictionary>()) {
-                    newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
-                } else {
-                    return;
-                }
-            }
-
-            PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData, _group);
-
-            newDict[_key] = ufeValueToVtValue(_value);
-            prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
-        }
-    }
+    if (_group.empty())
+        setKeyMetadata();
+    else
+        setGroupMetadata();
 }
 
 } // namespace USDUFE_NS_DEF

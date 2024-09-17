@@ -91,6 +91,10 @@ private:
 
 }; // UsdCutClipboardCommand
 
+//! \brief Retrieve the desired selection after the command has executed.
+//         \see UsdUndoSelectAfterCommand.
+Ufe::Selection USDUFE_PUBLIC getNewSelectionFromCommand(const UsdCutClipboardCommand& cmd);
+
 //! \brief Command to paste the USD prims from the clipboard.
 class USDUFE_PUBLIC UsdPasteClipboardCommand : public Ufe::PasteClipboardCommand
 {
@@ -138,6 +142,7 @@ private:
     Ufe::SceneItemList _itemsToSelect;
 
     // The cmd gets the clipboard data when executed.
+    friend class UsdPasteClipboardCommandWithSelection;
     UsdClipboard::Ptr _clipboard;
 
     // The info messages for the pasted items.

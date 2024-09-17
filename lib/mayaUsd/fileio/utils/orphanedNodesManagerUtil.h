@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSD_ORPHANEDNODESMANAGERUTIL_H
+#define MAYAUSD_ORPHANEDNODESMANAGERUTIL_H
 
 #include <mayaUsd/fileio/orphanedNodesManager.h>
 
@@ -52,3 +53,5 @@ void printOrphanedNodesManagerPullInfo(
 
 } // namespace utils
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_ORPHANEDNODESMANAGERUTIL_H

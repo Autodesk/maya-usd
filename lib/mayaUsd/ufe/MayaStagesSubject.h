@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_MAYASTAGESSUBJECT_H
+#define MAYAUSD_MAYASTAGESSUBJECT_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
@@ -78,7 +79,7 @@ private:
 
     // Map of per-stage listeners, indexed by stage.
     typedef PXR_NS::TfHashMap<PXR_NS::UsdStageWeakPtr, NoticeKeys, PXR_NS::TfHash> StageListenerMap;
-    StageListenerMap                                                               fStageListeners;
+    StageListenerMap                                                               _stageListeners;
 
     /*! \brief  Store invalidated ufe paths during dirty propagation.
 
@@ -87,13 +88,15 @@ private:
        during dirty propagation and send invalidation from compute, when the new stage is set. This
        cache is only useful between onStageInvalidate and onStageSet notifications.
     */
-    std::unordered_set<Ufe::Path> fInvalidStages;
+    std::unordered_set<Ufe::Path> _invalidStages;
 
-    bool fIsInNewScene = false;
+    bool _isInNewScene = false;
 
-    MCallbackIdArray fCbIds;
+    MCallbackIdArray _cbIds;
 
 }; // MayaStagesSubject
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_MAYASTAGESSUBJECT_H

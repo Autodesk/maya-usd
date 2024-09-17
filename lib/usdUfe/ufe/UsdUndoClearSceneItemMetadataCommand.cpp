@@ -16,10 +16,15 @@
 
 #include "UsdUndoClearSceneItemMetadataCommand.h"
 
+#include <usdUfe/base/tokens.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/editContext.h>
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
@@ -43,37 +48,27 @@ ClearSceneItemMetadataCommand::ClearSceneItemMetadataCommand(
 
 void ClearSceneItemMetadataCommand::executeImplementation()
 {
-    if (_stage) {
-        const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
-        if (_group.GetString().empty()) {
-            // If this is not a grouped meta data, remove the key
-            PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData);
+    if (!_stage)
+        return;
 
-            prim.ClearCustomDataByKey(TfToken(_key));
+    const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+    if (_group.empty()) {
+        // If this is not a grouped meta data, remove the key
+        PXR_NS::TfToken               key(_key);
+        PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, key);
+        prim.ClearCustomDataByKey(key);
+    } else {
+        // When the group name starts with "SessionLayer-", remove that prefix
+        // and clear in the session layer.
+        std::string prefixlessGroupName;
+        if (isSessionLayerGroupMetadata(_group, &prefixlessGroupName)) {
+            PXR_NS::UsdEditContext editCtx(_stage, _stage->GetSessionLayer());
+            PXR_NS::TfToken        fullKey(prefixlessGroupName + std::string(":") + _key);
+            prim.ClearCustomDataByKey(fullKey);
         } else {
-
-            const PXR_NS::VtValue data = prim.GetCustomDataByKey(_group);
-
-            if (!data.IsEmpty() && data.IsHolding<PXR_NS::VtDictionary>()) {
-                // Remove the key and its value.
-                if (!_key.empty()) {
-                    PXR_NS::VtDictionary newDict = data.UncheckedGet<PXR_NS::VtDictionary>();
-                    if (newDict.find(_key) != newDict.end()) {
-                        PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, _group);
-
-                        newDict.erase(_key);
-
-                        // Set the new data.
-                        prim.SetCustomDataByKey(_group, PXR_NS::VtValue(newDict));
-                    }
-                }
-                // Remove the group.
-                else {
-                    PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, _group);
-
-                    prim.ClearCustomDataByKey(_group);
-                }
-            }
+            PXR_NS::TfToken               fullKey(_group + std::string(":") + _key);
+            PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, fullKey);
+            prim.ClearCustomDataByKey(fullKey);
         }
     }
 }

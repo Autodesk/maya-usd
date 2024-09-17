@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_USDLIGHT_H
+#define MAYAUSD_USDLIGHT_H
 
 #include <mayaUsd/base/api.h>
 
@@ -25,11 +26,17 @@
 #include <ufe/light.h>
 #include <ufe/path.h>
 
+#if defined(UFE_VOLUME_LIGHTS_SUPPORT) && (UFE_MAJOR_VERSION == 5)
+#define UFE_LIGHT_BASE Ufe::Light_v5_5
+#else
+#define UFE_LIGHT_BASE Ufe::Light
+#endif
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to control lights through USD.
-class MAYAUSD_CORE_PUBLIC UsdLight : public Ufe::Light
+class MAYAUSD_CORE_PUBLIC UsdLight : public UFE_LIGHT_BASE
 {
 public:
     typedef std::shared_ptr<UsdLight> Ptr;
@@ -45,8 +52,8 @@ public:
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
-        if (TF_VERIFY(fItem != nullptr))
-            return fItem->prim();
+        if (TF_VERIFY(_item != nullptr))
+            return _item->prim();
         else
             return PXR_NS::UsdPrim();
     }
@@ -85,16 +92,21 @@ protected:
     std::shared_ptr<SphereInterface>      sphereInterfaceImpl() override;
     std::shared_ptr<ConeInterface>        coneInterfaceImpl() override;
     std::shared_ptr<AreaInterface>        areaInterfaceImpl() override;
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+    std::shared_ptr<CylinderInterface> cylinderInterfaceImpl() override;
+    std::shared_ptr<DiskInterface>     diskInterfaceImpl() override;
+    std::shared_ptr<DomeInterface>     domeInterfaceImpl() override;
+#endif
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 }; // UsdLight
 
 class UsdDirectionalInterface : public Ufe::Light::DirectionalInterface
 {
 public:
     UsdDirectionalInterface(const UsdUfe::UsdSceneItem::Ptr& item)
-        : fItem(item)
+        : _item(item)
     {
     }
 
@@ -103,14 +115,14 @@ public:
     float                                 angle() const override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdSphereInterface : public Ufe::Light::SphereInterface
 {
 public:
     UsdSphereInterface(const UsdUfe::UsdSceneItem::Ptr& item)
-        : fItem(item)
+        : _item(item)
     {
     }
 
@@ -119,14 +131,14 @@ public:
     Ufe::Light::SphereProps                     sphereProps() const override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdConeInterface : public Ufe::Light::ConeInterface
 {
 public:
     UsdConeInterface(const UsdUfe::UsdSceneItem::Ptr& item)
-        : fItem(item)
+        : _item(item)
     {
     }
 
@@ -136,14 +148,14 @@ public:
     Ufe::Light::ConeProps coneProps() const override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
 
 class UsdAreaInterface : public Ufe::Light::AreaInterface
 {
 public:
     UsdAreaInterface(const UsdUfe::UsdSceneItem::Ptr& item)
-        : fItem(item)
+        : _item(item)
     {
     }
 
@@ -152,8 +164,61 @@ public:
     bool                                      normalize() const override;
 
 private:
-    UsdUfe::UsdSceneItem::Ptr fItem;
+    UsdUfe::UsdSceneItem::Ptr _item;
 };
+
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+class UsdCylinderInterface : public UFE_LIGHT_BASE::CylinderInterface
+{
+public:
+    UsdCylinderInterface(const UsdUfe::UsdSceneItem::Ptr& item)
+        : _item(item)
+    {
+    }
+
+    UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr
+                                volumePropsCmd(float radius, float length) override;
+    void                        volumeProps(float radius, float length) override;
+    UFE_LIGHT_BASE::VolumeProps volumeProps() const override;
+
+private:
+    UsdUfe::UsdSceneItem::Ptr _item;
+};
+
+class UsdDiskInterface : public UFE_LIGHT_BASE::DiskInterface
+{
+public:
+    UsdDiskInterface(const UsdUfe::UsdSceneItem::Ptr& item)
+        : _item(item)
+    {
+    }
+
+    UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr volumePropsCmd(float radius) override;
+    void                                            volumeProps(float radius) override;
+    UFE_LIGHT_BASE::VolumeProps                     volumeProps() const override;
+
+private:
+    UsdUfe::UsdSceneItem::Ptr _item;
+};
+
+class UsdDomeInterface : public UFE_LIGHT_BASE::DomeInterface
+{
+public:
+    UsdDomeInterface(const UsdUfe::UsdSceneItem::Ptr& item)
+        : _item(item)
+    {
+    }
+
+    UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr volumePropsCmd(float radius) override;
+    void                                            volumeProps(float radius) override;
+    UFE_LIGHT_BASE::VolumeProps                     volumeProps() const override;
+
+private:
+    UsdUfe::UsdSceneItem::Ptr _item;
+};
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_USDLIGHT_H

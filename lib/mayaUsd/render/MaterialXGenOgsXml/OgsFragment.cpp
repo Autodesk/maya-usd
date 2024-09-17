@@ -17,7 +17,9 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
+#include <cctype>
 #include <iostream>
+#include <unordered_map>
 
 namespace MaterialXMaya {
 namespace {
@@ -368,6 +370,210 @@ std::string generateLightRig(
 
     return fragmentName;
 }
+
+// Need to find back renamed parameters and map them to their original names:
+std::string getOriginalName(const std::string& parameterName, const mx::NodeDefPtr& shaderNodeDef)
+{
+    if (!shaderNodeDef) {
+        return parameterName;
+    }
+
+    if (shaderNodeDef->getInput(parameterName)) {
+        return parameterName;
+    }
+
+    // Here we try to find back the original name in case it conflicted with an identifier (like
+    // "mix") A one level cache will help reduce churn:
+    static std::string           gLastNodeDef;
+    static std::set<std::string> gParameters;
+
+    if (gLastNodeDef != shaderNodeDef->getName()) {
+        gParameters.clear();
+        for (auto const& input : shaderNodeDef->getActiveInputs()) {
+            gParameters.insert(input->getName());
+        }
+        gLastNodeDef = shaderNodeDef->getName();
+    }
+
+    auto it = gParameters.lower_bound(parameterName);
+
+    if (it != gParameters.end() && *it == parameterName) {
+        return *it;
+    }
+
+    // Need to check the element just before to see if it is a substring of parameterName:
+    if (it == gParameters.begin()) {
+        return {};
+    }
+
+    --it;
+    if (parameterName.rfind(*it, 0) != 0) {
+        // Does not begin with that name
+        return {};
+    }
+
+    // Check that the remainder of the string only digits:
+    for (size_t i = it->length(); i < parameterName.length(); ++i) {
+        if (!std::isdigit(parameterName.at(i))) {
+            // Not a digit:
+            return {};
+        }
+    }
+
+    // Found a valid parameter name that was renamed by shadergen:
+    return *it;
+}
+
+template <typename T>
+static bool
+parameterDiffersFrom(const mx::NodePtr& node, const std::string& paramName, T const& paramValue)
+{
+    if (const auto input = node->getInput(paramName)) {
+        // A connected value is always considered to differ:
+        if (!input->getNodeName().empty() || !input->getInterfaceName().empty()
+            || !input->getOutputString().empty()) {
+            return true;
+        }
+
+        // Check the value itself:
+        if (input->hasValue()) {
+            const auto value = input->getValue();
+            return value->asA<T>() != paramValue;
+        }
+    }
+    // Assume default value is equal to paramValue.
+    return false;
+}
+
+bool isTransparentStandardSurface(const mx::NodePtr& surfaceNode)
+{
+    // See https://autodesk.github.io/standard-surface/
+    // and implementation in MaterialX libraries/bxdf/standard_surface.mtlx
+    if (parameterDiffersFrom(surfaceNode, "transmission", 0.0f)
+        || parameterDiffersFrom(surfaceNode, "opacity", mx::Color3(1.0f, 1.0f, 1.0f))) {
+        return true;
+    }
+
+    return false;
+}
+
+bool isTransparentOpenPBRSurface(const mx::NodePtr& surfaceNode)
+{
+    // See https://academysoftwarefoundation.github.io/OpenPBR/
+    // and the provided implementation
+    if (parameterDiffersFrom(surfaceNode, "transmission_weight", 0.0f)
+        || parameterDiffersFrom(surfaceNode, "geometry_opacity", 1.0f)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool isTransparentUsdPreviewSurface(const mx::NodePtr& surfaceNode)
+{
+    // See https://openusd.org/release/spec_usdpreviewsurface.html
+    // and implementation in MaterialX libraries/bxdf/usd_preview_surface.mtlx
+
+    // Non-zero opacityThreshold (or connected) triggers masked mode:
+    if (parameterDiffersFrom(surfaceNode, "opacityThreshold", 0.0f)) {
+        return true;
+    }
+
+    // Opacity less than 1.0 (or connected) triggers transparent mode:
+    if (parameterDiffersFrom(surfaceNode, "opacity", 1.0f)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool isTransparentGlTfPBRSurface(const mx::NodePtr& surfaceNode)
+{
+    // See https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#alpha-coverage
+    // And implementation in MaterialX /libraries/bxdf/gltf_pbr.mtlx
+
+    int alphaMode = 0; // Opaque
+    if (auto const modeInput = surfaceNode->getInput("alpha_mode")) {
+        if (!modeInput->getNodeName().empty() || !modeInput->getInterfaceName().empty()
+            || !modeInput->getOutputString().empty()) {
+            // A connected alpha_mode is non-standard, but will be considered to overall imply
+            // blend.
+            alphaMode = 2; // Blend
+        } else if (modeInput->hasValue()) {
+            const auto value = modeInput->getValue()->asA<int>();
+            if (value >= 0 && value <= 2) {
+                alphaMode = value;
+            }
+        }
+    }
+
+    bool retVal = false;
+    if (alphaMode == 1) // Mask
+    {
+        if (parameterDiffersFrom(surfaceNode, "alpha_cutoff", 1.0f)
+            && parameterDiffersFrom(surfaceNode, "alpha", 1.0f)) {
+            retVal = true;
+        }
+    } else if (alphaMode == 2) // Blend
+    {
+        if (parameterDiffersFrom(surfaceNode, "alpha", 1.0f)) {
+            retVal = true;
+        }
+    }
+
+    if (parameterDiffersFrom(surfaceNode, "transmission", 0.0f)) {
+        return true;
+    }
+
+    return retVal;
+}
+
+bool isTranparentMayaSurface(const mx::NodePtr& surfaceNode)
+{
+    if (parameterDiffersFrom(surfaceNode, "transparency", mx::Color3(0.0f, 0.0f, 0.0f))) {
+        return true;
+    }
+    return false;
+}
+
+enum class TransparencyResult
+{
+    kTransparent,
+    kOpaque,
+    kUnknown
+};
+TransparencyResult isTransparentSurfaceNode(const mx::NodePtr& surfaceNode)
+{
+    static const auto sKnownSurfaces
+        = std::unordered_map<std::string, std::function<bool(const mx::NodePtr&)>> {
+              { "ND_standard_surface_surfaceshader", isTransparentStandardSurface },
+              { "ND_open_pbr_surface_surfaceshader", isTransparentOpenPBRSurface },
+              { "ND_UsdPreviewSurface_surfaceshader", isTransparentUsdPreviewSurface },
+              { "ND_gltf_pbr_surfaceshader", isTransparentGlTfPBRSurface },
+              { "MayaND_lambert_surfaceshader", isTranparentMayaSurface },
+              { "MayaND_phong_surfaceshader", isTranparentMayaSurface },
+              { "MayaND_blinn_surfaceshader", isTranparentMayaSurface },
+              { "ND_convert_color3_surfaceshader", [](const mx::NodePtr&) { return false; } },
+              { "ND_convert_color4_surfaceshader", [](const mx::NodePtr&) { return true; } },
+              { "ND_convert_float_surfaceshader", [](const mx::NodePtr&) { return false; } },
+              { "ND_convert_vector2_surfaceshader", [](const mx::NodePtr&) { return false; } },
+              { "ND_convert_vector3_surfaceshader", [](const mx::NodePtr&) { return false; } },
+              { "ND_convert_vector4_surfaceshader", [](const mx::NodePtr&) { return true; } },
+              { "ND_convert_integer_surfaceshader", [](const mx::NodePtr&) { return false; } },
+              { "ND_convert_boolean_surfaceshader", [](const mx::NodePtr&) { return false; } },
+          };
+
+    if (const auto nodeDef = surfaceNode->getNodeDef()) {
+        auto it = sKnownSurfaces.find(nodeDef->getName());
+        if (it != sKnownSurfaces.end()) {
+            return it->second(surfaceNode) ? TransparencyResult::kTransparent
+                                           : TransparencyResult::kOpaque;
+        }
+    }
+
+    return TransparencyResult::kUnknown;
+}
+
 } // anonymous namespace
 
 OgsFragment::OgsFragment(mx::ElementPtr element, const mx::FileSearchPath& librarySearchPath)
@@ -419,16 +625,11 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
             surfaceNode = surfaceInput->getConnectedNode();
         }
     }
-    std::string           surfaceNodeName;
-    std::set<std::string> surfaceInputNames;
+    std::string    surfaceNodeName;
+    mx::NodeDefPtr surfaceNodeDef;
     if (surfaceNode) {
         surfaceNodeName = surfaceNode->getName();
-        const auto nodeDef = surfaceNode->getNodeDef();
-        if (nodeDef) {
-            for (auto const& surfaceInput : nodeDef->getActiveInputs()) {
-                surfaceInputNames.insert(surfaceInput->getName());
-            }
-        }
+        surfaceNodeDef = surfaceNode->getNodeDef();
     }
 
     // Extract the input fragment parameter names along with their
@@ -454,12 +655,16 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
             // from the Node* in the port though since this will be the N0
             // ShaderGraph.
             const std::string& variableName = port->getVariable();
-            if (path.empty() && surfaceInputNames.count(variableName)) {
+            if (path.empty()) {
                 // Assume it is the surface shader:
+                const std::string& originalName = getOriginalName(variableName, surfaceNodeDef);
+                if (originalName.empty()) {
+                    continue;
+                }
                 path.reserve(surfaceNodeName.size() + 1 + variableName.size());
                 path += surfaceNodeName;
                 path += "/";
-                path += variableName;
+                path += originalName;
             }
             if (!path.empty()) {
                 if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
@@ -494,9 +699,33 @@ bool OgsFragment::isElementAShader() const
     return typeElement && typeElement->getType() == mx::SURFACE_SHADER_TYPE_STRING;
 }
 
-bool OgsFragment::isTransparent() const
+bool OgsFragment::isTransparent() const { return isTransparentSurface(_element); }
+
+/// Implements transparency detection for well known shaders and then
+/// delegates to MaterialX for complex ones.
+bool OgsFragment::isTransparentSurface(const mx::ElementPtr& element)
 {
-    return isTransparentSurface(_element, mx::GlslShaderGenerator::TARGET);
+    if (mx::NodePtr node = element->asA<mx::Node>()) {
+        // Handle material nodes.
+        if (node->getCategory() == mx::SURFACE_MATERIAL_NODE_STRING) {
+            auto shaderNodes = getShaderNodes(node);
+            if (!shaderNodes.empty()) {
+                node = shaderNodes[0];
+            }
+        }
+
+        const auto transparencyResult = isTransparentSurfaceNode(node);
+        if (transparencyResult == TransparencyResult::kTransparent) {
+            return true;
+        }
+        if (transparencyResult == TransparencyResult::kOpaque) {
+            return false;
+        }
+        // Can also return kUnknown.
+    }
+
+    // Delegate to MaterialX for all other situations:
+    return MaterialX::isTransparentSurface(element, mx::GlslShaderGenerator::TARGET);
 }
 
 mx::ImageSamplingProperties

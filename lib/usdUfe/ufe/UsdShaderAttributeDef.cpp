@@ -35,37 +35,37 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 UsdShaderAttributeDef::UsdShaderAttributeDef(const SdrShaderPropertyConstPtr& shaderAttributeDef)
     : Ufe::AttributeDef()
-    , fShaderAttributeDef(shaderAttributeDef)
+    , _shaderAttributeDef(shaderAttributeDef)
 {
-    if (!TF_VERIFY(fShaderAttributeDef)) {
+    if (!TF_VERIFY(_shaderAttributeDef)) {
         throw std::runtime_error("Invalid shader attribute definition");
     }
 }
 
 std::string UsdShaderAttributeDef::name() const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
-    return fShaderAttributeDef->GetName().GetString();
+    TF_DEV_AXIOM(_shaderAttributeDef);
+    return _shaderAttributeDef->GetName().GetString();
 }
 
 std::string UsdShaderAttributeDef::type() const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
-    return usdTypeToUfe(fShaderAttributeDef);
+    TF_DEV_AXIOM(_shaderAttributeDef);
+    return usdTypeToUfe(_shaderAttributeDef);
 }
 
 std::string UsdShaderAttributeDef::defaultValue() const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(_shaderAttributeDef);
     std::ostringstream defaultValue;
-    defaultValue << fShaderAttributeDef->GetDefaultValue();
+    defaultValue << _shaderAttributeDef->GetDefaultValue();
     return defaultValue.str();
 }
 
 Ufe::AttributeDef::IOType UsdShaderAttributeDef::ioType() const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
-    return fShaderAttributeDef->IsOutput() ? Ufe::AttributeDef::OUTPUT_ATTR
+    TF_DEV_AXIOM(_shaderAttributeDef);
+    return _shaderAttributeDef->IsOutput() ? Ufe::AttributeDef::OUTPUT_ATTR
                                            : Ufe::AttributeDef::INPUT_ATTR;
 }
 
@@ -79,7 +79,7 @@ static const MetadataMap _metaMap = {
           return !p.GetLabel().IsEmpty() ? p.GetLabel().GetString()
                                          : UsdUfe::prettifyName(p.GetName().GetString());
       } },
-    { "doc",
+    { UsdUfe::MetadataTokens->UIDoc,
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetHelp().empty() ? p.GetHelp() : Ufe::Value();
       } },
@@ -87,7 +87,7 @@ static const MetadataMap _metaMap = {
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetPage().IsEmpty() ? p.GetPage().GetString() : Ufe::Value();
       } },
-    { "enum",
+    { UsdUfe::MetadataTokens->UIEnumLabels,
       [](const PXR_NS::SdrShaderProperty& p) {
           std::string r;
           for (auto&& opt : p.GetOptions()) {
@@ -98,7 +98,7 @@ static const MetadataMap _metaMap = {
           }
           return !r.empty() ? r : Ufe::Value();
       } },
-    { "enumvalues",
+    { UsdUfe::MetadataTokens->UIEnumValues,
       [](const PXR_NS::SdrShaderProperty& p) {
           std::string r;
           for (auto&& opt : p.GetOptions()) {
@@ -166,27 +166,36 @@ static const MetadataMap _metaMap = {
 
 Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(_shaderAttributeDef);
 
 #ifdef UFE_HAS_NATIVE_TYPE_METADATA
     if (key == Ufe::AttributeDef::kNativeType) {
         // We return the Sdf type as that is more meaningful than the Sdr type.
-        const auto sdfTypeTuple = fShaderAttributeDef->GetTypeAsSdfType();
+#if PXR_VERSION <= 2408
+        const auto sdfTypeTuple = _shaderAttributeDef->GetTypeAsSdfType();
         if (sdfTypeTuple.second.IsEmpty()) {
             return Ufe::Value(sdfTypeTuple.first.GetAsToken().GetString());
         } else {
             return Ufe::Value(sdfTypeTuple.second.GetString());
         }
+#else
+        const auto sdfTypeIndicator = _shaderAttributeDef->GetTypeAsSdfType();
+        if (sdfTypeIndicator.HasSdfType()) {
+            return Ufe::Value(sdfTypeIndicator.GetSdfType().GetAsToken().GetString());
+        } else {
+            return Ufe::Value(sdfTypeIndicator.GetNdrType().GetString());
+        }
+#endif // PXR_VERSION
     }
-#endif
+#endif // UFE_HAS_NATIVE_TYPE_METADATA
 
-    const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
+    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
     }
 
-    const NdrTokenMap& hints = fShaderAttributeDef->GetHints();
+    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
     it = hints.find(TfToken(key));
     if (it != hints.cend()) {
         return Ufe::Value(it->second);
@@ -194,7 +203,7 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 
     MetadataMap::const_iterator itMapper = _metaMap.find(key);
     if (itMapper != _metaMap.end()) {
-        return itMapper->second(*fShaderAttributeDef);
+        return itMapper->second(*_shaderAttributeDef);
     }
 
     return {};
@@ -202,7 +211,7 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 
 bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 {
-    TF_DEV_AXIOM(fShaderAttributeDef);
+    TF_DEV_AXIOM(_shaderAttributeDef);
 
 #ifdef UFE_HAS_NATIVE_TYPE_METADATA
     if (key == Ufe::AttributeDef::kNativeType) {
@@ -210,20 +219,20 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
     }
 #endif
 
-    const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
+    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return true;
     }
 
-    const NdrTokenMap& hints = fShaderAttributeDef->GetHints();
+    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
     it = hints.find(TfToken(key));
     if (it != hints.cend()) {
         return true;
     }
 
     MetadataMap::const_iterator itMapper = _metaMap.find(key);
-    if (itMapper != _metaMap.end() && !itMapper->second(*fShaderAttributeDef).empty()) {
+    if (itMapper != _metaMap.end() && !itMapper->second(*_shaderAttributeDef).empty()) {
         return true;
     }
 

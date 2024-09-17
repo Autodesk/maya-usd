@@ -120,8 +120,12 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportMaterials.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
-        kExportMaterialUnderPrimFlag,
-        UsdMayaJobExportArgsTokens->exportMaterialUnderPrim.GetText(),
+        kExportAssignedMaterialsFlag,
+        UsdMayaJobExportArgsTokens->exportAssignedMaterials.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
+        kLegacyMaterialScopeFlag,
+        UsdMayaJobExportArgsTokens->legacyMaterialScope.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
         kStripNamespacesFlag,
@@ -144,6 +148,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kExportComponentTagsFlag,
         UsdMayaJobExportArgsTokens->exportComponentTags.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
+        kExportStagesAsRefsFlag,
+        UsdMayaJobExportArgsTokens->exportStagesAsRefs.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
         kIgnoreWarningsFlag,

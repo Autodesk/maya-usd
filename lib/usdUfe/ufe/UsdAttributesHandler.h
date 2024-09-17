@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDATTRIBUTESHANDLER_H
+#define USDUFE_USDATTRIBUTESHANDLER_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdAttributes.h>
@@ -42,3 +43,5 @@ private:
 }; // UsdAttributesHandler
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDATTRIBUTESHANDLER_H

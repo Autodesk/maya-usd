@@ -16,7 +16,8 @@
 // Modifications copyright (C) 2020 Autodesk
 //
 
-#pragma once
+#ifndef MAYAUSD_TRANSLATORMESH_H
+#define MAYAUSD_TRANSLATORMESH_H
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
@@ -95,3 +96,5 @@ private:
 };
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_TRANSLATORMESH_H

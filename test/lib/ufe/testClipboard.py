@@ -23,6 +23,7 @@ import mayaUsd
 import mayaUsd_createStageWithNewLayer
 
 from maya import standalone
+import maya.cmds as cmds
 
 import ufe
 
@@ -247,6 +248,80 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         pastedSphereItem = ufeUtils.createItem(psPathStr + ',/Xform1/Sphere1')
         self.assertIsNotNone(pastedSphereItem)
 
+    def testClipboardCutRestrictions(self):
+        '''Basic test for the Clipboard cut restrictions.'''
+
+        # Create a proxy shape stage and prims to start with.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Sphere1', 'Sphere')
+
+        # The Sphere prim should be cutable.
+        sphereItem = ufeUtils.createItem(psPathStr + ',/Xform1/Sphere1')
+        self.assertIsNotNone(sphereItem)
+        self.assertTrue(ufe.ClipboardHandler.canBeCut(sphereItem))
+
+        # Create a new layer and set it as the edit target.
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        rootLayer = stage.GetRootLayer()
+        subLayerA = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=False, addAnonymous="SubLayerA")[0]
+        self.assertIsNotNone(subLayerA)
+        cmds.mayaUsdEditTarget(psPathStr, edit=True, editTarget=subLayerA)
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, subLayerA)
+
+        # Now the Sphere prim should no longer be cutable.
+        self.assertFalse(ufe.ClipboardHandler.canBeCut(sphereItem))
+
+        # And trying to cut it should not work and there should be no
+        # items in the clipboard.
+        rid = mayaUsd.ufe.getUsdRunTimeId()
+        ufe.ClipboardHandler.preCut()
+        self.assertFalse(ufe.ClipboardHandler.hasItemsToPaste(rid))
+        cmds.select(psPathStr + ',/Xform1/Sphere1')
+        # The cut command should be empty since the cut on Sphere is restricted
+        # and its the only item in the selection (to cut).
+        # Because the returned command is empty the clipboard handler will throw.
+        self.assertRaises(RuntimeError, ufe.ClipboardHandler.cutCmd, ufe.GlobalSelection.get())
+        self.assertFalse(ufe.ClipboardHandler.hasItemsToPaste(rid))
+
+        # The Sphere prim should still be there.
+        self.assertTrue(stage.GetPrimAtPath('/Xform1/Sphere1').IsValid())
+
+        # Create a new prim in this layer which will then be cutable.
+        stage.DefinePrim('/Xform1/Cube1', 'Cube')
+        cubeItem = ufeUtils.createItem(psPathStr + ',/Xform1/Cube1')
+        self.assertIsNotNone(cubeItem)
+        self.assertTrue(ufe.ClipboardHandler.canBeCut(cubeItem))
+
+        # Select both the cutable and non-cutable prims and cut. The
+        # cut should succeed by cutting only the cutable prim and only
+        # place it in the clipboard (to paste).
+        cmds.select(psPathStr + ',/Xform1/Sphere1', psPathStr + ',/Xform1/Cube1')
+        ufe.ClipboardHandler.preCut()
+        self.assertFalse(ufe.ClipboardHandler.hasItemsToPaste(rid))
+        cutCmd = ufe.ClipboardHandler.cutCmd(ufe.GlobalSelection.get())
+        self.assertIsNotNone(cutCmd)
+        cutCmd.execute()
+        self.assertTrue(ufe.ClipboardHandler.hasItemsToPaste(rid))
+
+    def testClipboardCutRemovedFromSelection(self):
+        '''Test that when we cut a selected item it is removed from selection list.'''
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Sphere1', 'Sphere')
+
+        # Select the sphere and cut it.
+        cmds.select(psPathStr + ',/Xform1/Sphere1')
+        cutCmd = ufe.ClipboardHandler.cutCmd(ufe.GlobalSelection.get())
+        self.assertIsNotNone(cutCmd)
+        cutCmd.execute()
+
+        # There sphere prim should not be selected.
+        self.assertTrue(ufe.GlobalSelection.get().empty())
+
     def testClipboardCopyPasteWithVariant(self):
         '''Basic test for the Clipboard copy/paste of prim with a variant.'''
 
@@ -255,7 +330,7 @@ class ClipboardHandlerTestCase(unittest.TestCase):
 
         # Get the stage
         mayaPathSegment = mayaUtils.createUfePathSegment('|Variant_usd|Variant_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # First check that we have a Variant.
         objectPrim = stage.GetPrimAtPath('/objects')
@@ -304,6 +379,114 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         for name in objectVariantSet.GetNames():
             self.assertTrue(pastedVariantSet.HasVariantSet(name))
             self.assertEqual(objectVariantSet.GetVariantSelection(name), pastedVariantSet.GetVariantSelection(name))
+
+    def testClipboardMultiplePaste(self):
+        '''Test pasting multiple times.'''
+        
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Sphere1', 'Sphere')
+
+        # Copy the sphere item and test that we have an item to paste.
+        cmds.select(psPathStr + ',/Xform1/Sphere1')
+        ufe.ClipboardHandler.preCopy()
+        copyCmd = ufe.ClipboardHandler.copyCmd(ufe.GlobalSelection.get())
+        self.assertIsNotNone(copyCmd)
+        copyCmd.execute()
+
+        # Create new Xforms for pasting into.
+        stage.DefinePrim('/Xform2', 'Xform')
+        stage.DefinePrim('/Xform3', 'Xform')
+
+        # First select the xform and continously paste into the
+        # global selection, which will be changing for each paste.
+        # The paste command selects the newly pasted items. But there
+        # is special "paste as sibling" logic.
+        cmds.select(psPathStr + ',/Xform2')
+
+        # Paste into the new xform multiple times.
+        nbPastes = 10
+        for _ in range(nbPastes):
+            # Paste target is global selection each time which is changing.
+            pasteCmd = ufe.ClipboardHandler.pasteCmd(ufe.GlobalSelection.get())
+            self.assertIsNotNone(pasteCmd)
+            pasteCmd.execute()  # This pastes and select
+
+        # The xform2 should now have X number of children.
+        xformItem = ufeUtils.createItem(psPathStr + ',/Xform2')
+        self.assertIsNotNone(xformItem)
+        xformHier = ufe.Hierarchy.hierarchy(xformItem)
+        self.assertIsNotNone(xformHier)
+        self.assertEqual(nbPastes, len(xformHier.children()))
+
+        # Select a different target and paste into that.
+        cmds.select(psPathStr + ',/Xform3')
+        pasteCmd = ufe.ClipboardHandler.pasteCmd(ufe.GlobalSelection.get())
+        self.assertIsNotNone(pasteCmd)
+        pasteCmd.execute()
+
+        # That new target should now have one child and the other target
+        # still the same X number.
+        self.assertEqual(nbPastes, len(xformHier.children()))
+        xformItem = ufeUtils.createItem(psPathStr + ',/Xform3')
+        xformHier = ufe.Hierarchy.hierarchy(xformItem)
+        self.assertEqual(1, len(xformHier.children()))
+
+    def testClipboardErrorConditions(self):
+        '''Test the clipboard handler error conditions.'''
+
+        # Create a proxy shape stage and prims to start with.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Sphere1', 'Sphere')
+
+        # The Sphere prim should be cutable.
+        #sphereItem = ufeUtils.createItem(psPathStr + ',/Xform1/Sphere1')
+        #self.assertIsNotNone(sphereItem)
+        #self.assertTrue(ufe.ClipboardHandler.canBeCut(sphereItem))
+
+        # Trying to cut/copy/paste with empty selection will throw.
+        emptySel = ufe.Selection()
+        self.assertRaisesRegex(ValueError, 'Empty clipboard selection for cut operation.',
+                               ufe.ClipboardHandler.cutCmd, emptySel)
+        self.assertRaisesRegex(ValueError, 'Empty clipboard selection for copy operation.',
+                               ufe.ClipboardHandler.copyCmd, emptySel)
+        self.assertRaisesRegex(ValueError, 'Empty clipboard selection for paste operation.',
+                               ufe.ClipboardHandler.pasteCmd, emptySel)
+
+        # The cut/copy/paste methods will throw if given invalid scene item.
+        rid = mayaUsd.ufe.getUsdRunTimeId()
+        ch = ufe.ClipboardHandler.clipboardHandler(rid)
+        self.assertIsNotNone(ch)
+        self.assertRaisesRegex(ValueError, 'Cannot cut null item.', ch.cutCmd_, None)
+        self.assertRaisesRegex(ValueError, 'Cannot copy null item.', ch.copyCmd_, None)
+        self.assertRaisesRegex(ValueError, 'Cannot paste into null parent item.', ch.pasteCmd, None)
+
+        # There is no Maya clipboardHandler registered.
+        self.assertIsNone(ufe.ClipboardHandler.clipboardHandler(mayaUsd.ufe.getMayaRunTimeId()))
+
+        # Trying to directly use clipboardHandler with Maya object selected will throw.
+        cmds.polyCube()
+        mayaSel = ufe.GlobalSelection.get()
+        self.assertRaisesRegex(RuntimeError, "No clipboard handler for runtime 'Maya-DG'.",
+                               ufe.ClipboardHandler.cutCmd, mayaSel)
+        self.assertRaisesRegex(RuntimeError, "No clipboard handler for runtime 'Maya-DG'.",
+                               ufe.ClipboardHandler.copyCmd, mayaSel)
+        self.assertRaisesRegex(RuntimeError, "No clipboard handler for runtime 'Maya-DG'.",
+                               ufe.ClipboardHandler.pasteCmd, mayaSel)
+
+        # Calling paste when there is nothing to paste will throw.
+        cmds.select(psPathStr + ',/Xform1/Sphere1')
+        ufe.ClipboardHandler.preCopy()
+        self.assertFalse(ch.hasItemsToPaste_())
+        # Using clipboardHandler directly.
+        pasteCmd = ch.pasteCmd(ufe.GlobalSelection.get())
+        self.assertRaisesRegex(RuntimeError, 'Failed to load Clipboard stage.', pasteCmd.execute)
+        # Using static method.
+        pasteCmd = ufe.ClipboardHandler.pasteCmd(ufe.GlobalSelection.get())
+        self.assertRaisesRegex(RuntimeError, 'Failed to load Clipboard stage.', pasteCmd.execute)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

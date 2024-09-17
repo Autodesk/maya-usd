@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_MAYAUSDOBJECT3D_H
+#define MAYAUSD_MAYAUSDOBJECT3D_H
 
 #include <mayaUsd/base/api.h>
 
@@ -46,3 +47,5 @@ public:
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_MAYAUSDOBJECT3D_H

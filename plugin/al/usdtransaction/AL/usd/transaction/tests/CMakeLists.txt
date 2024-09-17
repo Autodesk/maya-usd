@@ -25,7 +25,7 @@ target_include_directories(${TARGET_NAME}
   PUBLIC
     ${GTEST_INCLUDE_DIRS}
     ${USDTRANSACTION_INCLUDE_LOCATION}
-    ${USD_INCLUDE_DIR}
+    ${PXR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${TARGET_NAME}

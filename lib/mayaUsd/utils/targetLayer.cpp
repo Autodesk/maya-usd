@@ -18,6 +18,8 @@
 
 #include "dynamicAttribute.h"
 
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/pcp/node.h>
 #include <pxr/usd/usd/editTarget.h>
 
 #include <maya/MCommandResult.h>
@@ -27,6 +29,54 @@
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
+
+namespace {
+
+const char kTargetLayerAttrName[] = "usdStageTargetLayer";
+const char kTargetLayerPrimPathAttrName[] = "usdStageTargetLayerPrimPath";
+
+/// \brief Find prim node that matches given layer id
+PXR_NS::PcpNodeRef
+findPrimNode(const PXR_NS::PcpNodeRef& primNode, const std::string& targetLayerId)
+{
+    // We need to store and check current depth level first (BFS), this is to
+    // preserve the opinions from strong to week
+    std::vector<PXR_NS::PcpNodeRef> childNodes;
+    TF_FOR_ALL(child, primNode.GetChildrenRange())
+    {
+        // The prim node can't have a variant.
+        if (child->GetPath().ContainsPrimVariantSelection()) {
+            continue;
+        }
+        // Confirm that the primNode is a direct contributor to the root prim.
+        bool result = child->IsRootNode();
+        // Confirm we are looking at one of the composition arcs that could lead us to a prim
+        // instance and not some other contributor like a specializes or such.
+        if (!result) {
+            auto arcType = child->GetArcType();
+            result = (arcType == PcpArcTypeReference) || (arcType == PcpArcTypePayload)
+                || (arcType == PcpArcTypeVariant);
+        }
+
+        if (result) {
+            if (child->GetLayerStack()->GetIdentifier().rootLayer->GetIdentifier()
+                == targetLayerId) {
+                return *child;
+            }
+            childNodes.emplace_back(*child);
+        }
+    }
+
+    for (const auto& child : childNodes) {
+        auto childPrimNode = findPrimNode(child, targetLayerId);
+        if (childPrimNode) {
+            return childPrimNode;
+        }
+    }
+    return {};
+}
+
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 
@@ -47,13 +97,21 @@ MString convertTargetLayerToText(const PXR_NS::UsdStage& stage)
     return text;
 }
 
-PXR_NS::SdfLayerHandle getTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
+PXR_NS::SdfLayerHandle
+getTargetLayerFromText(const LayerNameMap& nameMap, PXR_NS::UsdStage& stage, const MString& text)
 {
     if (text.length() == 0)
         return {};
 
-    const std::string layerId(text.asChar());
-    for (const auto& layer : stage.GetLayerStack())
+    std::string layerId(text.asChar());
+
+    // Remap the anonymous layer names when reloaded.
+    auto iter = nameMap.find(layerId);
+    if (iter != nameMap.end()) {
+        layerId = iter->second;
+    }
+
+    for (const auto& layer : stage.GetUsedLayers())
         if (layer->GetIdentifier() == layerId)
             return layer;
 
@@ -62,7 +120,9 @@ PXR_NS::SdfLayerHandle getTargetLayerFromText(PXR_NS::UsdStage& stage, const MSt
 
 bool setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
 {
-    PXR_NS::SdfLayerHandle layer = getTargetLayerFromText(stage, text);
+    // Note: It's assumeing the layer id is known (in text form) when
+    //       setting from text, thus no need to pass a `LayerNameMap` for lookup
+    PXR_NS::SdfLayerHandle layer = getTargetLayerFromText({}, stage, text);
     if (!layer)
         return false;
 
@@ -70,32 +130,47 @@ bool setTargetLayerFromText(PXR_NS::UsdStage& stage, const MString& text)
     return true;
 }
 
-namespace {
-
-const char targetLayerAttrName[] = "usdStageTargetLayer";
-
-} // namespace
-
 MStatus copyTargetLayerToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape)
 {
     MObject proxyObj = proxyShape.thisMObject();
     if (proxyObj.isNull())
         return MS::kFailure;
 
+    MString     targetLayerText;
+    MString     targetLayerPrimPath;
+    const auto& editTarget = stage.GetEditTarget();
+    if (editTarget.IsValid()) {
+        const auto& editTargetLayer = editTarget.GetLayer();
+        targetLayerText = editTargetLayer->GetIdentifier().c_str();
+        if (!stage.HasLocalLayer(editTargetLayer)) {
+            const auto& pathMap(editTarget.GetMapFunction().GetSourceToTargetMap());
+            if (!pathMap.empty()) {
+                // Save the top most prim path as the reference prim path for this edit target,
+                // when restoring edit target , we will need a prim path to locate to
+                // this layer.
+                targetLayerPrimPath = pathMap.begin()->second.GetString().c_str();
+            }
+        }
+    }
+
     MFnDependencyNode depNode(proxyObj);
-    if (!hasDynamicAttribute(depNode, targetLayerAttrName))
-        createDynamicAttribute(depNode, targetLayerAttrName);
-
-    MString targetLayerText = convertTargetLayerToText(stage);
-
     // Don't set the attribute if it already has the same value to avoid
     // update loops.
     MString previousTargetLayerText;
-    getDynamicAttribute(depNode, targetLayerAttrName, previousTargetLayerText);
-    if (previousTargetLayerText == targetLayerText)
+    getDynamicAttribute(depNode, kTargetLayerAttrName, previousTargetLayerText);
+
+    MString previousTargetLayerPrimPathText;
+    getDynamicAttribute(depNode, kTargetLayerPrimPathAttrName, previousTargetLayerPrimPathText);
+
+    if (previousTargetLayerText == targetLayerText
+        && previousTargetLayerPrimPathText == targetLayerPrimPath)
         return MS::kSuccess;
 
-    MStatus status = setDynamicAttribute(depNode, targetLayerAttrName, targetLayerText);
+    // Create and set dynamic attribute only when needed
+    MStatus status = setDynamicAttribute(depNode, kTargetLayerAttrName, targetLayerText);
+    if (status == MS::kSuccess && targetLayerPrimPath.length()) {
+        status = setDynamicAttribute(depNode, kTargetLayerPrimPathAttrName, targetLayerPrimPath);
+    }
 
     return status;
 }
@@ -109,18 +184,20 @@ MString getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape)
         return targetLayerText;
 
     MFnDependencyNode depNode(proxyObj);
-    if (!hasDynamicAttribute(depNode, targetLayerAttrName))
+    if (!hasDynamicAttribute(depNode, kTargetLayerAttrName))
         return targetLayerText;
 
-    getDynamicAttribute(depNode, targetLayerAttrName, targetLayerText);
+    getDynamicAttribute(depNode, kTargetLayerAttrName, targetLayerText);
     return targetLayerText;
 }
 
-PXR_NS::SdfLayerHandle
-getTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
+PXR_NS::SdfLayerHandle getTargetLayerFromAttribute(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const LayerNameMap&          nameMap,
+    PXR_NS::UsdStage&            stage)
 {
     const MString layerId = getTargetLayerFromAttribute(proxyShape);
-    return getTargetLayerFromText(stage, layerId);
+    return getTargetLayerFromText(nameMap, stage, layerId);
 }
 
 MStatus
@@ -128,6 +205,72 @@ copyTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::Us
 {
     const MString targetLayerText = getTargetLayerFromAttribute(proxyShape);
     return setTargetLayerFromText(stage, targetLayerText) ? MS::kSuccess : MS::kNotFound;
+}
+
+PXR_NS::UsdEditTarget getEditTargetFromAttribute(
+    const MayaUsdProxyShapeBase& proxyShape,
+    const LayerNameMap&          nameMap,
+    PXR_NS::UsdStage&            stage)
+{
+    MObject proxyObj = proxyShape.thisMObject();
+    if (proxyObj.isNull()) {
+        return {};
+    }
+
+    MFnDependencyNode depNode(proxyObj);
+    if (!hasDynamicAttribute(depNode, kTargetLayerAttrName)) {
+        return {};
+    }
+
+    MString targetLayerText;
+    if (getDynamicAttribute(depNode, kTargetLayerAttrName, targetLayerText) != MS::kSuccess) {
+        return {};
+    }
+
+    PXR_NS::SdfLayerHandle layer = getTargetLayerFromText(nameMap, stage, targetLayerText);
+    if (!layer) {
+        // No layer found, either not accessible or missing
+        return {};
+    }
+
+    if (stage.HasLocalLayer(layer)) {
+        // Exit early if the layer in local layer stack
+        return layer;
+    }
+
+    MString targetLayerPrimPathText;
+    if (hasDynamicAttribute(depNode, kTargetLayerPrimPathAttrName)) {
+        getDynamicAttribute(depNode, kTargetLayerPrimPathAttrName, targetLayerPrimPathText);
+    }
+
+    if (!targetLayerPrimPathText.length()) {
+        return {};
+    }
+
+    std::string layerId = layer->GetIdentifier();
+
+    auto prim = stage.GetPrimAtPath(PXR_NS::SdfPath(targetLayerPrimPathText.asChar()));
+    if (!prim) {
+        MGlobal::displayError(
+            MString("Failed to construct non local edit target from layer id \"") + layerId.c_str()
+            + "\", reference prim path does not exist");
+        return {};
+    }
+
+    PXR_NS::PcpNodeRef primNode = prim.GetPrimIndex().GetRootNode();
+    if (primNode.GetLayerStack()->GetIdentifier().rootLayer->GetIdentifier() != layerId) {
+        // Search target layer from children recursively
+        primNode = findPrimNode(primNode, layerId);
+    }
+
+    if (!primNode) {
+        MGlobal::displayError(
+            MString("Failed to construct non local edit target from layer id \"") + layerId.c_str()
+            + "\", cannot find reference prim path \"" + targetLayerPrimPathText + "\"");
+        return {};
+    }
+
+    return PXR_NS::UsdEditTarget(layer, primNode);
 }
 
 } // namespace MAYAUSD_NS_DEF

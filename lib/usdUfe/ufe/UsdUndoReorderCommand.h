@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef USDUFE_USDUNDOREORDERCOMMAND_H
+#define USDUFE_USDUNDOREORDERCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
@@ -52,3 +53,5 @@ private:
 }; // UsdUndoReorderCommand
 
 } // namespace USDUFE_NS_DEF
+
+#endif // USDUFE_USDUNDOREORDERCOMMAND_H

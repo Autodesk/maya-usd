@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_PROXYSHAPEHANDLER_H
+#define MAYAUSD_PROXYSHAPEHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -47,9 +48,11 @@ public:
     static std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
 
 private:
-    static const std::string fMayaUsdGatewayNodeType;
+    static const std::string mayaUsdGatewayNodeType;
 
 }; // ProxyShapeHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_PROXYSHAPEHANDLER_H

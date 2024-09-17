@@ -16,8 +16,7 @@
 
 #include "UsdUndoToggleActiveCommand.h"
 
-#include "private/UfeNotifGuard.h"
-
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/editRouterContext.h>
 
