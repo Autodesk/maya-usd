@@ -16,7 +16,6 @@
 #include "primUpdaterManager.h"
 
 #include <mayaUsd/base/tokens.h>
-#include <mayaUsd/fileio/fallbackPrimUpdater.h>
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
@@ -37,7 +36,6 @@
 #include <mayaUsd/utils/traverseLayer.h>
 #include <mayaUsd/utils/trieVisitor.h>
 
-#include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 
@@ -559,6 +557,7 @@ struct PushExportResult
     SdfLayerRefPtr                       layer;
     std::shared_ptr<UsdPathToDagPathMap> usdToDag;
     std::vector<SdfPath>                 materialPaths;
+    std::vector<SdfPath>                 extraPrimsPaths;
 };
 
 PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterContext& context)
@@ -621,6 +620,7 @@ PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterC
     if (!writeJob.Write(fileName, false /* append */)) {
         return result;
     }
+    result.extraPrimsPaths = writeJob.GetExtraPrimsPaths();
     progressBar.advance();
 
     result.srcRootPath = writeJob.MapDagPathToSdfPath(dagPath);
@@ -1711,6 +1711,12 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
         CopyLayerPrimsOptions options;
         options.progressBar = &progressBar;
         options.mergeScopes = true;
+        std::vector<SdfPath> primsToCopy = { pushExportResult.srcRootPath };
+        primsToCopy.reserve(primsToCopy.size() + pushExportResult.extraPrimsPaths.size());
+        primsToCopy.insert(
+            primsToCopy.end(),
+            pushExportResult.extraPrimsPaths.begin(),
+            pushExportResult.extraPrimsPaths.end());
 
         CopyLayerPrimsResult copyResult = copyLayerPrims(
             srcStage,
@@ -1719,7 +1725,7 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
             dstStage,
             dstLayer,
             dstParentPath,
-            { pushExportResult.srcRootPath },
+            primsToCopy,
             options);
 
         context._pushExtras.finalize(MayaUsd::ufe::stagePath(dstStage), copyResult.renamedPaths);

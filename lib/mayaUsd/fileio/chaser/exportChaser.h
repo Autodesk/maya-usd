@@ -21,6 +21,7 @@
 #include <pxr/base/tf/declarePtrs.h>
 #include <pxr/base/tf/refPtr.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -69,6 +70,20 @@ public:
     /// Returning false will terminate the whole export.
     MAYAUSD_CORE_PUBLIC
     virtual bool PostExport();
+
+    /// Optional helper method to cache the given path array in the chaser.
+    /// The cached array is used internally to track any extra prim created by the chasers.
+    /// For example: when duplicating Maya data to USD we'll internally ask the chaser for those.
+    MAYAUSD_CORE_PUBLIC
+    virtual void RegisterExtraPrimsPaths(const std::vector<SdfPath>& extraPrimPaths);
+
+    /// Get the array of extra prim paths set by the chaser.
+    /// Returns the array of cached prim paths.
+    MAYAUSD_CORE_PUBLIC
+    virtual const std::vector<SdfPath>& GetExtraPrimsPaths() const;
+
+private:
+    std::vector<SdfPath> _extraPrimsPaths;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
