@@ -110,7 +110,7 @@ const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector { {
 #else
     HdInstancerTokens->instanceTransforms,
 #endif
-        HdInterpolationInstance,
+    HdInterpolationInstance,
     HdPrimvarRoleTokens->none } };
 
 } // namespace
