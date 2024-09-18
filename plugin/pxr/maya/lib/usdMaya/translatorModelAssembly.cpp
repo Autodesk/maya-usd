@@ -235,7 +235,7 @@ bool UsdMayaTranslatorModelAssembly::Create(
 
     if (!assemblyEdits.empty()) {
         std::vector<std::string> failedEdits;
-        const bool               needsLoadAndUnload = not prim.IsLoaded();
+        const bool               needsLoadAndUnload = !prim.IsLoaded();
 
         // the prim must be loaded in order to apply edits.
         if (needsLoadAndUnload) {

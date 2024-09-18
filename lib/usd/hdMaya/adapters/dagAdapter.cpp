@@ -106,11 +106,11 @@ void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData)
 
 const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector { {
 #if HD_API_VERSION < 56
-    HdInstancerTokens->instanceTransform
+    HdInstancerTokens->instanceTransform,
 #else
     HdInstancerTokens->instanceTransforms,
 #endif
-        HdInterpolationInstance,
+    HdInterpolationInstance,
     HdPrimvarRoleTokens->none } };
 
 } // namespace
