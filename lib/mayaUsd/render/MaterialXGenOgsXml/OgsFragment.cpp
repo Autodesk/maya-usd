@@ -647,6 +647,14 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
         for (size_t i = 0; i < uniforms.size(); ++i) {
             const mx::ShaderPort* const port = uniforms[i];
             if (!port->getNode()) {
+                if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
+                    // Might be an embedded texture. Retrieve the filename.
+                    std::string textureName
+                        = mx::OgsXmlGenerator::samplerToTextureName(port->getVariable());
+                    if (!textureName.empty() && !port->getPath().empty()) {
+                        _embeddedTextures[textureName] = port->getPath();
+                    }
+                }
                 continue;
             }
             std::string path = port->getPath();
@@ -692,6 +700,8 @@ const std::string& OgsFragment::getLightRigName() const { return _lightRigName; 
 const std::string& OgsFragment::getLightRigSource() const { return _lightRigSource; }
 
 const mx::StringMap& OgsFragment::getPathInputMap() const { return _pathInputMap; }
+
+const mx::StringMap& OgsFragment::getEmbeddedTextureMap() const { return _embeddedTextures; }
 
 bool OgsFragment::isElementAShader() const
 {
