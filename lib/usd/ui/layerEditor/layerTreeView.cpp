@@ -445,6 +445,11 @@ void LayerTreeView::callMethodOnSelection(const QString& undoName, simpleLayerMe
 {
     DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
 
+    callMethodOnSelectionNoDelay(undoName, method);
+}
+
+void LayerTreeView::callMethodOnSelectionNoDelay(const QString& undoName, simpleLayerMethod method)
+{
     CallMethodParams params;
     auto             selection = getSelectedLayerItems();
     params.selection = &selection;

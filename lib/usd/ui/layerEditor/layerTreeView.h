@@ -102,6 +102,7 @@ public:
     // calls a given method on all items in the selection, with the given string as the undo chunk
     // name
     void callMethodOnSelection(const QString& undoName, simpleLayerMethod method);
+    void callMethodOnSelectionNoDelay(const QString& undoName, simpleLayerMethod method);
 
     // menu callbacks
     void onAddParentLayer(const QString& undoName) const;
