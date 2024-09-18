@@ -1,0 +1,44 @@
+#usda 1.0
+(
+    defaultPrim = "Top"
+    upAxis = "Z"
+)
+
+def Xform "Top" (
+    kind = "assembly"
+)
+{
+    def Xform "Cup_1" (
+        instanceable = true
+        prepend references = @./GeomWithTrf.usda@
+    )
+    {
+        float3 xformOp:rotateXYZ = (45, 0., -90.)
+        float3 xformOp:scale = (0.8, 0.8, 0.8)
+        double3 xformOp:translate = (11., 11., 0.)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Xform "Cup_2" (
+        instanceable = true
+        prepend references = @./GeomWithTrf.usda@
+    )
+    {
+        float3 xformOp:rotateXYZ = (45, 0., -90.)
+        float3 xformOp:scale = (0.8, 0.8, 0.8)
+        double3 xformOp:translate = (-11., 11., 0.)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+    def Xform "Cup_3" (
+        instanceable = true
+        prepend references = @./GeomWithTrf.usda@
+    )
+    {
+        float3 xformOp:rotateXYZ = (45, 0., -90.)
+        float3 xformOp:scale = (0.8, 0.8, 0.8)
+        double3 xformOp:translate = (11., -11., 0.)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+}
+
