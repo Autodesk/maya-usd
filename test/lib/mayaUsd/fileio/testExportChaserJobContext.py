@@ -158,7 +158,7 @@ class ChaserExample2(mayaUsd.lib.ExportChaser):
         ChaserExample2.postExportCalled = True
 
         # creating an extra prim to be tested on Duplicate As
-        scope = Usd.Prim = self.stage.DefinePrim("/TestScope", "Scope")
+        scope = self.stage.DefinePrim("/TestScope", "Scope")
         self.RegisterExtraPrimsPaths([scope.GetPath()])
 
         return True
@@ -210,6 +210,11 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         fixturesUtils.setUpClass(__file__)
         cls.temp_dir = os.path.abspath('.')
 
+        ChaserExample1.register()
+        ChaserExample2.register()
+        JobContextExample1.register()
+        JobContextExample2.register()
+
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
@@ -218,11 +223,6 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testSimpleExportChaser(self):
-        ChaserExample1.register()
-        ChaserExample2.register()
-        JobContextExample1.register()
-        JobContextExample2.register()
-
         cmds.polySphere(r = 3.5, name='apple')
 
         usdFilePath = os.path.join(self.temp_dir,'testExportChaser.usda')
@@ -250,7 +250,7 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         self.assertTrue(ChaserExample2.postExportCalled)
 
     def testChaserWithDuplicateAsUsd(self):
-        sphere = cmds.polySphere(r = 1, name='apple')
+        sphere = cmds.polySphere(r = 1, name='TestSphere')
 
         # Create a stage to receive the USD duplicate.
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
@@ -260,12 +260,11 @@ class TestExportChaserWithJobContext(unittest.TestCase):
 
         # check if the extra prim has also been duplicated
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
-        applePrim = stage.GetPrimAtPath("/apple")
+        spherePrim = stage.GetPrimAtPath("/TestSphere")
         scopePrim = stage.GetPrimAtPath("/TestScope")
         
-        self.assertTrue(applePrim.IsValid())
+        self.assertTrue(spherePrim.IsValid())
         self.assertTrue(scopePrim.IsValid())
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
