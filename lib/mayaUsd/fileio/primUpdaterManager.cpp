@@ -1713,22 +1713,15 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicateToUsd(
     CopyLayerPrimsOptions options;
     options.progressBar = &progressBar;
     options.mergeScopes = true;
-      std::vector<SdfPath> primsToCopy = { pushExportResult.srcRootPath };
     std::vector<SdfPath> primsToCopy = { pushExportResult.srcRootPath };
     primsToCopy.reserve(primsToCopy.size() + pushExportResult.extraPrimsPaths.size());
-    primsToCopy.insert(primsToCopy.end(),
+    primsToCopy.insert(
+        primsToCopy.end(),
         pushExportResult.extraPrimsPaths.begin(),
         pushExportResult.extraPrimsPaths.end());
 
     CopyLayerPrimsResult copyResult = copyLayerPrims(
-        srcStage,
-        srcLayer,
-        srcParentPath,
-        dstStage,
-        dstLayer,
-        dstParentPath,
-        primsToCopy,
-        options);
+        srcStage, srcLayer, srcParentPath, dstStage, dstLayer, dstParentPath, primsToCopy, options);
 
     context._pushExtras.finalize(MayaUsd::ufe::stagePath(dstStage), copyResult.renamedPaths);
 
