@@ -23,6 +23,8 @@ from maya import cmds
 from maya import standalone
 
 import fixturesUtils, os
+import mayaUsd_createStageWithNewLayer
+import mayaUsdDuplicateAsUsdDataOptions
 
 import unittest
 
@@ -138,6 +140,7 @@ class ChaserExample2(mayaUsd.lib.ExportChaser):
 
     def __init__(self, factoryContext, *args, **kwargs):
         super(ChaserExample2, self).__init__(factoryContext, *args, **kwargs)
+        self.stage = factoryContext.GetStage()
         jobArgs = factoryContext.GetJobArgs()
         ChaserExample2.seenChasers = jobArgs.chaserNames
         if ChaserExample2.name in jobArgs.allChaserArgs:
@@ -153,6 +156,11 @@ class ChaserExample2(mayaUsd.lib.ExportChaser):
 
     def PostExport(self):
         ChaserExample2.postExportCalled = True
+
+        # creating an extra prim to be tested on Duplicate As
+        scope = Usd.Prim = self.stage.DefinePrim("/TestScope", "Scope")
+        self.RegisterExtraPrimsPaths([scope.GetPath()])
+
         return True
 
     @staticmethod
@@ -240,6 +248,26 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         self.assertTrue(ChaserExample2.exportDefaultCalled)
         self.assertTrue(ChaserExample2.exportFrameCalled)
         self.assertTrue(ChaserExample2.postExportCalled)
+
+    def testChaserWithDuplicateAsUsd(self):
+        ChaserExample1.register()
+        JobContextExample1.register()
+
+        sphere = cmds.polySphere(r = 1, name='apple')
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        defaultDuplicateAsUsdDataOptions = mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText()
+        modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions.replace("jobContext=[]", "jobContext=[JobContextExample1]")
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
+
+        # check if the extra prim has also been duplicated
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        applePrim = stage.GetPrimAtPath("/apple")
+        scopePrim = stage.GetPrimAtPath("/TestScope")
+        
+        self.assertTrue(applePrim.IsValid())
+        self.assertTrue(scopePrim.IsValid())
 
 
 if __name__ == '__main__':
