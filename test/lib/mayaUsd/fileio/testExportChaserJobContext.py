@@ -250,9 +250,6 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         self.assertTrue(ChaserExample2.postExportCalled)
 
     def testChaserWithDuplicateAsUsd(self):
-        ChaserExample1.register()
-        JobContextExample1.register()
-
         sphere = cmds.polySphere(r = 1, name='apple')
 
         # Create a stage to receive the USD duplicate.
