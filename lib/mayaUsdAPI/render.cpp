@@ -115,6 +115,11 @@ const MaterialX::StringMap& OgsFragment::getPathInputMap() const
     return _imp->_ogsFragment.getPathInputMap();
 }
 
+const MaterialX::StringMap& OgsFragment::getEmbeddedTextureMap() const
+{
+    return _imp->_ogsFragment.getEmbeddedTextureMap();
+}
+
 std::string OgsFragment::getMatrix4Name(const std::string& matrix3Name)
 {
     return _imp->_ogsFragment.getMatrix4Name(matrix3Name);

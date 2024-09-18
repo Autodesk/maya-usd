@@ -138,14 +138,19 @@ MStatus parseUfePathArg(
     return parseArgAsUfePath(text, outputPath);
 }
 
-MStatus parseDagPathArg(const MArgParser& argParser, int index, MDagPath& outputDagPath)
+MStatus parseObjectArg(const MArgParser& argParser, int index, MObject& outputObject)
 {
     MString text;
     MStatus status = parseTextArg(argParser, index, text);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    return PXR_NS::UsdMayaUtil::GetMObjectByName(text, outputObject);
+}
+
+MStatus parseDagPathArg(const MArgParser& argParser, int index, MDagPath& outputDagPath)
+{
     MObject obj;
-    status = PXR_NS::UsdMayaUtil::GetMObjectByName(text, obj);
+    MStatus status = parseObjectArg(argParser, index, obj);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     return MDagPath::getAPathTo(obj, outputDagPath);
@@ -428,11 +433,18 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     MArgParser argParser(syntax(), argList, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    status = parseUfePathArg(argParser, 0, _srcPath);
-    if (status != MS::kSuccess)
-        return reportError(status);
+    MObject   srcMayaObject;
+    Ufe::Path srcPath;
+    status = parseUfePathArg(argParser, 0, srcPath);
+    if (status != MS::kSuccess) {
+        status = parseObjectArg(argParser, 0, srcMayaObject);
+        if (status != MS::kSuccess) {
+            return reportError(status);
+        }
+    }
 
-    status = parseUfePathArg(argParser, 1, _dstPath, true /*allowEmpty*/);
+    Ufe::Path dstPath;
+    status = parseUfePathArg(argParser, 1, dstPath, true /*allowEmpty*/);
     if (status != MS::kSuccess)
         return reportError(status);
 
@@ -452,7 +464,9 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
         OpUndoItemRecorder undoRecorder(_undoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        auto  dstUfePaths = manager.duplicate(_srcPath, _dstPath, userArgs);
+        auto  dstUfePaths = srcPath.empty()
+            ? manager.duplicateToUsd(srcMayaObject, dstPath, userArgs)
+            : manager.duplicate(srcPath, dstPath, userArgs);
 
         if (dstUfePaths.size() > 0) {
             // Select the duplicate.

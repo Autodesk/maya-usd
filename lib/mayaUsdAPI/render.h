@@ -94,6 +94,7 @@ public:
     const std::string&          getFragmentSource() const;
     const std::string&          getFragmentName() const;
     const MaterialX::StringMap& getPathInputMap() const;
+    const MaterialX::StringMap& getEmbeddedTextureMap() const;
     std::string                 getMatrix4Name(const std::string& matrix3Name);
 
 private:
