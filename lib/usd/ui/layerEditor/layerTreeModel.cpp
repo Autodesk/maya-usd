@@ -300,7 +300,13 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     _lastAskedAnonLayerNameSinceRebuild = 0;
 
     beginResetModel();
-    clear();
+
+    //  Note: do *not* call clear() here! Unfortunately, clear() itself calls,
+    //        beginResetModel() and endResetModel(). Qt does not detect the nested
+    //        begin/end/ So calling clear() would make the layer manager flicker
+    //        to be empty for a brief time.
+    if (rowCount() > 0)
+        removeRows(0, rowCount());
 
     if (_sessionState->isValid()) {
         auto rootLayer = _sessionState->stage()->GetRootLayer();
