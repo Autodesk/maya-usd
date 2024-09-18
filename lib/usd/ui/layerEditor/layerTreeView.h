@@ -65,6 +65,8 @@ private:
     };
 
     std::map<ItemId, ItemState> _itemsState;
+    int                         _horizontalScrollbarPosition { 0 };
+    int                         _verticalScrollbarPosition { 0 };
 };
 
 /**
