@@ -31,13 +31,10 @@ UsdMaya_ReadJobWithSceneAssembly::UsdMaya_ReadJobWithSceneAssembly(
 
 UsdMaya_ReadJobWithSceneAssembly::~UsdMaya_ReadJobWithSceneAssembly() { }
 
-bool UsdMaya_ReadJobWithSceneAssembly::DoImport(
-    UsdPrimRange&  rootRange,
-    const UsdPrim& usdRootPrim,
-    const bool     resetXform)
+bool UsdMaya_ReadJobWithSceneAssembly::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
     return mArgs.importWithProxyShapes ? _DoImportWithProxies(rootRange)
-                                       : _DoImport(rootRange, usdRootPrim, resetXform);
+                                       : _DoImport(rootRange, usdRootPrim);
 }
 
 bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(

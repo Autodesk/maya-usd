@@ -22,7 +22,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdMayaPrimReaderContext::UsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap)
     : _prune(false)
     , _timeSampleMultiplier(1.0)
-    , _resetXform(false)
     , _pathNodeMap(pathNodeMap)
 {
 }
@@ -95,9 +94,5 @@ void UsdMayaPrimReaderContext::SetTimeSampleMultiplier(double multiplier)
 {
     _timeSampleMultiplier = multiplier;
 };
-
-void UsdMayaPrimReaderContext::SetForceResetXform(bool resetXform) { _resetXform = resetXform; };
-
-bool UsdMayaPrimReaderContext::GetForceResetXform() const { return _resetXform; };
 
 PXR_NAMESPACE_CLOSE_SCOPE

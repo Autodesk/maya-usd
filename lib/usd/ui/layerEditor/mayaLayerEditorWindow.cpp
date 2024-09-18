@@ -173,7 +173,7 @@ std::string MayaLayerEditorWindow::proxyShapeName() const
 void MayaLayerEditorWindow::removeSubLayer()
 {
     QString name = "Remove";
-    treeView()->callMethodOnSelection(name, &LayerTreeItem::removeSubLayer);
+    treeView()->callMethodOnSelectionNoDelay(name, &LayerTreeItem::removeSubLayer);
 }
 
 void MayaLayerEditorWindow::saveEdits()

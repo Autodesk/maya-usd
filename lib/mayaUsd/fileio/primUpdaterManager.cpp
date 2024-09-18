@@ -20,6 +20,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/utils/proxyAccessorUtil.h>
 #ifdef HAS_ORPHANED_NODES_MANAGER
 #include <mayaUsd/fileio/orphanedNodesManager.h>
 #endif
@@ -292,8 +293,7 @@ using PullImportPaths = std::vector<std::pair<MDagPath, Ufe::Path>>;
 PullImportPaths pullImport(
     const Ufe::Path&                 ufePulledPath,
     const UsdPrim&                   pulledPrim,
-    const UsdMayaPrimUpdaterContext& context,
-    const bool                       resetXform = false)
+    const UsdMayaPrimUpdaterContext& context)
 {
     MayaUsd::ProgressBarScope progressBar(9);
 
@@ -331,7 +331,7 @@ PullImportPaths pullImport(
     std::vector<MDagPath> addedDagPaths;
 
     // Execute the command, which can succeed but import nothing.
-    bool success = readJob->Read(&addedDagPaths, resetXform);
+    bool success = readJob->Read(&addedDagPaths);
     if (!success || addedDagPaths.size() == 0) {
         TF_WARN("Nothing to edit in the selection.");
         return PullImportPaths();
@@ -352,52 +352,13 @@ PullImportPaths pullImport(
     const bool isCopy = context.GetArgs()._copyOperation;
     if (!isCopy) {
         progressBar.addSteps(4);
-
-        // Quick workaround to reuse some POC code - to rewrite later
-
-        // Communication to current proxyAccessor code is through the global
-        // selection, so we must save the current selection for proper undo.
-        // This is not logically necessary, and should be re-written to avoid
-        // going through the global selection.
-        if (!UfeSelectionUndoItem::select(
-                "Pre-proxyAccessor selection", *Ufe::GlobalSelection::get())) {
-            TF_WARN("Cannot save the selection.");
-            return PullImportPaths();
-        }
-
-        // The "child" is the node that will receive the computed parent
-        // transformation, in its offsetParentMatrix attribute.  We are using
-        // the pull parent for this purpose, so pop the path of the ufeChild to
-        // get to its pull parent.
-        auto ufeChild = MayaUsd::ufe::dagPathToUfe(addedDagPath).pop();
-
         // Since we haven't pulled yet, obtaining the parent is simple, and
         // doesn't require going through the Hierarchy interface, which can do
         // non-trivial work on pulled objects to get their parent.
         auto ufeParent = ufePulledPath.pop();
 
-        MString pyCommand;
-        pyCommand.format(
-            "from mayaUsd.lib import proxyAccessor as pa\n"
-            "import maya.cmds as cmds\n"
-            "cmds.select('^1s', '^2s')\n"
-            "pa.parent()\n"
-            "cmds.select(clear=True)\n",
-            Ufe::PathString::string(ufeChild).c_str(),
-            Ufe::PathString::string(ufeParent).c_str());
-
-        MString pyUndoCommand;
-        pyUndoCommand.format(
-            "from mayaUsd.lib import proxyAccessor as pa\n"
-            "import maya.cmds as cmds\n"
-            "cmds.select('^1s', '^2s')\n"
-            "pa.unparent()\n"
-            "cmds.select(clear=True)\n",
-            Ufe::PathString::string(ufeChild).c_str(),
-            Ufe::PathString::string(ufeParent).c_str());
-
-        if (!PythonUndoItem::execute(
-                "Pull import proxy accessor parenting", pyCommand, pyUndoCommand)) {
+        if (!utils::ProxyAccessorUndoItem::parentPulledObject(
+                "Pull import proxy accessor parenting", addedDagPath, ufeParent)) {
             TF_WARN("Cannot parent pulled object.");
             return PullImportPaths();
         }
@@ -1285,7 +1246,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     //    each, for per-prim customization.
 
     // 1) Perform the import
-    PullImportPaths importedPaths = pullImport(path, pulledPrim, context, true);
+    PullImportPaths importedPaths = pullImport(path, pulledPrim, context);
     if (importedPaths.empty()) {
         return false;
     }
@@ -1630,7 +1591,7 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
         context._pullExtras.initRecursive(Ufe::Hierarchy::createItem(srcPath));
         progressBar.advance();
 
-        PullImportPaths importedPaths = pullImport(srcPath, srcPrim, context, true);
+        PullImportPaths importedPaths = pullImport(srcPath, srcPrim, context);
         progressBar.advance();
 
         scopeIt.end();

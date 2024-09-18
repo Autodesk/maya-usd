@@ -254,6 +254,13 @@ LayerViewMemento::LayerViewMemento(const LayerTreeView& view, const LayerTreeMod
 
 void LayerViewMemento::preserve(const LayerTreeView& view, const LayerTreeModel& model)
 {
+    if (QScrollBar* hsb = view.horizontalScrollBar()) {
+        _horizontalScrollbarPosition = hsb->value();
+    }
+    if (QScrollBar* vsb = view.verticalScrollBar()) {
+        _verticalScrollbarPosition = vsb->value();
+    }
+
     const LayerItemVector items = model.getAllItems();
     if (items.size() == 0)
         return;
@@ -296,6 +303,19 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
 
         view.setExpanded(item->index(), expanded);
     }
+
+    if (QScrollBar* hsb = view.horizontalScrollBar()) {
+        if (hsb->value() != _horizontalScrollbarPosition) {
+            hsb->setValue(_horizontalScrollbarPosition);
+            hsb->valueChanged(_horizontalScrollbarPosition);
+        }
+    }
+    if (QScrollBar* vsb = view.verticalScrollBar()) {
+        if (vsb->value() != _verticalScrollbarPosition) {
+            vsb->setValue(_verticalScrollbarPosition);
+            vsb->valueChanged(_verticalScrollbarPosition);
+        }
+    }
 }
 
 void LayerTreeView::onModelAboutToBeReset()
@@ -303,10 +323,13 @@ void LayerTreeView::onModelAboutToBeReset()
     if (!_model)
         return;
 
-    LayerViewMemento memento(*this, *_model);
-    if (memento.empty())
+    // Don't allow recursive saving of the tree view state.
+    // Could happen if notifications are sent in response
+    // to other notifications or Qt events.
+    if (_cachedModelState)
         return;
 
+    LayerViewMemento memento(*this, *_model);
     _cachedModelState = std::make_unique<LayerViewMemento>(std::move(memento));
 }
 
@@ -315,10 +338,12 @@ void LayerTreeView::onModelReset()
     if (!_model)
         return;
 
-    if (_cachedModelState)
+    if (_cachedModelState) {
         _cachedModelState->restore(*this, *_model);
-    else
+        _cachedModelState.reset();
+    } else {
         expandAll();
+    }
 }
 
 LayerItemVector LayerTreeView::getSelectedLayerItems() const
@@ -420,6 +445,11 @@ void LayerTreeView::callMethodOnSelection(const QString& undoName, simpleLayerMe
 {
     DelayAbstractCommandHook delayed(*_model->sessionState()->commandHook());
 
+    callMethodOnSelectionNoDelay(undoName, method);
+}
+
+void LayerTreeView::callMethodOnSelectionNoDelay(const QString& undoName, simpleLayerMethod method)
+{
     CallMethodParams params;
     auto             selection = getSelectedLayerItems();
     params.selection = &selection;
