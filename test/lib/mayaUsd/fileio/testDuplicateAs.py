@@ -49,7 +49,7 @@ class DuplicateAsTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
@@ -390,7 +390,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         '''Duplicate a Maya sphere without the meshes, only materials.'''
 
         # Create a sphere.
-        sphere = cmds.polySphere(r=1)
+        sphere = cmds.polyCube()
 
         # Create a stage to receive the USD duplicate.
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
@@ -402,7 +402,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Verify that the both the sphere and material were copied.
         looksPrim = stage.GetPrimAtPath("/Looks")
         self.assertTrue(looksPrim.IsValid())
-        spherePrim = stage.GetPrimAtPath("/pSphere1")
+        spherePrim = stage.GetPrimAtPath("/pCube1")
         self.assertTrue(spherePrim.IsValid())
 
         # Undo duplicate to USD.
@@ -416,6 +416,31 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertTrue(looksPrim.IsValid())
         spherePrim = stage.GetPrimAtPath("/pSphere1")
         self.assertFalse(spherePrim.IsValid())
+
+
+    def testDuplicateMaterial(self):
+        '''Duplicate a Maya material directly.'''
+
+        # Reuse a Maya test file from the usd file IO tests.
+        mayaFileName  = 'one-group.ma'
+        inputPath = self.inputPath.replace('mayaUsd', 'usd').replace('fileio', 'translators')
+        mayaFile = os.path.join(inputPath, 'UsdExportMaterialScopeTest', mayaFileName)
+        cmds.file(mayaFile, force=True, open=True)
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Duplicate a Maya material to USD without meshes, with materials
+        cmds.mayaUsdDuplicate("standardSurface4", psPathStr, exportOptions='exportMaterials=1;excludeExportTypes=[Mesh]')
+
+        # Verify that the material was copied.
+        looksPrim = stage.GetPrimAtPath("/Looks")
+        self.assertTrue(looksPrim.IsValid())
+        materialPrim = stage.GetPrimAtPath("/Looks/standardSurface4SG")
+        self.assertTrue(materialPrim.IsValid())
+        shaderPrim = stage.GetPrimAtPath("/Looks/standardSurface4SG/standardSurface4")
+        self.assertTrue(shaderPrim.IsValid())
 
 
     def testDuplicateSelection(self):
