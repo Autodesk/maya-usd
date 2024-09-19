@@ -68,6 +68,12 @@ MSyntax MayaUSDImportCommand::createSyntax()
         kImportRelativeTexturesFlag,
         UsdMayaJobImportArgsTokens->importRelativeTextures.GetText(),
         MSyntax::kString);
+    syntax.addFlag(
+        kImportUpAxisFlag, UsdMayaJobImportArgsTokens->upAxis.GetText(), MSyntax::kBoolean);
+    syntax.addFlag(
+        kImportAxisAndUnitMethodFlag,
+        UsdMayaJobImportArgsTokens->axisAndUnitMethod.GetText(),
+        MSyntax::kString);
     syntax.addFlag(kMetadataFlag, UsdMayaJobImportArgsTokens->metadata.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kMetadataFlag);
     syntax.addFlag(

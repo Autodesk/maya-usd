@@ -174,6 +174,12 @@ TF_DECLARE_PUBLIC_TOKENS(
     (pullImportStage) \
     (preserveTimeline) \
     (remapUVSetsTo) \
+    (upAxis) \
+    (axisAndUnitMethod) \
+    /* values for axis and unit method */ \
+    (rotateScale) \
+    (addTransform) \
+    (overwritePrefs) \
     /* values for import relative textures */ \
     (automatic) \
     (absolute) \
@@ -403,6 +409,8 @@ struct UsdMayaJobImportArgs
     const std::string    importUSDZTexturesFilePath;
     const bool           importUSDZTextures;
     const std::string    importRelativeTextures;
+    const std::string    axisAndUnitMethod;
+    const bool           upAxis;
     const bool           importInstances;
     const bool           useAsAnimationCache;
     const bool           importWithProxyShapes;
