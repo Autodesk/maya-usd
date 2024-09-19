@@ -273,6 +273,22 @@ global proc mayaUSDRegisterStrings()
                                        "Plug-ins may have extra settings you can adjust.");
     register("kImportPluginConfigButtonAnn", "Options");
 
+    register("kImportAxisAndUnit", "Axis & Unit Conversion");
+    register("kImportUpAxis", "Up Axis");
+    register("kImportUpAxisAnn", "If selected, when an up axis mismatch is detected\n" +
+                                 "between the imported data and your scene preferences,\n" +
+                                 "an automatic correction will be performed.");
+    register("kImportAxisAndUnitMethod", "Method");
+    // Note: initial <b> is used to force Qt to render the text as HTML.
+    register("kImportAxisAndUnitMethodAnn", "<b></b>Select the method for axis/unit conversions.<br/>" +
+                                            "<br/>" +
+                                            "<b>Rotate/Scale</b>: Rotate/Scale the stage.<br/>" +
+                                            "<b>Add Parent Transform</b>: Rotate/Scale all objects within the imported data as a group<br/>" +
+                                            "<b>Overwrite Maya Preferences</b>: Update Maya's axis/unit preferences based on the imported data.");
+    register("kImportAxisAndUnitRotateScale", "Rotate/Scale");
+    register("kImportAxisAndUnitAddTransform", "Add Parent Transform");
+    register("kImportAxisAndUnitOverwritePrefs", "Overwrite Maya Preferences");
+
     register("kMayaDiscardEdits", "Discard Maya Edits");
     register("kMayaRefDiscardEdits", "Cancel Editing as Maya Data");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");

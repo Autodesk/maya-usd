@@ -1344,6 +1344,14 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
             UsdMayaJobImportArgsTokens->absolute,
             UsdMayaJobImportArgsTokens->relative,
             UsdMayaJobImportArgsTokens->none }))
+    , axisAndUnitMethod(extractToken(
+          userArgs,
+          UsdMayaJobImportArgsTokens->axisAndUnitMethod,
+          UsdMayaJobImportArgsTokens->rotateScale,
+          { UsdMayaJobImportArgsTokens->rotateScale,
+            UsdMayaJobImportArgsTokens->addTransform,
+            UsdMayaJobImportArgsTokens->overwritePrefs }))
+    , upAxis(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->upAxis))
     , importInstances(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
     , importWithProxyShapes(importWithProxyShapes)
@@ -1432,6 +1440,9 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = "";
         d[UsdMayaJobImportArgsTokens->importRelativeTextures]
             = UsdMayaJobImportArgsTokens->none.GetString();
+        d[UsdMayaJobImportArgsTokens->axisAndUnitMethod]
+            = UsdMayaJobImportArgsTokens->rotateScale.GetString();
+        d[UsdMayaJobImportArgsTokens->upAxis] = true;
         d[UsdMayaJobImportArgsTokens->pullImportStage] = UsdStageRefPtr();
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = false;
@@ -1514,6 +1525,8 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = _string;
         d[UsdMayaJobImportArgsTokens->importRelativeTextures] = _string;
+        d[UsdMayaJobImportArgsTokens->axisAndUnitMethod] = _string;
+        d[UsdMayaJobImportArgsTokens->upAxis] = _boolean;
         d[UsdMayaJobImportArgsTokens->pullImportStage] = _usdStageRefPtr;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = _boolean;
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = _boolean;
@@ -1604,6 +1617,8 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "importUSDZTextures: " << TfStringify(importArgs.importUSDZTextures) << std::endl
         << "importUSDZTexturesFilePath: " << TfStringify(importArgs.importUSDZTexturesFilePath)
         << "importRelativeTextures: " << TfStringify(importArgs.importRelativeTextures) << std::endl
+        << "axisAndUnitMethod: " << TfStringify(importArgs.axisAndUnitMethod) << std::endl
+        << "upAxis: " << TfStringify(importArgs.upAxis) << std::endl
         << "pullImportStage: " << TfStringify(importArgs.pullImportStage) << std::endl
         << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl

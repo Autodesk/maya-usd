@@ -87,6 +87,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportUSDZTextures.py
     testUsdExportImportRoundtripPreviewSurface.py
     testUsdImportSkeleton.py
+    testUsdImportUpAxis.py
     testUsdImportXforms.py
     testUsdImportXformAnim.py
     testUsdImportEulerFilter.py
