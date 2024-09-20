@@ -4,6 +4,8 @@ import maya.mel
 import fixturesUtils
 import mtohUtils
 
+from pxr import Usd
+
 class TestCommand(mtohUtils.MtohTestCase):
     _file = __file__
 
@@ -20,7 +22,14 @@ class TestCommand(mtohUtils.MtohTestCase):
         # we assume the results of `listRenderIndex=..., visibileOnly=1` are
         # sufficient
 
-        cubeUnselectedImg = "cube_unselected.png"
+        # Diffuse and Specular computations changed in Usd versions after 24.08
+        # This will affect the output of this test, so use a legacy baseline
+        # if needed
+        usdSuffix = ''
+        if Usd.GetVersion() <= (0, 24, 8):
+            usdSuffix = '_legacyUsd'
+
+        cubeUnselectedImg = "cube_unselected" + usdSuffix + ".png"
         nothingImg = "nothing.png"
 
         cmds.refresh()
