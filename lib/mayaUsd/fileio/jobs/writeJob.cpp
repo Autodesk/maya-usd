@@ -222,12 +222,16 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     MayaUsd::ProgressBarScope progressBar(8);
 
     // If no default prim for the exported root layer was given, select one from
-    // the available root nodes of the Maya scene. We take into account the excluded
-    // node types based on the export job arguments.
-    if (mJobCtx.mArgs.defaultPrim.empty()) {
-        MStringArray roots = GetExportDefaultPrimCandidates(mJobCtx.mArgs);
-        if (roots.length() > 0) {
-            mJobCtx.mArgs.defaultPrim = roots[0].asChar();
+    // the available root nodes of the Maya scene in order for materials to be
+    // parented correctly. We take into account the excluded node types based on
+    // the export job arguments. This is not required if using the legacy
+    // material scope.
+    if (!mJobCtx.mArgs.legacyMaterialScope) {
+        if (mJobCtx.mArgs.defaultPrim.empty()) {
+            MStringArray roots = GetExportDefaultPrimCandidates(mJobCtx.mArgs);
+            if (roots.length() > 0) {
+                mJobCtx.mArgs.defaultPrim = roots[0].asChar();
+            }
         }
     }
 
