@@ -59,9 +59,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     const std::vector<SdfPath>& GetMaterialPaths() { return mJobCtx.GetMaterialPaths(); }
 
-    MAYAUSD_CORE_PUBLIC
-    const std::vector<SdfPath>& GetExtraPrimsPaths() { return _extrasPrimsPaths; }
-
 private:
     /// Begins constructing the USD stage, writing out the values at the default
     /// time. Returns \c true if the stage can be created successfully.

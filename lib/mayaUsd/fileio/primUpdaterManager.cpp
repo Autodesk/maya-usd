@@ -518,7 +518,6 @@ struct PushExportResult
     SdfLayerRefPtr                       layer;
     std::shared_ptr<UsdPathToDagPathMap> usdToDag;
     std::vector<SdfPath>                 materialPaths;
-    std::vector<SdfPath>                 extraPrimsPaths;
 };
 
 PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterContext& context)
@@ -586,7 +585,6 @@ PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterC
     if (!writeJob.Write(fileName, false /* append */)) {
         return result;
     }
-    result.extraPrimsPaths = writeJob.GetExtraPrimsPaths();
     progressBar.advance();
 
     result.srcRootPath = writeJob.MapDagPathToSdfPath(dagPath);
@@ -1713,12 +1711,11 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicateToUsd(
     CopyLayerPrimsOptions options;
     options.progressBar = &progressBar;
     options.mergeScopes = true;
+
     std::vector<SdfPath> primsToCopy = { pushExportResult.srcRootPath };
-    primsToCopy.reserve(primsToCopy.size() + pushExportResult.extraPrimsPaths.size());
-    primsToCopy.insert(
-        primsToCopy.end(),
-        pushExportResult.extraPrimsPaths.begin(),
-        pushExportResult.extraPrimsPaths.end());
+    for (const auto& prim : srcStage->Traverse()) {
+        primsToCopy.push_back(prim.GetPath());
+    }
 
     CopyLayerPrimsResult copyResult = copyLayerPrims(
         srcStage, srcLayer, srcParentPath, dstStage, dstLayer, dstParentPath, primsToCopy, options);

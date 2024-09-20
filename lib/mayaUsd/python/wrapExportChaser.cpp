@@ -176,16 +176,6 @@ void wrapExportChaser()
         .def("ExportDefault", &This::ExportDefault, &ExportChaserWrapper::default_ExportDefault)
         .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
         .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
-        .def(
-            "RegisterExtraPrimsPaths",
-            &This::RegisterExtraPrimsPaths,
-            boost::python::arg("extraPrimPaths"),
-            "Method to cache the path for any extra prim path created by the chaser.")
-        .def(
-            "GetExtraPrimsPaths",
-            &This::GetExtraPrimsPaths,
-            boost::python::return_internal_reference<>(),
-            "Get the array of the currently cached extra paths.")
         .def("Register", &ExportChaserWrapper::Register)
         .staticmethod("Register")
         .def("Unregister", &ExportChaserWrapper::Unregister)

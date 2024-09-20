@@ -25,6 +25,7 @@ from maya import standalone
 import fixturesUtils, os
 import mayaUsd_createStageWithNewLayer
 import mayaUsdDuplicateAsUsdDataOptions
+import mayaUsdOptions
 
 import unittest
 
@@ -52,6 +53,7 @@ class ChaserExample1(mayaUsd.lib.ExportChaser):
     def __init__(self, factoryContext, *args, **kwargs):
         super(ChaserExample1, self).__init__(factoryContext, *args, **kwargs)
         jobArgs = factoryContext.GetJobArgs()
+        self.stage = factoryContext.GetStage()
         ChaserExample1.seenChasers = jobArgs.chaserNames
         if ChaserExample1.name in jobArgs.allChaserArgs:
             ChaserExample1.seenChaserArgs = jobArgs.allChaserArgs[ChaserExample1.name]
@@ -66,6 +68,10 @@ class ChaserExample1(mayaUsd.lib.ExportChaser):
 
     def PostExport(self):
         ChaserExample1.postExportCalled = True
+
+        # creating an extra prim to be tested on Duplicate As
+        scope = self.stage.DefinePrim("/TestScope", "Scope")
+
         return True
 
     @staticmethod
@@ -140,7 +146,6 @@ class ChaserExample2(mayaUsd.lib.ExportChaser):
 
     def __init__(self, factoryContext, *args, **kwargs):
         super(ChaserExample2, self).__init__(factoryContext, *args, **kwargs)
-        self.stage = factoryContext.GetStage()
         jobArgs = factoryContext.GetJobArgs()
         ChaserExample2.seenChasers = jobArgs.chaserNames
         if ChaserExample2.name in jobArgs.allChaserArgs:
@@ -156,10 +161,6 @@ class ChaserExample2(mayaUsd.lib.ExportChaser):
 
     def PostExport(self):
         ChaserExample2.postExportCalled = True
-
-        # creating an extra prim to be tested on Duplicate As
-        scope = self.stage.DefinePrim("/TestScope", "Scope")
-        self.RegisterExtraPrimsPaths([scope.GetPath()])
 
         return True
 
@@ -255,14 +256,14 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         # Create a stage to receive the USD duplicate.
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         defaultDuplicateAsUsdDataOptions = mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText()
-        modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions.replace("jobContext=[]", "jobContext=[JobContextExample1]")
+        modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions + ";jobContext=[JobContextExample1]"
         cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
 
         # check if the extra prim has also been duplicated
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
         spherePrim = stage.GetPrimAtPath("/TestSphere")
         scopePrim = stage.GetPrimAtPath("/TestScope")
-        
+
         self.assertTrue(spherePrim.IsValid())
         self.assertTrue(scopePrim.IsValid())
 
