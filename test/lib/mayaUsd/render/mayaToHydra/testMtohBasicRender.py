@@ -10,6 +10,8 @@ import maya.mel
 import fixturesUtils
 import mtohUtils
 
+from pxr import Usd
+
 class TestSnapshot(mtohUtils.MtohTestCase):
     """Tests whether our snapshot rendering works with basic Viewport 2.0"""
 
@@ -59,10 +61,16 @@ class TestHdMayaRender(mtohUtils.MtohTestCase):
         if maya.mel.eval("defaultShaderName") != "standardSurface1":
             imageVersion = 'lambertDefaultMaterial'
 
+        usdSuffix = ''
+        if Usd.GetVersion() <= (0, 24, 8):
+            usdSuffix = '_legacyUsd'
+
         self.makeCubeScene(camDist=6)
-        self.assertSnapshotClose("cube_unselected.png", imageVersion, 0.0002)
+        self.assertSnapshotClose(
+            "cube_unselected" + usdSuffix + ".png", imageVersion, 0.0002)
         cmds.select(self.cubeTrans)
-        self.assertSnapshotClose("cube_selected.png", imageVersion, 0.0002)
+        self.assertSnapshotClose(
+            "cube_selected" + usdSuffix + ".png", imageVersion, 0.0002)
 
 
 if __name__ == '__main__':

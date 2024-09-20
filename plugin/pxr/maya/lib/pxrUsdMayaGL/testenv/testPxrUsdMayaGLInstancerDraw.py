@@ -24,6 +24,8 @@ import fixturesUtils
 import imageUtils
 import mayaUtils
 
+from pxr import Usd
+
 
 class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
 
@@ -122,9 +124,15 @@ class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
                 open=True, force=True)
 
         # The cards rendering colors in older versions of Maya is lighter,
-        suffix = ''
+        mayaSuffix = ''
         if mayaUtils.mayaMajorVersion() <= 2024:
-            suffix = '_v1'
+            mayaSuffix = '_v1'
+
+        # Cards rendering became lighter with a change to lighting computations
+        # in Storm in USD versions beyond 24.08
+        usdSuffix = ''
+        if Usd.GetVersion() <= (0, 24, 8):
+            usdSuffix = '_legacyUsd'
 
         # Draw in VP2 at current frame.
         self._SetModelPanelsToViewport2()
@@ -132,11 +140,13 @@ class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
 
         # Load assembly in "Cards" to use cards drawmode.
         cmds.assembly("CubeModel", edit=True, active="Cards")
-        self._WriteViewportImage("InstancerTest", "cards" + suffix)
+        self._WriteViewportImage(
+            "InstancerTest", "cards" + mayaSuffix + usdSuffix)
 
         # Change the time; this will change the instancer positions.
         cmds.currentTime(50, edit=True)
-        self._WriteViewportImage("InstancerTest", "frame50" + suffix)
+        self._WriteViewportImage(
+            "InstancerTest", "frame50" + mayaSuffix + usdSuffix)
 
         # Delete the first instance.
         # Tickle the second instance so that it draws.
@@ -144,7 +154,8 @@ class testPxrUsdMayaGLInstancerDraw(imageUtils.ImageDiffingTestCase):
         # the greatest and we're just checking that it doesn't break horribly.
         cmds.delete("instance1")
         cmds.setAttr("instance2.t", 15, 0, 0, type="double3")
-        self._WriteViewportImage("InstancerTest", "instance2" + suffix)
+        self._WriteViewportImage(
+            "InstancerTest", "instance2" + mayaSuffix + usdSuffix)
 
         # Delete the second instance.
         cmds.delete("instance2")
