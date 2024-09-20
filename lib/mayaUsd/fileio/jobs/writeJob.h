@@ -102,9 +102,6 @@ private:
 
     UsdMayaUtil::MDagPathMap<SdfPath> mDagPathToUsdPathMap;
 
-    // Array to track any extra prims created chasers
-    std::vector<SdfPath> _extrasPrimsPaths;
-
     // Currently only used if stripNamespaces is on, to ensure we don't have clashes
     TfHashMap<SdfPath, MDagPath, SdfPath::Hash> mUsdPathToDagPathMap;
 

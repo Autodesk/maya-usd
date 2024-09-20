@@ -22,9 +22,11 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/base/ts/spline.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -32,16 +34,16 @@
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MFn.h>
-#include <maya/MFnAnimCurve.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnTransform.h>
 #include <maya/MString.h>
 
 #include <vector>
-#pragma optimize("", off)
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_WRITER(transform, UsdMayaTransformWriter);
@@ -74,11 +76,7 @@ void UsdMayaTransformWriter::_AnimChannel::setXformOp(
     } else { // float precision
         vtValue = VtValue(GfVec3f(value));
     }
-    if (opType == _XformType::Translate) {
-        //valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
-    } else {
-        valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
-    }
+    valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
 }
 
 /* static */
@@ -136,7 +134,7 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                     const TfToken& lookupName = animChannel.suffix.IsEmpty()
                         ? UsdGeomXformOp::GetOpTypeToken(animChannel.usdOpType)
                         : animChannel.suffix;
-                    auto           findResult = previousRotates->find(lookupName);
+                    auto findResult = previousRotates->find(lookupName);
                     if (findResult == previousRotates->end()) {
                         MEulerRotation::RotationOrder rotOrder
                             = UsdMayaXformStack::RotateOrderFromOpType(
@@ -635,37 +633,6 @@ void UsdMayaTransformWriter::Write(const UsdTimeCode& usdTime)
     // without actually having a transform (e.g. the internal
     // UsdMaya_FunctorPrimWriter), so accomodate those here.
     if (GetMayaObject().hasFn(MFn::kTransform)) {
-        MStatus      status;
-        MFnTransform fnXform(GetDagPath());
-        auto         transformPlug = fnXform.findPlug("translateX", false, &status);
-
-        auto spline = TsSpline();
-
-        MFnAnimCurve animCurve(transformPlug, &status);
-        // MFnAnimCurve animCurve;
-        // auto         curve = animCurve.create(transformPlug, nullptr, &status);
-        if (status && usdTime == UsdTimeCode::Default()) {
-            unsigned int numKeys = animCurve.numKeys();
-            for (unsigned int i = 0; i < numKeys; ++i) {
-                double x, xout;
-                double y, yout;
-                animCurve.getTangent(i, x, y, true);
-                animCurve.getTangent(i, xout, yout, false);
-                auto time = animCurve.time(i);
-
-                TsKnot knot;
-                knot.SetValue(animCurve.value(i));
-                knot.SetTime(time.value());
-                knot.SetMayaPreTanWidth(x);
-                knot.SetMayaPostTanWidth(xout);
-                knot.SetMayaPreTanHeight(y);
-                knot.SetMayaPostTanHeight(yout);
-
-                spline.SetKnot(knot);
-                // inTangentType
-                // outTangentType
-            }
-        }
         // There are valid cases where we have a transform in Maya but not one
         // in USD, e.g. typeless defs or other container prims in USD.
         if (UsdGeomXformable xformSchema = UsdGeomXformable(_usdPrim)) {
@@ -677,7 +644,6 @@ void UsdMayaTransformWriter::Write(const UsdTimeCode& usdTime)
                 _GetSparseValueWriter(),
                 _distanceConversionScalar);
         }
-        _usdPrim.GetAttribute(TfToken("xformOp:translateX")).SetSpline(spline);
     }
 }
 
