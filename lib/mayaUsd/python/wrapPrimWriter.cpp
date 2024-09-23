@@ -564,6 +564,7 @@ void wrapJobExportArgs()
         .def_readonly("file", &UsdMayaJobExportArgs::file)
         .def_readonly("rootPrim", &UsdMayaJobExportArgs::rootPrim)
         .def_readonly("rootPrimType", &UsdMayaJobExportArgs::rootPrimType)
+        .def_readonly("upAxis", &UsdMayaJobExportArgs::upAxis)
         .add_property(
             "filteredTypeIds",
             make_getter(
@@ -607,6 +608,9 @@ void wrapJobExportArgs()
             "rootPrimType",
             make_getter(
                 &UsdMayaJobExportArgs::rootPrimType, return_value_policy<return_by_value>()))
+        .add_property(
+            "upAxis",
+            make_getter(&UsdMayaJobExportArgs::upAxis, return_value_policy<return_by_value>()))
         .def_readonly("pythonPerFrameCallback", &UsdMayaJobExportArgs::pythonPerFrameCallback)
         .def_readonly("pythonPostCallback", &UsdMayaJobExportArgs::pythonPostCallback)
         .add_property(

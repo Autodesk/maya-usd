@@ -106,6 +106,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (parentScope) \
     (rootPrim) \
     (rootPrimType) \
+    (upAxis) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
     (renderableOnly) \
@@ -125,6 +126,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     (excludeExportTypes) \
     /* Special "none" token */ \
     (none) \
+    /* up axis values */ \
+    (mayaPrefs) \
+    (y) \
+    (z) \
     /* relative textures values */ \
     (automatic) \
     (absolute) \
@@ -258,6 +263,7 @@ struct UsdMayaJobExportArgs
     const SdfPath      parentScope; // Deprecated, use rootPrim instead.
     const SdfPath      rootPrim;
     const TfToken      rootPrimType;
+    const TfToken      upAxis;
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
     const bool         disableModelKindProcessor;
