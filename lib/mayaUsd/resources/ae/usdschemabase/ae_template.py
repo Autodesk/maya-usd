@@ -220,11 +220,7 @@ class MetaDataCustomControl(object):
         # that case we don't need to update our controls since none will change.
         pass
 
-    def refresh(self):
-        # PrimPath
-        cmds.textFieldGrp(self.primPath, edit=True, text=str(self.prim.GetPath()))
-
-        # Kind
+    def _refreshKind(self):
         model = Usd.ModelAPI(self.prim)
         primKind = model.GetKind()
         if not primKind:
@@ -232,6 +228,13 @@ class MetaDataCustomControl(object):
             cmds.optionMenuGrp(self.kind, edit=True, select=1)
         else:
             cmds.optionMenuGrp(self.kind, edit=True, value=primKind)
+
+    def refresh(self):
+        # PrimPath
+        cmds.textFieldGrp(self.primPath, edit=True, text=str(self.prim.GetPath()))
+
+        # Kind
+        self._refreshKind()
 
         # Active
         cmds.checkBoxGrp(self.active, edit=True, value1=self.prim.IsActive())
@@ -246,8 +249,13 @@ class MetaDataCustomControl(object):
 
     def _onKindChanged(self, value):
         with mayaUsdLib.UsdUndoBlock():
-            model = Usd.ModelAPI(self.prim)
-            model.SetKind(value)
+            try:
+                usdUfe.SetKindCommand(self.prim, value).execute()
+            except Exception as ex:
+                # Note: the command might not work because there is a stronger
+                #       opinion or an editRouting prevention so update the option menu
+                self._refreshKind()
+
 
     def _onActiveChanged(self, value):
         with mayaUsdLib.UsdUndoBlock():
