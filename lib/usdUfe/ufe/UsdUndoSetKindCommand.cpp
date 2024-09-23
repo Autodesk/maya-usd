@@ -16,7 +16,6 @@
 #include "UsdUndoSetKindCommand.h"
 
 #include <usdUfe/undo/UsdUndoBlock.h>
-
 #include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/token.h>

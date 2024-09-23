@@ -160,9 +160,9 @@ public:
 
 private:
     PXR_NS::SdfLayerHandle getPrimMetadataLayer(
-        const PXR_NS::UsdPrim& prim,
-        const PXR_NS::TfToken& metadataName,
-        const PXR_NS::TfToken& metadataKeyPath,
+        const PXR_NS::UsdPrim&        prim,
+        const PXR_NS::TfToken&        metadataName,
+        const PXR_NS::TfToken&        metadataKeyPath,
         const PXR_NS::SdfLayerHandle& fallbackLayer);
 };
 
