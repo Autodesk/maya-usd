@@ -59,11 +59,17 @@ void ClearSceneItemMetadataCommand::executeImplementation()
         prim.ClearCustomDataByKey(key);
     } else {
         // When the group name starts with "SessionLayer-", remove that prefix
-        // and clear in the session layer.
+        // and clear in the session layer if the operation is not editRouted.
         std::string prefixlessGroupName;
         if (isSessionLayerGroupMetadata(_group, &prefixlessGroupName)) {
-            PXR_NS::UsdEditContext editCtx(_stage, _stage->GetSessionLayer());
-            PXR_NS::TfToken        fullKey(prefixlessGroupName + std::string(":") + _key);
+            PXR_NS::TfToken fullKey(prefixlessGroupName + std::string(":") + _key);
+
+            PrimMetadataEditRouterContext ctx(
+                prim,
+                PXR_NS::SdfFieldKeys->CustomData,
+                fullKey,
+                /*fallbackLayer=*/_stage->GetSessionLayer());
+
             prim.ClearCustomDataByKey(fullKey);
         } else {
             PXR_NS::TfToken               fullKey(_group + std::string(":") + _key);

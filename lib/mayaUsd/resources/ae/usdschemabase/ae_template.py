@@ -20,6 +20,7 @@ from .attribute_custom_control import AttributeCustomControl
 from .material_custom_control import MaterialCustomControl
 
 import collections
+import contextlib
 import fnmatch
 import re
 import ufe
@@ -135,6 +136,15 @@ class UfeConnectionChangedObserver(ufe.Observer):
     def onReplace(self, *args):
         # Nothing needed here since we don't create any UI.
         pass
+
+@contextlib.contextmanager
+def PrimCustomDataEditRouting(prim, *args):
+    '''
+    A context manager that activates prim customData editRouting.
+    '''
+    # Note: the edit router context must be kept alive in a variable.
+    ctx = mayaUsdUfe.PrimMetadataEditRouterContext(prim, Sdf.PrimSpec.CustomDataKey, *args)
+    yield
 
 class MetaDataCustomControl(object):
     '''Custom control for all prim metadata we want to display.'''
@@ -713,9 +723,15 @@ class DisplayCustomDataControl(object):
     def onReplace(self, *args):
         pass
 
-    def clear(self):
+    def _clearUseOutlinerColor(self):
         cmds.checkBoxGrp(self.useOutlinerColor, edit=True, v1=False)
+
+    def _clearOutlinerColor(self):
         cmds.colorSliderGrp(self.outlinerColor, edit=True, rgb=(0,0,0))
+        
+    def clear(self):
+        self._clearUseOutlinerColor()
+        self._clearOutlinerColor()
 
     def refresh(self):
         try:
@@ -724,6 +740,8 @@ class DisplayCustomDataControl(object):
                 useOutlinerColor = self.item.getGroupMetadata(self.GROUP, self.USE_OUTLINER_COLOR)
                 if not useOutlinerColor.empty() and (useOutlinerColor.typeName() == 'bool'):
                     cmds.checkBoxGrp(self.useOutlinerColor, edit=True, v1=bool(useOutlinerColor))
+                else:
+                    self._clearUseOutlinerColor()
 
                 outlinerColor = self.item.getGroupMetadata(self.GROUP, self.OUTLINER_COLOR)
                 if not outlinerColor.empty() and (outlinerColor.typeName() == "ufe.Vector3d"):
@@ -731,29 +749,35 @@ class DisplayCustomDataControl(object):
                     clr = ufe.Vector3d(outlinerColor)
                     cmds.colorSliderGrp(self.outlinerColor, edit=True,
                                         rgb=(clr.x(), clr.y(), clr.z()))
+                else:
+                    self._clearOutlinerColor()
             else:
                 # Get the custom data directly from USD.
                 useOutlinerColor = self.prim.GetCustomDataByKey(self.USE_OUTLINER_COLOR)
                 if useOutlinerColor is not None and isinstance(useOutlinerColor, bool):
                     cmds.checkBoxGrp(self.useOutlinerColor, edit=True, v1=useOutlinerColor)
+                else:
+                    self._clearUseOutlinerColor()
 
                 outlinerColor = self.prim.GetCustomDataByKey(self.OUTLINER_COLOR)
                 if outlinerColor is not None and isinstance(outlinerColor, Gf.Vec3d):
                     # Color is stored as double3 USD custom data.
                     cmds.colorSliderGrp(self.outlinerColor, edit=True,
                                         rgb=(outlinerColor[0], outlinerColor[1], outlinerColor[2]))
+                else:
+                    self._clearOutlinerColor()
         except:
             self.clear()
 
     def _updateTextColorChanged(self):
         '''Update the text color custom data for this prim based on the values
         set in the two fields.'''
-        currEditTarget = None
+        # Get the value of "Use Outliner Color" checkbox.
+        useTextColor = cmds.checkBoxGrp(self.useOutlinerColor, query=True, v1=True)
+        # Get the value of "Outliner Color" color slider.
+        rgb = cmds.colorSliderGrp(self.outlinerColor, query=True, rgbValue=True)
         try:
             if self.useMetadata:
-                useTextColor = cmds.checkBoxGrp(self.useOutlinerColor, query=True, v1=True)
-                rgb = cmds.colorSliderGrp(self.outlinerColor, query=True, rgbValue=True)
-
                 # Get ufe commands for the two metadata.
                 cmd1 = self.item.setGroupMetadataCmd(self.GROUP, self.USE_OUTLINER_COLOR, useTextColor)
                 ufeVec = ufe.Vector3d(rgb[0], rgb[1], rgb[2])
@@ -765,20 +789,17 @@ class DisplayCustomDataControl(object):
             else:
                 with mayaUsdLib.UsdUndoBlock():
                     # As initially decided write out the color custom data to the session layer.
-                    stage = self.prim.GetStage()
-                    currEditTarget = stage.GetEditTarget()
-                    stage.SetEditTarget(stage.GetSessionLayer())
-
-                    # Get the value of "Use Outliner Color" checkbox and set in custom data.
-                    useTextColor = cmds.checkBoxGrp(self.useOutlinerColor, query=True, v1=True)
-                    self.prim.SetCustomDataByKey(self.USE_OUTLINER_COLOR, useTextColor)
-
-                    # Get the value of "Outliner Color" color slider and set in custom data.
-                    rgb = cmds.colorSliderGrp(self.outlinerColor, query=True, rgbValue=True)
-                    self.prim.SetCustomDataByKey(self.OUTLINER_COLOR, Gf.Vec3d(rgb[0], rgb[1], rgb[2]))
-        finally:
-            if currEditTarget is not None:
-                stage.SetEditTarget(currEditTarget)
+                    # It still can be edit-routed as a 'primMetadata' operation.
+                    fallbackLayer = self.prim.GetStage().GetSessionLayer()
+                    with PrimCustomDataEditRouting(self.prim, self.USE_OUTLINER_COLOR, fallbackLayer):
+                        self.prim.SetCustomDataByKey(self.USE_OUTLINER_COLOR, useTextColor)
+                    with PrimCustomDataEditRouting(self.prim, self.OUTLINER_COLOR, fallbackLayer):
+                        self.prim.SetCustomDataByKey(self.OUTLINER_COLOR, Gf.Vec3d(rgb[0], rgb[1], rgb[2]))
+        except Exception as ex:
+            # Note: the command might not work because there is a stronger
+            #       opinion or an editRouting prevention so update the metadata controls.
+            self.refresh()
+            cmds.error(str(ex))
 
     def _onUseOutlinerColorChanged(self, value):
         self._updateTextColorChanged()

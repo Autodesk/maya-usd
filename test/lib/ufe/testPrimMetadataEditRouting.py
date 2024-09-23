@@ -64,6 +64,12 @@ def createSimpleSceneItem():
     stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
     prim = stage.DefinePrim('/Xf', 'Xform')
 
+    # Add a subLayer that will be used as editRouting destination by all tests.
+    # Note: We do not use session layer as some tests verify that we route
+    #       edits that are authored in session by default.
+    layer = Sdf.Layer.CreateAnonymous("metadataLayerTag")
+    stage.GetRootLayer().subLayerPaths.append(layer.identifier)
+
     return ufe.Hierarchy.createItem(ufe.Path([
         ufe.PathString.path(psPathStr).segments[0],
         usdUtils.createUfePathSegment(str(prim.GetPath())),
@@ -74,7 +80,15 @@ def getMetadataDestinationLayer(prim):
     '''
     Returns the editRouting destination layer used by the following tests.
     '''
-    return prim.GetStage().GetSessionLayer()
+    # Note: We do not use session layer here as some tests verify that we route
+    #       edits that are authored in session by default.
+    for layer in prim.GetStage().GetLayerStack(False):
+        if layer.anonymous and layer.identifier.endswith('metadataLayerTag'):
+            destLayer = layer
+            break
+    else:
+        raise Exception("Could not find expected anonymous layer in layer stack")
+    return destLayer
 
 
 def varSelectionCmd(sceneItem, variantSetName, variantName):
@@ -443,6 +457,31 @@ class PrimMetadataEditRoutingTestCase(unittest.TestCase):
             lambda prim: prim.SetCustomDataByKey('Group:Key', 'Edited'),
             lambda item: item.clearGroupMetadataCmd('Group', 'Key'),
             lambda spec: self.assertNotIn('Group', spec.customData),
+        )
+
+    @unittest.skipUnless(ufeMetadataSupported, 'Available only if UFE supports metadata.')
+    def testEditRouterForSetSceneItemSessionMetadata(self):
+        '''
+        Test edit router functionality for setting Ufe sceneItem metadata with 'SessionLayer-'
+        group prefix. They are authored in session layer by default, verify that we can
+        route them to another layer.
+        '''
+        self._verifyEditRoutingForSetMetadata(
+            lambda item: item.setGroupMetadataCmd('SessionLayer-Autodesk', 'Key', 'Edited'),
+            lambda spec: self.assertEqual(spec.customData.get('Autodesk'), {'Key': 'Edited'}),
+        )
+
+    @unittest.skipUnless(ufeMetadataSupported, 'Available only if UFE supports metadata.')
+    def testEditRouterForClearSceneItemSessionMetadata(self):
+        '''
+        Test edit router functionality for clearing Ufe sceneItem metadata with 'SessionLayer-'
+        group prefix. They are authored in session layer by default, verify that we can
+        route them to another layer.
+        '''
+        self._verifyEditRoutingForClearMetadata(
+            lambda prim: prim.SetCustomDataByKey('Autodesk:Key', 'Edited'),
+            lambda item: item.clearGroupMetadataCmd('SessionLayer-Autodesk', 'Key'),
+            lambda spec: self.assertNotIn('Autodesk', spec.customData),
         )
 
 if __name__ == '__main__':

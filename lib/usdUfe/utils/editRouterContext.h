@@ -142,11 +142,14 @@ class USDUFE_PUBLIC PrimMetadataEditRouterContext : public StackedEditRouterCont
 {
 public:
     /*! \brief Route a metadata operation on a prim for the given metadata / metadataKeyPath.
+     *  If there is no editRouting for this metadata and a non-null fallbackLayer is given,
+     *  it will be used as edit target.
      */
     PrimMetadataEditRouterContext(
-        const PXR_NS::UsdPrim& prim,
-        const pxr::TfToken&    metadataName,
-        const pxr::TfToken&    metadataKeyPath = pxr::TfToken {});
+        const PXR_NS::UsdPrim&        prim,
+        const pxr::TfToken&           metadataName,
+        const pxr::TfToken&           metadataKeyPath = pxr::TfToken {},
+        const PXR_NS::SdfLayerHandle& fallbackLayer = PXR_NS::SdfLayerHandle {});
 
     /*! \brief Route to the given stage and layer.
      *  Should be used in undo to ensure the same target is used as in the initial execution.
@@ -159,7 +162,8 @@ private:
     PXR_NS::SdfLayerHandle getPrimMetadataLayer(
         const PXR_NS::UsdPrim& prim,
         const PXR_NS::TfToken& metadataName,
-        const PXR_NS::TfToken& metadataKeyPath);
+        const PXR_NS::TfToken& metadataKeyPath,
+        const PXR_NS::SdfLayerHandle& fallbackLayer);
 };
 
 } // namespace USDUFE_NS_DEF
