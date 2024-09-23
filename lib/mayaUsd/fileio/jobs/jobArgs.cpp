@@ -747,6 +747,13 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaJobExportArgsTokens->rootPrimType,
           UsdMayaJobExportArgsTokens->scope,
           { UsdMayaJobExportArgsTokens->xform }))
+    , upAxis(extractToken(
+          userArgs,
+          UsdMayaJobExportArgsTokens->upAxis,
+          UsdMayaJobExportArgsTokens->mayaPrefs,
+          { UsdMayaJobExportArgsTokens->none,
+            UsdMayaJobExportArgsTokens->y,
+            UsdMayaJobExportArgsTokens->z }))
     , renderLayerMode(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->renderLayerMode,
@@ -1137,6 +1144,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->parentScope] = std::string(); // Deprecated
         d[UsdMayaJobExportArgsTokens->rootPrim] = std::string();
         d[UsdMayaJobExportArgsTokens->rootPrimType] = UsdMayaJobExportArgsTokens->scope.GetString();
+        d[UsdMayaJobExportArgsTokens->upAxis] = UsdMayaJobExportArgsTokens->mayaPrefs.GetString();
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->renderableOnly] = false;
@@ -1241,6 +1249,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->parentScope] = _string; // Deprecated
         d[UsdMayaJobExportArgsTokens->rootPrim] = _string;
         d[UsdMayaJobExportArgsTokens->rootPrimType] = _string;
+        d[UsdMayaJobExportArgsTokens->upAxis] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = _string;
         d[UsdMayaJobExportArgsTokens->renderableOnly] = _boolean;

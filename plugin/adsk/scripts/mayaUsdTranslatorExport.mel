@@ -825,6 +825,7 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
         checkBoxGrp -e -en 1 includeEmptyTransformsCheckBox;
         checkBoxGrp -e -en 1 includeNamespacesCheckBox;
         checkBoxGrp -e -en 1 worldspaceCheckBox;
+        optionMenuGrp -e -en 1 upAxisPopup;
     }
     
     if (stringArrayContains("context", $sectionNames)) {
@@ -943,6 +944,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportDisplayColorCheckBox");
             } else if ($optionBreakDown[0] == "exportInstances") {
                 mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], $enable, "exportInstancesPopup");
+            } else if ($optionBreakDown[0] == "upAxis") {
+                mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "upAxisPopup");
             } else if ($optionBreakDown[0] == "exportVisibility") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportVisibilityCheckBox");
             } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
@@ -1002,7 +1005,7 @@ proc string[] parseActionSectionNames(string $sections, string $out_expandedSect
 {
     global string $gMayaUsdTranslatorExport_SectionNames[];
 
-    string $allSections[] = { "context", "output", "output-RootPrim", "geometry", "materials", "animation", "animation-data", "advanced" };
+    string $allSections[] = { "context", "output", "output-RootPrim", "geometry", "materials", "animation", "animation-data", "advanced", "axisAndUnit" };
 
     string $sectionList[];
     tokenize($sections, ";", $sectionList);
@@ -1066,6 +1069,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
 //            that section). Example:
 //                "action=section1:expanded;section2:collapsed"
 //
+//            Special types of export can also be specified. The known special exports are:
+//            cacheToUSD, duplicate and mergeToUSD.
+//
 //        The section name can also be "all", "none" or prefixed with "!":
 //            - When "all" is used, all sections are included.
 //            - When "none" is used, all sections are removed.
@@ -1126,13 +1132,20 @@ global proc int mayaUsdTranslatorExport (string $parent,
         // Adjust options related to which operation is being done:
         // export, duplicate-to-USD or merge=to-USD.
         int $canExportStagesAsRefs = 1;
+        int $canControlUpAxis = 1;
         
         if (stringArrayContains("duplicate", $sectionNames)) {
             $canExportStagesAsRefs = 0;
+            $canControlUpAxis = 0;
         }
 
         if (stringArrayContains("mergeToUSD", $sectionNames)) {
             $canExportStagesAsRefs = 0;
+            $canControlUpAxis = 0;
+        }
+
+        if (stringArrayContains("cacheToUSD", $sectionNames)) {
+            $canControlUpAxis = 0;
         }
 
         setParent $parent;
@@ -1318,6 +1331,19 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         -value1 1 exportStagesAsRefsCheckBox;
                 }
 
+                if ($canControlUpAxis) {
+                    int $collapse = stringArrayContains("axisAndUnit", $expandedSections) ? false : true;
+                    frameLayout -label `getMayaUsdString("kExportAxisAndUnitLbl")` -collapsable true -collapse $collapse axisAndUnitFrameLayout;
+                        separator -style "none";
+                        optionMenuGrp -l `getMayaUsdString("kExportUpAxisLbl")` -annotation `getMayaUsdString("kExportUpAxisAnn")` upAxisPopup;
+                            menuItem -l `getMayaUsdString("kExportUpAxisNoneLbl")` -ann "none";
+                            menuItem -l `getMayaUsdString("kExportUpAxisMayaPrefsLbl")` -ann "mayaPrefs";
+                            menuItem -l `getMayaUsdString("kExportUpAxisYLbl")` -ann "y";
+                            menuItem -l `getMayaUsdString("kExportUpAxisZLbl")` -ann "z";
+
+                    setParent ..;
+                }
+
                 separator -style "none";
             setParent ..;
         }
@@ -1382,6 +1408,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "worldspace", "worldspaceCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportStagesAsRefs", "exportStagesAsRefsCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "upAxis", "upAxisPopup");
         }
 
         if (stringArrayContains("context", $sectionNames)) {

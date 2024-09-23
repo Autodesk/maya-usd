@@ -212,7 +212,7 @@ def fileOptionsTabPage(tabLayout):
     fileOptionsScroll = cmds.columnLayout('fileOptionsScroll')
     optionsText = mayaUsdOptions.convertOptionsDictToText(cacheToUsd.loadCacheCreationOptions())
     optionsText = mayaUsdOptions.setAnimateOption(_mayaRefDagPath, optionsText)
-    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post={exportOpts}", "{cacheOpts}", "")'.format(exportOpts=kTranslatorExportOptions, cacheOpts=optionsText))
+    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post={exportOpts};cacheToUSD", "{cacheOpts}", "")'.format(exportOpts=kTranslatorExportOptions, cacheOpts=optionsText))
 
     cacheFileUsdHierarchyOptions(topForm)
 

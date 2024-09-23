@@ -112,6 +112,112 @@ static TfToken _GetFallbackExtension(const TfToken& compatibilityMode)
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
+class AutoUpAxisChanger
+{
+public:
+    AutoUpAxisChanger(const UsdStageRefPtr& stage, const TfToken& upAxisOption)
+        : _stage(stage)
+    {
+        _PrepareUpAxis(upAxisOption);
+    }
+
+    ~AutoUpAxisChanger()
+    {
+        try {
+            _CleanupUpAxis();
+        } catch (const std::exception&) {
+        }
+    }
+
+    void cleanup() { _CleanupUpAxis(); }
+
+private:
+    void _PrepareUpAxis(const TfToken& upAxisOption)
+    {
+        // If the user don't want to author the up-axis, we won't need to change the Maya up-axis.
+        const bool wantAuthorUpAxis = (upAxisOption != UsdMayaJobExportArgsTokens->none);
+        if (!wantAuthorUpAxis)
+            return;
+
+        // If the user want the up-axis authored in USD, well, author it.
+        const bool wantMayaPrefs = (upAxisOption == UsdMayaJobExportArgsTokens->mayaPrefs);
+        const bool isMayaUpAxisZ = MGlobal::isZAxisUp();
+        _wantUpAxisZ
+            = (wantMayaPrefs && isMayaUpAxisZ) || (upAxisOption == UsdMayaJobExportArgsTokens->z);
+        UsdGeomSetStageUpAxis(_stage, _wantUpAxisZ ? UsdGeomTokens->z : UsdGeomTokens->y);
+
+        // If the Maya up-axis is already the right one, we dont have to modify the Maya scene.
+        if (_wantUpAxisZ == isMayaUpAxisZ)
+            return;
+
+        // We need to modify the up-axis. Record if it was successful or not.
+        _modifiedUpAxis = _RotateUpAxis(_wantUpAxisZ);
+    }
+
+    void _CleanupUpAxis()
+    {
+        // If we did not modify the Maya up-axis, we don't have to restore it.
+        if (!_modifiedUpAxis)
+            return;
+
+        // Make sure cleanup will not be done twice even if there are exceptions.
+        _modifiedUpAxis = false;
+
+        // We are restoring the Maya scene up-axis, so we pass the opposite of the up-axis flag.
+        _RotateUpAxis(!_wantUpAxisZ);
+    }
+
+    static bool _RotateUpAxis(const bool wantUpAxisZ)
+    {
+        static const char* fullScriptFormat
+            = "proc rotateAllNodes(int $angle) {\n"
+              // Preserve the selection. Grouping and ungrouping changes it.
+              "    string $selection[] = `ls -selection`;\n"
+              // Find all root nodes.
+              "    string $rootNodeNames[] = `ls -assemblies`;\n"
+              // Group all root node under a new group:
+              //
+              //    - Use -absolute to keep the grouped node world positions
+              //    - Use -world to create the group under the root ofthe scene
+              //      if the import was done at the root of the scene
+              //    - Capture the new group name in a MEL variable called $groupName
+              "    string $groupName = `group -absolute -world $rootNodeNames`;\n"
+              // Rotate the group to align with the desired axis.
+              //
+              //    - Use relative rotation since we want to rotate the group as it is already
+              //    positioned
+              //    - Use -euler to make teh angle be relative to the current angle
+              //    - Use forceOrderXYZ to force the rotation to be relative to world
+              //    - Use -pivot to make sure we are rotating relative to the origin
+              //      (The group is positioned at the center of all sub-object, so we need to
+              //      specify the pivot)
+              "    rotate -relative -euler -pivot 0 0 0 -forceOrderXYZ $angle 0 0 $groupName;\n"
+              // Ungroup while preserving the rotation.
+              "    ungroup -absolute $groupName;\n"
+              // Restore the selection.
+              "    select -replace $selection;\n"
+              "}\n"
+              "rotateAllNodes(%d);\n";
+
+        const int         angleYtoZ = 90;
+        const int         angleZtoY = -90;
+        const std::string fullScript
+            = TfStringPrintf(fullScriptFormat, wantUpAxisZ ? angleYtoZ : angleZtoY);
+
+        if (!MGlobal::executeCommand(fullScript.c_str())) {
+            MGlobal::displayWarning(
+                "Failed to temporarily rotate the scene to export with modified up-axis.");
+            return false;
+        }
+
+        return true;
+    }
+
+    UsdStageRefPtr _stage;
+    bool           _wantUpAxisZ { false };
+    bool           _modifiedUpAxis { false };
+};
+
 bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
 {
     const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
@@ -159,7 +265,9 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     if (!_FinishWriting()) {
         return false;
     }
+
     progressBar.advance();
+
     return true;
 }
 
@@ -327,6 +435,9 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         mJobCtx.mStage->SetTimeCodesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsDouble());
         mJobCtx.mStage->SetFramesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsDouble());
     }
+
+    // Temporarily change Maya's up-axis if needed.
+    _autoAxisChanger = std::make_unique<AutoUpAxisChanger>(mJobCtx.mStage, mJobCtx.mArgs.upAxis);
 
     // Set the customLayerData on the layer
     if (!mJobCtx.mArgs.customLayerData.empty()) {
@@ -593,16 +704,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
     }
     progressBar.advance();
 
-    // Unfortunately, MGlobal::isZAxisUp() is merely session state that does
-    // not get recorded in Maya files, so we cannot rely on it being set
-    // properly.  Since "Y" is the more common upAxis, we'll just use
-    // isZAxisUp as an override to whatever our pipeline is configured for.
-    TfToken upAxis = UsdGeomGetFallbackUpAxis();
-    if (MGlobal::isZAxisUp()) {
-        upAxis = UsdGeomTokens->z;
-    }
-    UsdGeomSetStageUpAxis(mJobCtx.mStage, upAxis);
-
     // XXX Currently all distance values are written directly to USD, and will
     // be in centimeters (Maya's internal unit) despite what the users UIUnit
     // preference is.
@@ -658,6 +759,9 @@ bool UsdMaya_WriteJob::_FinishWriting()
 
     _PruneEmpties();
     progressBar.advance();
+
+    // Restore Maya's up-axis if needed.
+    _autoAxisChanger.reset();
 
     TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {

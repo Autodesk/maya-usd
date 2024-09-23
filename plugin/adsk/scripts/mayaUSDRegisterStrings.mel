@@ -232,6 +232,17 @@ global proc mayaUSDRegisterStrings()
     register("kExportDefaultPrimNoneLbl", "None");
     register("kExportDefaultPrimAnn", "As part of its metadata, each USD stage can identify a default prim.\nThis is the primitive that is referenced in if you reference in a file.");
 
+    register("kExportAxisAndUnitLbl", "Axis & Unit Conversion");
+    register("kExportUpAxisLbl", "Up Axis");
+    register("kExportUpAxisAnn", "<b.</b>Select the up axis for the export file." +
+                                 "Rotation will be applied if converting to a different axis." +
+                                 "<b>None</b>: do not author upAxis." +
+                                 "<b>Use Maya Preferences</b>: use the axis of the current scene.");
+    register("kExportUpAxisNoneLbl", "None");
+    register("kExportUpAxisMayaPrefsLbl", "Use Maya Preferences");
+    register("kExportUpAxisYLbl", "Y");
+    register("kExportUpAxisZLbl", "Z");
+
     // All strings for import dialog:
     register("kImportAnimationDataLbl", "Animation Data");
     register("kImportCustomFrameRangeLbl", "Custom Frame Range");
