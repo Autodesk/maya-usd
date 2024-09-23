@@ -286,6 +286,11 @@ PXR_NS::SdfLayerHandle getPrimMetadataEditRouterLayer(
     if (!dstEditRouter)
         return nullptr;
 
+    // Optimize the case where we have a per-stage layer routing.
+    // This avoid creating dictionaries just to pass and receive a value.
+    if (auto layerRouter = std::dynamic_pointer_cast<LayerPerStageEditRouter>(dstEditRouter))
+        return layerRouter->getLayerForStage(prim.GetStage());
+
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
     context[EditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
