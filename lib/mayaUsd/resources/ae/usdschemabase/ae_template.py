@@ -255,6 +255,7 @@ class MetaDataCustomControl(object):
                 # Note: the command might not work because there is a stronger
                 #       opinion or an editRouting prevention so update the option menu
                 self._refreshKind()
+                cmds.error(str(ex))
 
 
     def _onActiveChanged(self, value):
