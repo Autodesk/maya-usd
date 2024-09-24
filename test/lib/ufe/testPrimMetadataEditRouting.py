@@ -290,7 +290,7 @@ class PrimMetadataEditRoutingTestCase(unittest.TestCase):
         # Check that no changes were done in any layer.
         self.assertTrue(prim.IsActive())
         self.assertFalse(prim.IsInstanceable())
-        self.assertEqual(prim.GetKind(), '')
+        self.assertEqual(Usd.ModelAPI(prim).GetKind(), '')
         self.assertFalse(prim.HasAuthoredPayloads())
         self.assertFalse(prim.HasAuthoredReferences())
         self.assertFalse(varSet.HasAuthoredVariantSelection())
