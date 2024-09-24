@@ -331,5 +331,37 @@ class CameraTestCase(unittest.TestCase):
         result = ufe.CameraHandler.findAll(geoPath)
         self.assertTrue(result.empty())
 
+    @unittest.skipUnless(mayaUtils.mayaMajorMinorVersions() >= (2025, 2), 'Maya USD camera manipulator is only supported in 2025.2 or greater.')
+    def testUsdCameraManipulators(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        testFile = testUtils.getTestScene("camera", 'cameraManipulator.usda')
+        mayaUtils.createProxyFromFile(testFile)
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.clear()
+
+        # create some strings
+        cameraManPathString = '|stage|stageShape,/Camera1'
+
+        camItem = ufeUtils.createItem(cameraManPathString)
+        cameraPrim = usdUtils.getPrimFromSceneItem(camItem)
+    
+        translateAttr = cameraPrim.GetAttribute("xformOp:translate")
+        self.assertIsNotNone(translateAttr)
+        tranlateBeforeEdit = translateAttr.Get()
+        print(tranlateBeforeEdit)
+
+        # dolly
+        cmds.dolly( cameraManPathString, d = -3 )
+        translateAttr = cameraPrim.GetAttribute("xformOp:translate")
+        self.assertIsNotNone(translateAttr)
+        self.assertEqual(translateAttr.Get(), Gf.Vec3d(0.0, 0.0, -3.0))
+
+        #track
+        cmds.track( cameraManPathString, d = 10 )
+        translateAttr = cameraPrim.GetAttribute("xformOp:translate")
+        self.assertIsNotNone(translateAttr)
+        self.assertEqual(translateAttr.Get(), Gf.Vec3d(0.0, -10.0, 0.0))
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
