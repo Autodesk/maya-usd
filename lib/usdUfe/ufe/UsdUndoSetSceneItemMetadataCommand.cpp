@@ -33,6 +33,24 @@
 
 namespace USDUFE_NS_DEF {
 
+namespace {
+
+void setSceneItemCustomDataByKey(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& key,
+    const Ufe::Value&      value)
+{
+    std::string errMsg;
+    if (!UsdUfe::isPrimMetadataEditAllowed(prim, PXR_NS::SdfFieldKeys->CustomData, key, &errMsg)) {
+        // Note: we don't throw an exception because this would break bulk actions.
+        TF_RUNTIME_ERROR(errMsg);
+    } else {
+        prim.SetCustomDataByKey(key, ufeValueToVtValue(value));
+    }
+}
+
+} // namespace
+
 USDUFE_VERIFY_CLASS_SETUP(
     UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>,
     SetSceneItemMetadataCommand);
@@ -69,7 +87,7 @@ void SetSceneItemMetadataCommand::setKeyMetadata()
 
     // If this is not a grouped metadata, set the _value directly on the _key
     PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData, key);
-    prim.SetCustomDataByKey(key, ufeValueToVtValue(_value));
+    setSceneItemCustomDataByKey(prim, key, _value);
 }
 
 void SetSceneItemMetadataCommand::setGroupMetadata()
@@ -88,11 +106,11 @@ void SetSceneItemMetadataCommand::setGroupMetadata()
             fullKey,
             /*fallbackLayer=*/_stage->GetSessionLayer());
 
-        prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
+        setSceneItemCustomDataByKey(prim, fullKey, _value);
     } else {
         PXR_NS::TfToken               fullKey(_group + std::string(":") + _key);
         PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData, fullKey);
-        prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
+        setSceneItemCustomDataByKey(prim, fullKey, _value);
     }
 }
 
