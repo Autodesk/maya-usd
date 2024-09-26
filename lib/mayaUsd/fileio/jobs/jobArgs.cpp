@@ -729,8 +729,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , ignoreWarnings(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->ignoreWarnings))
     , includeEmptyTransforms(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->includeEmptyTransforms))
-    , isDuplicating(
-          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->isDuplicating))
+    , isDuplicating(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->isDuplicating))
     , materialCollectionsPath(
           extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->materialCollectionsPath))
     , materialsScopeName(_GetMaterialsScopeName(
@@ -842,8 +841,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "file: " << exportArgs.file << std::endl
         << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl
         << "includeEmptyTransforms: " << TfStringify(exportArgs.includeEmptyTransforms)
-        << "isDuplicating: " << TfStringify(exportArgs.isDuplicating)
-        << std::endl;
+        << "isDuplicating: " << TfStringify(exportArgs.isDuplicating) << std::endl;
     out << "includeAPINames (" << exportArgs.includeAPINames.size() << ")" << std::endl;
     for (const std::string& includeAPIName : exportArgs.includeAPINames) {
         out << "    " << includeAPIName << std::endl;
