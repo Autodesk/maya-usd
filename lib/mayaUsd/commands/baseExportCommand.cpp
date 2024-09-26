@@ -182,6 +182,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kRootPrimTypeFlag, UsdMayaJobExportArgsTokens->rootPrimType.GetText(), MSyntax::kString);
     syntax.addFlag(kUpAxisFlag, UsdMayaJobExportArgsTokens->upAxis.GetText(), MSyntax::kString);
+    syntax.addFlag(kUnitFlag, UsdMayaJobExportArgsTokens->unit.GetText(), MSyntax::kString);
     syntax.addFlag(
         kRenderableOnlyFlag, UsdMayaJobExportArgsTokens->renderableOnly.GetText(), MSyntax::kNoArg);
     syntax.addFlag(
