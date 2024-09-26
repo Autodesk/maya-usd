@@ -291,7 +291,7 @@ class LightTestCase(unittest.TestCase):
         if (hasattr(ufe, "Light_v5_5")):
             ufeCylinderLight = ufe.Light_v5_5.light(cylinderlightItem)
         else:
-            ufeCylinderLight = ufe.light.light(cylinderlightItem)
+            ufeCylinderLight = ufe.Light.light(cylinderlightItem)
         usdCylinderLight = usdUtils.getPrimFromSceneItem(cylinderlightItem)
         self._TestCylinderLight(ufeCylinderLight, usdCylinderLight)
 
