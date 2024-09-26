@@ -574,6 +574,7 @@ void wrapJobExportArgs()
                 &UsdMayaJobExportArgs::geomSidedness, return_value_policy<return_by_value>()))
         .def_readonly("ignoreWarnings", &UsdMayaJobExportArgs::ignoreWarnings)
         .def_readonly("includeEmptyTransforms", &UsdMayaJobExportArgs::includeEmptyTransforms)
+        .def_readonly("isDuplicating", &UsdMayaJobExportArgs::isDuplicating)
         .add_property(
             "includeAPINames",
             make_getter(

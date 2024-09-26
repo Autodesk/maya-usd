@@ -634,11 +634,18 @@ bool UsdMaya_WriteJob::_FinishWriting()
         primWriterLoop.loopAdvance();
     }
 
+    _extrasPrimsPaths.clear();
+
     // Run post export function on the chasers.
     MayaUsd::ProgressBarLoopScope chasersLoop(mChasers.size());
     for (const UsdMayaExportChaserRefPtr& chaser : mChasers) {
         if (!chaser->PostExport()) {
             return false;
+        }
+
+        // Collect extra prims paths from chasers
+        for (const SdfPath& path : chaser->GetExtraPrimsPaths()) {
+            _extrasPrimsPaths.emplace_back(path);
         }
         chasersLoop.loopAdvance();
     }

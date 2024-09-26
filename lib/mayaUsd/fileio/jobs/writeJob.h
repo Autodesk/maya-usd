@@ -59,6 +59,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     const std::vector<SdfPath>& GetMaterialPaths() { return mJobCtx.GetMaterialPaths(); }
 
+    // Cached prims paths from chasers
+    MAYAUSD_CORE_PUBLIC
+    const std::vector<SdfPath>& GetExtraPrimsPaths() { return _extrasPrimsPaths; }
+
 private:
     /// Begins constructing the USD stage, writing out the values at the default
     /// time. Returns \c true if the stage can be created successfully.
@@ -101,6 +105,9 @@ private:
     MObjectArray mRenderLayerObjs;
 
     UsdMayaUtil::MDagPathMap<SdfPath> mDagPathToUsdPathMap;
+
+    // Array to track any extra prims created chasers
+    std::vector<SdfPath> _extrasPrimsPaths;
 
     // Currently only used if stripNamespaces is on, to ensure we don't have clashes
     TfHashMap<SdfPath, MDagPath, SdfPath::Hash> mUsdPathToDagPathMap;

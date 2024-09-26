@@ -25,7 +25,6 @@ from maya import standalone
 import fixturesUtils, os
 import mayaUsd_createStageWithNewLayer
 import mayaUsdDuplicateAsUsdDataOptions
-import mayaUsdOptions
 
 import unittest
 
@@ -50,16 +49,25 @@ class ChaserExample1(mayaUsd.lib.ExportChaser):
     seenChasers = None
     seenChaserArgs = None
 
+    isDuplicating = False
+
     def __init__(self, factoryContext, *args, **kwargs):
         super(ChaserExample1, self).__init__(factoryContext, *args, **kwargs)
         jobArgs = factoryContext.GetJobArgs()
         self.stage = factoryContext.GetStage()
+        self.isDuplicating = factoryContext.GetJobArgs().isDuplicating
         ChaserExample1.seenChasers = jobArgs.chaserNames
         if ChaserExample1.name in jobArgs.allChaserArgs:
             ChaserExample1.seenChaserArgs = jobArgs.allChaserArgs[ChaserExample1.name]
         
     def ExportDefault(self):
         ChaserExample1.exportDefaultCalled = True
+
+        if self.isDuplicating:
+            # creating an extra prim to be tested on Duplicate As
+            scope = self.stage.DefinePrim("/TestExportDefault", "Scope")
+            self.RegisterExtraPrimsPaths([scope.GetPath()])
+
         return self.ExportFrame(Usd.TimeCode.Default())
 
     def ExportFrame(self, frame):
@@ -69,8 +77,10 @@ class ChaserExample1(mayaUsd.lib.ExportChaser):
     def PostExport(self):
         ChaserExample1.postExportCalled = True
 
-        # creating an extra prim to be tested on Duplicate As
-        scope = self.stage.DefinePrim("/TestScope", "Scope")
+        if self.isDuplicating:
+            # creating an extra prim to be tested on Duplicate As
+            scope = self.stage.DefinePrim("/TestPostExport", "Scope")
+            self.RegisterExtraPrimsPaths([scope.GetPath()])
 
         return True
 
@@ -259,13 +269,15 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions + ";jobContext=[JobContextExample1]"
         cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
 
-        # check if the extra prim has also been duplicated
+        # Check if the extra prims have also been duplicated
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
         spherePrim = stage.GetPrimAtPath("/TestSphere")
-        scopePrim = stage.GetPrimAtPath("/TestScope")
+        scopeExportPrim = stage.GetPrimAtPath("/TestExportDefault")
+        scopePostPrim = stage.GetPrimAtPath("/TestPostExport")
 
         self.assertTrue(spherePrim.IsValid())
-        self.assertTrue(scopePrim.IsValid())
+        self.assertTrue(scopeExportPrim.IsValid())
+        self.assertTrue(scopePostPrim.IsValid())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
