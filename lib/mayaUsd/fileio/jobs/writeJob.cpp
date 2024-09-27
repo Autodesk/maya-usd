@@ -643,7 +643,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
             return false;
         }
 
-         // Collect extra prims paths from chasers
+        // Collect extra prims paths from chasers
         _extrasPrimsPaths.insert(
             _extrasPrimsPaths.end(),
             chaser->GetExtraPrimsPaths().begin(),
