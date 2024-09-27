@@ -643,10 +643,12 @@ bool UsdMaya_WriteJob::_FinishWriting()
             return false;
         }
 
-        // Collect extra prims paths from chasers
-        for (const SdfPath& path : chaser->GetExtraPrimsPaths()) {
-            _extrasPrimsPaths.emplace_back(path);
-        }
+         // Collect extra prims paths from chasers
+        _extrasPrimsPaths.insert(
+            _extrasPrimsPaths.end(),
+            chaser->GetExtraPrimsPaths().begin(),
+            chaser->GetExtraPrimsPaths().end());
+
         chasersLoop.loopAdvance();
     }
 
