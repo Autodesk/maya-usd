@@ -25,7 +25,6 @@
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/sdf/primSpec.h>
 
 #include <maya/MAnimControl.h>
 #include <maya/MComputation.h>
@@ -35,13 +34,11 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MObjectArray.h>
-#include <maya/MPxNode.h>
 #include <maya/MStatus.h>
 #include <maya/MUuid.h>
 
 #include <limits>
 #include <map>
-#include <unordered_set>
 // Needed for directly removing a UsdVariant via Sdf
 //   Remove when UsdVariantSet::RemoveVariant() is exposed
 //   XXX [bug 75864]
@@ -50,7 +47,6 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/modelKindProcessor.h>
 #include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
@@ -58,11 +54,9 @@
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/sdf/variantSetSpec.h>
-#include <pxr/usd/sdf/variantSpec.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/primRange.h>
-#include <pxr/usd/usd/usdcFileFormat.h>
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/xform.h>
@@ -644,12 +638,21 @@ bool UsdMaya_WriteJob::_FinishWriting()
         primWriterLoop.loopAdvance();
     }
 
+    _extrasPrimsPaths.clear();
+
     // Run post export function on the chasers.
     MayaUsd::ProgressBarLoopScope chasersLoop(mChasers.size());
     for (const UsdMayaExportChaserRefPtr& chaser : mChasers) {
         if (!chaser->PostExport()) {
             return false;
         }
+
+        // Collect extra prims paths from chasers
+        _extrasPrimsPaths.insert(
+            _extrasPrimsPaths.end(),
+            chaser->GetExtraPrimsPaths().begin(),
+            chaser->GetExtraPrimsPaths().end());
+
         chasersLoop.loopAdvance();
     }
 
