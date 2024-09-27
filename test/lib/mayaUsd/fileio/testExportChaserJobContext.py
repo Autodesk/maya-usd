@@ -23,6 +23,7 @@ from maya import cmds
 from maya import standalone
 
 import fixturesUtils, os
+import mayaUtils
 import mayaUsd_createStageWithNewLayer
 import mayaUsdDuplicateAsUsdDataOptions
 
@@ -260,6 +261,7 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         self.assertTrue(ChaserExample2.exportFrameCalled)
         self.assertTrue(ChaserExample2.postExportCalled)
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testChaserWithDuplicateAsUsd(self):
         sphere = cmds.polySphere(r = 1, name='TestSphere')
 
