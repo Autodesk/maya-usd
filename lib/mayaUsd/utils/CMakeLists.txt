@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        autoUndoCommands.cpp
         blockSceneModificationContext.cpp
         colorSpace.cpp
         converter.cpp
@@ -36,6 +37,7 @@ target_sources(${PROJECT_NAME}
 )
 
 set(HEADERS
+    autoUndoCommands.h
     blockSceneModificationContext.h
     colorSpace.h
     customLayerData.h
