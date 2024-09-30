@@ -475,6 +475,7 @@ void wrapJobImportArgs()
         .def_readonly("importRelativeTextures", &UsdMayaJobImportArgs::importRelativeTextures)
         .def_readonly("axisAndUnitMethod", &UsdMayaJobImportArgs::axisAndUnitMethod)
         .def_readonly("upAxis", &UsdMayaJobImportArgs::upAxis)
+        .def_readonly("unit", &UsdMayaJobImportArgs::unit)
         .def_readonly("importWithProxyShapes", &UsdMayaJobImportArgs::importWithProxyShapes)
         .add_property(
             "includeAPINames",

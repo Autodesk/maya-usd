@@ -152,6 +152,11 @@ double ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Unit mdistanceUn
 MAYAUSD_CORE_PUBLIC
 MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit);
 
+/// Convert the given \p mdistanceYnit into its text representation suitable
+/// to be used with the currentUnit MEL command. Invalid units return "cm".
+MAYAUSD_CORE_PUBLIC
+MString ConvertMDistanceUnitToText(const MDistance::Unit mdistanceUnit);
+
 /// Returns a scaling value from Maya's internal units to the specified \p metersPerUnit
 MAYAUSD_CORE_PUBLIC
 double GetExportDistanceConversionScalar(const double metersPerUnit);

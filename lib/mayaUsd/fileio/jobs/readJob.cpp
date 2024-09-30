@@ -199,7 +199,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     // When we are called from PrimUpdaterManager we should already have
     // a computation scope. If we are called from elsewhere don't show any
     // progress bar here.
-    MayaUsd::ProgressBarScope progressBar(17);
+    MayaUsd::ProgressBarScope progressBar(16);
 
     // Do not use the global undo info recording system.
     // The read job Undo() / redo() functions will handle all operations.
@@ -257,22 +257,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     UsdEditContext editContext(stage, stage->GetSessionLayer());
     stage->SetEditTarget(stage->GetSessionLayer());
     _setTimeSampleMultiplierFrom(stage->GetTimeCodesPerSecond());
-    progressBar.advance();
-
-    // XXX Currently all distance values are set directly from USD and will be
-    // interpreted as centimeters (Maya's internal distance unit). Future work
-    // could include converting distance values based on the specified meters-
-    // per-unit in the USD stage metadata. For now, simply warn.
-    if (UsdGeomStageHasAuthoredMetersPerUnit(stage)) {
-        MDistance::Unit mdistanceUnit = UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(
-            UsdGeomGetStageMetersPerUnit(stage));
-
-        if (mdistanceUnit != MDistance::internalUnit()) {
-            TF_WARN("Distance unit conversion is not yet supported. "
-                    "All distance values will be imported in Maya's internal "
-                    "distance unit.");
-        }
-    }
     progressBar.advance();
 
     // If the import time interval isn't empty, we expand the Min/Max time
@@ -483,7 +467,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     }
     progressBar.advance();
 
-    _ConvertUpAxis(stage);
+    _ConvertUpAxisAndUnits(stage);
     progressBar.advance();
 
     UsdMayaReadUtil::mapFileHashes.clear();
@@ -498,37 +482,39 @@ static bool getUSDUpAxisZ(const UsdStageRefPtr& stage)
     return UsdGeomGetStageUpAxis(stage) == UsdGeomTokens->z;
 }
 
-void UsdMaya_ReadJob::_ConvertUpAxis(const UsdStageRefPtr& stage)
+void UsdMaya_ReadJob::_ConvertUpAxisAndUnits(const UsdStageRefPtr& stage)
 {
-    // If up-axis fixing is turned off, do nothing.
-    if (!mArgs.upAxis)
+    ConversionInfo conversion;
+
+    // Convert up-axis based if required and different between Maya and USD.
+    const bool convertUpAxis = mArgs.upAxis;
+    conversion.isMayaUpAxisZ = getMayaUpAxisZ();
+    conversion.isUSDUpAxisUZ = getUSDUpAxisZ(stage);
+    conversion.needUpAxisConversion
+        = (convertUpAxis && (conversion.isMayaUpAxisZ != conversion.isUSDUpAxisUZ));
+
+    // Convert units if required and different between Maya and USD.
+    const bool convertUnits = mArgs.unit;
+    conversion.mayaMetersPerUnit
+        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+    conversion.usdMetersPerUnit = UsdGeomGetStageMetersPerUnit(stage);
+    conversion.needUnitsConversion
+        = (convertUnits && (conversion.mayaMetersPerUnit != conversion.usdMetersPerUnit));
+
+    // If neither up-axis nor units need to change, do nothing.
+    if (!conversion.needUpAxisConversion && !conversion.needUnitsConversion)
         return;
-
-    // If up axis are the same in Maya and USD, do nothing.
-    const bool isMayaUpAxisZ = getMayaUpAxisZ();
-    const bool isUSDUpAxisUZ = getUSDUpAxisZ(stage);
-
-    if (isMayaUpAxisZ == isUSDUpAxisUZ)
-        return;
-
-    // Convert axis based on desired method.
-    const bool convertYtoZ = isMayaUpAxisZ;
-
-    bool success = false;
 
     if (mArgs.axisAndUnitMethod == UsdMayaJobImportArgsTokens->rotateScale)
-        success = _ConvertUpAxisWithRotation(stage, convertYtoZ, false);
+        _ConvertUpAxisAndUnitsByModifyingData(stage, conversion, false);
     else if (mArgs.axisAndUnitMethod == UsdMayaJobImportArgsTokens->addTransform)
-        success = _ConvertUpAxisWithRotation(stage, convertYtoZ, true);
+        _ConvertUpAxisAndUnitsByModifyingData(stage, conversion, true);
     else if (mArgs.axisAndUnitMethod == UsdMayaJobImportArgsTokens->overwritePrefs)
-        success = _ConvertUpAxisByChangingMayPrefs(convertYtoZ);
+        _ConvertUpAxisAndUnitsByChangingMayaPrefs(stage, conversion);
     else
         TF_WARN(
-            "Unknown method of converting the USD up axis to Maya: %s",
+            "Unknown method of converting the USD up axis and units to Maya: %s",
             mArgs.axisAndUnitMethod.c_str());
-
-    if (success)
-        MGlobal::displayInfo("Mismatching axis have been converted for accurate orientation.");
 }
 
 // Construct list of top level DAG nodes.
@@ -583,11 +569,9 @@ static std::string _cleanMayaNodeName(const std::string& name)
     return cleaned;
 }
 
-static void
-_addOrignalUpAxisAttribute(const std::vector<MDagPath>& dagNodePaths, bool convertUsdYtoMayaZ)
+static void _addOrignalUpAxisAttribute(const std::vector<MDagPath>& dagNodePaths, bool isUSDUpAxisZ)
 {
-    // Note: if we're converting from Y to Z, then the original up axis was Y, otherwise Z.
-    const MString originalUpAxis = convertUsdYtoMayaZ ? "Y" : "Z";
+    const MString originalUpAxis = isUSDUpAxisZ ? "Z" : "Y";
     const MString attrName = "OriginalUSDUpAxis";
     for (const MDagPath& dagPath : dagNodePaths) {
         MFnDependencyNode depNode(dagPath.node());
@@ -595,15 +579,27 @@ _addOrignalUpAxisAttribute(const std::vector<MDagPath>& dagNodePaths, bool conve
     }
 }
 
-bool UsdMaya_ReadJob::_ConvertUpAxisWithRotation(
+static void
+_addOrignalUnitsAttribute(const std::vector<MDagPath>& dagNodePaths, double usdMetersPerUnit)
+{
+    MString originalUnits;
+    originalUnits.set(usdMetersPerUnit);
+    const MString attrName = "OriginalUSDMetersPerUnit";
+    for (const MDagPath& dagPath : dagNodePaths) {
+        MFnDependencyNode depNode(dagPath.node());
+        MayaUsd::setDynamicAttribute(depNode, attrName, originalUnits);
+    }
+}
+
+void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByModifyingData(
     const UsdStageRefPtr& stage,
-    bool                  convertUsdYtoMayaZ,
+    const ConversionInfo& conversion,
     bool                  keepParentGroup)
 {
     std::vector<MDagPath> dagNodePaths
         = _findAllRootDagNodePaths(mNewNodeRegistry, mMayaRootDagPath);
     if (dagNodePaths.size() <= 0)
-        return true;
+        return;
 
     std::vector<std::string> dagNodeNames = _convertDagPathToNames(dagNodePaths);
 
@@ -648,7 +644,7 @@ bool UsdMaya_ReadJob::_ConvertUpAxisWithRotation(
 
         if (mMayaRootDagPath.node() != MObject::kNullObj) {
             static const char groupUnderParentCmdFormat[]
-                = "string $groupName = `group -name \"%s\" -absolute -parent \"%s\" \"%s\"`;";
+                = "string $groupName = `group -name \"%s\" -absolute -parent \"%s\" \"%s\"`;\n";
             std::string rootName = mMayaRootDagPath.fullPathName().asChar();
             groupCmd = TfStringPrintf(
                 groupUnderParentCmdFormat,
@@ -657,7 +653,7 @@ bool UsdMaya_ReadJob::_ConvertUpAxisWithRotation(
                 rootName.c_str());
         } else {
             static const char groupUnderWorldCmdFormat[]
-                = "string $groupName = `group -name \"%s\" -absolute -world \"%s\"`;";
+                = "string $groupName = `group -name \"%s\" -absolute -world \"%s\"`;\n";
             groupCmd = TfStringPrintf(
                 groupUnderWorldCmdFormat, groupName.c_str(), joinedDAGNodeNames.c_str());
         }
@@ -673,18 +669,27 @@ bool UsdMaya_ReadJob::_ConvertUpAxisWithRotation(
     //    - Use -pivot to make sure we are rotating relative to the origin
     //      (The group is positioned at the center of all sub-object, so we need to specify the
     //      pivot)
-    {
+    if (conversion.needUpAxisConversion) {
         static const char rotationCmdFormat[]
-            = "rotate -relative -euler -pivot 0 0 0 -forceOrderXYZ %d 0 0 $groupName;";
+            = "rotate -relative -euler -pivot 0 0 0 -forceOrderXYZ %d 0 0 $groupName;\n";
         const int   angleYtoZ = 90;
         const int   angleZtoY = -90;
         std::string rotationCmd
-            = TfStringPrintf(rotationCmdFormat, convertUsdYtoMayaZ ? angleYtoZ : angleZtoY);
+            = TfStringPrintf(rotationCmdFormat, conversion.isMayaUpAxisZ ? angleYtoZ : angleZtoY);
         fullScript += rotationCmd;
     }
 
+    if (conversion.needUnitsConversion) {
+        static const char scalingCmdFormat[]
+            = "scale -relative -pivot 0 0 0 -scaleXYZ %f %f %f $groupName;\n";
+        const double usdToMayaScaling = conversion.usdMetersPerUnit / conversion.mayaMetersPerUnit;
+        std::string  scalingCmd = TfStringPrintf(
+            scalingCmdFormat, usdToMayaScaling, usdToMayaScaling, usdToMayaScaling);
+        fullScript += scalingCmd;
+    }
+
     if (!keepParentGroup) {
-        static const char ungroupCmdFormat[] = "ungroup -absolute \"%s\";";
+        static const char ungroupCmdFormat[] = "ungroup -absolute \"%s\";\n";
         std::string       ungroupCmd = TfStringPrintf(ungroupCmdFormat, groupName.c_str());
         fullScript += ungroupCmd;
     }
@@ -692,7 +697,7 @@ bool UsdMaya_ReadJob::_ConvertUpAxisWithRotation(
     if (!MGlobal::executeCommand(fullScript.c_str())) {
         MGlobal::displayWarning("Failed to add a transform to convert the up-axis to align "
                                 "the USD data with Maya up-axis.");
-        return false;
+        return;
     }
 
     if (keepParentGroup) {
@@ -702,26 +707,67 @@ bool UsdMaya_ReadJob::_ConvertUpAxisWithRotation(
             sel.add(groupName.c_str());
             sel.getDagPath(0, groupDagPath);
         }
-        _addOrignalUpAxisAttribute({ groupDagPath }, convertUsdYtoMayaZ);
+        if (conversion.needUpAxisConversion)
+            _addOrignalUpAxisAttribute({ groupDagPath }, conversion.isUSDUpAxisUZ);
+        if (conversion.needUnitsConversion)
+            _addOrignalUnitsAttribute({ groupDagPath }, conversion.usdMetersPerUnit);
     } else {
-        _addOrignalUpAxisAttribute(dagNodePaths, convertUsdYtoMayaZ);
+        if (conversion.needUpAxisConversion)
+            _addOrignalUpAxisAttribute(dagNodePaths, conversion.isUSDUpAxisUZ);
+        if (conversion.needUnitsConversion)
+            _addOrignalUnitsAttribute(dagNodePaths, conversion.usdMetersPerUnit);
     }
 
-    return true;
+    MGlobal::displayInfo(
+        "Mismatching axis and units have been converted for accurate orientation and scale.");
 }
 
-bool UsdMaya_ReadJob::_ConvertUpAxisByChangingMayPrefs(const bool convertUsdYtoMayaZ)
+void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByChangingMayaPrefs(
+    const UsdStageRefPtr& stage,
+    const ConversionInfo& conversion)
 {
-    const bool    rotateView = true;
-    const MStatus status
-        = convertUsdYtoMayaZ ? MGlobal::setYAxisUp(rotateView) : MGlobal::setZAxisUp(rotateView);
-    if (!status) {
-        MGlobal::displayWarning(
-            "Failed to change the Maya up-axis preferences to match USD data up-axis.");
-        return false;
+    bool success = true;
+
+    // Set up-axis preferences if needed.
+    if (conversion.needUpAxisConversion) {
+        const bool    rotateView = true;
+        const MStatus status = conversion.isUSDUpAxisUZ ? MGlobal::setZAxisUp(rotateView)
+                                                        : MGlobal::setYAxisUp(rotateView);
+        if (!status) {
+            MGlobal::displayWarning(
+                "Failed to change the Maya up-axis preferences to match USD data up-axis.");
+            success = false;
+        }
     }
 
-    return true;
+    // Set units preferences if needed.
+    if (conversion.needUnitsConversion) {
+        const MDistance::Unit mayaUnit
+            = UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(conversion.usdMetersPerUnit);
+        if (mayaUnit == MDistance::kInvalid) {
+            MGlobal::displayWarning(
+                "Unable to convert <unit> to a Maya unit. Supported units include millimeters, "
+                "centimeters, meters, kilometers, inches, feet, yards and miles.");
+            success = false;
+        } else {
+            const MString mayaUnitText = UsdMayaUtil::ConvertMDistanceUnitToText(mayaUnit);
+            MString       changeUnitsCmd;
+            changeUnitsCmd.format("currentUnit -linear ^1s;", mayaUnitText);
+
+            // Note: we *must* execute the units change on-idle because the import process
+            //       saves and restores all units! If we change it now, the change would be lost.
+            if (!MGlobal::executeCommandOnIdle(changeUnitsCmd)) {
+                MGlobal::displayWarning(
+                    "Failed to change the Maya units preferences to match USD data "
+                    "because the units are not supported by Maya.");
+                success = false;
+            }
+        }
+    }
+
+    if (success)
+        MGlobal::displayInfo(
+            "Changed Maya preferences to match up-axis and units from the imported USD scene.");
 }
 
 bool UsdMaya_ReadJob::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
