@@ -25,6 +25,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
@@ -93,7 +94,7 @@ protected:
     // Engine method for DoImport().  Covers the functionality of a regular
     // usdImport.
     MAYAUSD_CORE_PUBLIC
-    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
+    bool _DoImport(const UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
     // Hook for derived classes to perform processing before import.
     // Method in this class is a no-op.
@@ -112,24 +113,40 @@ protected:
     MDagPath                                 mMayaRootDagPath;
 
 private:
+    // Import a range of prims. called by _DoImport and _ImportPrototype
+    void _ImportPrimRange(const UsdPrimRange& range, const UsdPrim& usdRootPrim);
+
+    // Delete the temporary prototypes once all instances are setup.
+    bool _CleanupPrototypes(const UsdPrim& usdRootPrim);
+
+    // Import a non-instance prim.
     void _DoImportPrimIt(
         UsdPrimRange::iterator&   primIt,
         const UsdPrim&            usdRootPrim,
         UsdMayaPrimReaderContext& readCtx,
         _PrimReaderMap&           primReaders);
 
+    // Import an instance prim. Will create the prototype if needed.
     void _DoImportInstanceIt(
         UsdPrimRange::iterator&   primIt,
         const UsdPrim&            usdRootPrim,
         UsdMayaPrimReaderContext& readCtx,
         _PrimReaderMap&           primReaders);
 
+    // Import a prototype to be used by instances.
     void _ImportPrototype(
         const UsdPrim&            prototype,
         const UsdPrim&            usdRootPrim,
         UsdMayaPrimReaderContext& readCtx);
 
     double _setTimeSampleMultiplierFrom(const double layerFPS);
+
+    void _ConvertUpAxis(const UsdStageRefPtr& stage);
+    bool _ConvertUpAxisWithRotation(
+        const UsdStageRefPtr& stage,
+        bool                  convertUsdYtoMayaZ,
+        bool                  keepParentGroup);
+    bool _ConvertUpAxisByChangingMayPrefs(const bool convertUsdYtoMayaZ);
 
     // Data
     MDagModifier mDagModifierUndo;
