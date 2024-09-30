@@ -35,4 +35,14 @@ bool UsdMayaExportChaser::PostExport()
     return true;
 }
 
+void UsdMayaExportChaser::RegisterExtraPrimsPaths(const std::vector<SdfPath>& extraPrimPaths)
+{
+    _extraPrimsPaths.insert(_extraPrimsPaths.end(), extraPrimPaths.begin(), extraPrimPaths.end());
+}
+
+const std::vector<SdfPath>& UsdMayaExportChaser::GetExtraPrimsPaths() const
+{
+    return _extraPrimsPaths;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
