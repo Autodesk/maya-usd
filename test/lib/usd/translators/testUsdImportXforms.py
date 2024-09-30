@@ -249,7 +249,7 @@ class testUsdImportXforms(unittest.TestCase):
         stage = Usd.Stage.Open(usdFile)
         xformCache = UsdGeom.XformCache()
 
-        cmds.usdImport(file=os.path.abspath(usdFile), primPath='/World')
+        cmds.usdImport(file=os.path.abspath(usdFile), primPath='/World', upAxis=0)
 
         usdPaths = [
                 '/World/anim/chars/SomeCharacter/Geom/Face/Eyes/LEye',

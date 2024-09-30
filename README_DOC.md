@@ -8,6 +8,7 @@
 + [Managing Translation (Import/Export) Options](lib/mayaUsd/fileio/doc/Managing_export_options_via_JobContext_in_Python.md)
 + [Example Import and Export Plugin in Python](tutorials/import-export-plugin/README.md)
 + [Example Import and Export Plugin in C++](tutorials/import-export-plugin-c++/README.md)
++ [Adding new import or export option](lib/mayaUsd/fileio/doc/How-to-add-new-option.md)
 + [SchemaAPI Translators](lib/mayaUsd/fileio/doc/SchemaAPI_Import_Export_in_Python.md)
 + [UFE Transform](lib/usdUfe/ufe/trf/UsdTransform3d.md)
 + [Undo/Redo Support](lib/mayaUsd/undo/README.md)
