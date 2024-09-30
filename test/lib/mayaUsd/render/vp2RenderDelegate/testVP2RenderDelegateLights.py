@@ -43,8 +43,10 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
 
         cls._testDir = os.path.abspath('.')
         
-        mayaVer = int(cmds.about(majorVersion=True))
-        cls._suffix = '-2024' if mayaVer <= 2024 else ''
+        if (os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'FALSE'):
+            cls._suffix = '-legacy'
+        else:
+            cls._suffix = ''
 
     def assertSnapshotClose(self, imageName):
         baselineImage = os.path.join(self._baselineDir, imageName)

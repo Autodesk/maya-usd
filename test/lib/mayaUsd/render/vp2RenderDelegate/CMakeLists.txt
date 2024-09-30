@@ -111,6 +111,9 @@ foreach(script ${TEST_SCRIPT_FILES})
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
             "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"
+
+            # Used in detecting whether there is support for volume light gizmos
+            "UFE_VOLUME_LIGHTS_SUPPORT=${UFE_VOLUME_LIGHTS_SUPPORT}"
     )
 
     # Assign a CTest label to these tests for easy filtering.
