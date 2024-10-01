@@ -198,4 +198,14 @@ void wrapEditRouter()
     using AttrThis = UsdUfe::AttributeEditRouterContext;
     class_<AttrThis, boost::noncopyable>("AttributeEditRouterContext", no_init)
         .def("__init__", make_constructor(AttributeEditRouterContextInit));
+
+    using PrimMdThis = UsdUfe::PrimMetadataEditRouterContext;
+    class_<PrimMdThis, boost::noncopyable>("PrimMetadataEditRouterContext", no_init)
+        .def(init<const PXR_NS::UsdPrim&, const PXR_NS::TfToken&>())
+        .def(init<const PXR_NS::UsdPrim&, const PXR_NS::TfToken&, const PXR_NS::TfToken&>())
+        .def(init<
+             const PXR_NS::UsdPrim&,
+             const PXR_NS::TfToken&,
+             const PXR_NS::TfToken&,
+             const PXR_NS::SdfLayerHandle&>());
 }

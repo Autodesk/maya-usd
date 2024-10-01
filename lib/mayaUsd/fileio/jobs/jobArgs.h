@@ -108,6 +108,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (rootPrim) \
     (rootPrimType) \
     (upAxis) \
+    (unit) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
     (renderableOnly) \
@@ -128,9 +129,24 @@ TF_DECLARE_PUBLIC_TOKENS(
     /* Special "none" token */ \
     (none) \
     /* up axis values */ \
+    /* (none) */ \
     (mayaPrefs) \
     (y) \
     (z) \
+    /* unit values */ \
+    /* (none) */ \
+    /* (mayaPrefs) */ \
+    (nm) \
+    (um) \
+    (mm) \
+    (cm) \
+    (m) \
+    (km) \
+    (lightyear) \
+    (inch) \
+    (foot) \
+    (yard) \
+    (mile) \
     /* relative textures values */ \
     (automatic) \
     (absolute) \
@@ -272,6 +288,7 @@ struct UsdMayaJobExportArgs
     const SdfPath      rootPrim;
     const TfToken      rootPrimType;
     const TfToken      upAxis;
+    const TfToken      unit;
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
     const bool         disableModelKindProcessor;

@@ -755,6 +755,22 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           { UsdMayaJobExportArgsTokens->none,
             UsdMayaJobExportArgsTokens->y,
             UsdMayaJobExportArgsTokens->z }))
+    , unit(extractToken(
+          userArgs,
+          UsdMayaJobExportArgsTokens->unit,
+          UsdMayaJobExportArgsTokens->mayaPrefs,
+          { UsdMayaJobExportArgsTokens->none,
+            UsdMayaJobExportArgsTokens->nm,
+            UsdMayaJobExportArgsTokens->um,
+            UsdMayaJobExportArgsTokens->mm,
+            UsdMayaJobExportArgsTokens->cm,
+            UsdMayaJobExportArgsTokens->m,
+            UsdMayaJobExportArgsTokens->km,
+            UsdMayaJobExportArgsTokens->lightyear,
+            UsdMayaJobExportArgsTokens->inch,
+            UsdMayaJobExportArgsTokens->foot,
+            UsdMayaJobExportArgsTokens->yard,
+            UsdMayaJobExportArgsTokens->mile }))
     , renderLayerMode(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->renderLayerMode,
@@ -1111,7 +1127,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportAssignedMaterials] = true;
         d[UsdMayaJobExportArgsTokens->legacyMaterialScope] = false;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = false;
-        d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = true;
+        d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = false;
         d[UsdMayaJobExportArgsTokens->exportInstances] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
         d[UsdMayaJobExportArgsTokens->referenceObjectMode]
@@ -1147,6 +1163,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->rootPrim] = std::string();
         d[UsdMayaJobExportArgsTokens->rootPrimType] = UsdMayaJobExportArgsTokens->scope.GetString();
         d[UsdMayaJobExportArgsTokens->upAxis] = UsdMayaJobExportArgsTokens->mayaPrefs.GetString();
+        d[UsdMayaJobExportArgsTokens->unit] = UsdMayaJobExportArgsTokens->mayaPrefs.GetString();
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->renderableOnly] = false;
@@ -1253,6 +1270,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->rootPrim] = _string;
         d[UsdMayaJobExportArgsTokens->rootPrimType] = _string;
         d[UsdMayaJobExportArgsTokens->upAxis] = _string;
+        d[UsdMayaJobExportArgsTokens->unit] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = _string;
         d[UsdMayaJobExportArgsTokens->renderableOnly] = _boolean;

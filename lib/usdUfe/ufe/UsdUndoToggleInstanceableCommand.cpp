@@ -17,6 +17,7 @@
 #include "UsdUndoToggleInstanceableCommand.h"
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 namespace USDUFE_NS_DEF {
 
@@ -38,6 +39,8 @@ void UsdUndoToggleInstanceableCommand::executeImplementation()
     PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
     if (!prim.IsValid())
         return;
+
+    PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->Instanceable);
 
     std::string errMsg;
     if (!UsdUfe::isPrimMetadataEditAllowed(

@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMaya_ModelKindProcessor;
-class AutoUpAxisChanger;
+class AutoUpAxisAndUnitsChanger;
 
 class UsdMaya_WriteJob
 {
@@ -118,7 +118,7 @@ private:
     UsdMayaWriteJobContext mJobCtx;
 
     std::unique_ptr<UsdMaya_ModelKindProcessor> _modelKindProcessor;
-    std::unique_ptr<AutoUpAxisChanger>          _autoAxisChanger;
+    std::unique_ptr<AutoUpAxisAndUnitsChanger>  _autoAxisAndUnitsChanger;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
