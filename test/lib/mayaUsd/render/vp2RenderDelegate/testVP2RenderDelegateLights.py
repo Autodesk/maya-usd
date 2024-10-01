@@ -42,6 +42,11 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
             'VP2RenderDelegateLightsTest', 'baseline')
 
         cls._testDir = os.path.abspath('.')
+        
+        if (os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'FALSE'):
+            cls._suffix = '-legacy'
+        else:
+            cls._suffix = ''
 
     def assertSnapshotClose(self, imageName):
         baselineImage = os.path.join(self._baselineDir, imageName)
@@ -66,7 +71,7 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         # unselect all and compare images
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
-        self.assertSnapshotClose('%s_unselected.png' % (self._testName))
+        self.assertSnapshotClose('%s_unselected%s.png' % (self._testName, self._suffix))
 
         # select all 4 lights and compare images
         selection = ufe.Selection()
@@ -75,11 +80,11 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         selection.append(self._GetSceneItem('|stage|stageShape', '/lights/directionalLight'))
         selection.append(self._GetSceneItem('|stage|stageShape', '/lights/areaLight'))        
         globalSelection.replaceWith(selection)
-        self.assertSnapshotClose('%s_selected.png' % (self._testName))
+        self.assertSnapshotClose('%s_selected%s.png' % (self._testName, self._suffix))
 
         # move all 4 lights and compare images
         cmds.move(-2, -2, -2, relative=True)
-        self.assertSnapshotClose('%s_moved.png' % (self._testName))
+        self.assertSnapshotClose('%s_moved%s.png' % (self._testName, self._suffix))
 
         # rename the stage to verify that the proxy light handles this properly
         cmds.rename('|stage', 'stage2')
@@ -87,24 +92,24 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         # select the stage and compare images
         globalSelection.clear()
         cmds.select('|stage2')
-        self.assertSnapshotClose('%s_stage_selected.png' % (self._testName))
+        self.assertSnapshotClose('%s_stage_selected%s.png' % (self._testName, self._suffix))
 
         # delete one of the lights to verify that the proxy light handles this properly
         cmds.delete('|stage2|stage2Shape,/lights/pointLight')
 
         # move the stage and compare images
         cmds.move(4, 4, 4, absolute=True)
-        self.assertSnapshotClose('%s_stage_moved.png' % (self._testName))
+        self.assertSnapshotClose('%s_stage_moved%s.png' % (self._testName, self._suffix))
         
         # add a new USD light and compare images        
         stage = mayaUsdUfe.getStage("|stage2|stage2Shape")
         stage.DefinePrim('/lights2/pointLight2', "SphereLight")
         cmds.select( clear=True )
-        self.assertSnapshotClose('%s_with_new_light.png' % (self._testName))
+        self.assertSnapshotClose('%s_with_new_light%s.png' % (self._testName, self._suffix))
 
         # set time and verify light animation
         cmds.currentTime(3)
-        self.assertSnapshotClose('%s_animation.png' % (self._testName))
+        self.assertSnapshotClose('%s_animation%s.png' % (self._testName, self._suffix))
 
     def _GetSceneItem(self, mayaPathString, usdPathString):
         mayaPathSegment = mayaUtils.createUfePathSegment(mayaPathString)
