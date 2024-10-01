@@ -80,6 +80,7 @@ public:
     static constexpr auto kRootPrimFlag = "rpm";
     static constexpr auto kRootPrimTypeFlag = "rpt";
     static constexpr auto kUpAxisFlag = "upa";
+    static constexpr auto kUnitFlag = "unt";
     static constexpr auto kRenderableOnlyFlag = "ro";
     static constexpr auto kDefaultCamerasFlag = "dc";
     static constexpr auto kRenderLayerModeFlag = "rlm";

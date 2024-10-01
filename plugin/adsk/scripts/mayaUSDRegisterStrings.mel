@@ -243,6 +243,22 @@ global proc mayaUSDRegisterStrings()
     register("kExportUpAxisYLbl", "Y");
     register("kExportUpAxisZLbl", "Z");
 
+    register("kExportUnitLbl", "Unit");
+    register("kExportUnitAnn", "<b></b>Select the unit for the export file." +
+                               " Scaling will be applied if converting to a different unit.<br/>" +
+                               "<b>None</b>: Do not scale or write out unit metadata.<br/>" +
+                               "<b>Use Maya Preferences</b>: Use the unit of the current scene.<br/>");
+    register("kExportUnitNoneLbl", "None");
+    register("kExportUnitMayaPrefsLbl", "Use Maya Preferences");
+    register("kExportUnitMillimeterLbl", "Millimeter");
+    register("kExportUnitCentimeterLbl", "Centimeter");
+    register("kExportUnitMeterLbl", "Meter");
+    register("kExportUnitKilometerLbl", "Kilometer");
+    register("kExportUnitInchLbl", "Inch");
+    register("kExportUnitFootLbl", "Foot");
+    register("kExportUnitYardLbl", "Yard");
+    register("kExportUnitMileLbl", "Mile");
+
     // All strings for import dialog:
     register("kImportAnimationDataLbl", "Animation Data");
     register("kImportCustomFrameRangeLbl", "Custom Frame Range");

@@ -107,22 +107,93 @@ static TfToken _GetFallbackExtension(const TfToken& compatibilityMode)
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
-/// Class to automatically change and restore the up-axis of the Maya scene.
-class AutoUpAxisChanger : public MayaUsd::AutoUndoCommands
+/// Class to automatically change and restore the up-axis and units of the Maya scene.
+class AutoUpAxisAndUnitsChanger : public MayaUsd::AutoUndoCommands
 {
 public:
-    AutoUpAxisChanger(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::TfToken& upAxisOption)
-        : AutoUndoCommands("change up-axis", _prepareCommands(stage, upAxisOption))
+    AutoUpAxisAndUnitsChanger(
+        const PXR_NS::UsdStageRefPtr& stage,
+        const PXR_NS::TfToken&        upAxisOption,
+        const PXR_NS::TfToken&        unitsOption)
+        : AutoUndoCommands(
+            "change up-axis and units",
+            _prepareCommands(stage, upAxisOption, unitsOption))
     {
     }
 
 private:
+    static double _convertOptionUnitsToUSDUnits(const TfToken& unitsOption)
+    {
+        static std::map<TfToken, double> unitsConversionMap
+            = { { UsdMayaJobExportArgsTokens->nm, UsdGeomLinearUnits::nanometers },
+                { UsdMayaJobExportArgsTokens->um, UsdGeomLinearUnits::micrometers },
+                { UsdMayaJobExportArgsTokens->mm, UsdGeomLinearUnits::millimeters },
+                { UsdMayaJobExportArgsTokens->cm, UsdGeomLinearUnits::centimeters },
+                { UsdMayaJobExportArgsTokens->m, UsdGeomLinearUnits::meters },
+                { UsdMayaJobExportArgsTokens->km, UsdGeomLinearUnits::kilometers },
+                { UsdMayaJobExportArgsTokens->lightyear, UsdGeomLinearUnits::lightYears },
+                { UsdMayaJobExportArgsTokens->inch, UsdGeomLinearUnits::inches },
+                { UsdMayaJobExportArgsTokens->foot, UsdGeomLinearUnits::feet },
+                { UsdMayaJobExportArgsTokens->yard, UsdGeomLinearUnits::yards },
+                { UsdMayaJobExportArgsTokens->mile, UsdGeomLinearUnits::miles } };
+
+        const auto iter = unitsConversionMap.find(unitsOption);
+        if (iter == unitsConversionMap.end())
+            return UsdGeomLinearUnits::centimeters;
+        return iter->second;
+    }
+
+    static TfToken _convertMayaUnitsToOptionUnits(MDistance::Unit mayaUnits)
+    {
+        static std::map<MDistance::Unit, TfToken> unitsConversionMap
+            = { { MDistance::kMillimeters, UsdMayaJobExportArgsTokens->mm },
+                { MDistance::kCentimeters, UsdMayaJobExportArgsTokens->cm },
+                { MDistance::kMeters, UsdMayaJobExportArgsTokens->m },
+                { MDistance::kKilometers, UsdMayaJobExportArgsTokens->km },
+                { MDistance::kInches, UsdMayaJobExportArgsTokens->inch },
+                { MDistance::kFeet, UsdMayaJobExportArgsTokens->foot },
+                { MDistance::kYards, UsdMayaJobExportArgsTokens->yard },
+                { MDistance::kMiles, UsdMayaJobExportArgsTokens->mile } };
+
+        const auto iter = unitsConversionMap.find(mayaUnits);
+        if (iter == unitsConversionMap.end())
+            return UsdMayaJobExportArgsTokens->cm;
+        return iter->second;
+    }
+
     static std::string
-    _prepareCommands(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::TfToken& upAxisOption)
+    _prepareUnitsCommands(const UsdStageRefPtr& stage, const TfToken& unitsOption)
+    {
+        // If the user don't want to author the unit, we won't need to change the Maya unit.
+        if (unitsOption == UsdMayaJobExportArgsTokens->none)
+            return {};
+
+        // If the user want the unit authored in USD, well, author it.
+        const bool    wantMayaPrefs = (unitsOption == UsdMayaJobExportArgsTokens->mayaPrefs);
+        const TfToken mayaUIUnits = _convertMayaUnitsToOptionUnits(MDistance::uiUnit());
+        const TfToken mayaDataUnits = _convertMayaUnitsToOptionUnits(MDistance::internalUnit());
+        const TfToken wantedUnits = wantMayaPrefs ? mayaUIUnits : unitsOption;
+        const double  usdMetersPerUnit = _convertOptionUnitsToUSDUnits(wantedUnits);
+        UsdGeomSetStageMetersPerUnit(stage, usdMetersPerUnit);
+
+        // If the Maya data unit is already the right one, we dont have to modify the Maya scene.
+        if (wantedUnits == mayaDataUnits)
+            return {};
+
+        static const char scalingCommandsFormat[]
+            = "scale -relative -pivot 0 0 0 -scaleXYZ %f %f %f $groupName;\n";
+
+        const double mayaMetersPerUnit = _convertOptionUnitsToUSDUnits(mayaDataUnits);
+        const double requiredScale = mayaMetersPerUnit / usdMetersPerUnit;
+
+        return TfStringPrintf(scalingCommandsFormat, requiredScale, requiredScale, requiredScale);
+    }
+
+    static std::string
+    _prepareUpAxisCommands(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::TfToken& upAxisOption)
     {
         // If the user don't want to author the up-axis, we won't need to change the Maya up-axis.
-        const bool wantAuthorUpAxis = (upAxisOption != UsdMayaJobExportArgsTokens->none);
-        if (!wantAuthorUpAxis)
+        if (upAxisOption == UsdMayaJobExportArgsTokens->none)
             return {};
 
         // If the user want the up-axis authored in USD, well, author it.
@@ -136,7 +207,41 @@ private:
         if (wantUpAxisZ == isMayaUpAxisZ)
             return {};
 
-        static const char fullScriptFormat[] =
+        static const char rotationCommandsFormat[] =
+            // Rotate the group to align with the desired axis.
+            //
+            //    - Use relative rotation since we want to rotate the group as it is already
+            //    positioned
+            //    - Use -euler to make the angle be relative to the current angle
+            //    - Use forceOrderXYZ to force the rotation to be relative to world
+            //    - Use -pivot to make sure we are rotating relative to the origin
+            //      (The group is positioned at the center of all sub-object, so we need to
+            //      specify the pivot)
+            "rotate -relative -euler -pivot 0 0 0 -forceOrderXYZ %d 0 0 $groupName;\n";
+
+        const int angleYtoZ = 90;
+        const int angleZtoY = -90;
+        const int rotationAngle = wantUpAxisZ ? angleYtoZ : angleZtoY;
+
+        return TfStringPrintf(rotationCommandsFormat, rotationAngle);
+    }
+
+    static std::string _prepareCommands(
+        const PXR_NS::UsdStageRefPtr& stage,
+        const PXR_NS::TfToken&        upAxisOption,
+        const PXR_NS::TfToken&        unitsOption)
+    {
+        // These commands wrap the scene-changing commands by providing:
+        //
+        //     - the list of root names as the variable $rootNodeNames
+        //     - a group containing all those nodes named $groupName
+        //     -
+        //
+        // The scene-changing commands should mofify the group, so that ungrouping
+        // these node while preserving transform changes were done on the group will
+        // modify each root node individually.
+
+        static const char scriptPrefix[] =
             // Preserve the selection. Grouping and ungrouping changes it.
             "string $selection[] = `ls -selection`;\n"
             // Find all root nodes.
@@ -147,25 +252,22 @@ private:
             //    - Use -world to create the group under the root ofthe scene
             //      if the import was done at the root of the scene
             //    - Capture the new group name in a MEL variable called $groupName
-            "string $groupName = `group -absolute -world $rootNodeNames`;\n"
-            // Rotate the group to align with the desired axis.
-            //
-            //    - Use relative rotation since we want to rotate the group as it is already
-            //    positioned
-            //    - Use -euler to make teh angle be relative to the current angle
-            //    - Use forceOrderXYZ to force the rotation to be relative to world
-            //    - Use -pivot to make sure we are rotating relative to the origin
-            //      (The group is positioned at the center of all sub-object, so we need to
-            //      specify the pivot)
-            "rotate -relative -euler -pivot 0 0 0 -forceOrderXYZ %d 0 0 $groupName;\n"
-            // Ungroup while preserving the rotation.
+            "string $groupName = `group -absolute -world $rootNodeNames`;\n";
+
+        static const char scriptSuffix[] = // Ungroup while preserving the rotation.
             "ungroup -absolute $groupName;\n"
             // Restore the selection.
             "select -replace $selection;\n";
 
-        const int angleYtoZ = 90;
-        const int angleZtoY = -90;
-        return TfStringPrintf(fullScriptFormat, wantUpAxisZ ? angleYtoZ : angleZtoY);
+        const std::string upAxisCommands = _prepareUpAxisCommands(stage, upAxisOption);
+        const std::string unitsCommands = _prepareUnitsCommands(stage, unitsOption);
+
+        // If both are empty, we don't need to do anything.
+        if (upAxisCommands.empty() && unitsCommands.empty())
+            return {};
+
+        const std::string fullScript = scriptPrefix + upAxisCommands + unitsCommands + scriptSuffix;
+        return fullScript;
     }
 };
 
@@ -388,7 +490,10 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     }
 
     // Temporarily change Maya's up-axis if needed.
-    _autoAxisChanger = std::make_unique<AutoUpAxisChanger>(mJobCtx.mStage, mJobCtx.mArgs.upAxis);
+    _autoAxisAndUnitsChanger = std::make_unique<AutoUpAxisAndUnitsChanger>(
+        mJobCtx.mStage, mJobCtx.mArgs.upAxis, mJobCtx.mArgs.unit);
+
+    // TODO: handle mJobCtx.mArgs.unit
 
     // Set the customLayerData on the layer
     if (!mJobCtx.mArgs.customLayerData.empty()) {
@@ -662,8 +767,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
     MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
     auto            mayaInternalUnitLinear
         = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit);
-    if (mayaInternalUnit != MDistance::uiUnit()
-        || mJobCtx.mArgs.metersPerUnit != mayaInternalUnitLinear) {
+    if (mJobCtx.mArgs.metersPerUnit != mayaInternalUnitLinear) {
         TF_WARN(
             "Support for Distance unit conversion is evolving. "
             "All distance units will be written in %s except where conversion is supported "
@@ -721,7 +825,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
     progressBar.advance();
 
     // Restore Maya's up-axis if needed.
-    _autoAxisChanger.reset();
+    _autoAxisAndUnitsChanger.reset();
 
     TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
