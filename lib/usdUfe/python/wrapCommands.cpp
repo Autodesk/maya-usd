@@ -21,6 +21,7 @@
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoReloadRefCommand.h>
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoSetKindCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleActiveCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
 
@@ -65,6 +66,12 @@ UsdUfe::UsdUndoToggleActiveCommand* ToggleActiveCommandInit(const PXR_NS::UsdPri
 UsdUfe::UsdUndoToggleInstanceableCommand* ToggleInstanceableCommandInit(const PXR_NS::UsdPrim& prim)
 {
     return new UsdUfe::UsdUndoToggleInstanceableCommand(prim);
+}
+
+UsdUfe::UsdUndoSetKindCommand*
+SetKindCommandInit(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& kind)
+{
+    return new UsdUfe::UsdUndoSetKindCommand(prim, kind);
 }
 
 UsdUfe::UsdUndoLoadPayloadCommand*
@@ -164,6 +171,14 @@ void wrapCommands()
             .def("execute", &UsdUfe::UsdUndoToggleInstanceableCommand::execute)
             .def("undo", &UsdUfe::UsdUndoToggleInstanceableCommand::undo)
             .def("redo", &UsdUfe::UsdUndoToggleInstanceableCommand::redo);
+    }
+    {
+        using This = UsdUfe::UsdUndoSetKindCommand;
+        class_<This, boost::noncopyable>("SetKindCommand", no_init)
+            .def("__init__", make_constructor(SetKindCommandInit))
+            .def("execute", &UsdUfe::UsdUndoSetKindCommand::execute)
+            .def("undo", &UsdUfe::UsdUndoSetKindCommand::undo)
+            .def("redo", &UsdUfe::UsdUndoSetKindCommand::redo);
     }
     {
         using This = UsdUfe::UsdUndoLoadPayloadCommand;

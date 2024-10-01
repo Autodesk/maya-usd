@@ -18,6 +18,8 @@
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
@@ -52,17 +54,26 @@ void ClearSceneItemMetadataCommand::executeImplementation()
     const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
     if (_group.empty()) {
         // If this is not a grouped meta data, remove the key
-        prim.ClearCustomDataByKey(TfToken(_key));
+        PXR_NS::TfToken               key(_key);
+        PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, key);
+        prim.ClearCustomDataByKey(key);
     } else {
         // When the group name starts with "SessionLayer-", remove that prefix
-        // and clear in the session layer.
+        // and clear in the session layer if the operation is not editRouted.
         std::string prefixlessGroupName;
         if (isSessionLayerGroupMetadata(_group, &prefixlessGroupName)) {
-            PXR_NS::UsdEditContext editCtx(_stage, _stage->GetSessionLayer());
-            PXR_NS::TfToken        fullKey(prefixlessGroupName + std::string(":") + _key);
+            PXR_NS::TfToken fullKey(prefixlessGroupName + std::string(":") + _key);
+
+            PrimMetadataEditRouterContext ctx(
+                prim,
+                PXR_NS::SdfFieldKeys->CustomData,
+                fullKey,
+                /*fallbackLayer=*/_stage->GetSessionLayer());
+
             prim.ClearCustomDataByKey(fullKey);
         } else {
-            PXR_NS::TfToken fullKey(_group + std::string(":") + _key);
+            PXR_NS::TfToken               fullKey(_group + std::string(":") + _key);
+            PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, fullKey);
             prim.ClearCustomDataByKey(fullKey);
         }
     }

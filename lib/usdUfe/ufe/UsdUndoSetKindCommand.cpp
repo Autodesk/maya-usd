@@ -15,7 +15,9 @@
 //
 #include "UsdUndoSetKindCommand.h"
 
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/modelAPI.h>
@@ -50,8 +52,17 @@ UsdUndoSetKindCommand::create(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken
 
 void UsdUndoSetKindCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
+    PrimMetadataEditRouterContext ctx(_prim, PXR_NS::SdfFieldKeys->Kind);
 
+    std::string errMsg;
+    if (!UsdUfe::isPrimMetadataEditAllowed(
+            _prim, PXR_NS::SdfFieldKeys->Kind, PXR_NS::TfToken(), &errMsg)) {
+        // Note: we don't throw an exception because this would break bulk actions.
+        TF_RUNTIME_ERROR(errMsg);
+        return;
+    }
+
+    UsdUndoBlock undoBlock(&_undoableItem);
     PXR_NS::UsdModelAPI(_prim).SetKind(_kind);
 }
 

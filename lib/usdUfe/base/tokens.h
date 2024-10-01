@@ -39,6 +39,8 @@ namespace USDUFE_NS_DEF {
     /* Stage received in the context of some router  */ \
     ((Stage, "stage"))                                  \
     ((EditTarget, "editTarget"))                        \
+    /* Metadata key path received in the context     */ \
+    ((KeyPath, "keyPath"))                              \
                                                         \
     /* Routing operations                            */ \
                                                         \
@@ -46,6 +48,7 @@ namespace USDUFE_NS_DEF {
     ((RouteDuplicate, "duplicate"))                     \
     ((RouteVisibility, "visibility"))                   \
     ((RouteAttribute, "attribute"))                     \
+    ((RoutePrimMetadata, "primMetadata"))               \
     ((RouteDelete, "delete"))                           \
     ((RouteTransform, "transform"))                     \
                                                         \
