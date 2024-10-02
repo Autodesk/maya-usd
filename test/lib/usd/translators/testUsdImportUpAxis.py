@@ -26,25 +26,8 @@ from maya import standalone
 from pxr import Gf
 
 import fixturesUtils
+import transformUtils
 
-def _GetMayaTransform(transformName):
-    '''Retrieve the transformation matrix of a Maya node.'''
-    selectionList = om.MSelectionList()
-    selectionList.add(transformName)
-    node = selectionList.getDependNode(0)
-    return om.MFnTransform(node)
-
-def _GetMayaMatrix(transformName):
-    '''Retrieve the three XYZ local rotation angles of a Maya node.'''
-    mayaTransform = _GetMayaTransform(transformName)
-    transformation = mayaTransform.transformation()
-    return transformation.asMatrix()
-
-def _GetRotationFromMatrix(matrix):
-    return om.MTransformationMatrix(matrix).rotation()
-
-def _GetMayaRotation(transformName):
-    return _GetRotationFromMatrix(_GetMayaMatrix(transformName))
 
 class testUsdImportUpAxis(unittest.TestCase):
     """Test for modifying the up-axis when importing."""
@@ -93,9 +76,9 @@ class testUsdImportUpAxis(unittest.TestCase):
 
         EPSILON = 1e-3
 
-        expectedRotation = _GetRotationFromMatrix(
+        expectedRotation = transformUtils.getMayaMatrixRotation(
             om.MEulerRotation(radians(90.), radians(0.), radians(0.)).asMatrix())
-        actualRotation = _GetMayaRotation(rootNodes[0])
+        actualRotation = transformUtils.getMayaNodeRotation(rootNodes[0])
         self.assertTrue(actualRotation.isEquivalent(expectedRotation))
 
         self.assertEqual(cmds.getAttr('%s.OriginalUSDUpAxis' % rootNodes[0]), 'Y')
@@ -118,9 +101,9 @@ class testUsdImportUpAxis(unittest.TestCase):
 
         EPSILON = 1e-3
 
-        expectedRotation = _GetRotationFromMatrix(
+        expectedRotation = transformUtils.getMayaMatrixRotation(
             om.MEulerRotation(radians(90.), radians(0.), radians(0.)).asMatrix())
-        actualRotation = _GetMayaRotation(rootNodes[0])
+        actualRotation = transformUtils.getMayaNodeRotation(rootNodes[0])
         self.assertTrue(actualRotation.isEquivalent(expectedRotation))
 
         self.assertEqual(cmds.getAttr('%s.OriginalUSDUpAxis' % rootNodes[0]), 'Y')

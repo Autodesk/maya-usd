@@ -1333,8 +1333,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 }
 
                 if ($canControlUpAxisAndUnit) {
-                    int $collapse = stringArrayContains("axisAndUnit", $expandedSections) ? false : true;
-                    frameLayout -label `getMayaUsdString("kExportAxisAndUnitLbl")` -collapsable true -collapse $collapse axisAndUnitFrameLayout;
+                    frameLayout -label `getMayaUsdString("kExportAxisAndUnitLbl")` -collapsable true -collapse false axisAndUnitFrameLayout;
                         separator -style "none";
 
                         optionMenuGrp -l `getMayaUsdString("kExportUpAxisLbl")` -annotation `getMayaUsdString("kExportUpAxisAnn")` upAxisPopup;

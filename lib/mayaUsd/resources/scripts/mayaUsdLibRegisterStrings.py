@@ -129,6 +129,11 @@ def mayaUsdLibRegisterStrings():
     register('kMenuCacheToUsd', 'Cache to USD...')
     register('kMenuMergeMayaEdits', 'Merge Maya Edits to USD');
 
+    # mayaUsdStageConversion.py
+    register("kStageConversionUnknownMethod", "Unknown stage conversion method: %s")
+    register("kStageConversionSuccessful", "Mismatching axis/unit have been converted for accurate scale.")
+
+
 def registerPluginResource(pluginId, stringId, resourceStr):
     '''See registerPluginResource.mel in Maya.
 
