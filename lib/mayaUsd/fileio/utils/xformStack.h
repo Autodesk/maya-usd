@@ -42,6 +42,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (rotatePivotTranslate) \
     (rotatePivot) \
     (rotate) \
+    (rotateX) \
+    (rotateY) \
+    (rotateZ) \
     (rotateAxis) \
     (scalePivotTranslate) \
     (scalePivot) \

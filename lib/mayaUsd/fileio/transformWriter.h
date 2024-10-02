@@ -66,6 +66,9 @@ private:
     {
         Translate,
         Rotate,
+        RotateX,
+        RotateY,
+        RotateZ,
         Scale,
         Shear,
         Transform
@@ -98,6 +101,7 @@ private:
         TfToken                   suffix;
         bool                      isInverse = false;
         bool                      isMatrix = false;
+        bool                      usingSpline = false;
         UsdGeomXformOp            op;
 
         // Retrieve the value from the Maya attribute based on if it is a matrix.
@@ -135,7 +139,8 @@ private:
         std::vector<_AnimChannel>* oAnimChanList,
         const bool                 isWritingAnimation,
         const bool                 useSuffix,
-        const bool                 isMatrix = false);
+        const bool                 isMatrix = false,
+        const bool                 usingSpline = false);
 
     // Change the channel suffix so that the USD XformOp becomes unique.
     // This is to deal with complex rigs that can have multiple transforms

@@ -15,9 +15,10 @@
 //
 #include "transformWriter.h"
 
+#include "utils/xformStack.h"
+
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
@@ -34,7 +35,6 @@
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdGeom/xformable.h>
-#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
@@ -43,6 +43,8 @@
 #include <maya/MString.h>
 
 #include <vector>
+
+#pragma optimize("", off)
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -76,8 +78,68 @@ void UsdMayaTransformWriter::_AnimChannel::setXformOp(
     } else { // float precision
         vtValue = VtValue(GfVec3f(value));
     }
-    valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
+
+    if (opType == _XformType::Rotate) {
+        switch (usdOpType) {
+        case UsdGeomXformOp::TypeRotateX:
+            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[0]), usdTime);
+            break;
+        case UsdGeomXformOp::TypeRotateY:
+            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[1]), usdTime);
+            break;
+        case UsdGeomXformOp::TypeRotateZ:
+            valueWriter->SetAttribute(op.GetAttr(), VtValue(value[2]), usdTime);
+            break;
+        default: break;
+        }
+    } else {
+        valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
+    }
 }
+
+/*
+ *bool UsdMayaWriteUtil::SetUsdAttrSplineAnimation(const MFnDependencyNode& fnNode, const MString& attributePlugName, UsdAttribute& usdAttr)
+{
+    if (!usdAttr) {
+        return false;
+    }
+
+    MStatus status;
+    MPlug plg = fnNode.findPlug(attributePlugName, &status);
+    if(plg.isNull() || !status) {
+        return false;
+    }
+
+    VtValue val = GetVtValue(plg, usdAttr.GetTypeName());
+    if (val.IsEmpty()) {
+        return false;
+    }
+
+    // spline animations are only supported for float/double/half types
+    if (val.GetType().GetTypeName() != SdfValueTypeNames->Float
+        || val.GetType().GetTypeName() != SdfValueTypeNames->Double
+        || val.GetType().GetTypeName() != SdfValueTypeNames->Half) {
+        return false;
+    }
+
+    MFnAnimCurve animCurve(plg, &status);
+    unsigned int numKeys = animCurve.numKeys();
+    auto spline = TsSpline();
+    for(unsigned int i = 0; i < numKeys; ++i) {
+        MAngle angle;
+        double weight;
+        animCurve.getTangent(i, angle, weight, true);
+
+        auto knot = TsKnot(val.GetType());
+        knot.SetTime(animCurve.time(i).value());
+        knot.SetValue(42.0);
+        spline.SetKnot(knot);
+    }
+    
+    usdAttr.SetSpline(spline);
+
+    return false;
+}*/
 
 /* static */
 void UsdMayaTransformWriter::_ComputeXformOps(
@@ -134,7 +196,7 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                     const TfToken& lookupName = animChannel.suffix.IsEmpty()
                         ? UsdGeomXformOp::GetOpTypeToken(animChannel.usdOpType)
                         : animChannel.suffix;
-                    auto findResult = previousRotates->find(lookupName);
+                    auto           findResult = previousRotates->find(lookupName);
                     if (findResult == previousRotates->end()) {
                         MEulerRotation::RotationOrder rotOrder
                             = UsdMayaXformStack::RotateOrderFromOpType(
@@ -194,7 +256,8 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     std::vector<_AnimChannel>* oAnimChanList,
     const bool                 isWritingAnimation,
     const bool                 useSuffix,
-    const bool                 isMatrix)
+    const bool                 isMatrix,
+    const bool                 usingSpline)
 {
     _AnimChannel chan;
     chan.opType = opType;
@@ -295,7 +358,54 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
         } else {
             return false;
         }
-        oAnimChanList->push_back(chan);
+
+        // when using spline animation, we need to break down the animation elements as its
+        // components. USD spline doesn't support animating the whole transform as a single entity.
+        // TODO: USD also just currenly only supports spline animation on rotation, for now.
+        if (/*usingSpline && */ opType == _XformType::Rotate) {
+            // add channels for each component of the transform
+            chan.isMatrix = false;
+            auto chanX = chan, chanY = chan, chanZ = chan;
+            chanX.usdOpType = UsdGeomXformOp::TypeRotateX;
+            chanY.usdOpType = UsdGeomXformOp::TypeRotateY;
+            chanZ.usdOpType = UsdGeomXformOp::TypeRotateZ;
+
+            switch (iTrans.rotationOrder()) {
+            case MTransformationMatrix::kYZX:
+                oAnimChanList->push_back(chanY);
+                oAnimChanList->push_back(chanZ);
+                oAnimChanList->push_back(chanX);
+                break;
+            case MTransformationMatrix::kZXY:
+                oAnimChanList->push_back(chanZ);
+                oAnimChanList->push_back(chanX);
+                oAnimChanList->push_back(chanY);
+                break;
+            case MTransformationMatrix::kXZY:
+                oAnimChanList->push_back(chanX);
+                oAnimChanList->push_back(chanZ);
+                oAnimChanList->push_back(chanY);
+                break;
+            case MTransformationMatrix::kXYZ:
+                oAnimChanList->push_back(chanX);
+                oAnimChanList->push_back(chanY);
+                oAnimChanList->push_back(chanZ);
+                break;
+            case MTransformationMatrix::kYXZ:
+                oAnimChanList->push_back(chanY);
+                oAnimChanList->push_back(chanX);
+                oAnimChanList->push_back(chanZ);
+                break;
+            case MTransformationMatrix::kZYX:
+                oAnimChanList->push_back(chanZ);
+                oAnimChanList->push_back(chanY);
+                oAnimChanList->push_back(chanX);
+                break;
+            default: break;
+            }
+        } else {
+            oAnimChanList->push_back(chan);
+        }
         return true;
     }
     return false;
@@ -646,5 +756,6 @@ void UsdMayaTransformWriter::Write(const UsdTimeCode& usdTime)
         }
     }
 }
+#pragma optimize("", on)
 
 PXR_NAMESPACE_CLOSE_SCOPE
