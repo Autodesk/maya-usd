@@ -47,6 +47,7 @@ public:
     static constexpr auto kImportUSDZTexturesFilePathFlag = "itf";
     static constexpr auto kImportRelativeTexturesFlag = "rtx";
     static constexpr auto kImportUpAxisFlag = "upa";
+    static constexpr auto kImportUnitFlag = "unt";
     static constexpr auto kImportAxisAndUnitMethodFlag = "aum";
     static constexpr auto kMetadataFlag = "md";
     static constexpr auto kApiSchemaFlag = "api";

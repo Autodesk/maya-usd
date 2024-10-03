@@ -141,12 +141,25 @@ private:
 
     double _setTimeSampleMultiplierFrom(const double layerFPS);
 
-    void _ConvertUpAxis(const UsdStageRefPtr& stage);
-    bool _ConvertUpAxisWithRotation(
+    struct ConversionInfo
+    {
+        bool isMayaUpAxisZ { false };
+        bool isUSDUpAxisUZ { false };
+        bool needUpAxisConversion { false };
+
+        double mayaMetersPerUnit = { 0.01 };
+        double usdMetersPerUnit = { 0.01 };
+        bool   needUnitsConversion = { false };
+    };
+
+    void _ConvertUpAxisAndUnits(const UsdStageRefPtr& stage);
+    void _ConvertUpAxisAndUnitsByModifyingData(
         const UsdStageRefPtr& stage,
-        bool                  convertUsdYtoMayaZ,
+        const ConversionInfo& conversion,
         bool                  keepParentGroup);
-    bool _ConvertUpAxisByChangingMayPrefs(const bool convertUsdYtoMayaZ);
+    void _ConvertUpAxisAndUnitsByChangingMayaPrefs(
+        const UsdStageRefPtr& stage,
+        const ConversionInfo& conversion);
 
     // Data
     MDagModifier mDagModifierUndo;

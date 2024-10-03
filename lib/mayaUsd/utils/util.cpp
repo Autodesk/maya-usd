@@ -148,6 +148,20 @@ double UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Uni
     }
 }
 
+MString UsdMayaUtil::ConvertMDistanceUnitToText(const MDistance::Unit mdistanceUnit)
+{
+    static std::map<MDistance::Unit, const char*> unitsConversionMap
+        = { { MDistance::kMillimeters, "mm" }, { MDistance::kCentimeters, "cm" },
+            { MDistance::kMeters, "m" },       { MDistance::kKilometers, "km" },
+            { MDistance::kInches, "inch" },    { MDistance::kFeet, "foot" },
+            { MDistance::kYards, "yard" },     { MDistance::kMiles, "mile" } };
+
+    const auto iter = unitsConversionMap.find(mdistanceUnit);
+    if (iter == unitsConversionMap.end())
+        return "cm";
+    return iter->second;
+}
+
 MDistance::Unit UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit)
 {
     if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::millimeters)) {
@@ -175,8 +189,7 @@ MDistance::Unit UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(const doubl
         return MDistance::kMiles;
     }
 
-    TF_CODING_ERROR("Invalid UsdGeomLinearUnit %f. Assuming centimeters", linearUnit);
-    return MDistance::kCentimeters;
+    return MDistance::kInvalid;
 }
 
 double UsdMayaUtil::GetExportDistanceConversionScalar(const double metersPerUnit)
