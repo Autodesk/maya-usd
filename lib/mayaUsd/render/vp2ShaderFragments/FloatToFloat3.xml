@@ -1,0 +1,47 @@
+<fragment uiName="FloatToFloat3" name="FloatToFloat3" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        Expands a float to a float3 array of all the same value.
+    </description>
+    <properties>
+        <float name="input"/>
+    </properties>
+    <values/>
+    <outputs>
+        <float3 name="output"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="FloatToFloat3"/>
+            <source>
+                <![CDATA[
+float3 FloatToFloat3(float in_float)
+{
+    return float3(in_float, in_float, in_float);
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="FloatToFloat3"/>
+            <source>
+                <![CDATA[
+vec3 FloatToFloat3(float in_float)
+{
+    return vec3(in_float, in_float, in_float);
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="FloatToFloat3"/>
+            <source>
+                <![CDATA[
+float3 FloatToFloat3(float in_float)
+{
+    return float3(in_float, in_float, in_float);
+}
+]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

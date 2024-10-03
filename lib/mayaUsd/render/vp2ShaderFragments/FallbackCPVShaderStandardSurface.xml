@@ -1,0 +1,130 @@
+<!--
+========================================================================
+Copyright 2019 Autodesk
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment_graph name="FallbackCPVShaderStandardSurface" ref="FallbackCPVShaderStandardSurface" class="FragmentGraph" version="1.0" feature_level="0" >
+    <fragments>
+        <fragment_ref name="mayaDefaultStandardSurface" ref="mayaDefaultStandardSurface" />
+        <fragment_ref name="FloatToFloat3" ref="FloatToFloat3" />
+        <fragment_ref name="Float4ToFloat3" ref="Float4ToFloat3" />
+        <fragment_ref name="Float4ToFloatW" ref="Float4ToFloatW" />
+        <fragment_ref name="mayaCPVPassing" ref="mayaCPVPassing" />
+    </fragments>
+    <connections>
+        <connect from="Float4ToFloat3.output" to="mayaDefaultStandardSurface.baseColor" name="color" />
+        <connect from="FloatToFloat3.output" to="mayaDefaultStandardSurface.opacity" name="opacity" />
+        <connect from="Float4ToFloatW.output" to="FloatToFloat3.input" name="alphavec" />
+        <connect from="mayaCPVPassing.C_4F" to="Float4ToFloat3.input" name="rgb" />
+        <connect from="mayaCPVPassing.C_4F" to="Float4ToFloatW.input" name="a" />
+    </connections>
+    <properties>
+        <float3  name="mayaTangentIn" ref="mayaDefaultStandardSurface.mayaTangentIn" semantic="tangent" flags="varyingInputParam" />
+        <float  name="base" ref="mayaDefaultStandardSurface.base" />
+        <float  name="diffuseRoughness" ref="mayaDefaultStandardSurface.diffuseRoughness" />
+        <float  name="metalness" ref="mayaDefaultStandardSurface.metalness" />
+        <float  name="specular" ref="mayaDefaultStandardSurface.specular" />
+        <float3  name="specularColor" ref="mayaDefaultStandardSurface.specularColor" />
+        <float  name="specularIOR" ref="mayaDefaultStandardSurface.specularIOR" />
+        <float  name="specularRoughness" ref="mayaDefaultStandardSurface.specularRoughness" />
+        <float  name="specularAnisotropy" ref="mayaDefaultStandardSurface.specularAnisotropy" />
+        <float  name="specularRotation" ref="mayaDefaultStandardSurface.specularRotation" />
+        <float  name="transmission" ref="mayaDefaultStandardSurface.transmission" />
+        <float3  name="transmissionColor" ref="mayaDefaultStandardSurface.transmissionColor" />
+        <float  name="subsurface" ref="mayaDefaultStandardSurface.subsurface" />
+        <float3  name="subsurfaceColor" ref="mayaDefaultStandardSurface.subsurfaceColor" />
+        <float  name="coat" ref="mayaDefaultStandardSurface.coat" />
+        <float3  name="coatColor" ref="mayaDefaultStandardSurface.coatColor" />
+        <float  name="coatIOR" ref="mayaDefaultStandardSurface.coatIOR" />
+        <float  name="coatRoughness" ref="mayaDefaultStandardSurface.coatRoughness" />
+        <float  name="coatAnisotropy" ref="mayaDefaultStandardSurface.coatAnisotropy" />
+        <float  name="coatRotation" ref="mayaDefaultStandardSurface.coatRotation" />
+        <float  name="coatAffectRoughness" ref="mayaDefaultStandardSurface.coatAffectRoughness" />
+        <float  name="coatAffectColor" ref="mayaDefaultStandardSurface.coatAffectColor" />
+        <float  name="sheen" ref="mayaDefaultStandardSurface.sheen" />
+        <float3  name="sheenColor" ref="mayaDefaultStandardSurface.sheenColor" />
+        <float  name="sheenRoughness" ref="mayaDefaultStandardSurface.sheenRoughness" />
+        <float  name="emission" ref="mayaDefaultStandardSurface.emission" />
+        <float3  name="emissionColor" ref="mayaDefaultStandardSurface.emissionColor" />
+        <float  name="extraOpacity" ref="mayaDefaultStandardSurface.extraOpacity" />
+        <bool  name="fogEnabled" ref="mayaDefaultStandardSurface.fogEnabled" />
+        <float3  name="Pw" ref="mayaDefaultStandardSurface.Pw" semantic="Pw" />
+        <float4x4  name="ViewProj" ref="mayaDefaultStandardSurface.ViewProj" semantic="viewprojection" />
+        <float  name="fogStart" ref="mayaDefaultStandardSurface.fogStart" />
+        <float  name="fogEnd" ref="mayaDefaultStandardSurface.fogEnd" />
+        <int  name="fogMode" ref="mayaDefaultStandardSurface.fogMode" />
+        <float  name="fogDensity" ref="mayaDefaultStandardSurface.fogDensity" />
+        <float4  name="fogColor" ref="mayaDefaultStandardSurface.fogColor" />
+        <float  name="fogMultiplier" ref="mayaDefaultStandardSurface.fogMultiplier" />
+        <float3  name="IrradianceEnv" ref="mayaDefaultStandardSurface.IrradianceEnv" />
+        <float3  name="SpecularEnv" ref="mayaDefaultStandardSurface.SpecularEnv" />
+        <int  name="selectionIndex" ref="mayaDefaultStandardSurface.selectionIndex" />
+        <struct  name="light0" ref="mayaDefaultStandardSurface.light0" />
+        <struct  name="light1" ref="mayaDefaultStandardSurface.light1" />
+        <struct  name="light2" ref="mayaDefaultStandardSurface.light2" />
+        <struct  name="light3" ref="mayaDefaultStandardSurface.light3" />
+        <struct  name="light4" ref="mayaDefaultStandardSurface.light4" />
+        <struct  name="light5" ref="mayaDefaultStandardSurface.light5" />
+        <struct  name="light6" ref="mayaDefaultStandardSurface.light6" />
+        <struct  name="light7" ref="mayaDefaultStandardSurface.light7" />
+        <struct  name="light8" ref="mayaDefaultStandardSurface.light8" />
+        <struct  name="light9" ref="mayaDefaultStandardSurface.light9" />
+        <struct  name="light10" ref="mayaDefaultStandardSurface.light10" />
+        <struct  name="light11" ref="mayaDefaultStandardSurface.light11" />
+        <struct  name="light12" ref="mayaDefaultStandardSurface.light12" />
+        <struct  name="light13" ref="mayaDefaultStandardSurface.light13" />
+        <struct  name="light14" ref="mayaDefaultStandardSurface.light14" />
+        <struct  name="light15" ref="mayaDefaultStandardSurface.light15" />
+        <float3  name="Nw" ref="mayaDefaultStandardSurface.N" flags="varyingInputParam" />
+        <float3  name="Vw" ref="mayaDefaultStandardSurface.V" flags="varyingInputParam" />
+        <string  name="selector" ref="mayaDefaultStandardSurface.selector" />
+        <float3  name="ambientColor" ref="mayaDefaultStandardSurface.ambientColor" />
+        <float3  name="ambientIn" ref="mayaDefaultStandardSurface.input" />
+        <undefined  name="GPUStage" ref="mayaDefaultStandardSurface.GPUStage" semantic="GPUStage" />
+        <float4 name="diffuseColor" ref="mayaCPVPassing.colorIn" flags="varyingInputParam" />
+    </properties>
+    <values>
+        <float name="base" value="1.000000"  />
+        <float name="specular" value="1.000000"  />
+        <float3 name="specularColor" value="1.000000,1.000000,1.000000"  />
+        <float name="specularIOR" value="1.500000"  />
+        <float name="specularRoughness" value="0.500000"  />
+        <float3 name="transmissionColor" value="1.000000,1.000000,1.000000"  />
+        <float3 name="subsurfaceColor" value="1.000000,1.000000,1.000000"  />
+        <float3 name="coatColor" value="1.000000,1.000000,1.000000"  />
+        <float name="coatIOR" value="1.500000"  />
+        <float name="coatRoughness" value="0.100000"  />
+        <float3 name="sheenColor" value="1.000000,1.000000,1.000000"  />
+        <float name="sheenRoughness" value="0.300000"  />
+        <float3 name="emissionColor" value="1.000000,1.000000,1.000000"  />
+        <float name="extraOpacity" value="1.000000"  />
+        <bool name="fogEnabled" value="false"  />
+        <float name="fogStart" value="0.000000"  />
+        <float name="fogEnd" value="92.000000"  />
+        <int name="fogMode" value="0"  />
+        <float name="fogDensity" value="0.100000"  />
+        <float4 name="fogColor" value="0.500000,0.500000,0.500000,1.000000"  />
+        <float name="fogMultiplier" value="1.000000"  />
+        <float3 name="IrradianceEnv" value="0.000000,0.000000,0.000000"  />
+        <float3 name="SpecularEnv" value="0.000000,0.000000,0.000000"  />
+        <int name="selectionIndex" value="0"  />
+        <string name="selector" value="mayaLightSelector16"  />
+        <float3 name="ambientColor" value="0.000000,0.000000,0.000000"  />
+        <float4 name="diffuseColor" value="0.18,0.18,0.18,1.0" />
+    </values>
+    <outputs>
+        <float4  name="outSurfaceFinal" ref="mayaDefaultStandardSurface.outSurfaceFinal" />
+    </outputs>
+</fragment_graph>

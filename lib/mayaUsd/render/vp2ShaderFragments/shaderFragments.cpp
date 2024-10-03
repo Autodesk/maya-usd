@@ -67,7 +67,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PointsGeometry)
 
     (FallbackCPVShader)
+    (FallbackCPVShaderStandardSurface)
     (FallbackShader)
+    (FallbackShaderStandardSurface)
 
     (Float4ToFloatX)
     (Float4ToFloatY)
@@ -78,6 +80,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float3ToFloatX)
     (Float3ToFloatY)
     (Float3ToFloatZ)
+    (FloatToFloat3)
 
     (NwFaceCameraIfNAN)
 
@@ -142,6 +145,7 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->Float4ToFloatW,
                                               _tokens->Float4ToFloat3,
                                               _tokens->Float4ToFloat4,
+                                              _tokens->FloatToFloat3,
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
                                               _tokens->Float3ToFloatX,
                                               _tokens->Float3ToFloatY,
@@ -167,10 +171,11 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->usdPreviewSurfaceCombiner };
 
 static const TfTokenVector _FragmentGraphNames
-    = { _tokens->BasisCurvesCubicCPVShader,  _tokens->BasisCurvesCubicFallbackShader,
-        _tokens->BasisCurvesLinearCPVShader, _tokens->BasisCurvesLinearFallbackShader,
-        _tokens->FallbackCPVShader,          _tokens->FallbackShader,
-        _tokens->PointsFallbackCPVShader,    _tokens->PointsFallbackShader };
+    = { _tokens->BasisCurvesCubicCPVShader,        _tokens->BasisCurvesCubicFallbackShader,
+        _tokens->BasisCurvesLinearCPVShader,       _tokens->BasisCurvesLinearFallbackShader,
+        _tokens->FallbackCPVShader,                _tokens->FallbackShader,
+        _tokens->FallbackCPVShaderStandardSurface, _tokens->FallbackShaderStandardSurface,
+        _tokens->PointsFallbackCPVShader,          _tokens->PointsFallbackShader };
 
 namespace {
 //! Get the file path of the shader fragment.

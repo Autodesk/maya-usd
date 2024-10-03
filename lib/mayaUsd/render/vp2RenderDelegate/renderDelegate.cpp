@@ -49,6 +49,11 @@ TF_DEFINE_ENV_SETTING(
     false,
     "This env tells the viewport to only draw glslfx UsdPreviewSurface shading networks.");
 
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_VP2_USE_STANDARDSURFACE_FALLBACK,
+    false,
+    "This env flag allows setting the common fallback shader to the UsdPreviewSurface shader fragment.");
+
 namespace {
 
 /*! \brief List of supported Rprims by VP2 render delegate
@@ -101,7 +106,8 @@ enum class FallbackShaderType
 constexpr size_t FallbackShaderTypeCount = static_cast<size_t>(FallbackShaderType::kCount);
 
 //! Array of constant-color shader fragment names indexed by FallbackShaderType
-const MString _fallbackShaderNames[] = { "FallbackShader",
+const MString _fallbackShaderNames[] = { TfGetEnvSetting(MAYAUSD_VP2_USE_STANDARDSURFACE_FALLBACK) ?
+                                         "FallbackShaderStandardSurface" : "FallbackShader",
                                          "BasisCurvesLinearFallbackShader",
                                          "BasisCurvesCubicFallbackShader",
                                          "BasisCurvesCubicFallbackShader",
@@ -109,9 +115,13 @@ const MString _fallbackShaderNames[] = { "FallbackShader",
                                          "PointsFallbackShader" };
 
 //! Array of varying-color shader fragment names indexed by FallbackShaderType
-const MString _cpvFallbackShaderNames[]
-    = { "FallbackCPVShader",         "BasisCurvesLinearCPVShader", "BasisCurvesCubicCPVShader",
-        "BasisCurvesCubicCPVShader", "BasisCurvesCubicCPVShader",  "PointsFallbackCPVShader" };
+const MString _cpvFallbackShaderNames[] = { TfGetEnvSetting(MAYAUSD_VP2_USE_STANDARDSURFACE_FALLBACK) ?
+                                            "FallbackCPVShaderStandardSurface" : "FallbackCPVShader",
+                                            "BasisCurvesLinearCPVShader",
+                                            "BasisCurvesCubicCPVShader",
+                                            "BasisCurvesCubicCPVShader",
+                                            "BasisCurvesCubicCPVShader",
+                                            "PointsFallbackCPVShader" };
 
 //! "curveBasis" parameter values for three different cubic curves
 const std::unordered_map<FallbackShaderType, int> _curveBasisParameterValueMapping
@@ -184,7 +194,9 @@ public:
             return;
 
         _3dDefaultMaterialShader
-            = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dDefaultMaterialShader);
+            = TfGetEnvSetting(MAYAUSD_VP2_USE_STANDARDSURFACE_FALLBACK) ?
+            shaderMgr->getStockShader(MHWRender::MShaderManager::k3dStandardSurfaceShader) :
+            shaderMgr->getStockShader(MHWRender::MShaderManager::k3dDefaultMaterialShader);
 
         TF_VERIFY(_3dDefaultMaterialShader);
 

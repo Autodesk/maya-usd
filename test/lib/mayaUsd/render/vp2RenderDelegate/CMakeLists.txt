@@ -39,6 +39,27 @@ if(MAYA_CAMERA_GIZMO_SUPPORT)
     )
 endif()
 
+# Test standard surface shader with MAYAUSD_VP2_USE_STANDARDSURFACE_FALLBACK true
+mayaUsd_get_unittest_target(target testVP2RenderDelegateDisplayColorsStandardSurface.py)
+mayaUsd_add_test(${target}
+    INTERACTIVE
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    PYTHON_SCRIPT testVP2RenderDelegateDisplayColorsStandardSurface.py
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
+
+        # Maya uses a very old version of GLEW, so we need support for
+        # pre-loading a newer version from elsewhere.
+        "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"
+
+        # Use the standard surface fallback to match maya 2024+ default material
+        "MAYAUSD_VP2_USE_STANDARDSURFACE_FALLBACK=true"
+)
+# Assign a CTest label to these tests for easy filtering.
+set_property(TEST ${target} APPEND PROPERTY LABELS vp2RenderDelegate)
+
 if (CMAKE_WANT_MATERIALX_BUILD)
     # We want modern OCIO for the MaterialX test:
     mayaUsd_get_unittest_target(target testVP2RenderDelegateMaterialX.py)
