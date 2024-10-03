@@ -423,8 +423,7 @@ class DuplicateAsTestCase(unittest.TestCase):
 
         # Reuse a Maya test file from the usd file IO tests.
         mayaFileName  = 'one-group.ma'
-        inputPath = self.inputPath.replace('mayaUsd', 'usd').replace('fileio', 'translators')
-        mayaFile = os.path.join(inputPath, 'UsdExportMaterialScopeTest', mayaFileName)
+        mayaFile = os.path.join(self.inputPath, 'UsdExportMaterialScopeTest', mayaFileName)
         cmds.file(mayaFile, force=True, open=True)
 
         # Create a stage to receive the USD duplicate.

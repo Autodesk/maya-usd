@@ -89,6 +89,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportUSDZTextures.py
     testUsdExportImportRoundtripPreviewSurface.py
     testUsdImportSkeleton.py
+    testUsdImportUnits.py
     testUsdImportUpAxis.py
     testUsdImportXforms.py
     testUsdImportXformAnim.py

@@ -54,6 +54,7 @@ Each base command class is documented in the following sections.
 | `-importUSDZTexturesFilePath` | `-itf`     | string         | none                              | Specifies an explicit directory to write imported textures to from a USDZ archive. Has no effect if `-importUSDZTextures` is not specified. |
 | `-importRelativeTextures`     | `-rtx`     | string         | none                              | Selects how textures filenames are generated: absolute, relative, automatic or none. When automatic, the filename is relative if the source filename of the texture being imported is relative. When none, the file path is left alone, for backward compatible behavior. |
 | `-upAxis`                     | `-upa`     | bool           | true                              | Enable changing axis on import. |
+| `-unit`                       | `-unt`     | bool           | true                              | Enable changing units on import. |
 | `-axisAndUnitMethod`          | `-aum`     | string         | rotateScale                       | Selects how the unit and axis are handled during import. |
 
 ### Return Value
