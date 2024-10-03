@@ -114,6 +114,19 @@ void fixupVertexDataInstance(ShaderStage& stage)
         = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$](" + d(HW::T_TEXCOORD) + "_[0-9]+)";
     static const std::regex vdCleanTexRegex(vdCleanTexSource.c_str());
 
+    // Find keywords:                                (as text)
+    //
+    //  HW::T_VERTEX_DATA_INSTANCE.(T_COLOR_INDEX)   $vd.$color_0;
+    //
+    // And replace with:
+    //
+    //  (T_COLOR_INDEX)                              color_0;
+    //
+
+    static const std::string vdCleanColorSource
+        = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$](" + d(HW::T_COLOR) + "_[0-9]+)";
+    static const std::regex vdCleanColorRegex(vdCleanColorSource.c_str());
+
     std::string code = stage.getSourceCode();
     code = std::regex_replace(code, paramRegex, "vec3 unused_$1");
     code = std::regex_replace(code, vtxRegex, "$$$1( PIX_IN.$$$1 )");
@@ -121,6 +134,7 @@ void fixupVertexDataInstance(ShaderStage& stage)
     code = std::regex_replace(code, texcoordParamRegex, "vec$1 unused_$2");
     code = std::regex_replace(code, vdCleanGeoRegex, "PIX_IN.$1");
     code = std::regex_replace(code, vdCleanTexRegex, "PIX_IN.$1");
+    code = std::regex_replace(code, vdCleanColorRegex, "$1");
 
 #if MX_COMBINED_VERSION >= 13804
     stage.setSourceCode(code);
