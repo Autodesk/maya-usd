@@ -1,0 +1,191 @@
+#usda 1.0
+(
+    defaultPrim = "scene"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Scope "scene"
+{
+    def Camera "camera"
+    {
+        float focalLength = 35
+        float horizontalAperture = 35.999928
+        float verticalAperture = 23.999952
+        float xformOp:rotateX = -25
+        double3 xformOp:translate = (0, 1, 2.25)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+    }
+
+    def Scope "geo"
+    {
+        def "opacityThreshold_000" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            specializes = </lib/frontFacingPlane>
+        )
+        {
+            rel material:binding = </scene/mtl/opacityThreshold_000>
+            double3 xformOp:translate = (-1, 0, 0)
+        }
+
+        def "opacityThreshold_025" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            specializes = </lib/frontFacingPlane>
+        )
+        {
+            rel material:binding = </scene/mtl/opacityThreshold_025>
+            double3 xformOp:translate = (-0.5, 0, 0)
+        }
+
+        def "opacityThreshold_050" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            specializes = </lib/frontFacingPlane>
+        )
+        {
+            rel material:binding = </scene/mtl/opacityThreshold_050>
+            double3 xformOp:translate = (0, 0, 0)
+        }
+
+        def "opacityThreshold_075" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            specializes = </lib/frontFacingPlane>
+        )
+        {
+            rel material:binding = </scene/mtl/opacityThreshold_075>
+            double3 xformOp:translate = (0.5, 0, 0)
+        }
+
+        def "opacityThreshold_100" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            specializes = </lib/frontFacingPlane>
+        )
+        {
+            rel material:binding = </scene/mtl/opacityThreshold_100>
+            double3 xformOp:translate = (1, 0, 0)
+        }
+
+        def Mesh "ground" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-1, 0, -1), (1, 0, 1)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 3, 2]
+            rel material:binding = </scene/mtl/ground>
+            point3f[] points = [(-1, 0, 1), (1, 0, 1), (-1, 0, -1), (1, 0, -1)]
+            float3[] primvars:normals = [(0, 1, 0)] (
+                interpolation = "constant"
+            )
+            double3 xformOp:scale = (1.5, 1, 0.75)
+            double3 xformOp:translate = (0, -0.225, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def Scope "mtl"
+    {
+        def Material "groundMat"
+        {
+            token outputs:surface.connect = </scene/mtl/groundMat/surface.outputs:surface>
+
+            def Shader "surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 1, 1)
+                float inputs:roughness = 1
+                int inputs:useSpecularWorkflow = 1
+                token outputs:surface
+            }
+        }
+
+        def Material "opacityThreshold_000" (
+            specializes = </lib/texturedOpacityMat>
+        )
+        {
+            float inputs:opacityThreshold = 0
+        }
+
+        def Material "opacityThreshold_025" (
+            specializes = </lib/texturedOpacityMat>
+        )
+        {
+            float inputs:opacityThreshold = 0.25
+        }
+
+        def Material "opacityThreshold_050" (
+            specializes = </lib/texturedOpacityMat>
+        )
+        {
+            float inputs:opacityThreshold = 0.5
+        }
+
+        def Material "opacityThreshold_075" (
+            specializes = </lib/texturedOpacityMat>
+        )
+        {
+            float inputs:opacityThreshold = 0.75
+        }
+
+        def Material "opacityThreshold_100" (
+            specializes = </lib/texturedOpacityMat>
+        )
+        {
+            float inputs:opacityThreshold = 1
+        }
+    }
+}
+
+def Scope "lib"
+{
+    class Mesh "frontFacingPlane"
+    {
+        uniform bool doubleSided = 1
+        float3[] extent = [(-1, -1, 0), (1, 1, 0)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 3, 2]
+        normal3f[] normals = [(0, 0, 1)] (
+            interpolation = "constant"
+        )
+        point3f[] points = [(-1, -1, 0), (1, -1, 0), (-1, 1, 0), (1, 1, 0)]
+        texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+            interpolation = "vertex"
+        )
+        uniform token subdivisionScheme = "none"
+        double3 xformOp:scale = (0.25, 0.25, 0.25)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    class Material "texturedOpacityMat"
+    {
+        float inputs:opacityThreshold = 0
+        token outputs:surface.connect = </lib/texturedOpacityMat/surface.outputs:surface>
+
+        def Shader "surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1, 0, 0)
+            float inputs:opacity.connect = </lib/texturedOpacityMat/opacityRamp.outputs:a>
+            float inputs:opacityThreshold.connect = </lib/texturedOpacityMat.inputs:opacityThreshold>
+            token outputs:surface
+        }
+
+        def Shader "opacityRamp"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @./opacityRamp.png@ (
+                colorSpace = "raw"
+            )
+            float2 inputs:st.connect = </lib/texturedOpacityMat/texCooordReader.outputs:result>
+            float outputs:a
+        }
+
+        def Shader "texCooordReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            string inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+}
+

@@ -271,5 +271,41 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         mayaUtils.setBasicCamera(3)
         self.assertSnapshotClose('doubleSided_disabled_back.png')
 
+    def testOpacityThreshold(self):
+        '''
+        Test UsdPreviewSurface transparency cut-out. The surface fragments should be
+        should be fully transparent or fully opaque when opacityThreshold is positive.
+        '''
+        cmds.file(new=True, force=True)
+        mayaUtils.loadPlugin('mayaUsdPlugin')
+
+        # Import the USD file and the maya camera for the snapshot.
+        testFile = testUtils.getTestScene('UsdPreviewSurface', 'TestOpacityThreshold.usda')
+        stageShapeNode, _ = mayaUtils.createProxyFromFile(testFile)
+        mayaUsdLib.PrimUpdaterManager.editAsMaya(stageShapeNode + ",/scene/camera")
+        testCamera = cmds.ls(sl=True)[0]
+
+        # Create a light to cast a shadow.
+        white_light = cmds.directionalLight(rgb=(1, 1, 1))
+        white_transform = cmds.listRelatives(white_light, parent=True)[0]
+        cmds.xform(white_transform, ro=(-35, -35, 0), ws=True)
+    
+        # Turn on texturing, lighting, shadows.
+        cmds.modelEditor(
+            mayaUtils.activeModelPanel(),
+            edit=True,
+            camera=testCamera,
+            displayTextures=True,
+            displayLights='all',
+            shadows=True,
+            lights=False
+        )
+
+        # This option is needed for VP2 to discard shadow map samples.
+        cmds.setAttr('hardwareRenderingGlobals.transparentShadow', True)
+
+        # Snapshot and assert similarity.
+        self.assertSnapshotClose('opacityThreshold.png')
+
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
