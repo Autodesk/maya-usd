@@ -673,16 +673,25 @@ void _MaterialXData::_FixLibraryTangentInputs(mx::DocumentPtr& mtlxDoc)
                 if (input->hasDefaultGeomPropString()) {
                     const std::string& geomPropString = input->getDefaultGeomPropString();
                     if ((geomPropString == _mtlxTokens->Tworld.GetString()
-                         || geomPropString == _mtlxTokens->Tobject.GetString())
-                        && node->getConnectedNodeName(input->getName()).empty()) {
-                        if (!tangentInput) {
-                            tangentInput = graphDef->addInput(
-                                _mtlxTokens->tangent_fix.GetString(),
-                                _mtlxTokens->vector3.GetString());
-                            tangentInput->setDefaultGeomPropString(geomPropString);
+                         || geomPropString == _mtlxTokens->Tobject.GetString())) {
+                        const auto nodeInput = node->getInput(input->getName());
+                        if (nodeInput && nodeInput->hasInterfaceName()) {
+                            // Whatever created this NodeGraph implementation forgot to copy
+                            // the default geom prop string to the interface:
+                            auto defInput = graphDef->getInput(nodeInput->getInterfaceName());
+                            if (defInput) {
+                                defInput->setDefaultGeomPropString(geomPropString);
+                            }
+                        } else if (node->getConnectedNodeName(input->getName()).empty()) {
+                            if (!tangentInput) {
+                                tangentInput = graphDef->addInput(
+                                    _mtlxTokens->tangent_fix.GetString(),
+                                    _mtlxTokens->vector3.GetString());
+                                tangentInput->setDefaultGeomPropString(geomPropString);
+                            }
+                            node->addInput(input->getName(), input->getType())
+                                ->setInterfaceName(_mtlxTokens->tangent_fix.GetString());
                         }
-                        node->addInput(input->getName(), input->getType())
-                            ->setInterfaceName(_mtlxTokens->tangent_fix.GetString());
                     }
                 }
             }
