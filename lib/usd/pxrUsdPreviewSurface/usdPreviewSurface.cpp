@@ -444,8 +444,8 @@ MStatus PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlo
         CHECK_MSTATUS(status);
         const float opacityThreshold = opacityThresholdData.asFloat();
 
-        if (opacity < opacityThreshold) {
-            opacity = 0.0f;
+        if (opacityThreshold > 0.0f) {
+            opacity = (opacity < opacityThreshold) ? 0.0f : 1.0f;
         }
 
         const float        transparency = 1.0f - opacity;
