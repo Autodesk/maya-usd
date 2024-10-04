@@ -49,6 +49,7 @@ limitations under the License.
         <float name="roughness" ref="usdPreviewSurfaceLightingAPI2.specularRoughness"/>
         <float3 name="specularColor" ref="usdPreviewSurfaceLightingAPI2.specularColor"/>
         <float name="opacity" ref="opacityToTransparency.opacity"/>
+        <float name="opacityThreshold" ref="usdPreviewSurfaceLightingAPI2.opacityThreshold"/>
         <bool name="useSpecularWorkflow" ref="usdPreviewSurfaceLightingAPI2.useSpecularWorkflow"/>
 
         <!-- Maya Parameters for Lighting -->
@@ -86,6 +87,7 @@ limitations under the License.
         <float3 name="specularColor" value="0.0,0.0,0.0"/>
         <!-- The shader computes transparency from its "opacity" attribute. -->
         <float name="opacity" value="1.0"/>
+        <float name="opacityThreshold" value="0.0"/>
         <bool name="useSpecularWorkflow" value="false"/>
 
         <!-- Default values for Maya-provided parameters. -->
