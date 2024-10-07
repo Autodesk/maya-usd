@@ -29,19 +29,27 @@ bool hasDynamicAttribute(const MFnDependencyNode& depNode, const MString& attrNa
     return depNode.hasAttribute(attrName);
 }
 
-MStatus createDynamicAttribute(MFnDependencyNode& depNode, const MString& attrName)
+MStatus createDynamicAttribute(
+    MFnDependencyNode&     depNode,
+    const MString&         attrName,
+    const DynamicAttrFlags flags)
 {
     MStatus status;
 
-    MFnTypedAttribute typedAttrFn;
-    MObject attr = typedAttrFn.create(attrName, "", MFnData::kString, MObject::kNullObj, &status);
+    MFnTypedAttribute attrFn;
+    MObject attr = attrFn.create(attrName, "", MFnData::kString, MObject::kNullObj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    typedAttrFn.setReadable(true);
-    typedAttrFn.setWritable(true);
-    typedAttrFn.setHidden(true);
-    typedAttrFn.setKeyable(false);
-    typedAttrFn.setStorable(true);
+    attrFn.setAffectsAppearance(isFlagSet(flags, DynamicAttrFlags::kAppearance) ? true : false);
+    attrFn.setCached(isFlagSet(flags, DynamicAttrFlags::kCached) ? true : false);
+    attrFn.setConnectable(isFlagSet(flags, DynamicAttrFlags::kConnectable) ? true : false);
+    attrFn.setUsedAsFilename(isFlagSet(flags, DynamicAttrFlags::kFilename) ? true : false);
+    attrFn.setHidden(isFlagSet(flags, DynamicAttrFlags::kHidden) ? true : false);
+    attrFn.setKeyable(isFlagSet(flags, DynamicAttrFlags::kKeyable) ? true : false);
+    attrFn.setReadable(isFlagSet(flags, DynamicAttrFlags::kReadable) ? true : false);
+    attrFn.setStorable(isFlagSet(flags, DynamicAttrFlags::kStorable) ? true : false);
+    attrFn.setAffectsWorldSpace(isFlagSet(flags, DynamicAttrFlags::kWorldspace) ? true : false);
+    attrFn.setWritable(isFlagSet(flags, DynamicAttrFlags::kWritable) ? true : false);
 
     status = depNode.addAttribute(attr);
     return status;
@@ -59,13 +67,16 @@ getDynamicAttribute(const MFnDependencyNode& depNode, const MString& attrName, M
     return status;
 }
 
-MStatus
-setDynamicAttribute(MFnDependencyNode& depNode, const MString& attrName, const MString& value)
+MStatus setDynamicAttribute(
+    MFnDependencyNode&     depNode,
+    const MString&         attrName,
+    const MString&         value,
+    const DynamicAttrFlags flags)
 {
     MStatus status = MS::kSuccess;
 
     if (!depNode.hasAttribute(attrName)) {
-        status = createDynamicAttribute(depNode, attrName);
+        status = createDynamicAttribute(depNode, attrName, flags);
         CHECK_MSTATUS_AND_RETURN_IT(status);
     }
 

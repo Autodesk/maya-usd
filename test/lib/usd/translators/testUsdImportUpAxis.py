@@ -98,7 +98,7 @@ class testUsdImportUpAxis(unittest.TestCase):
         actualRotation = _GetMayaRotation(rootNodes[0])
         self.assertTrue(actualRotation.isEquivalent(expectedRotation))
 
-        self.assertEqual(cmds.getAttr('%s.OriginalUSDUpAxis' % rootNodes[0]), 'Y')
+        self.assertEqual(cmds.getAttr('%s.OriginalUpAxis' % rootNodes[0]), 'Y')
 
     def testImportRotateRootNodes(self):
         """Test importing and rotating the root nodes."""
@@ -123,7 +123,7 @@ class testUsdImportUpAxis(unittest.TestCase):
         actualRotation = _GetMayaRotation(rootNodes[0])
         self.assertTrue(actualRotation.isEquivalent(expectedRotation))
 
-        self.assertEqual(cmds.getAttr('%s.OriginalUSDUpAxis' % rootNodes[0]), 'Y')
+        self.assertEqual(cmds.getAttr('%s.OriginalUpAxis' % rootNodes[0]), 'Y')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
