@@ -97,7 +97,7 @@ public:
 
     //! Get the surface shader instance.
     MHWRender::MShaderInstance*
-                                GetSurfaceShader(const TfToken& reprToken, bool backfaceCull = false) const;
+    GetSurfaceShader(const TfToken& reprToken, bool backfaceCull = false) const;
     MHWRender::MShaderInstance* GetPointShader(const TfToken& reprToken) const;
 
     //! Get primvar tokens required by this material.

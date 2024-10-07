@@ -2935,7 +2935,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 completeLibrary);
 #else
             std::set<SdfPath> hdTextureNodes;
-            mx::StringMap mxHdTextureMap; // Mx-Hd texture name counterparts
+            mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
