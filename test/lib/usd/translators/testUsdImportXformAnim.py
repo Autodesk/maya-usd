@@ -31,7 +31,7 @@ class testUsdImportXformAnim(unittest.TestCase):
     def _LoadUsd(self):
         # Import the USD file.
         usdFilePath = os.path.join(self.inputPath, "UsdImportXformAnimTest", "Mesh.usda")
-        cmds.usdImport(file=usdFilePath, readAnimData=False)
+        cmds.usdImport(file=usdFilePath, readAnimData=False, upAxis=False)
         self.stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(self.stage)
 
