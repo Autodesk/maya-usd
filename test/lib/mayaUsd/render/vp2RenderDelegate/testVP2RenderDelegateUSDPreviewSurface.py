@@ -238,7 +238,8 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")
         options = ["shadingMode=[[useRegistry,UsdPreviewSurface]]",
                    "primPath=/",
-                   "preferredMaterial=none"]
+                   "preferredMaterial=none",
+                   "upAxis=0"]
         cmds.file(testFile, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
                   namespace="Test", pr=True, importTimeRange="combine",

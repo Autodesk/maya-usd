@@ -71,7 +71,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Duplicate USD data as Maya data, placing it under the root.
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-                aUsdUfePathStr, ''))
+                aUsdUfePathStr, '', {'upAxis': False}))
 
         # Should now have two transform nodes in the Maya scene: the path
         # components in the second segment of the aUsdItem and bUsdItem will
@@ -131,7 +131,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         previousSn = cmds.ls(sl=True, ufe=True, long=True)
 
         # Duplicate USD data as Maya data, placing it under the root.
-        cmds.mayaUsdDuplicate(aUsdUfePathStr, '')
+        cmds.mayaUsdDuplicate(aUsdUfePathStr, '', exportOptions='upAxis=0')
 
         def verifyDuplicate():
             # Should now have two transform nodes in the Maya scene: the path
