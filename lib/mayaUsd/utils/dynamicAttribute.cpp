@@ -40,16 +40,16 @@ MStatus createDynamicAttribute(
     MObject attr = attrFn.create(attrName, "", MFnData::kString, MObject::kNullObj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    attrFn.setAffectsAppearance(isFlagSet(flags, DynamicAttrFlags::kAppearance) ? true : false);
-    attrFn.setCached(isFlagSet(flags, DynamicAttrFlags::kCached) ? true : false);
-    attrFn.setConnectable(isFlagSet(flags, DynamicAttrFlags::kConnectable) ? true : false);
-    attrFn.setUsedAsFilename(isFlagSet(flags, DynamicAttrFlags::kFilename) ? true : false);
-    attrFn.setHidden(isFlagSet(flags, DynamicAttrFlags::kHidden) ? true : false);
-    attrFn.setKeyable(isFlagSet(flags, DynamicAttrFlags::kKeyable) ? true : false);
-    attrFn.setReadable(isFlagSet(flags, DynamicAttrFlags::kReadable) ? true : false);
-    attrFn.setStorable(isFlagSet(flags, DynamicAttrFlags::kStorable) ? true : false);
-    attrFn.setAffectsWorldSpace(isFlagSet(flags, DynamicAttrFlags::kWorldspace) ? true : false);
-    attrFn.setWritable(isFlagSet(flags, DynamicAttrFlags::kWritable) ? true : false);
+    attrFn.setAffectsAppearance(isFlagSet(flags, DynamicAttrFlags::kAppearance));
+    attrFn.setCached(isFlagSet(flags, DynamicAttrFlags::kCached));
+    attrFn.setConnectable(isFlagSet(flags, DynamicAttrFlags::kConnectable));
+    attrFn.setUsedAsFilename(isFlagSet(flags, DynamicAttrFlags::kFilename));
+    attrFn.setHidden(isFlagSet(flags, DynamicAttrFlags::kHidden));
+    attrFn.setKeyable(isFlagSet(flags, DynamicAttrFlags::kKeyable));
+    attrFn.setReadable(isFlagSet(flags, DynamicAttrFlags::kReadable));
+    attrFn.setStorable(isFlagSet(flags, DynamicAttrFlags::kStorable));
+    attrFn.setAffectsWorldSpace(isFlagSet(flags, DynamicAttrFlags::kWorldspace));
+    attrFn.setWritable(isFlagSet(flags, DynamicAttrFlags::kWritable));
 
     status = depNode.addAttribute(attr);
     return status;
