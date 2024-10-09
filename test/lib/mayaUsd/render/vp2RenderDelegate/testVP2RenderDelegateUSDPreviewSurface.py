@@ -279,11 +279,13 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         cmds.file(new=True, force=True)
         mayaUtils.loadPlugin('mayaUsdPlugin')
 
-        # Import the USD file and the maya camera for the snapshot.
+        # Import the USD file.
         testFile = testUtils.getTestScene('UsdPreviewSurface', 'TestOpacityThreshold.usda')
-        stageShapeNode, _ = mayaUtils.createProxyFromFile(testFile)
-        mayaUsdLib.PrimUpdaterManager.editAsMaya(stageShapeNode + ",/scene/camera")
-        testCamera = cmds.ls(sl=True)[0]
+        mayaUtils.createProxyFromFile(testFile)
+        
+        # Frame the scene for the snapshot.
+        cmds.xform("persp", t= (0, 1, 2.25))
+        cmds.xform("persp", ro=[-25, 0, 0], ws=True)
 
         # Create a light to cast a shadow.
         white_light = cmds.directionalLight(rgb=(1, 1, 1))
@@ -294,7 +296,6 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         cmds.modelEditor(
             mayaUtils.activeModelPanel(),
             edit=True,
-            camera=testCamera,
             displayTextures=True,
             displayLights='all',
             shadows=True,

@@ -7,16 +7,6 @@
 
 def Scope "scene"
 {
-    def Camera "camera"
-    {
-        float focalLength = 35
-        float horizontalAperture = 35.999928
-        float verticalAperture = 23.999952
-        float xformOp:rotateX = -25
-        double3 xformOp:translate = (0, 1, 2.25)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
-    }
-
     def Scope "geo"
     {
         def "opacityThreshold_000" (
