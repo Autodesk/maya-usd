@@ -67,7 +67,7 @@ class StageConversionInfo:
         _UsdGeom.LinearUnits.yards       : "yard",
         _UsdGeom.LinearUnits.miles       : "mile",
         _UsdGeom.LinearUnits.millimeters : "mm",
-        _UsdGeom.LinearUnits.centimeters : "cn",
+        _UsdGeom.LinearUnits.centimeters : "cm",
         _UsdGeom.LinearUnits.kilometers  : "km",
         _UsdGeom.LinearUnits.meters      : "m",
     }
