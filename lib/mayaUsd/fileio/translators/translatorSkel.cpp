@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
 
@@ -28,21 +29,18 @@
 #include <pxr/usd/usdSkel/topology.h>
 
 #include <maya/MDGModifier.h>
-#include <maya/MDagModifier.h>
 #include <maya/MDoubleArray.h>
 #include <maya/MEulerRotation.h>
 #include <maya/MFnAnimCurve.h>
+#include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnComponentListData.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MFnDoubleArrayData.h>
-#include <maya/MFnMatrixData.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MFnTransform.h>
 #include <maya/MMatrix.h>
-#include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
@@ -1317,8 +1315,27 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
 
             const auto skinSrc = shapeToSkinInMesh.source();
             if (!skinSrc.isNull()) {
+                MObjectArray blendShapeDeformers;
+                UsdMayaMeshWriteUtils::getBlendShapesOfMesh(
+                    shapeToSkin, blendShapeDeformers, &status);
+
                 dgMod.disconnect(skinSrc, shapeToSkinInMesh);
-                status = dgMod.connect(skinSrc, groupPartsInputGeometry);
+
+                // If the mesh has blendShapes, it has already been created prior to this step.
+                // When that's the case, we need to disconnect the blendShape outputGeometry
+                // and connect it to the groupParts.inputGeometry which drives the skel/skinCluster.
+                // Then, the output of the groupParts will be connected to the end mesh.
+                if (blendShapeDeformers.length() > 0) {
+                    MFnBlendShapeDeformer blendShapeFn(blendShapeDeformers[0], &status);
+                    MPlug                 blenshapeOutputPlug
+                        = blendShapeFn.findPlug(_MayaTokens->outputGeometry, &status);
+                    MPlug blenshapeOutputPlug0
+                        = blenshapeOutputPlug.elementByLogicalIndex(0, &status);
+
+                    status = dgMod.connect(blenshapeOutputPlug0, groupPartsInputGeometry);
+                } else {
+                    status = dgMod.connect(skinSrc, groupPartsInputGeometry);
+                }
                 CHECK_MSTATUS_AND_RETURN(status, false);
             } else {
                 // For the case where there were no blendShapes attached to the mesh, create a rest
