@@ -147,8 +147,8 @@ public:
      */
     PrimMetadataEditRouterContext(
         const PXR_NS::UsdPrim&        prim,
-        const pxr::TfToken&           metadataName,
-        const pxr::TfToken&           metadataKeyPath = pxr::TfToken {},
+        const PXR_NS::TfToken&        metadataName,
+        const PXR_NS::TfToken&        metadataKeyPath = PXR_NS::TfToken {},
         const PXR_NS::SdfLayerHandle& fallbackLayer = PXR_NS::SdfLayerHandle {});
 
     /*! \brief Route to the given stage and layer.
