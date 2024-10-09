@@ -151,8 +151,8 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
     CHECK_MSTATUS_AND_RETURN(status, false)
     MFnDependencyNode blendShapeDepNodeFn;
     blendShapeDepNodeFn.setObject(blendShapeObj);
-    blendShapeDepNodeFn.setName(
-        MString(TfStringPrintf("%s_Deformer", meshPrim.GetPath().GetElementString()).c_str()));
+    blendShapeDepNodeFn.setName(MString(
+        TfStringPrintf("%s_Deformer", meshPrim.GetPath().GetElementString().c_str()).c_str()));
 
     MObject      deformedMeshObject;
     VtVec3fArray deltaPoints, deltaNormals;
