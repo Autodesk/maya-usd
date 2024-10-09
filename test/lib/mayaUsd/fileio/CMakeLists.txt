@@ -11,6 +11,7 @@ set(TEST_SCRIPT_FILES
     testDisplayLayerSaveRestore.py
     testSaveMutedAnonLayer.py
     testSaveLockedAnonLayer.py
+    testSaveUpAxisAndUnits.py
     testNonLocalEditTargetLayer.py
 
     # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test

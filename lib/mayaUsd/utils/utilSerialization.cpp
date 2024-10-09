@@ -30,6 +30,7 @@
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
@@ -359,6 +360,24 @@ static bool isCompatibleWithSave(
     }
 }
 
+void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
+{
+    if (!layer)
+        return;
+
+    const PXR_NS::TfToken upAxis
+        = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
+    const double metersPerUnit
+        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+
+    // Note: code similar to what UsdGeomSetStageUpAxis -> UsdStage::SetMetadata end-up doing,
+    // but without having to have a stage. We basically set metadat on the virtual root object
+    // of the layer.
+    layer->SetField(
+        PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->metersPerUnit, metersPerUnit);
+    layer->SetField(PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
+}
+
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
     const std::string& requestedFilePath,
@@ -371,6 +390,7 @@ bool saveLayerWithFormat(
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
     UsdMayaUtilFileSystem::updatePostponedRelativePaths(layer, filePath);
+    setLayerUpAxisAndUnits(layer);
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
