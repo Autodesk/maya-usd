@@ -1819,6 +1819,15 @@ void HdVP2Mesh::_UpdateDrawItem(
             } else {
                 drawItemData._shaderIsFallback = true;
             }
+
+            if (material && !drawItemData._shaderIsFallback) {
+                // A material with a masked transparency does not need alpha blending and sorting.
+                drawItemData._supportsTransparentInstances
+                    = material->IsMaskedTransparency(_GetMaterialNetworkToken(reprToken));
+            } else {
+                // Fallback shader will need alpha blending if opacity primvar is authored.
+                drawItemData._supportsTransparentInstances = false;
+            }
         }
 
         bool useFallbackMaterial
@@ -1917,6 +1926,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                         modeLead = kActive;
                     }
                 } else {
+                    // Favor performance for instances selection highlight w/o depth sorting.
+                    drawItemData._supportsTransparentInstances = true;
                     if (isShadedSelectedInstanceItem) {
                         modeDormant = kInvalid;
                         modeActive = kActive;
@@ -2422,6 +2433,12 @@ void HdVP2Mesh::_UpdateDrawItem(
                 // default and will be kept enabled on this case.
                 bool success = renderItem->setMatrix(stateToCommit._worldMatrix);
                 TF_VERIFY(success);
+            }
+
+            if (stateToCommit._renderItemData._usingInstancedDraw) {
+                // This must be done after the subScene item is set up for GPU instancing.
+                drawScene.setAllowTransparentInstances(
+                    *renderItem, stateToCommit._renderItemData._supportsTransparentInstances);
             }
 
             if (stateToCommit._instanceTransforms) {
