@@ -371,7 +371,7 @@ void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
         = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
 
     // Note: code similar to what UsdGeomSetStageUpAxis -> UsdStage::SetMetadata end-up doing,
-    // but without having to have a stage. We basically set metadat on the virtual root object
+    // but without having to have a stage. We basically set metadata on the virtual root object
     // of the layer.
     layer->SetField(
         PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->metersPerUnit, metersPerUnit);
