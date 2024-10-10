@@ -87,7 +87,7 @@ class testUsdImportUpAxis(unittest.TestCase):
         actualScaling = transformUtils.getMayaNodeScaling(rootNodes[0])
         self.assertTrue(Gf.IsClose(actualScaling, expectedScaling, EPSILON))
 
-        self.assertEqual(cmds.getAttr('%s.OriginalUSDMetersPerUnit' % rootNodes[0]), '0.001')
+        self.assertEqual(cmds.getAttr('%s.OriginalMetersPerUnit' % rootNodes[0]), '0.001')
 
     def testImportScaleRootNodes(self):
         """Test importing and scaling the root nodes."""
@@ -112,7 +112,7 @@ class testUsdImportUpAxis(unittest.TestCase):
         actualScaling = transformUtils.getMayaNodeScaling(rootNodes[0])
         self.assertTrue(Gf.IsClose(actualScaling, expectedScaling, EPSILON))
 
-        self.assertEqual(cmds.getAttr('%s.OriginalUSDMetersPerUnit' % rootNodes[0]), '0.001')
+        self.assertEqual(cmds.getAttr('%s.OriginalMetersPerUnit' % rootNodes[0]), '0.001')
 
 
 if __name__ == '__main__':
