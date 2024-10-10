@@ -15,16 +15,16 @@
 # limitations under the License.
 #
 
-import maya.api.OpenMaya as om
 import os
 import unittest
 
 from maya import cmds
 from maya import standalone
 
-from pxr import Gf, Usd, UsdGeom
+from pxr import Usd, UsdGeom
 
 import fixturesUtils
+import transformUtils
 
 class testUsdExportUpAxis(unittest.TestCase):
     """Test for modifying the up-axis when exporting."""
@@ -41,22 +41,6 @@ class testUsdExportUpAxis(unittest.TestCase):
         """Clear the scene"""
         cmds.file(f=True, new=True)
         cmds.upAxis(axis='z')
-
-    def assertPrimXform(self, prim, xforms):
-        '''
-        Verify that the prim has the given xform in the roder given.
-        xforms should be a list of pairs, each containing the xform op name and its value.
-        '''
-        EPSILON = 1e-3
-        xformOpOrder = prim.GetAttribute('xformOpOrder').Get()
-        self.assertEqual(len(xformOpOrder), len(xforms))
-        for name, value in xforms:
-            self.assertEqual(xformOpOrder[0], name)
-            attr = prim.GetAttribute(name)
-            self.assertIsNotNone(attr)
-            self.assertTrue(Gf.IsClose(attr.Get(), value, EPSILON))
-            # Chop off the first xofrm op for the next loop.
-            xformOpOrder = xformOpOrder[1:]
 
     def testExportUpAxisNone(self):
         """Test importing and adding a group to hold the rotation."""
@@ -93,7 +77,7 @@ class testUsdExportUpAxis(unittest.TestCase):
         spherePrim = stage.GetPrimAtPath('/pSphere1')
         self.assertTrue(spherePrim)
 
-        self.assertPrimXform(spherePrim, [
+        transformUtils.assertPrimXforms(self, spherePrim, [
             ('xformOp:translate', (0., 0., 3.))])
 
     def testExportUpAxisDifferentY(self):
@@ -115,7 +99,7 @@ class testUsdExportUpAxis(unittest.TestCase):
         spherePrim = stage.GetPrimAtPath('/pSphere1')
         self.assertTrue(spherePrim)
 
-        self.assertPrimXform(spherePrim, [
+        transformUtils.assertPrimXforms(self, spherePrim, [
             ('xformOp:translate', (0., 3., 0.)),
             ('xformOp:rotateXYZ', (-90., 0., 0.))])
 

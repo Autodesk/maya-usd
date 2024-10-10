@@ -173,6 +173,11 @@ PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     std::string            formatArg = "",
     std::string*           errorMsg = nullptr);
 
+/*! \brief Set the up-axis and units metadata according to the current Maya preferences.
+ */
+MAYAUSD_CORE_PUBLIC
+void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer);
+
 /*! \brief Update the list of sub-layers with a new layer identity.
  *         The new sub-layer is identified by its path explicitly,
  *         because a given layer might get referenced through multiple

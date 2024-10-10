@@ -152,7 +152,7 @@ double ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Unit mdistanceUn
 MAYAUSD_CORE_PUBLIC
 MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit);
 
-/// Convert the given \p mdistanceYnit into its text representation suitable
+/// Convert the given \p mdistanceUnit into its text representation suitable
 /// to be used with the currentUnit MEL command. Invalid units return "cm".
 MAYAUSD_CORE_PUBLIC
 MString ConvertMDistanceUnitToText(const MDistance::Unit mdistanceUnit);

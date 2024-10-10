@@ -80,8 +80,11 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
 #endif
     , _ufeSrcItem(srcItem)
     , _ufeDstItem(nullptr)
-    , _stage(_ufeSrcItem->prim().GetStage())
+    , _stage(_ufeSrcItem ? _ufeSrcItem->prim().GetStage() : PXR_NS::UsdStageWeakPtr())
 {
+    if (!_stage)
+        return;
+
     const UsdPrim prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
     UsdUfe::applyCommandRestriction(prim, "rename");

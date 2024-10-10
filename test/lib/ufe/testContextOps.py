@@ -912,6 +912,34 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialCreationInLockedLayer(self):
+        """This test creates a material in a locked layer. This should fail but not crash."""
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        proxyShape, stage = mayaUtils.createProxyAndStage()
+
+        # Create a cube prim without material.
+        cubeUsdPathStr = '/MyCube'
+        cubePrim = stage.DefinePrim(cubeUsdPathStr, 'Cube')
+        self.assertFalse(cubePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        # Create a sub-layer, target it and lock it.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        stage.SetEditTarget(subLayer)
+        subLayer.SetPermissionToEdit(False)
+
+        # try to create a material on the cube prim.
+        cubeSceneItem = ufeUtils.createUfeSceneItem(proxyShape, cubeUsdPathStr)
+        contextOps = ufe.ContextOps.contextOps(cubeSceneItem)
+        cmdPS = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmdPS)
+        ufeCmd.execute(cmdPS)
+
+        # Verify the command filed due to the lock, but did not crash.
+        self.assertFalse(cubePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testMaterialCreationForSingleObject(self):
         """This test builds a material using contextOps capabilities."""
         cmds.file(new=True, force=True)

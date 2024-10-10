@@ -718,6 +718,8 @@ MStatus addLayerToBuilder(
     auto fileFormatIdToken = layer->GetFileFormat()->GetFormatId();
     fileFormatIdHandle.setString(UsdMayaUtil::convert(fileFormatIdToken.GetString()));
 
+    MayaUsd::utils::setLayerUpAxisAndUnits(layer);
+
     std::string temp;
     if (!stubOnly && ((exportOnlyIfDirty && layer->IsDirty()) || !exportOnlyIfDirty)) {
         if (!layer->ExportToString(&temp)) {

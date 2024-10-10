@@ -572,10 +572,12 @@ static std::string _cleanMayaNodeName(const std::string& name)
 static void _addOrignalUpAxisAttribute(const std::vector<MDagPath>& dagNodePaths, bool isUSDUpAxisZ)
 {
     const MString originalUpAxis = isUSDUpAxisZ ? "Z" : "Y";
-    const MString attrName = "OriginalUSDUpAxis";
+    const MString attrName = "OriginalUpAxis";
     for (const MDagPath& dagPath : dagNodePaths) {
         MFnDependencyNode depNode(dagPath.node());
-        MayaUsd::setDynamicAttribute(depNode, attrName, originalUpAxis);
+        using namespace MayaUsd;
+        const auto flags = DynamicAttrFlags::kDefaults & ~DynamicAttrFlags::kHidden;
+        MayaUsd::setDynamicAttribute(depNode, attrName, originalUpAxis, flags);
     }
 }
 
@@ -584,10 +586,12 @@ _addOrignalUnitsAttribute(const std::vector<MDagPath>& dagNodePaths, double usdM
 {
     MString originalUnits;
     originalUnits.set(usdMetersPerUnit);
-    const MString attrName = "OriginalUSDMetersPerUnit";
+    const MString attrName = "OriginalMetersPerUnit";
     for (const MDagPath& dagPath : dagNodePaths) {
         MFnDependencyNode depNode(dagPath.node());
-        MayaUsd::setDynamicAttribute(depNode, attrName, originalUnits);
+        using namespace MayaUsd;
+        const auto flags = DynamicAttrFlags::kDefaults & ~DynamicAttrFlags::kHidden;
+        MayaUsd::setDynamicAttribute(depNode, attrName, originalUnits, flags);
     }
 }
 

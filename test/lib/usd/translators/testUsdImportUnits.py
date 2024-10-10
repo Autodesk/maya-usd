@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-import maya.api.OpenMaya as om
 import os
 import unittest
 
@@ -26,27 +25,7 @@ from pxr import Gf
 
 import fixturesUtils
 
-
-def _GetMayaTransform(transformName):
-    '''Retrieve the Maya SDK transformation API (MFnTransform) of a Maya node.'''
-    selectionList = om.MSelectionList()
-    selectionList.add(transformName)
-    node = selectionList.getDependNode(0)
-    return om.MFnTransform(node)
-
-def _GetMayaMatrix(transformName):
-    '''Retrieve the transformation matrix (MMatrix) of a Maya node.'''
-    mayaTransform = _GetMayaTransform(transformName)
-    transformation = mayaTransform.transformation()
-    return transformation.asMatrix()
-
-def _GetScalingFromMatrix(matrix):
-    '''Extract the scaling from a Maya matrix.'''
-    return om.MTransformationMatrix(matrix).scale(om.MSpace.kObject)
-
-def _GetMayaScaling(transformName):
-    '''Extract the scaling from a Maya node.'''
-    return _GetScalingFromMatrix(_GetMayaMatrix(transformName))
+import transformUtils
 
 
 class testUsdImportUpAxis(unittest.TestCase):
@@ -105,10 +84,10 @@ class testUsdImportUpAxis(unittest.TestCase):
         EPSILON = 1e-6
 
         expectedScaling = [0.1, 0.1, 0.1]
-        actualScaling = _GetMayaScaling(rootNodes[0])
+        actualScaling = transformUtils.getMayaNodeScaling(rootNodes[0])
         self.assertTrue(Gf.IsClose(actualScaling, expectedScaling, EPSILON))
 
-        self.assertEqual(cmds.getAttr('%s.OriginalUSDMetersPerUnit' % rootNodes[0]), '0.001')
+        self.assertEqual(cmds.getAttr('%s.OriginalMetersPerUnit' % rootNodes[0]), '0.001')
 
     def testImportScaleRootNodes(self):
         """Test importing and scaling the root nodes."""
@@ -130,10 +109,10 @@ class testUsdImportUpAxis(unittest.TestCase):
         EPSILON = 1e-6
 
         expectedScaling = [0.1, 0.1, 0.1]
-        actualScaling = _GetMayaScaling(rootNodes[0])
+        actualScaling = transformUtils.getMayaNodeScaling(rootNodes[0])
         self.assertTrue(Gf.IsClose(actualScaling, expectedScaling, EPSILON))
 
-        self.assertEqual(cmds.getAttr('%s.OriginalUSDMetersPerUnit' % rootNodes[0]), '0.001')
+        self.assertEqual(cmds.getAttr('%s.OriginalMetersPerUnit' % rootNodes[0]), '0.001')
 
 
 if __name__ == '__main__':
