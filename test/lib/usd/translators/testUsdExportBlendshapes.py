@@ -58,7 +58,7 @@ class TestUsdExportBlendshapes(unittest.TestCase):
         cmds.mayaUSDExport(f=temp_file, v=True, sl=True, ebs=True, skl="auto")
 
         stage = Usd.Stage.Open(temp_file)
-        prim = stage.GetPrimAtPath("/root/base/blend")
+        prim = stage.GetPrimAtPath("/root/base/blendShape")
         offsets = prim.GetAttribute("offsets").Get()
 
         for i, coords in enumerate(offsets):
@@ -68,7 +68,7 @@ class TestUsdExportBlendshapes(unittest.TestCase):
         """
         Sample BlendShape prim:
 
-        def BlendShape "blend"
+        def BlendShape "blendShape"
         {
             uniform vector3f[] normalOffsets = [(0, 0, 0), (0, 0, 0), (0, 0, 0)]
             uniform vector3f[] offsets = [(0, -0.25, 0), (0, -0.25, 0), (0, 0.25, 0)]

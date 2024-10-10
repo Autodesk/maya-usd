@@ -66,6 +66,9 @@ MStatus getSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinCluster)
 MAYAUSD_CORE_PUBLIC
 MStatus getSkinClustersUpstreamOfMesh(const MObject& mesh, MObjectArray& skinClusters);
 
+MAYAUSD_CORE_PUBLIC
+void getBlendShapesOfMesh(const MObject& mesh, MObjectArray& blendShapes, MStatus* stat);
+
 /**
  * Calculates the union bounding box of a given array of meshes.
  *
@@ -73,8 +76,7 @@ MStatus getSkinClustersUpstreamOfMesh(const MObject& mesh, MObjectArray& skinClu
  *
  * @return          The union bounding box.
  */
-MAYAUSD_CORE_PUBLIC
-MBoundingBox calcBBoxOfMeshes(const MObjectArray& meshes);
+MAYAUSD_CORE_PUBLIC MBoundingBox calcBBoxOfMeshes(const MObjectArray& meshes);
 
 /// Helper method for getting Maya mesh normals as a VtVec3fArray.
 MAYAUSD_CORE_PUBLIC
