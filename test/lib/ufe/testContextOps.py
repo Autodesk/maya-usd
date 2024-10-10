@@ -748,6 +748,50 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(ufeObs.nbAddNotif(), 2)
         self.assertEqual(ufeObs.nbDeleteNotif(), 2)
 
+    def testUndoAddNewPrimCleanSessionLayer(self):
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShape).GetStage()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Add a new prim.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The proxy shape should now have a single UFE child item.
+        proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 1)
+
+        # Add a new prim to the prim we just added.
+        cmds.pickWalk(d='down')
+
+        # Get the scene item from the UFE selection.
+        snIter = iter(ufe.GlobalSelection.get())
+        xformItem = next(snIter)
+        xformPrim = usdUtils.getPrimFromSceneItem(xformItem)
+        xformPath = xformPrim.GetPath()
+
+        # Add data in the session layer.
+        metadataName = 'instanceable'
+        sessionLayer = stage.GetSessionLayer()
+        with Usd.EditContext(stage, sessionLayer):
+            xformPrim.SetMetadata(metadataName, True)
+
+        self.assertTrue(xformPrim.HasAuthoredMetadata(metadataName))
+        self.assertTrue(sessionLayer.GetPrimAtPath(xformPath))
+
+        # Verify that after undo the sessin layer got cleaned.
+        cmd.undo()
+        self.assertFalse(sessionLayer.GetPrimAtPath(xformPath))
+
     def testAddNewPrimInWeakerLayer(self):
         cmds.file(new=True, force=True)
 

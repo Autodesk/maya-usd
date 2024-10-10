@@ -54,7 +54,7 @@ private:
     ~UsdUndoManager() = default;
 
     void addInverse(UsdUndoableItem::InvertFunc func);
-    void transferEdits(UsdUndoableItem& undoableItem);
+    void transferEdits(UsdUndoableItem& undoableItem, bool extraEdits);
 
 private:
     UsdUndoableItem::InvertFuncs _invertFuncs;
@@ -76,10 +76,10 @@ public:
         auto& undoManager = UsdUfe::UsdUndoManager::instance();
         undoManager.addInverse(func);
     }
-    static void transferEdits(UsdUndoableItem& undoableItem)
+    static void transferEdits(UsdUndoableItem& undoableItem, bool extraEdits = false)
     {
         auto& undoManager = UsdUfe::UsdUndoManager::instance();
-        undoManager.transferEdits(undoableItem);
+        undoManager.transferEdits(undoableItem, extraEdits);
     }
 };
 

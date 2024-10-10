@@ -21,6 +21,7 @@
 #include <usdUfe/ufe/UsdAttributes.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/trf/XformOpUtils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editability.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
@@ -34,6 +35,7 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
+#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/resolver.h>
@@ -1499,6 +1501,26 @@ bool isSessionLayerGroupMetadata(const std::string& groupName, std::string* adju
         *adjustedGroupName = groupName.substr(sessionLayerPrefix.size());
 
     return true;
+}
+
+void removeSessionLeftOvers(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfPath&        primPath,
+    UsdUndoableItem*              undoableItem,
+    bool                          extraEdits)
+{
+    // Delete any information left in the session layer, adding any action taken
+    // to the undoable items. Note that if an undo/redo cycle already happened,
+    // the removal of the session data will already been done by the previous
+    // undo since this first undo captured removing the session data. In that
+    // case, the code below will do nothing and we won't capture double-removal
+    // of session data.
+    if (!stage)
+        return;
+
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    UsdUndoBlock   undoBlock(undoableItem, extraEdits);
+    stage->RemovePrim(primPath);
 }
 
 } // namespace USDUFE_NS_DEF

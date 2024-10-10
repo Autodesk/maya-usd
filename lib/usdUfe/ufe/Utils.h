@@ -50,6 +50,7 @@ UFE_NS_DEF
 namespace USDUFE_NS_DEF {
 
 class UsdAttribute;
+class UsdUndoableItem;
 
 // DCC specific accessor functions.
 typedef PXR_NS::UsdStageWeakPtr (*StageAccessorFn)(const Ufe::Path&);
@@ -466,6 +467,15 @@ const char* getTransform3dMatrixOpName();
 //! \note the prefix-less name is only filled when returning true.
 USDUFE_PUBLIC
 bool isSessionLayerGroupMetadata(const std::string& groupName, std::string* adjustedGroupName);
+
+//! Remove data left behind in the session layer for the given prim path in the given stage
+//! and store the undos as extra undos in the given undo items.
+USDUFE_PUBLIC
+void removeSessionLeftOvers(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfPath&        primPath,
+    UsdUndoableItem*              undoableItem,
+    bool                          extraEdits = true);
 
 } // namespace USDUFE_NS_DEF
 
