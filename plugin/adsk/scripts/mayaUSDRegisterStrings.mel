@@ -46,6 +46,24 @@ global proc mayaUSDRegisterStrings()
     register("kLabelStage", "Stage");
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
+    register("kStageAdvancedLabel", "Advanced");
+    register("kStageAxisUnitConversionLabel", "Axis & Unit Conversion");
+    register("kStageUpAxisLabel", "Up Axis");
+    register("kStageUpAxisAnn", "If selected, when an up axis mismatch is detected\n" +
+                                "between the imported data and your scene preferences,\n" +
+                                "an automatic correction will be performed.");
+    register("kStageUnitLabel", "Unit");
+    register("kStageUnitAnn", "If selected, when a unit mismatch is detected\n" +
+                              "between the imported data and your scene preferences,\n" +
+                              "an automatic correction will be performed.");
+    register("kStageAxisAndUnitMethod", "Method");
+    // Note: initial <b> is used to force Qt to render the text as HTML.
+    register("kStageAxisAndUnitMethodAnn", "<b></b>Select the method for axis/unit conversions.<br/>" +
+                                           "<br/>" +
+                                           "<b>Rotate/Scale</b>: Rotate/Scale the stage.<br/>" +
+                                           "<b>Overwrite Maya Preferences</b>: Update Maya's axis/unit preferences based on the imported data.");
+    register("kStageAxisAndUnitRotateScale", "Rotate/Scale");
+    register("kStageAxisAndUnitOverwritePrefs", "Overwrite Maya Preferences");
     register("kLoad", "Load");
     register("kLoadPayloads", "Load Payloads:");
     register("kLoadPayloadsAnn", "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded.");

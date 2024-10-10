@@ -3,6 +3,7 @@ set(TEST_SCRIPT_FILES
     testLayerManagerSerialization.py
     testPointBasedDeformerNode.py
     testProxyShapeBase.py
+    testProxyShapeConversion.py
 )
 
 foreach(script ${TEST_SCRIPT_FILES})
