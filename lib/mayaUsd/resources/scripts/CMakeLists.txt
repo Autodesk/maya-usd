@@ -1,5 +1,4 @@
 list(APPEND scripts_src
-    mayaUsdLibRegisterStrings.mel
     mayaUsdLibRegisterStrings.py
     mayaUsdAddMayaReference.mel
     mayaUsdAddMayaReference.py

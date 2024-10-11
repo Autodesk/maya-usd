@@ -376,6 +376,8 @@ MStatus uninitializePlugin(MObject obj)
                                   "-typeLabel \"mayaUsdProxyShape.filePath\" -temporary");
     CHECK_MSTATUS(status);
 
+    MGlobal::executeCommand("mayaUSDUnregisterStrings()");
+
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
 
