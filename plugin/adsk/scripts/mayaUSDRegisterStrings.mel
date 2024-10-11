@@ -305,6 +305,10 @@ global proc mayaUSDRegisterStrings()
     register("kImportUpAxisAnn", "If selected, when an up axis mismatch is detected\n" +
                                  "between the imported data and your scene preferences,\n" +
                                  "an automatic correction will be performed.");
+    register("kImportUnit", "Unit");
+    register("kImportUnitAnn", "If selected, when a unit mismatch is detected\n" +
+                                 "between the imported data and your scene preferences,\n" +
+                                 "an automatic correction will be performed.");
     register("kImportAxisAndUnitMethod", "Method");
     // Note: initial <b> is used to force Qt to render the text as HTML.
     register("kImportAxisAndUnitMethodAnn", "<b></b>Select the method for axis/unit conversions.<br/>" +

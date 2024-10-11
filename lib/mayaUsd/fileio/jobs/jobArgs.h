@@ -197,6 +197,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (preserveTimeline) \
     (remapUVSetsTo) \
     (upAxis) \
+    (unit) \
     (axisAndUnitMethod) \
     /* values for axis and unit method */ \
     (rotateScale) \
@@ -436,6 +437,7 @@ struct UsdMayaJobImportArgs
     const std::string    importRelativeTextures;
     const std::string    axisAndUnitMethod;
     const bool           upAxis;
+    const bool           unit;
     const bool           importInstances;
     const bool           useAsAnimationCache;
     const bool           importWithProxyShapes;

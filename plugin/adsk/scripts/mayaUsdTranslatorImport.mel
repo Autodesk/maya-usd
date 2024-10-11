@@ -374,6 +374,7 @@ global proc mayaUsdTranslatorImport_EnableAllControls() {
     intFieldGrp -e -en1 1 -en2 1 mayaUsdTranslator_CustomFrameRange;
 
     checkBoxGrp -e -en 1 mayaUsdTranslator_ImportUpAxisCheckBox;
+    checkBoxGrp -e -en 1 mayaUsdTranslator_ImportUnitCheckBox;
     optionMenuGrp -e -en 1 mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu;
 
     mayaUsdTranslatorImport_enableContextOptions();
@@ -409,6 +410,8 @@ global proc mayaUsdTranslatorImport_SetFromOptions(string $currentOptions, int $
                 intFieldGrp -e -value2 $endTime -en2 $enable mayaUsdTranslator_CustomFrameRange;
             } else if ($optionBreakDown[0] == "upAxis") {
                 mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportUpAxisCheckBox");
+            } else if ($optionBreakDown[0] == "unit") {
+                mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportUnitCheckBox");
             } else if ($optionBreakDown[0] == "axisAndUnitMethod") {
                 mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu");
             } else if ($optionBreakDown[0] == "useCustomFrameRange") {
@@ -584,6 +587,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
             frameLayout -label `getMayaUsdString("kImportAxisAndUnit")` axisAndUnitFrameLayout;
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUpAxis")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportUpAxisAnn")` mayaUsdTranslator_ImportUpAxisCheckBox;
+                checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUnit")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportUnitAnn")` mayaUsdTranslator_ImportUnitCheckBox;
                 optionMenuGrp -l `getMayaUsdString("kImportAxisAndUnitMethod")` -cw 1 $cw1 -ann `getMayaUsdString("kImportAxisAndUnitMethodAnn")` mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu;
                     menuItem -l `getMayaUsdString("kImportAxisAndUnitRotateScale")` -ann "rotateScale";
                     menuItem -l `getMayaUsdString("kImportAxisAndUnitAddTransform")` -ann "addTransform";
@@ -621,6 +625,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
         if (!$forEditAsMaya) {
             $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "upAxis", "mayaUsdTranslator_ImportUpAxisCheckBox");
+            $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "unit", "mayaUsdTranslator_ImportUnitCheckBox");
             $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "axisAndUnitMethod", "mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu");
         }
         eval($resultCallback+" \""+$currentOptions+"\"");

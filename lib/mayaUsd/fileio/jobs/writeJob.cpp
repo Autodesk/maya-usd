@@ -493,8 +493,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     _autoAxisAndUnitsChanger = std::make_unique<AutoUpAxisAndUnitsChanger>(
         mJobCtx.mStage, mJobCtx.mArgs.upAxis, mJobCtx.mArgs.unit);
 
-    // TODO: handle mJobCtx.mArgs.unit
-
     // Set the customLayerData on the layer
     if (!mJobCtx.mArgs.customLayerData.empty()) {
         mJobCtx.mStage->GetRootLayer()->SetCustomLayerData(mJobCtx.mArgs.customLayerData);

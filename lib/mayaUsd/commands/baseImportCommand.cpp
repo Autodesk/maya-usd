@@ -70,6 +70,7 @@ MSyntax MayaUSDImportCommand::createSyntax()
         MSyntax::kString);
     syntax.addFlag(
         kImportUpAxisFlag, UsdMayaJobImportArgsTokens->upAxis.GetText(), MSyntax::kBoolean);
+    syntax.addFlag(kImportUnitFlag, UsdMayaJobImportArgsTokens->unit.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
         kImportAxisAndUnitMethodFlag,
         UsdMayaJobImportArgsTokens->axisAndUnitMethod.GetText(),
