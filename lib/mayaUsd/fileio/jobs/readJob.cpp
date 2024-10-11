@@ -756,7 +756,15 @@ void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByChangingMayaPrefs(
         } else {
             const MString mayaUnitText = UsdMayaUtil::ConvertMDistanceUnitToText(mayaUnit);
             MString       changeUnitsCmd;
-            changeUnitsCmd.format("currentUnit -linear ^1s;", mayaUnitText);
+            changeUnitsCmd.format(
+                "global string $gPreferenceWindow;\n"
+                "if (`window -query -exists $gPreferenceWindow`) {\n"
+                "    if (`window -query -visible $gPreferenceWindow`) {\n"
+                "        window -edit -visible off $gPreferenceWindow;\n"
+                "    }\n"
+                "}\n"
+                "currentUnit -linear ^1s;",
+                mayaUnitText);
 
             // Note: we *must* execute the units change on-idle because the import process
             //       saves and restores all units! If we change it now, the change would be lost.
