@@ -65,16 +65,31 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     #------------------------------------------------------------------------------
     # Custom Rig Schema
     #------------------------------------------------------------------------------
+    file(COPY
+            ${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/schema.usda
+        DESTINATION
+            ${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema
+    )
+    
+    # Note: we must copy the base plugInfo.json so that the USD schema generator below
+    #       does not author things we don't want, like the resource path of library path.
+    file(COPY
+            ${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/plugInfo.json
+        DESTINATION
+            ${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema
+    )
+    
     execute_process(COMMAND
                         ${Python_EXECUTABLE}
                         ${USD_GENSCHEMA}
-                        ${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/schema.usda
-                        ${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/
+                        ${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/schema.usda
+                        ${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/
                     WORKING_DIRECTORY
                         ${CMAKE_CURRENT_BINARY_DIR}
                     RESULT_VARIABLE
                         usdgen_res
     )
+
     if(usdgen_res)
         message(FATAL_ERROR "Schemas generation failed")
     endif()
@@ -85,7 +100,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENV
-            "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/"
+            "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 endif()
