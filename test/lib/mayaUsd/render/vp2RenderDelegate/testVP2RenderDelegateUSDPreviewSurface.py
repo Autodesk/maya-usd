@@ -16,6 +16,8 @@
 # limitations under the License.
 #
 
+import unittest
+
 import fixturesUtils
 import imageUtils
 
@@ -271,6 +273,7 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         mayaUtils.setBasicCamera(3)
         self.assertSnapshotClose('doubleSided_disabled_back.png')
 
+    @unittest.skipUnless(int(os.getenv("MAYA_LIGHTAPI_VERSION")) >= 2, 'UsdPreviewSurface fragment graph for light API v1 does not support opacityThreshold')
     def testOpacityThreshold(self):
         '''
         Test UsdPreviewSurface transparency cut-out. The surface fragments should be
