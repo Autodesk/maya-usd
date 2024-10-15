@@ -27,6 +27,7 @@
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MFnReference.h>
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPxNode.h>
@@ -128,10 +129,11 @@ public:
        recreated layer, and all sublayers, with edits from a previous Maya session and should be
        used to initialize the Proxy Shape in a call to UsdStage::Open().
     */
-    static SdfLayerHandle findLayer(std::string identifier);
+    static SdfLayerHandle
+    findLayer(std::string identifier, const MFnReference* fromReference = nullptr);
 
     using LayerNameMap = std::map<std::string, std::string>;
-    static LayerNameMap getLayerNameMap();
+    static LayerNameMap getLayerNameMap(const MFnReference* fromReference = nullptr);
 
     //! \brief returns true if the layer manager is currently saving files.
     static bool isSaving();
