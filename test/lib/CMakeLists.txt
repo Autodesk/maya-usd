@@ -2,6 +2,7 @@
 set(TEST_SCRIPT_FILES
     testMayaUsdConverter.py
     testMayaUsdCreateStageCommands.py
+    testMayaUsdCreateStageInMayaRef.py
     testMayaUsdDirtyScene.py
     testMayaUsdLayerEditorCommands.py
     testMayaUsdProxyAccessor.py
