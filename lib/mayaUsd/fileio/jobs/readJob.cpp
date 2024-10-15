@@ -732,6 +732,34 @@ void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByChangingMayaPrefs(
 {
     bool success = true;
 
+    // Close preference window if needed.
+    {
+        static const char* closePrefsCmd
+            = "global string $gPreferenceWindow;\n"
+              "if (`window -query -exists $gPreferenceWindow`) {\n"
+              "    if (`window -query -visible $gPreferenceWindow`) {\n"
+              "         string $title = getMayaUsdLibString(\"kAboutToChangePrefsTitle\");\n"
+              "         string $body = getMayaUsdLibString(\"kAboutToChangePrefs\");\n"
+              "         string $ok = getMayaUsdLibString(\"kSavePrefsChange\");\n"
+              "         string $cancel = getMayaUsdLibString(\"kDiscardPrefsChange\");\n"
+              "         string $result = `confirmDialog -title $title -message $body\n"
+              "                          -button $ok -button $cancel\n"
+              "                          -defaultButton $ok\n"
+              "                          -cancelButton $cancel`;\n"
+              "         if ($result == $ok) {\n"
+              "             savePrefsChanges;\n"
+              "         }\n"
+              "         else {\n"
+              "             cancelPrefsChanges;\n"
+              "         }\n"
+              "    }\n"
+              "}\n";
+
+        if (!MGlobal::executeCommand(closePrefsCmd)) {
+            MGlobal::displayWarning("Failed to close the Maya preferences windows.");
+        }
+    }
+
     // Set up-axis preferences if needed.
     if (conversion.needUpAxisConversion) {
         const bool    rotateView = true;
@@ -756,15 +784,7 @@ void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByChangingMayaPrefs(
         } else {
             const MString mayaUnitText = UsdMayaUtil::ConvertMDistanceUnitToText(mayaUnit);
             MString       changeUnitsCmd;
-            changeUnitsCmd.format(
-                "global string $gPreferenceWindow;\n"
-                "if (`window -query -exists $gPreferenceWindow`) {\n"
-                "    if (`window -query -visible $gPreferenceWindow`) {\n"
-                "        window -edit -visible off $gPreferenceWindow;\n"
-                "    }\n"
-                "}\n"
-                "currentUnit -linear ^1s;",
-                mayaUnitText);
+            changeUnitsCmd.format("currentUnit -linear ^1s;", mayaUnitText);
 
             // Note: we *must* execute the units change on-idle because the import process
             //       saves and restores all units! If we change it now, the change would be lost.
