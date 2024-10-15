@@ -102,6 +102,7 @@ void UsdUndoAddNewPrimCommand::undo()
     UsdUfe::InAddOrDeleteOperation ad;
 
     _undoableItem.undo();
+    removeSessionLeftOvers(_stage, _primPath, &_undoableItem);
 }
 
 void UsdUndoAddNewPrimCommand::redo()
