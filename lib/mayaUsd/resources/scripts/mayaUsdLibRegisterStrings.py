@@ -197,10 +197,7 @@ def registerPluginResource(pluginId, stringId, resourceStr):
     '''See registerPluginResource.mel in Maya.
 
     Unfortunately there is no equivalent python version of this MEL proc
-    so we created our own version of it here.
-    
-    We also re-implement it here because we don't want warnings when registering
-    the same string again, which happens when re-loading the plugin.'''
+    so we created our own version of it here.'''
 
     fullId = 'p_%s.%s' % (pluginId, stringId)
     if cmds.displayString(fullId, exists=True):

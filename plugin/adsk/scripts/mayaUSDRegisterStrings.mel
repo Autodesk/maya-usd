@@ -28,6 +28,7 @@ global proc mayaUSDRegisterStrings()
     python("import mayaUSDRegisterStrings; mayaUSDRegisterStrings.mayaUSDRegisterStrings()");
 
     // Register the strings from the MayaUsd Lib.
+    source "mayaUSDLibRegisterStrings.mel";
     python("import mayaUsdLibRegisterStrings; mayaUsdLibRegisterStrings.mayaUsdLibRegisterStrings()");
 
     // load any localized resources
