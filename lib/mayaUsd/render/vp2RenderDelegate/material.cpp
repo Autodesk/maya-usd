@@ -1294,61 +1294,6 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
 }
 #endif
 
-//! Return true if the surface shader needs to be rendered in a transparency pass.
-bool _IsTransparent(const HdMaterialNetwork& network)
-{
-    using OpaqueTestPair = std::pair<TfToken, float>;
-    using OpaqueTestPairList = std::vector<OpaqueTestPair>;
-    const OpaqueTestPairList inputPairList
-        = { { _tokens->opacity, 1.0f },         { _tokens->existence, 1.0f },
-            { _tokens->alpha, 1.0f },           { _tokens->transmission, 0.0f },
-            { _tokens->transparency, 0.0f },    { _tokens->transmission_weight, 0.0f },
-            { _tokens->geometry_opacity, 1.0f } };
-
-    const HdMaterialNode& surfaceShader = network.nodes.back();
-
-    // Check for explicitly set value:
-    for (auto&& inputPair : inputPairList) {
-        auto paramIt = surfaceShader.parameters.find(inputPair.first);
-        if (paramIt != surfaceShader.parameters.end()) {
-            if (paramIt->second.IsHolding<float>()) {
-                if (paramIt->second.Get<float>() != inputPair.second) {
-                    return true;
-                }
-            } else if (paramIt->second.IsHolding<GfVec3f>()) {
-                const GfVec3f& value = paramIt->second.Get<GfVec3f>();
-                if (value != GfVec3f(inputPair.second, inputPair.second, inputPair.second)) {
-                    return true;
-                }
-            } else if (paramIt->second.IsHolding<GfVec3d>()) {
-                const GfVec3d& value = paramIt->second.Get<GfVec3d>();
-                if (value != GfVec3d(inputPair.second, inputPair.second, inputPair.second)) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    // Check for any connection on a parameter affecting transparency. It is quite possible that the
-    // output value of the connected subtree is constant and opaque, but discovery is complex. Let's
-    // assume there is at least one semi-transparent pixel if that parameter is connected.
-    for (const HdMaterialRelationship& rel : network.relationships) {
-        if (rel.outputId == surfaceShader.path) {
-            for (auto&& inputPair : inputPairList) {
-                if (inputPair.first == rel.outputName) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    // Not the most efficient code, but the upgrade to HdMaterialConnection2 should improve things
-    // a lot since we will not have to traverse the whole list of connections, only the ones found
-    // on the surface node.
-
-    return false;
-}
-
 //! Determines if the shader uses transparency for geometric cut-out, meaning the material would
 //! be tagged as 'masked' (HdStMaterialTagTokens->masked) by HdStorm.
 //! In this case, the shader instance typically discards transparent fragments and will render
@@ -1406,6 +1351,66 @@ bool _IsMaskedTransparency(const HdMaterialNetwork& network)
             return (rel.outputId == surfaceShader.path)
                 && (std::find(maskPrms.begin(), maskPrms.end(), rel.outputName) != maskPrms.end());
         });
+}
+
+//! Return true if the surface shader needs to be rendered in a transparency pass.
+bool _IsTransparent(const HdMaterialNetwork& network)
+{
+    // Masked transparency will not produce semi-transparency and can be rendered in opaque pass.
+    if (_IsMaskedTransparency(network)) {
+        return false;
+    }
+
+    using OpaqueTestPair = std::pair<TfToken, float>;
+    using OpaqueTestPairList = std::vector<OpaqueTestPair>;
+    const OpaqueTestPairList inputPairList
+        = { { _tokens->opacity, 1.0f },         { _tokens->existence, 1.0f },
+            { _tokens->alpha, 1.0f },           { _tokens->transmission, 0.0f },
+            { _tokens->transparency, 0.0f },    { _tokens->transmission_weight, 0.0f },
+            { _tokens->geometry_opacity, 1.0f } };
+
+    const HdMaterialNode& surfaceShader = network.nodes.back();
+
+    // Check for explicitly set value:
+    for (auto&& inputPair : inputPairList) {
+        auto paramIt = surfaceShader.parameters.find(inputPair.first);
+        if (paramIt != surfaceShader.parameters.end()) {
+            if (paramIt->second.IsHolding<float>()) {
+                if (paramIt->second.Get<float>() != inputPair.second) {
+                    return true;
+                }
+            } else if (paramIt->second.IsHolding<GfVec3f>()) {
+                const GfVec3f& value = paramIt->second.Get<GfVec3f>();
+                if (value != GfVec3f(inputPair.second, inputPair.second, inputPair.second)) {
+                    return true;
+                }
+            } else if (paramIt->second.IsHolding<GfVec3d>()) {
+                const GfVec3d& value = paramIt->second.Get<GfVec3d>();
+                if (value != GfVec3d(inputPair.second, inputPair.second, inputPair.second)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Check for any connection on a parameter affecting transparency. It is quite possible that the
+    // output value of the connected subtree is constant and opaque, but discovery is complex. Let's
+    // assume there is at least one semi-transparent pixel if that parameter is connected.
+    for (const HdMaterialRelationship& rel : network.relationships) {
+        if (rel.outputId == surfaceShader.path) {
+            for (auto&& inputPair : inputPairList) {
+                if (inputPair.first == rel.outputName) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Not the most efficient code, but the upgrade to HdMaterialConnection2 should improve things
+    // a lot since we will not have to traverse the whole list of connections, only the ones found
+    // on the surface node.
+
+    return false;
 }
 
 //! Helper utility function to convert Hydra texture addressing token to VP2 enum.
@@ -2193,12 +2198,12 @@ void HdVP2Material::CompiledNetwork::Sync(
     const HdMaterialNetworkMap& networkMap)
 {
     auto updateShaderInstance = [this, &sceneDelegate](const HdMaterialNetwork& bxdfNet) {
-        const auto prevDrawItemFlags = _drawItemFlags;
+        const bool wasTransparent = _transparent;
         _UpdateShaderInstance(sceneDelegate, bxdfNet);
-        // If a flag such as 'transparent' changed, then the drawItems must be updated.
+        // If the transparency flag changed, then the drawItems must be updated.
         // e.g. if MRenderItem was first marked transparent and then the shader's transparency
         // is turned off, MRenderItem must now be marked opaque.
-        bool drawItemsDirty = (prevDrawItemFlags != _drawItemFlags);
+        bool drawItemsDirty = (wasTransparent != _transparent);
 
 // Consolidation workaround requires dirtying the mesh even on a ValueChanged
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
@@ -3289,7 +3294,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
     const HdMaterialNetwork& mat)
 {
     if (!_surfaceShader) {
-        _drawItemFlags.reset();
+        _transparent = false;
         return;
     }
 
@@ -3302,16 +3307,10 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
         return SetShaderParameter(paramName, paramValue);
     };
 
-    // Update the drawItem flags based on the material network.
-    const bool matIsTransparent = _IsTransparent(mat);
-    _drawItemFlags.set(kDrawItemFlagTransparent, matIsTransparent);
-    _drawItemFlags.set(kDrawItemFlagMasked, matIsTransparent && _IsMaskedTransparency(mat));
-
-    // The render item must be marked transparent even if the shader uses a masked transparency
-    // and would not require alpha blending. This way, VP2 post effects like SSAO
-    // will correctly ignore the fully transparent/discarded surface.
-    if (matIsTransparent != _surfaceShader->isTransparent()) {
-        SetShaderIsTransparent(matIsTransparent);
+    // Update the transparency flag based on the material network.
+    _transparent = _IsTransparent(mat);
+    if (_transparent != _surfaceShader->isTransparent()) {
+        SetShaderIsTransparent(_transparent);
     }
 
     for (const HdMaterialNode& node : mat.nodes) {
@@ -3797,11 +3796,6 @@ MHWRender::MShaderInstance* HdVP2Material::GetPointShader(const TfToken& reprTok
 const TfTokenVector& HdVP2Material::GetRequiredPrimvars(const TfToken& reprToken) const
 {
     return _compiledNetworks[_GetCompiledConfig(reprToken)].GetRequiredPrimvars();
-}
-
-bool HdVP2Material::IsMaskedTransparency(const TfToken& reprToken) const
-{
-    return _compiledNetworks[_GetCompiledConfig(reprToken)].IsMaskedTransparency();
 }
 
 void HdVP2Material::SubscribeForMaterialUpdates(const SdfPath& rprimId)
