@@ -365,6 +365,10 @@ void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
     if (!layer)
         return;
 
+    // Don't try to author the metadata on non-editable layers.
+    if (!layer->PermissionToEdit())
+        return;
+
     const PXR_NS::TfToken upAxis
         = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
     const double metersPerUnit
