@@ -706,15 +706,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             } else {
                 drawItemData._shaderIsFallback = true;
             }
-
-            if (material && !drawItemData._shaderIsFallback) {
-                // A material with a masked transparency does not need alpha blending and sorting.
-                drawItemData._supportsTransparentInstances
-                    = material->IsMaskedTransparency(_GetMaterialNetworkToken(reprToken));
-            } else {
-                // Fallback shader will need alpha blending if opacity primvar is authored.
-                drawItemData._supportsTransparentInstances = false;
-            }
         }
 
         if (itemDirtyBits
@@ -1003,9 +994,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                     shader = _delegate->Get3dSolidShader(color);
                 }
 
-                // Favor performance for instances selection highlight w/o depth sorting.
-                drawItemData._supportsTransparentInstances = true;
-
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
@@ -1213,12 +1201,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             // Regular non-instanced prims. Consolidation has been turned on by
             // default and will be kept enabled on this case.
             renderItem->setMatrix(stateToCommit._worldMatrix);
-        }
-
-        if (stateToCommit._renderItemData._usingInstancedDraw) {
-            // This must be done after the subScene item is set up for GPU instancing.
-            drawScene.setAllowTransparentInstances(
-                *renderItem, stateToCommit._renderItemData._supportsTransparentInstances);
         }
 
         oldInstanceCount = newInstanceCount;

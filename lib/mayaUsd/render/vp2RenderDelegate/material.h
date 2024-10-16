@@ -104,10 +104,6 @@ public:
     //! Get primvar tokens required by this material.
     const TfTokenVector& GetRequiredPrimvars(const TfToken& reprToken) const;
 
-    //! Returns whether the surface shader for the given representation uses masked transparency.
-    //! If \c true, it does not need to be rendered with alpha blending.
-    bool IsMaskedTransparency(const TfToken& reprToken) const;
-
     void EnqueueLoadTextures();
     void ClearPendingTasks();
 
@@ -129,15 +125,6 @@ private:
     class CompiledNetwork
     {
     public:
-        //! These flags affect draw items to which this material network is bound.
-        enum DrawItemFlag
-        {
-            kDrawItemFlagTransparent = 0, //!< The draw item should be marked as transparent.
-            kDrawItemFlagMasked, //!< The transparent draw item does not require alpha blending.
-            kDrawItemFlagCount   //!< Sentinel value.
-        };
-        using DrawItemFlags = std::bitset<kDrawItemFlagCount>;
-
         CompiledNetwork(HdVP2Material* m)
             : _owner(m)
         {
@@ -149,8 +136,6 @@ private:
         MHWRender::MShaderInstance* GetFrontFaceShader() const;
         MHWRender::MShaderInstance* GetPointShader() const;
         const TfTokenVector&        GetRequiredPrimvars() const { return _requiredPrimvars; }
-
-        bool IsMaskedTransparency() const { return _drawItemFlags.test(kDrawItemFlagMasked); }
 
         template <typename ParameterType>
         MStatus SetShaderParameter(const MString& paramName, const ParameterType& val)
@@ -188,13 +173,13 @@ private:
 
     private:
         HdVP2Material* _owner;
-        TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
-        SdfPath _surfaceShaderId;     //!< Path of the surface shader
+        TfToken _surfaceNetworkToken;   //!< Generated token to uniquely identify a material network
+        SdfPath _surfaceShaderId;       //!< Path of the surface shader
+        bool    _transparent { false }; //!< Whether this network is transparent
         HdVP2ShaderUniquePtr         _surfaceShader;    //!< VP2 surface shader instance
         mutable HdVP2ShaderUniquePtr _frontFaceShader;  //!< same as above + backface culling
         mutable HdVP2ShaderUniquePtr _pointShader;      //!< VP2 point shader instance, if needed
         TfTokenVector                _requiredPrimvars; //!< primvars required by this network
-        DrawItemFlags                _drawItemFlags;    //!< flags affecting drawItems using this
         std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
             _nodePathMap; //!< Mapping from authored node paths to VP2-specific simplified pathes
 #ifdef WANT_MATERIALX_BUILD

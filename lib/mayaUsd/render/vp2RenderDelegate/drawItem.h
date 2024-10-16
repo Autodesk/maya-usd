@@ -101,9 +101,6 @@ public:
         //! Whether or not the render item is using GPU instanced draw.
         bool _usingInstancedDraw { false };
 
-        //! Whether or not we can use GPU instanced draw when the renter item is transparent.
-        bool _supportsTransparentInstances { false };
-
         //! Dirty bits to control data update of draw item
         HdDirtyBits _dirtyBits { HdChangeTracker::AllDirty };
 
