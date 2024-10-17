@@ -684,12 +684,35 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     return MS::kUnknownParameter;
 }
 
+static std::unique_ptr<MFnReference> getMayaReferenceOrigin(const MayaUsdProxyShapeBase& proxyShape)
+{
+    MObject proxyShapeNode(proxyShape.thisMObject());
+
+    MStringArray referenceFileNames;
+    MFileIO::getReferences(referenceFileNames);
+    for (unsigned int rfni = 0; rfni < referenceFileNames.length(); ++rfni) {
+        MSelectionList selectionList;
+        selectionList.add(referenceFileNames[rfni]);
+        MObject referenceObject;
+        selectionList.getDependNode(0, referenceObject);
+        MFnReference mayaRef(referenceObject);
+
+        if (mayaRef.containsNode(proxyShapeNode)) {
+            return std::make_unique<MFnReference>(referenceObject);
+        }
+    }
+
+    return {};
+}
+
 /* virtual */
 SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock& dataBlock, const std::string&)
 {
     if (LayerManager::supportedNodeType(MPxNode::typeId())) {
-        auto rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
-        return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName));
+        auto                rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
+        auto                mayaRef = getMayaReferenceOrigin(*this);
+        const MFnReference* fromReference = mayaRef ? mayaRef.get() : nullptr;
+        return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName), fromReference);
     } else {
         return nullptr;
     }
@@ -700,7 +723,9 @@ SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock& dataBlock)
 {
     if (LayerManager::supportedNodeType(MPxNode::typeId())) {
         auto sessionLayerName = dataBlock.inputValue(sessionLayerNameAttr).asString();
-        return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName));
+        auto mayaRef = getMayaReferenceOrigin(*this);
+        const MFnReference* fromReference = mayaRef ? mayaRef.get() : nullptr;
+        return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName), fromReference);
     } else {
         return nullptr;
     }
@@ -824,7 +849,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     UsdStageRefPtr finalUsdStage;
     SdfPath        primPath;
 
-    MayaUsd::LayerNameMap layerNameMap = LayerManager::getLayerNameMap();
+    auto                  mayaRef = getMayaReferenceOrigin(*this);
+    const MFnReference*   fromReference = mayaRef ? mayaRef.get() : nullptr;
+    MayaUsd::LayerNameMap layerNameMap = LayerManager::getLayerNameMap(fromReference);
 
     MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -844,7 +871,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             VtArray<std::string> updatedReferences;
             for (const auto& identifier : referencedLayers) {
                 // Update the identifier reference in the customer layer data
-                auto layer = LayerManager::findLayer(identifier);
+                auto layer = LayerManager::findLayer(identifier, fromReference);
                 if (layer) {
                     updatedReferences.push_back(layer->GetIdentifier());
                 }
