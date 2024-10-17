@@ -164,6 +164,13 @@ __mayaUsdLibStringResources = {
     "kUsdASCIIFiles": "USD ASCII Files",
     "kUsdBinaryFiles": "USD Binary Files",
     "kUsdCompressedFiles": "USD Compressed Files",
+
+    # readJob.cpp
+    "kAboutToChangePrefs": "The USD import is about to change the Maya preferences.\n" +
+                           "Save your changes in the preferences window?",
+    "kAboutToChangePrefsTitle": "Save Preferences",
+    "kSavePrefsChange": "Save Preferences",
+    "kDiscardPrefsChange": "Discard Preferences",
 }
 
 
@@ -191,13 +198,6 @@ def unregisterPluginResource(pluginId, stringId):
     if not cmds.displayString(fullId, exists=True):
         return
     cmds.displayString(fullId, delete=True)
-
-    # readJob.cpp
-    register("kAboutToChangePrefs", "The USD import is about to change the Maya preferences.\n" +
-                                    "Save your changes in the preferences window?")
-    register("kAboutToChangePrefsTitle", "Save Preferences")
-    register("kSavePrefsChange", "Save Preferences")
-    register("kDiscardPrefsChange", "Discard Preferences")
 
 
 def registerPluginResource(pluginId, stringId, resourceStr):
