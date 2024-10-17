@@ -393,6 +393,8 @@ MStatus PxrMayaUsdPreviewSurface::initialize()
 
     status = attributeAffects(opacityAttr, outTransparencyOnAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = attributeAffects(opacityThresholdAttr, outTransparencyOnAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     return status;
 }
@@ -444,8 +446,8 @@ MStatus PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlo
         CHECK_MSTATUS(status);
         const float opacityThreshold = opacityThresholdData.asFloat();
 
-        if (opacity < opacityThreshold) {
-            opacity = 0.0f;
+        if (opacityThreshold > 0.0f) {
+            opacity = (opacity < opacityThreshold) ? 0.0f : 1.0f;
         }
 
         const float        transparency = 1.0f - opacity;
@@ -461,32 +463,44 @@ MStatus PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlo
         // details. We don't use the user-visible "outTransparency" attribute for transparency test
         // because its value depends on upstream nodes and thus error-prone when the "opacity" plug
         // is connected to certain textures. In that case, we should enable transparency.
-        bool opacityConnected = false;
 
-        const MObject opacityAttr
-            = depNodeFn.attribute(PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName.GetText());
-        const MPlug opacityPlug(thisMObject(), opacityAttr);
-        if (opacityPlug.isConnected()) {
-            const MPlug sourcePlug = opacityPlug.source(&status);
-            CHECK_MSTATUS(status);
-            const MObject sourceNode = sourcePlug.node(&status);
-            CHECK_MSTATUS(status);
-
-            // Anim curve output will be evaluated to determine if transparency should be enabled.
-            if (!sourceNode.hasFn(MFn::kAnimCurve)) {
-                opacityConnected = true;
-            }
-        }
+        MObject opacityThresholdAttr = depNodeFn.attribute(
+            PxrMayaUsdPreviewSurfaceTokens->OpacityThresholdAttrName.GetText());
+        const MDataHandle opacityThresholdData
+            = dataBlock.inputValue(opacityThresholdAttr, &status);
+        CHECK_MSTATUS(status);
 
         float transparencyOn = false;
-        if (opacityConnected) {
-            transparencyOn = true;
-        } else {
-            const MDataHandle opacityData = dataBlock.inputValue(opacityAttr, &status);
-            CHECK_MSTATUS(status);
-            const float opacity = opacityData.asFloat();
-            if (opacity < 1.0f - std::numeric_limits<float>::epsilon()) {
+
+        // For masked transparency, we want VP2 to treat the shader as opaque.
+        if (opacityThresholdData.asFloat() <= 0.0f) {
+            bool opacityConnected = false;
+
+            const MObject opacityAttr
+                = depNodeFn.attribute(PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName.GetText());
+            const MPlug opacityPlug(thisMObject(), opacityAttr);
+            if (opacityPlug.isConnected()) {
+                const MPlug sourcePlug = opacityPlug.source(&status);
+                CHECK_MSTATUS(status);
+                const MObject sourceNode = sourcePlug.node(&status);
+                CHECK_MSTATUS(status);
+
+                // Anim curve output will be evaluated to determine if transparency should be
+                // enabled.
+                if (!sourceNode.hasFn(MFn::kAnimCurve)) {
+                    opacityConnected = true;
+                }
+            }
+
+            if (opacityConnected) {
                 transparencyOn = true;
+            } else {
+                const MDataHandle opacityData = dataBlock.inputValue(opacityAttr, &status);
+                CHECK_MSTATUS(status);
+                const float opacity = opacityData.asFloat();
+                if (opacity < 1.0f - std::numeric_limits<float>::epsilon()) {
+                    transparencyOn = true;
+                }
             }
         }
 
