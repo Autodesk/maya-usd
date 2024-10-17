@@ -192,6 +192,13 @@ def unregisterPluginResource(pluginId, stringId):
         return
     cmds.displayString(fullId, delete=True)
 
+    # readJob.cpp
+    register("kAboutToChangePrefs", "The USD import is about to change the Maya preferences.\n" +
+                                    "Save your changes in the preferences window?")
+    register("kAboutToChangePrefsTitle", "Save Preferences")
+    register("kSavePrefsChange", "Save Preferences")
+    register("kDiscardPrefsChange", "Discard Preferences")
+
 
 def registerPluginResource(pluginId, stringId, resourceStr):
     '''See registerPluginResource.mel in Maya.

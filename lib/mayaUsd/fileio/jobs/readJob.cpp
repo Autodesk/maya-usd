@@ -732,6 +732,34 @@ void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByChangingMayaPrefs(
 {
     bool success = true;
 
+    // Close preference window if needed.
+    {
+        static const char* closePrefsCmd
+            = "global string $gPreferenceWindow;\n"
+              "if (`window -query -exists $gPreferenceWindow`) {\n"
+              "    if (`window -query -visible $gPreferenceWindow`) {\n"
+              "         string $title = getMayaUsdLibString(\"kAboutToChangePrefsTitle\");\n"
+              "         string $body = getMayaUsdLibString(\"kAboutToChangePrefs\");\n"
+              "         string $ok = getMayaUsdLibString(\"kSavePrefsChange\");\n"
+              "         string $cancel = getMayaUsdLibString(\"kDiscardPrefsChange\");\n"
+              "         string $result = `confirmDialog -title $title -message $body\n"
+              "                          -button $ok -button $cancel\n"
+              "                          -defaultButton $ok\n"
+              "                          -cancelButton $cancel`;\n"
+              "         if ($result == $ok) {\n"
+              "             savePrefsChanges;\n"
+              "         }\n"
+              "         else {\n"
+              "             cancelPrefsChanges;\n"
+              "         }\n"
+              "    }\n"
+              "}\n";
+
+        if (!MGlobal::executeCommand(closePrefsCmd)) {
+            MGlobal::displayWarning("Failed to close the Maya preferences windows.");
+        }
+    }
+
     // Set up-axis preferences if needed.
     if (conversion.needUpAxisConversion) {
         const bool    rotateView = true;
