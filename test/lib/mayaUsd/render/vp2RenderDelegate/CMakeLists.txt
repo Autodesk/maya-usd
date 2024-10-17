@@ -1,7 +1,7 @@
 # Unit test scripts.
-set(TEST_SCRIPT_FILES "")
+set(TEST_SCRIPT_FILES_LAMBERT "")
 
-list(APPEND TEST_SCRIPT_FILES
+list(APPEND TEST_SCRIPT_FILES_LAMBERT
     testVP2RenderDelegateDisplayColors.py
 	testVP2RenderDelegateGeomSubset.py
     testVP2RenderDelegatePointInstanceOrientation.py
@@ -20,45 +20,24 @@ list(APPEND TEST_SCRIPT_FILES
 )
 
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
-    list(APPEND TEST_SCRIPT_FILES
+    list(APPEND TEST_SCRIPT_FILES_LAMBERT
         testVP2RenderDelegateSelection.py
         testVP2RenderDelegateUsdSkel.py
     )
 endif()
 
 if (MAYA_APP_VERSION VERSION_GREATER 2024)
-    list(APPEND TEST_SCRIPT_FILES
+    list(APPEND TEST_SCRIPT_FILES_LAMBERT
         testVP2RenderDelegateDrawModes.py
     )
 endif()
 
 if(MAYA_CAMERA_GIZMO_SUPPORT)
-    list(APPEND TEST_SCRIPT_FILES
+    list(APPEND TEST_SCRIPT_FILES_LAMBERT
         testVP2RenderDelegateLights.py
         testVP2RenderDelegateCameras.py
     )
 endif()
-
-# Test standard surface shader with MAYAUSD_VP2_USE_STANDARDSURFACE_FALLBACK true
-mayaUsd_get_unittest_target(target testVP2RenderDelegateDisplayColorsStandardSurface.py)
-mayaUsd_add_test(${target}
-    INTERACTIVE
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    PYTHON_SCRIPT testVP2RenderDelegateDisplayColorsStandardSurface.py
-    ENV
-        "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
-        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-        "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
-
-        # Maya uses a very old version of GLEW, so we need support for
-        # pre-loading a newer version from elsewhere.
-        "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"
-
-        # Use the standard surface fallback to match maya 2024+ default material
-        "MAYAUSD_VP2_USE_STANDARDSURFACE_FALLBACK=true"
-)
-# Assign a CTest label to these tests for easy filtering.
-set_property(TEST ${target} APPEND PROPERTY LABELS vp2RenderDelegate)
 
 if (CMAKE_WANT_MATERIALX_BUILD)
     # We want modern OCIO for the MaterialX test:
@@ -77,6 +56,9 @@ if (CMAKE_WANT_MATERIALX_BUILD)
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
             "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"
+
+            # Legacy lambert tests will force the use of the lamber fallback shaders
+            "MAYAUSD_VP2_USE_LAMBERT_FALLBACK=true"
     )
 
     # Assign a CTest label to these tests for easy filtering.
@@ -100,6 +82,9 @@ if (CMAKE_WANT_MATERIALX_BUILD)
 
             # Specify we only want preview surface rendering:
             "MAYAUSD_VP2_USE_ONLY_PREVIEWSURFACE=1"
+
+            # Legacy lambert tests will force the use of the lamber fallback shaders
+            "MAYAUSD_VP2_USE_LAMBERT_FALLBACK=true"
     )
 
     # Assign a CTest label to these tests for easy filtering.
@@ -107,18 +92,52 @@ if (CMAKE_WANT_MATERIALX_BUILD)
 endif()
 
 if(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
-    list(APPEND TEST_SCRIPT_FILES
+    list(APPEND TEST_SCRIPT_FILES_LAMBERT
         testVP2RenderDelegateIsolateSelect.py
     )
 endif()
 
 if (MAYA_HAS_DISPLAY_LAYER_API)
-    list(APPEND TEST_SCRIPT_FILES
+    list(APPEND TEST_SCRIPT_FILES_LAMBERT
         testVP2RenderDelegateDisplayLayers.py
         )
 endif()
 
-foreach(script ${TEST_SCRIPT_FILES})
+foreach(script ${TEST_SCRIPT_FILES_LAMBERT})
+    mayaUsd_get_unittest_target(target ${script})
+    mayaUsd_add_test(${target}
+        INTERACTIVE
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        PYTHON_SCRIPT ${script}
+        ENV
+            "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
+
+            # Maya uses a very old version of GLEW, so we need support for
+            # pre-loading a newer version from elsewhere.
+            "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"
+
+            # Used in detecting whether there is support for volume light gizmos
+            "UFE_VOLUME_LIGHTS_SUPPORT=${UFE_VOLUME_LIGHTS_SUPPORT}"
+
+            # Legacy lambert tests will force the use of the lamber fallback shaders
+            "MAYAUSD_VP2_USE_LAMBERT_FALLBACK=true"
+    )
+
+    # Assign a CTest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS vp2RenderDelegate)
+endforeach()
+
+
+# Modern tests with maya 2024+ will use the standardSurface fallback vp2 shader fragments
+set(TEST_SCRIPT_FILES_STANDARDSURFACE "")
+
+list(APPEND TEST_SCRIPT_FILES_STANDARDSURFACE
+    testVP2RenderDelegateDisplayColorsStandardSurface.py
+)
+
+foreach(script ${TEST_SCRIPT_FILES_STANDARDSURFACE})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
         INTERACTIVE
