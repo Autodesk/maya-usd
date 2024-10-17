@@ -13,46 +13,8 @@
 // limitations under the License.
 //
 
-proc register(string $key, string $value)
-{
-    registerPluginResource("mayaUsdLib", $key, $value);
-}
-
 global proc string getMayaUsdLibString(string $key)
 {
     return getPluginResource("mayaUsdLib", $key);
 }
 
-global proc mayaUsdLibRegisterStrings()
-{
-    // mayaUsdAddMayaReference.mel
-    register("kMayaRefDescription", "Description");
-    register("kMayaRefCacheToUSDDescription1", "<p>Export your Maya Reference to a USD cache file on disk. This workflow enables you to work with Maya data in USD scenes and then export them to a USD cache and author it back into your current USD hierarchy. Use the Cache Options section to build out the scope of your output.</p>");
-    register("kMayaRefCacheToUSDDescription2", "<p><b>Note:</b> When authoring the exported USD cache back into a current USD hierarchy, an edit will be made on the targeted layer. The cache file will be added as a USD reference, defined either in a variant or prim.</p>");
-    register("kMayaRefAddToUSDDescription1", "<p>Add a Maya reference to a USD prim to enable working with original Maya data in your USD scene. Select a Maya scene file to add as a reference. Once a Maya reference file is added, a Maya transform node will appear in the Outliner at your selected prim, containing your newly added Maya reference. Use this dialog to build out the scope of your Maya reference.</p>");
-    register("kMayaRefAddToUSDDescription2", "<p><b>Tip:</b> Define your Maya Reference in a USD variant. This will enable your prim to have 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.</p>");
-    register("kMayaRefUsdOptions", "Author Maya Reference File to USD");
-    register("kMayaRefMayaRefPrimName", "Maya Reference Prim Name:");
-    register("kMayaRefGroup", "Group");
-    register("kMayaRefPrimName", "Prim Name:");
-    register("kMayaRefPrimType", "Prim Type:");
-    register("kMayaRefPrimKind", "Prim Kind:");
-    register("kMayaRefDefineInVariant", "Define in Variant");
-    register("kMayaRefDefineInVariantAnn", "Select this checkbox to define the Maya Reference in a USD variant. This will enable your prim to have 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.");
-    register("kMayaRefVariantSetName", "Variant Set Name:");
-    register("kMayaRefVariantName", "Variant Name:");
-    register("kMayaRefVariantOnPrim", "Variant will be on prim:");
-    register("kMayaRefEditAsMayaData", "Edit as Maya Data");
-    register("kMayaRefEditAsMayaDataAnn", "Select this checkbox to enable editing the MayaReference prim as a Maya Reference.");
-    register("kMayaRefOptions", "Maya Reference Options");
-    register("kMayaRefCreateNew", "Create New");
-    register("kMayaRefAddToPrim", "Add Maya Reference to Prim");
-    register("kMayaRefReference", "Reference");
-
-    // Used in multiple places.
-    register("kAllUsdFiles", "All USD Files");
-    register("kUsdFiles", "USD Files");
-    register("kUsdASCIIFiles", "USD ASCII Files");
-    register("kUsdBinaryFiles", "USD Binary Files");
-    register("kUsdCompressedFiles", "USD Compressed Files");
-}
