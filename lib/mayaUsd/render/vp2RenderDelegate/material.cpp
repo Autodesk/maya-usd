@@ -175,10 +175,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (file)
     (opacity)
+    (opacityThreshold)
     (existence)
     (transmission)
     (transparency)
     (alpha)
+    (alpha_mode)
     (transmission_weight)
     (geometry_opacity)
     (useSpecularWorkflow)
@@ -219,6 +221,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (toColor3ForCM)
     (extract)
 
+    (gltf_pbr)
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
@@ -1300,9 +1303,73 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
 }
 #endif
 
+//! Determines if the shader uses transparency for geometric cut-out, meaning the material would
+//! be tagged as 'masked' (HdStMaterialTagTokens->masked) by HdStorm.
+//! In this case, the shader instance typically discards transparent fragments and will render
+//! others as fully opaque thus without alpha blending.
+//! Inspired by:
+//! https://github.com/PixarAnimationStudios/OpenUSD/blob/59992d2178afcebd89273759f2bddfe730e59aa8/pxr/imaging/hdSt/materialNetwork.cpp#L59
+//! https://github.com/PixarAnimationStudios/OpenUSD/blob/59992d2178afcebd89273759f2bddfe730e59aa8/pxr/imaging/hdSt/materialXFilter.cpp#L754
+bool _IsMaskedTransparency(const HdMaterialNetwork& network)
+{
+    const HdMaterialNode& surfaceShader = network.nodes.back();
+
+    auto surfaceParamOr = [&surfaceShader](const TfToken& name, auto defVal) {
+        const auto itr = surfaceShader.parameters.find(name);
+        return itr == surfaceShader.parameters.end() ? defVal : itr->second.GetWithDefault(defVal);
+    };
+
+    // Names of surfaceShader parameters affecting the mask interpretation.
+    TfSmallVector<TfToken, 2> maskPrms;
+
+#ifdef WANT_MATERIALX_BUILD
+    const auto ndrNode = SdrRegistry::GetInstance().GetNodeByIdentifier(surfaceShader.identifier);
+
+    // Handle MaterialX shaders.
+    if (ndrNode->GetSourceType() == HdVP2Tokens->mtlx) {
+        // Check UsdPreviewSurface node based on opacityThreshold.
+        if (ndrNode->GetFamily() == UsdImagingTokens->UsdPreviewSurface) {
+            if (surfaceParamOr(_tokens->opacityThreshold, 0.0f) > 0.0f) {
+                maskPrms.push_back(_tokens->opacityThreshold);
+            }
+        }
+        // Check if glTF PBR's alpha_mode is `MASK` and that transmission is disabled.
+        else if (ndrNode->GetFamily() == _tokens->gltf_pbr) {
+            if (surfaceParamOr(_tokens->alpha_mode, 0) == 1
+                && surfaceParamOr(_tokens->transmission, 0.0f) == 0.0f) {
+                maskPrms.assign({ _tokens->transmission, _tokens->alpha_mode });
+            }
+        }
+    } else
+#endif
+        // Handle all glslfx surface nodes based on opacityThreshold.
+        if (surfaceParamOr(_tokens->opacityThreshold, 0.0f) > 0.0f) {
+            maskPrms.push_back(_tokens->opacityThreshold);
+        }
+
+    // If no masking parameters were detected, the opacity is not used as a mask.
+    if (maskPrms.empty()) {
+        return false;
+    }
+
+    // Check if any input connection could make the surface non-constantly masked.
+    return std::none_of(
+        network.relationships.begin(),
+        network.relationships.end(),
+        [&surfaceShader, &maskPrms](const HdMaterialRelationship& rel) {
+            return (rel.outputId == surfaceShader.path)
+                && (std::find(maskPrms.begin(), maskPrms.end(), rel.outputName) != maskPrms.end());
+        });
+}
+
 //! Return true if the surface shader needs to be rendered in a transparency pass.
 bool _IsTransparent(const HdMaterialNetwork& network)
 {
+    // Masked transparency will not produce semi-transparency and can be rendered in opaque pass.
+    if (_IsMaskedTransparency(network)) {
+        return false;
+    }
+
     using OpaqueTestPair = std::pair<TfToken, float>;
     using OpaqueTestPairList = std::vector<OpaqueTestPair>;
     const OpaqueTestPairList inputPairList
@@ -2139,6 +2206,23 @@ void HdVP2Material::CompiledNetwork::Sync(
     HdSceneDelegate*            sceneDelegate,
     const HdMaterialNetworkMap& networkMap)
 {
+    auto updateShaderInstance = [this, &sceneDelegate](const HdMaterialNetwork& bxdfNet) {
+        const bool wasTransparent = _transparent;
+        _UpdateShaderInstance(sceneDelegate, bxdfNet);
+        // If the transparency flag changed, then the drawItems must be updated.
+        // e.g. if MRenderItem was first marked transparent and then the shader's transparency
+        // is turned off, MRenderItem must now be marked opaque.
+        bool drawItemsDirty = (wasTransparent != _transparent);
+
+// Consolidation workaround requires dirtying the mesh even on a ValueChanged
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        drawItemsDirty = true;
+#endif
+        if (drawItemsDirty) {
+            _owner->MaterialChanged(sceneDelegate);
+        }
+    };
+
     const SdfPath&    id = _owner->GetId();
     HdMaterialNetwork bxdfNet, dispNet, vp2BxdfNet;
 
@@ -2176,11 +2260,7 @@ void HdVP2Material::CompiledNetwork::Sync(
             }
 
             if (_surfaceShader) {
-                _UpdateShaderInstance(sceneDelegate, bxdfNet);
-// Consolidation workaround requires dirtying the mesh even on a ValueChanged
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-                _owner->MaterialChanged(sceneDelegate);
-#endif
+                updateShaderInstance(bxdfNet);
             }
             return;
         }
@@ -2293,12 +2373,7 @@ void HdVP2Material::CompiledNetwork::Sync(
             _surfaceNetworkToken = token;
         }
 
-        _UpdateShaderInstance(sceneDelegate, bxdfNet);
-
-// Consolidation workaround requires dirtying the mesh even on a ValueChanged
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-        _owner->MaterialChanged(sceneDelegate);
-#endif
+        updateShaderInstance(bxdfNet);
     }
 }
 
@@ -2944,7 +3019,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
                 completeLibrary);
 #else
             std::set<SdfPath> hdTextureNodes;
-            mx::StringMap mxHdTextureMap; // Mx-Hd texture name counterparts
+            mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
@@ -3228,6 +3303,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
     const HdMaterialNetwork& mat)
 {
     if (!_surfaceShader) {
+        _transparent = false;
         return;
     }
 
@@ -3240,9 +3316,10 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
         return SetShaderParameter(paramName, paramValue);
     };
 
-    const bool matIsTransparent = _IsTransparent(mat);
-    if (matIsTransparent != _surfaceShader->isTransparent()) {
-        SetShaderIsTransparent(matIsTransparent);
+    // Update the transparency flag based on the material network.
+    _transparent = _IsTransparent(mat);
+    if (_transparent != _surfaceShader->isTransparent()) {
+        SetShaderIsTransparent(_transparent);
     }
 
     for (const HdMaterialNode& node : mat.nodes) {

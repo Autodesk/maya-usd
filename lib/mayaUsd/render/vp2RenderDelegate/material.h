@@ -24,6 +24,7 @@
 
 #include <maya/MShaderManager.h>
 
+#include <bitset>
 #include <chrono>
 #include <mutex>
 #include <set>
@@ -97,7 +98,7 @@ public:
 
     //! Get the surface shader instance.
     MHWRender::MShaderInstance*
-                                GetSurfaceShader(const TfToken& reprToken, bool backfaceCull = false) const;
+    GetSurfaceShader(const TfToken& reprToken, bool backfaceCull = false) const;
     MHWRender::MShaderInstance* GetPointShader(const TfToken& reprToken) const;
 
     //! Get primvar tokens required by this material.
@@ -172,8 +173,9 @@ private:
 
     private:
         HdVP2Material* _owner;
-        TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
-        SdfPath _surfaceShaderId;     //!< Path of the surface shader
+        TfToken _surfaceNetworkToken;   //!< Generated token to uniquely identify a material network
+        SdfPath _surfaceShaderId;       //!< Path of the surface shader
+        bool    _transparent { false }; //!< Whether this network is transparent
         HdVP2ShaderUniquePtr         _surfaceShader;    //!< VP2 surface shader instance
         mutable HdVP2ShaderUniquePtr _frontFaceShader;  //!< same as above + backface culling
         mutable HdVP2ShaderUniquePtr _pointShader;      //!< VP2 point shader instance, if needed
