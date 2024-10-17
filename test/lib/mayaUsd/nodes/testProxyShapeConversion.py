@@ -50,9 +50,11 @@ class testProxyShapeConversion(unittest.TestCase):
         """Clear the scene and setup the Maya preferences."""
         cmds.file(f=True, new=True)
         # Make sure up-axis is Z.
-        cmds.upAxis(axis='z')
+        if cmds.upAxis(query=True, axis=True).lower() != 'z':
+            cmds.upAxis(axis='z')
         # Make sure the units are centimeters.
-        cmds.currentUnit(linear='cm')
+        if cmds.currentUnit(query=True, linear=True).lower() != 'cm':
+            cmds.currentUnit(linear='cm')
 
     def testCreateStageChangeUpAxisMayaPrefs(self):
         """Test creating a stage and changing the Maya up-axis preference."""

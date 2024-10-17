@@ -30,7 +30,7 @@ Usually, you will need to modify these places:
 - wrapPrimReader.cpp:
 	- Expose the option to Python
 
-- mayaUSDRegisterStrings.mel:
+- mayaUSDRegisterStrings.py:
 	Add the new UI labels
 
 - mayaUsdTranslatorImport.mel: (or mayaUsdTranslatorExport.mel)
