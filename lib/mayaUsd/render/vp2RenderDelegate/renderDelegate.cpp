@@ -91,8 +91,8 @@ const MString kPointSizeParameterName = "pointSize";       //!< Shader parameter
 const MString kCurveBasisParameterName = "curveBasis";     //!< Shader parameter name
 const MString kStructOutputName = "outSurfaceFinal"; //!< Output struct name of the fallback shader
 
-//! Returns a boolean of whether or not to use shader fragments using the default standardSurface material
-bool UseStandardSurface()
+//! Returns a boolean of whether or not we want the standardSurface shader fragment graph fallbacks
+bool WantStandardSurfaceFallback()
 {
     bool useStandardSurface = (MGlobal::executeCommandStringResult("defaultShaderName()") != "lambert1");
     if (TfGetEnvSetting(MAYAUSD_VP2_USE_LAMBERT_FALLBACK)) {
@@ -103,7 +103,7 @@ bool UseStandardSurface()
 }
 
 //! Boolean of whether or not to use shader fragments using the default standardSurface material
-const bool _useStandardSurface = UseStandardSurface();
+const bool _useStandardSurface = WantStandardSurfaceFallback();
 
 //! Enum class for fallback shader types
 enum class FallbackShaderType
