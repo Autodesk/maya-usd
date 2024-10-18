@@ -93,8 +93,6 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
     return materials;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 5003)
-
 bool UsdMaterial::hasMaterial() const
 {
     if (!TF_VERIFY(_item)) {
@@ -123,8 +121,6 @@ bool UsdMaterial::hasMaterial() const
 
     return false;
 }
-
-#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
