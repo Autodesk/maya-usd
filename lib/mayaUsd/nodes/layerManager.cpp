@@ -126,7 +126,7 @@ isNodeFromDesiredOrigin(const MFnReference* fromReference, const MFnDependencyNo
     }
 }
 
-MayaUsd::LayerManager* findNode(const MFnReference* fromReference)
+MayaUsd::LayerManager* findNode(const MFnReference* fromReference = nullptr)
 {
     // Check for cached layer manager before searching
     MFnDependencyNode fn;
@@ -152,7 +152,7 @@ MayaUsd::LayerManager* findNode(const MFnReference* fromReference)
     return nullptr;
 }
 
-MayaUsd::LayerManager* findOrCreateNode(const MFnReference* fromReference)
+MayaUsd::LayerManager* findOrCreateNode(const MFnReference* fromReference = nullptr)
 {
     MayaUsd::LayerManager* lm = findNode(fromReference);
     if (!lm) {
@@ -231,7 +231,7 @@ public:
     static void           cleanupForExport(void*);
     static void           prepareForWriteCheck(bool*, bool);
     static void           cleanupForWrite();
-    static void           loadLayersPostRead(const MFnReference* fromReference);
+    static void           loadLayersPostRead(const MFnReference* fromReference = nullptr);
     static void           cleanUpNewScene(void*);
     static void           clearManagerNode(MayaUsd::LayerManager* lm);
     static void           removeManagerNode(MayaUsd::LayerManager* lm = nullptr);
@@ -614,8 +614,7 @@ std::string LayerDatabase::getSelectedStage() const { return _selectedStage; }
 
 bool LayerDatabase::saveLayerManagerSelectedStage()
 {
-    const MFnReference*    fromReference = nullptr;
-    MayaUsd::LayerManager* lm = findOrCreateNode(fromReference);
+    MayaUsd::LayerManager* lm = findOrCreateNode();
     if (!lm)
         return false;
 
@@ -642,8 +641,7 @@ bool LayerDatabase::saveLayerManagerSelectedStage()
 
 bool LayerDatabase::loadLayerManagerSelectedStage()
 {
-    const MFnReference*    fromReference = nullptr;
-    MayaUsd::LayerManager* lm = findNode(fromReference);
+    MayaUsd::LayerManager* lm = findNode();
     if (!lm)
         return false;
 
@@ -861,8 +859,7 @@ SaveStageToMayaResult saveStageToMayaFile(
 SaveStageToMayaResult saveStageToMayaFile(const MObject& proxyNode, UsdStageRefPtr stage)
 {
     SaveStageToMayaResult  result;
-    const MFnReference*    fromReference = nullptr;
-    MayaUsd::LayerManager* lm = findOrCreateNode(fromReference);
+    MayaUsd::LayerManager* lm = findOrCreateNode();
     if (!lm)
         return result;
 
@@ -883,8 +880,7 @@ SaveStageToMayaResult saveStageToMayaFile(const MObject& proxyNode, UsdStageRefP
 
 BatchSaveResult LayerDatabase::saveUsdToMayaFile()
 {
-    const MFnReference*    fromReference = nullptr;
-    MayaUsd::LayerManager* lm = findOrCreateNode(fromReference);
+    MayaUsd::LayerManager* lm = findOrCreateNode();
     if (!lm) {
         return MayaUsd::kNotHandled;
     }
@@ -1027,8 +1023,7 @@ void LayerDatabase::convertAnonymousLayers(
 
 void LayerDatabase::saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous)
 {
-    const MFnReference*    fromReference = nullptr;
-    MayaUsd::LayerManager* lm = findOrCreateNode(fromReference);
+    MayaUsd::LayerManager* lm = findOrCreateNode();
     if (!lm)
         return;
 
@@ -1286,8 +1281,7 @@ void LayerDatabase::clearManagerNode(MayaUsd::LayerManager* lm)
 void LayerDatabase::removeManagerNode(MayaUsd::LayerManager* lm)
 {
     if (!lm) {
-        const MFnReference* fromReference = nullptr;
-        lm = findNode(fromReference);
+        lm = findNode();
     }
     if (!lm) {
         return;
@@ -1482,8 +1476,7 @@ void LayerManager::setSelectedStage(const std::string& stage)
 /* static */
 std::string LayerManager::getSelectedStage()
 {
-    const MFnReference* fromReference = nullptr;
-    LayerDatabase::loadLayersPostRead(fromReference);
+    LayerDatabase::loadLayersPostRead();
     return LayerDatabase::instance().getSelectedStage();
 }
 
