@@ -24,7 +24,6 @@
 
 #include <maya/MShaderManager.h>
 
-#include <bitset>
 #include <chrono>
 #include <mutex>
 #include <set>
