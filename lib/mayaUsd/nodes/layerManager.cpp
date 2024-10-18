@@ -114,7 +114,10 @@ MStatus disconnectCompoundArrayPlug(MPlug arrayPlug)
     return dgmod.doIt();
 }
 
-static bool isFromReference(const MFnReference* fromReference, const MFnDependencyNode& node)
+/// @brief Verify if the given node is either from the given reference, if that is not null,
+///        or from the main Maya scene if the reference is null.
+static bool
+isNodeFromDesiredOrigin(const MFnReference* fromReference, const MFnDependencyNode& node)
 {
     if (fromReference) {
         return fromReference->containsNodeExactly(node.object());
@@ -139,9 +142,11 @@ MayaUsd::LayerManager* findNode(const MFnReference* fromReference)
     for (; !iter.isDone(); iter.next()) {
         MObject mobj = iter.item();
         fn.setObject(mobj);
-        if (fn.typeId() == MayaUsd::LayerManager::typeId && isFromReference(fromReference, fn)) {
-            layerManagerHandle = mobj;
-            return static_cast<MayaUsd::LayerManager*>(fn.userNode());
+        if (fn.typeId() == MayaUsd::LayerManager::typeId) {
+            if (isNodeFromDesiredOrigin(fromReference, fn)) {
+                layerManagerHandle = mobj;
+                return static_cast<MayaUsd::LayerManager*>(fn.userNode());
+            }
         }
     }
     return nullptr;

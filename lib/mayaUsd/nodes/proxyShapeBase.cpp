@@ -684,7 +684,9 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     return MS::kUnknownParameter;
 }
 
-static std::unique_ptr<MFnReference> getMayaReferenceOrigin(const MayaUsdProxyShapeBase& proxyShape)
+/// Return either the Maya reference scene containing the node or nullptr to mean the
+/// main Maya scene.
+static std::unique_ptr<MFnReference> getProxyNodeOrigin(const MayaUsdProxyShapeBase& proxyShape)
 {
     MObject proxyShapeNode(proxyShape.thisMObject());
 
@@ -710,7 +712,7 @@ SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock& dataBlock, co
 {
     if (LayerManager::supportedNodeType(MPxNode::typeId())) {
         auto                rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
-        auto                mayaRef = getMayaReferenceOrigin(*this);
+        auto                mayaRef = getProxyNodeOrigin(*this);
         const MFnReference* fromReference = mayaRef ? mayaRef.get() : nullptr;
         return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName), fromReference);
     } else {
@@ -723,7 +725,7 @@ SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock& dataBlock)
 {
     if (LayerManager::supportedNodeType(MPxNode::typeId())) {
         auto sessionLayerName = dataBlock.inputValue(sessionLayerNameAttr).asString();
-        auto mayaRef = getMayaReferenceOrigin(*this);
+        auto mayaRef = getProxyNodeOrigin(*this);
         const MFnReference* fromReference = mayaRef ? mayaRef.get() : nullptr;
         return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName), fromReference);
     } else {
@@ -849,7 +851,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     UsdStageRefPtr finalUsdStage;
     SdfPath        primPath;
 
-    auto                  mayaRef = getMayaReferenceOrigin(*this);
+    auto                  mayaRef = getProxyNodeOrigin(*this);
     const MFnReference*   fromReference = mayaRef ? mayaRef.get() : nullptr;
     MayaUsd::LayerNameMap layerNameMap = LayerManager::getLayerNameMap(fromReference);
 
