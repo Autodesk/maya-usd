@@ -1305,13 +1305,24 @@ bool _IsMaskedTransparency(const HdMaterialNetwork& network)
 {
     const HdMaterialNode& surfaceShader = network.nodes.back();
 
-    auto surfaceParamOr = [&surfaceShader](const TfToken& name, auto defVal) {
-        const auto itr = surfaceShader.parameters.find(name);
-        return itr == surfaceShader.parameters.end() ? defVal : itr->second.GetWithDefault(defVal);
-    };
+    auto testParamValue = [&](const TfToken& name, auto&& predicate, auto rhsVal) {
+        using ValueT = std::decay_t<decltype(rhsVal)>;
 
-    // Names of surfaceShader parameters affecting the mask interpretation.
-    TfSmallVector<TfToken, 2> maskPrms;
+        const auto itr = surfaceShader.parameters.find(name);
+        if (itr == surfaceShader.parameters.end() || !itr->second.IsHolding<ValueT>())
+            return false;
+
+        if (!predicate(itr->second.UncheckedGet<ValueT>(), rhsVal))
+            return false;
+
+        // Check if any connection to the param makes its value vary.
+        return std::none_of(
+            network.relationships.begin(),
+            network.relationships.end(),
+            [&surfaceShader, &name](const HdMaterialRelationship& rel) {
+                return (rel.outputId == surfaceShader.path) && (rel.outputName == name);
+            });
+    };
 
 #ifdef WANT_MATERIALX_BUILD
     const auto ndrNode = SdrRegistry::GetInstance().GetNodeByIdentifier(surfaceShader.identifier);
@@ -1320,37 +1331,19 @@ bool _IsMaskedTransparency(const HdMaterialNetwork& network)
     if (ndrNode->GetSourceType() == HdVP2Tokens->mtlx) {
         // Check UsdPreviewSurface node based on opacityThreshold.
         if (ndrNode->GetFamily() == UsdImagingTokens->UsdPreviewSurface) {
-            if (surfaceParamOr(_tokens->opacityThreshold, 0.0f) > 0.0f) {
-                maskPrms.push_back(_tokens->opacityThreshold);
-            }
+            return testParamValue(_tokens->opacityThreshold, std::greater<>(), 0.0f);
         }
         // Check if glTF PBR's alpha_mode is `MASK` and that transmission is disabled.
-        else if (ndrNode->GetFamily() == _tokens->gltf_pbr) {
-            if (surfaceParamOr(_tokens->alpha_mode, 0) == 1
-                && surfaceParamOr(_tokens->transmission, 0.0f) == 0.0f) {
-                maskPrms.assign({ _tokens->transmission, _tokens->alpha_mode });
-            }
+        if (ndrNode->GetFamily() == _tokens->gltf_pbr) {
+            return testParamValue(_tokens->alpha_mode, std::equal_to<>(), 1)
+                && testParamValue(_tokens->transmission, std::equal_to<>(), 0.0f);
         }
-    } else
-#endif
-        // Handle all glslfx surface nodes based on opacityThreshold.
-        if (surfaceParamOr(_tokens->opacityThreshold, 0.0f) > 0.0f) {
-            maskPrms.push_back(_tokens->opacityThreshold);
-        }
-
-    // If no masking parameters were detected, the opacity is not used as a mask.
-    if (maskPrms.empty()) {
+        // Unhandled MaterialX terminal.
         return false;
     }
-
-    // Check if any input connection could make the surface non-constantly masked.
-    return std::none_of(
-        network.relationships.begin(),
-        network.relationships.end(),
-        [&surfaceShader, &maskPrms](const HdMaterialRelationship& rel) {
-            return (rel.outputId == surfaceShader.path)
-                && (std::find(maskPrms.begin(), maskPrms.end(), rel.outputName) != maskPrms.end());
-        });
+#endif
+    // Handle all glslfx surface nodes based on opacityThreshold.
+    return testParamValue(_tokens->opacityThreshold, std::greater<>(), 0.0f);
 }
 
 //! Return true if the surface shader needs to be rendered in a transparency pass.
