@@ -38,6 +38,7 @@ set(TEST_SCRIPT_FILES
     testToggleCommands.py
     testTransform3dChainOfResponsibility.py
     testTransform3dTranslate.py
+    testTransform3dTranslateWithTimeSamples.py
     testUIInfoHandler.py
     testUfePythonImport.py
     testVariant.py
