@@ -113,7 +113,7 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         Create a stage with a new layer using the command exposed by a Python wrapper.
         '''
 
-        stageUfePathStr = mayaUsd.ufe.createStageWithNewLayer("|world")
+        stageUfePathStr = mayaUsd.ufe.createStageWithNewLayer("")
         self.assertIsNotNone(stageUfePathStr)
 
         stageUfePath = ufe.PathString.path(stageUfePathStr)
@@ -143,3 +143,39 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
             cmds.redo()
         stageUfeSceneItem = ufe.Hierarchy.createItem(stageUfePath)
         self.assertIsNotNone(stageUfeSceneItem)
+
+    def testCreateStageNamedWorld(self):
+        # This test requires a Maya fix for the hidden world node.
+        # Without fix = '|world'
+        # With fix    = '|world|world'
+        worldPath = ufe.PathString.path('|world')
+        if str(worldPath) == '|world':
+            self.skipTest('Requires Maya fix for hidden world node.')
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Get the parent transform and rename it to "world".
+        stageNode = cmds.listRelatives(proxyShape, parent=True)
+        self.assertIsNotNone(stageNode)
+        cmds.rename(stageNode, 'world')
+
+        # Get a Ufe path to the renamed proxy shape.
+        proxyShapePath = ufe.PathString.path('|world|worldShape')
+        self.assertIsNotNone(proxyShapePath)
+
+        # Create a Ufe item from that path. This will fail without the fix
+        # in Maya which always adds the hidden Maya "world" node to the
+        # start of every Ufe path.
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        self.assertIsNotNone(proxyShapeItem)
+
+        # Using that scene item we should be able to add a prim to the
+        # renamed "world" proxy shape.
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        cmd = proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+        capsulePath = ufe.PathString.path('|world|worldShape,/Capsule1')
+        self.assertIsNotNone(capsulePath)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        self.assertIsNotNone(capsuleItem)

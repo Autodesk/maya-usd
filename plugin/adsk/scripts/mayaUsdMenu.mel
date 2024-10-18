@@ -667,17 +667,49 @@ global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
     if (!hasPrimUpdater())
         return;
 
+    // Convert proxy to long form.
+    {
+        string $proxyLong[] = `ls -l $proxy`;
+        if (size($proxyLong) == 0)
+            return;
+        $proxy = $proxyLong[0];
+    }
+
+    string $bulkObjects[];
+
+    // Convert selection to long form.
+    string $sel[] = `ls -sl`;
+    for ($i = 0; $i < size($sel); $i++) {
+        string $objLong[] = `ls -l $sel[$i]`;
+        if (size($objLong))
+            $sel[$i] = $objLong[0];
+    }
+
     if (size($obj) == 0) {
-        string $sel[] = `ls -sl`;
-        if (size($sel)) {
-            $obj = $sel[0];
+        $bulkObjects = $sel;
+    } else {
+        // Convert object to long form.
+        {
+            string $objLong[] = `ls -l $obj`;
+            if (size($objLong))
+                $obj = $objLong[0];
+        }
+        int $found = 0;
+        for ($item in $sel) {
+            if ($item == $obj) {
+                $found = 1;
+            }
+        }
+        if ($found) {
+            $bulkObjects = $sel;
+        } else {
+            $bulkObjects = { $obj };
         }
     }
-    string $objLong[] = `ls -l $obj`;
-    string $proxyLong[] = `ls -l $proxy`;
-    if (size($objLong) && size($proxyLong)) {
-        string $exportOptions = `python("import mayaUsdDuplicateAsUsdDataOptions; import mayaUsdOptions; mayaUsdOptions.setAnimateOption('''" + $obj + "''', mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText())")`;
-        mayaUsdDuplicate -exportOptions $exportOptions $objLong[0] $proxyLong[0];
+
+    for ($item in $bulkObjects) {
+        string $exportOptions = `python("import mayaUsdDuplicateAsUsdDataOptions; import mayaUsdOptions; mayaUsdOptions.setAnimateOption('''" + $item + "''', mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText())")`;
+        mayaUsdDuplicate -exportOptions $exportOptions $item $proxy;
     }
 }
 

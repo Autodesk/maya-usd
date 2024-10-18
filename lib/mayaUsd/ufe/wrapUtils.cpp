@@ -93,8 +93,13 @@ PXR_NS::TfTokenVector _getProxyShapePurposes(const std::string& ufePathString)
 #ifdef UFE_V4_FEATURES_AVAILABLE
 std::string createStageWithNewLayer(const std::string& parentPathString)
 {
-    auto parentPath = Ufe::PathString::path(parentPathString);
-    auto parent = Ufe::Hierarchy::createItem(parentPath);
+    // Input path parent string is allowed to be empty in which case we'll
+    // parent the new stage to the Maya world node.
+    Ufe::SceneItem::Ptr parent;
+    if (!parentPathString.empty()) {
+        auto parentPath = Ufe::PathString::path(parentPathString);
+        parent = Ufe::Hierarchy::createItem(parentPath);
+    }
     auto command = MayaUsd::ufe::UsdUndoCreateStageWithNewLayerCommand::create(parent);
     if (!command) {
         return "";

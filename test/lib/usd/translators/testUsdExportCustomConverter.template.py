@@ -70,7 +70,9 @@ class testUsdExportCustomConverter(unittest.TestCase):
         # plugin
         options = ["shadingMode=useRegistry",
                    "convertMaterialsTo=[maya]",
-                   "mergeTransformAndShape=1"]
+                   "mergeTransformAndShape=1",
+                   "legacyMaterialScope=0",
+                   "defaultPrim=None"]
 
         default_ext_setting = cmds.file(q=True, defaultExtensions=True)
         cmds.file(defaultExtensions=False)

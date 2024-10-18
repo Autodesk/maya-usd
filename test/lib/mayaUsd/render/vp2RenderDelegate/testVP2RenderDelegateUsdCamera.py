@@ -107,6 +107,9 @@ class testVP2RenderDelegateUsdCamera(imageUtils.ImageDiffingTestCase):
         clippingAttr = usdCamera.GetAttribute('clippingRange')
         clippingRange = clippingAttr.Get()
         clippingAttr.Set(Gf.Vec2f(10, 5000))
+        # Translate the camera to force the view to update
+        cam2Transform3d.translate(0, 0, 0)
+        cam2Transform3d.translate(-1, 0, 0)
         self.assertSnapshotClose('%s_cam2_insideNearClipPlane.png' % self._testName)
 
 if __name__ == '__main__':

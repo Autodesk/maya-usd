@@ -29,7 +29,7 @@ import mayaUsd.ufe
 
 from pxr import UsdGeom, Gf
 
-from maya import cmds
+from maya import cmds, mel
 from maya import standalone
 from maya.api import OpenMaya as om
 
@@ -71,7 +71,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Duplicate USD data as Maya data, placing it under the root.
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-                aUsdUfePathStr, '|world'))
+                aUsdUfePathStr, ''))
 
         # Should now have two transform nodes in the Maya scene: the path
         # components in the second segment of the aUsdItem and bUsdItem will
@@ -102,7 +102,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Duplicate USD data as Maya data, placing it under the transform we created.
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-                aUsdUfePathStr, '|world|'+ xformName))
+                aUsdUfePathStr, "|" + xformName))
 
         # Should now have two transform nodes in the Maya scene: the path
         # components in the second segment of the aUsdItem and bUsdItem will
@@ -131,7 +131,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         previousSn = cmds.ls(sl=True, ufe=True, long=True)
 
         # Duplicate USD data as Maya data, placing it under the root.
-        cmds.mayaUsdDuplicate(aUsdUfePathStr, '|world')
+        cmds.mayaUsdDuplicate(aUsdUfePathStr, '')
 
         def verifyDuplicate():
             # Should now have two transform nodes in the Maya scene: the path
@@ -370,7 +370,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr)
 
         # Verify that the copied sphere has a look (material) prim.
-        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        looksPrim = stage.GetPrimAtPath("/Looks")
         self.assertTrue(looksPrim.IsValid())
 
         # Undo duplicate to USD.
@@ -382,6 +382,103 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Verify that the copied sphere does not have a look (material) prim.
         looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
         self.assertFalse(looksPrim.IsValid())
+        looksPrim = stage.GetPrimAtPath("/Looks")
+        self.assertFalse(looksPrim.IsValid())
+
+
+    def testDuplicateWithoutMeshes(self):
+        '''Duplicate a Maya sphere without the meshes, only materials.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Duplicate Maya data as USD data with meshes
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr)
+
+        # Verify that the both the sphere and material were copied.
+        looksPrim = stage.GetPrimAtPath("/Looks")
+        self.assertTrue(looksPrim.IsValid())
+        spherePrim = stage.GetPrimAtPath("/pSphere1")
+        self.assertTrue(spherePrim.IsValid())
+
+        # Undo duplicate to USD.
+        cmds.undo()
+
+        # Duplicate Maya data as USD data without meshes
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions='excludeExportTypes=[Mesh]')
+
+        # Verify that the material was copied but not the sphere.
+        looksPrim = stage.GetPrimAtPath("/Looks")
+        self.assertTrue(looksPrim.IsValid())
+        spherePrim = stage.GetPrimAtPath("/pSphere1")
+        self.assertFalse(spherePrim.IsValid())
+
+
+    def testDuplicateSelection(self):
+        '''Duplicate a Maya sphere and cone both in selection by calling the MEL script used in the UI.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)[0]
+        cone = cmds.polyCone(r=1)[0]
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # Select both
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        # Duplicate Maya data as USD data, will use the selection.
+        mel.eval('''source mayaUsd_pluginUICreation.mel''')
+        mel.eval('''source mayaUsdMenu.mel''')
+        mel.eval('''mayaUsdMenu_duplicateToUSD("%s", "%s")''' % (psPathStr, sphere))
+
+        # Verify that the copied sphere has a look (material) prim.
+        spherePrim = stage.GetPrimAtPath("/%s" % sphere)
+        self.assertTrue(spherePrim.IsValid())
+        conePrim = stage.GetPrimAtPath("/%s" % cone)
+        self.assertTrue(conePrim.IsValid())
+
+
+    def testDuplicateGroupedSelection(self):
+        '''Duplicate a Maya sphere and cone both in a group and in selection by calling the MEL script used in the UI.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)[0]
+        cone = cmds.polyCone(r=1)[0]
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # Select both and group them
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        cmds.group()
+
+        # Select both again
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        # Duplicate Maya data as USD data, will use the selection.
+        mel.eval('''source mayaUsd_pluginUICreation.mel''')
+        mel.eval('''source mayaUsdMenu.mel''')
+        mel.eval('''mayaUsdMenu_duplicateToUSD("%s", "%s")''' % (psPathStr, sphere))
+
+        # Verify that the copied sphere has a look (material) prim.
+        spherePrim = stage.GetPrimAtPath("/%s" % sphere)
+        self.assertTrue(spherePrim.IsValid())
+        conePrim = stage.GetPrimAtPath("/%s" % cone)
+        self.assertTrue(conePrim.IsValid())
 
 
     def testDuplicateUsingOptions(self):
@@ -423,7 +520,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
 
         # Verify that the copied sphere has a look (material) prim.
-        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        looksPrim = stage.GetPrimAtPath("/Looks")
         self.assertTrue(looksPrim.IsValid())
 
         # Restore default options

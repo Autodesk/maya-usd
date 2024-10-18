@@ -11,6 +11,7 @@ pxr_plugin(${PXR_PACKAGE}
         ${MAYA_OpenMaya_LIBRARY}
 
     INCLUDE_DIRS
+        ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
 
     CPPFILES

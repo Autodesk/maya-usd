@@ -19,7 +19,7 @@
 #include "debugCodes.h"
 #include "instancer.h"
 #include "material.h"
-#include "render_delegate.h"
+#include "renderDelegate.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>

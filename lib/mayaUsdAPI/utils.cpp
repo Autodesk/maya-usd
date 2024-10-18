@@ -24,13 +24,49 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/mergePrims.h>
 #include <usdUfe/utils/usdUtils.h>
 
+#include <pxr/usd/usd/prim.h>
+
 namespace MAYAUSDAPI_NS_DEF {
 
 Ufe::Rtid getMayaRunTimeId() { return MayaUsd::ufe::getMayaRunTimeId(); }
+
+Ufe::Rtid getUsdRunTimeId() { return UsdUfe::getUsdRunTimeId(); }
+
+std::string getUsdRunTimeName() { return UsdUfe::getUsdRunTimeName(); }
+
+bool isUsdSceneItem(const Ufe::SceneItem::Ptr& item) { return (UsdUfe::downcast(item) != nullptr); }
+
+Ufe::SceneItem::Ptr createUsdSceneItem(const Ufe::Path& path, const PXR_NS::UsdPrim& prim)
+{
+    return UsdUfe::UsdSceneItem::create(path, prim);
+}
+
+PXR_NS::UsdPrim getPrimForUsdSceneItem(const Ufe::SceneItem::Ptr& item)
+{
+    if (auto usdItem = UsdUfe::downcast(item)) {
+        return usdItem->prim();
+    }
+    return PXR_NS::UsdPrim();
+}
+
+PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path) { return UsdUfe::ufePathToPrim(path); }
+
+Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
+{
+    return UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex);
+}
+
+PXR_NS::UsdTimeCode getTime(const Ufe::Path& path) { return UsdUfe::getTime(path); }
+
+PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path) { return UsdUfe::getStage(path); }
+
+Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage) { return UsdUfe::stagePath(stage); }
 
 bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
 {
@@ -87,6 +123,18 @@ Ufe::UndoableCommand::Ptr createMaterialsScopeCommand(const Ufe::SceneItem::Ptr&
 Ufe::UndoableCommand::Ptr createStageWithNewLayerCommand(const Ufe::SceneItem::Ptr& parentItem)
 {
     return MayaUsd::ufe::UsdUndoCreateStageWithNewLayerCommand::create(parentItem);
+}
+
+MAYAUSD_API_PUBLIC
+Ufe::SceneItemResultUndoableCommand::Ptr createAddNewPrimCommand(
+    const Ufe::SceneItem::Ptr& parentItem,
+    const std::string&         name,
+    const std::string&         type)
+{
+    if (auto usdSceneItem = UsdUfe::downcast(parentItem)) {
+        return UsdUfe::UsdUndoAddNewPrimCommand::create(usdSceneItem, name, type);
+    }
+    return nullptr;
 }
 
 #endif

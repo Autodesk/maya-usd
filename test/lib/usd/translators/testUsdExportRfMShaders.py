@@ -41,7 +41,8 @@ class testUsdExportRfMShaders(unittest.TestCase):
         usdFilePath = os.path.abspath('MarbleCube.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['rendermanForMaya'],
-            materialsScopeName='Materials')
+            materialsScopeName='Materials', legacyMaterialScope=False,
+            defaultPrim='None')
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 

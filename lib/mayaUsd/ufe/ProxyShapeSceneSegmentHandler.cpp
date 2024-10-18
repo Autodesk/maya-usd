@@ -18,6 +18,8 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <maya/MFnDependencyNode.h>
+#include <maya/MItDag.h>
 #include <ufe/hierarchy.h>
 #include <ufe/runTimeMgr.h>
 
@@ -117,6 +119,18 @@ bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
     return stage ? true
                  : _mayaSceneSegmentHandler ? _mayaSceneSegmentHandler->isGateway_(path) : false;
 }
+
+#ifdef UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH
+Ufe::Path ProxyShapeSceneSegmentHandler::rootSceneSegmentRootPath() const
+{
+    MItDag            it;
+    auto              root = it.currentItem();
+    MFnDependencyNode rootNode(root);
+    std::string       rootName(rootNode.name().asChar());
+    Ufe::Path         rootPath(Ufe::PathSegment(rootName, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+    return rootPath;
+}
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

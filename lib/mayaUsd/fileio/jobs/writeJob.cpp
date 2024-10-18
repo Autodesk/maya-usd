@@ -163,9 +163,73 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     return true;
 }
 
+static MStringArray GetExportDefaultPrimCandidates(const UsdMayaJobExportArgs& exportArgs)
+{
+    MStringArray roots;
+
+    // If the user provided a root prim, used it as the default prim.
+    if (!exportArgs.rootPrim.IsEmpty()) {
+        roots.append(exportArgs.rootPrim.GetName().c_str());
+        return roots;
+    }
+
+    // If the user provided export roots, used them to select the default prim.
+    if (exportArgs.exportRoots.size() > 0) {
+        for (const std::string& root : exportArgs.exportRoots) {
+            if (root.empty())
+                continue;
+            roots.append(root.c_str());
+        }
+        if (roots.length() > 0)
+            return roots;
+    }
+
+    // Note: we reuse the same logic used for the UI so that the logic stay in sync.
+    //       This is called only once during an export, so calling a Python command
+    //       is not an issue in regard to performance.
+    MString cmd;
+
+    static const MString getAllRoots("updateDefaultPrimCandidates");
+    static const MString getSelRoots("updateDefaultPrimCandidatesFromSelection");
+
+    const MString getRoots = exportArgs.exportSelected ? getSelRoots : getAllRoots;
+
+    static const MString pyTrue("True");
+    static const MString pyFalse("False");
+
+    // Note: the booleans all represent exclusion while the job arguments are all inclusion,
+    //       so we pass False when something is included.
+    const MString excludeMesh = exportArgs.isExportingMeshes() ? pyFalse : pyTrue;
+    const MString excludeLight = exportArgs.isExportingLights() ? pyFalse : pyTrue;
+    const MString excludeCamera = exportArgs.isExportingCameras() ? pyFalse : pyTrue;
+    const MString excludeStage = exportArgs.exportStagesAsRefs ? pyFalse : pyTrue;
+
+    cmd.format(
+        "import mayaUsd_exportHelpers; mayaUsd_exportHelpers.^1s(^2s, ^3s, ^4s, ^5s)",
+        getRoots,
+        excludeMesh,
+        excludeLight,
+        excludeCamera,
+        excludeStage);
+
+    MGlobal::executePythonCommand(cmd, roots);
+
+    return roots;
+}
+
 bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 {
     MayaUsd::ProgressBarScope progressBar(8);
+
+    // If no default prim for the exported root layer was given, select one from
+    // the available root nodes of the Maya scene. We take into account the excluded
+    // node types based on the export job arguments.
+    if (mJobCtx.mArgs.defaultPrim.empty()) {
+        MStringArray roots = GetExportDefaultPrimCandidates(mJobCtx.mArgs);
+        if (roots.length() > 0) {
+            mJobCtx.mArgs.defaultPrim = roots[0].asChar();
+        }
+    }
 
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export

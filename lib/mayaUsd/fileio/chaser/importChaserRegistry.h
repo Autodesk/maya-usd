@@ -16,9 +16,8 @@
 #ifndef IMPORTCHASERREGISTRY_H
 #define IMPORTCHASERREGISTRY_H
 
-#include "importChaser.h"
-
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/chaser/importChaser.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 
 #include <pxr/base/tf/declarePtrs.h>

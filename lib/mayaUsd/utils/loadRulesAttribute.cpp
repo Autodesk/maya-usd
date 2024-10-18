@@ -31,7 +31,7 @@ namespace MAYAUSD_NS_DEF {
 
 namespace {
 
-const char loadRulesAttrName[] = "usdStageLoadRules";
+const char kLoadRulesAttrName[] = "usdStageLoadRules";
 
 } // namespace
 
@@ -41,7 +41,7 @@ bool hasLoadRulesAttribute(const PXR_NS::MayaUsdProxyShapeBase& proxyShape)
     if (proxyObj.isNull())
         return false;
 
-    return hasDynamicAttribute(MFnDependencyNode(proxyObj), loadRulesAttrName);
+    return hasDynamicAttribute(MFnDependencyNode(proxyObj), kLoadRulesAttrName);
 }
 
 MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape)
@@ -51,12 +51,12 @@ MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShap
         return MS::kFailure;
 
     MFnDependencyNode depNode(proxyObj);
-    if (!hasDynamicAttribute(depNode, loadRulesAttrName))
-        createDynamicAttribute(depNode, loadRulesAttrName);
+    if (!hasDynamicAttribute(depNode, kLoadRulesAttrName))
+        createDynamicAttribute(depNode, kLoadRulesAttrName);
 
     auto loadRulesText = UsdUfe::convertLoadRulesToText(stage);
 
-    MStatus status = setDynamicAttribute(depNode, loadRulesAttrName, loadRulesText.c_str());
+    MStatus status = setDynamicAttribute(depNode, kLoadRulesAttrName, loadRulesText.c_str());
 
     return status;
 }
@@ -77,11 +77,11 @@ MStatus getLoadRulesFromAttribute(const MObject& proxyObj, PXR_NS::UsdStageLoadR
         return MS::kFailure;
 
     MFnDependencyNode depNode(proxyObj);
-    if (!hasDynamicAttribute(depNode, loadRulesAttrName))
+    if (!hasDynamicAttribute(depNode, kLoadRulesAttrName))
         return MS::kNotFound;
 
     MString loadRulesText;
-    MStatus status = getDynamicAttribute(depNode, loadRulesAttrName, loadRulesText);
+    MStatus status = getDynamicAttribute(depNode, kLoadRulesAttrName, loadRulesText);
     if (!status)
         return status;
 
@@ -109,7 +109,7 @@ MStatus setLoadRulesAttribute(const MObject& proxyObj, bool loadAllPayloads)
     const std::string loadRulesText = UsdUfe::convertLoadRulesToText(rules);
 
     MFnDependencyNode depNode(proxyObj);
-    return setDynamicAttribute(depNode, loadRulesAttrName, loadRulesText.c_str());
+    return setDynamicAttribute(depNode, kLoadRulesAttrName, loadRulesText.c_str());
 }
 
 } // namespace MAYAUSD_NS_DEF

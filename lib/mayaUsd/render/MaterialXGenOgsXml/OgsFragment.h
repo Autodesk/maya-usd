@@ -83,6 +83,10 @@ public:
     /// determined by MaterialX at generation time.
     bool isTransparent() const;
 
+    /// Implements transparency detection for some known types and then
+    /// delegates to MaterialX for complex ones.
+    static bool isTransparentSurface(const mx::ElementPtr& element);
+
     /// Derive a matrix4 parameter name from a matrix3 parameter name.
     /// Required because OGS doesn't support matrix3 parameters.
     static std::string getMatrix4Name(const std::string& matrix3Name);

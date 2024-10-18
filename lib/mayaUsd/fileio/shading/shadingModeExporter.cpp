@@ -128,9 +128,12 @@ void UsdMayaShadingModeExporter::DoExport(
         SdfPathSet       boundPrimPaths;
         Export(context, &mat, &boundPrimPaths);
 
-        if (mat && !boundPrimPaths.empty()) {
+        if (mat) {
+            writeJobContext.AddMaterialPath(mat.GetPath());
             exportedMaterials.push_back(mat);
-            matAssignments.push_back(std::make_pair(_GetCollectionName(mat), boundPrimPaths));
+            if (!boundPrimPaths.empty()) {
+                matAssignments.push_back(std::make_pair(_GetCollectionName(mat), boundPrimPaths));
+            }
         }
         shadingEngineLoop.loopAdvance();
     }
