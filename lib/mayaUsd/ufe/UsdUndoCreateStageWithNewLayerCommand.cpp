@@ -33,9 +33,6 @@ UsdUndoCreateStageWithNewLayerCommand::UsdUndoCreateStageWithNewLayerCommand(
     : _parentItem(nullptr)
     , _insertedChild(nullptr)
 {
-    if (!TF_VERIFY(parentItem))
-        return;
-
     _parentItem = parentItem;
 }
 
@@ -44,10 +41,7 @@ UsdUndoCreateStageWithNewLayerCommand::~UsdUndoCreateStageWithNewLayerCommand() 
 UsdUndoCreateStageWithNewLayerCommand::Ptr
 UsdUndoCreateStageWithNewLayerCommand::create(const Ufe::SceneItem::Ptr& parentItem)
 {
-    if (!parentItem) {
-        return nullptr;
-    }
-
+    // Note: input parentItem is allowed to be null.
     return std::make_shared<UsdUndoCreateStageWithNewLayerCommand>(parentItem);
 }
 
@@ -58,10 +52,6 @@ Ufe::SceneItem::Ptr UsdUndoCreateStageWithNewLayerCommand::sceneItem() const
 
 void UsdUndoCreateStageWithNewLayerCommand::execute()
 {
-    if (!_parentItem) {
-        return;
-    }
-
     bool success = false;
     try {
         OpUndoItemRecorder undoRecorder(_undoItemList);
@@ -82,20 +72,27 @@ bool UsdUndoCreateStageWithNewLayerCommand::executeWithinUndoRecorder()
     // Note: If and only if the parent is the world node, MDagPath::transform() will set status
     // to kInvalidParameter. In this case MObject::kNullObj is returned, which is a valid parent
     // object. Thus, kInvalidParameter will not be treated as a failure.
-    MStatus  status;
-    MDagPath parentDagPath = MayaUsd::ufe::ufeToDagPath(_parentItem->path());
-    MObject  parentObject = parentDagPath.transform(&status);
-    if (status != MStatus::kInvalidParameter && MFAIL(status))
-        return false;
+    MObject parentObject;
+    MStatus status;
+
+    if (_parentItem) {
+        MDagPath parentDagPath = MayaUsd::ufe::ufeToDagPath(_parentItem->path());
+        parentObject = parentDagPath.transform(&status);
+        if ((status != MStatus::kInvalidParameter) && MFAIL(status))
+            return false;
+    }
 
     MDagModifier& dagMod = MDagModifierUndoItem::create("Create stage with new Layer");
 
     // Create a transform node.
     // Note: It would be possible to create the transform and the proxy shape in one doIt() call.
     // However, doing so causes notifications to be sent in a different order, which triggers a
-    // `TF_VERIFY(g_StageMap.isDirty())` in StagesSubject::onStageSet(). Creating the transform in a
-    // separate doIt() call seems more robust and avoids triggering the TF_VERIFY.
+    // `TF_VERIFY(UsdStageMap::getInstance().isDirty())` in StagesSubject::onStageSet().
+    //  Creating the transform in a separate doIt() call seems more robust and avoids triggering the
+    //  TF_VERIFY.
     MObject transformObj;
+    // Note: the input parentObject is allowed to be null in which case the new object gets parented
+    //       under the Maya world node.
     transformObj = dagMod.createNode("transform", parentObject);
     if (transformObj.isNull())
         return false;

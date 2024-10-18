@@ -686,7 +686,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format(
-            "^1s \"^2s\" \"|world\"",
+            "^1s \"^2s\" \"\"",
             DuplicateCommand::commandName,
             Ufe::PathString::string(path()).c_str());
         WaitCursor wait;
