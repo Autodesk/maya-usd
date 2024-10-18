@@ -72,7 +72,8 @@ void ADSKMayaUSDGetMaterialsForRenderersCommand::appendMaterialXMaterials() cons
     static const std::vector<std::pair<std::string, std::string>> vettedSurfaces
         = { { "ND_standard_surface_surfaceshader", "Standard Surface" },
             { "ND_gltf_pbr_surfaceshader", "glTF PBR" },
-            { "ND_UsdPreviewSurface_surfaceshader", "USD Preview Surface" } };
+            { "ND_UsdPreviewSurface_surfaceshader", "USD Preview Surface" },
+            { "ND_open_pbr_surface_surfaceshader", "OpenPBR Surface" } };
     auto& sdrRegistry = PXR_NS::SdrRegistry::GetInstance();
     for (auto&& info : vettedSurfaces) {
         auto shaderDef = sdrRegistry.GetShaderNodeByIdentifier(TfToken(info.first));

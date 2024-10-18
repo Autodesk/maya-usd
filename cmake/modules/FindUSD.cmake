@@ -158,8 +158,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(USD
     REQUIRED_VARS
         PXR_USD_LOCATION
-        USD_INCLUDE_DIR
-        USD_LIBRARY_DIR
+        PXR_INCLUDE_DIRS
         USD_CONFIG_FILE
         USD_VERSION
         ADSK_USD_VERSION
@@ -170,8 +169,7 @@ find_package_handle_standard_args(USD
 
 if (USD_FOUND)
     # This will follow a message "-- Found USD: <path> ..."
-    message(STATUS "   USD include dir: ${USD_INCLUDE_DIR}")
-    message(STATUS "   USD library dir: ${USD_LIBRARY_DIR}")
+    message(STATUS "   USD include dirs: ${PXR_INCLUDE_DIRS}")
     if (USD_GENSCHEMA)
         message(STATUS "   usdGenSchema: ${USD_GENSCHEMA}")
     endif()

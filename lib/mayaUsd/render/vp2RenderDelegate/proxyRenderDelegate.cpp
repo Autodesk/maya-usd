@@ -15,10 +15,10 @@
 //
 #include "proxyRenderDelegate.h"
 
-#include "draw_item.h"
+#include "drawItem.h"
 #include "material.h"
 #include "mayaPrimCommon.h"
-#include "render_delegate.h"
+#include "renderDelegate.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>

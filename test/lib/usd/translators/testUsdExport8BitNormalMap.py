@@ -100,7 +100,7 @@ class testExport8BitNormalMap(unittest.TestCase):
         build_test_scene(self.temp_dir)
 
         out_file = os.path.abspath('normalMapTest.usdc')
-        cmds.mayaUSDExport(file=out_file,)
+        cmds.mayaUSDExport(file=out_file,legacyMaterialScope=False, defaultPrim="None")
         
         self.assertTrue(os.path.isfile(out_file))
 

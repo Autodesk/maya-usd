@@ -32,7 +32,6 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/pathTable.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdSkel/animation.h>
@@ -45,10 +44,8 @@
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMatrixData.h>
-#include <maya/MFnSkinCluster.h>
 #include <maya/MFnTransform.h>
 #include <maya/MGlobal.h>
-#include <maya/MItDag.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -93,21 +90,6 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
     }
 
     _usdPrim = _skel.GetPrim();
-}
-
-/// Whether the transform plugs on a transform node are animated.
-static bool _IsTransformNodeAnimated(const MDagPath& dagPath)
-{
-    MFnDependencyNode node(dagPath.node());
-    return UsdMayaUtil::isPlugAnimated(node.findPlug("translateX"))
-        || UsdMayaUtil::isPlugAnimated(node.findPlug("translateY"))
-        || UsdMayaUtil::isPlugAnimated(node.findPlug("translateZ"))
-        || UsdMayaUtil::isPlugAnimated(node.findPlug("rotateX"))
-        || UsdMayaUtil::isPlugAnimated(node.findPlug("rotateY"))
-        || UsdMayaUtil::isPlugAnimated(node.findPlug("rotateZ"))
-        || UsdMayaUtil::isPlugAnimated(node.findPlug("scaleX"))
-        || UsdMayaUtil::isPlugAnimated(node.findPlug("scaleY"))
-        || UsdMayaUtil::isPlugAnimated(node.findPlug("scaleZ"));
 }
 
 /// Gets the world-space rest transform for a single dag path.
@@ -274,49 +256,6 @@ bool _GetLocalTransformForDagPoseMember(
     return true;
 }
 
-/// Set local-space rest transform by converting from the world-space bind xforms.
-static bool
-_GetJointLocalRestTransformsFromBindTransforms(UsdSkelSkeleton& skel, VtMatrix4dArray& restXforms)
-{
-    auto bindXformsAttr = skel.GetBindTransformsAttr();
-    if (!bindXformsAttr) {
-        TF_WARN("skeleton was missing bind transforms attr: %s", skel.GetPath().GetText());
-        return false;
-    }
-    VtMatrix4dArray bindXforms;
-    if (!bindXformsAttr.Get(&bindXforms)) {
-        TF_WARN("error retrieving bind transforms: %s", skel.GetPath().GetText());
-        return false;
-    }
-
-    auto jointsAttr = skel.GetJointsAttr();
-    if (!jointsAttr) {
-        TF_WARN("skeleton was missing bind joints attr: %s", skel.GetPath().GetText());
-        return false;
-    }
-    VtTokenArray joints;
-    if (!jointsAttr.Get(&joints)) {
-        TF_WARN("error retrieving bind joints: %s", skel.GetPath().GetText());
-        return false;
-    }
-
-    auto restXformsAttr = skel.GetRestTransformsAttr();
-    if (!restXformsAttr) {
-        restXformsAttr = skel.CreateRestTransformsAttr();
-        if (!restXformsAttr) {
-            TF_WARN(
-                "skeleton had no rest transforms attr, and was unable to "
-                "create it: %s",
-                skel.GetPath().GetText());
-            return false;
-        }
-    }
-
-    UsdSkelTopology topology(joints);
-    restXforms.resize(bindXforms.size());
-    return UsdSkelComputeJointLocalTransforms(topology, bindXforms, restXforms);
-}
-
 /// Gets the world-space transform of \p dagPath at the current time.
 static GfMatrix4d _GetJointWorldTransform(const MDagPath& dagPath)
 {
@@ -388,34 +327,15 @@ static bool _GetJointLocalTransforms(
     return true;
 }
 
-/// Returns true if the joint's transform definitely matches its rest transform
-/// over all exported frames.
-static bool _JointMatchesRestPose(
-    size_t                 jointIdx,
-    const MDagPath&        dagPath,
-    const VtMatrix4dArray& xforms,
-    const VtMatrix4dArray& restXforms,
-    bool                   exportingAnimation)
-{
-    if (exportingAnimation && _IsTransformNodeAnimated(dagPath))
-        return false;
-    else if (jointIdx < xforms.size())
-        return GfIsClose(xforms[jointIdx], restXforms[jointIdx], 1e-8);
-    return false;
-}
-
 /// Given the list of USD joint names and dag paths, returns the joints that
 /// (1) are moved from their rest poses or (2) have animation, if we are going
 /// to export animation.
 static void _GetAnimatedJoints(
-    const UsdSkelTopology&       topology,
     const VtTokenArray&          usdJointNames,
-    const MDagPath&              rootDagPath,
     const std::vector<MDagPath>& jointDagPaths,
     const VtMatrix4dArray&       restXforms,
     VtTokenArray*                animatedJointNames,
-    std::vector<MDagPath>*       animatedJointPaths,
-    bool                         exportingAnimation)
+    std::vector<MDagPath>*       animatedJointPaths)
 {
     if (!TF_VERIFY(usdJointNames.size() == jointDagPaths.size())) {
         return;
@@ -430,14 +350,6 @@ static void _GetAnimatedJoints(
         return;
     }
 
-    VtMatrix4dArray localXforms;
-    if (!exportingAnimation) {
-        // Compute the current local xforms of all joints so we can decide
-        // whether or not they need to have a value encoded on the anim prim.
-        GfMatrix4d rootXform = _GetJointWorldTransform(rootDagPath);
-        _GetJointLocalTransforms(topology, jointDagPaths, rootXform, &localXforms);
-    }
-
     // The resulting vector contains only animated joints or joints not
     // in their rest pose. The order is *not* guaranteed to be the Skeleton
     // order, because UsdSkel allows arbitrary order on SkelAnimation.
@@ -445,11 +357,8 @@ static void _GetAnimatedJoints(
         const TfToken&  jointName = usdJointNames[i];
         const MDagPath& dagPath = jointDagPaths[i];
 
-        if (!_JointMatchesRestPose(
-                i, jointDagPaths[i], localXforms, restXforms, exportingAnimation)) {
-            animatedJointNames->push_back(jointName);
-            animatedJointPaths->push_back(dagPath);
-        }
+        animatedJointNames->push_back(jointName);
+        animatedJointPaths->push_back(dagPath);
     }
 }
 
@@ -499,7 +408,12 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
 
     // Create something reasonable for rest transforms
     VtMatrix4dArray restXforms;
-    if (_GetJointLocalRestTransformsFromBindTransforms(_skel, restXforms)) {
+    GfMatrix4d      rootXf = _GetJointWorldTransform(_jointHierarchyRootPath);
+    // Setting the skel rest transform as the inverse of the current joint transform.
+    // The inverse of the bind pose would be the ideal scenario here, however joints without a bind
+    // pose or not linked to a skin cluster would have the identity and wouldn't be represented
+    // correctly.
+    if (_GetJointLocalTransforms(_topology, _joints, rootXf, &restXforms)) {
         UsdMayaWriteUtil::SetAttribute(
             _skel.GetRestTransformsAttr(),
             restXforms,
@@ -510,15 +424,7 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
     }
 
     VtTokenArray animJointNames;
-    _GetAnimatedJoints(
-        _topology,
-        skelJointNames,
-        GetDagPath(),
-        _joints,
-        restXforms,
-        &animJointNames,
-        &_animatedJoints,
-        !_GetExportArgs().timeSamples.empty());
+    _GetAnimatedJoints(skelJointNames, _joints, restXforms, &animJointNames, &_animatedJoints);
 
     if (haveUsdSkelXform) {
         _skelXformAttr = _skel.MakeMatrixXform();

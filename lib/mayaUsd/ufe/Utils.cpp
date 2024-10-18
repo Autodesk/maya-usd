@@ -288,7 +288,7 @@ UsdTimeCode getTime(const Ufe::Path& path)
 
     // Proxy shape node should not be null.
     auto proxyShape = UsdStageMap::getInstance().proxyShapeNode(path);
-    if (!TF_VERIFY(proxyShape)) {
+    if (proxyShape == nullptr) {
         return UsdTimeCode::Default();
     }
 
@@ -437,7 +437,7 @@ void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const RenamedPat
     // Replicate display layer membership
     for (const auto& entry : _primToLayerMap) {
         if (entry.second.hasFn(MFn::kDisplayLayer)) {
-            auto usdPrimPath = entry.first;
+            SdfPath usdPrimPath = entry.first;
             for (const auto& oldAndNew : renamed) {
                 const PXR_NS::SdfPath& oldPrefix = oldAndNew.first;
                 if (!usdPrimPath.HasPrefix(oldPrefix))
@@ -446,6 +446,11 @@ void ReplicateExtrasToUSD::finalize(const Ufe::Path& stagePath, const RenamedPat
                 const PXR_NS::SdfPath& newPrefix = oldAndNew.second;
                 usdPrimPath = usdPrimPath.ReplacePrefix(oldPrefix, newPrefix);
             }
+
+            // Avoid trying to manipulate the virtual absolute root. It will trigger
+            // exceptions which can affect Python scripts and testing.
+            if (usdPrimPath.IsAbsoluteRootPath())
+                continue;
 
             auto                primPath = UsdUfe::usdPathToUfePathSegment(usdPrimPath);
             Ufe::Path::Segments segments { stagePath.getSegments()[0], primPath };
@@ -464,15 +469,15 @@ static Ufe::BBox3d transformBBox(const PXR_NS::GfMatrix4d& matrix, const Ufe::BB
 {
     Ufe::BBox3d transformed(bbox);
 
-    transformed.min = toUfe(matrix.Transform(toUsd(bbox.min)));
-    transformed.max = toUfe(matrix.Transform(toUsd(bbox.max)));
+    transformed.min = UsdUfe::toUfe(matrix.Transform(UsdUfe::toUsd(bbox.min)));
+    transformed.max = UsdUfe::toUfe(matrix.Transform(UsdUfe::toUsd(bbox.max)));
 
     return transformed;
 }
 
 static Ufe::BBox3d transformBBox(const Ufe::Matrix4d& matrix, const Ufe::BBox3d& bbox)
 {
-    return transformBBox(toUsd(matrix), bbox);
+    return transformBBox(UsdUfe::toUsd(matrix), bbox);
 }
 
 static Ufe::BBox3d transformBBox(Ufe::SceneItem::Ptr& item, const Ufe::BBox3d& bbox)

@@ -183,6 +183,8 @@ class testUsdImportSkeleton(unittest.TestCase):
             _ArraysAreClose(cmds.getAttr("%s.geomMatrix"%skinClusterName),
                             _GfMatrixToList(
                                 usdSkinningQuery.GetGeomBindTransform())))
+        
+        self.assertEqual(cmds.getAttr("%s.skinningMethod"%skinClusterName), 0)
 
         connections = cmds.listConnections(
             "%s.groupId"%groupIdName,
@@ -274,6 +276,27 @@ class testUsdImportSkeleton(unittest.TestCase):
             meshName=meshPrim.GetName(),
             usdSkelQuery=skelQuery,
             usdSkinningQuery=skinningQuery)
+        
+    def test_SkelImportDQ(self):
+        """
+        Tests if skinning method is properly setup when importing a skin mesh.
+        """
+        cmds.file(new=True, force=True)
+
+        path = os.path.join(self.inputPath, "UsdImportSkeleton", "skelCubeDq.usda")
+
+        cmds.usdImport(file=path, readAnimData=True, primPath="/Root",
+                       shadingMode=[["none", "default"], ])
+
+        stage = Usd.Stage.Open(path)
+        meshPrim = stage.GetPrimAtPath("/Root/Cube")
+        self.assertTrue(meshPrim)
+
+        skinClusterName="skinCluster_{}".format(meshPrim.GetName())
+        skinCluster = _GetDepNode(skinClusterName)
+        self.assertEqual(skinCluster.typeName, "skinCluster")
+        # In maya, Dual Quaternion is the second position on the dropdown, checking if it is properly set here
+        self.assertEqual(cmds.getAttr("%s.skinningMethod"%skinClusterName), 1)
 
     def test_SkelImportStaticTimeSampledMesh(self):
         """

@@ -8,45 +8,67 @@ def Xform "lights"
 {
     def SphereLight "spotLight"
     {
+        float inputs:intensity = 20000
+        color3f inputs:shadow:color = (1, 0, 0)
+        bool inputs:shadow:enable = 1
+        float inputs:shaping:cone:angle = 50
+        float inputs:shaping:cone:softness = 0.1
+        float inputs:shaping:focus = 0.5
         double3 xformOp:translate = (0, 1, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
-
-		float inputs:intensity = 20000
-		bool inputs:shadow:enable = true
-		color3f inputs:shadow:color = (1, 0, 0)
-		
-		float inputs:shaping:focus = 0.5
-		float inputs:shaping:cone:angle = 50
-		float inputs:shaping:cone:softness = 0.1
     }
-	
+
     def SphereLight "pointLight"
     {
-		float inputs:intensity = 200
-		bool inputs:shadow:enable = false
-		color3f inputs:shadow:color = (1, 1, 0)
+        float inputs:intensity = 200
+        float inputs:radius = 0
+        color3f inputs:shadow:color = (1, 1, 0)
+        bool inputs:shadow:enable = 0
+        bool treatAsPoint = 1
     }
-	
+
     def DistantLight "directionalLight"
     {
-		float inputs:angle = 0.2
-	
+        float inputs:angle = 0.2
         color3f inputs:color = (0, 0, 1)
-
-		float inputs:intensity = 20000
-		bool inputs:shadow:enable = true
-		color3f inputs:shadow:color = (1, 0, 0)
+        float inputs:intensity = 20000
+        color3f inputs:shadow:color = (1, 0, 0)
+        bool inputs:shadow:enable = 1
     }
-	
+
     def RectLight "areaLight"
     {
-		 bool inputs:normalize = true
-	
         color3f inputs:color = (0, 1, 0)
-		
-		float inputs:intensity = 20000
-		bool inputs:shadow:enable = true
-		color3f inputs:shadow:color = (1, 0, 0)		
-    }	
+        float inputs:intensity = 20000
+        bool inputs:normalize = 1
+        color3f inputs:shadow:color = (1, 0, 0)
+        bool inputs:shadow:enable = 1
+    }
+
+    def CylinderLight "cylinderLight"
+    {
+        color3f inputs:shadow:color
+        bool inputs:shadow:enable = 1
+    }
+
+    def DiskLight "diskLight"
+    {
+        color3f inputs:shadow:color
+        bool inputs:shadow:enable = 1
+        float3 xformOp:scale = (1, 0, 1)
+        uniform token[] xformOpOrder = ["xformOp:scale"]
+    }
+
+    def DomeLight "domeLight"
+    {
+        color3f inputs:shadow:color
+        bool inputs:shadow:enable = 1
+    }
+
+    def PortalLight "portalLight"
+    {
+        color3f inputs:shadow:color
+        bool inputs:shadow:enable = 1
+    }
 }
 

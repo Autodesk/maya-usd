@@ -43,6 +43,19 @@ mayaUsd_add_test(${target}
 )
 set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 
+# Install a test to check that the MayaHydra plugin loads (if available).
+mayaUsd_get_unittest_target(target testMayaHydraPlugin.py)
+mayaUsd_add_test(${target}
+    INTERACTIVE
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    PYTHON_SCRIPT testMayaHydraPlugin.py
+    ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+        "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
+)
+set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+
 foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}

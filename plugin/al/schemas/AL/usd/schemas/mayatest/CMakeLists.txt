@@ -73,7 +73,7 @@ target_compile_definitions(AL_USDMayaSchemasTest
 
 target_include_directories(AL_USDMayaSchemasTest 
   PUBLIC
-    ${USD_INCLUDE_DIR}
+    ${PXR_INCLUDE_DIRS}
 )
 
 target_link_libraries(AL_USDMayaSchemasTest ${DEPENDANT_LIBRARIES})

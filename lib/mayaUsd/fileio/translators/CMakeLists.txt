@@ -15,11 +15,11 @@ target_sources(${PROJECT_NAME}
         translatorNurbsPatch.cpp
         translatorPrim.cpp
         translatorRfMLight.cpp
-        translatorRfMLight_deprecated.cpp
+        translatorRfMLightDeprecated.cpp
         translatorSkel.cpp
         translatorUtil.cpp
         translatorXformable.cpp
-        translatorXformable_decompose.cpp
+        translatorXformableDecompose.cpp
 )
 
 set(HEADERS

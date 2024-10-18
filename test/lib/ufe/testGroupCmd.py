@@ -123,7 +123,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertEqual(len(parentChildrenPre), 6)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # set the edit target to balls.usda
         layer = stage.GetLayerStack()[1]
@@ -323,7 +323,7 @@ class GroupCmdTestCase(unittest.TestCase):
         ufeSelection.append(ball5Item)
 
         # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # set the edit target to a new layer
         newLayerName = 'Layer_1'

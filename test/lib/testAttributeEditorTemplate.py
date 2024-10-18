@@ -181,6 +181,59 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, sectionName)
         self.assertIsNotNone(frameLayout, 'Could not find Extra Attributes frameLayout')
 
+    def testCreateDisplaySection(self):
+        '''Simple test for the createDisplaySection in AE template.'''
+
+        # Create a simple USD scene with a single prim.
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+
+        # Create a Capsule via contextOps menu. Not all versions of Maya automatically
+        # select the prim from 'Add New Prim', so always select it here.
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+        cmds.select(proxyShape + ",/Capsule1")
+
+        # Make sure the AE is visible.
+        import maya.mel
+        maya.mel.eval('openAEWindow')
+
+        def findDisplayLayout():
+            capsuleFormLayout = self.attrEdFormLayoutName('Capsule')
+            startLayout = cmds.formLayout(capsuleFormLayout, query=True, fullPathName=True)
+            kDisplay = maya.mel.eval('uiRes(\"m_AEdagNodeTemplate.kDisplay\");')
+            return self.searchForMayaControl(startLayout, cmds.frameLayout, kDisplay)
+
+        # --------------------------------------------------------------------------------
+        # Test the 'createDisplaySection' method of template.
+        # --------------------------------------------------------------------------------
+        displayLayout = findDisplayLayout()
+        self.assertIsNotNone(displayLayout, 'Could not find Display frameLayout')
+
+        # Maya 2022 doesn't remember and restore the expand/collapse state,
+        # so skip this part of the test.
+        if mayaUtils.mayaMajorVersion() > 2022:
+            # Expand the Display layout then update the AE again.
+            # We must do this because when we expand it doesn't happen right away.
+            # But by expanding it when we updateAE the capsule the display section
+            # expansion is remembered and auto-expanded.
+            cmds.frameLayout(displayLayout, edit=True, collapse=False)
+            maya.mel.eval('updateAE "|stage1|stageShape1,/Capsule1"')
+            displayLayout = findDisplayLayout()
+            self.assertIsNotNone(displayLayout, 'Could not find Display frameLayout')
+
+            # We should have 'Visibility' optionMenuGrp (which is a label (text) and optionMenu).
+            visControl = self.searchForMayaControl(displayLayout, cmds.text, 'Visibility')
+            self.assertIsNotNone(visControl)
+
+            # We should have a 'Use Outliner Color' checkBoxGrp (which is a label(text) and checkBox).
+            useOutlinerColorControl = self.searchForMayaControl(displayLayout, cmds.checkBox, 'Use Outliner Color')
+            self.assertIsNotNone(useOutlinerColorControl)
+
     def testAECustomMaterialControl(self):
         '''Simple test for the MaterialCustomControl in AE template.'''
 
@@ -275,7 +328,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(frameLayout, 'Could not find "Alpha" frameLayout')
         
         # We should also have custom enum control for 'Inputs Alpha Mode'.
-        InputsAlphaModeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Alpha  Mode')
+        InputsAlphaModeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Alpha Mode')
         self.assertIsNotNone(InputsAlphaModeControl, 'Could not find gltf_pbr1 "Alpha Mode" control')
 
     def testAEConnectionsCustomControl(self):
@@ -300,10 +353,10 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
         
         if mayaUtils.mayaMajorVersion() > 2024:
-            # We should have a frameLayout called 'Shader: Fractal3d' in the template.
+            # We should have a frameLayout called 'Shader: 3D Fractal Noise' in the template.
             # If there is a scripting error in the template, this layout will be missing.
-            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Fractal3d')
-            self.assertIsNotNone(frameLayout, 'Could not find "Shader: Fractal3d" frameLayout')
+            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: 3D Fractal Noise')
+            self.assertIsNotNone(frameLayout, 'Could not find "Shader: 3D Fractal Noise" frameLayout')
             
             # We should also have an attribute called 'Amplitude' which has a connection.
             AmplitudeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Amplitude')

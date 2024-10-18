@@ -54,7 +54,7 @@ PXRUSDMAYA_DEFINE_WRITER(PxrRectLight, args, context)
     return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
-// see lightRfMWriter_PxrMeshLight.cpp for PxrMeshLight.
+// see lightRfMWriterPxrMeshLight.cpp for PxrMeshLight.
 
 PXRUSDMAYA_DEFINE_WRITER(PxrSphereLight, args, context)
 {

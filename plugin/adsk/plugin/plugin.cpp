@@ -85,9 +85,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
-const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
-const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
+const MTypeId kMayaUsdPreviewSurface_typeId(0x58000096);
+const MString kMayaUsdPreviewSurface_typeName("usdPreviewSurface");
+const MString kMayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
 
 template <typename T> void registerCommandCheck(MFnPlugin& plugin)
 {
@@ -118,11 +118,11 @@ MStatus registerStringResources()
 
 TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
 {
-    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(MayaUsdPreviewSurface_typeName);
+    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(kMayaUsdPreviewSurface_typeName);
 };
 TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 {
-    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(MayaUsdPreviewSurface_typeName);
+    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(kMayaUsdPreviewSurface_typeName);
 };
 
 MAYAUSD_PLUGIN_PUBLIC
@@ -235,9 +235,9 @@ MStatus initializePlugin(MObject obj)
 
     status = PxrMayaUsdPreviewSurfacePlugin::initialize(
         plugin,
-        MayaUsdPreviewSurface_typeName,
-        MayaUsdPreviewSurface_typeId,
-        MayaUsdPreviewSurface_registrantId);
+        kMayaUsdPreviewSurface_typeName,
+        kMayaUsdPreviewSurface_typeId,
+        kMayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     plugin.registerUI(
@@ -301,9 +301,9 @@ MStatus uninitializePlugin(MObject obj)
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,
-        MayaUsdPreviewSurface_typeName,
-        MayaUsdPreviewSurface_typeId,
-        MayaUsdPreviewSurface_registrantId);
+        kMayaUsdPreviewSurface_typeName,
+        kMayaUsdPreviewSurface_typeId,
+        kMayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);

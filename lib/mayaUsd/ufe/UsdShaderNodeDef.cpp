@@ -290,7 +290,7 @@ static const MetadataMap _metaMap = {
     { UsdUfe::MetadataTokens->UIName.GetString(),
       [](const PXR_NS::SdrShaderNode& n) {
           std::string uiname;
-          if (!n.GetLabel().IsEmpty()) {
+          if (!n.GetLabel().IsEmpty() && n.GetLabel() != n.GetFamily()) {
               return n.GetLabel().GetString();
           }
           if (!n.GetFamily().IsEmpty() && !_isArnoldWithIssue1214(n)) {
@@ -298,7 +298,7 @@ static const MetadataMap _metaMap = {
           }
           return UsdUfe::prettifyName(n.GetName());
       } },
-    { "doc",
+    { UsdUfe::MetadataTokens->UIDoc,
       [](const PXR_NS::SdrShaderNode& n) {
           return !n.GetHelp().empty() ? n.GetHelp() : Ufe::Value();
       } },

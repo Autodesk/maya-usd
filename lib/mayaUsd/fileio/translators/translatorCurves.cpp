@@ -155,11 +155,74 @@ bool UsdMayaTranslatorCurves::Create(
                     &curveRanges); // not animatable or actually used....
             }
 
-            const int curveDegree = curveOrders[curveIndex] - 1;
-            const int pointCount = curveVertexCounts[curveIndex];
+            if (curveIndex >= curveOrders.size()) {
+                TF_RUNTIME_ERROR(
+                    "Curve index goes beyond the curve orders array end (%d >= %d) in <%s>. "
+                    "Skipping...",
+                    (int)curveIndex,
+                    (int)curveOrders.size(),
+                    prim.GetPath().GetText());
+                return false;
+            }
 
+            const int curveDegree = curveOrders[curveIndex] - 1;
+            if (curveDegree < 1) {
+                TF_RUNTIME_ERROR(
+                    "Curve curve degree is invalid (%d) in <%s>. Skipping...",
+                    curveDegree,
+                    prim.GetPath().GetText());
+                return false;
+            }
+
+            // Note: curveIndex is already limited by curveVertexCounts.size() from the loop.
+            const int pointCount = curveVertexCounts[curveIndex];
+            if (pointCount <= 0) {
+                TF_RUNTIME_ERROR(
+                    "Invalid point count (%d) in <%s>. Skipping...",
+                    pointCount,
+                    prim.GetPath().GetText());
+                return false;
+            }
+
+            // Fill in missing knots.
+            //
             // The USD NURBS curve schema (UsdGeomNurbsCurves) defines the number
-            // of knots as: # points + degree + 1.
+            // of knots as: # spans + 2 * degree + 1.
+            //
+            // But the array of points is already equal to # spans + degree. So the
+            // number of knots is # point + degree + 1
+            //
+            // The fist few knots (equal in number to the degree) must be equal
+            // and the same applies to the last knots.
+            const size_t requiredKnotCount = pointCount + curveDegree + 1;
+            if (curveKnots.size() < coffset + requiredKnotCount) {
+                // The knots array might already contain knots, so we're going to
+                // keep the existing ones and only fill the necessary missing ones.
+                // So calculate from which index we must start to fill.
+                const size_t toBeFilledStartIndex = (curveKnots.size() > size_t(coffset))
+                    ? size_t(curveKnots.size() - coffset)
+                    : size_t(0);
+
+                curveKnots.resize(coffset + requiredKnotCount);
+
+                // Knot index start value, initialize to last knots if available,
+                // otehrwise start at zero.
+                size_t knotIdx = (toBeFilledStartIndex > 0)
+                    ? size_t(curveKnots[coffset + toBeFilledStartIndex - 1])
+                    : size_t(0);
+
+                for (size_t i = toBeFilledStartIndex; i < curveKnots.size(); ++i) {
+                    if (i < (size_t)curveDegree)
+                        curveKnots[coffset + i] = knotIdx;
+                    else if (i > curveKnots.size() - curveDegree)
+                        curveKnots[coffset + i] = knotIdx;
+                    else {
+                        ++knotIdx;
+                        curveKnots[coffset + i] = double(knotIdx);
+                    }
+                }
+            }
+
             auto usdKnotStart = curveKnots.begin() + coffset;
             auto usdKnotEnd = usdKnotStart + pointCount + curveDegree + 1;
 

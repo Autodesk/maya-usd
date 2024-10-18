@@ -547,7 +547,11 @@ TfToken MtlxUsd_BaseWriter::_GetVarnameName()
         SdrShaderNodeConstPtr shaderNodeDef
             = registry.GetShaderNodeByIdentifier(TrUsdTokens->UsdPrimvarReader_float2);
         SdfValueTypeName varnameType = shaderNodeDef
+#if PXR_VERSION <= 2408
             ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first
+#else
+            ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().GetSdfType()
+#endif
             : SdfValueTypeNames->Token;
 
         // If UsdPrimvarReaders use string varnames, then we do not need to use varnameStr anymore.

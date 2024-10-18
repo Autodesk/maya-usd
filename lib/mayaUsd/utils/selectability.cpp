@@ -21,6 +21,8 @@
 
 #include <pxr/base/tf/hashmap.h>
 
+#include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /*! \brief  The tokens used in the selectability metadata.

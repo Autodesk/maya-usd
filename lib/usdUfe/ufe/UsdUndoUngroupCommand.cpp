@@ -15,8 +15,7 @@
 //
 #include "UsdUndoUngroupCommand.h"
 
-#include "private/UfeNotifGuard.h"
-
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/usd/editContext.h>

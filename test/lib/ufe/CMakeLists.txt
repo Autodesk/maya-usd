@@ -28,6 +28,7 @@ set(TEST_SCRIPT_FILES
     testRotateCmd.py
     testRotateCmdUndoRedo.py
     testRotatePivot.py
+    testPivotConversion.py
     testScaleCmd.py
     testSceneItem.py
     testSelection.py
@@ -61,6 +62,12 @@ endif()
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testUngroupCmd.py
+    )
+endif()
+
+if (UFE_SCENEITEM_HAS_METADATA)
+    list(APPEND TEST_SCRIPT_FILES
+        testSceneItemMetadata.py
     )
 endif()
 
@@ -160,6 +167,8 @@ foreach(script ${TEST_SCRIPT_FILES})
             "UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR=${UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR}"
             "UFE_MATERIAL_HAS_HASMATERIAL=${UFE_MATERIAL_HAS_HASMATERIAL}"
             "UFE_CAMERA_HAS_RENDERABLE=${UFE_CAMERA_HAS_RENDERABLE}"
+            "UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH=${UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH}"
+            "UFE_VOLUME_LIGHTS_SUPPORT=${UFE_VOLUME_LIGHTS_SUPPORT}"
     )
 
     # Add a ctest label to these tests for easy filtering.
@@ -172,6 +181,8 @@ foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
         INTERACTIVE
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_SCRIPT ${script}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
     # Add a ctest label to these tests for easy filtering.

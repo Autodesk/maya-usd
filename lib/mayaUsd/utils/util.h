@@ -122,25 +122,25 @@ private:
     ~MDataHandleHolder() override;
 };
 
-const double MillimetersPerInch = 25.4;
+const double kMillimetersPerInch = 25.4;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
 /// in inches.
-inline double ConvertMMToInches(const double mm) { return mm / MillimetersPerInch; }
+inline double ConvertMMToInches(const double mm) { return mm / kMillimetersPerInch; }
 
 /// Converts the given value \p inches in inches to the equivalent value
 /// in millimeters.
-inline double ConvertInchesToMM(const double inches) { return inches * MillimetersPerInch; }
+inline double ConvertInchesToMM(const double inches) { return inches * kMillimetersPerInch; }
 
-const double MillimetersPerCentimeter = 10.0;
+const double kMillimetersPerCentimeter = 10.0;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
 /// in centimeters.
-inline double ConvertMMToCM(const double mm) { return mm / MillimetersPerCentimeter; }
+inline double ConvertMMToCM(const double mm) { return mm / kMillimetersPerCentimeter; }
 
 /// Converts the given value \p cm in centimeters to the equivalent value
 /// in millimeters.
-inline double ConvertCMToMM(const double cm) { return cm * MillimetersPerCentimeter; }
+inline double ConvertCMToMM(const double cm) { return cm * kMillimetersPerCentimeter; }
 
 /// Converts the given value \p mdistance in Maya's MDistance units to the
 /// equivalent value in USD's metersPerUnit.
@@ -276,11 +276,11 @@ bool isWritable(const MObject& object);
 
 /// This is the delimiter that Maya uses to identify levels of hierarchy in the
 /// Maya DAG.
-const std::string MayaDagDelimiter("|");
+const std::string kMayaDagDelimiter("|");
 
 /// This is the delimiter that Maya uses to separate levels of namespace in
 /// Maya node names.
-const std::string MayaNamespaceDelimiter(":");
+const std::string kMayaNamespaceDelimiter(":");
 
 /// Strip \p nsDepth namespaces from \p nodeName.
 ///

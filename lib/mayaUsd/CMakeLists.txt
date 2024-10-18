@@ -219,16 +219,14 @@ mayaUsd_compile_config(${PROJECT_NAME})
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${PROJECT_NAME} 
-    PUBLIC
-        ${MAYA_INCLUDE_DIRS}
+    SYSTEM PUBLIC
         ${PXR_INCLUDE_DIRS}
+        ${MAYA_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
+)
+target_include_directories(${PROJECT_NAME} 
+    PUBLIC
         ${CMAKE_BINARY_DIR}/include
-
-    PRIVATE
-        # TEMP (UsdUfe) - this one is temporary during the transition to UsdUfe.
-        # See lib\usdUfe\ufe\private\CMakeLists.txt
-        ${CMAKE_BINARY_DIR}/include/usdUfe/mayaUsd
 )
 
 # -----------------------------------------------------------------------------

@@ -139,10 +139,11 @@ void updateTargetLayer(const std::string& proxyNodeName, const SdfLayerRefPtr& l
 }
 
 void updateRootLayer(
-    const std::string&    proxy,
-    const std::string&    layerPath,
-    const SdfLayerRefPtr& layer,
-    bool                  isTargetLayer)
+    const std::string&            proxy,
+    const std::string&            layerPath,
+    MayaUsd::utils::ProxyPathMode proxyPathMode,
+    const SdfLayerRefPtr&         layer,
+    bool                          isTargetLayer)
 {
     // Upda the root layer of the given proxy shape
     if (layerPath.empty() || proxy.empty())
@@ -157,7 +158,7 @@ void updateRootLayer(
 #endif
 
     MayaUsd::utils::setNewProxyPath(
-        MString(proxy.c_str()), MString(fp.c_str()), layer, isTargetLayer);
+        MString(proxy.c_str()), MString(fp.c_str()), proxyPathMode, layer, isTargetLayer);
 }
 
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
@@ -275,13 +276,46 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
     }
 } // namespace MAYAUSD_NS_DEF
 
+bool isProxyShapePathRelative(MayaUsdProxyShapeBase& proxyShape)
+{
+    MStatus           status;
+    MFnDependencyNode depNode(proxyShape.thisMObject(), &status);
+    if (!status)
+        return false;
+
+    MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
+    return filePathRelativePlug.asBool();
+}
+
+bool isProxyPathModeRelative(ProxyPathMode proxyPathMode, const MString& proxyNodeName)
+{
+    if (kProxyPathRelative == proxyPathMode)
+        return true;
+
+    if (kProxyPathAbsolute == proxyPathMode)
+        return false;
+
+    if (kProxyPathFollowProxyShape == proxyPathMode) {
+        // Note: if we fail to find the proxy shape, we will fallback on
+        //       using the options var preference instead.
+        MayaUsdProxyShapeBase* proxyShape
+            = UsdMayaUtil::GetProxyShapeByProxyName(proxyNodeName.asChar());
+        if (proxyShape) {
+            return isProxyShapePathRelative(*proxyShape);
+        }
+    }
+
+    return UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+}
+
 void setNewProxyPath(
     const MString&        proxyNodeName,
     const MString&        newRootLayerPath,
+    ProxyPathMode         proxyPathMode,
     const SdfLayerRefPtr& layer,
     bool                  isTargetLayer)
 {
-    const bool  needRelativePath = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+    const bool  needRelativePath = isProxyPathModeRelative(proxyPathMode, proxyNodeName);
     const char* filePathCmd = "setAttr -type \"string\" ^1s.filePath \"^2s\"; "
                               "setAttr ^1s.filePathRelative ^3s; ";
 
@@ -461,7 +495,12 @@ SdfLayerRefPtr saveAnonymousLayer(
     if (isSubLayer) {
         updateSubLayer(parentLayer, anonLayer, filePath);
     } else if (!parent._proxyPath.empty()) {
-        updateRootLayer(parent._proxyPath, filePath, newLayer, wasTargetLayer);
+        updateRootLayer(
+            parent._proxyPath,
+            filePath,
+            pathInfo.savePathAsRelative ? kProxyPathRelative : kProxyPathAbsolute,
+            newLayer,
+            wasTargetLayer);
     }
 
     updateTargetLayer(parent._proxyPath, newLayer);

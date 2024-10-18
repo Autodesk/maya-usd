@@ -41,7 +41,7 @@ class testUsdExportDisplacementShaders(unittest.TestCase):
         usdFilePath = os.path.abspath('SimpleDisplacement.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
-            materialsScopeName='Materials')
+            materialsScopeName='Materials', legacyMaterialScope=False, defaultPrim="None")
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 

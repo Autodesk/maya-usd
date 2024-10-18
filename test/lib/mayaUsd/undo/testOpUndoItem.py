@@ -60,7 +60,7 @@ class OpUndoItemTestCase(unittest.TestCase):
         # Without any means to capture undo items.
         with self.assertRaises(pxr.Tf.ErrorException):
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-                aUsdUfePathStr, '|world'))
+                aUsdUfePathStr, ''))
 
     def testUndoItemWithRecorder(self):
         '''
@@ -84,7 +84,7 @@ class OpUndoItemTestCase(unittest.TestCase):
         # With an active list the undo item should be happy.
         with undoList:
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-                aUsdUfePathStr, '|world'))
+                aUsdUfePathStr, ''))
 
 
 if __name__ == '__main__':

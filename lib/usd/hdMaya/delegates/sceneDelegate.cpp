@@ -63,7 +63,7 @@ void _nodeRemoved(MObject& obj, void* clientData)
     delegate->NodeRemoved(obj);
 }
 
-const MString defaultLightSet("defaultLightSet");
+const MString kDefaultLightSet("defaultLightSet");
 
 void _connectionChanged(MPlug& srcPlug, MPlug& destPlug, bool made, void* clientData)
 {
@@ -84,7 +84,7 @@ void _connectionChanged(MPlug& srcPlug, MPlug& destPlug, bool made, void* client
     if (ARCH_UNLIKELY(!status)) {
         return;
     }
-    if (destNode.name() != defaultLightSet) {
+    if (destNode.name() != kDefaultLightSet) {
         return;
     }
     auto*    delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);

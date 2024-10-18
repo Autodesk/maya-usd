@@ -34,6 +34,18 @@ class exportChaserTest(mayaUsdLib.ExportChaser):
     ChaserNames = set()
     ChaserArgs = {}
     ExportSelected = False
+    ShadingMode = None
+    ReferenceObjectMode = None
+    ExportRelativeTextures = None
+    Compatibility = None
+    DefaultMeshScheme = None
+    DefaultUSDFormat = None
+    ExportSkels = None
+    ExportSkin = None
+    MaterialsScopeName = None
+    RenderLayerMode = None
+    RootKind = None
+    GeomSidedness = None
 
     def __init__(self, factoryContext, *args, **kwargs):
         super(exportChaserTest, self).__init__(factoryContext, *args, **kwargs)
@@ -43,7 +55,18 @@ class exportChaserTest(mayaUsdLib.ExportChaser):
         exportChaserTest.DefaultPrim = factoryContext.GetJobArgs().defaultPrim
         exportChaserTest.RootPrim = factoryContext.GetJobArgs().rootPrim
         exportChaserTest.RootPrimType = factoryContext.GetJobArgs().rootPrimType
-
+        exportChaserTest.ShadingMode = factoryContext.GetJobArgs().shadingMode
+        exportChaserTest.ReferenceObjectMode = factoryContext.GetJobArgs().referenceObjectMode
+        exportChaserTest.ExportRelativeTextures = factoryContext.GetJobArgs().exportRelativeTextures
+        exportChaserTest.Compatibility = factoryContext.GetJobArgs().compatibility
+        exportChaserTest.DefaultMeshScheme = factoryContext.GetJobArgs().defaultMeshScheme
+        exportChaserTest.DefaultUSDFormat = factoryContext.GetJobArgs().defaultUSDFormat
+        exportChaserTest.ExportSkels = factoryContext.GetJobArgs().exportSkels
+        exportChaserTest.ExportSkin = factoryContext.GetJobArgs().exportSkin
+        exportChaserTest.MaterialsScopeName = factoryContext.GetJobArgs().materialsScopeName
+        exportChaserTest.RenderLayerMode = factoryContext.GetJobArgs().renderLayerMode
+        exportChaserTest.RootKind = factoryContext.GetJobArgs().rootKind
+        exportChaserTest.GeomSidedness = factoryContext.GetJobArgs().geomSidedness
 
     def ExportDefault(self):
         exportChaserTest.ExportDefaultCalled = True
@@ -120,6 +143,32 @@ class testExportChaser(unittest.TestCase):
         self.assertEqual(exportChaserTest.DefaultPrim,"testRootPrim")
         self.assertEqual(exportChaserTest.RootPrim, '/testRootPrim')
         self.assertEqual(exportChaserTest.RootPrimType, 'xform')
+
+        # test 'compatibility' argument explicitly, all other arguments
+        # remain default
+        usdzFilePath = os.path.join(self.temp_dir,'testExportChaser.usdz')
+        cmds.usdExport(mergeTransformAndShape=True,
+            file=usdzFilePath,
+            compatibility='appleArKit',  # Require to export as .usdz
+            chaser=['test'],
+            chaserArgs=[
+                ('test', 'foo', 'tball'),
+                ('test', 'bar', 'ometer'),
+            ])
+        self.assertEqual(exportChaserTest.Compatibility, 'appleArKit')
+        # Verify all other TfToken arguments can be accessed and are default values
+        self.assertEqual(exportChaserTest.ShadingMode, 'useRegistry')
+        self.assertEqual(exportChaserTest.ReferenceObjectMode, 'none')
+        self.assertEqual(exportChaserTest.ExportRelativeTextures, 'automatic')
+        self.assertEqual(exportChaserTest.DefaultMeshScheme, 'catmullClark')
+        self.assertEqual(exportChaserTest.DefaultUSDFormat, 'usdc')
+        self.assertEqual(exportChaserTest.ExportSkels, 'none')
+        self.assertEqual(exportChaserTest.ExportSkin, 'none')
+        self.assertEqual(exportChaserTest.MaterialsScopeName, 'Looks')
+        self.assertEqual(exportChaserTest.RenderLayerMode, 'defaultLayer')
+        self.assertEqual(exportChaserTest.RootKind, '')
+        self.assertEqual(exportChaserTest.GeomSidedness, 'derived')
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

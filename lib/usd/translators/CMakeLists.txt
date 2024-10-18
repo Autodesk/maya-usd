@@ -21,14 +21,14 @@ target_sources(${TARGET_NAME}
         jointWriter.cpp
         lightReader.cpp
         lightRfMWriter.cpp
-        lightRfMWriter_PxrMeshLight.cpp
+        lightRfMWriterPxrMeshLight.cpp
         lightWriter.cpp
         locatorWriter.cpp
         materialReader.cpp
         mayaReferenceReader.cpp
         meshReader.cpp
         meshWriter.cpp
-        meshWriter_BlendShapes.cpp
+        meshWriterBlendShapes.cpp
         nurbsCurvesReader.cpp
         nurbsCurveWriter.cpp
         nurbsPatchReader.cpp
@@ -37,6 +37,7 @@ target_sources(${TARGET_NAME}
         plugin.cpp
         scopeReader.cpp
         skelReader.cpp
+        stageWriter.cpp
         strokeWriter.cpp
         xformReader.cpp
 )
@@ -66,6 +67,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
     PRIVATE
+        ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         ${CMAKE_BINARY_DIR}
 )

@@ -160,7 +160,7 @@ class ReorderCmdTestCase(unittest.TestCase):
         '''
         # Get the USD stage
         mayaPathSegment = mayaUtils.createUfePathSegment('|Primitives_usd|Primitives_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # Some helper functions used during the test
         def getItem(name):

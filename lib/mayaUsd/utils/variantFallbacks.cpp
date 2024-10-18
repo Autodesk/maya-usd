@@ -25,7 +25,7 @@ namespace MAYAUSD_NS_DEF {
 
 namespace {
 
-const char variantFallbacksAttrName[] = "variantFallbacks";
+const char kVariantFallbacksAttrName[] = "variantFallbacks";
 
 } // namespace
 
@@ -72,14 +72,14 @@ PXR_NS::PcpVariantFallbackMap updateVariantFallbacks(
     }
 
     MFnDependencyNode depNode(proxyObj);
-    MPlug             attr = depNode.findPlug(variantFallbacksAttrName, &status);
+    MPlug             attr = depNode.findPlug(kVariantFallbacksAttrName, &status);
 
     if (status) {
         attr.getValue(fallbackString);
     } else {
         TF_CODING_ERROR(
             "Unable to get attribute \"%s\" of type MString. - %s",
-            variantFallbacksAttrName,
+            kVariantFallbacksAttrName,
             status.errorString().asChar());
     }
     auto fallbacks(convertVariantFallbackFromStr(fallbackString));
@@ -117,14 +117,14 @@ void saveVariantFallbacks(
     }
 
     MFnDependencyNode depNode(proxyObj);
-    MPlug             attr = depNode.findPlug(variantFallbacksAttrName, &status);
+    MPlug             attr = depNode.findPlug(kVariantFallbacksAttrName, &status);
 
     if (status) {
         attr.getValue(fallbackString);
     } else {
         TF_CODING_ERROR(
             "Unable to get attribute \"%s\" of type MString. - %s",
-            variantFallbacksAttrName,
+            kVariantFallbacksAttrName,
             status.errorString().asChar());
     }
     if (fallbacksStr != fallbackString) {
@@ -132,7 +132,7 @@ void saveVariantFallbacks(
         if (!status) {
             TF_CODING_ERROR(
                 "Unable to set attribute \"%s\" of type MString - %s",
-                variantFallbacksAttrName,
+                kVariantFallbacksAttrName,
                 status.errorString().asChar());
         }
     }

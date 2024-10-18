@@ -44,6 +44,9 @@ public:
     //! Since the proxy shape does not have a USD file associated (in the .filePath attribute), the
     //! proxy shape base will create an empty stage in memory. This will create the session and root
     //! layer as well.
+    //!
+    //! \param[in] parentItem Item to parent the new stage to, can be null in which case the
+    //!                       new stage gets parented under the Maya world node.
     static UsdUndoCreateStageWithNewLayerCommand::Ptr create(const Ufe::SceneItem::Ptr& parentItem);
 
     Ufe::SceneItem::Ptr sceneItem() const override;

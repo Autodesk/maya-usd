@@ -74,14 +74,13 @@ class CustomCompositeCmd(ufe.CompositeUndoableCommand):
     # composite command and its sub-commands.
     customOpName = 'custom'
 
-    def __init__(self, prim, sceneItem):
+    def __init__(self, prim, subCmd):
         super().__init__()
         self._prim = prim
         # Note: the edit router must be kept alive in a variable to affect
         #       subsequent code, in particular the creation of sub-commands.
         ctx = mayaUsd.lib.OperationEditRouterContext(self.customOpName, self._prim)
-        o3d = ufe.Object3d.object3d(sceneItem)
-        self.append(o3d.setVisibleCmd(False))
+        self.append(subCmd)
 
     def execute(self):
         # Note: the edit router must be kept alive in a variable to affect
@@ -131,6 +130,7 @@ class EditRoutingTestCase(unittest.TestCase):
 
     def tearDown(self):
         # Restore default edit routers.
+        mayaUsd.lib.clearAllEditRouters()
         mayaUsd.lib.restoreAllDefaultEditRouters()
 
     def _prepareSimpleScene(self):
@@ -604,8 +604,12 @@ class EditRoutingTestCase(unittest.TestCase):
         mayaUsd.lib.registerEditRouter('visibility', routeCmdToSessionLayer)
         mayaUsd.lib.registerEditRouter('custom', routeCmdToRootLayer)
  
-        # try to affect B via the command, should be prevented
-        compCmd = CustomCompositeCmd(self.prim, self.b)
+        # try to affect B via the command, should be prevented.
+        # Use three levels of edit routing to fully test nested routing.
+        o3d = ufe.Object3d.object3d(self.b)
+        subCmd = o3d.setVisibleCmd(False)
+        compCmd = CustomCompositeCmd(self.prim, subCmd)
+        compCmd = CustomCompositeCmd(self.prim, compCmd)
         compCmd.execute()
  
         # Check that nothing was written to the session layer
@@ -632,7 +636,9 @@ class EditRoutingTestCase(unittest.TestCase):
                          filterUsdStr('def Xform "A"\n{\n}\ndef Xform "B"\n{\n}'))
  
         # try to affect B via the command, should be prevented
-        compCmd = CustomCompositeCmd(self.prim, self.b)
+        o3d = ufe.Object3d.object3d(self.b)
+        subCmd = o3d.setVisibleCmd(False)
+        compCmd = CustomCompositeCmd(self.prim, subCmd)
         compCmd.execute()
  
         # Check that nothing was written to the session layer
@@ -687,7 +693,38 @@ class EditRoutingTestCase(unittest.TestCase):
             '''
         self.maxDiff = None
         self.assertEqual(filterUsdStr(self.sessionLayer.ExportToString()), filterUsdStr(expectedContents))
+
+    def testRegisterLambdaEditRouter(self):
+        '''
+        Test registering lambda function and forgetiing bout it.
+        This test that the edit router system properly keeps a reference
+        on the given router.
+        '''
+        self._prepareSimpleScene()
  
+        # Regsiter a lambda as the edit router:
+
+        router = lambda context, routingData: routingData.update(
+            {'layer': context.get('prim').GetStage().GetSessionLayer().identifier})
+        mayaUsd.lib.registerEditRouter('visibility', router)
+        router = None
+
+        def setVisibility():
+            cmds.hide()
+
+        def verifyVisibility(sessionLayer):
+            self.assertIsNotNone(sessionLayer.GetPrimAtPath('/B'))
+
+            # Check that any visibility changes were written to the session layer
+            self.assertIsNotNone(sessionLayer.GetAttributeAtPath('/B.visibility').default)
+ 
+            # Check that correct visibility changes were written to the session layer
+            self.assertEqual(filterUsdStr(sessionLayer.ExportToString()),
+                            filterUsdStr('over "B"\n{\n    token visibility = "invisible"\n}'))
+            
+        setVisibility()
+        verifyVisibility(self.sessionLayer)
+            
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
+#include <usdUfe/ufe/UsdUndoReloadRefCommand.h>
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleActiveCommand.h>
 #include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
@@ -52,6 +53,10 @@ UsdUfe::UsdUndoClearReferencesCommand* ClearReferencesCommandInit(const PXR_NS::
     return new UsdUfe::UsdUndoClearReferencesCommand(prim);
 }
 
+UsdUfe::UsdUndoReloadRefCommand* ReloadReferenceCommand(const PXR_NS::UsdPrim& prim)
+{
+    return new UsdUfe::UsdUndoReloadRefCommand(prim);
+}
 UsdUfe::UsdUndoToggleActiveCommand* ToggleActiveCommandInit(const PXR_NS::UsdPrim& prim)
 {
     return new UsdUfe::UsdUndoToggleActiveCommand(prim);
@@ -135,6 +140,14 @@ void wrapCommands()
             .def("execute", &UsdUfe::UsdUndoClearReferencesCommand::execute)
             .def("undo", &UsdUfe::UsdUndoClearReferencesCommand::undo)
             .def("redo", &UsdUfe::UsdUndoClearReferencesCommand::redo);
+    }
+    {
+        using This = UsdUfe::UsdUndoReloadRefCommand;
+        class_<This, boost::noncopyable>("ReloadReferenceCommand", no_init)
+            .def("__init__", make_constructor(ReloadReferenceCommand))
+            .def("execute", &UsdUfe::UsdUndoReloadRefCommand::execute)
+            .def("undo", &UsdUfe::UsdUndoReloadRefCommand::undo)
+            .def("redo", &UsdUfe::UsdUndoReloadRefCommand::redo);
     }
     {
         using This = UsdUfe::UsdUndoToggleActiveCommand;

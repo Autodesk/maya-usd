@@ -47,6 +47,9 @@ public:
     // Get the watch list gathered while traversing
     const WatchList& getWatchList() const;
 
+    // Will init the nodegraph if it does not currently exists:
+    mx::NodeGraphPtr& getNodeGraph();
+
 protected:
     mx::NodePtr   cloneNode(const mx::Node& node, mx::GraphElement& container);
     mx::OutputPtr findNodeGraphOutput(const mx::Input& input, const std::string& outputName);
@@ -69,8 +72,6 @@ protected:
     mx::DocumentPtr _doc;
     // This topo neutral document will store all ancillary nodes in a NodeGraph
     mx::NodeGraphPtr _nodeGraph;
-    // Will init the nodegraph if it does not currently exists:
-    mx::NodeGraphPtr& getNodeGraph();
     // Since we anonymize the node names, we need a map from original name
     // to the duplicated node.
     using TNodeMap = std::map<std::string, mx::NodePtr>;

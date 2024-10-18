@@ -16,11 +16,11 @@
 #ifndef MAYAUSD_PROXY_STAGE_PROVIDER_H
 #define MAYAUSD_PROXY_STAGE_PROVIDER_H
 
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-
 #include <mayaUsd/base/api.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

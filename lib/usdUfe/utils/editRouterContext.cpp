@@ -49,11 +49,10 @@ StackedEditRouterContext::~StackedEditRouterContext()
 
 const PXR_NS::SdfLayerHandle& StackedEditRouterContext::getLayer() const
 {
-    if (_layer)
-        return _layer;
-
-    if (const StackedEditRouterContext* ctx = GetStackPrevious())
-        return ctx->getLayer();
+    // Use the layer of the top-most edit router context that contains a layer.
+    for (const StackedEditRouterContext* ctx : GetStack())
+        if (ctx->_layer)
+            return ctx->_layer;
 
     static const PXR_NS::SdfLayerHandle empty;
     return empty;
@@ -61,11 +60,13 @@ const PXR_NS::SdfLayerHandle& StackedEditRouterContext::getLayer() const
 
 PXR_NS::UsdStagePtr StackedEditRouterContext::getStage() const
 {
-    if (_stage)
-        return _stage;
-
-    if (const StackedEditRouterContext* ctx = GetStackPrevious())
-        return ctx->getStage();
+    // Use the stage of the top-most edit router context that contains a layer.
+    //
+    // Note: *yes* we check the layer for the stage, it is the layer that can be
+    //       null or not.
+    for (const StackedEditRouterContext* ctx : GetStack())
+        if (ctx->_layer)
+            return ctx->_stage;
 
     return {};
 }

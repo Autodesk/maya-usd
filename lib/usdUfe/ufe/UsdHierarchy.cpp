@@ -54,7 +54,7 @@ namespace {
 // Note: UsdPrimIsActive is handled differently because pulled objects
 //       are set inactive (to hide them from Rendering), so we handle
 //       them differently.
-const Usd_PrimFlagsConjunction UsdUfePrimDefaultPredicate = UsdPrimIsDefined && !UsdPrimIsAbstract;
+const Usd_PrimFlagsConjunction kUsdUfePrimDefaultPredicate = UsdPrimIsDefined && !UsdPrimIsAbstract;
 
 UsdPrimSiblingRange invalidSiblingRange()
 {
@@ -91,7 +91,7 @@ UsdPrimSiblingRange invalidSiblingRange()
 
 UsdPrimSiblingRange getUSDFilteredChildren(
     const UsdUfe::UsdSceneItem::Ptr usdSceneItem,
-    const Usd_PrimFlagsPredicate    pred = UsdUfePrimDefaultPredicate)
+    const Usd_PrimFlagsPredicate    pred = kUsdUfePrimDefaultPredicate)
 {
     // If the scene item represents a point instance of a PointInstancer prim,
     // we consider it child-less. The namespace children of a PointInstancer
@@ -195,7 +195,7 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
         // See uniqueChildName() for explanation of USD filter predicate.
         const bool             showInactive = childFilter.front().value;
         Usd_PrimFlagsPredicate flags
-            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : UsdUfePrimDefaultPredicate;
+            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : kUsdUfePrimDefaultPredicate;
         return createUFEChildList(getUSDFilteredChildren(_item, flags), !showInactive);
     }
 

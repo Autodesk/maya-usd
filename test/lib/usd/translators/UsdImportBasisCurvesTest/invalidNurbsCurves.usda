@@ -1,0 +1,448 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Xform "world"
+{
+    def "ChangingTopology"
+    {
+        def NurbsCurves "nurbs_curve1_0"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.1]
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def NurbsCurves "nurbs_curve1_50"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.5]
+            double3 xformOp:translate = (0, 0, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def NurbsCurves "nurbs_curve1_100"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [1]
+            double3 xformOp:translate = (0, 0, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def NurbsCurves "nurbs_curve1_150"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (2, 1, 1), (3, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.5]
+            double3 xformOp:translate = (0, 0, 15)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def NurbsCurves "nurbs_curve1_200"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.1]
+            double3 xformOp:translate = (0, 0, 20)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve2_0"
+        {
+            int[] curveVertexCounts= [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.1]
+            double3 xformOp:translate = (5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve2_50"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (0, 1, 1), (1, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.5]
+            double3 xformOp:translate = (5, 0, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve2_100"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [1]
+            double3 xformOp:translate = (5, 0, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve2_150"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (2, 1, 1), (3, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.5]
+            double3 xformOp:translate = (5, 0, 15)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve2_200"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.1]
+            double3 xformOp:translate = (5, 0, 20)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve3_0"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.1]
+            double3 xformOp:translate = (15, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve3_50"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(-0.5, 0, 0), (0, 1, 1), (1, 1, 2), (2, 1, 1), (3, 1, 2), (4, 1, 1), (4.5, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.5]
+            double3 xformOp:translate = (15, 0, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve3_100"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [1]
+            double3 xformOp:translate = (15, 0, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve3_150"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(-0.5, 0, 0), (0, 1, 1), (1, 1, 0.5), (2, 1, 1), (3, 1, 0.5), (4, 0, 1), (4.5, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.5]
+            double3 xformOp:translate = (15, 0, 15)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve3_200"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.1]
+            double3 xformOp:translate = (15, 0, 20)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve4_0"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.1]
+            double3 xformOp:translate = (20, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve4_50"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(-0.5, 0, 0), (0, 1, 1), (1, 1, 2), (2, 1, 1), (3, 1, 2), (4, 1, 1), (4.5, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.5]
+            double3 xformOp:translate = (20, 0, 5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve4_100"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [1]
+            double3 xformOp:translate = (20, 0, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve4_150"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(-0.5, 0, 0), (0, 1, 1), (1, 1, 0.5), (2, 1, 1), (3, 1, 0.5), (4, 0, 1), (4.5, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.5]
+            double3 xformOp:translate = (20, 0, 15)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_curve4_200"
+        {
+            int[] curveVertexCounts = [7]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0), (3, 0, 0), (3, 0, 0), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] widths = [0.1]
+            double3 xformOp:translate = (20, 0, 20)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def "DifferentOrders"
+    {
+        def NurbsCurves "nurbs_order1"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [1]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (0, 0, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_order2"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (5, 0, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_order3"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [3]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (10, 0, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_order4"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [4]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (15, 0, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_order5_fail"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [5]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (20, 0, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_order6_fail"
+        {
+            int[] curveVertexCounts = [2, 2, 2]
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [5]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (20, 0, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "nurbs_order7_fail"
+        {
+            int[] curveVertexCounts = []
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.5, 0, 0), (4.5, 1, 2)]
+            int[] order = [3]
+            point3f[] points = [(0, 0, 0)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (20, 0, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def "VaryingProperties"
+    {
+        def NurbsCurves "order_0"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            int[] order = [1]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (0, 0, 6)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "order_50"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            int[] order = [2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (0, 0, 11)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "order_100"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            int[] order = [3]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (0, 0, 16)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "order_150"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            int[] order = [4]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (0, 0, 21)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "order_200"
+        {
+            int[] curveVertexCounts = [4]
+            uniform bool doubleSided = 1
+            int[] order = [5]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 1, 1), (3, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (0, 0, 26)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "multi1"
+        {
+            int[] curveVertexCounts = [6]
+            uniform bool doubleSided = 1
+            int[] order = [2, 2, 2]
+            point3f[] points = [(0, 0, 0), (1, 1, 1), (2, 0.5, 0.5), (3, 0.5, 0.5), (4, 1, 1), (5, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (5, 0, 6)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def NurbsCurves "multi2"
+        {
+            int[] curveVertexCounts = [12]
+            uniform bool doubleSided = 1
+            int[] order = [4, 4, 4]
+            point3f[] points = [(0, 0, 0), (0.5, 1, 0), (1, 1, 1), (1.5, 0, 1), (2, 0, 0), (2.5, 1, 0), (3, 1, 1), (3.5, 0, 1), (4, 0, 0), (4.5, 1, 0), (5, 1, 1), (5.5, 0, 1)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] widths = [0.25]
+            double3 xformOp:translate = (15, 0, 6)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}
+

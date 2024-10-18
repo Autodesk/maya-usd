@@ -83,22 +83,22 @@ TF_DEFINE_PRIVATE_TOKENS(
 namespace {
 /// Default value to use when collecting UVs from a UV set and a component
 /// has no authored value.
-const GfVec2f UnauthoredUV = GfVec2f(0.f);
+const GfVec2f kUnauthoredUV = GfVec2f(0.f);
 
 /// Default values to use when collecting colors based on shader values
 /// and an object or component has no assigned shader.
-const GfVec3f UnauthoredShaderRGB = GfVec3f(0.5f);
-const float   UnauthoredShaderAlpha = 0.0f;
+const GfVec3f kUnauthoredShaderRGB = GfVec3f(0.5f);
+const float   kUnauthoredShaderAlpha = 0.0f;
 
 /// Default values to use when collecting colors from a color set and a
 /// component has no authored value.
-const GfVec3f UnauthoredColorSetRGB = GfVec3f(1.0f);
-const float   UnauthoredColorAlpha = 1.0f;
-const GfVec4f UnauthoredColorSetRGBA = GfVec4f(
-    UnauthoredColorSetRGB[0],
-    UnauthoredColorSetRGB[1],
-    UnauthoredColorSetRGB[2],
-    UnauthoredColorAlpha);
+const GfVec3f kUnauthoredColorSetRGB = GfVec3f(1.0f);
+const float   kUnauthoredColorAlpha = 1.0f;
+const GfVec4f kUnauthoredColorSetRGBA = GfVec4f(
+    kUnauthoredColorSetRGB[0],
+    kUnauthoredColorSetRGB[1],
+    kUnauthoredColorSetRGB[2],
+    kUnauthoredColorAlpha);
 
 // XXX: Note that this function is not exposed publicly since the USD schema
 // has been updated to conform to OpenSubdiv 3. We still look for this attribute
@@ -275,7 +275,7 @@ UsdGeomPrimvar createUVPrimVar(
         = UsdGeomPrimvarsAPI(primSchema).CreatePrimvar(name, uvValueType, interp);
 
     setPrimvar(
-        primVar, assignmentIndices, VtValue(data), VtValue(UnauthoredUV), usdTime, valueWriter);
+        primVar, assignmentIndices, VtValue(data), VtValue(kUnauthoredUV), usdTime, valueWriter);
 
     return primVar;
 }
@@ -1070,7 +1070,7 @@ bool UsdMayaMeshWriteUtils::addDisplayPrimvars(
             displayColor,
             assignmentIndices,
             VtValue(RGBData),
-            VtValue(UnauthoredShaderRGB),
+            VtValue(kUnauthoredShaderRGB),
             usdTime,
             valueWriter);
 
@@ -1102,7 +1102,7 @@ bool UsdMayaMeshWriteUtils::addDisplayPrimvars(
                 displayOpacity,
                 assignmentIndices,
                 VtValue(AlphaData),
-                VtValue(UnauthoredShaderAlpha),
+                VtValue(kUnauthoredShaderAlpha),
                 usdTime,
                 valueWriter);
 
@@ -1150,7 +1150,7 @@ bool UsdMayaMeshWriteUtils::createRGBPrimVar(
         primVar,
         assignmentIndices,
         VtValue(data),
-        VtValue(UnauthoredColorSetRGB),
+        VtValue(kUnauthoredColorSetRGB),
         usdTime,
         valueWriter);
 
@@ -1194,7 +1194,7 @@ bool UsdMayaMeshWriteUtils::createRGBAPrimVar(
         primVar,
         assignmentIndices,
         VtValue(rgbaData),
-        VtValue(UnauthoredColorSetRGBA),
+        VtValue(kUnauthoredColorSetRGBA),
         usdTime,
         valueWriter);
 
@@ -1231,7 +1231,7 @@ bool UsdMayaMeshWriteUtils::createAlphaPrimVar(
         primVar,
         assignmentIndices,
         VtValue(data),
-        VtValue(UnauthoredColorAlpha),
+        VtValue(kUnauthoredColorAlpha),
         usdTime,
         valueWriter);
 
@@ -1343,9 +1343,9 @@ bool UsdMayaMeshWriteUtils::getMeshColorSetData(
                 colorSetData[fvi][2] = shadersRGBData[valueIndex][2];
             } else {
                 // No shader color to fallback on. Use the default shader color.
-                colorSetData[fvi][0] = UnauthoredShaderRGB[0];
-                colorSetData[fvi][1] = UnauthoredShaderRGB[1];
-                colorSetData[fvi][2] = UnauthoredShaderRGB[2];
+                colorSetData[fvi][0] = kUnauthoredShaderRGB[0];
+                colorSetData[fvi][1] = kUnauthoredShaderRGB[1];
+                colorSetData[fvi][2] = kUnauthoredShaderRGB[2];
             }
         }
         if (useShaderAlphaFallback) {
@@ -1366,14 +1366,14 @@ bool UsdMayaMeshWriteUtils::getMeshColorSetData(
                 colorSetData[fvi][3] = shadersAlphaData[valueIndex];
             } else {
                 // No shader alpha to fallback on. Use the default shader alpha.
-                colorSetData[fvi][3] = UnauthoredShaderAlpha;
+                colorSetData[fvi][3] = kUnauthoredShaderAlpha;
             }
         }
 
         // If we have a color/alpha value, add it to the data to be returned.
         if (colorSetData[fvi] != unsetColor) {
-            GfVec3f rgbValue = UnauthoredColorSetRGB;
-            float   alphaValue = UnauthoredColorAlpha;
+            GfVec3f rgbValue = kUnauthoredColorSetRGB;
+            float   alphaValue = kUnauthoredColorAlpha;
 
             if (useShaderColorFallback || (*colorSetRep == MFnMesh::kRGB)
                 || (*colorSetRep == MFnMesh::kRGBA)) {

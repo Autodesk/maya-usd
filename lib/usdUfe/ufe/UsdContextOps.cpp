@@ -15,10 +15,9 @@
 //
 #include "UsdContextOps.h"
 
-#include "private/UfeNotifGuard.h"
-
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/SetVariantSelectionCommand.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UsdObject3dHandler.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>

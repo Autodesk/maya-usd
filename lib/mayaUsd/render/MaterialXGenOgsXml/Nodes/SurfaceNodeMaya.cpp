@@ -119,7 +119,7 @@ void SurfaceNodeMaya::emitLightLoop(
 
     shadergen.emitComment("Accumulate the light's contribution", stage);
     shadergen.emitLine(
-        outColor + " += lightShader.specularI * " + bsdf->getOutput()->getVariable() + ".response",
+        outColor + " += lightShader.diffuseI * " + bsdf->getOutput()->getVariable() + ".response",
         stage);
 
     shadergen.emitScopeEnd(stage);

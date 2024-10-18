@@ -42,7 +42,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-const MString _RegistrantId("mayaUsd");
+const MString kRegistrantId("mayaUsd");
 int           _registrationCount = 0;
 
 // Name of the plugin registering the proxy shape base class.
@@ -125,12 +125,12 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
     // so register it here.  Native USD VP2 rendering uses a sub-scene override.
     if (_useVP2RenderDelegate) {
         status = MHWRender::MDrawRegistry::registerSubSceneOverrideCreator(
-            ProxyRenderDelegate::drawDbClassification, _RegistrantId, ProxyRenderDelegate::Creator);
+            ProxyRenderDelegate::drawDbClassification, kRegistrantId, ProxyRenderDelegate::Creator);
         CHECK_MSTATUS(status);
     } else {
         status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
             UsdMayaProxyDrawOverride::drawDbClassification,
-            _RegistrantId,
+            kRegistrantId,
             UsdMayaProxyDrawOverride::Creator);
         CHECK_MSTATUS(status);
 
@@ -158,7 +158,7 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
 
     status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
         PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
-        _RegistrantId,
+        kRegistrantId,
         PxrMayaHdImagingShapeDrawOverride::creator);
     CHECK_MSTATUS(status);
 
@@ -193,7 +193,7 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
-        PxrMayaHdImagingShapeDrawOverride::drawDbClassification, _RegistrantId);
+        PxrMayaHdImagingShapeDrawOverride::drawDbClassification, kRegistrantId);
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(PxrMayaHdImagingShape::typeId);
@@ -201,14 +201,14 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 
     if (_useVP2RenderDelegate) {
         status = MHWRender::MDrawRegistry::deregisterSubSceneOverrideCreator(
-            ProxyRenderDelegate::drawDbClassification, _RegistrantId);
+            ProxyRenderDelegate::drawDbClassification, kRegistrantId);
         CHECK_MSTATUS(status);
     } else {
         status = plugin.deregisterDisplayFilter(MayaUsdProxyShapeBase::displayFilterName);
         CHECK_MSTATUS(status);
 
         status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
-            UsdMayaProxyDrawOverride::drawDbClassification, _RegistrantId);
+            UsdMayaProxyDrawOverride::drawDbClassification, kRegistrantId);
         CHECK_MSTATUS(status);
     }
 

@@ -113,7 +113,12 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
         auto addMatchingOutputs = [&](SdfValueTypeName matchingType) {
             for (const auto& outName : outputNames) {
                 auto* sdrInfo = sdrNode->GetShaderOutput(outName);
-                if (sdrInfo && sdrInfo->GetTypeAsSdfType().first == matchingType) {
+#if PXR_VERSION <= 2408
+                const SdfValueTypeName sdfValueTypeName = sdrInfo->GetTypeAsSdfType().first;
+#else
+                const SdfValueTypeName sdfValueTypeName = sdrInfo->GetTypeAsSdfType().GetSdfType();
+#endif
+                if (sdrInfo && sdfValueTypeName == matchingType) {
                     validOutputs.push_back(outName);
                 }
             }
@@ -875,7 +880,13 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams
                         continue;
                     }
                     _previewShaderParams.emplace_back(
-                        inputName, property->GetDefaultValue(), property->GetTypeAsSdfType().first);
+                        inputName,
+                        property->GetDefaultValue(),
+#if PXR_VERSION <= 2408
+                        property->GetTypeAsSdfType().first);
+#else
+                        property->GetTypeAsSdfType().GetSdfType());
+#endif
                 }
                 std::sort(
                     _previewShaderParams.begin(),

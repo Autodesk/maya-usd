@@ -21,7 +21,7 @@
   <!-- ======================================================================== -->
 
   <!-- colorCorrect -->
-  <nodedef name="LdkND_ColorCorrect_color4" node="LdkColorCorrect" nodegroup="adjustment" doc="Color correct from Maya LookdevKit" version="1.0" isdefaultversion="true">
+  <nodedef name="LdkND_ColorCorrect_color4" node="LdkColorCorrect" uiname="LookdevKit Color Correct" nodegroup="adjustment" doc="Color correct from Maya LookdevKit" version="1.0" isdefaultversion="true">
     <!-- Inputs -->
     <input name="inColor" type="color3" value="0.3, 0.3, 0.3" uiname="Color" uifolder="Inputs" />
     <input name="inAlpha" type="float" value="1.0" uiname="Alpha" uifolder="Inputs" />
@@ -56,7 +56,7 @@
   </nodedef>
 
   <!-- floatCorrect -->
-  <nodedef name="LdkND_FloatCorrect_float" node="LdkFloatCorrect" nodegroup="adjustment" doc="Float correct from Maya LookdevKit" version="1.0" isdefaultversion="true">
+  <nodedef name="LdkND_FloatCorrect_float" node="LdkFloatCorrect" uiname="LookdevKit Float Correct" nodegroup="adjustment" doc="Float correct from Maya LookdevKit" version="1.0" isdefaultversion="true">
     <!-- Inputs -->
     <input name="inFloat" type="float" value="1.0" uiname="Float" uifolder="Inputs" />
 

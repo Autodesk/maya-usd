@@ -29,10 +29,13 @@ public:
     typedef std::unordered_multimap<SdfLayerRefPtr, std::string, TfHash> stageLayerMap;
 
     // Create dialog using single stage (from session state).
-    SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent);
+    SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent, bool isExporting);
 
     // Create dialog for bulk save using all provided proxy shapes and their owned stages.
-    SaveLayersDialog(QWidget* in_parent, const std::vector<MayaUsd::StageSavingInfo>& infos);
+    SaveLayersDialog(
+        QWidget*                                     in_parent,
+        const std::vector<MayaUsd::StageSavingInfo>& infos,
+        bool                                         isExporting);
 
     ~SaveLayersDialog();
 
@@ -88,6 +91,7 @@ private:
     stageLayerMap         _stageLayerMap;
     SessionState*         _sessionState;
     std::vector<QWidget*> _saveLayerPathRows;
+    bool                  _isExporting { false };
 };
 
 }; // namespace UsdLayerEditor

@@ -17,7 +17,7 @@
 #ifndef PXRUSDMAYA_TOKENS_H
 #define PXRUSDMAYA_TOKENS_H
 
-#include "api.h"
+#include <mayaUsd/base/api.h>
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>

@@ -31,7 +31,8 @@ def createStageWithNewLayer():
     # (in the .filePath attribute), the proxy shape base will create an empty
     # stage in memory. This will create the session and root layer as well.
     if hasattr(mayaUsd, 'ufe') and hasattr(mayaUsd.ufe, 'createStageWithNewLayer'):
-        shapeNode = mayaUsd.ufe.createStageWithNewLayer('|world')
+        # Empty parent means parent to Maya world node.
+        shapeNode = mayaUsd.ufe.createStageWithNewLayer('')
         cmds.select(shapeNode, replace=True)
         return shapeNode
     else:

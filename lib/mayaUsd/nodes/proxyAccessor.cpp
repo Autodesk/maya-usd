@@ -146,7 +146,7 @@ MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ComputeContext);
 
 namespace {
 //! Profiler category for proxy accessor events
-const int _accessorProfilerCategory = MProfiler::addCategory("ProxyAccessor", "ProxyAccessor");
+const int kAccessorProfilerCategory = MProfiler::addCategory("ProxyAccessor", "ProxyAccessor");
 
 static const TfToken combinedVisibilityToken("combinedVisibility");
 
@@ -288,7 +288,7 @@ void ProxyAccessor::collectAccessorItems(MObject node)
         return;
 
     MProfilingScope profilingScope(
-        _accessorProfilerCategory, MProfiler::kColorB_L1, "Generate acceleration structure");
+        kAccessorProfilerCategory, MProfiler::kColorB_L1, "Generate acceleration structure");
 
     _accessorInputItems.clear();
     _accessorOutputItems.clear();
@@ -397,7 +397,7 @@ MStatus ProxyAccessor::addDependentsDirty(const MPlug& plug, MPlugArray& plugArr
         return MS::kUnknownParameter;
 
     MProfilingScope profilingScope(
-        _accessorProfilerCategory, MProfiler::kColorB_L1, "Dirty accessor plugs");
+        kAccessorProfilerCategory, MProfiler::kColorB_L1, "Dirty accessor plugs");
 
     collectAccessorItems(plug.node());
 
@@ -429,7 +429,7 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock)
     // Special handling for nested compute
     if (inCompute()) {
         MProfilingScope profilingScope(
-            _accessorProfilerCategory, MProfiler::kColorB_L3, "Nested compute USD accessor");
+            kAccessorProfilerCategory, MProfiler::kColorB_L3, "Nested compute USD accessor");
 
         const auto* accessorItem = findAccessorItem(plug, false);
         if (accessorItem) {
@@ -475,7 +475,7 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock)
     }
 
     MProfilingScope profilingScope(
-        _accessorProfilerCategory, MProfiler::kColorB_L1, "Compute USD accessor");
+        kAccessorProfilerCategory, MProfiler::kColorB_L1, "Compute USD accessor");
 
     TF_DEBUG(USDMAYA_PROXYACCESSOR)
         .Msg("Compute USD accessor triggered by '%s'\n", plug.name().asChar());
@@ -523,7 +523,7 @@ MStatus ProxyAccessor::computeInput(
     // searches (i.e. getting the prim, getting attribute, checking if defined)
 
     MProfilingScope profilingScope(
-        _accessorProfilerCategory, MProfiler::kColorB_L1, "Write input", item.path.GetText());
+        kAccessorProfilerCategory, MProfiler::kColorB_L1, "Write input", item.path.GetText());
 
     evaluationId.sync(_evaluationId);
 
@@ -572,7 +572,7 @@ MStatus ProxyAccessor::computeOutput(
     // searches (i.e. getting the prim, getting attribute, checking if defined)
 
     MProfilingScope profilingScope(
-        _accessorProfilerCategory, MProfiler::kColorB_L1, "Write output", item.path.GetText());
+        kAccessorProfilerCategory, MProfiler::kColorB_L1, "Write output", item.path.GetText());
 
     const UsdPrim& itemPrim = stage->GetPrimAtPath(item.path);
 
@@ -647,7 +647,7 @@ MStatus ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock)
         return MS::kSuccess;
 
     MProfilingScope profilingScope(
-        _accessorProfilerCategory, MProfiler::kColorB_L1, "Update USD cache");
+        kAccessorProfilerCategory, MProfiler::kColorB_L1, "Update USD cache");
 
     TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Update USD cache\n");
 

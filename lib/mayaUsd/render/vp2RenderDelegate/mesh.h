@@ -16,7 +16,7 @@
 #ifndef HD_VP2_MESH
 #define HD_VP2_MESH
 
-#include "draw_item.h"
+#include "drawItem.h"
 #include "mayaPrimCommon.h"
 #include "meshViewportCompute.h"
 #include "primvarInfo.h"

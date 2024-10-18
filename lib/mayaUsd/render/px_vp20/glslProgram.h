@@ -16,8 +16,8 @@
 
 /// \file glslProgram.h
 
-#ifndef __PX_VP20_GLSL_PROGRAM_H__
-#define __PX_VP20_GLSL_PROGRAM_H__
+#ifndef PX_VP20_GLSL_PROGRAM_H
+#define PX_VP20_GLSL_PROGRAM_H
 
 #include <mayaUsd/base/api.h>
 
@@ -62,4 +62,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __PX_VP20_GLSL_PROGRAM_H__
+#endif // PX_VP20_GLSL_PROGRAM_H

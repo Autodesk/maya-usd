@@ -480,6 +480,68 @@ class MergeToUsdTestCase(unittest.TestCase):
         cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
         self.assertFalse(cylLooksPrim.IsValid())
 
+    def testMergeWithoutMeshes(self):
+        '''
+        Merge edits on data and not merging the meshes.
+        Edit again and merge with meshes. This should work.
+
+        (Previously it would not work because the first merge without meshes
+        authored the root prim as a USD assembly which then preventing
+        authoring meshes under it.)
+        '''
+
+        # Create an stage with an xform (no meshes).
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        psPath = ufe.PathString.path(psPathStr)
+        ps = ufe.Hierarchy.createItem(psPath)
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        aPrim = stage.DefinePrim('/A', 'Xform')
+        self.assertTrue(aPrim)
+        aUsdUfePathStr = psPathStr + ',/A'
+
+        # Edit as maya and add a sphere under the node.
+        def editAndAddSphere():
+            cmds.mayaUsdEditAsMaya(aUsdUfePathStr)
+
+            editedMayaItem = ufe.GlobalSelection.get().front()
+            editedMayaPath = editedMayaItem.path()
+            editedMayaPathStr = ufe.PathString.string(editedMayaPath)
+
+            sphere = cmds.polySphere(r=1, sx=20, sy=20)
+            cmds.parent(sphere, "A")
+
+            return editedMayaPathStr
+        
+        editedPath = editAndAddSphere()
+
+        # Merge back to USD wihtout meshes.
+        cmds.mayaUsdMergeToUsd(editedPath, exportOptions='excludeExportTypes=[Mesh]')
+
+        # Verify that the merged prim has no sphere and is not an assembly.
+        def verify(expectSphere=False):
+            aPrim = stage.GetPrimAtPath("/A")
+            self.assertTrue(aPrim.IsValid())
+            aModel = Usd.ModelAPI(aPrim)
+            aKind = aModel.GetKind()
+            self.assertEqual(aKind, '')
+            aSphere = stage.GetPrimAtPath("/A/pSphere1")
+            if expectSphere:
+                self.assertTrue(aSphere.IsValid())
+            else:
+                self.assertFalse(aSphere.IsValid())
+
+        verify()
+
+        # Edit again as maya and add a sphere under the node.
+        editedPath = editAndAddSphere()
+
+        # Merge back to USD, this time with meshes.
+        cmds.mayaUsdMergeToUsd(editedPath)
+
+        # Verify that the merged prim has a sphere.
+        verify(expectSphere=True)
+
+
     def testMergeInSubVariant(self):
         '''Merge edits on data that is inside a variant of a parent prim and contains variants.'''
 

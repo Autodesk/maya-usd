@@ -33,17 +33,17 @@ class testUsdImportNurbsCurves(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        inputPath = fixturesUtils.setUpClass(__file__)
-
-        filePath = os.path.join(inputPath, "UsdImportBasisCurvesTest", "nurbsCurve.usda")
-        cmds.file(filePath, force=True, open=True)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
     def testImport(self):
-        #Check the imported Usd.
+        '''Test that importing a curve from USD works.'''
+        filePath = os.path.join(self.inputPath, "UsdImportBasisCurvesTest", "nurbsCurve.usda")
+        cmds.file(filePath, force=True, open=True)
+
         selectionList = OpenMaya.MSelectionList()
         selectionList.add('Nurbs')
         dagPath = OpenMaya.MDagPath()
@@ -64,6 +64,18 @@ class testUsdImportNurbsCurves(unittest.TestCase):
         self.assertEqual(nc.GetWidthsInterpolation(), UsdGeom.Tokens.constant)
         self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([7]))
 
+    def testImportInvalidCurves(self):
+        '''Test that importing a file with invalid curve does not crash.'''
+        filePath = os.path.join(self.inputPath, "UsdImportBasisCurvesTest", "invalidNurbsCurves.usda")
+        cmds.file(filePath, force=True, open=True)
+        # The goal of the test is merely that Maya does not crash, but do check one node
+        # to make sure the file was imported.
+        selectionList = OpenMaya.MSelectionList()
+        selectionList.add('nurbs_curve1_0')
+        dagPath = OpenMaya.MDagPath()
+        selectionList.getDagPath( 0, dagPath )
+        MFnNurbsCurve = OpenMaya.MFnNurbsCurve(dagPath)
+        self.assertEqual(MFnNurbsCurve.numCVs(), 4)
 
 
 if __name__ == '__main__':

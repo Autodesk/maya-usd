@@ -467,7 +467,7 @@ _UninstancePrim(const UsdStageRefPtr& stage, const SdfPath& path, const std::str
 
 namespace {
 // Detect a name that was generated directly from a dg node typename:
-const std::regex _templatedRegex("^([a-zA-Z]+)([0-9]*)(SG)?$");
+const std::regex kTemplatedRegex("^([a-zA-Z]+)([0-9]*)(SG)?$");
 
 bool isSurfaceNodeType(const std::string& nodeType)
 {
@@ -500,7 +500,7 @@ std::string getMaterialName(
     std::string sgName = fnDepNode.name().asChar();
     std::smatch sgMatch;
     // Is the SG name following the standard Maya naming protocol for a known surface nodeType?
-    if (!std::regex_match(sgName, sgMatch, _templatedRegex))
+    if (!std::regex_match(sgName, sgMatch, kTemplatedRegex))
         return sgName;
 
     if (!isSurfaceNodeType(sgMatch[1].str()))
@@ -510,7 +510,7 @@ std::string getMaterialName(
     if (fnDepNode.setObject(surfaceShader) == MS::kSuccess) {
         std::string surfName = fnDepNode.name().asChar();
         std::smatch surfMatch;
-        if (std::regex_match(surfName, surfMatch, _templatedRegex)) {
+        if (std::regex_match(surfName, surfMatch, kTemplatedRegex)) {
             // Surface node name is also templated. Check the nodeType part.
             if (!isSurfaceNodeType(surfMatch[1].str())) {
                 // The surface is not named after a standard nodeType, so its name is more

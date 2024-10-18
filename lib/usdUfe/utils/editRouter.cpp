@@ -189,9 +189,11 @@ bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation)
     return true;
 }
 
+void clearAllEditRouters() { getRegisteredEditRouters().clear(); }
+
 void restoreAllDefaultEditRouters()
 {
-    getRegisteredEditRouters().clear();
+    clearAllEditRouters();
 
     auto defaults = defaultEditRouters();
     for (const auto& entry : defaults) {

@@ -133,11 +133,11 @@ inline void _addAttr(
     valueWriter->SetAttribute(attr, &val, usdTime);
 }
 
-const TfToken _rgbName("rgb");
-const TfToken _emissionName("emission");
-const TfToken _opacityName("opacity");
-const TfToken _lifespanName("lifespan");
-const TfToken _massName("mass");
+const TfToken kRgbName("rgb");
+const TfToken kEmissionName("emission");
+const TfToken kOpacityName("opacity");
+const TfToken kLifespanName("lifespan");
+const TfToken kMassName("mass");
 
 template <typename T>
 void _addAttrVec(
@@ -313,22 +313,22 @@ void PxrUsdTranslators_ParticleWriter::writeParams(
 
     if (particleSys.hasRgb()) {
         particleSys.rgb(mayaVectors);
-        vectors.emplace_back(_rgbName, _convertVectorArray<GfVec3f>(mayaVectors));
+        vectors.emplace_back(kRgbName, _convertVectorArray<GfVec3f>(mayaVectors));
     }
 
     if (particleSys.hasEmission()) {
         particleSys.rgb(mayaVectors);
-        vectors.emplace_back(_emissionName, _convertVectorArray<GfVec3f>(mayaVectors));
+        vectors.emplace_back(kEmissionName, _convertVectorArray<GfVec3f>(mayaVectors));
     }
 
     if (particleSys.hasOpacity()) {
         particleSys.opacity(mayaDoubles);
-        floats.emplace_back(_opacityName, _convertArray<float>(mayaDoubles));
+        floats.emplace_back(kOpacityName, _convertArray<float>(mayaDoubles));
     }
 
     if (particleSys.hasLifespan()) {
         particleSys.lifespan(mayaDoubles);
-        floats.emplace_back(_lifespanName, _convertArray<float>(mayaDoubles));
+        floats.emplace_back(kLifespanName, _convertArray<float>(mayaDoubles));
     }
 
     for (const auto& attr : mUserAttributes) {
@@ -394,7 +394,7 @@ void PxrUsdTranslators_ParticleWriter::writeParams(
 
     _addAttr(
         points,
-        _massName,
+        kMassName,
         SdfValueTypeNames->FloatArray,
         *masses,
         usdTime,

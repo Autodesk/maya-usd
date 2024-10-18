@@ -64,6 +64,8 @@ class testUsdExportRoot(unittest.TestCase):
                 'file': usdFile,
                 'mergeTransformAndShape': True,
                 'shadingMode': 'useRegistry',
+                'legacyMaterialScope': False,
+                'defaultPrim': 'None',
             }
             if root:
                 kwargs['exportRoots'] = root
@@ -79,7 +81,7 @@ class testUsdExportRoot(unittest.TestCase):
                 'type': 'USD Export',
                 'f': 1,
             }
-            options = []
+            options = ['legacyMaterialScope=0', 'defaultPrim=None']
             if root:
                 options.append('exportRoots={}'.format(','.join(root)))
             if worldspace:

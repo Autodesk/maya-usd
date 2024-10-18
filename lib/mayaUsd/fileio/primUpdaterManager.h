@@ -65,8 +65,9 @@ public:
     bool discardEdits(const MDagPath& dagPath);
 
     /// \brief Copy USD data into USD or Maya data.
+    /// \return list of destination paths.
     MAYAUSD_CORE_PUBLIC
-    bool duplicate(
+    std::vector<Ufe::Path> duplicate(
         const Ufe::Path&    srcPath,
         const Ufe::Path&    dstPath,
         const VtDictionary& userArgs = VtDictionary());

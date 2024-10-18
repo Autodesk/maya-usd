@@ -64,7 +64,7 @@ class PythonWrappersTestCase(unittest.TestCase):
         proxyShapePath = ufe.Path(mayaUtils.createUfePathSegment(proxyShape))
 
         # Test maya-usd getStage() wrapper.
-        mayaUsdStage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        mayaUsdStage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
         self.assertIsNotNone(mayaUsdStage)
 
         # Verify that this the stage returned from maya-usd wrapper
@@ -202,7 +202,7 @@ class PythonWrappersTestCase(unittest.TestCase):
             self.assertTrue(cmds.isConnected('time1.outTime', proxyShapePathString+'.time'))
 
         # Create a proxy shape under the world node.
-        proxy1PathString = mayaUsd.ufe.createStageWithNewLayer('|world')
+        proxy1PathString = mayaUsd.ufe.createStageWithNewLayer('')
         self.assertEqual('|stage1|stageShape1', proxy1PathString)
         verifyProxyShape(proxy1PathString)
         self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)

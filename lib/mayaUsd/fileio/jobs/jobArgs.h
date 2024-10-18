@@ -88,6 +88,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportVisibility) \
     (jobContext) \
     (exportComponentTags) \
+    (exportStagesAsRefs) \
     (file) \
     (filterTypes) \
     (ignoreWarnings) \
@@ -227,6 +228,7 @@ struct UsdMayaJobExportArgs
     const bool        exportBlendShapes;
     const bool        exportVisibility;
     const bool        exportComponentTags;
+    const bool        exportStagesAsRefs;
     const std::string file;
     const bool        ignoreWarnings;
     const bool        includeEmptyTransforms;
@@ -268,7 +270,7 @@ struct UsdMayaJobExportArgs
     const TfToken::Set includeAPINames;
     const TfToken::Set jobContextNames;
     const TfToken::Set excludeExportTypes;
-    const std::string  defaultPrim;
+    std::string        defaultPrim;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
@@ -305,7 +307,8 @@ struct UsdMayaJobExportArgs
     // When using export roots feature we will leverage map function to
     // override the sdfpath generated from source DAG path. Will be empty
     // if export roots is not used.
-    const PcpMapFunction rootMapFunction;
+    const std::vector<std::string> exportRoots;
+    const PcpMapFunction           rootMapFunction;
 
     // Maya type ids to avoid exporting; these are EXACT types, the constructor will also add all
     // inherited types (so if you exclude "constraint", it will also exclude "parentConstraint")
@@ -358,12 +361,15 @@ struct UsdMayaJobExportArgs
     std::string GetResolvedFileName() const;
 
     // Verify if meshes are exported. (i.e not excluded by excludeExportTypes)
+    MAYAUSD_CORE_PUBLIC
     bool isExportingMeshes() const;
 
     // Verify if cameras are exported. (i.e not excluded by excludeExportTypes)
+    MAYAUSD_CORE_PUBLIC
     bool isExportingCameras() const;
 
     // Verify if lights are exported. (i.e not excluded by excludeExportTypes)
+    MAYAUSD_CORE_PUBLIC
     bool isExportingLights() const;
 
 private:

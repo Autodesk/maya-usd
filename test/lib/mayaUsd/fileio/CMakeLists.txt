@@ -4,12 +4,14 @@ set(TEST_SCRIPT_FILES
     testPrimReader.py
     testPrimWriter.py
     testExportChaser.py
+    testExportChaserJobContext.py
     testImportChaser.py
     testImportWithNamespace.py
     testJobContextRegistry.py
     testDisplayLayerSaveRestore.py
     testSaveMutedAnonLayer.py
     testSaveLockedAnonLayer.py
+    testNonLocalEditTargetLayer.py
 
     # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
     # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
@@ -52,6 +54,7 @@ foreach(script ${TEST_SCRIPT_FILES})
         ENV
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
     # Add a ctest label to these tests for easy filtering.
@@ -83,6 +86,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENV
             "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 endif()
 
@@ -95,11 +99,14 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             ENV
                 "HAS_ORPHANED_NODES_MANAGER=1"
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         )
     else()
         mayaUsd_add_test(${target}
             PYTHON_MODULE ${target}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         )
     endif()
 
@@ -115,12 +122,15 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
             PYTHON_MODULE ${target}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             ENV
-            "HAS_ORPHANED_NODES_MANAGER=1"
+                "HAS_ORPHANED_NODES_MANAGER=1"
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         )
     else()
         mayaUsd_add_test(${target}
             PYTHON_MODULE ${target}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         )
     endif()
 

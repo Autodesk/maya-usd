@@ -663,6 +663,34 @@ def Scope "mtl"
             float3 outputs:out
         }
     }
+
+    def Material "MixSurface1"
+    {
+        token outputs:mtlx:surface.connect = </mtl/MixSurface1/mix1.outputs:out>
+
+        def Shader "MixSurface1"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            color3f inputs:diffuseColor = (0, 1, 0)
+            token outputs:out
+        }
+
+        def Shader "UsdPreviewSurface2"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            color3f inputs:diffuseColor = (1, 0, 0)
+            token outputs:out
+        }
+
+        def Shader "mix1"
+        {
+            uniform token info:id = "ND_mix_surfaceshader"
+            token inputs:bg.connect = </mtl/MixSurface1/MixSurface1.outputs:out>
+            token inputs:fg.connect = </mtl/MixSurface1/UsdPreviewSurface2.outputs:out>
+            float inputs:mix = 0.5
+            token outputs:out
+        }
+    }
 }
 
 def Mesh "Background" (
@@ -819,3 +847,19 @@ def Mesh "pMultiUVPlane7" (
     double3 xformOp:translate = (-2.2, 0, -1.1)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 }
+
+def Mesh "pMixedPlane6" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </mtl/MixSurface1>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    double3 xformOp:translate = (1.1, 0, 1.1)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+

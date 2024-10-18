@@ -19,7 +19,7 @@
 #include "batchRenderer.h"
 
 #include <mayaUsd/render/px_vp20/utils.h>
-#include <mayaUsd/render/px_vp20/utils_legacy.h>
+#include <mayaUsd/render/px_vp20/utilsLegacy.h>
 #include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
 #include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 

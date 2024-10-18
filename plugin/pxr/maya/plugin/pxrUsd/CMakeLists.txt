@@ -16,6 +16,7 @@ pxr_plugin(${PXR_PACKAGE}
         ${UFE_LIBRARY}
 
     INCLUDE_DIRS
+        ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
 

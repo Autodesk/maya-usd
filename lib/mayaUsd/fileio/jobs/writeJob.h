@@ -55,6 +55,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdPathMap() const;
 
+    // Retrieve all exported material paths.
+    MAYAUSD_CORE_PUBLIC
+    const std::vector<SdfPath>& GetMaterialPaths() { return mJobCtx.GetMaterialPaths(); }
+
 private:
     /// Begins constructing the USD stage, writing out the values at the default
     /// time. Returns \c true if the stage can be created successfully.

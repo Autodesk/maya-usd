@@ -141,12 +141,13 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
 
         connections = connectionHandler.sourceConnections(dF3t.item)
         self.assertIsNotNone(connections)
-        conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+        conn = set(["{}.{} -> {}.{}".format(ufe.PathString.string(i.src.path), i.src.name,
+                                            ufe.PathString.string(i.dst.path), i.dst.name) for i in connections.allConnections()])
         wrongButExpected = {
             # Connections are pointing to the original file3 and place2dTexture3 nodes. We want them
             # to link with the new nodes instead
-            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
-            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture3.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
+            '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file3.outputs:out -> |stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
+            '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/place2dTexture3.outputs:out -> |stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
         }
         self.assertEqual(conn, wrongButExpected)
 
@@ -164,24 +165,28 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
 
         expectedF3t = {
             # Connections are pointing to the new file4 and place2dTexture4 nodes.
-            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
-            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
+            '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file4.outputs:out -> |stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
+            '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.outputs:out -> |stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
         }
 
         def checkConnections1(self, cmd, f3Item, f3tItem, f3pItem, expectedF3t):
             connections = connectionHandler.sourceConnections(cmd.targetItem(f3tItem.path()))
             self.assertIsNotNone(connections)
-            conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+            conn = set(["{}.{} -> {}.{}".format(ufe.PathString.string(i.src.path), i.src.name,
+                                                ufe.PathString.string(i.dst.path), i.dst.name) for i in connections.allConnections()])
             self.assertEqual(conn, expectedF3t)
-            self.assertEqual(str(cmd.targetItem(f3Item.path()).path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4')
-            self.assertEqual(str(cmd.targetItem(f3pItem.path()).path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4')
+            self.assertEqual(ufe.PathString.string(cmd.targetItem(f3Item.path()).path()),
+                             '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file4')
+            self.assertEqual(ufe.PathString.string(cmd.targetItem(f3pItem.path()).path()),
+                             '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4')
 
             connections = connectionHandler.sourceConnections(cmd.targetItem(f3pItem.path()))
             self.assertIsNotNone(connections)
-            conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+            conn = set(["{}.{} -> {}.{}".format(ufe.PathString.string(i.src.path), i.src.name,
+                                                ufe.PathString.string(i.dst.path), i.dst.name) for i in connections.allConnections()])
             expectedF3p = {
                 # Connection pointing to the original node graph.
-                '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG.inputs:file3:varname -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.inputs:geomprop',
+                '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG.inputs:file3:varname -> |stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.inputs:geomprop',
             }
             self.assertEqual(conn, expectedF3p)
 
@@ -203,7 +208,8 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         def checkConnections2(self, cmd, f3tItem, f3pItem, expectedF3t):
             connections = connectionHandler.sourceConnections(cmd.targetItem(f3tItem.path()))
             self.assertIsNotNone(connections)
-            conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+            conn = set(["{}.{} -> {}.{}".format(ufe.PathString.string(i.src.path), i.src.name,
+                                                ufe.PathString.string(i.dst.path), i.dst.name) for i in connections.allConnections()])
             self.assertEqual(conn, expectedF3t)
 
             # The connection between the new place2dTexture and the original NodeGraph will be gone.
@@ -273,25 +279,29 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
 
         expectedF3t = {
             # Connections are pointing to the new file4 and place2dTexture4 nodes.
-            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
-            '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.outputs:out -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
+            '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file4.outputs:out -> |stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:inColor',
+            '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.outputs:out -> |stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file3_MayafileTexture1.inputs:uvCoord'
         }
 
         def checkState1(self, expectedF3t):
             f3tDupItem, f3DupItem, f3pDupItem = tuple(ufe.GlobalSelection.get())
             connections = connectionHandler.sourceConnections(f3tDupItem)
             self.assertIsNotNone(connections)
-            conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+            conn = set(["{}.{} -> {}.{}".format(ufe.PathString.string(i.src.path), i.src.name,
+                                                ufe.PathString.string(i.dst.path), i.dst.name) for i in connections.allConnections()])
             self.assertEqual(conn, expectedF3t)
-            self.assertEqual(str(f3DupItem.path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/file4')
-            self.assertEqual(str(f3pDupItem.path()), '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4')
+            self.assertEqual(ufe.PathString.string(f3DupItem.path()),
+                             '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/file4')
+            self.assertEqual(ufe.PathString.string(f3pDupItem.path()),
+                             '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4')
 
             connections = connectionHandler.sourceConnections(f3pDupItem)
             self.assertIsNotNone(connections)
-            conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+            conn = set(["{}.{} -> {}.{}".format(ufe.PathString.string(i.src.path), i.src.name,
+                                                ufe.PathString.string(i.dst.path), i.dst.name) for i in connections.allConnections()])
             expectedF3p = {
                 # Connection pointing to the original node graph.
-                '|world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG.inputs:file3:varname -> |world|stage|stageShape/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.inputs:geomprop',
+                '|stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG.inputs:file3:varname -> |stage|stageShape,/mtl/ss3SG/MayaNG_ss3SG/place2dTexture4.inputs:geomprop',
             }
             self.assertEqual(conn, expectedF3p)
 
@@ -311,7 +321,8 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
             f3tDupItem, _, f3pDupItem = tuple(ufe.GlobalSelection.get())
             connections = connectionHandler.sourceConnections(f3tDupItem)
             self.assertIsNotNone(connections)
-            conn = set(["{}.{} -> {}.{}".format(i.src.path, i.src.name, i.dst.path, i.dst.name) for i in connections.allConnections()])
+            conn = set(["{}.{} -> {}.{}".format(ufe.PathString.string(i.src.path), i.src.name,
+                                                ufe.PathString.string(i.dst.path), i.dst.name) for i in connections.allConnections()])
             self.assertEqual(conn, expectedF3t)
 
             # The connection between the new place2dTexture and the original NodeGraph will be gone.

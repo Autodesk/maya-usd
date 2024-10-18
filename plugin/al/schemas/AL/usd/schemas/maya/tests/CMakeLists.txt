@@ -18,7 +18,7 @@ target_include_directories(${TARGET_NAME}
     PUBLIC
         ${PROJECT_SOURCE_DIR}/schemas
         ${GTEST_INCLUDE_DIRS}
-        ${USD_INCLUDE_DIR}
+        ${PXR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${TARGET_NAME}

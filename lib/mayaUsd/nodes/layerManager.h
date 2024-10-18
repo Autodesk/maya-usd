@@ -65,7 +65,8 @@ struct StageSavingInfo
     plugin a delegate will be installed that posts a UI dialog that provides an opportunity
     to choose file names and locations of all anonymous layers that need to be saved to disk.
  */
-using BatchSaveDelegate = std::function<BatchSaveResult(const std::vector<StageSavingInfo>&)>;
+using BatchSaveDelegate
+    = std::function<BatchSaveResult(const std::vector<StageSavingInfo>&, bool isExporting)>;
 
 /*! \brief Maya dependency node responsible for serializing unsaved Usd edits.
 

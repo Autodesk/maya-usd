@@ -87,7 +87,8 @@ class testUsdExportMesh(unittest.TestCase):
         '''Export to USD with no default prim.'''
         usdFile = os.path.abspath('UsdExportMaterialScopeDefaultPrim.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
-            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'], defaultPrim='mtl')
+            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'], defaultPrim='mtl',
+            legacyMaterialScope=False)
         
         stage = Usd.Stage.Open(usdFile)
         defaultPrim = stage.GetDefaultPrim()
@@ -100,7 +101,7 @@ class testUsdExportMesh(unittest.TestCase):
         usdFile = os.path.abspath('UsdExportNoMeshMaterialScopeDefaultPrim.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'], defaultPrim='mtl',
-            excludeExportTypes=['Meshes'])
+            excludeExportTypes=['Meshes'], legacyMaterialScope=False)
         
         stage = Usd.Stage.Open(usdFile)
         defaultPrim = stage.GetDefaultPrim()

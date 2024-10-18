@@ -19,6 +19,7 @@ foreach(script ${TEST_SCRIPT_FILES})
         PYTHON_MODULE ${target}
         ENV
             "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
     set_property(TEST ${target} APPEND PROPERTY LABELS usdPreviewSurface)
 endforeach()

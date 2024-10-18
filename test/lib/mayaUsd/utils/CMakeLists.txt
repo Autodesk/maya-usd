@@ -24,6 +24,8 @@ foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
     # Add a ctest label to these tests for easy filtering.
@@ -36,6 +38,8 @@ foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
         INTERACTIVE
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_SCRIPT ${script}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
     # Add a ctest label to these tests for easy filtering.

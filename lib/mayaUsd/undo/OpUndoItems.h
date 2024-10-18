@@ -16,7 +16,7 @@
 #ifndef MAYAUSD_UNDO_OP_UNDO_ITEMS_H
 #define MAYAUSD_UNDO_OP_UNDO_ITEMS_H
 
-#include "OpUndoItemList.h"
+#include <mayaUsd/undo/OpUndoItemList.h>
 
 #include <usdUfe/undo/UsdUndoableItem.h>
 

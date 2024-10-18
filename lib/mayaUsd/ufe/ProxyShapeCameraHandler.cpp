@@ -61,8 +61,10 @@ Ufe::Selection ProxyShapeCameraHandler::find_(const Ufe::Path& path) const
         // path is a path to a proxyShape node.
         // Get the UsdStage for this proxy shape node and search it for cameras
         PXR_NS::UsdStageWeakPtr stage = getStage(path);
-        TF_VERIFY(stage);
-        return UsdUfe::UsdCameraHandler::find(path, path, stage->GetPseudoRoot());
+        if (stage != nullptr) {
+            return UsdUfe::UsdCameraHandler::find(path, path, stage->GetPseudoRoot());
+        }
+        return Ufe::Selection();
     }
     return _mayaCameraHandler ? _mayaCameraHandler->find(path) : Ufe::Selection();
 }

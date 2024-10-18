@@ -48,11 +48,12 @@ namespace {
 // Note: UsdPrimIsActive is handled differently because pulled objects
 //       are set inactive (to hide them from Rendering), so we handle
 //       them differently.
-const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate = UsdPrimIsDefined && !UsdPrimIsAbstract;
+const Usd_PrimFlagsConjunction kMayaUsdPrimDefaultPredicate
+    = UsdPrimIsDefined && !UsdPrimIsAbstract;
 
 UsdPrimSiblingRange getUSDFilteredChildren(
     const UsdPrim&               prim,
-    const Usd_PrimFlagsPredicate pred = MayaUsdPrimDefaultPredicate)
+    const Usd_PrimFlagsPredicate pred = kMayaUsdPrimDefaultPredicate)
 {
     // Since the equivalent of GetChildren is
     // GetFilteredChildren( UsdPrimDefaultPredicate ),
@@ -191,7 +192,7 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
         // See uniqueChildName() for explanation of USD filter predicate.
         const bool             showInactive = childFilter.front().value;
         Usd_PrimFlagsPredicate flags
-            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : MayaUsdPrimDefaultPredicate;
+            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : kMayaUsdPrimDefaultPredicate;
         return createUFEChildList(getUSDFilteredChildren(rootPrim, flags), !showInactive);
     }
 

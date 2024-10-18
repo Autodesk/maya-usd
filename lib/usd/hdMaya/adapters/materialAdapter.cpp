@@ -38,10 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-const VtValue       _emptyValue;
-const TfToken       _emptyToken;
-const TfTokenVector _stSamplerCoords = { TfToken("st") };
-// const TfTokenVector _stSamplerCoords;
+const TfToken kEmptyToken;
 
 } // namespace
 
@@ -171,7 +168,7 @@ private:
     void _CacheNodeAndTypes()
     {
         _surfaceShader = MObject::kNullObj;
-        _surfaceShaderType = _emptyToken;
+        _surfaceShaderType = kEmptyToken;
         MStatus           status;
         MFnDependencyNode node(GetNode(), &status);
         if (ARCH_UNLIKELY(!status)) {

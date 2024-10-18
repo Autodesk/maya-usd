@@ -164,6 +164,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.rotate(-90, 0, 0, 'persp')
         self.assertSnapshotClose('transparencyScene.png', 960, 960)
 
+    @unittest.skipIf(Usd.GetVersion() == (0, 24, 8), 'Issue with the custom OpenEXR code in USD v0.24.08')
     def testDemoQuads(self):
         cmds.file(force=True, new=True)
 

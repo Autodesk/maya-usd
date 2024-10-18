@@ -397,7 +397,7 @@ class DisplayLayerTestCase(unittest.TestCase):
         layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
         XFORM1_CUBE2 = '|stage1|stageShape1,/Xform1/Cube2'
         self.assertTrue(XFORM1_CUBE2 in layerObjs)
-        self._testLayerFromPath(XFORM1_CUBE2, self.LAYER1)    
+        self._testLayerFromPath(XFORM1_CUBE2, self.LAYER1)
 
     def testDisplayLayerClear(self):
         cmdHelp = cmds.help('editDisplayLayerMembers')
@@ -437,37 +437,68 @@ class DisplayLayerTestCase(unittest.TestCase):
 
     def testDisplayLayerEditAsMaya(self):
         '''Display layer membership in Edit As Maya workflow.'''
-        
-        (ps, xlateOp, xlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
-         _, _, _, _, _) = createSimpleXformScene()
+        (_,
+         _, _, aUsdUfePathStr, _, _,
+         _, _, bUsdUfePathStr, _, _) = createSimpleXformScene()
 
-        # Add an item to a new display layer
-        cmds.createDisplayLayer(name='layer1', number=1, empty=True)
-        cmds.editDisplayLayerMembers('layer1', '|stage1|stageShape1,/A', noRecurse=True)
+        def editAsMaya(usdUfePathStr):
+            with mayaUsd.lib.OpUndoItemList():
+                self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(usdUfePathStr))
+                self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(usdUfePathStr))
+            aMayaItem = ufe.GlobalSelection.get().front()
+            aMayaPath = aMayaItem.path()
+            return ufe.PathString.string(aMayaPath)
 
-        # Edit aPrim as Maya data.
-        with mayaUsd.lib.OpUndoItemList():
-            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
-            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        def mergeToUsd(mayaPathStr):
+            with mayaUsd.lib.OpUndoItemList():
+                self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(mayaPathStr))
 
-        # Check display layer membership on the other side
-        layerObjs = cmds.editDisplayLayerMembers('layer1', query=True, **self.kwArgsEditDisplayLayerMembers)
-        self.assertTrue("|__mayaUsd__|AParent|A" in layerObjs)
+        def duplicateToUsd(mayaPathStr, usdUfePathStr):
+            with mayaUsd.lib.OpUndoItemList():
+                mayaUsd.lib.PrimUpdaterManager.duplicate(mayaPathStr, usdUfePathStr)
 
-        # Create a new layer and put the item there
-        cmds.createDisplayLayer(name='layer2', number=1, empty=True)
-        cmds.editDisplayLayerMembers('layer2', "|__mayaUsd__|AParent|A", noRecurse=True)
+        def verifyInDisplayLayers(layerNameAndMembers):
+            # Verify they are in layer.
+            for name, members in layerNameAndMembers.items():
+                # Verify they are in layer.
+                layerObjs = cmds.editDisplayLayerMembers(name, query=True, **self.kwArgsEditDisplayLayerMembers)
+                for member in members:
+                    print(member)
+                    self.assertTrue(member in layerObjs)
 
-        # Merge edits back to USD.
-        aMayaItem = ufe.GlobalSelection.get().front()
-        aMayaPath = aMayaItem.path()
-        aMayaPathStr = ufe.PathString.string(aMayaPath)
-        with mayaUsd.lib.OpUndoItemList():
-            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+        def createDisplayLayers(layerNameAndMembers):
+            for name, members in layerNameAndMembers.items():
+                cmds.createDisplayLayer(name=name, number=1, empty=True)
+                cmds.editDisplayLayerMembers(name, members, noRecurse=True)
+            verifyInDisplayLayers(layerNameAndMembers)
 
-        # Check display layer membership back on the USD side
-        layerObjs = cmds.editDisplayLayerMembers('layer2', query=True, **self.kwArgsEditDisplayLayerMembers)
-        self.assertTrue('|stage1|stageShape1,/A' in layerObjs)
+        # Verify that displayLayers survive editing the stage's root.
+        createDisplayLayers({"lyrA": [aUsdUfePathStr], "lyrB": [bUsdUfePathStr]})
+        aMayaPathStr = editAsMaya(aUsdUfePathStr)
+        verifyInDisplayLayers({"lyrA": [aMayaPathStr], "lyrB": [aMayaPathStr + "|B"]})
+
+        # Verify that displayLayers survive merging to USD root.
+        createDisplayLayers({"lyrA2": [aMayaPathStr], "lyrB2": [aMayaPathStr + "|B"]})
+        mergeToUsd((aMayaPathStr))
+        verifyInDisplayLayers({"lyrA2": [aUsdUfePathStr], "lyrB2": [bUsdUfePathStr]})
+
+        # Verify that displayLayers survive editing non-root prim.
+        createDisplayLayers({"lyrB3": [bUsdUfePathStr]})
+        bMayaPathStr = editAsMaya(bUsdUfePathStr)
+        verifyInDisplayLayers({"lyrB3": [bMayaPathStr]})
+
+        # Verify that displayLayers survive merging to non-root prim.
+        createDisplayLayers({"lyrB4": [bMayaPathStr]})
+        mergeToUsd((bMayaPathStr))
+        verifyInDisplayLayers({"lyrB4": [bUsdUfePathStr]})
+
+        # Verify that displayLayers survive duplicating to non-root prim.
+        cubeName = cmds.polyCube()[0]
+        cubeMayaPathStr = cmds.ls(cubeName, long=True)[0]
+
+        createDisplayLayers({"lyrC": [cubeMayaPathStr]})
+        duplicateToUsd(cubeMayaPathStr, bUsdUfePathStr)
+        verifyInDisplayLayers({"lyrC": [cubeMayaPathStr, bUsdUfePathStr + "/" + cubeName]})
 
     @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 3, "Requires Display Layer Ufe subtree invalidate fix.")
     def testDisplayLayerSubtreeInvalidate(self):
