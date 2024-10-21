@@ -90,10 +90,12 @@ def isUfeUsdPath(ufeObject):
     lastSegment = ufeObject.path().segments[segmentCount-1]
     return Sdf.Path.IsValidPathString(str(lastSegment))
 
+def _createUfeSceneItem(ufePathStr):
+    return ufe.Hierarchy.createItem(ufe.PathString.path(ufePathStr))
+
 def createUfeSceneItem(dagPath, sdfPath=None):
-    ufePath = ufe.PathString.path('{},{}'.format(dagPath,sdfPath) if sdfPath != None else '{}'.format(dagPath))
-    ufeItem = ufe.Hierarchy.createItem(ufePath)
-    return ufeItem
+    ufePathStr = '{},{}'.format(dagPath,sdfPath) if sdfPath != None else '{}'.format(dagPath)
+    return _createUfeSceneItem(ufePathStr)
 
 def createXformOps(ufeObject):
     selDag, selPrim = getDagAndPrimFromUfe(ufeObject)
@@ -323,18 +325,18 @@ def parentItems(ufeChildren, ufeParent, connect=True):
         # Cannot use 'visibility' here because it's already used by orphan manager
         connectParentChildAttr(parentVisibilityAttr, childDagPath, 'lodVisibility', connect)
 
-def __parent(doParenting, forceUnparenting=False):
-   ufeSelection = iter(ufe.GlobalSelection.get())
-   ufeSelectionList = []
-   for ufeItem in ufeSelection:
-       ufeSelectionList.append(ufeItem)
-
-   # clearing this selection so nobody will try to use it.
-   # next steps can result in new selection being made due to potential call to createAccessPlug
-   ufeSelection = None
+def __parent(*ufeItemPathStrings, doParenting=True, forceUnparenting=False):
+   if ufeItemPathStrings:
+      ufeSelectionList = [_createUfeSceneItem(pStr) for pStr in ufeItemPathStrings]
+   else:
+      ufeSelection = iter(ufe.GlobalSelection.get())
+      ufeSelectionList = [ufeItem for ufeItem in ufeSelection]
+      # clearing this selection so nobody will try to use it.
+      # next steps can result in new selection being made due to potential call to createAccessPlug
+      ufeSelection = None
 
    if len(ufeSelectionList) < 2:
-       print("Select at least two objects. DAG child/ren and USD parent at the end")
+       print("Provide or select at least two objects. DAG child/ren and USD parent at the end")
        return
        
    ufeParent = ufeSelectionList[-1]
@@ -345,11 +347,11 @@ def __parent(doParenting, forceUnparenting=False):
    
    parentItems(ufeChildren, ufeParent, doParenting)
 
-def parent(force=False):
-    __parent(True, forceUnparenting=force)
+def parent(*ufeItemPathStrings, force=False):
+    __parent(*ufeItemPathStrings, doParenting=True, forceUnparenting=force)
 
-def unparent():
-    __parent(False)
+def unparent(*ufeItemPathStrings):
+    __parent(*ufeItemPathStrings, doParenting=False)
 
 def connectItems(ufeObjectSrc, ufeObjectDst, attrToConnect):
     connectMayaToUsd = isUfeUsdPath(ufeObjectDst)
