@@ -52,19 +52,25 @@ template <typename T> void moveAppendVector(std::vector<T>& src, std::vector<T>&
 
 using namespace UsdLayerEditor;
 
-void getDialogMessages(const int nbStages, const int nbAnonLayers, QString& msg1, QString& msg2)
+void getDialogMessages(
+    const int nbStages,
+    const int nbAnonLayers,
+    QString&  msg1,
+    QString&  msg2,
+    bool      isExporting)
 {
     MString msg, strNbStages, strNbAnonLayers;
     strNbStages = nbStages;
     strNbAnonLayers = nbAnonLayers;
-    msg.format(
-        StringResources::getAsMString(StringResources::kToSaveTheStageSaveAnonym),
-        strNbStages,
-        strNbAnonLayers);
+
+    auto msgResId = isExporting ? StringResources::kToExportTheStageSaveAnonym
+                                : StringResources::kToSaveTheStageSaveAnonym;
+    msg.format(StringResources::getAsMString(msgResId), strNbStages, strNbAnonLayers);
     msg1 = MQtUtil::toQString(msg);
 
-    msg.format(
-        StringResources::getAsMString(StringResources::kToSaveTheStageSaveFiles), strNbStages);
+    msgResId = isExporting ? StringResources::kToExportTheStageSaveFiles
+                           : StringResources::kToSaveTheStageSaveFiles;
+    msg.format(StringResources::getAsMString(msgResId), strNbStages);
     msg2 = MQtUtil::toQString(msg);
 }
 
@@ -427,9 +433,11 @@ namespace UsdLayerEditor {
 
 SaveLayersDialog::SaveLayersDialog(
     QWidget*                                     in_parent,
-    const std::vector<MayaUsd::StageSavingInfo>& infos)
+    const std::vector<MayaUsd::StageSavingInfo>& infos,
+    bool                                         isExporting)
     : QDialog(in_parent)
     , _sessionState(nullptr)
+    , _isExporting(isExporting)
 {
     MString msg, nbStages;
 
@@ -448,13 +456,21 @@ SaveLayersDialog::SaveLayersDialog(
 
     QString msg1, msg2;
     getDialogMessages(
-        static_cast<int>(infos.size()), static_cast<int>(_anonLayerInfos.size()), msg1, msg2);
+        static_cast<int>(infos.size()),
+        static_cast<int>(_anonLayerInfos.size()),
+        msg1,
+        msg2,
+        isExporting);
     buildDialog(msg1, msg2);
 }
 
-SaveLayersDialog::SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent)
+SaveLayersDialog::SaveLayersDialog(
+    SessionState* in_sessionState,
+    QWidget*      in_parent,
+    bool          isExporting)
     : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
     , _sessionState(in_sessionState)
+    , _isExporting(isExporting)
 {
     MString msg;
     QString dialogTitle = StringResources::getAsQString(StringResources::kSaveStage);
@@ -468,7 +484,7 @@ SaveLayersDialog::SaveLayersDialog(SessionState* in_sessionState, QWidget* in_pa
     setWindowTitle(dialogTitle);
 
     QString msg1, msg2;
-    getDialogMessages(1, static_cast<int>(_anonLayerInfos.size()), msg1, msg2);
+    getDialogMessages(1, static_cast<int>(_anonLayerInfos.size()), msg1, msg2, isExporting);
     buildDialog(msg1, msg2);
 }
 
@@ -532,8 +548,9 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
     auto buttonsLayout = new QHBoxLayout();
     QtUtils::initLayoutMargins(buttonsLayout, 0);
     buttonsLayout->addStretch();
-    auto okButton
-        = new QPushButton(StringResources::getAsQString(StringResources::kSaveStages), this);
+    auto msgResId
+        = _isExporting ? StringResources::kSaveStagesAndExport : StringResources::kSaveStages;
+    auto okButton = new QPushButton(StringResources::getAsQString(msgResId), this);
     connect(okButton, &QPushButton::clicked, this, &SaveLayersDialog::onSaveAll);
     okButton->setDefault(true);
     auto cancelButton

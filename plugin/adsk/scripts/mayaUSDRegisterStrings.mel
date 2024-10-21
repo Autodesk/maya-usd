@@ -146,6 +146,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportLightsAnn", "If selected, lights are extracted for USD export.");
     register("kExportComponentTagsAnn", "If selected, component tags get exported as USDGeomSubsets. Note: Edges and vertices are unsupported in USD.");
     register("kExportComponentTagsLbl", "Component Tags");
+    register("kExportStagesAsRefsAnn", "If selected, USD stages created from file will export as USD references.");
+    register("kExportStagesAsRefsLbl", "USD Stages as USD References");
     register("kExportCurvesAnn", "If selected, curves get exported to USD primTypes NurbsCurves or BasisCurves.");
     register("kExportCurvesLbl", "NURBS Curves");
     register("kExportDefaultFormatAnn", "Select whether the .usd file is written out in binary or ASCII");
@@ -228,7 +230,7 @@ global proc mayaUSDRegisterStrings()
     register("kExportVisibilityLbl", "Visibility");
     register("kExportDefaultPrimLbl", "Default Prim");
     register("kExportDefaultPrimNoneLbl", "None");
-    register("kExportDefaultPrimAnn", "Default Prim");
+    register("kExportDefaultPrimAnn", "As part of its metadata, each USD stage can identify a default prim.\nThis is the primitive that is referenced in if you reference in a file.");
 
     // All strings for import dialog:
     register("kImportAnimationDataLbl", "Animation Data");

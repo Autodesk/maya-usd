@@ -77,6 +77,7 @@ target_compile_definitions(${TARGET_NAME}
 target_include_directories(${TARGET_NAME}
     PRIVATE
         ${GTEST_INCLUDE_DIRS}
+        ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         "../../lib/AL_USDMaya"
         "../../schemas"

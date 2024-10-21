@@ -15,9 +15,9 @@
 //
 #include "StagesSubject.h"
 
-#include "private/UfeNotifGuard.h"
-
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdCamera.h>
 #include <usdUfe/ufe/Utils.h>
@@ -339,6 +339,18 @@ void processAttributeChanges(
                         metadataKeys.insert(newMetadataKey);
                     }
                 }
+            } else if (infoChanged.first == SdfFieldKeys->AllowedTokens) {
+                sendMetadataChanged = true;
+                metadataKeys.insert(UsdUfe::MetadataTokens->UIEnumLabels);
+            } else if (infoChanged.first == SdfFieldKeys->Documentation) {
+                sendMetadataChanged = true;
+                metadataKeys.insert(UsdUfe::MetadataTokens->UIDoc);
+            } else if (infoChanged.first == SdfFieldKeys->DisplayGroup) {
+                sendMetadataChanged = true;
+                metadataKeys.insert(UsdUfe::MetadataTokens->UIFolder);
+            } else if (infoChanged.first == SdfFieldKeys->DisplayName) {
+                sendMetadataChanged = true;
+                metadataKeys.insert(UsdUfe::MetadataTokens->UIName);
             }
         }
     }
@@ -387,6 +399,12 @@ StagesSubject::~StagesSubject() { }
 
 /*static*/
 StagesSubject::RefPtr StagesSubject::create() { return TfCreateRefPtr(new StagesSubject); }
+
+PXR_NS::TfNotice::Key StagesSubject::registerStage(const PXR_NS::UsdStageRefPtr& stage)
+{
+    auto me = PXR_NS::TfCreateWeakPtr(this);
+    return TfNotice::Register(me, &StagesSubject::stageChanged, stage);
+}
 
 void StagesSubject::stageChanged(
     UsdNotice::ObjectsChanged const& notice,

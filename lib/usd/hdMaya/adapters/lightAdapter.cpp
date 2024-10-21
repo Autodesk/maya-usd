@@ -86,7 +86,7 @@ void _dirtyParams(MObject& node, void* clientData)
     }
 }
 
-const MString defaultLightSet("defaultLightSet");
+const MString kDefaultLightSet("defaultLightSet");
 
 } // namespace
 
@@ -329,7 +329,7 @@ bool HdMayaLightAdapter::_GetVisibility() const
             if (!status) {
                 continue;
             }
-            if (otherNode.name() == defaultLightSet) {
+            if (otherNode.name() == kDefaultLightSet) {
                 return true;
             }
         }

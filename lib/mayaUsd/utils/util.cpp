@@ -686,9 +686,9 @@ std::string UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int 
     std::stringstream ss;
 
     const std::vector<std::string> nodeNameParts
-        = TfStringSplit(nodeName, UsdMayaUtil::MayaDagDelimiter);
+        = TfStringSplit(nodeName, UsdMayaUtil::kMayaDagDelimiter);
 
-    const bool isAbsolute = TfStringStartsWith(nodeName, UsdMayaUtil::MayaDagDelimiter);
+    const bool isAbsolute = TfStringStartsWith(nodeName, UsdMayaUtil::kMayaDagDelimiter);
 
     for (size_t i = 0u; i < nodeNameParts.size(); ++i) {
         if (i == 0u && isAbsolute) {
@@ -699,11 +699,11 @@ std::string UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int 
         }
 
         if (i != 0u) {
-            ss << UsdMayaUtil::MayaDagDelimiter;
+            ss << UsdMayaUtil::kMayaDagDelimiter;
         }
 
         const std::vector<std::string> nsNameParts
-            = TfStringSplit(nodeNameParts[i], UsdMayaUtil::MayaNamespaceDelimiter);
+            = TfStringSplit(nodeNameParts[i], UsdMayaUtil::kMayaNamespaceDelimiter);
 
         const size_t nodeNameIndex = nsNameParts.size() - 1u;
 
@@ -720,7 +720,7 @@ std::string UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int 
         }
 
         ss << TfStringJoin(
-            startIter, nsNameParts.end(), UsdMayaUtil::MayaNamespaceDelimiter.c_str());
+            startIter, nsNameParts.end(), UsdMayaUtil::kMayaNamespaceDelimiter.c_str());
     }
 
     return ss.str();
@@ -1347,9 +1347,10 @@ SdfPath UsdMayaUtil::MayaNodeNameToSdfPath(const std::string& nodeName, const bo
     std::replace(
         pathString.begin(),
         pathString.end(),
-        UsdMayaUtil::MayaDagDelimiter[0],
+        UsdMayaUtil::kMayaDagDelimiter[0],
         SdfPathTokens->childDelimiter.GetString()[0]);
-    std::replace(pathString.begin(), pathString.end(), UsdMayaUtil::MayaNamespaceDelimiter[0], '_');
+    std::replace(
+        pathString.begin(), pathString.end(), UsdMayaUtil::kMayaNamespaceDelimiter[0], '_');
 
     return SdfPath(pathString);
 }
@@ -2541,10 +2542,12 @@ void UsdMayaUtil::AddMayaExtents(GfBBox3d& bbox, const UsdPrim& root, const UsdT
 SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
 {
     // TODO: Replace hard-coded materials with dynamically generated list.
-    static const std::set<TfToken> vettedSurfaces = { TfToken("ND_standard_surface_surfaceshader"),
-                                                      TfToken("ND_gltf_pbr_surfaceshader"),
-                                                      TfToken("ND_UsdPreviewSurface_surfaceshader"),
-                                                      TfToken("UsdPreviewSurface") };
+    static const std::set<TfToken> vettedSurfaces
+        = { TfToken("ND_standard_surface_surfaceshader"),
+            TfToken("ND_gltf_pbr_surfaceshader"),
+            TfToken("ND_UsdPreviewSurface_surfaceshader"),
+            TfToken("UsdPreviewSurface"),
+            TfToken("ND_open_pbr_surface_surfaceshader") };
 
     SdrShaderNodePtrVec surfaceShaderNodeDefs;
 

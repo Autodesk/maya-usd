@@ -518,7 +518,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
     }
 
     if (showConfirmDgl) {
-        SaveLayersDialog dlg(_sessionState, in_parent);
+        bool             isExporting = false;
+        SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
         if (QDialog::Accepted == dlg.exec()) {
 
             if (!dlg.layersWithErrorPairs().isEmpty()) {

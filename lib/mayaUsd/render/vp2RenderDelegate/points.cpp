@@ -18,10 +18,10 @@
 
 #include "bboxGeom.h"
 #include "debugCodes.h"
-#include "draw_item.h"
+#include "drawItem.h"
 #include "instancer.h"
 #include "material.h"
-#include "render_delegate.h"
+#include "renderDelegate.h"
 #include "tokens.h"
 
 #include <pxr/base/gf/matrix4d.h>

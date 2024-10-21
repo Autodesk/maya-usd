@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    defaultPrim = "Top"
+)
+
+def Xform "Top"
+{
+    def Camera "Camera1" 
+    {
+        float3 xformOp:rotateXYZ = (41.11302, -0.000004207076, 824.80023)
+        double3 xformOp:translate = (9.708769364686477, 2.5652053232260315, 11.506007001811687)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Cylinder "Cylinder1"
+    {
+    }
+
+    def Cube "Cube1"
+    {
+        double3 xformOp:translate = (-9.090642486431634, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cone "Cone1"
+    {
+        double3 xformOp:translate = (-4.236429892399105, -5.846699994853033, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+

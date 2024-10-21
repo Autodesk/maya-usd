@@ -52,7 +52,7 @@ target_compile_definitions(${USDTRANSACTION_LIBRARY_NAME}
 target_include_directories(${USDTRANSACTION_LIBRARY_NAME} 
   PUBLIC
     ${USDTRANSACTION_INCLUDE_LOCATION} 
-    ${USD_INCLUDE_DIR}
+    ${PXR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${USDTRANSACTION_LIBRARY_NAME}
@@ -90,7 +90,7 @@ target_compile_definitions(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
 target_include_directories(${USDTRANSACTION_PYTHON_LIBRARY_NAME} 
   PUBLIC
     ${USDTRANSACTION_INCLUDE_LOCATION} 
-    ${USD_INCLUDE_DIR}
+    ${PXR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${USDTRANSACTION_PYTHON_LIBRARY_NAME}

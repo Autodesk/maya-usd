@@ -11,6 +11,9 @@ import unittest
 import usdUtils
 import testUtils
 from usdUtils import filterUsdStr
+import shutil
+import os
+import time
 
 #####################################################################
 #
@@ -55,6 +58,46 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.b = ufe.Hierarchy.createItem(bPath)
  
         cmds.select(clear=True)
+
+    def testReloadReferencesCommands(self):
+        '''
+        Test reload prim by simulating external changes happening to the reference.
+        '''
+
+        # paths to the files used in this test
+        newFile = testUtils.getTestScene('twoSpheres', 'spherexform.usda')
+        oldFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+        bkFile  = testUtils.getTestScene('twoSpheres', 'sphere_bk.usda')
+        refFile = testUtils.getTestScene('twoSpheres', 'spheres_ref.usda')
+
+        # Added a file with nested reference so that can also be tested
+        prim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+
+        # make sure to revert changes to the test file with original content
+        shutil.copyfile(bkFile, oldFile)
+
+        cmd = usdUfe.AddReferenceCommand(prim, refFile, True)
+        cmd.execute()
+
+        spherePrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/sphere")
+        sphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
+
+        self.assertTrue(spherePrim.IsValid())
+        self.assertFalse(sphereXformPrim.IsValid())
+
+        # Sleep here to make sure that the time stamp from the next copy will be different
+        # a delta time less than 1 second won't be enough to be detected for reloading
+        time.sleep(1.1)
+
+        # replace sphere file with a different version so that the "reload" can be tested
+        shutil.copyfile(newFile, oldFile)
+
+        reloadCmd = usdUfe.ReloadReferenceCommand(prim)
+        reloadCmd.execute()
+
+        newSphereXformPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A/test")
+        self.assertTrue(newSphereXformPrim.IsValid())
+
 
     def testAddAndClearReferenceCommands(self):
         '''

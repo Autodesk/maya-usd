@@ -1048,6 +1048,15 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                         targetSession ? sharedUsdStage->GetSessionLayer()
                                       : sharedUsdStage->GetRootLayer());
                 }
+
+                // Update file path attribute to match the correct root layer id if it was anonymous
+                if (!fileString.empty() && SdfLayer::IsAnonymousLayerIdentifier(fileString)) {
+                    if (rootLayer->IsAnonymous() && rootLayer->GetIdentifier() != fileString) {
+                        MDataHandle outDataHandle = dataBlock.outputValue(filePathAttr, &retValue);
+                        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+                        outDataHandle.set(MString(rootLayer->GetIdentifier().c_str()));
+                    }
+                }
             }
             // Reset only if the global variant fallbacks has been modified
             if (!fallbacks.empty()) {
@@ -1167,10 +1176,14 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // muting
         copyLayerLockingFromAttribute(*this, layerNameMap, *finalUsdStage);
 
-        copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
+        UsdEditTarget editTarget;
+        if (!_targetLayer) {
+            editTarget = getEditTargetFromAttribute(*this, layerNameMap, *finalUsdStage);
+            if (editTarget.IsValid()) {
+                _targetLayer = editTarget.GetLayer();
+            }
+        }
 
-        if (!_targetLayer)
-            _targetLayer = getTargetLayerFromAttribute(*this, *finalUsdStage);
         updateShareMode(sharedUsdStage, unsharedUsdStage, loadSet);
         // Note: setting the target layer must be done after updateShareMode()
         //       because the session layer changes when switching between shared
@@ -1180,10 +1193,19 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Note: it is possible the cached edit target layer is no longer valid,
             //       for example if it was deleted. Trying to set an invalid layer would
             //       throw an exception.
-            if (UsdUfe::isLayerInStage(_targetLayer, *finalUsdStage)) {
-                finalUsdStage->SetEditTarget(_targetLayer);
+            if (UsdUfe::isLayerInStage(_targetLayer, *finalUsdStage)
+                && _targetLayer != editTarget.GetLayer()) {
+                editTarget = UsdEditTarget(_targetLayer);
             }
         }
+        if (editTarget.IsValid()) {
+            finalUsdStage->SetEditTarget(editTarget);
+        }
+
+        // Note: muting layer needs to be done after setting edit target layer
+        //       because the target layer could be the muted layer itself,
+        //       or one of the nested layers of a muted layer
+        copyLayerMutingFromAttribute(*this, layerNameMap, *finalUsdStage);
     }
 
     // Set the outUsdStageData

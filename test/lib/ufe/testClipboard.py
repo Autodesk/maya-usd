@@ -330,7 +330,7 @@ class ClipboardHandlerTestCase(unittest.TestCase):
 
         # Get the stage
         mayaPathSegment = mayaUtils.createUfePathSegment('|Variant_usd|Variant_usdShape')
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
 
         # First check that we have a Variant.
         objectPrim = stage.GetPrimAtPath('/objects')
