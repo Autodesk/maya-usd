@@ -495,8 +495,13 @@ void UsdMaya_ReadJob::_ConvertUpAxisAndUnits(const UsdStageRefPtr& stage)
 
     // Convert units if required and different between Maya and USD.
     const bool convertUnits = mArgs.unit;
-    conversion.mayaMetersPerUnit
-        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+    // Note: when changing preference, we need to compare to the UI units.
+    //       When adding scaling transforms, we need to compare to internal units.
+    const MDistance::Unit mayaUnits
+        = (mArgs.axisAndUnitMethod == UsdMayaJobImportArgsTokens->overwritePrefs)
+        ? MDistance::uiUnit()
+        : MDistance::internalUnit();
+    conversion.mayaMetersPerUnit = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaUnits);
     conversion.usdMetersPerUnit = UsdGeomGetStageMetersPerUnit(stage);
     conversion.needUnitsConversion
         = (convertUnits && (conversion.mayaMetersPerUnit != conversion.usdMetersPerUnit));

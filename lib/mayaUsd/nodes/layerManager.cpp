@@ -114,7 +114,19 @@ MStatus disconnectCompoundArrayPlug(MPlug arrayPlug)
     return dgmod.doIt();
 }
 
-MayaUsd::LayerManager* findNode()
+/// @brief Verify if the given node is either from the given reference, if that is not null,
+///        or from the main Maya scene if the reference is null.
+static bool
+isNodeFromDesiredOrigin(const MFnReference* fromReference, const MFnDependencyNode& node)
+{
+    if (fromReference) {
+        return fromReference->containsNodeExactly(node.object());
+    } else {
+        return !node.isFromReferencedFile();
+    }
+}
+
+MayaUsd::LayerManager* findNode(const MFnReference* fromReference = nullptr)
 {
     // Check for cached layer manager before searching
     MFnDependencyNode fn;
@@ -130,17 +142,19 @@ MayaUsd::LayerManager* findNode()
     for (; !iter.isDone(); iter.next()) {
         MObject mobj = iter.item();
         fn.setObject(mobj);
-        if (fn.typeId() == MayaUsd::LayerManager::typeId && !fn.isFromReferencedFile()) {
-            layerManagerHandle = mobj;
-            return static_cast<MayaUsd::LayerManager*>(fn.userNode());
+        if (fn.typeId() == MayaUsd::LayerManager::typeId) {
+            if (isNodeFromDesiredOrigin(fromReference, fn)) {
+                layerManagerHandle = mobj;
+                return static_cast<MayaUsd::LayerManager*>(fn.userNode());
+            }
         }
     }
     return nullptr;
 }
 
-MayaUsd::LayerManager* findOrCreateNode()
+MayaUsd::LayerManager* findOrCreateNode(const MFnReference* fromReference = nullptr)
 {
-    MayaUsd::LayerManager* lm = findNode();
+    MayaUsd::LayerManager* lm = findNode(fromReference);
     if (!lm) {
         MDGModifier& modifier = MayaUsd::MDGModifierUndoItem::create("Node find or creation");
         MObject      manager = modifier.createNode(MayaUsd::LayerManager::typeId);
@@ -217,7 +231,7 @@ public:
     static void           cleanupForExport(void*);
     static void           prepareForWriteCheck(bool*, bool);
     static void           cleanupForWrite();
-    static void           loadLayersPostRead(void*);
+    static void           loadLayersPostRead(const MFnReference* fromReference = nullptr);
     static void           cleanUpNewScene(void*);
     static void           clearManagerNode(MayaUsd::LayerManager* lm);
     static void           removeManagerNode(MayaUsd::LayerManager* lm = nullptr);
@@ -1026,9 +1040,9 @@ void LayerDatabase::saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymou
     dataBlock.setClean(lm->layers);
 }
 
-void LayerDatabase::loadLayersPostRead(void*)
+void LayerDatabase::loadLayersPostRead(const MFnReference* fromReference)
 {
-    MayaUsd::LayerManager* lm = findNode();
+    MayaUsd::LayerManager* lm = findNode(fromReference);
     if (!lm)
         return;
 
@@ -1417,21 +1431,21 @@ LayerManager::LayerManager()
 LayerManager::~LayerManager() { }
 
 /* static */
-SdfLayerHandle LayerManager::findLayer(std::string identifier)
+SdfLayerHandle LayerManager::findLayer(std::string identifier, const MFnReference* fromReference)
 {
     std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
 
-    LayerDatabase::loadLayersPostRead(nullptr);
+    LayerDatabase::loadLayersPostRead(fromReference);
 
     return LayerDatabase::instance().findLayer(identifier);
 }
 
 /* static */
-LayerManager::LayerNameMap LayerManager::getLayerNameMap()
+LayerManager::LayerNameMap LayerManager::getLayerNameMap(const MFnReference* fromReference)
 {
     std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
 
-    LayerDatabase::loadLayersPostRead(nullptr);
+    LayerDatabase::loadLayersPostRead(fromReference);
 
     return LayerDatabase::instance().getLayerNameMap();
 }
@@ -1462,7 +1476,7 @@ void LayerManager::setSelectedStage(const std::string& stage)
 /* static */
 std::string LayerManager::getSelectedStage()
 {
-    LayerDatabase::loadLayersPostRead(nullptr);
+    LayerDatabase::loadLayersPostRead();
     return LayerDatabase::instance().getSelectedStage();
 }
 
