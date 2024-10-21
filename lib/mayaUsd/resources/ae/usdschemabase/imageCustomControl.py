@@ -13,8 +13,8 @@
 # limitations under the License.
 #
 
-from .attribute_custom_control import AttributeCustomControl
-from .attribute_custom_control import cleanAndFormatTooltip
+from .attributeCustomControl import AttributeCustomControl
+from .attributeCustomControl import cleanAndFormatTooltip
 
 import mayaUsd.lib as mayaUsdLib
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
@@ -30,7 +30,7 @@ from maya.common.ui import LayoutManager, ParentManager
 import ufe
 
 import os
-from pxr import Sdf
+from pxr import Sdf, UsdShade
 
 try:
     from PySide2 import QtCore
@@ -40,6 +40,34 @@ except:
 
 class ImageCustomControl(AttributeCustomControl):
     filenameField = "UIFilenameField"
+
+    @staticmethod
+    def isImageAttribute(aeTemplate, attrName):
+        '''
+        Verify if the given attribute name is an image attribute for the prim
+        currently being shown in the given AE template.
+        '''
+        kFilenameAttr = ufe.Attribute.kFilename if hasattr(ufe.Attribute, "kFilename") else 'Filename'
+        if aeTemplate.attrS.attributeType(attrName) != kFilenameAttr:
+            return False
+        shader = UsdShade.Shader(aeTemplate.prim)
+        if shader and attrName.startswith("inputs:"):
+            # Shader attribute. The actual USD Attribute might not exist yet.
+            return True
+        attr = aeTemplate.prim.GetAttribute(attrName)
+        if not attr:
+            return False
+        typeName = attr.GetTypeName()
+        if not typeName:
+            return False
+        return aeTemplate.assetPathType == typeName.type
+
+    @staticmethod
+    def creator(aeTemplate, attrName):
+        if not ImageCustomControl.isImageAttribute(aeTemplate, attrName):
+            return None
+        ufeAttr = aeTemplate.attrS.attribute(attrName)
+        return ImageCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName)
 
     def __init__(self, ufeAttr, prim, attrName, useNiceName):
         super(ImageCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
@@ -186,10 +214,4 @@ class ImageCustomControl(AttributeCustomControl):
         layerDirName = mayaUsdUtils.getCurrentTargetLayerDir(prim)
         murel.usdFileRelative.setRelativeFilePathRoot(layerDirName)
 
-
-def customImageControlCreator(aeTemplate, c):
-    if not aeTemplate.isImageAttribute(c):
-        return None
-    ufeAttr = aeTemplate.attrS.attribute(c)
-    return ImageCustomControl(ufeAttr, aeTemplate.prim, c, aeTemplate.useNiceName)
 

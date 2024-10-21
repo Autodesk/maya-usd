@@ -297,12 +297,12 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             self.assertIsNotNone(InputsInControl, 'Could not find D_filename "In" control')
 
     def testAECustomEnumControl(self):
-        '''Simple test for the customEnumControlCreator in AE template.'''
+        '''Simple test for the EnumCustomControl.creator in AE template.'''
 
         from ufe_ae.usd.nodes.usdschemabase.ae_template import AETemplate
-        from ufe_ae.usd.nodes.usdschemabase.custom_enum_control import customEnumControlCreator
-        if customEnumControlCreator not in AETemplate._controlCreators:
-            self.skipTest('Test only available if AE template has customEnumControlCreator.')
+        from ufe_ae.usd.nodes.usdschemabase.enumCustomControl import EnumCustomControl
+        if EnumCustomControl.creator not in AETemplate._controlCreators:
+            self.skipTest('Test only available if AE template has EnumCustomControl.creator.')
 
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene("MaterialX", "int_enum.usda")
@@ -332,7 +332,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(InputsAlphaModeControl, 'Could not find gltf_pbr1 "Alpha Mode" control')
 
     def testAEConnectionsCustomControl(self):
-        '''Simple test for the connectionsCustomControlCreator in AE template.'''
+        '''Simple test for the ConnectionsCustomControl.creator in AE template.'''
 
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene('MaterialX', 'multiple_connections.usda')
@@ -363,7 +363,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             self.assertIsNotNone(AmplitudeControl, 'Could not find fractal3d1 "Amplitude" control')
 
     def testAEConnectionsCustomControlWithComponents(self):
-        '''Test that connectionsCustomControlCreator in AE template navigates component connections correctly.'''
+        '''Test that ConnectionsCustomControl.creator in AE template navigates component connections correctly.'''
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene('MaterialX', 'multiple_connections.usda')
         testPath,shapeStage = mayaUtils.createProxyFromFile(testFile)
