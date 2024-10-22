@@ -220,7 +220,7 @@ class AETemplate(object):
 
         # Get the UFE Attributes interface for this scene item.
         self.attrS = ufe.Attributes.attributes(self.item)
-        self.addedAttrs = []
+        self.addedAttrs = set()
         self.suppressedAttrs = []
         self.hasConnectionObserver = False
 
@@ -233,12 +233,26 @@ class AETemplate(object):
         if cmds.optionVar(exists='attrEditorIsLongName'):
             self.useNiceName = (cmds.optionVar(q='attrEditorIsLongName') ==1)
 
+        self.addedMaterialSection = False
+
+        self.suppressArrayAttribute()
+
+        # Build the list of schemas with their associated attributes.
+        schemasAttributes = {
+            'extraAttributes' : [],
+            'metadata' : [],
+        }
+        
+        schemasAttributes.update(self.findAppliedSchemas())
+        schemasAttributes.update(self.findClassSchemas())
+        schemasAttributes.update(self.findSpecialSections())
+
+        # Order schema sections according to designer's choices.
+        orderedSchemas = self.orderSections(schemasAttributes)
+
+        # Build the section UI.
         cmds.editorTemplate(beginScrollLayout=True)
-        self.buildUI()
-        self.createAppliedSchemasSection()
-        self.createCustomCallbackSection()
-        self.createCustomExtraAttrs()
-        self.createMetadataSection()
+        self.createSchemasSections(orderedSchemas, schemasAttributes)
         cmds.editorTemplate(endScrollLayout=True)
 
         if ('%s.%s' % (cmds.about(majorVersion=True), cmds.about(minorVersion=True))) > '2022.1':
@@ -258,6 +272,46 @@ class AETemplate(object):
     def prependControlCreator(controlCreator):
         AETemplate._controlCreators.insert(0, controlCreator)
 
+    def orderSections(self, schemasAttributes):
+        '''
+        Choose the order in which the sections will be added to the AE template.
+        '''
+        availableSchemas = list(schemasAttributes.keys())
+
+        desiredFirstSchemas = [
+            'LightAPI',
+            '.* Light',
+            'lightLinkCollectionAPI',
+            'shadowLinkCollectionAPI',
+            'customCallbacks'
+        ]
+
+        desiredLastSchemas = [
+            'shader',
+            'transforms',
+            'display',
+            'extraAttributes',
+            'metadata',
+        ]
+
+        def addSchemas(desiredOrder, availableSchemas):
+            orderedSchemas = []
+            for order in desiredOrder:
+                if '*' in order:
+                    for avail in availableSchemas[:]:
+                        if re.match(order, avail):
+                            availableSchemas.remove(avail)
+                            orderedSchemas.append(avail)
+                elif order in availableSchemas:
+                    availableSchemas.remove(order)
+                    orderedSchemas.append(order)
+            return orderedSchemas
+
+        firstSchemas = addSchemas(desiredFirstSchemas, availableSchemas)
+        lastSchemas = addSchemas(desiredLastSchemas, availableSchemas)
+
+        return firstSchemas + availableSchemas + lastSchemas
+
     def addControls(self, attrNames):
         for attrName in attrNames:
             if attrName not in self.suppressedAttrs:
@@ -270,7 +324,7 @@ class AETemplate(object):
                     except Exception as ex:
                         # Do not let one custom control failure affect others.
                         print('Failed to create control %s: %s' % (attrName, ex))
-                self.addedAttrs.append(attrName)
+                self.addedAttrs.add(attrName)
 
     def suppress(self, control):
         cmds.editorTemplate(suppress=control)
@@ -304,6 +358,7 @@ class AETemplate(object):
             ('UsdAbc', ''),
             ('UsdGeomGprim', 'GeometricPrim'),
             ('UsdGeomImageable', mel.eval('uiRes(\"m_AEdagNodeTemplate.kDisplay\");')),
+            ('UsdGeomXformable', getMayaUsdLibString('kTransforms')),
             ('UsdGeom', ''),
             ('UsdHydra', ''),
             ('UsdImagingGL', ''),
@@ -335,7 +390,7 @@ class AETemplate(object):
 
     def addShaderLayout(self, group):
         """recursively create the full attribute layout section"""
-        with ufeAeTemplate.Layout(self, group.name):
+        with ufeAeTemplate.Layout(self, group.name, collapse=True):
             for item in group.items:
                 if isinstance(item, AEShaderLayout.Group):
                     self.addShaderLayout(item)
@@ -348,7 +403,7 @@ class AETemplate(object):
         nodeDef = nodeDefHandler.definition(self.item)
         return nodeDef and nodeDef.type() == "ND_adsk_ramp"
 
-    def createShaderAttributesSection(self):
+    def createShaderAttributesSection(self, sectionName, attrs, collapse):
         """Use an AEShaderLayout tool to populate the shader section"""
         # Add a custom control to monitor for connection changed
         # in order for the UI to update itself when the shader is modified.
@@ -374,7 +429,7 @@ class AETemplate(object):
         obs = UfeConnectionChangedObserver(self.item)
         self.defineCustom(obs)
 
-    def createTransformAttributesSection(self, sectionName, attrsToAdd):
+    def createTransformAttributesSection(self, sectionName, attrs, collapse):
         # Get the xformOp order and add those attributes (in order)
         # followed by the xformOp order attribute.
         allAttrs = self.attrS.attributeNames
@@ -384,8 +439,8 @@ class AETemplate(object):
         xformOpOrderNames.append(UsdGeom.Tokens.xformOpOrder)
 
         # Don't use createSection because we want a sub-sections.
-        with ufeAeTemplate.Layout(self, sectionName):
-            attrsToAdd.remove(UsdGeom.Tokens.xformOpOrder)
+        with ufeAeTemplate.Layout(self, sectionName, collapse=collapse):
+            attrs.remove(UsdGeom.Tokens.xformOpOrder)
             self.addControls(xformOpOrderNames)
 
             # Get the remainder of the xformOps and add them in an Unused section.
@@ -394,29 +449,29 @@ class AETemplate(object):
             self.createSection(getMayaUsdLibString('kLabelUnusedTransformAttrs'), xformOpUnusedNames, collapse=True)
 
             # Then add any reamining Xformable attributes
-            self.addControls(attrsToAdd)
+            self.addControls(attrs)
 
             # Add a custom control for UFE attribute changed.
             t3dObs = UfeAttributesObserver(self.item)
             self.defineCustom(t3dObs)
 
-    def createDisplaySection(self, sectionName, attrsToAdd):
-        with ufeAeTemplate.Layout(self, sectionName, collapse=True):
-            self.addControls(attrsToAdd)
+    def createDisplaySection(self, sectionName, attrs, collapse):
+        with ufeAeTemplate.Layout(self, sectionName, collapse=collapse):
+            self.addControls(attrs)
             customDataControl = DisplayCustomControl(self.item, self.prim)
             usdNoticeControl = UsdNoticeListener(self.prim, [customDataControl])
             self.defineCustom(customDataControl)
             self.defineCustom(usdNoticeControl)
 
-    def createMetadataSection(self):
+    def createMetadataSection(self, sectionName, attrs, collapse):
         # We don't use createSection() because these are metadata (not attributes).
-        with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelMetadata'), collapse=True):
+        with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelMetadata'), collapse=collapse):
             metaDataControl = MetadataCustomControl(self.item, self.prim, self.useNiceName)
             usdNoticeControl = UsdNoticeListener(self.prim, [metaDataControl])
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
 
-    def createCustomExtraAttrs(self):
+    def createCustomExtraAttrs(self, sectionName, attrs, collapse):
         # We are not using the maya default "Extra Attributes" section
         # because we are using custom widget for array type and it's not
         # possible to inject our widget inside the maya "Extra Attributes" section.
@@ -427,12 +482,9 @@ class AETemplate(object):
         # by addControls(). So any suppressed attributes in extraAttrs will be ignored later.
         extraAttrs = [attr for attr in self.attrS.attributeNames if attr not in self.addedAttrs]
         sectionName = mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
-        self.createSection(sectionName, extraAttrs, True)
+        self.createSection(sectionName, extraAttrs, collapse)
 
-    def createAppliedSchemasSection(self):
-        usdVer = Usd.GetVersion()
-        showAppliedSchemasSection = False
-
+    def findAppliedSchemas(self):
         # loop on all applied schemas and store all those
         # schema into a dictionary with the attributes.
         # Storing the schema into a dictionary allow us to
@@ -451,7 +503,8 @@ class AETemplate(object):
         # "Collection Light Link Include Root" and a comparison with the schema nice name
         # "Collection Light Link" will allow of to trim the nice name to "Include Root"
         #
-        schemaAttrsDict = {}
+        schemasAttributes = {}
+        usdVer = Usd.GetVersion()
         appliedSchemas = self.prim.GetAppliedSchemas()
         for schema in appliedSchemas:
             typeAndInstance = Usd.SchemaRegistry().GetTypeNameAndInstance(schema)
@@ -473,33 +526,20 @@ class AETemplate(object):
                         prefix = namespace + ":" + instanceName + ":"
                         attrList = [prefix + i for i in attrList]
 
-                    schemaAttrsDict[instanceName + typeName] = attrList
+                    typeName = instanceName + typeName
                 else:
                     attrList = schemaType.pythonClass.GetSchemaAttributeNames(False)
-                    schemaAttrsDict[typeName] = attrList
 
-                # The "Applied Schemas" will be only visible if at least
-                # one applied Schemas has attribute.
-                if not showAppliedSchemasSection:
-                    for attr in attrList:
-                        if self.attrS.hasAttribute(attr):
-                            showAppliedSchemasSection = True
-                            break
+                schemasAttributes[typeName] = attrList
 
-        # Create the "Applied Schemas" section
-        # with all the applied schemas
-        if showAppliedSchemasSection:
-            with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelAppliedSchemas'), collapse=True):
-                for typeName, attrs in schemaAttrsDict.items():
-                    typeName = self.sectionNameFromSchema(typeName)
-                    self.createSection(typeName, attrs, False)
+        return schemasAttributes
 
     @staticmethod
     def getAETemplateForCustomCallback():
         global _aeTemplate
         return _aeTemplate
 
-    def createCustomCallbackSection(self):
+    def createCustomCallbackSection(self, sectionName, attrs, collapse):
         '''Special custom callback section that gives users the opportunity to add
         layout section(s) to the AE template.
         See https://github.com/Autodesk/maya-usd/blob/dev/lib/mayaUsd/resources/ae/usdschemabase/Attribute-Editor-Template-Doc.md
@@ -524,25 +564,35 @@ class AETemplate(object):
             print('Failed triggerUICallback: %s' % ex)
         _aeTemplate = None
 
-    def buildUI(self):
+    def findClassSchemas(self):
+        schemasAttributes = {}
+
         usdSch = Usd.SchemaRegistry()
 
-        self.suppressArrayAttribute()
+        specialSchemas = {
+            'UsdShadeShader', 'UsdShadeNodeGraph', 'UsdShadeMaterial', 'UsdGeomXformable', 'UsdGeomImageable' }
 
-        # Track if we already added a connection observer.
-        self.hasConnectionObserver = False
+        # We use UFE for the ancestor node types since it caches the
+        # results by node type.
+        for schemaType in self.item.ancestorNodeTypes():
+            schemaType = usdSch.GetTypeFromName(schemaType)
+            schemaTypeName = schemaType.typeName
+            sectionName = self.sectionNameFromSchema(schemaTypeName)
+            if schemaType.pythonClass:
+                attrsToAdd = schemaType.pythonClass.GetSchemaAttributeNames(False)
+                if schemaTypeName in specialSchemas:
+                    continue
+                schemasAttributes[sectionName] = attrsToAdd
+    
+        return schemasAttributes
+    
+    def findSpecialSections(self):
+        schemasAttributes = {}
+
+        usdSch = Usd.SchemaRegistry()
 
         # Material has NodeGraph as base. We want to process once for both schema types:
         hasProcessedMaterial = False
-
-        # We want material to be either after the mesh section of the Xformable section,
-        # whichever comes first, so that it is not too far down in the AE.
-        self.addedMaterialSection = False
-        primTypeName = self.sectionNameFromSchema(self.prim.GetTypeName())
-        def addMatSection():
-            if not self.addedMaterialSection:
-                self.addedMaterialSection = True
-                self.createMaterialAttributeSection()
 
         # We use UFE for the ancestor node types since it caches the
         # results by node type.
@@ -557,23 +607,61 @@ class AETemplate(object):
                     if hasProcessedMaterial:
                         continue
                     # Shader attributes are special
-                    self.createShaderAttributesSection()
+                    schemasAttributes['shader'] = []
                     hasProcessedMaterial = True
                     # Note: don't show the material section for materials.
                     self.addedMaterialSection = True
                 # We have a special case when building the Xformable section.
                 elif schemaTypeName == 'UsdGeomXformable':
-                    self.createTransformAttributesSection(sectionName, attrsToAdd)
+                    schemasAttributes['transforms'] = attrsToAdd
                 elif schemaTypeName == 'UsdGeomImageable':
-                    self.createDisplaySection(sectionName, attrsToAdd)
-                else:
-                    sectionsToCollapse = ['Curves', 'Point Based', 'Geometric Prim', 'Boundable',
-                                          'Imageable', 'Field Asset', 'Light']
-                    collapse = sectionName in sectionsToCollapse
-                    self.createSection(sectionName, attrsToAdd, collapse)
+                    schemasAttributes['display'] = attrsToAdd
 
-                if sectionName == primTypeName:
-                    addMatSection()
+        return schemasAttributes
+
+    def createSchemasSections(self, schemasOrder, schemasAttributes):
+        # We want material to be either after the mesh section of the Xformable section,
+        # whichever comes first, so that it is not too far down in the AE.
+        primTypeName = self.sectionNameFromSchema(self.prim.GetTypeName())
+        def addMatSection():
+            if not self.addedMaterialSection:
+                self.addedMaterialSection = True
+                self.createMaterialAttributeSection()
+
+        # Function that determines if a section should be expanded.
+        def isSectionOpen(sectionName):
+            if sectionName == primTypeName:
+                return True
+            if sectionName == 'material':
+                return True
+            lowerName = sectionName.lower()
+            return 'light' in lowerName and 'link' not in lowerName
+        
+        # Dictionry of which function to call to create a given section.
+        # By default, calls the generic createSection, which will search
+        # in the list of known custom control creators for the one to be
+        # used.
+        sectionCreators = collections.defaultdict(
+            lambda : self.createSection,
+            {
+                'shader': self.createShaderAttributesSection,
+                'transforms': self.createTransformAttributesSection,
+                'display': self.createDisplaySection,
+                'extraAttributes': self.createCustomExtraAttrs,
+                'metadata': self.createMetadataSection,
+                'customCallbacks': self.createCustomCallbackSection,
+            })
+        
+        # Create the section in the specified order.
+        for typeName in schemasOrder:
+            attrs = schemasAttributes[typeName]
+            sectionName = self.sectionNameFromSchema(typeName)
+            collapse = not isSectionOpen(sectionName)
+            creator = sectionCreators[typeName]
+            creator(sectionName, attrs, collapse)
+
+            if sectionName == primTypeName:
+                addMatSection()
         
         # In case there was neither a Mesh nor Xformable section, add material section now.
         addMatSection()        
@@ -586,8 +674,7 @@ class AETemplate(object):
         if not mat:
             return
         layoutName = getMayaUsdLibString('kLabelMaterial')
-        collapse = False
-        with ufeAeTemplate.Layout(self, layoutName, collapse):
+        with ufeAeTemplate.Layout(self, layoutName, collapse=False):
             createdControl = MaterialCustomControl(self.item, self.prim, self.useNiceName)
             self.defineCustom(createdControl)
 

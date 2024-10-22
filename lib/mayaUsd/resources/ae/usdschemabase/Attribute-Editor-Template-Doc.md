@@ -22,28 +22,41 @@ The AE template has two functions to manage supressed attributes: `suppress`
 supresses the given attribute. `suppressArrayAttribute` which supresses all
 array attribute if the option to display is turned off.
 
-The constructor of the AE template calls `buildUI` to fit each attribute in a
-custom control. Afterward it calls the functions (in order) to create some UI sections that are always present:
-* `createAppliedSchemasSection`
-* `createCustomCallbackSection` - see below for more info
-* `createCustomExtraAttrs`
-* `createMetadataSection`
+The constructor of the AE template calls a series of `find`-ing functions to
+fit each attribute in a custom control or other special built-in sections.
+Afterward it calls `orderSections` to choose the order in which the sections
+will be added to the AE template. It then calls `createSchemasSections` to
+create the section UI.
 
-The `buildUI` function goes through each USD schema of the USD prim. If the
-schema is one of the "well-known" ones that have a specialized UI section,
-then that section gets created. For example, shader, transform and display each
-have a specialized UI section.
+Each `find` function goes through the USD schemas of the USD prim. Some of
+the `find` functinare looking for specific schemas. Other are looking for
+applied schema or class schemas. A few are not looking at schemas at all
+but are grabbing specific kind of attributes. Here are the `find` functions:
 
-If the schema is not a special one, then `buildUI` retrieves all attributes of
-the schema and calls `createSection` to create the UI section that will contain
-those attributes. `createSection` checks if the attribute is not supressed and
-calls `addControls` to do the UI creation.
+- findAppliedSchemas: find the attributes belonging to applied schemas.
+- findClassSchemasL find the attributes belonging to the prim class schemas.
+- findSpecialSections: find the shader, transforms and display attributes.
 
-The `addControls` function goes through each custom control and ask each of them
-to create the UI for the attributes. Once a custom control accepts to handle the
-attribute, it calls `defineCustom` to register the custom control with Maya.
-Afterward the attributes are added to the list of already handled attributes.
-The AE template can then proceed to the next schema.
+The `orderSections` function has a list of section it wishes to place first and
+a list of sections it wishes to place last. It orders all the sections that were
+found according to those lists. All remaining sections that are not forced to be
+in a particular order are placed in between.
+
+The `createSchemasSections` function takes the ordered sections and call the
+correct function for each. There is a generic `createSection` to create the UI
+for normal sections. There are a few special `create` functions for the special
+sections, like shader, material, transforms, metadata, etc.
+
+The creator function called `createCustomCallbackSection` is special. it allows
+sections to be created in a user-supplied callback. See below for more info.
+
+The `createSection` function checks if the attribute is not supressed and calls
+`addControls` to do the UI creation. The `addControls` function goes through each
+custom control creator and ask each of them to create the UI for the attributes.
+Once a custom control accepts to handle the attribute, it calls `defineCustom`
+to register the custom control with Maya. Afterward the attributes are added to
+the list of already handled attributes.
+
 
 ## Custom Controls
 
@@ -109,9 +122,14 @@ There are various helper functions and classes.
 
 ## Callbacks
 
-There is a special custom callback section `createCustomCallbackSection()` called during `buildUI()` in the AE template that gives users the opportunity to add layout section(s) to the AE template. For example the Arnold plugin which has its own USD prims. Using this callback section a plugin can organize plugin specific attributes of a prim into AE layout section(s).
+There is a special custom callback section `createCustomCallbackSection()`
+called during `createSchemasSections()` in the AE template that gives users
+the opportunity to add layout sections to the AE template. For example the
+Arnold plugin which has its own USD prims. Using this callback section a plugin
+can organize plugin specific attributes of a prim into AE layout section(s).
 
-To use this callback section a plugin needs to create a callback function  and then register for the AE template UI callback:
+To use this callback section a plugin needs to create a callback function and
+then register for the AE template UI callback:
 
 ```python
 # AE template UI callback function.
@@ -166,7 +184,9 @@ mayaUsdLib.unregisterUICallback('onBuildAETemplate', onBuildAETemplateCallback)
 
 ## Attribute Nice Naming callback
 
-A client can add a function to be called when asked for an attribute nice name. That function will be called from `getNiceAttributeName()` giving the client the ability to provide a nice name for the attribute.
+A client can add a function to be called when asked for an attribute nice name.
+That function will be called from `getNiceAttributeName()` giving the client
+the ability to provide a nice name for the attribute.
 
 The callback function will receive as input two params:
 - ufe attribute
