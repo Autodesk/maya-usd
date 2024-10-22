@@ -38,8 +38,8 @@ those attributes. `createSection` checks if the attribute is not supressed and
 calls `addControls` to do the UI creation.
 
 The `addControls` function goes through each custom control and ask each of them
-to create the UI for the attributes. Once one custom control accept to handle the
-attributes, it calls `defineCustom` to register the custom control with Maya.
+to create the UI for the attributes. Once a custom control accepts to handle the
+attribute, it calls `defineCustom` to register the custom control with Maya.
 Afterward the attributes are added to the list of already handled attributes.
 The AE template can then proceed to the next schema.
 
@@ -48,7 +48,7 @@ The AE template can then proceed to the next schema.
 Each custom control is a class with a creator function. The creator function
 checks if this custom control can be used for a given attribute and if so,
 creates an instance of this custom control for all the grouped supported
-attributes. If the attribute is not related to teh custom control, the creator
+attributes. If the attribute is not related to the custom control, the creator
 function returns None.
 
 Each custom control has an `onCreate` and a `onReplace` callbacks. The `onCreate`
@@ -59,9 +59,9 @@ the previously created UI with new data.
 The list of custom controls are:
 
 - ArrayCustomControl: to display attributes containing arrays of data.
-- EnumCustomControl: to display enumarated value as a drop-down menu.
+- EnumCustomControl: to display enumerated value as a drop-down menu.
 - ConnectionsCustomControl: to display connected attribute and go to the target.
-- DisplayCustomDataControl: to display viewpor-related attributes.
+- DisplayCustomDataControl: to display custom data for Outliner Color.
 - ImageCustomControl: to display the file paths of an image.
 - MaterialCustomControl: to display attributes related to materials.
 - MetadataCustomControl: to display the metadata of the prim.
@@ -70,13 +70,13 @@ The list of custom controls are:
 
 The AE template uses observers to refresh itself. These observers are custom
 controls without any UI elements. They merely re-use the custom control Maya
-callbacks to start and stop observing / listening to changes. They start to
+callbacks to start and stop observing/listening to changes. They start to
 observe in their `onCreate` callback and stop in either their `__del__` method
 or in a `uiDelete` `scripJob`.
 
 The observers are:
 
-- UfeAttributesObserver: observes and queue calls to _queueEditorRefresh() when
+- UfeAttributesObserver: observes and queues calls to _queueEditorRefresh() when
   an attribute is added or removed and when the `xformOpOrder` attribute or the
   `materialBindings` attribute are modified.
 
