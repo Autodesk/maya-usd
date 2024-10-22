@@ -29,6 +29,7 @@ std::string makeValidName(const NodeGraph& nodeGraph, GenContext& context)
 
 } // namespace
 
+#if MX_COMBINED_VERSION >= 13810
 //
 // ShaderGraph methods
 //
@@ -182,6 +183,7 @@ MayaShaderGraph::MayaShaderGraph(
 
     finalize(context);
 }
+#endif
 
 MayaShaderGraph::MayaShaderGraph(
     const ShaderGraph* parent,
@@ -213,6 +215,7 @@ MayaShaderGraph::MayaShaderGraph(
 
 MayaShaderGraph::~MayaShaderGraph() = default;
 
+#if MX_COMBINED_VERSION >= 13810
 ShaderGraphPtr MayaShaderGraph::create(
     const ShaderGraph* parent,
     const string&      name,
@@ -222,6 +225,7 @@ ShaderGraphPtr MayaShaderGraph::create(
     ShaderGraphPtr graph = std::make_shared<MayaShaderGraph>(parent, name, element, context);
     return graph;
 }
+#endif
 
 ShaderGraphPtr
 MayaShaderGraph::create(const ShaderGraph* parent, const NodeGraph& nodeGraph, GenContext& context)
@@ -247,6 +251,7 @@ void MayaShaderGraph::addPropagatedInput(ShaderNode& node, string const& name)
 
 StringVec const& MayaShaderGraph::getPropagatedInputs() const { return _propagatedInputs; }
 
+#if MX_COMBINED_VERSION >= 13810
 void MayaShaderGraph::createConnectedNodes(
     const ElementPtr& downstreamElement,
     const ElementPtr& upstreamElement,
@@ -363,5 +368,6 @@ void MayaShaderGraph::addUpstreamDependencies(const Element& root, GenContext& c
             downstreamElement, upstreamElement, edge.getConnectingElement(), context);
     }
 }
+#endif
 
 MATERIALX_NAMESPACE_END

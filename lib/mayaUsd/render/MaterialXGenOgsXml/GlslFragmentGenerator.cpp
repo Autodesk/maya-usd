@@ -254,6 +254,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
     ElementPtr    element,
     GenContext&   context) const
 {
+#if MX_COMBINED_VERSION >= 13810
     // Create the root shader graph
     ShaderGraphPtr graph = MayaShaderGraph::create(nullptr, name, element, context);
     ShaderPtr      shader = std::make_shared<Shader>(name, graph);
@@ -457,10 +458,18 @@ ShaderPtr GlslFragmentGenerator::createShader(
         // Flag the shader as being transparent.
         shader->setAttribute(HW::ATTR_TRANSPARENT);
     }
+#else
+    ShaderPtr    shader = GlslShaderGenerator::createShader(name, element, context);
+    ShaderGraph& graph = shader->getGraph();
+#endif
     ShaderStage& pixelStage = shader->getStage(Stage::PIXEL);
 
     // Add uniforms for environment lighting.
+#if MX_COMBINED_VERSION >= 13810
     if (requiresLighting(*graph) && OgsXmlGenerator::useLightAPI() < 2) {
+#else
+    if (requiresLighting(graph) && OgsXmlGenerator::useLightAPI() < 2) {
+#endif
         VariableBlock& psPrivateUniforms = pixelStage.getUniformBlock(HW::PUBLIC_UNIFORMS);
         psPrivateUniforms.add(
             Type::COLOR3, LIGHT_LOOP_RESULT, Value::createValue(Color3(0.0f, 0.0f, 0.0f)));
