@@ -1,5 +1,5 @@
 from .ae_template import AETemplate
-from .custom_enum_control import customEnumControlCreator
+from .enumCustomControl import EnumCustomControl
 import ufe
 if hasattr(ufe.Attributes, "getEnums"):
-    AETemplate.prependControlCreator(customEnumControlCreator)
+    AETemplate.prependControlCreator(EnumCustomControl.creator)
