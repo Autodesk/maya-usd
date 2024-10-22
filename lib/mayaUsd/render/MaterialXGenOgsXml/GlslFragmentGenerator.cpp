@@ -256,7 +256,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
 {
     // Create the root shader graph
     ShaderGraphPtr graph = MayaShaderGraph::create(nullptr, name, element, context);
-    ShaderPtr shader = std::make_shared<Shader>(name, graph);
+    ShaderPtr      shader = std::make_shared<Shader>(name, graph);
 
     // Check if there are inputs with default geomprops assigned. In order to bind the
     // corresponding data to these inputs we insert geomprop nodes in the graph.
@@ -264,7 +264,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
     for (ShaderGraphInputSocket* socket : graph->getInputSockets()) {
         if (!socket->getGeomProp().empty()) {
             ConstDocumentPtr doc = element->getDocument();
-            GeomPropDefPtr geomprop = doc->getGeomPropDef(socket->getGeomProp());
+            GeomPropDefPtr   geomprop = doc->getGeomPropDef(socket->getGeomProp());
             if (geomprop) {
                 // A default geomprop was assigned to this graph input.
                 // For all internal connections to this input, break the connection
@@ -292,10 +292,10 @@ ShaderPtr GlslFragmentGenerator::createShader(
     // Each Stage must have three types of uniform blocks:
     // Private, Public and Sampler blocks
     // Public uniforms are inputs that should be published in a user interface for user interaction,
-    // while private uniforms are internal variables needed by the system which should not be exposed in UI.
-    // So when creating these uniforms for a shader node, if the variable is user-facing it should go into the public block,
-    // and otherwise the private block.
-    // All texture based objects should be added to Sampler block
+    // while private uniforms are internal variables needed by the system which should not be
+    // exposed in UI. So when creating these uniforms for a shader node, if the variable is
+    // user-facing it should go into the public block, and otherwise the private block. All texture
+    // based objects should be added to Sampler block
 
     vs->createUniformBlock(HW::PRIVATE_UNIFORMS, "u_prv");
     vs->createUniformBlock(HW::PUBLIC_UNIFORMS, "u_pub");
@@ -308,7 +308,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
     vsPrivateUniforms.add(Type::MATRIX44, HW::T_VIEW_PROJECTION_MATRIX);
 
     // Create pixel stage.
-    ShaderStagePtr ps = createStage(Stage::PIXEL, *shader);
+    ShaderStagePtr   ps = createStage(Stage::PIXEL, *shader);
     VariableBlockPtr psOutputs = ps->createOutputBlock(HW::PIXEL_OUTPUTS, "o_ps");
 
     // Create required Uniform blocks and any additonal blocks if needed.
@@ -328,7 +328,8 @@ ShaderPtr GlslFragmentGenerator::createShader(
     // Add uniforms for shadow map rendering.
     if (context.getOptions().hwShadowMap) {
         psPrivateUniforms->add(Type::FILENAME, HW::T_SHADOW_MAP);
-        psPrivateUniforms->add(Type::MATRIX44, HW::T_SHADOW_MATRIX, Value::createValue(Matrix44::IDENTITY));
+        psPrivateUniforms->add(
+            Type::MATRIX44, HW::T_SHADOW_MATRIX, Value::createValue(Matrix44::IDENTITY));
     }
 
     // Add inputs and uniforms for ambient occlusion.
@@ -340,22 +341,24 @@ ShaderPtr GlslFragmentGenerator::createShader(
     }
 
     // Add uniforms for environment lighting.
-    bool lighting = graph->hasClassification(ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE) ||
-                    graph->hasClassification(ShaderNode::Classification::BSDF);
+    bool lighting = graph->hasClassification(
+                        ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE)
+        || graph->hasClassification(ShaderNode::Classification::BSDF);
     if (lighting && context.getOptions().hwSpecularEnvironmentMethod != SPECULAR_ENVIRONMENT_NONE) {
         const Matrix44 yRotationPI = Matrix44::createScale(Vector3(-1, 1, -1));
         psPrivateUniforms->add(Type::MATRIX44, HW::T_ENV_MATRIX, Value::createValue(yRotationPI));
         psPrivateUniforms->add(Type::FILENAME, HW::T_ENV_RADIANCE);
         psPrivateUniforms->add(Type::FLOAT, HW::T_ENV_LIGHT_INTENSITY, Value::createValue(1.0f));
         psPrivateUniforms->add(Type::INTEGER, HW::T_ENV_RADIANCE_MIPS, Value::createValue<int>(1));
-        psPrivateUniforms->add(Type::INTEGER, HW::T_ENV_RADIANCE_SAMPLES, Value::createValue<int>(16));
+        psPrivateUniforms->add(
+            Type::INTEGER, HW::T_ENV_RADIANCE_SAMPLES, Value::createValue<int>(16));
         psPrivateUniforms->add(Type::FILENAME, HW::T_ENV_IRRADIANCE);
         psPrivateUniforms->add(Type::BOOLEAN, HW::T_REFRACTION_TWO_SIDED);
     }
 
     // Add uniforms for the directional albedo table.
-    if (context.getOptions().hwDirectionalAlbedoMethod == DIRECTIONAL_ALBEDO_TABLE ||
-        context.getOptions().hwWriteAlbedoTable) {
+    if (context.getOptions().hwDirectionalAlbedoMethod == DIRECTIONAL_ALBEDO_TABLE
+        || context.getOptions().hwWriteAlbedoTable) {
         psPrivateUniforms->add(Type::FILENAME, HW::T_ALBEDO_TABLE);
         psPrivateUniforms->add(Type::INTEGER, HW::T_ALBEDO_TABLE_SIZE, Value::createValue<int>(64));
     }
@@ -383,17 +386,20 @@ ShaderPtr GlslFragmentGenerator::createShader(
     // so copy name and variable from the graph output but set type to color4.
     // TODO: Improve this to support multiple outputs and other data types.
     ShaderGraphOutputSocket* outputSocket = graph->getOutputSocket();
-    ShaderPort* output = psOutputs->add(Type::COLOR4, outputSocket->getName());
+    ShaderPort*              output = psOutputs->add(Type::COLOR4, outputSocket->getName());
     output->setVariable(outputSocket->getVariable());
     output->setPath(outputSocket->getPath());
 
     // Create shader variables for all nodes that need this.
     createVariables(graph, context, *shader);
 
-    HwLightShadersPtr lightShaders = context.getUserData<HwLightShaders>(HW::USER_DATA_LIGHT_SHADERS);
+    HwLightShadersPtr lightShaders
+        = context.getUserData<HwLightShaders>(HW::USER_DATA_LIGHT_SHADERS);
 
     // For surface shaders we need light shaders
-    if (lightShaders && graph->hasClassification(ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE)) {
+    if (lightShaders
+        && graph->hasClassification(
+            ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE)) {
         // Create shader variables for all bound light shaders
         for (const auto& it : lightShaders->get()) {
             ShaderNode* node = it.second.get();
@@ -411,7 +417,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
     vector<ShaderGraph*> graphStack = { graph.get() };
     if (lightShaders) {
         for (const auto& it : lightShaders->get()) {
-            ShaderNode* node = it.second.get();
+            ShaderNode*  node = it.second.get();
             ShaderGraph* lightGraph = node->getImplementation().getGraph();
             if (lightGraph) {
                 graphStack.push_back(lightGraph);
@@ -427,8 +433,10 @@ ShaderPtr GlslFragmentGenerator::createShader(
             if (node->hasClassification(ShaderNode::Classification::FILETEXTURE)) {
                 for (ShaderInput* input : node->getInputs()) {
                     if (!input->getConnection() && *input->getType() == *Type::FILENAME) {
-                        // Create the uniform using the filename type to make this uniform into a texture sampler.
-                        ShaderPort* filename = psPublicUniforms->add(Type::FILENAME, input->getVariable(), input->getValue());
+                        // Create the uniform using the filename type to make this uniform into a
+                        // texture sampler.
+                        ShaderPort* filename = psPublicUniforms->add(
+                            Type::FILENAME, input->getVariable(), input->getValue());
                         filename->setPath(input->getPath());
 
                         // Assing the uniform name to the input value

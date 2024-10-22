@@ -37,23 +37,19 @@ MayaShaderGraph::MayaShaderGraph(
     const string&      name,
     const ElementPtr&  element,
     GenContext&        context)
-    : ShaderGraph(
-        parent,
-        name,
-        element->getDocument(),
-        context.getReservedWords())
+    : ShaderGraph(parent, name, element->getDocument(), context.getReservedWords())
 {
     ElementPtr root;
 
     if (element->isA<Output>()) {
-        OutputPtr output = element->asA<Output>();
+        OutputPtr  output = element->asA<Output>();
         ElementPtr outputParent = output->getParent();
 
         InterfaceElementPtr interface;
         if (outputParent->isA<NodeGraph>()) {
             // A nodegraph output.
             NodeGraphPtr nodeGraph = outputParent->asA<NodeGraph>();
-            NodeDefPtr nodeDef = nodeGraph->getNodeDef();
+            NodeDefPtr   nodeDef = nodeGraph->getNodeDef();
             if (nodeDef) {
                 interface = nodeDef;
             } else {
@@ -65,7 +61,9 @@ MayaShaderGraph::MayaShaderGraph(
             interface = outputParent ? outputParent->asA<InterfaceElement>() : nullptr;
         }
         if (!interface) {
-            throw ExceptionShaderGenError("Given output '" + output->getName() + "' has no interface valid for shader generation");
+            throw ExceptionShaderGenError(
+                "Given output '" + output->getName()
+                + "' has no interface valid for shader generation");
         }
 
         // Clear classification
@@ -75,7 +73,8 @@ MayaShaderGraph::MayaShaderGraph(
         addInputSockets(*interface, context);
 
         // Create the given output socket
-        ShaderGraphOutputSocket* outputSocket = addOutputSocket(output->getName(), TypeDesc::get(output->getType()));
+        ShaderGraphOutputSocket* outputSocket
+            = addOutputSocket(output->getName(), TypeDesc::get(output->getType()));
         outputSocket->setPath(output->getNamePath());
         const string& outputUnit = output->getUnit();
         if (!outputUnit.empty()) {
@@ -89,10 +88,11 @@ MayaShaderGraph::MayaShaderGraph(
         // Start traversal from this output
         root = output;
     } else if (element->isA<Node>()) {
-        NodePtr node = element->asA<Node>();
+        NodePtr    node = element->asA<Node>();
         NodeDefPtr nodeDef = node->getNodeDef();
         if (!nodeDef) {
-            throw ExceptionShaderGenError("Could not find a nodedef for node '" + node->getName() + "'");
+            throw ExceptionShaderGenError(
+                "Could not find a nodedef for node '" + node->getName() + "'");
         }
 
         // Create input sockets
@@ -118,9 +118,11 @@ MayaShaderGraph::MayaShaderGraph(
         // Handle node input ports
         for (const InputPtr& nodedefInput : nodeDef->getActiveInputs()) {
             ShaderGraphInputSocket* inputSocket = getInputSocket(nodedefInput->getName());
-            ShaderInput* input = newNode->getInput(nodedefInput->getName());
+            ShaderInput*            input = newNode->getInput(nodedefInput->getName());
             if (!inputSocket || !input) {
-                throw ExceptionShaderGenError("Node input '" + nodedefInput->getName() + "' doesn't match an existing input on graph '" + getName() + "'");
+                throw ExceptionShaderGenError(
+                    "Node input '" + nodedefInput->getName()
+                    + "' doesn't match an existing input on graph '" + getName() + "'");
             }
 
             // Copy data from node element to shadergen representation
@@ -128,11 +130,13 @@ MayaShaderGraph::MayaShaderGraph(
             if (nodeInput) {
                 ValuePtr value = nodeInput->getResolvedValue();
                 if (value) {
-                    const string& valueString = value->getValueString();
+                    const string&                        valueString = value->getValueString();
                     std::pair<const TypeDesc*, ValuePtr> enumResult;
                     const TypeDesc* type = TypeDesc::get(nodedefInput->getType());
-                    const string& enumNames = nodedefInput->getAttribute(ValueElement::ENUM_ATTRIBUTE);
-                    if (context.getShaderGenerator().getSyntax().remapEnumeration(valueString, type, enumNames, enumResult)) {
+                    const string&   enumNames
+                        = nodedefInput->getAttribute(ValueElement::ENUM_ATTRIBUTE);
+                    if (context.getShaderGenerator().getSyntax().remapEnumeration(
+                            valueString, type, enumNames, enumResult)) {
                         inputSocket->setValue(enumResult.second);
                     } else {
                         inputSocket->setValue(value);
@@ -184,10 +188,10 @@ MayaShaderGraph::MayaShaderGraph(
     const NodeGraph&   nodeGraph,
     GenContext&        context)
     : ShaderGraph(
-        parent,
-        makeValidName(nodeGraph, context),
-        nodeGraph.getDocument(),
-        context.getReservedWords())
+          parent,
+          makeValidName(nodeGraph, context),
+          nodeGraph.getDocument(),
+          context.getReservedWords())
 {
     // Clear classification
     _classification = 0;
@@ -209,8 +213,11 @@ MayaShaderGraph::MayaShaderGraph(
 
 MayaShaderGraph::~MayaShaderGraph() = default;
 
-ShaderGraphPtr
-MayaShaderGraph::create(const ShaderGraph* parent, const string& name, ElementPtr element, GenContext& context)
+ShaderGraphPtr MayaShaderGraph::create(
+    const ShaderGraph* parent,
+    const string&      name,
+    ElementPtr         element,
+    GenContext&        context)
 {
     ShaderGraphPtr graph = std::make_shared<MayaShaderGraph>(parent, name, element, context);
     return graph;
@@ -240,19 +247,20 @@ void MayaShaderGraph::addPropagatedInput(ShaderNode& node, string const& name)
 
 StringVec const& MayaShaderGraph::getPropagatedInputs() const { return _propagatedInputs; }
 
-void MayaShaderGraph::createConnectedNodes(const ElementPtr& downstreamElement,
-                                           const ElementPtr& upstreamElement,
-                                           ElementPtr connectingElement,
-                                           GenContext& context)
+void MayaShaderGraph::createConnectedNodes(
+    const ElementPtr& downstreamElement,
+    const ElementPtr& upstreamElement,
+    ElementPtr        connectingElement,
+    GenContext&       context)
 {
     // Create the node if it doesn't exist.
     NodePtr upstreamNode = upstreamElement->asA<Node>();
     if (!upstreamNode) {
-        throw ExceptionShaderGenError("Upstream element to connect is not a node '" +
-                                      upstreamElement->getName() + "'");
+        throw ExceptionShaderGenError(
+            "Upstream element to connect is not a node '" + upstreamElement->getName() + "'");
     }
     const string& newNodeName = upstreamNode->getName();
-    ShaderNode* newNode = getNode(newNodeName);
+    ShaderNode*   newNode = getNode(newNodeName);
     if (!newNode) {
         newNode = createNode(upstreamNode, context);
     }
@@ -265,7 +273,8 @@ void MayaShaderGraph::createConnectedNodes(const ElementPtr& downstreamElement,
 
         InputPtr graphInput = activeInput->getInterfaceInput();
         if (graphInput && graphInput->hasDefaultGeomPropString()) {
-            ShaderInput* shaderInput = getNode(upstreamNode->getName())->getInput(activeInput->getName());
+            ShaderInput* shaderInput
+                = getNode(upstreamNode->getName())->getInput(activeInput->getName());
             addDefaultGeomNode(shaderInput, *graphInput->getDefaultGeomProp(), context);
         }
     }
@@ -282,11 +291,15 @@ void MayaShaderGraph::createConnectedNodes(const ElementPtr& downstreamElement,
         // the nodedef output in case of a multioutput node upstream.
         connectingElement = downstreamElement->asA<Output>();
     }
-    OutputPtr nodeDefOutput = connectingElement ? upstreamNode->getNodeDefOutput(connectingElement) : nullptr;
-    ShaderOutput* output = nodeDefOutput ? newNode->getOutput(nodeDefOutput->getName()) : newNode->getOutput();
+    OutputPtr nodeDefOutput
+        = connectingElement ? upstreamNode->getNodeDefOutput(connectingElement) : nullptr;
+    ShaderOutput* output
+        = nodeDefOutput ? newNode->getOutput(nodeDefOutput->getName()) : newNode->getOutput();
     if (!output) {
-        throw ExceptionShaderGenError("Could not find an output named '" + (nodeDefOutput ? nodeDefOutput->getName() : string("out")) +
-                                      "' on upstream node '" + upstreamNode->getName() + "'");
+        throw ExceptionShaderGenError(
+            "Could not find an output named '"
+            + (nodeDefOutput ? nodeDefOutput->getName() : string("out")) + "' on upstream node '"
+            + upstreamNode->getName() + "'");
     }
 
     // Check if it was a node downstream
@@ -297,12 +310,14 @@ void MayaShaderGraph::createConnectedNodes(const ElementPtr& downstreamElement,
         if (downstream && connectingElement) {
             ShaderInput* input = downstream->getInput(connectingElement->getName());
             if (!input) {
-                throw ExceptionShaderGenError("Could not find an input named '" + connectingElement->getName() +
-                                              "' on downstream node '" + downstream->getName() + "'");
+                throw ExceptionShaderGenError(
+                    "Could not find an input named '" + connectingElement->getName()
+                    + "' on downstream node '" + downstream->getName() + "'");
             }
             input->makeConnection(output);
         } else {
-            throw ExceptionShaderGenError("Could not find downstream node ' " + downstreamNode->getName() + "'");
+            throw ExceptionShaderGenError(
+                "Could not find downstream node ' " + downstreamNode->getName() + "'");
         }
     } else {
         // Not a node, then it must be an output
@@ -344,10 +359,8 @@ void MayaShaderGraph::addUpstreamDependencies(const Element& root, GenContext& c
             }
         }
 
-        createConnectedNodes(downstreamElement,
-                             upstreamElement,
-                             edge.getConnectingElement(),
-                             context);
+        createConnectedNodes(
+            downstreamElement, upstreamElement, edge.getConnectingElement(), context);
     }
 }
 

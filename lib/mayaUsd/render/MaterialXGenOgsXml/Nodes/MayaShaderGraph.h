@@ -19,7 +19,11 @@ class MayaShaderGraph : public ShaderGraph
 {
 public:
     /// Constructor
-    MayaShaderGraph(const ShaderGraph* parent, const string& name, const ElementPtr& element, GenContext& context);
+    MayaShaderGraph(
+        const ShaderGraph* parent,
+        const string&      name,
+        const ElementPtr&  element,
+        GenContext&        context);
     /// Constructor.
     MayaShaderGraph(const ShaderGraph* parent, const NodeGraph& nodeGraph, GenContext& context);
 
@@ -28,8 +32,8 @@ public:
 
     /// Create a new shader graph from an element.
     /// Supported elements are outputs and shader nodes.
-    static ShaderGraphPtr create(const ShaderGraph* parent, const string& name, ElementPtr element,
-                                 GenContext& context);
+    static ShaderGraphPtr
+    create(const ShaderGraph* parent, const string& name, ElementPtr element, GenContext& context);
 
     /// Create a new shader graph from a nodegraph.
     static ShaderGraphPtr
@@ -43,12 +47,14 @@ protected:
     /// Create node connections corresponding to the connection between a pair of elements.
     /// @param downstreamElement Element representing the node to connect to.
     /// @param upstreamElement Element representing the node to connect from
-    /// @param connectingElement If non-null, specifies the element on on the downstream node to connect to.
+    /// @param connectingElement If non-null, specifies the element on on the downstream node to
+    /// connect to.
     /// @param context Context for generation.
-    void createConnectedNodes(const ElementPtr& downstreamElement,
-                              const ElementPtr& upstreamElement,
-                              ElementPtr connectingElement,
-                              GenContext& context);
+    void createConnectedNodes(
+        const ElementPtr& downstreamElement,
+        const ElementPtr& upstreamElement,
+        ElementPtr        connectingElement,
+        GenContext&       context);
 
     /// Traverse from the given root element and add all dependencies upstream.
     /// The traversal is done in the context of a material, if given, to include
