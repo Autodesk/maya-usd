@@ -89,7 +89,7 @@ class SaveUpAxisAndUnitsTest(unittest.TestCase):
         verifyPrims(stage)
 
         # Save the file. Make sure the edit will go where requested by saveLocation.
-        tempMayaFile = 'saveLockedAnonLayer.ma'
+        tempMayaFile = 'saveUpAxisAndUnitsTest.ma'
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
         cmds.file(rename=tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
