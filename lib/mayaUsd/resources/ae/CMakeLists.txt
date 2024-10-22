@@ -21,11 +21,17 @@ set(MAYAUSD_AE_TEMPLATES usdschemabase)
 foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
     install(FILES
         ${_SUBDIR}/__init__.py
-        ${_SUBDIR}/custom_image_control.py
-        ${_SUBDIR}/custom_enum_control.py
         ${_SUBDIR}/ae_template.py
-        ${_SUBDIR}/attribute_custom_control.py
-        ${_SUBDIR}/material_custom_control.py
+        ${_SUBDIR}/aeUITemplate.py
+        ${_SUBDIR}/arrayCustomControl.py
+        ${_SUBDIR}/attributeCustomControl.py
+        ${_SUBDIR}/connectionsCustomControl.py
+        ${_SUBDIR}/displayCustomControl.py
+        ${_SUBDIR}/enumCustomControl.py
+        ${_SUBDIR}/imageCustomControl.py
+        ${_SUBDIR}/materialCustomControl.py
+        ${_SUBDIR}/metadataCustomControl.py
+        ${_SUBDIR}/observers.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
     )
 endforeach()

@@ -19,3 +19,4 @@
 + [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md)
 + [Layer Locking](doc/LayerLocking.md)
 + [Edit Routing](doc/EditRouting.md)
++ [Attribute Editor (AE) Template](lib/mayaUsd/resources/ae/usdschemabase/Attribute-Editor-Template-Doc.md)
