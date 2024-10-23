@@ -39,6 +39,7 @@ MayaShaderGraph::MayaShaderGraph(
     const ElementPtr&  element,
     GenContext&        context)
     : ShaderGraph(parent, name, element->getDocument(), context.getReservedWords())
+    , _shouldPropagateInputs(false)
 {
     ElementPtr root;
 
@@ -190,10 +191,11 @@ MayaShaderGraph::MayaShaderGraph(
     const NodeGraph&   nodeGraph,
     GenContext&        context)
     : ShaderGraph(
-        parent,
-        makeValidName(nodeGraph, context),
-        nodeGraph.getDocument(),
-        context.getReservedWords())
+          parent,
+          makeValidName(nodeGraph, context),
+          nodeGraph.getDocument(),
+          context.getReservedWords())
+    , _shouldPropagateInputs(true)
 {
     // Clear classification
     _classification = 0;
@@ -237,6 +239,10 @@ MayaShaderGraph::create(const ShaderGraph* parent, const NodeGraph& nodeGraph, G
 
 void MayaShaderGraph::addPropagatedInput(ShaderNode& node, string const& name)
 {
+    if (!_shouldPropagateInputs) {
+        return;
+    }
+
     auto* nodeInput = node.getInput(name);
     if (nodeInput) {
         auto* inputSocket = getInputSocket(name);

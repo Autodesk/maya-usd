@@ -70,6 +70,7 @@ protected:
 #endif
 
     StringVec _propagatedInputs;
+    bool      _shouldPropagateInputs;
 };
 
 MATERIALX_NAMESPACE_END
