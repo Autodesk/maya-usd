@@ -191,10 +191,10 @@ MayaShaderGraph::MayaShaderGraph(
     const NodeGraph&   nodeGraph,
     GenContext&        context)
     : ShaderGraph(
-          parent,
-          makeValidName(nodeGraph, context),
-          nodeGraph.getDocument(),
-          context.getReservedWords())
+        parent,
+        makeValidName(nodeGraph, context),
+        nodeGraph.getDocument(),
+        context.getReservedWords())
     , _shouldPropagateInputs(true)
 {
     // Clear classification
