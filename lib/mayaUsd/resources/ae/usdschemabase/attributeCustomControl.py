@@ -21,16 +21,51 @@ from maya.OpenMaya import MGlobal
 import os.path
 import json
 
+# List of extra functions used when asked to provide an attribute nice name.
+_niceAttributeNameFuncs = []
+
+# A client can add a function to be called when asked for an attribute nice name.
+# That function will be called from "getNiceAttributeName" below giving the
+# client the ability to provide a nice name for the attribute.
+#
+# Your function will receive as input two params:
+# - ufe attribute
+# - attribute name
+# And should return the adjusted name or None if no adjustment was made.
+def prependNiceAttributeNameFunc(niceNameFunc):
+    global _niceAttributeNameFuncs
+    _niceAttributeNameFuncs.insert(0, niceNameFunc)
+
+# Used to remove any function added with the "prependNiceAttributeNameFunc()" helper
+# above. For example when unloading your plugin.
+def removeAttributeNameFunc(niceNameFunc):
+    global _niceAttributeNameFuncs
+    if niceNameFunc in _niceAttributeNameFuncs:
+        _niceAttributeNameFuncs.remove(niceNameFunc)
 
 def getNiceAttributeName(ufeAttr, attrName):
     '''
-    Convert the attribute name into  nice name.
+    Convert the attribute name into a nice name.
     '''
     # Note: the uiname metadata comes from LookdevX and was used for connections.
     if hasattr(ufeAttr, 'displayName'):
         attrName = ufeAttr.displayName
     elif hasattr(ufeAttr, "hasMetadata") and ufeAttr.hasMetadata("uiname"):
         attrName = str(ufeAttr.getMetadata("uiname"))
+
+    try:
+        # If there are any nice attribute name functions registered call them now.
+        # this gives clients the ability to inject some nice naming.
+        global _niceAttributeNameFuncs
+        for fn in _niceAttributeNameFuncs:
+            tempName = fn(ufeAttr, attrName)
+            if tempName:
+                attrName = tempName
+    except:
+        # Do not let any of the callback failures affect our template.
+        pass
+
+    # Finally use our internal MayaUsd nice naming function.
     return mayaUsdUfe.prettifyName(attrName)
 
 def cleanAndFormatTooltip(s):

@@ -97,7 +97,34 @@ getRegisteredPythonCallbacks()
     return callbacks;
 }
 
-void addPythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
+PXR_NS::VtDictionary _triggerUICallback(
+    const PXR_NS::TfToken&      operation,
+    const PXR_NS::VtDictionary& cbContext,
+    const PXR_NS::VtDictionary& cbData)
+{
+    if (!UsdUfe::isUICallbackRegistered(operation))
+        return cbData;
+
+    //
+    // Need to copy the input data into non-const reference to call C++ version.
+    // This allows the python callback function to modify the data which we then
+    // return to the triggering function.
+    // 
+    // Trying to use "PXR_NS::VtDictionary& cbData" results in python error:
+    // 
+    // Python argument types in usdUfe._usdUfe.triggerUICallback(str, dict, dict)
+    // did not match C++ signature:
+    //     triggerUICallback(
+    //       class pxrInternal_v0_24__pxrReserved__::TfToken,
+    //       class pxrInternal_v0_24__pxrReserved__::VtDictionary,
+    //       class pxrInternal_v0_24__pxrReserved__::VtDictionary{lvalue})
+    //
+    PXR_NS::VtDictionary cbDataReturned(cbData);
+    UsdUfe::triggerUICallback(operation, cbContext, cbDataReturned);
+    return cbDataReturned;
+}
+
+void _addPythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
 {
     if (!uiCallback)
         return;
@@ -117,7 +144,7 @@ void addPythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
     UsdUfe::registerUICallback(operation, cb);
 }
 
-void removePythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
+void _removePythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
 {
     if (!uiCallback)
         return;
@@ -142,6 +169,10 @@ void removePythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback
 void wrapUICallback()
 {
     // Making the callbacks accessible from Python
-    def("registerUICallback", addPythonCallback);
-    def("unregisterUICallback", removePythonCallback);
+    def("registerUICallback", _addPythonCallback);
+    def("unregisterUICallback", _removePythonCallback);
+
+    // Helper function to trigger a callback for a given operation.
+    // Caller should supply the callback context and data.
+    def("triggerUICallback", _triggerUICallback);
 }

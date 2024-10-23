@@ -17,20 +17,20 @@
 
 #include <usdUfe/base/tokens.h>
 
-#include <pxr/base/tf/token.h>
+#include <pxr/base/tf/hashmap.h>
+
+#include <functional>
+#include <vector>
 
 namespace {
 
-UsdUfe::UICallbacks& getRegisteredUICallbacks()
-{
-    static UsdUfe::UICallbacks registeredUICallbacks;
-    return registeredUICallbacks;
-}
+using UICallbacks = PXR_NS::
+    TfHashMap<PXR_NS::TfToken, std::vector<UsdUfe::UICallback::Ptr>, PXR_NS::TfToken::HashFunctor>;
 
-const std::vector<UsdUfe::UICallback::Ptr>& getEmptyCallbacks()
+UICallbacks& getRegisteredUICallbacks()
 {
-    static std::vector<UsdUfe::UICallback::Ptr> empty;
-    return empty;
+    static UICallbacks registeredUICallbacks;
+    return registeredUICallbacks;
 }
 
 } // namespace
@@ -59,12 +59,24 @@ void unregisterUICallback(const PXR_NS::TfToken& operation, const UICallback::Pt
         getRegisteredUICallbacks().erase(operation);
 }
 
-const std::vector<UICallback::Ptr>& getUICallbacks(const PXR_NS::TfToken& operation)
+bool isUICallbackRegistered(const PXR_NS::TfToken& operation)
 {
-    UsdUfe::UICallbacks& uiCallbacks = getRegisteredUICallbacks();
+    const auto& uiCallbacks = getRegisteredUICallbacks();
+    return (uiCallbacks.count(operation) >= 1);
+}
 
+void triggerUICallback(
+    const PXR_NS::TfToken&      operation,
+    const PXR_NS::VtDictionary& context,
+    PXR_NS::VtDictionary&       data)
+{
+    UICallbacks& uiCallbacks = getRegisteredUICallbacks();
     auto foundCallback = uiCallbacks.find(operation);
-    return (foundCallback == uiCallbacks.end()) ? getEmptyCallbacks() : foundCallback->second;
+    if (foundCallback != uiCallbacks.end()) {
+        for (auto& cb : foundCallback->second) {
+            (*cb)(context, data);
+        }
+    }
 }
 
 } // namespace USDUFE_NS_DEF
