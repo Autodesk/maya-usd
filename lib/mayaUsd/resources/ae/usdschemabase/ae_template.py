@@ -29,13 +29,14 @@ import re
 import ufe
 import maya.mel as mel
 import maya.cmds as cmds
+import mayaUsd.lib as mayaUsdLib
 import mayaUsd.ufe as mayaUsdUfe
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
-from pxr import Usd, UsdGeom, UsdShade, Tf, Sdr
+from pxr import Usd, UsdGeom, UsdShade, Tf, Sdr, Vt
 
 
 def defaultControlCreator(aeTemplate, attrName):
@@ -235,6 +236,7 @@ class AETemplate(object):
         cmds.editorTemplate(beginScrollLayout=True)
         self.buildUI()
         self.createAppliedSchemasSection()
+        self.createCustomCallbackSection()
         self.createCustomExtraAttrs()
         self.createMetadataSection()
         cmds.editorTemplate(endScrollLayout=True)
@@ -492,6 +494,35 @@ class AETemplate(object):
                     typeName = self.sectionNameFromSchema(typeName)
                     self.createSection(typeName, attrs, False)
 
+    @staticmethod
+    def getAETemplateForCustomCallback():
+        global _aeTemplate
+        return _aeTemplate
+
+    def createCustomCallbackSection(self):
+        '''Special custom callback section that gives users the opportunity to add
+        layout section(s) to the AE template.
+        See https://github.com/Autodesk/maya-usd/blob/dev/lib/mayaUsd/resources/ae/usdschemabase/Attribute-Editor-Template-Doc.md
+        for more info.
+        '''
+
+        # Create the callback context/data (empty).
+        cbContext = {
+            'ufe_path_string' : ufe.PathString.string(self.item.path())
+        }
+        cbContextDict = Vt._ReturnDictionary(cbContext)
+        cbDataDict = Vt._ReturnDictionary({})
+
+        # Trigger the callback which will give other plugins the opportunity
+        # to add controls to our AE template.
+        global _aeTemplate
+        try:
+            _aeTemplate = self
+            cbDataDict = mayaUsdLib.triggerUICallback('onBuildAETemplate', cbContextDict, cbDataDict)
+        except Exception as ex:
+            # Do not let any of the callback failures affect our template.
+            print('Failed triggerUICallback: %s' % ex)
+        _aeTemplate = None
 
     def buildUI(self):
         usdSch = Usd.SchemaRegistry()

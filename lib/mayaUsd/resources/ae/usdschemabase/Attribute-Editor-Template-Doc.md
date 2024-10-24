@@ -23,9 +23,11 @@ supresses the given attribute. `suppressArrayAttribute` which supresses all
 array attribute if the option to display is turned off.
 
 The constructor of the AE template calls `buildUI` to fit each attribute in a
-custom control. Afterward it calls the functions `createAppliedSchemasSection`,
-`createCustomExtraAttrs` and `createMetadataSection` to create some UI sections
-that are always present.
+custom control. Afterward it calls the functions (in order) to create some UI sections that are always present:
+* `createAppliedSchemasSection`
+* `createCustomCallbackSection` - see below for more info
+* `createCustomExtraAttrs`
+* `createMetadataSection`
 
 The `buildUI` function goes through each USD schema of the USD prim. If the
 schema is one of the "well-known" ones that have a specialized UI section,
@@ -105,3 +107,71 @@ There are various helper functions and classes.
 
 - `AEShaderLayout` class: sort and order attributes. Used by LookdevX.
 
+## Callbacks
+
+There is a special custom callback section `createCustomCallbackSection()` called during `buildUI()` in the AE template that gives users the opportunity to add layout section(s) to the AE template. For example the Arnold plugin which has its own USD prims. Using this callback section a plugin can organize plugin specific attributes of a prim into AE layout section(s).
+
+To use this callback section a plugin needs to create a callback function  and then register for the AE template UI callback:
+
+```python
+# AE template UI callback function.
+import ufe
+import maya.internal.common.ufe_ae.template as ufeAeTemplate
+from ufe_ae.usd.nodes.usdschemabase.ae_template import AETemplate as mayaUsd_AETemplate
+
+# Callback function which receives two params as input: callback context and
+# callback data (empty).
+def onBuildAETemplateCallback(context, data):
+    # In the callback context you can retrieve the ufe path string.
+    ufe_path_string = context.get('ufe_path_string')
+    ufePath = ufe.PathString.path(ufe_path_string)
+    ufeItem = ufe.Hierarchy.createItem(ufePath)
+
+    # The callback data is empty.
+
+    # Then you can call the special static method above to get the MayaUsd
+    # AE template class object. Using that object you can then create
+    # layout sections and add controls.
+    #
+    # Any controls added should be done using mayaUsdAETemplate.addControls()
+    # which takes care of checking the AE state (show array attributes, nice
+    # name, etc). It also adds the added attributes to the addedAttrs list.
+    # This will keep the attributes from also appearing in the "Extra
+    # Attributes" section.
+    #
+    # If you don't want attributes shown in the AE, you should call
+    # mayaUsdAETemplate.suppress().
+    #
+    # You can also inject a function into the attribute nice naming.
+    # See [Attribute Nice Naming callback] section below for more info.
+    #
+    mayaUsdAETemplate = mayaUsd_AETemplate.getAETemplateForCustomCallback()
+    if mayaUsdAETemplate:
+        # Create a new section and add attributes to it.
+        with ufeAeTemplate.Layout(self.mayaUsdAETemplate, 'My Section', collapse=True):
+            self.mayaUsdAETemplate.addControls(['param1', 'param2'])
+
+# Register your callback so it will be called during the MayaUsd AE
+# template UI building code. This would probably done during plugin loading.
+# The first param string 'onBuildAETemplate' is the callback operation and the
+# second is the name of your callback function.
+import mayaUsd.lib as mayaUsdLib
+from usdUfe import registerUICallback
+mayaUsdLib.registerUICallback('onBuildAETemplate', onBuildAETemplateCallback)
+
+# During your plugin unload you should unregister the callback (and any attribute
+# nice naming function you also added).
+mayaUsdLib.unregisterUICallback('onBuildAETemplate', onBuildAETemplateCallback)
+```
+
+## Attribute Nice Naming callback
+
+A client can add a function to be called when asked for an attribute nice name. That function will be called from `getNiceAttributeName()` giving the client the ability to provide a nice name for the attribute.
+
+The callback function will receive as input two params:
+- ufe attribute
+- attribute name
+
+And should return the adjusted name or `None` if no adjustment was made.
+
+See `attributeCustomControl.getNiceAttributeName()` for more info.

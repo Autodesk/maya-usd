@@ -748,6 +748,7 @@ UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
         { "usdSkel", "Skeleton" },
         { "usdUI", "UI" },
         { "usdVol", "Volumes" },
+        { "usdArnold", "Arnold" }
     };
     // clang-format on
     return schemaPluginNiceNames;
