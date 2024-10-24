@@ -61,9 +61,9 @@ def getNiceAttributeName(ufeAttr, attrName):
             tempName = fn(ufeAttr, attrName)
             if tempName:
                 attrName = tempName
-    except:
+    except Exception as ex:
         # Do not let any of the callback failures affect our template.
-        pass
+        print('Failed to call AE nice naming callback for %s: %s' % (attrName, ex))
 
     # Finally use our internal MayaUsd nice naming function.
     return mayaUsdUfe.prettifyName(attrName)
