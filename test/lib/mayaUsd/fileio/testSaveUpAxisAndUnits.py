@@ -54,13 +54,13 @@ class SaveUpAxisAndUnitsTest(unittest.TestCase):
 
     def testSaveLayerInUSD(self):
         # Save the file. Make sure the USD edits will go to a USD file.
-        self._runTestSaveLayer(1)
+        self._runTestSaveLayer(True)
 
     def testSaveLayerInMaya(self):
         # Save the file. Make sure the USD edits will go to the Maya file.
-        self._runTestSaveLayer(2)
+        self._runTestSaveLayer(False)
 
-    def _runTestSaveLayer(self, saveLocation):
+    def _runTestSaveLayer(self, saveOnDisk):
         '''
         The goal is to create an anonymous sub-layer, verify the up-axis and units
         metadata is present when reloaded.
@@ -88,7 +88,9 @@ class SaveUpAxisAndUnitsTest(unittest.TestCase):
 
         verifyPrims(stage)
 
-        # Save the file. Make sure the edit will go where requested by saveLocation.
+        # Save the file. Make sure the edit will go where requested by saveOnDisk.
+        # saveLocation 1 means on-disk, 2 in the Maya scene.
+        saveLocation = 1 if saveOnDisk else 2
         tempMayaFile = 'saveUpAxisAndUnitsTest.ma'
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
         cmds.file(rename=tempMayaFile)
@@ -111,13 +113,27 @@ class SaveUpAxisAndUnitsTest(unittest.TestCase):
         subLayer = Sdf.Layer.FindOrOpen(subLayerPath)
         self.assertIsNotNone(subLayer)
 
-        self.assertTrue(stage.HasAuthoredMetadata(UsdGeom.Tokens.metersPerUnit))
-        self.assertEqual(UsdGeom.GetStageMetersPerUnit(stage), 0.01)
-        self.assertTrue(stage.HasAuthoredMetadata(UsdGeom.Tokens.upAxis))
-        self.assertEqual(UsdGeom.GetStageUpAxis(stage), UsdGeom.Tokens.y)
+        # Verify metadata if saved on disk or verify the absence of metadata
+        # when saved in the Maya scene. We only author metadata when on-disk,
+        # since when saved in the Maya scene, the layers remain anonymous.
+        if saveOnDisk:
+            self.assertTrue(stage.HasAuthoredMetadata(UsdGeom.Tokens.metersPerUnit))
+            self.assertEqual(UsdGeom.GetStageMetersPerUnit(stage), 0.01)
+            self.assertTrue(stage.HasAuthoredMetadata(UsdGeom.Tokens.upAxis))
+            self.assertEqual(UsdGeom.GetStageUpAxis(stage), UsdGeom.Tokens.y)
+        else:
+            self.assertFalse(stage.HasAuthoredMetadata(UsdGeom.Tokens.metersPerUnit))
+            self.assertFalse(stage.HasAuthoredMetadata(UsdGeom.Tokens.upAxis))
 
         # Verify the two objects are still present.
         verifyPrims(stage)
+
+        # Stage the sub-layer by itself and verify it has no metadata,
+        # since we only author metadata on the root layer.
+        subStage = Usd.Stage.Open(subLayer)
+        self.assertFalse(subStage.HasAuthoredMetadata(UsdGeom.Tokens.metersPerUnit))
+        self.assertFalse(subStage.HasAuthoredMetadata(UsdGeom.Tokens.upAxis))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
