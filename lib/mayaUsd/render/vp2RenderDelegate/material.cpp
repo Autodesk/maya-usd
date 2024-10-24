@@ -215,6 +215,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float3ToFloatX)
     (Float3ToFloatY)
     (Float3ToFloatZ)
+    (FloatToFloat3)
 
     // When using OCIO from Maya:
     (Maya_OCIO_)

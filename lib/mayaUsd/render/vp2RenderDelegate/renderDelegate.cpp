@@ -36,6 +36,7 @@
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hd/tokens.h>
 
+#include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
 
 #include <tbb/spin_rw_mutex.h>
@@ -48,6 +49,11 @@ TF_DEFINE_ENV_SETTING(
     MAYAUSD_VP2_USE_ONLY_PREVIEWSURFACE,
     false,
     "This env tells the viewport to only draw glslfx UsdPreviewSurface shading networks.");
+
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_VP2_USE_LAMBERT_FALLBACK,
+    false,
+    "This env flag allows forcing the fallback shaders to the legacy lambert shader fragments.");
 
 namespace {
 
@@ -85,6 +91,21 @@ const MString kPointSizeParameterName = "pointSize";       //!< Shader parameter
 const MString kCurveBasisParameterName = "curveBasis";     //!< Shader parameter name
 const MString kStructOutputName = "outSurfaceFinal"; //!< Output struct name of the fallback shader
 
+//! Returns a boolean of whether or not we want the standardSurface shader fragment graph fallbacks
+bool WantStandardSurfaceFallback()
+{
+    bool useStandardSurface
+        = (MGlobal::executeCommandStringResult("defaultShaderName()") != "lambert1");
+    if (TfGetEnvSetting(MAYAUSD_VP2_USE_LAMBERT_FALLBACK)) {
+        // Explicit request for legacy Lambert:
+        useStandardSurface = false;
+    }
+    return useStandardSurface;
+}
+
+//! Boolean of whether or not to use shader fragments using the default standardSurface material
+const bool _useStandardSurface = WantStandardSurfaceFallback();
+
 //! Enum class for fallback shader types
 enum class FallbackShaderType
 {
@@ -101,17 +122,22 @@ enum class FallbackShaderType
 constexpr size_t FallbackShaderTypeCount = static_cast<size_t>(FallbackShaderType::kCount);
 
 //! Array of constant-color shader fragment names indexed by FallbackShaderType
-const MString _fallbackShaderNames[] = { "FallbackShader",
-                                         "BasisCurvesLinearFallbackShader",
-                                         "BasisCurvesCubicFallbackShader",
-                                         "BasisCurvesCubicFallbackShader",
-                                         "BasisCurvesCubicFallbackShader",
-                                         "PointsFallbackShader" };
+const MString _fallbackShaderNames[]
+    = { _useStandardSurface ? "FallbackShaderStandardSurface" : "FallbackShader",
+        "BasisCurvesLinearFallbackShader",
+        "BasisCurvesCubicFallbackShader",
+        "BasisCurvesCubicFallbackShader",
+        "BasisCurvesCubicFallbackShader",
+        "PointsFallbackShader" };
 
 //! Array of varying-color shader fragment names indexed by FallbackShaderType
 const MString _cpvFallbackShaderNames[]
-    = { "FallbackCPVShader",         "BasisCurvesLinearCPVShader", "BasisCurvesCubicCPVShader",
-        "BasisCurvesCubicCPVShader", "BasisCurvesCubicCPVShader",  "PointsFallbackCPVShader" };
+    = { _useStandardSurface ? "FallbackCPVShaderStandardSurface" : "FallbackCPVShader",
+        "BasisCurvesLinearCPVShader",
+        "BasisCurvesCubicCPVShader",
+        "BasisCurvesCubicCPVShader",
+        "BasisCurvesCubicCPVShader",
+        "PointsFallbackCPVShader" };
 
 //! "curveBasis" parameter values for three different cubic curves
 const std::unordered_map<FallbackShaderType, int> _curveBasisParameterValueMapping
@@ -183,8 +209,9 @@ public:
         if (!TF_VERIFY(shaderMgr))
             return;
 
-        _3dDefaultMaterialShader
-            = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dDefaultMaterialShader);
+        _3dDefaultMaterialShader = _useStandardSurface
+            ? shaderMgr->getStockShader(MHWRender::MShaderManager::k3dStandardSurfaceShader)
+            : shaderMgr->getStockShader(MHWRender::MShaderManager::k3dDefaultMaterialShader);
 
         TF_VERIFY(_3dDefaultMaterialShader);
 

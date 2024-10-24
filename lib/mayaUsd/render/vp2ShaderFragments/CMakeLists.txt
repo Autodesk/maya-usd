@@ -18,6 +18,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     Float3ToFloatX.xml
     Float3ToFloatY.xml
     Float3ToFloatZ.xml
+    FloatToFloat3.xml
     UsdPreviewSurfaceLightAPI1.xml
     UsdPreviewSurfaceLightAPI2.xml
     UsdPreviewSurfaceLightAPI3.xml
@@ -49,7 +50,9 @@ list(APPEND SHADERFRAGMENTS_XMLS
     BasisCurvesLinearFallbackShader.xml
     BasisCurvesLinearHull.xml
     FallbackCPVShader.xml
+    FallbackCPVShaderStandardSurface.xml
     FallbackShader.xml
+    FallbackShaderStandardSurface.xml
     Float4ToFloat3.xml
     Float4ToFloat4.xml
     NwFaceCameraIfNAN.xml
