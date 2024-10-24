@@ -732,8 +732,6 @@ MStatus addLayerToBuilder(
     auto fileFormatIdToken = layer->GetFileFormat()->GetFormatId();
     fileFormatIdHandle.setString(UsdMayaUtil::convert(fileFormatIdToken.GetString()));
 
-    MayaUsd::utils::setLayerUpAxisAndUnits(layer);
-
     std::string temp;
     if (!stubOnly && ((exportOnlyIfDirty && layer->IsDirty()) || !exportOnlyIfDirty)) {
         if (!layer->ExportToString(&temp)) {
@@ -984,6 +982,10 @@ void LayerDatabase::convertAnonymousLayers(
     //       to convertAnonymousLayersRecursive
     root = stage->GetRootLayer();
     if (root->IsAnonymous()) {
+        // Only set up-axis and units metadata on the root layer
+        // and only if it is anonymous before being saved.
+        MayaUsd::utils::setLayerUpAxisAndUnits(root);
+
         const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == root);
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
