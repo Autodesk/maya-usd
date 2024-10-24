@@ -71,7 +71,7 @@ void triggerUICallback(
     PXR_NS::VtDictionary&       data)
 {
     UICallbacks& uiCallbacks = getRegisteredUICallbacks();
-    auto foundCallback = uiCallbacks.find(operation);
+    auto         foundCallback = uiCallbacks.find(operation);
     if (foundCallback != uiCallbacks.end()) {
         for (auto& cb : foundCallback->second) {
             (*cb)(context, data);

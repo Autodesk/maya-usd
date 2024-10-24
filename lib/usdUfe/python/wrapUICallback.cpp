@@ -109,9 +109,9 @@ PXR_NS::VtDictionary _triggerUICallback(
     // Need to copy the input data into non-const reference to call C++ version.
     // This allows the python callback function to modify the data which we then
     // return to the triggering function.
-    // 
+    //
     // Trying to use "PXR_NS::VtDictionary& cbData" results in python error:
-    // 
+    //
     // Python argument types in usdUfe._usdUfe.triggerUICallback(str, dict, dict)
     // did not match C++ signature:
     //     triggerUICallback(
