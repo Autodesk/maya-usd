@@ -34,7 +34,7 @@ applied schema or class schemas. A few are not looking at schemas at all
 but are grabbing specific kind of attributes. Here are the `find` functions:
 
 - findAppliedSchemas: find the attributes belonging to applied schemas.
-- findClassSchemasL find the attributes belonging to the prim class schemas.
+- findClassSchemas: find the attributes belonging to the prim class schemas.
 - findSpecialSections: find the shader, transforms and display attributes.
 
 The `orderSections` function has a list of section it wishes to place first and
