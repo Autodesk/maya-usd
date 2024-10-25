@@ -637,7 +637,7 @@ class AETemplate(object):
             lowerName = sectionName.lower()
             return 'light' in lowerName and 'link' not in lowerName
         
-        # Dictionry of which function to call to create a given section.
+        # Dictionary of which function to call to create a given section.
         # By default, calls the generic createSection, which will search
         # in the list of known custom control creators for the one to be
         # used.
