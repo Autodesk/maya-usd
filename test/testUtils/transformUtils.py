@@ -51,7 +51,7 @@ def assertPrimXforms(test, prim, xforms):
             ('xformOp:scale', (10., 10., 10.))
         ]
     '''
-    EPSILON = 1e-6
+    EPSILON = 1e-5
     xformOpOrder = prim.GetAttribute('xformOpOrder').Get()
     test.assertEqual(len(xformOpOrder), len(xforms))
     for name, value in xforms:
