@@ -764,6 +764,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
             UsdMayaJobExportArgsTokens->um,
             UsdMayaJobExportArgsTokens->mm,
             UsdMayaJobExportArgsTokens->cm,
+            UsdMayaJobExportArgsTokens->dm,
             UsdMayaJobExportArgsTokens->m,
             UsdMayaJobExportArgsTokens->km,
             UsdMayaJobExportArgsTokens->lightyear,

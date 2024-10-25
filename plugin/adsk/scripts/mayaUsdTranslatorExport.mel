@@ -1351,6 +1351,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
                             menuItem -divider on;
                             menuItem -l `getMayaUsdString("kExportUnitMillimeterLbl")` -ann "mm";
                             menuItem -l `getMayaUsdString("kExportUnitCentimeterLbl")` -ann "cm";
+                            menuItem -l `getMayaUsdString("kExportUnitDecimeterLbl")` -ann "dm";
                             menuItem -l `getMayaUsdString("kExportUnitMeterLbl")` -ann "m";
                             menuItem -l `getMayaUsdString("kExportUnitKilometerLbl")` -ann "km";
                             menuItem -divider on;
