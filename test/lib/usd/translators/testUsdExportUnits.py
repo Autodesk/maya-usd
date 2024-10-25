@@ -110,29 +110,69 @@ class testUsdExportUnits(unittest.TestCase):
             ('xformOp:translate', (0., 0., 30.)),
             ('xformOp:scale', (10., 10., 10.))])
 
-    def testExportUnitsDifferentUnits(self):
+    def testExportUnitsNanometers(self):
+        """Test exporting and forcing units of nanometers, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('nm', 1e-9)
+
+    def testExportUnitsMicrometers(self):
+        """Test exporting and forcing units of micrometers, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('um', 1e-6)
+
+    def testExportUnitsMillimeters(self):
+        """Test exporting and forcing units of millimeters, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('mm', 1e-3)
+
+    def testExportUnitsDecimeters(self):
+        """Test exporting and forcing units of decimeters, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('dm', 1e-1)
+
+    def testExportUnitsMeters(self):
+        """Test exporting and forcing units of meters, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('m', 1.)
+
+    def testExportUnitsKilometers(self):
         """Test exporting and forcing units of kilometers, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('km', 1000.)
+
+    def testExportUnitsInches(self):
+        """Test exporting and forcing units of inches, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('inch', 0.0254)
+
+    def testExportUnitsFeet(self):
+        """Test exporting and forcing units of feet, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('foot', 0.3048)
+
+    def testExportUnitsYards(self):
+        """Test exporting and forcing units of yards, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('yard', 0.9144)
+
+    def testExportUnitsMiles(self):
+        """Test exporting and forcing units of miles, different from Maya prefs."""
+        self._runTestExportUnitsDifferentUnits('mile', 1609.344)
+
+    def _runTestExportUnitsDifferentUnits(self, unitName, expectedMetersPerUnit):
+        """Test exporting and forcing units, different from Maya prefs."""
         cmds.polySphere()
         cmds.move(0, 0, 3, relative=True)
 
         usdFile = os.path.abspath('UsdExportUnits_DifferentY.usda')
         cmds.mayaUSDExport(file=usdFile,
                            shadingMode='none',
-                           unit='km')
+                           unit=unitName)
         
         stage = Usd.Stage.Open(usdFile)
         self.assertTrue(stage.HasAuthoredMetadata('metersPerUnit'))
 
-        expectedMetersPerUnit = 1000.
         actualMetersPerUnit = UsdGeom.GetStageMetersPerUnit(stage)
-        self.assertEqual(actualMetersPerUnit, expectedMetersPerUnit)
+        self.assertAlmostEqual(actualMetersPerUnit, expectedMetersPerUnit)
 
         spherePrim = stage.GetPrimAtPath('/pSphere1')
         self.assertTrue(spherePrim)
 
+        expectedScale = 0.01 / expectedMetersPerUnit
         transformUtils.assertPrimXforms(self, spherePrim, [
-            ('xformOp:translate', (0., 0., 0.00003)),
-            ('xformOp:scale', (0.00001, 0.00001, 0.00001))])
+            ('xformOp:translate', (0., 0., 3 * expectedScale)),
+            ('xformOp:scale', (expectedScale, expectedScale, expectedScale))])
 
 
 if __name__ == '__main__':

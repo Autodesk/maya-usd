@@ -140,6 +140,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (um) \
     (mm) \
     (cm) \
+    (dm) \
     (m) \
     (km) \
     (lightyear) \

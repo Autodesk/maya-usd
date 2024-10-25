@@ -283,6 +283,7 @@ __mayaUSDStringResources = {
     "kExportUnitMayaPrefsLbl": "Use Maya Preferences",
     "kExportUnitMillimeterLbl": "Millimeter",
     "kExportUnitCentimeterLbl": "Centimeter",
+    "kExportUnitDecimeterLbl": "Decimeter",
     "kExportUnitMeterLbl": "Meter",
     "kExportUnitKilometerLbl": "Kilometer",
     "kExportUnitInchLbl": "Inch",

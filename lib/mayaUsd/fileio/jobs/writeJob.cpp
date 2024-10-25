@@ -129,6 +129,8 @@ private:
                 { UsdMayaJobExportArgsTokens->um, UsdGeomLinearUnits::micrometers },
                 { UsdMayaJobExportArgsTokens->mm, UsdGeomLinearUnits::millimeters },
                 { UsdMayaJobExportArgsTokens->cm, UsdGeomLinearUnits::centimeters },
+                // Note: there is no official USD decimeter units, we have to roll our own.
+                { UsdMayaJobExportArgsTokens->dm, 0.1 },
                 { UsdMayaJobExportArgsTokens->m, UsdGeomLinearUnits::meters },
                 { UsdMayaJobExportArgsTokens->km, UsdGeomLinearUnits::kilometers },
                 { UsdMayaJobExportArgsTokens->lightyear, UsdGeomLinearUnits::lightYears },
