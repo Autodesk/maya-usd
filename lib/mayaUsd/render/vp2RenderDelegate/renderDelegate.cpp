@@ -38,6 +38,8 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
+#include <maya/MString.h>
+#include <maya/MStringArray.h>
 
 #include <tbb/spin_rw_mutex.h>
 
@@ -103,9 +105,6 @@ bool WantStandardSurfaceFallback()
     return useStandardSurface;
 }
 
-//! Boolean of whether or not to use shader fragments using the default standardSurface material
-const bool _useStandardSurface = WantStandardSurfaceFallback();
-
 //! Enum class for fallback shader types
 enum class FallbackShaderType
 {
@@ -120,24 +119,6 @@ enum class FallbackShaderType
 
 //! Total number of fallback shader types
 constexpr size_t FallbackShaderTypeCount = static_cast<size_t>(FallbackShaderType::kCount);
-
-//! Array of constant-color shader fragment names indexed by FallbackShaderType
-const MString _fallbackShaderNames[]
-    = { _useStandardSurface ? "FallbackShaderStandardSurface" : "FallbackShader",
-        "BasisCurvesLinearFallbackShader",
-        "BasisCurvesCubicFallbackShader",
-        "BasisCurvesCubicFallbackShader",
-        "BasisCurvesCubicFallbackShader",
-        "PointsFallbackShader" };
-
-//! Array of varying-color shader fragment names indexed by FallbackShaderType
-const MString _cpvFallbackShaderNames[]
-    = { _useStandardSurface ? "FallbackCPVShaderStandardSurface" : "FallbackCPVShader",
-        "BasisCurvesLinearCPVShader",
-        "BasisCurvesCubicCPVShader",
-        "BasisCurvesCubicCPVShader",
-        "BasisCurvesCubicCPVShader",
-        "PointsFallbackCPVShader" };
 
 //! "curveBasis" parameter values for three different cubic curves
 const std::unordered_map<FallbackShaderType, int> _curveBasisParameterValueMapping
@@ -202,6 +183,24 @@ public:
     {
         if (_isInitialized)
             return;
+
+        _useStandardSurface = WantStandardSurfaceFallback();
+
+        _fallbackShaderNames.append(
+            _useStandardSurface ? "FallbackShaderStandardSurface" : "FallbackShader");
+        _fallbackShaderNames.append("BasisCurvesLinearFallbackShader");
+        _fallbackShaderNames.append("BasisCurvesCubicFallbackShader");
+        _fallbackShaderNames.append("BasisCurvesCubicFallbackShader");
+        _fallbackShaderNames.append("BasisCurvesCubicFallbackShader");
+        _fallbackShaderNames.append("PointsFallbackShader");
+
+        _cpvFallbackShaderNames.append(
+            _useStandardSurface ? "FallbackCPVShaderStandardSurface" : "FallbackCPVShader");
+        _cpvFallbackShaderNames.append("BasisCurvesLinearCPVShader");
+        _cpvFallbackShaderNames.append("BasisCurvesCubicCPVShader");
+        _cpvFallbackShaderNames.append("BasisCurvesCubicCPVShader");
+        _cpvFallbackShaderNames.append("BasisCurvesCubicCPVShader");
+        _cpvFallbackShaderNames.append("PointsFallbackCPVShader");
 
         MHWRender::MRenderer*            renderer = MHWRender::MRenderer::theRenderer();
         const MHWRender::MShaderManager* shaderMgr
@@ -544,6 +543,16 @@ public:
 
 private:
     bool _isInitialized { false }; //!< Whether the shader cache is initialized
+
+    //! Boolean of whether or not to use shader fragments using the default
+    //! standardSurface material.
+    bool _useStandardSurface { false };
+
+    //! Array of constant-color shader fragment names indexed by FallbackShaderType
+    MStringArray _fallbackShaderNames;
+
+    //! Array of varying-color shader fragment names indexed by FallbackShaderType
+    MStringArray _cpvFallbackShaderNames;
 
     //! Shader registry used by fallback shaders
     MShaderMap _fallbackShaders[FallbackShaderTypeCount];
