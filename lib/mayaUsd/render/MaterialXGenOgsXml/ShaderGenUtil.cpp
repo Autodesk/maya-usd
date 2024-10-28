@@ -126,7 +126,7 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
             if (!sourceInput) {
                 continue;
             }
-            auto connectedNode = sourceInput->getConnectedNode();
+            auto              connectedNode = sourceInput->getConnectedNode();
             const std::string defaultGeomPropString = gatherDefaultGeomProp(*sourceInput);
             if (connectedNode) {
                 auto        destConnectedIt = _nodeMap.find(connectedNode->getNamePath());
@@ -170,7 +170,7 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
                 const auto parent = destNode->getParent();
                 if (parent && parent->isA<mx::NodeGraph>()) {
                     const auto nodeGraph = parent->asA<mx::NodeGraph>();
-                    auto nodeGraphInput = nodeGraph->getInput(interfaceName);
+                    auto       nodeGraphInput = nodeGraph->getInput(interfaceName);
                     if (!nodeGraphInput) {
                         nodeGraphInput = nodeGraph->addInput(interfaceName, sourceInput->getType());
                         nodeGraphInput->setDefaultGeomPropString(defaultGeomPropString);

@@ -121,7 +121,8 @@ TEST(ShaderGenUtils, topoGraphAPI_defaultgeomprop)
     doc->importLibrary(library);
 
     const mx::XmlReadOptions readOptions;
-    mx::readFromXmlFile(doc, testPath / "defaultgeomprop_topo.mtlx", mx::EMPTY_STRING, &readOptions);
+    mx::readFromXmlFile(
+        doc, testPath / "defaultgeomprop_topo.mtlx", mx::EMPTY_STRING, &readOptions);
 
     for (const mx::NodePtr& material : doc->getMaterialNodes()) {
         auto topoNetwork = MaterialXMaya::ShaderGenUtil::TopoNeutralGraph(material);
@@ -150,4 +151,3 @@ TEST(ShaderGenUtils, topoGraphAPI_defaultgeomprop)
     }
 }
 #endif
-
