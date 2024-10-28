@@ -149,6 +149,23 @@ bool isSessionLayer(
     const PXR_NS::SdfLayerHandle&           layer,
     const std::set<PXR_NS::SdfLayerRefPtr>& sessionLayers);
 
+// Verify if a stage has any dirty layer.
+enum class StageDirtyState : int
+{
+    Clean,
+    DirtyRootLayers,
+    DirtySessionLayers
+};
+
+/**
+ * Verify if a stage is dirty.
+ *
+ * @param stage the stage to verify.
+ */
+
+USDUFE_PUBLIC
+StageDirtyState isStageDirty(const PXR_NS::UsdStage& stage);
+
 /**
  * Get which of the two given layers is the strongest under the given root layer hierarchy.
  *

@@ -2,12 +2,13 @@
 //Name: sceneWithStage.ma
 //Last modified: Wed, Jun 26, 2024 04:41:34 PM
 //Codeset: 1252
+requires maya "2019ff01";
 requires -nodeType "mayaUsdLayerManager" -nodeType "mayaUsdProxyShape" -dataType "pxrUsdStageData"
 		 "mayaUsdPlugin" "0.30.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
-fileInfo "product" "Maya 2022";
-fileInfo "version" "Preview Release 123";
+fileInfo "product" "Maya 2019";
+fileInfo "version" "Preview Release 96";
 fileInfo "cutIdentifier" "202102250315-aee19a710d";
 fileInfo "osv" "Windows 7 Enterprise v (Build: 7601)";
 fileInfo "UUID" "898E14B2-4E8B-50E7-E532-F0A9C06435D9";

@@ -19,6 +19,7 @@ from pxr import Usd
 
 from maya import cmds
 from maya import standalone
+import mayaUsd.lib
 
 import os
 import unittest
@@ -41,6 +42,16 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         mayaFileName  = 'sceneWithStage.ma'
         self._mayaFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', mayaFileName)
         cmds.file(self._mayaFile, force=True, open=True)
+
+    def _removeCube1FromSceneStage(self):
+        '''Modify the stage contained in the Maya scene to make it dirty.'''
+        proxyShapePath = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        self.assertTrue(stage)
+        primPath = '/Top/Cube1'
+        self.assertTrue(stage.GetPrimAtPath(primPath))
+        stage.RemovePrim(primPath)
+        self.assertFalse(stage.GetPrimAtPath(primPath))
 
     def _export(self, exportStagesAsRef=True, selection=None, mergeTransform=True):
         '''
@@ -135,6 +146,17 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self._export(exportStagesAsRef=False)
         self._verifyReference('/stage1/Top', expectPresent=False)
         self.assertTrue(self._stage.GetPrimAtPath('/stage1/pSphere1'))
+
+    def testExportDirtyStage(self):
+        '''
+        Test that we can export a dirty stage and find it as a USD reference.
+        '''
+        self._prepareScene()
+        self._removeCube1FromSceneStage()
+        self._export(exportStagesAsRef=True)
+        self._verifyReference('/stage1/Top')
+        cubePrim = self._stage.GetPrimAtPath('/stage1/Top/Cube1')
+        self.assertFalse(cubePrim)
 
     def testExportSelectedStage(self):
         '''

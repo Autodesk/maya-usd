@@ -86,6 +86,28 @@ getAllSublayers(const std::vector<std::string>& layerPaths, bool includeParents)
     return layers;
 }
 
+StageDirtyState isStageDirty(const PXR_NS::UsdStage& stage)
+{
+    const bool               includeTopLayer = true;
+    std::set<SdfLayerRefPtr> rootLayers = getAllSublayerRefs(stage.GetRootLayer(), includeTopLayer);
+    std::set<SdfLayerRefPtr> sessionLayers
+        = getAllSublayerRefs(stage.GetSessionLayer(), includeTopLayer);
+
+    SdfLayerHandleVector allLayers = stage.GetUsedLayers(true);
+    for (auto layer : allLayers) {
+        if (!layer->IsDirty())
+            continue;
+
+        if (rootLayers.count(layer))
+            return StageDirtyState::DirtyRootLayers;
+
+        if (sessionLayers.count(layer))
+            return StageDirtyState::DirtySessionLayers;
+    }
+
+    return StageDirtyState::Clean;
+}
+
 bool hasMutedLayer(const PXR_NS::UsdPrim& prim)
 {
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
