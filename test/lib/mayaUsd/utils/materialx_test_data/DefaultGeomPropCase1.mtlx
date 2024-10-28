@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <surfacematerial name="N0" type="material" nodedef="ND_surfacematerial">
+    <input name="surfaceshader" type="surfaceshader" nodename="N1" />
+  </surfacematerial>
+  <standard_surface name="N1" type="surfaceshader" nodedef="ND_standard_surface_surfaceshader">
+    <input name="base_color" type="color3" output="O0" nodegraph="NG0" />
+  </standard_surface>
+  <nodegraph name="NG0">
+    <mix name="N2" type="color3" nodedef="ND_mix_color3">
+      <input name="mix" type="float" nodename="N3" />
+    </mix>
+    <output name="O0" type="color3" nodename="N2" />
+    <modulo name="N3" type="float" nodedef="ND_modulo_float">
+      <input name="in1" type="float" nodename="N4" />
+    </modulo>
+    <dotproduct name="N4" type="float" nodedef="ND_dotproduct_vector2">
+      <input name="in1" type="vector2" nodename="N5" />
+    </dotproduct>
+    <floor name="N5" type="vector2" nodedef="ND_floor_vector2">
+      <input name="in" type="vector2" nodename="N6" />
+    </floor>
+    <subtract name="N6" type="vector2" nodedef="ND_subtract_vector2">
+      <input name="in1" type="vector2" nodename="N7" />
+    </subtract>
+    <multiply name="N7" type="vector2" nodedef="ND_multiply_vector2">
+      <input name="in1" type="vector2" interfacename="dgp_UV0" />
+    </multiply>
+    <input name="dgp_UV0" type="vector2" defaultgeomprop="UV0" />
+  </nodegraph>
+</materialx>
