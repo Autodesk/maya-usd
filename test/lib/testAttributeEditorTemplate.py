@@ -19,16 +19,15 @@
 import unittest
 
 import mayaUtils
-import ufeUtils
 import fixturesUtils
 import testUtils
 
-import mayaUsd.lib
-
 from maya import cmds
+from maya import mel
 from maya import standalone
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+import mayaUsd_createStageWithNewLayer
 
 from pxr import Usd
 
@@ -66,6 +65,68 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
                         if mayaControlCmd(child, q=True, label=True) == labelToFind:
                             return child
         return None
+    
+    def findAllFrameLayoutLabels(self, startLayout):
+        '''
+        Find all child frame layout and return a list of their labels.
+        '''
+        found = []
+        
+        if not startLayout:
+            return found
+            
+        childrenOfLayout = cmds.layout(startLayout, q=True, ca=True)
+        if not childrenOfLayout:
+            return found
+            
+        for child in childrenOfLayout:
+            child = startLayout + '|' + child
+            if cmds.frameLayout(child, exists=True):
+                found.append(cmds.frameLayout(child, q=True, label=True))
+            elif cmds.layout(child, exists=True):
+                found += self.findAllFrameLayoutLabels(child)
+                    
+        return found
+
+    def findExpandedFrameLayout(self, startLayout, labelToFind, primPath):
+        '''
+        Find and expand the given frame layout and return the new updated layout.
+        We unfortunately need to explicitly update the AE for this to work.
+        '''
+        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, labelToFind)
+        self.assertIsNotNone(frameLayout, 'Could not find "%s" frameLayout' % labelToFind)
+        self.expandFrameLayout(frameLayout, primPath)
+        return self.searchForMayaControl(startLayout, cmds.frameLayout, labelToFind)
+    
+    def expandFrameLayout(self, frameLayout, primPath):
+        '''
+        Expand the given frame layout and refresh the AE.
+        You will need to find the layout again after that since it might have changed name.
+        '''
+        cmds.frameLayout(frameLayout, edit=True, collapse=False)
+        mel.eval('''updateAE "%s"''' % primPath)
+
+    def findAllNonLayout(self, startLayout):
+        '''
+        Find all child non-layout controls and return them as a list.
+        '''
+        found = []
+        
+        if not startLayout:
+            return found
+            
+        childrenOfLayout = cmds.layout(startLayout, q=True, ca=True)
+        if not childrenOfLayout:
+            return found
+            
+        for child in childrenOfLayout:
+            child = startLayout + '|' + child
+            if cmds.layout(child, exists=True):
+                found += self.findAllNonLayout(child)
+            else:
+                found.append(child)
+                    
+        return found
 
     def attrEdFormLayoutName(self, obj):
         # Ufe runtime name (USD) was added to formLayout name in 2022.2.
@@ -81,7 +142,6 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         # Create a simple USD scene with a single prim.
         cmds.file(new=True, force=True)
 
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
@@ -90,7 +150,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         # select the prim from 'Add New Prim', so always select it here.
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
-        cmds.select(proxyShape + ",/Capsule1")
+        fullPrimPath = proxyShape + ",/Capsule1"
+        cmds.select(fullPrimPath)
 
         # Enable the display of Array Attributes.
         cmds.optionVar(intValue=('mayaUSD_AEShowArrayAttributes', 1))
@@ -112,7 +173,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # We should have a frameLayout called 'Capsule' in the template.
         # If there is a scripting error in the template, this layout will be missing.
-        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Capsule')
+        frameLayout = self.findExpandedFrameLayout(startLayout, 'Capsule', fullPrimPath)
         self.assertIsNotNone(frameLayout, 'Could not find Capsule frameLayout')
 
         # We should also have float slider controls for 'Height' & 'Radius'.
@@ -134,7 +195,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # We should have a frameLayout called 'Metadata' in the template.
         # If there is a scripting error in the template, this layout will be missing.
-        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, getMayaUsdLibString('kLabelMetadata'))
+        frameLayout = self.findExpandedFrameLayout(startLayout, getMayaUsdLibString('kLabelMetadata'), fullPrimPath)
         self.assertIsNotNone(frameLayout, 'Could not find Metadata frameLayout')
 
         # Create a SphereLight via contextOps menu.
@@ -149,16 +210,6 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertTrue(cmds.formLayout(lightFormLayout, exists=True))
         startLayout = cmds.formLayout(lightFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for SphereLight formLayout')
-
-        # --------------------------------------------------------------------------------
-        # Test the 'createAppliedSchemasSection' method of template.
-        # Requires USD 0.21.2
-        # --------------------------------------------------------------------------------
-        if Usd.GetVersion() >= (0, 21, 2):
-            # We should have a frameLayout called 'Applied Schemas' in the template.
-            # If there is a scripting error in the template, this layout will be missing.
-            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, getMayaUsdLibString('kLabelAppliedSchemas'))
-            self.assertIsNotNone(frameLayout, 'Could not find Applied Schemas frameLayout')
 
         # --------------------------------------------------------------------------------
         # Test the 'createCustomExtraAttrs' method of template.
@@ -187,7 +238,6 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         # Create a simple USD scene with a single prim.
         cmds.file(new=True, force=True)
 
-        import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
@@ -196,7 +246,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         # select the prim from 'Add New Prim', so always select it here.
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
-        cmds.select(proxyShape + ",/Capsule1")
+        fullPrimPath = proxyShape + ",/Capsule1"
+        cmds.select(fullPrimPath)
 
         # Make sure the AE is visible.
         import maya.mel
@@ -206,7 +257,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             capsuleFormLayout = self.attrEdFormLayoutName('Capsule')
             startLayout = cmds.formLayout(capsuleFormLayout, query=True, fullPathName=True)
             kDisplay = maya.mel.eval('uiRes(\"m_AEdagNodeTemplate.kDisplay\");')
-            return self.searchForMayaControl(startLayout, cmds.frameLayout, kDisplay)
+            return self.findExpandedFrameLayout(startLayout, kDisplay, fullPrimPath)
+
 
         # --------------------------------------------------------------------------------
         # Test the 'createDisplaySection' method of template.
@@ -217,15 +269,6 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         # Maya 2022 doesn't remember and restore the expand/collapse state,
         # so skip this part of the test.
         if mayaUtils.mayaMajorVersion() > 2022:
-            # Expand the Display layout then update the AE again.
-            # We must do this because when we expand it doesn't happen right away.
-            # But by expanding it when we updateAE the capsule the display section
-            # expansion is remembered and auto-expanded.
-            cmds.frameLayout(displayLayout, edit=True, collapse=False)
-            maya.mel.eval('updateAE "|stage1|stageShape1,/Capsule1"')
-            displayLayout = findDisplayLayout()
-            self.assertIsNotNone(displayLayout, 'Could not find Display frameLayout')
-
             # We should have 'Visibility' optionMenuGrp (which is a label (text) and optionMenu).
             visControl = self.searchForMayaControl(displayLayout, cmds.text, 'Visibility')
             self.assertIsNotNone(visControl)
@@ -242,7 +285,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
 
         # Select this prim which has a custom material control attribute.
-        cmds.select('|stage|stageShape,/pCube1', r=True)
+        fullPrimPath = shapeNode + ',/pCube1'
+        cmds.select(fullPrimPath, r=True)
 
         # Make sure the AE is visible.
         import maya.mel
@@ -257,7 +301,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # In the AE there is a formLayout for each USD prim type. We start
         # by making sure we can find the one for the mesh.
-        materialFormLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Material')
+        materialFormLayout = self.findExpandedFrameLayout(startLayout, 'Material', fullPrimPath)
         self.assertIsNotNone(materialFormLayout, 'Could not find "Material" frameLayout')
 
         # We can now search for the control for the meterial.
@@ -273,7 +317,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
 
         # Select this prim which has a custom image control attribute.
-        cmds.select('|stage|stageShape,/TypeSampler/MaterialX/D_filename', r=True)
+        fullPrimPath = shapeNode + ',/TypeSampler/MaterialX/D_filename'
+        cmds.select(fullPrimPath, r=True)
 
         # Make sure the AE is visible.
         import maya.mel
@@ -289,7 +334,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         if mayaUtils.mayaMajorVersion() > 2024:
             # We should have a frameLayout called 'Shader: Dot' in the template.
             # If there is a scripting error in the template, this layout will be missing.
-            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Dot')
+            frameLayout = self.findExpandedFrameLayout(startLayout, 'Shader: Dot', fullPrimPath)
             self.assertIsNotNone(frameLayout, 'Could not find "Shader: Dot" frameLayout')
 
             # We should also have custom image control for 'In'.
@@ -309,7 +354,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
 
         # Select this prim which has a custom image control attribute.
-        cmds.select('|stage|stageShape,/Material1/gltf_pbr1', r=True)
+        fullPrimPath = shapeNode + ',/Material1/gltf_pbr1'
+        cmds.select(fullPrimPath, r=True)
 
         # Make sure the AE is visible.
         import maya.mel
@@ -321,12 +367,35 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertTrue(cmds.formLayout(shaderFormLayout, exists=True))
         startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
-        
+
+        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: glTF PBR')
+        self.assertIsNotNone(frameLayout, 'Could not find "Shader: glTF PBR" frameLayout')
+
+        self.expandFrameLayout(frameLayout, fullPrimPath)
+
+        shaderFormLayout = self.attrEdFormLayoutName('Shader')
+        self.assertTrue(cmds.formLayout(shaderFormLayout, exists=True))
+        startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
+        self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
+        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: glTF PBR')
+        self.assertIsNotNone(frameLayout, 'Could not find "Shader: glTF PBR" frameLayout')
+
         # We should have a frameLayout called 'Alpha' in the template.
         # If there is a scripting error in the template, this layout will be missing.
         frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Alpha')
         self.assertIsNotNone(frameLayout, 'Could not find "Alpha" frameLayout')
-        
+
+        self.expandFrameLayout(frameLayout, fullPrimPath)
+
+        shaderFormLayout = self.attrEdFormLayoutName('Shader')
+        self.assertTrue(cmds.formLayout(shaderFormLayout, exists=True))
+        startLayout = cmds.formLayout(shaderFormLayout, query=True, fullPathName=True)
+        self.assertIsNotNone(startLayout, 'Could not get full path for Shader formLayout')
+        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: glTF PBR')
+        self.assertIsNotNone(frameLayout, 'Could not find "Shader: glTF PBR" frameLayout')
+        frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Alpha')
+        self.assertIsNotNone(frameLayout, 'Could not find "Alpha" frameLayout')
+
         # We should also have custom enum control for 'Inputs Alpha Mode'.
         InputsAlphaModeControl = self.searchForMayaControl(frameLayout, cmds.text, 'Alpha Mode')
         self.assertIsNotNone(InputsAlphaModeControl, 'Could not find gltf_pbr1 "Alpha Mode" control')
@@ -339,7 +408,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         testPath,shapeStage = mayaUtils.createProxyFromFile(testFile)
 
         # Select this prim which has an attribute with a connection.
-        cmds.select('|stage|stageShape,/Material1/fractal3d1', r=True)
+        fullPrimPath = testPath + ',/Material1/fractal3d1'
+        cmds.select(fullPrimPath, r=True)
 
         # Make sure the AE is visible.
         import maya.mel
@@ -355,7 +425,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         if mayaUtils.mayaMajorVersion() > 2024:
             # We should have a frameLayout called 'Shader: 3D Fractal Noise' in the template.
             # If there is a scripting error in the template, this layout will be missing.
-            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: 3D Fractal Noise')
+            frameLayout = self.findExpandedFrameLayout(startLayout, 'Shader: 3D Fractal Noise', fullPrimPath)
             self.assertIsNotNone(frameLayout, 'Could not find "Shader: 3D Fractal Noise" frameLayout')
             
             # We should also have an attribute called 'Amplitude' which has a connection.
@@ -369,7 +439,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         testPath,shapeStage = mayaUtils.createProxyFromFile(testFile)
 
         # Select this prim which has an attribute with a connection.
-        cmds.select('|stage|stageShape,/Material1/component_add', r=True)
+        fullPrimPath = testPath + ',/Material1/component_add'
+        cmds.select(fullPrimPath, r=True)
 
         # Make sure the AE is visible.
         import maya.mel
@@ -385,7 +456,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         if mayaUtils.mayaMajorVersion() > 2024:
             # We should have a frameLayout called 'Shader: Add' in the template.
             # If there is a scripting error in the template, this layout will be missing.
-            frameLayout = self.searchForMayaControl(startLayout, cmds.frameLayout, 'Shader: Add')
+            frameLayout = self.findExpandedFrameLayout(startLayout, 'Shader: Add', fullPrimPath)
             self.assertIsNotNone(frameLayout, 'Could not find "Shader: Add" frameLayout')
             
             # We should also have an attribute called 'In1' which has component connections.
@@ -399,6 +470,62 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             expectedLabels = ['constant1.outputs:out...', 'constant2.outputs:out...']
             for menuItem in cmds.popupMenu(popupMenu, q=True, itemArray=True):
                 self.assertIn(cmds.menuItem(popupMenu + "|" + menuItem, q=True, l=True), expectedLabels)
+
+    def testAEForLight(self):
+        '''Test that the expected sections are created for lights.'''
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+
+        # Create a cylinder light via contextOps menu. Not all versions of Maya automatically
+        # select the prim from 'Add New Prim', so always select it here.
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'All Registered', 'Lighting', 'CylinderLight'])
+        primName = 'CylinderLight1'
+        fullPrimPath = proxyShape + ',/%s' % primName
+        cmds.select(fullPrimPath)
+
+        # Make sure the AE is visible.
+        import maya.mel
+        maya.mel.eval('openAEWindow')
+
+        primFormLayout = self.attrEdFormLayoutName('CylinderLight')
+        self.assertTrue(cmds.formLayout(primFormLayout, exists=True), 'Layout for %s was not found\n' % primName)
+            
+        startLayout = cmds.formLayout(primFormLayout, query=True, fullPathName=True)
+        self.assertIsNotNone(startLayout, 'Could not get full path for %s formLayout' % primName)
+
+        # Augment the maixmum diff size to get better error message when comparing the lists.
+        self.maxDiff = 2000
+        
+        actualSectionLabels = self.findAllFrameLayoutLabels(startLayout)
+
+        # Note: different version of USD can have different schemas,
+        #       so we only compare the ones we are interested in verifying.
+        expectedInitialSectionLabels = [
+            'Light ',
+            'Cylinder Light',
+            'Light Link Collection ',
+            'Shadow Link Collection ']
+        self.assertListEqual(
+            actualSectionLabels[0:len(expectedInitialSectionLabels)],
+            expectedInitialSectionLabels)
+
+        # Note: there are no extra attributes in Maya 2022.
+        if mayaUtils.mayaMajorMinorVersions() >= (2023, 0):
+            expectedFinalSectionLabels = [
+                'Transforms',
+                'Display',
+                'Extra Attributes',
+                'Metadata']
+        else:
+            expectedFinalSectionLabels = [
+                'Transforms',
+                'Display',
+                'Metadata']
+        self.assertListEqual(
+            actualSectionLabels[-len(expectedFinalSectionLabels):],
+            expectedFinalSectionLabels)
 
 
 if __name__ == '__main__':

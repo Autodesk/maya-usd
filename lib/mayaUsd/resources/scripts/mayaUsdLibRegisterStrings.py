@@ -40,7 +40,6 @@ __mayaUsdLibStringResources = {
     'kMenuPrintValue': 'Print to Script Editor',
     'kLabelUnusedTransformAttrs': 'Unused',
     'kLabelMetadata': 'Metadata',
-    'kLabelAppliedSchemas': 'Applied Schemas',
     'kOpenImage': 'Open',
     'kLabelMaterial': 'Material',
     'kLabelAssignedMaterial': 'Assigned Material',
@@ -57,6 +56,7 @@ __mayaUsdLibStringResources = {
     'kLabelMaterialNewTab': 'New Tab...',
     'kUseOutlinerColorAnn': 'Apply the Outliner color to the display of the prim name in the Outliner.',
     'kOutlinerColorAnn': 'The color of the text displayed in the Outliner.',
+    'kTransforms': 'Transforms',
 
     # mayaUsdAddMayaReference.py
     'kErrorGroupPrimExists': 'Group prim "^1s" already exists under "^2s". Choose prim name other than "^1s" to proceed.',
