@@ -55,6 +55,7 @@ protected:
     mx::OutputPtr findNodeGraphOutput(const mx::Input& input, const std::string& outputName);
     std::string   gatherChannels(const mx::Input& input);
     std::string   gatherOutput(const mx::Input& input);
+    std::string   gatherDefaultGeomProp(const mx::Input& input);
     void          cloneConnection(
                  const mx::Input&   sourceInput,
                  mx::Node&          destNode,
