@@ -114,7 +114,8 @@ global proc string stageFromFile_UISetup(string $parent)
         excludePrimPathField;
 
     frameLayout -label `getMayaUsdString("kStageAdvancedLabel")` -parent $frame -collapsable true -collapse true advancedSection;
-        frameLayout -label `getMayaUsdString("kStageAxisUnitConversionLabel")` -parent advancedSection -collapsable true -collapse false;
+        columnLayout -columnOffset "left" 2 -parent advancedSection advancedSectionOffset;
+        frameLayout -label `getMayaUsdString("kStageAxisUnitConversionLabel")` -parent advancedSectionOffset -collapsable true -collapse false;
             checkBoxGrp -l `getMayaUsdString("kStageUpAxisLabel")` 
                 -ann `getMayaUsdString("kStageUpAxisAnn")`
                 -value1 1
