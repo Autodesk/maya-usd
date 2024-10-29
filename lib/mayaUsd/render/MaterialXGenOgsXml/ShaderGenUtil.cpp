@@ -126,8 +126,8 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
             if (!sourceInput) {
                 continue;
             }
-
-            auto connectedNode = sourceInput->getConnectedNode();
+            auto              connectedNode = sourceInput->getConnectedNode();
+            const std::string defaultGeomPropString = gatherDefaultGeomProp(*sourceInput);
             if (connectedNode) {
                 auto        destConnectedIt = _nodeMap.find(connectedNode->getNamePath());
                 mx::NodePtr destConnectedNode;
@@ -162,6 +162,19 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
                     auto destInput
                         = destNode->addInput(sourceInput->getName(), sourceInput->getType());
                     destInput->setValueString(valueString);
+                }
+            } else if (!defaultGeomPropString.empty()) {
+                auto destInput = destNode->addInput(sourceInput->getName(), sourceInput->getType());
+                const std::string interfaceName = "dgp_" + defaultGeomPropString;
+                destInput->setInterfaceName(interfaceName);
+                const auto parent = destNode->getParent();
+                if (parent && parent->isA<mx::NodeGraph>()) {
+                    const auto nodeGraph = parent->asA<mx::NodeGraph>();
+                    auto       nodeGraphInput = nodeGraph->getInput(interfaceName);
+                    if (!nodeGraphInput) {
+                        nodeGraphInput = nodeGraph->addInput(interfaceName, sourceInput->getType());
+                        nodeGraphInput->setDefaultGeomPropString(defaultGeomPropString);
+                    }
                 }
             }
         }
@@ -306,6 +319,17 @@ std::string TopoNeutralGraph::gatherChannels(const mx::Input& input)
         }
     }
     return combinedChannels;
+}
+
+std::string TopoNeutralGraph::gatherDefaultGeomProp(const mx::Input& input)
+{
+    if (input.hasInterfaceName()) {
+        const auto interfaceInput = input.getInterfaceInput();
+        if (interfaceInput && interfaceInput->hasDefaultGeomPropString()) {
+            return interfaceInput->getDefaultGeomPropString();
+        }
+    }
+    return {};
 }
 
 std::string TopoNeutralGraph::gatherOutput(const mx::Input& input)

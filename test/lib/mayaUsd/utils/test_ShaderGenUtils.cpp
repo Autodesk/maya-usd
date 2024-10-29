@@ -102,3 +102,52 @@ TEST(ShaderGenUtils, topoGraphAPI)
     ASSERT_NE(it, watchList.end());
     ASSERT_EQ(it->second, sgu::TopoNeutralGraph::ElementType::eTopological);
 }
+
+#if MX_COMBINED_VERSION >= 13811
+TEST(ShaderGenUtils, topoGraphAPI_defaultgeomprop)
+{
+    auto testPath = mx::FilePath(MATERIALX_TEST_DATA);
+
+    auto searchPath = PXR_NS::HdMtlxSearchPaths();
+#if PXR_VERSION > 2311
+    auto library = PXR_NS::HdMtlxStdLibraries();
+#else
+    auto library = mx::createDocument();
+    ASSERT_TRUE(library != nullptr);
+    mx::loadLibraries({}, searchPath, library);
+#endif
+
+    auto doc = mx::createDocument();
+    doc->importLibrary(library);
+
+    const mx::XmlReadOptions readOptions;
+    mx::readFromXmlFile(
+        doc, testPath / "defaultgeomprop_topo.mtlx", mx::EMPTY_STRING, &readOptions);
+
+    for (const mx::NodePtr& material : doc->getMaterialNodes()) {
+        auto topoNetwork = MaterialXMaya::ShaderGenUtil::TopoNeutralGraph(material);
+
+        const std::string& expectedFileName = material->getAttribute("topo");
+        ASSERT_FALSE(expectedFileName.empty());
+
+        auto baseline = mx::createDocument();
+        auto baselinePath = testPath / expectedFileName;
+        mx::readFromXmlFile(baseline, baselinePath, mx::EMPTY_STRING, &readOptions);
+
+        auto outputDoc = topoNetwork.getDocument();
+
+        if (*baseline != *outputDoc) {
+            const std::string baselineStr = mx::writeToXmlString(baseline);
+            const std::string outputStr = mx::writeToXmlString(outputDoc);
+            ASSERT_EQ(baselineStr, outputStr) << "While testing: " << material->getName()
+                                              << " against baseline " << expectedFileName;
+        }
+
+        outputDoc->importLibrary(library);
+        std::string message;
+        if (material->getName().rfind("Broken", 0) != 0) {
+            ASSERT_TRUE(outputDoc->validate(&message)) << message;
+        }
+    }
+}
+#endif
