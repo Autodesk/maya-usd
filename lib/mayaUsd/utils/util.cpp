@@ -2584,3 +2584,10 @@ SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
 
     return surfaceShaderNodeDefs;
 }
+
+bool UsdMayaUtil::isNodeInReference(const MObject& node, const MString& referenceFileName)
+{
+    MSelectionList nodes;
+    MFileIO::getReferenceNodes(referenceFileName, nodes);
+    return nodes.hasItem(node);
+}

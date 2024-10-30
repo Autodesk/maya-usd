@@ -17,6 +17,7 @@
 #define MAYA_USD_LAYER_MANAGER
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/pxr.h>
@@ -122,7 +123,7 @@ public:
     //! \brief set the stage that is currently selected in the layer manager.
     static void setSelectedStage(const std::string& stage);
     //! \brief get the stage that should be selected in the layer manager.
-    static std::string getSelectedStage();
+    static std::string getSelectedStage(PXR_NS::MayaUsdProxyShapeBase* forProxyShape);
 
     /*! \brief  Supported Proxy Shapes should call this to possibly retrieve their Root and Session
        layers before calling Sdf::FindOrOpen.  If a handle is found and returned then it will be the
@@ -130,10 +131,10 @@ public:
        used to initialize the Proxy Shape in a call to UsdStage::Open().
     */
     static SdfLayerHandle
-    findLayer(std::string identifier, const MFnReference* fromReference = nullptr);
+    findLayer(std::string identifier, PXR_NS::MayaUsdProxyShapeBase* forProxyShape);
 
     using LayerNameMap = std::map<std::string, std::string>;
-    static LayerNameMap getLayerNameMap(const MFnReference* fromReference = nullptr);
+    static LayerNameMap getLayerNameMap(PXR_NS::MayaUsdProxyShapeBase* forProxyShape);
 
     //! \brief returns true if the layer manager is currently saving files.
     static bool isSaving();
