@@ -422,7 +422,7 @@ void handleDirtyStageDuringExport(const StageSavingInfo& info)
         return;
 
     const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
-    if (dirty == UsdUfe::StageDirtyState::Clean)
+    if (dirty == UsdUfe::StageDirtyState::kClean)
         return;
 
     if (info.stage->GetRootLayer()->IsAnonymous()) {
@@ -434,7 +434,7 @@ void handleDirtyStageDuringExport(const StageSavingInfo& info)
         return;
     }
 
-    if (dirty == UsdUfe::StageDirtyState::DirtyRootLayers) {
+    if (dirty == UsdUfe::StageDirtyState::kDirtyRootLayers) {
         MGlobal::displayWarning(formatProxyShapeWarning(
             "^1s may not appear in the exported scene exactly as it appears in the scene"
             " because there are layers that have not been saved to disk. Saving those"
@@ -443,7 +443,7 @@ void handleDirtyStageDuringExport(const StageSavingInfo& info)
         return;
     }
 
-    if (dirty == UsdUfe::StageDirtyState::DirtySessionLayers) {
+    if (dirty == UsdUfe::StageDirtyState::kDirtySessionLayers) {
         MGlobal::displayWarning(formatProxyShapeWarning(
             "^1s may not appear in the exported scene exactly as it appears in the scene"
             " because there are opinions in the session layer which are not propagated"
@@ -543,13 +543,13 @@ bool LayerDatabase::hasDirtyLayer() const
 {
     for (const auto& info : _proxiesToSave) {
         const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
-        if (dirty != UsdUfe::StageDirtyState::Clean) {
+        if (dirty != UsdUfe::StageDirtyState::kClean) {
             return true;
         }
     }
     for (const auto& info : _internalProxiesToSave) {
         const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
-        if (dirty != UsdUfe::StageDirtyState::Clean) {
+        if (dirty != UsdUfe::StageDirtyState::kClean) {
             return true;
         }
     }

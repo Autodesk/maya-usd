@@ -152,9 +152,9 @@ bool isSessionLayer(
 // Verify if a stage has any dirty layer.
 enum class StageDirtyState : int
 {
-    Clean,
-    DirtyRootLayers,
-    DirtySessionLayers
+    kClean,
+    kDirtyRootLayers,
+    kDirtySessionLayers
 };
 
 /**

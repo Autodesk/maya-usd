@@ -99,13 +99,13 @@ StageDirtyState isStageDirty(const PXR_NS::UsdStage& stage)
             continue;
 
         if (rootLayers.count(layer))
-            return StageDirtyState::DirtyRootLayers;
+            return StageDirtyState::kDirtyRootLayers;
 
         if (sessionLayers.count(layer))
-            return StageDirtyState::DirtySessionLayers;
+            return StageDirtyState::kDirtySessionLayers;
     }
 
-    return StageDirtyState::Clean;
+    return StageDirtyState::kClean;
 }
 
 bool hasMutedLayer(const PXR_NS::UsdPrim& prim)
