@@ -54,7 +54,6 @@
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
@@ -72,6 +71,7 @@
 #endif
 
 #if UFE_SCENE_SEGMENT_SUPPORT
+#include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
 #endif
 #include <mayaUsd/utils/mayaEditRouter.h>
@@ -274,9 +274,6 @@ MStatus initialize()
     auto proxyShapeSceneSegmentHandler
         = ProxyShapeSceneSegmentHandler::create(g_MayaSceneSegmentHandler);
     runTimeMgr.setSceneSegmentHandler(g_MayaRtid, proxyShapeSceneSegmentHandler);
-#endif
-
-#ifdef UFE_V4_FEATURES_AVAILABLE
     // set up the ProxyShapeCameraHandler
     g_MayaCameraHandler = runTimeMgr.cameraHandler(g_MayaRtid);
     auto proxyShapeCameraHandler = ProxyShapeCameraHandler::create(g_MayaCameraHandler);

@@ -25,7 +25,11 @@
 namespace USDUFE_NS_DEF {
 
 //! \brief Interface to create a UsdCameraHandler interface object.
+#if UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL
+class USDUFE_PUBLIC UsdCameraHandler : public Ufe::CameraHandler_v3_4
+#else
 class USDUFE_PUBLIC UsdCameraHandler : public Ufe::CameraHandler
+#endif // UFE_CAMERAHANDLER_HAS_FINDALL
 {
 public:
     typedef std::shared_ptr<UsdCameraHandler> Ptr;
@@ -40,12 +44,12 @@ public:
     // Ufe::CameraHandler overrides
     Ufe::Camera::Ptr camera(const Ufe::SceneItem::Ptr& item) const override;
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
+#if UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL
     Ufe::Selection find_(const Ufe::Path& path) const override;
 
     static Ufe::Selection
     find(const Ufe::Path& stagePath, const Ufe::Path& searchPath, const PXR_NS::UsdPrim& prim);
-#endif
+#endif // UFE_CAMERAHANDLER_HAS_FINDALL
 
 }; // UsdCameraHandler
 

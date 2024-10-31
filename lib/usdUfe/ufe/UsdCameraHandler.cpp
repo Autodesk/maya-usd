@@ -31,7 +31,11 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
 
+#if UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL
+USDUFE_VERIFY_CLASS_SETUP(Ufe::CameraHandler_v3_4, UsdCameraHandler);
+#else
 USDUFE_VERIFY_CLASS_SETUP(Ufe::CameraHandler, UsdCameraHandler);
+#endif // UFE_CAMERAHANDLER_HAS_FINDALL
 
 /*static*/
 UsdCameraHandler::Ptr UsdCameraHandler::create() { return std::make_shared<UsdCameraHandler>(); }
@@ -53,7 +57,7 @@ Ufe::Camera::Ptr UsdCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
     return UsdCamera::create(usdItem);
 }
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
+#if UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL
 Ufe::Selection UsdCameraHandler::find_(const Ufe::Path& path) const
 {
     TF_VERIFY(path.runTimeId() == getUsdRunTimeId());
@@ -80,6 +84,6 @@ Ufe::Selection UsdCameraHandler::find(
     }
     return result;
 }
-#endif
+#endif // UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL
 
 } // namespace USDUFE_NS_DEF

@@ -31,10 +31,14 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+#if UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::CameraHandler_v3_4, ProxyShapeCameraHandler);
+#else
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::CameraHandler, ProxyShapeCameraHandler);
+#endif // UFE_CAMERAHANDLER_HAS_FINDALL
 
-ProxyShapeCameraHandler::ProxyShapeCameraHandler(const Ufe::CameraHandler::Ptr& mayaCameraHandler)
-    : Ufe::CameraHandler()
+ProxyShapeCameraHandler::ProxyShapeCameraHandler(const CAMERAHANDLERBASE::Ptr& mayaCameraHandler)
+    : CAMERAHANDLERBASE()
     , _mayaCameraHandler(mayaCameraHandler)
 {
 }
@@ -43,7 +47,8 @@ ProxyShapeCameraHandler::ProxyShapeCameraHandler(const Ufe::CameraHandler::Ptr& 
 ProxyShapeCameraHandler::Ptr
 ProxyShapeCameraHandler::create(const Ufe::CameraHandler::Ptr& mayaCameraHandler)
 {
-    return std::make_shared<ProxyShapeCameraHandler>(mayaCameraHandler);
+    auto mayaCameraHandlerBase = std::static_pointer_cast<CAMERAHANDLERBASE>(mayaCameraHandler);
+    return std::make_shared<ProxyShapeCameraHandler>(mayaCameraHandlerBase);
 }
 
 //------------------------------------------------------------------------------
