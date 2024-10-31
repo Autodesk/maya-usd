@@ -394,7 +394,6 @@ bool saveLayerWithFormat(
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
     UsdMayaUtilFileSystem::updatePostponedRelativePaths(layer, filePath);
-    setLayerUpAxisAndUnits(layer);
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
@@ -469,6 +468,12 @@ SdfLayerRefPtr saveAnonymousLayer(
         formatErrorMsg(
             "Cannot save layer \"^1\" when system-locked", anonLayer, filePath, errorMsg);
         return nullptr;
+    }
+
+    // Only set up-axis and units metadata on the root layer
+    // and only if it is anonymous before being saved.
+    if (stage->GetRootLayer() == anonLayer) {
+        setLayerUpAxisAndUnits(anonLayer);
     }
 
     ensureUSDFileExtension(filePath);

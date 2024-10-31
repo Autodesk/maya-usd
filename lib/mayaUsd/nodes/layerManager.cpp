@@ -228,7 +228,6 @@ public:
     static void           prepareForSaveCheck(bool*, void*);
     static void           cleanupForSave(void*);
     static void           prepareForExportCheck(bool*, void*);
-    static void           cleanupForExport(void*);
     static void           prepareForWriteCheck(bool*, bool);
     static void           cleanupForWrite();
     static void           loadLayersPostRead(const MFnReference* fromReference = nullptr);
@@ -339,8 +338,6 @@ void LayerDatabase::registerCallbacks()
             = MSceneMessage::addCallback(MSceneMessage::kAfterSave, LayerDatabase::cleanupForSave);
         preExportCallbackId = MSceneMessage::addCallback(
             MSceneMessage::kBeforeExportCheck, LayerDatabase::prepareForExportCheck);
-        postExportCallbackId = MSceneMessage::addCallback(
-            MSceneMessage::kAfterExport, LayerDatabase::cleanupForExport);
         postNewCallbackId
             = MSceneMessage::addCallback(MSceneMessage::kAfterNew, LayerDatabase::cleanUpNewScene);
         preOpenCallbackId = MSceneMessage::addCallback(
@@ -409,17 +406,76 @@ void LayerDatabase::cleanupForSave(void*)
     cleanupForWrite();
 }
 
-void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
+namespace {
+
+MString formatProxyShapeWarning(const char* message, const StageSavingInfo& info)
 {
-    // This is called during a Maya notification callback, so no undo supported.
-    OpUndoItemMuting muting;
-    prepareForWriteCheck(retCode, true);
+    MString text;
+    text.format(message, info.dagPath.partialPathName());
+    return text;
 }
 
-void LayerDatabase::cleanupForExport(void*)
+// Handle a dirty stage during export as USD.
+void handleDirtyStageDuringExport(const StageSavingInfo& info)
 {
-    // This is call by Maya when the Maya save has finished.
-    cleanupForWrite();
+    if (!info.stage)
+        return;
+
+    const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
+    if (dirty == UsdUfe::StageDirtyState::kClean)
+        return;
+
+    if (info.stage->GetRootLayer()->IsAnonymous()) {
+        MGlobal::displayWarning(formatProxyShapeWarning(
+            "A reference to ^1s could not be exported because the root layer is anonymous."
+            " To include this stage, you will need to save the anonymous root layer to disk"
+            " and re-export the scene.",
+            info));
+        return;
+    }
+
+    if (dirty == UsdUfe::StageDirtyState::kDirtyRootLayers) {
+        MGlobal::displayWarning(formatProxyShapeWarning(
+            "^1s may not appear in the exported scene exactly as it appears in the scene"
+            " because there are layers that have not been saved to disk. Saving those"
+            " layers in the layer editor may be needed.",
+            info));
+        return;
+    }
+
+    if (dirty == UsdUfe::StageDirtyState::kDirtySessionLayers) {
+        MGlobal::displayWarning(formatProxyShapeWarning(
+            "^1s may not appear in the exported scene exactly as it appears in the scene"
+            " because there are opinions in the session layer which are not propagated"
+            " into the USD files.",
+            info));
+        return;
+    }
+}
+
+} // namespace
+
+void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
+{
+    *retCode = true;
+
+    // This is called during a Maya notification callback, so no undo supported.
+    OpUndoItemMuting muting;
+
+    auto& layerDB = LayerDatabase::instance();
+
+    bool       hasAnyProxy = false;
+    const bool isExport = true;
+    if (!layerDB.getProxiesToSave(isExport, &hasAnyProxy))
+        return;
+
+    for (const StageSavingInfo& info : layerDB._proxiesToSave)
+        handleDirtyStageDuringExport(info);
+
+    for (const auto& info : layerDB._internalProxiesToSave)
+        handleDirtyStageDuringExport(info);
+
+    layerDB.clearProxies();
 }
 
 void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
@@ -486,19 +542,15 @@ void LayerDatabase::updateLayerManagers()
 bool LayerDatabase::hasDirtyLayer() const
 {
     for (const auto& info : _proxiesToSave) {
-        SdfLayerHandleVector allLayers = info.stage->GetUsedLayers(true);
-        for (auto layer : allLayers) {
-            if (layer->IsDirty()) {
-                return true;
-            }
+        const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
+        if (dirty != UsdUfe::StageDirtyState::kClean) {
+            return true;
         }
     }
     for (const auto& info : _internalProxiesToSave) {
-        SdfLayerHandleVector allLayers = info.stage->GetUsedLayers(true);
-        for (auto layer : allLayers) {
-            if (layer->IsDirty()) {
-                return true;
-            }
+        const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
+        if (dirty != UsdUfe::StageDirtyState::kClean) {
+            return true;
         }
     }
     return false;
@@ -731,8 +783,6 @@ MStatus addLayerToBuilder(
 
     auto fileFormatIdToken = layer->GetFileFormat()->GetFormatId();
     fileFormatIdHandle.setString(UsdMayaUtil::convert(fileFormatIdToken.GetString()));
-
-    MayaUsd::utils::setLayerUpAxisAndUnits(layer);
 
     std::string temp;
     if (!stubOnly && ((exportOnlyIfDirty && layer->IsDirty()) || !exportOnlyIfDirty)) {
@@ -984,6 +1034,10 @@ void LayerDatabase::convertAnonymousLayers(
     //       to convertAnonymousLayersRecursive
     root = stage->GetRootLayer();
     if (root->IsAnonymous()) {
+        // Only set up-axis and units metadata on the root layer
+        // and only if it is anonymous before being saved.
+        MayaUsd::utils::setLayerUpAxisAndUnits(root);
+
         const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == root);
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
