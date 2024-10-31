@@ -587,6 +587,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportToInstanceOpt")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportToInstanceAnn")` mayaUsdTranslator_ImportInstancesCheckBox;
             separator -style "none";
 
+            columnLayout -columnOffset "left" 2;
             frameLayout -label `getMayaUsdString("kImportAxisAndUnit")` -collapsable true -collapse false axisAndUnitFrameLayout;
                 separator -style "none";
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUpAxis")` -ann `getMayaUsdString("kImportUpAxisAnn")`
@@ -602,6 +603,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
                     menuItem -l `getMayaUsdString("kImportAxisAndUnitAddTransform")` -ann "addTransform";
                     menuItem -l `getMayaUsdString("kImportAxisAndUnitOverwritePrefs")` -ann "overwritePrefs";
                 separator -style "none";
+            setParent ..;
             setParent ..;
         setParent ..;
 
