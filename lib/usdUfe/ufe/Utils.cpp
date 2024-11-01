@@ -1523,4 +1523,36 @@ void removeSessionLeftOvers(
     stage->RemovePrim(primPath);
 }
 
+Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childFilter)
+{
+    // Note: for now the only child filter flags we support are "Inactive Prims"
+    //       and "Class Prims".
+    //       See UsdHierarchyHandler::childFilter()
+
+    bool showInactive = false;
+    bool showClass = false;
+
+    for (const Ufe::ChildFilterFlag& filter : childFilter) {
+        if (filter.name == "InactivePrims") {
+            showInactive = filter.value;
+        } else if (filter.name == "ClassPrims") {
+            showClass = filter.value;
+        }
+    }
+
+    // Note: unfortunately, the way the USD predicate are implemented,
+    //       we cannot use && on a Usd_PrimFlagsPredicate, only on a
+    //       Usd_Term or a Usd_PrimFlagsConjunction.
+
+    auto predicate = Usd_PrimFlagsConjunction(Usd_Term(UsdPrimIsDefined));
+
+    if (!showInactive)
+        predicate &= UsdPrimIsActive;
+
+    if (!showClass)
+        predicate &= !UsdPrimIsAbstract;
+
+    return predicate;
+}
+
 } // namespace USDUFE_NS_DEF

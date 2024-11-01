@@ -403,8 +403,10 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+        const bool isClassPrim = prim().IsAbstract();
         const bool isMayaRef = (prim().GetTypeName() == TfToken("MayaReference"));
-        if (!_isAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
+        if (!isClassPrim && !_isAGatewayType
+            && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
 
             Ufe::ContextItem item(kEditAsMayaOptionsItem, kEditAsMayaOptionsLabel);
@@ -416,7 +418,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             }
         }
-        if (!isMayaRef) {
+        if (!isMayaRef && !isClassPrim) {
             items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
         }
         items.emplace_back(Ufe::ContextItem::kSeparator);
