@@ -26,6 +26,7 @@
 
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
+#include <maya/MFileIO.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
@@ -223,10 +224,17 @@ void MayaSessionState::processNodeAdded(MObject& node)
 
 void MayaSessionState::proxyShapeAddedCBOnIdle(const MObject& obj)
 {
+    if (MFileIO::isNewingFile())
+        return;
+
     // doing it on idle give time to the Load Stage to set a file name
     // but we don't do a second idle because we could get a delete right after a Add
-    MDagPath dagPath;
-    MFnDagNode(obj).getPath(dagPath);
+    MDagPath   dagPath;
+    MFnDagNode dagNode;
+    if (!dagNode.setObject(obj))
+        return;
+
+    dagNode.getPath(dagPath);
     auto       shapePath = dagPath.fullPathName();
     StageEntry entry;
     if (getStageEntry(&entry, shapePath)) {
@@ -308,7 +316,7 @@ void MayaSessionState::sceneLoadedCB(void* clientData)
 
 void MayaSessionState::loadSelectedStage()
 {
-    const std::string shapePath = MayaUsd::LayerManager::getSelectedStage();
+    const std::string shapePath = MayaUsd::LayerManager::getSelectedStage(nullptr);
     StageEntry        entry;
     if (!shapePath.empty() && getStageEntry(&entry, shapePath.c_str())) {
         setStageEntry(entry);

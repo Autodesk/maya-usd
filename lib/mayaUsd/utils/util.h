@@ -698,6 +698,10 @@ SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
 MAYAUSD_CORE_PUBLIC
 bool isShape(const MDagPath& dagPath);
 
+/// Verify if the given Maya node is from the given Maya reference.
+MAYAUSD_CORE_PUBLIC
+bool isNodeInReference(const MObject& node, const MString& referenceFileName);
+
 } // namespace UsdMayaUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
