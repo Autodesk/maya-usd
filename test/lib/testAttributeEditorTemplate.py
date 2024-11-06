@@ -505,7 +505,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         expectedInitialSectionLabels = [
             'Light ',
             'Cylinder Light',
-            'Light Link Collection ',
+            'Light Linking',
             'Shadow Link Collection ']
         self.assertListEqual(
             actualSectionLabels[0:len(expectedInitialSectionLabels)],
