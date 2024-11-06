@@ -37,3 +37,21 @@ foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
 endforeach()
 
 install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME})
+
+# Install shared components
+
+set(MAYAUSD_SHARED_COMPONENTS usd-shared-components/src/python/usdSharedComponents)
+install(FILES
+    ${MAYAUSD_SHARED_COMPONENTS}/collection/__init__.py
+    ${MAYAUSD_SHARED_COMPONENTS}/collection/widget.py
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/collection/
+)
+
+install(FILES
+    ${MAYAUSD_SHARED_COMPONENTS}/common/__init__.py
+    ${MAYAUSD_SHARED_COMPONENTS}/common/list.py
+    ${MAYAUSD_SHARED_COMPONENTS}/common/persistentStorage.py
+    ${MAYAUSD_SHARED_COMPONENTS}/common/resizable.py
+    ${MAYAUSD_SHARED_COMPONENTS}/common/theme.py
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/common/
+)

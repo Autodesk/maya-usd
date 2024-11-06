@@ -23,6 +23,7 @@ from .materialCustomControl import MaterialCustomControl
 from .metadataCustomControl import MetadataCustomControl
 from .observers import UfeAttributesObserver, UfeConnectionChangedObserver, UsdNoticeListener
 
+import sys
 import collections
 import fnmatch
 import re
@@ -220,30 +221,30 @@ class LightLinkingCustomControl(object):
         self.useNiceName = useNiceName
 
     def onCreate(self, *args):
-        try:
+        if self.prim.IsValid() == True and self.prim.HasAPI('CollectionAPI', 'lightLink'):
             try:
-                from shiboken6 import wrapInstance
-                from PySide6.QtWidgets import QWidget
-            except:
-                from shiboken2 import wrapInstance # type: ignore
-                from PySide2.QtWidgets import QWidget # type: ignore
+                try:
+                    from shiboken6 import wrapInstance
+                    from PySide6.QtWidgets import QWidget
+                except:
+                    from shiboken2 import wrapInstance # type: ignore
+                    from PySide2.QtWidgets import QWidget # type: ignore
+                    
+                from maya.OpenMayaUI import MQtUtil
+
+                self.parent = cmds.setParent(q=True)
+                ptr = MQtUtil.findControl(self.parent)
+                parentWidget = wrapInstance(int(ptr), QWidget)
+
+                from usd_shared_components.collection.widget import CollectionWidget
+
+                self.widget = CollectionWidget(Usd.CollectionAPI.Get(self.prim, 'lightLink'))
+                parentWidget.layout().addWidget(self.widget)
                 
-            from maya.OpenMayaUI import MQtUtil
+            except Exception as ex:
+                logger.exception(ex)
 
-            self.parent = cmds.setParent(q=True)
-            ptr = MQtUtil.findControl(self.parent)
-            parentWidget = wrapInstance(int(ptr), QWidget)
-
-            sys.path.append('C:/dev/usd-shared-components/src/python')
-            import usd_shared_components.light_linking.LightLinking as ll
-
-            self.widget = ll.create()
-            parentWidget.layout().addWidget(self.widget)
-            
-        except Exception as ex:
-            logger.exception(ex)
-
-        self.refresh()
+            self.refresh()
 
     def onReplace(self, *args):
         # Nothing needed here since USD data is not time varying. Normally this template
@@ -520,9 +521,9 @@ class AETemplate(object):
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
     
-    def createLightLinkingSection(self):
+    def createLightLinkingSection(self, sectionName, attrs, collapse):
         # We don't use createSection() because these are metadata (not attributes).
-        with ufeAeTemplate.Layout(self, 'Light Linking', collapse=True):
+        with ufeAeTemplate.Layout(self, 'Light Linking', collapse):
             lightLinkingControl = LightLinkingCustomControl(self.item, self.prim, self.useNiceName)
             self.defineCustom(lightLinkingControl)
 
@@ -704,7 +705,7 @@ class AETemplate(object):
                 'display': self.createDisplaySection,
                 'extraAttributes': self.createCustomExtraAttrs,
                 'metadata': self.createMetadataSection,
-                'lightLinkCollectionAPI': self.createLightLinkingSection, # does this work? 
+                'lightLinkCollectionAPI': self.createLightLinkingSection,
                 'customCallbacks': self.createCustomCallbackSection,
             })
         
