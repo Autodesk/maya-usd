@@ -398,6 +398,12 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
+    if (!mJobCtx.mArgs.defaultPrim.empty()) {
+        mJobCtx.mArgs.defaultPrim = UsdMayaUtil::MayaNodeNameToSdfPath(
+                                        mJobCtx.mArgs.defaultPrim, mJobCtx.mArgs.stripNamespaces)
+                                        .GetString();
+    }
+
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
     UsdMayaUtil::MDagPathSet::const_iterator m, n;
