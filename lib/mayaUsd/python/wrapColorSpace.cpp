@@ -21,10 +21,9 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

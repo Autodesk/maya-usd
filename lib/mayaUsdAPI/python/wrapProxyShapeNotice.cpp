@@ -18,8 +18,7 @@
 
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/tf/instantiateType.h>
-
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 namespace {
 
@@ -110,7 +109,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_INSTANTIATE_SINGLETON(StageNoticesListener); // Cannot be in anonymous namespace
 PXR_NAMESPACE_CLOSE_SCOPE
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 void wrapProxyShapeNotice()
 {
     def("resetStageSet", resetStageSet);

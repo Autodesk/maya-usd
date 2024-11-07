@@ -18,13 +18,11 @@
 #include <mayaUsd/undo/OpUndoItemRecorder.h>
 
 #include <pxr/base/tf/diagnostic.h>
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 #include <memory>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -65,7 +63,7 @@ void wrapOpUndoItem()
     // OpUndoItemList
     {
         typedef PythonOpUndoItemList This;
-        class_<This, boost::noncopyable>("OpUndoItemList", init<>())
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("OpUndoItemList", init<>())
             .def("__enter__", &This::enter)
             .def("__exit__", &This::exit)
             .def("isEmpty", &This::isEmpty)

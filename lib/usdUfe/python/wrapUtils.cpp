@@ -22,6 +22,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#include <pxr_python.h>
 
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
@@ -29,13 +30,10 @@
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
-
 #include <string>
 #include <vector>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NS::UsdStageWeakPtr _getStage(const std::string& ufePathString)
 {

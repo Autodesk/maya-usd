@@ -17,11 +17,7 @@
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
-
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -37,13 +33,14 @@ UsdStageCache& _UsdMayaStageCacheGet(bool loadAll, bool shared)
 
 void wrapStageCache()
 {
-    boost::python::class_<UsdMayaStageCache>("StageCache")
+    PXR_BOOST_PYTHON_NAMESPACE::class_<UsdMayaStageCache>("StageCache")
 
         .def(
             "Get",
             _UsdMayaStageCacheGet,
-            boost::python::args("loadAll", "shared"),
-            boost::python::return_value_policy<boost::python::reference_existing_object>())
+            PXR_BOOST_PYTHON_NAMESPACE::args("loadAll", "shared"),
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::reference_existing_object>())
         .staticmethod("Get")
         .def("Clear", &UsdMayaStageCache::Clear)
         .staticmethod("Clear");

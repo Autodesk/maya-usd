@@ -23,12 +23,7 @@
 
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/return_internal_reference.hpp>
-#include <boost/python/wrapper.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -124,15 +119,15 @@ public:
             const MFnDependencyNode&         node,
             const Ufe::Path&                 path)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return nullptr;
             }
-            auto                  primUpdater = std::make_shared<This>(context, node, path);
-            TfPyLock              pyLock;
-            boost::python::object instance = pyClass((uintptr_t)&primUpdater);
-            boost::python::incref(instance.ptr());
+            auto     primUpdater = std::make_shared<This>(context, node, path);
+            TfPyLock pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::object instance = pyClass((uintptr_t)&primUpdater);
+            PXR_BOOST_PYTHON_NAMESPACE::incref(instance.ptr());
             initialize_wrapper(instance.ptr(), primUpdater.get());
             return primUpdater;
         }
@@ -141,10 +136,10 @@ public:
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
         static UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn Register(
-            boost::python::object cl,
-            const std::string&    usdTypeName,
-            const std::string&    mayaType,
-            int                   sup)
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 usdTypeName,
+            const std::string&                 mayaType,
+            int                                sup)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, usdTypeName, mayaType, sup));
             if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
@@ -159,10 +154,10 @@ public:
         // Unregister a class for a given purpose. This will cause the associated factory
         // function to stop producing this Python class.
         static void Unregister(
-            boost::python::object cl,
-            const std::string&    usdTypeName,
-            const std::string&    mayaType,
-            int                   sup)
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 usdTypeName,
+            const std::string&                 mayaType,
+            int                                sup)
         {
             UnregisterPythonObject(cl, GetKey(cl, usdTypeName, mayaType, sup));
         }
@@ -177,10 +172,10 @@ public:
         // Generates a unique key based on the name of the class, along with the class
         // purpose:
         static std::string GetKey(
-            boost::python::object cl,
-            const std::string&    usdTypeName,
-            const std::string&    mayaType,
-            int                   sup)
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 usdTypeName,
+            const std::string&                 mayaType,
+            int                                sup)
         {
             return ClassName(cl) + "," + usdTypeName + "," + mayaType + "," + std::to_string(sup)
                 + ",PrimUpdater";
@@ -188,19 +183,19 @@ public:
     };
 
     static void Unregister(
-        boost::python::object cl,
-        const std::string&    usdTypeName,
-        const std::string&    mayaType,
-        int                   sup)
+        PXR_BOOST_PYTHON_NAMESPACE::object cl,
+        const std::string&                 usdTypeName,
+        const std::string&                 mayaType,
+        int                                sup)
     {
         FactoryFnWrapper::Unregister(cl, usdTypeName, mayaType, sup);
     }
 
     static void Register(
-        boost::python::object cl,
-        const std::string&    usdTypeName,
-        const std::string&    mayaType,
-        int                   sup)
+        PXR_BOOST_PYTHON_NAMESPACE::object cl,
+        const std::string&                 usdTypeName,
+        const std::string&                 mayaType,
+        int                                sup)
     {
         UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn fn
             = FactoryFnWrapper::Register(cl, usdTypeName, mayaType, sup);
@@ -216,40 +211,46 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapPrimUpdaterArgs()
 {
-    boost::python::class_<UsdMayaPrimUpdaterArgs>("PrimUpdaterArgs", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<UsdMayaPrimUpdaterArgs>(
+        "PrimUpdaterArgs", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("createFromDictionary", &UsdMayaPrimUpdaterArgs::createFromDictionary)
         .staticmethod("createFromDictionary")
         .def(
             "getDefaultDictionary",
             &UsdMayaPrimUpdaterArgs::getDefaultDictionary,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
         .staticmethod("getDefaultDictionary");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void wrapPrimUpdaterContext()
 {
-    boost::python::class_<UsdMayaPrimUpdaterContext>("PrimUpdaterContext", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<UsdMayaPrimUpdaterContext>(
+        "PrimUpdaterContext", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def(
             "GetTimeCode",
             &UsdMayaPrimUpdaterContext::GetTimeCode,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
         .def(
             "GetUsdStage",
             &UsdMayaPrimUpdaterContext::GetUsdStage,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
         .def(
             "GetUserArgs",
             &UsdMayaPrimUpdaterContext::GetUserArgs,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
         .def(
             "GetArgs",
             &UsdMayaPrimUpdaterContext::GetArgs,
-            boost::python::return_internal_reference<>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
         .def(
             "GetAdditionalFinalCommands",
             &UsdMayaPrimUpdaterContext::GetAdditionalFinalCommands,
-            boost::python::return_internal_reference<>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
         .def("MapSdfPathToDagPath", &UsdMayaPrimUpdaterContext::MapSdfPathToDagPath);
 }
 
@@ -272,10 +273,10 @@ void wrapPrimUpdater()
 {
     typedef UsdMayaPrimUpdater This;
 
-    boost::python::class_<PrimUpdaterWrapper, boost::noncopyable> c(
-        "PrimUpdater", boost::python::no_init);
+    PXR_BOOST_PYTHON_NAMESPACE::class_<PrimUpdaterWrapper, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
+        c("PrimUpdater", PXR_BOOST_PYTHON_NAMESPACE::no_init);
 
-    boost::python::scope s(c);
+    PXR_BOOST_PYTHON_NAMESPACE::scope s(c);
 
     TfPyWrapEnum<UsdMayaPrimUpdater::Supports>();
     TfPyWrapEnum<UsdMayaPrimUpdater::PushCopySpecs>();
@@ -290,10 +291,17 @@ void wrapPrimUpdater()
         .def(
             "getMayaObject",
             &This::getMayaObject,
-            boost::python::return_value_policy<boost::python::return_by_value>())
-        .def("getUfePath", &This::getUfePath, boost::python::return_internal_reference<>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
+        .def(
+            "getUfePath",
+            &This::getUfePath,
+            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
         .def("getUsdPrim", &This::getUsdPrim)
-        .def("getContext", &This::getContext, boost::python::return_internal_reference<>())
+        .def(
+            "getContext",
+            &This::getContext,
+            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
         .def("isAnimated", &This::isAnimated)
         .staticmethod("isAnimated")
         .def("Register", &PrimUpdaterWrapper::Register)

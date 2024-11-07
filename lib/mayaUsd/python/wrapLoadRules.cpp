@@ -17,10 +17,9 @@
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
+#include <pxr_python.h>
 
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 namespace {
 

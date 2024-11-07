@@ -17,11 +17,9 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/pyConversions.h>
+#include <pxr_python.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

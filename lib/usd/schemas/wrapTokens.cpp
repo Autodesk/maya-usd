@@ -13,52 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// GENERATED FILE.  DO NOT EDIT.
 #include <mayaUsd_Schemas/tokens.h>
 
-#include <boost/python/class.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-// Helper to return a static token as a string.  We wrap tokens as Python
-// strings and for some reason simply wrapping the token using def_readonly
-// bypasses to-Python conversion, leading to the error that there's no
-// Python type for the C++ TfToken type.  So we wrap this functor instead.
-class _WrapStaticToken
-{
-public:
-    _WrapStaticToken(const TfToken* token)
-        : _token(token)
-    {
-    }
-
-    std::string operator()() const { return _token->GetString(); }
-
-private:
-    const TfToken* _token;
-};
-
-template <typename T> void _AddToken(T& cls, const char* name, const TfToken& token)
-{
-    cls.add_static_property(
-        name,
-        boost::python::make_function(
-            _WrapStaticToken(&token),
-            boost::python::return_value_policy<boost::python::return_by_value>(),
-            boost::mpl::vector1<std::string>()));
-}
-
-} // namespace
+#define _ADD_TOKEN(cls, name) \
+    cls.add_static_property(  \
+        #name, +[]() { return MayaUsd_SchemasTokens->name.GetString(); });
 
 void wrapMayaUsd_SchemasTokens()
 {
-    boost::python::class_<MayaUsd_SchemasTokensType, boost::noncopyable> cls(
-        "Tokens", boost::python::no_init);
-    _AddToken(cls, "mayaAutoEdit", MayaUsd_SchemasTokens->mayaAutoEdit);
-    _AddToken(cls, "mayaNamespace", MayaUsd_SchemasTokens->mayaNamespace);
-    _AddToken(cls, "mayaReference", MayaUsd_SchemasTokens->mayaReference);
-    _AddToken(cls, "ALMayaReference", MayaUsd_SchemasTokens->ALMayaReference);
-    _AddToken(cls, "MayaReference", MayaUsd_SchemasTokens->MayaReference);
+    PXR_BOOST_PYTHON_NAMESPACE::
+        class_<MayaUsd_SchemasTokensType, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
+            cls("Tokens", PXR_BOOST_PYTHON_NAMESPACE::no_init);
+    _ADD_TOKEN(cls, mayaAutoEdit);
+    _ADD_TOKEN(cls, mayaNamespace);
+    _ADD_TOKEN(cls, mayaReference);
+    _ADD_TOKEN(cls, ALMayaReference);
+    _ADD_TOKEN(cls, MayaReference);
 }

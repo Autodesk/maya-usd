@@ -15,9 +15,9 @@
 //
 #include <mayaUsd/ufe/Global.h>
 
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 // clang-format off
 void wrapGlobal()

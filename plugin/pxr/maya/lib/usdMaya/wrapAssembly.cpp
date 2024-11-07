@@ -19,17 +19,16 @@
 
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
-#include <boost/python/def.hpp>
-
 #include <map>
 #include <string>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

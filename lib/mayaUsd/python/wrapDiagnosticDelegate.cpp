@@ -16,13 +16,9 @@
 #include <mayaUsd/utils/diagnosticDelegate.h>
 
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
-#include <boost/noncopyable.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/return_arg.hpp>
-
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
@@ -56,7 +52,7 @@ private:
 void wrapDiagnosticDelegate()
 {
     typedef UsdMayaDiagnosticDelegate This;
-    class_<This, boost::noncopyable>("DiagnosticDelegate", no_init)
+    class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("DiagnosticDelegate", no_init)
         .def("Flush", &This::Flush)
         .staticmethod("Flush")
         .def("SetMaximumUnbatchedDiagnostics", &This::SetMaximumUnbatchedDiagnostics)
@@ -65,7 +61,7 @@ void wrapDiagnosticDelegate()
         .staticmethod("GetMaximumUnbatchedDiagnostics");
 
     typedef _PyDiagnosticBatchContext Context;
-    class_<Context, boost::noncopyable>("DiagnosticBatchContext")
+    class_<Context, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("DiagnosticBatchContext")
         .def(init<int>())
         .def("__enter__", &Context::__enter__, return_self<>())
         .def("__exit__", &Context::__exit__);
