@@ -55,6 +55,7 @@ class testUsdExportMesh(unittest.TestCase):
         cmds.namespace(add="hello")
         cmds.namespace(setNamespace=":hello")
         cubeNames = cmds.polyCube()
+        cmds.namespace(setNamespace=":")
         self.assertEqual(len(cubeNames), 2)
 
         usdFile = os.path.abspath('UsdExportNamespaceDefaultPrim.usda')
@@ -66,6 +67,20 @@ class testUsdExportMesh(unittest.TestCase):
         defaultPrim = stage.GetDefaultPrim()
         self.assertTrue(defaultPrim)
         self.assertEqual(defaultPrim.GetName(), 'hello_pCube1')
+
+    def testExportRootsNoDefaultPrim(self):
+        '''Export to USD with the export roots argument and no default prim should select a root as default.'''
+        cubeNames = cmds.polyCube()
+        self.assertEqual(len(cubeNames), 2)
+
+        usdFile = os.path.abspath('UsdExportRootsNoDefaultPrim.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none', exportRoots=['|' + cubeNames[0]])
+
+        stage = Usd.Stage.Open(usdFile)
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+        self.assertEqual(defaultPrim.GetName(), cubeNames[0])
 
     def testExportLightDefaultPrim(self):
         '''Export to USD with a light set as the default prim.'''
