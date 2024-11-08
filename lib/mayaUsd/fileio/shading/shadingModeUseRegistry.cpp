@@ -721,13 +721,13 @@ private:
                 MFnAttribute mayaFnAttr(mayaAttr.attribute());
                 if (!srcFnAttr.acceptsAttribute(mayaFnAttr)) {
                     if (srcAttr.isChild()) {
-                        const auto srcParentPlug = srcAttr.parent();
+                        const auto   srcParentPlug = srcAttr.parent();
                         MFnAttribute srcParentAttr(srcParentPlug.attribute());
                         if (srcParentAttr.acceptsAttribute(mayaFnAttr)) {
                             srcAttr = srcParentPlug;
                         }
                     } else if (mayaAttr.isChild()) {
-                        const auto mayaParentPlug = mayaAttr.parent();
+                        const auto   mayaParentPlug = mayaAttr.parent();
                         MFnAttribute mayaParentAttr(mayaParentPlug.attribute());
                         if (srcFnAttr.acceptsAttribute(mayaParentAttr)) {
                             mayaAttr = mayaParentPlug;
