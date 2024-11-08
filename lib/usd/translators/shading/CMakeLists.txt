@@ -23,7 +23,7 @@ target_sources(${TARGET_NAME}
         usdStandardSurfaceWriter.cpp
 )
 
-if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20250300)
+if (MAYA_HAS_OPENPBR_SURFACE_SHADER)
     target_sources(${TARGET_NAME}
         PRIVATE
             usdOpenPBRSurfaceWriter.cpp
@@ -70,7 +70,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
         PRIVATE
         WANT_MATERIALX_TRANSLATORS=1
     )
-    if (USD_HAS_MX_OPENPBR_SURFACE AND MAYA_API_VERSION VERSION_GREATER_EQUAL 20250300)
+    if (USD_HAS_MX_OPENPBR_SURFACE AND MAYA_HAS_OPENPBR_SURFACE_SHADER)
         target_sources(${TARGET_NAME}
             PRIVATE
                 mtlxOpenPBRSurfaceReader.cpp

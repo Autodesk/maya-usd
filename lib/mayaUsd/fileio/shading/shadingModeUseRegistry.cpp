@@ -722,13 +722,13 @@ private:
                 if (!srcFnAttr.acceptsAttribute(mayaFnAttr)) {
                     if (srcAttr.isChild()) {
                         const auto srcParentPlug = srcAttr.parent();
-                        const auto srcParentAttr = MFnAttribute(srcParentPlug);
+                        MFnAttribute srcParentAttr(srcParentPlug.attribute());
                         if (srcParentAttr.acceptsAttribute(mayaFnAttr)) {
                             srcAttr = srcParentPlug;
                         }
                     } else if (mayaAttr.isChild()) {
                         const auto mayaParentPlug = mayaAttr.parent();
-                        const auto mayaParentAttr = MFnAttribute(mayaParentPlug);
+                        MFnAttribute mayaParentAttr(mayaParentPlug.attribute());
                         if (srcFnAttr.acceptsAttribute(mayaParentAttr)) {
                             mayaAttr = mayaParentPlug;
                         }
