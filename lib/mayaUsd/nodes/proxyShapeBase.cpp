@@ -1981,25 +1981,34 @@ void MayaUsdProxyShapeBase::getDrawPurposeToggles(
 
 MayaUsd::LayerManager* MayaUsdProxyShapeBase::getLayerManager()
 {
+    // Note: don't use the CHECK_MSTATUS macros because it is expected to not
+    //       find the layer manager atribute or layer manager UUID when loading
+    //       old scenes or recomputing the proxy shape after the layer manager
+    //       node has been deleted. So errors in this function are not hard errors.
+
     MStatus localStatus;
 
     MDataBlock  dataBlock = forceCache();
     MDataHandle layerManagerData = dataBlock.inputValue(layerManagerAttr, &localStatus);
-    CHECK_MSTATUS_AND_RETURN(localStatus, nullptr);
+    if (!localStatus)
+        return nullptr;
 
     if (layerManagerData.asString().length() <= 0)
         return nullptr;
 
     MUuid layerManagerUuid(layerManagerData.asString(), &localStatus);
-    CHECK_MSTATUS_AND_RETURN(localStatus, nullptr);
+    if (!localStatus)
+        return nullptr;
 
     MSelectionList selection;
     localStatus = selection.add(layerManagerUuid);
-    CHECK_MSTATUS_AND_RETURN(localStatus, nullptr);
+    if (!localStatus)
+        return nullptr;
 
     MObject layerManagerObj;
     localStatus = selection.getDependNode(0, layerManagerObj);
-    CHECK_MSTATUS_AND_RETURN(localStatus, nullptr);
+    if (!localStatus)
+        return nullptr;
 
     MFnDependencyNode depNode;
     if (!depNode.setObject(layerManagerObj))
