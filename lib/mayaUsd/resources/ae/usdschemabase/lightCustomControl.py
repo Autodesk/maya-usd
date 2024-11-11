@@ -34,7 +34,7 @@ class LightLinkingCustomControl(object):
                 parentWidget.layout().addWidget(self.widget)
                 
             except Exception as ex:
-                print(ex)
+                print('Failed to create Light custom control: %s' % (ex))
 
             self.refresh()
 
