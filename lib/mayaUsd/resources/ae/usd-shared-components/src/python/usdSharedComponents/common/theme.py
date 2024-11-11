@@ -47,10 +47,6 @@ class Theme(object):
         ### Returns the scaled value.
         return float(value) / self.uiScaleFactor
 
-    def icon(self, name: str) -> QIcon:
-        ### Returns the icon with the given name.
-        return QIcon(f"./icons/{name}.svg")
-
     class Palette(object):
         colorResizeBorderActive: QColor = QColor(0x5285a6)
 
