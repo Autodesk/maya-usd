@@ -16,6 +16,7 @@
 # Cache variables:
 # MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
 # MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API Maya API provides color management support
+# MAYA_HAS_OPENPBR_SURFACE_SHADER Maya has an OpenPBR shader
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
 # MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
 # MAYA_HAS_CRASH_DETECTION Presence of isInCrashHandler API
@@ -348,6 +349,12 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFragmentManager.h")
         set(MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API TRUE CACHE INTERNAL "getColorManagementFragmentInfo")
         message(STATUS "Maya has getColorManagementFragmentInfo API")
     endif()
+endif()
+
+set(MAYA_HAS_OPENPBR_SURFACE_SHADER FALSE CACHE INTERNAL "OpenPBRSurfaceShader")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFnOpenPBRSurfaceShader.h")
+    set(MAYA_HAS_OPENPBR_SURFACE_SHADER TRUE CACHE INTERNAL "OpenPBRSurfaceShader")
+    message(STATUS "Maya has OpenPBR Surface Shader")
 endif()
 
 set(MAYA_NEW_POINT_SNAPPING_SUPPORT FALSE CACHE INTERNAL "snapToActive")
