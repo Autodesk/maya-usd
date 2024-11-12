@@ -153,6 +153,22 @@ if (USD_LIBRARY_DIR AND EXISTS "${USD_LIBRARY_DIR}/${USD_LIB_PREFIX}usdMtlx${CMA
     endif()
 endif()
 
+# See if we are getting OpenPBR Surface shader from USD:
+set(USD_HAS_MX_OPENPBR_SURFACE FALSE CACHE INTERNAL "USD.MaterialX.OpenPBRSurface")
+if (PXR_USD_LOCATION AND 
+        (EXISTS "${PXR_USD_LOCATION}/libraries/bxdf/mx39_open_pbr_surface.mtlx" OR 
+         EXISTS "${PXR_USD_LOCATION}/libraries/bxdf/open_pbr_surface.mtlx"))
+    set(USD_HAS_MX_OPENPBR_SURFACE TRUE CACHE INTERNAL "USD.MaterialX.OpenPBRSurface")
+    message(STATUS "USD has OpenPBR Surface")
+endif()
+
+# See if we are using the backported OpenPBR Surface shader, which needs special handling of Mx39FresnelData:
+set(USD_HAS_BACKPORTED_MX39_OPENPBR FALSE CACHE INTERNAL "USD.MaterialX.Mx39OpenPBRSurface")
+if (PXR_USD_LOCATION AND EXISTS "${PXR_USD_LOCATION}/libraries/pbrlib/genglsl/lib/mx39_microfacet_specular.glsl")
+    set(USD_HAS_BACKPORTED_MX39_OPENPBR TRUE CACHE INTERNAL "USD.MaterialX.Mx39OpenPBRSurface")
+    message(STATUS "USD has backported MaterialX 1.39 OpenPBR Surface code")
+endif()
+
 include(FindPackageHandleStandardArgs)
 
 find_package_handle_standard_args(USD

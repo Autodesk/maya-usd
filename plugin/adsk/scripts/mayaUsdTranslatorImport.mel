@@ -525,10 +525,13 @@ global proc int mayaUsdTranslatorImport (string $parent,
             separator -style "none";
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportMaterialsLbl")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportMaterialsAnn")` -cc ("mayaUsdTranslatorImport_MaterialsCB") mayaUsdTranslator_MaterialsCheckBox;
 
-            string $apiString = `about -q -apiVersion`;
-            $apiString = `substring $apiString 1 4`;
+            string $apiStringFull = `about -q -apiVersion`;
+            $apiString = `substring $apiStringFull 1 4`;
             optionMenuGrp -l `getMayaUsdString("kImportMaterialConvLbl")` -cw 1 $cw1 -ann `getMayaUsdString("kImportMaterialConvAnn")` mayaUsdTranslator_MaterialsConversionMenu;
             menuItem -l `getMayaUsdString("kImportMaterialConvNoneLbl")` -ann "none";
+            if ((int)$apiStringFull >= 20250300) {
+                menuItem -l `getMayaUsdString("kImportMaterialConvOPBRLbl")` -ann "openPBRSurface";
+            }
             if ((int)$apiString >= 2020) {
                 menuItem -l `getMayaUsdString("kImportMaterialConvSSLbl")` -ann "standardSurface";
             }

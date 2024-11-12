@@ -66,7 +66,7 @@ public:
     void PostConnectSubtree(UsdMayaPrimReaderContext* context) override;
 
 private:
-    TfToken _shaderID;
+    bool _isMonochrome = false;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_image_float, MtlxUsd_ImageReader)
@@ -89,6 +89,9 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
     if (!shaderSchema) {
         return false;
     }
+
+    const auto output = shaderSchema.GetOutput(TrMtlxTokens->out);
+    _isMonochrome = output.GetTypeName() == SdfValueTypeNames->Float;
 
     // It is possible the file node already exists if we encountered a post-processor:
     MObject mayaObject = context.GetMayaNode(prim.GetPath(), false);
@@ -157,7 +160,7 @@ TfToken MtlxUsd_ImageReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrNam
     std::tie(usdOutputName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 
     if (attrType == UsdShadeAttributeType::Output && usdOutputName == TrMtlxTokens->out) {
-        if (_shaderID == TrMtlxTokens->ND_image_float) {
+        if (_isMonochrome) {
             return TrMayaTokens->outColorR;
         }
 

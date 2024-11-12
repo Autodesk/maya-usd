@@ -335,21 +335,27 @@ struct _MaterialXData
 {
     _MaterialXData()
     {
-        _mtlxSearchPath = HdMtlxSearchPaths();
+        try {
+            _mtlxSearchPath = HdMtlxSearchPaths();
 #if PXR_VERSION > 2311
-        _mtlxLibrary = HdMtlxStdLibraries();
+            _mtlxLibrary = HdMtlxStdLibraries();
 #else
-        _mtlxLibrary = mx::createDocument();
-        mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
+            _mtlxLibrary = mx::createDocument();
+            mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
 #endif
 
-        _FixLibraryTangentInputs(_mtlxLibrary);
+            _FixLibraryTangentInputs(_mtlxLibrary);
 
-        mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
+            mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
 
-        // This environment variable is defined in USD: pxr\usd\usdMtlx\parser.cpp
-        static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
-        _mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
+            // This environment variable is defined in USD: pxr\usd\usdMtlx\parser.cpp
+            static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
+            _mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
+
+        } catch (mx::Exception& e) {
+            TF_RUNTIME_ERROR(
+                "Caught exception '%s' while initializing MaterialX library", e.what());
+        }
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library

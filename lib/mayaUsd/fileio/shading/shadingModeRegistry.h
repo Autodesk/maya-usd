@@ -46,6 +46,18 @@ TF_DECLARE_PUBLIC_TOKENS(
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_SHADINGMODE_TOKENS);
 
+#ifdef MAYA_HAS_OPENPBR_SURFACE_SHADER
+// clang-format off
+#define PXRUSDMAYA_SHADINGCONVERSION_TOKENS \
+    (none) \
+    (lambert) \
+    (openPBRSurface) \
+    (standardSurface) \
+    (usdPreviewSurface) \
+    (blinn) \
+    (phong)
+// clang-format on
+#else
 // clang-format off
 #define PXRUSDMAYA_SHADINGCONVERSION_TOKENS \
     (none) \
@@ -55,6 +67,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (blinn) \
     (phong)
 // clang-format on
+#endif
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaPreferredMaterialTokens,

@@ -302,6 +302,7 @@ __mayaUSDStringResources = {
     "kImportMaterialConvAnn": "Select the preferred conversion method for inbound USD shading data to bind with Maya geometry",
     "kImportMaterialConvLbl": "Convert to:",
     "kImportMaterialConvNoneLbl": "Automatic",
+    "kImportMaterialConvOPBRLbl": "OpenPBR Surface",
     "kImportMaterialConvSSLbl": "Standard Surface",
     "kImportMaterialConvLamLbl": "Lambert",
     "kImportMaterialConvPSLbl": "USD Preview Surface",
