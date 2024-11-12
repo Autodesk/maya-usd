@@ -31,7 +31,11 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxCylinderLight, args, context)
     if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
         return UsdMayaTranslatorRfMLight::Read(args, context);
     }
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+    return UsdMayaTranslatorLight::Read(args, context);
+#else
     return false;
+#endif
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxDiskLight, args, context)
@@ -39,7 +43,11 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxDiskLight, args, context)
     if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
         return UsdMayaTranslatorRfMLight::Read(args, context);
     }
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+    return UsdMayaTranslatorLight::Read(args, context);
+#else
     return false;
+#endif
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxDistantLight, args, context)
@@ -55,7 +63,11 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxDomeLight, args, context)
     if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
         return UsdMayaTranslatorRfMLight::Read(args, context);
     }
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+    return UsdMayaTranslatorLight::Read(args, context);
+#else
     return false;
+#endif
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxGeometryLight, args, context)

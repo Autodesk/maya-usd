@@ -35,6 +35,8 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/rectLight.h>
@@ -62,6 +64,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DirectionalLightMayaTypeName, "directionalLight"))
     ((PointLightMayaTypeName, "pointLight"))
     ((AreaLightMayaTypeName, "areaLight"))
+    ((CylinderLightMayaTypeName, "volumeLight"))
+    ((DiskLightMayaTypeName, "volumeLight"))
+    ((DomeLightMayaTypeName, "volumeLight"))
     ((normalizeAttrName, "normalize"))
     // Maya light plug names.
     ((IntensityPlugName, "intensity"))
@@ -76,6 +81,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((PenumbraAnglePlugName, "penumbraAngle"))
     ((ConeAnglePlugName, "coneAngle"))
     ((LightRadiusPlugName, "lightRadius"))
+    ((LightLengthPlugName, "lightHeight"))
 );
 // clang-format on
 
@@ -424,6 +430,169 @@ static bool _ReadAreaLight(
     return success;
 }
 
+// Export the specialized MFnVolumeLight attributes
+bool UsdMayaTranslatorLight::WriteCylinderLightAttrs(
+    const UsdTimeCode&         usdTime,
+    const UsdLuxCylinderLight& usdLight,
+    MFnVolumeLight&            mayaLight,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    MStatus status;
+
+    MPlug lightRadiusPlug
+        = mayaLight.findPlug(_tokens->LightRadiusPlugName.GetText(), true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    float lightRadius = lightRadiusPlug.asFloat();
+
+    MPlug lightLengthPlug
+        = mayaLight.findPlug(_tokens->LightLengthPlugName.GetText(), true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    float lightLength = lightLengthPlug.asFloat();
+
+    UsdMayaWriteUtil::SetAttribute(usdLight.GetRadiusAttr(), lightRadius, usdTime, valueWriter);
+    UsdMayaWriteUtil::SetAttribute(usdLight.GetLengthAttr(), lightLength, usdTime, valueWriter);
+
+    UsdPrim          prim = usdLight.GetPrim();
+    UsdLuxShapingAPI shapingAPI = UsdLuxShapingAPI::Apply(prim);
+
+    return true;
+}
+
+bool UsdMayaTranslatorLight::WriteDiskLightAttrs(
+    const UsdTimeCode&         usdTime,
+    const UsdLuxDiskLight&     usdLight,
+    MFnVolumeLight&            mayaLight,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    MStatus status;
+
+    MPlug lightRadiusPlug
+        = mayaLight.findPlug(_tokens->LightRadiusPlugName.GetText(), true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    float lightRadius = lightRadiusPlug.asFloat();
+
+    UsdMayaWriteUtil::SetAttribute(usdLight.GetRadiusAttr(), lightRadius, usdTime, valueWriter);
+
+    UsdPrim          prim = usdLight.GetPrim();
+    UsdLuxShapingAPI shapingAPI = UsdLuxShapingAPI::Apply(prim);
+
+    return true;
+}
+
+bool UsdMayaTranslatorLight::WriteDomeLightAttrs(
+    const UsdTimeCode&         usdTime,
+    const UsdLuxDomeLight&     usdLight,
+    MFnVolumeLight&            mayaLight,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    MStatus status;
+
+    MPlug lightRadiusPlug
+        = mayaLight.findPlug(_tokens->LightRadiusPlugName.GetText(), true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    float lightRadius = lightRadiusPlug.asFloat();
+
+    UsdMayaWriteUtil::SetAttribute(
+        usdLight.CreateGuideRadiusAttr(), lightRadius, usdTime, valueWriter);
+
+    UsdPrim          prim = usdLight.GetPrim();
+    UsdLuxShapingAPI shapingAPI = UsdLuxShapingAPI::Apply(prim);
+
+    return true;
+}
+
+static bool _ReadVolumeLight(
+    const UsdLuxLightAPI&        lightSchema,
+    MFnDependencyNode&           depFn,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext&    context)
+{
+    // Both Cylinder light and disk light will be mapped to volume light in Maya
+
+    MStatus status;
+    bool    success = true;
+    UsdPrim prim = lightSchema.GetPrim();
+
+    if (prim.IsA<UsdLuxCylinderLight>()) {
+        UsdLuxCylinderLight cylinderLight(prim);
+        MPlug               plug = depFn.findPlug("lightShape", true, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        success &= UsdMayaReadUtil::SetMayaAttr(plug, VtValue(2), false);
+
+        MPlug plug2 = depFn.findPlug("faceAxis", true, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        success &= UsdMayaReadUtil::SetMayaAttr(plug2, VtValue(0), false);
+
+        success &= UsdMayaReadUtil::ReadUsdAttribute(
+            cylinderLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, &context);
+
+        UsdLuxShapingAPI shapingAPI(prim);
+        if (!shapingAPI) {
+            return false;
+        }
+
+        // We need to specify a time when getting an attribute, otherwise we can get invalid data
+        // for single time-samples
+        UsdTimeCode timeCode(args.GetTimeInterval().GetMin());
+        // We need some magic conversions between maya dropOff, coneAngle, penumbraAngle,
+        // and Usd shapingFocus, shapingConeAngle, shapingConeSoftness
+        success &= UsdMayaReadUtil::ReadUsdAttribute(
+            cylinderLight.GetLengthAttr(), depFn, _tokens->LightLengthPlugName, args, &context);
+
+        return success;
+
+    } else if (prim.IsA<UsdLuxDiskLight>()) {
+        UsdLuxDiskLight diskLight(prim);
+        if (!diskLight) {
+            return false;
+        }
+
+        MPlug plug = depFn.findPlug("lightShape", true, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        success &= UsdMayaReadUtil::SetMayaAttr(plug, VtValue(2), false);
+
+        MPlug plug2 = depFn.findPlug("faceAxis", true, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        success &= UsdMayaReadUtil::SetMayaAttr(plug2, VtValue(2), false);
+
+        success &= UsdMayaReadUtil::ReadUsdAttribute(
+            diskLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, &context);
+
+        UsdLuxShapingAPI shapingAPI(prim);
+        if (!shapingAPI) {
+            return false;
+        }
+
+        return success;
+    } else if (prim.IsA<UsdLuxDomeLight>()) {
+        UsdLuxDomeLight domeLight(prim);
+        if (!domeLight) {
+            return false;
+        }
+
+        MPlug plug = depFn.findPlug("lightShape", true, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        success &= UsdMayaReadUtil::SetMayaAttr(plug, VtValue(1), false);
+
+        success &= UsdMayaReadUtil::ReadUsdAttribute(
+            domeLight.GetGuideRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, &context);
+
+        UsdLuxShapingAPI shapingAPI(prim);
+        if (!shapingAPI) {
+            return false;
+        }
+
+        return success;
+    } else {
+        return false;
+    }
+}
+
 /* static */
 bool UsdMayaTranslatorLight::Read(
     const UsdMayaPrimReaderArgs& args,
@@ -456,6 +625,15 @@ bool UsdMayaTranslatorLight::Read(
         UsdLuxShapingAPI shapingAPI(lightSchema);
         mayaLightTypeToken
             = (shapingAPI) ? _tokens->SpotLightMayaTypeName : _tokens->PointLightMayaTypeName;
+    } else if (usdPrim.IsA<UsdLuxCylinderLight>()) {
+        // USD Cylinder Light => Maya Volume Light
+        mayaLightTypeToken = _tokens->CylinderLightMayaTypeName;
+    } else if (usdPrim.IsA<UsdLuxDiskLight>()) {
+        // USD Disk Light => Maya Volume Light
+        mayaLightTypeToken = _tokens->DiskLightMayaTypeName;
+    } else if (usdPrim.IsA<UsdLuxDomeLight>()) {
+        // USD Dome Light => Maya Dome Light
+        mayaLightTypeToken = _tokens->DomeLightMayaTypeName;
     }
     if (mayaLightTypeToken.IsEmpty()) {
         TF_RUNTIME_ERROR(
@@ -513,6 +691,8 @@ bool UsdMayaTranslatorLight::Read(
         _ReadSpotLight(lightSchema, depFn, args, context);
     } else if (mayaLightTypeToken == _tokens->AreaLightMayaTypeName) {
         _ReadAreaLight(lightSchema, depFn, args, context);
+    } else if (mayaLightTypeToken == _tokens->CylinderLightMayaTypeName) {
+        _ReadVolumeLight(lightSchema, depFn, args, context);
     }
     return true;
 }

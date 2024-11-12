@@ -50,6 +50,13 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if (UFE_VOLUME_LIGHTS_SUPPORT)
+    target_compile_definitions(${TARGET_NAME}
+    	PRIVATE
+            UFE_VOLUME_LIGHTS_SUPPORT=1
+    )
+endif()
+
 add_subdirectory(shading)
 
 # -----------------------------------------------------------------------------

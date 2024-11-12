@@ -88,6 +88,18 @@ public:
     void Write(const UsdTimeCode& usdTime) override;
 };
 
+/// Exports Maya volume lights to UsdLux sphere lights
+class PxrUsdTranslators_VolumeLightWriter : public UsdMayaPrimWriter
+{
+public:
+    PxrUsdTranslators_VolumeLightWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
+
+    void Write(const UsdTimeCode& usdTime) override;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

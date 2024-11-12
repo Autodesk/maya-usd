@@ -24,7 +24,10 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include <pxr/pxr.h>
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/domeLight.h>
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/sphereLight.h>
@@ -33,6 +36,7 @@
 #include <maya/MFnDirectionalLight.h>
 #include <maya/MFnPointLight.h>
 #include <maya/MFnSpotLight.h>
+#include <maya/MFnVolumeLight.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -79,6 +83,30 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxRectLight&     usdLight,
         MFnAreaLight&              mayaLight,
+        FlexibleSparseValueWriter* valueWriter = nullptr);
+
+    /// Exports Maya's area light attributes using UsdLuxCylinderLight schema
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteCylinderLightAttrs(
+        const UsdTimeCode&         usdTime,
+        const UsdLuxCylinderLight& usdLight,
+        MFnVolumeLight&            mayaLight,
+        FlexibleSparseValueWriter* valueWriter = nullptr);
+
+    /// Exports Maya's area light attributes using UsdLuxRectLight schema
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteDiskLightAttrs(
+        const UsdTimeCode&         usdTime,
+        const UsdLuxDiskLight&     usdLight,
+        MFnVolumeLight&            mayaLight,
+        FlexibleSparseValueWriter* valueWriter = nullptr);
+
+    /// Exports Maya's area light attributes using UsdLuxRectLight schema
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteDomeLightAttrs(
+        const UsdTimeCode&         usdTime,
+        const UsdLuxDomeLight&     usdLight,
+        MFnVolumeLight&            mayaLight,
         FlexibleSparseValueWriter* valueWriter = nullptr);
 
     /// Import a UsdLuxLightAPI schema as a corresponding Maya light.
