@@ -19,6 +19,7 @@ in this instance for the mayaUsd plug-in.
 | EditTargetCommand              | mayaUsdEditTarget        | Command to set or get the edit target  |
 | LayerEditorCommand             | mayaUsdLayerEditor       | Manipulate layers                      |
 | LayerEditorWindowCommand       | mayaUsdLayerEditorWindow | Open or manipulate the layer window    |
+| SchemaCommand                  | mayaUsdSchema            | Manipulate prim schemas                |
 
 Each base command class is documented in the following sections.
 
@@ -632,6 +633,20 @@ The purpose of this command is to set the current edit target.
 | `-query`       | `-q`       | noarg          | Retrieve the current edit target |
 | `-editTarget`  | `-et`      | string         | The name of the target to set with the `-edit` flag |
 
+## `mayaUsdSchema`
+
+The purpose of this command is to query or apply USD schemas to USD prims.
+
+### Command Flags
+
+| Long flag                   | Short flag | Type           | Description                                  |
+| --------------------------- | ---------- | -------------- | -------------------------------------------- |
+| `-primUfePath`              | `-ufe`     | string (multi) | The UFE paths to the USD prims               |
+| `-appliedSchemas`           | `-app`     | noarg          | Query which schemas the prims have in common |
+| `-schema`                   | `-sch`     | string         | The schema type name to apply to the prims   |
+| `-instanceName`             | `-in`      | string         | The instance name for multi-apply schema     |
+| `-singleApplicationSchemas` | `-sas`     | noarg          | Query the list of known single-apply schemas |
+| `-multiApplicationSchemas`  | `-mas`     | noarg          | Query the list of known multi-apply schemas  |
 
 ## `LayerEditorCommand`
 
