@@ -17,6 +17,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/Utils.h>
+#include <usdUfe/utils/schemas.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -100,6 +101,52 @@ bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     return UsdUfe::isAttributeEditAllowed(attr);
 }
 
+static boost::python::dict _convertSchemaInfo(const UsdUfe::SchemaInfo& info)
+{
+    boost::python::dict infoDict;
+
+    infoDict["pluginName"] = info.pluginName;
+    infoDict["schemaType"] = info.schemaType;
+    infoDict["schemaTypeName"] = info.schemaTypeName;
+    infoDict["isMultiApply"] = info.isMultiApply;
+
+    return infoDict;
+}
+
+static boost::python::list _getKnownApplicableSchemas()
+{
+    boost::python::list schemasList;
+
+    UsdUfe::KnownSchemas knownSchemas = UsdUfe::getKnownApplicableSchemas();
+
+    for (const auto& info : knownSchemas)
+        schemasList.append(_convertSchemaInfo(info.second));
+
+    return schemasList;
+}
+
+static boost::python::dict _findSchemasByTypeName(const PXR_NS::TfToken& schemaTypeName)
+{
+    auto maybeInfo = UsdUfe::findSchemasByTypeName(schemaTypeName);
+    if (!maybeInfo)
+        return {};
+
+    return _convertSchemaInfo(*maybeInfo);
+}
+
+bool _applySchemaToPrim(PXR_NS::UsdPrim& prim, const PXR_NS::TfType& schemaType)
+{
+    return UsdUfe::applySchemaToPrim(prim, schemaType);
+}
+
+bool _applyMultiSchemaToPrim(
+    PXR_NS::UsdPrim&       prim,
+    const PXR_NS::TfType&  schemaType,
+    const PXR_NS::TfToken& instanceName)
+{
+    return UsdUfe::applyMultiSchemaToPrim(prim, schemaType, instanceName);
+}
+
 void wrapUtils()
 {
     // Because UsdUfe and UFE have incompatible Python bindings that do not
@@ -123,4 +170,8 @@ void wrapUtils()
     def("getTime", _getTime);
     def("prettifyName", &UsdUfe::prettifyName);
     def("isAttributeEditAllowed", _isAttributeEditAllowed);
+    def("getKnownApplicableSchemas", _getKnownApplicableSchemas);
+    def("applySchemaToPrim", _applySchemaToPrim);
+    def("applyMultiSchemaToPrim", _applyMultiSchemaToPrim);
+    def("findSchemasByTypeName", _findSchemasByTypeName);
 }
