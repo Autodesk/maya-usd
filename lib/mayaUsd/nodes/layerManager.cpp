@@ -254,7 +254,7 @@ public:
     std::string getSelectedStage() const;
 
     bool saveLayerManagerSelectedStage();
-    bool loadLayerManagerSelectedStage(MayaUsdProxyShapeBase* forProxyShape);
+    bool loadLayerManagerSelectedStage(MayaUsd::LayerManager& layerManager);
 
     SdfLayerHandle findLayer(std::string identifier) const;
 
@@ -702,14 +702,11 @@ bool LayerDatabase::saveLayerManagerSelectedStage()
     return true;
 }
 
-bool LayerDatabase::loadLayerManagerSelectedStage(MayaUsdProxyShapeBase* forProxyShape)
+bool LayerDatabase::loadLayerManagerSelectedStage(MayaUsd::LayerManager& layerManager)
 {
-    MayaUsd::LayerManager* lm = findNode(forProxyShape);
-    if (!lm)
-        return false;
-
     MStatus status;
-    MPlug   selectedStagePlug(lm->thisMObject(), lm->selectedStage);
+
+    MPlug selectedStagePlug(layerManager.thisMObject(), layerManager.selectedStage);
     setSelectedStage(selectedStagePlug.asString(MDGContext::fsNormal, &status).asChar());
 
     return status;
@@ -1233,7 +1230,7 @@ void LayerDatabase::loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape)
         }
     }
 
-    LayerDatabase::instance().loadLayerManagerSelectedStage(forProxyShape);
+    LayerDatabase::instance().loadLayerManagerSelectedStage(*lm);
 
     if (!_isSavingMayaFile)
         removeManagerNode(lm, forProxyShape);
