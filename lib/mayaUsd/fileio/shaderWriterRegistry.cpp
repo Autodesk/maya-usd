@@ -20,6 +20,9 @@
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
+#include <mayaUsd/fileio/shading/symmetricShaderReader.h>
+#include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
+
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/registryManager.h>
@@ -132,6 +135,12 @@ UsdMayaShaderWriterRegistry::WriterFactoryFn UsdMayaShaderWriterRegistry::Find(
 
     it = _Find(mayaTypeName, exportArgs);
 
+    if (it != _reg.end()) {
+        return it->second._writer;
+    }
+
+    UsdMayaSymmetricShaderWriter::RegisterWriter(mayaTypeName, mayaTypeName, TfToken("rendermanForMaya"));
+    it = _Find(mayaTypeName, exportArgs);
     if (it != _reg.end()) {
         return it->second._writer;
     }
