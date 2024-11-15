@@ -239,6 +239,7 @@ class AETemplate(object):
 
         # Build the list of schemas with their associated attributes.
         schemasAttributes = {
+            'customCallbacks' : [],
             'extraAttributes' : [],
             'metadata' : [],
         }
