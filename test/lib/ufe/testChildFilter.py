@@ -116,6 +116,10 @@ class ChildFilterTestCase(unittest.TestCase):
         self.assertEqual(6, len(children))
         self.assertIn(ball3Item, children)
 
+    def testFilteredClassPrims(self):
+        # TODO
+        pass
+
     def testProxyShapeFilteredChildren(self):
         mayaUtils.openGroupBallsScene()
         cmds.select(clear=True)

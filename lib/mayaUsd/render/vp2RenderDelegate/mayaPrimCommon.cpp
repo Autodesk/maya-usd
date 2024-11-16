@@ -53,6 +53,30 @@ static const InstancePrototypePath sVoidInstancePrototypePath { SdfPath(), kNati
 namespace {
 std::mutex        sMayaMutex;
 MayaUsdCustomData sMayaUsdCustomData;
+
+bool getCastsShadows(HdVP2RenderDelegate* delegate, const SdfPath& rprimId, bool& isCastsShadows)
+{
+    static const TfToken primvarVisCastsShadowsToken("primvars:visibility:castsShadows", TfToken::Immortal);
+    auto param = static_cast<HdVP2RenderParam*>(delegate->GetRenderParam());
+    auto value = param->GetDrawScene().GetUsdImagingDelegate()->Get(rprimId, primvarVisCastsShadowsToken);
+    if (!value.IsEmpty() && value.IsHolding<bool>()) {
+        isCastsShadows = value.UncheckedGet<bool>();
+        return true;
+    }
+    return false;
+}
+
+void setCastsShadows(HdVP2RenderDelegate* delegate, MHWRender::MRenderItem* renderItem, bool isCastsShadows)
+{
+    const auto drawMode = renderItem->drawMode();
+    if (drawMode & MHWRender::MGeometry::kShaded || drawMode & MHWRender::MGeometry::kTextured) {
+        delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem, isCastsShadows]() {
+            renderItem->castsShadows(isCastsShadows);
+            renderItem->receivesShadows(isCastsShadows);
+        });
+    }
+}
+
 } // namespace
 
 /* static */
@@ -442,6 +466,12 @@ void MayaUsdRPrim::_InitRenderItemCommon(MHWRender::MRenderItem* renderItem) con
 #ifdef MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API
     renderItem->setHideOnPlayback(_hideOnPlayback);
 #endif
+
+    bool isCastsShadows = true;
+    if (getCastsShadows(_delegate, SdfPath(_rprimId.asChar()), isCastsShadows)) {
+        renderItem->castsShadows(isCastsShadows);
+        renderItem->receivesShadows(isCastsShadows);
+    }
 }
 
 HdVP2DrawItem::RenderItemData& MayaUsdRPrim::_AddRenderItem(
@@ -848,6 +878,19 @@ void MayaUsdRPrim::_SyncSharedData(
     TfToken const&     renderTag)
 {
     const SdfPath& id = refThis.GetId();
+
+    static const TfToken visCastsShadowsToken("visibility:castsShadows", TfToken::Immortal);
+    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, visCastsShadowsToken)) {
+        bool isCastsShadows = true;
+        if (getCastsShadows(_delegate, id, isCastsShadows)) {
+            RenderItemFunc setCastsShadowsFunc = [this, isCastsShadows](HdVP2DrawItem::RenderItemData& renderItemData) {
+                setCastsShadows(_delegate, renderItemData._renderItem, isCastsShadows);
+            };
+            for (const auto& repr : reprs) {
+                _ForEachRenderItemInRepr(repr.second, setCastsShadowsFunc);
+            }
+        }
+    }
 
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
         sharedData.bounds.SetRange(delegate->GetExtent(id));
