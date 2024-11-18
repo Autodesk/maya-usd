@@ -16,19 +16,17 @@
 #include "AL/usdmaya/StageCache.h"
 
 #include <pxr/base/tf/pyResultConversions.h>
-
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 void wrapStageCache()
 {
-    boost::python::class_<AL::usdmaya::StageCache>("StageCache")
+    PXR_BOOST_PYTHON_NAMESPACE::class_<AL::usdmaya::StageCache>("StageCache")
 
         .def(
             "Get",
             &AL::usdmaya::StageCache::Get,
-            boost::python::return_value_policy<boost::python::reference_existing_object>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::reference_existing_object>())
         .staticmethod("Get")
         .def("Clear", &AL::usdmaya::StageCache::Clear)
         .staticmethod("Clear");

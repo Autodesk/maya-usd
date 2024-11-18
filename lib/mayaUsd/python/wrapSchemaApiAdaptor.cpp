@@ -24,15 +24,9 @@
 #include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
 
 #include <pxr/base/tf/pyPolymorphic.h>
+#include <pxr_python.h>
 
 #include <maya/MTypes.h>
-
-#include <boost/python/args.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/return_internal_reference.hpp>
-#include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -143,8 +137,8 @@ public:
             // Do *not* call through if there's an active python exception.
             if (!PyErr_Occurred()) {
                 try {
-                    return boost::python::call<bool>(pyOverride.ptr(), modifier);
-                } catch (boost::python::error_already_set const&) {
+                    return PXR_BOOST_PYTHON_NAMESPACE::call<bool>(pyOverride.ptr(), modifier);
+                } catch (PXR_BOOST_PYTHON_NAMESPACE::error_already_set const&) {
                     // Convert any exception to TF_ERRORs.
                     TfPyConvertPythonExceptionToTfErrors();
                     PyErr_Clear();
@@ -179,8 +173,8 @@ public:
             // Do *not* call through if there's an active python exception.
             if (!PyErr_Occurred()) {
                 try {
-                    return boost::python::call<bool>(pyOverride.ptr(), modifier);
-                } catch (boost::python::error_already_set const&) {
+                    return PXR_BOOST_PYTHON_NAMESPACE::call<bool>(pyOverride.ptr(), modifier);
+                } catch (PXR_BOOST_PYTHON_NAMESPACE::error_already_set const&) {
                     // Convert any exception to TF_ERRORs.
                     TfPyConvertPythonExceptionToTfErrors();
                     PyErr_Clear();
@@ -231,15 +225,15 @@ public:
             const TfToken&           schemaName,
             const UsdPrimDefinition* schemaPrimDef)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return nullptr;
             }
-            auto                  sptr = std::make_shared<This>(object, schemaName, schemaPrimDef);
-            TfPyLock              pyLock;
-            boost::python::object instance = pyClass((uintptr_t)&sptr);
-            boost::python::incref(instance.ptr());
+            auto     sptr = std::make_shared<This>(object, schemaName, schemaPrimDef);
+            TfPyLock pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::object instance = pyClass((uintptr_t)&sptr);
+            PXR_BOOST_PYTHON_NAMESPACE::incref(instance.ptr());
             initialize_wrapper(instance.ptr(), sptr.get());
             return sptr;
         }
@@ -248,9 +242,9 @@ public:
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
         static UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFn Register(
-            boost::python::object cl,
-            const std::string&    mayaType,
-            const std::string&    schemaApiName)
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 mayaType,
+            const std::string&                 schemaApiName)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaType, schemaApiName));
             if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
@@ -265,9 +259,9 @@ public:
         // Unregister a class for a given purpose. This will cause the associated factory
         // function to stop producing this Python class.
         static void Unregister(
-            boost::python::object cl,
-            const std::string&    mayaType,
-            const std::string&    schemaApiName)
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 mayaType,
+            const std::string&                 schemaApiName)
         {
             UnregisterPythonObject(cl, GetKey(cl, mayaType, schemaApiName));
         }
@@ -282,18 +276,18 @@ public:
         // Generates a unique key based on the name of the class, along with the class
         // purpose:
         static std::string GetKey(
-            boost::python::object cl,
-            const std::string&    mayaType,
-            const std::string&    schemaApiName)
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 mayaType,
+            const std::string&                 schemaApiName)
         {
             return ClassName(cl) + "," + mayaType + "," + schemaApiName + ",SchemaApiAdaptor";
         }
     };
 
     static void Register(
-        boost::python::object cl,
-        const std::string&    mayaType,
-        const std::string&    schemaApiName)
+        PXR_BOOST_PYTHON_NAMESPACE::object cl,
+        const std::string&                 mayaType,
+        const std::string&                 schemaApiName)
     {
         UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFn fn
             = AdaptorFactoryFnWrapper::Register(cl, mayaType, schemaApiName);
@@ -303,9 +297,9 @@ public:
     }
 
     static void Unregister(
-        boost::python::object cl,
-        const std::string&    mayaType,
-        const std::string&    schemaApiName)
+        PXR_BOOST_PYTHON_NAMESPACE::object cl,
+        const std::string&                 mayaType,
+        const std::string&                 schemaApiName)
     {
         AdaptorFactoryFnWrapper::Unregister(cl, mayaType, schemaApiName);
     }
@@ -317,10 +311,11 @@ void wrapSchemaApiAdaptor()
 {
     typedef UsdMayaSchemaApiAdaptor This;
 
-    boost::python::class_<
+    PXR_BOOST_PYTHON_NAMESPACE::class_<
         SchemaApiAdaptorWrapper,
-        boost::python::bases<UsdMayaSchemaAdaptor>,
-        boost::noncopyable>("SchemaApiAdaptor", boost::python::no_init)
+        PXR_BOOST_PYTHON_NAMESPACE::bases<UsdMayaSchemaAdaptor>,
+        PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "SchemaApiAdaptor", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("__init__", make_constructor(&SchemaApiAdaptorWrapper::New))
 
         .def("CanAdapt", &This::CanAdapt, &SchemaApiAdaptorWrapper::default_CanAdapt)

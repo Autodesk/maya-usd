@@ -17,9 +17,9 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsdAPI/proxyStage.h>
 
-#include <maya/MDagPath.h>
+#include <pxr_python.h>
 
-#include <boost/python/class.hpp>
+#include <maya/MDagPath.h>
 
 namespace {
 
@@ -47,11 +47,11 @@ PXR_NS::UsdStageRefPtr ProxyStage_getUsdStage(const std::string& nodeName)
 
 } // namespace
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 void wrapProxyStage()
 {
-    class_<MayaUsdAPI::ProxyStage, boost::noncopyable>("ProxyStage", no_init)
+    class_<MayaUsdAPI::ProxyStage, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("ProxyStage", no_init)
         .def("getTime", &ProxyStage_getTime)
         .staticmethod("getTime")
         .def("getUsdStage", &ProxyStage_getUsdStage)

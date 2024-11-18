@@ -201,7 +201,7 @@ Headers should be included in the following order, with each section separated b
 2. All private headers
 3. All public headers from this repository (maya-usd)
 4. UsdUfe library headers
-5. Pixar + USD headers
+5. Pixar + USD headers + special pxr_python.h
 6. Autodesk + Maya headers
 7. Other libraries' headers
 8. C++ standard library headers
@@ -245,15 +245,19 @@ Headers should be included in the following order, with each section separated b
 	* Each version of Ufe contains a features available define (in ufe.h) such as `UFE_V4_FEATURES_AVAILABLE` that can be used for conditional compilation on code depending on Ufe Version.
 
 **USD**
-	* `PXR_VERSION` is the macro to test USD version (`PXR_MAJOR_VERSION` * 10000 + `PXR_MINOR_VERSION` * 100 + `PXR_PATCH_VERSION`)
+	* `PXR_VERSION` is the macro to test USD version in C++ code (`PXR_MAJOR_VERSION` * 10000 + `PXR_MINOR_VERSION` * 100 + `PXR_PATCH_VERSION`), ex: `#if PXR_VERSION <= 2311`
+    * `USD_VERSION` is the cmake variable to test USD version in cmake code, ex: `if(USD_VERSION VERSION_LESS "0.24.11")`
 
 Respect the minimum supported version for Maya and USD stated in [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) .
 
 ### std over boost
 Recent extensions to the C++ standard introduce many features previously only found in [boost](http://boost.org). To avoid introducing additional dependencies, developers should strive to use functionality in the C++ std over boost. If you encounter usage of boost in the code, consider converting this to the equivalent std mechanism. 
 Our library currently has the following boost dependencies:
-* `boost::python`
-* `boost::make_shared` (preferable to replace with `std::shared_ptr`)
+* `boost::python` for USD version < 24.11
+* `boost::make_shared` (preferable to replace with `std::shared_ptr`), `boost::static_pointer_cast`
+* `boost::hash{_range/_value}`, `boost::mpl`, `boost::multi_index`, `boost::optional`
+
+*Note*: all these Boost dependencies are header only and thus don't require linking to actual Boost libraries.
 
 ***Update:***
 * `boost::filesystem` and `boost::system` are removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the project.
@@ -261,6 +265,9 @@ Our library currently has the following boost dependencies:
 * Dependency on `boost::thread` is removed from Animal Logic plugin.
 
 * `boost::hash_combine` is replaced with `MayaUsd::hash_combine` and should be used instead across the project.
+
+***USD version >= 24.11:***
+* In USD v24.11 Pixar has removed Boost as a dependency for the USD build. This includes Boost python which is no longer used to build the python bindings. Instead Pixar has created their own boost python in a separate `pxr/external/boost` folder. Since MayaUsd supports many versions of USD we have created a boost porting python file [pxr_python.h](https://github.com/autodesk/maya-usd/pxr_python.h). This file has uses `ifdef` checks to support all versions of USD and which python it uses. Not python (Boost or Pixar Boost) header files should be included directly in C++ source files. Instead always include only `<pxr_python.h>` and use the `PXR_BOOST_PYTHON_NAMESPACE` define to refer to the Boost python code, ex: `PXR_BOOST_PYTHON_NAMESPACE::object`
 
 ## Modern C++
 Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) following modern C++ practices. We’ll follow the [C++ Core Guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and pay attention to:
@@ -318,8 +325,7 @@ Keyword meanings:
 6. Use cmake_parse_arguments as the recommended way for parsing the arguments given to the macro or function.
 7. Don't use file(GLOB).
 8. Be explicit by calling set_target_properties when it's appropriate.
-9. Links against Boost or GTest using imported targets rather than variables:
-e.g Boost::filesystem, Boost::system, GTest::GTest
+9. Links against GTest using imported targets rather than variables: ex: GTest::GTest
 
 ## Compiler features/flags/definitions
 1. Setting or appending compiler flags/definitions via CMAKE_CXX_FLAGS is NOT allowed.

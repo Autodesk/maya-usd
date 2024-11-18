@@ -18,14 +18,12 @@
 
 #include <pxr/base/tf/pyError.h>
 #include <pxr/base/tf/pyLock.h>
-
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 #include <exception>
 #include <iostream>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 namespace {
 
@@ -76,12 +74,12 @@ public:
         if (!PyCallable_Check(_pyCb)) {
             return;
         }
-        boost::python::dict dictObject(routingData);
+        PXR_BOOST_PYTHON_NAMESPACE::dict dictObject(routingData);
         try {
             call<void>(_pyCb, context, dictObject);
-        } catch (const boost::python::error_already_set&) {
+        } catch (const PXR_BOOST_PYTHON_NAMESPACE::error_already_set&) {
             const std::string errorMessage = handlePythonException();
-            boost::python::handle_exception();
+            PXR_BOOST_PYTHON_NAMESPACE::handle_exception();
             PyErr_Clear();
             TF_WARN("%s", errorMessage.c_str());
             throw std::runtime_error(errorMessage);
@@ -92,15 +90,15 @@ public:
 
         // Extract keys and values individually so that we can extract
         // PXR_NS::UsdEditTarget correctly from PXR_NS::TfPyObjWrapper.
-        const boost::python::object items = dictObject.items();
-        for (boost::python::ssize_t i = 0; i < len(items); ++i) {
+        const PXR_BOOST_PYTHON_NAMESPACE::object items = dictObject.items();
+        for (PXR_BOOST_PYTHON_NAMESPACE::ssize_t i = 0; i < len(items); ++i) {
 
-            boost::python::extract<std::string> keyExtractor(items[i][0]);
+            PXR_BOOST_PYTHON_NAMESPACE::extract<std::string> keyExtractor(items[i][0]);
             if (!keyExtractor.check()) {
                 continue;
             }
 
-            boost::python::extract<PXR_NS::VtValue> valueExtractor(items[i][1]);
+            PXR_BOOST_PYTHON_NAMESPACE::extract<PXR_NS::VtValue> valueExtractor(items[i][1]);
             if (!valueExtractor.check()) {
                 continue;
             }
@@ -110,8 +108,9 @@ public:
             if (vtvalue.IsHolding<PXR_NS::TfPyObjWrapper>()) {
                 const auto wrapper = vtvalue.Get<PXR_NS::TfPyObjWrapper>();
 
-                PXR_NS::TfPyLock                              lock;
-                boost::python::extract<PXR_NS::UsdEditTarget> editTargetExtractor(wrapper.Get());
+                PXR_NS::TfPyLock                                           lock;
+                PXR_BOOST_PYTHON_NAMESPACE::extract<PXR_NS::UsdEditTarget> editTargetExtractor(
+                    wrapper.Get());
                 if (editTargetExtractor.check()) {
                     auto editTarget = editTargetExtractor();
                     routingData[keyExtractor()] = PXR_NS::VtValue(editTarget);
@@ -192,15 +191,16 @@ void wrapEditRouter()
     def("clearAllEditRouters", &UsdUfe::clearAllEditRouters);
 
     using OpThis = UsdUfe::OperationEditRouterContext;
-    class_<OpThis, boost::noncopyable>("OperationEditRouterContext", no_init)
+    class_<OpThis, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("OperationEditRouterContext", no_init)
         .def("__init__", make_constructor(OperationEditRouterContextInit));
 
     using AttrThis = UsdUfe::AttributeEditRouterContext;
-    class_<AttrThis, boost::noncopyable>("AttributeEditRouterContext", no_init)
+    class_<AttrThis, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("AttributeEditRouterContext", no_init)
         .def("__init__", make_constructor(AttributeEditRouterContextInit));
 
     using PrimMdThis = UsdUfe::PrimMetadataEditRouterContext;
-    class_<PrimMdThis, boost::noncopyable>("PrimMetadataEditRouterContext", no_init)
+    class_<PrimMdThis, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "PrimMetadataEditRouterContext", no_init)
         .def(init<const PXR_NS::UsdPrim&, const PXR_NS::TfToken&>())
         .def(init<const PXR_NS::UsdPrim&, const PXR_NS::TfToken&, const PXR_NS::TfToken&>())
         .def(init<

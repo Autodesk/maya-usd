@@ -18,11 +18,7 @@
 #include <mayaUsd/fileio/registryHelper.h>
 
 #include <pxr/base/tf/pyPolymorphic.h>
-
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/wrapper.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -32,11 +28,11 @@ PXR_NAMESPACE_USING_DIRECTIVE
 class JobContextRegistry
 {
 public:
-    static boost::python::object GetJobContextInfo(const TfToken& jobContext)
+    static PXR_BOOST_PYTHON_NAMESPACE::object GetJobContextInfo(const TfToken& jobContext)
     {
         UsdMayaJobContextRegistry::ContextInfo ctx
             = UsdMayaJobContextRegistry::GetInstance().GetJobContextInfo(jobContext);
-        boost::python::dict dict;
+        PXR_BOOST_PYTHON_NAMESPACE::dict dict;
         dict["jobContext"] = ctx.jobContext;
         dict["niceName"] = ctx.niceName;
         dict["exportDescription"] = ctx.exportDescription;
@@ -47,10 +43,10 @@ public:
     }
 
     static void RegisterImportJobContext(
-        const std::string&    jobContext,
-        const std::string&    niceName,
-        const std::string&    description,
-        boost::python::object enablerFct)
+        const std::string&                 jobContext,
+        const std::string&                 niceName,
+        const std::string&                 description,
+        PXR_BOOST_PYTHON_NAMESPACE::object enablerFct)
     {
         if (!PyCallable_Check(enablerFct.ptr()))
             TF_CODING_ERROR(
@@ -60,10 +56,10 @@ public:
             jobContext, niceName, description, [=]() { return callEnablerFn(enablerFct); }, true);
     }
     static void RegisterExportJobContext(
-        const std::string&    jobContext,
-        const std::string&    niceName,
-        const std::string&    description,
-        boost::python::object enablerFct)
+        const std::string&                 jobContext,
+        const std::string&                 niceName,
+        const std::string&                 description,
+        PXR_BOOST_PYTHON_NAMESPACE::object enablerFct)
     {
         if (!PyCallable_Check(enablerFct.ptr()))
             TF_CODING_ERROR(
@@ -73,7 +69,8 @@ public:
             jobContext, niceName, description, [=]() { return callEnablerFn(enablerFct); }, true);
     }
 
-    static void SetExportOptionsUI(const std::string& jobContext, boost::python::object uiFct)
+    static void
+    SetExportOptionsUI(const std::string& jobContext, PXR_BOOST_PYTHON_NAMESPACE::object uiFct)
     {
         if (!PyCallable_Check(uiFct.ptr()))
             TF_CODING_ERROR(
@@ -89,7 +86,8 @@ public:
             true);
     }
 
-    static void SetImportOptionsUI(const std::string& jobContext, boost::python::object uiFct)
+    static void
+    SetImportOptionsUI(const std::string& jobContext, PXR_BOOST_PYTHON_NAMESPACE::object uiFct)
     {
         if (!PyCallable_Check(uiFct.ptr()))
             TF_CODING_ERROR(
@@ -106,17 +104,17 @@ public:
     }
 
 private:
-    static VtDictionary callEnablerFn(boost::python::object fnc)
+    static VtDictionary callEnablerFn(PXR_BOOST_PYTHON_NAMESPACE::object fnc)
     {
         auto res = TfPyCall<VtDictionary>(fnc)();
         return res;
     }
 
     static VtDictionary callUIFn(
-        boost::python::object fnc,
-        const TfToken&        jobContext,
-        const std::string&    parentUI,
-        const VtDictionary&   settings)
+        PXR_BOOST_PYTHON_NAMESPACE::object fnc,
+        const TfToken&                     jobContext,
+        const std::string&                 parentUI,
+        const VtDictionary&                settings)
     {
         auto res = TfPyCall<VtDictionary>(fnc)(jobContext, parentUI, settings);
         return res;
@@ -126,8 +124,8 @@ private:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobContextRegistry()
 {
-    boost::python::class_<JobContextRegistry, boost::noncopyable>(
-        "JobContextRegistry", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<JobContextRegistry, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "JobContextRegistry", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("GetJobContextInfo", &JobContextRegistry::GetJobContextInfo)
         .staticmethod("GetJobContextInfo")
         .def("RegisterImportJobContext", &JobContextRegistry::RegisterImportJobContext)

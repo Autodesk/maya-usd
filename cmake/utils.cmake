@@ -166,14 +166,16 @@ endfunction()
 
 #
 # mayaUsd_promoteHeaderList(
-#                        [SUBDIR  <sub-directory name>]
-#                        [FILES   <list of files>]
+#                        [HEADERS <list of header files>]
 #                        [BASEDIR <sub-directory name>])
+#                        [SUBDIR  <sub-directory name>]
 #
-#   SUBDIR     - sub-directory in which to promote files.
-#   FILES      - list of files to promote.
+#   HEADERS    - list of header files to promote.
 #   BASEDIR    - base directory where promoted headers are installed into.
-#                if not defined, mayaUsd subdirectory is used by default.
+#                If not defined, mayaUsd subdirectory is used by default.
+#                Unless special keyword "NONE" is used, in which case no
+#                basedir is set.
+#   SUBDIR     - sub-directory in which to promote header files.
 #
 #
 function(mayaUsd_promoteHeaderList)
@@ -192,7 +194,9 @@ function(mayaUsd_promoteHeaderList)
 
     set(BASEDIR ${CMAKE_BINARY_DIR}/include)
     if (PREFIX_BASEDIR)
-        set(BASEDIR ${BASEDIR}/${PREFIX_BASEDIR})
+        if(NOT ${PREFIX_BASEDIR} MATCHES "NONE")
+            set(BASEDIR ${BASEDIR}/${PREFIX_BASEDIR})
+        endif()
     else()
         set(BASEDIR ${BASEDIR}/mayaUsd)
     endif()
