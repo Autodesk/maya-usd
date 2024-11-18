@@ -148,6 +148,14 @@ if (UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH)
     )
 endif()
 
+if (NOT MAYA_APP_VERSION VERSION_GREATER 2025)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        MAYAUSD_NEED_OUTLINER_FILTER_FIX=1
+    )
+endif()
+
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE

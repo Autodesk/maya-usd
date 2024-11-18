@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Xform "top"
+{
+    def Cone "active_cone"
+    {
+        double3 xformOp:translate = (-5.624157828991091, 0, -5.283505766735125)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "active_cube"
+    {
+        double3 xformOp:translate = (-5.905612502078963, 0, 4.50852128164777)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cylinder "inactive_cylinder" (
+        active = false
+    )
+    {
+        double3 xformOp:translate = (5.058637937703114, 0, -5.308671155580967)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    class "active_class"
+    {
+    }
+
+    class "inactive_class" (
+        active = false
+    )
+    {
+    }
+}
+
