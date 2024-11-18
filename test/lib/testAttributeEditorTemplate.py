@@ -512,7 +512,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             expectedInitialSectionLabels)
 
         # Note: there are no extra attributes in Maya 2022.
-        if mayaUtils.mayaMajorMinorVersions() >= (2023, 0):
+        if mayaUtils.mayaMajorMinorVersions() >= (2022, 5):
             expectedFinalSectionLabels = [
                 'Transforms',
                 'Display',
