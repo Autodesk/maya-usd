@@ -24,12 +24,11 @@ import testUtils
 
 from maya import cmds
 from maya import mel
-from maya import standalone
+import maya.internal.common.ufe_ae.template as ufeAeTemplate
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 import mayaUsd_createStageWithNewLayer
-
-from pxr import Usd
+import mayaUsd.lib
 
 import ufe
 
@@ -527,6 +526,80 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             actualSectionLabels[-len(expectedFinalSectionLabels):],
             expectedFinalSectionLabels)
 
+    def testAECustomAttributeCallback(self):
+        '''Test that the custm atribute callbacks work.'''
 
+        # AE template UI callback function.
+        self.templateUseCount = 0
+        customSectionName ='UnlikelySectionName'
+
+        # Callback function which receives two params as input: callback context and
+        # callback data (empty).
+        def onBuildAETemplateCallback(context, data):
+            # In the callback context you can retrieve the ufe path string.
+            ufe_path_string = context.get('ufe_path_string')
+            ufePath = ufe.PathString.path(ufe_path_string)
+            ufeItem = ufe.Hierarchy.createItem(ufePath)
+            self.assertTrue(ufeItem)
+
+            # The callback data is empty.
+
+            # Note: do not import this globally, because at unit test startup time
+            #       the Python search path is not setup to find it. Once Maya runs,
+            #       we can import it.
+            from ufe_ae.usd.nodes.usdschemabase.ae_template import AETemplate as mayaUsd_AETemplate
+
+            mayaUsdAETemplate = mayaUsd_AETemplate.getAETemplateForCustomCallback()
+            self.assertTrue(mayaUsdAETemplate)
+            if mayaUsdAETemplate:
+                # Create a new section and add attributes to it.
+                with ufeAeTemplate.Layout(mayaUsdAETemplate, customSectionName, collapse=False):
+                    pass
+            
+            self.templateUseCount = self.templateUseCount + 1
+
+        # Register your callback so it will be called during the MayaUsd AE
+        # template UI building code. This would probably done during plugin loading.
+        # The first param string 'onBuildAETemplate' is the callback operation and the
+        # second is the name of your callback function.
+        mayaUsd.lib.registerUICallback('onBuildAETemplate', onBuildAETemplateCallback)
+
+        try:
+            proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+            proxyShapePath = ufe.PathString.path(proxyShape)
+            proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+
+            # Create a capsule prim.
+            proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+            proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+            fullPrimPath = proxyShape + ",/Capsule1"
+            cmds.select(fullPrimPath)
+
+            # Make sure the AE is visible.
+            import maya.mel
+            maya.mel.eval('openAEWindow')
+
+            capsuleFormLayout = self.attrEdFormLayoutName('Capsule')
+            self.assertTrue(cmds.formLayout(capsuleFormLayout, exists=True))
+            startLayout = cmds.formLayout(capsuleFormLayout, query=True, fullPathName=True)
+            self.assertIsNotNone(startLayout, 'Could not get full path for Capsule formLayout')
+
+            # Augment the maixmum diff size to get better error message when comparing the lists.
+            self.maxDiff = 2000
+            
+            actualSectionLabels = self.findAllFrameLayoutLabels(startLayout)
+
+            # Verify we got the custom section.
+            self.assertIn(customSectionName, actualSectionLabels)
+            self.assertGreater(self.templateUseCount, 0)
+        except:
+            # During your plugin unload you should unregister the callback (and any attribute
+            # nice naming function you also added).
+            mayaUsd.lib.unregisterUICallback('onBuildAETemplate', onBuildAETemplateCallback)
+            raise
+        else:
+            mayaUsd.lib.unregisterUICallback('onBuildAETemplate', onBuildAETemplateCallback)
+
+        
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
