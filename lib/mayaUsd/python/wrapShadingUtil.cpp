@@ -16,8 +16,7 @@
 
 #include <mayaUsd/fileio/utils/shadingUtil.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -28,7 +27,8 @@ class ShadingUtil
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShadingUtil()
 {
-    boost::python::class_<ShadingUtil, boost::noncopyable>("ShadingUtil", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<ShadingUtil, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "ShadingUtil", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("GetStandardAttrName", &UsdMayaShadingUtil::GetStandardAttrName)
         .staticmethod("GetStandardAttrName");
 }

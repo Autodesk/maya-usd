@@ -19,12 +19,10 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/pyUtils.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
-using namespace boost;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
+using namespace PXR_BOOST_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -82,7 +80,7 @@ std::string UsdMayaPythonObjectRegistry::ClassName(object cl)
         TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
     }
 
-    return std::string(boost::python::extract<std::string>(nameAttr));
+    return std::string(PXR_BOOST_PYTHON_NAMESPACE::extract<std::string>(nameAttr));
 }
 
 UsdMayaPythonObjectRegistry::TClassVec   UsdMayaPythonObjectRegistry::_sClassVec;

@@ -183,7 +183,7 @@ endfunction() # pxr_setup_python
 
 function(pxr_test_scripts)
     # If we can't build Python modules then do nothing.
-    if(NOT TARGET python)
+    if(NOT TARGET ${PYTHON_MODULES})
         return()
     endif()
 
@@ -241,7 +241,7 @@ function(pxr_register_test TEST_NAME)
             endif()
         endif()
 
-        if(NOT TARGET python)
+        if(NOT TARGET ${PYTHON_MODULES})
             # Implicit requirement.  Python modules require shared USD
             # libraries.  If the test runs python it's certainly going
             # to load USD modules.  If the test uses C++ to load USD
@@ -478,7 +478,7 @@ function(pxr_toplevel_prologue)
     # Create a target for targets that require Python.  Each should add
     # itself as a dependency to the "python" target.
     if(TARGET shared_libs)
-        add_custom_target(python ALL)
+        add_custom_target(${PYTHON_MODULES} ALL)
     endif()
 endfunction() # pxr_toplevel_prologue
 

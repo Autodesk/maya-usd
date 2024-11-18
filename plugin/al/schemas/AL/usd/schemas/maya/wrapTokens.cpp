@@ -13,63 +13,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// GENERATED FILE.  DO NOT EDIT.
 #include "tokens.h"
 
-#include <boost/python/class.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-// Helper to return a static token as a string.  We wrap tokens as Python
-// strings and for some reason simply wrapping the token using def_readonly
-// bypasses to-Python conversion, leading to the error that there's no
-// Python type for the C++ TfToken type.  So we wrap this functor instead.
-class _WrapStaticToken
-{
-public:
-    _WrapStaticToken(const TfToken* token)
-        : _token(token)
-    {
-    }
-
-    std::string operator()() const { return _token->GetString(); }
-
-private:
-    const TfToken* _token;
-};
-
-template <typename T> void _AddToken(T& cls, const char* name, const TfToken& token)
-{
-    cls.add_static_property(
-        name,
-        boost::python::make_function(
-            _WrapStaticToken(&token),
-            boost::python::return_value_policy<boost::python::return_by_value>(),
-            boost::mpl::vector1<std::string>()));
-}
-
-} // namespace
+#define _ADD_TOKEN(cls, name) \
+    cls.add_static_property(  \
+        #name, +[]() { return AL_USDMayaSchemasTokens->name.GetString(); });
 
 void wrapAL_USDMayaSchemasTokens()
 {
-    boost::python::class_<AL_USDMayaSchemasTokensType, boost::noncopyable> cls(
-        "Tokens", boost::python::no_init);
-    _AddToken(cls, "animationEndFrame", AL_USDMayaSchemasTokens->animationEndFrame);
-    _AddToken(cls, "animationStartFrame", AL_USDMayaSchemasTokens->animationStartFrame);
-    _AddToken(cls, "currentFrame", AL_USDMayaSchemasTokens->currentFrame);
-    _AddToken(cls, "endFrame", AL_USDMayaSchemasTokens->endFrame);
-    _AddToken(cls, "lock", AL_USDMayaSchemasTokens->lock);
-    _AddToken(cls, "lock_inherited", AL_USDMayaSchemasTokens->lock_inherited);
-    _AddToken(cls, "lock_transform", AL_USDMayaSchemasTokens->lock_transform);
-    _AddToken(cls, "lock_unlocked", AL_USDMayaSchemasTokens->lock_unlocked);
-    _AddToken(cls, "mergedTransform", AL_USDMayaSchemasTokens->mergedTransform);
-    _AddToken(cls, "mergedTransform_unmerged", AL_USDMayaSchemasTokens->mergedTransform_unmerged);
-    _AddToken(cls, "selectability", AL_USDMayaSchemasTokens->selectability);
-    _AddToken(cls, "selectability_inherited", AL_USDMayaSchemasTokens->selectability_inherited);
-    _AddToken(cls, "selectability_selectable", AL_USDMayaSchemasTokens->selectability_selectable);
-    _AddToken(
-        cls, "selectability_unselectable", AL_USDMayaSchemasTokens->selectability_unselectable);
-    _AddToken(cls, "startFrame", AL_USDMayaSchemasTokens->startFrame);
+    PXR_BOOST_PYTHON_NAMESPACE::
+        class_<AL_USDMayaSchemasTokensType, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
+            cls("Tokens", PXR_BOOST_PYTHON_NAMESPACE::no_init);
+    _ADD_TOKEN(cls, animationEndFrame);
+    _ADD_TOKEN(cls, animationStartFrame);
+    _ADD_TOKEN(cls, currentFrame);
+    _ADD_TOKEN(cls, endFrame);
+    _ADD_TOKEN(cls, lock);
+    _ADD_TOKEN(cls, lock_inherited);
+    _ADD_TOKEN(cls, lock_transform);
+    _ADD_TOKEN(cls, lock_unlocked);
+    _ADD_TOKEN(cls, mergedTransform);
+    _ADD_TOKEN(cls, mergedTransform_unmerged);
+    _ADD_TOKEN(cls, selectability);
+    _ADD_TOKEN(cls, selectability_inherited);
+    _ADD_TOKEN(cls, selectability_selectable);
+    _ADD_TOKEN(cls, selectability_unselectable);
+    _ADD_TOKEN(cls, startFrame);
 }

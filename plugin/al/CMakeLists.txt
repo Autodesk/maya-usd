@@ -9,9 +9,6 @@ endif()
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-if(NOT DEFINED ENV{BOOST_ROOT})
-    set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
-endif()
 
 set(INSTALL_DIR_SUFFIX plugin/al)
 set(AL_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX})
@@ -20,45 +17,54 @@ option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 
-if(WIN32)
-    if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
-        set(Boost_USE_DEBUG_PYTHON ON)
+if(USD_VERSION VERSION_LESS "0.24.11")
+    if(NOT DEFINED ENV{BOOST_ROOT})
+        set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
     endif()
-endif()
 
-find_package(Boost REQUIRED)
+    if(WIN32)
+        if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+            set(Boost_USE_DEBUG_PYTHON ON)
+        endif()
+    endif()
 
-# As of boost 1.67 the boost_python component name includes the
-# associated Python version (e.g. python27, python36). After boost 1.70
-# the built-in cmake files will deal with this. If we are using boost
-# that does not have working cmake files, or we are using a new boost
-# and not using cmake's boost files, we need to do the below.
-# https://cmake.org/cmake/help/latest/module/FindBoost.html
-# Find the component under the versioned name and then set the generic
-# Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
-# logic in each library's CMakeLists.txt.
-set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
-if (((${boost_version_string} VERSION_GREATER_EQUAL "1.67") AND
-    (${boost_version_string} VERSION_LESS "1.70")) OR
-    ((${boost_version_string} VERSION_GREATER_EQUAL "1.70") AND
-    Boost_NO_BOOST_CMAKE))
+    find_package(Boost REQUIRED)
 
-    set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
-    set(Boost_FIND_COMPONENTS
-        python${python_version_nodot}
+    # As of boost 1.67 the boost_python component name includes the
+    # associated Python version (e.g. python27, python36). After boost 1.70
+    # the built-in cmake files will deal with this. If we are using boost
+    # that does not have working cmake files, or we are using a new boost
+    # and not using cmake's boost files, we need to do the below.
+    # https://cmake.org/cmake/help/latest/module/FindBoost.html
+    # Find the component under the versioned name and then set the generic
+    # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
+    # logic in each library's CMakeLists.txt.
+    #
+    # Note: Autodesk USD build 21.11 (Linux) uses Boost 1.66
+    #
+    set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
+    if (((${boost_version_string} VERSION_GREATER_EQUAL "1.67") AND
+        (${boost_version_string} VERSION_LESS "1.70")) OR
+        ((${boost_version_string} VERSION_GREATER_EQUAL "1.70") AND
+        Boost_NO_BOOST_CMAKE))
+
+        set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
+        set(Boost_FIND_COMPONENTS
+            python${python_version_nodot}
+        )
+
+        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
+    else()
+        set(Boost_FIND_COMPONENTS
+            python
+        )
+    endif()
+
+    find_package(Boost COMPONENTS
+                    ${Boost_FIND_COMPONENTS}
+                    REQUIRED
     )
-
-    set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
-else()
-    set(Boost_FIND_COMPONENTS
-        python
-    )
 endif()
-
-find_package(Boost COMPONENTS
-                ${Boost_FIND_COMPONENTS}
-                REQUIRED
-)
 
 set(AL_USDMAYA_LOCATION_NAME
     "AL_USDMAYA_LOCATION"
