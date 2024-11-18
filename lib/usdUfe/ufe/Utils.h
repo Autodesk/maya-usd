@@ -22,10 +22,12 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdr/shaderNode.h>
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/primFlags.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <ufe/attribute.h>
+#include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/types.h>
@@ -476,6 +478,12 @@ void removeSessionLeftOvers(
     const PXR_NS::SdfPath&        primPath,
     UsdUndoableItem*              undoableItem,
     bool                          extraEdits = true);
+
+//! Return the USD prims predicate for the given UFE child filter.
+//! Note: an empty filter or unknown filter will filter out everything.
+//!       Yes, that means no-filter actually means filter everything out.
+USDUFE_PUBLIC
+PXR_NS::Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childFilter);
 
 } // namespace USDUFE_NS_DEF
 

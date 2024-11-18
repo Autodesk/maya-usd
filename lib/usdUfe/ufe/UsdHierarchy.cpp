@@ -189,18 +189,8 @@ Ufe::SceneItemList UsdHierarchy::children() const
 
 Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {
-    // Note: for now the only child filter flag we support is "Inactive Prims".
-    //       See UsdHierarchyHandler::childFilter()
-    if ((childFilter.size() == 1) && (childFilter.front().name == "InactivePrims")) {
-        // See uniqueChildName() for explanation of USD filter predicate.
-        const bool             showInactive = childFilter.front().value;
-        Usd_PrimFlagsPredicate flags
-            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : kUsdUfePrimDefaultPredicate;
-        return createUFEChildList(getUSDFilteredChildren(_item, flags), !showInactive);
-    }
-
-    UFE_LOG("Unknown child filter");
-    return Ufe::SceneItemList();
+    Usd_PrimFlagsPredicate flags = UsdUfe::getUsdPredicate(childFilter);
+    return createUFEChildList(getUSDFilteredChildren(_item, flags), false);
 }
 
 bool UsdHierarchy::childrenHook(
