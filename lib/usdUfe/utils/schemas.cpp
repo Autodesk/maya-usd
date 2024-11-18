@@ -22,9 +22,9 @@
 
 namespace USDUFE_NS_DEF {
 
-namespace {
-
-} // namespace
+////////////////////////////////////////////////////////////////////////////
+//
+// Known schemas
 
 KnownSchemas getKnownApplicableSchemas()
 {
@@ -69,12 +69,16 @@ std::shared_ptr<SchemaInfo> findSchemasByTypeName(const PXR_NS::TfToken& schemaT
     return findSchemasByTypeName(schemaTypeName, UsdUfe::getKnownApplicableSchemas());
 }
 
+////////////////////////////////////////////////////////////////////////////
+//
+// Schema application
+
 bool applySchemaToPrim(PXR_NS::UsdPrim& prim, const PXR_NS::TfType& schemaType)
 {
     return prim.ApplyAPI(schemaType);
 }
 
-bool applySchemaToPrim(PXR_NS::UsdPrim& prim, const SchemaInfo& info)
+bool applySchemaInfoToPrim(PXR_NS::UsdPrim& prim, const SchemaInfo& info)
 {
     return applySchemaToPrim(prim, info.schemaType);
 }
@@ -87,13 +91,47 @@ bool applyMultiSchemaToPrim(
     return prim.ApplyAPI(schemaType, instanceName);
 }
 
-bool applyMultiSchemaToPrim(
+bool applyMultiSchemaInfoToPrim(
     PXR_NS::UsdPrim&       prim,
     const SchemaInfo&      info,
     const PXR_NS::TfToken& instanceName)
 {
     return applyMultiSchemaToPrim(prim, info.schemaType, instanceName);
 }
+
+////////////////////////////////////////////////////////////////////////////
+//
+// Schema removal
+
+bool removeSchemaFromPrim(PXR_NS::UsdPrim& prim, const PXR_NS::TfType& schemaType)
+{
+    return prim.RemoveAPI(schemaType);
+}
+
+bool removeSchemaInfoFromPrim(PXR_NS::UsdPrim& prim, const SchemaInfo& info)
+{
+    return removeSchemaFromPrim(prim, info.schemaType);
+}
+
+bool removeMultiSchemaFromPrim(
+    PXR_NS::UsdPrim&       prim,
+    const PXR_NS::TfType&  schemaType,
+    const PXR_NS::TfToken& instanceName)
+{
+    return prim.RemoveAPI(schemaType, instanceName);
+}
+
+bool removeMultiSchemaInfoFromPrim(
+    PXR_NS::UsdPrim&       prim,
+    const SchemaInfo&      info,
+    const PXR_NS::TfToken& instanceName)
+{
+    return removeMultiSchemaFromPrim(prim, info.schemaType, instanceName);
+}
+
+////////////////////////////////////////////////////////////////////////////
+//
+// Schema query
 
 std::vector<PXR_NS::TfToken> getPrimAppliedSchemas(const PXR_NS::UsdPrim& prim)
 {

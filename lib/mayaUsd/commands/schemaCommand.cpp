@@ -45,9 +45,14 @@ static MString formatMessage(const char* format, const std::string& text)
     return PXR_NS::TfStringPrintf(format, text.c_str()).c_str();
 }
 
-static MString formatMessage(const char* format, PXR_NS::UsdPrim& prim, const std::string& text)
+static MString formatMessage(
+    const char*        format,
+    const char*        action,
+    PXR_NS::UsdPrim&   prim,
+    const std::string& text)
 {
-    return PXR_NS::TfStringPrintf(format, prim.GetPath().GetString().c_str(), text.c_str()).c_str();
+    return PXR_NS::TfStringPrintf(format, action, prim.GetPath().GetString().c_str(), text.c_str())
+        .c_str();
 }
 
 static std::string formatMessage(const char* format, const Ufe::Path& ufePath)
@@ -67,6 +72,8 @@ static const char kSchemaFlag[] = "sch";
 static const char kSchemaLongFlag[] = "schema";
 static const char kInstanceNameFlag[] = "in";
 static const char kInstanceNameLongFlag[] = "instanceName";
+static const char kRemoveSchemaFlag[] = "rem";
+static const char kRemoveSchemaLongFlag[] = "removeSchema";
 
 static const char kSingleApplicationFlag[] = "sas";
 static const char kSingleApplicationLongFlag[] = "singleApplicationSchemas";
@@ -94,6 +101,9 @@ public:
     const std::string& getSchema() const { return _schema; }
     const std::string& getInstanceName() const { return _instanceName; }
 
+    // Check if the command is removing a schema.
+    bool isRemovingSchema() const { return _isRemovingSchema; }
+
     // Check if the command is a query or which specific type of query.
     bool isQuerying() const { return isQueryingAppliedSchemas() || isQueryingKnownSchemas(); }
     bool isQueryingKnownSchemas() const
@@ -114,6 +124,7 @@ private:
     std::string parseStringArg(MArgDatabase& argData, const char* argFlag);
 
     std::vector<Ufe::Path> _primPaths;
+    bool                   _isRemovingSchema { false };
     bool                   _isQueryingAppliedSchemas { false };
     bool                   _singleApplicationSchemas { false };
     bool                   _multiApplicationSchemas { false };
@@ -133,6 +144,7 @@ MStatus SchemaCommand::Data::parseArgs(const MArgList& argList)
     _isQueryingAppliedSchemas = argData.isFlagSet(kAppliedSchemasFlag);
     _schema = parseStringArg(argData, kSchemaFlag);
     _instanceName = parseStringArg(argData, kInstanceNameFlag);
+    _isRemovingSchema = argData.isFlagSet(kRemoveSchemaFlag);
     _singleApplicationSchemas = argData.isFlagSet(kSingleApplicationFlag);
     _multiApplicationSchemas = argData.isFlagSet(kMultiApplicationFlag);
 
@@ -202,6 +214,8 @@ MSyntax SchemaCommand::createSyntax()
     syntax.addFlag(kSchemaFlag, kSchemaLongFlag, MSyntax::kString);
     syntax.addFlag(kInstanceNameFlag, kInstanceNameLongFlag, MSyntax::kString);
 
+    syntax.addFlag(kRemoveSchemaFlag, kRemoveSchemaLongFlag);
+
     syntax.addFlag(kSingleApplicationFlag, kSingleApplicationLongFlag);
     syntax.addFlag(kMultiApplicationFlag, kMultiApplicationLongFlag);
 
@@ -240,13 +254,13 @@ MStatus SchemaCommand::handleKnownSchemas()
     return MS::kSuccess;
 }
 
-MStatus SchemaCommand::handleApplySchema()
+MStatus SchemaCommand::handleApplyOrRemoveSchema()
 {
     UsdUfe::UsdUndoBlock undoBlock(&_data->getUsdUndoItem());
 
     const std::string& schemaName = _data->getSchema();
     if (schemaName.empty()) {
-        displayError("No schema given to apply to the prims");
+        displayError("No schema given to modify the prims");
         return MS::kInvalidParameter;
     }
 
@@ -265,18 +279,27 @@ MStatus SchemaCommand::handleApplySchema()
             return MS::kInvalidParameter;
         }
 
+        PXR_NS::TfToken instanceName(_data->getInstanceName());
+
+        auto func = _data->isRemovingSchema() ? &UsdUfe::removeMultiSchemaFromPrim
+                                              : &UsdUfe::applyMultiSchemaToPrim;
+        const char* action = _data->isRemovingSchema() ? "remove" : "apply";
+
         for (PXR_NS::UsdPrim& prim : _data->getPrims()) {
-            if (!UsdUfe::applyMultiSchemaToPrim(
-                    prim, schemaType, PXR_NS::TfToken(_data->getInstanceName()))) {
-                displayWarning(
-                    formatMessage("Could no apply schema \"%s\" to prim \"%s\"", prim, schemaName));
+            if (!func(prim, schemaType, instanceName)) {
+                displayWarning(formatMessage(
+                    "Could not %s schema \"%s\" to prim \"%s\"", action, prim, schemaName));
             }
         }
     } else {
+        auto func = _data->isRemovingSchema() ? &UsdUfe::removeSchemaFromPrim
+                                              : &UsdUfe::applySchemaToPrim;
+        const char* action = _data->isRemovingSchema() ? "remove" : "apply";
+
         for (PXR_NS::UsdPrim& prim : _data->getPrims()) {
-            if (!UsdUfe::applySchemaToPrim(prim, schemaType)) {
-                displayWarning(
-                    formatMessage("Could no apply schema \"%s\" to prim \"%s\"", prim, schemaName));
+            if (!func(prim, schemaType)) {
+                displayWarning(formatMessage(
+                    "Could not %s schema \"%s\" to prim \"%s\"", action, prim, schemaName));
             }
         }
     }
@@ -302,7 +325,7 @@ MStatus SchemaCommand::doIt(const MArgList& argList)
         if (_data->isQueryingKnownSchemas())
             return handleKnownSchemas();
 
-        return handleApplySchema();
+        return handleApplyOrRemoveSchema();
     } catch (const std::exception& exc) {
         displayError(exc.what());
         return MS::kFailure;

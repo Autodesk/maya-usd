@@ -63,7 +63,7 @@ private:
 
     MStatus handleAppliedSchemas();
     MStatus handleKnownSchemas();
-    MStatus handleApplySchema();
+    MStatus handleApplyOrRemoveSchema();
 
     class Data;
     std::unique_ptr<Data> _data;

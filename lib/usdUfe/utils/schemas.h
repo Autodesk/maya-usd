@@ -73,7 +73,7 @@ bool applySchemaToPrim(PXR_NS::UsdPrim& prim, const PXR_NS::TfType& schemaType);
 /// @param info the schema info to apply.
 /// @return true if the application succeeded.
 USDUFE_PUBLIC
-bool applySchemaToPrim(PXR_NS::UsdPrim& prim, const SchemaInfo& info);
+bool applySchemaInfoToPrim(PXR_NS::UsdPrim& prim, const SchemaInfo& info);
 
 /// @brief apply the given multi-apply schema type to the given prim.
 /// @param prim the prim to receive the schema.
@@ -92,7 +92,43 @@ bool applyMultiSchemaToPrim(
 /// @param instanceName the unique name of the new schema application.
 /// @return true if the application succeeded.
 USDUFE_PUBLIC
-bool applyMultiSchemaToPrim(
+bool applyMultiSchemaInfoToPrim(
+    PXR_NS::UsdPrim&       prim,
+    const SchemaInfo&      info,
+    const PXR_NS::TfToken& instanceName);
+
+/// @brief remove the given single-apply schema type from the given prim.
+/// @param prim the prim to lose the schema.
+/// @param schemaType the schema type to remove.
+/// @return true if the removal succeeded.
+USDUFE_PUBLIC
+bool removeSchemaFromPrim(PXR_NS::UsdPrim& prim, const PXR_NS::TfType& schemaType);
+
+/// @brief remove the given single-apply schema type from the given prim.
+/// @param prim the prim to lose the schema.
+/// @param info the schema info to remove.
+/// @return true if the removal succeeded.
+USDUFE_PUBLIC
+bool removeSchemaInfoFromPrim(PXR_NS::UsdPrim& prim, const SchemaInfo& info);
+
+/// @brief remove the given single-apply schema type from the given prim.
+/// @param prim the prim to lose the schema.
+/// @param schemaType the schema type to remove.
+/// @param instanceName the unique name of the new schema application.
+/// @return true if the removal succeeded.
+USDUFE_PUBLIC
+bool removeMultiSchemaFromPrim(
+    PXR_NS::UsdPrim&       prim,
+    const PXR_NS::TfType&  schemaType,
+    const PXR_NS::TfToken& instanceName);
+
+/// @brief remove the given single-apply schema type from the given prim.
+/// @param prim the prim to lose the schema.
+/// @param info the schema info to remove.
+/// @param instanceName the unique name of the new schema application.
+/// @return true if the removal succeeded.
+USDUFE_PUBLIC
+bool removeMultiSchemaInfoFromPrim(
     PXR_NS::UsdPrim&       prim,
     const SchemaInfo&      info,
     const PXR_NS::TfToken& instanceName);
