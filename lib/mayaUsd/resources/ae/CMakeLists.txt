@@ -29,7 +29,6 @@ foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
         ${_SUBDIR}/displayCustomControl.py
         ${_SUBDIR}/enumCustomControl.py
         ${_SUBDIR}/imageCustomControl.py
-        ${_SUBDIR}/lightCustomControl.py
         ${_SUBDIR}/materialCustomControl.py
         ${_SUBDIR}/metadataCustomControl.py
         ${_SUBDIR}/observers.py
