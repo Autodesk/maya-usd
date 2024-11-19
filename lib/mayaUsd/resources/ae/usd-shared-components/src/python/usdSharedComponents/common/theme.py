@@ -7,7 +7,7 @@ except:
     from PySide2.QtGui import QPainter, QColor, QPen, QIcon  # type: ignore
     from PySide2.QtWidgets import QWidget  # type: ignore
 
-
+from typing import Union
 from enum import Flag, auto
 
 
@@ -35,7 +35,7 @@ class Theme(object):
         ### Returns the UI scale factor.
         return 1.0
 
-    def uiScaled(self, value: float | int):
+    def uiScaled(self, value: Union[float, int]):
         ### Returns the scaled value.
         if isinstance(value, float):
             return value * self.uiScaleFactor
@@ -43,7 +43,7 @@ class Theme(object):
             return int(round(float(value) * self.uiScaleFactor))
         raise ValueError("Value must be a float or an int")
 
-    def uiUnScaled(self, value: float | int):
+    def uiUnScaled(self, value: Union[float, int]):
         ### Returns the scaled value.
         return float(value) / self.uiScaleFactor
 

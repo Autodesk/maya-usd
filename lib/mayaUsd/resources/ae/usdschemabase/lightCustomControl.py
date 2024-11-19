@@ -13,7 +13,7 @@ class LightLinkingCustomControl(object):
         self.useNiceName = useNiceName
 
     def onCreate(self, *args):
-        if self.prim.IsValid() == True and self.prim.HasAPI('CollectionAPI', 'lightLink'):
+        if self.prim.IsValid() == True and self.prim.HasAPI(Usd.CollectionAPI, 'lightLink'):
             try:
                 try:
                     from shiboken6 import wrapInstance

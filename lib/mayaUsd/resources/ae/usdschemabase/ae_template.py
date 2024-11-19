@@ -21,10 +21,13 @@ from .connectionsCustomControl import ConnectionsCustomControl
 from .displayCustomControl import DisplayCustomControl
 from .materialCustomControl import MaterialCustomControl
 from .metadataCustomControl import MetadataCustomControl
-from .lightCustomControl import LightLinkingCustomControl
 from .observers import UfeAttributesObserver, UfeConnectionChangedObserver, UsdNoticeListener
+try:
+    from .lightCustomControl import LightLinkingCustomControl
+    lightLinkingSupported = True
+except:
+    lightLinkingSupported = False
 
-import sys
 import collections
 import fnmatch
 import re
@@ -648,17 +651,19 @@ class AETemplate(object):
         # By default, calls the generic createSection, which will search
         # in the list of known custom control creators for the one to be
         # used.
+        customAttributes = {
+            'shader': self.createShaderAttributesSection,
+            'transforms': self.createTransformAttributesSection,
+            'display': self.createDisplaySection,
+            'extraAttributes': self.createCustomExtraAttrs,
+            'metadata': self.createMetadataSection,
+            'customCallbacks': self.createCustomCallbackSection,
+        }
+        # only support lightLinking custom attribute for Maya 2023+
+        if lightLinkingSupported:
+            customAttributes['lightLinkCollectionAPI'] = self.createLightLinkingSection
         sectionCreators = collections.defaultdict(
-            lambda : self.createSection,
-            {
-                'shader': self.createShaderAttributesSection,
-                'transforms': self.createTransformAttributesSection,
-                'display': self.createDisplaySection,
-                'extraAttributes': self.createCustomExtraAttrs,
-                'metadata': self.createMetadataSection,
-                'lightLinkCollectionAPI': self.createLightLinkingSection,
-                'customCallbacks': self.createCustomCallbackSection,
-            })
+            lambda : self.createSection, customAttributes)
         
         # Create the section in the specified order.
         for typeName in schemasOrder:

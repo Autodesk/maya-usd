@@ -502,17 +502,25 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # Note: different version of USD can have different schemas,
         #       so we only compare the ones we are interested in verifying.
-        expectedInitialSectionLabels = [
-            'Light ',
-            'Cylinder Light',
-            'Light Linking',
-            'Shadow Link Collection ']
+        expectedInitialSectionLabels = []
+        if mayaUtils.mayaMajorMinorVersions() >= (2023, 0):
+            expectedInitialSectionLabels = [
+                'Light ',
+                'Cylinder Light',
+                'Light Linking',
+                'Shadow Link Collection ']
+        else:
+            expectedInitialSectionLabels = [
+                'Light ',
+                'Cylinder Light',
+                'Light Link Collection ',
+                'Shadow Link Collection ']
         self.assertListEqual(
             actualSectionLabels[0:len(expectedInitialSectionLabels)],
             expectedInitialSectionLabels)
 
         # Note: there are no extra attributes in Maya 2022.
-        if mayaUtils.mayaMajorMinorVersions() >= (2022, 5):
+        if mayaUtils.mayaMajorMinorVersions() >= (2023, 0):
             expectedFinalSectionLabels = [
                 'Transforms',
                 'Display',

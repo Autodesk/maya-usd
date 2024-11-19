@@ -1,6 +1,6 @@
 from .theme import Theme
 from .persistentStorage import PersistentStorage
-
+from typing import Union
 try:
     from PySide6.QtCore import Qt, Signal, QRect
     from PySide6.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy
@@ -34,7 +34,7 @@ class Resizable(QWidget):
             super(Resizable._Overlay, self).__init__(parent)
 
             self._active:bool = False
-            self._mousePressGlobalPosY: int | None = None
+            self._mousePressGlobalPosY: Union[int, None] = None
             self._maskRect: QRect = None
 
             self.setWindowFlags(Qt.FramelessWindowHint)

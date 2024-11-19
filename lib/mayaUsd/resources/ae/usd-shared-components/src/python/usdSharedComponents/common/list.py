@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Union
 from .theme import Theme
 
 try:
@@ -13,6 +13,14 @@ try:
     from PySide6.QtGui import QPainter
     from PySide6.QtWidgets import QStyleOptionViewItem, QStyledItemDelegate, QListView, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QCheckBox
 except:
+    from PySide2.QtCore import (
+        QModelIndex,
+        QPersistentModelIndex,
+        QSize,
+        QStringListModel,
+        Qt,
+        Signal,
+    )
     from PySide2.QtGui import QPainter  # type: ignore
     from PySide2.QtWidgets import QStyleOptionViewItem, QStyledItemDelegate, QListView, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QCheckBox  # type: ignore
 
@@ -24,11 +32,11 @@ class _StringList(QListView):
             super(_StringList.Delegate, self).__init__(parent)
             self._model = model
 
-        def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex):
+        def sizeHint(self, option: QStyleOptionViewItem, index: Union[QModelIndex, QPersistentModelIndex]):
             s: int = Theme.instance().uiScaled(24)
             return QSize(s, s)
 
-        def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex):
+        def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: Union[QModelIndex, QPersistentModelIndex]):
             s: str = self._model.data(index, Qt.DisplayRole)
             Theme.instance().paintStringListEntry(painter, option.rect, s)
 
