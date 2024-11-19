@@ -36,7 +36,7 @@
 #include <ufe/trie.imp.h>
 
 // Workaround to avoid a crash that occurs when the Attribute Editor is visible
-// and displaying a USD prim that is being renamed, while we are updating proxyAccessor 
+// and displaying a USD prim that is being renamed, while we are updating proxyAccessor
 // connections for its descendant pulled objects.
 #define MAYA_USD_AE_CRASH_ON_RENAME_WORKAROUND
 
