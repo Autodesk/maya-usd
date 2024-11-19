@@ -391,7 +391,7 @@ class AETemplate(object):
 
     def addShaderLayout(self, group):
         """recursively create the full attribute layout section"""
-        with ufeAeTemplate.Layout(self, group.name, collapse=True):
+        with ufeAeTemplate.Layout(self, group.name, collapse=False):
             for item in group.items:
                 if isinstance(item, AEShaderLayout.Group):
                     self.addShaderLayout(item)
