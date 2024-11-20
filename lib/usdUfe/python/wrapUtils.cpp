@@ -101,9 +101,9 @@ bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     return UsdUfe::isAttributeEditAllowed(attr);
 }
 
-static boost::python::dict _convertSchemaInfo(const UsdUfe::SchemaInfo& info)
+static dict _convertSchemaInfo(const UsdUfe::SchemaInfo& info)
 {
-    boost::python::dict infoDict;
+    dict infoDict;
 
     infoDict["pluginName"] = info.pluginName;
     infoDict["schemaType"] = info.schemaType;
@@ -113,9 +113,9 @@ static boost::python::dict _convertSchemaInfo(const UsdUfe::SchemaInfo& info)
     return infoDict;
 }
 
-static boost::python::list _getKnownApplicableSchemas()
+static list _getKnownApplicableSchemas()
 {
-    boost::python::list schemasList;
+    list schemasList;
 
     UsdUfe::KnownSchemas knownSchemas = UsdUfe::getKnownApplicableSchemas();
 
@@ -125,7 +125,7 @@ static boost::python::list _getKnownApplicableSchemas()
     return schemasList;
 }
 
-static boost::python::dict _findSchemasByTypeName(const PXR_NS::TfToken& schemaTypeName)
+static dict _findSchemasByTypeName(const PXR_NS::TfToken& schemaTypeName)
 {
     auto maybeInfo = UsdUfe::findSchemasByTypeName(schemaTypeName);
     if (!maybeInfo)

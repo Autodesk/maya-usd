@@ -65,12 +65,14 @@ def _askForInstanceName(prettyTypeName):
     '''
     title = getMayaUsdString("kAddSchemaMenuItem")
     message = getMayaUsdString("kAddSchemaInstanceMesage") % prettyTypeName
+    cancelLabel = getMayaUsdString("kButtonCancel")
+    AddLabel = getMayaUsdString("kButtonAdd")
 
     result = cmds.promptDialog(
         message=message, title=title,
-        button=('OK', 'Cancel'),
-        defaultButton='OK', cancelButton='Cancel')
-    if result != 'OK':
+        button=(AddLabel, cancelLabel),
+        defaultButton=AddLabel, cancelButton=cancelLabel)
+    if result != AddLabel:
         return ''
 
     return cmds.promptDialog(query=True, text=True)
@@ -82,7 +84,7 @@ def _applySchemaMenuItemCallback(prettyTypeName, schemaTypeName, isMultiApply, m
     '''
     primPaths = [ufe.PathString.string(item.path()) for item in _getUsdItemsInSelection()]
     if not primPaths:
-        print('Cannot apply schema "%s": no USD prim are currently selected.' % schemaTypeName)
+        cmds.warning(getMayaUsdString("kCannotApplySchemaWarning") % schemaTypeName)
         return
 
     if isMultiApply:
@@ -96,7 +98,7 @@ def _applySchemaMenuItemCallback(prettyTypeName, schemaTypeName, isMultiApply, m
 
 def _createApplySchemaCommand(prettyTypeName, schemaTypeName, isMultiApply):
     '''
-    Create a menuitem callback for teh given argument andwith its metadata updated
+    Create a menuitem callback for the given argument and with its metadata updated
     to have a nice undo item entry in the Maya Edit menu.
     '''
     f = partial(_applySchemaMenuItemCallback, prettyTypeName, schemaTypeName, isMultiApply)

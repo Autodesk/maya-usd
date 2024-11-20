@@ -636,7 +636,7 @@ The purpose of this command is to set the current edit target.
 ## `mayaUsdSchema`
 
 The purpose of this command is to query or apply USD schemas to USD prims.
-It takes as primage argument a list of UFE paths.
+It takes as its main arguments a list of UFE paths.
 
 ### Command Flags
 
