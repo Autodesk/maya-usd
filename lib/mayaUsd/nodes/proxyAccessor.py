@@ -325,7 +325,7 @@ def parentItems(ufeChildren, ufeParent, connect=True):
         # Cannot use 'visibility' here because it's already used by orphan manager
         connectParentChildAttr(parentVisibilityAttr, childDagPath, 'lodVisibility', connect)
 
-def __parent(*ufeItemPathStrings, doParenting=True, forceUnparenting=False):
+def __parent(doParenting, forceUnparenting, *ufeItemPathStrings):
    if ufeItemPathStrings:
       ufeSelectionList = [_createUfeSceneItem(pStr) for pStr in ufeItemPathStrings]
    else:
@@ -347,11 +347,13 @@ def __parent(*ufeItemPathStrings, doParenting=True, forceUnparenting=False):
    
    parentItems(ufeChildren, ufeParent, doParenting)
 
-def parent(*ufeItemPathStrings, force=False):
-    __parent(*ufeItemPathStrings, doParenting=True, forceUnparenting=force)
+def parent(*ufeItemPathStrings, **kwargs):
+    # Use **kwargs instead of keyword-only arguments after varargs for python2 compat.
+    forceUnparenting = kwargs.get('force', False)
+    __parent(True, forceUnparenting, *ufeItemPathStrings)
 
 def unparent(*ufeItemPathStrings):
-    __parent(*ufeItemPathStrings, doParenting=False)
+    __parent(False, False, *ufeItemPathStrings)
 
 def connectItems(ufeObjectSrc, ufeObjectDst, attrToConnect):
     connectMayaToUsd = isUfeUsdPath(ufeObjectDst)
