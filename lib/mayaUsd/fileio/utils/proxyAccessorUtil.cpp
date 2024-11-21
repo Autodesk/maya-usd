@@ -37,20 +37,13 @@ MStatus ProxyAccessorUndoItem::parentPulledObject(
     const auto ufeChildPath = MayaUsd::ufe::dagPathToUfe(pulledDagPath).pop();
 
     // Quick workaround to reuse some POC code - to rewrite later
-
-    // Communication to current proxyAccessor code is through the global selection.
-    // This is not logically necessary, and should be re-written to avoid going through
-    // the global selection.
     static const MString kPyTrueLiteral("True");
     static const MString kPyFalseLiteral("False");
 
     MString pyCommand;
     pyCommand.format(
         "from mayaUsd.lib import proxyAccessor as pa\n"
-        "import maya.cmds as cmds\n"
-        "cmds.select('^1s', '^2s')\n"
-        "pa.parent(force=^3s)\n"
-        "cmds.select(clear=True)\n",
+        "pa.parent('^1s', '^2s', force=^3s)\n",
         Ufe::PathString::string(ufeChildPath).c_str(),
         Ufe::PathString::string(ufeParentPath).c_str(),
         force ? kPyTrueLiteral : kPyFalseLiteral);
