@@ -35,6 +35,7 @@ set(TEST_SCRIPT_FILES
     testSelection.py
     testSelectionNotification.py
     testSelectionByArray.py
+    testSchemas.py
     testToggleCommands.py
     testTransform3dChainOfResponsibility.py
     testTransform3dTranslate.py

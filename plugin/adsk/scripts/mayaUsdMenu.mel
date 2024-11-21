@@ -500,6 +500,18 @@ global proc mayaUsdMenu_aeShowMenuCallback(string $aeShowMenu)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// mayaUsdMenu_aeAttributesMenuCallback
+// Maya USD Attribute Editor Attributes menu callback.
+// Note: Maya is using a post callback to build it's menu.
+//       The maya's callback delete all menu item each time
+//       the menu is display, so we also need to create all
+//       our menu item each time.
+global proc mayaUsdMenu_aeAttributesMenuCallback(string $aeAttributeMenu)
+{
+    python("import mayaUsdMenu; mayaUsdMenu.aeAttributesMenuCallback('''" + $aeAttributeMenu + "''')");
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // initCreateMenu
 // setup the items in Maya's "Create" and "Window" menus
 proc initCreateMenu() {
@@ -566,6 +578,18 @@ proc termAEShowMenu()
 {
     string $aeShowMenu = findAEMenu(uiRes("m_showEditor.kShow"));
     removeMenuCallback($aeShowMenu, "mayaUsdMenu_aeShowMenuCallback");
+}
+
+proc initAEAttributesMenu()
+{
+    string $aeAttributesMenu = findAEMenu(uiRes("m_showEditor.kAttributes"));
+    addMenuCallback($aeAttributesMenu, "mayaUsdMenu_aeAttributesMenuCallback " + $aeAttributesMenu);
+}
+
+proc termAEAttributesMenu()
+{
+    string $aeAttributesMenu = findAEMenu(uiRes("m_showEditor.kAttributes"));
+    removeMenuCallback($aeAttributesMenu, "mayaUsdMenu_aeAttributesMenuCallback");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -848,6 +872,7 @@ global proc mayaUsdMenu_loadui() {
     initCreateMenu();
     initSelectMenu();
     initAEShowMenu();
+    initAEAttributesMenu();
 
     // if the current selection kind is not valid,
     // reset the current selection kind to none.
@@ -868,6 +893,7 @@ global proc mayaUsdMenu_unloadui() {
     termCreateMenu();
     termSelectMenu();
     termAEShowMenu();
+    termAEAttributesMenu();
     tearPullMenu();
     termOutlinerPopupMenu();
 }
