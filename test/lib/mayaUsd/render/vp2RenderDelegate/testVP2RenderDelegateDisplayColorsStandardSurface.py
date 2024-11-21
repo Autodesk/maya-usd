@@ -29,12 +29,13 @@ from maya import cmds
 import ufe
 
 import os
+import unittest
 
 
 class testVP2RenderDelegateDisplayColorsStandardSurface(imageUtils.ImageDiffingTestCase):
     """
-    Tests imaging using the Viewport 2.0 render delegate when using per-instance
-    inherited data on instances.
+    Tests imaging using the Viewport 2.0 render delegate when the default
+    material is standardSurface.
     """
 
     @classmethod
@@ -79,7 +80,11 @@ class testVP2RenderDelegateDisplayColorsStandardSurface(imageUtils.ImageDiffingT
         globalSelection.clear()
         self.assertSnapshotClose('%s_unselected.png' % self._testName)
 
-    def testPerInstanceInheritedData(self):
+    @unittest.skipIf(
+        int(cmds.about(apiVersion=True)) < 20240000,
+        "Test scene with default standardSurface material is compatible with maya 2024 and up."
+    )
+    def testStandardSurfaceShaderFragment(self):
         self._StartTest('ColorTestStandardSurface')
 
 
