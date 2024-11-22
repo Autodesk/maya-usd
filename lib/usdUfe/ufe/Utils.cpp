@@ -412,6 +412,54 @@ SdfPath uniqueChildPath(const UsdStage& stage, const SdfPath& path)
 
     return path.ReplaceName(TfToken(uniqueName));
 }
+
+std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& baseName)
+{
+    std::string name = uniqueChildName(usdParent, baseName);
+
+    // For new prim, apply extra checks so that other prims that are "around" it
+    // have different names, too.
+
+    TfToken::HashSet relativesNames;
+    for (auto child : usdParent.GetFilteredChildren(
+             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+        relativesNames.insert(child.GetName());
+    }
+
+    // Add all direct ancestors to the names t be avoided
+    for (UsdPrim ancestor = usdParent; ancestor; ancestor = ancestor.GetParent()) {
+        relativesNames.insert(ancestor.GetName());
+    }
+
+    // Add the closest 1000 descendants to the names to be avoided.
+    static const int maxDescendantCount = 1000;
+    int              descendantCount = 0;
+    for (auto child : usdParent.GetFilteredDescendants(
+             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+        relativesNames.insert(child.GetName());
+        if (++descendantCount >= maxDescendantCount)
+            break;
+    }
+
+    // Add the closest 1000 descendants of the root to the names to be avoided.
+    UsdPrim rootPrim = usdParent.GetPrimAtPath(SdfPath::AbsoluteRootPath());
+    if (rootPrim != usdParent) {
+        descendantCount = 0;
+        for (auto child : rootPrim.GetFilteredDescendants(
+                 UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+            relativesNames.insert(child.GetName());
+            if (++descendantCount >= maxDescendantCount)
+                break;
+        }
+    }
+
+    std::string childName { name };
+    if (relativesNames.find(TfToken(childName)) != relativesNames.end()) {
+        childName = uniqueName(relativesNames, childName);
+    }
+    return childName;
+}
+
 bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
 {
     if (!item) {
