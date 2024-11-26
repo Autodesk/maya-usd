@@ -147,6 +147,29 @@ bool _applyMultiSchemaToPrim(
     return UsdUfe::applyMultiSchemaToPrim(prim, schemaType, instanceName);
 }
 
+bool _removeSchemaFromPrim(PXR_NS::UsdPrim& prim, const PXR_NS::TfType& schemaType)
+{
+    return UsdUfe::removeSchemaFromPrim(prim, schemaType);
+}
+
+bool _removeMultiSchemaFromPrim(
+    PXR_NS::UsdPrim&       prim,
+    const PXR_NS::TfType&  schemaType,
+    const PXR_NS::TfToken& instanceName)
+{
+    return UsdUfe::removeMultiSchemaFromPrim(prim, schemaType, instanceName);
+}
+
+std::vector<PXR_NS::TfToken> _getPrimAppliedSchemas(const PXR_NS::UsdPrim& prim)
+{
+    return UsdUfe::getPrimAppliedSchemas(prim);
+}
+
+std::set<PXR_NS::TfToken> _getPrimsAppliedSchemas(const std::vector<PXR_NS::UsdPrim>& prims)
+{
+    return UsdUfe::getPrimsAppliedSchemas(prims);
+}
+
 void wrapUtils()
 {
     // Because UsdUfe and UFE have incompatible Python bindings that do not
@@ -173,5 +196,9 @@ void wrapUtils()
     def("getKnownApplicableSchemas", _getKnownApplicableSchemas);
     def("applySchemaToPrim", _applySchemaToPrim);
     def("applyMultiSchemaToPrim", _applyMultiSchemaToPrim);
+    def("removeSchemaFromPrim", _removeSchemaFromPrim);
+    def("removeMultiSchemaFromPrim", _removeMultiSchemaFromPrim);
+    def("getPrimAppliedSchemas", _getPrimAppliedSchemas);
+    def("getPrimsAppliedSchemas", _getPrimsAppliedSchemas);
     def("findSchemasByTypeName", _findSchemasByTypeName);
 }

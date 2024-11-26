@@ -75,8 +75,8 @@ class SchemasTestCase(unittest.TestCase):
         self.assertIn('CollectionAPI', multiSchemaByPlugins['usd'])
 
 
-    def testApplySingleApplySchema(self):
-        '''Test applying a single-apply schema to a prim.'''
+    def testSingleApplySchema(self):
+        '''Test applying, listing and removing a single-apply schema to a prim.'''
         stage = Usd.Stage.CreateInMemory()
         prim = stage.DefinePrim('/Hello')
         self.assertTrue(prim)
@@ -84,10 +84,13 @@ class SchemasTestCase(unittest.TestCase):
         knownSchemas = usdUfe.getKnownApplicableSchemas()
         singleSchemaByPlugins = self.convertToSchemasByPlugins(knownSchemas, False)
 
-        self.assertIn('usdGeom', singleSchemaByPlugins)
-        self.assertIn('GeomModelAPI', singleSchemaByPlugins['usdGeom'])
+        expectedPluginName = 'usdGeom'
+        expectedSchemaTypeName = 'GeomModelAPI'
 
-        modelSchemaType = singleSchemaByPlugins['usdGeom']['GeomModelAPI']
+        self.assertIn(expectedPluginName, singleSchemaByPlugins)
+        self.assertIn(expectedSchemaTypeName, singleSchemaByPlugins['usdGeom'])
+
+        modelSchemaType = singleSchemaByPlugins[expectedPluginName][expectedSchemaTypeName]
         self.assertTrue(modelSchemaType)
 
         self.assertFalse(prim.HasAPI(modelSchemaType))
@@ -95,8 +98,20 @@ class SchemasTestCase(unittest.TestCase):
         self.assertTrue(result)
         self.assertTrue(prim.HasAPI(modelSchemaType))
 
-    def testApplyMultiApplySchema(self):
-        '''Test applying a multi-apply schema to a prim.'''
+        schemaTypeNames = usdUfe.getPrimAppliedSchemas(prim)
+        self.assertTrue(schemaTypeNames)
+        self.assertIn(expectedSchemaTypeName, schemaTypeNames)
+
+        result = usdUfe.removeSchemaFromPrim(prim, modelSchemaType)
+        self.assertTrue(result)
+        self.assertFalse(prim.HasAPI(modelSchemaType))
+
+        schemaTypeNames = usdUfe.getPrimAppliedSchemas(prim)
+        self.assertNotIn(expectedSchemaTypeName, schemaTypeNames)
+
+
+    def testMultiApplySchema(self):
+        '''Test applying. listing and removing a multi-apply schema to a prim.'''
         stage = Usd.Stage.CreateInMemory()
         prim = stage.DefinePrim('/Hello')
         self.assertTrue(prim)
@@ -104,19 +119,37 @@ class SchemasTestCase(unittest.TestCase):
         knownSchemas = usdUfe.getKnownApplicableSchemas()
         multiSchemaByPlugins = self.convertToSchemasByPlugins(knownSchemas, True)
 
-        self.assertIn('usd', multiSchemaByPlugins)
-        self.assertIn('CollectionAPI', multiSchemaByPlugins['usd'])
+        expectedPluginName = 'usd'
+        expectedSchemaTypeName = 'CollectionAPI'
+        instanceName = 'mine'
+        fullSchemaName = expectedSchemaTypeName + ':' + instanceName
 
-        collectionSchemaType = multiSchemaByPlugins['usd']['CollectionAPI']
+        self.assertIn(expectedPluginName, multiSchemaByPlugins)
+        self.assertIn(expectedSchemaTypeName, multiSchemaByPlugins[expectedPluginName])
+
+        collectionSchemaType = multiSchemaByPlugins[expectedPluginName][expectedSchemaTypeName]
         self.assertTrue(collectionSchemaType)
 
-        instanceName = 'mine'
         self.assertFalse(prim.HasAPI(collectionSchemaType))
         self.assertFalse(prim.HasAPI(collectionSchemaType, instanceName=instanceName))
         result = usdUfe.applyMultiSchemaToPrim(prim, collectionSchemaType, instanceName)
         self.assertTrue(result)
         self.assertTrue(prim.HasAPI(collectionSchemaType))
         self.assertTrue(prim.HasAPI(collectionSchemaType, instanceName=instanceName))
+
+        schemaTypeNames = usdUfe.getPrimAppliedSchemas(prim)
+        self.assertTrue(schemaTypeNames)
+        self.assertIn(fullSchemaName, schemaTypeNames)
+
+        result = usdUfe.removeMultiSchemaFromPrim(prim, collectionSchemaType, instanceName)
+        self.assertTrue(result)
+        self.assertFalse(prim.HasAPI(collectionSchemaType))
+        self.assertFalse(prim.HasAPI(collectionSchemaType, instanceName=instanceName))
+
+        schemaTypeNames = usdUfe.getPrimAppliedSchemas(prim)
+        self.assertNotIn(expectedSchemaTypeName, schemaTypeNames)
+        self.assertNotIn(fullSchemaName, schemaTypeNames)
+
 
     def testFindSchemaInfo(self):
         '''Test that findSchemasByTypeName works.'''
