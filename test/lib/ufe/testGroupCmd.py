@@ -1115,6 +1115,28 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/A/ball'))
         self.assertFalse(stage.GetPrimAtPath('/A/group1/ball'))
         
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires that the group command returns the group name.')
+    def testGroupNested(self):
+        '''Verify grouping of a leaf node repeatedly.'''
+
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        self.assertTrue(stage)
+
+        # create a sphere
+        stage.DefinePrim('/ball', 'Sphere')
+        groupName = cmds.group('%s,/ball' % proxyShapePathStr)
+
+        groupNames = { groupName }
+
+        for _ in range(10):
+            groupName = cmds.group('%s,/%s' % (proxyShapePathStr, groupName))
+            self.assertNotIn(groupName, groupNames)
+            groupNames.add(groupName)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

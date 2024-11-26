@@ -199,6 +199,12 @@ void setUniqueChildNameFn(UniqueChildNameFn fn);
 USDUFE_PUBLIC
 std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
 
+//! Return a relatively unique prim name.
+//! That is, make some effort so that the name is unique relative to other prims
+//! "around" it, like ancestors and some descendants.
+USDUFE_PUBLIC
+std::string relativelyUniqueName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+
 //! Default uniqueChildName() implementation. Uses all the prim's children.
 USDUFE_PUBLIC
 std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::string& name);

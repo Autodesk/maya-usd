@@ -107,6 +107,23 @@ class MayaUsdSchemaCommandTestCase(unittest.TestCase):
         self.assertEqual(len(applied), 1)
         self.assertIn('MaterialBindingAPI', applied)
 
+        # Remove the schema and verify it has been removed.
+        cmds.mayaUsdSchema(primUfePath, schema='MaterialBindingAPI', removeSchema=True)
+        applied = cmds.mayaUsdSchema(primUfePath, appliedSchemas=True)
+        self.assertFalse(applied)
+
+        # Verify undo adds the schema.
+        cmds.undo()
+        applied = cmds.mayaUsdSchema(primUfePath, appliedSchemas=True)
+        self.assertTrue(applied)
+        self.assertEqual(len(applied), 1)
+        self.assertIn('MaterialBindingAPI', applied)
+
+        # Verify redo removes the schema.
+        cmds.redo()
+        applied = cmds.mayaUsdSchema(primUfePath, appliedSchemas=True)
+        self.assertFalse(applied)
+
 
     def testApplySchemaToMultiplePrimsCommand(self):
         '''
@@ -146,6 +163,23 @@ class MayaUsdSchemaCommandTestCase(unittest.TestCase):
         self.assertTrue(applied)
         self.assertEqual(len(applied), 1)
         self.assertIn('MaterialBindingAPI', applied)
+
+        # Remove the schema and verify it has been removed.
+        cmds.mayaUsdSchema(primUfePaths, schema='MaterialBindingAPI', removeSchema=True)
+        applied = cmds.mayaUsdSchema(primUfePaths, appliedSchemas=True)
+        self.assertFalse(applied)
+
+        # Verify undo adds the schema.
+        cmds.undo()
+        applied = cmds.mayaUsdSchema(primUfePaths, appliedSchemas=True)
+        self.assertTrue(applied)
+        self.assertEqual(len(applied), 1)
+        self.assertIn('MaterialBindingAPI', applied)
+
+        # Verify redo removes the schema.
+        cmds.redo()
+        applied = cmds.mayaUsdSchema(primUfePaths, appliedSchemas=True)
+        self.assertFalse(applied)
 
 
     def testApplyMultiSchemaCommand(self):
@@ -187,6 +221,23 @@ class MayaUsdSchemaCommandTestCase(unittest.TestCase):
         self.assertTrue(applied)
         self.assertEqual(len(applied), 1)
         self.assertIn('CollectionAPI:this', applied)
+
+        # Remove the schema and verify it has been removed.
+        cmds.mayaUsdSchema(primUfePath, schema='CollectionAPI', instanceName='this', removeSchema=True)
+        applied = cmds.mayaUsdSchema(primUfePath, appliedSchemas=True)
+        self.assertFalse(applied)
+
+        # Verify undo adds the schema.
+        cmds.undo()
+        applied = cmds.mayaUsdSchema(primUfePath, appliedSchemas=True)
+        self.assertTrue(applied)
+        self.assertEqual(len(applied), 1)
+        self.assertIn('CollectionAPI:this', applied)
+
+        # Verify redo removes the schema.
+        cmds.redo()
+        applied = cmds.mayaUsdSchema(primUfePath, appliedSchemas=True)
+        self.assertFalse(applied)
 
 
 if __name__ == '__main__':

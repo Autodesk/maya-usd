@@ -645,6 +645,7 @@ It takes as its main arguments a list of UFE paths.
 | `-appliedSchemas`           | `-app`     | noarg          | Query which schemas the prims have in common |
 | `-schema`                   | `-sch`     | string         | The schema type name to apply to the prims   |
 | `-instanceName`             | `-in`      | string         | The instance name for multi-apply schema     |
+| `-removeSchema`             | `-rem`     | noarg          | Remove the schema instead of applying it     |
 | `-singleApplicationSchemas` | `-sas`     | noarg          | Query the list of known single-apply schemas |
 | `-multiApplicationSchemas`  | `-mas`     | noarg          | Query the list of known multi-apply schemas  |
 

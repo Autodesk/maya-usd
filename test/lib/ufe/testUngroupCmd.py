@@ -310,13 +310,13 @@ class UngroupCmdTestCase(unittest.TestCase):
         self.assertEqual([x for x in self.stage.Traverse()],
             [self.stage.GetPrimAtPath("/Sphere1"),
             self.stage.GetPrimAtPath("/group1"),
-            self.stage.GetPrimAtPath("/group1/group1"),
-            self.stage.GetPrimAtPath("/group1/group1/Sphere2"),
-            self.stage.GetPrimAtPath("/group1/group1/Sphere3"),
-            self.stage.GetPrimAtPath("/group1/group1/Sphere4")])
+            self.stage.GetPrimAtPath("/group1/group2"),
+            self.stage.GetPrimAtPath("/group1/group2/Sphere2"),
+            self.stage.GetPrimAtPath("/group1/group2/Sphere3"),
+            self.stage.GetPrimAtPath("/group1/group2/Sphere4")])
 
         # remove /group1/group1 from the hierarchy with the -world flag
-        cmds.ungroup("{},/group1/group1".format(self.proxyShapePathStr), world=True)
+        cmds.ungroup("{},/group1/group2".format(self.proxyShapePathStr), world=True)
 
         # verify the paths after ungroup
         self.assertEqual([x for x in self.stage.Traverse()],
