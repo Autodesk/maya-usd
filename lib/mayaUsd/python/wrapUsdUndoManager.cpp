@@ -23,13 +23,11 @@
 #include <pxr/base/tf/pyNoticeWrapper.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 #include <memory>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -81,7 +79,7 @@ void wrapUsdUndoManager()
     // UsdUndoManager
     {
         typedef UsdUfe::UsdUndoManager This;
-        class_<This, boost::noncopyable>("UsdUndoManager", no_init)
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("UsdUndoManager", no_init)
             .def("trackLayerStates", &_trackLayerStates)
             .staticmethod("trackLayerStates");
     }
@@ -96,7 +94,7 @@ void wrapUsdUndoManager()
     // UsdUndoBlock
     {
         typedef PythonUndoBlock This;
-        class_<This, boost::noncopyable>("UsdUndoBlock")
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("UsdUndoBlock")
             .def(init<>())
             .def(init<UsdUfe::UsdUndoableItem&>(arg("item")))
             .def("__enter__", &This::enter)

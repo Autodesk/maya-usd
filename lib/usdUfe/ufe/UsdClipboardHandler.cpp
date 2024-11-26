@@ -189,7 +189,7 @@ bool UsdClipboardHandler::canBeCut_(const Ufe::SceneItem::Ptr& item)
                 // The attribute could be a destination for connected sources, so check for its
                 // connections.
                 PXR_NS::UsdShadeSourceInfoVector sourcesInfo
-                    = pxr::UsdShadeConnectableAPI::GetConnectedSources(attr);
+                    = PXR_NS::UsdShadeConnectableAPI::GetConnectedSources(attr);
 
                 if (!sourcesInfo.empty()) {
                     return false;

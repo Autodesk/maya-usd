@@ -8,6 +8,7 @@ set(TEST_SCRIPT_FILES
     testMayaUsdProxyAccessor.py
     testMayaUsdCacheId.py
     testMayaUsdInfoCommand.py
+    testMayaUsdSchemaCommand.py
 )
 
 # Interactive Unit test scripts.

@@ -17,16 +17,6 @@ project(mayaUsd)
 
 add_library(${PROJECT_NAME} SHARED)
 
-#------------------------------------------------------------------------------
-# modules and definitions
-#------------------------------------------------------------------------------
-if(NOT DEFINED ENV{BOOST_ROOT})
-    set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
-endif()
-if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
-    set(Boost_USE_DEBUG_PYTHON ON)
-endif()
-
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
@@ -34,8 +24,6 @@ target_compile_definitions(${PROJECT_NAME}
     PUBLIC
         PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         $<$<BOOL:${CMAKE_WANT_VALIDATE_UNDO_ITEM}>:WANT_VALIDATE_UNDO_ITEM>
         $<$<BOOL:${MAYA_ENABLE_NEW_PRIM_DELETE}>:MAYA_ENABLE_NEW_PRIM_DELETE>
     PRIVATE
@@ -55,6 +43,14 @@ target_compile_definitions(${PROJECT_NAME}
         # this flag is needed when building maya-usd in Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
+
+if (USD_VERSION VERSION_LESS "0.24.11")
+    target_compile_definitions(${PROJECT_NAME}
+        PUBLIC
+            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+    )
+endif()
 
 if(DEFINED UFE_PREVIEW_VERSION_NUM)
     target_compile_definitions(${PROJECT_NAME}
@@ -76,6 +72,13 @@ if (MAYA_HAS_COLOR_MANAGEMENT_SUPPORT_API)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
         HAS_COLOR_MANAGEMENT_SUPPORT_API=1
+    )
+endif()
+
+if (MAYA_HAS_OPENPBR_SURFACE_SHADER)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        MAYA_HAS_OPENPBR_SURFACE_SHADER=1
     )
 endif()
 
@@ -259,6 +262,7 @@ target_link_libraries(${PROJECT_NAME}
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
         usdUfe
+        $<$<BOOL:$<VERSION_GREATER_EQUAL:${USD_VERSION},0.24.11>>:Boost::headers>
     PRIVATE
         ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>

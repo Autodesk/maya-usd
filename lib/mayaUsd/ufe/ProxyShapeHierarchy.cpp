@@ -186,18 +186,8 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
     if (!rootPrim.IsValid())
         return Ufe::SceneItemList();
 
-    // Note: for now the only child filter flag we support is "Inactive Prims".
-    //       See UsdHierarchyHandler::childFilter()
-    if ((childFilter.size() == 1) && (childFilter.front().name == "InactivePrims")) {
-        // See uniqueChildName() for explanation of USD filter predicate.
-        const bool             showInactive = childFilter.front().value;
-        Usd_PrimFlagsPredicate flags
-            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : kMayaUsdPrimDefaultPredicate;
-        return createUFEChildList(getUSDFilteredChildren(rootPrim, flags), !showInactive);
-    }
-
-    UFE_LOG("Unknown child filter");
-    return Ufe::SceneItemList();
+    Usd_PrimFlagsPredicate flags = UsdUfe::getUsdPredicate(childFilter);
+    return createUFEChildList(getUSDFilteredChildren(rootPrim, flags), false);
 }
 
 // Return UFE child list from input USD child list.

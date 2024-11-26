@@ -103,6 +103,7 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MTime.h>
+#include <maya/MUuid.h>
 #include <maya/MViewport2Renderer.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
@@ -169,6 +170,7 @@ MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
 MObject MayaUsdProxyShapeBase::variantFallbacksAttr;
+MObject MayaUsdProxyShapeBase::layerManagerAttr;
 
 namespace {
 // utility function to extract the tag name from an anonymous layer.
@@ -479,6 +481,19 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(lockedLayersAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    layerManagerAttr = typedAttrFn.create(
+        "layerManager", "lymgr", MFnData::kString, MObject::kNullObj, &retValue);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setWritable(true);
+    typedAttrFn.setReadable(true);
+    typedAttrFn.setInternal(true);
+    typedAttrFn.setHidden(true);
+    typedAttrFn.setDisconnectBehavior(MFnNumericAttribute::kReset); // on disconnect, reset to Null
+    typedAttrFn.setAffectsAppearance(false);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(layerManagerAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     //
     // add attribute dependencies
     //
@@ -537,6 +552,9 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(variantFallbacksAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    retValue = attributeAffects(layerManagerAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     return retValue;
@@ -684,37 +702,12 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     return MS::kUnknownParameter;
 }
 
-/// Return either the Maya reference scene containing the node or nullptr to mean the
-/// main Maya scene.
-static std::unique_ptr<MFnReference> getProxyNodeOrigin(const MayaUsdProxyShapeBase& proxyShape)
-{
-    MObject proxyShapeNode(proxyShape.thisMObject());
-
-    MStringArray referenceFileNames;
-    MFileIO::getReferences(referenceFileNames);
-    for (unsigned int rfni = 0; rfni < referenceFileNames.length(); ++rfni) {
-        MSelectionList selectionList;
-        selectionList.add(referenceFileNames[rfni]);
-        MObject referenceObject;
-        selectionList.getDependNode(0, referenceObject);
-        MFnReference mayaRef(referenceObject);
-
-        if (mayaRef.containsNode(proxyShapeNode)) {
-            return std::make_unique<MFnReference>(referenceObject);
-        }
-    }
-
-    return {};
-}
-
 /* virtual */
 SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock& dataBlock, const std::string&)
 {
     if (LayerManager::supportedNodeType(MPxNode::typeId())) {
-        auto                rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
-        auto                mayaRef = getProxyNodeOrigin(*this);
-        const MFnReference* fromReference = mayaRef ? mayaRef.get() : nullptr;
-        return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName), fromReference);
+        const MString rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
+        return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName), this);
     } else {
         return nullptr;
     }
@@ -725,9 +718,7 @@ SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock& dataBlock)
 {
     if (LayerManager::supportedNodeType(MPxNode::typeId())) {
         auto sessionLayerName = dataBlock.inputValue(sessionLayerNameAttr).asString();
-        auto mayaRef = getProxyNodeOrigin(*this);
-        const MFnReference* fromReference = mayaRef ? mayaRef.get() : nullptr;
-        return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName), fromReference);
+        return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName), this);
     } else {
         return nullptr;
     }
@@ -851,9 +842,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     UsdStageRefPtr finalUsdStage;
     SdfPath        primPath;
 
-    auto                  mayaRef = getProxyNodeOrigin(*this);
-    const MFnReference*   fromReference = mayaRef ? mayaRef.get() : nullptr;
-    MayaUsd::LayerNameMap layerNameMap = LayerManager::getLayerNameMap(fromReference);
+    MayaUsd::LayerNameMap layerNameMap = LayerManager::getLayerNameMap(this);
 
     MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -873,7 +862,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             VtArray<std::string> updatedReferences;
             for (const auto& identifier : referencedLayers) {
                 // Update the identifier reference in the customer layer data
-                auto layer = LayerManager::findLayer(identifier, fromReference);
+                auto layer = LayerManager::findLayer(identifier, this);
                 if (layer) {
                     updatedReferences.push_back(layer->GetIdentifier());
                 }
@@ -1988,6 +1977,63 @@ void MayaUsdProxyShapeBase::getDrawPurposeToggles(
 {
     MDataBlock dataBlock = const_cast<MayaUsdProxyShapeBase*>(this)->forceCache();
     _GetDrawPurposeToggles(dataBlock, drawRenderPurpose, drawProxyPurpose, drawGuidePurpose);
+}
+
+MayaUsd::LayerManager* MayaUsdProxyShapeBase::getLayerManager()
+{
+    // Note: don't use the CHECK_MSTATUS macros because it is expected to not
+    //       find the layer manager atribute or layer manager UUID when loading
+    //       old scenes or recomputing the proxy shape after the layer manager
+    //       node has been deleted. So errors in this function are not hard errors.
+
+    MStatus localStatus;
+
+    MDataBlock  dataBlock = forceCache();
+    MDataHandle layerManagerData = dataBlock.inputValue(layerManagerAttr, &localStatus);
+    if (!localStatus)
+        return nullptr;
+
+    if (layerManagerData.asString().length() <= 0)
+        return nullptr;
+
+    MUuid layerManagerUuid(layerManagerData.asString(), &localStatus);
+    if (!localStatus)
+        return nullptr;
+
+    MSelectionList selection;
+    localStatus = selection.add(layerManagerUuid);
+    if (!localStatus)
+        return nullptr;
+
+    MObject layerManagerObj;
+    localStatus = selection.getDependNode(0, layerManagerObj);
+    if (!localStatus)
+        return nullptr;
+
+    MFnDependencyNode depNode;
+    if (!depNode.setObject(layerManagerObj))
+        return nullptr;
+
+    if (LayerManager* layerManager = dynamic_cast<LayerManager*>(depNode.userNode()))
+        return layerManager;
+
+    return nullptr;
+}
+
+void MayaUsdProxyShapeBase::setLayerManager(MayaUsd::LayerManager* layerManager)
+{
+    MStatus localStatus;
+
+    MPlug layerManagerPlug
+        = MFnDependencyNode(thisMObject()).findPlug(layerManagerAttr, false, &localStatus);
+    CHECK_MSTATUS(localStatus);
+
+    if (layerManager) {
+        MFnDependencyNode layerManagerDepNode(layerManager->thisMObject());
+        layerManagerPlug.setString(layerManagerDepNode.uuid().asString());
+    } else {
+        layerManagerPlug.setString("");
+    }
 }
 
 SdfPath MayaUsdProxyShapeBase::getPrimPath() const

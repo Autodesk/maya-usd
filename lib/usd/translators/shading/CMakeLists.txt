@@ -23,6 +23,14 @@ target_sources(${TARGET_NAME}
         usdStandardSurfaceWriter.cpp
 )
 
+if (MAYA_HAS_OPENPBR_SURFACE_SHADER)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            usdOpenPBRSurfaceWriter.cpp
+            usdOpenPBRSurfaceReader.cpp
+    )
+endif()
+
 if (BUILD_RFM_TRANSLATORS)
     target_sources(${TARGET_NAME}
         PRIVATE
@@ -54,10 +62,20 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
             mtlxStandardSurfaceWriter.cpp
             mtlxSymmetricShaderReader.cpp
             mtlxSymmetricShaderWriter.cpp
+            mtlxTranslationTableReader.cpp
+            mtlxTranslationTableWriter.cpp
             mtlxFileTextureWriter.cpp
     )
     target_compile_definitions(${TARGET_NAME}
         PRIVATE
         WANT_MATERIALX_TRANSLATORS=1
     )
+    if (USD_HAS_MX_OPENPBR_SURFACE AND MAYA_HAS_OPENPBR_SURFACE_SHADER)
+        target_sources(${TARGET_NAME}
+            PRIVATE
+                mtlxOpenPBRSurfaceReader.cpp
+                mtlxOpenPBRSurfaceWriter.cpp
+        )
+    endif()
+
 endif()

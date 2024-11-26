@@ -22,6 +22,11 @@ from .displayCustomControl import DisplayCustomControl
 from .materialCustomControl import MaterialCustomControl
 from .metadataCustomControl import MetadataCustomControl
 from .observers import UfeAttributesObserver, UfeConnectionChangedObserver, UsdNoticeListener
+try:
+    from .lightCustomControl import LightLinkingCustomControl
+    lightLinkingSupported = True
+except:
+    lightLinkingSupported = False
 
 import collections
 import fnmatch
@@ -204,7 +209,6 @@ class AEShaderLayout(object):
             folderIndex[groups].items.append(attributeInfo.name)
         return self._attributeLayout
 
-
 # SchemaBase template class for categorization of the attributes.
 # We no longer use the base class ufeAeTemplate.Template as we want to control
 # the placement of the metadata at the bottom (after extra attributes).
@@ -239,6 +243,7 @@ class AETemplate(object):
 
         # Build the list of schemas with their associated attributes.
         schemasAttributes = {
+            'customCallbacks' : [],
             'extraAttributes' : [],
             'metadata' : [],
         }
@@ -390,7 +395,7 @@ class AETemplate(object):
 
     def addShaderLayout(self, group):
         """recursively create the full attribute layout section"""
-        with ufeAeTemplate.Layout(self, group.name, collapse=True):
+        with ufeAeTemplate.Layout(self, group.name, collapse=False):
             for item in group.items:
                 if isinstance(item, AEShaderLayout.Group):
                     self.addShaderLayout(item)
@@ -470,6 +475,12 @@ class AETemplate(object):
             usdNoticeControl = UsdNoticeListener(self.prim, [metaDataControl])
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
+    
+    def createLightLinkingSection(self, sectionName, attrs, collapse):
+        # We don't use createSection() because these are metadata (not attributes).
+        with ufeAeTemplate.Layout(self, 'Light Linking', collapse):
+            lightLinkingControl = LightLinkingCustomControl(self.item, self.prim, self.useNiceName)
+            self.defineCustom(lightLinkingControl)
 
     def createCustomExtraAttrs(self, sectionName, attrs, collapse):
         # We are not using the maya default "Extra Attributes" section
@@ -641,16 +652,19 @@ class AETemplate(object):
         # By default, calls the generic createSection, which will search
         # in the list of known custom control creators for the one to be
         # used.
+        customAttributes = {
+            'shader': self.createShaderAttributesSection,
+            'transforms': self.createTransformAttributesSection,
+            'display': self.createDisplaySection,
+            'extraAttributes': self.createCustomExtraAttrs,
+            'metadata': self.createMetadataSection,
+            'customCallbacks': self.createCustomCallbackSection,
+        }
+        # only support lightLinking custom attribute for Maya 2023+
+        if lightLinkingSupported:
+            customAttributes['lightLinkCollectionAPI'] = self.createLightLinkingSection
         sectionCreators = collections.defaultdict(
-            lambda : self.createSection,
-            {
-                'shader': self.createShaderAttributesSection,
-                'transforms': self.createTransformAttributesSection,
-                'display': self.createDisplaySection,
-                'extraAttributes': self.createCustomExtraAttrs,
-                'metadata': self.createMetadataSection,
-                'customCallbacks': self.createCustomCallbackSection,
-            })
+            lambda : self.createSection, customAttributes)
         
         # Create the section in the specified order.
         for typeName in schemasOrder:

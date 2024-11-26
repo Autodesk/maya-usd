@@ -17,8 +17,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/base/tf/pyNoticeWrapper.h>
-
-#include <boost/python/class.hpp>
+#include <pxr_python.h>
 
 namespace {
 

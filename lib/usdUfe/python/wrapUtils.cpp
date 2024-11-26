@@ -17,11 +17,13 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/Utils.h>
+#include <usdUfe/utils/schemas.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#include <pxr_python.h>
 
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
@@ -29,13 +31,10 @@
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
-
 #include <string>
 #include <vector>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NS::UsdStageWeakPtr _getStage(const std::string& ufePathString)
 {
@@ -102,6 +101,52 @@ bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     return UsdUfe::isAttributeEditAllowed(attr);
 }
 
+static dict _convertSchemaInfo(const UsdUfe::SchemaInfo& info)
+{
+    dict infoDict;
+
+    infoDict["pluginName"] = info.pluginName;
+    infoDict["schemaType"] = info.schemaType;
+    infoDict["schemaTypeName"] = info.schemaTypeName;
+    infoDict["isMultiApply"] = info.isMultiApply;
+
+    return infoDict;
+}
+
+static list _getKnownApplicableSchemas()
+{
+    list schemasList;
+
+    UsdUfe::KnownSchemas knownSchemas = UsdUfe::getKnownApplicableSchemas();
+
+    for (const auto& info : knownSchemas)
+        schemasList.append(_convertSchemaInfo(info.second));
+
+    return schemasList;
+}
+
+static dict _findSchemasByTypeName(const PXR_NS::TfToken& schemaTypeName)
+{
+    auto maybeInfo = UsdUfe::findSchemasByTypeName(schemaTypeName);
+    if (!maybeInfo)
+        return {};
+
+    return _convertSchemaInfo(*maybeInfo);
+}
+
+bool _applySchemaToPrim(PXR_NS::UsdPrim& prim, const PXR_NS::TfType& schemaType)
+{
+    return UsdUfe::applySchemaToPrim(prim, schemaType);
+}
+
+bool _applyMultiSchemaToPrim(
+    PXR_NS::UsdPrim&       prim,
+    const PXR_NS::TfType&  schemaType,
+    const PXR_NS::TfToken& instanceName)
+{
+    return UsdUfe::applyMultiSchemaToPrim(prim, schemaType, instanceName);
+}
+
 void wrapUtils()
 {
     // Because UsdUfe and UFE have incompatible Python bindings that do not
@@ -125,4 +170,8 @@ void wrapUtils()
     def("getTime", _getTime);
     def("prettifyName", &UsdUfe::prettifyName);
     def("isAttributeEditAllowed", _isAttributeEditAllowed);
+    def("getKnownApplicableSchemas", _getKnownApplicableSchemas);
+    def("applySchemaToPrim", _applySchemaToPrim);
+    def("applyMultiSchemaToPrim", _applyMultiSchemaToPrim);
+    def("findSchemasByTypeName", _findSchemasByTypeName);
 }

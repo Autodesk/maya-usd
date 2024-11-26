@@ -29,10 +29,16 @@
 #include <pxr/usd/usd/editContext.h>
 
 #include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <ufe/hierarchy.h>
 #include <ufe/sceneSegmentHandler.h>
 #include <ufe/trie.imp.h>
+
+// Workaround to avoid a crash that occurs when the Attribute Editor is visible
+// and displaying a USD prim that is being renamed, while we are updating proxyAccessor
+// connections for its descendant pulled objects.
+#define MAYA_USD_AE_CRASH_ON_RENAME_WORKAROUND
 
 // For Tf diagnostics macros.
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -163,8 +169,22 @@ void renamePulledObject(
     for (const PullVariantInfo& info : trieNode->data()) {
         const MDagPath& mayaPath = info.editedAsMayaRoot;
         TF_VERIFY(writePullInformation(pulledPath, mayaPath));
-        if (usdPathChanged) {
-            TF_VERIFY(reparentPulledObject(mayaPath, pulledPath.pop()));
+        if (usdPathChanged && mayaPath.isValid()) {
+#ifdef MAYA_USD_AE_CRASH_ON_RENAME_WORKAROUND
+            // Update the proxyAccessor connections on idle to avoid a crash when
+            // attribute editor is visible and showing the ancestor USD prim beeing renamed.
+            if (MGlobal::mayaState() == MGlobal::kInteractive) {
+                using ReparentArgs = std::pair<MDagPath, Ufe::Path>;
+                MGlobal::executeTaskOnIdle(
+                    [](void* data) {
+                        const auto* args = static_cast<ReparentArgs*>(data);
+                        TF_VERIFY(reparentPulledObject(args->first, args->second));
+                        delete args;
+                    },
+                    new ReparentArgs(mayaPath, pulledPath.pop()));
+            } else
+#endif
+                TF_VERIFY(reparentPulledObject(mayaPath, pulledPath.pop()));
         }
     }
 }

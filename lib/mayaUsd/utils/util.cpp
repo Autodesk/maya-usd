@@ -1348,6 +1348,15 @@ bool UsdMayaUtil::isShape(const MDagPath& dagPath)
     return (numberOfShapesDirectlyBelow == 1);
 }
 
+std::string
+UsdMayaUtil::MayaNodeNameToPrimName(const std::string& nodeName, const bool stripNamespaces)
+{
+    // Note: When not found, rfind returns std::string::npos.
+    //       npos == -1, so npos+1 is zero, so it always works.
+    const std::string::size_type pos = nodeName.rfind('|');
+    return MayaNodeNameToSdfPath(nodeName.substr(pos + 1), stripNamespaces).GetString();
+}
+
 SdfPath UsdMayaUtil::MayaNodeNameToSdfPath(const std::string& nodeName, const bool stripNamespaces)
 {
     std::string pathString = nodeName;
@@ -2583,4 +2592,11 @@ SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
     }
 
     return surfaceShaderNodeDefs;
+}
+
+bool UsdMayaUtil::isNodeInReference(const MObject& node, const MString& referenceFileName)
+{
+    MSelectionList nodes;
+    MFileIO::getReferenceNodes(referenceFileName, nodes);
+    return nodes.hasItem(node);
 }

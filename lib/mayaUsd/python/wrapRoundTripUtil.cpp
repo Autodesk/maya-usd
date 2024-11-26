@@ -19,17 +19,16 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/pyConversions.h>
 #include <pxr/usd/usdGeom/primvar.h>
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapRoundTripUtil()
 {
-    typedef UsdMayaRoundTripUtil This;
-    boost::python::scope         RoundTripUtil
-        = boost::python::class_<This>("RoundTripUtil", boost::python::no_init)
+    typedef UsdMayaRoundTripUtil      This;
+    PXR_BOOST_PYTHON_NAMESPACE::scope RoundTripUtil
+        = PXR_BOOST_PYTHON_NAMESPACE::class_<This>(
+              "RoundTripUtil", PXR_BOOST_PYTHON_NAMESPACE::no_init)
               .def("IsAttributeUserAuthored", This::IsAttributeUserAuthored)
               .staticmethod("IsAttributeUserAuthored")
 

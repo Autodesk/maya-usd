@@ -23,6 +23,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#include <pxr_python.h>
 
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
@@ -36,12 +37,9 @@
 #include <ufe/undoableCommandMgr.h>
 #endif
 
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
-
 #include <string>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NS::UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {

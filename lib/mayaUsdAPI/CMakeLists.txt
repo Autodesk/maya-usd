@@ -59,23 +59,10 @@ if (UFE_CLIPBOARD_SUPPORT)
     )
 endif()
 
-#------------------------------------------------------------------------------
-# modules and definitions
-#------------------------------------------------------------------------------
-if(NOT DEFINED ENV{BOOST_ROOT})
-    set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
-endif()
-if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
-    set(Boost_USE_DEBUG_PYTHON ON)
-endif()
-
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME} 
-    PUBLIC
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
     PRIVATE
         MAYAUSD_API_EXPORT
         MFB_PACKAGE_NAME="${PROJECT_NAME}"
@@ -87,6 +74,14 @@ target_compile_definitions(${PROJECT_NAME}
         # this flag is needed when building for Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
+
+if (USD_VERSION VERSION_LESS "0.24.11")
+    target_compile_definitions(${PROJECT_NAME}
+        PUBLIC
+            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+    )
+endif()
 
 # When the cmake var is set also set another cmake var for the corresponding
 # define. So in mayaUsdAPI.h.src we can configure it correctly. This is used

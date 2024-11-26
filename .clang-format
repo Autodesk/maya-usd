@@ -37,7 +37,7 @@ IncludeCategories:
   # 2. All private headers
   # 3. All public headers from this repository (maya-usd)
   # 4. UsdUfe headers
-  # 5. Pixar + USD headers
+  # 5. Pixar + USD headers + special pxr_python.h
   # 6. Autodesk + Maya headers
   # 7. Other libraries' headers
   # 8. C++ standard library headers
@@ -62,7 +62,7 @@ IncludeCategories:
     Priority:        4
 
   # 5. Pixar + USD headers
-  - Regex:           '^<pxr/'
+  - Regex:           '(pxr_python\.h|^<pxr/)'
     Priority:        5
 
   # 6. Autodesk + Maya headers

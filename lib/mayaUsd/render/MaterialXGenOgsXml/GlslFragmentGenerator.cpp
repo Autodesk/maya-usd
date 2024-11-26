@@ -18,6 +18,9 @@
 #include "Nodes/MayaHwImageNode.h"
 #include "Nodes/MayaSourceCodeNode.h"
 #endif
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+#include "Nodes/MayaClosureSourceCodeNode.h"
+#endif
 
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
@@ -559,21 +562,33 @@ ShaderPtr GlslFragmentGenerator::generate(
             emitLineBreak(pixelStage);
             MX_EMIT_INCLUDE(
                 libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+            emitLine("#define MAYA_MX39_USING_ENVIRONMENT_FIS", pixelStage, false);
+#endif
         } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
             if (OgsXmlGenerator::useLightAPI() < 2) {
                 MX_EMIT_INCLUDE(
                     libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl",
                     context,
                     pixelStage);
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+                emitLine("#define MAYA_MX39_USING_ENVIRONMENT_PREFILTER_V1", pixelStage, false);
+#endif
             } else {
                 MX_EMIT_INCLUDE(
                     libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl",
                     context,
                     pixelStage);
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+                emitLine("#define MAYA_MX39_USING_ENVIRONMENT_PREFILTER_V2", pixelStage, false);
+#endif
             }
         } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
             MX_EMIT_INCLUDE(
                 libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+            emitLine("#define MAYA_MX39_USING_ENVIRONMENT_NONE", pixelStage, false);
+#endif
         } else {
             throw ExceptionShaderGenError(
                 "Invalid hardware specular environment method specified: '"
@@ -954,6 +969,19 @@ GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& con
         context.addNodeImplementation(name, impl);
 
         return impl;
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+    } else if (
+        implElement->getName() == "IM_dielectric_tf_bsdf_genglsl"
+        || implElement->getName() == "IM_generalized_schlick_tf_82_bsdf_genglsl") {
+        // We need to inject lighting code into the backported OpenPBR:
+        impl = MayaClosureSourceCodeNode::create();
+        impl->initialize(*implElement, context);
+
+        // Cache it.
+        context.addNodeImplementation(name, impl);
+
+        return impl;
+#endif
     }
     return GlslShaderGenerator::getImplementation(nodedef, context);
 }

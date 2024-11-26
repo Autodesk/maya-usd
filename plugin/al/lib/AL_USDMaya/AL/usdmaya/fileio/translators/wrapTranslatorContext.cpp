@@ -20,18 +20,17 @@
 #include <pxr/base/tf/makePyConstructor.h>
 #include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObjectHandle.h>
 
-#include <boost/python.hpp>
-
 using namespace AL::usdmaya::fileio::translators;
 using namespace AL::usdmaya::nodes;
 using namespace AL::maya::utils;
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 namespace {
 
@@ -118,7 +117,7 @@ void wrapTranslatorContext()
 {
     typedef TfWeakPtr<TranslatorContext> TranslatorContextPtr;
 
-    class_<TranslatorContext, TranslatorContextPtr, boost::noncopyable>(
+    class_<TranslatorContext, TranslatorContextPtr, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
         "TranslatorContext", no_init)
         .def(TfPyRefAndWeakPtr())
         .def("create", &TranslatorContext::create, return_value_policy<TfPyRefPtrFactory<>>())
