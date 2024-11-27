@@ -16,7 +16,11 @@
 
 #include "render.h"
 
+#include "MaterialXCore/Library.h"
+
 #include <mayaUsd/render/vp2RenderDelegate/colorManagementPreferences.h>
+
+#include <memory>
 
 #ifdef WANT_MATERIALX_BUILD
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsFragment.h>
@@ -129,10 +133,39 @@ std::string OgsFragment::getMatrix4Name(const std::string& matrix3Name)
 
 namespace ShaderGenUtil {
 
+struct LobePrunerImpl
+{
+    LobePrunerImpl() { _lobePruner = MaterialXMaya::ShaderGenUtil::LobePruner::create(); }
+    ~LobePrunerImpl() = default;
+
+    MaterialXMaya::ShaderGenUtil::LobePruner::Ptr _lobePruner;
+};
+
+LobePruner::LobePruner()
+    : _imp(new LobePrunerImpl)
+{
+}
+
+LobePruner::~LobePruner() = default;
+
+LobePruner::Ptr LobePruner::create() { return Ptr { new LobePruner }; }
+
+void LobePruner::setLibrary(const MaterialX::DocumentPtr& library)
+{
+    if (_imp && _imp->_lobePruner) {
+        _imp->_lobePruner->setLibrary(library);
+    }
+}
+
 struct TopoNeutralGraphImpl
 {
     TopoNeutralGraphImpl(const MaterialX::ElementPtr& material)
         : _topoGraph(material)
+    {
+    }
+
+    TopoNeutralGraphImpl(const MaterialX::ElementPtr& material, const LobePruner::Ptr& lobePruner)
+        : _topoGraph(material, lobePruner->_imp->_lobePruner)
     {
     }
 
@@ -141,6 +174,13 @@ struct TopoNeutralGraphImpl
 
 TopoNeutralGraph::TopoNeutralGraph(const MaterialX::ElementPtr& material)
     : _imp(new TopoNeutralGraphImpl(material))
+{
+}
+
+TopoNeutralGraph::TopoNeutralGraph(
+    const MaterialX::ElementPtr& material,
+    const LobePruner::Ptr&       lobePruner)
+    : _imp(new TopoNeutralGraphImpl(material, lobePruner))
 {
 }
 
@@ -168,6 +208,11 @@ bool TopoNeutralGraph::isTopologicalNodeDef(const MaterialX::NodeDef& nodeDef)
 const std::string& TopoNeutralGraph::getMaterialName()
 {
     return MaterialXMaya::ShaderGenUtil::TopoNeutralGraph::getMaterialName();
+}
+
+const MaterialX::StringVec& TopoNeutralGraph::getOptimizedAttributes() const
+{
+    return _imp->_topoGraph.getOptimizedAttributes();
 }
 
 } // namespace ShaderGenUtil

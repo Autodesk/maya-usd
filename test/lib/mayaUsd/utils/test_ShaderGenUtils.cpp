@@ -7,12 +7,14 @@
 #include <maya/MString.h>
 
 #include <MaterialXCore/Document.h>
+#include <MaterialXCore/Node.h>
 #include <MaterialXFormat/File.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 #include <MaterialXGenShader/Util.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <iostream>
 
 TEST(ShaderGenUtils, topoChannels)
@@ -151,3 +153,51 @@ TEST(ShaderGenUtils, topoGraphAPI_defaultgeomprop)
     }
 }
 #endif
+
+TEST(ShaderGenUtils, lobePruner)
+{
+    namespace sgu = MaterialXMaya::ShaderGenUtil;
+
+    auto testPath = mx::FilePath(MATERIALX_TEST_DATA);
+
+    auto library = mx::createDocument();
+    ASSERT_TRUE(library != nullptr);
+    auto searchPath = PXR_NS::HdMtlxSearchPaths();
+    mx::loadLibraries({}, searchPath, library);
+
+    auto doc = mx::createDocument();
+    doc->importLibrary(library);
+
+    auto lobePruner = sgu::LobePruner::create();
+    lobePruner->setLibrary(doc);
+
+    const auto attrVec = lobePruner->getOptimizedAttributeNames(doc->getNodeDef("ND_standard_surface_surfaceshader"));
+    ASSERT_FALSE(attrVec.empty());
+    ASSERT_TRUE(std::is_sorted(attrVec.begin(), attrVec.end()));
+    ASSERT_TRUE(std::lower_bound(attrVec.begin(), attrVec.end(),"subsurface") != attrVec.end());
+
+    const auto node = doc->addNode("standard_surface", "bob", "surfaceshader");
+
+    std::string optimizedCategory;
+    ASSERT_TRUE(lobePruner->getOptimizedNodeCategory(*node, optimizedCategory));
+    // An x means can not optimize on that attribute
+    // A 0 means we optimized due to this value being zero
+    ASSERT_EQ(optimizedCategory, "standard_surface_x0000x00x000");
+
+    auto input = node->addInputFromNodeDef("subsurface");
+    input->setValueString("1.0");
+    ASSERT_TRUE(lobePruner->getOptimizedNodeCategory(*node, optimizedCategory));
+    // Now have a 1 for subsurface since we can also optimize the 1 value for mix nodes.
+    ASSERT_EQ(optimizedCategory, "standard_surface_x0000x00x010");
+
+    PXR_NS::HdMaterialNode2 usdNode;
+    usdNode.nodeTypeId = PXR_NS::TfToken("ND_standard_surface_surfaceshader");
+    auto optimizedNodeId = lobePruner->getOptimizedNodeId(usdNode);
+    ASSERT_EQ(optimizedNodeId.GetString(), sgu::LobePruner::getOptimizedNodeDefPrefix() + "standard_surface_x0000x00x000_surfaceshader");
+    ASSERT_TRUE(sgu::LobePruner::isOptimizedNodeId(optimizedNodeId));
+
+    usdNode.nodeTypeId = PXR_NS::TfToken("ND_mix_surfaceshader");
+    optimizedNodeId = lobePruner->getOptimizedNodeId(usdNode);
+    ASSERT_TRUE(optimizedNodeId.IsEmpty());
+}
+

@@ -5,6 +5,7 @@
 /// Helpers
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/render/MaterialXGenOgsXml/LobePruner.h>
 
 #include <MaterialXCore/Document.h>
 
@@ -20,6 +21,7 @@ class MAYAUSD_CORE_PUBLIC TopoNeutralGraph
 {
 public:
     explicit TopoNeutralGraph(const mx::ElementPtr& material);
+    explicit TopoNeutralGraph(const mx::ElementPtr& material, const LobePruner::Ptr& library);
     ~TopoNeutralGraph() = default;
 
     TopoNeutralGraph() = delete;
@@ -34,6 +36,10 @@ public:
     mx::DocumentPtr           getDocument() const;
     static const std::string& getMaterialName();
     const std::string&        getOriginalPath(const std::string& topoPath) const;
+
+    // Get the list of node.attribute paths used by the LobePruner to optimize surface shader nodes
+    // found in the material that was processed.
+    const mx::StringVec& getOptimizedAttributes() const;
 
     // As we traverse the shader graph, remember all elements that should be watched for value
     // changes
@@ -51,6 +57,7 @@ public:
     mx::NodeGraphPtr& getNodeGraph();
 
 protected:
+    void          computeGraph(const mx::ElementPtr& material);
     mx::NodePtr   cloneNode(const mx::Node& node, mx::GraphElement& container);
     mx::OutputPtr findNodeGraphOutput(const mx::Input& input, const std::string& outputName);
     std::string   gatherChannels(const mx::Input& input);
@@ -86,6 +93,9 @@ protected:
     std::unordered_map<std::string, std::string> _pathMap;
     // All visited nodes/nodeGraphs elements we should monitor for value changes
     WatchList _watchList;
+    // Optional LobePruner that can replace a heavy surface shader with a lightweight version.
+    LobePruner::Ptr _lobePruner;
+    mx::StringVec   _optimizedAttributes;
 };
 
 } // namespace ShaderGenUtil
