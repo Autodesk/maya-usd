@@ -11,24 +11,10 @@ except ImportError:
 
 class Resizable(QWidget):
 
-    __slots__ = [
-        "_contentLayout",
-        "_minContentSize",
-        "_maxContentSize",
-        "_persistentStorageGroup",
-        "_persistentStorageKey",
-        "_contentSize",
-        "_dragStartContentSize",
-        "_widget",
-        "_overlay",
-    ]
-
     class _Overlay(QWidget):
 
         dragged = Signal(int)
         dragging = Signal(bool)
-
-        __slots__ = ["_active", "_mousePressGlobalPosY", "_maskRect"]
 
         def __init__(self, parent=None):
             super(Resizable._Overlay, self).__init__(parent)

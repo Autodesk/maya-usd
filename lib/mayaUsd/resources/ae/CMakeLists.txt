@@ -52,6 +52,9 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
     install(FILES
         ${MAYAUSD_SHARED_COMPONENTS}/collection/__init__.py
         ${MAYAUSD_SHARED_COMPONENTS}/collection/widget.py
+        ${MAYAUSD_SHARED_COMPONENTS}/collection/IncludeExcludeWidget.py
+        ${MAYAUSD_SHARED_COMPONENTS}/collection/ExpressionWidget.py
+        ${MAYAUSD_SHARED_COMPONENTS}/collection/ExpressionRulesMenu.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/collection/
     )
 
@@ -61,6 +64,14 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
         ${MAYAUSD_SHARED_COMPONENTS}/common/persistentStorage.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/resizable.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/theme.py
+        ${MAYAUSD_SHARED_COMPONENTS}/common/kebabMenu.py
+        ${MAYAUSD_SHARED_COMPONENTS}/resources.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/common/
     )
+
+    install(FILES
+        ${MAYAUSD_SHARED_COMPONENTS}/resources.py
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/
+    )
+
 endif()

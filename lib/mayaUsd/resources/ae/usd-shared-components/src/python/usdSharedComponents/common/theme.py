@@ -3,18 +3,15 @@ try:
     from PySide6.QtGui import QPainter, QColor, QPen, QIcon
     from PySide6.QtWidgets import QWidget
 except:
-    from PySide2.QtCore import QRect  # type: ignore
+    from PySide2.QtCore import QRect, Qt  # type: ignore
     from PySide2.QtGui import QPainter, QColor, QPen, QIcon  # type: ignore
     from PySide2.QtWidgets import QWidget  # type: ignore
 
-from typing import Union
 from enum import Flag, auto
-
+from typing import Union
 
 class Theme(object):
     _instance = None
-
-    __slots__ = ["_palette"]
 
     def __init__(self):
         raise RuntimeError("Call instance() instead")
@@ -49,6 +46,10 @@ class Theme(object):
 
     class Palette(object):
         colorResizeBorderActive: QColor = QColor(0x5285a6)
+
+    def icon(self, name: str) -> QIcon:
+        ### Returns the icon with the given name.
+        return QIcon(f"./icons/{name}.svg")
 
     @property
     def palette(self) -> Palette:

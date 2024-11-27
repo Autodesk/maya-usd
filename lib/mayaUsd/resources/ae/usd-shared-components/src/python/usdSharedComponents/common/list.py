@@ -13,7 +13,7 @@ try:
     from PySide6.QtGui import QPainter
     from PySide6.QtWidgets import QStyleOptionViewItem, QStyledItemDelegate, QListView, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QCheckBox
 except:
-    from PySide2.QtCore import (
+    from PySide2.QtCore import ( # type: ignore
         QModelIndex,
         QPersistentModelIndex,
         QSize,
