@@ -866,7 +866,9 @@ public:
             MayaUsd::lockLayer(_proxyShapePath, curLayer, _lockType, true);
         }
 
-        updateEditTarget(stage);
+        if (_updateEditTarget) {
+            updateEditTarget(stage);
+        }
 
         return true;
     }
@@ -896,7 +898,9 @@ public:
         }
         restoreSelection();
 
-        updateEditTarget(stage);
+        if (_updateEditTarget) {
+            updateEditTarget(stage);
+        }
 
         return true;
     }
@@ -904,6 +908,7 @@ public:
     MayaUsd::LayerLockType _lockType = MayaUsd::LayerLockType::LayerLock_Locked;
     bool                   _includeSublayers = false;
     bool                   _skipSystemLockedLayers = false;
+    bool                   _updateEditTarget = true;
     std::string            _proxyShapePath;
 
 private:
@@ -982,10 +987,12 @@ public:
             }
         }
 
-        updateEditTarget(stage);
-
-        if (_layers.size() > 0) {
+        if (!_layers.empty()) {
             _notifySystemLockIsRefreshed();
+
+            // Finally update edit target after layer locks were changed
+            // by the command or a callback.
+            updateEditTarget(stage);
         }
 
         return true;
@@ -1006,10 +1013,12 @@ public:
             }
         }
 
-        updateEditTarget(stage);
-
-        if (_layers.size() > 0) {
+        if (!_layers.empty()) {
             _notifySystemLockIsRefreshed();
+
+            // Finally update edit target after layer locks were changed
+            // by the command or a callback.
+            updateEditTarget(stage);
         }
 
         return true;
@@ -1053,6 +1062,8 @@ private:
                         cmd->_lockType = MayaUsd::LayerLockType::LayerLock_Unlocked;
                         cmd->_includeSublayers = false;
                         cmd->_proxyShapePath = _proxyShapePath;
+                        // Edit target will be updated once at the end of the refresh command.
+                        cmd->_updateEditTarget = false;
 
                         // Add the lock command and its parameter to be executed
                         _lockCommands.push_back(std::move(cmd));
@@ -1066,6 +1077,8 @@ private:
                         cmd->_lockType = MayaUsd::LayerLockType::LayerLock_SystemLocked;
                         cmd->_includeSublayers = false;
                         cmd->_proxyShapePath = _proxyShapePath;
+                        // Edit target will be updated once at the end of the refresh command.
+                        cmd->_updateEditTarget = false;
 
                         // Add the lock command and its parameter to be executed
                         _lockCommands.push_back(std::move(cmd));
