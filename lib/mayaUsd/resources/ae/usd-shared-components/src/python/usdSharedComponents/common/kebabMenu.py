@@ -1,4 +1,4 @@
-from ..collection.ExpressionRulesMenu import ExpressionMenu
+from ..collection.expressionRulesMenu import ExpressionMenu
 from ..resources import *
 try:
     from PySide6.QtCore import Qt # type: ignore

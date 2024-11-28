@@ -1,5 +1,5 @@
-from .IncludeExcludeWidget import IncludeExcludeWidget
-from .ExpressionWidget import ExpressionWidget
+from .includeExcludeWidget import IncludeExcludeWidget
+from .expressionWidget import ExpressionWidget
 
 try:
     from PySide6.QtGui import QIcon

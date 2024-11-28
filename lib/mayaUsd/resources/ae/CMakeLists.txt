@@ -52,9 +52,9 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
     install(FILES
         ${MAYAUSD_SHARED_COMPONENTS}/collection/__init__.py
         ${MAYAUSD_SHARED_COMPONENTS}/collection/widget.py
-        ${MAYAUSD_SHARED_COMPONENTS}/collection/IncludeExcludeWidget.py
-        ${MAYAUSD_SHARED_COMPONENTS}/collection/ExpressionWidget.py
-        ${MAYAUSD_SHARED_COMPONENTS}/collection/ExpressionRulesMenu.py
+        ${MAYAUSD_SHARED_COMPONENTS}/collection/includeExcludeWidget.py
+        ${MAYAUSD_SHARED_COMPONENTS}/collection/expressionWidget.py
+        ${MAYAUSD_SHARED_COMPONENTS}/collection/expressionRulesMenu.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/collection/
     )
 

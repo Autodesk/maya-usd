@@ -1,4 +1,4 @@
-from .ExpressionRulesMenu import ExpressionMenu
+from .expressionRulesMenu import ExpressionMenu
 from ..common.kebabMenu import KebabMenu
 
 try:

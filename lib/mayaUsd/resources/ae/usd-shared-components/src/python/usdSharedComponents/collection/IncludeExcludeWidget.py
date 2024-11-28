@@ -1,7 +1,7 @@
 from ..common.list import StringList
 from ..common.resizable import Resizable
 from ..common.kebabMenu import KebabMenu
-from .ExpressionRulesMenu import ExpressionMenu
+from .expressionRulesMenu import ExpressionMenu
 
 try:
     from PySide6.QtWidgets import QFrame, QWidget, QHBoxLayout, QVBoxLayout# type: ignore
