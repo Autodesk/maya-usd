@@ -171,10 +171,11 @@ TEST(ShaderGenUtils, lobePruner)
     auto lobePruner = sgu::LobePruner::create();
     lobePruner->setLibrary(doc);
 
-    const auto attrVec = lobePruner->getOptimizedAttributeNames(doc->getNodeDef("ND_standard_surface_surfaceshader"));
+    const auto attrVec = lobePruner->getOptimizedAttributeNames(
+        doc->getNodeDef("ND_standard_surface_surfaceshader"));
     ASSERT_FALSE(attrVec.empty());
     ASSERT_TRUE(std::is_sorted(attrVec.begin(), attrVec.end()));
-    ASSERT_TRUE(std::lower_bound(attrVec.begin(), attrVec.end(),"subsurface") != attrVec.end());
+    ASSERT_TRUE(std::lower_bound(attrVec.begin(), attrVec.end(), "subsurface") != attrVec.end());
 
     const auto node = doc->addNode("standard_surface", "bob", "surfaceshader");
 
@@ -193,11 +194,13 @@ TEST(ShaderGenUtils, lobePruner)
     PXR_NS::HdMaterialNode2 usdNode;
     usdNode.nodeTypeId = PXR_NS::TfToken("ND_standard_surface_surfaceshader");
     auto optimizedNodeId = lobePruner->getOptimizedNodeId(usdNode);
-    ASSERT_EQ(optimizedNodeId.GetString(), sgu::LobePruner::getOptimizedNodeDefPrefix() + "standard_surface_x0000x00x000_surfaceshader");
+    ASSERT_EQ(
+        optimizedNodeId.GetString(),
+        sgu::LobePruner::getOptimizedNodeDefPrefix()
+            + "standard_surface_x0000x00x000_surfaceshader");
     ASSERT_TRUE(sgu::LobePruner::isOptimizedNodeId(optimizedNodeId));
 
     usdNode.nodeTypeId = PXR_NS::TfToken("ND_mix_surfaceshader");
     optimizedNodeId = lobePruner->getOptimizedNodeId(usdNode);
     ASSERT_TRUE(optimizedNodeId.IsEmpty());
 }
-
