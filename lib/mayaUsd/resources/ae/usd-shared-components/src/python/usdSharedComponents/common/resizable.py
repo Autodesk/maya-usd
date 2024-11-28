@@ -103,6 +103,7 @@ class Resizable(QWidget):
         persistentStorageGroup: str = None,
         persistentStorageKey: str = None,
         parent: QWidget = None,
+        defaultSize = -1,
     ):
         super(Resizable, self).__init__(parent)
 
@@ -127,6 +128,8 @@ class Resizable(QWidget):
         self._widget: QWidget = None
 
         self.loadPersistentStorage()
+        if self._contentSize < 0 and defaultSize > 0:
+            self._contentSize = defaultSize
 
         if w is not None:
             self.widget = w
