@@ -491,7 +491,7 @@ void LobePrunerImpl::addDarkShaders()
         return;
     }
 
-    auto nd = _library->addNodeDef(ND_DARK_BASE, mx::BSDF_TYPE_STRING, DARK_BASE);
+    auto nd = _library->addNodeDef(ND_DARK_BASE, "BSDF", DARK_BASE);
     nd->setAttribute("bsdf", "R");
     nd->setNodeGroup("pbr");
     nd->setDocString("A completely dark base BSDF node.");
@@ -499,7 +499,7 @@ void LobePrunerImpl::addDarkShaders()
     auto im = _library->addImplementation(IM_DARK_BASE);
     im->setNodeDef(nd);
 
-    nd = _library->addNodeDef(ND_DARK_LAYER, mx::BSDF_TYPE_STRING, DARK_LAYER);
+    nd = _library->addNodeDef(ND_DARK_LAYER, "BSDF", DARK_LAYER);
     nd->setNodeGroup("pbr");
     nd->setDocString("A completely dark layer BSDF node.");
 
