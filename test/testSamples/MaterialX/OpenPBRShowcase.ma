@@ -550,6 +550,7 @@ createNode place2dTexture -n "place2dTexture27";
 createNode file -n "file28";
 	rename -uid "7FB0A196-488B-6311-2E70-B0817B5BCB59";
 	setAttr ".ftn" -type "string" "textures/Mono.png";
+	setAttr ".co" -type "float3" 1.5 1.5 1.5 ;
 	setAttr ".ft" 0;
 	setAttr ".cs" -type "string" "sRGB";
 createNode place2dTexture -n "place2dTexture28";

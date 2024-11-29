@@ -19,7 +19,11 @@
 import unittest
 import tempfile
 import testUtils
-from os import path
+import mayaUtils
+
+from os import path, chmod
+from stat import S_IREAD
+
 from maya import cmds, mel
 import mayaUsd_createStageWithNewLayer
 import mayaUsd
@@ -827,6 +831,115 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
 
         # 6- Unregistering again should do nothing and not crash.
         mayaUsd.lib.unregisterUICallback('onRefreshSystemLock', refreshSystemLockCallback)        
+
+    def _verifyStageAfterRefreshSystemLock(
+            self, writableFiles, expectedLayerModifiable, callback=None):
+
+        with testUtils.TemporaryDirectory(prefix='RefreshLock') as testDir:
+            # Create a stage with a simple layer stack.
+            rootLayerPath = path.join(testDir, "root.usda")
+            rootLayer = Sdf.Layer.CreateNew(rootLayerPath)
+
+            subLayerPath = path.join(testDir, "sub.usda")
+            subLayer = Sdf.Layer.CreateNew(subLayerPath)
+
+            rootLayer.subLayerPaths.append(subLayer.identifier)
+            rootLayer.Save()
+
+            proxyShape, stage = mayaUtils.createProxyFromFile(rootLayerPath)
+
+            # Apply requested file permissions if needed.
+            if not writableFiles:
+                for layer in stage.GetLayerStack(False):
+                    chmod(layer.realPath, S_IREAD)
+
+            if callback is not None:
+                # Install the given callback.
+                mayaUsd.lib.registerUICallback('onRefreshSystemLock', callback)
+
+                # Alter a layer lock to ensure the callback is triggered on
+                # refreshSystemLock.
+                lockStatus = 0 if mayaUsd.lib.isLayerSystemLocked(rootLayer) else 2
+                cmds.mayaUsdLayerEditor(rootLayerPath, e=True,
+                                        lockLayer=(lockStatus, 0, proxyShape))
+
+            cmds.mayaUsdLayerEditor(rootLayerPath, e=True,
+                                    refreshSystemLock=(proxyShape, 1))
+
+            if callback is not None:
+                mayaUsd.lib.unregisterUICallback('onRefreshSystemLock', callback)
+
+            # Verify that the expected locks were applied
+            # e.g. during the callback.
+            self.assertEqual(mayaUsdUfe.isAnyLayerModifiable(stage),
+                             expectedLayerModifiable)
+
+            # Verify that refreshSystemLock properly handled the editTarget
+            # e.g. that it accounts for lock changes during the callback.
+            if expectedLayerModifiable:
+                # The initial target should be preserved in this case.
+                expectedTargetLayer = rootLayer
+            else:
+                # Edit target should have been forced to session layer.
+                expectedTargetLayer = stage.GetSessionLayer()
+
+            self.assertEqual(stage.GetEditTarget().GetLayer(),
+                             expectedTargetLayer)
+
+    def testRefreshSystemLockWithoutCallback(self):
+        """
+        Test refreshSystemLocks without any callback.
+        """
+        self._verifyStageAfterRefreshSystemLock(
+            writableFiles=False, expectedLayerModifiable=False)
+
+        self._verifyStageAfterRefreshSystemLock(
+            writableFiles=True, expectedLayerModifiable=True)
+
+    def testRefreshSystemLockCallbackLockingAll(self):
+        """
+        Test refreshSystemLocks with a callback that force a systemLock on all
+        layers even if the usd files are writable.
+        """
+        def callback(context, callbackData):
+            shapePath = context.get('proxyShapePath')
+            stage = mayaUsdUfe.getStage(shapePath)
+            for layer in stage.GetLayerStack(False):
+                mayaUsd.lib.systemLockLayer(shapePath, layer)
+
+        self._verifyStageAfterRefreshSystemLock(
+            writableFiles=True, expectedLayerModifiable=False,
+            callback=callback)
+
+    def testRefreshSystemLockWithCallbackUnlockingAll(self):
+        """
+        Test refreshSystemLocks with a callback that will unlock all
+        layers while they were automatically locked according to usd files
+        permissions.
+        """
+        def callback(context, callbackData):
+            shapePath = context.get('proxyShapePath')
+            for layerId in callbackData.get('affectedLayerIds'):
+                mayaUsd.lib.unlockLayer(shapePath, Sdf.Find(layerId))
+
+        self._verifyStageAfterRefreshSystemLock(
+            writableFiles=False, expectedLayerModifiable=True,
+            callback=callback)
+
+    def testRefreshSystemLockWithCallbackUnlockingEditTarget(self):
+        """
+        Test refreshSystemLocks with a callback that unlocks the current
+        edit target layer while it was automatically locked according
+        to usd file permission.
+        """
+        def callback(context, callbackData):
+            shapePath = context.get('proxyShapePath')
+            stage = mayaUsdUfe.getStage(shapePath)
+            mayaUsd.lib.unlockLayer(shapePath, stage.GetEditTarget().GetLayer())
+
+        self._verifyStageAfterRefreshSystemLock(
+            writableFiles=False, expectedLayerModifiable=True,
+            callback=callback)
 
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """
