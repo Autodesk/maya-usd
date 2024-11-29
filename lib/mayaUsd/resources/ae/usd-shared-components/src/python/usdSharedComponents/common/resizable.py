@@ -2,8 +2,8 @@ from .theme import Theme
 from .persistentStorage import PersistentStorage
 from typing import Union
 try:
-    from PySide6.QtCore import Qt, Signal, QRect
-    from PySide6.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy
+    from PySide6.QtCore import Qt, Signal, QRect  # type: ignore
+    from PySide6.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy  # type: ignore
 except ImportError:
     from PySide2.QtCore import Qt, Signal, QRect  # type: ignore
     from PySide2.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy  # type: ignore
@@ -11,24 +11,10 @@ except ImportError:
 
 class Resizable(QWidget):
 
-    __slots__ = [
-        "_contentLayout",
-        "_minContentSize",
-        "_maxContentSize",
-        "_persistentStorageGroup",
-        "_persistentStorageKey",
-        "_contentSize",
-        "_dragStartContentSize",
-        "_widget",
-        "_overlay",
-    ]
-
     class _Overlay(QWidget):
 
         dragged = Signal(int)
         dragging = Signal(bool)
-
-        __slots__ = ["_active", "_mousePressGlobalPosY", "_maskRect"]
 
         def __init__(self, parent=None):
             super(Resizable._Overlay, self).__init__(parent)
