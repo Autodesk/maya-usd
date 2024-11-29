@@ -226,7 +226,7 @@ if(BUILD_MAYAUSD_LIBRARY)
     endif()
 endif()
 
-if(USD_VERSION VERSION_GREATER_EQUAL "0.24.11")
+if(BUILD_MAYAUSD_LIBRARY AND (USD_VERSION VERSION_GREATER_EQUAL "0.24.11"))
     # In USD v24.11 Pixar USD has completely removed Boost.
     # However MayaUsd is still using a few of the Boost components, so
     # when using USD v24.11 (or greater) we need to find Boost ourselves
