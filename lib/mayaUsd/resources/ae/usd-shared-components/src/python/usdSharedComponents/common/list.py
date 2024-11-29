@@ -2,7 +2,7 @@ from typing import Sequence, Union
 from .theme import Theme
 
 try:
-    from PySide6.QtCore import (
+    from PySide6.QtCore import (   # type: ignore
         QModelIndex,
         QPersistentModelIndex,
         QSize,
@@ -10,8 +10,17 @@ try:
         Qt,
         Signal,
     )
-    from PySide6.QtGui import QPainter
-    from PySide6.QtWidgets import QStyleOptionViewItem, QStyledItemDelegate, QListView, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QCheckBox
+    from PySide6.QtGui import QPainter  # type: ignore
+    from PySide6.QtWidgets import (  # type: ignore
+        QStyleOptionViewItem,
+        QStyledItemDelegate,
+        QListView,
+        QLabel,
+        QVBoxLayout,
+        QHBoxLayout,
+        QWidget,
+        QCheckBox,
+    )
 except:
     from PySide2.QtCore import ( # type: ignore
         QModelIndex,

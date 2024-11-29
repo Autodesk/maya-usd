@@ -1,6 +1,0 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
-    <qresource prefix="icons">
-        <file alias="kebab.png">icons/kebab_100.png</file>
-    </qresource>
-</RCC>

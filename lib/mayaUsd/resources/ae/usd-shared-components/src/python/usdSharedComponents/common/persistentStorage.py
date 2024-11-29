@@ -1,5 +1,5 @@
 try:
-    from PySide6.QtCore import QSettings
+    from PySide6.QtCore import QSettings  # type: ignore
 except:
     from PySide2.QtCore import QSettings  # type: ignore
 

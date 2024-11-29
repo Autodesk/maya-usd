@@ -1,6 +1,6 @@
 from ..common.list import StringList
 from ..common.resizable import Resizable
-from ..common.kebabMenu import KebabMenu
+from ..common.menuButton import MenuButton
 from .expressionRulesMenu import ExpressionMenu
 
 try:
@@ -33,7 +33,7 @@ class IncludeExcludeWidget(QWidget):
         includeExcludeLayout.setContentsMargins(0,0,0,0)
 
         self._expressionMenu = ExpressionMenu(self._collection, self)
-        menuButton = KebabMenu(self._expressionMenu, self)
+        menuButton = MenuButton(self._expressionMenu, self)
 
         separator = QFrame()
         separator.setFrameShape(QFrame.VLine)

@@ -2,8 +2,8 @@ from .theme import Theme
 from .persistentStorage import PersistentStorage
 from typing import Union
 try:
-    from PySide6.QtCore import Qt, Signal, QRect
-    from PySide6.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy
+    from PySide6.QtCore import Qt, Signal, QRect  # type: ignore
+    from PySide6.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy  # type: ignore
 except ImportError:
     from PySide2.QtCore import Qt, Signal, QRect  # type: ignore
     from PySide2.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy  # type: ignore

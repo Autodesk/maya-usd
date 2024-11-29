@@ -1,5 +1,5 @@
 from .expressionRulesMenu import ExpressionMenu
-from ..common.kebabMenu import KebabMenu
+from ..common.menuButton import MenuButton
 
 try:
     from PySide6.QtCore import QEvent, Qt  # type: ignore
@@ -23,7 +23,7 @@ class ExpressionWidget(QWidget):
         self._expressionText.setPlaceholderText("Type an expression here...")
 
         self._expressionMenu = ExpressionMenu(collection, self)
-        menuButton = KebabMenu(self._expressionMenu, self)
+        menuButton = MenuButton(self._expressionMenu, self)
 
         menuWidget = QWidget(self)
         menuLayout = QHBoxLayout(menuWidget)

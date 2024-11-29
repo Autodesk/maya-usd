@@ -64,14 +64,24 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
         ${MAYAUSD_SHARED_COMPONENTS}/common/persistentStorage.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/resizable.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/theme.py
-        ${MAYAUSD_SHARED_COMPONENTS}/common/kebabMenu.py
-        ${MAYAUSD_SHARED_COMPONENTS}/resources.py
+        ${MAYAUSD_SHARED_COMPONENTS}/common/menuButton.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/common/
     )
 
-    install(FILES
-        ${MAYAUSD_SHARED_COMPONENTS}/resources.py
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/
+    set(LIB_ICONS
+        ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/menu
     )
+    foreach(ICON_BASE ${LIB_ICONS})
+        # The _100.png files need to be installed without the _100. This is the
+        # base icon name that is used. Maya will automatically choose the _150/_200
+        # image if neeeded.
+        install(FILES "${ICON_BASE}_100.png"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/icons/dark"
+            RENAME "${ICON_BASE}.png"
+        )
+        install(FILES "${ICON_BASE}_150.png" "${ICON_BASE}_200.png"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/icons/dark"
+        )
+    endforeach()
 
 endif()
