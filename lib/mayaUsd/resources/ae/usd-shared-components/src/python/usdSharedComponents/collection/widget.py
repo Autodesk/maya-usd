@@ -1,10 +1,12 @@
-from ..common.list import StringList
-from ..common.resizable import Resizable
+from .includeExcludeWidget import IncludeExcludeWidget
+from .expressionWidget import ExpressionWidget
 
 try:
-    from PySide6.QtWidgets import QWidget, QVBoxLayout
+    from PySide6.QtGui import QIcon
+    from PySide6.QtWidgets import QWidget, QTabWidget, QVBoxLayout
 except ImportError:
-    from PySide2.QtWidgets import QWidget, QVBoxLayout # type: ignore
+    from PySide2.QtGui import QIcon # type: ignore
+    from PySide2.QtWidgets import QWidget, QTabWidget, QVBoxLayout # type: ignore
 
 from pxr import Usd
 
@@ -12,37 +14,34 @@ class CollectionWidget(QWidget):
     def __init__(self, collection: Usd.CollectionAPI = None, parent: QWidget = None):
         super(CollectionWidget, self).__init__(parent)
 
-        self._collection: Usd.CollectionAPI = collection
+        mainLayout = QVBoxLayout()
+        mainLayout.setContentsMargins(0,0,0,0)
 
-        includes = []
-        excludes = []
-        shouldIncludeAll = False
+        self._includeExcludeWidget = IncludeExcludeWidget(collection, self)
 
-        if self._collection is not None:
-            includeRootAttribute = self._collection.GetIncludeRootAttr()
-            if includeRootAttribute.IsAuthored():
-                shouldIncludeAll = self._collection.GetIncludeRootAttr().Get()
+        # only create tab when usd version is greater then 23.11
+        if Usd.GetVersion() >= (0, 23, 11):
+            tabWidget = QTabWidget()
+            tabWidget.currentChanged.connect(self.onTabChanged)
 
-            for p in self._collection.GetIncludesRel().GetTargets():
-                includes.append(p.pathString)
-            for p in self._collection.GetExcludesRel().GetTargets():
-                excludes.append(p.pathString)
+            self._expressionWidget = ExpressionWidget(collection, tabWidget, self.onExpressionChanged)
+            tabWidget.addTab(self._includeExcludeWidget, QIcon(), "Include/Exclude")
+            tabWidget.addTab(self._expressionWidget, QIcon(), "Expression")
 
-        self.mainLayout = QVBoxLayout(self)
-        self.mainLayout.setContentsMargins(0,0,0,0)
+            mainLayout.addWidget(tabWidget)
+        else:
+            mainLayout.addWidget(self._includeExcludeWidget)
 
-        self._include = StringList( includes, "Include", "Include all", self)
-        self._include.cbIncludeAll.setChecked(shouldIncludeAll)
-        self._include.cbIncludeAll.stateChanged.connect(self.onIncludeAllToggle)
-        self._resizableInclude = Resizable(self._include, "USD_Light_Linking", "IncludeListHeight", self)
+        self.setLayout(mainLayout)
 
-        self.mainLayout.addWidget(self._resizableInclude)
 
-        self._exclude = StringList( excludes, "Exclude", "", self)
-        self._resizableExclude = Resizable(self._exclude, "USD_Light_Linking", "ExcludeListHeight", self)
+    if Usd.GetVersion() >= (0, 23, 11):
+        def onTabChanged(self, index):
+            self._includeExcludeWidget.update()
+            self._expressionWidget.update()
 
-        self.mainLayout.addWidget(self._resizableExclude)
-        self.mainLayout.addStretch(1)
-
-    def onIncludeAllToggle(self):
-        self._collection.GetIncludeRootAttr().Set(self._include.cbIncludeAll.isChecked())
+        def onExpressionChanged(self):
+            updateIncludeAll = len(self._includeExcludeWidget.getIncludedItems()) == 0 and len(self._includeExcludeWidget.getIncludedItems()) == 0 and self._includeExcludeWidget.getIncludeAll()
+            if updateIncludeAll:
+                self._includeExcludeWidget.setIncludeAll(False)
+                print('"Include All" has been disabled for the expression to take effect.')
