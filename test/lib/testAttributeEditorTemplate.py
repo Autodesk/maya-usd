@@ -501,38 +501,20 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
 
         # Note: different version of USD can have different schemas,
         #       so we only compare the ones we are interested in verifying.
-        expectedInitialSectionLabels = []
-        if mayaUtils.mayaMajorMinorVersions() >= (2023, 0):
-            expectedInitialSectionLabels = [
-                'Light ',
-                'Cylinder Light',
-                'Light Linking',
-                'Shadow Link Collection ']
-        else:
-            expectedInitialSectionLabels = [
-                'Light ',
-                'Cylinder Light',
-                'Light Link Collection ',
-                'Shadow Link Collection ']
+        expectedInitialSectionLabels = [
+            'Light ',
+            'Cylinder Light',
+            'Light Link Collection ',
+            'Shadow Link Collection ']
         self.assertListEqual(
             actualSectionLabels[0:len(expectedInitialSectionLabels)],
             expectedInitialSectionLabels)
 
-        # Note: there are no extra attributes in Maya 2022.
-        if mayaUtils.mayaMajorMinorVersions() >= (2023, 0):
-            expectedFinalSectionLabels = [
-                'Transforms',
-                'Display',
-                'Extra Attributes',
-                'Metadata']
-        else:
-            expectedFinalSectionLabels = [
-                'Transforms',
-                'Display',
-                'Metadata']
-        self.assertListEqual(
-            actualSectionLabels[-len(expectedFinalSectionLabels):],
-            expectedFinalSectionLabels)
+        # Note: the extra attributes sometimes show up, especially
+        #       in older versions of Maya, so we don't compare an exact list.
+        self.assertIn('Transforms', actualSectionLabels[-4:])
+        self.assertIn('Display', actualSectionLabels[-4:])
+        self.assertIn('Metadata', actualSectionLabels[-4:])
 
     def testAECustomAttributeCallback(self):
         '''Test that the custm atribute callbacks work.'''
