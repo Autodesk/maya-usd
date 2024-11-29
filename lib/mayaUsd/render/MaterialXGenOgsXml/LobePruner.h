@@ -55,7 +55,13 @@ public:
     void setLibrary(const mx::DocumentPtr& library);
 
     /*! Checks if a node is optimizable and if this is the case, create the optimized NodeDef and
-     * NodeGraph in the library and return the optimized node category.
+     * NodeGraph in the library and return the optimized node category.  An optimized node category
+     * will consist of the name of the original category followed by a series of characters
+     * describing which attibutes were optimized:
+     *   - 'x' that attribute was not optimized (intermediate value or connected)
+     *   - '0' a zero value was optimized
+     *   - '1' a one value was optimized
+     * The ordered list of attributes names can be found by calling getOptimizedAttributeNames().
      * @param[in] node is a node we want to optimize. All nodes are welcome.
      * @param[out] nodeCategory is the node category of the optimized node.
      *  \return true if an optimization was found
@@ -72,7 +78,13 @@ public:
     mx::StringVec getOptimizedAttributeNames(const mx::NodeDefPtr& nodeDef) const;
 
     /*! USD specific. Checks if a node is optimizable and if this is the case, create the optimized
-     * NodeDef and NodeGraph in the library and return the optimized node id.
+     * NodeDef and NodeGraph in the library and return the optimized node id. An optimized node id
+     * will be built from the name of the original category followed by a series of characters
+     * describing which attibutes were optimized:
+     *   - 'x' that attribute was not optimized (intermediate value or connected)
+     *   - '0' a zero value was optimized
+     *   - '1' a one value was optimized
+     * The ordered list of attributes names can be found by calling getOptimizedAttributeNames().
      * @param[in] node is a node we want to optimize. All nodes are welcome.
      *  \return a TfToken with the optimized node:id if one was found, will return the Empty token
      * if no optimization was found.

@@ -155,8 +155,9 @@ public:
     const std::string&     getOriginalPath(const std::string& topoPath) const;
 
     /*! Get the list of node.attribute paths used by the LobePruner to optimize surface shader nodes
-     * found in the material that was processed. \return a string vector containing all paths to
-     * attibutes that were used to optimize nodes in this graph.
+     * found in the material that was processed.
+     * \return a string vector containing all paths to attibutes that were used to optimize nodes in
+     * this graph.
      */
     const MaterialX::StringVec& getOptimizedAttributes() const;
 
