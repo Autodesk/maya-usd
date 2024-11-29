@@ -272,6 +272,8 @@ class AETemplate(object):
                 pass
 
     _controlCreators = [ConnectionsCustomControl.creator, ArrayCustomControl.creator, ImageCustomControl.creator, defaultControlCreator]
+    if lightLinkingSupported:
+        _controlCreators.insert(0, LightLinkingCustomControl.creator)
 
     @staticmethod
     def prependControlCreator(controlCreator):
@@ -319,21 +321,25 @@ class AETemplate(object):
 
     def addControls(self, attrNames):
         for attrName in attrNames:
-            if attrName not in self.suppressedAttrs:
-                for controlCreator in AETemplate._controlCreators:
-                    try:
-                        createdControl = controlCreator(self, attrName)
-                        if createdControl:
-                            self.defineCustom(createdControl, attrName)
-                            break
-                    except Exception as ex:
-                        # Do not let one custom control failure affect others.
-                        print('Failed to create control %s: %s' % (attrName, ex))
-                self.addedAttrs.add(attrName)
+            for controlCreator in AETemplate._controlCreators:
+                # Control can suppress attributes in the creator function
+                # so we check for supression at each loop
+                if attrName in self.suppressedAttrs:
+                    break
 
-    def suppress(self, control):
-        cmds.editorTemplate(suppress=control)
-        self.suppressedAttrs.append(control)
+                try:
+                    createdControl = controlCreator(self, attrName)
+                    if createdControl:
+                        self.defineCustom(createdControl, attrName)
+                        self.addedAttrs.add(attrName)
+                        break
+                except Exception as ex:
+                    # Do not let one custom control failure affect others.
+                    print('Failed to create control %s: %s' % (attrName, ex))
+
+    def suppress(self, attrName):
+        cmds.editorTemplate(suppress=attrName)
+        self.suppressedAttrs.append(attrName)
 
     @staticmethod
     def defineCustom(customObj, attrs=[]):
@@ -476,12 +482,6 @@ class AETemplate(object):
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
     
-    def createLightLinkingSection(self, sectionName, attrs, collapse):
-        # We don't use createSection() because these are metadata (not attributes).
-        with ufeAeTemplate.Layout(self, 'Light Linking', collapse):
-            lightLinkingControl = LightLinkingCustomControl(self.item, self.prim, self.useNiceName)
-            self.defineCustom(lightLinkingControl)
-
     def createCustomExtraAttrs(self, sectionName, attrs, collapse):
         # We are not using the maya default "Extra Attributes" section
         # because we are using custom widget for array type and it's not
@@ -660,9 +660,6 @@ class AETemplate(object):
             'metadata': self.createMetadataSection,
             'customCallbacks': self.createCustomCallbackSection,
         }
-        # only support lightLinking custom attribute for Maya 2023+
-        if lightLinkingSupported:
-            customAttributes['lightLinkCollectionAPI'] = self.createLightLinkingSection
         sectionCreators = collections.defaultdict(
             lambda : self.createSection, customAttributes)
         
