@@ -1,20 +1,17 @@
 try:
-    from PySide6.QtCore import QRect, Qt
-    from PySide6.QtGui import QPainter, QColor, QPen, QIcon
-    from PySide6.QtWidgets import QWidget
+    from PySide6.QtCore import QRect, Qt  # type: ignore
+    from PySide6.QtGui import QPainter, QColor, QPen, QIcon  # type: ignore
+    from PySide6.QtWidgets import QWidget  # type: ignore
 except:
-    from PySide2.QtCore import QRect  # type: ignore
+    from PySide2.QtCore import QRect, Qt  # type: ignore
     from PySide2.QtGui import QPainter, QColor, QPen, QIcon  # type: ignore
     from PySide2.QtWidgets import QWidget  # type: ignore
 
-from typing import Union
 from enum import Flag, auto
-
+from typing import Union
 
 class Theme(object):
     _instance = None
-
-    __slots__ = ["_palette"]
 
     def __init__(self):
         raise RuntimeError("Call instance() instead")
@@ -24,6 +21,7 @@ class Theme(object):
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
             cls._instance._palette = None
+            cls._instance._icons = {}
         return cls._instance
 
     @classmethod
@@ -48,7 +46,30 @@ class Theme(object):
         return float(value) / self.uiScaleFactor
 
     class Palette(object):
-        colorResizeBorderActive: QColor = QColor(0x5285a6)
+        def __init__(self):
+            super(Theme.Palette, self)
+            self.colorResizeBorderActive: QColor = QColor(0x5285a6)
+
+    def icon(self, name: str) -> QIcon:
+        ### Returns the icon with the given name.
+
+        if name in self._icons:
+            return self._icons[name]
+        
+        import os, fnmatch
+        result = QIcon()
+
+        iconFolder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons", "dark"))
+        if os.path.exists(iconFolder):
+            icons = fnmatch.filter(os.listdir(iconFolder), f"{name}*.png")
+            for icon in icons:
+                result.addPixmap(os.path.join(iconFolder, icon))
+
+        if result.isNull():
+            raise ValueError(f"Icon '{name}' not found")
+        
+        self._icons[name] = result
+        return result
 
     @property
     def palette(self) -> Palette:
