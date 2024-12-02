@@ -331,11 +331,11 @@ class AETemplate(object):
                     createdControl = controlCreator(self, attrName)
                     if createdControl:
                         self.defineCustom(createdControl, attrName)
-                        self.addedAttrs.add(attrName)
                         break
                 except Exception as ex:
                     # Do not let one custom control failure affect others.
                     print('Failed to create control %s: %s' % (attrName, ex))
+            self.addedAttrs.add(attrName)
 
     def suppress(self, attrName):
         cmds.editorTemplate(suppress=attrName)
@@ -491,7 +491,7 @@ class AETemplate(object):
         # long as the suppressed attributes are suppressed by suppress(self, control).
         # This function will keep all suppressed attributes into a list which will be use
         # by addControls(). So any suppressed attributes in extraAttrs will be ignored later.
-        extraAttrs = [attr for attr in self.attrS.attributeNames if attr not in self.addedAttrs]
+        extraAttrs = [attr for attr in self.attrS.attributeNames if attr not in self.addedAttrs and attr not in self.suppressedAttrs]
         sectionName = mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
         self.createSection(sectionName, extraAttrs, collapse)
 
