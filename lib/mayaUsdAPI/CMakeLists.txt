@@ -63,6 +63,9 @@ endif()
 # compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME} 
+    PUBLIC
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
     PRIVATE
         MAYAUSD_API_EXPORT
         MFB_PACKAGE_NAME="${PROJECT_NAME}"
@@ -74,14 +77,6 @@ target_compile_definitions(${PROJECT_NAME}
         # this flag is needed when building for Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
-
-if (USD_VERSION VERSION_LESS "0.24.11")
-    target_compile_definitions(${PROJECT_NAME}
-        PUBLIC
-            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
-    )
-endif()
 
 # When the cmake var is set also set another cmake var for the corresponding
 # define. So in mayaUsdAPI.h.src we can configure it correctly. This is used
