@@ -9,6 +9,7 @@ except ImportError:
     from PySide2.QtWidgets import QSizePolicy, QTextEdit, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
 
 from pxr import Usd, Sdf
+import maya.api.OpenMaya as OpenMaya
 
 class ExpressionWidget(QWidget):
     def __init__(self, collection: Usd.CollectionAPI, parent: QWidget, expressionChangedCallback):

@@ -40,10 +40,11 @@ class _StringList(QListView):
             s: str = self._model.data(index, Qt.DisplayRole)
             Theme.instance().paintStringListEntry(painter, option.rect, s)
 
-    def __init__(self, items: Sequence[str] = [], parent=None):
+    def __init__(self, items: Sequence[str] = [],  headerTitle:str = "", parent=None):
         super(_StringList, self).__init__(parent)
         self._model = QStringListModel(items, self)
         self.setModel(self._model)
+        self.headerTitle = headerTitle
 
         self.setUniformItemSizes(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -51,8 +52,15 @@ class _StringList(QListView):
         self.setSelectionBehavior(QListView.SelectRows)
         self.setSelectionMode(QListView.MultiSelection)
         self.setContentsMargins(0,0,0,0)
+        self.setMovement(QListView.Free)
 
         self.selectionModel().selectionChanged.connect(lambda: self.selectedItemsChanged.emit())
+
+        #                
+        self.placeholder_label = QLabel("Drag objects here or click “+” to add", self)
+        self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.placeholder_label.setStyleSheet("color: gray; font-size: 18px;")
+        self.placeholder_label.hide()
 
     def drawFrame(self, painter: QPainter):
         pass
@@ -68,13 +76,32 @@ class _StringList(QListView):
     @property
     def selectedItems(self) -> Sequence[str]:
         return [index.data(Qt.DisplayRole) for index in self.selectedIndexes()]
+    
+    def update_placeholder(self):
+        """Show or hide placeholder based on the model's content."""
+        model = self.model()
+        if model and model.rowCount() == 0:
+            self.placeholder_label.show()
+        else:
+            self.placeholder_label.hide()
+    
+    def resizeEvent(self, event):
+        """Ensure placeholder is centered on resize."""
+        super().resizeEvent(event)
+        if self.placeholder_label.isVisible():
+            self.placeholder_label.setGeometry(self.viewport().geometry())
 
 
 class StringList(QWidget):
-
+    _dragging = False
+    _mimeData = None
     def __init__(self, items: Sequence[str] = [], headerTitle: str = "", toggleTitle: str = "", parent=None):
         super().__init__()
-        self.list = _StringList(items, self)
+        #self.setAcceptDrops(True)
+        #self.installEventFilter(self)
+
+        self.list = _StringList(items, headerTitle, self)
+        self.list.update_placeholder()
 
         layout = QVBoxLayout(self)
         LEFT_RIGHT_MARGINS = 2
@@ -98,5 +125,4 @@ class StringList(QWidget):
 
         layout.addWidget(headerWidget)
         layout.addWidget(self.list)
-
         self.setLayout(layout)
