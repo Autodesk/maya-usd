@@ -25,6 +25,9 @@ add_library(${PROJECT_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME}
     PUBLIC
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         $<$<BOOL:${MAYA_ENABLE_NEW_PRIM_DELETE}>:MAYA_ENABLE_NEW_PRIM_DELETE>
     PRIVATE
         USDUFE_EXPORT
@@ -37,15 +40,6 @@ target_compile_definitions(${PROJECT_NAME}
         # this flag is needed when building for Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
-
-if (USD_VERSION VERSION_LESS "0.24.11")
-    target_compile_definitions(${PROJECT_NAME}
-        PUBLIC
-            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-            $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
-    )
-endif()
-
 
 if(DEFINED UFE_PREVIEW_VERSION_NUM)
     target_compile_definitions(${PROJECT_NAME}
