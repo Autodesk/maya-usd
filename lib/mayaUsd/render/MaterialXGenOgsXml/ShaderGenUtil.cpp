@@ -56,17 +56,26 @@ const std::string& TopoNeutralGraph::getMaterialName()
     return kMaterialName;
 }
 
-TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material) { computeGraph(material); }
+TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material) { computeGraph(material, true); }
 
 TopoNeutralGraph::TopoNeutralGraph(
     const mx::ElementPtr&  material,
     const LobePruner::Ptr& lobePruner)
 {
     _lobePruner = lobePruner;
-    computeGraph(material);
+    computeGraph(material, true);
 }
 
-void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material)
+TopoNeutralGraph::TopoNeutralGraph(
+    const mx::ElementPtr&  material,
+    const LobePruner::Ptr& lobePruner,
+    bool                   textured)
+{
+    _lobePruner = lobePruner;
+    computeGraph(material, textured);
+}
+
+void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material, bool textured)
 {
     if (!material) {
         throw mx::Exception("Invalid material element");
@@ -138,7 +147,16 @@ void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material)
             if (!sourceInput) {
                 continue;
             }
-            auto              connectedNode = sourceInput->getConnectedNode();
+            auto connectedNode = sourceInput->getConnectedNode();
+
+            // In textured mode we traverse everything, but in untextured mode we only traverse PBR
+            // level connections.
+            static const auto isPbrType
+                = [](const auto& t) { return t == "BSDF" || t == "EDF" || t == "surfaceshader"; };
+            if (!textured && !isPbrType(sourceInput->getType())) {
+                connectedNode = nullptr;
+            }
+
             const std::string defaultGeomPropString = gatherDefaultGeomProp(*sourceInput);
             if (connectedNode) {
                 auto        destConnectedIt = _nodeMap.find(connectedNode->getNamePath());

@@ -21,7 +21,8 @@ class MAYAUSD_CORE_PUBLIC TopoNeutralGraph
 {
 public:
     explicit TopoNeutralGraph(const mx::ElementPtr& material);
-    explicit TopoNeutralGraph(const mx::ElementPtr& material, const LobePruner::Ptr& library);
+    TopoNeutralGraph(const mx::ElementPtr& material, const LobePruner::Ptr& library);
+    TopoNeutralGraph(const mx::ElementPtr& material, const LobePruner::Ptr& library, bool textured);
     ~TopoNeutralGraph() = default;
 
     TopoNeutralGraph() = delete;
@@ -57,7 +58,7 @@ public:
     mx::NodeGraphPtr& getNodeGraph();
 
 protected:
-    void          computeGraph(const mx::ElementPtr& material);
+    void          computeGraph(const mx::ElementPtr& material, bool textured);
     mx::NodePtr   cloneNode(const mx::Node& node, mx::GraphElement& container);
     mx::OutputPtr findNodeGraphOutput(const mx::Input& input, const std::string& outputName);
     std::string   gatherChannels(const mx::Input& input);

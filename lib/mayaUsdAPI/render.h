@@ -147,6 +147,10 @@ class MAYAUSD_API_PUBLIC TopoNeutralGraph
 public:
     TopoNeutralGraph(const MaterialX::ElementPtr&);
     TopoNeutralGraph(const MaterialX::ElementPtr&, const LobePruner::Ptr& lobePruner);
+    TopoNeutralGraph(
+        const MaterialX::ElementPtr& material,
+        const LobePruner::Ptr&       library,
+        bool                         textured);
     ~TopoNeutralGraph();
 
     MaterialX::NodeGraphPtr nodeGraph();
