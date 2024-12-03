@@ -95,7 +95,7 @@ StageDirtyState isStageDirty(const PXR_NS::UsdStage& stage)
 
     SdfLayerHandleVector allLayers = stage.GetUsedLayers(true);
     for (auto layer : allLayers) {
-        if (!layer->IsDirty())
+        if (!TF_VERIFY(layer) || !layer->IsDirty())
             continue;
 
         if (rootLayers.count(layer))

@@ -407,7 +407,12 @@ bool saveLayerWithFormat(
         }
     }
 
-    updateAllCachedStageWithLayer(layer, filePath);
+    // Update all known stage caches if the layer was saved to a new file path.
+    // Skip this step when the layer's file path hasn't changed to avoid unnecessary stage
+    // recompositions.
+    if (!requestedFilePath.empty()) {
+        updateAllCachedStageWithLayer(layer, filePath);
+    }
 
     return true;
 }
