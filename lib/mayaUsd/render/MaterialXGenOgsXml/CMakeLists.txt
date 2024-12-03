@@ -8,8 +8,10 @@ target_sources(${PROJECT_NAME}
         OgsFragment.cpp
         OgsXmlGenerator.cpp
         ShaderGenUtil.cpp
+        LobePruner.cpp
         Nodes/SurfaceNodeMaya.cpp
         Nodes/TexcoordNodeMaya.cpp
+        Nodes/MayaDarkClosureNode.cpp
         PugiXML/pugixml.cpp
 )
 
@@ -55,6 +57,7 @@ set(HEADERS
     OgsFragment.h
     OgsXmlGenerator.h
     ShaderGenUtil.h
+    LobePruner.h
 )
 
 # -----------------------------------------------------------------------------

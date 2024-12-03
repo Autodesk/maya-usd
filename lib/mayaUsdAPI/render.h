@@ -16,6 +16,8 @@
 #ifndef MAYAUSDAPI_RENDER_H
 #define MAYAUSDAPI_RENDER_H
 
+#include "MaterialXCore/Library.h"
+
 #include <mayaUsdAPI/api.h>
 
 #include <string>
@@ -27,6 +29,7 @@
 #include <MaterialXFormat/File.h>
 
 #include <memory>
+#include <vector>
 #endif
 
 namespace MAYAUSDAPI_NS_DEF {
@@ -105,19 +108,58 @@ private:
 
 namespace ShaderGenUtil {
 
-// Forward declarations.
+// Forward declaration:
+struct LobePrunerImpl;
 struct TopoNeutralGraphImpl;
+
+/*! \brief  This class will process MaterialX surface shader nodes and provide optimized version of
+ * the shader based on the current value of a node attribute.
+ */
+class MAYAUSD_API_PUBLIC LobePruner
+{
+public:
+    using Ptr = std::shared_ptr<LobePruner>;
+
+    /*! Creates a shared LobePruner.
+     *  \return the freshly created LobePruner.
+     */
+    static Ptr create();
+
+    ~LobePruner();
+
+    /*! Sets the LobePruner library. This is used first to explore all surface shaders for
+     * optimization candidated, then to store the optimized NodeDef and NodeGraph this class
+     * generates.
+     * @param[in] library is a fully loaded MaterialX library where the generated optimized shaders
+     * will be stored.
+     */
+    void setLibrary(const MaterialX::DocumentPtr& library);
+
+private:
+    LobePruner();
+
+    std::unique_ptr<LobePrunerImpl> _imp;
+    friend struct TopoNeutralGraphImpl;
+};
 
 class MAYAUSD_API_PUBLIC TopoNeutralGraph
 {
 public:
     TopoNeutralGraph(const MaterialX::ElementPtr&);
+    TopoNeutralGraph(const MaterialX::ElementPtr&, const LobePruner::Ptr& lobePruner);
     ~TopoNeutralGraph();
 
     MaterialX::NodeGraphPtr nodeGraph();
 
     MaterialX::DocumentPtr getDocument() const;
     const std::string&     getOriginalPath(const std::string& topoPath) const;
+
+    /*! Get the list of node.attribute paths used by the LobePruner to optimize surface shader nodes
+     * found in the material that was processed.
+     * \return a string vector containing all paths to attibutes that were used to optimize nodes in
+     * this graph.
+     */
+    const MaterialX::StringVec& getOptimizedAttributes() const;
 
     static bool isTopologicalNodeDef(const MaterialX::NodeDef& nodeDef);
 
