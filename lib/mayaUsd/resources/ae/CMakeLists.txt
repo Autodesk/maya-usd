@@ -60,6 +60,8 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
 
     install(FILES
         ${MAYAUSD_SHARED_COMPONENTS}/common/__init__.py
+        ${MAYAUSD_SHARED_COMPONENTS}/common/filteredStringListModel.py
+        ${MAYAUSD_SHARED_COMPONENTS}/common/filteredStringListView.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/list.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/persistentStorage.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/resizable.py

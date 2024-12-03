@@ -4,11 +4,14 @@ from ..common.menuButton import MenuButton
 from .expressionRulesMenu import ExpressionMenu
 
 try:
-    from PySide6.QtWidgets import QFrame, QWidget, QHBoxLayout, QVBoxLayout# type: ignore
+    from PySide6.QtWidgets import QFrame, QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, QSizePolicy # type: ignore
 except ImportError:
-    from PySide2.QtWidgets import QFrame, QWidget, QHBoxLayout, QVBoxLayout # type: ignore
+    from PySide2.QtWidgets import QFrame, QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, QSizePolicy # type: ignore
 
 from pxr import Usd
+
+# TODO: support I8N
+kSearchPlaceHolder = 'Search...'
 
 class IncludeExcludeWidget(QWidget):
     def __init__(self, collection: Usd.CollectionAPI = None, parent: QWidget = None):
@@ -35,26 +38,36 @@ class IncludeExcludeWidget(QWidget):
         self._expressionMenu = ExpressionMenu(self._collection, self)
         menuButton = MenuButton(self._expressionMenu, self)
 
+        self._filterWidget = QLineEdit()
+        self._filterWidget.setContentsMargins(0, 0, 0, 0)
+        self._filterWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._filterWidget.setPlaceholderText(kSearchPlaceHolder)
+        self._filterWidget.setClearButtonEnabled(True)
+
         separator = QFrame()
         separator.setFrameShape(QFrame.VLine)
 
         headerWidget = QWidget(self)
+        headerWidget.setContentsMargins(0, 0, 0, 0)
         headerLayout = QHBoxLayout(headerWidget)
-        headerLayout.addStretch(1)
-        # Will need a separator for future designs
-        #headerLayout.addWidget(separator)
+        headerLayout.setContentsMargins(0, 2, 2, 0)
+        headerLayout.addWidget(self._filterWidget)
+        headerLayout.addWidget(separator)
         headerLayout.addWidget(menuButton)
         includeExcludeLayout.addWidget(headerWidget)
 
         self._include = StringList(includes, "Include", "Include all", self)
         self._include.cbIncludeAll.setChecked(shouldIncludeAll)
         self._include.cbIncludeAll.stateChanged.connect(self.onIncludeAllToggle)
-        self._resizableInclude = Resizable(self._include, "USD_Light_Linking", "IncludeListHeight", self)
+        self._resizableInclude = Resizable(self._include, "USD_Light_Linking", "IncludeListHeight", self, defaultSize=80)
         includeExcludeLayout.addWidget(self._resizableInclude)
 
         self._exclude = StringList(excludes, "Exclude", "", self)
-        self._resizableExclude = Resizable(self._exclude, "USD_Light_Linking", "ExcludeListHeight", self)
+        self._resizableExclude = Resizable(self._exclude, "USD_Light_Linking", "ExcludeListHeight", self, defaultSize=80)
         includeExcludeLayout.addWidget(self._resizableExclude)
+
+        self._filterWidget.textChanged.connect(self._include.list._model.setFilter)
+        self._filterWidget.textChanged.connect(self._exclude.list._model.setFilter)
 
         self.setLayout(includeExcludeLayout)
 
