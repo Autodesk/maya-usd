@@ -1,5 +1,7 @@
 #include "ShaderGenUtil.h"
 
+#include "LobePruner.h"
+
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 
 #include <MaterialXCore/Document.h>
@@ -54,7 +56,17 @@ const std::string& TopoNeutralGraph::getMaterialName()
     return kMaterialName;
 }
 
-TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
+TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material) { computeGraph(material); }
+
+TopoNeutralGraph::TopoNeutralGraph(
+    const mx::ElementPtr&  material,
+    const LobePruner::Ptr& lobePruner)
+{
+    _lobePruner = lobePruner;
+    computeGraph(material);
+}
+
+void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material)
 {
     if (!material) {
         throw mx::Exception("Invalid material element");
@@ -193,7 +205,17 @@ mx::NodePtr TopoNeutralGraph::cloneNode(const mx::Node& node, mx::GraphElement& 
     if (!nodeDef) {
         throw mx::Exception("Ambiguous node is not fully resolvable");
     }
-    destNode->setNodeDefString(nodeDef->getName());
+    std::string optimizedNodeCategory;
+    if (_lobePruner && _lobePruner->getOptimizedNodeCategory(node, optimizedNodeCategory)) {
+        destNode->setCategory(optimizedNodeCategory);
+        destNode->setNodeDefString(
+            LobePruner::getOptimizedNodeDefPrefix() + optimizedNodeCategory + "_surfaceshader");
+        for (const auto& attrName : _lobePruner->getOptimizedAttributeNames(nodeDef)) {
+            _optimizedAttributes.push_back(node.getNamePath() + "." + attrName);
+        }
+    } else {
+        destNode->setNodeDefString(nodeDef->getName());
+    }
     return destNode;
 }
 
@@ -204,6 +226,11 @@ const std::string& TopoNeutralGraph::getOriginalPath(const std::string& topoPath
         throw mx::Exception("Could not find original path for " + topoPath);
     }
     return it->second;
+}
+
+const mx::StringVec& TopoNeutralGraph::getOptimizedAttributes() const
+{
+    return _optimizedAttributes;
 }
 
 const TopoNeutralGraph::WatchList& TopoNeutralGraph::getWatchList() const { return _watchList; }

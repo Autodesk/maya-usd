@@ -5,6 +5,7 @@
 
 #include "GlslFragmentGenerator.h"
 
+#include "Nodes/MayaDarkClosureNode.h"
 #include "Nodes/MayaShaderGraph.h"
 #include "Nodes/SurfaceNodeMaya.h"
 #include "Nodes/TexcoordNodeMaya.h"
@@ -24,6 +25,7 @@
 
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
+#include <mayaUsd/render/MaterialXGenOgsXml/LobePruner.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
@@ -207,6 +209,13 @@ GlslFragmentGenerator::GlslFragmentGenerator()
         registerImplementation(
             "IM_texcoord_vector3_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
     }
+
+    registerImplementation(
+        MaterialXMaya::ShaderGenUtil::LobePruner::getDarkBaseImplementationName(),
+        MayaDarkClosureNode::create);
+    registerImplementation(
+        MaterialXMaya::ShaderGenUtil::LobePruner::getDarkLayerImplementationName(),
+        MayaDarkClosureNode::create);
 
     // The MaterialX transform node will crash if one of the "space" inputs is empty. This will be
     // fixed in 1.38.9. In the meantime we use patched nodes to replace those previously added in

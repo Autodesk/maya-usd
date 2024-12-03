@@ -606,7 +606,7 @@ bool LayerDatabase::getProxiesToSave(bool isExport, bool* hasAnyProxy)
                 if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
                     SdfLayerHandleVector allLayers = stage->GetUsedLayers(true);
                     for (auto layer : allLayers) {
-                        if (layer->IsDirty()) {
+                        if (TF_VERIFY(layer) && layer->IsDirty()) {
                             StageSavingInfo info;
                             MDagPath::getAPathTo(mobj, info.dagPath);
                             info.stage = stage;
@@ -893,7 +893,8 @@ SaveStageToMayaResult saveStageToMayaFile(
     saveLayersToMayaFile(
         stage->GetUsedLayers(true),
         [&localLayerIds](const auto& layer) {
-            return localLayerIds.find(layer->GetIdentifier()) != localLayerIds.cend();
+            return TF_VERIFY(layer)
+                && localLayerIds.find(layer->GetIdentifier()) != localLayerIds.cend();
         },
         lm,
         builder,
@@ -1020,12 +1021,14 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
                 const auto& sessionLayer = info.stage->GetSessionLayer();
                 const auto& allLayers = info.stage->GetUsedLayers(true);
                 for (auto layer : allLayers) {
-                    if (layer != sessionLayer && layer->PermissionToSave()) {
-                        if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
-                            MString errMsg;
-                            MString layerName(layer->GetDisplayName().c_str());
-                            errMsg.format("Could not save layer ^1s.", layerName);
-                            MGlobal::displayError(errMsg);
+                    if (TF_VERIFY(layer)) {
+                        if (layer != sessionLayer && layer->PermissionToSave()) {
+                            if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
+                                MString errMsg;
+                                MString layerName(layer->GetDisplayName().c_str());
+                                errMsg.format("Could not save layer ^1s.", layerName);
+                                MGlobal::displayError(errMsg);
+                            }
                         }
                     }
                 }

@@ -68,6 +68,9 @@
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsFragment.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/ShaderGenUtil.h>
+#if MX_COMBINED_VERSION >= 13808
+#include <mayaUsd/render/MaterialXGenOgsXml/LobePruner.h>
+#endif
 
 #include <MaterialXCore/Document.h>
 #include <MaterialXFormat/File.h>
@@ -353,6 +356,20 @@ struct _MaterialXData
             static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
             _mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
 
+#if MX_COMBINED_VERSION >= 13808
+            _lobePruner = MaterialXMaya::ShaderGenUtil::LobePruner::create();
+            _lobePruner->setLibrary(_mtlxLibrary);
+
+            // TODO: Optimize published shaders.
+            // SCENARIO: User publishes a shader with a NodeGraph implementation that encapsulates a
+            // slow surface shader like OpenPBR or Standard surface. Notices the performance of the
+            // published shader is poor compared to the unpublished version. FIX: Run the LobePruner
+            // on all custom shader graphs in the _mtlxLibrary to replace the slow surfaces with
+            // optimized nodes CAVEAT: If the user has promoted all the weight attributes to the
+            // NodeGraph boundary, then no optimization will be found. This would require a change
+            // in the LobePruner to detect transitive weights. Doable, but complex. We will wait
+            // until there is sufficient demand.
+#endif
         } catch (mx::Exception& e) {
             TF_RUNTIME_ERROR(
                 "Caught exception '%s' while initializing MaterialX library", e.what());
@@ -361,6 +378,9 @@ struct _MaterialXData
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
     std::string               _mainUvSetName;  //!< Main UV set name
+#if MX_COMBINED_VERSION >= 13808
+    MaterialXMaya::ShaderGenUtil::LobePruner::Ptr _lobePruner;
+#endif
 
 private:
     void _FixLibraryTangentInputs(MaterialX::DocumentPtr& mtlxLibrary);
@@ -462,8 +482,16 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
         MayaUsd::hash_combine(topoHash, hash_value(nodePair.first));
 
         const auto& node = nodePair.second;
+#if MX_COMBINED_VERSION >= 13808
+        TfToken optimizedNodeId = _GetMaterialXData()._lobePruner->getOptimizedNodeId(node);
+        if (optimizedNodeId.IsEmpty()) {
+            MayaUsd::hash_combine(topoHash, hash_value(node.nodeTypeId));
+        } else {
+            MayaUsd::hash_combine(topoHash, hash_value(optimizedNodeId));
+        }
+#else
         MayaUsd::hash_combine(topoHash, hash_value(node.nodeTypeId));
-
+#endif
         if (_IsTopologicalNode(node)) {
             // We need to capture values that affect topology:
             for (auto const& p : node.parameters) {
@@ -2883,7 +2911,16 @@ void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
     for (const auto& nodePair : inNet.nodes) {
         const HdMaterialNode2& inNode = nodePair.second;
         HdMaterialNode2        outNode;
+#if MX_COMBINED_VERSION >= 13808
+        TfToken optimizedNodeId = _GetMaterialXData()._lobePruner->getOptimizedNodeId(inNode);
+        if (optimizedNodeId.IsEmpty()) {
+            outNode.nodeTypeId = inNode.nodeTypeId;
+        } else {
+            outNode.nodeTypeId = optimizedNodeId;
+        }
+#else
         outNode.nodeTypeId = inNode.nodeTypeId;
+#endif
         if (_IsTopologicalNode(inNode)) {
             // These parameters affect topology:
             outNode.parameters = inNode.parameters;
@@ -2999,7 +3036,13 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
 
         mx::DocumentPtr           mtlxDoc;
         const mx::FileSearchPath& crLibrarySearchPath(_GetMaterialXData()._mtlxSearchPath);
+#if MX_COMBINED_VERSION >= 13808
+        if (mtlxSdrNode
+            || MaterialXMaya::ShaderGenUtil::LobePruner::isOptimizedNodeId(
+                surfTerminal->nodeTypeId)) {
+#else
         if (mtlxSdrNode) {
+#endif
 
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
             mx::DocumentPtr completeLibrary = mx::createDocument();
