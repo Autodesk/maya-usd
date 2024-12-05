@@ -70,5 +70,10 @@ def Xform "lights"
         color3f inputs:shadow:color
         bool inputs:shadow:enable = 1
     }
+
+    def CylinderLight "noAttrLight"
+    {
+    }
+
 }
 

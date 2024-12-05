@@ -216,6 +216,9 @@ std::string prettifyName(const std::string& name)
         { "usd", "USD" },
         { "mtlx", "MaterialX" },
         { "lookdevx", "LookdevX" },
+        { "Ui Nodegraph Node", "Ui" },
+        { "Translate Scale Pivot", "Scale Pivot" },
+        { "Translate Rotate Pivot", "Rotate Pivot" },
     };
 
     static const auto subRegexes = []() {
