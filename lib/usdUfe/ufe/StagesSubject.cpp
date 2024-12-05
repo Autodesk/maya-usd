@@ -13,10 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "StagesSubject.h"
-
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/StagesSubject.h>
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdCamera.h>
@@ -528,6 +527,24 @@ void StagesSubject::stageChanged(
             Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath);
             if (!sceneItem || InAddOrDeleteOperation::inAddOrDeleteOperation()) {
                 sendObjectDestroyed(ufePath);
+
+                // If we are not in an add or delete operation, and a prim is
+                // removed, we need to trigger a subtree invalidation.  This is
+                // necessary in order to prevent stale items from being kept in
+                // the global selection set.
+                if (!InAddOrDeleteOperation::inAddOrDeleteOperation()) {
+                    auto       parentPath = changedPath.GetParentPath();
+                    const auto parentUfePath = parentPath == SdfPath::AbsoluteRootPath()
+                        ? stagePath(sender)
+                        : stagePath(sender)
+                            + Ufe::PathSegment(
+                                parentPath.GetString(), UsdUfe::getUsdRunTimeId(), '/');
+
+                    auto parentItem = Ufe::Hierarchy::createItem(parentUfePath);
+                    if (parentItem) {
+                        sendSubtreeInvalidate(parentItem);
+                    }
+                }
             } else {
                 sendSubtreeInvalidate(sceneItem);
             }

@@ -307,7 +307,7 @@ class SelectTestCase(unittest.TestCase):
         for sel, expected in zip(globalSn, reversedItems):
             self.assertEqual(sel, expected)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only avaiable in Maya 2023 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testMayaSelectMuteLayer(self):
         '''Stale selection items must be removed on mute layer.'''
         
@@ -380,6 +380,37 @@ class SelectTestCase(unittest.TestCase):
 
         stage.MuteLayer(subLayerId)
 
+        self.assertTrue(sn.empty())
+
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
+    def testMayaSelectRemoveSelectedPrim(self):
+        '''Stale selection items must be removed when a prim is deleted'''
+        
+        # Create new stage
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr    = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath       = ufe.PathString.path(proxyShapePathStr)
+        proxyShapeItem       = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        stage     = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        # Create a prim that we will delete
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        capsulePathStr = '%s,/Capsule1' % proxyShapePathStr
+        capsulePath    = ufe.PathString.path(capsulePathStr)
+        capsuleItem    = ufe.Hierarchy.createItem(capsulePath)
+
+        # Select the prim.  When the prim is removed from the stage the prim
+        # should be removed from the global selection
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(capsuleItem)
+        self.assertTrue(sn.contains(capsulePath))
+
+        stage.RemovePrim("/Capsule1")
+
+        # Should be nothing on the selection list.
         self.assertTrue(sn.empty())
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
