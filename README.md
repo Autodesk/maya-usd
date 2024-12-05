@@ -1,6 +1,6 @@
 ![Maya USD](doc/images/header.png "Placeholder Image")
 # Maya USD Plugin
-**maya-usd** is a feature-rich plugin for Maya that provides support for [OpenUSD](http://openusd.org/) as part of [AOUSD](https://aousd.org/).  Evolving from two powerful plugins, MayaUSD benefited from many contributions from Pixar and Animal Logic.  While the plugin provides traditional methods for import and export, the most important and exciting capability it provides is to load USD stages directly in the viewport for interactive editing without import/export.  The plugin provides advanced integration into Maya for example, Outliner and the Attribute Editor.
+**maya-usd** is a feature-rich plugin for Maya that provides support for [OpenUSD](http://openusd.org/) as part of [AOUSD](https://aousd.org/).  Evolving from two powerful plugins, MayaUSD benefited from many contributions from Pixar and Animal Logic.  While the plugin provides traditional methods for import and export, the most important and exciting capability it provides is to load USD stages directly in the viewport for interactive editing without import/export.  The plugin provides advanced integration into Maya, including the viewport, Outliner and Attribute Editor.
 
 ![Maya USD](doc/images/maya-usd.png )
 
