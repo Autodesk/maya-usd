@@ -22,7 +22,7 @@ import testUtils
 import ufeUtils
 import usdUtils
 
-from pxr import Gf
+from pxr import Gf, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -75,9 +75,10 @@ class LightTestCase(unittest.TestCase):
         cmds.file(force=True, new=True)
         self._testName = testName
         testFile = testUtils.getTestScene("light", self._testName + ".usda")
-        mayaUtils.createProxyFromFile(testFile)
+        shapeNode, shapeStage = mayaUtils.createProxyFromFile(testFile)
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
+        return shapeNode, shapeStage
 
     def _TestSpotLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
@@ -240,8 +241,9 @@ class LightTestCase(unittest.TestCase):
         self.assertEqual(usdAttr.Get(), ufeLight.areaInterface().normalize())        
 
     def testUsdLight(self):
-        self._StartTest('SimpleLight')
-        mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
+        shapeNode, _ = self._StartTest('SimpleLight')
+
+        mayaPathSegment = mayaUtils.createUfePathSegment(shapeNode)
         
         # test spot light
         spotlightUsdPathSegment = usdUtils.createUfePathSegment('/lights/spotLight')
@@ -281,8 +283,8 @@ class LightTestCase(unittest.TestCase):
 
     @unittest.skipUnless(os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'TRUE', 'UFE has volume light support.')
     def testUsdVolumeLights(self):
-        self._StartTest('SimpleLight')
-        mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
+        shapeNode, _ = self._StartTest('SimpleLight')
+        mayaPathSegment = mayaUtils.createUfePathSegment(shapeNode)
         # test cylinder light
         cylinderlightUsdPathSegment = usdUtils.createUfePathSegment('/lights/cylinderLight')
         cylinderlightPath = ufe.Path([mayaPathSegment, cylinderlightUsdPathSegment])
@@ -318,6 +320,30 @@ class LightTestCase(unittest.TestCase):
             ufeDomeLight = ufe.Light.light(domelightItem)
         usdDomeLight = usdUtils.getPrimFromSceneItem(domelightItem)
         self._TestDomeLight(ufeDomeLight, usdDomeLight)
+
+    def testLoadingLight(self):
+        '''
+        Verify that the act of loading a stage with lights does not dirty the stage.
+        '''
+        shapeNode, stage = self._StartTest('SimpleLight')
+        mayaPathSegment = mayaUtils.createUfePathSegment(shapeNode)
+
+        # Verify the stage is not dirty
+        def verifyClean():
+            layer: Sdf.Layer = stage.GetRootLayer()
+            self.assertFalse(layer.dirty)
+        
+        verifyClean()
+
+        # Access the cylinder light shadow enable attribute.
+        noAttrlightUsdPathSegment = usdUtils.createUfePathSegment('/lights/noAttrLight')
+        noAttrlightPath = ufe.Path([mayaPathSegment, noAttrlightUsdPathSegment])
+        noAttrlightItem = ufe.Hierarchy.createItem(noAttrlightPath)
+
+        ufeLight = ufe.Light.light(noAttrlightItem)
+        self.assertFalse(ufeLight.shadowEnable())
+
+        verifyClean()
 
 
 if __name__ == '__main__':
