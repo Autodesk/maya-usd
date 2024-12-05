@@ -20,9 +20,34 @@ namespace ShaderGenUtil {
 class MAYAUSD_CORE_PUBLIC TopoNeutralGraph
 {
 public:
+    /*! Creates a barebones TopoNeutralGraph that will process the provided material and generate a
+     * topo neutral version of it.
+     * @param[in] material the material to process
+     */
     explicit TopoNeutralGraph(const mx::ElementPtr& material);
-    TopoNeutralGraph(const mx::ElementPtr& material, const LobePruner::Ptr& library);
-    TopoNeutralGraph(const mx::ElementPtr& material, const LobePruner::Ptr& library, bool textured);
+
+    /*! Creates a TopoNeutralGraph that will process the provided material and generate a topo
+     * neutral version of it. It will also substitute lobe pruned categories if a LobePruner is
+     * provided.
+     * @param[in] material the material to process
+     * @param[in] lobePruner an instance of a LobePruner. These are usually singletons that
+     * accumulate pruned NodeDefs
+     */
+    TopoNeutralGraph(const mx::ElementPtr& material, const LobePruner::Ptr& lobePruner);
+
+    /*! Creates a TopoNeutralGraph that will process the provided material and generate a topo
+     * neutral version of it. It will also substitute lobe pruned categories if a LobePruner is
+     * provided.
+     * @param[in] material the material to process
+     * @param[in] lobePruner an instance of a LobePruner. These are usually singletons that
+     * accumulate pruned NodeDefs
+     * @param[in] textured is true if the full material is to be processed. When false, we will
+     * generate an untextured topo neutral material instead
+     */
+    TopoNeutralGraph(
+        const mx::ElementPtr&  material,
+        const LobePruner::Ptr& lobePruner,
+        bool                   textured);
     ~TopoNeutralGraph() = default;
 
     TopoNeutralGraph() = delete;
