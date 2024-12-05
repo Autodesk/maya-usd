@@ -33,8 +33,6 @@ class IncludeExcludeWidget(QWidget):
             for p in self._collection.GetExcludesRel().GetTargets():
                 excludes.append(p.pathString)
 
-        #self._includeExcludeMenu = IncludeExcludeMenu(self._collection, self)
-
         includeExcludeLayout = QVBoxLayout(self)
         includeExcludeLayout.setContentsMargins(0,0,0,0)
         self._expressionMenu = ExpressionMenu(self._collection, self)
@@ -137,21 +135,23 @@ class EventFilter(QObject):
 
         return super().eventFilter(obj, event)
 
-    def addItemToCollection(self, item):
-        path = ""
-        if ',' in item:
-            path = item.split(',')[1]
-        else:
-            path = item
-        
-        if not self._validatePath(self.control._collection, path):
-            return
+    def addItemToCollection(self, items):
+        itemList = items.split('\n')
+        for item in itemList:
+            path = ""
+            if ',' in item:
+                path = item.split(',')[1]
+            else:
+                path = item
+            
+            if not self._validatePath(self.control._collection, path):
+                return
 
-        if self.control._collection is not None:
-            if self.widget.headerTitle == "Include":
-                self.control._collection.GetIncludesRel().AddTarget(path)
-            elif self.widget.headerTitle == "Exclude":
-                self.control._collection.GetExcludesRel().AddTarget(path)
+            if self.control._collection is not None:
+                if self.widget.headerTitle == "Include":
+                    self.control._collection.GetIncludesRel().AddTarget(path)
+                elif self.widget.headerTitle == "Exclude":
+                    self.control._collection.GetExcludesRel().AddTarget(path)
 
         self.control.update()
     '''
