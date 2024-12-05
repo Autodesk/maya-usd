@@ -1,6 +1,7 @@
 #include "ShaderGenUtil.h"
 
 #include "LobePruner.h"
+#include "MaterialXCore/Types.h"
 
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 
@@ -151,9 +152,15 @@ void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material, bool texture
 
             // In textured mode we traverse everything, but in untextured mode we only traverse PBR
             // level connections.
-            static const auto isPbrType
-                = [](const auto& t) { return t == "BSDF" || t == "EDF" || t == "surfaceshader"; };
-            if (!textured && !isPbrType(sourceInput->getType())) {
+            static const auto kPbrConnectionTypes
+                = std::set<std::string> { mx::BSDF_TYPE_STRING,
+                                          mx::EDF_TYPE_STRING,
+                                          mx::VDF_TYPE_STRING,
+                                          mx::SURFACE_SHADER_TYPE_STRING,
+                                          mx::DISPLACEMENT_SHADER_TYPE_STRING,
+                                          mx::VOLUME_SHADER_TYPE_STRING };
+
+            if (!textured && kPbrConnectionTypes.count(sourceInput->getType()) == 0) {
                 connectedNode = nullptr;
             }
 
