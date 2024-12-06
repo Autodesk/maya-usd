@@ -19,19 +19,16 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
-import ufeUtils
 import usdUtils
 
-from pxr import Gf, Sdf
+from pxr import Usd, Sdf
 
 from maya import cmds
 from maya import standalone
-from maya.api import OpenMaya as om
 
 import ufe
 import os
 
-from functools import partial
 import unittest
 
 class LightTestCase(unittest.TestCase):
@@ -321,6 +318,7 @@ class LightTestCase(unittest.TestCase):
         usdDomeLight = usdUtils.getPrimFromSceneItem(domelightItem)
         self._TestDomeLight(ufeDomeLight, usdDomeLight)
 
+    @unittest.skipUnless(Usd.GetVersion() < (0, 24, 11), 'USD 24.11 reports the root layer dirty even though data is unmodified.')
     def testLoadingLight(self):
         '''
         Verify that the act of loading a stage with lights does not dirty the stage.
@@ -331,6 +329,7 @@ class LightTestCase(unittest.TestCase):
         # Verify the stage is not dirty
         def verifyClean():
             layer: Sdf.Layer = stage.GetRootLayer()
+            print(layer.ExportToString())
             self.assertFalse(layer.dirty)
         
         verifyClean()
