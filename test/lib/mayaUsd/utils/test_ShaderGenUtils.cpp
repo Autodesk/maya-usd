@@ -204,3 +204,51 @@ TEST(ShaderGenUtils, lobePruner)
     optimizedNodeId = lobePruner->getOptimizedNodeId(usdNode);
     ASSERT_TRUE(optimizedNodeId.IsEmpty());
 }
+
+TEST(ShaderGenUtils, lobePrunedTopoGraph)
+{
+    namespace sgu = MaterialXMaya::ShaderGenUtil;
+
+    auto testPath = mx::FilePath(MATERIALX_TEST_DATA);
+
+    auto library = mx::createDocument();
+    ASSERT_TRUE(library != nullptr);
+    auto searchPath = PXR_NS::HdMtlxSearchPaths();
+    mx::loadLibraries({}, searchPath, library);
+
+    auto doc = mx::createDocument();
+    doc->importLibrary(library);
+
+    auto lobePruner = sgu::LobePruner::create();
+    lobePruner->setLibrary(doc);
+
+    const mx::XmlReadOptions readOptions;
+    mx::readFromXmlFile(doc, testPath / "MultiConnect1_topo.mtlx", mx::EMPTY_STRING, &readOptions);
+
+    const auto originalCategory = doc->getNode("N1")->getCategory();
+
+    auto topoNetwork
+        = MaterialXMaya::ShaderGenUtil::TopoNeutralGraph(doc->getNode("N0"), lobePruner, false);
+
+    // In thory, we should have an empty NodeGraph since we are in untextured mode:
+    ASSERT_TRUE(topoNetwork.getNodeGraph()->getNodes().empty());
+
+    // Should have only 2 nodes:
+    ASSERT_EQ(topoNetwork.getDocument()->getNodes().size(), 2);
+
+    // Surface should be optimized and fully unconnected:
+    const auto surface = topoNetwork.getDocument()->getNode("N1");
+
+    const auto surfaceCategory = surface->getCategory();
+
+    // Should begin with standard_surface
+    ASSERT_TRUE(surfaceCategory.rfind(originalCategory, 0) == 0);
+
+    // But have a LobePruner optimization:
+    ASSERT_TRUE(surfaceCategory.size() > originalCategory.size());
+
+    // Which should be in the library of the LobePruner:
+    topoNetwork.getDocument()->importLibrary(doc);
+    const auto optNodeDef = surface->getNodeDef();
+    ASSERT_TRUE(optNodeDef != nullptr);
+}
