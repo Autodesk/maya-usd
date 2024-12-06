@@ -13,9 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "StagesSubject.h"
+
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Global.h>
-#include <usdUfe/ufe/StagesSubject.h>
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdCamera.h>
