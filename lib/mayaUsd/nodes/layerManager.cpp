@@ -1022,7 +1022,8 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
                 const auto& allLayers = info.stage->GetUsedLayers(true);
                 for (auto layer : allLayers) {
                     if (TF_VERIFY(layer)) {
-                        if (layer != sessionLayer && layer->PermissionToSave()) {
+                        if (layer != sessionLayer && layer->PermissionToSave()
+                            && layer->IsDirty()) {
                             if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
                                 MString errMsg;
                                 MString layerName(layer->GetDisplayName().c_str());
