@@ -169,6 +169,14 @@ struct TopoNeutralGraphImpl
     {
     }
 
+    TopoNeutralGraphImpl(
+        const MaterialX::ElementPtr& material,
+        const LobePruner::Ptr&       lobePruner,
+        bool                         textured)
+        : _topoGraph(material, lobePruner->_imp->_lobePruner, textured)
+    {
+    }
+
     MaterialXMaya::ShaderGenUtil::TopoNeutralGraph _topoGraph;
 };
 
@@ -181,6 +189,14 @@ TopoNeutralGraph::TopoNeutralGraph(
     const MaterialX::ElementPtr& material,
     const LobePruner::Ptr&       lobePruner)
     : _imp(new TopoNeutralGraphImpl(material, lobePruner))
+{
+}
+
+TopoNeutralGraph::TopoNeutralGraph(
+    const MaterialX::ElementPtr& material,
+    const LobePruner::Ptr&       lobePruner,
+    bool                         textured)
+    : _imp(new TopoNeutralGraphImpl(material, lobePruner, textured))
 {
 }
 

@@ -1,6 +1,7 @@
 #include "ShaderGenUtil.h"
 
 #include "LobePruner.h"
+#include "MaterialXCore/Types.h"
 
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 
@@ -56,17 +57,26 @@ const std::string& TopoNeutralGraph::getMaterialName()
     return kMaterialName;
 }
 
-TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material) { computeGraph(material); }
+TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material) { computeGraph(material, true); }
 
 TopoNeutralGraph::TopoNeutralGraph(
     const mx::ElementPtr&  material,
     const LobePruner::Ptr& lobePruner)
 {
     _lobePruner = lobePruner;
-    computeGraph(material);
+    computeGraph(material, true);
 }
 
-void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material)
+TopoNeutralGraph::TopoNeutralGraph(
+    const mx::ElementPtr&  material,
+    const LobePruner::Ptr& lobePruner,
+    bool                   textured)
+{
+    _lobePruner = lobePruner;
+    computeGraph(material, textured);
+}
+
+void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material, bool textured)
 {
     if (!material) {
         throw mx::Exception("Invalid material element");
@@ -138,7 +148,25 @@ void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material)
             if (!sourceInput) {
                 continue;
             }
-            auto              connectedNode = sourceInput->getConnectedNode();
+            auto connectedNode = sourceInput->getConnectedNode();
+
+            // In textured mode we traverse everything, but in untextured mode we only traverse PBR
+            // level connections.
+            static const auto kPbrConnectionTypes = std::set<std::string>
+            {
+#if MX_COMBINED_VERSION >= 13807
+                mx::BSDF_TYPE_STRING, mx::EDF_TYPE_STRING, mx::VDF_TYPE_STRING,
+#else
+                "BSDF", "EDF", "VDF",
+#endif
+                    mx::SURFACE_SHADER_TYPE_STRING, mx::DISPLACEMENT_SHADER_TYPE_STRING,
+                    mx::VOLUME_SHADER_TYPE_STRING
+            };
+
+            if (!textured && kPbrConnectionTypes.count(sourceInput->getType()) == 0) {
+                connectedNode = nullptr;
+            }
+
             const std::string defaultGeomPropString = gatherDefaultGeomProp(*sourceInput);
             if (connectedNode) {
                 auto        destConnectedIt = _nodeMap.find(connectedNode->getNamePath());
