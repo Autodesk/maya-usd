@@ -100,6 +100,12 @@ if(IS_MACOSX OR IS_LINUX)
     )
 endif()
 
+# For initializing the handlers of lookdevXUsd
+target_link_libraries(${TARGET_NAME}
+    PRIVATE
+        lookdevXUsd
+)
+
 # -----------------------------------------------------------------------------
 # properties
 # -----------------------------------------------------------------------------

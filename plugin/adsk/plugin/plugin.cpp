@@ -55,6 +55,8 @@
 #include <maya/MStatus.h>
 #include <ufe/runTimeMgr.h>
 
+#include <lookdevXUsd/LookdevXUsd.h>
+
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 #include <sstream>
@@ -193,6 +195,8 @@ MStatus initializePlugin(MObject obj)
     if (!status) {
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
     }
+
+    LookdevXUsd::initialize();
 
     status = plugin.registerShape(
         MayaUsd::ProxyShape::typeName,
@@ -380,6 +384,8 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     MGlobal::executeCommand("mayaUSDUnregisterStrings()");
+
+    LookdevXUsd::uninitialize();
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
