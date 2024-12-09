@@ -11,7 +11,8 @@ class StringList(QWidget):
 
     def __init__(self, items: Sequence[str] = None, headerTitle: str = "", toggleTitle: str = "", parent=None):
         super().__init__()
-        self.list = FilteredStringListView(items if items else [], self)
+        self.list = FilteredStringListView(items if items else [], headerTitle, self)
+        self.list.update_placeholder()
 
         layout = QVBoxLayout(self)
         LEFT_RIGHT_MARGINS = 2
@@ -35,5 +36,4 @@ class StringList(QWidget):
 
         layout.addWidget(headerWidget)
         layout.addWidget(self.list)
-
         self.setLayout(layout)
