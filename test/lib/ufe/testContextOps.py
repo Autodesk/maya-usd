@@ -1901,7 +1901,9 @@ class ContextOpsTestCase(unittest.TestCase):
         dagPath.extendToShape()
 
         with mayaUsd.lib.OpUndoItemList():
-            mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
+            mayaUsd.lib.PrimUpdaterManager.duplicate(
+                cmds.ls(cubeXForm, long=True)[0], psPathStr, 
+                {'exportComponentTags': True})
 
         topPath = ufe.PathString.path(psPathStr + ',/' + cubeXForm + "/" + "top")
         topItem = ufe.Hierarchy.createItem(topPath)
