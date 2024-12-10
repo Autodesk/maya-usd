@@ -55,9 +55,8 @@
 #include <maya/MStatus.h>
 #include <ufe/runTimeMgr.h>
 
-#include <lookdevXUsd/LookdevXUsd.h>
-
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+#include <lookdevXUsd/LookdevXUsd.h>
 
 #include <sstream>
 
