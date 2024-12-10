@@ -59,6 +59,13 @@ if(DEFINED MAYAUSD_VERSION)
     )
 endif()
 
+if(BUILD_LOOKDEVXUSD_LIBRARY)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+            HAS_LOOKDEVXUSD=1
+    )
+endif()
+
 mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
@@ -101,10 +108,12 @@ if(IS_MACOSX OR IS_LINUX)
 endif()
 
 # For initializing the handlers of lookdevXUsd
-target_link_libraries(${TARGET_NAME}
-    PRIVATE
-        lookdevXUsd
-)
+if (BUILD_LOOKDEVXUSD_LIBRARY)
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            lookdevXUsd
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # properties

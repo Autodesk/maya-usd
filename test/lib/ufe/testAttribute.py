@@ -1225,7 +1225,7 @@ class AttributeTestCase(unittest.TestCase):
         # Maya-Usd lib registers a single global observer when it is initialized.
         kNbGlobalObs = 2
         # If LookdevXUsd is built, there is a third global observer.
-        if(os.getenv('BUILD_LOOKDEVXUSD_LIBRARY', 'NOT-FOUND') == 'ON'):
+        if(os.getenv('HAS_LOOKDEVXUSD', 'NOT-FOUND') == 'ON'):
             kNbGlobalObs = 3
         self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs)
 

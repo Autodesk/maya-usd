@@ -56,7 +56,9 @@
 #include <ufe/runTimeMgr.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+#if HAS_LOOKDEVXUSD
 #include <lookdevXUsd/LookdevXUsd.h>
+#endif // HAS_LOOKDEVXUSD
 
 #include <sstream>
 
@@ -195,7 +197,9 @@ MStatus initializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
     }
 
+#if HAS_LOOKDEVXUSD
     LookdevXUsd::initialize();
+#endif // HAS_LOOKDEVXUSD
 
     status = plugin.registerShape(
         MayaUsd::ProxyShape::typeName,
@@ -384,7 +388,9 @@ MStatus uninitializePlugin(MObject obj)
 
     MGlobal::executeCommand("mayaUSDUnregisterStrings()");
 
+#if HAS_LOOKDEVXUSD
     LookdevXUsd::uninitialize();
+#endif // HAS_LOOKDEVXUSD
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
