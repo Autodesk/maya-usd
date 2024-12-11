@@ -1,2 +1,2 @@
 # Skip clang-format of LookdevXUsd for now
-lib/lookdevXUsd/*
+./lib/lookdevXUsd/*
