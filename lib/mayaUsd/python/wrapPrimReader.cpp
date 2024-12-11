@@ -38,7 +38,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 template <typename T = UsdMayaPrimReader>
 class PrimReaderWrapper
     : public T
-    , public TfPyPolymorphic<UsdMayaPrimReader>
+    , public TfPyPolymorphic<T>
 {
 public:
     typedef PrimReaderWrapper This;
@@ -580,7 +580,7 @@ void wrapShaderReader()
 
     typedef UsdMayaShaderReader This;
 
-    class_<ShaderReaderWrapper, bases<PrimReaderWrapper<>>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
+    class_<ShaderReaderWrapper, bases<UsdMayaPrimReader>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
         c("ShaderReader", no_init);
 
     scope s(c);
