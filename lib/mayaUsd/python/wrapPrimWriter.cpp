@@ -38,7 +38,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 template <typename T = UsdMayaPrimWriter>
 class PrimWriterWrapper
     : public T
-    , public TfPyPolymorphic<UsdMayaPrimWriter>
+    , public TfPyPolymorphic<T>
 {
 public:
     typedef PrimWriterWrapper This;
@@ -99,7 +99,7 @@ public:
     const SdfPathVector& default_GetModelPaths() const { return base_t::GetModelPaths(); }
     const SdfPathVector& GetModelPaths() const override
     {
-        if (Override o = GetOverride("GetModelPaths")) {
+        if (TfPyOverride o = this->GetOverride("GetModelPaths")) {
             auto res = std::function<PXR_BOOST_PYTHON_NAMESPACE::object()>(
                 TfPyCall<PXR_BOOST_PYTHON_NAMESPACE::object>(o))();
             if (res) {
@@ -131,7 +131,7 @@ public:
     }
     const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagToUsdPathMapping() const override
     {
-        if (Override o = GetOverride("GetDagToUsdPathMapping")) {
+        if (TfPyOverride o = this->GetOverride("GetDagToUsdPathMapping")) {
             auto res = std::function<PXR_BOOST_PYTHON_NAMESPACE::object()>(
                 TfPyCall<PXR_BOOST_PYTHON_NAMESPACE::object>(o))();
             if (res) {
@@ -735,7 +735,7 @@ void wrapShaderWriter()
 {
     PXR_BOOST_PYTHON_NAMESPACE::class_<
         ShaderWriterWrapper,
-        PXR_BOOST_PYTHON_NAMESPACE::bases<PrimWriterWrapper<>>,
+        PXR_BOOST_PYTHON_NAMESPACE::bases<UsdMayaPrimWriter>,
         PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
         c("ShaderWriter", PXR_BOOST_PYTHON_NAMESPACE::no_init);
 
