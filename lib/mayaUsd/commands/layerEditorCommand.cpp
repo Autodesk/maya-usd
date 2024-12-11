@@ -825,8 +825,6 @@ public:
         if (!stage)
             return false;
 
-        saveSelection();
-
         std::set<PXR_NS::SdfLayerRefPtr> layersToUpdate;
         if (_includeSublayers) {
             // If _includeSublayers is True, we attempt to refresh the system lock status of all
@@ -896,7 +894,6 @@ public:
                     _proxyShapePath, _layers[layerIndex], _previousStates[layerIndex], true);
             }
         }
-        restoreSelection();
 
         if (_updateEditTarget) {
             updateEditTarget(stage);
@@ -919,36 +916,6 @@ private:
         return stage;
     }
 
-    void saveSelection()
-    {
-        // Make a copy of the global selection, to restore it on unlock.
-        auto globalSn = Ufe::GlobalSelection::get();
-        _savedSn.replaceWith(*globalSn);
-        // Filter the global selection, removing items below our proxy shape.
-        // We know the path to the proxy shape has a single segment.  Not
-        // using Ufe::PathString::path() for UFE v1 compatibility, which
-        // unfortunately reveals leading "world" path component implementation
-        // detail.
-        Ufe::Path path(
-            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, path));
-    }
-
-    void restoreSelection()
-    {
-        // Restore the saved selection to the global selection.  If a saved
-        // selection item started with the proxy shape path, re-create it.
-        // We know the path to the proxy shape has a single segment.  Not
-        // using Ufe::PathString::path() for UFE v1 compatibility, which
-        // unfortunately reveals leading "world" path component implementation
-        // detail.
-        Ufe::Path path(
-            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
-    }
-
-    Ufe::Selection                      _savedSn;
     std::vector<MayaUsd::LayerLockType> _previousStates;
     SdfLayerHandleVector                _layers;
 };
