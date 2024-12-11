@@ -318,7 +318,6 @@ class LightTestCase(unittest.TestCase):
         usdDomeLight = usdUtils.getPrimFromSceneItem(domelightItem)
         self._TestDomeLight(ufeDomeLight, usdDomeLight)
 
-    @unittest.skipUnless(Usd.GetVersion() < (0, 24, 11), 'USD 24.11 reports the root layer dirty even though data is unmodified.')
     def testLoadingLight(self):
         '''
         Verify that the act of loading a stage with lights does not dirty the stage.
@@ -329,7 +328,6 @@ class LightTestCase(unittest.TestCase):
         # Verify the stage is not dirty
         def verifyClean():
             layer: Sdf.Layer = stage.GetRootLayer()
-            print(layer.ExportToString())
             self.assertFalse(layer.dirty)
         
         verifyClean()
