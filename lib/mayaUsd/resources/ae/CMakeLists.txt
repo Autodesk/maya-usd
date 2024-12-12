@@ -62,6 +62,7 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
         ${MAYAUSD_SHARED_COMPONENTS}/common/__init__.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/filteredStringListModel.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/filteredStringListView.py
+        ${MAYAUSD_SHARED_COMPONENTS}/common/host.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/list.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/persistentStorage.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/resizable.py
@@ -72,6 +73,7 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
 
     set(LIB_ICONS
         ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/menu
+        ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/delete
     )
     foreach(ICON_BASE ${LIB_ICONS})
         # The _100.png files need to be installed without the _100. This is the
