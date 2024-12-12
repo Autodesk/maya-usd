@@ -28,11 +28,104 @@ import fixturesUtils, os
 import unittest
 
 
+def getJobArgsProperties():
+    return [
+        "allChaserArgs",
+        "allMaterialConversions",
+        "chaserNames",
+        "compatibility",
+        "convertMaterialsTo",
+        "remapUVSetsTo",
+        "defaultMeshScheme",
+        "defaultUSDFormat",
+        "defaultPrim",
+        "eulerFilter",
+        "excludeInvisible",
+        "exportBlendShapes",
+        "exportCollectionBasedBindings",
+        "exportColorSets",
+        "exportMaterials",
+        "exportAssignedMaterials",
+        "exportComponentTags",
+        "exportStagesAsRefs",
+        "exportDefaultCameras",
+        "exportDisplayColor",
+        "exportDistanceUnit",
+        "exportInstances",
+        "exportMaterialCollections",
+        "exportMeshUVs",
+        "exportNurbsExplicitUV",
+        "exportRelativeTextures",
+        "legacyMaterialScope",
+        "referenceObjectMode",
+        "exportRefsAsInstanceable",
+        "exportSelected",
+        "exportSkels",
+        "exportSkin",
+        "exportVisibility",
+        "file",
+        "rootPrim",
+        "rootPrimType",
+        "exportRoots",
+        "upAxis",
+        "unit",
+        "filteredTypeIds",
+        "geomSidedness",
+        "ignoreWarnings",
+        "includeEmptyTransforms",
+        "isDuplicating",
+        "includeAPINames",
+        "jobContextNames",
+        "materialCollectionsPath",
+        "materialsScopeName",
+        "melPerFrameCallback",
+        "melPostCallback",
+        "mergeTransformAndShape",
+        "normalizeNurbs",
+        "preserveUVSetNames",
+        "writeDefaults",
+        "metersPerUnit",
+        "parentScope",
+        "rootPrim",
+        "rootPrimType",
+        "upAxis",
+        "unit",
+        "pythonPerFrameCallback",
+        "pythonPostCallback",
+        "renderLayerMode",
+        "rootKind",
+        "disableModelKindProcessor",
+        "rootMapFunction",
+        "shadingMode",
+        "staticSingleSample",
+        "stripNamespaces",
+        "worldspace",
+        "timeSamples",
+        "usdModelRootOverridePath",
+        "exportMeshes",
+        "exportCameras",
+        "exportLights",
+        "verbose",
+    ]
+
+def copyJobArgs(jobArgs):
+    args = {}
+    for name in getJobArgsProperties():
+        args[name] = getattr(jobArgs, name)
+
+    args["resolvedFileName"] = jobArgs.GetResolvedFileName()
+    args["defaultMaterialsScopeName"] = jobArgs.GetDefaultMaterialsScopeName()
+         
+    return args
+
+
 class primWriterTest(mayaUsdLib.PrimWriter):
     InitCalled = False
     WriteCalled = False
     PostExportCalled = False
     CanExportCalled = False
+
+    JobArgs = {}
 
     def __init__(self, *args, **kwargs):
         super(primWriterTest, self).__init__(*args, **kwargs)
@@ -53,6 +146,7 @@ class primWriterTest(mayaUsdLib.PrimWriter):
     @classmethod
     def CanExport(cls, exportArgs, exportObj=None):
         primWriterTest.CanExportCalled = True
+        primWriterTest.JobArgs = copyJobArgs(exportArgs)
         return mayaUsdLib.PrimWriter.ContextSupport.Supported
 
     def Write(self, usdTime):
@@ -83,6 +177,12 @@ class testReadWriteUtils(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
+    def _verifyJobArgs(self, args):
+        for name in getJobArgsProperties():
+            self.assertIn(name, args)
+        self.assertIn('resolvedFileName', args)
+        self.assertIn('defaultMaterialsScopeName', args)
+
     def testSimplePrimWriter(self):
         mayaUsdLib.PrimWriter.Register(primWriterTest, "mesh")
 
@@ -97,6 +197,10 @@ class testReadWriteUtils(unittest.TestCase):
         self.assertTrue(primWriterTest.CanExportCalled)
         self.assertTrue(primWriterTest.WriteCalled)
         self.assertTrue(primWriterTest.PostExportCalled)
+
+        # Verify the job args had all expected properties.
+        self._verifyJobArgs(primWriterTest.JobArgs)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
