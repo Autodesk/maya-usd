@@ -460,6 +460,12 @@ PXR_BOOST_PYTHON_NAMESPACE::object get_allChaserArgs(UsdMayaJobExportArgs& self)
     return PXR_BOOST_PYTHON_NAMESPACE::object(allChaserArgs);
 }
 
+bool get_ExportCameras(UsdMayaJobExportArgs& self) { return self.isExportingCameras(); }
+
+bool get_ExportMeshes(UsdMayaJobExportArgs& self) { return self.isExportingMeshes(); }
+
+bool get_ExportLights(UsdMayaJobExportArgs& self) { return self.isExportingLights(); }
+
 PXR_BOOST_PYTHON_NAMESPACE::object get_remapUVSetsTo(UsdMayaJobExportArgs& self)
 {
     PXR_BOOST_PYTHON_NAMESPACE::dict uvSetRemaps;
@@ -552,6 +558,7 @@ void wrapJobExportArgs()
             make_getter(
                 &UsdMayaJobExportArgs::exportRelativeTextures,
                 return_value_policy<return_by_value>()))
+        .def_readonly("legacyMaterialScope", &UsdMayaJobExportArgs::legacyMaterialScope)
         .add_property(
             "referenceObjectMode",
             make_getter(
@@ -568,6 +575,10 @@ void wrapJobExportArgs()
         .def_readonly("file", &UsdMayaJobExportArgs::file)
         .def_readonly("rootPrim", &UsdMayaJobExportArgs::rootPrim)
         .def_readonly("rootPrimType", &UsdMayaJobExportArgs::rootPrimType)
+        .add_property(
+            "exportRoots",
+            make_getter(
+                &UsdMayaJobExportArgs::exportRoots, return_value_policy<TfPySequenceToSet>()))
         .def_readonly("upAxis", &UsdMayaJobExportArgs::upAxis)
         .def_readonly("unit", &UsdMayaJobExportArgs::unit)
         .add_property(
@@ -604,6 +615,7 @@ void wrapJobExportArgs()
         .def_readonly("normalizeNurbs", &UsdMayaJobExportArgs::normalizeNurbs)
         .def_readonly("preserveUVSetNames", &UsdMayaJobExportArgs::preserveUVSetNames)
         .def_readonly("writeDefaults", &UsdMayaJobExportArgs::writeDefaults)
+        .def_readonly("metersPerUnit", &UsdMayaJobExportArgs::metersPerUnit)
         .add_property(
             "parentScope",
             make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))
@@ -629,6 +641,7 @@ void wrapJobExportArgs()
         .add_property(
             "rootKind",
             make_getter(&UsdMayaJobExportArgs::rootKind, return_value_policy<return_by_value>()))
+        .def_readonly("disableModelKindProcessor", &UsdMayaJobExportArgs::disableModelKindProcessor)
         .add_property(
             "rootMapFunction",
             make_getter(
@@ -647,6 +660,9 @@ void wrapJobExportArgs()
             make_getter(
                 &UsdMayaJobExportArgs::usdModelRootOverridePath,
                 return_value_policy<return_by_value>()))
+        .add_property("exportMeshes", ::get_ExportMeshes)
+        .add_property("exportCameras", ::get_ExportCameras)
+        .add_property("exportLights", ::get_ExportLights)
         .def_readonly("verbose", &UsdMayaJobExportArgs::verbose)
         .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName)
         .def("GetDefaultMaterialsScopeName", &UsdMayaJobExportArgs::GetDefaultMaterialsScopeName)
