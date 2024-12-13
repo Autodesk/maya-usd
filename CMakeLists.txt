@@ -232,6 +232,9 @@ if(BUILD_MAYAUSD_LIBRARY)
     endif()
 endif()
 
+if (NOT BUILD_ADSK_PLUGIN)
+        set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
+endif()
 # Need LookdevXUfe/MayaUsdAPI when building LookdevXUsd.
 if(BUILD_LOOKDEVXUSD_LIBRARY)
     if(NOT BUILD_MAYAUSDAPI_LIBRARY)
