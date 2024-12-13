@@ -87,9 +87,6 @@ class IncludeExcludeWidget(QWidget):
 
         headerLayout.addWidget(self._filterWidget)
         headerLayout.addWidget(separator)
-
-        # Will need a separator for future designs
-        # headerLayout.addWidget(separator)
         headerLayout.addWidget(menuButton)
         includeExcludeLayout.addWidget(headerWidget)
 
@@ -209,6 +206,7 @@ class IncludeExcludeWidget(QWidget):
         self._updatingUI = False
         self.updateUI()
         self.onListSelectionChanged()
+        self._include.list.update_placeholder()
 
     def onRemoveSelectionFromExclude(self):
         self._updatingUI = True
@@ -217,6 +215,7 @@ class IncludeExcludeWidget(QWidget):
         self._updatingUI = False
         self.updateUI()
         self.onListSelectionChanged()
+        self._exclude.list.update_placeholder()
 
     def onListSelectionChanged(self):
         includesSelected = self._include.list.hasSelectedItems
@@ -229,7 +228,7 @@ class IncludeExcludeWidget(QWidget):
         try:
             self._deleteBtn.pressed.disconnect(self.onRemoveSelectionFromInclude)
             self._deleteBtn.pressed.disconnect(self.onRemoveSelectionFromExclude)
-        except:
+        except Exception:
             pass
 
         if includesSelected and excludeSelected:
@@ -301,17 +300,6 @@ class EventFilter(QObject):
 
         self.control.update()
 
-    """
-    def removeItemToCollection(self, item):
-        if self.control._collection is not None:
-            if self.widget.headerTitle == "Include":
-                self.control._collection.GetIncludesRel().RemoveTarget(item)
-            elif self.widget.headerTitle == "Exclude":
-                self.control._collection.GetExcludesRel().RemoveTarget(item)
-
-        self.control.update()
-    """
-
     def _validatePath(self, collection, path):
 
         if not Sdf.Path.IsValidPathString(path):
@@ -321,7 +309,7 @@ class EventFilter(QObject):
         prim = stage.GetPrimAtPath(Sdf.Path(path))
 
         if not prim or not prim.IsValid():
-            raise ValueError("Value must be a float or an int")(
+            raise ValueError(
                 "Error: The dragged object is not in the same stage as the collection. Ensure that objects belong to the same stage before adding them"
             )
 
