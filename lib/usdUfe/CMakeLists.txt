@@ -56,6 +56,14 @@ if (USD_HAS_COLOR4_SDR_SUPPORT)
     )
 endif()
 
+message(STATUS "USD_HAS_NAMESPACE_EDIT is ${USD_HAS_NAMESPACE_EDIT}")
+if (USD_HAS_NAMESPACE_EDIT)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        USD_HAS_NAMESPACE_EDIT=1
+    )
+endif()
+
 message(STATUS "MAYA_HAS_DISPLAY_LAYER_API is ${MAYA_HAS_DISPLAY_LAYER_API}")
 if (MAYA_HAS_DISPLAY_LAYER_API)
     target_compile_definitions(${PROJECT_NAME}
