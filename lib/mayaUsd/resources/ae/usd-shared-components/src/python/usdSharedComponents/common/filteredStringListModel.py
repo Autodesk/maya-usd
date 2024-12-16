@@ -1,4 +1,5 @@
 from typing import Sequence
+from ..data.stringListData import StringListData
 
 try:
     from PySide6.QtCore import (
@@ -18,20 +19,15 @@ class FilteredStringListModel(QStringListModel):
     '''
     filterChanged = Signal()
 
-    def __init__(self, items: Sequence[str] = None, parent=None):
-        super(FilteredStringListModel, self).__init__(items if items else [], parent)
-        self._unfilteredItems = items
+    def __init__(self, data: StringListData, parent=None):
+        super(FilteredStringListModel, self).__init__(data.getStrings() if data else [], parent)
+        self._collData = data
         self._isFilteredEmpty = False
         self._filter = ""
 
-    def setStringList(self, items: Sequence[str]):
-        '''
-        Override base class implementation to properly rebuild
-        the filtered list.
-        '''
-        self._unfilteredItems = items
-        self._isFilteredEmpty = False
-        super(FilteredStringListModel, self).setStringList(items)
+        self._collData.dataChanged.connect(self._onDataChanged)
+
+    def _onDataChanged(self):
         self._rebuildFilteredModel()
 
     def _rebuildFilteredModel(self):
@@ -39,11 +35,11 @@ class FilteredStringListModel(QStringListModel):
         Rebuild the model by applying the filter.
         '''
         if not self._filter:
-            filteredItems = self._unfilteredItems
+            filteredItems = self._collData.getStrings()
         else:
             filters = [filter.lower() for filter in self._filter.split('*')]
-            filteredItems = [item for item in self._unfilteredItems if self._isValidItem(item, filters)]
-        self._isFilteredEmpty = bool(self._unfilteredItems) and not bool(filteredItems)
+            filteredItems = [item for item in self._collData.getStrings() if self._isValidItem(item, filters)]
+        self._isFilteredEmpty = self._filter and not bool(filteredItems)
         # Note: don't call our own version, otehrwise we would get infinite recursion.
         super(FilteredStringListModel, self).setStringList(filteredItems)
 

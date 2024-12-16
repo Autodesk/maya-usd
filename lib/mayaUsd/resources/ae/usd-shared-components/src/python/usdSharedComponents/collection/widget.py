@@ -1,5 +1,6 @@
 from .includeExcludeWidget import IncludeExcludeWidget
 from .expressionWidget import ExpressionWidget
+from ..usdData.usdCollectionData import UsdCollectionData
 
 try:
     from PySide6.QtCore import Slot  # type: ignore
@@ -25,28 +26,22 @@ class CollectionWidget(QWidget):
 
         self._collection: Usd.CollectionAPI = collection
         self._prim: Usd.Prim = prim
+        self._collData = UsdCollectionData(prim, collection)
 
         mainLayout = QVBoxLayout()
         mainLayout.setContentsMargins(0, 0, 0, 0)
 
-        self._includeExcludeWidget = IncludeExcludeWidget(prim, collection, self)
+        self._includeExcludeWidget = IncludeExcludeWidget(self._collData, self)
 
         # this is used to avoid infinite loop when updating the UI
         self._updatingUI: bool = False
-
-        # register to the object changed notification
-        self._noticeKey = Tf.Notice.Register(
-            Usd.Notice.ObjectsChanged, self.onObjectsChanged, self._prim.GetStage()
-        )
 
         # only create tab when usd version is greater then 23.11
         if Usd.GetVersion() >= (0, 23, 11):
             tabWidget = QTabWidget()
             tabWidget.currentChanged.connect(self.onTabChanged)
 
-            self._expressionWidget = ExpressionWidget(
-                collection, tabWidget, self.onExpressionChanged
-            )
+            self._expressionWidget = ExpressionWidget(self._collData, tabWidget, self.onExpressionChanged)
             tabWidget.addTab(self._includeExcludeWidget, QIcon(), "Include/Exclude")
             tabWidget.addTab(self._expressionWidget, QIcon(), "Expression")
 
@@ -56,21 +51,6 @@ class CollectionWidget(QWidget):
 
         self.setLayout(mainLayout)
 
-    def updateUI(self):
-        self._updatingUI = True
-        self._includeExcludeWidget.updateUI()
-        self._updatingUI = False
-
-    def onObjectsChanged(self, notice, sender):
-        # TODO: check if the collection was actually touched by this change!
-        if not self._updatingUI:
-            self.updateUI()
-
-    @Slot()
-    def cleanup(self):
-        # unregister from the object changed notification
-        self._noticeKey.Revoke()
-
     if Usd.GetVersion() >= (0, 23, 11):
 
         def onTabChanged(self, index):
@@ -79,12 +59,12 @@ class CollectionWidget(QWidget):
 
         def onExpressionChanged(self):
             updateIncludeAll = (
-                len(self._includeExcludeWidget.getIncludedItems()) == 0
-                and len(self._includeExcludeWidget.getIncludedItems()) == 0
-                and self._includeExcludeWidget.getIncludeAll()
+                len(self._collData._includes.getStrings()) == 0
+                and len(self._collData._includes.getStrings()) == 0
+                and self._collData.includesAll()
             )
             if updateIncludeAll:
-                self._includeExcludeWidget.setIncludeAll(False)
+                self._collData.setIncludeAll(False)
                 print(
                     '"Include All" has been disabled for the expression to take effect.'
                 )

@@ -1,5 +1,6 @@
 from .expressionRulesMenu import ExpressionMenu
 from ..common.menuButton import MenuButton
+from ..data.collectionData import CollectionData
 
 try:
     from PySide6.QtCore import QEvent, Qt  # type: ignore
@@ -11,9 +12,9 @@ except ImportError:
 from pxr import Usd, Sdf
 
 class ExpressionWidget(QWidget):
-    def __init__(self, collection: Usd.CollectionAPI, parent: QWidget, expressionChangedCallback):
+    def __init__(self, data: CollectionData, parent: QWidget, expressionChangedCallback):
         super(ExpressionWidget, self).__init__(parent)
-        self._collection = collection
+        self._collData = data
         self._expressionCallback = expressionChangedCallback
 
         self._expressionText = QTextEdit(self)
@@ -22,7 +23,7 @@ class ExpressionWidget(QWidget):
         self._expressionText.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._expressionText.setPlaceholderText("Type an expression here...")
 
-        self._expressionMenu = ExpressionMenu(collection, self)
+        self._expressionMenu = ExpressionMenu(data, self)
         menuButton = MenuButton(self._expressionMenu, self)
 
         menuWidget = QWidget(self)
@@ -37,31 +38,19 @@ class ExpressionWidget(QWidget):
         
         self._expressionText.installEventFilter(self)
         self.setLayout(mainLayout)
-        self.update()
 
-    def update(self):
-        usdExpressionAttr = self._collection.GetMembershipExpressionAttr().Get()
+        self._collData.dataChanged.connect(self._onDataChanged)
+        self._onDataChanged()
+
+    def _onDataChanged(self):
+        usdExpressionAttr = self._collData.getMembershipExpression()
         if usdExpressionAttr != None:
             self._expressionText.setPlainText(usdExpressionAttr.GetText())
 
-        self._expressionMenu.update()
-
     def submitExpression(self):
-        usdExpressionAttr = self._collection.GetMembershipExpressionAttr().Get()
-        usdExpression = ""
-        if usdExpressionAttr != None:
-            usdExpression = usdExpressionAttr.GetText()
-
-        textExpression = self._expressionText.toPlainText()
-        if usdExpression != textExpression:
-            # assign default value if text is empty
-            if textExpression == "":
-                self._collection.CreateMembershipExpressionAttr()
-            else:
-                self._collection.CreateMembershipExpressionAttr(Sdf.PathExpression(textExpression))
-
-            if self._expressionCallback != None:
-                self._expressionCallback()
+        self._collData.setMembershipExpression(self._expressionText.toPlainText())
+        if self._expressionCallback != None:
+            self._expressionCallback()
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress and obj is self._expressionText:

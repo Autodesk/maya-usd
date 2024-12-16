@@ -49,6 +49,7 @@ class Theme(object):
         def __init__(self):
             super(Theme.Palette, self)
             self.colorResizeBorderActive: QColor = QColor(0x5285a6)
+            self.colorPlaceHolderText = QColor(128, 128, 128)
 
     def icon(self, name: str) -> QIcon:
         ### Returns the icon with the given name.

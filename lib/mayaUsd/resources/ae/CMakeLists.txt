@@ -63,12 +63,26 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
         ${MAYAUSD_SHARED_COMPONENTS}/common/filteredStringListModel.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/filteredStringListView.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/host.py
-        ${MAYAUSD_SHARED_COMPONENTS}/common/list.py
+        ${MAYAUSD_SHARED_COMPONENTS}/common/stringListPanel.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/persistentStorage.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/resizable.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/theme.py
         ${MAYAUSD_SHARED_COMPONENTS}/common/menuButton.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/common/
+    )
+
+    install(FILES
+        ${MAYAUSD_SHARED_COMPONENTS}/data/__init__.py
+        ${MAYAUSD_SHARED_COMPONENTS}/data/collectionData.py
+        ${MAYAUSD_SHARED_COMPONENTS}/data/stringListData.py
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/data/
+    )
+
+    install(FILES
+        ${MAYAUSD_SHARED_COMPONENTS}/usdData/__init__.py
+        ${MAYAUSD_SHARED_COMPONENTS}/usdData/usdCollectionData.py
+        ${MAYAUSD_SHARED_COMPONENTS}/usdData/usdCollectionStringListData.py
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/usdData/
     )
 
     set(LIB_ICONS
