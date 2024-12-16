@@ -1,5 +1,22 @@
 import maya.cmds as cmds
 from pxr import Usd
+from typing import Sequence
+
+from usd_shared_components.collection.widget import CollectionWidget # type: ignore
+from usd_shared_components.common.host import Host # type: ignore
+
+class MayaHost(Host):
+    '''Class to host and override maya specific functions for the collection API.'''
+    def __init__(self):
+        pass
+
+    @property
+    def canPick(self) -> bool:
+        return False # nothing to do yet
+
+    def pick(self, stage: Usd.Stage) -> Sequence[Usd.Prim]:
+        return [] # nothing to do yet
+
 
 class LightLinkingCustomControl(object):
     '''Custom control for the light linking data we want to display.'''
@@ -60,9 +77,8 @@ class LightLinkingCustomControl(object):
             ptr = MQtUtil.findControl(self.parent)
             parentWidget = wrapInstance(int(ptr), QWidget)
 
-            from usd_shared_components.collection.widget import CollectionWidget # type: ignore
-
-            self.widget = CollectionWidget(Usd.CollectionAPI.Get(self.prim, self.instanceName))
+            Host.injectInstance(MayaHost())
+            self.widget = CollectionWidget(self.prim, Usd.CollectionAPI.Get(self.prim, self.instanceName))
             parentWidget.layout().addWidget(self.widget)
 
         except Exception as ex:
