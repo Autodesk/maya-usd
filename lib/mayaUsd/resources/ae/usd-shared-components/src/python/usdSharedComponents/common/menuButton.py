@@ -10,7 +10,7 @@ class MenuButton(QToolButton):
     def __init__(self, menu: QMenu, parent: QWidget = None):
         super(MenuButton, self).__init__(parent)
         self.setIcon(Theme.instance().icon("menu"))
-        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.setArrowType(Qt.NoArrow)
         self.setPopupMode(QToolButton.InstantPopup)
         self.setStyleSheet("""

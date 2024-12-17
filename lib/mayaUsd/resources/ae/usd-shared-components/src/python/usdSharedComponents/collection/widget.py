@@ -1,17 +1,29 @@
 from .includeExcludeWidget import IncludeExcludeWidget
 from .expressionWidget import ExpressionWidget
+from ..common.theme import Theme
 
 try:
-    from PySide6.QtCore import Slot  # type: ignore
-    from PySide6.QtGui import QIcon  # type: ignore
-    from PySide6.QtWidgets import QWidget, QTabWidget, QVBoxLayout  # type: ignore
+    from PySide6.QtCore import QEvent, QObject, Qt, Slot  # type: ignore
+    from PySide6.QtGui import QIcon, QWheelEvent  # type: ignore
+    from PySide6.QtWidgets import QTabBar, QTabWidget, QVBoxLayout, QWidget  # type: ignore
 except ImportError:
-    from PySide2.QtCore import Slot  # type: ignore
-    from PySide2.QtGui import QIcon  # type: ignore
-    from PySide2.QtWidgets import QWidget, QTabWidget, QVBoxLayout  # type: ignore
+    from PySide2.QtCore import QEvent, QObject, Qt, Slot  # type: ignore
+    from PySide2.QtGui import QIcon, QWheelEvent  # type: ignore
+    from PySide2.QtWidgets import QTabBar, QTabWidget, QVBoxLayout, QWidget  # type: ignore
 
 from pxr import Usd, Tf
 
+
+class NonScrollingTabBar(QTabBar):
+    """A QTabBar that does not switch tabs when the mouse wheel is used."""
+
+    def __init__(self, parent: QWidget = None):
+        super(NonScrollingTabBar, self).__init__(parent)
+
+    def wheelEvent(self, event: QWheelEvent):
+        # Ignore the event. This cannot be done using an event filter as the
+        # event needs to be properly ignored to 'bubble up' the parent chain.
+        event.ignore()
 
 class CollectionWidget(QWidget):
 
@@ -39,18 +51,30 @@ class CollectionWidget(QWidget):
             Usd.Notice.ObjectsChanged, self.onObjectsChanged, self._prim.GetStage()
         )
 
+        self._tabWidget = None
+
         # only create tab when usd version is greater then 23.11
         if Usd.GetVersion() >= (0, 23, 11):
-            tabWidget = QTabWidget()
-            tabWidget.currentChanged.connect(self.onTabChanged)
+            self._tabWidget = QTabWidget()
+            self._tabWidget.setTabBar(NonScrollingTabBar(self._tabWidget))
+            self._tabWidget.currentChanged.connect(self.onTabChanged)
+            self._tabWidget.setDocumentMode(True)
 
             self._expressionWidget = ExpressionWidget(
-                collection, tabWidget, self.onExpressionChanged
+                collection, self._tabWidget, self.onExpressionChanged
             )
-            tabWidget.addTab(self._includeExcludeWidget, QIcon(), "Include/Exclude")
-            tabWidget.addTab(self._expressionWidget, QIcon(), "Expression")
+            self._tabWidget.addTab(
+                self._includeExcludeWidget, QIcon(), "Include/Exclude"
+            )
+            self._tabWidget.addTab(self._expressionWidget, QIcon(), "Expression")
 
-            mainLayout.addWidget(tabWidget)
+            offset: int = Theme.instance().uiScaled(4)
+            self._includeExcludeWidget.setContentsMargins(0, offset, 0, 0)
+            self._expressionWidget.setContentsMargins(0, offset, 0, 0)
+
+            self._tabWidget.tabBar().setExpanding(True)
+            self._tabWidget.tabBar().setCursor(Qt.ArrowCursor)
+            mainLayout.addWidget(self._tabWidget)
         else:
             mainLayout.addWidget(self._includeExcludeWidget)
 

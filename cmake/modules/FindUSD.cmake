@@ -131,6 +131,13 @@ if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/imaging/hd/changeTracker.
     endif()
 endif()
 
+# See if USD changetracker has instance count.
+set(USD_HAS_NAMESPACE_EDIT FALSE CACHE INTERNAL "USD.NamespaceEdit")
+if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/usd/sdf/namespaceEdit.h")
+    set(USD_HAS_NAMESPACE_EDIT TRUE CACHE INTERNAL "USD.NamespaceEdit")
+    message(STATUS "USD has namespace edit")
+endif()
+
 # See if MaterialX shaders with color4 inputs exist natively in Sdr:
 # Not yet in a tagged USD version: https://github.com/PixarAnimationStudios/USD/pull/1894
 set(USD_HAS_COLOR4_SDR_SUPPORT FALSE CACHE INTERNAL "USD.Sdr.PropertyTypes.Color4")

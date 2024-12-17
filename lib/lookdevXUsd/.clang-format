@@ -1,0 +1,3 @@
+# Skip clang-format of LookdevXUsd for now
+DisableFormat: true
+SortIncludes: false

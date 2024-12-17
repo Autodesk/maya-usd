@@ -107,6 +107,8 @@ class Resizable(QWidget):
     ):
         super(Resizable, self).__init__(parent)
 
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
         stackedLayout = QStackedLayout()
         stackedLayout.setContentsMargins(0, 0, 0, 0)
         stackedLayout.setSpacing(0)
@@ -185,6 +187,7 @@ class Resizable(QWidget):
         self._contentSize = max(self._minContentSize, min(self._maxContentSize, s))
         if self._widget is not None:
             self._widget.setFixedHeight(self._contentSize)
+            self.updateGeometry()
 
     @property
     def minContentSize(self):

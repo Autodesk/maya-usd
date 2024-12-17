@@ -1,6 +1,7 @@
 from typing import Sequence
 from pxr import Usd
 
+
 class Host(object):
     _instance = None
 
@@ -18,10 +19,12 @@ class Host(object):
         cls._instance = host
 
     @property
-    def canPick() -> bool:
+    def canPick(self) -> bool:
         return False
-    
-    def pick(self, stage: Usd.Stage) -> Sequence[Usd.Prim]:
-        return None
 
-    
+    @property
+    def canDrop(self) -> bool:
+        return True
+
+    def pick(self, stage: Usd.Stage, *, dialogTitle: str = "") -> Sequence[Usd.Prim]:
+        return None

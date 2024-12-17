@@ -1137,6 +1137,32 @@ class GroupCmdTestCase(unittest.TestCase):
             self.assertNotIn(groupName, groupNames)
             groupNames.add(groupName)
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 3), 'Requires USD 24.03 or greater for namespace edits')
+    def testGroupPrimWithRef(self):
+        """
+        Tests that grouping a prim with a reference does not flatten
+        the reference when done in a single layer.
+        """
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        self.assertTrue(stage)
+
+        # create a over containing a reference
+        primWithRef = stage.OverridePrim("/primWithRef")
+        self.assertTrue(primWithRef)
+        cubeRefFile = testUtils.getTestScene("cubeRef", "cube.usda")
+        primWithRef.GetReferences().AddReference(cubeRefFile)
+
+        cmds.group('%s,/primWithRef' % proxyShapePathStr)
+
+        self.assertFalse(stage.GetPrimAtPath('/primWithRef'))
+        primWithRef = stage.GetPrimAtPath('/group1/primWithRef')
+        self.assertTrue(primWithRef)
+        self.assertTrue(primWithRef.HasAuthoredReferences())
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
