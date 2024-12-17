@@ -1,9 +1,11 @@
 from typing import Sequence
+from maya.OpenMaya import MGlobal
 
 try:
     from PySide6.QtCore import (
         QStringListModel,
         Signal,
+        QModelIndex,
     )
 except:
     from PySide2.QtCore import (
@@ -16,13 +18,16 @@ class FilteredStringListModel(QStringListModel):
     '''
     A Qt string list model that can be filtered.
     '''
-    filterChanged = Signal()
+    filterChanged = Signal()   
+    dataChangedSignal = Signal()
 
-    def __init__(self, items: Sequence[str] = None, parent=None):
+    def __init__(self, items: Sequence[str] = None, parent=None, headerTitle: str = "", controller = None):
         super(FilteredStringListModel, self).__init__(items if items else [], parent)
         self._unfilteredItems = items
         self._isFilteredEmpty = False
         self._filter = ""
+        self.headerTitle = headerTitle
+        self.controller = controller
 
     def setStringList(self, items: Sequence[str]):
         '''
@@ -79,3 +84,38 @@ class FilteredStringListModel(QStringListModel):
         self._filter = filter
         self._rebuildFilteredModel()
         self.filterChanged.emit()
+
+    def removeRows(self, row, count, parent=QModelIndex()):
+        MGlobal.displayInfo("removeRows")
+        
+        # Validate the range
+        if row < 0 or row + count > len(self._unfilteredItems) or count <= 0:
+            return False
+
+        # Notify views about the rows to be removed
+        self.beginRemoveRows(parent, row, row + count - 1)
+        #self.removeItemToCollection(self._unfilteredItems[row])
+
+        # Perform the data removal
+        currentItems = self.stringList()
+        del currentItems[row:row + count]
+        self.setStringList(currentItems)
+
+        MGlobal.displayInfo("removeRows, now we have: ")
+        for i in self.stringList():
+            MGlobal.displayInfo(i)
+
+        # Notify views that rows have been removed
+        self.endRemoveRows()
+        self.dataChangedSignal.emit()
+
+        return True
+    '''
+    def removeItemToCollection(self, item):
+        if self.headerTitle == "Include":
+            MGlobal.displayInfo("Remove include item")
+            self.control._collection.GetIncludesRel().RemoveTarget(item)
+        elif self.headerTitle == "Exclude":
+            MGlobal.displayInfo("Remove exclude item")
+            self.control._collection.GetExcludesRel().RemoveTarget(item)
+    '''

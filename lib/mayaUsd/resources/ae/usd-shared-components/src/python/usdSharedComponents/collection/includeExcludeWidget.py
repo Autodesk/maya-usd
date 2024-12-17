@@ -2,10 +2,11 @@ from ..common.list import StringList
 from ..common.resizable import Resizable
 from ..common.menuButton import MenuButton
 from .expressionRulesMenu import ExpressionMenu
+from maya.OpenMaya import MGlobal
 
 try:
     from PySide6.QtCore import QEvent, QObject  # type: ignore
-    from PySide6.QtWidgets import QFrame, QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, QSizePolicy  # type: ignore
+    from PySide6.QtWidgets import QFrame, QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, QSizePolicy, QApplication  # type: ignore
 except ImportError:
     from PySide2.QtWidgets import QFrame, QWidget, QHBoxLayout, QVBoxLayout, QLineEdit, QSizePolicy # type: ignore
 
@@ -70,9 +71,11 @@ class IncludeExcludeWidget(QWidget):
         self._filterWidget.textChanged.connect(self._exclude.list._model.setFilter)
         EventFilter(self._include.list, self)
         EventFilter(self._exclude.list, self)
+        
+        self._include.list._model.dataChangedSignal.connect(self.updateCollection)
 
         self.setLayout(includeExcludeLayout)
-        self.update()
+        #self.update()
 
     def update(self):
         self._expressionMenu.update()
@@ -93,6 +96,30 @@ class IncludeExcludeWidget(QWidget):
         self._exclude.list.items = excludes
         self._include.list.update_placeholder()
         self._exclude.list.update_placeholder()
+    
+    def updateCollection(self):
+        MGlobal.displayInfo("Update collection")
+        includeList = []
+        excludeList = []
+        if self._include.list.items() is not None:
+            includeList = list(self._include.list.items())
+            MGlobal.displayInfo("Include list: ")
+            self.printList(includeList)
+        if self._exclude.list.items() is not None:
+            excludeList = list(self._exclude.list.items())
+            MGlobal.displayInfo("Exclude list: ")
+            self.printList(excludeList)
+
+        if self._collection is not None:
+            self._collection.GetIncludesRel().SetTargets(includeList)
+            self._collection.GetExcludesRel().SetTargets(excludeList)
+
+        self._include.list.update_placeholder()
+        self._exclude.list.update_placeholder()
+
+    def printList(self, list):
+        for item in list:
+            MGlobal.displayInfo(item)
 
     def getIncludedItems(self):
         return self._include.list.items()
@@ -123,14 +150,22 @@ class EventFilter(QObject):
 
     def eventFilter(self, obj: QObject, event: QEvent):
         if event.type() == QEvent.Drop:
+            MGlobal.displayInfo("Drop: ")
             mime_data = event.mimeData()
-            self.addItemToCollection(mime_data.text())
+            MGlobal.displayInfo(mime_data.text())
+            if mime_data.hasText():
+                self.addItemToCollection(mime_data.text())
+            event.acceptProposedAction()
             return True
         elif event.type() == QEvent.DragEnter:
+            if obj == self.widget:
+                self.widget.placeholder_label.hide()
             event.acceptProposedAction()
             return True
         elif event.type() == QEvent.DragMove:
             event.acceptProposedAction()
+            return True
+        elif event.type() == QEvent.DragLeave:
             return True
 
         return super().eventFilter(obj, event)
@@ -149,21 +184,25 @@ class EventFilter(QObject):
 
             if self.control._collection is not None:
                 if self.widget.headerTitle == "Include":
+                    # Check if the path is already in the exclude list
+                    targets = self.control._collection.GetExcludesRel().GetTargets()
+                    if path in targets:
+                        targets.remove(path)
+                        #self.control._collection.GetExcludesRel().RemoveTarget(path)
+                        self.control._collection.GetExcludesRel().SetTargets(targets)
                     self.control._collection.GetIncludesRel().AddTarget(path)
                 elif self.widget.headerTitle == "Exclude":
+                    # Check if the path is already in the include list
+                    #if path in self.control._collection.GetIncludesRel().GetTargets():
+                        #self.control._collection.GetIncludesRel().RemoveTarget(path)
+                    targets = self.control._collection.GetIncludesRel().GetTargets()
+                    if path in targets:
+                        targets.remove(path)
+                        #self.control._collection.GetExcludesRel().RemoveTarget(path)
+                        self.control._collection.GetIncludesRel().SetTargets(targets)
                     self.control._collection.GetExcludesRel().AddTarget(path)
 
         self.control.update()
-    '''
-    def removeItemToCollection(self, item):
-        if self.control._collection is not None:
-            if self.widget.headerTitle == "Include":
-                self.control._collection.GetIncludesRel().RemoveTarget(item)
-            elif self.widget.headerTitle == "Exclude":
-                self.control._collection.GetExcludesRel().RemoveTarget(item)
-
-        self.control.update()
-    '''
 
     def _validatePath(self, collection, path):
        
@@ -174,6 +213,6 @@ class EventFilter(QObject):
         prim = stage.GetPrimAtPath(Sdf.Path(path))
 
         if not prim or not prim.IsValid():
-            raise ValueError("Value must be a float or an int")("Error: The dragged object is not in the same stage as the collection. Ensure that objects belong to the same stage before adding them")
+            raise ValueError("Error: The dragged object is not in the same stage as the collection. Ensure that objects belong to the same stage before adding them")
         
         return True

@@ -1,6 +1,7 @@
 from typing import Sequence, Union
 from .theme import Theme
 from .filteredStringListModel import FilteredStringListModel
+from maya.OpenMaya import MGlobal
 
 try:
     from PySide6.QtCore import (
@@ -48,7 +49,7 @@ class FilteredStringListView(QListView):
 
     def __init__(self, items: Sequence[str] = None,  headerTitle:str = "", parent=None):
         super(FilteredStringListView, self).__init__(parent)
-        self._model = FilteredStringListModel(items if items else [], self)
+        self._model = FilteredStringListModel(items if items else [], self, headerTitle)
         self.setModel(self._model)
         self.headerTitle = headerTitle
 
@@ -58,6 +59,8 @@ class FilteredStringListView(QListView):
         self.setSelectionBehavior(QListView.SelectRows)
         self.setSelectionMode(QListView.MultiSelection)
         self.setContentsMargins(0,0,0,0)
+        self.setDragDropMode(QListView.DragDrop)
+        self.setDefaultDropAction(Qt.MoveAction)
 
         self.selectionModel().selectionChanged.connect(lambda: self.selectedItemsChanged.emit())
 
@@ -65,7 +68,7 @@ class FilteredStringListView(QListView):
         self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.placeholder_label.setStyleSheet("color: gray; font-size: 18px;")
         self.placeholder_label.hide()
-
+        
     def drawFrame(self, painter: QPainter):
         pass
 
