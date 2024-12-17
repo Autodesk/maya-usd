@@ -10,10 +10,6 @@ class MayaHost(Host):
     def __init__(self):
         pass
 
-    @property
-    def canPick(self) -> bool:
-        return False # nothing to do yet
-
     def pick(self, stage: Usd.Stage) -> Sequence[Usd.Prim]:
         return [] # nothing to do yet
 

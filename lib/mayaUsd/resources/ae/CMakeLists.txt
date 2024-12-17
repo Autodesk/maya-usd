@@ -72,18 +72,14 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
     )
 
     set(LIB_ICONS
-        ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/menu
+        ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/add
         ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/delete
+        ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/menu
+        ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/selector
+        ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/warning
     )
     foreach(ICON_BASE ${LIB_ICONS})
-        # The _100.png files need to be installed without the _100. This is the
-        # base icon name that is used. Maya will automatically choose the _150/_200
-        # image if neeeded.
-        install(FILES "${ICON_BASE}_100.png"
-            DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/icons/dark"
-            RENAME "${ICON_BASE}.png"
-        )
-        install(FILES "${ICON_BASE}_150.png" "${ICON_BASE}_200.png"
+        install(FILES "${ICON_BASE}.svg"
             DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/icons/dark"
         )
     endforeach()

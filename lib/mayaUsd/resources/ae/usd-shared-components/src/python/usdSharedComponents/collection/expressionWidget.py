@@ -1,5 +1,6 @@
 from .expressionRulesMenu import ExpressionMenu
 from ..common.menuButton import MenuButton
+from ..common.theme import Theme
 
 try:
     from PySide6.QtCore import QEvent, Qt  # type: ignore
@@ -16,27 +17,34 @@ class ExpressionWidget(QWidget):
         self._collection = collection
         self._expressionCallback = expressionChangedCallback
 
-        self._expressionText = QTextEdit(self)
-        self._expressionText.setContentsMargins(0,0,0,0)
-        self._expressionText.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
-        self._expressionText.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self._expressionText.setPlaceholderText("Type an expression here...")
+        mainLayout = QVBoxLayout(self)
+        margin: int = Theme.instance().uiScaled(2)
+        mainLayout.setSpacing(margin)
 
         self._expressionMenu = ExpressionMenu(collection, self)
         menuButton = MenuButton(self._expressionMenu, self)
 
         menuWidget = QWidget(self)
         menuLayout = QHBoxLayout(menuWidget)
+
+        margins = menuLayout.contentsMargins()
+        margins.setRight(0)
+        menuLayout.setContentsMargins(margins)
+
         menuLayout.addStretch(1)
         menuLayout.addWidget(menuButton)
+        menuWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-        mainLayout = QVBoxLayout(self)
-        mainLayout.setContentsMargins(0,0,0,0)
-        mainLayout.addWidget(menuWidget)
-        mainLayout.addWidget(self._expressionText)
-        
+        self._expressionText = QTextEdit(self)
+        self._expressionText.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
+        self._expressionText.setMinimumHeight(Theme.instance().uiScaled(80))
+        self._expressionText.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self._expressionText.setPlaceholderText("Type an expression here...")
+
+        mainLayout.addWidget(menuWidget, 0)
+        mainLayout.addWidget(self._expressionText, 1)
+
         self._expressionText.installEventFilter(self)
-        self.setLayout(mainLayout)
         self.update()
 
     def update(self):
