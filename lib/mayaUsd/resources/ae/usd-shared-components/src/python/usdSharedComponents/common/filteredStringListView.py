@@ -2,42 +2,44 @@ from typing import Sequence, Union
 from .theme import Theme
 from .host import Host
 from .filteredStringListModel import FilteredStringListModel
+from ..data.stringListData import StringListData
 
 try:
     from PySide6.QtCore import (  # type: ignore
-        QItemSelection,
-        QItemSelectionModel,
+        QEvent,
         QModelIndex,
+        QObject,
         QPersistentModelIndex,
         QSize,
         QStringListModel,
         Qt,
         Signal,
     )
-    from PySide6.QtGui import QPalette, QPainter, QPaintEvent  # type: ignore
+    from PySide6.QtGui import QPainter, QPaintEvent, QFont  # type: ignore
     from PySide6.QtWidgets import (  # type: ignore
-        QFrame,
-        QLabel,
         QListView,
         QStyledItemDelegate,
         QStyleOptionViewItem
     )
 except:
     from PySide2.QtCore import (  # type: ignore
-        QItemSelection,
-        QItemSelectionModel,
+        QEvent,
         QModelIndex,
+        QObject,
         QPersistentModelIndex,
         QSize,
         QStringListModel,
         Qt,
         Signal,
     )
-    from PySide2.QtGui import QPalette, QPainter, QPaintEvent  # type: ignore
-    from PySide2.QtWidgets import QFrame, QLabel, QListView, QStyledItemDelegate, QStyleOptionViewItem  # type: ignore
+    from PySide2.QtGui import QPainter, QPaintEvent, QFont  # type: ignore
+    from PySide2.QtWidgets import QListView, QStyledItemDelegate, QStyleOptionViewItem  # type: ignore
 
 
 kNoObjectFoundLabel = "No objects found"
+kDragObjectsHereLabel = "Drag objects here"
+kPickObjectsLabel = "Click '+' to add"
+kDragOrPickObjectsLabel = "Drag objects here or click '+' to add"
 
 
 class FilteredStringListView(QListView):
@@ -65,101 +67,79 @@ class FilteredStringListView(QListView):
             s: str = self._model.data(index, Qt.DisplayRole)
             Theme.instance().paintStringListEntry(painter, option.rect, s)
 
-    def __init__(self, items: Sequence[str] = [], headerTitle: str = "", parent=None):
+    def __init__(self, data: StringListData, headerTitle: str = "", parent=None):
         super(FilteredStringListView, self).__init__(parent)
         self.headerTitle = headerTitle
-        self._model = FilteredStringListModel(items, self)
+        self._model = FilteredStringListModel(data, self)
         self.setModel(self._model)
-        self._model.filterChanged.connect(self.updatePlaceholder)
 
         self.setUniformItemSizes(True)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollMode(QListView.ScrollMode.ScrollPerPixel)
         self.setTextElideMode(Qt.TextElideMode.ElideMiddle)
-        self.setSelectionBehavior(QListView.SelectRows)
-        self.setSelectionMode(QListView.MultiSelection)
+        self.setSelectionBehavior(QListView.SelectionBehavior.SelectRows)
+        self.setSelectionMode(QListView.SelectionMode.ExtendedSelection)
         self.setContentsMargins(1, 0, 1, 1)
 
         self.setCursor(Qt.ArrowCursor)
-        
+
+        DragAndDropEventFilter(self, data)
+
         self.selectionModel().selectionChanged.connect(
             lambda: self.selectionChanged.emit()
         )
-
-        if Host.instance().canDrop and Host.instance().canPick:
-            self.placeholder_label = QLabel(
-                "Drag objects here or click '+' to add", self
-            )
-        elif Host.instance().canDrop:
-            self.placeholder_label = QLabel("Drag objects here", self)
-        elif Host.instance().canPick:
-            self.placeholder_label = QLabel("Click '+' to add", self)
-        else:
-            self.placeholder_label = None
-
-        if self.placeholder_label is not None:
-            self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-            palette: QPalette = self.placeholder_label.palette()
-            palette.setColor(
-                self.placeholder_label.foregroundRole(),
-                Theme.instance().palette.colorPlaceHolderText,
-            )
-            self.placeholder_label.setPalette(palette)
-            self.placeholder_label.hide()
 
     def paintEvent(self, event: QPaintEvent):
         painter = QPainter(self)
         painter.fillRect(event.rect(), Theme.instance().palette.colorListBorder)
         super(FilteredStringListView, self).paintEvent(event)
-        if self._model.isFilteredEmpty():
-            painter = QPainter(self.viewport())
-            painter.setPen(Theme.instance().palette.colorPlaceHolderText)
-            painter.drawText(self.rect(), Qt.AlignCenter, kNoObjectFoundLabel)
 
-    @property
-    def items(self) -> Sequence[str]:
-        return self._model.stringList
+        model = self.model()
+        if not model:
+            return
 
-    @items.setter
-    def items(self, items: Sequence[str]):
-        # save the selected items
-        prevSelectedIndices = []
-        for s in self.selectedItems:
-            try:
-                newIdx = items.index(s)
-            except ValueError:
-                continue
-            prevSelectedIndices.append(newIdx)
+        if model.isFilteredEmpty():
+            self._paintPlaceHolder(kNoObjectFoundLabel)
+        elif model.rowCount() == 0:
+            if Host.instance().canDrop and Host.instance().canPick:
+                self._paintPlaceHolder(kDragOrPickObjectsLabel)
+            elif Host.instance().canDrop:
+                self._paintPlaceHolder(kDragObjectsHereLabel)
+            elif Host.instance().canPick:
+                self._paintPlaceHolder(kPickObjectsLabel)
 
-        self._model.setStringList(items)
-        # restore the selected items
-        newSelection = QItemSelection()
-        for i in prevSelectedIndices:
-            idx = self._model.index(i, 0)
-            newSelection.select(idx, idx)
-        self.selectionModel().select(newSelection, QItemSelectionModel.ClearAndSelect)
-        self.updatePlaceholder()
-
-    @property
     def selectedItems(self) -> Sequence[str]:
         return [str(index.data(Qt.DisplayRole)) for index in self.selectedIndexes()]
 
-    @property
     def hasSelectedItems(self) -> bool:
-        return self.selectionModel().hasSelection()
+        return bool(self.selectionModel().hasSelection())
 
-    def updatePlaceholder(self):
-        """Show or hide placeholder based on the model's content."""
-        if self.placeholder_label is not None:
-            model = self.model()
-            if model and model.rowCount() == 0:
-                self.placeholder_label.show()
-            else:
-                self.placeholder_label.hide()
+    def _paintPlaceHolder(self, placeHolderText):
+        painter = QPainter(self.viewport())
+        theme = Theme.instance()
+        painter.setPen(theme.palette.colorPlaceHolderText)
+        font: QFont = painter.font()
+        font.setPixelSize(theme.uiScaled(18))
+        painter.setFont(font)
+        painter.drawText(self.rect(), Qt.AlignCenter, placeHolderText)
 
-    def resizeEvent(self, event):
-        """Ensure placeholder is centered on resize."""
-        super().resizeEvent(event)
-        if self.placeholder_label is not None:
-            self.placeholder_label.setGeometry(self.viewport().geometry())
+class DragAndDropEventFilter(QObject):
+    def __init__(self, widget, data: StringListData):
+        super().__init__(widget)
+        self._collData = data
+        widget.installEventFilter(self)
+        widget.setAcceptDrops(True)
+
+    def eventFilter(self, obj: QObject, event: QEvent):
+        if event.type() == QEvent.Drop:
+            mime_data = event.mimeData()
+            self._collData.addMultiLineStrings(mime_data.text())
+            return True
+        elif event.type() == QEvent.DragEnter:
+            event.acceptProposedAction()
+            return True
+        elif event.type() == QEvent.DragMove:
+            event.acceptProposedAction()
+            return True
+
+        return super().eventFilter(obj, event)

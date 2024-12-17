@@ -1,20 +1,19 @@
 from typing import Sequence
 
-from ..common.list import StringList
+from ..common.stringListPanel import StringListPanel
 from ..common.resizable import Resizable
 from ..common.menuButton import MenuButton
 from .expressionRulesMenu import ExpressionMenu
 from ..common.host import Host
 from ..common.theme import Theme
+from ..data.collectionData import CollectionData
 
 try:
-    from PySide6.QtCore import QEvent, QObject, Qt  # type: ignore
+    from PySide6.QtCore import Qt  # type: ignore
     from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLineEdit, QMenu, QSizePolicy, QToolButton, QWidget  # type: ignore
 except ImportError:
-    from PySide2.QtCore import QEvent, QObject, Qt  # type: ignore
+    from PySide2.QtCore import Qt  # type: ignore
     from PySide2.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLineEdit, QMenu, QSizePolicy, QToolButton, QWidget  # type: ignore
-
-from pxr import Usd, Sdf
 
 # TODO: support I8N
 kSearchPlaceHolder = "Search..."
@@ -22,19 +21,16 @@ kSearchPlaceHolder = "Search..."
 class IncludeExcludeWidget(QWidget):
     def __init__(
         self,
-        prim: Usd.Prim = None,
-        collection: Usd.CollectionAPI = None,
+        data: CollectionData,
         parent: QWidget = None,
     ):
         super(IncludeExcludeWidget, self).__init__(parent)
-        self._collection: Usd.CollectionAPI = collection
-        self._prim: Usd.Prim = prim
-        self._updatingUI = False
+        self._collData = data
 
         mainLayout = QVBoxLayout(self)
         mainLayout.setContentsMargins(0, 0, 0, 0)
 
-        self._expressionMenu = ExpressionMenu(self._collection, self)
+        self._expressionMenu = ExpressionMenu(data, self)
         menuButton = MenuButton(self._expressionMenu, self)
 
         self._filterWidget = QLineEdit()
@@ -82,7 +78,7 @@ class IncludeExcludeWidget(QWidget):
         headerLayout.addWidget(menuButton)
         mainLayout.addWidget(headerWidget)
 
-        self._include = StringList([], "Include", "Include all", self)
+        self._include = StringListPanel(data.getIncludeData(), True, "Include", self)
         self._include.cbIncludeAll.stateChanged.connect(self.onIncludeAllToggle)
         self._resizableInclude = Resizable(
             self._include,
@@ -94,7 +90,7 @@ class IncludeExcludeWidget(QWidget):
         self._resizableInclude.minContentSize = Theme.instance().uiScaled(44)
         mainLayout.addWidget(self._resizableInclude)
 
-        self._exclude = StringList([], "Exclude", "", self)
+        self._exclude = StringListPanel(data.getExcludeData(), False, "Exclude", self)
         self._resizableExclude = Resizable(
             self._exclude,
             "USD_Light_Linking",
@@ -110,114 +106,40 @@ class IncludeExcludeWidget(QWidget):
 
         self._filterWidget.textChanged.connect(self._include.list._model.setFilter)
         self._filterWidget.textChanged.connect(self._exclude.list._model.setFilter)
+        self._collData.dataChanged.connect(self._onDataChanged)
 
-        if Host.instance().canDrop:
-            EventFilter(self._include.list, self)
-            EventFilter(self._exclude.list, self)
-
-        self.updateUI()
         self.onListSelectionChanged()
+        self._onDataChanged()
 
-    def update(self):
-        self._expressionMenu.update()
-        includes = []
-        excludes = []
-
-        if self._collection is not None:
-            includeRootAttribute = self._collection.GetIncludeRootAttr()
-            if includeRootAttribute.IsAuthored():
-                shouldIncludeAll = self._collection.GetIncludeRootAttr().Get()
-
-            for p in self._collection.GetIncludesRel().GetTargets():
-                includes.append(p.pathString)
-            for p in self._collection.GetExcludesRel().GetTargets():
-                excludes.append(p.pathString)
-
-        self._include.list.items = includes
-        self._exclude.list.items = excludes
-        self._include.list.updatePlaceholder()
-        self._exclude.list.updatePlaceholder()
-
-    def getIncludedItems(self):
-        return self._include.list.items()
-
-    def getExcludedItems(self):
-        return self._exclude.list.items()
-
-    def getIncludeAll(self):
-        return self._include.cbIncludeAll.isChecked()
-
-    def setIncludeAll(self, value: bool):
-        self._include.cbIncludeAll.setChecked(value)
-
-    def updateUI(self):
-
-        if self._updatingUI:
-            return
-
-        self._updatingUI = True
-
-        # update the include list
-        includes = []
-        for p in self._collection.GetIncludesRel().GetTargets():
-            includes.append(p.pathString)
-        self._include.list.items = includes
-
-        # update the exclude list
-        excludes = []
-        for p in self._collection.GetExcludesRel().GetTargets():
-            excludes.append(p.pathString)
-        self._exclude.list.items = excludes
-
-        self._include.cbIncludeAll.setChecked(
-            self._collection.GetIncludeRootAttr().Get()
-        )
-
-        self._updatingUI = False
+    def _onDataChanged(self):
+        incAll = self._collData.includesAll()
+        if incAll != self._include.cbIncludeAll.isChecked():
+            self._include.cbIncludeAll.setChecked(incAll)
 
     def onAddToIncludePrimClicked(self):
-        pickedItems: Sequence[Usd.Prim] = Host.instance().pick(self._prim.GetStage(), dialogTitle="Add Include Objects")
-        if pickedItems is None:
-            return
-        self._updatingUI = True
-        for item in pickedItems:
-            self._collection.GetIncludesRel().AddTarget(item.GetPath())
-        self._updatingUI = False
-        self.updateUI()
+        items = self._collData.pick("Add Include Objects")
+        self._collData.getIncludeData().addStrings(items)
 
     def onAddToExcludePrimClicked(self):
-        pickedItems: Sequence[Usd.Prim] = Host.instance().pick(self._prim.GetStage(), dialogTitle="Add Exclude Objects")
-        if pickedItems is None:
-            return
-        self._updatingUI = True
-        for item in pickedItems:
-            self._collection.GetExcludesRel().AddTarget(item.GetPath())
-        self._updatingUI = False
-        self.updateUI()
+        items = self._collData.pick("Add Exclude Objects")
+        self._collData.getExcludeData().addStrings(items)
 
     def onRemoveSelectionFromInclude(self):
-        self._updatingUI = True
-        for item in self._include.list.selectedItems:
-            self._collection.GetIncludesRel().RemoveTarget(Sdf.Path(item))
-        self._updatingUI = False
-        self.updateUI()
+        self._collData.getIncludeData().removeStrings(self._include.list.selectedItems())
         self.onListSelectionChanged()
 
     def onRemoveSelectionFromExclude(self):
-        self._updatingUI = True
-        for item in self._exclude.list.selectedItems:
-            self._collection.GetExcludesRel().RemoveTarget(Sdf.Path(item))
-        self._updatingUI = False
-        self.updateUI()
+        self._collData.getExcludeData().removeStrings(self._include.list.selectedItems())
         self.onListSelectionChanged()
 
     def onListSelectionChanged(self):
-        includesSelected = self._include.list.hasSelectedItems
-        excludeSelected = self._exclude.list.hasSelectedItems
+        includesSelected = self._include.list.hasSelectedItems()
+        excludeSelected = self._exclude.list.hasSelectedItems()
         self._deleteBtn.setEnabled(includesSelected or excludeSelected)
 
-        self._deleteBtnActionFromIncludes.setEnabled(includesSelected)
-        self._deleteBtnActionFromExcludes.setEnabled(excludeSelected)
+        # TODO: these QAction are reported as already being deleted in C++
+        # self._deleteBtnActionFromIncludes.setEnabled(includesSelected)
+        # self._deleteBtnActionFromExcludes.setEnabled(excludeSelected)
 
         try:
             self._deleteBtn.pressed.disconnect(self.onRemoveSelectionFromInclude)
@@ -243,68 +165,8 @@ class IncludeExcludeWidget(QWidget):
                 """QToolButton::menu-indicator { width: 0px; }"""
             )
 
-    def onIncludeAllToggle(self, state: Qt.CheckState):
-        if not self._updatingUI:
-            self._collection.GetIncludeRootAttr().Set(state == Qt.Checked)
+    def onIncludeAllToggle(self, _: Qt.CheckState):
+        incAll = self._include.cbIncludeAll.isChecked()
+        self._collData.setIncludeAll(incAll)
 
 
-class EventFilter(QObject):
-    def __init__(self, widget, control):
-        super().__init__(widget)
-        self._widget = widget
-        self.control = control
-        self.widget.installEventFilter(self)
-        self.widget.setAcceptDrops(True)
-
-    @property
-    def widget(self):
-        return self._widget
-
-    def eventFilter(self, obj: QObject, event: QEvent):
-        if event.type() == QEvent.Drop:
-            mime_data = event.mimeData()
-            self.addItemToCollection(mime_data.text())
-            return True
-        elif event.type() == QEvent.DragEnter:
-            event.acceptProposedAction()
-            return True
-        elif event.type() == QEvent.DragMove:
-            event.acceptProposedAction()
-            return True
-
-        return super().eventFilter(obj, event)
-
-    def addItemToCollection(self, items):
-        itemList = items.split("\n")
-        for item in itemList:
-            path = ""
-            if "," in item:
-                path = item.split(",")[1]
-            else:
-                path = item
-
-            if not self._validatePath(self.control._collection, path):
-                return
-
-            if self.control._collection is not None:
-                if self.widget.headerTitle == "Include":
-                    self.control._collection.GetIncludesRel().AddTarget(path)
-                elif self.widget.headerTitle == "Exclude":
-                    self.control._collection.GetExcludesRel().AddTarget(path)
-
-        self.control.update()
-
-    def _validatePath(self, collection, path):
-
-        if not Sdf.Path.IsValidPathString(path):
-            raise ValueError("Invalid sdf path: " + path)
-
-        stage = self.control._collection.GetPrim().GetStage()
-        prim = stage.GetPrimAtPath(Sdf.Path(path))
-
-        if not prim or not prim.IsValid():
-            raise ValueError(
-                "Error: The dragged object is not in the same stage as the collection. Ensure that objects belong to the same stage before adding them"
-            )
-
-        return True
