@@ -10,17 +10,14 @@ from ..common.theme import Theme
 try:
     from PySide6.QtCore import QEvent, QObject, Qt  # type: ignore
     from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLineEdit, QMenu, QSizePolicy, QToolButton, QWidget  # type: ignore
-    from PySide6.QtGui import QAction # type: ignore
 except ImportError:
     from PySide2.QtCore import QEvent, QObject, Qt  # type: ignore
     from PySide2.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLineEdit, QMenu, QSizePolicy, QToolButton, QWidget  # type: ignore
-    from PySide2.QtGui import QAction # type: ignore
 
 from pxr import Usd, Sdf
 
 # TODO: support I8N
 kSearchPlaceHolder = "Search..."
-
 
 class IncludeExcludeWidget(QWidget):
     def __init__(
@@ -34,15 +31,13 @@ class IncludeExcludeWidget(QWidget):
         self._prim: Usd.Prim = prim
         self._updatingUI = False
 
-        includeExcludeLayout = QVBoxLayout(self)
-
-        includeExcludeLayout.setContentsMargins(0, 0, 0, 0)
+        mainLayout = QVBoxLayout(self)
+        mainLayout.setContentsMargins(0, 0, 0, 0)
 
         self._expressionMenu = ExpressionMenu(self._collection, self)
         menuButton = MenuButton(self._expressionMenu, self)
 
         self._filterWidget = QLineEdit()
-        self._filterWidget.setContentsMargins(0, 0, 0, 0)
         self._filterWidget.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
@@ -53,33 +48,30 @@ class IncludeExcludeWidget(QWidget):
         separator.setFrameShape(QFrame.VLine)
 
         headerWidget = QWidget(self)
-        headerWidget.setContentsMargins(0, 0, 0, 0)
         headerLayout = QHBoxLayout(headerWidget)
-
-        headerLayout.setContentsMargins(0, 2, 2, 0)
 
         if Host.instance().canPick:
             addBtn = QToolButton(headerWidget)
-            addBtn.setToolTip("Add prims to Include or Exclude")
+            addBtn.setToolTip("Add Objects to the Include/Exclude list")
             addBtn.setIcon(Theme.instance().icon("add"))
             addBtn.setPopupMode(QToolButton.InstantPopup)
             addBtnMenu = QMenu(addBtn)
-            addBtnMenu.addAction("Add prims to Include", self.onAddToIncludePrimClicked)
-            addBtnMenu.addAction("Add prims to Exclude", self.onAddToExcludePrimClicked)
+            addBtnMenu.addAction("Include Objects...", self.onAddToIncludePrimClicked)
+            addBtnMenu.addAction("Exclude Objects...", self.onAddToExcludePrimClicked)
             addBtn.setMenu(addBtnMenu)
             headerLayout.addWidget(addBtn)
 
         self._deleteBtn = QToolButton(headerWidget)
-        self._deleteBtn.setToolTip("Remove selected prims from Include or Exclude")
+        self._deleteBtn.setToolTip("Remove Selected Objects from Include/Exclude list")
         self._deleteBtn.setIcon(Theme.instance().icon("delete"))
         self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
         self._deleteBtnMenu = QMenu(self._deleteBtn)
-        self._deleteBtnActionFromIncludes = QAction("Remove selected prims from Include", self._deleteBtnMenu)
-        self._deleteBtnActionFromIncludes.triggered.connect(self.onRemoveSelectionFromInclude)
-        self._deleteBtnMenu.addAction(self._deleteBtnActionFromIncludes)
-        self._deleteBtnActionFromExcludes = QAction("Remove selected prims from Exclude", self._deleteBtnMenu)
-        self._deleteBtnActionFromExcludes.triggered.connect(self.onRemoveSelectionFromExclude)
-        self._deleteBtnMenu.addAction(self._deleteBtnActionFromExcludes)
+        self._deleteBtnActionFromIncludes = self._deleteBtnMenu.addAction(
+            "Remove Selected Objects from Include", self.onRemoveSelectionFromInclude
+        )
+        self._deleteBtnActionFromExcludes = self._deleteBtnMenu.addAction(
+            "Remove Selected Objects from Exclude", self.onRemoveSelectionFromExclude
+        )
         self._deleteBtn.setMenu(self._deleteBtnMenu)
         headerLayout.addWidget(self._deleteBtn)
 
@@ -88,7 +80,7 @@ class IncludeExcludeWidget(QWidget):
         headerLayout.addWidget(self._filterWidget)
         headerLayout.addWidget(separator)
         headerLayout.addWidget(menuButton)
-        includeExcludeLayout.addWidget(headerWidget)
+        mainLayout.addWidget(headerWidget)
 
         self._include = StringList([], "Include", "Include all", self)
         self._include.cbIncludeAll.stateChanged.connect(self.onIncludeAllToggle)
@@ -97,9 +89,10 @@ class IncludeExcludeWidget(QWidget):
             "USD_Light_Linking",
             "IncludeListHeight",
             self,
-            defaultSize=80,
+            defaultSize=Theme.instance().uiScaled(80),
         )
-        includeExcludeLayout.addWidget(self._resizableInclude)
+        self._resizableInclude.minContentSize = Theme.instance().uiScaled(44)
+        mainLayout.addWidget(self._resizableInclude)
 
         self._exclude = StringList([], "Exclude", "", self)
         self._resizableExclude = Resizable(
@@ -107,19 +100,21 @@ class IncludeExcludeWidget(QWidget):
             "USD_Light_Linking",
             "ExcludeListHeight",
             self,
-            defaultSize=80,
+            defaultSize=Theme.instance().uiScaled(80),
         )
-        includeExcludeLayout.addWidget(self._resizableExclude)
+        self._resizableExclude.minContentSize = Theme.instance().uiScaled(44)
+        mainLayout.addWidget(self._resizableExclude)
 
         self._include.list.selectionChanged.connect(self.onListSelectionChanged)
         self._exclude.list.selectionChanged.connect(self.onListSelectionChanged)
 
         self._filterWidget.textChanged.connect(self._include.list._model.setFilter)
         self._filterWidget.textChanged.connect(self._exclude.list._model.setFilter)
-        EventFilter(self._include.list, self)
-        EventFilter(self._exclude.list, self)
 
-        self.setLayout(includeExcludeLayout)
+        if Host.instance().canDrop:
+            EventFilter(self._include.list, self)
+            EventFilter(self._exclude.list, self)
+
         self.updateUI()
         self.onListSelectionChanged()
 
@@ -140,8 +135,8 @@ class IncludeExcludeWidget(QWidget):
 
         self._include.list.items = includes
         self._exclude.list.items = excludes
-        self._include.list.update_placeholder()
-        self._exclude.list.update_placeholder()
+        self._include.list.updatePlaceholder()
+        self._exclude.list.updatePlaceholder()
 
     def getIncludedItems(self):
         return self._include.list.items()
@@ -156,6 +151,7 @@ class IncludeExcludeWidget(QWidget):
         self._include.cbIncludeAll.setChecked(value)
 
     def updateUI(self):
+
         if self._updatingUI:
             return
 
@@ -180,22 +176,22 @@ class IncludeExcludeWidget(QWidget):
         self._updatingUI = False
 
     def onAddToIncludePrimClicked(self):
-        prims: Sequence[Usd.Prim] = Host.instance().pick(self._prim.GetStage())
-        if prims is None:
+        pickedItems: Sequence[Usd.Prim] = Host.instance().pick(self._prim.GetStage(), dialogTitle="Add Include Objects")
+        if pickedItems is None:
             return
         self._updatingUI = True
-        for prim in prims:
-            self._collection.GetIncludesRel().AddTarget(prim.GetPath())
+        for item in pickedItems:
+            self._collection.GetIncludesRel().AddTarget(item.GetPath())
         self._updatingUI = False
         self.updateUI()
 
     def onAddToExcludePrimClicked(self):
-        prims: Sequence[Usd.Prim] = Host.instance().pick(self._prim.GetStage())
-        if prims is None:
+        pickedItems: Sequence[Usd.Prim] = Host.instance().pick(self._prim.GetStage(), dialogTitle="Add Exclude Objects")
+        if pickedItems is None:
             return
         self._updatingUI = True
-        for prim in prims:
-            self._collection.GetExcludesRel().AddTarget(prim.GetPath())
+        for item in pickedItems:
+            self._collection.GetExcludesRel().AddTarget(item.GetPath())
         self._updatingUI = False
         self.updateUI()
 
@@ -206,7 +202,6 @@ class IncludeExcludeWidget(QWidget):
         self._updatingUI = False
         self.updateUI()
         self.onListSelectionChanged()
-        self._include.list.update_placeholder()
 
     def onRemoveSelectionFromExclude(self):
         self._updatingUI = True
@@ -215,7 +210,6 @@ class IncludeExcludeWidget(QWidget):
         self._updatingUI = False
         self.updateUI()
         self.onListSelectionChanged()
-        self._exclude.list.update_placeholder()
 
     def onListSelectionChanged(self):
         includesSelected = self._include.list.hasSelectedItems
@@ -233,16 +227,16 @@ class IncludeExcludeWidget(QWidget):
 
         if includesSelected and excludeSelected:
             self._deleteBtn.setToolTip(
-                "Remove selected prims from Include or Exclude..."
+                "Remove Selected Objects from Include/Exclude list"
             )
             self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
             self._deleteBtn.setStyleSheet("")
         else:
             if includesSelected:
-                self._deleteBtn.setToolTip("Remove selected prims from Include")
+                self._deleteBtn.setToolTip("Remove Selected Objects from Include")
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromInclude)
             elif excludeSelected:
-                self._deleteBtn.setToolTip("Remove selected prims from Exclude")
+                self._deleteBtn.setToolTip("Remove Selected Objects from Exclude")
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromExclude)
             self._deleteBtn.setPopupMode(QToolButton.DelayedPopup)
             self._deleteBtn.setStyleSheet(

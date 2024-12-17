@@ -1,10 +1,10 @@
 try:
     from PySide6.QtCore import QRect, Qt  # type: ignore
-    from PySide6.QtGui import QPainter, QColor, QPen, QIcon  # type: ignore
+    from PySide6.QtGui import QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
     from PySide6.QtWidgets import QWidget  # type: ignore
 except:
     from PySide2.QtCore import QRect, Qt  # type: ignore
-    from PySide2.QtGui import QPainter, QColor, QPen, QIcon  # type: ignore
+    from PySide2.QtGui import QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
     from PySide2.QtWidgets import QWidget  # type: ignore
 
 from enum import Flag, auto
@@ -50,25 +50,42 @@ class Theme(object):
             super(Theme.Palette, self)
             self.colorResizeBorderActive: QColor = QColor(0x5285a6)
 
+            pal = QPallette = QPalette()
+            self.colorPlaceHolderText = pal.color(QPalette.ColorRole.WindowText)
+            self.colorPlaceHolderText.setAlphaF(0.7)
+
+            self.colorListBorder = pal.color(QPalette.ColorRole.Dark)
+
     def icon(self, name: str) -> QIcon:
         ### Returns the icon with the given name.
 
         if name in self._icons:
             return self._icons[name]
-        
+
+        result = self.themedIcon(name, "dark")
+
+        if result.isNull():
+            raise ValueError(f"Icon '{name}' not found")
+
+        self._icons[name] = result
+        return result
+
+    def themedIcon(self, name: str, theme: str) -> QIcon:
         import os, fnmatch
         result = QIcon()
 
-        iconFolder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons", "dark"))
+        iconFolder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons", theme))
         if os.path.exists(iconFolder):
+            icons = fnmatch.filter(os.listdir(iconFolder), f"{name}.svg")
+            for icon in icons:
+                result.addPixmap(os.path.join(iconFolder, icon))
+                # take the first SVG and run!
+                return result
+
             icons = fnmatch.filter(os.listdir(iconFolder), f"{name}*.png")
             for icon in icons:
                 result.addPixmap(os.path.join(iconFolder, icon))
 
-        if result.isNull():
-            raise ValueError(f"Icon '{name}' not found")
-        
-        self._icons[name] = result
         return result
 
     @property
@@ -83,7 +100,7 @@ class Theme(object):
         Pressed = auto()
         Disabled = auto()
         Empty = auto()
-    
+
     def paintResizableOverlay(self, widget: QWidget):
         """ Paints the overlay of a Resizable.
 
@@ -105,12 +122,12 @@ class Theme(object):
         painter.setPen(QPen(self.palette.colorResizeBorderActive, lineWidth, Qt.SolidLine, Qt.SquareCap, Qt.MiterJoin))
         painter.setBrush(Qt.NoBrush)
         painter.drawRect(rect)
-    
+
     def resizableActiveAreaSize(self) -> int:
         """Returns the size of the active area at the bottom of a Resizable."""
 
         return self.uiScaled(6)
-    
+
     def resizableContentMargin(self) -> int:
         """Returns the bottom margin of the content of a Resizable.
 
@@ -120,10 +137,9 @@ class Theme(object):
         """
 
         return self.uiScaled(2)
-    
-    
+
     def paintList(self, widget: QWidget, updateRect: QRect, state: State):
         raise RuntimeError("Needs to be implemented in derived class")
-    
+
     def paintStringListEntry(self, painter: QPainter, rect: QRect, string: str):
         raise RuntimeError("Needs to be implemented in derived class")

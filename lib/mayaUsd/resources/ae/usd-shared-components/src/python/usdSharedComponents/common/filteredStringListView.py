@@ -1,5 +1,6 @@
 from typing import Sequence, Union
 from .theme import Theme
+from .host import Host
 from .filteredStringListModel import FilteredStringListModel
 
 try:
@@ -13,12 +14,13 @@ try:
         Qt,
         Signal,
     )
-    from PySide6.QtGui import QPainter, QPaintEvent, QPen, QColor  # type: ignore
+    from PySide6.QtGui import QPalette, QPainter, QPaintEvent  # type: ignore
     from PySide6.QtWidgets import (  # type: ignore
-        QStyleOptionViewItem,
-        QStyledItemDelegate,
+        QFrame,
+        QLabel,
         QListView,
-        QLabel
+        QStyledItemDelegate,
+        QStyleOptionViewItem
     )
 except:
     from PySide2.QtCore import (  # type: ignore
@@ -31,8 +33,8 @@ except:
         Qt,
         Signal,
     )
-    from PySide2.QtGui import QPainter, QPaintEvent, QPen, QColor  # type: ignore
-    from PySide2.QtWidgets import QStyleOptionViewItem, QStyledItemDelegate, QListView, QLabel  # type: ignore
+    from PySide2.QtGui import QPalette, QPainter, QPaintEvent  # type: ignore
+    from PySide2.QtWidgets import QFrame, QLabel, QListView, QStyledItemDelegate, QStyleOptionViewItem  # type: ignore
 
 
 kNoObjectFoundLabel = "No objects found"
@@ -65,30 +67,55 @@ class FilteredStringListView(QListView):
 
     def __init__(self, items: Sequence[str] = [], headerTitle: str = "", parent=None):
         super(FilteredStringListView, self).__init__(parent)
+        self.headerTitle = headerTitle
         self._model = FilteredStringListModel(items, self)
         self.setModel(self._model)
-        self.headerTitle = headerTitle
+        self._model.filterChanged.connect(self.updatePlaceholder)
 
         self.setUniformItemSizes(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollMode(QListView.ScrollMode.ScrollPerPixel)
         self.setTextElideMode(Qt.TextElideMode.ElideMiddle)
         self.setSelectionBehavior(QListView.SelectRows)
         self.setSelectionMode(QListView.MultiSelection)
-        self.setContentsMargins(0, 0, 0, 0)
+        self.setContentsMargins(1, 0, 1, 1)
 
         self.setCursor(Qt.ArrowCursor)
-
+        
         self.selectionModel().selectionChanged.connect(
             lambda: self.selectionChanged.emit()
         )
 
-        self.placeholder_label = QLabel("Drag objects here or click “+” to add", self)
-        self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.placeholder_label.setStyleSheet("color: gray; font-size: 18px;")
-        self.placeholder_label.hide()
+        if Host.instance().canDrop and Host.instance().canPick:
+            self.placeholder_label = QLabel(
+                "Drag objects here or click '+' to add", self
+            )
+        elif Host.instance().canDrop:
+            self.placeholder_label = QLabel("Drag objects here", self)
+        elif Host.instance().canPick:
+            self.placeholder_label = QLabel("Click '+' to add", self)
+        else:
+            self.placeholder_label = None
 
-    def drawFrame(self, painter: QPainter):
-        pass
+        if self.placeholder_label is not None:
+            self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            palette: QPalette = self.placeholder_label.palette()
+            palette.setColor(
+                self.placeholder_label.foregroundRole(),
+                Theme.instance().palette.colorPlaceHolderText,
+            )
+            self.placeholder_label.setPalette(palette)
+            self.placeholder_label.hide()
+
+    def paintEvent(self, event: QPaintEvent):
+        painter = QPainter(self)
+        painter.fillRect(event.rect(), Theme.instance().palette.colorListBorder)
+        super(FilteredStringListView, self).paintEvent(event)
+        if self._model.isFilteredEmpty():
+            painter = QPainter(self.viewport())
+            painter.setPen(Theme.instance().palette.colorPlaceHolderText)
+            painter.drawText(self.rect(), Qt.AlignCenter, kNoObjectFoundLabel)
 
     @property
     def items(self) -> Sequence[str]:
@@ -112,6 +139,7 @@ class FilteredStringListView(QListView):
             idx = self._model.index(i, 0)
             newSelection.select(idx, idx)
         self.selectionModel().select(newSelection, QItemSelectionModel.ClearAndSelect)
+        self.updatePlaceholder()
 
     @property
     def selectedItems(self) -> Sequence[str]:
@@ -121,17 +149,17 @@ class FilteredStringListView(QListView):
     def hasSelectedItems(self) -> bool:
         return self.selectionModel().hasSelection()
 
-    def update_placeholder(self):
+    def updatePlaceholder(self):
         """Show or hide placeholder based on the model's content."""
-        model = self.model()
-        if model and model.rowCount() == 0:
-           self.placeholder_label.show()
-           self.placeholder_label.setGeometry(self.viewport().geometry())
-        else:
-           self.placeholder_label.hide()
+        if self.placeholder_label is not None:
+            model = self.model()
+            if model and model.rowCount() == 0:
+                self.placeholder_label.show()
+            else:
+                self.placeholder_label.hide()
 
     def resizeEvent(self, event):
         """Ensure placeholder is centered on resize."""
         super().resizeEvent(event)
-        if self.placeholder_label.isVisible():
-           self.placeholder_label.setGeometry(self.viewport().geometry())
+        if self.placeholder_label is not None:
+            self.placeholder_label.setGeometry(self.viewport().geometry())
