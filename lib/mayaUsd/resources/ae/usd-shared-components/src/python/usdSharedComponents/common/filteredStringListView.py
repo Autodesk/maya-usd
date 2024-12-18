@@ -17,6 +17,7 @@ try:
     )
     from PySide6.QtGui import QPainter, QPaintEvent, QFont  # type: ignore
     from PySide6.QtWidgets import (  # type: ignore
+        QLabel,
         QListView,
         QStyledItemDelegate,
         QStyleOptionViewItem
@@ -33,7 +34,7 @@ except:
         Signal,
     )
     from PySide2.QtGui import QPainter, QPaintEvent, QFont  # type: ignore
-    from PySide2.QtWidgets import QListView, QStyledItemDelegate, QStyleOptionViewItem  # type: ignore
+    from PySide2.QtWidgets import QLabel, QListView, QStyledItemDelegate, QStyleOptionViewItem  # type: ignore
 
 
 NO_OBJECTS_FOUND_LABEL = "No objects found"
@@ -81,6 +82,16 @@ class FilteredStringListView(QListView):
         self.setSelectionMode(QListView.SelectionMode.ExtendedSelection)
         self.setContentsMargins(1, 0, 1, 1)
 
+        self.placeholder_label = QLabel(self)
+        self.placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        palette = self.placeholder_label.palette()
+        palette.setColor(
+            self.placeholder_label.foregroundRole(),
+            Theme.instance().palette.colorPlaceHolderText,
+        )
+        self.placeholder_label.setPalette(palette)
+        self.placeholder_label.hide()
+
         self.setCursor(Qt.ArrowCursor)
 
         DragAndDropEventFilter(self, data)
@@ -107,18 +118,21 @@ class FilteredStringListView(QListView):
                 self._paintPlaceHolder(DRAG_OBJECTS_HERE_LABEL)
             elif Host.instance().canPick:
                 self._paintPlaceHolder(PICK_OBJECTS_LABEL)
+            else:
+                self.placeholder_label.hide()
+        else:
+            self.placeholder_label.hide()
+
+    def _paintPlaceHolder(self, placeHolderText):
+        self.placeholder_label.setText(placeHolderText)
+        self.placeholder_label.setGeometry(self.viewport().geometry())
+        self.placeholder_label.show()
 
     def selectedItems(self) -> Sequence[str]:
         return [str(index.data(Qt.DisplayRole)) for index in self.selectedIndexes()]
 
     def hasSelectedItems(self) -> bool:
         return bool(self.selectionModel().hasSelection())
-
-    def _paintPlaceHolder(self, placeHolderText):
-        painter = QPainter(self.viewport())
-        theme = Theme.instance()
-        painter.setPen(theme.palette.colorPlaceHolderText)
-        painter.drawText(self.rect(), Qt.AlignCenter, placeHolderText)
 
 class DragAndDropEventFilter(QObject):
     def __init__(self, widget, data: StringListData):

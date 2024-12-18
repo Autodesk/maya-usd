@@ -74,7 +74,7 @@ class UsdCollectionData(CollectionData):
         if not self._collection:
             return False
         includeRootAttribute = self._collection.GetIncludeRootAttr()
-        return includeRootAttribute.Get()
+        return bool(includeRootAttribute.Get())
 
     def setIncludeAll(self, state: bool):
         '''
@@ -98,6 +98,13 @@ class UsdCollectionData(CollectionData):
         Returns the excluded items string list.
         '''
         return self._excludes
+
+    def removeAllIncludeExclude(self):
+        '''
+        Remove all included and excluded items.
+        By design, we author a block collection opinion.
+        '''
+        self._collection.BlockCollection()
 
     # Expression
 
@@ -143,14 +150,10 @@ class UsdCollectionData(CollectionData):
         if usdExpressionAttr != None:
             usdExpression = usdExpressionAttr.GetText()
 
-        textExpression = self._expressionText.toPlainText()
         if usdExpression != textExpression:
             # assign default value if text is empty
             if textExpression == "":
                 self._collection.CreateMembershipExpressionAttr()
             else:
                 self._collection.CreateMembershipExpressionAttr(Sdf.PathExpression(textExpression))
-
-            if self._expressionCallback != None:
-                self._expressionCallback()
 

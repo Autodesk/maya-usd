@@ -9,15 +9,28 @@ except ImportError:
 
 from pxr import Usd
 
+# TODO: support I8N
 EXPAND_PRIMS_MENU_OPTION = "Expand Prims"
 EXPAND_PRIMS_PROPERTIES_MENU_OPTION = "Expand Prims and Properties"
 EXPLICIT_ONLY_MENU_OPTION = "Explicit Only"
+kIncludeExcludeLabel = "Include/Exclude"
+kRemoveAllLabel = "Remove All"
 
 class ExpressionMenu(QMenu):
     def __init__(self, data: CollectionData, parent: QWidget):
         super(ExpressionMenu, self).__init__(parent)
         self._collData = data
 
+        # Note: this is necessary to avoid the separator not show up.
+        self.setSeparatorsCollapsible(False)
+
+        self._incExSeparator = self.addSection(kIncludeExcludeLabel)
+        self._removeAllAction = QAction(kRemoveAllLabel, self)
+        self.addActions([self._incExSeparator, self._removeAllAction])
+
+        self._removeAllAction.triggered.connect(self._onRemoveAll)
+
+        self._collData.dataChanged.connect(self._onDataChanged)
         expansionRulesMenu = QMenu("Expansion Rules", self)
         self.expandPrimsAction = QAction(EXPAND_PRIMS_MENU_OPTION, expansionRulesMenu, checkable=True)
         self.expandPrimsPropertiesAction = QAction(EXPAND_PRIMS_PROPERTIES_MENU_OPTION, expansionRulesMenu, checkable=True)
@@ -28,10 +41,9 @@ class ExpressionMenu(QMenu):
         actionGroup.setExclusive(True)
         for action in expansionRulesMenu.actions():
             actionGroup.addAction(action)
-
-        self.triggered.connect(self.onExpressionSelected)
-        self._collData.dataChanged.connect(self._onDataChanged)
         self.addMenu(expansionRulesMenu)
+
+        actionGroup.triggered.connect(self.onExpressionSelected)
 
         self._onDataChanged()
 
@@ -43,6 +55,9 @@ class ExpressionMenu(QMenu):
             self.expandPrimsPropertiesAction.setChecked(True)
         elif usdExpansionRule == Usd.Tokens.explicitOnly:
             self.explicitOnlyAction.setChecked(True)
+
+    def _onRemoveAll(self):
+        self._collData.removeAllIncludeExclude()
 
     def onExpressionSelected(self, menuOption):
         if menuOption == self.expandPrimsAction:
