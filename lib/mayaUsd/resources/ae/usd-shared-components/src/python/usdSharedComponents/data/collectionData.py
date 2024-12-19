@@ -13,19 +13,13 @@ class CollectionData(QObject):
     def __init__(self):
         super().__init__()
 
-    # Item picking
-
-    def canPick(self) -> bool:
-        '''
-        Return if there is a UI to pick items.
-        '''
-        return False
+    # USD Stage information
     
-    def pick(self) -> Sequence[AnyStr]:
+    def getStage(self):
         '''
-        Pick items and return the sequnce of picked items.
+        Returns the USD stage in which the collection lives.
         '''
-        return []
+        return None
 
     # Include and exclude
 

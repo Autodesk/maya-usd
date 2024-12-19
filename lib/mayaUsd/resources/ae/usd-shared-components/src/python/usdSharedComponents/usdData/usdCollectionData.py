@@ -55,26 +55,15 @@ class UsdCollectionData(CollectionData):
         self._includes.dataChanged.emit()
         self._excludes.dataChanged.emit()
 
-    # Item picking
-
-    def canPick(self) -> bool:
-        '''
-        Return if there is a UI to pick items.
-        '''
-        return False
+    # USD Stage information
     
-    def pick(self, dialogTitle) -> Sequence[AnyStr]:
+    def getStage(self):
         '''
-        Pick items and return the sequnce of picked items.
+        Returns the USD stage in which the collection lives.
         '''
-        # TODO: move host functionality in sub-class of this class, overriding pick.
-        prims: Sequence[Usd.Prim] = Host.instance().pick(self._prim.GetStage(), dialogTitle=dialogTitle)
-        if prims is None:
-            return
-        items = []
-        for prim in prims:
-            items.append(prim.GetPath())
-        return items
+        if not self._prim:
+            return None
+        return self._prim.GetStage()
 
     # Include and exclude
 
@@ -82,6 +71,8 @@ class UsdCollectionData(CollectionData):
         '''
         Verify if the collection includes all by default.
         '''
+        if not self._collection:
+            return False
         includeRootAttribute = self._collection.GetIncludeRootAttr()
         return includeRootAttribute.Get()
 
@@ -90,6 +81,8 @@ class UsdCollectionData(CollectionData):
         Sets if the collection should include all items by default.
         '''
         if self.includesAll() == state:
+            return
+        if not self._collection:
             return
         includeRootAttribute = self._collection.GetIncludeRootAttr()
         includeRootAttribute.Set(state)
@@ -112,6 +105,8 @@ class UsdCollectionData(CollectionData):
         '''
         Returns expansion rule as a USD token.
         '''
+        if not self._collection:
+            return ""
         return self._collection.GetExpansionRuleAttr().Get()
 
     def setExpansionRule(self, rule):
@@ -120,12 +115,17 @@ class UsdCollectionData(CollectionData):
         '''
         if rule == self.getExpansionRule():
             return
+        if not self._collection:
+            return
         self._collection.CreateExpansionRuleAttr(rule)
 
     def getMembershipExpression(self) -> AnyStr:
         '''
         Returns the membership expression as text.
         '''
+        if not self._collection:
+            return None
+        
         usdExpressionAttr = self._collection.GetMembershipExpressionAttr().Get()
         if usdExpressionAttr is None:
             return None
@@ -135,6 +135,9 @@ class UsdCollectionData(CollectionData):
         '''
         Set the textual membership expression.
         '''
+        if not self._collection:
+            return
+        
         usdExpression = ""
         usdExpressionAttr = self._collection.GetMembershipExpressionAttr().Get()
         if usdExpressionAttr != None:

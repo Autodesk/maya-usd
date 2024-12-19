@@ -38,6 +38,7 @@ class CollectionStringListData(StringListData):
         '''
         if self._collection is None:
             return
+        
         # Use a SdfChangeBlock to group all updates in a single USD recomposition.
         with Sdf.ChangeBlock():
             if self._isInclude:
@@ -51,6 +52,9 @@ class CollectionStringListData(StringListData):
         '''
         Remove the given strings from the model.
         '''
+        if self._collection is None:
+            return
+        
         with Sdf.ChangeBlock():
             if self._isInclude:
                 for item in items:
@@ -66,6 +70,9 @@ class CollectionStringListData(StringListData):
         '''
         # We probably received the UFE path, which contains a Maya path and
         # a USD (Sdf) path separated by a comma. Extract the USD path.
+        if self._collection is None:
+            return None
+
         if "," in text:
             text = text.split(",")[1]
         if not Sdf.Path.IsValidPathString(text):

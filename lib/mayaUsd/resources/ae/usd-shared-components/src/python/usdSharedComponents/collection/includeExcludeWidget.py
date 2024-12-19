@@ -117,11 +117,17 @@ class IncludeExcludeWidget(QWidget):
             self._include.cbIncludeAll.setChecked(incAll)
 
     def onAddToIncludePrimClicked(self):
-        items = self._collData.pick("Add Include Objects")
+        stage = self._collData.getStage()
+        if not stage:
+            return
+        items = Host.instance().pick(stage, "Add Include Objects")
         self._collData.getIncludeData().addStrings(items)
 
     def onAddToExcludePrimClicked(self):
-        items = self._collData.pick("Add Exclude Objects")
+        stage = self._collData.getStage()
+        if not stage:
+            return
+        items = Host.instance().pick(stage, "Add Exclude Objects")
         self._collData.getExcludeData().addStrings(items)
 
     def onRemoveSelectionFromInclude(self):

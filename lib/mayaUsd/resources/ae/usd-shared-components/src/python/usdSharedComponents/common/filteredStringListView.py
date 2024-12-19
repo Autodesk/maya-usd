@@ -36,10 +36,10 @@ except:
     from PySide2.QtWidgets import QListView, QStyledItemDelegate, QStyleOptionViewItem  # type: ignore
 
 
-kNoObjectFoundLabel = "No objects found"
-kDragObjectsHereLabel = "Drag objects here"
-kPickObjectsLabel = "Click '+' to add"
-kDragOrPickObjectsLabel = "Drag objects here or click '+' to add"
+NO_OBJECTS_FOUND_LABEL = "No objects found"
+DRAG_OBJECTS_HERE_LABEL = "Drag objects here"
+PICK_OBJECTS_LABEL = "Click '+' to add"
+DRAG_OR_PICK_OBJECTS_LABEL = "Drag objects here or click '+' to add"
 
 
 class FilteredStringListView(QListView):
@@ -99,14 +99,14 @@ class FilteredStringListView(QListView):
             return
 
         if model.isFilteredEmpty():
-            self._paintPlaceHolder(kNoObjectFoundLabel)
+            self._paintPlaceHolder(NO_OBJECTS_FOUND_LABEL)
         elif model.rowCount() == 0:
             if Host.instance().canDrop and Host.instance().canPick:
-                self._paintPlaceHolder(kDragOrPickObjectsLabel)
+                self._paintPlaceHolder(DRAG_OR_PICK_OBJECTS_LABEL)
             elif Host.instance().canDrop:
-                self._paintPlaceHolder(kDragObjectsHereLabel)
+                self._paintPlaceHolder(DRAG_OBJECTS_HERE_LABEL)
             elif Host.instance().canPick:
-                self._paintPlaceHolder(kPickObjectsLabel)
+                self._paintPlaceHolder(PICK_OBJECTS_LABEL)
 
     def selectedItems(self) -> Sequence[str]:
         return [str(index.data(Qt.DisplayRole)) for index in self.selectedIndexes()]
@@ -118,9 +118,6 @@ class FilteredStringListView(QListView):
         painter = QPainter(self.viewport())
         theme = Theme.instance()
         painter.setPen(theme.palette.colorPlaceHolderText)
-        font: QFont = painter.font()
-        font.setPixelSize(theme.uiScaled(18))
-        painter.setFont(font)
         painter.drawText(self.rect(), Qt.AlignCenter, placeHolderText)
 
 class DragAndDropEventFilter(QObject):
