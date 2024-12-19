@@ -359,6 +359,7 @@ struct _MaterialXData
 #if MX_COMBINED_VERSION >= 13808
             _lobePruner = MaterialXMaya::ShaderGenUtil::LobePruner::create();
             _lobePruner->setLibrary(_mtlxLibrary);
+            _lobePruner->optimizeLibrary(_mtlxLibrary);
 
             // TODO: Optimize published shaders.
             // SCENARIO: User publishes a shader with a NodeGraph implementation that encapsulates a
@@ -3038,8 +3039,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
         const mx::FileSearchPath& crLibrarySearchPath(_GetMaterialXData()._mtlxSearchPath);
 #if MX_COMBINED_VERSION >= 13808
         if (mtlxSdrNode
-            || MaterialXMaya::ShaderGenUtil::LobePruner::isOptimizedNodeId(
-                surfTerminal->nodeTypeId)) {
+            || _GetMaterialXData()._lobePruner->isOptimizedNodeId(surfTerminal->nodeTypeId)) {
 #else
         if (mtlxSdrNode) {
 #endif

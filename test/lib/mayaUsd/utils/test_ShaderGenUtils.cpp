@@ -179,17 +179,17 @@ TEST(ShaderGenUtils, lobePruner)
 
     const auto node = doc->addNode("standard_surface", "bob", "surfaceshader");
 
-    std::string optimizedCategory;
-    ASSERT_TRUE(lobePruner->getOptimizedNodeCategory(*node, optimizedCategory));
+    mx::NodeDefPtr optimizedNodeDef;
+    ASSERT_TRUE(lobePruner->getOptimizedNodeDef(*node, optimizedNodeDef));
     // An x means can not optimize on that attribute
     // A 0 means we optimized due to this value being zero
-    ASSERT_EQ(optimizedCategory, "standard_surface_x0000x00x000");
+    ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x000");
 
     auto input = node->addInputFromNodeDef("subsurface");
     input->setValueString("1.0");
-    ASSERT_TRUE(lobePruner->getOptimizedNodeCategory(*node, optimizedCategory));
+    ASSERT_TRUE(lobePruner->getOptimizedNodeDef(*node, optimizedNodeDef));
     // Now have a 1 for subsurface since we can also optimize the 1 value for mix nodes.
-    ASSERT_EQ(optimizedCategory, "standard_surface_x0000x00x010");
+    ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x010");
 
     PXR_NS::HdMaterialNode2 usdNode;
     usdNode.nodeTypeId = PXR_NS::TfToken("ND_standard_surface_surfaceshader");
@@ -198,7 +198,7 @@ TEST(ShaderGenUtils, lobePruner)
         optimizedNodeId.GetString(),
         sgu::LobePruner::getOptimizedNodeDefPrefix()
             + "standard_surface_x0000x00x000_surfaceshader");
-    ASSERT_TRUE(sgu::LobePruner::isOptimizedNodeId(optimizedNodeId));
+    ASSERT_TRUE(lobePruner->isOptimizedNodeId(optimizedNodeId));
 
     usdNode.nodeTypeId = PXR_NS::TfToken("ND_mix_surfaceshader");
     optimizedNodeId = lobePruner->getOptimizedNodeId(usdNode);
