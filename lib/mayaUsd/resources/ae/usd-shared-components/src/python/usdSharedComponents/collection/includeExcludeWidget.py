@@ -16,7 +16,19 @@ except ImportError:
     from PySide2.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLineEdit, QMenu, QSizePolicy, QToolButton, QWidget  # type: ignore
 
 # TODO: support I8N
-kSearchPlaceHolder = "Search..."
+SEARCH_PLACEHOLDER_LABEL = "Search..."
+ADD_OBJECTS_TOOLTIP = "Add Objects to the Include/Exclude list"
+REMOVE_OBJECTS_TOOLTIP = "Remove Selected Objects from Include/Exclude list"
+REMOVE_FROM_INCLUDE_TOOLTIP = "Remove Selected Objects from Include"
+REMOVE_FROM_EXCLUDE_TOOLTIP = "Remove Selected Objects from Exclude"
+INCLUDE_OBJECTS_LABEL = "Include Objects..."
+EXCLUDE_OBJECTS_LABEL ="Exclude Objects..."
+REMOVE_FROM_INCLUDES_LABEL = "Remove Selected Objects from Include"
+REMOVE_FROM_EXCLUDES_LABEL = "Remove Selected Objects from Exclude"
+INCLUDE_LABEL = "Include"
+EXCLUDE_LABEL = "Exclude"
+ADD_INCLUDE_OBJECTS_TITLE = "Add Include Objects"
+ADD_EXCLUDE_OBJECTS_TITLE = "Add Exclude Objects"
 
 class IncludeExcludeWidget(QWidget):
     def __init__(
@@ -37,7 +49,7 @@ class IncludeExcludeWidget(QWidget):
         self._filterWidget.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
-        self._filterWidget.setPlaceholderText(kSearchPlaceHolder)
+        self._filterWidget.setPlaceholderText(SEARCH_PLACEHOLDER_LABEL)
         self._filterWidget.setClearButtonEnabled(True)
 
         separator = QFrame()
@@ -48,25 +60,25 @@ class IncludeExcludeWidget(QWidget):
 
         if Host.instance().canPick:
             addBtn = QToolButton(headerWidget)
-            addBtn.setToolTip("Add Objects to the Include/Exclude list")
+            addBtn.setToolTip(ADD_OBJECTS_TOOLTIP)
             addBtn.setIcon(Theme.instance().icon("add"))
             addBtn.setPopupMode(QToolButton.InstantPopup)
             addBtnMenu = QMenu(addBtn)
-            addBtnMenu.addAction("Include Objects...", self.onAddToIncludePrimClicked)
-            addBtnMenu.addAction("Exclude Objects...", self.onAddToExcludePrimClicked)
+            addBtnMenu.addAction(INCLUDE_OBJECTS_LABEL, self.onAddToIncludePrimClicked)
+            addBtnMenu.addAction(EXCLUDE_OBJECTS_LABEL, self.onAddToExcludePrimClicked)
             addBtn.setMenu(addBtnMenu)
             headerLayout.addWidget(addBtn)
 
         self._deleteBtn = QToolButton(headerWidget)
-        self._deleteBtn.setToolTip("Remove Selected Objects from Include/Exclude list")
+        self._deleteBtn.setToolTip(REMOVE_OBJECTS_TOOLTIP)
         self._deleteBtn.setIcon(Theme.instance().icon("delete"))
         self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
         self._deleteBtnMenu = QMenu(self._deleteBtn)
-        self._deleteBtnActionFromIncludes = self._deleteBtnMenu.addAction(
-            "Remove Selected Objects from Include", self.onRemoveSelectionFromInclude
+        self._deleteBtnMenu.addAction(
+            REMOVE_FROM_INCLUDES_LABEL, self.onRemoveSelectionFromInclude
         )
-        self._deleteBtnActionFromExcludes = self._deleteBtnMenu.addAction(
-            "Remove Selected Objects from Exclude", self.onRemoveSelectionFromExclude
+        self._deleteBtnMenu.addAction(
+            REMOVE_FROM_EXCLUDES_LABEL, self.onRemoveSelectionFromExclude
         )
         self._deleteBtn.setMenu(self._deleteBtnMenu)
         headerLayout.addWidget(self._deleteBtn)
@@ -78,7 +90,7 @@ class IncludeExcludeWidget(QWidget):
         headerLayout.addWidget(menuButton)
         mainLayout.addWidget(headerWidget)
 
-        self._include = StringListPanel(data.getIncludeData(), True, "Include", self)
+        self._include = StringListPanel(data.getIncludeData(), True, INCLUDE_LABEL, self)
         self._include.cbIncludeAll.stateChanged.connect(self.onIncludeAllToggle)
         self._resizableInclude = Resizable(
             self._include,
@@ -90,7 +102,7 @@ class IncludeExcludeWidget(QWidget):
         self._resizableInclude.minContentSize = Theme.instance().uiScaled(44)
         mainLayout.addWidget(self._resizableInclude)
 
-        self._exclude = StringListPanel(data.getExcludeData(), False, "Exclude", self)
+        self._exclude = StringListPanel(data.getExcludeData(), False, EXCLUDE_LABEL, self)
         self._resizableExclude = Resizable(
             self._exclude,
             "USD_Light_Linking",
@@ -120,14 +132,14 @@ class IncludeExcludeWidget(QWidget):
         stage = self._collData.getStage()
         if not stage:
             return
-        items = Host.instance().pick(stage, "Add Include Objects")
+        items = Host.instance().pick(stage, ADD_INCLUDE_OBJECTS_TITLE)
         self._collData.getIncludeData().addStrings(items)
 
     def onAddToExcludePrimClicked(self):
         stage = self._collData.getStage()
         if not stage:
             return
-        items = Host.instance().pick(stage, "Add Exclude Objects")
+        items = Host.instance().pick(stage, ADD_EXCLUDE_OBJECTS_TITLE)
         self._collData.getExcludeData().addStrings(items)
 
     def onRemoveSelectionFromInclude(self):
@@ -138,14 +150,23 @@ class IncludeExcludeWidget(QWidget):
         self._collData.getExcludeData().removeStrings(self._include.list.selectedItems())
         self.onListSelectionChanged()
 
+    def _findAction(self, label):
+        for act in self._deleteBtnMenu.actions():
+            if act.text() == label:
+                return act
+        return None
+
     def onListSelectionChanged(self):
         includesSelected = self._include.list.hasSelectedItems()
         excludeSelected = self._exclude.list.hasSelectedItems()
         self._deleteBtn.setEnabled(includesSelected or excludeSelected)
 
-        # TODO: these QAction are reported as already being deleted in C++
-        # self._deleteBtnActionFromIncludes.setEnabled(includesSelected)
-        # self._deleteBtnActionFromExcludes.setEnabled(excludeSelected)
+        deleteFromIncludesAction = self._findAction(REMOVE_FROM_INCLUDES_LABEL)
+        if deleteFromIncludesAction:
+            deleteFromIncludesAction.setEnabled(includesSelected)
+        deleteFromExcludesAction = self._findAction(REMOVE_FROM_EXCLUDES_LABEL)
+        if deleteFromExcludesAction:
+            deleteFromExcludesAction.setEnabled(excludeSelected)
 
         try:
             self._deleteBtn.pressed.disconnect(self.onRemoveSelectionFromInclude)
@@ -154,17 +175,15 @@ class IncludeExcludeWidget(QWidget):
             pass
 
         if includesSelected and excludeSelected:
-            self._deleteBtn.setToolTip(
-                "Remove Selected Objects from Include/Exclude list"
-            )
+            self._deleteBtn.setToolTip(REMOVE_OBJECTS_TOOLTIP)
             self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
             self._deleteBtn.setStyleSheet("")
         else:
             if includesSelected:
-                self._deleteBtn.setToolTip("Remove Selected Objects from Include")
+                self._deleteBtn.setToolTip(REMOVE_FROM_INCLUDE_TOOLTIP)
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromInclude)
             elif excludeSelected:
-                self._deleteBtn.setToolTip("Remove Selected Objects from Exclude")
+                self._deleteBtn.setToolTip(REMOVE_FROM_EXCLUDE_TOOLTIP)
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromExclude)
             self._deleteBtn.setPopupMode(QToolButton.DelayedPopup)
             self._deleteBtn.setStyleSheet(
