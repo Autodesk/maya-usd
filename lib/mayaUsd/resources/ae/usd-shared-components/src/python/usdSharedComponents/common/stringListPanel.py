@@ -1,6 +1,8 @@
 from typing import Sequence
 from .theme import Theme
+import textwrap
 from .filteredStringListView import FilteredStringListView
+from ..data.stringListData import StringListData
 
 try:
     from PySide6.QtCore import QRect, Qt  # type: ignore
@@ -19,21 +21,26 @@ except ImportError:
     from PySide2.QtGui import QPainter  # type: ignore
     from PySide2.QtWidgets import QCheckBox, QHBoxLayout, QVBoxLayout, QStyle, QStyleOptionHeaderV2, QStylePainter, QWidget  # type: ignore
 
+# TODO: support I8N
+kIncludeAllLabel = "Include all"
+kIncludeAllTooltip = textwrap.dedent(
+    """
+    When enabled, all prims are illuminated. When disabled,
+    only the prims in the Include list are illuminated.
+    """).strip()
 
 _LEFT_RIGHT_MARGINS: int = Theme.instance().uiScaled(2)
 
-class StringList(QWidget):
-
+class StringListPanel(QWidget):
     def __init__(
         self,
-        items: Sequence[str] = [],
+        data: StringListData,
+        isInclude: bool,
         headerTitle: str = "",
-        toggleTitle: str = "",
         parent=None,
     ):
-        super(StringList, self).__init__(parent)
-        self.list = FilteredStringListView(items, headerTitle, self)
-        self.list.updatePlaceholder()
+        super(StringListPanel, self).__init__(parent)
+        self.list = FilteredStringListView(data, headerTitle, self)
 
         layout = QVBoxLayout(self)
         layout.setSpacing(0)
@@ -44,14 +51,15 @@ class StringList(QWidget):
         # affect other hosts
         self.setProperty("StyleLayer", 3)
 
-        self.headerWidget = StringList.HeaderWidget(headerTitle, self)
+        self.headerWidget = StringListPanel.HeaderWidget(headerTitle, self)
         headerLayout = QHBoxLayout(self.headerWidget)
         headerLayout.addStretch(1)
         headerLayout.setContentsMargins(0, 0, _LEFT_RIGHT_MARGINS, 0)
 
         # only add the check box on the header if there's a label
-        if toggleTitle != None and toggleTitle != "":
-            self.cbIncludeAll = QCheckBox(toggleTitle, self)
+        if isInclude:
+            self.cbIncludeAll = QCheckBox(kIncludeAllLabel, self)
+            self.cbIncludeAll.setToolTip(kIncludeAllTooltip)
             self.cbIncludeAll.setCheckable(True)
             headerLayout.addWidget(self.cbIncludeAll)
 
@@ -75,7 +83,7 @@ class StringList(QWidget):
     class HeaderWidget(QWidget):
 
         def __init__(self, headerTitle: str = "", parent=None):
-            super(StringList.HeaderWidget, self).__init__(parent)
+            super(StringListPanel.HeaderWidget, self).__init__(parent)
             self._headerTitle = headerTitle
             self.setMinimumHeight(Theme.instance().uiScaled(22))
 
