@@ -1,3 +1,4 @@
+from ..data.collectionData import CollectionData
 
 try:
     from PySide6.QtWidgets import QMenu, QWidget # type: ignore
@@ -13,9 +14,9 @@ EXPAND_PRIMS_PROPERTIES_MENU_OPTION = "Expand Prims and Properties"
 EXPLICIT_ONLY_MENU_OPTION = "Explicit Only"
 
 class ExpressionMenu(QMenu):
-    def __init__(self, collection, parent: QWidget):
+    def __init__(self, data: CollectionData, parent: QWidget):
         super(ExpressionMenu, self).__init__(parent)
-        self._collection = collection
+        self._collData = data
 
         expansionRulesMenu = QMenu("Expansion Rules", self)
         self.expandPrimsAction = QAction(EXPAND_PRIMS_MENU_OPTION, expansionRulesMenu, checkable=True)
@@ -23,18 +24,19 @@ class ExpressionMenu(QMenu):
         self.explicitOnlyAction = QAction(EXPLICIT_ONLY_MENU_OPTION, expansionRulesMenu, checkable=True)
         expansionRulesMenu.addActions([self.expandPrimsAction, self.expandPrimsPropertiesAction, self.explicitOnlyAction])
 
-        self.update()
-
         actionGroup = QActionGroup(self)
         actionGroup.setExclusive(True)
         for action in expansionRulesMenu.actions():
             actionGroup.addAction(action)
 
         self.triggered.connect(self.onExpressionSelected)
+        self._collData.dataChanged.connect(self._onDataChanged)
         self.addMenu(expansionRulesMenu)
 
-    def update(self):
-        usdExpansionRule = self._collection.GetExpansionRuleAttr().Get()
+        self._onDataChanged()
+
+    def _onDataChanged(self):
+        usdExpansionRule = self._collData.getExpansionRule()
         if usdExpansionRule == Usd.Tokens.expandPrims:
             self.expandPrimsAction.setChecked(True)
         elif usdExpansionRule == Usd.Tokens.expandPrimsAndProperties:
@@ -43,13 +45,9 @@ class ExpressionMenu(QMenu):
             self.explicitOnlyAction.setChecked(True)
 
     def onExpressionSelected(self, menuOption):
-        usdExpansionRule = self._collection.GetExpansionRuleAttr().Get()
         if menuOption == self.expandPrimsAction:
-            if usdExpansionRule != Usd.Tokens.expandPrims:
-                self._collection.CreateExpansionRuleAttr(Usd.Tokens.expandPrims)
+            self._collData.setExpansionRule(Usd.Tokens.expandPrims)
         elif menuOption == self.expandPrimsPropertiesAction:
-            if usdExpansionRule != Usd.Tokens.expandPrimsAndProperties:
-                self._collection.CreateExpansionRuleAttr(Usd.Tokens.expandPrimsAndProperties)
+            self._collData.setExpansionRule(Usd.Tokens.expandPrimsAndProperties)
         elif menuOption == self.explicitOnlyAction:
-            if usdExpansionRule != Usd.Tokens.explicitOnly:
-                self._collection.CreateExpansionRuleAttr(Usd.Tokens.explicitOnly)
+            self._collData.setExpansionRule(Usd.Tokens.explicitOnly)
