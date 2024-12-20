@@ -179,15 +179,16 @@ TEST(ShaderGenUtils, lobePruner)
 
     const auto node = doc->addNode("standard_surface", "bob", "surfaceshader");
 
-    mx::NodeDefPtr optimizedNodeDef;
-    ASSERT_TRUE(lobePruner->getOptimizedNodeDef(*node, optimizedNodeDef));
+    auto optimizedNodeDef = lobePruner->getOptimizedNodeDef(*node);
+    ASSERT_TRUE(optimizedNodeDef);
     // An x means can not optimize on that attribute
     // A 0 means we optimized due to this value being zero
     ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x000");
 
     auto input = node->addInputFromNodeDef("subsurface");
     input->setValueString("1.0");
-    ASSERT_TRUE(lobePruner->getOptimizedNodeDef(*node, optimizedNodeDef));
+    optimizedNodeDef = lobePruner->getOptimizedNodeDef(*node);
+    ASSERT_TRUE(optimizedNodeDef);
     // Now have a 1 for subsurface since we can also optimize the 1 value for mix nodes.
     ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x010");
 

@@ -233,8 +233,9 @@ mx::NodePtr TopoNeutralGraph::cloneNode(const mx::Node& node, mx::GraphElement& 
     if (!nodeDef) {
         throw mx::Exception("Ambiguous node is not fully resolvable");
     }
-    mx::NodeDefPtr optimizedNodeDef;
-    if (_lobePruner && _lobePruner->getOptimizedNodeDef(node, optimizedNodeDef)) {
+    auto optimizedNodeDef
+        = _lobePruner ? _lobePruner->getOptimizedNodeDef(node) : mx::NodeDefPtr {};
+    if (optimizedNodeDef) {
         const auto nsPrefix = optimizedNodeDef->hasNamespace()
             ? optimizedNodeDef->getNamespace() + ":"
             : std::string {};

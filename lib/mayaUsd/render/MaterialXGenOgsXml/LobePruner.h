@@ -63,10 +63,9 @@ public:
     /*! Checks if a node is optimizable and if this is the case, create the optimized NodeDef and
      * NodeGraph in the library and return the optimized NodeDef.
      * @param[in] node is a node we want to optimize. All nodes are welcome.
-     * @param[out] nodeDef is the NodeDef of the optimized node.
-     *  \return true if an optimization was found
+     *  \return the optimized NodeDef if one was found, nullptr otherwise
      */
-    bool getOptimizedNodeDef(const mx::Node& node, mx::NodeDefPtr& nodeDef);
+    mx::NodeDefPtr getOptimizedNodeDef(const mx::Node& node);
 
     /*! Get the list of attribute names that are optimization targets for a specific NodeDef.
      * @param[in] nodeDef is preferably node definition that has previously been optimized, but all

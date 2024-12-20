@@ -85,7 +85,7 @@ public:
     LobePrunerImpl(LobePrunerImpl&&) = delete;
     LobePrunerImpl& operator=(LobePrunerImpl&&) = delete;
 
-    bool getOptimizedNodeDef(const mx::Node& node, mx::NodeDefPtr& nodeDef);
+    mx::NodeDefPtr getOptimizedNodeDef(const mx::Node& node);
 
     mx::StringVec getOptimizedAttributeNames(const mx::NodeDefPtr& nodeDef) const;
 
@@ -110,7 +110,7 @@ private:
         const mx::NodeGraphPtr& ng,
         const mx::NodeDefPtr&   nd);
     mx::NodeDefPtr
-         ensureLibraryHasOptimizedShader(const PXR_NS::TfToken& nodeDefName, const std::string& flags);
+         getOrAddOptimizedNodeDef(const PXR_NS::TfToken& nodeDefName, const std::string& flags);
     void optimizeZeroValue(
         mx::NodeGraphPtr&          optimizedNodeGraph,
         const OptimizableValueMap& optimizationMap,
@@ -290,7 +290,7 @@ void LobePrunerImpl::optimizeLibrary(const MaterialX::DocumentPtr& library)
             }
 
             if (canOptimize) {
-                const auto optimizedNodeDef = ensureLibraryHasOptimizedShader(ndName, flags);
+                const auto optimizedNodeDef = getOrAddOptimizedNodeDef(ndName, flags);
                 // Replace the node with an optimized one:
                 const auto nsPrefix = optimizedNodeDef->hasNamespace()
                     ? optimizedNodeDef->getNamespace() + ":"
@@ -331,17 +331,17 @@ void LobePrunerImpl::addOptimizableValue(
     valueMap.find(value)->second.push_back(PXR_NS::TfToken(input->getParent()->getName()));
 }
 
-bool LobePrunerImpl::getOptimizedNodeDef(const mx::Node& node, mx::NodeDefPtr& nodeDef)
+mx::NodeDefPtr LobePrunerImpl::getOptimizedNodeDef(const mx::Node& node)
 {
     const auto& nd = node.getNodeDef();
     if (!nd) {
-        return false;
+        return {};
     }
 
     const auto ndName = PXR_NS::TfToken(nd->getName());
     const auto ndIt = _prunerData.find(ndName);
     if (ndIt == _prunerData.end()) {
-        return false;
+        return {};
     }
 
     std::string flags(ndIt->second._attributeData.size(), 'x');
@@ -377,11 +377,10 @@ bool LobePrunerImpl::getOptimizedNodeDef(const mx::Node& node, mx::NodeDefPtr& n
     }
 
     if (canOptimize) {
-        nodeDef = ensureLibraryHasOptimizedShader(ndName, flags);
-        return true;
+        return getOrAddOptimizedNodeDef(ndName, flags);
     }
 
-    return false;
+    return {};
 }
 
 mx::StringVec LobePrunerImpl::getOptimizedAttributeNames(const mx::NodeDefPtr& nodeDef) const
@@ -444,7 +443,7 @@ PXR_NS::TfToken LobePrunerImpl::getOptimizedNodeId(const PXR_NS::HdMaterialNode2
     }
 
     if (canOptimize) {
-        return PXR_NS::TfToken(ensureLibraryHasOptimizedShader(node.nodeTypeId, flags)->getName());
+        return PXR_NS::TfToken(getOrAddOptimizedNodeDef(node.nodeTypeId, flags)->getName());
     }
 
     return retVal;
@@ -455,7 +454,7 @@ bool LobePrunerImpl::isOptimizedNodeId(const PXR_NS::TfToken& nodeId)
     return _optimizedNodeIds.count(nodeId) != 0;
 }
 
-mx::NodeDefPtr LobePrunerImpl::ensureLibraryHasOptimizedShader(
+mx::NodeDefPtr LobePrunerImpl::getOrAddOptimizedNodeDef(
     const PXR_NS::TfToken& nodeDefName,
     const std::string&     flags)
 {
@@ -671,9 +670,9 @@ void LobePruner::optimizeLibrary(const MaterialX::DocumentPtr& library)
     }
 }
 
-bool LobePruner::getOptimizedNodeDef(const mx::Node& node, mx::NodeDefPtr& nodeDef)
+mx::NodeDefPtr LobePruner::getOptimizedNodeDef(const mx::Node& node)
 {
-    return _impl ? _impl->getOptimizedNodeDef(node, nodeDef) : false;
+    return _impl ? _impl->getOptimizedNodeDef(node) : mx::NodeDefPtr {};
 }
 
 mx::StringVec LobePruner::getOptimizedAttributeNames(const mx::NodeDefPtr& nodeDef) const
