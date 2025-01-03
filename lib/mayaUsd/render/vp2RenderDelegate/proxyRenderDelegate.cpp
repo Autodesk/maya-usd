@@ -548,7 +548,9 @@ bool _IsVP2RenderDelegate()
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (theRenderer) {
         const MString overrideName = theRenderer->activeRenderOverride();
-        isVP2RenderDelegate = (0 == overrideName.length()); //Having a non empty render override name means we are not using the VP2 render delegate
+        isVP2RenderDelegate
+            = (0 == overrideName.length()); // Having a non empty render override name means we are
+                                            // not using the VP2 render delegate
     }
 
     return isVP2RenderDelegate;
@@ -632,7 +634,7 @@ bool ProxyRenderDelegate::requiresUpdate(
 
 void ProxyRenderDelegate::_ClearRenderDelegate()
 {
-    if ( ! _isInitialized())
+    if (!_isInitialized())
         return;
 
     // The order of deletion matters. Some orders cause crashes.
