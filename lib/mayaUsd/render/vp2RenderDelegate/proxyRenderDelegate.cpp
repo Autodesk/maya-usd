@@ -542,6 +542,18 @@ bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam
 
 bool _longDurationRendering = false;
 
+bool _IsVP2RenderDelegate()
+{
+    bool                  isVP2RenderDelegate = true;
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (theRenderer) {
+        const MString overrideName = theRenderer->activeRenderOverride();
+        isVP2RenderDelegate = (0 == overrideName.length()); //Having a non empty render override name means we are not using the VP2 render delegate
+    }
+
+    return isVP2RenderDelegate;
+}
+
 } // namespace
 
 //! \brief  Draw classification used during plugin load to register in VP2
@@ -620,6 +632,9 @@ bool ProxyRenderDelegate::requiresUpdate(
 
 void ProxyRenderDelegate::_ClearRenderDelegate()
 {
+    if ( ! _isInitialized())
+        return;
+
     // The order of deletion matters. Some orders cause crashes.
 
     _sceneDelegate.reset();
@@ -1223,6 +1238,12 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // Without a proxy shape we can't do anything
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;
+
+    const bool isVP2RenderDelegate = _IsVP2RenderDelegate();
+    if (!isVP2RenderDelegate) {
+        _ClearRenderDelegate(); // Free resources if we are not using VP2 render delegate
+        return;
+    }
 
     // If the rendering was flagged as possibly taking a long time,
     // show the wait cursor.
