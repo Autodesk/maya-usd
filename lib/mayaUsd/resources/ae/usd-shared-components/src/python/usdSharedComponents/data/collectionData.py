@@ -46,6 +46,12 @@ class CollectionData(QObject):
         Returns the excluded items string list.
         '''
         return None
+    
+    def removeAllIncludeExclude(self):
+        '''
+        Remove all included and excluded items.
+        '''
+        pass
 
     # Expression
 

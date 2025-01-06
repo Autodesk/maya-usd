@@ -132,14 +132,14 @@ class IncludeExcludeWidget(QWidget):
         stage = self._collData.getStage()
         if not stage:
             return
-        items = Host.instance().pick(stage, ADD_INCLUDE_OBJECTS_TITLE)
+        items = Host.instance().pick(stage, dialogTitle=ADD_INCLUDE_OBJECTS_TITLE)
         self._collData.getIncludeData().addStrings(items)
 
     def onAddToExcludePrimClicked(self):
         stage = self._collData.getStage()
         if not stage:
             return
-        items = Host.instance().pick(stage, ADD_EXCLUDE_OBJECTS_TITLE)
+        items = Host.instance().pick(stage, dialogTitle=ADD_EXCLUDE_OBJECTS_TITLE)
         self._collData.getExcludeData().addStrings(items)
 
     def onRemoveSelectionFromInclude(self):

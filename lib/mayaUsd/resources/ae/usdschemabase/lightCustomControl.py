@@ -10,7 +10,7 @@ class MayaHost(Host):
     def __init__(self):
         pass
 
-    def pick(self, stage: Usd.Stage) -> Sequence[Usd.Prim]:
+    def pick(self, stage: Usd.Stage, *, dialogTitle: str = "") -> Sequence[Usd.Prim]:
         return [] # nothing to do yet
 
 

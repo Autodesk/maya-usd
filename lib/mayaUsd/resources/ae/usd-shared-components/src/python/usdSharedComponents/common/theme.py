@@ -49,9 +49,9 @@ class Theme(object):
         def __init__(self):
             super(Theme.Palette, self)
             self.colorResizeBorderActive: QColor = QColor(0x5285a6)
-            self.colorPlaceHolderText = QColor(128, 128, 128)
 
-            pal = QPallette = QPalette()
+            pal = QPalette()
+
             self.colorPlaceHolderText = pal.color(QPalette.ColorRole.WindowText)
             self.colorPlaceHolderText.setAlphaF(0.7)
 
