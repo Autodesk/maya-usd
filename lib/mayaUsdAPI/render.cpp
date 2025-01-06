@@ -157,6 +157,13 @@ void LobePruner::setLibrary(const MaterialX::DocumentPtr& library)
     }
 }
 
+void LobePruner::optimizeLibrary(const MaterialX::DocumentPtr& library)
+{
+    if (_imp && _imp->_lobePruner) {
+        _imp->_lobePruner->optimizeLibrary(library);
+    }
+}
+
 struct TopoNeutralGraphImpl
 {
     TopoNeutralGraphImpl(const MaterialX::ElementPtr& material)

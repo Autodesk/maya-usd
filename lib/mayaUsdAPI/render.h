@@ -135,6 +135,12 @@ public:
      */
     void setLibrary(const MaterialX::DocumentPtr& library);
 
+    /*! Traverses and optimizes in place all NodeGraphs found in the library. Useful if a library
+     * contains NodeGraphs that embed optimizable nodes.
+     * @param[in] library is the library used to generate shaders.
+     */
+    void optimizeLibrary(const MaterialX::DocumentPtr& library);
+
 private:
     LobePruner();
 

@@ -57,13 +57,13 @@ class LobePrunerImpl
     //            nodeGraphName,
     //            map< attributeName,       // AttributeMap
     //                map< attributeValue,  // OptimizableValueMap
-    //                     NodeVector
+    //                     NodeSet
     //                >
     //            >
     //        }
     //    >
-    using NodeVector = std::vector<PXR_NS::TfToken>;
-    using OptimizableValueMap = std::map<float, NodeVector>;
+    using NodeSet = PXR_NS::TfToken::HashSet;
+    using OptimizableValueMap = std::map<float, NodeSet>;
     // We want attributes alphabetically sorted:
     using AttributeMap = std::map<PXR_NS::TfToken, OptimizableValueMap>;
     struct NodeDefData
@@ -73,7 +73,7 @@ class LobePrunerImpl
     };
 
     // Also helps if we have a reverse connection map from source node to dest node:
-    using Destinations = std::vector<std::string>;
+    using Destinations = std::set<std::string>;
     using ReverseCnxMap = std::map<std::string, Destinations>;
 
 public:
@@ -85,10 +85,14 @@ public:
     LobePrunerImpl(LobePrunerImpl&&) = delete;
     LobePrunerImpl& operator=(LobePrunerImpl&&) = delete;
 
-    bool          getOptimizedNodeCategory(const mx::Node& node, std::string& nodeCategory);
+    mx::NodeDefPtr getOptimizedNodeDef(const mx::Node& node);
+
     mx::StringVec getOptimizedAttributeNames(const mx::NodeDefPtr& nodeDef) const;
 
     PXR_NS::TfToken getOptimizedNodeId(const PXR_NS::HdMaterialNode2& node);
+    bool            isOptimizedNodeId(const PXR_NS::TfToken& nodeId);
+
+    void optimizeLibrary(const MaterialX::DocumentPtr& library);
 
     static const std::string ND_PREFIX;
     static const std::string DARK_BASE;
@@ -105,8 +109,8 @@ private:
         const mx::InputPtr&     input,
         const mx::NodeGraphPtr& ng,
         const mx::NodeDefPtr&   nd);
-    void
-         ensureLibraryHasOptimizedShader(const PXR_NS::TfToken& nodeDefName, const std::string& flags);
+    mx::NodeDefPtr
+         getOrAddOptimizedNodeDef(const PXR_NS::TfToken& nodeDefName, const std::string& flags);
     void optimizeZeroValue(
         mx::NodeGraphPtr&          optimizedNodeGraph,
         const OptimizableValueMap& optimizationMap,
@@ -129,9 +133,11 @@ private:
         mx::NodePtr&       node,
         const std::string& darkNodeName,
         const std::string& darkNodeDefName) const;
+    void updateReverseMap(ReverseCnxMap& reverseMap, const std::string& nameToRemove) const;
 
     std::unordered_map<PXR_NS::TfToken, NodeDefData, PXR_NS::TfToken::HashFunctor> _prunerData;
     mx::DocumentPtr                                                                _library;
+    PXR_NS::TfToken::HashSet _optimizedNodeIds;
 };
 
 const std::string LobePrunerImpl::ND_PREFIX = "LPOPTIND_";
@@ -216,6 +222,90 @@ bool LobePrunerImpl::isLobeInput(const mx::InputPtr& input, const mx::NodeDefPtr
     return true;
 }
 
+void LobePrunerImpl::optimizeLibrary(const MaterialX::DocumentPtr& library)
+{
+    if (!_library || _prunerData.empty()) {
+        return;
+    }
+
+    std::set<std::string> allDefinedNodeGraphs;
+    // Go thru all NodeGraphs found in the library that have an associated NodeDef:
+    for (const auto& ng : library->getNodeGraphs()) {
+        if (ng->hasNodeDefString()) {
+            allDefinedNodeGraphs.insert(ng->getName());
+        }
+    }
+    for (const auto& impl : library->getImplementations()) {
+        if (impl->hasNodeGraph()) {
+            allDefinedNodeGraphs.insert(impl->getNodeGraph());
+        }
+    }
+
+    for (const auto& ngName : allDefinedNodeGraphs) {
+        const auto ng = library->getNodeGraph(ngName);
+        // Go thru all the nodes of that NodeGraph
+        for (const auto& node : ng->getNodes()) {
+            // Can this node be optimized?
+            const auto& nd = node->getNodeDef();
+            if (!nd) {
+                continue;
+            }
+
+            const auto ndName = PXR_NS::TfToken(nd->getName());
+            const auto ndIt = _prunerData.find(ndName);
+            if (ndIt == _prunerData.end()) {
+                continue;
+            }
+
+            // This NodeGraph contains an optimizable embedded surface shader node.
+            std::string flags(ndIt->second._attributeData.size(), 'x');
+
+            bool canOptimize = false;
+
+            auto attrIt = ndIt->second._attributeData.cbegin();
+            for (size_t i = 0; attrIt != ndIt->second._attributeData.cend(); ++attrIt, ++i) {
+                const auto nodeinput = node->getActiveInput(attrIt->first);
+                float      inputValue = 0.5F;
+                if (nodeinput) {
+                    // Can not optimize if connected in any way.
+                    if (nodeinput->hasNodeName() || nodeinput->hasOutputString()
+                        || nodeinput->hasInterfaceName()) {
+                        continue;
+                    }
+                    inputValue = nodeinput->getValue()->asA<float>();
+                } else {
+                    const auto defInput = nd->getActiveInput(attrIt->first);
+                    inputValue = defInput->getValue()->asA<float>();
+                }
+
+                for (const auto& optimizableValue : attrIt->second) {
+                    if (optimizableValue.first == inputValue) {
+                        if (inputValue == 0.0F) {
+                            flags[i] = '0';
+                        } else {
+                            flags[i] = '1';
+                        }
+                        canOptimize = true;
+                    }
+                }
+            }
+
+            if (canOptimize) {
+                const auto optimizedNodeDef = getOrAddOptimizedNodeDef(ndName, flags);
+                // Replace the node with an optimized one:
+                const auto nsPrefix = optimizedNodeDef->hasNamespace()
+                    ? optimizedNodeDef->getNamespace() + ":"
+                    : std::string {};
+
+                node->setCategory(nsPrefix + optimizedNodeDef->getNodeString());
+                if (node->hasNodeDefString()) {
+                    node->setNodeDefString(optimizedNodeDef->getName());
+                }
+            }
+        }
+    }
+}
+
 void LobePrunerImpl::addOptimizableValue(
     float                   value,
     const mx::InputPtr&     input,
@@ -236,23 +326,23 @@ void LobePrunerImpl::addOptimizableValue(
     auto& valueMap = attrMap._attributeData.find(interfaceName)->second;
 
     if (!valueMap.count(value)) {
-        valueMap.emplace(value, NodeVector {});
+        valueMap.emplace(value, NodeSet {});
     }
 
-    valueMap.find(value)->second.push_back(PXR_NS::TfToken(input->getParent()->getName()));
+    valueMap.find(value)->second.insert(PXR_NS::TfToken(input->getParent()->getName()));
 }
 
-bool LobePrunerImpl::getOptimizedNodeCategory(const mx::Node& node, std::string& nodeCategory)
+mx::NodeDefPtr LobePrunerImpl::getOptimizedNodeDef(const mx::Node& node)
 {
     const auto& nd = node.getNodeDef();
     if (!nd) {
-        return false;
+        return {};
     }
 
     const auto ndName = PXR_NS::TfToken(nd->getName());
     const auto ndIt = _prunerData.find(ndName);
     if (ndIt == _prunerData.end()) {
-        return false;
+        return {};
     }
 
     std::string flags(ndIt->second._attributeData.size(), 'x');
@@ -288,12 +378,10 @@ bool LobePrunerImpl::getOptimizedNodeCategory(const mx::Node& node, std::string&
     }
 
     if (canOptimize) {
-        ensureLibraryHasOptimizedShader(ndName, flags);
-        nodeCategory = node.getCategory() + "_" + flags;
-        return true;
+        return getOrAddOptimizedNodeDef(ndName, flags);
     }
 
-    return false;
+    return {};
 }
 
 mx::StringVec LobePrunerImpl::getOptimizedAttributeNames(const mx::NodeDefPtr& nodeDef) const
@@ -356,31 +444,44 @@ PXR_NS::TfToken LobePrunerImpl::getOptimizedNodeId(const PXR_NS::HdMaterialNode2
     }
 
     if (canOptimize) {
-        ensureLibraryHasOptimizedShader(node.nodeTypeId, flags);
-        return PXR_NS::TfToken(
-            ND_PREFIX + nodeDef->GetFamily().GetString() + "_" + flags + "_surfaceshader");
+        return PXR_NS::TfToken(getOrAddOptimizedNodeDef(node.nodeTypeId, flags)->getName());
     }
 
     return retVal;
 }
 
-void LobePrunerImpl::ensureLibraryHasOptimizedShader(
+bool LobePrunerImpl::isOptimizedNodeId(const PXR_NS::TfToken& nodeId)
+{
+    return _optimizedNodeIds.count(nodeId) != 0;
+}
+
+mx::NodeDefPtr LobePrunerImpl::getOrAddOptimizedNodeDef(
     const PXR_NS::TfToken& nodeDefName,
     const std::string&     flags)
 {
     const auto ndIt = _prunerData.find(nodeDefName);
     if (ndIt == _prunerData.end()) {
-        return;
+        return {};
     }
 
-    const auto        originalNodeDef = _library->getNodeDef(nodeDefName.GetString());
-    const auto        originalNodeGraph = _library->getNodeGraph(ndIt->second._nodeGraphName);
-    const std::string optimizedNodeName = originalNodeDef->getNodeString() + "_" + flags;
-    const std::string optimizedNodeDefName = ND_PREFIX + optimizedNodeName + "_surfaceshader";
-    if (_library->getNodeDef(optimizedNodeDefName)) {
-        // Already there
-        return;
+    const auto originalNodeDef = _library->getNodeDef(nodeDefName.GetString());
+    const auto originalNodeGraph = _library->getNodeGraph(ndIt->second._nodeGraphName);
+    const auto nsPrefix = originalNodeDef->hasNamespace()
+        ? originalNodeDef->getNamespace() + mx::NAME_PREFIX_SEPARATOR
+        : std::string {};
+    auto optimizedNodeName = originalNodeDef->getNodeString() + "_" + flags;
+    if (!nsPrefix.empty() && optimizedNodeName.rfind(nsPrefix, 0) == 0) {
+        optimizedNodeName = optimizedNodeName.substr(nsPrefix.size());
     }
+    const auto        optimizedNodeNameWithNS = nsPrefix + optimizedNodeName;
+    const std::string optimizedNodeDefName
+        = nsPrefix + ND_PREFIX + optimizedNodeName + "_surfaceshader";
+    if (const auto existingNd = _library->getNodeDef(optimizedNodeDefName)) {
+        // Already there
+        return existingNd;
+    }
+
+    _optimizedNodeIds.insert(PXR_NS::TfToken(optimizedNodeDefName));
 
     auto optimizedNodeDef
         = _library->addNodeDef(optimizedNodeDefName, "surfaceshader", optimizedNodeName);
@@ -388,7 +489,8 @@ void LobePrunerImpl::ensureLibraryHasOptimizedShader(
     optimizedNodeDef->setSourceUri("");
     optimizedNodeDef->setNodeString(optimizedNodeName);
 
-    auto optimizedNodeGraph = _library->addNodeGraph("NG_" + optimizedNodeName + "_surfaceshader");
+    auto optimizedNodeGraph
+        = _library->addNodeGraph(nsPrefix + "LPOPTING_" + optimizedNodeName + "_surfaceshader");
     optimizedNodeGraph->copyContentFrom(originalNodeGraph);
     optimizedNodeGraph->setSourceUri("");
     optimizedNodeGraph->setNodeDefString(optimizedNodeDefName);
@@ -401,7 +503,7 @@ void LobePrunerImpl::ensureLibraryHasOptimizedShader(
                 if (!reverseMap.count(sourceNodeName)) {
                     reverseMap.emplace(sourceNodeName, Destinations {});
                 }
-                reverseMap.find(sourceNodeName)->second.push_back(node->getName());
+                reverseMap.find(sourceNodeName)->second.insert(node->getName());
             }
         }
     }
@@ -414,6 +516,8 @@ void LobePrunerImpl::ensureLibraryHasOptimizedShader(
         default: continue;
         }
     }
+
+    return optimizedNodeDef;
 }
 
 void LobePrunerImpl::optimizeZeroValue(
@@ -484,38 +588,38 @@ void LobePrunerImpl::optimizeMixNode(
     if (!bgInput) {
         return;
     }
-    for (const auto& destNodeName : reverseMap.find(mixNode->getName())->second) {
-        auto destNode = optimizedNodeGraph->getNode(destNodeName);
-        if (!destNode) {
-            return;
-        }
-        for (auto input : destNode->getInputs()) {
-            if (input->getNodeName() == mixNode->getName()) {
-                input->removeAttribute(mx::PortElement::NODE_NAME_ATTRIBUTE);
-                if (bgInput->hasNodeName()) {
-                    input->setNodeName(bgInput->getNodeName());
-                    auto& nodeVector = reverseMap.find(bgInput->getNodeName())->second;
-                    nodeVector.push_back(destNodeName);
-                    nodeVector.erase(
-                        std::remove_if(
-                            nodeVector.begin(),
-                            nodeVector.end(),
-                            [mixNode](const std::string& s) { return s == mixNode->getName(); }),
-                        nodeVector.end());
-                }
-                if (bgInput->hasInterfaceName()) {
-                    input->setInterfaceName(bgInput->getInterfaceName());
-                }
-                if (bgInput->hasOutputString()) {
-                    input->setOutputString(bgInput->getOutputString());
-                }
-                if (bgInput->hasValueString()) {
-                    input->setValueString(bgInput->getValueString());
+    const auto nodesToUpdateIt = reverseMap.find(mixNode->getName());
+    if (nodesToUpdateIt != reverseMap.end()) {
+        for (const auto& destNodeName : nodesToUpdateIt->second) {
+            auto destNode = optimizedNodeGraph->getNode(destNodeName);
+            if (!destNode) {
+                return;
+            }
+            for (auto input : destNode->getInputs()) {
+                if (input->getNodeName() == mixNode->getName()) {
+                    input->removeAttribute(mx::PortElement::NODE_NAME_ATTRIBUTE);
+                    if (bgInput->hasNodeName()) {
+                        input->setNodeName(bgInput->getNodeName());
+                        const auto bgInputsToUpdateIt = reverseMap.find(bgInput->getNodeName());
+                        if (bgInputsToUpdateIt != reverseMap.end()) {
+                            bgInputsToUpdateIt->second.insert(destNodeName);
+                        }
+                    }
+                    if (bgInput->hasInterfaceName()) {
+                        input->setInterfaceName(bgInput->getInterfaceName());
+                    }
+                    if (bgInput->hasOutputString()) {
+                        input->setOutputString(bgInput->getOutputString());
+                    }
+                    if (bgInput->hasValueString()) {
+                        input->setValueString(bgInput->getValueString());
+                    }
                 }
             }
         }
     }
     optimizedNodeGraph->removeNode(mixNode->getName());
+    updateReverseMap(reverseMap, mixNode->getName());
 }
 
 void LobePrunerImpl::optimizeMultiplyNode(
@@ -524,19 +628,23 @@ void LobePrunerImpl::optimizeMultiplyNode(
     ReverseCnxMap&    reverseMap) const
 {
     // Result will be a zero value of the type it requests:
-    for (const auto& destNodeName : reverseMap.find(node->getName())->second) {
-        auto destNode = optimizedNodeGraph->getNode(destNodeName);
-        for (auto input : destNode->getInputs()) {
-            if (input->getNodeName() == node->getName()) {
-                input->removeAttribute(mx::PortElement::NODE_NAME_ATTRIBUTE);
-                const auto defaultValueIt = kZeroMultiplyValueMap.find(input->getType());
-                if (defaultValueIt != kZeroMultiplyValueMap.end()) {
-                    input->setValueString(defaultValueIt->second);
+    const auto nodesToUpdateIt = reverseMap.find(node->getName());
+    if (nodesToUpdateIt != reverseMap.end()) {
+        for (const auto& destNodeName : nodesToUpdateIt->second) {
+            auto destNode = optimizedNodeGraph->getNode(destNodeName);
+            for (auto input : destNode->getInputs()) {
+                if (input->getNodeName() == node->getName()) {
+                    input->removeAttribute(mx::PortElement::NODE_NAME_ATTRIBUTE);
+                    const auto defaultValueIt = kZeroMultiplyValueMap.find(input->getType());
+                    if (defaultValueIt != kZeroMultiplyValueMap.end()) {
+                        input->setValueString(defaultValueIt->second);
+                    }
                 }
             }
         }
     }
     optimizedNodeGraph->removeNode(node->getName());
+    updateReverseMap(reverseMap, node->getName());
 }
 
 void LobePrunerImpl::optimizePbrNode(
@@ -555,14 +663,37 @@ void LobePrunerImpl::optimizePbrNode(
     }
 }
 
+void LobePrunerImpl::updateReverseMap(ReverseCnxMap& reverseMap, const std::string& nameToRemove)
+    const
+{
+    // Need to remove anything leading to that deleted node:
+    std::vector<std::string> emptyEntries;
+    for (auto& mapEntry : reverseMap) {
+        mapEntry.second.erase(nameToRemove);
+        if (mapEntry.second.empty()) {
+            emptyEntries.push_back(mapEntry.first);
+        }
+    }
+    for (const auto& emptyEntry : emptyEntries) {
+        reverseMap.erase(emptyEntry);
+    }
+}
+
 LobePruner::Ptr LobePruner::create() { return std::make_shared<LobePruner>(); }
 
 LobePruner::~LobePruner() = default;
 LobePruner::LobePruner() = default;
 
-bool LobePruner::getOptimizedNodeCategory(const mx::Node& node, std::string& nodeCategory)
+void LobePruner::optimizeLibrary(const MaterialX::DocumentPtr& library)
 {
-    return _impl ? _impl->getOptimizedNodeCategory(node, nodeCategory) : false;
+    if (_impl) {
+        _impl->optimizeLibrary(library);
+    }
+}
+
+mx::NodeDefPtr LobePruner::getOptimizedNodeDef(const mx::Node& node)
+{
+    return _impl ? _impl->getOptimizedNodeDef(node) : mx::NodeDefPtr {};
 }
 
 mx::StringVec LobePruner::getOptimizedAttributeNames(const mx::NodeDefPtr& nodeDef) const
@@ -582,7 +713,7 @@ void LobePruner::setLibrary(const mx::DocumentPtr& library)
 
 bool LobePruner::isOptimizedNodeId(const PXR_NS::TfToken& nodeId)
 {
-    return nodeId.GetString().rfind(LobePrunerImpl::ND_PREFIX, 0) == 0;
+    return _impl ? _impl->isOptimizedNodeId(nodeId) : false;
 }
 
 const std::string& LobePruner::getOptimizedNodeDefPrefix() { return LobePrunerImpl::ND_PREFIX; }
