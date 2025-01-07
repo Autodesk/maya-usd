@@ -12,8 +12,9 @@ from pxr import Usd
 EXPAND_PRIMS_MENU_OPTION = "Expand Prims"
 EXPAND_PRIMS_PROPERTIES_MENU_OPTION = "Expand Prims and Properties"
 EXPLICIT_ONLY_MENU_OPTION = "Explicit Only"
-kIncludeExcludeLabel = "Include/Exclude"
-kRemoveAllLabel = "Remove All"
+INCLUDE_EXCLUDE_LABEL = "Include/Exclude"
+REMOVE_ALL_LABEL = "Remove All"
+
 
 class ExpressionMenu(QMenu):
     def __init__(self, data: CollectionData, parent: QWidget):
@@ -23,8 +24,8 @@ class ExpressionMenu(QMenu):
         # Note: this is necessary to avoid the separator not show up.
         self.setSeparatorsCollapsible(False)
 
-        self._incExSeparator = self.addSection(kIncludeExcludeLabel)
-        self._removeAllAction = QAction(kRemoveAllLabel, self)
+        self._incExSeparator = self.addSection(INCLUDE_EXCLUDE_LABEL)
+        self._removeAllAction = QAction(REMOVE_ALL_LABEL, self)
         self.addActions([self._incExSeparator, self._removeAllAction])
 
         self._removeAllAction.triggered.connect(self._onRemoveAll)
