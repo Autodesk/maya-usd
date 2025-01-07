@@ -43,7 +43,8 @@ install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJE
 if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
     foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
         install(FILES
-            ${_SUBDIR}/lightCustomControl.py
+            ${_SUBDIR}/collectionCustomControl.py
+            ${_SUBDIR}/collectionMayaHost.py
             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
         )
     endforeach()

@@ -1,20 +1,12 @@
 import maya.cmds as cmds
 from pxr import Usd
-from typing import Sequence
 
 from usd_shared_components.collection.widget import CollectionWidget # type: ignore
 from usd_shared_components.common.host import Host # type: ignore
 
-class MayaHost(Host):
-    '''Class to host and override maya specific functions for the collection API.'''
-    def __init__(self):
-        pass
+from .collectionMayaHost import MayaHost
 
-    def pick(self, stage: Usd.Stage, *, dialogTitle: str = "") -> Sequence[Usd.Prim]:
-        return [] # nothing to do yet
-
-
-class LightLinkingCustomControl(object):
+class CollectionCustomControl(object):
     '''Custom control for the light linking data we want to display.'''
 
     @staticmethod
@@ -41,16 +33,16 @@ class LightLinkingCustomControl(object):
         '''
         If the attribute is a collection attribute then create a section to edit it.
         '''
-        if LightLinkingCustomControl.isCollectionAttribute(aeTemplate, attrName):
+        if CollectionCustomControl.isCollectionAttribute(aeTemplate, attrName):
             attrName, instanceName = attrName.split(':')
-            return LightLinkingCustomControl(aeTemplate.item, aeTemplate.prim, attrName, instanceName, aeTemplate.useNiceName)
+            return CollectionCustomControl(aeTemplate.item, aeTemplate.prim, attrName, instanceName, aeTemplate.useNiceName)
         else:
             return None
 
     def __init__(self, item, prim, attrName, instanceName, useNiceName):
         # In Maya 2022.1 we need to hold onto the Ufe SceneItem to make
         # sure it doesn't go stale. This is not needed in latest Maya.
-        super(LightLinkingCustomControl, self).__init__()
+        super(CollectionCustomControl, self).__init__()
         mayaVer = '%s.%s' % (cmds.about(majorVersion=True), cmds.about(minorVersion=True))
         self.item = item if mayaVer == '2022.1' else None
         self.attrName = attrName
