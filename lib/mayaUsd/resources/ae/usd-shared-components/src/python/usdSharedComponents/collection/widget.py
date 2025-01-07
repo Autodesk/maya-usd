@@ -44,7 +44,6 @@ class CollectionWidget(QWidget):
         mainLayout.setContentsMargins(0, 0, 0, 0)
 
         self._includeExcludeWidget = IncludeExcludeWidget(self._collData, self)
-
         self._tabWidget = None
 
         # only create tab when usd version is greater then 23.11
@@ -69,6 +68,11 @@ class CollectionWidget(QWidget):
             mainLayout.addWidget(self._includeExcludeWidget)
 
         self.setLayout(mainLayout)
+
+    def setCollection(self, prim: Usd.Prim = None, collection: Usd.CollectionAPI = None):
+        self._collection = collection
+        self._prim = prim
+        self._collData = UsdCollectionData(prim, collection)
 
     if Usd.GetVersion() >= (0, 23, 11):
 
