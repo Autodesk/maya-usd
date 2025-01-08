@@ -113,8 +113,8 @@ class IncludeExcludeWidget(QWidget):
         self._resizableExclude.minContentSize = Theme.instance().uiScaled(44)
         mainLayout.addWidget(self._resizableExclude)
 
-        self._include.list.selectionChanged.connect(self.onListSelectionChanged)
-        self._exclude.list.selectionChanged.connect(self.onListSelectionChanged)
+        self._include.list.itemSelectionChanged.connect(self.onListSelectionChanged)
+        self._exclude.list.itemSelectionChanged.connect(self.onListSelectionChanged)
 
         self._filterWidget.textChanged.connect(self._include.list._model.setFilter)
         self._filterWidget.textChanged.connect(self._exclude.list._model.setFilter)
@@ -133,21 +133,21 @@ class IncludeExcludeWidget(QWidget):
         if not stage:
             return
         items = Host.instance().pick(stage, dialogTitle=ADD_INCLUDE_OBJECTS_TITLE)
-        self._collData.getIncludeData().addStrings(items)
+        self._collData.getIncludeData().addStrings(map(lambda x: str(x.GetPath()), items))
 
     def onAddToExcludePrimClicked(self):
         stage = self._collData.getStage()
         if not stage:
             return
         items = Host.instance().pick(stage, dialogTitle=ADD_EXCLUDE_OBJECTS_TITLE)
-        self._collData.getExcludeData().addStrings(items)
+        self._collData.getExcludeData().addStrings(map(lambda x: str(x.GetPath()), items))
 
     def onRemoveSelectionFromInclude(self):
         self._collData.getIncludeData().removeStrings(self._include.list.selectedItems())
         self.onListSelectionChanged()
 
     def onRemoveSelectionFromExclude(self):
-        self._collData.getExcludeData().removeStrings(self._include.list.selectedItems())
+        self._collData.getExcludeData().removeStrings(self._exclude.list.selectedItems())
         self.onListSelectionChanged()
 
     def _findAction(self, label):
@@ -193,5 +193,3 @@ class IncludeExcludeWidget(QWidget):
     def onIncludeAllToggle(self, _: Qt.CheckState):
         incAll = self._include.cbIncludeAll.isChecked()
         self._collData.setIncludeAll(incAll)
-
-

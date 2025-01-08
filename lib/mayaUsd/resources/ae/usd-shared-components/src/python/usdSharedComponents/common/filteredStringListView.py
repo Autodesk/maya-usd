@@ -44,7 +44,8 @@ DRAG_OR_PICK_OBJECTS_LABEL = "Drag objects here or click '+' to add"
 
 
 class FilteredStringListView(QListView):
-    selectionChanged = Signal()
+
+    itemSelectionChanged = Signal()
 
     class Delegate(QStyledItemDelegate):
         def __init__(self, model: QStringListModel, parent=None):
@@ -96,9 +97,7 @@ class FilteredStringListView(QListView):
 
         DragAndDropEventFilter(self, data)
 
-        self.selectionModel().selectionChanged.connect(
-            lambda: self.selectionChanged.emit()
-        )
+        self.selectionModel().selectionChanged.connect(self.itemSelectionChanged)
 
     def paintEvent(self, event: QPaintEvent):
         painter = QPainter(self)
