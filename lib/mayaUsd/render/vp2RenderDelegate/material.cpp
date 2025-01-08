@@ -341,10 +341,10 @@ struct _MaterialXData
     {
         try {
             _mtlxSearchPath = HdMtlxSearchPaths();
-#if PXR_VERSION > 2311
-            _mtlxLibrary = HdMtlxStdLibraries();
-#else
             _mtlxLibrary = mx::createDocument();
+#if PXR_VERSION > 2311
+            _mtlxLibrary->importLibrary(HdMtlxStdLibraries());
+#else
             mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
 #endif
 
