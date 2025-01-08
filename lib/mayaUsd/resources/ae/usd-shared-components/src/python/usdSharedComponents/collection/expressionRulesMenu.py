@@ -4,8 +4,7 @@ try:
     from PySide6.QtWidgets import QMenu, QWidget # type: ignore
     from PySide6.QtGui import QActionGroup, QAction # type: ignore
 except ImportError:
-    from PySide2.QtWidgets import QMenu, QWidget # type: ignore
-    from PySide2.QtGui import QActionGroup  # type: ignore
+    from PySide2.QtWidgets import QMenu, QWidget, QActionGroup, QAction # type: ignore
 
 from pxr import Usd
 

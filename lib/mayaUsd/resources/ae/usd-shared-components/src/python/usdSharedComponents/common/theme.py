@@ -1,10 +1,12 @@
 try:
+    from PySide6 import QtSvg
     from PySide6.QtCore import QRect, Qt  # type: ignore
-    from PySide6.QtGui import QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
+    from PySide6.QtGui import QImage, QPixmap, QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
     from PySide6.QtWidgets import QWidget  # type: ignore
 except:
+    from PySide2 import QtSvg # type: ignore
     from PySide2.QtCore import QRect, Qt  # type: ignore
-    from PySide2.QtGui import QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
+    from PySide2.QtGui import QImage, QPixmap, QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
     from PySide2.QtWidgets import QWidget  # type: ignore
 
 from enum import Flag, auto
@@ -50,8 +52,8 @@ class Theme(object):
             super(Theme.Palette, self)
             self.colorResizeBorderActive: QColor = QColor(0x5285a6)
 
-            pal = QPalette()
 
+            pal = QPalette()
             self.colorPlaceHolderText = pal.color(QPalette.ColorRole.WindowText)
             self.colorPlaceHolderText.setAlphaF(0.7)
 
@@ -79,13 +81,25 @@ class Theme(object):
         if os.path.exists(iconFolder):
             icons = fnmatch.filter(os.listdir(iconFolder), f"{name}.svg")
             for icon in icons:
-                result.addPixmap(os.path.join(iconFolder, icon))
+                svg_renderer = QtSvg.QSvgRenderer(os.path.join(iconFolder, icon))
+                image = QImage(64, 64, QImage.Format_ARGB32)
+                image.fill(0x00000000)
+                svg_renderer.render(QPainter(image))
+                pixmap = QPixmap.fromImage(image)
+
+                result.addPixmap(pixmap)
                 # take the first SVG and run!
                 return result
 
             icons = fnmatch.filter(os.listdir(iconFolder), f"{name}*.png")
             for icon in icons:
-                result.addPixmap(os.path.join(iconFolder, icon))
+                svg_renderer = QtSvg.QSvgRenderer(os.path.join(iconFolder, icon))
+                image = QImage(64, 64, QImage.Format_ARGB32)
+                image.fill(0x00000000)
+                svg_renderer.render(QPainter(image))
+                pixmap = QPixmap.fromImage(image)
+
+                result.addPixmap(pixmap)
 
         return result
 

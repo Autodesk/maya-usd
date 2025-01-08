@@ -37,8 +37,9 @@ class UsdCollectionData(CollectionData):
         converted to the class's dataChanged signal (and to each
         CollectionStringListData dataChanged signal)
         '''
-        self._noticeKey = Tf.Notice.Register(
-            Usd.Notice.ObjectsChanged, self._onObjectsChanged, self._prim.GetStage())
+        if self._prim:
+            self._noticeKey = Tf.Notice.Register(
+                Usd.Notice.ObjectsChanged, self._onObjectsChanged, self._prim.GetStage())
 
     def _untrackCollectionNotifications(self):
         '''
