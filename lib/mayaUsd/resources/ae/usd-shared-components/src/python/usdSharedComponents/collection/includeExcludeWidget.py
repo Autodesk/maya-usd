@@ -127,6 +127,7 @@ class IncludeExcludeWidget(QWidget):
         incAll = self._collData.includesAll()
         if incAll != self._include.cbIncludeAll.isChecked():
             self._include.cbIncludeAll.setChecked(incAll)
+        self.onListSelectionChanged()
 
     def onAddToIncludePrimClicked(self):
         stage = self._collData.getStage()
