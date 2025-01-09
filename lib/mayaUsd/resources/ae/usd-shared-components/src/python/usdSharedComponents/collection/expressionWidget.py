@@ -10,8 +10,6 @@ except ImportError:
     from PySide2.QtCore import QEvent, Qt  # type: ignore
     from PySide2.QtWidgets import QSizePolicy, QTextEdit, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
 
-from pxr import Usd, Sdf
-
 class ExpressionWidget(QWidget):
     def __init__(self, data: CollectionData, parent: QWidget, expressionChangedCallback):
         super(ExpressionWidget, self).__init__(parent)
@@ -54,7 +52,7 @@ class ExpressionWidget(QWidget):
     def _onDataChanged(self):
         usdExpressionAttr = self._collData.getMembershipExpression()
         if usdExpressionAttr != None:
-            self._expressionText.setPlainText(usdExpressionAttr.GetText())
+            self._expressionText.setPlainText(usdExpressionAttr)
 
     def submitExpression(self):
         self._collData.setMembershipExpression(self._expressionText.toPlainText())
