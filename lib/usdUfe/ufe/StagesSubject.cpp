@@ -533,6 +533,9 @@ void StagesSubject::stageChanged(
                 // removed, we need to trigger a subtree invalidation.  This is
                 // necessary in order to prevent stale items from being kept in
                 // the global selection set.
+                // Note: at the point of this notif the prim is not valid anymore
+                // and thus we cannot create a scene item to simply remove
+                // the item from selection list.
                 if (!InAddOrDeleteOperation::inAddOrDeleteOperation()) {
                     auto       parentPath = changedPath.GetParentPath();
                     const auto parentUfePath = parentPath == SdfPath::AbsoluteRootPath()
