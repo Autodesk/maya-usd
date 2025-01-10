@@ -61,7 +61,7 @@ class ExpressionWidget(QWidget):
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress and obj is self._expressionText:
-            if event.key() == Qt.Key_Return and self._expressionText.hasFocus():
+            if event.key() == Qt.Key_Enter and self._expressionText.hasFocus():
                 self._expressionText.clearFocus()
                 return True
         elif event.type() == QEvent.FocusOut:
