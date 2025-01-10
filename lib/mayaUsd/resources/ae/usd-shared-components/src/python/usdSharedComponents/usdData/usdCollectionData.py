@@ -1,15 +1,15 @@
 from typing import AnyStr, Sequence
 from ..data.collectionData import CollectionData
 from .usdCollectionStringListData import CollectionStringListData
-from ..common.host import Host
 
 from pxr import Sdf, Tf, Usd
 
 class UsdCollectionData(CollectionData):
     def __init__(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         super().__init__()
-        self._includes = CollectionStringListData(collection, True)
-        self._excludes = CollectionStringListData(collection, False)
+        from ..common.host import Host
+        self._includes = Host.instance().createStringListData(collection, True)
+        self._excludes = Host.instance().createStringListData(collection, False)
         self._noticeKey = None
         self.setCollection(prim, collection)
 

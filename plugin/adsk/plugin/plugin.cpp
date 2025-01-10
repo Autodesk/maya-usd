@@ -189,6 +189,13 @@ MStatus initializePlugin(MObject obj)
         MayaUsd::MayaUsdUndoBlockCmd::commandName, MayaUsd::MayaUsdUndoBlockCmd::creator);
     CHECK_MSTATUS(status);
 
+    MGlobal::executePythonCommand(
+        "try:\n"
+        "    from ufe_ae.usd.nodes.usdschemabase import collectionMayaHost\n"
+        "    collectionMayaHost.registerCommands('mayaUsdPlugin')\n"
+        "except:\n"
+        "    pass\n");
+
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
@@ -379,6 +386,13 @@ MStatus uninitializePlugin(MObject obj)
 
     status = plugin.deregisterCommand(MayaUsd::MayaUsdUndoBlockCmd::commandName);
     CHECK_MSTATUS(status);
+
+    MGlobal::executePythonCommand(
+        "try:\n"
+        "    from ufe_ae.usd.nodes.usdschemabase import collectionMayaHost\n"
+        "    collectionMayaHost.deregisterCommands('mayaUsdPlugin')\n"
+        "except:\n"
+        "    pass\n");
 
     // Deregister from file path editor
     status
