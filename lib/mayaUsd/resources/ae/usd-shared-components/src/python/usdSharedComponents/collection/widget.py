@@ -1,18 +1,19 @@
 from .includeExcludeWidget import IncludeExcludeWidget
 from .expressionWidget import ExpressionWidget
 from ..common.theme import Theme
+from ..common.host import Host
 from ..usdData.usdCollectionData import UsdCollectionData
 
 try:
-    from PySide6.QtCore import QEvent, QObject, Qt, Slot  # type: ignore
+    from PySide6.QtCore import Qt  # type: ignore
     from PySide6.QtGui import QIcon, QWheelEvent  # type: ignore
     from PySide6.QtWidgets import QTabBar, QTabWidget, QVBoxLayout, QWidget  # type: ignore
 except ImportError:
-    from PySide2.QtCore import QEvent, QObject, Qt, Slot  # type: ignore
+    from PySide2.QtCore import Qt  # type: ignore
     from PySide2.QtGui import QIcon, QWheelEvent  # type: ignore
     from PySide2.QtWidgets import QTabBar, QTabWidget, QVBoxLayout, QWidget  # type: ignore
 
-from pxr import Usd, Tf
+from pxr import Usd
 
 
 class NonScrollingTabBar(QTabBar):
@@ -38,7 +39,7 @@ class CollectionWidget(QWidget):
 
         self._collection: Usd.CollectionAPI = collection
         self._prim: Usd.Prim = prim
-        self._collData = UsdCollectionData(prim, collection)
+        self._collData = Host.instance().createCollectionData(prim, collection)
 
         mainLayout = QVBoxLayout()
         mainLayout.setContentsMargins(0, 0, 0, 0)

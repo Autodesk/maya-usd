@@ -51,8 +51,7 @@ class ExpressionWidget(QWidget):
 
     def _onDataChanged(self):
         usdExpressionAttr = self._collData.getMembershipExpression()
-        if usdExpressionAttr != None:
-            self._expressionText.setPlainText(usdExpressionAttr)
+        self._expressionText.setPlainText(usdExpressionAttr or '')
 
     def submitExpression(self):
         self._collData.setMembershipExpression(self._expressionText.toPlainText())

@@ -23,10 +23,10 @@ from .materialCustomControl import MaterialCustomControl
 from .metadataCustomControl import MetadataCustomControl
 from .observers import UfeAttributesObserver, UfeConnectionChangedObserver, UsdNoticeListener
 try:
-    from .lightCustomControl import LightLinkingCustomControl
-    lightLinkingSupported = True
+    from .collectionCustomControl import CollectionCustomControl
+    collectionsSupported = True
 except:
-    lightLinkingSupported = False
+    collectionsSupported = False
 
 import collections
 import fnmatch
@@ -272,8 +272,8 @@ class AETemplate(object):
                 pass
 
     _controlCreators = [ConnectionsCustomControl.creator, ArrayCustomControl.creator, ImageCustomControl.creator, defaultControlCreator]
-    if lightLinkingSupported:
-        _controlCreators.insert(0, LightLinkingCustomControl.creator)
+    if collectionsSupported:
+        _controlCreators.insert(0, CollectionCustomControl.creator)
 
     @staticmethod
     def prependControlCreator(controlCreator):
