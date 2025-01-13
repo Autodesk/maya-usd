@@ -528,6 +528,27 @@ void StagesSubject::stageChanged(
             Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath);
             if (!sceneItem || InAddOrDeleteOperation::inAddOrDeleteOperation()) {
                 sendObjectDestroyed(ufePath);
+
+                // If we are not in an add or delete operation, and a prim is
+                // removed, we need to trigger a subtree invalidation.  This is
+                // necessary in order to prevent stale items from being kept in
+                // the global selection set.
+                // Note: at the point of this notif the prim is not valid anymore
+                // and thus we cannot create a scene item to simply remove
+                // the item from selection list.
+                if (!InAddOrDeleteOperation::inAddOrDeleteOperation()) {
+                    auto       parentPath = changedPath.GetParentPath();
+                    const auto parentUfePath = parentPath == SdfPath::AbsoluteRootPath()
+                        ? stagePath(sender)
+                        : stagePath(sender)
+                            + Ufe::PathSegment(
+                                parentPath.GetString(), UsdUfe::getUsdRunTimeId(), '/');
+
+                    auto parentItem = Ufe::Hierarchy::createItem(parentUfePath);
+                    if (parentItem) {
+                        sendSubtreeInvalidate(parentItem);
+                    }
+                }
             } else {
                 sendSubtreeInvalidate(sceneItem);
             }
