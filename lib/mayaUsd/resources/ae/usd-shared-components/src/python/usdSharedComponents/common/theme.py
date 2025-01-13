@@ -2,12 +2,12 @@ try:
     from PySide6 import QtSvg
     from PySide6.QtCore import QRect, Qt  # type: ignore
     from PySide6.QtGui import QImage, QPixmap, QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
-    from PySide6.QtWidgets import QWidget  # type: ignore
+    from PySide6.QtWidgets import QWidget, QTabWidget  # type: ignore
 except:
     from PySide2 import QtSvg # type: ignore
     from PySide2.QtCore import QRect, Qt  # type: ignore
     from PySide2.QtGui import QImage, QPixmap, QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
-    from PySide2.QtWidgets import QWidget  # type: ignore
+    from PySide2.QtWidgets import QWidget, QTabWidget  # type: ignore
 
 from enum import Flag, auto
 from typing import Union
@@ -102,6 +102,10 @@ class Theme(object):
                 result.addPixmap(pixmap)
 
         return result
+    
+    def themeTab(self, tab: QTabWidget):
+        tab.setDocumentMode(True)
+        tab.tabBar().setCursor(Qt.ArrowCursor)
 
     @property
     def palette(self) -> Palette:
