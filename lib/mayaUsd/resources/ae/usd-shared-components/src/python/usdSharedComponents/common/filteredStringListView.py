@@ -19,7 +19,6 @@ try:
     from PySide6.QtWidgets import (  # type: ignore
         QLabel,
         QListView,
-        QStyledItemDelegate,
         QStyleOptionViewItem
     )
 except:
@@ -34,7 +33,7 @@ except:
         Signal,
     )
     from PySide2.QtGui import QPainter, QPaintEvent, QFont  # type: ignore
-    from PySide2.QtWidgets import QLabel, QListView, QStyledItemDelegate, QStyleOptionViewItem  # type: ignore
+    from PySide2.QtWidgets import QLabel, QListView, QStyleOptionViewItem  # type: ignore
 
 
 NO_OBJECTS_FOUND_LABEL = "No objects found"
@@ -46,28 +45,6 @@ DRAG_OR_PICK_OBJECTS_LABEL = "Drag objects here or click '+' to add"
 class FilteredStringListView(QListView):
 
     itemSelectionChanged = Signal()
-
-    class Delegate(QStyledItemDelegate):
-        def __init__(self, model: QStringListModel, parent=None):
-            super(FilteredStringListView.Delegate, self).__init__(parent)
-            self._model = model
-
-        def sizeHint(
-            self,
-            option: QStyleOptionViewItem,
-            index: Union[QModelIndex, QPersistentModelIndex],
-        ):
-            s: int = Theme.instance().uiScaled(24)
-            return QSize(s, s)
-
-        def paint(
-            self,
-            painter: QPainter,
-            option: QStyleOptionViewItem,
-            index: Union[QModelIndex, QPersistentModelIndex],
-        ):
-            s: str = self._model.data(index, Qt.DisplayRole)
-            Theme.instance().paintStringListEntry(painter, option.rect, s)
 
     def __init__(self, data: StringListData, headerTitle: str = "", parent=None):
         super(FilteredStringListView, self).__init__(parent)

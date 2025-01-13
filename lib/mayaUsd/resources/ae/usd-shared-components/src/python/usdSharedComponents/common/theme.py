@@ -152,9 +152,3 @@ class Theme(object):
         """
 
         return self.uiScaled(2)
-
-    def paintList(self, widget: QWidget, updateRect: QRect, state: State):
-        raise RuntimeError("Needs to be implemented in derived class")
-
-    def paintStringListEntry(self, painter: QPainter, rect: QRect, string: str):
-        raise RuntimeError("Needs to be implemented in derived class")

@@ -20,17 +20,20 @@ class StringListData(QObject):
         '''
         return []
 
-    def addStrings(self, items: Sequence[AnyStr]):
+    def addStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Add the given strings to the model.
+        Return True if successfully added.
         '''
-        pass
+        return False
 
-    def removeStrings(self, items: Sequence[AnyStr]):
+    def removeStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Remove the given strings from the model.
+        Return True if successfully removed.
+        Return False if already empty.
         '''
-        pass
+        return False
 
     def _isValidString(self, s) -> AnyStr:
         '''

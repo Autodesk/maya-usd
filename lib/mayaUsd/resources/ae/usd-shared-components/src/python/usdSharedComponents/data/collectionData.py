@@ -29,11 +29,13 @@ class CollectionData(QObject):
         '''
         return False
     
-    def setIncludeAll(self, state: bool):
+    def setIncludeAll(self, state: bool) -> bool:
         '''
         Sets if the collection should include all items by default.
+        Return True if successfully set.
+        Return False if already set to the same value.
         '''
-        pass
+        return False
     
     def getIncludeData(self) -> StringListData:
         '''
@@ -47,11 +49,13 @@ class CollectionData(QObject):
         '''
         return None
 
-    def removeAllIncludeExclude(self):
+    def removeAllIncludeExclude(self) -> bool:
         '''
         Remove all included and excluded items.
+        Return True if successfully removed.
+        Return False if already empty.
         '''
-        pass
+        return False
 
     # Expression
 
@@ -61,11 +65,13 @@ class CollectionData(QObject):
         '''
         return None
     
-    def setExpansionRule(self, rule):
+    def setExpansionRule(self, rule) -> bool:
         '''
         Sets the expansion rule as a USD token.
+        Return True if successfully set.
+        Return False if already set to the same value.
         '''
-        pass
+        return False
 
     def getMembershipExpression(self) -> AnyStr:
         '''
@@ -73,8 +79,10 @@ class CollectionData(QObject):
         '''
         return None
     
-    def setMembershipExpression(self, textExpression: AnyStr):
+    def setMembershipExpression(self, textExpression: AnyStr) -> bool:
         '''
         Set the textual membership expression.
+        Return True if successfully set.
+        Return False if already set to the same value.
         '''
-        pass
+        return False
