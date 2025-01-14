@@ -83,6 +83,7 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
         ${MAYAUSD_SHARED_COMPONENTS}/usdData/__init__.py
         ${MAYAUSD_SHARED_COMPONENTS}/usdData/usdCollectionData.py
         ${MAYAUSD_SHARED_COMPONENTS}/usdData/usdCollectionStringListData.py
+        ${MAYAUSD_SHARED_COMPONENTS}/usdData/validator.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/usdData/
     )
 

@@ -1,11 +1,12 @@
 from .theme import Theme
 from .persistentStorage import PersistentStorage
 from typing import Union
+
 try:
-    from PySide6.QtCore import Qt, Signal, QRect  # type: ignore
+    from PySide6.QtCore import QPoint, QRect, QSize, Qt, Signal  # type: ignore
     from PySide6.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy  # type: ignore
 except ImportError:
-    from PySide2.QtCore import Qt, Signal, QRect  # type: ignore
+    from PySide2.QtCore import QPoint, QRect, QSize, Qt, Signal  # type: ignore
     from PySide2.QtWidgets import QWidget, QStackedLayout, QVBoxLayout, QSizePolicy  # type: ignore
 
 
@@ -16,19 +17,23 @@ class Resizable(QWidget):
         dragged = Signal(int)
         dragging = Signal(bool)
 
+        RESIZE_HANDLE_SIZE: int = Theme.instance().resizableActiveAreaSize()
+
         def __init__(self, parent=None):
             super(Resizable._Overlay, self).__init__(parent)
 
-            self._active:bool = False
+            self._active: bool = False
             self._mousePressGlobalPosY: Union[int, None] = None
-            self._maskRect: QRect = None
+            self._resizeHandleMask: QRect = None
 
             self.setWindowFlags(Qt.FramelessWindowHint)
             self.setAttribute(Qt.WA_TranslucentBackground)
             self.setAttribute(Qt.WA_NoSystemBackground)
             self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-            s: int = Theme.instance().resizableActiveAreaSize()
-            self.setMinimumSize(s, s)
+            self.setMinimumSize(
+                self.RESIZE_HANDLE_SIZE,
+                self.RESIZE_HANDLE_SIZE,
+            )
             self.setMouseTracking(True)
             self.setFocusPolicy(Qt.NoFocus)
 
@@ -38,27 +43,50 @@ class Resizable(QWidget):
 
         def resizeEvent(self, event):
             super().resizeEvent(event)
-            s: int = Theme.instance().resizableActiveAreaSize()
-            self._maskRect = QRect(0, event.size().height() - s, event.size().width(), s)
-            if not self._active:
-                self.setMask(self._maskRect)
+            size: QSize = event.size()
+            self._resizeHandleMask = QRect(
+                0,
+                size.height() - self.RESIZE_HANDLE_SIZE,
+                size.width(),
+                self.RESIZE_HANDLE_SIZE,
+            )
+            self._updateMask()
+
+        def _isOverResizeHandle(self, pos: QPoint) -> bool:
+            x: int = pos.x()
+            if x < 0 or x >= self.width():
+                return False
+            lowerBorder: int = self.height()
+            upperBorder: int = lowerBorder - self.RESIZE_HANDLE_SIZE
+            y: int = pos.y()
+            return y >= upperBorder and y < lowerBorder
+
+        def _updateMask(self):
+            if self._active:
+                self.clearMask()
+            else:
+                self.setMask(self._resizeHandleMask)
+
+        @property
+        def active(self) -> bool:
+            return self._active
+
+        @active.setter
+        def active(self, value: bool):
+            if self._active == value:
+                return
+            self._active = value
+            self._updateMask()
+            self.update()
+            self.setCursor(Qt.SizeVerCursor if value else Qt.ArrowCursor)
 
         def mouseMoveEvent(self, event):
             if self._mousePressGlobalPosY is not None:
                 diff = event.globalPos().y() - self._mousePressGlobalPosY
-                # self._mousePressGlobalPosY = event.globalPos().y()
                 self.dragged.emit(diff)
                 event.accept()
             else:
-                _overActiveArea: bool = event.pos().y() >= self.height() - Theme.instance().resizableActiveAreaSize()
-                if _overActiveArea != self._active:
-                    self._active = _overActiveArea
-                    if self._active:
-                        self.clearMask()
-                    else:
-                        self.setMask(self._maskRect)
-                    self.update()
-                    self.setCursor(Qt.SizeVerCursor if self._active else Qt.ArrowCursor)
+                self.active = self._isOverResizeHandle(event.pos())
                 event.ignore()
 
         def mousePressEvent(self, event):
@@ -71,7 +99,7 @@ class Resizable(QWidget):
                 event.ignore()
 
         def mouseReleaseEvent(self, event):
-            if self._active:
+            if self.active:
                 self._mousePressGlobalPosY = None
                 self.dragging.emit(False)
                 event.accept()
@@ -79,20 +107,15 @@ class Resizable(QWidget):
                 event.ignore()
 
         def enterEvent(self, event):
-            self._active = event.pos().y() >= self.height() - Theme.instance().resizableActiveAreaSize()
-            if self._active:
+            self.active = self._isOverResizeHandle(event.pos())
+            if self.active:
                 event.accept()
-                self._active = False
-                self.update()
-                self.setCursor(Qt.SizeVerCursor)
             else:
                 event.ignore()
 
         def leaveEvent(self, event):
-            if self._active:
-                self._active = False
-                self.update()
-                self.setCursor(Qt.ArrowCursor)
+            if self.active:
+                self.active = False
                 event.accept()
             else:
                 event.ignore()
@@ -103,7 +126,7 @@ class Resizable(QWidget):
         persistentStorageGroup: str = None,
         persistentStorageKey: str = None,
         parent: QWidget = None,
-        defaultSize = -1,
+        defaultSize: int = -1,
     ):
         super(Resizable, self).__init__(parent)
 
@@ -154,6 +177,7 @@ class Resizable(QWidget):
             self._dragStartContentSize = self._contentSize
         else:
             self.savePersistentStorage()
+            self.updateGeometry()
 
     def onResizeHandleDragged(self, dy):
         height = self._dragStartContentSize + dy
