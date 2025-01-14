@@ -1,4 +1,5 @@
 from ..data.stringListData import StringListData
+from .validator import validateCollection
 
 from typing import AnyStr, Sequence
 from pxr import Sdf
@@ -14,15 +15,14 @@ class CollectionStringListData(StringListData):
         Sets which USD collection is held by this data class.
         '''
         self._collection = collection
+        self._prim = collection.GetPrim() if collection else None
 
+    @validateCollection([])
     def getStrings(self) -> Sequence[AnyStr]:
         '''
         Retrieve the full list of all text strings.
         '''
         items = []
-        if self._collection is None:
-            return items
-
         if self._isInclude:
             targets = self._collection.GetIncludesRel().GetTargets()
         else:
@@ -32,13 +32,11 @@ class CollectionStringListData(StringListData):
             items.append(p.pathString)
         return items
 
-    def addStrings(self, items: Sequence[AnyStr]):
+    @validateCollection(False)
+    def addStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Add the given strings to the model.
         '''
-        if self._collection is None:
-            return
-        
         # Use a SdfChangeBlock to group all updates in a single USD recomposition.
         with Sdf.ChangeBlock():
             if self._isInclude:
@@ -47,14 +45,13 @@ class CollectionStringListData(StringListData):
             else:
                 for path in items:
                     self._collection.GetExcludesRel().AddTarget(Sdf.Path(path))
+        return True
 
-    def removeStrings(self, items: Sequence[AnyStr]):
+    @validateCollection(False)
+    def removeStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Remove the given strings from the model.
         '''
-        if self._collection is None:
-            return
-        
         with Sdf.ChangeBlock():
             if self._isInclude:
                 for item in items:
@@ -62,7 +59,9 @@ class CollectionStringListData(StringListData):
             else:
                 for item in items:
                     self._collection.GetExcludesRel().RemoveTarget(Sdf.Path(item))
+        return True
 
+    @validateCollection(None)
     def _isValidString(self, text) -> AnyStr:
         '''
         Validates if the string is valid and possibly alter it to make it valid
@@ -70,9 +69,6 @@ class CollectionStringListData(StringListData):
         '''
         # We probably received the UFE path, which contains a Maya path and
         # a USD (Sdf) path separated by a comma. Extract the USD path.
-        if self._collection is None:
-            return None
-
         if "," in text:
             text = text.split(",")[1]
         if not Sdf.Path.IsValidPathString(text):
@@ -82,7 +78,6 @@ class CollectionStringListData(StringListData):
         prim = stage.GetPrimAtPath(Sdf.Path(text))
 
         if not prim or not prim.IsValid():
-            # TODO: maybe report a warning...? Would it be really useful?
             return None
 
         return text

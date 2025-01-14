@@ -37,8 +37,6 @@ class CollectionWidget(QWidget):
     ):
         super(CollectionWidget, self).__init__(parent)
 
-        self._collection: Usd.CollectionAPI = collection
-        self._prim: Usd.Prim = prim
         self._collData = Host.instance().createCollectionData(prim, collection)
 
         mainLayout = QVBoxLayout()
@@ -54,7 +52,7 @@ class CollectionWidget(QWidget):
             self._tabWidget.currentChanged.connect(self.onTabChanged)
             self._tabWidget.setDocumentMode(True)
 
-            self._expressionWidget = ExpressionWidget(self._collData, self._tabWidget, self.onExpressionChanged)
+            self._expressionWidget = ExpressionWidget(self._collData, self._tabWidget)
             self._tabWidget.addTab(self._includeExcludeWidget, QIcon(), "Include/Exclude")
             self._tabWidget.addTab(self._expressionWidget, QIcon(), "Expression")
 
@@ -71,24 +69,10 @@ class CollectionWidget(QWidget):
         self.setLayout(mainLayout)
 
     def setCollection(self, prim: Usd.Prim = None, collection: Usd.CollectionAPI = None):
-        self._collection = collection
-        self._prim = prim
-        self._collData = UsdCollectionData(prim, collection)
+        self._collData.setCollection(prim, collection)
 
     if Usd.GetVersion() >= (0, 23, 11):
 
         def onTabChanged(self, index):
             self._includeExcludeWidget.update()
             self._expressionWidget.update()
-
-        def onExpressionChanged(self):
-            updateIncludeAll = (
-                len(self._collData._includes.getStrings()) == 0
-                and len(self._collData._includes.getStrings()) == 0
-                and self._collData.includesAll()
-            )
-            if updateIncludeAll:
-                self._collData.setIncludeAll(False)
-                print(
-                    '"Include All" has been disabled for the expression to take effect.'
-                )

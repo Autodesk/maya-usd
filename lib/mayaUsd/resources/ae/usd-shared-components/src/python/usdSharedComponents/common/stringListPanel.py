@@ -19,7 +19,7 @@ try:
 except ImportError:
     from PySide2.QtCore import QRect, Qt  # type: ignore
     from PySide2.QtGui import QPainter  # type: ignore
-    from PySide2.QtWidgets import QCheckBox, QHBoxLayout, QVBoxLayout, QStyle, QStyleOptionHeaderV2, QStylePainter, QWidget  # type: ignore
+    from PySide2.QtWidgets import QCheckBox, QHBoxLayout, QVBoxLayout, QStyle, QStyleOptionHeader as QStyleOptionHeaderV2, QStylePainter, QWidget  # type: ignore
 
 # TODO: support I8N
 kIncludeAllLabel = "Include all"
