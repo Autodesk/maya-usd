@@ -7,6 +7,7 @@ from usd_shared_components.usdData.usdCollectionStringListData import Collection
 from maya.api.OpenMaya import MPxCommand, MFnPlugin, MGlobal, MSyntax, MArgDatabase
 import mayaUsd.lib
 import maya.mel as mel
+import maya.cmds as cmds
 
 from pxr import Usd
 from typing import AnyStr, Sequence, Tuple
@@ -312,6 +313,12 @@ class MayaTheme(Theme):
     def __init__(self):
         self._palette = None
         self._icons = {}
+
+    @property
+    def uiScaleFactor(self) -> float:
+        if not hasattr(cmds, 'mayaDpiSetting'):
+            return 1
+        return float(cmds.mayaDpiSetting(query=True, realScaleValue=True))
 
     def themeTab(self, tab):
         super().themeTab(tab)
