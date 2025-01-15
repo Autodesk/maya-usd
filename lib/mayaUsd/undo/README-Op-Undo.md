@@ -2,7 +2,13 @@
 
 ## Goal
 
-The goal of the OpUndo system is to support undo/redo when using any framework.
+The OpUndo system is a set of C++ classes with the goal of supporting undo/redo
+when using any combination of frameworks, each with their own way of recording
+work that would ptentially need to be undone and redone later.
+
+Note that the goal OpUndo system is *only* to record what is done and would need
+to be undone and redone. It is *not* an undo/redo stack nor an undo manager.
+For that, we still rely on Maya's built-in undo system.
 
 The reason we need this is that the MayaUSD plugin uses multiple frameworks that
 each have their own undo system or none at all. For example, the plugin uses:
@@ -13,6 +19,7 @@ each have their own undo system or none at all. For example, the plugin uses:
 - MEL
 - pure C++ code
 - Python
+
 
 ## Building Blocks
 
@@ -40,3 +47,9 @@ The general pattern to use the framework is as follow:
   `OpUndoItemRecorder` will do that automatically for you.
 - When Maya asks your operation to be undone or redone, call `undo` or `redo` on the
   `OpUndoItemList` that holds all the undo items.
+
+So, a concrete example would be a Maya command derived from `MPxCommand`. Your
+`MPxCommand` would contain an `OpUndoItemList` as a member variable. In your
+commands' `doIt` function, you would declare an `OpUndoItemRecorder` and use
+various `OpUndoItem` sub-classes. In The `MPxCommand` `undoIt` and `redoIt`
+functions, you would call the `OpUndoItemList` `undo` and `redo` functions.
