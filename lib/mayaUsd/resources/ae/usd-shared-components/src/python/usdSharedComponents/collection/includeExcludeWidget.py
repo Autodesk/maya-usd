@@ -7,6 +7,7 @@ from .expressionRulesMenu import ExpressionMenu
 from ..common.host import Host
 from ..common.theme import Theme
 from ..data.collectionData import CollectionData
+from ..data.stringListData import StringListData
 
 try:
     from PySide6.QtCore import Qt  # type: ignore
@@ -23,6 +24,8 @@ REMOVE_FROM_INCLUDE_TOOLTIP = "Remove Selected Objects from Include"
 REMOVE_FROM_EXCLUDE_TOOLTIP = "Remove Selected Objects from Exclude"
 INCLUDE_OBJECTS_LABEL = "Include Objects..."
 EXCLUDE_OBJECTS_LABEL ="Exclude Objects..."
+ADD_SELECTION_TO_INCLUDE_LABEL ="Add Selection to Include"
+ADD_SELECTION_TO_EXCLUDE_LABEL ="Add Selection to Exclude"
 REMOVE_FROM_INCLUDES_LABEL = "Remove Selected Objects from Include"
 REMOVE_FROM_EXCLUDES_LABEL = "Remove Selected Objects from Exclude"
 INCLUDE_LABEL = "Include"
@@ -58,16 +61,25 @@ class IncludeExcludeWidget(QWidget):
         headerWidget = QWidget(self)
         headerLayout = QHBoxLayout(headerWidget)
 
+        addBtn = QToolButton(headerWidget)
+        addBtn.setToolTip(ADD_OBJECTS_TOOLTIP)
+        addBtn.setIcon(Theme.instance().icon("add"))
+        addBtn.setPopupMode(QToolButton.InstantPopup)
+        
+        self._addBtnMenu = QMenu(addBtn)
+        
         if Host.instance().canPick:
-            addBtn = QToolButton(headerWidget)
-            addBtn.setToolTip(ADD_OBJECTS_TOOLTIP)
-            addBtn.setIcon(Theme.instance().icon("add"))
-            addBtn.setPopupMode(QToolButton.InstantPopup)
-            addBtnMenu = QMenu(addBtn)
-            addBtnMenu.addAction(INCLUDE_OBJECTS_LABEL, self.onAddToIncludePrimClicked)
-            addBtnMenu.addAction(EXCLUDE_OBJECTS_LABEL, self.onAddToExcludePrimClicked)
-            addBtn.setMenu(addBtnMenu)
-            headerLayout.addWidget(addBtn)
+            self._addBtnMenu.addAction(INCLUDE_OBJECTS_LABEL, self.onAddToIncludePrimClicked)
+            self._addBtnMenu.addAction(EXCLUDE_OBJECTS_LABEL, self.onAddToExcludePrimClicked)
+            self._addBtnMenu.addSeparator()
+
+        self._addBtnMenu.addAction(ADD_SELECTION_TO_INCLUDE_LABEL, self._onAddSelectionToInclude)
+        self._addBtnMenu.addAction(ADD_SELECTION_TO_EXCLUDE_LABEL, self._onAddSelectionToExclude)
+
+        self._addBtnMenu.aboutToShow.connect(self._onAboutToShowAddMenu)
+
+        addBtn.setMenu(self._addBtnMenu)
+        headerLayout.addWidget(addBtn)
 
         self._deleteBtn = QToolButton(headerWidget)
         self._deleteBtn.setToolTip(REMOVE_OBJECTS_TOOLTIP)
@@ -143,6 +155,39 @@ class IncludeExcludeWidget(QWidget):
         items = Host.instance().pick(stage, dialogTitle=ADD_EXCLUDE_OBJECTS_TITLE)
         self._collData.getExcludeData().addStrings(map(lambda x: str(x.GetPath()), items))
 
+    def _hasValidSelection(self, stringList: StringListData) -> bool:
+        for item in Host.instance().getSelectionAsText():
+            if stringList._isValidString(item):
+                return True
+        return False
+    
+    def _onAboutToShowAddMenu(self):
+        labelsAndDatas = [
+            (ADD_SELECTION_TO_INCLUDE_LABEL, self._collData.getIncludeData()),
+            (ADD_SELECTION_TO_EXCLUDE_LABEL, self._collData.getExcludeData()),
+        ]
+        for label, data in labelsAndDatas:
+            action = self._findAction(label)
+            if not action:
+                continue
+            action.setEnabled(self._hasValidSelection(data))
+
+    def _onAddSelectionToInclude(self):
+        self._addSelectionToList(self._collData.getIncludeData())
+        
+    def _onAddSelectionToExclude(self):
+        self._addSelectionToList(self._collData.getExcludeData())
+
+    def _addSelectionToList(self, stringList: StringListData):
+        multilineSelection = Host.instance().getSelectionAsText()
+        if not multilineSelection:
+            return
+        # Note: we use addMultiLineStrings becuase it validates the given path.
+        #
+        # TODO: maybe move the validation into the addStrings and removeStrings
+        #       functions instead? But that would cause code duplication...
+        stringList.addMultiLineStrings('\n'.join(multilineSelection))
+
     def onRemoveSelectionFromInclude(self):
         self._collData.getIncludeData().removeStrings(self._include.list.selectedItems())
         self.onListSelectionChanged()
@@ -155,8 +200,11 @@ class IncludeExcludeWidget(QWidget):
         for act in self._deleteBtnMenu.actions():
             if act.text() == label:
                 return act
+        for act in self._addBtnMenu.actions():
+            if act.text() == label:
+                return act
         return None
-
+    
     def onListSelectionChanged(self):
         includesSelected = self._include.list.hasSelectedItems()
         excludeSelected = self._exclude.list.hasSelectedItems()

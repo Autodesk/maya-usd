@@ -63,6 +63,12 @@ class Host(object):
         By default, simply print the error with an "Error: " prefix.
         '''
         print('%s: %s', (msgType, message))
+
+    def getSelectionAsText(self) -> Sequence[str]:
+        '''
+        Retrieve the current selection as a list of item paths in text form.
+        '''
+        return []
     
     def createCollectionData(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         '''
