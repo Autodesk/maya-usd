@@ -47,9 +47,14 @@ class StringListData(QObject):
 
     def addMultiLineStrings(self, multiLineText):
         items = []
+        reportedError = False
         for text in multiLineText.split("\n"):
             text = self._isValidString(text)
-            if text is None:
+            if not text:
+                if not reportedError:
+                    reportedError = True
+                    from ..common.host import Host
+                    Host.instance().reportMessage("Only objects in the same stage as the collection can be added.")
                 continue
             items.append(text)
 

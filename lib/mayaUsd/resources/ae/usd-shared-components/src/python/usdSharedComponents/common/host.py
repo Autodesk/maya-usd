@@ -1,5 +1,15 @@
 from typing import Sequence
+from enum import Enum
 from pxr import Usd
+
+
+class MessageType(Enum):
+    '''
+    Message type used to report messages in the DCC.
+    '''
+    INFO = 1
+    WARNING = 2
+    ERROR = 3
 
 
 class Host(object):
@@ -46,6 +56,13 @@ class Host(object):
         supports picking USD prims.
         '''
         return None
+    
+    def reportMessage(self, message: str, msgType: MessageType=MessageType.ERROR):
+        '''
+        Report an error message using the DCC-specific logging system.
+        By default, simply print the error with an "Error: " prefix.
+        '''
+        print('%s: %s', (msgType, message))
     
     def createCollectionData(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         '''
