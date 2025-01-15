@@ -3,8 +3,9 @@ from pxr import Usd
 
 from usd_shared_components.collection.widget import CollectionWidget # type: ignore
 from usd_shared_components.common.host import Host # type: ignore
+from usd_shared_components.common.theme import Theme # type: ignore
 
-from .collectionMayaHost import MayaHost
+from .collectionMayaHost import MayaHost, MayaTheme
 
 class CollectionCustomControl(object):
     '''Custom control for the light linking data we want to display.'''
@@ -65,7 +66,9 @@ class CollectionCustomControl(object):
             ptr = MQtUtil.findControl(self.parent)
             parentWidget = wrapInstance(int(ptr), QWidget)
 
-            Host.injectInstance(MayaHost())
+            if Host._instance is None:
+                Host.injectInstance(MayaHost())
+                Theme.injectInstance(MayaTheme())
             self.widget = CollectionWidget(self.prim, Usd.CollectionAPI.Get(self.prim, self.instanceName))
             parentWidget.layout().addWidget(self.widget)
 

@@ -50,7 +50,6 @@ class CollectionWidget(QWidget):
             self._tabWidget = QTabWidget()
             self._tabWidget.setTabBar(NonScrollingTabBar(self._tabWidget))
             self._tabWidget.currentChanged.connect(self.onTabChanged)
-            self._tabWidget.setDocumentMode(True)
 
             self._expressionWidget = ExpressionWidget(self._collData, self._tabWidget)
             self._tabWidget.addTab(self._includeExcludeWidget, QIcon(), "Include/Exclude")
@@ -60,8 +59,7 @@ class CollectionWidget(QWidget):
             self._includeExcludeWidget.setContentsMargins(0, offset, 0, 0)
             self._expressionWidget.setContentsMargins(0, offset, 0, 0)
 
-            self._tabWidget.tabBar().setExpanding(True)
-            self._tabWidget.tabBar().setCursor(Qt.ArrowCursor)
+            Theme.instance().themeTab(self._tabWidget)
             mainLayout.addWidget(self._tabWidget)
         else:
             mainLayout.addWidget(self._includeExcludeWidget)

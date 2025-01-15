@@ -1,5 +1,6 @@
 
 from usd_shared_components.common.host import Host
+from usd_shared_components.common.theme import Theme
 from usd_shared_components.usdData.usdCollectionData import UsdCollectionData
 from usd_shared_components.usdData.usdCollectionStringListData import CollectionStringListData
 
@@ -307,6 +308,15 @@ class MayaStringListData(CollectionStringListData):
         with _UsdUndoBlockContext(_RemoveItemsCommand.commandName):
             super().removeStrings(items)
 
+class MayaTheme(Theme):
+    def __init__(self):
+        self._palette = None
+        self._icons = {}
+
+    def themeTab(self, tab):
+        super().themeTab(tab)
+        tab.setDocumentMode(False)
+        tab.tabBar().setExpanding(False)
 
 class MayaHost(Host):
     '''Class to host and override Maya-specific functions for the collection API.'''
