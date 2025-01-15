@@ -1,5 +1,5 @@
 
-from usd_shared_components.common.host import Host
+from usd_shared_components.common.host import Host, MessageType
 from usd_shared_components.common.theme import Theme
 from usd_shared_components.usdData.usdCollectionData import UsdCollectionData
 from usd_shared_components.usdData.usdCollectionStringListData import CollectionStringListData
@@ -239,7 +239,7 @@ def registerCommands(pluginName):
         try:
             plugin.registerCommand(cls.commandName, cls.creator, cls.createSyntax) 
         except Exception as ex:
-            print(ex)
+            MGlobal.displayError(ex)
 
 def deregisterCommands(pluginName):
     '''
@@ -256,7 +256,7 @@ def deregisterCommands(pluginName):
         try:
             plugin.deregisterCommand(cls.commandName) 
         except Exception as ex:
-            print(ex)
+            MGlobal.displayError(ex)
 
 
 class MayaCollectionData(UsdCollectionData):
@@ -333,6 +333,14 @@ class MayaHost(Host):
 
     def pick(self, stage: Usd.Stage, *, dialogTitle: str = "") -> Sequence[Usd.Prim]:
         return [] # nothing to do yet
+
+    def reportMessage(self, message: str, msgType: MessageType=MessageType.ERROR):
+        if msgType == MessageType.INFO:
+            MGlobal.displayInfo(message)
+        elif msgType == MessageType.WARNING:
+            MGlobal.displayWarning(message)
+        elif msgType == MessageType.ERROR:
+            MGlobal.displayError(message)
 
     def createCollectionData(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         return MayaCollectionData(prim, collection)
