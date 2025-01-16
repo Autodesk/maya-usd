@@ -66,11 +66,19 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
         return strAncestorTypes;
 
     // Get the actual schema type from the prim definition.
-    const TfType& schemaType = _prim.GetPrimTypeInfo().GetSchemaType();
-    if (!schemaType) {
-        // No schema type, return empty ancestor types.
-        return strAncestorTypes;
+    const TfType* schemaTypePtr = &_prim.GetPrimTypeInfo().GetSchemaType();
+    if (!*schemaTypePtr) {
+        // Typeless prim (for example, pure Def) don't have a schema type,
+        // so we pretend that they have the base schema so that it can be
+        // properly displayed in the Attribute Editor.
+        schemaTypePtr = &TfType::Find<UsdSchemaBase>();
+        if (!*schemaTypePtr) {
+            // No schema type, return empty ancestor types.
+            return strAncestorTypes;
+        }
     }
+
+    const TfType& schemaType = *schemaTypePtr;
 
     // According to the USD docs GetAllAncestorTypes() is expensive, so we keep a cache.
     static std::map<TfType, std::vector<std::string>> ancestorTypesCache;
