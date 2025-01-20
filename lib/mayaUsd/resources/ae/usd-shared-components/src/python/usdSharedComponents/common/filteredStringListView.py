@@ -72,13 +72,11 @@ class FilteredStringListView(QListView):
 
         self.setCursor(Qt.ArrowCursor)
 
-        DragAndDropEventFilter(self, data)
+        DragAndDropAndDeleteEventFilter(self, data)
 
         self.selectionModel().selectionChanged.connect(self.itemSelectionChanged)
 
     def paintEvent(self, event: QPaintEvent):
-        painter = QPainter(self)
-        painter.fillRect(event.rect(), Theme.instance().palette.colorListBorder)
         super(FilteredStringListView, self).paintEvent(event)
 
         model = self.model()
@@ -110,7 +108,7 @@ class FilteredStringListView(QListView):
     def hasSelectedItems(self) -> bool:
         return bool(self.selectionModel().hasSelection())
 
-class DragAndDropEventFilter(QObject):
+class DragAndDropAndDeleteEventFilter(QObject):
     def __init__(self, widget, data: StringListData):
         super().__init__(widget)
         self._collData = data
@@ -128,5 +126,10 @@ class DragAndDropEventFilter(QObject):
         elif event.type() == QEvent.DragMove:
             event.acceptProposedAction()
             return True
+        elif event.type() == QEvent.KeyPress:
+            # These are to prevent deleting the overall DCC selection when
+            # an item in the listview is selected.
+            if event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
+                return True
 
         return super().eventFilter(obj, event)
