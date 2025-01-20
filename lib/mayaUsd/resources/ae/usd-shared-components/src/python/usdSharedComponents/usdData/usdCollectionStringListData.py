@@ -74,10 +74,14 @@ class CollectionStringListData(StringListData):
         if not Sdf.Path.IsValidPathString(text):
             return None
 
-        stage = self._collection.GetPrim().GetStage()
+        stage = self._prim.GetStage()
         prim = stage.GetPrimAtPath(Sdf.Path(text))
 
         if not prim or not prim.IsValid():
+            return None
+        
+        # We don't allow adding a prim to its own collection.
+        if prim == self._prim:
             return None
 
         return text
