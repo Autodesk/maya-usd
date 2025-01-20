@@ -349,6 +349,10 @@ class MayaHost(Host):
         elif msgType == MessageType.ERROR:
             MGlobal.displayError(message)
 
+    def getSelectionAsText(self) -> Sequence[str]:
+        # Note: we need the UFE selection in order to have USD items.
+        return cmds.ls(selection=True, ufe=True, long=True)
+
     def createCollectionData(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         return MayaCollectionData(prim, collection)
     
