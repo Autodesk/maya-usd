@@ -48,43 +48,52 @@ class IncludeExcludeWidget(QWidget):
         self._expressionMenu = ExpressionMenu(data, self)
         menuButton = MenuButton(self._expressionMenu, self)
 
+        spacer = QWidget()
+        spacer.setMinimumWidth(0)
+        spacer.setSizePolicy(
+            QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
+        )
+
         self._filterWidget = QLineEdit()
         self._filterWidget.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
+        self._filterWidget.setMaximumWidth(Theme.instance().uiScaled(165))
         self._filterWidget.setPlaceholderText(SEARCH_PLACEHOLDER_LABEL)
         self._filterWidget.setClearButtonEnabled(True)
 
         separator = QFrame()
         separator.setFrameShape(QFrame.VLine)
+        separator.setMaximumHeight(Theme.instance().uiScaled(20))
 
         headerWidget = QWidget(self)
         headerLayout = QHBoxLayout(headerWidget)
+        topMargin = Theme.instance().uiScaled(4)
+        margin = Theme.instance().uiScaled(2)
+        headerLayout.setContentsMargins(margin, topMargin, margin, margin)
 
         addBtn = QToolButton(headerWidget)
         addBtn.setToolTip(ADD_OBJECTS_TOOLTIP)
         addBtn.setIcon(Theme.instance().icon("add"))
         addBtn.setPopupMode(QToolButton.InstantPopup)
+        Theme.instance().themeMenuButton(addBtn, True)
         
         self._addBtnMenu = QMenu(addBtn)
-        
         if Host.instance().canPick:
             self._addBtnMenu.addAction(INCLUDE_OBJECTS_LABEL, self.onAddToIncludePrimClicked)
             self._addBtnMenu.addAction(EXCLUDE_OBJECTS_LABEL, self.onAddToExcludePrimClicked)
             self._addBtnMenu.addSeparator()
-
         self._addBtnMenu.addAction(ADD_SELECTION_TO_INCLUDE_LABEL, self._onAddSelectionToInclude)
         self._addBtnMenu.addAction(ADD_SELECTION_TO_EXCLUDE_LABEL, self._onAddSelectionToExclude)
-
         self._addBtnMenu.aboutToShow.connect(self._onAboutToShowAddMenu)
-
         addBtn.setMenu(self._addBtnMenu)
-        headerLayout.addWidget(addBtn)
 
         self._deleteBtn = QToolButton(headerWidget)
         self._deleteBtn.setToolTip(REMOVE_OBJECTS_TOOLTIP)
         self._deleteBtn.setIcon(Theme.instance().icon("delete"))
         self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
+        self._deleteBtn.setEnabled(False)
+
         self._deleteBtnMenu = QMenu(self._deleteBtn)
         self._deleteBtnMenu.addAction(
             REMOVE_FROM_INCLUDES_LABEL, self.onRemoveSelectionFromInclude
@@ -93,13 +102,14 @@ class IncludeExcludeWidget(QWidget):
             REMOVE_FROM_EXCLUDES_LABEL, self.onRemoveSelectionFromExclude
         )
         self._deleteBtn.setMenu(self._deleteBtnMenu)
+
+        headerLayout.addWidget(addBtn)
         headerLayout.addWidget(self._deleteBtn)
-
-        self._deleteBtn.setEnabled(False)
-
+        headerLayout.addWidget(spacer)
         headerLayout.addWidget(self._filterWidget)
         headerLayout.addWidget(separator)
         headerLayout.addWidget(menuButton)
+
         mainLayout.addWidget(headerWidget)
 
         self._include = StringListPanel(data.getIncludeData(), True, INCLUDE_LABEL, self)
@@ -226,7 +236,7 @@ class IncludeExcludeWidget(QWidget):
         if includesSelected and excludeSelected:
             self._deleteBtn.setToolTip(REMOVE_OBJECTS_TOOLTIP)
             self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
-            self._deleteBtn.setStyleSheet("")
+            Theme.instance().themeMenuButton(self._deleteBtn, True)
         else:
             if includesSelected:
                 self._deleteBtn.setToolTip(REMOVE_FROM_INCLUDE_TOOLTIP)
@@ -235,9 +245,7 @@ class IncludeExcludeWidget(QWidget):
                 self._deleteBtn.setToolTip(REMOVE_FROM_EXCLUDE_TOOLTIP)
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromExclude)
             self._deleteBtn.setPopupMode(QToolButton.DelayedPopup)
-            self._deleteBtn.setStyleSheet(
-                """QToolButton::menu-indicator { width: 0px; }"""
-            )
+            Theme.instance().themeMenuButton(self._deleteBtn, False)
 
     def onIncludeAllToggle(self, _: Qt.CheckState):
         incAll = self._include.cbIncludeAll.isChecked()
