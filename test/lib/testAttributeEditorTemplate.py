@@ -522,7 +522,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
 
-        # Create a Def primt via contextOps menu. Not all versions of Maya automatically
+        # Create a Def prim via contextOps menu. Not all versions of Maya automatically
         # select the prim from 'Add New Prim', so always select it here.
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Def'])
