@@ -494,7 +494,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         startLayout = cmds.formLayout(primFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for %s formLayout' % primName)
 
-        # Augment the maixmum diff size to get better error message when comparing the lists.
+        # Augment the maximum diff size to get better error message when comparing the lists.
         self.maxDiff = 2000
         
         actualSectionLabels = self.findAllFrameLayoutLabels(startLayout)
@@ -522,7 +522,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
 
-        # Create a cylinder light via contextOps menu. Not all versions of Maya automatically
+        # Create a Def primt via contextOps menu. Not all versions of Maya automatically
         # select the prim from 'Add New Prim', so always select it here.
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Def'])
@@ -544,7 +544,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         startLayout = cmds.formLayout(primFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for %s formLayout' % primName)
 
-        # Augment the maixmum diff size to get better error message when comparing the lists.
+        # Augment the maximum diff size to get better error message when comparing the lists.
         self.maxDiff = 2000
         
         actualSectionLabels = self.findAllFrameLayoutLabels(startLayout)
