@@ -1,7 +1,7 @@
 from typing import AnyStr, Sequence
 from ..data.collectionData import CollectionData
 from .usdCollectionStringListData import CollectionStringListData
-from .validator import validatePrim
+from .validator import validatePrim, validateCollection
 
 from pxr import Sdf, Tf, Usd
 
@@ -68,24 +68,20 @@ class UsdCollectionData(CollectionData):
 
     # Include and exclude
 
-    @validatePrim(False)
+    @validateCollection(False)
     def includesAll(self) -> bool:
         '''
         Verify if the collection includes all by default.
         '''
-        if not self._collection:
-            return False
         includeRootAttribute = self._collection.GetIncludeRootAttr()
         return bool(includeRootAttribute.Get())
 
-    @validatePrim(False)
+    @validateCollection(False)
     def setIncludeAll(self, state: bool) -> bool:
         '''
         Sets if the collection should include all items by default.
         '''
         if self.includesAll() == state:
-            return False
-        if not self._collection:
             return False
         includeRootAttribute = self._collection.GetIncludeRootAttr()
         includeRootAttribute.Set(state)
@@ -103,61 +99,51 @@ class UsdCollectionData(CollectionData):
         '''
         return self._excludes
 
-    @validatePrim(False)
+    @validateCollection(False)
     def removeAllIncludeExclude(self) -> bool:
         '''
         Remove all included and excluded items.
         By design, we author a block collection opinion.
         '''
-        if not self._collection:
-            return False
         self._collection.BlockCollection()
         return True
 
     # Expression
 
-    @validatePrim('')
+    @validateCollection('')
     def getExpansionRule(self):
         '''
         Returns expansion rule as a USD token.
         '''
-        if not self._collection:
-            return ""
         return self._collection.GetExpansionRuleAttr().Get()
 
-    @validatePrim(False)
+    @validateCollection(False)
     def setExpansionRule(self, rule) -> bool:
         '''
         Sets the expansion rule as a USD token.
         '''
         if rule == self.getExpansionRule():
             return False
-        if not self._collection:
-            return False
         self._collection.CreateExpansionRuleAttr(rule)
         return True
 
-    @validatePrim('')
+    @validateCollection('')
     def getMembershipExpression(self) -> AnyStr:
         '''
         Returns the membership expression as text.
         '''
-        if not self._collection:
-            return None
-        
         usdExpressionAttr = self._collection.GetMembershipExpressionAttr().Get()
         if usdExpressionAttr is None:
             return None
         return usdExpressionAttr.GetText()
     
-    @validatePrim(False)
+    @validateCollection(False)
     def setMembershipExpression(self, textExpression: AnyStr) -> bool:
         '''
         Set the textual membership expression.
         '''
-        if not self._collection:
-            return False
-        
+        from ..common.host import Host, MessageType
+
         usdExpression = ""
         usdExpressionAttr = self._collection.GetMembershipExpressionAttr().Get()
         if usdExpressionAttr != None:
@@ -172,17 +158,23 @@ class UsdCollectionData(CollectionData):
                 self._collection.GetMembershipExpressionAttr().Clear()
                 return True
 
+            self._collection.CreateMembershipExpressionAttr(Sdf.PathExpression(textExpression))
+
             # If the include-all flag is set and there are not explicit include or exclude,
             # then turn off the include-all flag so that the expression works. Otherwise,
             # the include-all flag would make the expression useless since everything would
             # be included anyway.
+            #
+            # Note: do it after setting the expression, since the expression might be invalid.
             if self.includesAll() and not self._includes.getStrings() and not self._excludes.getStrings():
                 includeRootAttribute = self._collection.GetIncludeRootAttr()
                 includeRootAttribute.Set(False)
-                print('"Include All" has been disabled for the expression to take effect.')
+                Host.instance().reportMessage(
+                    '"Include All" has been disabled for the expression to take effect.',
+                    MessageType.INFO)
 
-            self._collection.CreateMembershipExpressionAttr(Sdf.PathExpression(textExpression))
             return True
-        except:
-            print('Error: Failed to update: {0}, in collection {1}.'.format(textExpression, self._collection.GetName()))
+        except Exception:
+            Host.instance().reportMessage(
+                'Failed to update the collection {1} with the expression: {0}'.format(textExpression, self._collection.GetName()))
             return False

@@ -38,6 +38,8 @@ class CollectionStringListData(StringListData):
         Add the given strings to the model.
         '''
         # Use a SdfChangeBlock to group all updates in a single USD recomposition.
+        existingItems = set(self.getStrings())
+        items = set(items).difference(existingItems)
         with Sdf.ChangeBlock():
             if self._isInclude:
                 for path in items:
