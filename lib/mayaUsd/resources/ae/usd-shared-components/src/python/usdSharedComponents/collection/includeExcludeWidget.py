@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Callable
 
 from ..common.stringListPanel import StringListPanel
 from ..common.resizable import Resizable
@@ -106,6 +106,9 @@ class IncludeExcludeWidget(QWidget):
         headerLayout.addWidget(addBtn)
         headerLayout.addWidget(self._deleteBtn)
         headerLayout.addWidget(spacer)
+
+        self._deleteBtnPressedConnectedTo: Callable = None
+
         headerLayout.addWidget(self._filterWidget)
         headerLayout.addWidget(separator)
         headerLayout.addWidget(menuButton)
@@ -227,11 +230,9 @@ class IncludeExcludeWidget(QWidget):
         if deleteFromExcludesAction:
             deleteFromExcludesAction.setEnabled(excludeSelected)
 
-        try:
-            self._deleteBtn.pressed.disconnect(self.onRemoveSelectionFromInclude)
-            self._deleteBtn.pressed.disconnect(self.onRemoveSelectionFromExclude)
-        except Exception:
-            pass
+        if self._deleteBtnPressedConnectedTo:
+            self._deleteBtn.pressed.disconnect(self._deleteBtnPressedConnectedTo)
+            self._deleteBtnPressedConnectedTo = None
 
         if includesSelected and excludeSelected:
             self._deleteBtn.setToolTip(REMOVE_OBJECTS_TOOLTIP)
@@ -241,9 +242,11 @@ class IncludeExcludeWidget(QWidget):
             if includesSelected:
                 self._deleteBtn.setToolTip(REMOVE_FROM_INCLUDE_TOOLTIP)
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromInclude)
+                self._deleteBtnPressedConnectedTo = self.onRemoveSelectionFromInclude
             elif excludeSelected:
                 self._deleteBtn.setToolTip(REMOVE_FROM_EXCLUDE_TOOLTIP)
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromExclude)
+                self._deleteBtnPressedConnectedTo = self.onRemoveSelectionFromExclude
             self._deleteBtn.setPopupMode(QToolButton.DelayedPopup)
             Theme.instance().themeMenuButton(self._deleteBtn, False)
 
