@@ -494,7 +494,7 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         startLayout = cmds.formLayout(primFormLayout, query=True, fullPathName=True)
         self.assertIsNotNone(startLayout, 'Could not get full path for %s formLayout' % primName)
 
-        # Augment the maixmum diff size to get better error message when comparing the lists.
+        # Augment the maximum diff size to get better error message when comparing the lists.
         self.maxDiff = 2000
         
         actualSectionLabels = self.findAllFrameLayoutLabels(startLayout)
@@ -515,6 +515,50 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIn('Transforms', actualSectionLabels[-4:])
         self.assertIn('Display', actualSectionLabels[-4:])
         self.assertIn('Metadata', actualSectionLabels[-4:])
+
+    def testAEForDefWithSchema(self):
+        '''Test that the expected sections are created for def with added schema.'''
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+
+        # Create a Def prim via contextOps menu. Not all versions of Maya automatically
+        # select the prim from 'Add New Prim', so always select it here.
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Def'])
+        primName = 'Def1'
+        fullPrimPath = proxyShape + ',/%s' % primName
+        cmds.select(fullPrimPath)
+
+        # Add Light schema to the Def prim.
+        cmds.mayaUsdSchema(fullPrimPath, schema='LightAPI')
+
+        # Make sure the AE is visible.
+        import maya.mel
+        maya.mel.eval('openAEWindow')
+
+        # Note: for Def, the nodeType command returns ''.
+        primFormLayout = self.attrEdFormLayoutName('')
+        self.assertTrue(cmds.formLayout(primFormLayout, exists=True), 'Layout for %s was not found\n' % primName)
+            
+        startLayout = cmds.formLayout(primFormLayout, query=True, fullPathName=True)
+        self.assertIsNotNone(startLayout, 'Could not get full path for %s formLayout' % primName)
+
+        # Augment the maximum diff size to get better error message when comparing the lists.
+        self.maxDiff = 2000
+        
+        actualSectionLabels = self.findAllFrameLayoutLabels(startLayout)
+
+        # Note: different version of USD can have different schemas,
+        #       so we only compare the ones we are interested in verifying.
+        expectedInitialSectionLabels = [
+            'Light ',
+            'Light Link Collection ',
+            'Shadow Link Collection ']
+        self.assertListEqual(
+            actualSectionLabels[0:len(expectedInitialSectionLabels)],
+            expectedInitialSectionLabels)
+        self.assertIn('Metadata', actualSectionLabels)
 
     def testAECustomAttributeCallback(self):
         '''Test that the custm atribute callbacks work.'''
