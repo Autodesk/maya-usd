@@ -1,6 +1,7 @@
 
 from usd_shared_components.common.host import Host, MessageType
 from usd_shared_components.common.theme import Theme
+from usd_shared_components.common.persistentStorage import PersistentStorage
 from usd_shared_components.usdData.usdCollectionData import UsdCollectionData
 from usd_shared_components.usdData.usdCollectionStringListData import CollectionStringListData
 
@@ -358,3 +359,39 @@ class MayaHost(Host):
     
     def createStringListData(self, collection: Usd.CollectionAPI, isInclude: bool):
         return MayaStringListData(collection, isInclude)
+
+
+class MayaPersistentStorage(PersistentStorage):
+    '''Implement the persistent storage using Maya option vars.'''
+
+    def __init__(self):
+        pass
+
+    def _getOptVarName(self, group: str, key: str) -> str:
+        if not group:
+            return None
+        if not key:
+            return None
+        return '%s_%s' % (group, key)
+
+    def set(self, group: str, key: str, value: object) -> bool:
+        # Note: we allow empty value but not None
+        if value is None:
+            return False
+
+        varName = self._getOptVarName(group, key)
+        if not varName:
+            return False
+
+        return cmds.optionVar(stringValue=(varName, str(value)))
+
+    def get(self, group: str, key: str, default: object = None) -> object:
+        varName = self._getOptVarName(group, key)
+        if not varName:
+            return default
+
+        if not cmds.optionVar(exists=varName):
+            return default
+
+        varType = str if default is None else type(default)
+        return varType(cmds.optionVar(query=varName))

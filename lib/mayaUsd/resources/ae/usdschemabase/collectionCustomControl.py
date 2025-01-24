@@ -4,8 +4,9 @@ from pxr import Usd
 from usd_shared_components.collection.widget import CollectionWidget # type: ignore
 from usd_shared_components.common.host import Host # type: ignore
 from usd_shared_components.common.theme import Theme # type: ignore
+from usd_shared_components.common.persistentStorage import PersistentStorage # type: ignore
 
-from .collectionMayaHost import MayaHost, MayaTheme
+from .collectionMayaHost import MayaHost, MayaTheme, MayaPersistentStorage
 
 class CollectionCustomControl(object):
     '''Custom control for the light linking data we want to display.'''
@@ -69,6 +70,7 @@ class CollectionCustomControl(object):
             if Host._instance is None:
                 Host.injectInstance(MayaHost())
                 Theme.injectInstance(MayaTheme())
+                PersistentStorage.injectInstance(MayaPersistentStorage())
             self.widget = CollectionWidget(self.prim, Usd.CollectionAPI.Get(self.prim, self.instanceName))
             parentWidget.layout().addWidget(self.widget)
 
