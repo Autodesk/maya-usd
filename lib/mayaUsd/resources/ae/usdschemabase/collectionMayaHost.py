@@ -7,6 +7,7 @@ from usd_shared_components.usdData.usdCollectionStringListData import Collection
 
 from maya.api.OpenMaya import MPxCommand, MFnPlugin, MGlobal, MSyntax, MArgDatabase
 import mayaUsd.lib
+import mayaUsd.ufe
 import maya.mel as mel
 import maya.cmds as cmds
 
@@ -353,6 +354,15 @@ class MayaHost(Host):
     def getSelectionAsText(self) -> Sequence[str]:
         # Note: we need the UFE selection in order to have USD items.
         return cmds.ls(selection=True, ufe=True, long=True)
+
+    def setSelectionFromText(self, paths: Sequence[str]) -> bool:
+        if not paths:
+            return False
+        cmds.select(paths, replace=True)
+        return True
+
+    def getStagePath(self, stage: Usd.Stage) -> str:
+        return mayaUsd.ufe.stagePath(stage)
 
     def createCollectionData(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         return MayaCollectionData(prim, collection)
