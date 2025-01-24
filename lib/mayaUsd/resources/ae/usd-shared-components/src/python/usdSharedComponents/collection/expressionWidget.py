@@ -60,6 +60,12 @@ class ExpressionWidget(QWidget):
             return
         self._collData.setMembershipExpression(newText)
 
+        # If there was an error setting the expression, 
+        # revert the text in the ui to the original text since it was not properly set
+        membershipExpression = self._collData.getMembershipExpression()
+        if membershipExpression != self._expressionText.toPlainText():
+            self._expressionText.setPlainText(membershipExpression)
+
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress and obj is self._expressionText:
             if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
