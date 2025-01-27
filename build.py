@@ -310,7 +310,7 @@ def RunCMake(context, extraArgs=None, stages=None):
                         installArg=installArg,
                         multiproc=FormatMultiProcs(context.numJobs, generator)))
 
-def RunCTest(context, extraArgs=None):
+def RunCTest(context, extraArgs=None, runOnlyFailed=False):
     buildDir = context.buildDir
     variant = BuildVariant(context)
 
@@ -319,9 +319,10 @@ def RunCTest(context, extraArgs=None):
             'ctest '
             '--output-on-failure ' 
             '--timeout 500 '
-            '-C {variant} '
+            '-C {variant} {rerun} '
             '{extraArgs} '
             .format(variant=variant,
+                    rerun = '--rerun-failed' if runOnlyFailed else '',
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
 
 def RunMakeZipArchive(context):
@@ -549,15 +550,34 @@ def BuildAndInstall(context, buildArgs, stages):
                            "or choose a different location to install to."
                            .format(dir=dir))
                 sys.exit(1)
-        Print("""Success MayaUSD build and install !!!!""")
+        Print('Success MayaUsd build and install!')
 
-def RunTests(context,extraArgs):
-    RunCTest(context,extraArgs)
-    Print("""Success running MayaUSD tests !!!!""")
+def RunTests(context, extraArgs):
+    # Clean out any previous ctest logs before running ctest.
+    lastTestLog = os.path.join(context.buildDir, 'Testing', 'Temporary','LastTest.log')
+    if os.path.exists(lastTestLog):
+        os.remove(lastTestLog)
+    lastTestsFailedLog = os.path.join(context.buildDir, 'Testing', 'Temporary', 'LastTestsFailed.log')
+    if os.path.exists(lastTestsFailedLog):
+        os.remove(lastTestsFailedLog)
+
+    try:
+        RunCTest(context, extraArgs)
+    except RuntimeError as e:
+        PrintWarning('One (or more) tests failed, re-running only failed tests.\n')
+        try:
+            RunCTest(context, extraArgs, runOnlyFailed=True)
+        except:
+            PrintWarning('One (or more) tests failed on re-run!\n')
+            raise e # Re-raise the original failure.
+        else:
+            Print('Successfully re-ran failed tests!')
+
+    Print('Success running MayaUsd tests!')
 
 def Package(context):
     RunMakeZipArchive(context)
-    Print("""Success packaging MayaUSD !!!!""")
+    Print('Success packaging MayaUsd!')
     Print('Archived package is available in {pkgDir}'.format(pkgDir=context.pkgDir))
 
 ############################################################
@@ -598,7 +618,7 @@ parser.add_argument("--devkit-location", type=str,
 parser.add_argument("--materialx", dest="build_materialx", action="store_true", default=True,
                     help="Build with MaterialX features enabled (default). Requires USD built with MaterialX support.")
 parser.add_argument("--no-materialx", dest="build_materialx", action="store_false",
-                    help="Do not build MaterialX support in MayaUSD.")
+                    help="Do not build MaterialX support in MayaUsd.")
 
 varGroup = parser.add_mutually_exclusive_group()
 varGroup.add_argument("--build-debug", dest="build_debug", action="store_true",
