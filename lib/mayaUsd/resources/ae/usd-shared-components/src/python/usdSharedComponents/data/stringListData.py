@@ -20,6 +20,12 @@ class StringListData(QObject):
         '''
         return []
 
+    def getSuggestions(self) -> Sequence[AnyStr]:
+        '''
+        Retrieve suggestions for paths completion.
+        '''
+        return []
+
     def addStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Add the given strings to the model.
@@ -31,6 +37,14 @@ class StringListData(QObject):
         '''
         Remove the given strings from the model.
         Return True if successfully removed.
+        Return False if already empty.
+        '''
+        return False
+    
+    def replaceStrings(self, oldString, newString) -> bool:
+        '''
+        Remove oldString from the model then add newString.
+        Return True if successfully removed then added.
         Return False if already empty.
         '''
         return False

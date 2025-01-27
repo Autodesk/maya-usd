@@ -59,7 +59,7 @@ class FilteredStringListModel(QStringListModel):
                 return False
             index = newIndex + len(filter)
         return True
-    
+
     def isFilteredEmpty(self):
         '''
         Verify if the model is empty because it was entirely filtered out.

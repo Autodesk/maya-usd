@@ -62,7 +62,7 @@ class Host(object):
         Report an error message using the DCC-specific logging system.
         By default, simply print the error with an "Error: " prefix.
         '''
-        print('%s: %s', (msgType, message))
+        print('%s: %s' % (msgType, message))
 
     def getSelectionAsText(self) -> Sequence[str]:
         '''
