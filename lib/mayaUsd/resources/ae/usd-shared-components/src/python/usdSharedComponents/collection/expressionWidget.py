@@ -1,14 +1,17 @@
 from .expressionRulesMenu import ExpressionMenu
 from ..common.menuButton import MenuButton
+from ..common.host import Host
 from ..common.theme import Theme
 from ..data.collectionData import CollectionData
 
 try:
     from PySide6.QtCore import QEvent, Qt  # type: ignore
-    from PySide6.QtWidgets import QSizePolicy, QTextEdit, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
+    from PySide6.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
 except ImportError:
     from PySide2.QtCore import QEvent, Qt  # type: ignore
-    from PySide2.QtWidgets import QSizePolicy, QTextEdit, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
+    from PySide2.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
+
+SELECT_OBJECTS_TOOLTIP = "Selects the objects in the Viewport."
 
 class ExpressionWidget(QWidget):
     def __init__(self, data: CollectionData, parent: QWidget):
@@ -18,16 +21,23 @@ class ExpressionWidget(QWidget):
         mainLayout = QVBoxLayout(self)
         margin: int = Theme.instance().uiScaled(2)
         mainLayout.setSpacing(margin)
+        mainLayout.setContentsMargins(0, 0, 0, 0)
 
         self._expressionMenu = ExpressionMenu(data, self)
         menuButton = MenuButton(self._expressionMenu, self)
 
         menuWidget = QWidget(self)
         menuLayout = QHBoxLayout(menuWidget)
+        topMargin = Theme.instance().uiScaled(4)
+        margin = Theme.instance().uiScaled(2)
+        menuLayout.setContentsMargins(margin, topMargin, margin, margin)
 
-        margins = menuLayout.contentsMargins()
-        margins.setRight(0)
-        menuLayout.setContentsMargins(margins)
+        self._selectBtn = QToolButton(menuWidget)
+        self._selectBtn.setToolTip(SELECT_OBJECTS_TOOLTIP)
+        self._selectBtn.setIcon(Theme.instance().icon("selector"))
+        self._selectBtn.setEnabled(False)
+        self._selectBtn.clicked.connect(self._onSelectItemsClicked)
+        menuLayout.addWidget(self._selectBtn)
 
         menuLayout.addStretch(1)
         menuLayout.addWidget(menuButton)
@@ -51,7 +61,16 @@ class ExpressionWidget(QWidget):
 
     def _onDataChanged(self):
         usdExpressionAttr = self._collData.getMembershipExpression()
-        self._expressionText.setPlainText(usdExpressionAttr or '')
+        text = usdExpressionAttr or ''
+        self._expressionText.setPlainText(text)
+        self._selectBtn.setEnabled(bool(text))
+
+    def _onSelectItemsClicked(self):
+        membershipItems = self._collData.computeMembership()
+        # Note: for membership expression, it does not matter if we use
+        #       the include or exclude version of convertToItemPaths.
+        membershipItems = self._collData.getIncludeData().convertToItemPaths(membershipItems)
+        Host.instance().setSelectionFromText(membershipItems)
 
     def submitExpression(self):
         newText = self._expressionText.toPlainText() or ''

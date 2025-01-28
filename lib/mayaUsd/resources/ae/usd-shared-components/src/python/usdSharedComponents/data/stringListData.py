@@ -35,12 +35,20 @@ class StringListData(QObject):
         '''
         return False
 
-    def _isValidString(self, s) -> AnyStr:
+    def convertToCollectionString(self, s) -> AnyStr:
         '''
         Validates if the string is valid and possibly alter it to make it valid
         or conform to the expected format or value. Return None if invalid.
         '''
         return None
+    
+    def convertToItemPaths(self, items: Sequence[str]) -> Sequence[str]:
+        '''
+        Convert back the given strings in the format kept by this collection
+        into their original format. Should be the opposite of the transformation
+        made in the convertToCollectionString function above.
+        '''
+        return []
 
     # Function provided to help using this class, call
     # other functions above.
@@ -49,7 +57,7 @@ class StringListData(QObject):
         items = []
         reportedError = False
         for text in multiLineText.split("\n"):
-            text = self._isValidString(text)
+            text = self.convertToCollectionString(text)
             if not text:
                 if not reportedError:
                     reportedError = True
