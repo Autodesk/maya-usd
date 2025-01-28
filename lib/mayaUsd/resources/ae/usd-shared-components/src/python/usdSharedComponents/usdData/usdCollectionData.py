@@ -178,3 +178,13 @@ class UsdCollectionData(CollectionData):
             Host.instance().reportMessage(
                 'Failed to update the collection {1} with the expression: {0}'.format(textExpression, self._collection.GetName()))
             return False
+
+    @validateCollection([])
+    def computeMembership(self) -> Sequence[str]:
+        '''
+        Compute all items that are included by the membership expression.
+        '''
+        query = self._collection.ComputeMembershipQuery()
+        if not query:
+            return []
+        return Usd.CollectionAPI.ComputeIncludedPaths(query, self._prim.GetStage())

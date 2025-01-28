@@ -22,6 +22,7 @@ ADD_OBJECTS_TOOLTIP = "Add Objects to the Include/Exclude list"
 REMOVE_OBJECTS_TOOLTIP = "Remove Selected Objects from Include/Exclude list"
 REMOVE_FROM_INCLUDE_TOOLTIP = "Remove Selected Objects from Include"
 REMOVE_FROM_EXCLUDE_TOOLTIP = "Remove Selected Objects from Exclude"
+SELECT_OBJECTS_TOOLTIP = "Selects the objects in the Viewport."
 INCLUDE_OBJECTS_LABEL = "Include Objects..."
 EXCLUDE_OBJECTS_LABEL ="Exclude Objects..."
 ADD_SELECTION_TO_INCLUDE_LABEL ="Add Selection to Include"
@@ -103,8 +104,15 @@ class IncludeExcludeWidget(QWidget):
         )
         self._deleteBtn.setMenu(self._deleteBtnMenu)
 
+        self._selectBtn = QToolButton(headerWidget)
+        self._selectBtn.setToolTip(SELECT_OBJECTS_TOOLTIP)
+        self._selectBtn.setIcon(Theme.instance().icon("selector"))
+        self._selectBtn.setEnabled(False)
+        self._selectBtn.clicked.connect(self._onSelectItemsClicked)
+
         headerLayout.addWidget(addBtn)
         headerLayout.addWidget(self._deleteBtn)
+        headerLayout.addWidget(self._selectBtn)
         headerLayout.addWidget(spacer)
 
         self._deleteBtnPressedConnectedTo: Callable = None
@@ -170,7 +178,7 @@ class IncludeExcludeWidget(QWidget):
 
     def _hasValidSelection(self, stringList: StringListData) -> bool:
         for item in Host.instance().getSelectionAsText():
-            if stringList._isValidString(item):
+            if stringList.convertToCollectionString(item):
                 return True
         return False
     
@@ -209,6 +217,11 @@ class IncludeExcludeWidget(QWidget):
         self._collData.getExcludeData().removeStrings(self._exclude.list.selectedItems())
         self.onListSelectionChanged()
 
+    def _onSelectItemsClicked(self):
+        included = self._collData.getIncludeData().convertToItemPaths(self._include.list.selectedItems())
+        excluded = self._collData.getExcludeData().convertToItemPaths(self._exclude.list.selectedItems())
+        Host.instance().setSelectionFromText(included + excluded)
+
     def _findAction(self, label):
         for act in self._deleteBtnMenu.actions():
             if act.text() == label:
@@ -222,6 +235,7 @@ class IncludeExcludeWidget(QWidget):
         includesSelected = self._include.list.hasSelectedItems()
         excludeSelected = self._exclude.list.hasSelectedItems()
         self._deleteBtn.setEnabled(includesSelected or excludeSelected)
+        self._selectBtn.setEnabled(includesSelected or excludeSelected)
 
         deleteFromIncludesAction = self._findAction(REMOVE_FROM_INCLUDES_LABEL)
         if deleteFromIncludesAction:

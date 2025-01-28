@@ -64,7 +64,7 @@ class CollectionStringListData(StringListData):
         return True
 
     @validateCollection(None)
-    def _isValidString(self, text) -> AnyStr:
+    def convertToCollectionString(self, text) -> AnyStr:
         '''
         Validates if the string is valid and possibly alter it to make it valid
         or conform to the expected format or value. Return None if invalid.
@@ -87,3 +87,13 @@ class CollectionStringListData(StringListData):
             return None
 
         return text
+
+    @validateCollection([])
+    def convertToItemPaths(self, items: Sequence[str]) -> Sequence[str]:
+        from ..common.host import Host
+        stagePath = Host.instance().getStagePath(self._prim.GetStage())
+        # Protect in case the stage was deleted.
+        if not stagePath:
+            return []
+        
+        return ['%s,%s' % (stagePath, item) for item in items if items]
