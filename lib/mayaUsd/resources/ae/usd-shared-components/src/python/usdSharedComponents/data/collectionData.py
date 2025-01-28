@@ -13,6 +13,15 @@ class CollectionData(QObject):
     def __init__(self):
         super().__init__()
 
+    # Data conflicts
+
+    def hasDataConflict(self) -> bool:
+        '''
+        Verify if the collection has both a membership expression and
+        some explicit inclusions or exclusions.
+        '''
+        return False
+    
     # USD Stage information
     
     def getStage(self):

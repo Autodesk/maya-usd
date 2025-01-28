@@ -1,4 +1,5 @@
 from .expressionRulesMenu import ExpressionMenu
+from.warningWidget import WarningWidget
 from ..common.menuButton import MenuButton
 from ..common.host import Host
 from ..common.theme import Theme
@@ -6,10 +7,10 @@ from ..data.collectionData import CollectionData
 
 try:
     from PySide6.QtCore import QEvent, Qt  # type: ignore
-    from PySide6.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
+    from PySide6.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout, QFrame # type: ignore
 except ImportError:
     from PySide2.QtCore import QEvent, Qt  # type: ignore
-    from PySide2.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
+    from PySide2.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout, QFrame # type: ignore
 
 SELECT_OBJECTS_TOOLTIP = "Selects the objects in the Viewport."
 
@@ -40,6 +41,15 @@ class ExpressionWidget(QWidget):
         menuLayout.addWidget(self._selectBtn)
 
         menuLayout.addStretch(1)
+
+        self._warningWidget = WarningWidget(menuWidget)
+        self._warningSeparator = QFrame()
+        self._warningSeparator.setFrameShape(QFrame.VLine)
+        self._warningSeparator.setMaximumHeight(Theme.instance().uiScaled(20))
+        self._warningSeparator.setVisible(False)
+        menuLayout.addWidget(self._warningWidget)
+        menuLayout.addWidget(self._warningSeparator)
+
         menuLayout.addWidget(menuButton)
         menuWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
@@ -57,6 +67,7 @@ class ExpressionWidget(QWidget):
         self.setLayout(mainLayout)
 
         self._collData.dataChanged.connect(self._onDataChanged)
+
         self._onDataChanged()
 
     def _onDataChanged(self):
@@ -64,6 +75,10 @@ class ExpressionWidget(QWidget):
         text = usdExpressionAttr or ''
         self._expressionText.setPlainText(text)
         self._selectBtn.setEnabled(bool(text))
+
+        isConflicted = self._collData.hasDataConflict()
+        self._warningWidget.setVisible(isConflicted)
+        self._warningWidget.setVisible(isConflicted)
 
     def _onSelectItemsClicked(self):
         membershipItems = self._collData.computeMembership()
