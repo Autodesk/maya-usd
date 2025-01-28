@@ -33,6 +33,8 @@ INCLUDE_LABEL = "Include"
 EXCLUDE_LABEL = "Exclude"
 ADD_INCLUDE_OBJECTS_TITLE = "Add Include Objects"
 ADD_EXCLUDE_OBJECTS_TITLE = "Add Exclude Objects"
+INCLUDE_EXPRESSION_WARNING_TOOLTIP = "Both Include/Exclude rules and Expressions are currently defined.\nExpressions will be ignored."
+
 
 class IncludeExcludeWidget(QWidget):
     def __init__(
@@ -110,6 +112,17 @@ class IncludeExcludeWidget(QWidget):
         self._selectBtn.setEnabled(False)
         self._selectBtn.clicked.connect(self._onSelectItemsClicked)
 
+        self._warningIcon = QToolButton(headerWidget)
+        self._warningIcon.setToolTip(INCLUDE_EXPRESSION_WARNING_TOOLTIP)
+        self._warningIcon.setIcon(Theme.instance().icon("warning"))
+        self._warningIcon.setVisible(False)
+        self._warningIcon.setStyleSheet("""
+            QToolButton { border: 0px; }""")
+        self._warningSeparator = QFrame()
+        self._warningSeparator.setFrameShape(QFrame.VLine)
+        self._warningSeparator.setMaximumHeight(Theme.instance().uiScaled(20))
+        self._warningSeparator.setVisible(False)
+
         headerLayout.addWidget(addBtn)
         headerLayout.addWidget(self._deleteBtn)
         headerLayout.addWidget(self._selectBtn)
@@ -117,6 +130,8 @@ class IncludeExcludeWidget(QWidget):
 
         self._deleteBtnPressedConnectedTo: Callable = None
 
+        headerLayout.addWidget(self._warningIcon)
+        headerLayout.addWidget(self._warningSeparator)
         headerLayout.addWidget(self._filterWidget)
         headerLayout.addWidget(separator)
         headerLayout.addWidget(menuButton)
@@ -151,16 +166,23 @@ class IncludeExcludeWidget(QWidget):
 
         self._filterWidget.textChanged.connect(self._include.list._model.setFilter)
         self._filterWidget.textChanged.connect(self._exclude.list._model.setFilter)
+
         self._collData.dataChanged.connect(self._onDataChanged)
+        self._collData.dataConflicted.connect(self._onDataConflict)
 
         self.onListSelectionChanged()
         self._onDataChanged()
+        self._onDataConflict(False)
 
     def _onDataChanged(self):
         incAll = self._collData.includesAll()
         if incAll != self._include.cbIncludeAll.isChecked():
             self._include.cbIncludeAll.setChecked(incAll)
         self.onListSelectionChanged()
+
+    def _onDataConflict(self, isConflicted: bool):
+        self._warningSeparator.setVisible(isConflicted)
+        self._warningIcon.setVisible(isConflicted)
 
     def onAddToIncludePrimClicked(self):
         stage = self._collData.getStage()

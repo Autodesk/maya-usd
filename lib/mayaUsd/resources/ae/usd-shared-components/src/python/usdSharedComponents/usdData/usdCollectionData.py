@@ -1,16 +1,22 @@
 from typing import AnyStr, Sequence
 from ..data.collectionData import CollectionData
 from .usdCollectionStringListData import CollectionStringListData
-from .validator import validatePrim, validateCollection
+from .validator import validatePrim, validateCollection, detectDataConflict
 
 from pxr import Sdf, Tf, Usd
+
+
+CONFLICT_WARNING_MSG = "Warning: Both Include/Exclude rules and Expressions are currently defined. Expressions will be ignored."
+
 
 class UsdCollectionData(CollectionData):
     def __init__(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         super().__init__()
         from ..common.host import Host
         self._includes = Host.instance().createStringListData(collection, True)
+        self._includes._collData = self
         self._excludes = Host.instance().createStringListData(collection, False)
+        self._excludes._collData = self
         self._noticeKey = None
         self.setCollection(prim, collection)
 
@@ -57,6 +63,33 @@ class UsdCollectionData(CollectionData):
         self._includes.dataChanged.emit()
         self._excludes.dataChanged.emit()
 
+    # Data conflicts
+
+    @validateCollection(False)
+    def hasDataConflict(self) -> bool:
+        '''
+        Verify if the collection has both a membership expression and
+        some explicit inclusions or exclusions.
+        '''
+        if not self.getMembershipExpression():
+            return False
+        if self.includesAll():
+            return True
+        if self._includes.getStrings():
+            return True
+        if self._excludes.getStrings():
+            return True
+        return False
+
+    def reportDataConflict(self, isConflicted: bool):
+        '''
+        Report about data conflicts.
+        '''
+        if isConflicted:
+            from ..common.host import Host, MessageType
+            Host.instance().reportMessage(CONFLICT_WARNING_MSG, MessageType.WARNING)
+        self.dataConflicted.emit(isConflicted)
+
     # USD Stage information
     
     @validatePrim(None)
@@ -77,6 +110,7 @@ class UsdCollectionData(CollectionData):
         return bool(includeRootAttribute.Get())
 
     @validateCollection(False)
+    @detectDataConflict
     def setIncludeAll(self, state: bool) -> bool:
         '''
         Sets if the collection should include all items by default.
@@ -100,6 +134,7 @@ class UsdCollectionData(CollectionData):
         return self._excludes
 
     @validateCollection(False)
+    @detectDataConflict
     def removeAllIncludeExclude(self) -> bool:
         '''
         Remove all included and excluded items.
@@ -118,6 +153,7 @@ class UsdCollectionData(CollectionData):
         return self._collection.GetExpansionRuleAttr().Get()
 
     @validateCollection(False)
+    @detectDataConflict
     def setExpansionRule(self, rule) -> bool:
         '''
         Sets the expansion rule as a USD token.
@@ -138,6 +174,7 @@ class UsdCollectionData(CollectionData):
         return usdExpressionAttr.GetText()
     
     @validateCollection(False)
+    @detectDataConflict
     def setMembershipExpression(self, textExpression: AnyStr) -> bool:
         '''
         Set the textual membership expression.

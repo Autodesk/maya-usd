@@ -9,10 +9,26 @@ except ImportError:
 
 class CollectionData(QObject):
     dataChanged = Signal()
+    dataConflicted = Signal(bool)
 
     def __init__(self):
         super().__init__()
 
+    # Data conflicts
+
+    def hasDataConflict(self) -> bool:
+        '''
+        Verify if the collection has both a membership expression and
+        some explicit inclusions or exclusions.
+        '''
+        return False
+    
+    def reportDataConflict(self, isConflicted: bool):
+        '''
+        Report about data conflicts.
+        '''
+        pass
+    
     # USD Stage information
     
     def getStage(self):

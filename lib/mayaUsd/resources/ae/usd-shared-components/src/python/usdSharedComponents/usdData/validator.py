@@ -28,3 +28,16 @@ def validateCollection(defaultReturnValue = None) -> Callable:
         return wrapper
     return validator
 
+def detectDataConflict(func: Callable) -> Callable:
+    '''
+    Check if the collection include/exclude conflicts with the expression
+    before and after the call, emitting the signal if the conflict status changed.
+    '''
+    def wrapper(self, *args, **kwargs):
+        wasConflicted = self.hasDataConflict()
+        result = func(self, *args, **kwargs)
+        isConflicted = self.hasDataConflict()
+        if wasConflicted != isConflicted:
+            self.reportDataConflict(isConflicted)
+        return result
+    return wrapper

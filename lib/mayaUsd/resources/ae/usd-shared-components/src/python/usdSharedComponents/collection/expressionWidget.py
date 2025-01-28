@@ -6,12 +6,13 @@ from ..data.collectionData import CollectionData
 
 try:
     from PySide6.QtCore import QEvent, Qt  # type: ignore
-    from PySide6.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
+    from PySide6.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout, QFrame # type: ignore
 except ImportError:
     from PySide2.QtCore import QEvent, Qt  # type: ignore
-    from PySide2.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout # type: ignore
+    from PySide2.QtWidgets import QSizePolicy, QTextEdit, QToolButton, QWidget, QVBoxLayout, QHBoxLayout, QFrame # type: ignore
 
 SELECT_OBJECTS_TOOLTIP = "Selects the objects in the Viewport."
+INCLUDE_EXPRESSION_WARNING_TOOLTIP = "Both Include/Exclude rules and Expressions are currently defined.\nExpressions will be ignored."
 
 class ExpressionWidget(QWidget):
     def __init__(self, data: CollectionData, parent: QWidget):
@@ -40,6 +41,20 @@ class ExpressionWidget(QWidget):
         menuLayout.addWidget(self._selectBtn)
 
         menuLayout.addStretch(1)
+
+        self._warningIcon = QToolButton(menuWidget)
+        self._warningIcon.setToolTip(INCLUDE_EXPRESSION_WARNING_TOOLTIP)
+        self._warningIcon.setIcon(Theme.instance().icon("warning"))
+        self._warningIcon.setVisible(False)
+        self._warningIcon.setStyleSheet("""
+            QToolButton { border: 0px; }""")
+        self._warningSeparator = QFrame()
+        self._warningSeparator.setFrameShape(QFrame.VLine)
+        self._warningSeparator.setMaximumHeight(Theme.instance().uiScaled(20))
+        self._warningSeparator.setVisible(False)
+        menuLayout.addWidget(self._warningIcon)
+        menuLayout.addWidget(self._warningSeparator)
+
         menuLayout.addWidget(menuButton)
         menuWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
@@ -57,13 +72,20 @@ class ExpressionWidget(QWidget):
         self.setLayout(mainLayout)
 
         self._collData.dataChanged.connect(self._onDataChanged)
+        self._collData.dataConflicted.connect(self._onDataConflict)
+
         self._onDataChanged()
+        self._onDataConflict(False)
 
     def _onDataChanged(self):
         usdExpressionAttr = self._collData.getMembershipExpression()
         text = usdExpressionAttr or ''
         self._expressionText.setPlainText(text)
         self._selectBtn.setEnabled(bool(text))
+
+    def _onDataConflict(self, isConflicted: bool):
+        self._warningSeparator.setVisible(isConflicted)
+        self._warningIcon.setVisible(isConflicted)
 
     def _onSelectItemsClicked(self):
         membershipItems = self._collData.computeMembership()

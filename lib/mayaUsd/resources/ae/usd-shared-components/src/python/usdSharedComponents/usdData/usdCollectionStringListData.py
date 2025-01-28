@@ -1,5 +1,6 @@
 from ..data.stringListData import StringListData
-from .validator import validateCollection
+from ..data.collectionData import CollectionData
+from .validator import validateCollection, detectDataConflict
 
 from typing import AnyStr, Sequence
 from pxr import Sdf
@@ -17,6 +18,23 @@ class CollectionStringListData(StringListData):
         self._collection = collection
         self._prim = collection.GetPrim() if collection else None
 
+    # Data conflicts
+
+    def hasDataConflict(self) -> bool:
+        '''
+        Verify if the collection has both a membership expression and
+        some explicit inclusions or exclusions.
+        '''
+        return self._collData.hasDataConflict()
+
+    def reportDataConflict(self, isConflicted: bool):
+        '''
+        Report about data conflicts.
+        '''
+        return self._collData.reportDataConflict(isConflicted)
+
+    # String list functions.
+
     @validateCollection([])
     def getStrings(self) -> Sequence[AnyStr]:
         '''
@@ -33,6 +51,7 @@ class CollectionStringListData(StringListData):
         return items
 
     @validateCollection(False)
+    @detectDataConflict
     def addStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Add the given strings to the model.
@@ -50,6 +69,7 @@ class CollectionStringListData(StringListData):
         return True
 
     @validateCollection(False)
+    @detectDataConflict
     def removeStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Remove the given strings from the model.
