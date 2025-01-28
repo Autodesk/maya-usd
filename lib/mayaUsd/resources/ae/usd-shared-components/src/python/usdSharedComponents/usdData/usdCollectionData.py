@@ -108,6 +108,14 @@ class UsdCollectionData(CollectionData):
         self._collection.BlockCollection()
         return True
 
+    @validateCollection(False)
+    def clearIncludeExcludeOpinions(self) -> bool:
+        '''
+        Clear all opinions about the collection.
+        '''
+        self._collection.ResetCollection()
+        return True
+
     # Expression
 
     @validateCollection('')

@@ -193,6 +193,11 @@ class _RemoveAllIncludeExcludeCommand(_UsdUndoBlockCommand):
     def __init__(self):
         super().__init__()
 
+class _ClearIncludeExcludeOpinionsCommand(_UsdUndoBlockCommand):
+    commandName = 'usdCollectionClearOpinions'
+    def __init__(self):
+        super().__init__()
+
 
 class _SetExansionRuleCommand(_UsdUndoBlockCommand):
     commandName = 'usdCollectionSetExpansionRule'
@@ -221,6 +226,7 @@ class _RemoveItemsCommand(_UsdUndoBlockCommand):
 _allCommandClasses = [
     _SetIncludeAllCommand,
     _RemoveAllIncludeExcludeCommand,
+    _ClearIncludeExcludeOpinionsCommand,
     _SetExansionRuleCommand,
     _SetMembershipExpressionCommand,
     _AddItemsCommand,
@@ -278,6 +284,10 @@ class MayaCollectionData(UsdCollectionData):
     def removeAllIncludeExclude(self):
         with _UsdUndoBlockContext(_RemoveAllIncludeExcludeCommand.commandName):
             super().removeAllIncludeExclude()
+
+    def clearIncludeExcludeOpinions(self):
+        with _UsdUndoBlockContext(_ClearIncludeExcludeOpinionsCommand.commandName):
+            super().clearIncludeExcludeOpinions()
 
     # Expression
 

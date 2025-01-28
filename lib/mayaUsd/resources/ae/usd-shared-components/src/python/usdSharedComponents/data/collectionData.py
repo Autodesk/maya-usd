@@ -56,6 +56,12 @@ class CollectionData(QObject):
         Return False if already empty.
         '''
         return False
+    
+    def clearIncludeExcludeOpinions(self) -> bool:
+        '''
+        Clear all opinions about the include/exclude in the collection.
+        '''
+        return False
 
     # Expression
 
