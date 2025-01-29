@@ -1,5 +1,5 @@
 from .expressionRulesMenu import ExpressionMenu
-from.warningWidget import WarningWidget
+from .warningWidget import WarningWidget
 from ..common.menuButton import MenuButton
 from ..common.host import Host
 from ..common.theme import Theme
@@ -78,7 +78,7 @@ class ExpressionWidget(QWidget):
 
         isConflicted = self._collData.hasDataConflict()
         self._warningWidget.setVisible(isConflicted)
-        self._warningWidget.setVisible(isConflicted)
+        self._warningSeparator.setVisible(isConflicted)
 
     def _onSelectItemsClicked(self):
         membershipItems = self._collData.computeMembership()
