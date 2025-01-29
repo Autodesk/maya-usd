@@ -988,8 +988,7 @@ bool px_vp20Utils::HasHydraRenderOverride(const MHWRender::MFrameContext& frameC
         const auto prefixLength = std::strlen(prefix);
         if (overrideInfo.overrideName.length() < prefixLength) {
             continue;
-        }
-        else if (overrideInfo.overrideName.substring(0, prefixLength - 1) == prefix) {
+        } else if (overrideInfo.overrideName.substring(0, prefixLength - 1) == prefix) {
             return true;
         }
     }
