@@ -24,9 +24,8 @@ class ExpressionMenu(QMenu):
         # Note: this is necessary to avoid the separator not show up.
         self.setSeparatorsCollapsible(False)
 
-        self._incExSeparator = self.addSection(INCLUDE_EXCLUDE_LABEL)
         self._removeAllAction = QAction(REMOVE_ALL_LABEL, self)
-        self.addActions([self._incExSeparator, self._removeAllAction])
+        self.addActions([self._removeAllAction])
 
         self._removeAllAction.triggered.connect(self._onRemoveAll)
 
