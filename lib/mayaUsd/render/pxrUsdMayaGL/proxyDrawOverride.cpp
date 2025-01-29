@@ -202,14 +202,11 @@ MUserData* UsdMayaProxyDrawOverride::prepareForDraw(
         return nullptr;
     }
 
-#if defined(BUILD_HDMAYA)
-    // If the current viewport renderer is an mtoh one, skip this update, as
-    // mtoh already has special handling for proxy shapes, and we don't want to
-    // build out a render index we don't need
-    if (IsMtohRenderOverride(frameContext)) {
+    // Hydra-based render overrides already take care of USD data,
+    // so avoid duplicating the effort.
+    if (px_vp20Utils::HasHydraRenderOverride(frameContext)) {
         return nullptr;
     }
-#endif
 
     MayaUsdProxyShapeBase* shape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     if (!shape) {
