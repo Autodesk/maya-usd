@@ -978,7 +978,7 @@ bool px_vp20Utils::HasHydraRenderOverride(const MHWRender::MFrameContext& frameC
     MHWRender::MFrameContext::RenderOverrideInformation overrideInfo;
     frameContext.getRenderOverrideInformation(overrideInfo);
 
-    if (overrideInfo.overrideName.isEmpty()) {
+    if (overrideInfo.overrideName.length() == 0U) {
         // No render override, avoid checking for prefixes
         return false;
     }
