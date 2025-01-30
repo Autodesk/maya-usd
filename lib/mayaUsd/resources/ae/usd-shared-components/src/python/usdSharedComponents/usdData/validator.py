@@ -10,7 +10,10 @@ def validatePrim(defaultReturnValue = None) -> Callable:
         def wrapper(self, *args, **kwargs):
             if not self._prim or not self._prim.IsValid():
                 return defaultReturnValue
-            return func(self, *args, **kwargs)
+            try:
+                return func(self, *args, **kwargs)
+            except Exception:
+                return defaultReturnValue
         return wrapper
     return validator
 
@@ -24,7 +27,10 @@ def validateCollection(defaultReturnValue = None) -> Callable:
         def wrapper(self, *args, **kwargs):
             if not self._prim or not self._collection or not self._prim.IsValid():
                 return defaultReturnValue
-            return func(self, *args, **kwargs)
+            try:
+                return func(self, *args, **kwargs)
+            except Exception:
+                return defaultReturnValue
         return wrapper
     return validator
 
