@@ -4,6 +4,7 @@ from ..common.stringListPanel import StringListPanel
 from ..common.resizable import Resizable
 from ..common.menuButton import MenuButton
 from .expressionRulesMenu import ExpressionMenu
+from .warningWidget import WarningWidget
 from ..common.host import Host
 from ..common.theme import Theme
 from ..data.collectionData import CollectionData
@@ -33,6 +34,8 @@ INCLUDE_LABEL = "Include"
 EXCLUDE_LABEL = "Exclude"
 ADD_INCLUDE_OBJECTS_TITLE = "Add Include Objects"
 ADD_EXCLUDE_OBJECTS_TITLE = "Add Exclude Objects"
+CONFLICT_WARNING_MSG = "Both Include/Exclude rules and Expressions are currently defined. Expressions will be ignored."
+
 
 class IncludeExcludeWidget(QWidget):
     def __init__(
@@ -110,6 +113,12 @@ class IncludeExcludeWidget(QWidget):
         self._selectBtn.setEnabled(False)
         self._selectBtn.clicked.connect(self._onSelectItemsClicked)
 
+        self._warningWidget = WarningWidget(headerWidget)
+        self._warningSeparator = QFrame()
+        self._warningSeparator.setFrameShape(QFrame.VLine)
+        self._warningSeparator.setMaximumHeight(Theme.instance().uiScaled(20))
+        self._warningSeparator.setVisible(False)
+
         headerLayout.addWidget(addBtn)
         headerLayout.addWidget(self._deleteBtn)
         headerLayout.addWidget(self._selectBtn)
@@ -117,6 +126,8 @@ class IncludeExcludeWidget(QWidget):
 
         self._deleteBtnPressedConnectedTo: Callable = None
 
+        headerLayout.addWidget(self._warningWidget)
+        headerLayout.addWidget(self._warningSeparator)
         headerLayout.addWidget(self._filterWidget)
         headerLayout.addWidget(separator)
         headerLayout.addWidget(menuButton)
@@ -151,6 +162,7 @@ class IncludeExcludeWidget(QWidget):
 
         self._filterWidget.textChanged.connect(self._include.list._model.setFilter)
         self._filterWidget.textChanged.connect(self._exclude.list._model.setFilter)
+
         self._collData.dataChanged.connect(self._onDataChanged)
 
         self.onListSelectionChanged()
@@ -161,6 +173,15 @@ class IncludeExcludeWidget(QWidget):
         if incAll != self._include.cbIncludeAll.isChecked():
             self._include.cbIncludeAll.setChecked(incAll)
         self.onListSelectionChanged()
+
+        wasConflicted = self._warningWidget.isVisible()
+        isConflicted = self._collData.hasDataConflict()
+        if wasConflicted != isConflicted:
+            self._warningWidget.setVisible(isConflicted)
+            self._warningSeparator.setVisible(isConflicted)
+            if isConflicted:
+                from ..common.host import Host, MessageType
+                Host.instance().reportMessage(CONFLICT_WARNING_MSG, MessageType.WARNING)
 
     def onAddToIncludePrimClicked(self):
         stage = self._collData.getStage()

@@ -5,6 +5,7 @@ from .validator import validatePrim, validateCollection
 
 from pxr import Sdf, Tf, Usd
 
+
 class UsdCollectionData(CollectionData):
     def __init__(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         super().__init__()
@@ -57,6 +58,24 @@ class UsdCollectionData(CollectionData):
         self._includes.dataChanged.emit()
         self._excludes.dataChanged.emit()
 
+    # Data conflicts
+
+    @validateCollection(False)
+    def hasDataConflict(self) -> bool:
+        '''
+        Verify if the collection has both a membership expression and
+        some explicit inclusions or exclusions.
+        '''
+        if not self.getMembershipExpression():
+            return False
+        if self.includesAll():
+            return True
+        if self._includes.getStrings():
+            return True
+        if self._excludes.getStrings():
+            return True
+        return False
+
     # USD Stage information
     
     @validatePrim(None)
@@ -106,6 +125,14 @@ class UsdCollectionData(CollectionData):
         By design, we author a block collection opinion.
         '''
         self._collection.BlockCollection()
+        return True
+
+    @validateCollection(False)
+    def clearIncludeExcludeOpinions(self) -> bool:
+        '''
+        Clear all opinions about the collection.
+        '''
+        self._collection.ResetCollection()
         return True
 
     # Expression

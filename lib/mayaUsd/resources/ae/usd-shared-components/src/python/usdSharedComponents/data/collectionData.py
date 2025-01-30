@@ -13,6 +13,15 @@ class CollectionData(QObject):
     def __init__(self):
         super().__init__()
 
+    # Data conflicts
+
+    def hasDataConflict(self) -> bool:
+        '''
+        Verify if the collection has both a membership expression and
+        some explicit inclusions or exclusions.
+        '''
+        return False
+    
     # USD Stage information
     
     def getStage(self):
@@ -54,6 +63,12 @@ class CollectionData(QObject):
         Remove all included and excluded items.
         Return True if successfully removed.
         Return False if already empty.
+        '''
+        return False
+    
+    def clearIncludeExcludeOpinions(self) -> bool:
+        '''
+        Clear all opinions about the include/exclude in the collection.
         '''
         return False
 
