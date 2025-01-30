@@ -14,6 +14,7 @@ EXPAND_PRIMS_PROPERTIES_MENU_OPTION = "Expand Prims and Properties"
 EXPLICIT_ONLY_MENU_OPTION = "Explicit Only"
 INCLUDE_EXCLUDE_LABEL = "Include/Exclude"
 REMOVE_ALL_LABEL = "Remove All"
+CLEAR_OPINIONS_LABEL = "Clear Opinions from Target Layer"
 
 
 class ExpressionMenu(QMenu):
@@ -25,9 +26,11 @@ class ExpressionMenu(QMenu):
         self.setSeparatorsCollapsible(False)
 
         self._removeAllAction = QAction(REMOVE_ALL_LABEL, self)
-        self.addActions([self._removeAllAction])
+        self._clearOpinionsAction = QAction(CLEAR_OPINIONS_LABEL, self)
+        self.addActions([self._removeAllAction, self._clearOpinionsAction])
 
         self._removeAllAction.triggered.connect(self._onRemoveAll)
+        self._clearOpinionsAction.triggered.connect(self._onClearOpinions)
 
         self._collData.dataChanged.connect(self._onDataChanged)
         expansionRulesMenu = QMenu("Expansion Rules", self)
@@ -57,6 +60,9 @@ class ExpressionMenu(QMenu):
 
     def _onRemoveAll(self):
         self._collData.removeAllIncludeExclude()
+
+    def _onClearOpinions(self):
+        self._collData.clearIncludeExcludeOpinions()
 
     def onExpressionSelected(self, menuOption):
         if menuOption == self.expandPrimsAction:
