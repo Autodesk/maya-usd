@@ -30,6 +30,12 @@ class CollectionData(QObject):
         '''
         return None
 
+    def printCollection(self):
+        '''
+        Prints the collection to the host logging system.
+        '''
+        pass
+
     # Include and exclude
 
     def includesAll(self) -> bool:

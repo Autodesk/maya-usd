@@ -6,6 +6,10 @@ from .validator import validatePrim, validateCollection
 from pxr import Sdf, Tf, Usd
 
 
+PRINT_PRIMS_MSG = "{count} prims included in collection {collName} on {primName}:"
+PRINT_PRIMS_CONFLICT_MSG = "Both Include/Exclude rules and Expressions are currently defined. Expressions will be ignored."
+
+
 class UsdCollectionData(CollectionData):
     def __init__(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         super().__init__()
@@ -84,6 +88,24 @@ class UsdCollectionData(CollectionData):
         Returns the USD stage in which the collection lives.
         '''
         return self._prim.GetStage()
+
+    @validateCollection('')
+    def printCollection(self):
+        '''
+        Prints the collection to the host logging system.
+        '''
+        members = list(map(str, self.computeMembership()))
+        msgHeader = PRINT_PRIMS_MSG.format(
+            count=len(members),
+            collName=self._collection.GetName(),
+            primName=self._prim.GetPath())
+        
+        from ..common.host import Host, MessageType
+        Host.instance().reportMessage(msgHeader, MessageType.INFO)
+        Host.instance().reportMessage('\n'.join(members), MessageType.INFO)
+
+        if (self.hasDataConflict()):
+            Host.instance().reportMessage(PRINT_PRIMS_CONFLICT_MSG, MessageType.INFO)
 
     # Include and exclude
 
@@ -214,4 +236,18 @@ class UsdCollectionData(CollectionData):
         query = self._collection.ComputeMembershipQuery()
         if not query:
             return []
-        return Usd.CollectionAPI.ComputeIncludedPaths(query, self._prim.GetStage())
+
+        # When there are both explicit inclusions/exclusions and a membership
+        # expression, the CollectionAPI docs states that the expression should
+        # be ignored. Unfortunately, ComputeIncludedPaths does not handle this
+        # correctly, so we have to do the work by hand by calling IsPAthIncluded
+        # for each path, as that function works correctly.
+        if self.hasDataConflict():
+            members = []
+            for prim in self._prim.GetStage().TraverseAll():
+                path = prim.GetPath()
+                if query.IsPathIncluded(path):
+                    members.append(path.pathString)
+            return members
+        else:
+            return Usd.CollectionAPI.ComputeIncludedPaths(query, self._prim.GetStage())
