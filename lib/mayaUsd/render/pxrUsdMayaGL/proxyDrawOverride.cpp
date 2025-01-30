@@ -252,6 +252,12 @@ bool UsdMayaProxyDrawOverride::userSelect(
         MProfiler::kColorE_L2,
         "USD Proxy Shape userSelect() (Viewport 2.0)");
 
+    // Hydra-based render overrides already take care of USD data,
+    // so avoid duplicating the effort.
+    if (px_vp20Utils::HasHydraRenderOverride(context)) {
+        return false;
+    }
+
     M3dView    view;
     const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
     if (hasView && !view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
