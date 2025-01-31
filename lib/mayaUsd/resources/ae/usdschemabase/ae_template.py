@@ -535,7 +535,7 @@ class AETemplate(object):
                     if usdVer < (0, 22, 3):
                         namespace = Usd.SchemaRegistry().GetPropertyNamespacePrefix(typeName)
                         prefix = namespace + ":" + instanceName + ":"
-                        attrList = [prefix + i for i in attrList]
+                        attrList = [namespace + ":" + instanceName] + [prefix + i for i in attrList]
 
                     typeName = instanceName + typeName
                 else:
