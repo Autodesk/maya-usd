@@ -68,6 +68,12 @@ class StringListData(QObject):
     # other functions above.
 
     def addMultiLineStrings(self, multiLineText):
+        self.addStrings(self._splitMultiLineStrings(multiLineText))
+
+    def removeMultiLineStrings(self, multiLineText):
+        self.removeStrings(self._splitMultiLineStrings(multiLineText))
+
+    def _splitMultiLineStrings(self, multiLineText):
         items = []
         reportedError = False
         for text in multiLineText.split("\n"):
@@ -80,4 +86,5 @@ class StringListData(QObject):
                 continue
             items.append(text)
 
-        self.addStrings(items)
+        return items
+

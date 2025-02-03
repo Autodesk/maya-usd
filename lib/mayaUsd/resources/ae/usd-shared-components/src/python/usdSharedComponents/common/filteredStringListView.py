@@ -11,8 +11,9 @@ try:
         QObject,
         Qt,
         Signal,
+        QMimeData
     )
-    from PySide6.QtGui import QPainter, QPaintEvent # type: ignore
+    from PySide6.QtGui import QDrag, QPaintEvent # type: ignore
     from PySide6.QtWidgets import (  # type: ignore
         QLabel,
         QListView,
@@ -26,8 +27,9 @@ except:
         QObject,
         Qt,
         Signal,
+        QMimeData
     )
-    from PySide2.QtGui import QPainter, QPaintEvent # type: ignore
+    from PySide2.QtGui import QDrag, QPaintEvent # type: ignore
     from PySide2.QtWidgets import QLabel, QListView, QLineEdit, QListWidget  # type: ignore
 
 
@@ -163,6 +165,17 @@ class FilteredStringListView(QListView):
         self.placeholder_label.setGeometry(self.viewport().geometry())
         self.placeholder_label.show()
 
+    def startDrag(self, supportedActions):
+        drag = QDrag(self)
+        mimeData = QMimeData()
+
+        selectedIndexes = self.selectedIndexes()
+        if selectedIndexes:
+            mimeData.setText("\n".join([index.data() for index in selectedIndexes]))
+
+        drag.setMimeData(mimeData)
+        drag.exec(Qt.MoveAction)
+
     def selectedItems(self) -> Sequence[str]:
         return [str(index.data(Qt.DisplayRole)) for index in self.selectedIndexes()]
 
@@ -175,11 +188,31 @@ class DragAndDropAndDeleteEventFilter(QObject):
         self._collData = data
         widget.installEventFilter(self)
         widget.setAcceptDrops(True)
+        widget.setDragEnabled(True)
+        widget.setDropIndicatorShown(True)
 
     def eventFilter(self, obj: QObject, event: QEvent):
         if event.type() == QEvent.Drop:
             mime_data = event.mimeData()
-            self._collData.addMultiLineStrings(mime_data.text())
+            draggedItems = mime_data.text()
+
+            # The source model will exist when draggin/dropping from within lists.
+            # For example: dragging from include to exclude list and vice-versa.
+            try:
+                sourceModel = event.source().model()
+
+                # prevent dropping elements from the same list
+                if sourceModel and sourceModel._collData == self._collData:
+                    return False
+
+                # Also remove the elements dragged from the original list
+                if sourceModel:
+                    sourceModel._collData.removeMultiLineStrings(draggedItems)
+            except Exception:
+                pass
+
+            self._collData.addMultiLineStrings(draggedItems)
+
             return True
         elif event.type() == QEvent.DragEnter:
             event.acceptProposedAction()

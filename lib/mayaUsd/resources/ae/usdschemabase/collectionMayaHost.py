@@ -222,6 +222,10 @@ class _RemoveItemsCommand(_UsdUndoBlockCommand):
     def __init__(self):
         super().__init__()
 
+class _ReplaceItemsCommand(_UsdUndoBlockCommand):
+    commandName = 'usdCollectionReplaceItems'
+    def __init__(self):
+        super().__init__()
 
 _allCommandClasses = [
     _SetIncludeAllCommand,
@@ -230,7 +234,8 @@ _allCommandClasses = [
     _SetExansionRuleCommand,
     _SetMembershipExpressionCommand,
     _AddItemsCommand,
-    _RemoveItemsCommand]
+    _RemoveItemsCommand,
+    _ReplaceItemsCommand]
 
 def registerCommands(pluginName):
     '''
@@ -307,19 +312,26 @@ class MayaStringListData(CollectionStringListData):
     def __init__(self, collection, isInclude: bool):
         super().__init__(collection, isInclude)
 
-    def addStrings(self, items: Sequence[AnyStr]):
+    def addStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Add the given strings to the model.
         '''
         with _UsdUndoBlockContext(_AddItemsCommand.commandName):
-            super().addStrings(items)
+            return super().addStrings(items)
 
-    def removeStrings(self, items: Sequence[AnyStr]):
+    def removeStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Remove the given strings from the model.
         '''
         with _UsdUndoBlockContext(_RemoveItemsCommand.commandName):
-            super().removeStrings(items)
+            return super().removeStrings(items)
+
+    def replaceStrings(self, oldString, newString) -> bool:
+        '''
+        Replace the old string with thew newString on the model.
+        '''
+        with _UsdUndoBlockContext(_ReplaceItemsCommand.commandName):
+            return super().replaceStrings(oldString, newString)
 
 class MayaTheme(Theme):
     def __init__(self):
