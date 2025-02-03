@@ -46,6 +46,8 @@ class IncludeExcludeWidget(QWidget):
         super(IncludeExcludeWidget, self).__init__(parent)
         self._collData = data
 
+        theme = Theme.instance()
+
         mainLayout = QVBoxLayout(self)
         mainLayout.setContentsMargins(0, 0, 0, 0)
 
@@ -63,7 +65,7 @@ class IncludeExcludeWidget(QWidget):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
         self._filterWidget.setMaximumWidth(Theme.instance().uiScaled(165))
-        self._filterWidget.setPlaceholderText(SEARCH_PLACEHOLDER_LABEL)
+        self._filterWidget.setPlaceholderText(theme.themeLabel(SEARCH_PLACEHOLDER_LABEL))
         self._filterWidget.setClearButtonEnabled(True)
 
         separator = QFrame()
@@ -77,24 +79,24 @@ class IncludeExcludeWidget(QWidget):
         headerLayout.setContentsMargins(margin, topMargin, margin, margin)
 
         addBtn = QToolButton(headerWidget)
-        addBtn.setToolTip(ADD_OBJECTS_TOOLTIP)
-        addBtn.setIcon(Theme.instance().icon("add"))
+        addBtn.setToolTip(theme.themeLabel(ADD_OBJECTS_TOOLTIP))
+        addBtn.setIcon(theme.icon("add"))
         addBtn.setPopupMode(QToolButton.InstantPopup)
         Theme.instance().themeMenuButton(addBtn, True)
         
         self._addBtnMenu = QMenu(addBtn)
         if Host.instance().canPick:
-            self._addBtnMenu.addAction(INCLUDE_OBJECTS_LABEL, self.onAddToIncludePrimClicked)
-            self._addBtnMenu.addAction(EXCLUDE_OBJECTS_LABEL, self.onAddToExcludePrimClicked)
+            self._addBtnMenu.addAction(theme.themeLabel(INCLUDE_OBJECTS_LABEL), self.onAddToIncludePrimClicked)
+            self._addBtnMenu.addAction(theme.themeLabel(EXCLUDE_OBJECTS_LABEL), self.onAddToExcludePrimClicked)
             self._addBtnMenu.addSeparator()
-        self._addBtnMenu.addAction(ADD_SELECTION_TO_INCLUDE_LABEL, self._onAddSelectionToInclude)
-        self._addBtnMenu.addAction(ADD_SELECTION_TO_EXCLUDE_LABEL, self._onAddSelectionToExclude)
+        self._addBtnMenu.addAction(theme.themeLabel(ADD_SELECTION_TO_INCLUDE_LABEL), self._onAddSelectionToInclude)
+        self._addBtnMenu.addAction(theme.themeLabel(ADD_SELECTION_TO_EXCLUDE_LABEL), self._onAddSelectionToExclude)
         self._addBtnMenu.aboutToShow.connect(self._onAboutToShowAddMenu)
         addBtn.setMenu(self._addBtnMenu)
 
         self._deleteBtn = QToolButton(headerWidget)
-        self._deleteBtn.setToolTip(REMOVE_OBJECTS_TOOLTIP)
-        self._deleteBtn.setIcon(Theme.instance().icon("delete"))
+        self._deleteBtn.setToolTip(theme.themeLabel(REMOVE_OBJECTS_TOOLTIP))
+        self._deleteBtn.setIcon(theme.icon("delete"))
         self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
         self._deleteBtn.setEnabled(False)
 
@@ -103,12 +105,12 @@ class IncludeExcludeWidget(QWidget):
             REMOVE_FROM_INCLUDES_LABEL, self.onRemoveSelectionFromInclude
         )
         self._deleteBtnMenu.addAction(
-            REMOVE_FROM_EXCLUDES_LABEL, self.onRemoveSelectionFromExclude
+            theme.themeLabel(REMOVE_FROM_EXCLUDES_LABEL), self.onRemoveSelectionFromExclude
         )
         self._deleteBtn.setMenu(self._deleteBtnMenu)
 
         self._selectBtn = QToolButton(headerWidget)
-        self._selectBtn.setToolTip(SELECT_OBJECTS_TOOLTIP)
+        self._selectBtn.setToolTip(theme.themeLabel(SELECT_OBJECTS_TOOLTIP))
         self._selectBtn.setIcon(Theme.instance().icon("selector"))
         self._selectBtn.setEnabled(False)
         self._selectBtn.clicked.connect(self._onSelectItemsClicked)
@@ -134,7 +136,7 @@ class IncludeExcludeWidget(QWidget):
 
         mainLayout.addWidget(headerWidget)
 
-        self._include = StringListPanel(data.getIncludeData(), True, INCLUDE_LABEL, self)
+        self._include = StringListPanel(data.getIncludeData(), True, theme.themeLabel(INCLUDE_LABEL), self)
         self._include.cbIncludeAll.stateChanged.connect(self.onIncludeAllToggle)
         self._resizableInclude = Resizable(
             self._include,
@@ -146,7 +148,7 @@ class IncludeExcludeWidget(QWidget):
         self._resizableInclude.minContentSize = Theme.instance().uiScaled(44)
         mainLayout.addWidget(self._resizableInclude)
 
-        self._exclude = StringListPanel(data.getExcludeData(), False, EXCLUDE_LABEL, self)
+        self._exclude = StringListPanel(data.getExcludeData(), False, theme.themeLabel(EXCLUDE_LABEL), self)
         self._resizableExclude = Resizable(
             self._exclude,
             "USD_Light_Linking",
@@ -187,14 +189,16 @@ class IncludeExcludeWidget(QWidget):
         stage = self._collData.getStage()
         if not stage:
             return
-        items = Host.instance().pick(stage, dialogTitle=ADD_INCLUDE_OBJECTS_TITLE)
+        theme = Theme.instance()
+        items = Host.instance().pick(stage, dialogTitle=theme.themeLabel(ADD_INCLUDE_OBJECTS_TITLE))
         self._collData.getIncludeData().addStrings(map(lambda x: str(x.GetPath()), items))
 
     def onAddToExcludePrimClicked(self):
         stage = self._collData.getStage()
         if not stage:
             return
-        items = Host.instance().pick(stage, dialogTitle=ADD_EXCLUDE_OBJECTS_TITLE)
+        theme = Theme.instance()
+        items = Host.instance().pick(stage, dialogTitle=theme.themeLabel(ADD_EXCLUDE_OBJECTS_TITLE))
         self._collData.getExcludeData().addStrings(map(lambda x: str(x.GetPath()), items))
 
     def _hasValidSelection(self, stringList: StringListData) -> bool:
@@ -204,9 +208,10 @@ class IncludeExcludeWidget(QWidget):
         return False
     
     def _onAboutToShowAddMenu(self):
+        theme = Theme.instance()
         labelsAndDatas = [
-            (ADD_SELECTION_TO_INCLUDE_LABEL, self._collData.getIncludeData()),
-            (ADD_SELECTION_TO_EXCLUDE_LABEL, self._collData.getExcludeData()),
+            (theme.themeLabel(ADD_SELECTION_TO_INCLUDE_LABEL), self._collData.getIncludeData()),
+            (theme.themeLabel(ADD_SELECTION_TO_EXCLUDE_LABEL), self._collData.getExcludeData()),
         ]
         for label, data in labelsAndDatas:
             action = self._findAction(label)
@@ -258,10 +263,11 @@ class IncludeExcludeWidget(QWidget):
         self._deleteBtn.setEnabled(includesSelected or excludeSelected)
         self._selectBtn.setEnabled(includesSelected or excludeSelected)
 
-        deleteFromIncludesAction = self._findAction(REMOVE_FROM_INCLUDES_LABEL)
+        theme = Theme.instance()
+        deleteFromIncludesAction = self._findAction(theme.themeLabel(REMOVE_FROM_INCLUDES_LABEL))
         if deleteFromIncludesAction:
             deleteFromIncludesAction.setEnabled(includesSelected)
-        deleteFromExcludesAction = self._findAction(REMOVE_FROM_EXCLUDES_LABEL)
+        deleteFromExcludesAction = self._findAction(theme.themeLabel(REMOVE_FROM_EXCLUDES_LABEL))
         if deleteFromExcludesAction:
             deleteFromExcludesAction.setEnabled(excludeSelected)
 
@@ -270,16 +276,16 @@ class IncludeExcludeWidget(QWidget):
             self._deleteBtnPressedConnectedTo = None
 
         if includesSelected and excludeSelected:
-            self._deleteBtn.setToolTip(REMOVE_OBJECTS_TOOLTIP)
+            self._deleteBtn.setToolTip(theme.themeLabel(REMOVE_OBJECTS_TOOLTIP))
             self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
             Theme.instance().themeMenuButton(self._deleteBtn, True)
         else:
             if includesSelected:
-                self._deleteBtn.setToolTip(REMOVE_FROM_INCLUDE_TOOLTIP)
+                self._deleteBtn.setToolTip(theme.themeLabel(REMOVE_FROM_INCLUDE_TOOLTIP))
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromInclude)
                 self._deleteBtnPressedConnectedTo = self.onRemoveSelectionFromInclude
             elif excludeSelected:
-                self._deleteBtn.setToolTip(REMOVE_FROM_EXCLUDE_TOOLTIP)
+                self._deleteBtn.setToolTip(theme.themeLabel(REMOVE_FROM_EXCLUDE_TOOLTIP))
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromExclude)
                 self._deleteBtnPressedConnectedTo = self.onRemoveSelectionFromExclude
             self._deleteBtn.setPopupMode(QToolButton.DelayedPopup)

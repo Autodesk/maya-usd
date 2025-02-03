@@ -1,4 +1,5 @@
 from ..data.collectionData import CollectionData
+from ..common.theme import Theme
 
 try:
     from PySide6.QtWidgets import QMenu, QWidget # type: ignore
@@ -23,14 +24,16 @@ class ExpressionMenu(QMenu):
         super(ExpressionMenu, self).__init__(parent)
         self._collData = data
 
+        theme = Theme.instance()
+
         # Note: this is necessary to avoid the separator not show up.
         self.setSeparatorsCollapsible(False)
 
-        self._removeAllAction = QAction(REMOVE_ALL_LABEL, self)
-        self._clearOpinionsAction = QAction(CLEAR_OPINIONS_LABEL, self)
+        self._removeAllAction = QAction(theme.themeLabel(REMOVE_ALL_LABEL), self)
+        self._clearOpinionsAction = QAction(theme.themeLabel(CLEAR_OPINIONS_LABEL), self)
         prePrintSeparator = QAction()
         prePrintSeparator.setSeparator(True)
-        self._printPrimsAction = QAction(PRINT_PRIMS_LABEL, self)
+        self._printPrimsAction = QAction(theme.themeLabel(PRINT_PRIMS_LABEL), self)
         self.addActions([self._removeAllAction, self._clearOpinionsAction, prePrintSeparator, self._printPrimsAction])
 
         self._removeAllAction.triggered.connect(self._onRemoveAll)
@@ -39,9 +42,9 @@ class ExpressionMenu(QMenu):
 
         self._collData.dataChanged.connect(self._onDataChanged)
         expansionRulesMenu = QMenu("Expansion Rules", self)
-        self.expandPrimsAction = QAction(EXPAND_PRIMS_MENU_OPTION, expansionRulesMenu, checkable=True)
-        self.expandPrimsPropertiesAction = QAction(EXPAND_PRIMS_PROPERTIES_MENU_OPTION, expansionRulesMenu, checkable=True)
-        self.explicitOnlyAction = QAction(EXPLICIT_ONLY_MENU_OPTION, expansionRulesMenu, checkable=True)
+        self.expandPrimsAction = QAction(theme.themeLabel(EXPAND_PRIMS_MENU_OPTION), expansionRulesMenu, checkable=True)
+        self.expandPrimsPropertiesAction = QAction(theme.themeLabel(EXPAND_PRIMS_PROPERTIES_MENU_OPTION), expansionRulesMenu, checkable=True)
+        self.explicitOnlyAction = QAction(theme.themeLabel(EXPLICIT_ONLY_MENU_OPTION), expansionRulesMenu, checkable=True)
         expansionRulesMenu.addActions([self.expandPrimsAction, self.expandPrimsPropertiesAction, self.explicitOnlyAction])
 
         actionGroup = QActionGroup(self)
