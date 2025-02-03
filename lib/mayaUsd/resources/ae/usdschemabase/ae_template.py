@@ -341,8 +341,7 @@ class AETemplate(object):
         cmds.editorTemplate(suppress=attrName)
         self.suppressedAttrs.append(attrName)
 
-    @staticmethod
-    def defineCustom(customObj, attrs=[]):
+    def defineCustom(self, customObj, attrs=[]):
         create = lambda *args : customObj.onCreate(args)
         replace = lambda *args : customObj.onReplace(args)
         cmds.editorTemplate(attrs, callCustom=[create, replace])
@@ -536,6 +535,8 @@ class AETemplate(object):
                         namespace = Usd.SchemaRegistry().GetPropertyNamespacePrefix(typeName)
                         prefix = namespace + ":" + instanceName + ":"
                         attrList = [namespace + ":" + instanceName] + [prefix + i for i in attrList]
+                    elif usdVer <= (0, 22, 11):
+                        attrList = [schema] + attrList
 
                     typeName = instanceName + typeName
                 else:
