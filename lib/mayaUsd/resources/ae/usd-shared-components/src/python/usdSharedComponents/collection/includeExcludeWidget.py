@@ -174,11 +174,11 @@ class IncludeExcludeWidget(QWidget):
             self._include.cbIncludeAll.setChecked(incAll)
         self.onListSelectionChanged()
 
-        wasConflicted = self._warningWidget.isVisible()
+        wasConflicted = self._warningWidget.isConflicted()
         isConflicted = self._collData.hasDataConflict()
+        self._warningWidget.setConflicted(isConflicted)
+        self._warningSeparator.setVisible(isConflicted)
         if wasConflicted != isConflicted:
-            self._warningWidget.setVisible(isConflicted)
-            self._warningSeparator.setVisible(isConflicted)
             if isConflicted:
                 from ..common.host import Host, MessageType
                 Host.instance().reportMessage(CONFLICT_WARNING_MSG, MessageType.WARNING)

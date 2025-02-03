@@ -77,7 +77,7 @@ class ExpressionWidget(QWidget):
         self._selectBtn.setEnabled(bool(text))
 
         isConflicted = self._collData.hasDataConflict()
-        self._warningWidget.setVisible(isConflicted)
+        self._warningWidget.setConflicted(isConflicted)
         self._warningSeparator.setVisible(isConflicted)
 
     def _onSelectItemsClicked(self):
