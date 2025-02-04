@@ -161,7 +161,8 @@ class FilteredStringListView(QListView):
             self.placeholder_label.hide()
 
     def _paintPlaceHolder(self, placeHolderText):
-        self.placeholder_label.setText(placeHolderText)
+        theme = Theme.instance()
+        self.placeholder_label.setText(theme.themeLabel(placeHolderText))
         self.placeholder_label.setGeometry(self.viewport().geometry())
         self.placeholder_label.show()
 
