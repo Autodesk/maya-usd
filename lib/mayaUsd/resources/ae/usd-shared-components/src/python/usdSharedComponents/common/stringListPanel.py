@@ -60,6 +60,7 @@ class StringListPanel(QWidget):
         if isInclude:
             self.cbIncludeAll = QCheckBox(kIncludeAllLabel, self)
             self.cbIncludeAll.setToolTip(kIncludeAllTooltip)
+            self.cbIncludeAll.setStatusTip(kIncludeAllTooltip)
             self.cbIncludeAll.setCheckable(True)
             headerLayout.addWidget(self.cbIncludeAll)
 

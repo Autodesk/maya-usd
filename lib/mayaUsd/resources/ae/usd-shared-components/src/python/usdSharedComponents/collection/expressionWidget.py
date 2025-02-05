@@ -19,8 +19,10 @@ class ExpressionWidget(QWidget):
         super(ExpressionWidget, self).__init__(parent)
         self._collData = data
 
+        theme = Theme.instance()
+
         mainLayout = QVBoxLayout(self)
-        margin: int = Theme.instance().uiScaled(2)
+        margin = theme.uiScaled(2)
         mainLayout.setSpacing(margin)
         mainLayout.setContentsMargins(0, 0, 0, 0)
 
@@ -34,7 +36,8 @@ class ExpressionWidget(QWidget):
         menuLayout.setContentsMargins(margin, topMargin, margin, margin)
 
         self._selectBtn = QToolButton(menuWidget)
-        self._selectBtn.setToolTip(SELECT_OBJECTS_TOOLTIP)
+        self._selectBtn.setToolTip(theme.themeLabel(SELECT_OBJECTS_TOOLTIP))
+        self._selectBtn.setStatusTip(theme.themeLabel(SELECT_OBJECTS_TOOLTIP))
         self._selectBtn.setIcon(Theme.instance().icon("selector"))
         self._selectBtn.setEnabled(False)
         self._selectBtn.clicked.connect(self._onSelectItemsClicked)
