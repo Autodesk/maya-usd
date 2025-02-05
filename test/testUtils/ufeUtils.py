@@ -90,10 +90,6 @@ def selectUfeItems(selectItems):
 def ufeFeatureSetVersion():
     '''Return the UFE feature set version taking into account rollback to using
     0 for unreleased version after we ship a UFE.
-
-    If you need to test for a specific UFE preview release version then check
-    the cmake variable UFE_PREVIEW_VERSION_NUM. This is also set as an env
-    for the python tests.
     '''
 
     # Examples:
