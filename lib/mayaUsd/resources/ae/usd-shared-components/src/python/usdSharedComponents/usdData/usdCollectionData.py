@@ -57,6 +57,9 @@ class UsdCollectionData(CollectionData):
         self._noticeKey = None
 
     def _onObjectsChanged(self, notice, sender):
+        if not self._prim or not self._prim.IsValid() or not self._collection:
+            self._untrackCollectionNotifications()
+            return
         # TODO: check if the collection was actually touched by this change!
         self.dataChanged.emit()
         self._includes.dataChanged.emit()
