@@ -80,6 +80,7 @@ class IncludeExcludeWidget(QWidget):
 
         addBtn = QToolButton(headerWidget)
         addBtn.setToolTip(theme.themeLabel(ADD_OBJECTS_TOOLTIP))
+        addBtn.setStatusTip(theme.themeLabel(ADD_OBJECTS_TOOLTIP))
         addBtn.setIcon(theme.icon("add"))
         addBtn.setPopupMode(QToolButton.InstantPopup)
         Theme.instance().themeMenuButton(addBtn, True)
@@ -96,6 +97,7 @@ class IncludeExcludeWidget(QWidget):
 
         self._deleteBtn = QToolButton(headerWidget)
         self._deleteBtn.setToolTip(theme.themeLabel(REMOVE_OBJECTS_TOOLTIP))
+        self._deleteBtn.setStatusTip(theme.themeLabel(REMOVE_OBJECTS_TOOLTIP))
         self._deleteBtn.setIcon(theme.icon("delete"))
         self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
         self._deleteBtn.setEnabled(False)
@@ -111,6 +113,7 @@ class IncludeExcludeWidget(QWidget):
 
         self._selectBtn = QToolButton(headerWidget)
         self._selectBtn.setToolTip(theme.themeLabel(SELECT_OBJECTS_TOOLTIP))
+        self._selectBtn.setStatusTip(theme.themeLabel(SELECT_OBJECTS_TOOLTIP))
         self._selectBtn.setIcon(Theme.instance().icon("selector"))
         self._selectBtn.setEnabled(False)
         self._selectBtn.clicked.connect(self._onSelectItemsClicked)
@@ -277,15 +280,18 @@ class IncludeExcludeWidget(QWidget):
 
         if includesSelected and excludeSelected:
             self._deleteBtn.setToolTip(theme.themeLabel(REMOVE_OBJECTS_TOOLTIP))
+            self._deleteBtn.setStatusTip(theme.themeLabel(REMOVE_OBJECTS_TOOLTIP))
             self._deleteBtn.setPopupMode(QToolButton.InstantPopup)
             Theme.instance().themeMenuButton(self._deleteBtn, True)
         else:
             if includesSelected:
                 self._deleteBtn.setToolTip(theme.themeLabel(REMOVE_FROM_INCLUDE_TOOLTIP))
+                self._deleteBtn.setStatusTip(theme.themeLabel(REMOVE_FROM_INCLUDE_TOOLTIP))
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromInclude)
                 self._deleteBtnPressedConnectedTo = self.onRemoveSelectionFromInclude
             elif excludeSelected:
                 self._deleteBtn.setToolTip(theme.themeLabel(REMOVE_FROM_EXCLUDE_TOOLTIP))
+                self._deleteBtn.setStatusTip(theme.themeLabel(REMOVE_FROM_EXCLUDE_TOOLTIP))
                 self._deleteBtn.pressed.connect(self.onRemoveSelectionFromExclude)
                 self._deleteBtnPressedConnectedTo = self.onRemoveSelectionFromExclude
             self._deleteBtn.setPopupMode(QToolButton.DelayedPopup)

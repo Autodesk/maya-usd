@@ -19,8 +19,12 @@ class WarningWidget(QToolButton):
     def __init__(self, parentWidget=None):
         super(WarningWidget, self).__init__(parentWidget)
         self._conflicted = False
-        self.setToolTip(CONFLICT_WARNING_TOOLTIP)
-        self.setIcon(Theme.instance().icon("warning"))
+
+        theme = Theme.instance()
+        
+        self.setToolTip(theme.themeLabel(CONFLICT_WARNING_TOOLTIP))
+        self.setStatusTip(theme.themeLabel(CONFLICT_WARNING_TOOLTIP))
+        self.setIcon(theme.icon("warning"))
         self.setVisible(False)
         self.setStyleSheet("""
             QToolButton { border: 0px; }""")
