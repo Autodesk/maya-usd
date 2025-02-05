@@ -50,30 +50,6 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
     endforeach()
     set(UFE_VERSION ${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_LEVEL})
 
-    if(UFE_MAJOR_VERSION VERSION_EQUAL "0")
-        math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
-    elseif(UFE_VERSION VERSION_EQUAL "4.1.0")
-        # Temporary. Once next Maya is released with UFE v4.1.0 this should
-        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
-        set(UFE_PREVIEW_VERSION_NUM 4100)
-    elseif(UFE_VERSION VERSION_EQUAL "4.2.0")
-        # Temporary. Once next Maya is released with UFE v4.2.0 this should
-        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
-        set(UFE_PREVIEW_VERSION_NUM 4202)
-    elseif((UFE_VERSION VERSION_GREATER_EQUAL "4.2.300") AND (UFE_VERSION VERSION_LESS "5.0.0"))
-        # Temporary - will only be used if there is development for a Ufe v4.3.0 to create
-        # the UFE_PREVIEW_VERSION_NUM for that version while it is in development.
-        # Note: the UFE_PATCH_LEVEL will start at 300 and will thus encode the minor version
-        #       of 3 (so we don't use UFE_MINOR_VERSION in this formula).
-        math(EXPR UFE_PREVIEW_VERSION_NUM "4 * 1000 + ${UFE_PATCH_LEVEL}")
-    elseif(UFE_VERSION VERSION_EQUAL "5.0.0")
-        # Temporary. Once next Maya PR is released with UFE v5.0.0 this should
-        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
-        set(UFE_PREVIEW_VERSION_NUM 5017)
-    elseif(UFE_VERSION VERSION_EQUAL "5.1.0")
-        set(UFE_PREVIEW_VERSION_NUM 5100)
-    endif()
-
     file(STRINGS
         "${UFE_INCLUDE_DIR}/ufe/ufe.h"
         _ufe_features
