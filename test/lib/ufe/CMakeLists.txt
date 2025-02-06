@@ -157,6 +157,7 @@ if(LOOKDEVXUFE_HAS_PYTHON_BINDINGS)
         testLdxCapabilityHandler.py
         testLdxComponentConnections.py        
         testLdxConnection.py
+        testLdxDebugHandler.py
     )
 endif()
 

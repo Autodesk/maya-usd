@@ -47,7 +47,7 @@ def verifyConnections(testHarness, connections, numRegularConnections, numCompon
     testHarness.assertEqual(numComponent, numComponentConnections)
     testHarness.assertEqual(numConverter, numConverterConnections)
 
-class ComponentConnectionsTestCase(unittest.TestCase):
+class LookdevXUfeConnectionTestCase(unittest.TestCase):
     '''Verify the USD implementation of LookdevXUfe connections.
     '''
     pluginsLoaded = False
