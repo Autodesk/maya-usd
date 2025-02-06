@@ -65,6 +65,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
             mtlxTranslationTableReader.cpp
             mtlxTranslationTableWriter.cpp
             mtlxFileTextureWriter.cpp
+            mtlxMaterialXSurfaceShaderWriter.cpp
     )
     target_compile_definitions(${TARGET_NAME}
         PRIVATE
