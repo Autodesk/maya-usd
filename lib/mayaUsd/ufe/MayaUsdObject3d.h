@@ -42,6 +42,9 @@ public:
     void adjustBBoxExtents(PXR_NS::GfBBox3d& bbox, const PXR_NS::UsdTimeCode time) const override;
     Ufe::BBox3d
     adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTimeCode time) const override;
+#ifndef UFE_CAMERA_HAS_COMPUTEDVISIBILITY
+    bool visibility() const override;
+#endif // UFE_CAMERA_HAS_COMPUTEDVISIBILITY
 
 }; // MayaUsdObject3d
 

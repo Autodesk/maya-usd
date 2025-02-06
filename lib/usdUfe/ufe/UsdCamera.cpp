@@ -24,6 +24,8 @@
 #include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/metrics.h>
 
+#include <ufe/object3d.h>
+
 namespace USDUFE_NS_DEF {
 
 USDUFE_VERIFY_CLASS_SETUP(Ufe::Camera, UsdCamera);
@@ -478,4 +480,32 @@ bool UsdCamera::renderable() const
     return purpose == UsdGeomTokens->render || purpose == UsdGeomTokens->default_;
 }
 #endif
+
+#ifdef UFE_CAMERA_HAS_COMPUTEDVISIBILITY
+bool UsdCamera::computedVisibility() const
+{
+    PXR_NS::TfToken visibilityToken;
+    auto            visAttr = PXR_NS::UsdGeomImageable(prim()).GetVisibilityAttr();
+    visAttr.Get(&visibilityToken);
+
+    // Check if the prim is a camera
+    // if its a camera, then we need to check if the camera's parents are visible
+    if (visibilityToken == PXR_NS::UsdGeomTokens->inherited) {
+        // get the parent of the camera
+        Ufe::Path parentPath = sceneItem()->path().pop();
+        while (!parentPath.empty()) {
+            // check if the parent is visible
+            auto parentItem = Ufe::Hierarchy::createItem(parentPath);
+            auto parentObject3d = Ufe::Object3d::object3d(parentItem);
+            if (!parentObject3d->visibility()) {
+                return false;
+            }
+            parentPath = parentPath.pop();
+        }
+    }
+
+    return visibilityToken != PXR_NS::UsdGeomTokens->invisible;
+}
+#endif
+
 } // namespace USDUFE_NS_DEF
