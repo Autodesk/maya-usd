@@ -15,6 +15,8 @@
 //
 #include "UsdObject3d.h"
 
+#include "pxr/usd/usdGeom/camera.h"
+
 #include <usdUfe/ufe/UsdUndoVisibleCommand.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/editRouter.h>
