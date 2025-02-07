@@ -65,7 +65,6 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
             mtlxTranslationTableReader.cpp
             mtlxTranslationTableWriter.cpp
             mtlxFileTextureWriter.cpp
-            mtlxMaterialXSurfaceShaderWriter.cpp
     )
     target_compile_definitions(${TARGET_NAME}
         PRIVATE
@@ -77,6 +76,13 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
                 mtlxOpenPBRSurfaceReader.cpp
                 mtlxOpenPBRSurfaceWriter.cpp
         )
+    endif()
+    
+    if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2025)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            mtlxMaterialXSurfaceShaderWriter.cpp
+    )
     endif()
 
 endif()
