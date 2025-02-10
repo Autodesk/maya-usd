@@ -495,7 +495,8 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
     auto shaderNode = MaterialNode->getConnectedNode("surfaceshader");
     if (shaderNode == nullptr) {
         TF_WARN(
-            "Surface Shader Node not found in the MaterialX Document, for Shader at path '%s'", _usdPrim.GetPrimPath().GetText());
+            "Surface Shader Node not found in the MaterialX Document, for Shader at path '%s'",
+            _usdPrim.GetPrimPath().GetText());
         return;
     }
     _SetShaderInfoAttributes(shaderNode, _usdPrim, ufeParentPath + shaderNode->getName());
