@@ -211,6 +211,19 @@ SdfPath UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) con
     return _GetRootOverridePath(mArgs, path, /* modelRootOverride = */ true, /* rootMap = */ false);
 }
 
+std::vector<SdfPath> UsdMayaWriteJobContext::GetAlInstanceMasterPaths() const
+{
+    std::vector<SdfPath> masterPaths;
+
+    for (const auto& objToMasters : _objectsToMasterPaths) {
+        // Note: the second element of the iteration value is the pair of master paths,
+        //       the first of which is the true path in the stage of the instance master.
+        //       See the documentation about the _ExportAndRefPaths type.
+        masterPaths.emplace_back(objToMasters.second.first);
+    }
+    return masterPaths;
+}
+
 UsdMayaWriteJobContext::_ExportAndRefPaths
 UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) const
 {
