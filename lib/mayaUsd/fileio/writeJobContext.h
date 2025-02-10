@@ -141,6 +141,9 @@ public:
     // Retrieve all exported material paths.
     const std::vector<SdfPath>& GetMaterialPaths() { return _materialPaths; }
 
+    // Retrieve all instance master paths
+    std::vector<SdfPath> GetAlInstanceMasterPaths() const;
+
 protected:
     /// Opens the stage with the given \p filename for writing.
     /// If \p append is \c true, the file must already exist.
