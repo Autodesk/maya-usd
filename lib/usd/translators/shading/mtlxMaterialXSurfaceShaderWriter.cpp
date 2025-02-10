@@ -26,7 +26,6 @@
 #include <pxr/usd/usdUI/nodeGraphNodeAPI.h>
 
 #include <maya/MFnDependencyNode.h>
-#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
@@ -59,7 +58,7 @@ std::string _GetNodeDefString(const MaterialX::NodePtr& node, const Ufe::Path& u
     if (nodeDef) {
         return nodeDef->type();
     }
-    TF_VERIFY("Could not find nodeDef for node %s", node->getName().c_str());
+    TF_WARN("Could not find nodeDef for node '%s'", node->getName().c_str());
     return std::string();
 }
 
@@ -454,8 +453,8 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
     // surfaceMaterialNode
     auto MaterialNode = mtlxDoc->getNode(depNodeFn.name().asChar());
     if (MaterialNode == nullptr) {
-        MGlobal::displayError(
-            "Material Node " + depNodeFn.name() + " not found in the MaterialX Document");
+        TF_WARN(
+            "Material Node '%s' not found in the MaterialX Document", depNodeFn.name().asChar());
         return;
     }
     // Collection of the MaterialX nodes already processed, to avoid processing them again.
@@ -495,9 +494,8 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
 
     auto shaderNode = MaterialNode->getConnectedNode("surfaceshader");
     if (shaderNode == nullptr) {
-        MGlobal::displayError(
-            "Surface Shader Node not found in the MaterialX Document, for Shader at path : "
-            + MString(_usdPrim.GetPrimPath().GetText()));
+        TF_WARN(
+            "Surface Shader Node not found in the MaterialX Document, for Shader at path '%s'", _usdPrim.GetPrimPath().GetText());
         return;
     }
     _SetShaderInfoAttributes(shaderNode, _usdPrim, ufeParentPath + shaderNode->getName());
