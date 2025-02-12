@@ -1033,13 +1033,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     MProfilingScope profilingScope(
                         _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Open stage");
 
-                    static const MString kSessionLayerOptionVarName(
-                        MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen.GetText());
-
-                    bool targetSession
-                        = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
-                    targetSession = targetSession || !rootLayer->PermissionToEdit();
-
                     // Note: UsdStage::Open has the peculiar design that it will return
                     //       any previously open stage that happen to match its arguments,
                     //       all its arguments, but only those arguments.
@@ -1061,10 +1054,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     } else {
                         sharedUsdStage = UsdStage::Open(rootLayer, loadSet);
                     }
-
-                    sharedUsdStage->SetEditTarget(
-                        targetSession ? sharedUsdStage->GetSessionLayer()
-                                      : sharedUsdStage->GetRootLayer());
                 }
 
                 // Update file path attribute to match the correct root layer id if it was anonymous
@@ -1194,11 +1183,28 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // muting
         copyLayerLockingFromAttribute(*this, layerNameMap, *finalUsdStage);
 
+        static const MString kSessionLayerOptionVarName(
+            MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen.GetText());
+
+        const bool targetSession = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
+
         UsdEditTarget editTarget;
         if (!_targetLayer) {
-            editTarget = getEditTargetFromAttribute(*this, layerNameMap, *finalUsdStage);
-            if (editTarget.IsValid()) {
-                _targetLayer = editTarget.GetLayer();
+            if (targetSession) {
+                editTarget = finalUsdStage->GetSessionLayer();
+            } else {
+                editTarget = getEditTargetFromAttribute(*this, layerNameMap, *finalUsdStage);
+                if (editTarget.IsValid()) {
+                    _targetLayer = editTarget.GetLayer();
+                } else {
+                    auto rootLayer = finalUsdStage->GetRootLayer();
+                    if (rootLayer->PermissionToEdit()) {
+                        editTarget = rootLayer;
+
+                    } else {
+                        editTarget = finalUsdStage->GetSessionLayer();
+                    }
+                }
             }
         }
 
