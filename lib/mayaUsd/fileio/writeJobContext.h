@@ -144,6 +144,9 @@ public:
     // Retrieve all instance master paths
     std::vector<SdfPath> GetAlInstanceMasterPaths() const;
 
+    // Retrieve the default root path of all instance masters.
+    static const SdfPath& GetInstanceMasterBasePath();
+
 protected:
     /// Opens the stage with the given \p filename for writing.
     /// If \p append is \c true, the file must already exist.

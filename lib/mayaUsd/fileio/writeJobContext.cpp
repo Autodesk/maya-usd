@@ -81,9 +81,14 @@ inline SdfPath _GetRootOverridePath(
     return path;
 }
 
-const SdfPath INSTANCES_SCOPE_PATH("/MayaExportedInstanceSources");
-
 } // anonymous namespace
+
+/*static*/
+const SdfPath& UsdMayaWriteJobContext::GetInstanceMasterBasePath()
+{
+    static const SdfPath INSTANCES_SCOPE_PATH("/MayaExportedInstanceSources");
+    return INSTANCES_SCOPE_PATH;
+}
 
 UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
     : mArgs(args)
@@ -497,7 +502,7 @@ bool UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
     }
 
     if (mArgs.exportInstances) {
-        mInstancesPrim = mStage->OverridePrim(INSTANCES_SCOPE_PATH);
+        mInstancesPrim = mStage->OverridePrim(GetInstanceMasterBasePath());
     }
 
     return true;
