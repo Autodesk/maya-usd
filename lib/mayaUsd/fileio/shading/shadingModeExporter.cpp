@@ -112,7 +112,7 @@ void UsdMayaShadingModeExporter::DoExport(
     using MaterialAssignments = std::vector<std::pair<TfToken, SdfPathSet>>;
     MaterialAssignments matAssignments;
 
-    std::vector<UsdShadeMaterial> exportedMaterials;
+    std::vector<UsdShadeMaterial> materialsToBind;
 
     std::vector<MObject> shadingEngines;
     MItDependencyNodes   shadingEngineIter(MFn::kShadingEngine);
@@ -130,8 +130,8 @@ void UsdMayaShadingModeExporter::DoExport(
 
         if (mat) {
             writeJobContext.AddMaterialPath(mat.GetPath());
-            exportedMaterials.push_back(mat);
             if (!boundPrimPaths.empty()) {
+                materialsToBind.push_back(mat);
                 matAssignments.push_back(std::make_pair(_GetCollectionName(mat), boundPrimPaths));
             }
         }
@@ -151,7 +151,7 @@ void UsdMayaShadingModeExporter::DoExport(
             //
             // This computes the first root prim below which a material has
             // been exported.
-            SdfPath rootPrimPath = exportedMaterials[0].GetPath().GetPrefixes()[0];
+            SdfPath rootPrimPath = materialsToBind.at(0).GetPath().GetPrefixes()[0];
             materialCollectionsPrim = stage->GetPrimAtPath(rootPrimPath);
             TF_VERIFY(
                 materialCollectionsPrim,
@@ -164,9 +164,9 @@ void UsdMayaShadingModeExporter::DoExport(
             = UsdUtilsCreateCollections(matAssignments, materialCollectionsPrim);
 
         if (exportArgs.exportCollectionBasedBindings) {
-            for (size_t i = 0u; i < exportedMaterials.size(); ++i) {
-                const UsdShadeMaterial& mat = exportedMaterials[i];
-                const UsdCollectionAPI& coll = collections[i];
+            for (size_t i = 0u; i < materialsToBind.size(); ++i) {
+                const UsdShadeMaterial& mat = materialsToBind[i];
+                const UsdCollectionAPI& coll = collections.at(i);
 
                 // If the all the paths are under the prim with the materialBind
                 // collections, export the binding on the prim.
