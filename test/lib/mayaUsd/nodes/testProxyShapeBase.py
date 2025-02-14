@@ -467,6 +467,28 @@ class testProxyShapeBase(unittest.TestCase):
 
         self._verifyPrim()
 
+    def testForTArgetSessionLayer(self):
+        '''
+        Verify that setting the option var mayaUsd_ProxyTargetsSessionLayerOnOpen
+        to 1 targets the session layer instead of the layer that was previously targeted.
+        '''
+        cmds.optionVar(iv=["mayaUsd_ProxyTargetsSessionLayerOnOpen",  1])
+
+        try:
+            # create new stage
+            cmds.file(new=True, force=True)
+
+            # Open target-root-layerrma scene in testSamples
+            mayaUtils.openTestScene("targetRootLayer", "target-root-layer.ma")
+
+            # check that the stage is shared and the root is the right one
+            stage, proxyShapePath = self._getStage()
+
+            self.assertTrue(stage)
+            self.assertEqual(stage.GetSessionLayer().identifier, stage.GetEditTarget().GetLayer().identifier)
+        finally:
+            cmds.optionVar(iv=["mayaUsd_ProxyTargetsSessionLayerOnOpen",  0])
+
     def _saveStagePreserveLayerHelper(self, targetRoot, saveInMaya):
         '''
         Verify that a freshly-created stage preserve its session or root layer data

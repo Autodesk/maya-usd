@@ -103,6 +103,44 @@ class testUsdExportInstances(unittest.TestCase):
         rootPrims = list(layer.rootPrims.keys())
         self.assertEqual(rootPrims[-1], "MayaExportedInstanceSources")
 
+    def testExportInstances_WithExportRoots(self):
+        cmds.file(new=True, force=True)
+        sphere = cmds.sphere(r=10, name="instance")
+        lod_group = cmds.group(name="my_lod")
+        asset_group = cmds.group(name="my_asset")
+        for i in range(5):
+            inst = cmds.instance([sphere[0]], name=sphere[0] +  "_" + str(i))
+            cmds.move(25 * (i + 1), 0, 0, inst[0])
+            
+        usdFile = os.path.abspath('UsdExportInstances_instances.usda')
+        cmds.mayaUSDExport(
+            asset_group, file=usdFile,
+            exportDisplayColor=True,
+            kind="group", shadingMode="none",
+            exportInstances=True, exportCollectionBasedBindings=False,
+            mergeTransformAndShape=True,
+            defaultPrim=lod_group,
+            exportRoots=[lod_group],
+        )
+
+        stage = Usd.Stage.Open(usdFile)
+        self.assertTrue(stage)
+
+        exportedPaths = [
+            '/my_lod/instance',
+            '/my_lod/instance_0',
+            '/my_lod/instance_1',
+            '/my_lod/instance_2',
+            '/my_lod/instance_3',
+            '/my_lod/instance_4',
+            '/MayaExportedInstanceSources',
+            '/MayaExportedInstanceSources/my__asset_my__lod_instance_instanceShape',
+        ]
+
+        for path in exportedPaths:
+            prim = stage.GetPrimAtPath(path)
+            self.assertTrue(prim.IsValid(), 'Failed to find path ' + path)
+
     def testExportInstances_ModelHierarchyValidation(self):
         """Tests that model-hierarchy validation works with instances."""
         usdFile = os.path.abspath('UsdExportInstances_kinds.usda')
