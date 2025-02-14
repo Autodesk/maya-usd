@@ -77,5 +77,12 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
                 mtlxOpenPBRSurfaceWriter.cpp
         )
     endif()
+    
+    if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2025)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            mtlxMaterialXSurfaceShaderWriter.cpp
+    )
+    endif()
 
 endif()
