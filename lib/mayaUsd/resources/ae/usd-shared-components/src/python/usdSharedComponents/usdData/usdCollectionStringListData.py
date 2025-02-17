@@ -80,7 +80,7 @@ class CollectionStringListData(StringListData):
         if addedNewIncludes and not existingItems and items:
             self._collection.GetIncludeRootAttr().Set(False)
             Host.instance().reportMessage(
-                "'Include All' has been disabled to illuminate only the included objects, in collection: %s." 
+                "'Include All' has been disabled for the included prim(s) to take effect, in collection: %s." 
                 % self._collection.GetName(), 
                 MessageType.INFO)
 
