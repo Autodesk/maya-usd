@@ -232,25 +232,51 @@ class UsdCollectionData(CollectionData):
             return False
 
     @validateCollection([])
-    def computeMembership(self) -> Sequence[str]:
+    def computeMembership(self, onlyExpression=False) -> Sequence[str]:
         '''
-        Compute all items that are included by the membership expression.
+        Compute all items that are included in the collection.
         '''
-        query = self._collection.ComputeMembershipQuery()
-        if not query:
+        stage = self._prim.GetStage()
+
+        # When only expression is wanted and there are both expicit includes/excludes
+        # and an expression, we need to only use the expression, but this is not
+        # possible in USD. So we instead create a temporary prim in the session layer
+        # with the expression so that we can compute the expression-only membership.
+        if onlyExpression and self.hasDataConflict():
+            with Usd.EditContext(stage, Usd.EditTarget(stage.GetSessionLayer())):
+                tempPrim = None
+                try:
+                    tempPrim = stage.DefinePrim('/___temporary_prim___')
+                    collection = Usd.CollectionAPI.Apply(tempPrim, '___temporary_collection___')
+                    collection.CreateMembershipExpressionAttr(Sdf.PathExpression(self.getMembershipExpression()))
+                    return _getQueryMembership(stage, collection, False)
+                finally:
+                    if tempPrim:
+                        stage.RemovePrim(tempPrim.GetPath())
             return []
 
-        # When there are both explicit inclusions/exclusions and a membership
-        # expression, the CollectionAPI docs states that the expression should
-        # be ignored. Unfortunately, ComputeIncludedPaths does not handle this
-        # correctly, so we have to do the work by hand by calling IsPAthIncluded
-        # for each path, as that function works correctly.
-        if self.hasDataConflict():
-            members = []
-            for prim in self._prim.GetStage().TraverseAll():
-                path = prim.GetPath()
-                if query.IsPathIncluded(path):
-                    members.append(path.pathString)
-            return members
-        else:
-            return Usd.CollectionAPI.ComputeIncludedPaths(query, self._prim.GetStage())
+        return _getQueryMembership(stage, self._collection, self.hasDataConflict())
+
+
+def _getQueryMembership(stage, collection, hasConflict):
+    if not collection:
+        return []
+
+    query = collection.ComputeMembershipQuery()
+    if not query:
+        return []
+
+    # When there are both explicit inclusions/exclusions and a membership
+    # expression, the CollectionAPI docs states that the expression should
+    # be ignored. Unfortunately, ComputeIncludedPaths does not handle this
+    # correctly, so we have to do the work by hand by calling IsPAthIncluded
+    # for each path, as that function works correctly.
+    if hasConflict:
+        members = []
+        for prim in stage.TraverseAll():
+            path = prim.GetPath()
+            if query.IsPathIncluded(path):
+                members.append(path.pathString)
+        return members
+    else:
+        return Usd.CollectionAPI.ComputeIncludedPaths(query, stage)

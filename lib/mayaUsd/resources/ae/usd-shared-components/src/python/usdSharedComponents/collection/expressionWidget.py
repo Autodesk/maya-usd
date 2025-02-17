@@ -84,7 +84,7 @@ class ExpressionWidget(QWidget):
         self._warningSeparator.setVisible(isConflicted)
 
     def _onSelectItemsClicked(self):
-        membershipItems = self._collData.computeMembership()
+        membershipItems = self._collData.computeMembership(True)
         # Note: for membership expression, it does not matter if we use
         #       the include or exclude version of convertToItemPaths.
         membershipItems = self._collData.getIncludeData().convertToItemPaths(membershipItems)
