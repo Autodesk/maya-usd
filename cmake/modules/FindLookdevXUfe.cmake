@@ -77,3 +77,10 @@ find_package_handle_standard_args(LookdevXUfe
     VERSION_VAR
         LookdevXUfe_VERSION
 )
+
+set(LOOKDEVXUFE_HAS_PYTHON_BINDINGS FALSE CACHE INTERNAL "PyLookdevXUfe")
+if(LookdevXUfe_VERSION VERSION_GREATER_EQUAL "1.0.1" OR
+    (LookdevXUfe_VERSION VERSION_LESS "1.0.0" AND LookdevXUfe_VERSION VERSION_GREATER_EQUAL "0.2.0"))
+    set(LOOKDEVXUFE_HAS_PYTHON_BINDINGS TRUE CACHE INTERNAL "PyLookdevXUfe")
+    message(STATUS "Maya has LookdevXUfe Python bindings")
+endif()

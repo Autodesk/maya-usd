@@ -1,0 +1,89 @@
+#usda 1.0
+
+def Sphere "Sphere1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/standard_surface1>
+}
+
+def Scope "mtl"
+{
+    def Material "standard_surface1" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+        customData = {
+            dictionary Autodesk = {
+                token ldx_inputPos = "-450 -61"
+                token ldx_outputPos = "225 -61"
+            }
+        }
+    )
+    {
+        token outputs:mtlx:surface.connect = </mtl/standard_surface1/standard_surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (0.055555556, 0.055555556)
+
+        def Shader "standard_surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/standard_surface1/combine1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-0.44444445, -0.20555556)
+        }
+
+        def Shader "constant1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-1.57685, -1.0148168)
+        }
+
+        def Shader "add1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_color3"
+            color3f outputs:out
+            color3f inputs:in1.connect = </mtl/standard_surface1/constant1.outputs:out>
+        }
+
+        def Shader "separate1" (
+            customData = {
+             dictionary Autodesk = {
+                 string hidden = "true"
+             }
+            }
+        )
+        {
+            uniform token info:id = "ND_separate3_color3"
+            color3f inputs:in.connect = </mtl/standard_surface1/add1.outputs:out>
+            float outputs:outr
+        }
+
+        def Shader "combine1" (
+            customData = {
+             dictionary Autodesk = {
+                 string hidden = "true"
+             }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.timeSamples = {
+                1: 0.8,
+            }
+            float inputs:in1.connect = </mtl/standard_surface1/separate1.outputs:outr>
+            float inputs:in2.timeSamples = {
+                1: 0.8,
+            }
+            float inputs:in3.timeSamples = {
+                1: 0.8,
+            }
+            color3f outputs:out
+        }
+    }
+}
+

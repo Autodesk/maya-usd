@@ -1,0 +1,278 @@
+#usda 1.0
+
+def Sphere "Sphere1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </mtl/standard_surface1>
+}
+
+def Scope "mtl"
+{
+    def Material "standard_surface1" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+        customData = {
+            dictionary Autodesk = {
+                token ldx_inputPos = "-969 -120.333"
+                token ldx_outputPos = "617.275 -73.3805"
+            }
+        }
+    )
+    {
+        token outputs:mtlx:surface.connect = </mtl/standard_surface1/standard_surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (0.055555556, 0.055555556)
+
+        def Shader "standard_surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.4861945, -0.37486166)
+        }
+
+        def Shader "constant_color3" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            uniform float2 ui:nodegraph:node:pos = (-3.8370388, -0.96645)
+        }
+
+        def Shader "constant_float" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_float"
+            uniform float2 ui:nodegraph:node:pos = (-3.8081167, -2.13755)
+        }
+
+        def Shader "add_float" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_float"
+            float inputs:in1 = 0.5
+            uniform float2 ui:nodegraph:node:pos = (-1.3588111, -2.1391444)
+        }
+
+        def Shader "constant_color4" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color4"
+            uniform float2 ui:nodegraph:node:pos = (-3.8583333, 0.15210722)
+        }
+
+        def Shader "constant_vector2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_vector2"
+            uniform float2 ui:nodegraph:node:pos = (-3.886689, 1.3638556)
+        }
+
+        def Shader "constant_vector3" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_vector3"
+            uniform float2 ui:nodegraph:node:pos = (-3.9212832, 2.4603057)
+        }
+
+        def Shader "constant_vector4" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_vector4"
+            uniform float2 ui:nodegraph:node:pos = (-3.94245, 3.5846388)
+        }
+
+        def Shader "add_color3" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_color3"
+            color3f inputs:in1 = (0.1, 0.2, 0.3)
+            uniform float2 ui:nodegraph:node:pos = (-1.4134389, -0.9946611)
+        }
+
+        def Shader "add_color4" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_color4"
+            color4f inputs:in1 = (0.1, 0.2, 0.3, 0.4)
+            uniform float2 ui:nodegraph:node:pos = (-1.4293056, 0.14815277)
+        }
+
+        def Shader "add_vector2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_vector2"
+            float2 inputs:in1 = (0.1, 0.2)
+            uniform float2 ui:nodegraph:node:pos = (-1.4394777, 1.3561223)
+        }
+
+        def Shader "add_vector3" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_vector3"
+            float3 inputs:in1 = (0.1, 0.2, 0.3)
+            uniform float2 ui:nodegraph:node:pos = (-1.462061, 2.466189)
+        }
+
+        def Shader "add_vector4" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_vector4"
+            float4 inputs:in1 = (0.1, 0.2, 0.3, 0.4)
+            uniform float2 ui:nodegraph:node:pos = (-1.4772334, 3.6083665)
+        }
+
+        def Shader "constant_string" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_string"
+            uniform float2 ui:nodegraph:node:pos = (-3.933311, 4.7703557)
+        }
+
+        def Shader "constant_matrix33" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_matrix33"
+            uniform float2 ui:nodegraph:node:pos = (-3.9435499, 5.9079995)
+        }
+
+        def Shader "constant_matrix44" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_matrix44"
+            uniform float2 ui:nodegraph:node:pos = (-4.0094333, 7.0698886)
+        }
+
+        def Shader "add_matrix33" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_matrix33"
+            uniform float2 ui:nodegraph:node:pos = (-1.5000334, 4.895889)
+        }
+
+        def Shader "add_matrix44" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_matrix44"
+            uniform float2 ui:nodegraph:node:pos = (-1.54795, 6.1415553)
+        }
+    }
+
+    def Material "standard_surface2" (
+        apiSchemas = ["NodeGraphNodeAPI"]
+        customData = {
+            dictionary Autodesk = {
+                token ldx_inputPos = "-969 -120.333"
+                token ldx_outputPos = "617.275 -73.3805"
+            }
+        }
+    )
+    {
+        uniform float2 ui:nodegraph:node:pos = (0.055555556, 0.055555556)
+
+        def NodeGraph "compound1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            color3f inputs:out (
+                sdrMetadata = {
+                    string uiorder = "0"
+                }
+            )
+            color3f inputs:out.connect = </mtl/standard_surface2/combine1.outputs:out>
+            color3f outputs:value (
+                sdrMetadata = {
+                    string uiorder = "0"
+                }
+            )
+            uniform float2 ui:nodegraph:node:pos = (-1.2314944, -0.35861167)
+        }
+
+        def Shader "constant1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f inputs:value.connect = </mtl/standard_surface2/combine2.outputs:out>
+            uniform float2 ui:nodegraph:node:pos = (0.6073056, -0.48191887)
+        }
+
+        def Shader "constant2" (
+            apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.9181278, -0.11234944)
+        }
+
+        def Shader "separate1" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_separate3_color3"
+            color3f inputs:in.connect = </mtl/standard_surface2/constant2.outputs:out>
+            float outputs:outr
+        }
+
+        def Shader "combine1" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/standard_surface2/separate1.outputs:outr>
+            color3f outputs:out
+        }
+
+        def Shader "separate2" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_separate3_color3"
+            color3f inputs:in.connect = </mtl/standard_surface2/compound1.outputs:value>
+            float outputs:outr
+        }
+
+        def Shader "combine2" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/standard_surface2/separate2.outputs:outr>
+            color3f outputs:out
+        }
+    }
+}
+
