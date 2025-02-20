@@ -263,7 +263,7 @@ UsdStageMap::StageSet UsdStageMap::allStages()
     // and so the cache might not have been dirtied just yet.
     // Therefore, directly query the Maya data model to get the most up-to-date
     // info. This will add any missing stages in the cache. If there are outdated
-    // stages in the cache, they will be cleared on the next cache rebuild, or 
+    // stages in the cache, they will be cleared on the next cache rebuild, or
     // the next time anyone queries such an outdated stage.
     StageSet stages;
     for (const auto& proxyShapeName : ProxyShapeHandler::getAllNames()) {
