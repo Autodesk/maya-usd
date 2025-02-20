@@ -255,11 +255,10 @@ Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
 
 UsdStageMap::StageSet UsdStageMap::allStages()
 {
-    rebuildIfDirty();
-
     // We can't rely on using the cached paths to find all the stages.
     // There might have been changes made to the stages, but we might not
-    // yet have received the notification(s) required to update the cache.
+    // yet have received the notification(s) required to update the cache,
+    // and so the cache might not have been dirtied just yet.
     // Therefore, directly query the Maya data model to get the most up-to-date
     // info. This will add any missing stages in the cache. If there are outdated
     // stages in the cache, they will be cleared on the next cache rebuild, or 
