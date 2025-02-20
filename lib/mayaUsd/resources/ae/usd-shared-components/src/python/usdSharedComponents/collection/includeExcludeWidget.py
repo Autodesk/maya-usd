@@ -206,7 +206,7 @@ class IncludeExcludeWidget(QWidget):
 
     def _hasValidSelection(self, stringList: StringListData) -> bool:
         for item in Host.instance().getSelectionAsText():
-            if stringList.convertToCollectionString(item):
+            if stringList.convertToCollectionString(item)[0]:
                 return True
         return False
     

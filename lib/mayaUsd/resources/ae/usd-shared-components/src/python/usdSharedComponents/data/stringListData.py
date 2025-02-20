@@ -1,4 +1,4 @@
-from typing import AnyStr, Sequence
+from typing import AnyStr, Sequence, Tuple
 
 try:
     from PySide6.QtCore import QObject, Signal  # type: ignore
@@ -49,7 +49,7 @@ class StringListData(QObject):
         '''
         return False
 
-    def convertToCollectionString(self, s) -> AnyStr:
+    def convertToCollectionString(self, s) -> Tuple[AnyStr, AnyStr]:
         '''
         Validates if the string is valid and possibly alter it to make it valid
         or conform to the expected format or value. Return None if invalid.
@@ -75,14 +75,14 @@ class StringListData(QObject):
 
     def _splitMultiLineStrings(self, multiLineText):
         items = []
-        reportedError = False
+        reportedError = set()
         for text in multiLineText.split("\n"):
-            text = self.convertToCollectionString(text)
+            text, error = self.convertToCollectionString(text)
             if not text:
-                if not reportedError:
-                    reportedError = True
+                if error not in reportedError:
+                    reportedError.add(error)
                     from ..common.host import Host
-                    Host.instance().reportMessage("Only objects in the same stage as the collection can be added.")
+                    Host.instance().reportMessage(error)
                 continue
             items.append(text)
 

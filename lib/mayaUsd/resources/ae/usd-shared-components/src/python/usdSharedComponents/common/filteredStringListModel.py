@@ -5,11 +5,13 @@ try:
     from PySide6.QtCore import (
         QStringListModel,
         Signal,
+        Qt
     )
 except:
     from PySide2.QtCore import (
         QStringListModel,
         Signal,
+        Qt
     )
 
 
@@ -59,6 +61,20 @@ class FilteredStringListModel(QStringListModel):
                 return False
             index = newIndex + len(filter)
         return True
+    
+    def setData(self, index, value, role):
+        if role == Qt.DisplayRole or role ==  Qt.ItemDataRole:
+            oldValue = self.data(index, role)
+            value = value.strip()
+            if value:
+                self._collData.replaceStrings(oldValue, value)
+        return super(QStringListModel, self).setData(index, value, role)
+
+    def flags(self, index):
+        '''
+        Return the flags for the given index.
+        '''
+        return super(FilteredStringListModel, self).flags(index) | Qt.ItemFlag.ItemIsEditable
 
     def isFilteredEmpty(self):
         '''

@@ -7,7 +7,6 @@ from ..data.stringListData import StringListData
 try:
     from PySide6.QtCore import (  # type: ignore
         QEvent,
-        QModelIndex,
         QObject,
         Qt,
         Signal,
@@ -17,26 +16,47 @@ try:
     from PySide6.QtWidgets import (  # type: ignore
         QLabel,
         QListView,
-        QLineEdit,
-        QListWidget
+        QItemDelegate,
+        QCompleter
     )
 except:
     from PySide2.QtCore import (  # type: ignore
         QEvent,
-        QModelIndex,
         QObject,
         Qt,
         Signal,
         QMimeData
     )
     from PySide2.QtGui import QDrag, QPaintEvent # type: ignore
-    from PySide2.QtWidgets import QLabel, QListView, QLineEdit, QListWidget  # type: ignore
+    from PySide2.QtWidgets import QLabel, QListView, QCompleter, QItemDelegate # type: ignore
 
 
 NO_OBJECTS_FOUND_LABEL = "No objects found"
 DRAG_OBJECTS_HERE_LABEL = "Drag objects here"
 PICK_OBJECTS_LABEL = "Click '+' to add"
 DRAG_OR_PICK_OBJECTS_LABEL = "Drag objects here or click '+' to add"
+
+class FilteredStringDelegate(QItemDelegate):
+    def __init__(self, listView, parent=None):
+        super(FilteredStringDelegate, self).__init__(parent)
+        self._listView = listView
+
+    def createEditor(self, parent, option, index):
+        editLine = super(FilteredStringDelegate, self).createEditor(parent, option, index)
+        if editLine and self._listView:
+            suggestions = self._listView.model()._collData.getSuggestions()
+            self._completer = QCompleter(suggestions)
+            editLine.setCompleter(self._completer)
+        return editLine
+
+    def setModelData(self, editor, model, index):
+        oldValue = model.data(index, Qt.DisplayRole)
+        newValue = editor.text().strip()
+        if newValue:
+            model._collData.replaceStrings(oldValue, newValue)
+        super(FilteredStringDelegate, self).setModelData(editor, model, index)
+        # Note: set focus on list view to avoid starting to edit items in outliner.
+        self._listView.setFocus()
 
 
 class FilteredStringListView(QListView):
@@ -47,8 +67,8 @@ class FilteredStringListView(QListView):
         super(FilteredStringListView, self).__init__(parent)
         self.headerTitle = headerTitle
         self._model = FilteredStringListModel(data, self)
-        self._editLine = None
         self.setModel(self._model)
+        self.setItemDelegate(FilteredStringDelegate(self))
 
         self.setUniformItemSizes(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -73,71 +93,6 @@ class FilteredStringListView(QListView):
         DragAndDropAndDeleteEventFilter(self, data)
 
         self.selectionModel().selectionChanged.connect(self.itemSelectionChanged)
-
-    def mouseDoubleClickEvent(self, event):
-        index = self.indexAt(event.pos())
-        if index.isValid():
-            self._openEditor(index)
-
-    def _openEditor(self, index: QModelIndex):
-        if self._editLine:
-            self._editLine.deleteLater()
-
-        self._editLine = QLineEdit(self)
-        self._editLine.setText(self._model.data(index, Qt.DisplayRole))
-        self._editLine.setGeometry(self.visualRect(index))
-        self._editLine.setFocus()
-        self._editLine.show()
-
-        self._suggestionList = QListWidget(self)
-        currentPos = self._suggestionList.pos()
-        newX = currentPos.x()
-        newY = currentPos.y() + self._editLine.height()*(index.row()+1)
-        self._suggestionList.move(newX, newY)
-
-        # Stretch the suggestion Bar to Be the same length as the edit_line
-        self._suggestionList.setFixedWidth(self._editLine.width())
-        self.suggestions = self.model()._collData.getSuggestions()
-        self.filteredSuggestions = []
-
-        self._editLine.textChanged.connect(self._updateSuggestion)
-        self._suggestionList.itemClicked.connect(lambda item:self._selectSuggestion(item, index))
-        self._editLine.returnPressed.connect(lambda: self._closeEditor(index))
-
-    def _closeEditor(self, index: QModelIndex):
-        oldValue = self.model().data(index, Qt.DisplayRole)
-        newValue = self._editLine.text()
-
-        if not newValue.strip():
-            newValue = oldValue
-        self._model.setData(index, newValue, Qt.EditRole)
-        self._saveSuggestions(oldValue, newValue)
-        self._editLine.deleteLater()
-        self._editLine = None
-
-    def _updateSuggestion(self, text):
-        if not text:
-            self._suggestionList.hide()
-            return
-
-        self.filteredSuggestions = [s.pathString for s in self.suggestions if text.lower() in s.pathString]
-        self._suggestionList.clear()
-        self._suggestionList.addItems(self.filteredSuggestions[:5])
-        self._suggestionList.setVisible(bool(self.filteredSuggestions))
-    
-    def _saveSuggestions(self, oldTarget, newTarget):
-        if oldTarget == newTarget:
-            return
-
-        if not self.model()._collData:
-            return
-
-        self.model()._collData.replaceStrings(oldTarget, newTarget)
-
-    def _selectSuggestion(self, item, index):
-        self._editLine.setText(item.text())
-        self._suggestionList.hide()
-        self._closeEditor(index)
 
     def paintEvent(self, event: QPaintEvent):
         super(FilteredStringListView, self).paintEvent(event)
