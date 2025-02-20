@@ -25,7 +25,7 @@ class UsdCollectionData(CollectionData):
 
     def setCollection(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         '''
-        Update which collecton on which prim is held by this data class.
+        Update which collection on which prim is held by this data class.
         '''
         self._prim = prim
         self._collection = collection
@@ -142,6 +142,13 @@ class UsdCollectionData(CollectionData):
         Returns the excluded items string list.
         '''
         return self._excludes
+    
+    @validateCollection()
+    def getNamedCollectionPath(self) -> str:
+        '''
+        Returns the named path of the collection inside the current prim.
+        '''
+        return self._collection.GetNamedCollectionPath(self._prim, self._collection.GetName()).pathString
 
     @validateCollection(False)
     def removeAllIncludeExclude(self) -> bool:

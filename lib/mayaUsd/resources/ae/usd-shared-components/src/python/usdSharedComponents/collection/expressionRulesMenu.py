@@ -2,10 +2,10 @@ from ..data.collectionData import CollectionData
 from ..common.theme import Theme
 
 try:
-    from PySide6.QtWidgets import QMenu, QWidget # type: ignore
+    from PySide6.QtWidgets import QApplication, QMenu, QWidget # type: ignore
     from PySide6.QtGui import QActionGroup, QAction # type: ignore
 except ImportError:
-    from PySide2.QtWidgets import QMenu, QWidget, QActionGroup, QAction # type: ignore
+    from PySide2.QtWidgets import QApplication, QMenu, QWidget, QActionGroup, QAction # type: ignore
 
 from pxr import Usd
 
@@ -17,6 +17,7 @@ INCLUDE_EXCLUDE_LABEL = "Include/Exclude"
 REMOVE_ALL_LABEL = "Remove All"
 CLEAR_OPINIONS_LABEL = "Clear Opinions from Target Layer"
 PRINT_PRIMS_LABEL = "Print Prims to Script Editor"
+COPY_COLLECTION_PATH_LABEL = "Copy Collection Path"
 
 
 class ExpressionMenu(QMenu):
@@ -26,19 +27,19 @@ class ExpressionMenu(QMenu):
 
         theme = Theme.instance()
 
-        # Note: this is necessary to avoid the separator not show up.
-        self.setSeparatorsCollapsible(False)
-
         self._removeAllAction = QAction(theme.themeLabel(REMOVE_ALL_LABEL), self)
         self._clearOpinionsAction = QAction(theme.themeLabel(CLEAR_OPINIONS_LABEL), self)
-        prePrintSeparator = QAction()
-        prePrintSeparator.setSeparator(True)
         self._printPrimsAction = QAction(theme.themeLabel(PRINT_PRIMS_LABEL), self)
-        self.addActions([self._removeAllAction, self._clearOpinionsAction, prePrintSeparator, self._printPrimsAction])
+        self._copyCollectionPathAction = QAction(theme.themeLabel(COPY_COLLECTION_PATH_LABEL), self)
+
+        self.addActions([self._removeAllAction, self._clearOpinionsAction])
+        self.addSeparator()
+        self.addActions([self._printPrimsAction, self._copyCollectionPathAction])
 
         self._removeAllAction.triggered.connect(self._onRemoveAll)
         self._clearOpinionsAction.triggered.connect(self._onClearOpinions)
         self._printPrimsAction.triggered.connect(self._onPrintPrims)
+        self._copyCollectionPathAction.triggered.connect(self._copyCollectionPathToClipboard)
 
         self._collData.dataChanged.connect(self._onDataChanged)
         expansionRulesMenu = QMenu("Expansion Rules", self)
@@ -74,6 +75,11 @@ class ExpressionMenu(QMenu):
 
     def _onPrintPrims(self):
         self._collData.printCollection()        
+
+    def _copyCollectionPathToClipboard(self):
+        path = self._collData.getNamedCollectionPath()
+        if path:
+            QApplication.clipboard().setText(path)
 
     def onExpressionSelected(self, menuOption):
         if menuOption == self.expandPrimsAction:

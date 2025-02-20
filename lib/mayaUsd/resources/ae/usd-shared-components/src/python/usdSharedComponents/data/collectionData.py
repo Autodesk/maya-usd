@@ -77,6 +77,12 @@ class CollectionData(QObject):
         Clear all opinions about the include/exclude in the collection.
         '''
         return False
+    
+    def getNamedCollectionPath(self) -> str:
+        '''
+        Returns the named path of the collection.
+        '''
+        return None
 
     # Expression
 
