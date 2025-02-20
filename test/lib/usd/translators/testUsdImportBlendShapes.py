@@ -66,28 +66,28 @@ class testUsdImportBlendShapes(unittest.TestCase):
         skinningQuery = skelCache.GetSkinningQuery(meshPrim)
         self.assertTrue(skinningQuery)
 
-        self.assertEqual(cmds.nodeType("blendShape1"), "blendShape")
+        self.assertEqual(cmds.nodeType("b1_Deformer"), "blendShape")
 
         regularShape = sorted(
                 cmds.listConnections(
-                    "blendShape1.inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget", 
+                    "b1_Deformer.inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget", 
                     destination=False, source=True, plugs=True))
         self.assertEqual(regularShape, ['Box0002.worldMesh'])
 
         inBetween = sorted(
                 cmds.listConnections(
-                    "blendShape1.inputTarget[0].inputTargetGroup[0].inputTargetItem[4000].inputGeomTarget", 
+                    "b1_Deformer.inputTarget[0].inputTargetGroup[0].inputTargetItem[4000].inputGeomTarget", 
                     destination=False, source=True, plugs=True))
         self.assertEqual(inBetween, ['IBT_1.worldMesh'])
 
         cmds.currentTime(0)
-        self.assertEqual(sorted(cmds.getAttr("blendShape1.weight")[0]), [-1.0])
+        self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [-1.0])
         cmds.currentTime(3)
-        self.assertEqual(sorted(cmds.getAttr("blendShape1.weight")[0]), [-0.14404296875])
+        self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [-0.14404296875])
         cmds.currentTime(5)
-        self.assertEqual(sorted(cmds.getAttr("blendShape1.weight")[0]), [0.13427734375])
+        self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [0.13427734375])
         cmds.currentTime(8)
-        self.assertEqual(sorted(cmds.getAttr("blendShape1.weight")[0]), [1.0])
+        self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [1.0])
 
 
 if __name__ == '__main__':

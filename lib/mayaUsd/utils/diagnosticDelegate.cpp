@@ -143,6 +143,23 @@ class ErrorOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
     {
         UsdMayaDiagnosticDelegate::Flush();
 
+        // Note: TfLogCrash will do a hard abort of the process.
+        //       The dynamic libraries will be unloaded in a random order and
+        //       global variable will be destroyed. Unfortunately, USD holds a
+        //       mutex while in the TfLogCrash function and trying to remove the
+        //       diagnostic delegate (_waker) will also try to hold that mutex
+        //       resulting in a dead-lock. Avoid this by avoiding to destroy
+        //       the delegates
+        //
+        //       Yes, this means we are leaking the delegates, but we are in
+        //       the middle of crashing anyway, so it does not really matter.
+
+        _waker.release();
+        _flusher.release();
+        _batchedStatuses.release();
+        _batchedWarnings.release();
+        _batchedErrors.release();
+
         TfLogCrash(
             "FATAL ERROR",
             msg,

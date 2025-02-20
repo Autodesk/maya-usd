@@ -120,6 +120,8 @@ c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\Maya2025
 Name                        | Description                                                | Default
 ---                         | ---                                                        | ---
 BUILD_MAYAUSD_LIBRARY       | builds Core USD libraries.                                 | ON
+BUILD_MAYAUSDAPI_LIBRARY    | Build the mayaUsdAPI subset library that provides a stable versioned interface to mayaUsd for external plugins. | ON
+BUILD_LOOKDEVXUSD_LIBRARY   | Build LookdevXUsd library using LookdevXUfe.               | ON
 BUILD_ADSK_PLUGIN           | builds Autodesk USD plugin.                                | ON
 BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.                 | ON
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON

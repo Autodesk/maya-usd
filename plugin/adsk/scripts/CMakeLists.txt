@@ -8,6 +8,7 @@ list(APPEND scripts_src
     AEmayaUsdProxyShapeTemplate.mel
     AETemplateHelpers.py
     mayaUsdMenu.mel
+    mayaUsdMenu.py
     mayaUsd_createStageFromFile.mel
     mayaUsd_createStageWithNewLayer.py
     mayaUsd_createStageFromAsset.mel

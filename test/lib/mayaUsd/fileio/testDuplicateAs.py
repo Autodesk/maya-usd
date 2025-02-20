@@ -29,7 +29,7 @@ import mayaUsd.ufe
 
 from pxr import UsdGeom, Gf
 
-from maya import cmds
+from maya import cmds, mel
 from maya import standalone
 from maya.api import OpenMaya as om
 
@@ -49,7 +49,7 @@ class DuplicateAsTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
@@ -71,7 +71,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Duplicate USD data as Maya data, placing it under the root.
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-                aUsdUfePathStr, ''))
+                aUsdUfePathStr, '', {'upAxis': False}))
 
         # Should now have two transform nodes in the Maya scene: the path
         # components in the second segment of the aUsdItem and bUsdItem will
@@ -131,7 +131,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         previousSn = cmds.ls(sl=True, ufe=True, long=True)
 
         # Duplicate USD data as Maya data, placing it under the root.
-        cmds.mayaUsdDuplicate(aUsdUfePathStr, '')
+        cmds.mayaUsdDuplicate(aUsdUfePathStr, '', exportOptions='upAxis=0')
 
         def verifyDuplicate():
             # Should now have two transform nodes in the Maya scene: the path
@@ -210,6 +210,71 @@ class DuplicateAsTestCase(unittest.TestCase):
         usdGroup2T3d = ufe.Transform3d.transform3d(usdGroup2)
         self.assertEqual([1, 2, 3], usdGroup1T3d.translation().vector)
         self.assertEqual([-4, -5, -6], usdGroup2T3d.translation().vector)
+
+    def testDuplicateGroupedInstancesAsUsd(self):
+        '''Duplicate Maya grouped instances to USD.'''
+
+        # Create a hierarchy.  Because group1 is selected upon creation, group2
+        # will be its parent.
+        cmds.polyCube()
+        cmds.instance()
+        cube1 = 'pCube1'
+        cube2 = 'pCube2'
+        group = cmds.group(cube1, cube2)
+        self.assertEqual(cmds.listRelatives(cube1, parent=True)[0], group)
+        self.assertEqual(cmds.listRelatives(cube2, parent=True)[0], group)
+
+        cmds.setAttr(cube1 + '.translate', 1, 2, 3)
+        cmds.setAttr(cube2 + '.translate', -4, -5, -6)
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        
+        # Duplicate Maya data as USD data.  As of 17-Nov-2021 no single-segment
+        # path handler registered to UFE for Maya path strings, so use absolute
+        # path.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
+                cmds.ls(group, long=True)[0], psPathStr))
+
+        # Maya hierarchy should be duplicated in USD.
+        usdGroupPathStr = psPathStr + ',/' + group
+        usdCube1PathStr = usdGroupPathStr + '/' + cube1
+        usdCube2PathStr = usdGroupPathStr + '/' + cube2
+
+        usdGroupPath = ufe.PathString.path(usdGroupPathStr)
+        usdCube1Path = ufe.PathString.path(usdCube1PathStr)
+        usdCube2Path = ufe.PathString.path(usdCube2PathStr)
+
+        # group1 is the child of group2
+        usdGroup = ufe.Hierarchy.createItem(usdGroupPath)
+        usdCube1 = ufe.Hierarchy.createItem(usdCube1Path)
+        usdCube2 = ufe.Hierarchy.createItem(usdCube2Path)
+
+        usdGroupHier = ufe.Hierarchy.hierarchy(usdGroup)
+        usdCube1Hier = ufe.Hierarchy.hierarchy(usdCube1)
+        usdCube2Hier = ufe.Hierarchy.hierarchy(usdCube2)
+        self.assertEqual(usdGroup, usdCube1Hier.parent())
+        self.assertEqual(usdGroup, usdCube2Hier.parent())
+        self.assertEqual(len(usdGroupHier.children()), 2)
+
+        # Translations have been preserved.
+        usdCube1T3d = ufe.Transform3d.transform3d(usdCube1)
+        usdCube2T3d = ufe.Transform3d.transform3d(usdCube2)
+        self.assertEqual([1, 2, 3], usdCube1T3d.translation().vector)
+        self.assertEqual([-4, -5, -6], usdCube2T3d.translation().vector)
+
+        usdCube1ShapePathStr = usdCube1PathStr + '/' + 'pCubeShape1'
+        usdCube2ShapePathStr = usdCube2PathStr + '/' + 'pCubeShape1'
+
+        usdCube1ShapePath = ufe.PathString.path(usdCube1ShapePathStr)
+        usdCube2ShapePath = ufe.PathString.path(usdCube2ShapePathStr)
+
+        usdCube1Shape = ufe.Hierarchy.createItem(usdCube1ShapePath)
+        usdCube2Shape = ufe.Hierarchy.createItem(usdCube2ShapePath)
+
+        self.assertTrue(usdCube1Shape)
+        self.assertTrue(usdCube2Shape)
 
     def testDuplicateAsNonRootUsd(self):
         '''Duplicate a Maya transform hierarchy to a non-root node in USD.'''
@@ -390,7 +455,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         '''Duplicate a Maya sphere without the meshes, only materials.'''
 
         # Create a sphere.
-        sphere = cmds.polySphere(r=1)
+        sphere = cmds.polyCube()
 
         # Create a stage to receive the USD duplicate.
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
@@ -402,7 +467,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Verify that the both the sphere and material were copied.
         looksPrim = stage.GetPrimAtPath("/Looks")
         self.assertTrue(looksPrim.IsValid())
-        spherePrim = stage.GetPrimAtPath("/pSphere1")
+        spherePrim = stage.GetPrimAtPath("/pCube1")
         self.assertTrue(spherePrim.IsValid())
 
         # Undo duplicate to USD.
@@ -416,6 +481,93 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertTrue(looksPrim.IsValid())
         spherePrim = stage.GetPrimAtPath("/pSphere1")
         self.assertFalse(spherePrim.IsValid())
+
+
+    def testDuplicateMaterial(self):
+        '''Duplicate a Maya material directly.'''
+
+        # Reuse a Maya test file from the usd file IO tests.
+        mayaFileName  = 'one-group.ma'
+        mayaFile = os.path.join(self.inputPath, 'UsdExportMaterialScopeTest', mayaFileName)
+        cmds.file(mayaFile, force=True, open=True)
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Duplicate a Maya material to USD without meshes, with materials
+        cmds.mayaUsdDuplicate("standardSurface4", psPathStr, exportOptions='exportMaterials=1;excludeExportTypes=[Mesh]')
+
+        # Verify that the material was copied.
+        looksPrim = stage.GetPrimAtPath("/Looks")
+        self.assertTrue(looksPrim.IsValid())
+        materialPrim = stage.GetPrimAtPath("/Looks/standardSurface4SG")
+        self.assertTrue(materialPrim.IsValid())
+        shaderPrim = stage.GetPrimAtPath("/Looks/standardSurface4SG/standardSurface4")
+        self.assertTrue(shaderPrim.IsValid())
+
+
+    def testDuplicateSelection(self):
+        '''Duplicate a Maya sphere and cone both in selection by calling the MEL script used in the UI.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)[0]
+        cone = cmds.polyCone(r=1)[0]
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # Select both
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        # Duplicate Maya data as USD data, will use the selection.
+        mel.eval('''source mayaUsd_pluginUICreation.mel''')
+        mel.eval('''source mayaUsdMenu.mel''')
+        mel.eval('''mayaUsdMenu_duplicateToUSD("%s", "%s")''' % (psPathStr, sphere))
+
+        # Verify that the copied sphere has a look (material) prim.
+        spherePrim = stage.GetPrimAtPath("/%s" % sphere)
+        self.assertTrue(spherePrim.IsValid())
+        conePrim = stage.GetPrimAtPath("/%s" % cone)
+        self.assertTrue(conePrim.IsValid())
+
+
+    def testDuplicateGroupedSelection(self):
+        '''Duplicate a Maya sphere and cone both in a group and in selection by calling the MEL script used in the UI.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)[0]
+        cone = cmds.polyCone(r=1)[0]
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # Select both and group them
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        cmds.group()
+
+        # Select both again
+        cmds.select(clear=True)
+        cmds.select(sphere, add=True)
+        cmds.select(cone, add=True)
+
+        # Duplicate Maya data as USD data, will use the selection.
+        mel.eval('''source mayaUsd_pluginUICreation.mel''')
+        mel.eval('''source mayaUsdMenu.mel''')
+        mel.eval('''mayaUsdMenu_duplicateToUSD("%s", "%s")''' % (psPathStr, sphere))
+
+        # Verify that the copied sphere has a look (material) prim.
+        spherePrim = stage.GetPrimAtPath("/%s" % sphere)
+        self.assertTrue(spherePrim.IsValid())
+        conePrim = stage.GetPrimAtPath("/%s" % cone)
+        self.assertTrue(conePrim.IsValid())
 
 
     def testDuplicateUsingOptions(self):

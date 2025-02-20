@@ -33,6 +33,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImagingGL/renderParams.h>
+#include <pxr_python.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>

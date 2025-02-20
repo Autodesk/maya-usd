@@ -220,7 +220,11 @@ PXR_NS::SdfValueTypeName UsdShaderAttributeHolder::usdAttributeType() const
         return PXR_NS::SdfValueTypeNames->Bool;
     }
 #endif
+#if PXR_VERSION <= 2408
     return _sdrProp->GetTypeAsSdfType().first;
+#else
+    return _sdrProp->GetTypeAsSdfType().GetSdfType();
+#endif
 }
 
 Ufe::AttributeEnumString::EnumValues UsdShaderAttributeHolder::getEnumValues() const

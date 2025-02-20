@@ -30,6 +30,7 @@
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
@@ -139,10 +140,11 @@ void updateTargetLayer(const std::string& proxyNodeName, const SdfLayerRefPtr& l
 }
 
 void updateRootLayer(
-    const std::string&    proxy,
-    const std::string&    layerPath,
-    const SdfLayerRefPtr& layer,
-    bool                  isTargetLayer)
+    const std::string&            proxy,
+    const std::string&            layerPath,
+    MayaUsd::utils::ProxyPathMode proxyPathMode,
+    const SdfLayerRefPtr&         layer,
+    bool                          isTargetLayer)
 {
     // Upda the root layer of the given proxy shape
     if (layerPath.empty() || proxy.empty())
@@ -157,7 +159,7 @@ void updateRootLayer(
 #endif
 
     MayaUsd::utils::setNewProxyPath(
-        MString(proxy.c_str()), MString(fp.c_str()), layer, isTargetLayer);
+        MString(proxy.c_str()), MString(fp.c_str()), proxyPathMode, layer, isTargetLayer);
 }
 
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
@@ -275,13 +277,46 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
     }
 } // namespace MAYAUSD_NS_DEF
 
+bool isProxyShapePathRelative(MayaUsdProxyShapeBase& proxyShape)
+{
+    MStatus           status;
+    MFnDependencyNode depNode(proxyShape.thisMObject(), &status);
+    if (!status)
+        return false;
+
+    MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
+    return filePathRelativePlug.asBool();
+}
+
+bool isProxyPathModeRelative(ProxyPathMode proxyPathMode, const MString& proxyNodeName)
+{
+    if (kProxyPathRelative == proxyPathMode)
+        return true;
+
+    if (kProxyPathAbsolute == proxyPathMode)
+        return false;
+
+    if (kProxyPathFollowProxyShape == proxyPathMode) {
+        // Note: if we fail to find the proxy shape, we will fallback on
+        //       using the options var preference instead.
+        MayaUsdProxyShapeBase* proxyShape
+            = UsdMayaUtil::GetProxyShapeByProxyName(proxyNodeName.asChar());
+        if (proxyShape) {
+            return isProxyShapePathRelative(*proxyShape);
+        }
+    }
+
+    return UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+}
+
 void setNewProxyPath(
     const MString&        proxyNodeName,
     const MString&        newRootLayerPath,
+    ProxyPathMode         proxyPathMode,
     const SdfLayerRefPtr& layer,
     bool                  isTargetLayer)
 {
-    const bool  needRelativePath = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
+    const bool  needRelativePath = isProxyPathModeRelative(proxyPathMode, proxyNodeName);
     const char* filePathCmd = "setAttr -type \"string\" ^1s.filePath \"^2s\"; "
                               "setAttr ^1s.filePathRelative ^3s; ";
 
@@ -325,6 +360,28 @@ static bool isCompatibleWithSave(
     }
 }
 
+void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
+{
+    if (!layer)
+        return;
+
+    // Don't try to author the metadata on non-editable layers.
+    if (!layer->PermissionToEdit())
+        return;
+
+    const PXR_NS::TfToken upAxis
+        = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
+    const double metersPerUnit
+        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+
+    // Note: code similar to what UsdGeomSetStageUpAxis -> UsdStage::SetMetadata end-up doing,
+    // but without having to have a stage. We basically set metadata on the virtual root object
+    // of the layer.
+    layer->SetField(
+        PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->metersPerUnit, metersPerUnit);
+    layer->SetField(PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
+}
+
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
     const std::string& requestedFilePath,
@@ -350,7 +407,12 @@ bool saveLayerWithFormat(
         }
     }
 
-    updateAllCachedStageWithLayer(layer, filePath);
+    // Update all known stage caches if the layer was saved to a new file path.
+    // Skip this step when the layer's file path hasn't changed to avoid unnecessary stage
+    // recompositions.
+    if (!requestedFilePath.empty()) {
+        updateAllCachedStageWithLayer(layer, filePath);
+    }
 
     return true;
 }
@@ -413,6 +475,12 @@ SdfLayerRefPtr saveAnonymousLayer(
         return nullptr;
     }
 
+    // Only set up-axis and units metadata on the root layer
+    // and only if it is anonymous before being saved.
+    if (stage->GetRootLayer() == anonLayer) {
+        setLayerUpAxisAndUnits(anonLayer);
+    }
+
     ensureUSDFileExtension(filePath);
 
     const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
@@ -461,7 +529,12 @@ SdfLayerRefPtr saveAnonymousLayer(
     if (isSubLayer) {
         updateSubLayer(parentLayer, anonLayer, filePath);
     } else if (!parent._proxyPath.empty()) {
-        updateRootLayer(parent._proxyPath, filePath, newLayer, wasTargetLayer);
+        updateRootLayer(
+            parent._proxyPath,
+            filePath,
+            pathInfo.savePathAsRelative ? kProxyPathRelative : kProxyPathAbsolute,
+            newLayer,
+            wasTargetLayer);
     }
 
     updateTargetLayer(parent._proxyPath, newLayer);

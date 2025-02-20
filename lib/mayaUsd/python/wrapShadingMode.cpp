@@ -17,8 +17,7 @@
 #include <mayaUsd/fileio/shading/shadingModeImporter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -49,8 +48,8 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShadingModeImportContext()
 {
-    boost::python::class_<UsdMayaShadingModeImportContext>(
-        "ShadingModeImportContext", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<UsdMayaShadingModeImportContext>(
+        "ShadingModeImportContext", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("GetCreatedObject", &UsdMayaShadingModeImportContext::GetCreatedObject)
         //        .def("AddCreatedObject",&UsdMayaShadingModeImportContext::AddCreatedObject) //
         //        overloads
@@ -69,13 +68,15 @@ void wrapShadingModeImportContext()
         .def(
             "GetPrimReaderContext",
             &UsdMayaShadingModeImportContext::GetPrimReaderContext,
-            boost::python::return_value_policy<boost::python::return_by_value>());
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShadingMode()
 {
-    boost::python::class_<ShadingModeRegistry>("ShadingModeRegistry", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<ShadingModeRegistry>(
+        "ShadingModeRegistry", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("RegisterImportConversion", &ShadingModeRegistry::RegisterImportConversion)
         .staticmethod("RegisterImportConversion")
         .def("RegisterExportConversion", &ShadingModeRegistry::RegisterExportConversion)

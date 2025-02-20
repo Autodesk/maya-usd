@@ -17,13 +17,11 @@
 
 #include <pxr/base/tf/pyError.h>
 #include <pxr/base/tf/pyLock.h>
-
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
+#include <pxr_python.h>
 
 #include <iostream>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 namespace {
 
@@ -64,12 +62,12 @@ public:
         if (!PyCallable_Check(_pyCb)) {
             return;
         }
-        boost::python::object dictObject(callbackData);
+        PXR_BOOST_PYTHON_NAMESPACE::object dictObject(callbackData);
         try {
             call<void>(_pyCb, context, dictObject);
-        } catch (const boost::python::error_already_set&) {
+        } catch (const PXR_BOOST_PYTHON_NAMESPACE::error_already_set&) {
             const std::string errorMessage = handlePythonException();
-            boost::python::handle_exception();
+            PXR_BOOST_PYTHON_NAMESPACE::handle_exception();
             PyErr_Clear();
             TF_WARN("%s", errorMessage.c_str());
             throw std::runtime_error(errorMessage);
@@ -77,7 +75,7 @@ public:
             TF_WARN("%s", ex.what());
             throw;
         }
-        boost::python::extract<PXR_NS::VtDictionary> extractedDict(dictObject);
+        PXR_BOOST_PYTHON_NAMESPACE::extract<PXR_NS::VtDictionary> extractedDict(dictObject);
         if (extractedDict.check()) {
             callbackData = extractedDict;
         }
@@ -97,7 +95,34 @@ getRegisteredPythonCallbacks()
     return callbacks;
 }
 
-void addPythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
+PXR_NS::VtDictionary _triggerUICallback(
+    const PXR_NS::TfToken&      operation,
+    const PXR_NS::VtDictionary& cbContext,
+    const PXR_NS::VtDictionary& cbData)
+{
+    if (!UsdUfe::isUICallbackRegistered(operation))
+        return cbData;
+
+    //
+    // Need to copy the input data into non-const reference to call C++ version.
+    // This allows the python callback function to modify the data which we then
+    // return to the triggering function.
+    //
+    // Trying to use "PXR_NS::VtDictionary& cbData" results in python error:
+    //
+    // Python argument types in usdUfe._usdUfe.triggerUICallback(str, dict, dict)
+    // did not match C++ signature:
+    //     triggerUICallback(
+    //       class pxrInternal_v0_24__pxrReserved__::TfToken,
+    //       class pxrInternal_v0_24__pxrReserved__::VtDictionary,
+    //       class pxrInternal_v0_24__pxrReserved__::VtDictionary{lvalue})
+    //
+    PXR_NS::VtDictionary cbDataReturned(cbData);
+    UsdUfe::triggerUICallback(operation, cbContext, cbDataReturned);
+    return cbDataReturned;
+}
+
+void _addPythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
 {
     if (!uiCallback)
         return;
@@ -117,7 +142,7 @@ void addPythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
     UsdUfe::registerUICallback(operation, cb);
 }
 
-void removePythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
+void _removePythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback)
 {
     if (!uiCallback)
         return;
@@ -142,6 +167,10 @@ void removePythonCallback(const PXR_NS::TfToken& operation, PyObject* uiCallback
 void wrapUICallback()
 {
     // Making the callbacks accessible from Python
-    def("registerUICallback", addPythonCallback);
-    def("unregisterUICallback", removePythonCallback);
+    def("registerUICallback", _addPythonCallback);
+    def("unregisterUICallback", _removePythonCallback);
+
+    // Helper function to trigger a callback for a given operation.
+    // Caller should supply the callback context and data.
+    def("triggerUICallback", _triggerUICallback);
 }

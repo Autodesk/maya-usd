@@ -202,6 +202,10 @@ struct UsdMayaTranslatorUtil
     MAYAUSD_CORE_PUBLIC
     static std::map<TfToken, TfToken>
     ComputeUsdAttributeToMayaAttributeNamesForShader(const TfToken& sdrShaderId);
+
+    // Verify if the prim is transformable and has authored XformOps.
+    MAYAUSD_CORE_PUBLIC
+    static bool HasXformOps(const UsdPrim& usdPrim);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

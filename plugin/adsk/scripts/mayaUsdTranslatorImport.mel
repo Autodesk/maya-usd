@@ -373,6 +373,10 @@ global proc mayaUsdTranslatorImport_EnableAllControls() {
 
     intFieldGrp -e -en1 1 -en2 1 mayaUsdTranslator_CustomFrameRange;
 
+    checkBoxGrp -e -en 1 mayaUsdTranslator_ImportUpAxisCheckBox;
+    checkBoxGrp -e -en 1 mayaUsdTranslator_ImportUnitCheckBox;
+    optionMenuGrp -e -en 1 mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu;
+
     mayaUsdTranslatorImport_enableContextOptions();
 }
 
@@ -404,6 +408,14 @@ global proc mayaUsdTranslatorImport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "endTime") {
                 int $endTime = $optionBreakDown[1];
                 intFieldGrp -e -value2 $endTime -en2 $enable mayaUsdTranslator_CustomFrameRange;
+            } else if ($optionBreakDown[0] == "upAxis") {
+                mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportUpAxisCheckBox");
+                mayaUsdTranslatorImport_upAxisUnitCB();
+            } else if ($optionBreakDown[0] == "unit") {
+                mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportUnitCheckBox");
+                mayaUsdTranslatorImport_upAxisUnitCB();
+            } else if ($optionBreakDown[0] == "axisAndUnitMethod") {
+                mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu");
             } else if ($optionBreakDown[0] == "useCustomFrameRange") {
                 mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_CustomFrameRangeCheckBox");
                 mayaUsdTranslatorImport_AnimationCB();
@@ -509,14 +521,17 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //            menuItem -label "Object space";
 //            menuItem -label "World space";
 //        optionMenuGrp -e -sl 1 mayaUsdTranslator_CoordSystemOptionMenu;
-        frameLayout -label `getMayaUsdString("kImportMaterialsLbl")` materialsFrameLayout;
+        frameLayout -label `getMayaUsdString("kImportMaterialsLbl")` -collapsable true -collapse false materialsFrameLayout;
             separator -style "none";
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportMaterialsLbl")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportMaterialsAnn")` -cc ("mayaUsdTranslatorImport_MaterialsCB") mayaUsdTranslator_MaterialsCheckBox;
 
-            string $apiString = `about -q -apiVersion`;
-            $apiString = `substring $apiString 1 4`;
+            string $apiStringFull = `about -q -apiVersion`;
+            $apiString = `substring $apiStringFull 1 4`;
             optionMenuGrp -l `getMayaUsdString("kImportMaterialConvLbl")` -cw 1 $cw1 -ann `getMayaUsdString("kImportMaterialConvAnn")` mayaUsdTranslator_MaterialsConversionMenu;
             menuItem -l `getMayaUsdString("kImportMaterialConvNoneLbl")` -ann "none";
+            if ((int)$apiStringFull >= 20250300) {
+                menuItem -l `getMayaUsdString("kImportMaterialConvOPBRLbl")` -ann "openPBRSurface";
+            }
             if ((int)$apiString >= 2020) {
                 menuItem -l `getMayaUsdString("kImportMaterialConvSSLbl")` -ann "standardSurface";
             }
@@ -555,7 +570,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //            menuItem "Custom";
 //        optionMenuGrp -e -sl 2 mayaUsdTranslator_IncludeCustomAttribOptionMenu;
 
-        frameLayout -label "Animation" animationFrameLayout;
+        frameLayout -label "Animation" -collapsable true -collapse false animationFrameLayout;
             separator -style "none";
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportAnimationDataLbl")` -cw 1 $cw1 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_AnimDataCheckBox;
 
@@ -570,10 +585,29 @@ global proc int mayaUsdTranslatorImport (string $parent,
             separator -style "none";
         setParent ..;
 
-        frameLayout -label "Advanced" advancedFrameLayout;
+        frameLayout -label "Advanced" -collapsable true -collapse true advancedFrameLayout;
             separator -style "none";
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportToInstanceOpt")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportToInstanceAnn")` mayaUsdTranslator_ImportInstancesCheckBox;
             separator -style "none";
+
+            columnLayout -columnOffset "left" 2;
+            frameLayout -label `getMayaUsdString("kImportAxisAndUnit")` -collapsable true -collapse false axisAndUnitFrameLayout;
+                separator -style "none";
+                checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUpAxis")` -ann `getMayaUsdString("kImportUpAxisAnn")`
+                    -cw 1 $cw1 -value1 1
+                    -cc ("mayaUsdTranslatorImport_upAxisUnitCB")
+                    mayaUsdTranslator_ImportUpAxisCheckBox;
+                checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUnit")` -ann `getMayaUsdString("kImportUnitAnn")`
+                    -cw 1 $cw1 -value1 1
+                    -cc ("mayaUsdTranslatorImport_upAxisUnitCB")
+                    mayaUsdTranslator_ImportUnitCheckBox;
+                optionMenuGrp -l `getMayaUsdString("kImportAxisAndUnitMethod")` -cw 1 $cw1 -ann `getMayaUsdString("kImportAxisAndUnitMethodAnn")` mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu;
+                    menuItem -l `getMayaUsdString("kImportAxisAndUnitRotateScale")` -ann "rotateScale";
+                    menuItem -l `getMayaUsdString("kImportAxisAndUnitAddTransform")` -ann "addTransform";
+                    menuItem -l `getMayaUsdString("kImportAxisAndUnitOverwritePrefs")` -ann "overwritePrefs";
+                separator -style "none";
+            setParent ..;
+            setParent ..;
         setParent ..;
 
         // Now set to current settings.
@@ -604,6 +638,11 @@ global proc int mayaUsdTranslatorImport (string $parent,
         $currentOptions = mayaUsdTranslatorImport_queryContextOptionsUI($currentOptions, "jobContext");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importInstances", "mayaUsdTranslator_ImportInstancesCheckBox");
 
+        if (!$forEditAsMaya) {
+            $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "upAxis", "mayaUsdTranslator_ImportUpAxisCheckBox");
+            $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "unit", "mayaUsdTranslator_ImportUnitCheckBox");
+            $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "axisAndUnitMethod", "mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu");
+        }
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
 
@@ -653,6 +692,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
     }
 
     mayaUsdTranslatorImport_AnimationCB();
+    mayaUsdTranslatorImport_upAxisUnitCB();
     return $bResult;
 }
 
@@ -691,6 +731,14 @@ global proc mayaUsdTranslatorImport_AnimationCB()
         checkBoxGrp -e -en false mayaUsdTranslator_CustomFrameRangeCheckBox;
         intFieldGrp -e -en false mayaUsdTranslator_CustomFrameRange;
     }
+}
+
+// Call when the up-axis or unit checkbox are modified bythe user.
+global proc mayaUsdTranslatorImport_upAxisUnitCB()
+{
+    int $upAxisEnabled = `checkBoxGrp -q -value1 mayaUsdTranslator_ImportUpAxisCheckBox`;
+    int $unitEnabled = `checkBoxGrp -q -value1 mayaUsdTranslator_ImportUnitCheckBox`;
+    optionMenuGrp -e -en ($unitEnabled + $upAxisEnabled) mayaUsdTranslator_ImportkImportAxisAndUnitMethodMenu;
 }
 
 global proc mayaUsdTranslatorImport_MaterialsCB()

@@ -25,6 +25,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
@@ -49,7 +50,7 @@ public:
     /// Reads the USD stage specified by the job file name and prim path.
     /// Newly-created DAG paths are inserted into the vector \p addedDagPaths.
     MAYAUSD_CORE_PUBLIC
-    bool Read(std::vector<MDagPath>* addedDagPaths, const bool resetXform = false);
+    bool Read(std::vector<MDagPath>* addedDagPaths);
 
     /// Redoes a previous Read() operation after Undo() has been called.
     /// If Undo() hasn't been called, does nothing.
@@ -77,8 +78,7 @@ protected:
     using _PrimReaderMap = std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr, SdfPath::Hash>;
 
     MAYAUSD_CORE_PUBLIC
-    virtual bool
-    DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim, const bool isEdityAsMaya = false);
+    virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
     // Hook for derived classes to override the prim reader.  Returns true if
     // override was done, false otherwise.  Implementation in this class
@@ -94,7 +94,7 @@ protected:
     // Engine method for DoImport().  Covers the functionality of a regular
     // usdImport.
     MAYAUSD_CORE_PUBLIC
-    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim, const bool resetXform = false);
+    bool _DoImport(const UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
     // Hook for derived classes to perform processing before import.
     // Method in this class is a no-op.
@@ -113,24 +113,53 @@ protected:
     MDagPath                                 mMayaRootDagPath;
 
 private:
+    // Import a range of prims. called by _DoImport and _ImportPrototype
+    void _ImportPrimRange(const UsdPrimRange& range, const UsdPrim& usdRootPrim);
+
+    // Delete the temporary prototypes once all instances are setup.
+    bool _CleanupPrototypes(const UsdPrim& usdRootPrim);
+
+    // Import a non-instance prim.
     void _DoImportPrimIt(
         UsdPrimRange::iterator&   primIt,
         const UsdPrim&            usdRootPrim,
         UsdMayaPrimReaderContext& readCtx,
         _PrimReaderMap&           primReaders);
 
+    // Import an instance prim. Will create the prototype if needed.
     void _DoImportInstanceIt(
         UsdPrimRange::iterator&   primIt,
         const UsdPrim&            usdRootPrim,
         UsdMayaPrimReaderContext& readCtx,
         _PrimReaderMap&           primReaders);
 
+    // Import a prototype to be used by instances.
     void _ImportPrototype(
         const UsdPrim&            prototype,
         const UsdPrim&            usdRootPrim,
         UsdMayaPrimReaderContext& readCtx);
 
     double _setTimeSampleMultiplierFrom(const double layerFPS);
+
+    struct ConversionInfo
+    {
+        bool isMayaUpAxisZ { false };
+        bool isUSDUpAxisUZ { false };
+        bool needUpAxisConversion { false };
+
+        double mayaMetersPerUnit = { 0.01 };
+        double usdMetersPerUnit = { 0.01 };
+        bool   needUnitsConversion = { false };
+    };
+
+    void _ConvertUpAxisAndUnits(const UsdStageRefPtr& stage);
+    void _ConvertUpAxisAndUnitsByModifyingData(
+        const UsdStageRefPtr& stage,
+        const ConversionInfo& conversion,
+        bool                  keepParentGroup);
+    void _ConvertUpAxisAndUnitsByChangingMayaPrefs(
+        const UsdStageRefPtr& stage,
+        const ConversionInfo& conversion);
 
     // Data
     MDagModifier mDagModifierUndo;

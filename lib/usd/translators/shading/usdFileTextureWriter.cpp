@@ -69,7 +69,11 @@ SdfValueTypeName _GetVarnameType()
         SdrShaderNodeConstPtr shaderNodeDef
             = registry.GetShaderNodeByIdentifier(TrUsdTokens->UsdPrimvarReader_float2);
         varnameType = shaderNodeDef
+#if PXR_VERSION <= 2408
             ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first
+#else
+            ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().GetSdfType()
+#endif
             : SdfValueTypeNames->Token;
     });
     return varnameType;

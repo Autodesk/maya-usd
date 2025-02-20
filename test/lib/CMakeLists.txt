@@ -2,11 +2,13 @@
 set(TEST_SCRIPT_FILES
     testMayaUsdConverter.py
     testMayaUsdCreateStageCommands.py
+    testMayaUsdCreateStageInMayaRef.py
     testMayaUsdDirtyScene.py
     testMayaUsdLayerEditorCommands.py
     testMayaUsdProxyAccessor.py
     testMayaUsdCacheId.py
     testMayaUsdInfoCommand.py
+    testMayaUsdSchemaCommand.py
 )
 
 # Interactive Unit test scripts.

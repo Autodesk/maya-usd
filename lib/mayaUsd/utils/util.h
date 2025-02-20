@@ -152,6 +152,11 @@ double ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Unit mdistanceUn
 MAYAUSD_CORE_PUBLIC
 MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit);
 
+/// Convert the given \p mdistanceUnit into its text representation suitable
+/// to be used with the currentUnit MEL command. Invalid units return "cm".
+MAYAUSD_CORE_PUBLIC
+MString ConvertMDistanceUnitToText(const MDistance::Unit mdistanceUnit);
+
 /// Returns a scaling value from Maya's internal units to the specified \p metersPerUnit
 MAYAUSD_CORE_PUBLIC
 double GetExportDistanceConversionScalar(const double metersPerUnit);
@@ -403,6 +408,15 @@ MPlug FindChildPlugByName(const MPlug& plug, const MString& name);
 /// underscores ('_').
 MAYAUSD_CORE_PUBLIC
 SdfPath MayaNodeNameToSdfPath(const std::string& nodeName, const bool stripNamespaces);
+
+/// Converts the given Maya node name or DAG path \p nodeName into a prim name.
+///
+/// This will strip any DAG path, so there is only the final part after the final '|'.
+/// Then it will be sanitized such that it is a valid USD prim name.
+/// This means it will replace Maya's namespace delimiter (':') with
+/// underscores ('_').
+MAYAUSD_CORE_PUBLIC
+std::string MayaNodeNameToPrimName(const std::string& nodeName, const bool stripNamespaces);
 
 /// Converts the given Maya MDagPath \p dagPath into an SdfPath.
 ///
@@ -692,6 +706,10 @@ SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
 
 MAYAUSD_CORE_PUBLIC
 bool isShape(const MDagPath& dagPath);
+
+/// Verify if the given Maya node is from the given Maya reference.
+MAYAUSD_CORE_PUBLIC
+bool isNodeInReference(const MObject& node, const MString& referenceFileName);
 
 } // namespace UsdMayaUtil
 

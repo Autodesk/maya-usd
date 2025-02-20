@@ -26,22 +26,6 @@ TF_DEFINE_ENV_SETTING(
     false,
     "Whether to import UsdLux as Renderman-for-Maya lights.");
 
-PXRUSDMAYA_DEFINE_READER(UsdLuxCylinderLight, args, context)
-{
-    if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
-        return UsdMayaTranslatorRfMLight::Read(args, context);
-    }
-    return false;
-}
-
-PXRUSDMAYA_DEFINE_READER(UsdLuxDiskLight, args, context)
-{
-    if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
-        return UsdMayaTranslatorRfMLight::Read(args, context);
-    }
-    return false;
-}
-
 PXRUSDMAYA_DEFINE_READER(UsdLuxDistantLight, args, context)
 {
     if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
@@ -50,14 +34,7 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxDistantLight, args, context)
     return UsdMayaTranslatorLight::Read(args, context);
 }
 
-PXRUSDMAYA_DEFINE_READER(UsdLuxDomeLight, args, context)
-{
-    if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
-        return UsdMayaTranslatorRfMLight::Read(args, context);
-    }
-    return false;
-}
-
+/*
 PXRUSDMAYA_DEFINE_READER(UsdLuxGeometryLight, args, context)
 {
     if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
@@ -65,6 +42,7 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxGeometryLight, args, context)
     }
     return false;
 }
+*/
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxRectLight, args, context)
 {

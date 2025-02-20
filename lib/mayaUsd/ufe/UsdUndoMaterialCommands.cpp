@@ -82,7 +82,12 @@ bool connectShaderToMaterial(
         return false;
     }
     UsdShadeOutput shaderOutput = shaderPrim.CreateOutput(
-        shaderOutputDef->GetName(), shaderOutputDef->GetTypeAsSdfType().first);
+        shaderOutputDef->GetName(),
+#if PXR_VERSION <= 2408
+        shaderOutputDef->GetTypeAsSdfType().first);
+#else
+        shaderOutputDef->GetTypeAsSdfType().GetSdfType());
+#endif
     if (!shaderOutput) {
         return false;
     }
@@ -648,40 +653,55 @@ Ufe::SceneItem::Ptr UsdUndoCreateMaterialsScopeCommand::sceneItem() const { retu
 
 void UsdUndoCreateMaterialsScopeCommand::execute()
 {
+    try {
+        if (!doExecute()) {
+            markAsFailed();
+        }
+    } catch (std::exception&) {
+        markAsFailed();
+        throw;
+    }
+}
+
+bool UsdUndoCreateMaterialsScopeCommand::doExecute()
+{
+    if (_insertedChild || !_parentItem) {
+        return true;
+    }
+
     UsdUfe::InAddOrDeleteOperation ad;
 
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
-
-    if (_insertedChild || !_parentItem) {
-        return;
-    }
 
     // The AddNewPrimCommand automatically appends a "1" to the name, so it cannot create a
     // scope with the desired name directly. Create a scope and rename it afterwards.
     auto createScopeCmd
         = UsdUfe::UsdUndoAddNewPrimCommand::create(_parentItem, "ScopeName", "Scope");
     if (!createScopeCmd) {
-        markAsFailed();
-        return;
+        return false;
     }
     createScopeCmd->execute();
 
     auto scopeItem = downcast(createScopeCmd->sceneItem());
+    if (!scopeItem || scopeItem->path().empty()) {
+        return false;
+    }
+
     auto materialsScopeName = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
     auto renameCmd = UsdUndoRenameCommand::create(scopeItem, materialsScopeName);
     if (!renameCmd) {
-        markAsFailed();
-        return;
+        return false;
     }
     renameCmd->execute();
 
     scopeItem = renameCmd->renamedItem();
     if (!scopeItem || scopeItem->path().empty()) {
-        markAsFailed();
-        return;
+        return false;
     }
 
     _insertedChild = scopeItem;
+
+    return true;
 }
 
 void UsdUndoCreateMaterialsScopeCommand::undo()

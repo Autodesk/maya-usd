@@ -28,14 +28,7 @@
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
 #include <pxr/base/tf/pyResultConversions.h>
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/pure_virtual.hpp>
-#include <boost/python/return_internal_reference.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/wrapper.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -45,7 +38,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 template <typename T = UsdMayaPrimReader>
 class PrimReaderWrapper
     : public T
-    , public TfPyPolymorphic<UsdMayaPrimReader>
+    , public TfPyPolymorphic<T>
 {
 public:
     typedef PrimReaderWrapper This;
@@ -99,15 +92,15 @@ public:
         // python wrappers based on the latest class registered.
         UsdMayaPrimReaderSharedPtr operator()(const UsdMayaPrimReaderArgs& args)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return nullptr;
             }
-            auto                  sptr = std::make_shared<This>(args);
-            TfPyLock              pyLock;
-            boost::python::object instance = pyClass((uintptr_t)&sptr);
-            boost::python::incref(instance.ptr());
+            auto                               sptr = std::make_shared<This>(args);
+            TfPyLock                           pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::object instance = pyClass((uintptr_t)&sptr);
+            PXR_BOOST_PYTHON_NAMESPACE::incref(instance.ptr());
             initialize_wrapper(instance.ptr(), sptr.get());
             return sptr;
         }
@@ -115,16 +108,16 @@ public:
         UsdMayaPrimReader::ContextSupport
         operator()(const UsdMayaJobImportArgs& args, const UsdPrim& importPrim)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return UsdMayaPrimReader::ContextSupport::Unsupported;
             }
             TfPyLock pyLock;
             if (PyObject_HasAttrString(pyClass.ptr(), "CanImport")) {
-                boost::python::object CanImport = pyClass.attr("CanImport");
-                PyObject*             callable = CanImport.ptr();
-                auto                  res = boost::python::call<int>(callable, args, importPrim);
+                PXR_BOOST_PYTHON_NAMESPACE::object CanImport = pyClass.attr("CanImport");
+                PyObject*                          callable = CanImport.ptr();
+                auto res = PXR_BOOST_PYTHON_NAMESPACE::call<int>(callable, args, importPrim);
                 return UsdMayaPrimReader::ContextSupport(res);
             } else {
                 return UsdMayaPrimReader::CanImport(args, importPrim);
@@ -135,7 +128,7 @@ public:
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
         static FactoryFnWrapper
-        Register(boost::python::object cl, const std::string& typeName, bool& updated)
+        Register(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& typeName, bool& updated)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, typeName));
             updated = classIndex == UsdMayaPythonObjectRegistry::UPDATED;
@@ -145,7 +138,7 @@ public:
 
         // Unregister a class for a given purpose. This will cause the associated factory
         // function to stop producing this Python class.
-        static void Unregister(boost::python::object cl, const std::string& typeName)
+        static void Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& typeName)
         {
             UnregisterPythonObject(cl, GetKey(cl, typeName));
         }
@@ -159,13 +152,14 @@ public:
 
         // Generates a unique key based on the name of the class, along with the class
         // purpose:
-        static std::string GetKey(boost::python::object cl, const std::string& typeName)
+        static std::string
+        GetKey(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& typeName)
         {
             return ClassName(cl) + "," + typeName + "," + ",PrimReader";
         }
     };
 
-    static void Register(boost::python::object cl, const std::string& typeName)
+    static void Register(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& typeName)
     {
         bool             updated = false;
         FactoryFnWrapper fn = FactoryFnWrapper::Register(cl, typeName, updated);
@@ -175,7 +169,7 @@ public:
         }
     }
 
-    static void Unregister(boost::python::object cl, const std::string& typeName)
+    static void Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& typeName)
     {
         FactoryFnWrapper::Unregister(cl, typeName);
     }
@@ -239,17 +233,18 @@ public:
     boost::optional<IsConverterResult> IsConverter() override
     {
         if (Override o = GetOverride("IsConverter")) {
-            auto res = std::function<boost::python::object()>(TfPyCall<boost::python::object>(o))();
+            auto res = std::function<PXR_BOOST_PYTHON_NAMESPACE::object()>(
+                TfPyCall<PXR_BOOST_PYTHON_NAMESPACE::object>(o))();
             if (res) {
                 TfPyLock pyLock;
 
-                boost::python::tuple t(res);
-                if (boost::python::len(t) == 2) {
-                    boost::python::extract<UsdShadeShader> downstreamSchema(t[0]);
+                PXR_BOOST_PYTHON_NAMESPACE::tuple t(res);
+                if (PXR_BOOST_PYTHON_NAMESPACE::len(t) == 2) {
+                    PXR_BOOST_PYTHON_NAMESPACE::extract<UsdShadeShader> downstreamSchema(t[0]);
                     if (downstreamSchema.check()) {
-                        boost::python::extract<TfToken> downstreamOutputName(t[1]);
+                        PXR_BOOST_PYTHON_NAMESPACE::extract<TfToken> downstreamOutputName(t[1]);
                         if (downstreamOutputName.check()) {
-                            boost::python::incref(t.ptr());
+                            PXR_BOOST_PYTHON_NAMESPACE::incref(t.ptr());
                             return IsConverterResult { downstreamSchema, downstreamOutputName };
                         } else {
                             TF_CODING_ERROR(
@@ -300,15 +295,15 @@ public:
         // python wrappers based on the latest class registered.
         UsdMayaPrimReaderSharedPtr operator()(const UsdMayaPrimReaderArgs& args)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return nullptr;
             }
-            auto                  sptr = std::make_shared<This>(args);
-            TfPyLock              pyLock;
-            boost::python::object instance = pyClass((uintptr_t)&sptr);
-            boost::python::incref(instance.ptr());
+            auto                               sptr = std::make_shared<This>(args);
+            TfPyLock                           pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::object instance = pyClass((uintptr_t)&sptr);
+            PXR_BOOST_PYTHON_NAMESPACE::incref(instance.ptr());
             initialize_wrapper(instance.ptr(), sptr.get());
             return sptr;
         }
@@ -316,16 +311,16 @@ public:
         // We can have multiple function objects, this one adapts the CanImport function:
         UsdMayaPrimReader::ContextSupport operator()(const UsdMayaJobImportArgs& args)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return UsdMayaPrimReader::ContextSupport::Unsupported;
             }
             TfPyLock pyLock;
             if (PyObject_HasAttrString(pyClass.ptr(), "CanImport")) {
-                boost::python::object CanImport = pyClass.attr("CanImport");
-                PyObject*             callable = CanImport.ptr();
-                auto                  res = boost::python::call<int>(callable, args);
+                PXR_BOOST_PYTHON_NAMESPACE::object CanImport = pyClass.attr("CanImport");
+                PyObject*                          callable = CanImport.ptr();
+                auto res = PXR_BOOST_PYTHON_NAMESPACE::call<int>(callable, args);
                 return UsdMayaPrimReader::ContextSupport(res);
             } else {
                 return UsdMayaShaderReader::CanImport(args);
@@ -335,8 +330,10 @@ public:
         // Create a new wrapper for a Python class that is seen for the first time for a given
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
-        static FactoryFnWrapper
-        Register(boost::python::object cl, const std::string& usdShaderId, bool& updated)
+        static FactoryFnWrapper Register(
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 usdShaderId,
+            bool&                              updated)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, usdShaderId));
             updated = classIndex == UsdMayaPythonObjectRegistry::UPDATED;
@@ -346,7 +343,8 @@ public:
 
         // Unregister a class for a given purpose. This will cause the associated factory
         // function to stop producing this Python class.
-        static void Unregister(boost::python::object cl, const std::string& usdShaderId)
+        static void
+        Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& usdShaderId)
         {
             UnregisterPythonObject(cl, GetKey(cl, usdShaderId));
         }
@@ -360,13 +358,14 @@ public:
 
         // Generates a unique key based on the name of the class, along with the class
         // purpose:
-        static std::string GetKey(boost::python::object cl, const std::string& usdShaderId)
+        static std::string
+        GetKey(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& usdShaderId)
         {
             return ClassName(cl) + "," + usdShaderId + "," + ",ShaderReader";
         }
     };
 
-    static void Register(boost::python::object cl, const TfToken& usdShaderId)
+    static void Register(PXR_BOOST_PYTHON_NAMESPACE::object cl, const TfToken& usdShaderId)
     {
         bool             updated = false;
         FactoryFnWrapper fn = FactoryFnWrapper::Register(cl, usdShaderId, updated);
@@ -375,16 +374,16 @@ public:
         }
     }
 
-    static void Unregister(boost::python::object cl, const TfToken& usdShaderId)
+    static void Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const TfToken& usdShaderId)
     {
         FactoryFnWrapper::Unregister(cl, usdShaderId);
     }
 
     static void RegisterSymmetric(
-        boost::python::object cl,
-        const TfToken&        usdShaderId,
-        const TfToken&        mayaNodeTypeName,
-        const TfToken&        materialConversion)
+        PXR_BOOST_PYTHON_NAMESPACE::object cl,
+        const TfToken&                     usdShaderId,
+        const TfToken&                     mayaNodeTypeName,
+        const TfToken&                     materialConversion)
     {
         UsdMayaSymmetricShaderReader::RegisterReader(
             usdShaderId, mayaNodeTypeName, materialConversion, true);
@@ -396,7 +395,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapPrimReaderContext()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
     class_<UsdMayaPrimReaderContext>("PrimReaderContext", no_init)
         .def(
@@ -412,26 +411,26 @@ void wrapPrimReaderContext()
 
 namespace {
 
-boost::python::object get_allChaserArgs(UsdMayaJobImportArgs& self)
+PXR_BOOST_PYTHON_NAMESPACE::object get_allChaserArgs(UsdMayaJobImportArgs& self)
 {
-    boost::python::dict allChaserArgs;
+    PXR_BOOST_PYTHON_NAMESPACE::dict allChaserArgs;
     for (auto&& perChaser : self.allChaserArgs) {
-        auto perChaserDict = boost::python::dict();
+        auto perChaserDict = PXR_BOOST_PYTHON_NAMESPACE::dict();
         for (auto&& perItem : perChaser.second) {
             perChaserDict[perItem.first] = perItem.second;
         }
         allChaserArgs[perChaser.first] = perChaserDict;
     }
-    return boost::python::object(allChaserArgs);
+    return PXR_BOOST_PYTHON_NAMESPACE::object(allChaserArgs);
 }
 
-boost::python::object get_remapUVSetsTo(UsdMayaJobImportArgs& self)
+PXR_BOOST_PYTHON_NAMESPACE::object get_remapUVSetsTo(UsdMayaJobImportArgs& self)
 {
-    boost::python::dict uvSetRemaps;
+    PXR_BOOST_PYTHON_NAMESPACE::dict uvSetRemaps;
     for (auto&& remap : self.remapUVSetsTo) {
         uvSetRemaps[remap.first] = remap.second;
     }
-    return boost::python::object(uvSetRemaps);
+    return PXR_BOOST_PYTHON_NAMESPACE::object(uvSetRemaps);
 }
 
 } // namespace
@@ -439,7 +438,7 @@ boost::python::object get_remapUVSetsTo(UsdMayaJobImportArgs& self)
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobImportArgs()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
     class_<UsdMayaJobImportArgs> c("JobImportArgs", no_init);
 
@@ -473,6 +472,9 @@ void wrapJobImportArgs()
         .def_readonly(
             "importUSDZTexturesFilePath", &UsdMayaJobImportArgs::importUSDZTexturesFilePath)
         .def_readonly("importRelativeTextures", &UsdMayaJobImportArgs::importRelativeTextures)
+        .def_readonly("axisAndUnitMethod", &UsdMayaJobImportArgs::axisAndUnitMethod)
+        .def_readonly("upAxis", &UsdMayaJobImportArgs::upAxis)
+        .def_readonly("unit", &UsdMayaJobImportArgs::unit)
         .def_readonly("importWithProxyShapes", &UsdMayaJobImportArgs::importWithProxyShapes)
         .add_property(
             "includeAPINames",
@@ -507,7 +509,7 @@ void wrapJobImportArgs()
 
 void wrapPrimReaderArgs()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
     class_<UsdMayaPrimReaderArgs>("PrimReaderArgs", no_init)
         .def("GetUsdPrim", &UsdMayaPrimReaderArgs::GetUsdPrim, return_internal_reference<>())
@@ -544,10 +546,11 @@ TF_REGISTRY_FUNCTION(TfEnum)
 
 void wrapPrimReader()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_PYTHON_NAMESPACE;
+
     typedef UsdMayaPrimReader This;
 
-    class_<PrimReaderWrapper<>, boost::noncopyable> c("PrimReader", no_init);
+    class_<PrimReaderWrapper<>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable> c("PrimReader", no_init);
 
     scope s(c);
 
@@ -573,11 +576,12 @@ void wrapPrimReader()
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShaderReader()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_PYTHON_NAMESPACE;
+
     typedef UsdMayaShaderReader This;
 
-    class_<ShaderReaderWrapper, bases<PrimReaderWrapper<>>, boost::noncopyable> c(
-        "ShaderReader", no_init);
+    class_<ShaderReaderWrapper, bases<UsdMayaPrimReader>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
+        c("ShaderReader", no_init);
 
     scope s(c);
 
@@ -611,7 +615,8 @@ void wrapShaderReader()
         .staticmethod("RegisterSymmetric");
 
     // For wrapping UsdMayaShaderReader created in c++
-    class_<This, std::shared_ptr<This>, boost::noncopyable>("ShaderReaderWrapper", no_init)
+    class_<This, std::shared_ptr<This>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "ShaderReaderWrapper", no_init)
         .def("Read", pure_virtual(&UsdMayaPrimReader::Read))
         .def("GetMayaPlugForUsdAttrName", &This::GetMayaPlugForUsdAttrName)
         .def("GetMayaNameForUsdAttrName", &This::GetMayaNameForUsdAttrName)

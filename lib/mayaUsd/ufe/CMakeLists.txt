@@ -52,6 +52,12 @@ if (UFE_LIGHTS_SUPPORT)
     PRIVATE
         UFE_LIGHTS_SUPPORT=1
     )
+    if (UFE_VOLUME_LIGHTS_SUPPORT)
+        target_compile_definitions(${PROJECT_NAME}
+    	    PRIVATE
+                UFE_VOLUME_LIGHTS_SUPPORT=1
+        )
+    endif()
 endif()
 
 if (UFE_MATERIALS_SUPPORT)
@@ -142,13 +148,33 @@ if (UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH)
     )
 endif()
 
+if (NOT MAYA_APP_VERSION VERSION_GREATER 2025)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        MAYAUSD_NEED_OUTLINER_FILTER_FIX=1
+    )
+endif()
+
+if (UFE_CAMERAHANDLER_HAS_FINDALL)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_CAMERAHANDLER_HAS_FINDALL=1
+    )
+endif()
+
+if(UFE_CAMERAHANDLER_HAS_FINDALL)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            ProxyShapeCameraHandler.cpp
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
             UsdShaderNodeDef.cpp
             UsdShaderNodeDefHandler.cpp
             UsdUndoCreateFromNodeDefCommand.cpp
-            ProxyShapeCameraHandler.cpp
             UsdConnections.cpp
             UsdConnectionHandler.cpp
             UsdUINodeGraphNode.cpp
@@ -229,12 +255,17 @@ if(CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
     )
 endif()
 
+if(UFE_CAMERAHANDLER_HAS_FINDALL)
+    list(APPEND HEADERS
+        ProxyShapeCameraHandler.h
+    )
+endif()
+       
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdShaderNodeDef.h
         UsdShaderNodeDefHandler.h
         UsdUndoCreateFromNodeDefCommand.h
-        ProxyShapeCameraHandler.h
         UsdConnections.h
         UsdConnectionHandler.h
         UsdUINodeGraphNode.h

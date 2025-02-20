@@ -12,6 +12,7 @@ set(TEST_SCRIPT_FILES
     testDuplicateCmd.py
     testDuplicateProxyShape.py
     testEditRouting.py
+    testPrimMetadataEditRouting.py
     testGroupCmd.py
     testMatrices.py
     testMayaPickwalk.py
@@ -34,9 +35,11 @@ set(TEST_SCRIPT_FILES
     testSelection.py
     testSelectionNotification.py
     testSelectionByArray.py
+    testSchemas.py
     testToggleCommands.py
     testTransform3dChainOfResponsibility.py
     testTransform3dTranslate.py
+    testTransform3dTranslateWithTimeSamples.py
     testUIInfoHandler.py
     testUfePythonImport.py
     testVariant.py
@@ -156,7 +159,6 @@ foreach(script ${TEST_SCRIPT_FILES})
         PYTHON_MODULE ${target}
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/ufeTestPlugins"
-            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "UFE_HAS_CODE_WRAPPER=${UFE_HAS_CODE_WRAPPER}"
             "USD_HAS_COLOR4_SDR_SUPPORT=${USD_HAS_COLOR4_SDR_SUPPORT}"
@@ -168,6 +170,9 @@ foreach(script ${TEST_SCRIPT_FILES})
             "UFE_MATERIAL_HAS_HASMATERIAL=${UFE_MATERIAL_HAS_HASMATERIAL}"
             "UFE_CAMERA_HAS_RENDERABLE=${UFE_CAMERA_HAS_RENDERABLE}"
             "UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH=${UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH}"
+            "UFE_VOLUME_LIGHTS_SUPPORT=${UFE_VOLUME_LIGHTS_SUPPORT}"
+            "UFE_SCENEITEM_HAS_METADATA=${UFE_SCENEITEM_HAS_METADATA}"
+            "HAS_LOOKDEVXUSD=${BUILD_LOOKDEVXUSD_LIBRARY}"
     )
 
     # Add a ctest label to these tests for easy filtering.

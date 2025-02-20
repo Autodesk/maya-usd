@@ -15,13 +15,11 @@
 //
 #include <mayaUsd/utils/blockSceneModificationContext.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/return_arg.hpp>
+#include <pxr_python.h>
 
 #include <memory>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 namespace {
 

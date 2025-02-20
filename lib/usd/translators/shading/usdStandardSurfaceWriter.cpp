@@ -184,7 +184,7 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
         usdTime,
-        /* ignoreIfUnauthored = */ false,
+        /* ignoreIfUnauthored = */ true,
         /* inputTypeName = */ SdfValueTypeNames->Normal3f);
 }
 

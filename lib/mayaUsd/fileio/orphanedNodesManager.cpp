@@ -17,9 +17,11 @@
 
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/fileio/pullInformation.h>
+#include <mayaUsd/fileio/utils/proxyAccessorUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 
@@ -27,10 +29,16 @@
 #include <pxr/usd/usd/editContext.h>
 
 #include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <ufe/hierarchy.h>
 #include <ufe/sceneSegmentHandler.h>
 #include <ufe/trie.imp.h>
+
+// Workaround to avoid a crash that occurs when the Attribute Editor is visible
+// and displaying a USD prim that is being renamed, while we are updating proxyAccessor
+// connections for its descendant pulled objects.
+#define MAYA_USD_AE_CRASH_ON_RENAME_WORKAROUND
 
 // For Tf diagnostics macros.
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -112,7 +120,18 @@ void renameVariantInfo(
     trieNode->setData(newVariantInfos);
 }
 
-void renamePullInformation(
+MStatus reparentPulledObject(const MDagPath& dagPath, const Ufe::Path& ufeParentPath)
+{
+    OpUndoItemMuting undoInfoMuting;
+
+    return utils::ProxyAccessorUndoItem::parentPulledObject(
+        "OrphanedNodesManager pulled object re-parenting",
+        dagPath,
+        ufeParentPath,
+        /*force=*/true);
+}
+
+void renamePulledObject(
     const PulledPrimNode::Ptr& trieNode,
     const Ufe::Path&           oldPath,
     const Ufe::Path&           newPath)
@@ -144,9 +163,29 @@ void renamePullInformation(
         }
     }
 
+    const bool usdPathChanged
+        = ((newPath.nbSegments() == 2) && (oldPath.getSegments()[1] != newPath.getSegments()[1]));
+
     for (const PullVariantInfo& info : trieNode->data()) {
         const MDagPath& mayaPath = info.editedAsMayaRoot;
         TF_VERIFY(writePullInformation(pulledPath, mayaPath));
+        if (usdPathChanged && mayaPath.isValid()) {
+#ifdef MAYA_USD_AE_CRASH_ON_RENAME_WORKAROUND
+            // Update the proxyAccessor connections on idle to avoid a crash when
+            // attribute editor is visible and showing the ancestor USD prim beeing renamed.
+            if (MGlobal::mayaState() == MGlobal::kInteractive) {
+                using ReparentArgs = std::pair<MDagPath, Ufe::Path>;
+                MGlobal::executeTaskOnIdle(
+                    [](void* data) {
+                        const auto* args = static_cast<ReparentArgs*>(data);
+                        TF_VERIFY(reparentPulledObject(args->first, args->second));
+                        delete args;
+                    },
+                    new ReparentArgs(mayaPath, pulledPath.pop()));
+            } else
+#endif
+                TF_VERIFY(reparentPulledObject(mayaPath, pulledPath.pop()));
+        }
     }
 }
 
@@ -157,7 +196,7 @@ void recursiveRename(
 {
     if (trieNode->hasData()) {
         renameVariantInfo(trieNode, oldPath, newPath);
-        renamePullInformation(trieNode, oldPath, newPath);
+        renamePulledObject(trieNode, oldPath, newPath);
     } else {
         auto childrenComponents = trieNode->childrenComponents();
         for (auto& c : childrenComponents) {

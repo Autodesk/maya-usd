@@ -199,6 +199,55 @@ TF_DECLARE_PUBLIC_TOKENS(
     TR_MAYA_MATERIALS TR_MAYA_NODES TR_MAYA_STANDARD_SURFACE TR_MAYA_FILE TR_MAYA_UV
         TR_MAYA_PRIMVAR);
 
+// clang-format off
+#define TR_MAYA_OPENPBR_SURFACE \
+    (openPBRSurface) \
+    (baseWeight) \
+    (baseColor) \
+    (baseDiffuseRoughness) \
+    (baseMetalness) \
+    (specularWeight) \
+    (specularColor) \
+    (specularRoughness) \
+    (specularIOR) \
+    (specularRoughnessAnisotropy) \
+    (transmissionWeight) \
+    (transmissionColor) \
+    (transmissionDepth) \
+    (transmissionScatter) \
+    (transmissionScatterAnisotropy) \
+    (transmissionDispersionScale) \
+    (transmissionDispersionAbbeNumber) \
+    (subsurfaceWeight) \
+    (subsurfaceColor) \
+    (subsurfaceRadius) \
+    (subsurfaceRadiusScale) \
+    (subsurfaceScatterAnisotropy) \
+    (fuzzWeight) \
+    (fuzzColor) \
+    (fuzzRoughness) \
+    (coatWeight) \
+    (coatColor) \
+    (coatRoughness) \
+    (coatRoughnessAnisotropy) \
+    (coatIOR) \
+    (coatDarkening) \
+    (thinFilmWeight) \
+    (thinFilmThickness) \
+    (thinFilmIOR) \
+    (emissionWeight) \
+    (emissionLuminance) \
+    (emissionColor) \
+    (geometryOpacity) \
+    (geometryThinWalled) \
+    (normalCamera) \
+    (geometryCoatNormal) \
+    (tangentUCamera) \
+    (geometryCoatTangent)
+// clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(TrMayaOpenPBRTokens, , TR_MAYA_OPENPBR_SURFACE);
+
 #ifdef WANT_MATERIALX_TRANSLATORS
 
 // clang-format off
@@ -314,6 +363,54 @@ TF_DECLARE_PUBLIC_TOKENS(
     TrMtlxTokens,
     ,
     TR_MTLX_COMMON TR_MTLX_NODE_DEFS TR_MTLX_STANDARD_SURFACE TR_MTLX_IMAGE TR_MTLX_ATTRIBUTES);
+
+// clang-format off
+#define TR_MTLX_OPENPBR_SURFACE \
+    (ND_open_pbr_surface_surfaceshader) \
+    (base_weight) \
+    (base_color) \
+    (base_diffuse_roughness) \
+    (base_metalness) \
+    (specular_weight) \
+    (specular_color) \
+    (specular_roughness) \
+    (specular_ior) \
+    (specular_roughness_anisotropy) \
+    (transmission_weight) \
+    (transmission_color) \
+    (transmission_depth) \
+    (transmission_scatter) \
+    (transmission_scatter_anisotropy) \
+    (transmission_dispersion_scale) \
+    (transmission_dispersion_abbe_number) \
+    (subsurface_weight) \
+    (subsurface_color) \
+    (subsurface_radius) \
+    (subsurface_radius_scale) \
+    (subsurface_scatter_anisotropy) \
+    (fuzz_weight) \
+    (fuzz_color) \
+    (fuzz_roughness) \
+    (coat_weight) \
+    (coat_color) \
+    (coat_roughness) \
+    (coat_roughness_anisotropy) \
+    (coat_ior) \
+    (coat_darkening) \
+    (thin_film_weight) \
+    (thin_film_thickness) \
+    (thin_film_ior) \
+    (emission_luminance) \
+    (emission_color) \
+    (geometry_opacity) \
+    (geometry_thin_walled) \
+    (geometry_normal) \
+    (geometry_coat_normal) \
+    (geometry_tangent) \
+    (geometry_coat_tangent)
+// clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(TrMtlxOpenPBRTokens, , TR_MTLX_OPENPBR_SURFACE);
 
 #endif
 

@@ -126,6 +126,46 @@ private:
     getAttributeLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attributeName);
 };
 
+/*! \brief Select the target layer when modifying USD prim metadata, via the edit router.
+ *
+ * Commands and other code that wish to be routable when modifying an USD prim metadata
+ * should use this instead of the native USD USdEditContext class.
+ *
+ * Support nesting properly, so that if a composite command is routed to a layer,
+ * all sub-commands will use that layer and not individually routed layers. The
+ * nesting is per-thread.
+ *
+ * We may add ways for edit routers of sub-command to force routing to a different
+ * layer in the future. Using this class will make this transparent.
+ */
+class USDUFE_PUBLIC PrimMetadataEditRouterContext : public StackedEditRouterContext
+{
+public:
+    /*! \brief Route a metadata operation on a prim for the given metadata / metadataKeyPath.
+     *  If there is no editRouting for this metadata and a non-null fallbackLayer is given,
+     *  it will be used as edit target.
+     */
+    PrimMetadataEditRouterContext(
+        const PXR_NS::UsdPrim&        prim,
+        const PXR_NS::TfToken&        metadataName,
+        const PXR_NS::TfToken&        metadataKeyPath = PXR_NS::TfToken {},
+        const PXR_NS::SdfLayerHandle& fallbackLayer = PXR_NS::SdfLayerHandle {});
+
+    /*! \brief Route to the given stage and layer.
+     *  Should be used in undo to ensure the same target is used as in the initial execution.
+     */
+    PrimMetadataEditRouterContext(
+        const PXR_NS::UsdStagePtr&    stage,
+        const PXR_NS::SdfLayerHandle& layer);
+
+private:
+    PXR_NS::SdfLayerHandle getPrimMetadataLayer(
+        const PXR_NS::UsdPrim&        prim,
+        const PXR_NS::TfToken&        metadataName,
+        const PXR_NS::TfToken&        metadataKeyPath,
+        const PXR_NS::SdfLayerHandle& fallbackLayer);
+};
+
 } // namespace USDUFE_NS_DEF
 
 #endif // USDUFE_EDITROUTERCONTEXT_H

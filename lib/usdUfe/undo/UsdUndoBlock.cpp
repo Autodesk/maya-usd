@@ -23,8 +23,9 @@ USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdUndoBlock);
 
 uint32_t UsdUndoBlock::_undoBlockDepth { 0 };
 
-UsdUndoBlock::UsdUndoBlock(UsdUndoableItem* undoItem)
+UsdUndoBlock::UsdUndoBlock(UsdUndoableItem* undoItem, bool extraEdits)
     : _undoItem(undoItem)
+    , _extraEdits(extraEdits)
 {
     // TfDebug::Enable(USDUFE_UNDOSTACK);
 
@@ -40,7 +41,7 @@ UsdUndoBlock::~UsdUndoBlock()
 
     if ((nullptr != _undoItem) && (_undoBlockDepth == 0)) {
         // transfer edits
-        UsdUfe::UsdUndoManagerAccessor::transferEdits(*_undoItem);
+        UsdUfe::UsdUndoManagerAccessor::transferEdits(*_undoItem, _extraEdits);
 
         TF_DEBUG_MSG(USDUFE_UNDOSTACK, "Undoable Item adopted the new edits.\n");
     }

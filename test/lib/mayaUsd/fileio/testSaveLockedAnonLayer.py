@@ -122,11 +122,11 @@ class SaveLockedLayerTest(unittest.TestCase):
 
     def testSaveSystemLockedAnonLayerInUSD(self):
         # Save the file. Make sure the USD edits will go to a USD file.
-        self._runTestSaveLockedAnonLayer(1)
+        self._runTestSaveSystemLockedAnonLayer(1)
 
     def testSaveSystemLockedAnonLayerInMaya(self):
         # Save the file. Make sure the USD edits will go to the Maya file.
-        self._runTestSaveLockedAnonLayer(2)
+        self._runTestSaveSystemLockedAnonLayer(2)
 
     def _runTestSaveSystemLockedAnonLayer(self, saveLocation):
         '''
@@ -163,7 +163,7 @@ class SaveLockedLayerTest(unittest.TestCase):
         mayaUsd.lib.systemLockLayer(psPathStr, subLayer)
 
         # Save the file. Make sure the edit will go where requested by saveLocation.
-        tempMayaFile = 'saveLockedAnonLayer.ma'
+        tempMayaFile = 'saveSystemLockedAnonLayer.ma'
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
         cmds.file(rename=tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')

@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
+from pxr import Usd, UsdMaya
 
 from maya import cmds
 
@@ -128,17 +128,23 @@ class testRefAssemblyDrawRepresentations(imageUtils.ImageDiffingTestCase):
 
         for representation in ['Cards', 'Collapsed', 'Expanded', 'Full',
                 'Playback']:
-            
-           # The cards rendering colors in older versions of Maya is lighter,
-            suffix = ''
-            if mayaUtils.mayaMajorVersion() <= 2024:
-                if representation == "Cards":
-                    suffix = '_v1'
+
+            # The cards rendering colors in older versions of Maya is lighter,
+            # and cards rendering became lighter with a change to lighting
+            # computations in Storm in USD versions beyond 24.08
+            mayaSuffix = ''
+            usdSuffix = ''
+            if representation == "Cards":
+                if mayaUtils.mayaMajorVersion() <= 2024:
+                   mayaSuffix = '_v1'
+                if Usd.GetVersion() <= (0, 24, 8):
+                    usdSuffix = '_legacyUsd'
 
             cmds.assembly("Cube_1", edit=True, active=representation)
              
             cmds.assembly('Cube_1', edit=True, active=representation)
-            self._WriteViewportImage(self._testName, representation + suffix)
+            self._WriteViewportImage(
+                self._testName, representation + mayaSuffix + usdSuffix)
 
 
 if __name__ == '__main__':

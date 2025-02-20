@@ -21,17 +21,15 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <maya/MFnMesh.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-
 #include <string>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -102,17 +102,6 @@ REGISTER_EXPORT_JOB_CONTEXT_FCT(
     return extraArgs;
 }
 
-REGISTER_EXPORT_JOB_CONTEXT_FCT(
-    Curly,
-    "Curly's special",
-    "Test coverage of error handling part deux")
-{
-    VtDictionary extraArgs;
-    // Incorrect type:
-    extraArgs[UsdMayaJobExportArgsTokens->apiSchema] = VtValue(std::string("testApi"));
-    return extraArgs;
-}
-
 REGISTER_EXPORT_JOB_CONTEXT_UI_FCT(Curly)
 {
     VtDictionary forcedSettings;
@@ -127,6 +116,17 @@ REGISTER_EXPORT_JOB_CONTEXT_UI_FCT(Curly)
     }
 
     return forcedSettings;
+}
+
+REGISTER_EXPORT_JOB_CONTEXT_FCT(
+    Curly,
+    "Curly's special",
+    "Test coverage of error handling part deux")
+{
+    VtDictionary extraArgs;
+    // Incorrect type:
+    extraArgs[UsdMayaJobExportArgsTokens->apiSchema] = VtValue(std::string("testApi"));
+    return extraArgs;
 }
 
 REGISTER_EXPORT_JOB_CONTEXT_FCT(Moe, "Moe's special", "Test coverage of error handling part funf")

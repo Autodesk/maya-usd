@@ -15,6 +15,7 @@
 //
 
 #include <pxr/usd/usdGeom/camera.h>
+#include <pxr_python.h>
 
 #include <maya/MTypes.h>
 
@@ -26,9 +27,6 @@
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MPlug.h>
-
-#include <boost/python/import.hpp>
-#include <boost/python/to_python_converter.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -66,13 +64,13 @@ template <class MayaClass> struct MayaClassConverter
     // to-python conversion of const MayaClass.
     static PyObject* convert(const MayaClass& object)
     {
-        TfPyLock              lock;
-        boost::python::object classInstance
-            = boost::python::import("maya.OpenMaya").attr(classname<MayaClass>())();
-        boost::python::object theSwigObject = classInstance.attr("this");
-        SwigPyObject*         theSwigPyObject = (SwigPyObject*)theSwigObject.ptr();
+        TfPyLock                           lock;
+        PXR_BOOST_PYTHON_NAMESPACE::object classInstance
+            = PXR_BOOST_PYTHON_NAMESPACE::import("maya.OpenMaya").attr(classname<MayaClass>())();
+        PXR_BOOST_PYTHON_NAMESPACE::object theSwigObject = classInstance.attr("this");
+        SwigPyObject*                      theSwigPyObject = (SwigPyObject*)theSwigObject.ptr();
         copyOperator(theSwigPyObject->ptr, object);
-        return boost::python::incref(classInstance.ptr());
+        return PXR_BOOST_PYTHON_NAMESPACE::incref(classInstance.ptr());
     }
 };
 #else
@@ -88,12 +86,13 @@ template <class MayaClass> struct MayaClassConverter
     // to-python conversion of const MayaClass.
     static PyObject* convert(const MayaClass& object)
     {
-        TfPyLock              lock;
-        boost::python::object classInstance
-            = boost::python::import("maya.api.OpenMaya").attr(classname<MayaClass>())();
+        TfPyLock                           lock;
+        PXR_BOOST_PYTHON_NAMESPACE::object classInstance
+            = PXR_BOOST_PYTHON_NAMESPACE::import("maya.api.OpenMaya")
+                  .attr(classname<MayaClass>())();
         MPyObject<MayaClass>* thePyObject = (MPyObject<MayaClass>*)classInstance.ptr();
         copyOperator(thePyObject->fPtr, object);
-        return boost::python::incref(classInstance.ptr());
+        return PXR_BOOST_PYTHON_NAMESPACE::incref(classInstance.ptr());
     }
 };
 #endif
@@ -104,15 +103,17 @@ template <class T> struct registerConverter
 public:
     registerConverter()
     {
-        boost::python::to_python_converter<T, MayaClassConverter<T>>();
-        boost::python::converter::registry::push_back(&convertible, &construct, typeid(T));
+        PXR_BOOST_PYTHON_NAMESPACE::to_python_converter<T, MayaClassConverter<T>>();
+        PXR_BOOST_PYTHON_NAMESPACE::converter::registry::push_back(
+            &convertible, &construct, typeid(T));
     }
 
 private:
     static void* convertible(PyObject* obj) { return obj; }
 
-    static void
-    construct(PyObject* obj, boost::python::converter::rvalue_from_python_stage1_data* data)
+    static void construct(
+        PyObject*                                                              obj,
+        PXR_BOOST_PYTHON_NAMESPACE::converter::rvalue_from_python_stage1_data* data)
     {
         MPyObject<T>* thePyObject = (MPyObject<T>*)obj;
         data->convertible = thePyObject->fPtr;

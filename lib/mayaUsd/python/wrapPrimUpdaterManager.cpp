@@ -19,13 +19,11 @@
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <maya/MFnDagNode.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
-
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -69,7 +67,7 @@ bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDi
     return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path, userArgs);
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(mergeToUsd_overloads, mergeToUsd, 1, 2)
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(mergeToUsd_overloads, mergeToUsd, 1, 2)
 
 bool editAsMaya(const std::string& ufePathString)
 {
@@ -110,7 +108,7 @@ std::string duplicate(
     return Ufe::PathString::string(dstUfePaths[0]);
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(duplicate_overloads, duplicate, 2, 3)
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(duplicate_overloads, duplicate, 2, 3)
 
 std::string readPullInformationString(const PXR_NS::UsdPrim& prim)
 {
@@ -129,8 +127,8 @@ bool isEditedPrimOrphaned(const PXR_NS::UsdPrim& prim)
 
 void wrapPrimUpdaterManager()
 {
-    boost::python::class_<PrimUpdaterManager, boost::noncopyable>(
-        "PrimUpdaterManager", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<PrimUpdaterManager, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "PrimUpdaterManager", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("isAnimated", isAnimated)
         .def("mergeToUsd", mergeToUsd, mergeToUsd_overloads())
         .def("editAsMaya", editAsMaya)

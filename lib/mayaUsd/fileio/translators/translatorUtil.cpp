@@ -422,9 +422,13 @@ static bool _ReadProperty(
     const MFnDependencyNode&         depFn,
     std::string*                     reason)
 {
-    const TfToken          mayaAttrName(shaderProp->GetImplementationName());
-    const TfToken          usdAttrName(_ShaderAttrName(shaderProp->GetName()));
+    const TfToken mayaAttrName(shaderProp->GetImplementationName());
+    const TfToken usdAttrName(_ShaderAttrName(shaderProp->GetName()));
+#if PXR_VERSION <= 2408
     const SdfValueTypeName sdfValueTypeName = shaderProp->GetTypeAsSdfType().first;
+#else
+    const SdfValueTypeName sdfValueTypeName = shaderProp->GetTypeAsSdfType().GetSdfType();
+#endif
 
     UsdAttribute usdAttr = usdPrim.GetAttribute(usdAttrName);
     if (!usdAttr) {
@@ -504,9 +508,13 @@ static bool _WriteProperty(
     UsdPrim                          usdPrim,
     std::string*                     reason)
 {
-    const TfToken          mayaAttrName(shaderProp->GetImplementationName());
-    const TfToken          usdAttrName(_ShaderAttrName(shaderProp->GetName()));
+    const TfToken mayaAttrName(shaderProp->GetImplementationName());
+    const TfToken usdAttrName(_ShaderAttrName(shaderProp->GetName()));
+#if PXR_VERSION <= 2408
     const SdfValueTypeName sdfValueTypeName = shaderProp->GetTypeAsSdfType().first;
+#else
+    const SdfValueTypeName sdfValueTypeName = shaderProp->GetTypeAsSdfType().GetSdfType();
+#endif
 
     MStatus     status;
     const MPlug attrPlug = depFn.findPlug(mayaAttrName.GetText(), &status);
@@ -605,6 +613,21 @@ UsdMayaTranslatorUtil::ComputeUsdAttributeToMayaAttributeNamesForShader(const Tf
         }
     }
     return usdAttrToMayaAttrNames;
+}
+
+bool UsdMayaTranslatorUtil::HasXformOps(const UsdPrim& usdPrim)
+{
+    // If it is not a prim, then it has no XformOps.
+    if (!usdPrim)
+        return false;
+
+    // If it is not transformable, then it has no XformOps.
+    if (!usdPrim.IsA<UsdGeomXformable>())
+        return false;
+
+    UsdGeomXformable xformable(usdPrim);
+    bool             resetStack = false;
+    return xformable.GetOrderedXformOps(&resetStack).size() > 0;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

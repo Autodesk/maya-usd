@@ -379,15 +379,24 @@ surfaceShader(vec3 Peye, vec3 Neye,
     float specularAmount
 )
 {
-    float opacity = 1.0 - transparency.r;
-    if (opacity < opacityThreshold) {
-        discard;
-    } 
-
     mayaSurfaceShaderOutput result;
+    result.outGlowColor = vec3(0.0);
 
-    // Pre-multiply diffuse color by opacity if not done so already
-    diffuseColor *= opacity;
+    // Transparency and cutout.
+    float opacity = 1.0 - transparency.r;
+    if (opacityThreshold > 0.0) {
+        if (opacity < opacityThreshold) {
+            discard;
+        } 
+        result.outTransparency = vec3(0.0);
+        result.outMatteOpacity = vec3(1.0);
+    } else {
+        result.outTransparency = transparency;
+        result.outMatteOpacity = vec3(opacity);
+
+        // Pre-multiply diffuse color by opacity if not done so already
+        diffuseColor *= opacity;
+    }
 
     // Evaluate all lights.
     result.outColor = evaluateLights(
@@ -405,12 +414,6 @@ surfaceShader(vec3 Peye, vec3 Neye,
         occlusion,
         Peye,
         Neye);
-
-    // Transparency
-    result.outTransparency = transparency;
-
-    result.outGlowColor = vec3(0.0, 0.0, 0.0);
-    result.outMatteOpacity = vec3(opacity);
 
     return result;
 }
@@ -733,15 +736,24 @@ surfaceShader(vec3 Peye, vec3 Neye,
     float specularAmount
 )
 {
-    float opacity = 1.0 - transparency.r;
-    if (opacity < opacityThreshold) {
-        discard;
-    } 
-
     mayaSurfaceShaderOutput result;
+    result.outGlowColor = vec3(0.0);
 
-    // Pre-multiply diffuse color by opacity if not done so already
-    diffuseColor *= opacity;
+    // Transparency and cutout.
+    float opacity = 1.0 - transparency.r;
+    if (opacityThreshold > 0.0) {
+        if (opacity < opacityThreshold) {
+            discard;
+        }
+        result.outTransparency = vec3(0.0);
+        result.outMatteOpacity = vec3(1.0);
+    } else {
+        result.outTransparency = transparency;
+        result.outMatteOpacity = vec3(opacity);
+
+        // Pre-multiply diffuse color by opacity if not done so already
+        diffuseColor *= opacity;
+    }
 
     // Evaluate all lights.
     result.outColor = evaluateLights(
@@ -759,12 +771,6 @@ surfaceShader(vec3 Peye, vec3 Neye,
         occlusion,
         Peye,
         Neye);
-
-    // Transparency
-    result.outTransparency = transparency;
-
-    result.outGlowColor = vec3(0.0, 0.0, 0.0);
-    result.outMatteOpacity = vec3(opacity);
 
     return result;
 }
@@ -1087,15 +1093,24 @@ surfaceShader(float3 Peye, float3 Neye,
     float specularAmount
 )
 {
-    float opacity = 1.0 - transparency.r;
-    if (opacity < opacityThreshold) {
-        discard;
-    } 
-
     mayaSurfaceShaderOutput result;
+    result.outGlowColor = float3(0.0, 0.0, 0.0);
 
-    // Pre-multiply diffuse color by opacity if not done so already
-    diffuseColor *= opacity;
+    // Transparency and cutout.
+    float opacity = 1.0 - transparency.r;
+    if (opacityThreshold > 0.0) {
+        if (opacity < opacityThreshold) {
+            discard;
+        }
+        result.outTransparency = float3(0.0, 0.0, 0.0);
+        result.outMatteOpacity = float3(1.0, 1.0, 1.0);
+    } else {
+        result.outTransparency = transparency;
+        result.outMatteOpacity = float3(opacity, opacity, opacity);
+
+        // Pre-multiply diffuse color by opacity if not done so already
+        diffuseColor *= opacity;
+    }
 
     // Evaluate all lights.
     result.outColor = evaluateLights(
@@ -1113,12 +1128,6 @@ surfaceShader(float3 Peye, float3 Neye,
         occlusion,
         Peye,
         Neye);
-
-    // Transparency
-    result.outTransparency = transparency;
-
-    result.outGlowColor = float3(0.0, 0.0, 0.0);
-    result.outMatteOpacity = float3(opacity, opacity, opacity);
 
     return result;
 }

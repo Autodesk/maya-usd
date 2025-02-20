@@ -8,8 +8,10 @@ target_sources(${PROJECT_NAME}
         OgsFragment.cpp
         OgsXmlGenerator.cpp
         ShaderGenUtil.cpp
+        LobePruner.cpp
         Nodes/SurfaceNodeMaya.cpp
         Nodes/TexcoordNodeMaya.cpp
+        Nodes/MayaDarkClosureNode.cpp
         PugiXML/pugixml.cpp
 )
 
@@ -37,6 +39,17 @@ target_sources(${PROJECT_NAME}
     )
 endif()
 
+if(USD_HAS_BACKPORTED_MX39_OPENPBR)
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    USD_HAS_BACKPORTED_MX39_OPENPBR
+    )
+target_sources(${PROJECT_NAME} 
+    PRIVATE
+        Nodes/MayaClosureSourceCodeNode.cpp
+    )
+endif()
+
 set(HEADERS
     CombinedMaterialXVersion.h
     GlslFragmentGenerator.h
@@ -44,6 +57,7 @@ set(HEADERS
     OgsFragment.h
     OgsXmlGenerator.h
     ShaderGenUtil.h
+    LobePruner.h
 )
 
 # -----------------------------------------------------------------------------
@@ -55,6 +69,12 @@ list(APPEND LIGHT_IMPLEMENTATIONS
     libraries/mx_lighting_maya_v2.glsl
     libraries/mx_lighting_maya_v3.glsl
 )
+
+if(USD_HAS_BACKPORTED_MX39_OPENPBR)
+    list(APPEND LIGHT_IMPLEMENTATIONS
+        libraries/mx39_lighting_maya_all.glsl
+    )
+endif()
 
 list(APPEND NODE_DECLARATIONS
     libraries/maya_surfaces.mtlx

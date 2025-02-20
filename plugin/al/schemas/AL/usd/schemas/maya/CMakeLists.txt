@@ -129,6 +129,11 @@ target_compile_definitions(${PYTHON_LIBRARY_NAME}
         MFB_PACKAGE_MODULE=AL.usd.schemas.maya
 )
 
+target_include_directories(${PYTHON_LIBRARY_NAME} 
+  PRIVATE
+    ${CMAKE_BINARY_DIR}/include
+)
+
 set_python_module_property(${PYTHON_LIBRARY_NAME})
 
 target_link_libraries(${PYTHON_LIBRARY_NAME} AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})

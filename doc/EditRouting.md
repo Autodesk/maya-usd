@@ -54,10 +54,11 @@ data indexed by USD tokens (TfToken):
 In theory, each edit routing operation could fill the context differently
 and expect different data in the output dictionary. In practice many operations
 share the same inputs and outputs. Currently, the operations can be divided in
-three categories:
+four categories:
 
 - Simple commands
 - Attributes
+- Prim metadata
 - Maya references
 
 The following sections describe the input and output of each category. Each
@@ -119,6 +120,45 @@ def routeAttrToSessionLayer(context, routingData):
         return
 
     routingData['layer'] = prim.GetStage().GetSessionLayer().identifier
+```
+
+### Prim Metadata
+
+Inputs:
+- prim: the USD prim (UsdPrim) that is being affected.
+- operation: the operation name (TfToken). Always 'primMetadata'.
+- primMetadata: the metadata name (TfToken), e.g. "variantSelection"
+- keyPath: the path of the edited key if the metadata is dict-valued (TfToken), 
+  e.g. the variantSet name for "variantSelection" metadata, the key of a "customData".
+
+Outputs:
+- layer: the desired layer ID (text string) or layer handle (SdfLayerHandle).
+
+On return, if the layer entry is empty, no routing is done and the current edit
+target is used. Here is an example of a primMetadata edit router:
+
+```Python
+def routeVariantSelectionToSessionLayer(context, routingData):
+    '''
+    Edit router implementation for 'primMetadata' operations that routes
+    variant selections within variantSets named 'mySessionVariant' to the
+    session layer of the stage that contains the prim.
+    '''
+    prim = context.get('prim')
+    if prim is None:
+        return
+
+    metadataName = context.get('primMetadata')
+    if metadataName != "variantSelection":
+        return
+
+    variantSetName = context.get('keyPath')
+    if variantSetName != "mySessionVariant":
+        return
+
+    routingData['layer'] = prim.GetStage().GetSessionLayer().identifier
+
+mayaUsd.lib.registerEditRouter('primMetadata', routeVariantSelectionToSessionLayer)
 ```
 
 ### Maya references
@@ -325,6 +365,7 @@ could be used:
 import mayaUsd.lib
 
 sessionAttributes = set(['visibility', 'radius'])
+sessionVariantSets = set(['rigVariants', 'proxyVariants'])
 
 def routeToSessionLayer(context, routingData):
     '''
@@ -354,6 +395,27 @@ def routeAttrToSessionLayer(context, routingData):
 
     routingData['layer'] = prim.GetStage().GetSessionLayer().identifier
 
+def routeVariantSelectionToSessionLayer(context, routingData):
+    '''
+    Edit router implementation for 'primMetadata' operations that routes
+    some variantSelection to the session layer of the stage that contains the 
+    prim.
+    '''
+    prim = context.get('prim')
+    if prim is None:
+        print('Prim not in context')
+        return
+
+    metadataName = context.get('primMetadata')
+    if metadataName != 'variantSelection':
+        return
+    
+    variantSetName = context.get('keyPath')
+    if variantSetName not in sessionVariantSets:
+        return
+
+    routingData['layer'] = prim.GetStage().GetSessionLayer().identifier
+
 def registerAttributeEditRouter():
     '''
     Register an edit router for the 'attribute' operation that routes to
@@ -368,8 +430,16 @@ def registerVisibilityEditRouter():
     '''
     mayaUsd.lib.registerEditRouter('visibility', routeToSessionLayer)
 
+def registerPrimMetadataEditRouter():
+    '''
+    Register an edit router for the 'primMetadata' operation that routes to
+    the session layer.
+    '''
+    mayaUsd.lib.registerEditRouter('primMetadata', routeVariantSelectionToSessionLayer)
+
 def registerEditRouters():
     registerAttributeEditRouter()
     registerVisibilityEditRouter()
+    registerPrimMetadataEditRouter()
 
 ```

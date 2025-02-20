@@ -77,7 +77,7 @@ static const std::unordered_map<string, const pugi::char_t*> OGS_SEMANTICS_MAP =
 
 static const vector<std::pair<string, const pugi::char_t*>> OGS_SEMANTICS_PREFIX_MAP
     = { { "texcoord_", "mayaUvCoordSemantic" },
-        { "color_", "colorset" },
+        { "color_", "fcolor" },
         { "i_geomprop_", "mayaUvCoordSemantic" } };
 
 namespace OgsParameterFlags {

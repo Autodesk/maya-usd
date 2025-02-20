@@ -172,8 +172,9 @@ private:
 
     private:
         HdVP2Material* _owner;
-        TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
-        SdfPath _surfaceShaderId;     //!< Path of the surface shader
+        TfToken _surfaceNetworkToken;   //!< Generated token to uniquely identify a material network
+        SdfPath _surfaceShaderId;       //!< Path of the surface shader
+        bool    _transparent { false }; //!< Whether this network is transparent
         HdVP2ShaderUniquePtr         _surfaceShader;    //!< VP2 surface shader instance
         mutable HdVP2ShaderUniquePtr _frontFaceShader;  //!< same as above + backface culling
         mutable HdVP2ShaderUniquePtr _pointShader;      //!< VP2 point shader instance, if needed

@@ -20,8 +20,12 @@
 
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/domeLight.h>
 #include <pxr/usd/usdLux/lightAPI.h>
+#include <pxr/usd/usdLux/portalLight.h>
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
@@ -70,7 +74,7 @@ private:
 MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Light, UsdLight);
 
 UsdLight::UsdLight(const UsdUfe::UsdSceneItem::Ptr& item)
-    : Light()
+    : UFE_LIGHT_BASE()
     , _item(item)
 {
 }
@@ -94,14 +98,32 @@ Ufe::Light::Type UsdLight::type() const
 
     if (usdPrim.IsA<UsdLuxDistantLight>()) {
         return Ufe::Light::Directional;
-    } else if (usdPrim.IsA<UsdLuxRectLight>()) {
+    } else if (
+        usdPrim.IsA<UsdLuxRectLight>()
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+        || usdPrim.IsA<UsdLuxPortalLight>()) {
+#else
+    ) {
+#endif
         return Ufe::Light::Area;
     } else if (usdPrim.IsA<UsdLuxSphereLight>()) {
         const UsdLuxShapingAPI shapingAPI(usdPrim);
         return shapingAPI.GetShapingConeAngleAttr().IsValid() ? Ufe::Light::Spot
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+                                                              : Ufe::Light::Sphere;
+#else
                                                               : Ufe::Light::Point;
-    }
+#endif
 
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+    } else if (usdPrim.IsA<UsdLuxCylinderLight>()) {
+        return Ufe::Light::Cylinder;
+    } else if (usdPrim.IsA<UsdLuxDiskLight>()) {
+        return Ufe::Light::Disk;
+    } else if (usdPrim.IsA<UsdLuxDomeLight>()) {
+        return Ufe::Light::Dome;
+#endif
+    }
     // In case of unknown light type, fallback to point light
     return Ufe::Light::Point;
 }
@@ -121,7 +143,10 @@ void setLightIntensity(const UsdPrim& prim, float attrVal)
     const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetIntensityAttr();
 
-    lightAttribute.Set(attrVal);
+    if (!lightAttribute)
+        lightSchema.CreateIntensityAttr(VtValue(attrVal));
+    else
+        lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::IntensityUndoableCommand::Ptr UsdLight::intensityCmd(float li)
@@ -150,8 +175,10 @@ void setLightColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
 {
     const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetColorAttr();
-
-    lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
+    if (!lightAttribute)
+        lightSchema.CreateColorAttr(VtValue(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b())));
+    else
+        lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
 }
 
 Ufe::Light::ColorUndoableCommand::Ptr UsdLight::colorCmd(float r, float g, float b)
@@ -172,12 +199,6 @@ bool getLightShadowEnable(const UsdPrim& prim)
     const UsdLuxShadowAPI shadowAPI(prim);
     PXR_NS::UsdAttribute  lightAttribute = shadowAPI.GetShadowEnableAttr();
 
-    if (!lightAttribute) {
-        // If the shadow enable attribute is not created yet, create one here
-        lightAttribute = shadowAPI.CreateShadowEnableAttr(VtValue(true));
-        return true;
-    }
-
     bool val = false;
     lightAttribute.Get(&val);
     return val;
@@ -188,9 +209,10 @@ void setLightShadowEnable(const UsdPrim& prim, bool attrVal)
     const UsdLuxShadowAPI      shadowAPI(prim);
     const PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
 
-    if (lightAttribute) {
+    if (lightAttribute)
         lightAttribute.Set(attrVal);
-    }
+    else
+        shadowAPI.CreateShadowEnableAttr(VtValue(attrVal));
 }
 
 Ufe::Light::ShadowEnableUndoableCommand::Ptr UsdLight::shadowEnableCmd(bool se)
@@ -210,11 +232,6 @@ Ufe::Color3f getLightShadowColor(const UsdPrim& prim)
     const UsdLuxShadowAPI shadowAPI(prim);
     PXR_NS::UsdAttribute  lightAttribute = shadowAPI.GetShadowColorAttr();
 
-    if (!lightAttribute) {
-        // If the shadow color attribute is not created yet, create one here
-        lightAttribute = shadowAPI.CreateShadowColorAttr();
-    }
-
     GfVec3f val(0.f, 0.f, 0.f);
     lightAttribute.Get(&val);
     return Ufe::Color3f(val[0], val[1], val[2]);
@@ -224,8 +241,10 @@ void setLightShadowColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
 {
     const UsdLuxShadowAPI      shadowAPI(prim);
     const PXR_NS::UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
-
-    lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
+    if (!lightAttribute)
+        shadowAPI.CreateShadowColorAttr(VtValue(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b())));
+    else
+        lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
 }
 
 Ufe::Light::ShadowColorUndoableCommand::Ptr UsdLight::shadowColorCmd(float r, float g, float b)
@@ -258,8 +277,10 @@ void setLightDiffuse(const UsdPrim& prim, float attrVal)
 {
     const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetDiffuseAttr();
-
-    lightAttribute.Set(attrVal);
+    if (!lightAttribute)
+        lightSchema.CreateDiffuseAttr(VtValue(attrVal));
+    else
+        lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::DiffuseUndoableCommand::Ptr UsdLight::diffuseCmd(float ld)
@@ -288,8 +309,10 @@ void setLightSpecular(const UsdPrim& prim, float attrVal)
 {
     const UsdLuxLightAPI       lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetSpecularAttr();
-
-    lightAttribute.Set(attrVal);
+    if (!lightAttribute)
+        lightSchema.CreateSpecularAttr(VtValue(attrVal));
+    else
+        lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::SpecularUndoableCommand::Ptr UsdLight::specularCmd(float ls)
@@ -318,8 +341,10 @@ void setLightAngle(const UsdPrim& prim, float attrVal)
 {
     const UsdLuxDistantLight   lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetAngleAttr();
-
-    lightAttribute.Set(attrVal);
+    if (!lightAttribute)
+        lightSchema.CreateAngleAttr(VtValue(attrVal));
+    else
+        lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::AngleUndoableCommand::Ptr UsdDirectionalInterface::angleCmd(float la)
@@ -349,8 +374,10 @@ void setLightSphereProps(const UsdPrim& prim, const Ufe::Light::SphereProps& att
 {
     const UsdLuxSphereLight    lightSchema(prim);
     const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
-
-    lightAttribute.Set(attrVal.radius);
+    if (!lightAttribute)
+        lightSchema.CreateRadiusAttr(VtValue(attrVal.radius));
+    else
+        lightAttribute.Set(attrVal.radius);
 }
 
 Ufe::Light::SpherePropsUndoableCommand::Ptr
@@ -365,6 +392,9 @@ UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
 
 void UsdSphereInterface::sphereProps(float radius, bool asPoint)
 {
+    if (asPoint) {
+        radius = 0.0f;
+    }
     setLightSphereProps(_item->prim(), Ufe::Light::SphereProps { radius, asPoint });
 }
 
@@ -391,12 +421,22 @@ void setLightConeProps(const UsdPrim& prim, const Ufe::Light::ConeProps& attrVal
 {
     const UsdLuxShapingAPI     lightSchema(prim);
     const PXR_NS::UsdAttribute focusAttribute = lightSchema.GetShapingFocusAttr();
-    const PXR_NS::UsdAttribute coneAngleAttribute = lightSchema.GetShapingConeAngleAttr();
-    const PXR_NS::UsdAttribute coneSoftnessAttribute = lightSchema.GetShapingConeSoftnessAttr();
+    if (!focusAttribute)
+        lightSchema.CreateShapingFocusAttr(VtValue(attrVal.focus));
+    else
+        focusAttribute.Set(attrVal.focus);
 
-    focusAttribute.Set(attrVal.focus);
-    coneAngleAttribute.Set(attrVal.angle);
-    coneSoftnessAttribute.Set(attrVal.softness);
+    const PXR_NS::UsdAttribute coneAngleAttribute = lightSchema.GetShapingConeAngleAttr();
+    if (!coneAngleAttribute)
+        lightSchema.CreateShapingConeAngleAttr(VtValue(attrVal.angle));
+    else
+        coneAngleAttribute.Set(attrVal.angle);
+
+    const PXR_NS::UsdAttribute coneSoftnessAttribute = lightSchema.GetShapingConeSoftnessAttr();
+    if (!coneSoftnessAttribute)
+        lightSchema.CreateShapingConeSoftnessAttr(VtValue(attrVal.softness));
+    else
+        coneSoftnessAttribute.Set(attrVal.softness);
 }
 
 Ufe::Light::ConePropsUndoableCommand::Ptr
@@ -434,7 +474,10 @@ void setLightNormalize(const UsdPrim& prim, bool attrVal)
     const UsdLuxRectLight      rectLight(prim);
     const PXR_NS::UsdAttribute lightAttribute = rectLight.GetNormalizeAttr();
 
-    lightAttribute.Set(attrVal);
+    if (!lightAttribute)
+        rectLight.CreateNormalizeAttr(VtValue(attrVal));
+    else
+        lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl)
@@ -445,6 +488,106 @@ Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl
     pCmd->set(nl);
     return pCmd;
 }
+
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+
+UFE_LIGHT_BASE::VolumeProps getLightCylinderVolumeProps(const UsdPrim& prim)
+{
+    const UsdLuxCylinderLight  lightSchema(prim);
+    const PXR_NS::UsdAttribute radiusAttribute = lightSchema.GetRadiusAttr();
+    const PXR_NS::UsdAttribute lengthAttribute = lightSchema.GetLengthAttr();
+
+    UFE_LIGHT_BASE::VolumeProps vp;
+    radiusAttribute.Get(&vp.radius);
+    lengthAttribute.Get(&vp.length);
+    return vp;
+}
+
+UFE_LIGHT_BASE::VolumeProps getLightDiskVolumeProps(const UsdPrim& prim)
+{
+    const UsdLuxDiskLight      lightSchema(prim);
+    const PXR_NS::UsdAttribute radiusAttribute = lightSchema.GetRadiusAttr();
+
+    UFE_LIGHT_BASE::VolumeProps vp;
+    radiusAttribute.Get(&vp.radius);
+    return vp;
+}
+
+UFE_LIGHT_BASE::VolumeProps getLightDomeVolumeProps(const UsdPrim& prim)
+{
+    UFE_LIGHT_BASE::VolumeProps vp;
+    return vp;
+}
+
+void setLightVolumeProps(const UsdPrim& prim, const UFE_LIGHT_BASE::VolumeProps& attrVal)
+{
+    const UsdLuxSphereLight    lightSchema(prim);
+    const PXR_NS::UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
+    if (!lightAttribute)
+        lightSchema.CreateRadiusAttr(VtValue(attrVal.radius));
+    else
+        lightAttribute.Set(attrVal.radius);
+}
+
+void UsdCylinderInterface::volumeProps(float radius, float length)
+{
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius, length });
+}
+void UsdDiskInterface::volumeProps(float radius)
+{
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius });
+}
+
+void UsdDomeInterface::volumeProps(float radius)
+{
+    setLightVolumeProps(_item->prim(), UFE_LIGHT_BASE::VolumeProps { radius });
+}
+
+// Cylinder Light
+UFE_LIGHT_BASE::VolumeProps UsdCylinderInterface::volumeProps() const
+{
+    return getLightCylinderVolumeProps(_item->prim());
+}
+
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr
+UsdCylinderInterface::volumePropsCmd(float radius, float length)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, length });
+    return pCmd;
+}
+
+// Disk Light
+UFE_LIGHT_BASE::VolumeProps UsdDiskInterface::volumeProps() const
+{
+    return getLightDiskVolumeProps(_item->prim());
+}
+
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr UsdDiskInterface::volumePropsCmd(float radius)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, 0 });
+    return pCmd;
+}
+
+// Dome light
+UFE_LIGHT_BASE::VolumeProps UsdDomeInterface::volumeProps() const
+{
+    return getLightDomeVolumeProps(_item->prim());
+}
+
+UFE_LIGHT_BASE::VolumePropsUndoableCommand::Ptr UsdDomeInterface::volumePropsCmd(float radius)
+{
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const UFE_LIGHT_BASE::VolumeProps&>>(
+        _item->path(), setLightVolumeProps);
+
+    pCmd->set(UFE_LIGHT_BASE::VolumeProps { radius, 0 });
+    return pCmd;
+}
+#endif
 
 void UsdAreaInterface::normalize(bool ln) { setLightNormalize(_item->prim(), ln); }
 
@@ -469,6 +612,23 @@ std::shared_ptr<Ufe::Light::AreaInterface> UsdLight::areaInterfaceImpl()
 {
     return std::make_shared<UsdAreaInterface>(_item);
 }
+
+#ifdef UFE_VOLUME_LIGHTS_SUPPORT
+std::shared_ptr<UFE_LIGHT_BASE::CylinderInterface> UsdLight::cylinderInterfaceImpl()
+{
+    return std::make_shared<UsdCylinderInterface>(_item);
+}
+
+std::shared_ptr<UFE_LIGHT_BASE::DiskInterface> UsdLight::diskInterfaceImpl()
+{
+    return std::make_shared<UsdDiskInterface>(_item);
+}
+
+std::shared_ptr<UFE_LIGHT_BASE::DomeInterface> UsdLight::domeInterfaceImpl()
+{
+    return std::make_shared<UsdDomeInterface>(_item);
+}
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
