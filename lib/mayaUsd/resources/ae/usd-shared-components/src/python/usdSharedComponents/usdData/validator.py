@@ -12,7 +12,7 @@ def validatePrim(defaultReturnValue = None) -> Callable:
                 return defaultReturnValue
             try:
                 return func(self, *args, **kwargs)
-            except Exception:
+            except AttributeError:
                 return defaultReturnValue
         return wrapper
     return validator
@@ -29,7 +29,7 @@ def validateCollection(defaultReturnValue = None) -> Callable:
                 return defaultReturnValue
             try:
                 return func(self, *args, **kwargs)
-            except Exception:
+            except AttributeError:
                 return defaultReturnValue
         return wrapper
     return validator
