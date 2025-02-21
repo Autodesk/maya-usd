@@ -117,6 +117,7 @@ class IncludeExcludeWidget(QWidget):
         self._selectBtn.setIcon(Theme.instance().icon("selector"))
         self._selectBtn.setEnabled(False)
         self._selectBtn.clicked.connect(self._onSelectItemsClicked)
+        theme.themeMenuButton(self._selectBtn, False)
 
         self._warningWidget = WarningWidget(headerWidget)
         self._warningSeparator = QFrame()

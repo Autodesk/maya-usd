@@ -41,6 +41,7 @@ class ExpressionWidget(QWidget):
         self._selectBtn.setIcon(Theme.instance().icon("selector"))
         self._selectBtn.setEnabled(False)
         self._selectBtn.clicked.connect(self._onSelectItemsClicked)
+        theme.themeMenuButton(self._selectBtn, False)
         menuLayout.addWidget(self._selectBtn)
 
         menuLayout.addStretch(1)
