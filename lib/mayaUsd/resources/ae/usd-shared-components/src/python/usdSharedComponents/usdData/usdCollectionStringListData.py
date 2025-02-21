@@ -2,20 +2,8 @@ from ..data.stringListData import StringListData
 from .validator import validateCollection
 from ..common.host import Host, MessageType
 
-from typing import AnyStr, Sequence
+from typing import AnyStr, Sequence, Tuple
 from pxr import Sdf
-
-def _gatherSuggestion(stage, path: Sdf.Path = Sdf.Path.absoluteRootPath):
-    suggestions = []
-
-    root = stage.GetPrimAtPath(path)
-    if root:
-        for child in root.GetChildren():
-            childPath = path.AppendElementString(child.GetName())
-            suggestions.append(childPath)
-            suggestions.extend(_gatherSuggestion(stage, childPath))
-
-    return suggestions
 
 class CollectionStringListData(StringListData):
     def __init__(self, collection, isInclude: bool):
@@ -47,7 +35,13 @@ class CollectionStringListData(StringListData):
 
     @validateCollection([])
     def getSuggestions(self) -> Sequence[AnyStr]:
-        return _gatherSuggestion(self._prim.GetStage()) 
+        suggestions = []
+
+        stage = self._prim.GetStage()
+        for childPrim in stage.Traverse():
+            suggestions.append(childPrim.GetPath().pathString)
+
+        return suggestions
 
     @validateCollection(False)
     def addStrings(self, items: Sequence[AnyStr]) -> bool:
@@ -90,7 +84,7 @@ class CollectionStringListData(StringListData):
                 Can't add the following prims to the {0} list:
                 {1}""".format("Includes" if self._isInclude else "Excludes", failedPaths))
 
-        return True
+        return addedNewIncludes
 
     @validateCollection(False)
     def removeStrings(self, items: Sequence[AnyStr]) -> bool:
@@ -108,10 +102,11 @@ class CollectionStringListData(StringListData):
 
     @validateCollection(False)
     def replaceStrings(self, oldString, newString) -> bool:
-        return self.removeStrings([oldString]) and self.addStrings([newString])
+        return self.addStrings([newString]) and self.removeStrings([oldString])
+    
 
-    @validateCollection(None)
-    def convertToCollectionString(self, text) -> AnyStr:
+    @validateCollection((None, "Could not add prim to the collection."))
+    def convertToCollectionString(self, text) -> Tuple[AnyStr, AnyStr]:
         '''
         Validates if the string is valid and possibly alter it to make it valid
         or conform to the expected format or value. Return None if invalid.
@@ -121,19 +116,19 @@ class CollectionStringListData(StringListData):
         if "," in text:
             text = text.split(",")[1]
         if not Sdf.Path.IsValidPathString(text):
-            return None
+            return None, "Only valid USD paths can be added."
 
         stage = self._prim.GetStage()
         prim = stage.GetPrimAtPath(Sdf.Path(text))
 
         if not prim or not prim.IsValid():
-            return None
+            return None, "Only objects in the same stage as the collection can be added."
         
         # We don't allow adding a prim to its own collection.
         if prim == self._prim:
-            return None
+            return None, "Prim cannot be added to its own collection."
 
-        return text
+        return text, None
 
     @validateCollection([])
     def convertToItemPaths(self, items: Sequence[str]) -> Sequence[str]:
