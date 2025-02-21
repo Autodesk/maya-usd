@@ -23,6 +23,10 @@ from pxr import UsdShade
 from maya import cmds
 from maya import standalone
 
+import maya.cmds as cmds
+import maya.mel as mel
+import ufe
+
 import mayaUsd.lib as mayaUsdLib
 
 import maya.api.OpenMaya as om
@@ -46,9 +50,21 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
 
         cmds.file(f=True, new=True)
 
-        mayaFile = os.path.join(self._inputPath, 'UsdExportMaterialXSurfaceShader',
-            'MaterialXStackExport.ma')
-        cmds.file(mayaFile, force=True, open=True)
+        mtlxFile = os.path.join(self._inputPath, 'UsdExportMaterialXSurfaceShader',
+            'MaterialXStackExport.mtlx')
+
+        stackName = mel.eval("createNode materialxStack")
+        stackPathString = mel.eval("ls -l " + stackName)[0]
+        stackItem = ufe.Hierarchy.createItem(ufe.PathString.path(stackPathString))
+        stackHierarchy = ufe.Hierarchy.hierarchy(stackItem)
+        stackContextOps = ufe.ContextOps.contextOps(stackItem)
+        stackContextOps.doOp(['MxImportDocument', mtlxFile])
+        documentItem = stackHierarchy.children()[-1]
+        sphere = cmds.polySphere()
+        surfPathString = ufe.PathString.string(documentItem.path()) + "%Standard_Surface1"
+        cmds.select(sphere)
+        materialContextOps = ufe.ContextOps.contextOps(ufe.Hierarchy.createItem(ufe.PathString.path(surfPathString)))
+        materialContextOps.doOp(['Assign Material to Selection']) 
 
         # Export to USD.
         usdFilePath = os.path.abspath('MaterialXStackExport.usda')
@@ -100,6 +116,76 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
         self.assertEqual(checkboardPrim.GetName(), 'checkboard1')
         self.assertEqual(checkboardPrim.GetAttribute('info:id').Get(), 'ND_checkerboard_color3')
 
+    def testExportMultiOutput(self):
+
+        cmds.file(f=True, new=True)
+
+        mtlxFile = os.path.join(self._inputPath, 'Multioutput.mtlx',
+            'MaterialXStackExport.mtlx')
+
+        stackName = mel.eval("createNode materialxStack")
+        stackPathString = mel.eval("ls -l " + stackName)[0]
+        stackItem = ufe.Hierarchy.createItem(ufe.PathString.path(stackPathString))
+        stackHierarchy = ufe.Hierarchy.hierarchy(stackItem)
+        stackContextOps = ufe.ContextOps.contextOps(stackItem)
+        stackContextOps.doOp(['MxImportDocument', mtlxFile])
+        documentItem = stackHierarchy.children()[-1]
+        sphere = cmds.polySphere()
+        surfPathString = ufe.PathString.string(documentItem.path()) + "%test_multi_out_mat"
+        cmds.select(sphere)
+        materialContextOps = ufe.ContextOps.contextOps(ufe.Hierarchy.createItem(ufe.PathString.path(surfPathString)))
+        materialContextOps.doOp(['Assign Material to Selection']) 
+
+        # Export to USD.
+        usdFilePath = os.path.abspath('Multioutput.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            materialsScopeName='Materials', defaultPrim='None')
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+
+        prim = stage.GetPrimAtPath("/Materials/test_multi_out_matSG")
+        self.assertTrue(prim)
+        material = UsdShade.Material(prim)
+        self.assertTrue(material)
+
+        # Validate that the artistic_ior output were properly exported and connected
+        surfOutput = material.GetSurfaceOutput("mtlx")
+        self.assertTrue(surfOutput)
+        surfSource = surfOutput.GetConnectedSources()[0]
+        surfPrim = surfSource[0].source.GetPrim()
+        self.assertEqual(surfPrim.GetName(), "test_multi_out_mat")
+        id = surfPrim.GetAttribute('info:id')
+        self.assertEqual(id.Get(), 'ND_standard_surface_surfaceshader')
+        surfShader = UsdShade.Shader(surfPrim)
+        specular = surfShader.GetInput('specular')
+        # Validate the Node Graph
+        nodeGraphPrim = specular.GetConnectedSources()[0][0].source.GetPrim()
+        self.assertEqual(nodeGraphPrim.GetName(), 'compound1')
+        nodeGraph = UsdShade.NodeGraph(nodeGraphPrim)
+        # Validate the ior output
+        iorExtractPrim = nodeGraph.GetOutput('specular_ior_output').GetConnectedSources()[0][0].source.GetPrim()
+        self.assertEqual(iorExtractPrim.GetName(), 'ior')
+        self.assertEqual(iorExtractPrim.GetAttribute('info:id').Get(), 'ND_extract_color3')
+        iorExtractShader = UsdShade.Shader(iorExtractPrim)
+        artisticiorPrim = iorExtractShader.GetInput('in').GetConnectedSources()[0][0].source.GetPrim()
+        self.assertEqual(artisticiorPrim.GetName(), 'artistic_ior')
+        self.assertEqual(iorExtractPrim.GetAttribute('info:id').Get(), 'ND_artistic_ior')
+
+        # Validate the extinction output
+        specularExtractPrim = nodeGraph.GetOutput('specular_output').GetConnectedSources()[0][0].source.GetPrim()
+        self.assertEqual(specularExtractPrim.GetName(), 'specular')
+        self.assertEqual(specularExtractPrim.GetAttribute('info:id').Get(), 'ND_extract_color3')
+        specularExtractShader = UsdShade.Shader(specularExtractPrim)
+        artisticiorPrim = specularExtractShader.GetInput('in').GetConnectedSources()[0][0].source.GetPrim()
+        self.assertEqual(artisticiorPrim.GetName(), 'artistic_ior')
+
+        artisticiorShader = UsdShade.Shader(artisticiorPrim)
+        outs = artisticiorShader.GetOutputs() 
+        self.assertEqual(outs[0].GetBaseName(), 'extinction')
+        self.assertEqual(outs[1].GetBaseName(), 'ior')
+        
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

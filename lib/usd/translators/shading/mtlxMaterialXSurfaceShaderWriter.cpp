@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
+#include <usdUfe/base/tokens.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -74,17 +75,14 @@ MaterialX::ConstNodeDefPtr _GetNodeDef(const MaterialX::NodePtr& node, const Ufe
     return nodeDefPtr;
 }
 
-// Sets shader info:id attribute on a USD prim based on a MaterialX node.
+// Sets shader info:id attribute on a USD ShadeShader based on a MaterialX node.
 void _SetShaderInfoAttributes(
     const MaterialX::NodePtr& node,
-    UsdPrim&                  shaderPrim,
+    UsdShadeShader&           usdShader,
     const Ufe::Path&          ufePath)
 {
-    auto infoAttr = shaderPrim.CreateAttribute(
-        UsdShadeTokens->infoId, SdfValueTypeNames->Token, SdfVariabilityUniform);
-
     auto nodeDefString = _GetNodeDefString(node, ufePath);
-    infoAttr.Set(TfToken(nodeDefString));
+    usdShader.CreateIdAttr(VtValue(TfToken(nodeDefString)));
 }
 
 // Checks if the input type supports color space.
@@ -113,15 +111,56 @@ bool _TypeSupportsColorSpace(const MaterialX::InputPtr& mxElem, const Ufe::Path&
 // Sets UI attributes for a USD input based on a MaterialX input.
 void _SetInputUIAttributes(const MaterialX::InputPtr mtlxInput, UsdShadeInput& usdInput)
 {
-    if (mtlxInput->hasAttribute(MaterialX::ValueElement::UI_NAME_ATTRIBUTE)) {
-        usdInput.GetAttr().SetDisplayName(
-            mtlxInput->getAttribute(MaterialX::ValueElement::UI_NAME_ATTRIBUTE));
+    auto attr = usdInput.GetAttr();
+    for (const auto& key : UsdUfe::MetadataTokens->allTokens) {
+        if (mtlxInput->hasAttribute(key.GetString())) {
+            auto value = mtlxInput->getAttribute(key);
+            if (key == UsdUfe::MetadataTokens->UIDoc) {
+                attr.SetDocumentation(value);
+            } else if (key == UsdUfe::MetadataTokens->UIEnumLabels) {
+                const auto   enumStrings = UsdUfe::splitString(value, ",");
+                VtTokenArray allowedTokens;
+                allowedTokens.reserve(enumStrings.size());
+                for (const auto& tokenString : enumStrings) {
+                    allowedTokens.push_back(TfToken(TfStringTrim(tokenString, " ")));
+                }
+                attr.SetMetadata(SdfFieldKeys->AllowedTokens, allowedTokens);
+            } else if (key == UsdUfe::MetadataTokens->UIFolder) {
+                std::replace(value.begin(), value.end(), '/', ':');
+                attr.SetDisplayGroup(value);
+            } else if (key == UsdUfe::MetadataTokens->UIName) {
+                attr.SetDisplayName(value);
+            } else if (SdfSchema::GetInstance().IsRegistered(key)) {
+                attr.SetMetadata(key, VtValue(value));
+            } else {
+                attr.SetCustomDataByKey(key, VtValue(value));
+            }
+        }
     }
-    if (mtlxInput->hasAttribute(MaterialX::ValueElement::UI_FOLDER_ATTRIBUTE)) {
-        auto uiFolder = mtlxInput->getAttribute(MaterialX::ValueElement::UI_FOLDER_ATTRIBUTE);
-        std::replace(uiFolder.begin(), uiFolder.end(), '/', ':');
-        usdInput.GetAttr().SetDisplayGroup(uiFolder);
+}
+
+// Gets the output name of the mxNode connected to a portElement
+// If the portElement has an outputString, use that.
+// Otherwise, look for the output name in the NodeDef
+// If that fails, use the default output name.
+std::string _GetOutputName(
+    const MaterialX::PortElementPtr& portElement,
+    const MaterialX::NodePtr&        mxNode,
+    const Ufe::Path&                 ufePath)
+{
+    std::string outputName;
+    if (portElement->hasOutputString()) {
+        outputName = portElement->getOutputString();
+    } else if (auto nodeDef = _GetNodeDef(mxNode, ufePath)) {
+        auto outVec = nodeDef->getOutputs();
+        if (!outVec.empty()) {
+            outputName = outVec[0]->getName();
+        }
     }
+    if (outputName.empty()) {
+        outputName = UsdMtlxTokens->DefaultOutputName.GetString();
+    }
+    return outputName;
 }
 
 // Connects a USD input to a node output based on a MaterialX input.
@@ -129,12 +168,15 @@ void _ConnectToNode(
     const MaterialX::InputPtr& input,
     UsdShadeInput&             usdInput,
     const SdfPath&             parentPath,
+    const Ufe::Path&           ufePath,
     const UsdStagePtr&         stage)
 {
     auto connectedNode = input->getConnectedNode();
-    auto nodeOutput = UsdShadeShader(stage->GetPrimAtPath(
+
+    std::string outputName = _GetOutputName(input, connectedNode, ufePath);
+    auto        nodeOutput = UsdShadeShader(stage->GetPrimAtPath(
                                          parentPath.AppendPath(SdfPath(connectedNode->getName()))))
-                          .GetOutput(UsdMtlxTokens->DefaultOutputName);
+                          .GetOutput(TfToken(outputName));
     if (nodeOutput.IsDefined()) {
         usdInput.ConnectToSource(nodeOutput);
     }
@@ -202,13 +244,14 @@ void _AddInput(
     const Ufe::Path&           ufePath,
     const UsdStagePtr&         stage)
 {
-    if (!input->getNodeGraphString().empty() && input->getConnectedNode()) {
+    if (input->hasNodeGraphString()) {
         _ConnectToNodeGraph(input, usdInput, parentPath, stage);
-    } else if (input->getConnectedNode() != nullptr) {
-        _ConnectToNode(input, usdInput, parentPath, stage);
-    } else if (auto interfaceInput = input->getInterfaceInput()) {
+    } else if (input->hasNodeName()) {
+        _ConnectToNode(input, usdInput, parentPath, ufePath, stage);
+    } else if (input->hasInterfaceName()) {
+        auto interfaceInput = input->getInterfaceInput();
         _ConnectToInterfaceInput(interfaceInput, usdInput, parentPath, stage);
-    } else if (input->getConnectedOutput() == nullptr) {
+    } else if (!input->hasOutputString()) {
         _SetInputValue(input, usdInput, ufePath);
     }
 }
@@ -249,6 +292,10 @@ void _AddNodeGraphInput(
 // Sets UI attributes for a prim based on a MaterialX node.
 void _SetShaderUIAttribute(const MaterialX::InterfaceElementPtr& node, UsdPrim& prim)
 {
+    if (!prim.HasAPI<UsdUINodeGraphNodeAPI>()) {
+        UsdUINodeGraphNodeAPI::Apply(prim);
+    }
+
     if (auto nodeGraphApi = UsdUINodeGraphNodeAPI(prim)) {
         if (node->hasAttribute("ypos") && node->hasAttribute("xpos")) {
             nodeGraphApi.CreatePosAttr(VtValue(GfVec2f(
@@ -292,9 +339,16 @@ void _AddNode(
     auto shaderPrim = shader.GetPrim();
     _SetShaderUIAttribute(node, shaderPrim);
     auto shaderUfePath = ufePath + node->getName();
-    _SetShaderInfoAttributes(node, shaderPrim, shaderUfePath);
-    shader.CreateOutput(
-        UsdMtlxTokens->DefaultOutputName, UsdMtlxGetUsdType(node->getType()).valueTypeName);
+    _SetShaderInfoAttributes(node, shader, shaderUfePath);
+
+    if (auto nodeDef = _GetNodeDef(node, shaderUfePath)) {
+        for (auto output : nodeDef->getOutputs()) {
+            auto outName
+                = output->getName().empty() ? UsdMtlxTokens->DefaultOutputName : output->getName();
+            shader.CreateOutput(
+                TfToken(outName), UsdMtlxGetUsdType(output->getType()).valueTypeName);
+        }
+    }
 
     for (auto input : node->getInputs()) {
         _AddShaderInput(input, shader, parentPath, shaderUfePath, stage);
@@ -344,10 +398,17 @@ void _AddDependentNodes(
                 usdOutput.ConnectToSource(
                     _GetPrimOutput(targetPrim, TfToken(targetOutput->getName())));
             } else if (auto targetNode = output->getConnectedNode()) {
+                if (targetNode->getParent() != node) {
+                    TF_WARN(
+                        "NodeGraph output '%s' is connected to a node outside the NodeGraph",
+                        output->getName().c_str());
+                    continue;
+                }
+                auto targetOutputName
+                    = _GetOutputName(output, targetNode, targetUfePath + targetNode->getName());
                 auto targetPrim
                     = stage->GetPrimAtPath(targetPath.AppendPath(SdfPath(targetNode->getName())));
-                usdOutput.ConnectToSource(
-                    _GetPrimOutput(targetPrim, UsdMtlxTokens->DefaultOutputName));
+                usdOutput.ConnectToSource(_GetPrimOutput(targetPrim, TfToken(targetOutputName)));
             }
         }
     }
@@ -451,10 +512,11 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
     readFromXmlString(mtlxDoc, renderDocumentString.asChar());
 
     // surfaceMaterialNode
-    auto MaterialNode = mtlxDoc->getNode(depNodeFn.name().asChar());
+    auto MaterialNode = mtlxDoc->getNode(ufePath.back().string());
     if (MaterialNode == nullptr) {
         TF_WARN(
-            "Material Node '%s' not found in the MaterialX Document", depNodeFn.name().asChar());
+            "Material Node '%s' not found in the MaterialX Document",
+            ufePath.back().string().c_str());
         return;
     }
     // Collection of the MaterialX nodes already processed, to avoid processing them again.
@@ -481,10 +543,9 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
         auto _ShaderDisplacementOutput = displacementShader.CreateOutput(
             UsdMtlxTokens->DefaultOutputName, _mtlDisplacementOutput.GetTypeName());
         _mtlDisplacementOutput.ConnectToSource(_ShaderDisplacementOutput);
-        auto      displacementPrim = displacementShader.GetPrim();
         auto&     dispNodeName = displacementNode->getName();
         Ufe::Path ufeDispPath = ufeParentPath + dispNodeName;
-        _SetShaderInfoAttributes(displacementNode, displacementPrim, ufeDispPath);
+        _SetShaderInfoAttributes(displacementNode, displacementShader, ufeDispPath);
         _AddDependentNodes(
             displacementNode, collectedNodes, GetUsdStage(), parentPath, ufeParentPath);
         for (auto input : displacementNode->getInputs()) {
@@ -499,7 +560,7 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
             _usdPrim.GetPrimPath().GetText());
         return;
     }
-    _SetShaderInfoAttributes(shaderNode, _usdPrim, ufeParentPath + shaderNode->getName());
+    _SetShaderInfoAttributes(shaderNode, shaderSchema, ufeParentPath + shaderNode->getName());
     _AddDependentNodes(shaderNode, collectedNodes, GetUsdStage(), parentPath, ufeParentPath);
 
     for (auto input : shaderNode->getInputs()) {
