@@ -590,9 +590,19 @@ PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterC
     progressBar.advance();
 
     result.srcRootPath = writeJob.MapDagPathToSdfPath(dagPath);
+
+    // If there are no correspondences, it may be due to the fact the
+    // source DAG node was excluded from the export.  In this case, try
+    // to find a material or extra prim to use as the source root path.
     if (result.srcRootPath.IsEmpty()) {
         for (const SdfPath& matPath : writeJob.GetMaterialPaths()) {
             result.srcRootPath = matPath.GetParentPath();
+            break;
+        }
+    }
+    if (result.srcRootPath.IsEmpty()) {
+        for (const SdfPath& extraPath : result.extraPrimsPaths) {
+            result.srcRootPath = extraPath;
             break;
         }
     }
