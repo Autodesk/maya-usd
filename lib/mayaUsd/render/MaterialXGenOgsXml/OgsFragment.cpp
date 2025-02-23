@@ -647,7 +647,11 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
         for (size_t i = 0; i < uniforms.size(); ++i) {
             const mx::ShaderPort* const port = uniforms[i];
             if (!port->getNode()) {
+#if MX_COMBINED_VERSION < 13900
                 if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
+#else
+                if (port->getType().getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
+#endif
                     // Might be an embedded texture. Retrieve the filename.
                     std::string textureName
                         = mx::OgsXmlGenerator::samplerToTextureName(port->getVariable());
@@ -675,7 +679,11 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
                 path += originalName;
             }
             if (!path.empty()) {
+#if MX_COMBINED_VERSION < 13900
                 if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
+#else
+                if (port->getType().getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
+#endif
                     std::string textureName
                         = mx::OgsXmlGenerator::samplerToTextureName(variableName);
                     if (!textureName.empty()) {

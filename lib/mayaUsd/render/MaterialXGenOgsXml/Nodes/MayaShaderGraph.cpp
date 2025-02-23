@@ -133,8 +133,13 @@ MayaShaderGraph::MayaShaderGraph(
                 ValuePtr value = nodeInput->getResolvedValue();
                 if (value) {
                     const string&                        valueString = value->getValueString();
+#if MX_COMBINED_VERSION < 13900
                     std::pair<const TypeDesc*, ValuePtr> enumResult;
                     const TypeDesc* type = TypeDesc::get(nodedefInput->getType());
+#else
+                    std::pair<TypeDesc, ValuePtr> enumResult;
+                    TypeDesc type = TypeDesc::get(nodedefInput->getType());
+#endif
                     const string&   enumNames
                         = nodedefInput->getAttribute(ValueElement::ENUM_ATTRIBUTE);
                     if (context.getShaderGenerator().getSyntax().remapEnumeration(
