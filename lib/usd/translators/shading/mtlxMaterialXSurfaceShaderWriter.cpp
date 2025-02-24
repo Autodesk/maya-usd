@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
+
 #include <usdUfe/base/tokens.h>
 
 #include <pxr/base/tf/token.h>
