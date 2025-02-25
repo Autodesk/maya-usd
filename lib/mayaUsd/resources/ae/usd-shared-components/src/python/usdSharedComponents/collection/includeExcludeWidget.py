@@ -28,8 +28,9 @@ INCLUDE_OBJECTS_LABEL = "Include Objects..."
 EXCLUDE_OBJECTS_LABEL ="Exclude Objects..."
 ADD_SELECTION_TO_INCLUDE_LABEL ="Add Selection to Include"
 ADD_SELECTION_TO_EXCLUDE_LABEL ="Add Selection to Exclude"
-REMOVE_FROM_INCLUDES_LABEL = "Remove Selected Objects from Include"
-REMOVE_FROM_EXCLUDES_LABEL = "Remove Selected Objects from Exclude"
+REMOVE_FROM_INCLUDES_LABEL = "Remove Selected from Include"
+REMOVE_FROM_EXCLUDES_LABEL = "Remove Selected from Exclude"
+REMOVE_FROM_BOTH_LABEL = "Remove Selected from Both"
 INCLUDE_LABEL = "Include"
 EXCLUDE_LABEL = "Exclude"
 ADD_INCLUDE_OBJECTS_TITLE = "Add Include Objects"
@@ -108,6 +109,9 @@ class IncludeExcludeWidget(QWidget):
         )
         self._deleteBtnMenu.addAction(
             theme.themeLabel(REMOVE_FROM_EXCLUDES_LABEL), self.onRemoveSelectionFromExclude
+        )
+        self._deleteBtnMenu.addAction(
+            theme.themeLabel(REMOVE_FROM_BOTH_LABEL), self.onRemoveSelectionFromBoth
         )
         self._deleteBtn.setMenu(self._deleteBtnMenu)
 
@@ -245,6 +249,14 @@ class IncludeExcludeWidget(QWidget):
 
     def onRemoveSelectionFromExclude(self):
         self._collData.getExcludeData().removeStrings(self._exclude.list.selectedItems())
+        self.onListSelectionChanged()
+
+    def onRemoveSelectionFromBoth(self):
+        # Note: need to retrieve both the lists becuase change cuase UI updates.
+        included = self._include.list.selectedItems()
+        excluded = self._exclude.list.selectedItems()
+        self._collData.getIncludeData().removeStrings(included)
+        self._collData.getExcludeData().removeStrings(excluded)
         self.onListSelectionChanged()
 
     def _onSelectItemsClicked(self):
