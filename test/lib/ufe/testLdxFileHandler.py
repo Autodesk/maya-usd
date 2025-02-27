@@ -33,8 +33,8 @@ from pxr import UsdGeom, UsdShade, Sdf, Usd, Gf, Vt
 import os
 import unittest
 
-class LookdevXUfeDebugHandlerTestCase(unittest.TestCase):
-    '''Verify the USD implementation of LookdevXUfe DebugHandler.
+class LookdevXUfeFileHandlerTestCase(unittest.TestCase):
+    '''Verify the USD implementation of LookdevXUfe FileHandler.
     '''
     pluginsLoaded = False
 
@@ -55,7 +55,7 @@ class LookdevXUfeDebugHandlerTestCase(unittest.TestCase):
         testFile = testUtils.getTestScene('lookdevXUsd', fileName)
         mayaUtils.createProxyFromFile(testFile)
 
-    def test_DebugHandler(self):
+    def test_FileHandler(self):
         self.loadUsdFile('RelativeReferencedUdimTextures.usda')
 
         uvTexturePathStr = "|stage|stageShape,/Def1/pPlane1/mtl/UsdPreviewSurface1/UsdUVTexture1"
