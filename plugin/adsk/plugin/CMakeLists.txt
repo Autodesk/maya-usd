@@ -34,6 +34,9 @@ target_sources(${TARGET_NAME}
         ProxyShape.cpp
         ProxyShapeListener.cpp
         mayaUsdInfoCommand.cpp
+        gizmoShape.cpp
+        gizmoGeometryOverride.cpp
+        drawUtils.cpp
 )
 
 if (CMAKE_UFE_V3_FEATURES_AVAILABLE)

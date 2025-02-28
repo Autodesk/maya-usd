@@ -23,6 +23,8 @@
 #include "base/api.h"
 #include "exportTranslator.h"
 #include "geomNode.h"
+#include "gizmoGeometryOverride.h"
+#include "gizmoShape.h"
 #include "importTranslator.h"
 #include "mayaUsdInfoCommand.h"
 
@@ -49,10 +51,19 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
 
+#include <maya/M3dView.h>
 #include <maya/MDrawRegistry.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnLightDataAttribute.h>
+#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
+#include <maya/MPxDrawOverride.h>
+#include <maya/MPxLocatorNode.h>
+#include <maya/MPxNode.h>
 #include <maya/MStatus.h>
+#include <maya/MTypeId.h>
+#include <maya/MUserData.h>
 #include <ufe/runTimeMgr.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
@@ -92,6 +103,8 @@ namespace {
 const MTypeId kMayaUsdPreviewSurface_typeId(0x58000096);
 const MString kMayaUsdPreviewSurface_typeName("usdPreviewSurface");
 const MString kMayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
+
+const MString kMayaUsdPlugin_registrantId("mayaUsdPlugin");
 
 template <typename T> void registerCommandCheck(MFnPlugin& plugin)
 {
@@ -229,6 +242,21 @@ MStatus initializePlugin(MObject obj)
         MayaUsd::MayaUsdGeomNode::typeId,
         MayaUsd::MayaUsdGeomNode::creator,
         MayaUsd::MayaUsdGeomNode::initialize);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerShape(
+        MayaUsd::GizmoShape::typeName,
+        MayaUsd::GizmoShape::id,
+        MayaUsd::GizmoShape::creator,
+        MayaUsd::GizmoShape::initialize,
+        nullptr,
+        &MayaUsd::GizmoGeometryOverride::dbClassification);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::registerGeometryOverrideCreator(
+        MayaUsd::GizmoGeometryOverride::dbClassification,
+        kMayaUsdPlugin_registrantId,
+        MayaUsd::GizmoGeometryOverride::Creator);
     CHECK_MSTATUS(status);
 
     registerCommandCheck<MayaUsd::ADSKMayaUSDListJobContextsCommand>(plugin);
@@ -379,6 +407,13 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(MayaUsd::MayaUsdGeomNode::typeId);
+    CHECK_MSTATUS(status);
+
+    plugin.deregisterNode(MayaUsd::GizmoShape::id);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::deregisterGeometryOverrideCreator(
+        MayaUsd::GizmoGeometryOverride::dbClassification, kMayaUsdPlugin_registrantId);
     CHECK_MSTATUS(status);
 
     status = MayaUsdProxyShapePlugin::finalize(plugin);
