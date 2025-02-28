@@ -438,9 +438,13 @@ bool _IsHydraColorSpace(const TfToken& paramName)
 bool _IsMaterialX(const HdMaterialNode& node)
 {
     SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
+#if PXR_VERSION >= 2505
+    SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(node.identifier);
+    return sdrNode && sdrNode->GetSourceType() == HdVP2Tokens->mtlx;
+#else
     NdrNodeConstPtr ndrNode = shaderReg.GetNodeByIdentifier(node.identifier);
-
     return ndrNode && ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
+#endif
 }
 
 bool _MxHasFilenameInput(const mx::NodeDefPtr nodeDef)
@@ -1370,16 +1374,20 @@ bool _IsMaskedTransparency(const HdMaterialNetwork& network)
     };
 
 #ifdef WANT_MATERIALX_BUILD
-    const auto ndrNode = SdrRegistry::GetInstance().GetNodeByIdentifier(surfaceShader.identifier);
-
+#if PXR_VERSION >= 2505
+    const auto node = SdrRegistry::GetInstance().GetShaderNodeByIdentifier(surfaceShader.identifier);
+#else
+    const auto node = SdrRegistry::GetInstance().GetNodeByIdentifier(surfaceShader.identifier);
+#endif
+    
     // Handle MaterialX shaders.
-    if (ndrNode->GetSourceType() == HdVP2Tokens->mtlx) {
+    if (node->GetSourceType() == HdVP2Tokens->mtlx) {
         // Check UsdPreviewSurface node based on opacityThreshold.
-        if (ndrNode->GetFamily() == UsdImagingTokens->UsdPreviewSurface) {
+        if (node->GetFamily() == UsdImagingTokens->UsdPreviewSurface) {
             return testParamValue(_tokens->opacityThreshold, std::greater<>(), 0.0f);
         }
         // Check if glTF PBR's alpha_mode is `MASK` and that transmission is disabled.
-        if (ndrNode->GetFamily() == _tokens->gltf_pbr) {
+        if (node->GetFamily() == _tokens->gltf_pbr) {
             return testParamValue(_tokens->alpha_mode, std::equal_to<>(), 1)
                 && testParamValue(_tokens->transmission, std::equal_to<>(), 0.0f);
         }

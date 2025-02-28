@@ -544,7 +544,11 @@ void UsdMayaTranslatorUtil::ReadShaderAttributesFromUsdPrim(
     }
 
     std::string reason;
+#if PXR_VERSION >= 2505
+    for (const TfToken& inputName : shaderNode->GetShaderInputNames()) {
+#else
     for (const TfToken& inputName : shaderNode->GetInputNames()) {
+#endif
         if (SdrShaderPropertyConstPtr shaderProp = shaderNode->GetShaderInput(inputName)) {
             // We only read attributes that should have been written.
             if (_ShouldBeWrittenInUsd(shaderProp)) {
@@ -577,7 +581,11 @@ void UsdMayaTranslatorUtil::WriteShaderAttributesToUsdPrim(
     UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(usdPrim);
     UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(usdPrim);
     std::string reason;
+#if PXR_VERSION >= 2505
+    for (const TfToken& inputName : shaderNode->GetShaderInputNames()) {
+#else
     for (const TfToken& inputName : shaderNode->GetInputNames()) {
+#endif
         if (SdrShaderPropertyConstPtr shaderProp = shaderNode->GetShaderInput(inputName)) {
             if (_ShouldBeWrittenInUsd(shaderProp)) {
                 if (!_WriteProperty(shaderProp, depFn, usdPrim, &reason)) {
@@ -601,7 +609,11 @@ UsdMayaTranslatorUtil::ComputeUsdAttributeToMayaAttributeNamesForShader(const Tf
     }
 
     std::map<TfToken, TfToken> usdAttrToMayaAttrNames;
+#if PXR_VERSION >= 2505
+    for (const TfToken& inputName : shaderNode->GetShaderInputNames()) {
+#else
     for (const TfToken& inputName : shaderNode->GetInputNames()) {
+#endif
         if (SdrShaderPropertyConstPtr shaderProp = shaderNode->GetShaderInput(inputName)) {
             if (_ShouldBeWrittenInUsd(shaderProp)) {
                 const TfToken mayaAttrName(shaderProp->GetImplementationName());

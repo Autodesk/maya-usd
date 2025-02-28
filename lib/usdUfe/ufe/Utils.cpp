@@ -608,6 +608,8 @@ Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderPropert
         TokenToSdfTypeMap::const_iterator it
 #if PXR_VERSION <= 2408
             = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
+#elif PXR_VERSION >= 2505
+            = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().GetSdrType());
 #else
             = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().GetNdrType());
 #endif

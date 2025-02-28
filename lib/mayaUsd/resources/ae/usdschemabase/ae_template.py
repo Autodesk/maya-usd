@@ -113,7 +113,12 @@ class AEShaderLayout(object):
 
         # Best option: Use ordering metadata found the Sdr properties:
         hasMetadataOrdering = False
-        for inputName in nodeDef.GetInputNames():
+        if Usd.GetVersion() < (0, 25, 5):
+            inputNames = nodeDef.GetInputNames()
+        else:
+            inputNames = nodeDef.GetShaderInputNames()
+
+        for inputName in inputNames:
             input = nodeDef.GetShaderInput(inputName)
             metadata = input.GetHints()
             metadata.update(input.GetMetadata())
@@ -124,7 +129,7 @@ class AEShaderLayout(object):
         if hasMetadataOrdering:
             # Prefer metadata over GetPages. The metadata can contain subgroups.
             unorderedIndex = 10000
-            for inputName in nodeDef.GetInputNames():
+            for inputName in inputNames:
                 input = nodeDef.GetShaderInput(inputName)
                 metadata = input.GetHints()
                 metadata.update(input.GetMetadata())
@@ -148,7 +153,7 @@ class AEShaderLayout(object):
 
         if not pages:
             # Worst case: Flat layout
-            for name in nodeDef.GetInputNames():
+            for name in inputNames:
                 self._attributeLayout.items.append(UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input))
             return
 
@@ -158,7 +163,12 @@ class AEShaderLayout(object):
                 pageLabel = 'Extra Shader Attributes'
             group = AEShaderLayout.Group(pageLabel)
             for name in nodeDef.GetPropertyNamesForPage(page):
-                if nodeDef.GetInput(name):
+                if Usd.GetVersion() < (0, 25, 5):
+                    nodeInput = nodeDef.GetInput()
+                else:
+                    nodeInput = nodeDef.GetShaderInput()
+
+                if nodeInput:
                     name = UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input)
                     group.items.append(name)
             if group.items:

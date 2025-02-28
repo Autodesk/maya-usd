@@ -68,7 +68,11 @@ bool connectShaderToMaterial(
         materialOutput = UsdShadeMaterial(materialPrim).CreateSurfaceOutput();
         shaderOutputDef = shaderNodeDef->GetShaderOutput(TfToken("surface"));
     } else {
+#if PXR_VERSION >= 2505
+        if (shaderNodeDef->GetShaderOutputNames().size() != 1) {
+#else
         if (shaderNodeDef->GetOutputNames().size() != 1) {
+#endif
             TF_RUNTIME_ERROR(
                 "Cannot resolve which output of shader %s should be connected to surface",
                 nodeId.c_str());
@@ -76,7 +80,11 @@ bool connectShaderToMaterial(
         }
         materialOutput
             = UsdShadeMaterial(materialPrim).CreateSurfaceOutput(shaderNodeDef->GetSourceType());
+#if PXR_VERSION >= 2505
+        shaderOutputDef = shaderNodeDef->GetShaderOutput(shaderNodeDef->GetShaderOutputNames()[0]);
+#else
         shaderOutputDef = shaderNodeDef->GetShaderOutput(shaderNodeDef->GetOutputNames()[0]);
+#endif
     }
     if (!shaderOutputDef) {
         return false;
@@ -378,7 +386,11 @@ void UsdUndoAssignNewMaterialCommand::execute()
             markAsFailed();
             return;
         }
+#if PXR_VERSION >= 2505
+        if (shaderNodeDef->GetShaderOutputNames().empty()) {
+#else
         if (shaderNodeDef->GetOutputNames().empty()) {
+#endif
             TF_RUNTIME_ERROR("Surface shader %s does not have any outputs", _nodeId.c_str());
             markAsFailed();
             return;
@@ -546,7 +558,11 @@ void UsdUndoAddNewMaterialCommand::execute()
         TF_RUNTIME_ERROR("Unknown shader identifier: %s", _nodeId.c_str());
         return;
     }
+#if PXR_VERSION >= 2505
+    if (shaderNodeDef->GetShaderOutputNames().empty()) {
+#else
     if (shaderNodeDef->GetOutputNames().empty()) {
+#endif
         TF_RUNTIME_ERROR("Surface shader %s does not have any outputs", _nodeId.c_str());
         return;
     }
