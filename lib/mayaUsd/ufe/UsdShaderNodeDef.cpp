@@ -64,7 +64,8 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
     Ufe::ConstAttributeDefs attrs;
     const bool              input = (IOTYPE == Ufe::AttributeDef::INPUT_ATTR);
 #if PXR_VERSION >= 2505
-    auto names = input ? shaderNodeDef->GetShaderInputNames() : shaderNodeDef->GetShaderOutputNames();
+    auto names
+        = input ? shaderNodeDef->GetShaderInputNames() : shaderNodeDef->GetShaderOutputNames();
     attrs.reserve(names.size());
     for (const TfToken& name : names) {
         SdrShaderPropertyConstPtr property
@@ -238,7 +239,7 @@ std::vector<std::string> UsdShaderNodeDef::inputNames() const
 #if PXR_VERSION >= 2505
     auto names = _shaderNodeDef->GetShaderInputNames();
 #else
-    auto names = _shaderNodeDef->GetInputNames();
+    auto               names = _shaderNodeDef->GetInputNames();
 #endif
     retVal.reserve(names.size());
     for (auto&& n : names) {
@@ -275,7 +276,7 @@ std::vector<std::string> UsdShaderNodeDef::outputNames() const
 #if PXR_VERSION >= 2505
     auto names = _shaderNodeDef->GetShaderOutputNames();
 #else
-    auto names = _shaderNodeDef->GetOutputNames();
+    auto               names = _shaderNodeDef->GetOutputNames();
 #endif
     retVal.reserve(names.size());
     for (auto&& n : names) {

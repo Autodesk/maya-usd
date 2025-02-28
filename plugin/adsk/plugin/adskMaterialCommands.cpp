@@ -88,7 +88,7 @@ void ADSKMayaUSDGetMaterialsForRenderersCommand::appendMaterialXMaterials() cons
 
 void ADSKMayaUSDGetMaterialsForRenderersCommand::appendArnoldMaterials() const
 {
-    auto&      sdrRegistry = PXR_NS::SdrRegistry::GetInstance();
+    auto& sdrRegistry = PXR_NS::SdrRegistry::GetInstance();
 #if PXR_VERSION >= 2505
     const auto sourceTypes = sdrRegistry.GetAllShaderNodeSourceTypes();
 #else

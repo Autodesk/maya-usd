@@ -109,9 +109,9 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
         // First, get the list off all outputs of the correct type.
         std::vector<TfToken> validOutputs;
 #if PXR_VERSION >= 2505
-        auto                 outputNames = sdrNode->GetShaderOutputNames();
+        auto outputNames = sdrNode->GetShaderOutputNames();
 #else
-        auto                 outputNames = sdrNode->GetOutputNames();
+        auto outputNames = sdrNode->GetOutputNames();
 #endif
 
         auto addMatchingOutputs = [&](SdfValueTypeName matchingType) {
@@ -878,7 +878,7 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams
 #if PXR_VERSION >= 2505
                 auto inputNames = sdrNode->GetShaderInputNames();
 #else
-                auto inputNames = sdrNode->GetInputNames();
+                auto                   inputNames = sdrNode->GetInputNames();
 #endif
                 _previewShaderParams.reserve(inputNames.size());
 

@@ -133,13 +133,13 @@ static const MetadataMap _metaMap = {
               { Ufe::Attribute::kColorFloat4, std::string { "0,0,0,0" } },
 #endif
           };
-          // If there is a UIMin value, use it as the soft min.
+    // If there is a UIMin value, use it as the soft min.
 #if PXR_VERSION >= 2505
           const SdrTokenMap& metadata = p.GetMetadata();
 #else
           const NdrTokenMap& metadata = p.GetMetadata();
 #endif
-          auto               it = metadata.find(UsdUfe::MetadataTokens->UIMin);
+          auto it = metadata.find(UsdUfe::MetadataTokens->UIMin);
           if (it != metadata.cend()) {
               return Ufe::Value(it->second);
           }
@@ -161,13 +161,13 @@ static const MetadataMap _metaMap = {
               { Ufe::Attribute::kColorFloat4, std::string { "1,1,1,1" } },
 #endif
           };
-          // If there is a UIMax value, use it as the soft max.
+    // If there is a UIMax value, use it as the soft max.
 #if PXR_VERSION >= 2505
           const SdrTokenMap& metadata = p.GetMetadata();
 #else
           const NdrTokenMap& metadata = p.GetMetadata();
 #endif
-          auto               it = metadata.find(UsdUfe::MetadataTokens->UIMax);
+          auto it = metadata.find(UsdUfe::MetadataTokens->UIMax);
           if (it != metadata.cend()) {
               return Ufe::Value(it->second);
           }
@@ -211,9 +211,9 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 #if PXR_VERSION >= 2505
     const SdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
 #else
-    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
+    const NdrTokenMap&       metadata = _shaderAttributeDef->GetMetadata();
 #endif
-    auto               it = metadata.find(TfToken(key));
+    auto it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
     }
@@ -221,7 +221,7 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 #if PXR_VERSION >= 2505
     const SdrTokenMap& hints = _shaderAttributeDef->GetHints();
 #else
-    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
+    const NdrTokenMap&       hints = _shaderAttributeDef->GetHints();
 #endif
     it = hints.find(TfToken(key));
     if (it != hints.cend()) {
@@ -249,9 +249,9 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 #if PXR_VERSION >= 2505
     const SdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
 #else
-    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
+    const NdrTokenMap&       metadata = _shaderAttributeDef->GetMetadata();
 #endif
-    auto               it = metadata.find(TfToken(key));
+    auto it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return true;
     }
@@ -259,7 +259,7 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 #if PXR_VERSION >= 2505
     const SdrTokenMap& hints = _shaderAttributeDef->GetHints();
 #else
-    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
+    const NdrTokenMap&       hints = _shaderAttributeDef->GetHints();
 #endif
     it = hints.find(TfToken(key));
     if (it != hints.cend()) {
