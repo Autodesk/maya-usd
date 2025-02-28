@@ -58,7 +58,7 @@ def assertPrimXforms(test, prim, xforms):
         test.assertEqual(xformOpOrder[0], name)
         attr = prim.GetAttribute(name)
         test.assertIsNotNone(attr)
-        test.assertTrue(Gf.IsClose(attr.Get(), value, EPSILON))
+        test.assertTrue(Gf.IsClose(attr.Get(), value, EPSILON), "For %s Expected: %s, Got: %s" % (name, value, attr.Get()))
         # Chop off the first xofrm op for the next loop.
         xformOpOrder = xformOpOrder[1:]
 

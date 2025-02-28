@@ -236,10 +236,8 @@ class testUsdExportRoot(unittest.TestCase):
             self.assertNotPrim(stage, '/OtherMid')
             self.assertPrim(stage, '/Mid/OtherLowest', 'Xform')
             transformUtils.assertStagePrimXforms(self, stage, '/Mid', [
-                ('xformOp:translate', (2., 0., 0.)),
-                ('xformOp:rotateXYZ', (45., 0., 0.)),
-                ('xformOp:translate:channel1', (0., 2., 0.)),
-                ('xformOp:rotateXYZ:channel1', (0., 0., 45.))])
+                ('xformOp:translate', (2., 2., 0.)),
+                ('xformOp:rotateXYZ', (45., 0., 45.))])
             transformUtils.assertStagePrimXforms(self, stage, '/Mid/Cube', [
                 ('xformOp:translate', (0., 0., 3.)),
                 ('xformOp:rotateXYZ', (0., 45., 0.))])
@@ -317,12 +315,8 @@ class testUsdExportRoot(unittest.TestCase):
             self.assertNotPrim(stage, '/OtherMid')
             self.assertNotPrim(stage, '/OtherLowest')
             transformUtils.assertStagePrimXforms(self, stage, '/Cube', [
-                ('xformOp:translate', (2., 0., 0.)),
-                ('xformOp:rotateXYZ', (45., 0., 0.)),
-                ('xformOp:translate:channel1', (0., 2., 0.)),
-                ('xformOp:rotateXYZ:channel1', (0., 0., 45.)),
-                ('xformOp:translate:channel2', (0., 0., 3.)),
-                ('xformOp:rotateXYZ:channel2', (0., 45., 0.))])
+                ('xformOp:translate', (2., 2., 3.)),
+                ('xformOp:rotateXYZ', (45., 45., 45.))])
         self.doExportImportTest(validator, root='Cube', worldspace=True)
 
     def testExportRoot_rootCube_selTop(self):

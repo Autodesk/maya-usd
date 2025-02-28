@@ -152,6 +152,9 @@ private:
         const bool              writeAnim,
         const bool              worldspace);
 
+    static UsdGeomXformOp
+    findXformOp(const UsdGeomXformable& usdXformable, const _AnimChannel& animChan);
+
     void _WriteChannelsXformOps(const UsdGeomXformable& usdXForm);
 
     std::vector<_AnimChannel> _animChannels;

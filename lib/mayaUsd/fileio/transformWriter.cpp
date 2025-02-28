@@ -49,6 +49,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_REGISTER_WRITER(transform, UsdMayaTransformWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(transform, UsdGeomXform);
 
+static bool _isDoublePrecision(const UsdAttribute& attr)
+{
+    return UsdGeomXformOp::GetPrecisionFromValueTypeName(attr.GetTypeName())
+        == UsdGeomXformOp::PrecisionDouble;
+}
+
 void UsdMayaTransformWriter::_AnimChannel::setXformOp(
     const GfVec3d&             value,
     const GfMatrix4d&          matrix,
@@ -60,23 +66,86 @@ void UsdMayaTransformWriter::_AnimChannel::setXformOp(
         return;
     }
 
+    const UsdAttribute& attr = op.GetAttr();
+    // Note: USD makes it harder than it should to know if an attribute has an
+    //       opinion authored at a given precise time. USD will interpolate
+    //       values out of thin air out of surrounding values. To complicate
+    //       things further, the behaviour of function to check authored values
+    //       is not the same for values at given time vs the value a the default
+    //       (unspecified) time.
+    //
+    //       That is why we need two different ways to check if a value is
+    //       authored at a given time or at the default time.
+    bool hasAuthoredValue = false;
+    if (usdTime.IsDefault()) {
+        hasAuthoredValue = attr.GetResolveInfo(usdTime).HasAuthoredValueOpinion();
+
+    } else {
+        std::vector<double> times;
+        attr.GetTimeSamplesInInterval(GfInterval(usdTime.GetValue()), &times);
+        hasAuthoredValue = !times.empty();
+    }
+
+    // Combine the given value with any existing authored value at the precise
+    // time when we want to author the value.
     VtValue vtValue;
     if (isMatrix) {
-        vtValue = matrix;
+        GfMatrix4d authoredValue = GfMatrix4d(1.0);
+        if (hasAuthoredValue)
+            attr.Get(&authoredValue, usdTime);
+
+        vtValue = GfMatrix4d(authoredValue * matrix);
     } else if (opType == _XformType::Shear) {
         GfMatrix4d shearXForm(1.0);
         shearXForm[1][0] = value[0]; // xyVal
         shearXForm[2][0] = value[1]; // xzVal
         shearXForm[2][1] = value[2]; // yzVal
-        vtValue = shearXForm;
-    } else if (
-        UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName())
-        == UsdGeomXformOp::PrecisionDouble) {
-        vtValue = VtValue(value);
+
+        GfMatrix4d authoredValue = GfMatrix4d(1.0);
+        if (hasAuthoredValue)
+            attr.Get(&authoredValue, usdTime);
+
+        vtValue = GfMatrix4d(authoredValue * shearXForm);
+    } else if (_isDoublePrecision(attr)) {
+        GfVec3d authoredValue(usdOpType == UsdGeomXformOp::TypeScale ? 1. : 0.);
+        if (hasAuthoredValue) {
+            if (!attr.Get(&authoredValue, usdTime)) {
+                GfVec3f floatValue(usdOpType == UsdGeomXformOp::TypeScale ? 1. : 0.);
+                if (attr.Get(&floatValue, usdTime)) {
+                    authoredValue = GfVec3d(floatValue);
+                }
+            }
+        }
+
+        if (usdOpType == UsdGeomXformOp::TypeScale) {
+            authoredValue[0] *= value[0];
+            authoredValue[1] *= value[1];
+            authoredValue[2] *= value[2];
+            vtValue = authoredValue;
+        } else {
+            vtValue = GfVec3d(authoredValue + value);
+        }
     } else { // float precision
-        vtValue = VtValue(GfVec3f(value));
+        GfVec3f authoredValue(usdOpType == UsdGeomXformOp::TypeScale ? 1.f : 0.f);
+        if (hasAuthoredValue) {
+            if (!attr.Get(&authoredValue, usdTime)) {
+                GfVec3d doubleValue(usdOpType == UsdGeomXformOp::TypeScale ? 1. : 0.);
+                if (attr.Get(&doubleValue, usdTime)) {
+                    authoredValue = GfVec3f(doubleValue);
+                }
+            }
+        }
+
+        if (usdOpType == UsdGeomXformOp::TypeScale) {
+            authoredValue[0] *= value[0];
+            authoredValue[1] *= value[1];
+            authoredValue[2] *= value[2];
+            vtValue = authoredValue;
+        } else {
+            vtValue = GfVec3f(authoredValue + GfVec3f(value));
+        }
     }
-    valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
+    valueWriter->SetAttribute(attr, vtValue, usdTime);
 }
 
 /* static */
@@ -303,6 +372,20 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
 
 void UsdMayaTransformWriter::_MakeAnimChannelsUnique(const UsdGeomXformable& usdXformable)
 {
+    // Note: we no longer make transform ops unique, instead we combine the values
+    //       from multiple source together. This avoids the problem that generating
+    //       the USD file in multiple passes in append mode would create new channels
+    //       for each pass.
+    //
+    //       The main problem was when trying ot generate the USD file in multiple
+    //       passes, one per animation frame. Each frame would generate a new set
+    //       of channels, and the channels would be duplicated in the USD file.
+    //
+    //       Furthermore, *not* generating channels would break rigs and skeletons,
+    //       since they provide values from multiple source that need to be combined.
+    //       What we do now is combine the values: adding translations, multiplying
+    //       scales, etc. This combination is done in the _AnimChannel::setXformOp
+    //       function.
     using OpName = TfToken;
     std::set<OpName> existingOps;
     bool             xformReset = false;
@@ -570,15 +653,31 @@ void UsdMayaTransformWriter::_PushTransformStack(
     }
 }
 
+/* static */
+UsdGeomXformOp UsdMayaTransformWriter::findXformOp(
+    const UsdGeomXformable& usdXformable,
+    const _AnimChannel&     animChan)
+{
+    bool resetsXformStack = false;
+    for (const UsdGeomXformOp& op : usdXformable.GetOrderedXformOps(&resetsXformStack)) {
+        if (op.GetOpType() == animChan.usdOpType && op.HasSuffix(animChan.suffix)
+            && op.IsInverseOp() == animChan.isInverse) {
+            return op;
+        }
+    }
+    return {};
+}
+
 void UsdMayaTransformWriter::_WriteChannelsXformOps(const UsdGeomXformable& usdXformable)
 {
-    _MakeAnimChannelsUnique(usdXformable);
-
-    // Loop over anim channel vector and create corresponding XFormOps
+    // Loop over anim channel vector and get or create corresponding XFormOps
     // including the inverse ones if needed
     for (_AnimChannel& animChan : _animChannels) {
-        animChan.op = usdXformable.AddXformOp(
-            animChan.usdOpType, animChan.precision, animChan.suffix, animChan.isInverse);
+        animChan.op = findXformOp(usdXformable, animChan);
+        if (!animChan.op) {
+            animChan.op = usdXformable.AddXformOp(
+                animChan.usdOpType, animChan.precision, animChan.suffix, animChan.isInverse);
+        }
         if (!animChan.op) {
             TF_CODING_ERROR("Could not add xform op");
             animChan.op = UsdGeomXformOp();
