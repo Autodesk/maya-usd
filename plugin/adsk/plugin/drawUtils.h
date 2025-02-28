@@ -61,7 +61,7 @@ public:
     //! Constructor to specify the Disk parameters
     //! \param[in] offset specifies the offset from the point of origin
     //! \param[in] radius specifies the radius of the circle
-    //! \param[in] circleOnly When true, it only generates the data for a circle. When false, 
+    //! \param[in] circleOnly When true, it only generates the data for a circle. When false,
     //! is also generates lines connecting the circle to the center.
     //! \param[in] resolution specifies the number of edges generated when forming the circle.
     //! \note resolution also impacts the number of lines drawn connecting the circle to its center

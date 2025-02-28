@@ -249,7 +249,7 @@ ConePrimitive::ConePrimitive(
     }
 
     // Arrow
-    double   lineOffset[3] = { 0.0, 0.0, 0.0 };
+    double         lineOffset[3] = { 0.0, 0.0, 0.0 };
     ArrowPrimitive arrow(lineOffset, 0.5f + height);
 
     lastVertexIndex = wirePositions.length();
