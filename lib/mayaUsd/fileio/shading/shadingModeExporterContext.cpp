@@ -612,6 +612,10 @@ public:
         // See lib\usd\translators\shading\usdFileTextureWriter.cpp for an example of an exporter
         // declaring UV inputs that require linking.
         for (const UsdShadeInput& input : material.GetInputs()) {
+            // Split the input name along ':' (that is what SplitName does)
+            // and if the last element is "varname" or "varnameStr" then
+            // the Maya node name is added to _nodesWithUVInput. (The Maya
+            // node name is the middle part of the split name.)
             const UsdAttribute&      usdAttr = input.GetAttr();
             std::vector<std::string> splitName = usdAttr.SplitName();
             if (splitName.back() != _tokens->varname.GetString()
@@ -619,12 +623,15 @@ public:
                 continue;
             }
 
+            // Maya node names can be inside a Maya namespace. The Maya namespace
+            // separator is *also* ':'. So we need to check if the split name
+            // has more than 3 parts, and if so, we need to concatenate the parts.
             switch (splitName.size()) {
-            case 3: _nodesWithUVInput.push_back(TfToken(splitName[1])); break;
-            default
-                : // NOTE: (yliangsiew) Means that we have a Maya node with a namespace/multiple
-                  // namespaces.
-            {
+            case 3: {
+                _nodesWithUVInput.push_back(TfToken(splitName[1]));
+                break;
+            }
+            default: {
                 std::string mayaNodeName = splitName[1];
                 for (size_t i = 2; i < splitName.size() - 1; ++i) {
                     mayaNodeName += ":" + splitName[i];
@@ -645,12 +652,26 @@ public:
         }
 
         // Ask Maya about UV linkage:
-        for (const TfToken& nodeName : _nodesWithUVInput) {
-            MString uvLinkCmd;
+
+        for (size_t i = 0; i < _nodesWithUVInput.size(); ++i) {
+            const TfToken& nodeName = _nodesWithUVInput[i];
+            MString        uvLinkCmd;
             uvLinkCmd.format(
                 "stringArrayToString(`uvLink -q -t \"^1s\"`, \" \");", nodeName.GetText());
             std::string uvLinkResult = MGlobal::executeCommandStringResult(uvLinkCmd).asChar();
-            for (std::string uvSetRef : TfStringTokenize(uvLinkResult)) {
+            const std::vector<std::string> uvSets = TfStringTokenize(uvLinkResult);
+            // If there are not UV sets, then the node has no valid UV input we must remove it.
+            // Otherwise, assumptions in the code below won't be satisfied.
+            if (uvSets.empty()) {
+                TF_WARN(
+                    "Could not determine the UV link of the UV input of the node \"%s\".",
+                    nodeName.GetText());
+                _nodesWithUVInput.erase(_nodesWithUVInput.begin() + i);
+                --i;
+                continue;
+            }
+
+            for (std::string uvSetRef : uvSets) {
                 // NOTE: If the mesh shape has the same name as the transform, then we will get a
                 //       complete path like
                 //           |mesh|mesh.uvSet[0].uvSetName
@@ -706,6 +727,8 @@ public:
 
         // Update the original material with the most common mapping:
         if (largestSize) {
+            // TODO: why is it assumed that the largest set has the same size as the nodes?
+            //       Could the UV sets not be disjoint?
             TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
             TfTokenVector::const_iterator itName = largestSet.cbegin();
             for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
