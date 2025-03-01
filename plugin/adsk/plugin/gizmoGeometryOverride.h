@@ -73,11 +73,11 @@ public:
     {
         return new GizmoGeometryOverride(obj);
     }
-    virtual MHWRender::DrawAPI supportedDrawAPIs() const { return (MHWRender::kAllDevices); }
+    virtual MHWRender::DrawAPI supportedDrawAPIs() const override { return (MHWRender::kAllDevices); }
 
     virtual void updateDG() override { }
-    virtual bool isIndexingDirty(const MHWRender::MRenderItem& item) { return true; }
-    virtual bool isStreamDirty(const MHWRender::MVertexBufferDescriptor& desc) { return true; }
+    virtual bool isIndexingDirty(const MHWRender::MRenderItem& item) override { return true; }
+    virtual bool isStreamDirty(const MHWRender::MVertexBufferDescriptor& desc) override { return true; }
     virtual void updateRenderItems(const MDagPath& path, MHWRender::MRenderItemList& list) override;
     virtual void populateGeometry(
         const MHWRender::MGeometryRequirements& requirements,
