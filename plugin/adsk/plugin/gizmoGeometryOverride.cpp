@@ -98,7 +98,8 @@ void GizmoGeometryOverride::updateRenderItems(
         MPlug shapeTypePlug = depNode.findPlug("shapeType", true, &status);
         if (!shapeTypePlug.isNull()) {
             int val;
-            if (status = shapeTypePlug.getValue(val)) {
+            status = shapeTypePlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = m_geometryDirty || (((int)fShapeType) != val);
                 fShapeType = (GizmoData::ShapeType)val;
             }
@@ -107,7 +108,8 @@ void GizmoGeometryOverride::updateRenderItems(
         MPlug widthPlug = depNode.findPlug("width", true, &status);
         if (!widthPlug.isNull()) {
             float val;
-            if (status = widthPlug.getValue(val)) {
+            status = widthPlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = m_geometryDirty || (fWidth != val);
                 fWidth = val;
             }
@@ -116,7 +118,8 @@ void GizmoGeometryOverride::updateRenderItems(
         MPlug heightPlug = depNode.findPlug("height", true, &status);
         if (!heightPlug.isNull()) {
             float val;
-            if (status = heightPlug.getValue(val)) {
+            status = heightPlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = m_geometryDirty || (fHeight != val);
                 fHeight = val;
             }
@@ -125,7 +128,8 @@ void GizmoGeometryOverride::updateRenderItems(
         MPlug radiusPlug = depNode.findPlug("radius", true, &status);
         if (!radiusPlug.isNull()) {
             float val;
-            if (status = radiusPlug.getValue(val)) {
+            status = radiusPlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = m_geometryDirty || (fRadius != val);
                 fRadius = val;
             }
@@ -134,7 +138,8 @@ void GizmoGeometryOverride::updateRenderItems(
         MPlug penumbraPlug = depNode.findPlug("penumbra", true, &status);
         if (!penumbraPlug.isNull()) {
             float val;
-            if (status = penumbraPlug.getValue(val)) {
+            status = penumbraPlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = m_geometryDirty || (fPenumbraAngle != val);
                 fPenumbraAngle = val;
             }
@@ -143,7 +148,8 @@ void GizmoGeometryOverride::updateRenderItems(
         MPlug coneAnglePlug = depNode.findPlug("coneAngle", true, &status);
         if (!coneAnglePlug.isNull()) {
             float val;
-            if (status = coneAnglePlug.getValue(val)) {
+            status = coneAnglePlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = m_geometryDirty || (fConeAngle != val);
                 fConeAngle = val;
             }
@@ -152,7 +158,8 @@ void GizmoGeometryOverride::updateRenderItems(
         MPlug dropOffPlug = depNode.findPlug("dropOff", true, &status);
         if (!dropOffPlug.isNull()) {
             float val;
-            if (status = dropOffPlug.getValue(val)) {
+            status = dropOffPlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = m_geometryDirty || (fDropOff != val);
                 fDropOff = val;
             }
@@ -161,7 +168,8 @@ void GizmoGeometryOverride::updateRenderItems(
         MPlug lightAnglePlug = depNode.findPlug("lightAngle", true, &status);
         if (!lightAnglePlug.isNull()) {
             float val;
-            if (status = lightAnglePlug.getValue(val)) {
+            status = lightAnglePlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = m_geometryDirty || (fLightAngle != val);
                 fLightAngle = val;
             }
