@@ -9,7 +9,7 @@ DISPATCH_POOL = isAzure ? 'aws-linux' : 'mayausd-preload-pool'
 
 pipeline {
     agent {
-        label ${DISPATCH_POOL}
+        label "${DISPATCH_POOL}"
     }
     stages {
         stage('Triggering Preflight Update Submodule') {
