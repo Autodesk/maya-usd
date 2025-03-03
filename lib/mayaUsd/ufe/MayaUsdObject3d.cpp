@@ -54,7 +54,9 @@ MayaUsdObject3d::adjustAlignedBBox(const Ufe::BBox3d& bbox, const PXR_NS::UsdTim
     return UsdUfe::combineUfeBBox(bbox, pulledBBox);
 }
 
-#ifndef UFE_CAMERA_HAS_VISIBILITY
+// This visibility method is for older maya versions that do not have computedVisibility() for
+// cameras
+#ifndef UFE_CAMERA_HAS_COMPUTEDVISIBILITY
 bool MayaUsdObject3d::visibility() const
 {
     PXR_NS::TfToken visibilityToken;
@@ -80,7 +82,7 @@ bool MayaUsdObject3d::visibility() const
 
     return visibilityToken != PXR_NS::UsdGeomTokens->invisible;
 }
-#endif // UFE_CAMERA_HAS_VISIBILITY
+#endif // UFE_CAMERA_HAS_COMPUTEDVISIBILITY
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

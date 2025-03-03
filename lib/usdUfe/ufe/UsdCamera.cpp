@@ -481,8 +481,8 @@ bool UsdCamera::renderable() const
 }
 #endif
 
-#ifdef UFE_CAMERA_HAS_VISIBILITY
-bool UsdCamera::visibility() const
+#ifdef UFE_CAMERA_HAS_COMPUTEDVISIBILITY
+bool UsdCamera::computedVisibility() const
 {
     PXR_NS::TfToken visibilityToken;
     auto            visAttr = PXR_NS::UsdGeomImageable(prim()).GetVisibilityAttr();
