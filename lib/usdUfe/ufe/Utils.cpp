@@ -1281,7 +1281,7 @@ bool isRelationshipEditAllowed(
                         }
                     }
                 } 
-                if(targetsToRemove) {
+                if (targetsToRemove) {
                     // Checking if some of the items are added, prepended or
                     // appended back using a stronger opinion.
                     for (auto it = targetsToRemove->begin(); it != targetsToRemove->end();) {
@@ -1309,8 +1309,7 @@ bool isRelationshipEditAllowed(
         }
     }
 
-    if(errMsg)
-    {
+    if (errMsg) {
         constexpr auto join = [](const std::vector<std::string>& items) -> std::string {
             std::string result;
             for (const auto& item : items) {

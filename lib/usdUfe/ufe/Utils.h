@@ -395,15 +395,15 @@ bool isEditTargetLayerModifiable(
     std::string*                  errMsg = nullptr);
 
 //! Check if a vector of paths could be added/removed on a given relationship.
-//! \param relationship The relationship to be edited.  
+//! \param relationship The relationship to be edited.
 //! \param targetsToAdd The optional paths to be added to the relationship. If
 //!        not nullptr, the entries will be adjusted to only keep the paths that
-//!        are allowed to be added to the relationship.  
+//!        are allowed to be added to the relationship.
 //! \param targetsToRemove The optional paths to be removed from the
 //!        relationship. If not nullptr, the entries will be adjusted to only
-//!        keep the paths that are allowed to be removed from the relationship.  
+//!        keep the paths that are allowed to be removed from the relationship.
 //! \param errMsg The optional error message to be filled in case of any target
-//!        not being able to be added/removed.  
+//!        not being able to be added/removed.
 //! \return True, if one ore more of the targets given are allowed to be
 //!        added/removed to the relationship in the stage's local Layer Stack.
 USDUFE_PUBLIC
