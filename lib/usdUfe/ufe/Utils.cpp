@@ -1280,7 +1280,7 @@ bool isRelationshipEditAllowed(
                             ++it;
                         }
                     }
-                } 
+                }
                 if (targetsToRemove) {
                     // Checking if some of the items are added, prepended or
                     // appended back using a stronger opinion.
