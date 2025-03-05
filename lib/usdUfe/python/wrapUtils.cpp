@@ -101,6 +101,79 @@ bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     return UsdUfe::isAttributeEditAllowed(attr);
 }
 
+static tuple _isRelationshipEditAllowed(
+    const PXR_NS::UsdRelationship& relationship,
+    list&                          targetsToAdd,
+    list&                          targetsToRemove)
+{
+    std::string errMsg;
+    bool        result = true;
+    {
+        PXR_NS::SdfPathVector targetsToAddVec = extract<PXR_NS::SdfPathVector>(targetsToAdd);
+        PXR_NS::SdfPathVector targetsToRemoveVec = extract<PXR_NS::SdfPathVector>(targetsToRemove);
+
+        result = UsdUfe::isRelationshipEditAllowed(
+            relationship, &targetsToAddVec, &targetsToRemoveVec, &errMsg);
+
+        // pass the removal of elements to the python lists
+        int i = len(targetsToAdd);
+        if (i > 0) {
+            int finalLen = static_cast<int>(targetsToAddVec.size());
+            if (finalLen != i) {
+                if (finalLen == 0) {
+                    // all elements were removed
+                    while (i > 0) {
+                        targetsToAdd.pop();
+                        --i;
+                    }
+                } else {
+                    --i;
+                    for (auto it = targetsToAddVec.crbegin(); it != targetsToAddVec.crend();) {
+                        if (*it != extract<PXR_NS::SdfPath>(targetsToAdd[i])) {
+                            targetsToAdd.pop(i);
+                        } else {
+                            ++it;
+                        }
+                        if (i == finalLen) {
+                            break;
+                        }
+                        --i;
+                    }
+                }
+            }
+        }
+
+        i = len(targetsToRemove);
+        if (i > 0) {
+            int finalLen = static_cast<int>(targetsToRemoveVec.size());
+            if (finalLen != i) {
+                if (finalLen == 0) {
+                    // all elements were removed
+                    while (i > 0) {
+                        targetsToRemove.pop();
+                        --i;
+                    }
+                } else {
+                    --i;
+                    for (auto it = targetsToRemoveVec.crbegin();
+                         it != targetsToRemoveVec.crend();) {
+                        if (*it != extract<PXR_NS::SdfPath>(targetsToRemove[i])) {
+                            targetsToRemove.pop(i);
+                        } else {
+                            ++it;
+                        }
+                        if (i == finalLen) {
+                            break;
+                        }
+                        --i;
+                    }
+                }
+            }
+        }
+    }
+    return make_tuple<bool, std::string>(result, errMsg);
+}
+
 static dict _convertSchemaInfo(const UsdUfe::SchemaInfo& info)
 {
     dict infoDict;
@@ -193,6 +266,7 @@ void wrapUtils()
     def("getTime", _getTime);
     def("prettifyName", &UsdUfe::prettifyName);
     def("isAttributeEditAllowed", _isAttributeEditAllowed);
+    def("isRelationshipEditAllowed", _isRelationshipEditAllowed);
     def("getKnownApplicableSchemas", _getKnownApplicableSchemas);
     def("applySchemaToPrim", _applySchemaToPrim);
     def("applyMultiSchemaToPrim", _applyMultiSchemaToPrim);
