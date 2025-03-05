@@ -51,7 +51,6 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
 
-#include <maya/M3dView.h>
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnLightDataAttribute.h>
