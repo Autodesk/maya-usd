@@ -234,6 +234,10 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
                   options=";".join(import_options))
         cmds.move(0, 0, 2, "Test1:locator1")
 
+        # Set all filtering to OFF to prevent aliasing from causing differences
+        for fn in cmds.ls(exactType="file"):
+            cmds.setAttr(fn + ".filterType", 0)
+
         self.assertSnapshotClose('OpenPBRShowcase_UsdPS_Import_render.png', 960, 960)
 
         cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
