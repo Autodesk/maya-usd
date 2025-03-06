@@ -153,7 +153,7 @@ UsdShadeOutput UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
     TfToken               outputName = terminalName;
     SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(nodeID);
     if (shaderNodeDef) {
-#if PXR_VERSION >= 2025
+#if PXR_VERSION >= 2505
         const SdrTokenVec& outputNames = shaderNodeDef->GetShaderOutputNames();
 #else
         const NdrTokenVec& outputNames = shaderNodeDef->GetOutputNames();
