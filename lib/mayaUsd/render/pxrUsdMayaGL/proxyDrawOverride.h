@@ -77,10 +77,12 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     bool userSelect(
-        MHWRender::MSelectionInfo&     selectionInfo,
-        const MHWRender::MDrawContext& context,
-        MPoint&                        hitPoint,
-        const MUserData*               data) override;
+        const MSelectionInfo&           selectionInfo,
+        const MHWRender::MDrawContext&  context,
+        const MDagPath&                 objPath,
+        const MUserData*                data,
+        MSelectionList&                 selectionList,
+        MPointArray&                    worldSpaceSelectPts) override;
 
     MAYAUSD_CORE_PUBLIC
     static void draw(const MHWRender::MDrawContext& context, const MUserData* data);

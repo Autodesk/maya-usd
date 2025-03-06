@@ -81,6 +81,23 @@ public:
         const MHWRender::MFrameContext& frameContext,
         MUserData*                      oldData) override;
 
+    // wantUserSelection() and userSelect() are overridden to make sure
+    // HdImagingShape is not selectable. It causes a deadlock in VP2 in x-ray
+    // mode, if this node is selectable. (MAYA-2941)
+    MAYAUSD_CORE_PUBLIC
+    bool wantUserSelection() const override { return true; }
+    MAYAUSD_CORE_PUBLIC
+    bool userSelect(
+        const MSelectionInfo&           selectionInfo,
+        const MHWRender::MDrawContext&  context,
+        const MDagPath&                 objPath,
+        const MUserData*                data,
+        MSelectionList&                 selectionList,
+        MPointArray&                    worldSpaceSelectPts) override
+    {
+        return false;
+    }
+
     MAYAUSD_CORE_PUBLIC
     static void draw(const MHWRender::MDrawContext& context, const MUserData* data);
 

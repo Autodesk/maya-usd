@@ -240,10 +240,12 @@ bool UsdMayaProxyDrawOverride::wantUserSelection() const
 
 /* virtual */
 bool UsdMayaProxyDrawOverride::userSelect(
-    MHWRender::MSelectionInfo&     selectionInfo,
-    const MHWRender::MDrawContext& context,
-    MPoint&                        hitPoint,
-    const MUserData*               data)
+    const MSelectionInfo&           selectionInfo,
+    const MHWRender::MDrawContext&  context,
+    const MDagPath&                 objPath,
+    const MUserData*                data,
+    MSelectionList&                 selectionList,
+    MPointArray&                    worldSpaceHitPts)
 {
     TRACE_FUNCTION();
 
@@ -297,7 +299,9 @@ bool UsdMayaProxyDrawOverride::userSelect(
 #else
     const GfVec3f& gfHitPoint = nearestHit->worldSpaceHitPoint;
 #endif
-    hitPoint = MPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
+    selectionList.add(objPath);
+    MPoint hitPoint = MPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
+    worldSpaceHitPts.append(hitPoint);
 
     return true;
 }
