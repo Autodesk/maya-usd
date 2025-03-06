@@ -240,12 +240,12 @@ bool UsdMayaProxyDrawOverride::wantUserSelection() const
 
 /* virtual */
 bool UsdMayaProxyDrawOverride::userSelect(
-    const MSelectionInfo&           selectionInfo,
-    const MHWRender::MDrawContext&  context,
-    const MDagPath&                 objPath,
-    const MUserData*                data,
-    MSelectionList&                 selectionList,
-    MPointArray&                    worldSpaceHitPts)
+    const MSelectionInfo&          selectionInfo,
+    const MHWRender::MDrawContext& context,
+    const MDagPath&                objPath,
+    const MUserData*               data,
+    MSelectionList&                selectionList,
+    MPointArray&                   worldSpaceHitPts)
 {
     TRACE_FUNCTION();
 

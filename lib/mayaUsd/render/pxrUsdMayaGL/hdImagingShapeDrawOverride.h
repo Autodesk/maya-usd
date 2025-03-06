@@ -88,12 +88,12 @@ public:
     bool wantUserSelection() const override { return true; }
     MAYAUSD_CORE_PUBLIC
     bool userSelect(
-        const MSelectionInfo&           selectionInfo,
-        const MHWRender::MDrawContext&  context,
-        const MDagPath&                 objPath,
-        const MUserData*                data,
-        MSelectionList&                 selectionList,
-        MPointArray&                    worldSpaceSelectPts) override
+        const MSelectionInfo&          selectionInfo,
+        const MHWRender::MDrawContext& context,
+        const MDagPath&                objPath,
+        const MUserData*               data,
+        MSelectionList&                selectionList,
+        MPointArray&                   worldSpaceSelectPts) override
     {
         return false;
     }
