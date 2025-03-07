@@ -164,9 +164,9 @@ class AEShaderLayout(object):
             group = AEShaderLayout.Group(pageLabel)
             for name in nodeDef.GetPropertyNamesForPage(page):
                 if Usd.GetVersion() < (0, 25, 5):
-                    nodeInput = nodeDef.GetInput()
+                    nodeInput = nodeDef.GetInput(name)
                 else:
-                    nodeInput = nodeDef.GetShaderInput()
+                    nodeInput = nodeDef.GetShaderInput(name)
 
                 if nodeInput:
                     name = UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input)
