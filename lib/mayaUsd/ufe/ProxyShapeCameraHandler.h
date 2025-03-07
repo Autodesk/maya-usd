@@ -23,13 +23,19 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+#if UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL
+#define CAMERAHANDLERBASE Ufe::CameraHandler_v3_4
+#else
+#define CAMERAHANDLERBASE Ufe::CameraHandler
+#endif // UFE_CAMERAHANDLER_HAS_FINDALL
+
 //! \brief Interface to create a ProxyShapeCameraHandler interface object.
-class MAYAUSD_CORE_PUBLIC ProxyShapeCameraHandler : public Ufe::CameraHandler
+class MAYAUSD_CORE_PUBLIC ProxyShapeCameraHandler : public CAMERAHANDLERBASE
 {
 public:
     typedef std::shared_ptr<ProxyShapeCameraHandler> Ptr;
 
-    ProxyShapeCameraHandler(const Ufe::CameraHandler::Ptr&);
+    ProxyShapeCameraHandler(const CAMERAHANDLERBASE::Ptr&);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeCameraHandler);
 
@@ -42,7 +48,7 @@ public:
     Ufe::Selection find_(const Ufe::Path& path) const override;
 
 private:
-    Ufe::CameraHandler::Ptr _mayaCameraHandler;
+    CAMERAHANDLERBASE::Ptr _mayaCameraHandler;
 
 }; // ProxyShapeCameraHandler
 

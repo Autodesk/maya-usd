@@ -189,6 +189,7 @@ public:
     void redo() override;
 
 private:
+    bool doExecute();
     void markAsFailed();
 
     UsdUfe::UsdSceneItem::Ptr _parentItem;

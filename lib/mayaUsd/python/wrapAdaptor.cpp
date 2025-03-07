@@ -24,16 +24,11 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/pyConversions.h>
 #include <pxr/usd/usdGeom/primvar.h>
+#include <pxr_python.h>
 
 #include <maya/MObject.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/self.hpp>
-
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -95,9 +90,9 @@ public:
             // Do *not* call through if there's an active python exception.
             if (!PyErr_Occurred()) {
                 try {
-                    return boost::python::call<UsdMayaAttributeAdaptor>(
+                    return PXR_BOOST_PYTHON_NAMESPACE::call<UsdMayaAttributeAdaptor>(
                         pyOverride.ptr(), attrName, modifier);
-                } catch (boost::python::error_already_set const&) {
+                } catch (PXR_BOOST_PYTHON_NAMESPACE::error_already_set const&) {
                     // Convert any exception to TF_ERRORs.
                     TfPyConvertPythonExceptionToTfErrors();
                     PyErr_Clear();
@@ -120,8 +115,9 @@ public:
             // Do *not* call through if there's an active python exception.
             if (!PyErr_Occurred()) {
                 try {
-                    return boost::python::call<void>(pyOverride.ptr(), attrName, modifier);
-                } catch (boost::python::error_already_set const&) {
+                    return PXR_BOOST_PYTHON_NAMESPACE::call<void>(
+                        pyOverride.ptr(), attrName, modifier);
+                } catch (PXR_BOOST_PYTHON_NAMESPACE::error_already_set const&) {
                     // Convert any exception to TF_ERRORs.
                     TfPyConvertPythonExceptionToTfErrors();
                     PyErr_Clear();
@@ -144,13 +140,14 @@ static UsdMayaAdaptor* _Adaptor__init__(const std::string& dagPath)
     return new UsdMayaAdaptor(object);
 }
 
-static boost::python::object _Adaptor_GetMetadata(const UsdMayaAdaptor& self, const TfToken& key)
+static PXR_BOOST_PYTHON_NAMESPACE::object
+_Adaptor_GetMetadata(const UsdMayaAdaptor& self, const TfToken& key)
 {
     VtValue value;
     if (self.GetMetadata(key, &value)) {
-        return boost::python::object(value);
+        return PXR_BOOST_PYTHON_NAMESPACE::object(value);
     }
-    return boost::python::object();
+    return PXR_BOOST_PYTHON_NAMESPACE::object();
 }
 
 static bool _Adaptor_SetMetadata(UsdMayaAdaptor& self, const TfToken& key, const VtValue& value)
@@ -233,13 +230,13 @@ static std::string _SchemaAdaptor__repr__(const UsdMayaSchemaAdaptorPtr& self)
     }
 }
 
-static boost::python::object _AttributeAdaptor_Get(const UsdMayaAttributeAdaptor& self)
+static PXR_BOOST_PYTHON_NAMESPACE::object _AttributeAdaptor_Get(const UsdMayaAttributeAdaptor& self)
 {
     VtValue value;
     if (self.Get(&value)) {
-        return boost::python::object(value);
+        return PXR_BOOST_PYTHON_NAMESPACE::object(value);
     }
-    return boost::python::object();
+    return PXR_BOOST_PYTHON_NAMESPACE::object();
 }
 
 static bool _AttributeAdaptor_Set(UsdMayaAttributeAdaptor& self, const VtValue& value)
@@ -325,8 +322,9 @@ void wrapAdaptor()
         .def("Set", _AttributeAdaptor_Set)
         .def("GetAttributeDefinition", &UsdMayaAttributeAdaptor::GetAttributeDefinition);
 
-    class_<SchemaAdaptorWrapper, boost::noncopyable> c("SchemaAdaptor", boost::python::no_init);
-    boost::python::scope                             s(c);
+    class_<SchemaAdaptorWrapper, PXR_BOOST_PYTHON_NAMESPACE::noncopyable> c(
+        "SchemaAdaptor", PXR_BOOST_PYTHON_NAMESPACE::no_init);
+    PXR_BOOST_PYTHON_NAMESPACE::scope s(c);
 
     c.def(!self)
         .def("__init__", make_constructor(&SchemaAdaptorWrapper::New))
@@ -345,8 +343,11 @@ void wrapAdaptor()
         .def("GetAttributeNames", &UsdMayaSchemaAdaptor::GetAttributeNames);
 
     // For wrapping UsdMayaSchemaAdaptor created in c++
-    boost::python::class_<UsdMayaSchemaAdaptor, UsdMayaSchemaAdaptorPtr, boost::noncopyable>(
-        "SchemaAdaptor", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<
+        UsdMayaSchemaAdaptor,
+        UsdMayaSchemaAdaptorPtr,
+        PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "SchemaAdaptor", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def(!self)
         .def("GetName", &UsdMayaSchemaAdaptor::GetName)
         .def("GetAttribute", &UsdMayaSchemaAdaptor::GetAttribute)

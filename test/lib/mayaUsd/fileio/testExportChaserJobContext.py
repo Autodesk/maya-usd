@@ -23,6 +23,9 @@ from maya import cmds
 from maya import standalone
 
 import fixturesUtils, os
+import mayaUtils
+import mayaUsd_createStageWithNewLayer
+import mayaUsdDuplicateAsUsdDataOptions
 
 import unittest
 
@@ -47,15 +50,25 @@ class ChaserExample1(mayaUsd.lib.ExportChaser):
     seenChasers = None
     seenChaserArgs = None
 
+    isDuplicating = False
+
     def __init__(self, factoryContext, *args, **kwargs):
         super(ChaserExample1, self).__init__(factoryContext, *args, **kwargs)
         jobArgs = factoryContext.GetJobArgs()
+        self.stage = factoryContext.GetStage()
+        self.isDuplicating = factoryContext.GetJobArgs().isDuplicating
         ChaserExample1.seenChasers = jobArgs.chaserNames
         if ChaserExample1.name in jobArgs.allChaserArgs:
             ChaserExample1.seenChaserArgs = jobArgs.allChaserArgs[ChaserExample1.name]
         
     def ExportDefault(self):
         ChaserExample1.exportDefaultCalled = True
+
+        if self.isDuplicating:
+            # creating an extra prim to be tested on Duplicate As
+            scope = self.stage.DefinePrim("/TestExportDefault", "Scope")
+            self.RegisterExtraPrimsPaths([scope.GetPath()])
+
         return self.ExportFrame(Usd.TimeCode.Default())
 
     def ExportFrame(self, frame):
@@ -64,6 +77,12 @@ class ChaserExample1(mayaUsd.lib.ExportChaser):
 
     def PostExport(self):
         ChaserExample1.postExportCalled = True
+
+        if self.isDuplicating:
+            # creating an extra prim to be tested on Duplicate As
+            scope = self.stage.DefinePrim("/TestPostExport", "Scope")
+            self.RegisterExtraPrimsPaths([scope.GetPath()])
+
         return True
 
     @staticmethod
@@ -153,6 +172,7 @@ class ChaserExample2(mayaUsd.lib.ExportChaser):
 
     def PostExport(self):
         ChaserExample2.postExportCalled = True
+
         return True
 
     @staticmethod
@@ -202,6 +222,11 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         fixturesUtils.setUpClass(__file__)
         cls.temp_dir = os.path.abspath('.')
 
+        ChaserExample1.register()
+        ChaserExample2.register()
+        JobContextExample1.register()
+        JobContextExample2.register()
+
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
@@ -210,11 +235,6 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testSimpleExportChaser(self):
-        ChaserExample1.register()
-        ChaserExample2.register()
-        JobContextExample1.register()
-        JobContextExample2.register()
-
         cmds.polySphere(r = 3.5, name='apple')
 
         usdFilePath = os.path.join(self.temp_dir,'testExportChaser.usda')
@@ -241,6 +261,25 @@ class TestExportChaserWithJobContext(unittest.TestCase):
         self.assertTrue(ChaserExample2.exportFrameCalled)
         self.assertTrue(ChaserExample2.postExportCalled)
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
+    def testChaserWithDuplicateAsUsd(self):
+        sphere = cmds.polySphere(r = 1, name='TestSphere')
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        defaultDuplicateAsUsdDataOptions = mayaUsdDuplicateAsUsdDataOptions.getDuplicateAsUsdDataOptionsText()
+        modifiedDuplicateAsUsdDataOptions = defaultDuplicateAsUsdDataOptions + ";jobContext=[JobContextExample1]"
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions=modifiedDuplicateAsUsdDataOptions)
+
+        # Check if the extra prims have also been duplicated
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        spherePrim = stage.GetPrimAtPath("/TestSphere")
+        scopeExportPrim = stage.GetPrimAtPath("/TestExportDefault")
+        scopePostPrim = stage.GetPrimAtPath("/TestPostExport")
+
+        self.assertTrue(spherePrim.IsValid())
+        self.assertTrue(scopeExportPrim.IsValid())
+        self.assertTrue(scopePostPrim.IsValid())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

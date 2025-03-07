@@ -19,6 +19,7 @@ target_sources(${PROJECT_NAME}
         loadRulesText.cpp
         mergePrims.cpp
         mergePrimsOptions.cpp
+        schemas.cpp
         uiCallback.cpp
         usdUtils.cpp
         Utils.cpp
@@ -38,6 +39,7 @@ set(HEADERS
     loadRules.h
     mergePrims.h
     mergePrimsOptions.h
+    schemas.h
     SIMD.h
     uiCallback.h
     usdUtils.h

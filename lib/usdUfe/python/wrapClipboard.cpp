@@ -17,12 +17,11 @@
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UsdClipboardHandler.h>
 
+#include <pxr_python.h>
+
 #include <ufe/runTimeMgr.h>
 
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 void _setClipboardFileFormat(const std::string& formatTag)
 {

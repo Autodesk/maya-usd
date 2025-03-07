@@ -68,6 +68,9 @@
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsFragment.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/ShaderGenUtil.h>
+#if MX_COMBINED_VERSION >= 13808
+#include <mayaUsd/render/MaterialXGenOgsXml/LobePruner.h>
+#endif
 
 #include <MaterialXCore/Document.h>
 #include <MaterialXFormat/File.h>
@@ -175,10 +178,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (file)
     (opacity)
+    (opacityThreshold)
     (existence)
     (transmission)
     (transparency)
     (alpha)
+    (alpha_mode)
     (transmission_weight)
     (geometry_opacity)
     (useSpecularWorkflow)
@@ -213,12 +218,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float3ToFloatX)
     (Float3ToFloatY)
     (Float3ToFloatZ)
+    (FloatToFloat3)
 
     // When using OCIO from Maya:
     (Maya_OCIO_)
     (toColor3ForCM)
     (extract)
 
+    (gltf_pbr)
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
@@ -332,25 +339,49 @@ struct _MaterialXData
 {
     _MaterialXData()
     {
-        _mtlxSearchPath = HdMtlxSearchPaths();
+        try {
+            _mtlxSearchPath = HdMtlxSearchPaths();
+            _mtlxLibrary = mx::createDocument();
 #if PXR_VERSION > 2311
-        _mtlxLibrary = HdMtlxStdLibraries();
+            _mtlxLibrary->importLibrary(HdMtlxStdLibraries());
 #else
-        _mtlxLibrary = mx::createDocument();
-        mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
+            mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
 #endif
 
-        _FixLibraryTangentInputs(_mtlxLibrary);
+            _FixLibraryTangentInputs(_mtlxLibrary);
 
-        mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
+            mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
 
-        // This environment variable is defined in USD: pxr\usd\usdMtlx\parser.cpp
-        static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
-        _mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
+            // This environment variable is defined in USD: pxr\usd\usdMtlx\parser.cpp
+            static const std::string env = TfGetenv("USDMTLX_PRIMARY_UV_NAME");
+            _mainUvSetName = env.empty() ? UsdUtilsGetPrimaryUVSetName().GetString() : env;
+
+#if MX_COMBINED_VERSION >= 13808
+            _lobePruner = MaterialXMaya::ShaderGenUtil::LobePruner::create();
+            _lobePruner->setLibrary(_mtlxLibrary);
+            _lobePruner->optimizeLibrary(_mtlxLibrary);
+
+            // TODO: Optimize published shaders.
+            // SCENARIO: User publishes a shader with a NodeGraph implementation that encapsulates a
+            // slow surface shader like OpenPBR or Standard surface. Notices the performance of the
+            // published shader is poor compared to the unpublished version. FIX: Run the LobePruner
+            // on all custom shader graphs in the _mtlxLibrary to replace the slow surfaces with
+            // optimized nodes CAVEAT: If the user has promoted all the weight attributes to the
+            // NodeGraph boundary, then no optimization will be found. This would require a change
+            // in the LobePruner to detect transitive weights. Doable, but complex. We will wait
+            // until there is sufficient demand.
+#endif
+        } catch (mx::Exception& e) {
+            TF_RUNTIME_ERROR(
+                "Caught exception '%s' while initializing MaterialX library", e.what());
+        }
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
     std::string               _mainUvSetName;  //!< Main UV set name
+#if MX_COMBINED_VERSION >= 13808
+    MaterialXMaya::ShaderGenUtil::LobePruner::Ptr _lobePruner;
+#endif
 
 private:
     void _FixLibraryTangentInputs(MaterialX::DocumentPtr& mtlxLibrary);
@@ -452,8 +483,16 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
         MayaUsd::hash_combine(topoHash, hash_value(nodePair.first));
 
         const auto& node = nodePair.second;
+#if MX_COMBINED_VERSION >= 13808
+        TfToken optimizedNodeId = _GetMaterialXData()._lobePruner->getOptimizedNodeId(node);
+        if (optimizedNodeId.IsEmpty()) {
+            MayaUsd::hash_combine(topoHash, hash_value(node.nodeTypeId));
+        } else {
+            MayaUsd::hash_combine(topoHash, hash_value(optimizedNodeId));
+        }
+#else
         MayaUsd::hash_combine(topoHash, hash_value(node.nodeTypeId));
-
+#endif
         if (_IsTopologicalNode(node)) {
             // We need to capture values that affect topology:
             for (auto const& p : node.parameters) {
@@ -673,16 +712,25 @@ void _MaterialXData::_FixLibraryTangentInputs(mx::DocumentPtr& mtlxDoc)
                 if (input->hasDefaultGeomPropString()) {
                     const std::string& geomPropString = input->getDefaultGeomPropString();
                     if ((geomPropString == _mtlxTokens->Tworld.GetString()
-                         || geomPropString == _mtlxTokens->Tobject.GetString())
-                        && node->getConnectedNodeName(input->getName()).empty()) {
-                        if (!tangentInput) {
-                            tangentInput = graphDef->addInput(
-                                _mtlxTokens->tangent_fix.GetString(),
-                                _mtlxTokens->vector3.GetString());
-                            tangentInput->setDefaultGeomPropString(geomPropString);
+                         || geomPropString == _mtlxTokens->Tobject.GetString())) {
+                        const auto nodeInput = node->getInput(input->getName());
+                        if (nodeInput && nodeInput->hasInterfaceName()) {
+                            // Whatever created this NodeGraph implementation forgot to copy
+                            // the default geom prop string to the interface:
+                            auto defInput = graphDef->getInput(nodeInput->getInterfaceName());
+                            if (defInput) {
+                                defInput->setDefaultGeomPropString(geomPropString);
+                            }
+                        } else if (node->getConnectedNodeName(input->getName()).empty()) {
+                            if (!tangentInput) {
+                                tangentInput = graphDef->addInput(
+                                    _mtlxTokens->tangent_fix.GetString(),
+                                    _mtlxTokens->vector3.GetString());
+                                tangentInput->setDefaultGeomPropString(geomPropString);
+                            }
+                            node->addInput(input->getName(), input->getType())
+                                ->setInterfaceName(_mtlxTokens->tangent_fix.GetString());
                         }
-                        node->addInput(input->getName(), input->getType())
-                            ->setInterfaceName(_mtlxTokens->tangent_fix.GetString());
                     }
                 }
             }
@@ -1291,9 +1339,66 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
 }
 #endif
 
+//! Determines if the shader uses transparency for geometric cut-out, meaning the material would
+//! be tagged as 'masked' (HdStMaterialTagTokens->masked) by HdStorm.
+//! In this case, the shader instance typically discards transparent fragments and will render
+//! others as fully opaque thus without alpha blending.
+//! Inspired by:
+//! https://github.com/PixarAnimationStudios/OpenUSD/blob/59992d2178afcebd89273759f2bddfe730e59aa8/pxr/imaging/hdSt/materialNetwork.cpp#L59
+//! https://github.com/PixarAnimationStudios/OpenUSD/blob/59992d2178afcebd89273759f2bddfe730e59aa8/pxr/imaging/hdSt/materialXFilter.cpp#L754
+bool _IsMaskedTransparency(const HdMaterialNetwork& network)
+{
+    const HdMaterialNode& surfaceShader = network.nodes.back();
+
+    auto testParamValue = [&](const TfToken& name, auto&& predicate, auto rhsVal) {
+        using ValueT = std::decay_t<decltype(rhsVal)>;
+
+        const auto itr = surfaceShader.parameters.find(name);
+        if (itr == surfaceShader.parameters.end() || !itr->second.IsHolding<ValueT>())
+            return false;
+
+        if (!predicate(itr->second.UncheckedGet<ValueT>(), rhsVal))
+            return false;
+
+        // Check if any connection to the param makes its value vary.
+        return std::none_of(
+            network.relationships.begin(),
+            network.relationships.end(),
+            [&surfaceShader, &name](const HdMaterialRelationship& rel) {
+                return (rel.outputId == surfaceShader.path) && (rel.outputName == name);
+            });
+    };
+
+#ifdef WANT_MATERIALX_BUILD
+    const auto ndrNode = SdrRegistry::GetInstance().GetNodeByIdentifier(surfaceShader.identifier);
+
+    // Handle MaterialX shaders.
+    if (ndrNode->GetSourceType() == HdVP2Tokens->mtlx) {
+        // Check UsdPreviewSurface node based on opacityThreshold.
+        if (ndrNode->GetFamily() == UsdImagingTokens->UsdPreviewSurface) {
+            return testParamValue(_tokens->opacityThreshold, std::greater<>(), 0.0f);
+        }
+        // Check if glTF PBR's alpha_mode is `MASK` and that transmission is disabled.
+        if (ndrNode->GetFamily() == _tokens->gltf_pbr) {
+            return testParamValue(_tokens->alpha_mode, std::equal_to<>(), 1)
+                && testParamValue(_tokens->transmission, std::equal_to<>(), 0.0f);
+        }
+        // Unhandled MaterialX terminal.
+        return false;
+    }
+#endif
+    // Handle all glslfx surface nodes based on opacityThreshold.
+    return testParamValue(_tokens->opacityThreshold, std::greater<>(), 0.0f);
+}
+
 //! Return true if the surface shader needs to be rendered in a transparency pass.
 bool _IsTransparent(const HdMaterialNetwork& network)
 {
+    // Masked transparency will not produce semi-transparency and can be rendered in opaque pass.
+    if (_IsMaskedTransparency(network)) {
+        return false;
+    }
+
     using OpaqueTestPair = std::pair<TfToken, float>;
     using OpaqueTestPairList = std::vector<OpaqueTestPair>;
     const OpaqueTestPairList inputPairList
@@ -2130,6 +2235,23 @@ void HdVP2Material::CompiledNetwork::Sync(
     HdSceneDelegate*            sceneDelegate,
     const HdMaterialNetworkMap& networkMap)
 {
+    auto updateShaderInstance = [this, &sceneDelegate](const HdMaterialNetwork& bxdfNet) {
+        const bool wasTransparent = _transparent;
+        _UpdateShaderInstance(sceneDelegate, bxdfNet);
+        // If the transparency flag changed, then the drawItems must be updated.
+        // e.g. if MRenderItem was first marked transparent and then the shader's transparency
+        // is turned off, MRenderItem must now be marked opaque.
+        bool drawItemsDirty = (wasTransparent != _transparent);
+
+// Consolidation workaround requires dirtying the mesh even on a ValueChanged
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        drawItemsDirty = true;
+#endif
+        if (drawItemsDirty) {
+            _owner->MaterialChanged(sceneDelegate);
+        }
+    };
+
     const SdfPath&    id = _owner->GetId();
     HdMaterialNetwork bxdfNet, dispNet, vp2BxdfNet;
 
@@ -2167,11 +2289,7 @@ void HdVP2Material::CompiledNetwork::Sync(
             }
 
             if (_surfaceShader) {
-                _UpdateShaderInstance(sceneDelegate, bxdfNet);
-// Consolidation workaround requires dirtying the mesh even on a ValueChanged
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-                _owner->MaterialChanged(sceneDelegate);
-#endif
+                updateShaderInstance(bxdfNet);
             }
             return;
         }
@@ -2284,12 +2402,7 @@ void HdVP2Material::CompiledNetwork::Sync(
             _surfaceNetworkToken = token;
         }
 
-        _UpdateShaderInstance(sceneDelegate, bxdfNet);
-
-// Consolidation workaround requires dirtying the mesh even on a ValueChanged
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-        _owner->MaterialChanged(sceneDelegate);
-#endif
+        updateShaderInstance(bxdfNet);
     }
 }
 
@@ -2799,7 +2912,16 @@ void HdVP2Material::CompiledNetwork::_ApplyMtlxVP2Fixes(
     for (const auto& nodePair : inNet.nodes) {
         const HdMaterialNode2& inNode = nodePair.second;
         HdMaterialNode2        outNode;
+#if MX_COMBINED_VERSION >= 13808
+        TfToken optimizedNodeId = _GetMaterialXData()._lobePruner->getOptimizedNodeId(inNode);
+        if (optimizedNodeId.IsEmpty()) {
+            outNode.nodeTypeId = inNode.nodeTypeId;
+        } else {
+            outNode.nodeTypeId = optimizedNodeId;
+        }
+#else
         outNode.nodeTypeId = inNode.nodeTypeId;
+#endif
         if (_IsTopologicalNode(inNode)) {
             // These parameters affect topology:
             outNode.parameters = inNode.parameters;
@@ -2915,7 +3037,12 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
 
         mx::DocumentPtr           mtlxDoc;
         const mx::FileSearchPath& crLibrarySearchPath(_GetMaterialXData()._mtlxSearchPath);
+#if MX_COMBINED_VERSION >= 13808
+        if (mtlxSdrNode
+            || _GetMaterialXData()._lobePruner->isOptimizedNodeId(surfTerminal->nodeTypeId)) {
+#else
         if (mtlxSdrNode) {
+#endif
 
 #ifdef HAS_COLOR_MANAGEMENT_SUPPORT_API
             mx::DocumentPtr completeLibrary = mx::createDocument();
@@ -3219,6 +3346,7 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
     const HdMaterialNetwork& mat)
 {
     if (!_surfaceShader) {
+        _transparent = false;
         return;
     }
 
@@ -3231,9 +3359,10 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
         return SetShaderParameter(paramName, paramValue);
     };
 
-    const bool matIsTransparent = _IsTransparent(mat);
-    if (matIsTransparent != _surfaceShader->isTransparent()) {
-        SetShaderIsTransparent(matIsTransparent);
+    // Update the transparency flag based on the material network.
+    _transparent = _IsTransparent(mat);
+    if (_transparent != _surfaceShader->isTransparent()) {
+        SetShaderIsTransparent(_transparent);
     }
 
     for (const HdMaterialNode& node : mat.nodes) {

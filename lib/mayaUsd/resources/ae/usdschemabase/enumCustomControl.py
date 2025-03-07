@@ -13,8 +13,8 @@
 # limitations under the License.
 #
 
-from .attribute_custom_control import AttributeCustomControl
-from .attribute_custom_control import cleanAndFormatTooltip
+from .attributeCustomControl import AttributeCustomControl
+from .attributeCustomControl import cleanAndFormatTooltip
 
 import ufe
 import mayaUsd.ufe as mayaUsdUfe
@@ -22,9 +22,23 @@ import mayaUsd.lib as mayaUsdLib
 import maya.cmds as cmds
 import maya.internal.ufeSupport.attributes as attributes
 
-class CustomEnumControl(AttributeCustomControl):
+class EnumCustomControl(AttributeCustomControl):
+
+    @staticmethod
+    def creator(aeTemplate, attrName):
+        ufeAttrType = aeTemplate.attrS.attributeType(attrName)
+        ufeAttr = aeTemplate.attrS.attribute(attrName)
+        ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
+        enums = ufeAttrs.getEnums(ufeAttr.name)
+        # For now only integer enums are supported.
+        if ufeAttrType == ufe.Attribute.kInt and len(enums) > 0:
+            return EnumCustomControl(ufeAttr, ufeAttrType, aeTemplate.prim, attrName, aeTemplate.useNiceName)
+        else:
+            return None
+
+
     def __init__(self, ufeAttr, ufeAttrType, prim, attrName, useNiceName):
-        super(CustomEnumControl, self).__init__(ufeAttr, attrName, useNiceName)
+        super(EnumCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
         self.prim = prim
         self.ufeAttrType = ufeAttrType
         ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
@@ -86,16 +100,5 @@ class CustomEnumControl(AttributeCustomControl):
                 if enum[0] == values[0]:
                     if self.ufeAttrType == ufe.Attribute.kInt:
                         return int(enum[1])
-        return None
-
-def customEnumControlCreator(aeTemplate, c):
-    ufeAttrType = aeTemplate.attrS.attributeType(c)
-    ufeAttr = aeTemplate.attrS.attribute(c)
-    ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
-    enums = ufeAttrs.getEnums(ufeAttr.name)
-    # For now only integer enums are supported.
-    if ufeAttrType == ufe.Attribute.kInt and len(enums) > 0:
-        return CustomEnumControl(ufeAttr, ufeAttrType, aeTemplate.prim, c, aeTemplate.useNiceName)
-    else:
         return None
 

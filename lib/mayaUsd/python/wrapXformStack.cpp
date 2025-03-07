@@ -20,26 +20,22 @@
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <maya/MEulerRotation.h>
 #include <maya/MTransformationMatrix.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/import.hpp>
-#include <boost/python/raw_function.hpp>
-
 #include <mutex>
 
-using boost::python::class_;
-using boost::python::copy_const_reference;
-using boost::python::extract;
-using boost::python::no_init;
-using boost::python::object;
-using boost::python::reference_existing_object;
-using boost::python::return_by_value;
-using boost::python::return_value_policy;
-using boost::python::self;
+using PXR_BOOST_PYTHON_NAMESPACE::class_;
+using PXR_BOOST_PYTHON_NAMESPACE::copy_const_reference;
+using PXR_BOOST_PYTHON_NAMESPACE::extract;
+using PXR_BOOST_PYTHON_NAMESPACE::no_init;
+using PXR_BOOST_PYTHON_NAMESPACE::object;
+using PXR_BOOST_PYTHON_NAMESPACE::reference_existing_object;
+using PXR_BOOST_PYTHON_NAMESPACE::return_by_value;
+using PXR_BOOST_PYTHON_NAMESPACE::return_value_policy;
+using PXR_BOOST_PYTHON_NAMESPACE::self;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -63,7 +59,7 @@ public:
     static void ImportUsdGeomOnce()
     {
         static std::once_flag once;
-        std::call_once(once, []() { boost::python::import("pxr.UsdGeom"); });
+        std::call_once(once, []() { PXR_BOOST_PYTHON_NAMESPACE::import("pxr.UsdGeom"); });
     }
 
     UsdGeomXformOp::Type GetOpType() const
@@ -86,11 +82,11 @@ public:
     {
         TfPyLock lock;
         if (opClass.IsNull()) {
-            return boost::python::incref(Py_None);
+            return PXR_BOOST_PYTHON_NAMESPACE::incref(Py_None);
         } else {
             object obj((_PyXformOpClassification(opClass)));
             // Incref because ~object does a decref
-            return boost::python::incref(obj.ptr());
+            return PXR_BOOST_PYTHON_NAMESPACE::incref(obj.ptr());
         }
     }
 
@@ -115,22 +111,23 @@ public:
     // could be dangerous
     static object convert_index_pair(const UsdMayaXformStack::IndexPair& indexPair)
     {
-        return boost::python::make_tuple(
+        return PXR_BOOST_PYTHON_NAMESPACE::make_tuple(
             convert_index(indexPair.first), convert_index(indexPair.second));
     }
 
     static PyObject* convert(const UsdMayaXformStack::OpClassPair& opPair)
     {
-        boost::python::tuple result = boost::python::make_tuple(opPair.first, opPair.second);
+        PXR_BOOST_PYTHON_NAMESPACE::tuple result
+            = PXR_BOOST_PYTHON_NAMESPACE::make_tuple(opPair.first, opPair.second);
         // Incref because ~object does a decref
-        return boost::python::incref(result.ptr());
+        return PXR_BOOST_PYTHON_NAMESPACE::incref(result.ptr());
     }
 
     static const UsdMayaXformOpClassification& getitem(const UsdMayaXformStack& stack, long index)
     {
         auto raise_index_error = []() {
             PyErr_SetString(PyExc_IndexError, "index out of range");
-            boost::python::throw_error_already_set();
+            PXR_BOOST_PYTHON_NAMESPACE::throw_error_already_set();
         };
 
         if (index < 0) {
@@ -146,7 +143,7 @@ public:
 
     static object GetInversionTwins(const UsdMayaXformStack& stack)
     {
-        boost::python::list result;
+        PXR_BOOST_PYTHON_NAMESPACE::list result;
         for (const auto& idxPair : stack.GetInversionTwins()) {
             result.append(convert_index_pair(idxPair));
         }
@@ -176,7 +173,8 @@ void wrapXformStack()
         .def("IsCompatibleType", &_PyXformOpClassification::IsCompatibleType)
         .def("CompatibleAttrNames", &_PyXformOpClassification::CompatibleAttrNames);
 
-    boost::python::to_python_converter<UsdMayaXformOpClassification, _PyXformOpClassification>();
+    PXR_BOOST_PYTHON_NAMESPACE::
+        to_python_converter<UsdMayaXformOpClassification, _PyXformOpClassification>();
 
     class_<UsdMayaXformStack>("XformStack", no_init)
         .def("GetOps", &UsdMayaXformStack::GetOps, return_value_policy<TfPySequenceToList>())
@@ -188,11 +186,13 @@ void wrapXformStack()
         .def(
             "FindOpIndex",
             &_PyXformStack::FindOpIndex,
-            (boost::python::arg("opName"), boost::python::arg("isInvertedTwin") = false))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("opName"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("isInvertedTwin") = false))
         .def(
             "FindOp",
             &UsdMayaXformStack::FindOp,
-            (boost::python::arg("opName"), boost::python::arg("isInvertedTwin") = false),
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("opName"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("isInvertedTwin") = false),
             return_value_policy<copy_const_reference>())
         .def("FindOpIndexPair", &_PyXformStack::FindOpIndexPair)
         .def("FindOpPair", &UsdMayaXformStack::FindOpPair)
@@ -206,9 +206,10 @@ void wrapXformStack()
         .def("FirstMatchingSubstack", &UsdMayaXformStack::FirstMatchingSubstack)
         .staticmethod("FirstMatchingSubstack");
 
-    boost::python::to_python_converter<UsdMayaXformStack::OpClassPair, _PyXformStack>();
+    PXR_BOOST_PYTHON_NAMESPACE::
+        to_python_converter<UsdMayaXformStack::OpClassPair, _PyXformStack>();
 
-    boost::python::to_python_converter<
+    PXR_BOOST_PYTHON_NAMESPACE::to_python_converter<
         std::vector<UsdMayaXformStack::OpClass>,
         TfPySequenceToPython<std::vector<UsdMayaXformStack::OpClass>>>();
 

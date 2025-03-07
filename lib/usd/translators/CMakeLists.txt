@@ -60,6 +60,13 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
+if (MAYA_HAS_OPENPBR_SURFACE_SHADER)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+        MAYA_HAS_OPENPBR_SURFACE_SHADER=1
+    )
+endif()
+
 mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------

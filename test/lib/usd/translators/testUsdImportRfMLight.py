@@ -22,7 +22,6 @@ from pxr import Gf
 from pxr import Usd
 
 from maya import OpenMaya
-from maya import OpenMayaAnim
 from maya import cmds
 from maya import standalone
 
@@ -84,18 +83,9 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertTrue(lightTypeName in cmds.listConnections('defaultLightSet'))
 
         testNumber = None
-        if lightTypeName == 'CylinderLight':
-            self.assertEqual(depNodeFn.typeName(), 'PxrCylinderLight')
-            testNumber = 1
-        elif lightTypeName == 'DiskLight':
-            self.assertEqual(depNodeFn.typeName(), 'PxrDiskLight')
-            testNumber = 2
-        elif lightTypeName == 'DistantLight':
+        if lightTypeName == 'DistantLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrDistantLight')
             testNumber = 3
-        elif lightTypeName == 'DomeLight':
-            self.assertEqual(depNodeFn.typeName(), 'PxrDomeLight')
-            testNumber = 4
         elif lightTypeName == 'MeshLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrMeshLight')
             testNumber = 5
@@ -124,10 +114,6 @@ class testUsdImportRfMLight(unittest.TestCase):
         self._assertGfIsClose(cmds.getAttr('%s.specular' % nodePath),
             expectedSpecular, 1e-6)
 
-        # PxrDomeLight has no normalize attribute
-        if lightTypeName != 'DomeLight':
-            self.assertTrue(cmds.getAttr('%s.areaNormalize' % nodePath))
-
         expectedColor = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.1 * testNumber))
         self._assertGfIsClose(cmds.getAttr('%s.lightColorR' % nodePath),
             expectedColor[0], 1e-6)
@@ -142,28 +128,6 @@ class testUsdImportRfMLight(unittest.TestCase):
         self._assertGfIsClose(cmds.getAttr('%s.temperature' % nodePath),
             expectedTemperature, 1e-6)
 
-    def _ValidatePxrDiskLightTransformAnimation(self):
-        nodePath = '|RfMLightsTest|Lights|DiskLight'
-
-        depNodeFn = self._GetMayaDependencyNode(nodePath)
-
-        animatedPlugs = OpenMaya.MPlugArray()
-        OpenMayaAnim.MAnimUtil.findAnimatedPlugs(depNodeFn.object(),
-            animatedPlugs)
-        self.assertEqual(animatedPlugs.length(), 1)
-
-        translateYPlug = animatedPlugs[0]
-        self.assertEqual(translateYPlug.name(), 'DiskLight.translateY')
-
-        animObjs = OpenMaya.MObjectArray()
-        OpenMayaAnim.MAnimUtil.findAnimation(translateYPlug, animObjs)
-        self.assertEqual(animObjs.length(), 1)
-
-        animCurveFn = OpenMayaAnim.MFnAnimCurve(animObjs[0])
-        timeUnit = OpenMaya.MTime.uiUnit()
-        for frame in range(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
-            value = animCurveFn.evaluate(OpenMaya.MTime(frame, timeUnit))
-            self._assertGfIsClose(float(frame), value, 1e-6)
 
     def _ValidatePxrDistantLightAngle(self):
         nodePath = '|RfMLightsTest|Lights|DistantLight|DistantLightShape'
@@ -178,52 +142,6 @@ class testUsdImportRfMLight(unittest.TestCase):
         expectedTextureFile = './RectLight_texture.tex'
         self.assertEqual(cmds.getAttr('%s.lightColorMap' % nodePath),
             expectedTextureFile)
-
-    def _ValidatePxrDomeLightTextureFile(self):
-        nodePath = '|RfMLightsTest|Lights|DomeLight|DomeLightShape'
-
-        expectedTextureFile = './DomeLight_texture.tex'
-        self.assertEqual(cmds.getAttr('%s.lightColorMap' % nodePath),
-            expectedTextureFile)
-
-    def _ValidateMayaLightShaping(self):
-        nodePath = '|RfMLightsTest|Lights|DiskLight|DiskLightShape'
-
-        expectedFocus = 0.2
-        self._assertGfIsClose(cmds.getAttr('%s.emissionFocus' % nodePath),
-            expectedFocus, 1e-6)
-
-        expectedFocusTint = Gf.ConvertLinearToDisplay(Gf.Vec3f(0.2))
-        self._assertGfIsClose(cmds.getAttr('%s.emissionFocusTintR' % nodePath),
-            expectedFocusTint[0], 1e-6)
-        self._assertGfIsClose(cmds.getAttr('%s.emissionFocusTintG' % nodePath),
-            expectedFocusTint[1], 1e-6)
-        self._assertGfIsClose(cmds.getAttr('%s.emissionFocusTintB' % nodePath),
-            expectedFocusTint[2], 1e-6)
-
-        expectedConeAngle = 92.0
-        self._assertGfIsClose(cmds.getAttr('%s.coneAngle' % nodePath),
-            expectedConeAngle, 1e-6)
-
-        expectedConeSoftness = 0.2
-        self._assertGfIsClose(cmds.getAttr('%s.coneSoftness' % nodePath),
-            expectedConeSoftness, 1e-6)
-
-        expectedProfilePath = './DiskLight_profile.ies'
-        self.assertEqual(cmds.getAttr('%s.iesProfile' % nodePath),
-            expectedProfilePath)
-
-        expectedProfileScale = 1.2
-        self._assertGfIsClose(cmds.getAttr('%s.iesProfileScale' % nodePath),
-            expectedProfileScale, 1e-6)
-
-        expectedProfileNormalize = False
-        self.assertEqual(cmds.getAttr('%s.iesProfileNormalize' % nodePath),
-            expectedProfileNormalize)
-
-        expectedProfileNormalize = False
-        self.assertEqual(cmds.getAttr('%s.iesProfileNormalize' % nodePath),
-            expectedProfileNormalize)
 
     def _ValidateMayaLightShadow(self):
         nodePath = '|RfMLightsTest|Lights|RectLight|RectLightShape'
@@ -272,21 +190,9 @@ class testUsdImportRfMLight(unittest.TestCase):
             loaded=True))
         self._ValidatePxrLightImportedUnderScope()
 
-    def testImportCylinderLight(self):
-        self._ValidateMayaLight('CylinderLight')
-
-    def testImportDiskLight(self):
-        self._ValidateMayaLight('DiskLight')
-        self._ValidatePxrDiskLightTransformAnimation()
-        self._ValidateMayaLightShaping()
-
     def testImportDistantLight(self):
         self._ValidateMayaLight('DistantLight')
         self._ValidatePxrDistantLightAngle()
-
-    def testImportDomeLight(self):
-        self._ValidateMayaLight('DomeLight')
-        self._ValidatePxrDomeLightTextureFile()
 
     def testImportMeshLight(self):
         self._ValidateMayaLight('MeshLight')

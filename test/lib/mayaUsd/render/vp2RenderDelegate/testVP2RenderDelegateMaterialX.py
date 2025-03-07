@@ -181,6 +181,64 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
 
         self._StartTest('DemoQuads')
 
+    @unittest.skipIf(os.getenv("USD_HAS_MX_OPENPBR_SURFACE", 'FALSE') != 'TRUE', 'Requires OpenPBR in MaterialX')
+    def testOpenPBRSupport(self):
+        """Test that OpenPBR imports, exports, and renders"""
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayTextures=True, displayLights = 'all')
+
+        # Too much differences between Linux and Windows otherwise
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
+
+        testFile = testUtils.getTestScene("MaterialX", "OpenPBRShowcase.ma")
+        cmds.file(testFile, force=True, open=True)
+        cmds.move(0, 7, -1.5, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')
+        usdFilePath = os.path.join(self._testDir, "OpenPBRShowcase_MTLX.usda")
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            materialsScopeName='Materials', excludeExportTypes=['Cameras','Lights'])
+        xform, shape = mayaUtils.createProxyFromFile(usdFilePath)
+        cmds.move(0, 0, 1, xform)
+
+        # Re-import for a full roundtrip:
+        # Import back:
+        import_options = ("shadingMode=[[useRegistry,MaterialX]]",
+                          "primPath=/")
+        cmds.file(usdFilePath, i=True, type="USD Import",
+                  ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
+                  namespace="Test", pr=True, importTimeRange="combine",
+                  options=";".join(import_options))
+        cmds.move(0, 0, 2, "Test:locator1")
+
+        self.assertSnapshotClose('OpenPBRShowcase_MTLX_Import_render.png', 960, 960)
+
+        cmds.delete(xform)
+        cmds.delete("Test:locator1")
+
+        # Same test, but in UsdPreviewSurface land:
+        usdFilePath = os.path.join(self._testDir, "OpenPBRShowcase_UsdPS.usda")
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['UsdPreviewSurface'],
+            materialsScopeName='Materials', excludeExportTypes=['Cameras','Lights'])
+        xform, shape = mayaUtils.createProxyFromFile(usdFilePath)
+        cmds.move(0, 0, 1, xform)
+
+        import_options = ("shadingMode=[[useRegistry,UsdPreviewSurface]]",
+                          "preferredMaterial=openPBRSurface",
+                          "primPath=/")
+        cmds.file(usdFilePath, i=True, type="USD Import",
+                  ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
+                  namespace="Test", pr=True, importTimeRange="combine",
+                  options=";".join(import_options))
+        cmds.move(0, 0, 2, "Test1:locator1")
+
+        self.assertSnapshotClose('OpenPBRShowcase_UsdPS_Import_render.png', 960, 960)
+
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
+
+
     def testWithEnabledMaterialX(self):
         """Make sure the absence of MAYAUSD_VP2_USE_ONLY_PREVIEWSURFACE env var has an effect."""
         cmds.file(force=True, new=True)

@@ -29,6 +29,9 @@
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#ifdef USD_HAS_NAMESPACE_EDIT
+#include <pxr/usd/sdf/namespaceEdit.h>
+#endif
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
@@ -214,6 +217,23 @@ static void doInsertion(
         TF_WARN("%s", error.c_str());
         throw std::runtime_error(error);
     }
+
+#ifdef USD_HAS_NAMESPACE_EDIT
+    // Try to use a single-layer renaming namespace edit.
+    // This only works correctly if there is a single layer and the destination layer
+    // is the same as the source layer. If it fails we will fall through to the other
+    // algorithm below.
+    if (1 == authLayerAndPaths.size()) {
+        SdfBatchNamespaceEdit edits;
+
+        const auto parentPath = dstUsdPath.GetParentPath();
+        edits.Add(SdfNamespaceEdit::Reparent(srcUsdPath, parentPath, SdfNamespaceEdit::Same));
+
+        if (dstLayer->Apply(edits)) {
+            return;
+        }
+    }
+#endif
 
     UsdUfe::MergePrimsOptions options;
     options.verbosity = UsdUfe::MergeVerbosity::None;

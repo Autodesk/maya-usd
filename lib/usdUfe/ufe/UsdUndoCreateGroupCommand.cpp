@@ -17,6 +17,7 @@
 
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoSetKindCommand.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/usd/modelAPI.h>
@@ -72,7 +73,9 @@ Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::insertedChild() const { return _g
 
 void UsdUndoCreateGroupCommand::execute()
 {
-    auto addPrimCmd = UsdUndoAddNewPrimCommand::create(_parentItem, _name.string(), "Xform");
+    std::string newPrimName
+        = UsdUfe::relativelyUniqueName(_parentItem->prim(), _name.string() + '1');
+    auto addPrimCmd = UsdUndoAddNewPrimCommand::create(_parentItem, newPrimName, "Xform");
     _groupCompositeCmd->append(addPrimCmd);
     addPrimCmd->execute();
 

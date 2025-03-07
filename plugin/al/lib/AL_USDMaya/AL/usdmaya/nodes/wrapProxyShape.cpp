@@ -23,6 +23,7 @@
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/refPtr.h>
+#include <pxr_python.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGModifier.h>
@@ -34,15 +35,11 @@
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
-#include <boost/python/def.hpp>
-
 #include <memory>
 
 using AL::usdmaya::nodes::ProxyShape;
-using boost::python::object;
-using boost::python::reference_existing_object;
+using PXR_BOOST_PYTHON_NAMESPACE::object;
+using PXR_BOOST_PYTHON_NAMESPACE::reference_existing_object;
 
 namespace {
 struct MBoundingBoxConverter
@@ -53,7 +50,7 @@ struct MBoundingBoxConverter
     static PyObject* convert(const MBoundingBox& bbox)
     {
         TfPyLock lock;
-        object   OpenMaya = boost::python::import("maya.OpenMaya");
+        object   OpenMaya = PXR_BOOST_PYTHON_NAMESPACE::import("maya.OpenMaya");
         // Considered grabbing the raw pointer to the MBoundingBox
         // from the swig wrapper, but this seems sketchy, so I'm
         // just re-constructing "in python"
@@ -64,7 +61,7 @@ struct MBoundingBoxConverter
         object pyMin = PyMPoint(min.x, min.y, min.z, min.w);
         object pyMax = PyMPoint(max.x, max.y, max.z, max.w);
         object pyBbox = PyMBoundingBox(pyMin, pyMax);
-        return boost::python::incref(pyBbox.ptr());
+        return PXR_BOOST_PYTHON_NAMESPACE::incref(pyBbox.ptr());
     }
 };
 
@@ -87,7 +84,7 @@ object MobjToName(const MObject& mobj, MString description)
             MGlobal::displayError(MString("Error converting MObject to dagNode: ") + description);
             return object(); // None
         }
-        return boost::python::str(requiredDagNode.fullPathName().asChar());
+        return PXR_BOOST_PYTHON_NAMESPACE::str(requiredDagNode.fullPathName().asChar());
     } else if (mobj.hasFn(MFn::kDependencyNode)) {
         MFnDependencyNode requiredDepNode(mobj, &status);
         if (!status) {
@@ -95,7 +92,7 @@ object MobjToName(const MObject& mobj, MString description)
                 MString("Error converting MObject to dependNode: ") + description);
             return object(); // None
         }
-        return boost::python::str(requiredDepNode.name().asChar());
+        return PXR_BOOST_PYTHON_NAMESPACE::str(requiredDepNode.name().asChar());
     } else {
         MGlobal::displayError(
             MString("MObject did not appear to be a dependency node: ") + description);
@@ -297,7 +294,7 @@ struct PyProxyShape
         objDesc += "'";
         object resultPyObj = MobjToName(resultObj, objDesc);
         if (returnCreateCount) {
-            return boost::python::make_tuple(resultPyObj, createCount);
+            return PXR_BOOST_PYTHON_NAMESPACE::make_tuple(resultPyObj, createCount);
         }
         return resultPyObj;
     }
@@ -403,12 +400,12 @@ void wrapProxyShape()
         ProxyShape & proxyShape, const SdfPath& path, ProxyShape::TransformReason)
         = PyProxyShape::removeUsdTransformChain;
 
-    boost::python::class_<ProxyShape, boost::noncopyable> proxyShapeCls(
-        "ProxyShape", boost::python::no_init);
+    PXR_BOOST_PYTHON_NAMESPACE::class_<ProxyShape, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
+        proxyShapeCls("ProxyShape", PXR_BOOST_PYTHON_NAMESPACE::no_init);
 
-    boost::python::scope proxyShapeScope = proxyShapeCls;
+    PXR_BOOST_PYTHON_NAMESPACE::scope proxyShapeScope = proxyShapeCls;
 
-    boost::python::enum_<ProxyShape::TransformReason>("TransformReason")
+    PXR_BOOST_PYTHON_NAMESPACE::enum_<ProxyShape::TransformReason>("TransformReason")
         .value("kSelection", ProxyShape::kSelection)
         .value("kRequested", ProxyShape::kRequested)
         .value("kRequired", ProxyShape::kRequired);
@@ -417,7 +414,7 @@ void wrapProxyShape()
         .def(
             "getByName",
             PyProxyShape::getProxyShapeByName,
-            boost::python::return_value_policy<reference_existing_object>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<reference_existing_object>())
         .staticmethod("getByName")
         .def("getUsdStage", &ProxyShape::getUsdStage)
         .def(
@@ -428,7 +425,7 @@ void wrapProxyShape()
              "\tdagPath (str): Dag path of AL_usdmaya_Transform node.\n"
              "Returns:\n"
              "\tThe Usd prim if found, else an invalid prim.\n"),
-            (boost::python::arg("dagPath")))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("dagPath")))
         .staticmethod("getUsdPrimFromMayaPath")
         .def(
             "getMayaPathFromUsdPrim",
@@ -438,36 +435,39 @@ void wrapProxyShape()
              "\tprim (pxr.Usd.Prim): A valid Usd prim.\n"
              "Returns:\n"
              "\tThe full dag path of the Maya node if found, else an empty string.\n"),
-            (boost::python::arg("prim")))
-        .def("resync", &ProxyShape::resync, (boost::python::arg("path")))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("prim")))
+        .def("resync", &ProxyShape::resync, (PXR_BOOST_PYTHON_NAMESPACE::arg("path")))
         .def("boundingBox", PyProxyShape::boundingBox)
         .def("isRequiredPath", &ProxyShape::isRequiredPath)
         .def("findRequiredPath", PyProxyShape::findRequiredPath)
         .def(
             "makeUsdTransformChain",
             PyProxyShape::makeUsdTransformChain,
-            (boost::python::arg("usdPrim"),
-             boost::python::arg("reason") = ProxyShape::kRequested,
-             boost::python::arg("pushToPrim") = false,
-             boost::python::arg("returnCreateCount") = false))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("usdPrim"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("reason") = ProxyShape::kRequested,
+             PXR_BOOST_PYTHON_NAMESPACE::arg("pushToPrim") = false,
+             PXR_BOOST_PYTHON_NAMESPACE::arg("returnCreateCount") = false))
         .def(
             "makeUsdTransforms",
             PyProxyShape::makeUsdTransforms,
-            (boost::python::arg("usdPrim"),
-             boost::python::arg("reason") = ProxyShape::kRequested,
-             boost::python::arg("pushToPrim") = false))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("usdPrim"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("reason") = ProxyShape::kRequested,
+             PXR_BOOST_PYTHON_NAMESPACE::arg("pushToPrim") = false))
         .def(
             "removeUsdTransformChain",
             removeUsdTransformChain_prim,
-            (boost::python::arg("usdPrim"), boost::python::arg("reason") = ProxyShape::kRequested))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("usdPrim"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("reason") = ProxyShape::kRequested))
         .def(
             "removeUsdTransformChain",
             removeUsdTransformChain_path,
-            (boost::python::arg("path"), boost::python::arg("reason") = ProxyShape::kRequested))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("path"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("reason") = ProxyShape::kRequested))
         .def(
             "removeUsdTransforms",
             PyProxyShape::removeUsdTransforms,
-            (boost::python::arg("usdPrim"), boost::python::arg("reason") = ProxyShape::kRequested))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("usdPrim"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("reason") = ProxyShape::kRequested))
         .def("destroyTransformReferences", &ProxyShape::destroyTransformReferences);
 
     // Decided NOT to register this using boost::python::to_python_converter,

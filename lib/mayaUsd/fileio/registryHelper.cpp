@@ -24,10 +24,9 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr_python.h>
 
 #include <maya/MGlobal.h>
-
-#include <boost/python/import.hpp>
 
 #include <map>
 #include <vector>
@@ -337,7 +336,7 @@ void UsdMaya_RegistryHelper::AddUnloader(const std::function<void()>& func, bool
 {
     if (fromPython) {
         g_pythonUnloaders.emplace_back(func);
-        if (boost::python::import("atexit")
+        if (PXR_BOOST_PYTHON_NAMESPACE::import("atexit")
                 .attr("register")(&PythonUnload, g_pythonUnloaders.size() - 1)
                 .is_none()) {
             TF_CODING_ERROR("Couldn't register unloader to atexit");

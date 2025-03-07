@@ -30,6 +30,7 @@
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
@@ -359,6 +360,28 @@ static bool isCompatibleWithSave(
     }
 }
 
+void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
+{
+    if (!layer)
+        return;
+
+    // Don't try to author the metadata on non-editable layers.
+    if (!layer->PermissionToEdit())
+        return;
+
+    const PXR_NS::TfToken upAxis
+        = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
+    const double metersPerUnit
+        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+
+    // Note: code similar to what UsdGeomSetStageUpAxis -> UsdStage::SetMetadata end-up doing,
+    // but without having to have a stage. We basically set metadata on the virtual root object
+    // of the layer.
+    layer->SetField(
+        PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->metersPerUnit, metersPerUnit);
+    layer->SetField(PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
+}
+
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
     const std::string& requestedFilePath,
@@ -384,7 +407,12 @@ bool saveLayerWithFormat(
         }
     }
 
-    updateAllCachedStageWithLayer(layer, filePath);
+    // Update all known stage caches if the layer was saved to a new file path.
+    // Skip this step when the layer's file path hasn't changed to avoid unnecessary stage
+    // recompositions.
+    if (!requestedFilePath.empty()) {
+        updateAllCachedStageWithLayer(layer, filePath);
+    }
 
     return true;
 }
@@ -445,6 +473,12 @@ SdfLayerRefPtr saveAnonymousLayer(
         formatErrorMsg(
             "Cannot save layer \"^1\" when system-locked", anonLayer, filePath, errorMsg);
         return nullptr;
+    }
+
+    // Only set up-axis and units metadata on the root layer
+    // and only if it is anonymous before being saved.
+    if (stage->GetRootLayer() == anonLayer) {
+        setLayerUpAxisAndUnits(anonLayer);
     }
 
     ensureUSDFileExtension(filePath);

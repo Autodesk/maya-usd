@@ -104,24 +104,6 @@ public:
         TfToken   importDescription;
         EnablerFn importEnablerCallback;
         UIFn      importUICallback;
-
-        ContextInfo() = default;
-
-        ContextInfo(
-            const TfToken& jc,
-            const TfToken& nn,
-            const TfToken& edsc,
-            EnablerFn      eef,
-            const TfToken& idsc,
-            EnablerFn      ief)
-            : jobContext(jc)
-            , niceName(nn)
-            , exportDescription(edsc)
-            , exportEnablerCallback(eef)
-            , importDescription(idsc)
-            , importEnablerCallback(ief)
-        {
-        }
     };
 
     /// Gets the conversion information associated with \p jobContext on export and import

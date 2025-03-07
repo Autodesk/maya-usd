@@ -30,6 +30,7 @@
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/commands/layerEditorWindowCommand.h>
+#include <mayaUsd/commands/schemaCommand.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/listeners/notice.h>
@@ -55,6 +56,9 @@
 #include <ufe/runTimeMgr.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+#if HAS_LOOKDEVXUSD
+#include <lookdevXUsd/LookdevXUsd.h>
+#endif // HAS_LOOKDEVXUSD
 
 #include <sstream>
 
@@ -165,6 +169,7 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    registerCommandCheck<MayaUsd::SchemaCommand>(plugin);
     registerCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
@@ -184,6 +189,13 @@ MStatus initializePlugin(MObject obj)
         MayaUsd::MayaUsdUndoBlockCmd::commandName, MayaUsd::MayaUsdUndoBlockCmd::creator);
     CHECK_MSTATUS(status);
 
+    MGlobal::executePythonCommand(
+        "try:\n"
+        "    from ufe_ae.usd.nodes.usdschemabase import collectionMayaHost\n"
+        "    collectionMayaHost.registerCommands('mayaUsdPlugin')\n"
+        "except:\n"
+        "    pass\n");
+
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
@@ -191,6 +203,10 @@ MStatus initializePlugin(MObject obj)
     if (!status) {
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
     }
+
+#if HAS_LOOKDEVXUSD
+    LookdevXUsd::initialize();
+#endif // HAS_LOOKDEVXUSD
 
     status = plugin.registerShape(
         MayaUsd::ProxyShape::typeName,
@@ -339,6 +355,7 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     deregisterCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::SchemaCommand>(plugin);
     deregisterCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     deregisterCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
@@ -370,11 +387,24 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterCommand(MayaUsd::MayaUsdUndoBlockCmd::commandName);
     CHECK_MSTATUS(status);
 
+    MGlobal::executePythonCommand(
+        "try:\n"
+        "    from ufe_ae.usd.nodes.usdschemabase import collectionMayaHost\n"
+        "    collectionMayaHost.deregisterCommands('mayaUsdPlugin')\n"
+        "except:\n"
+        "    pass\n");
+
     // Deregister from file path editor
     status
         = MGlobal::executeCommand("filePathEditor -deregisterType \"mayaUsdProxyShape.filePath\" "
                                   "-typeLabel \"mayaUsdProxyShape.filePath\" -temporary");
     CHECK_MSTATUS(status);
+
+    MGlobal::executeCommand("mayaUSDUnregisterStrings()");
+
+#if HAS_LOOKDEVXUSD
+    LookdevXUsd::uninitialize();
+#endif // HAS_LOOKDEVXUSD
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);

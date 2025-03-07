@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ],
+                        "schemaIdentifier": "ALMayaReference",
                         "schemaKind": "concreteTyped"
                     },
                     "MayaUsd_SchemasALMayaReference": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "MayaUsd_SchemasMayaReference"
                         ],
+                        "schemaIdentifier": "MayaReference",
                         "schemaKind": "concreteTyped"
                     }
                 }

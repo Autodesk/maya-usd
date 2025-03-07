@@ -15,32 +15,17 @@
 //
 #include "AL/usdmaya/nodes/LayerManager.h"
 
-#include <boost/python/args.hpp>
-#include <boost/python/def.hpp>
-
-// On Windows, against certain versions of Maya and with strict compiler
-// settings on, we are getting warning-as-error problems with a couple
-// boost includes.  Disabling those warnings for the specific includes
-// for now instead of disabling the strict settings at a higher level.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4275)
-#endif
-#include <boost/python.hpp>
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
 #include <pxr/base/tf/refPtr.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <maya/MStringArray.h>
 
 #include <memory>
 
 using AL::usdmaya::nodes::LayerManager;
-using boost::python::object;
-using boost::python::reference_existing_object;
+using PXR_BOOST_PYTHON_NAMESPACE::object;
+using PXR_BOOST_PYTHON_NAMESPACE::reference_existing_object;
 
 namespace {
 struct PyLayerManager
@@ -59,20 +44,21 @@ struct PyLayerManager
     {
         bool          wasCreated;
         LayerManager* managerPtr = LayerManager::findOrCreateManager(nullptr, &wasCreated);
-        typename boost::python::reference_existing_object::apply<LayerManager*>::type converter;
-        boost::python::handle<> handle(converter(managerPtr));
-        object                  managerPyObj(handle);
+        typename PXR_BOOST_PYTHON_NAMESPACE::reference_existing_object::apply<LayerManager*>::type
+                                             converter;
+        PXR_BOOST_PYTHON_NAMESPACE::handle<> handle(converter(managerPtr));
+        object                               managerPyObj(handle);
         if (returnWasCreated) {
-            return boost::python::make_tuple(managerPyObj, wasCreated);
+            return PXR_BOOST_PYTHON_NAMESPACE::make_tuple(managerPyObj, wasCreated);
         }
         return managerPyObj;
     }
 
-    static boost::python::list getLayerIdentifiers(LayerManager& manager)
+    static PXR_BOOST_PYTHON_NAMESPACE::list getLayerIdentifiers(LayerManager& manager)
     {
         MStringArray mstrings;
         manager.getLayerIdentifiers(mstrings);
-        boost::python::list pyList;
+        PXR_BOOST_PYTHON_NAMESPACE::list pyList;
         for (unsigned int i = 0; i < mstrings.length(); ++i) {
             pyList.append(mstrings[i].asChar());
         }
@@ -83,21 +69,23 @@ struct PyLayerManager
 
 void wrapLayerManager()
 {
-    boost::python::class_<LayerManager, boost::noncopyable>("LayerManager", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<LayerManager, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "LayerManager", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def(
             "find",
             &LayerManager::findManager,
-            boost::python::return_value_policy<reference_existing_object>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<reference_existing_object>())
         .staticmethod("find")
         .def(
             "findOrCreate",
             PyLayerManager::findOrCreate,
-            (boost::python::arg("returnWasCreated") = false))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("returnWasCreated") = false))
         .staticmethod("findOrCreate")
         .def(
             "addLayer",
             &LayerManager::addLayer,
-            (boost::python::arg("layer"), boost::python::arg("identifier") = ""))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("layer"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("identifier") = ""))
         .def("removeLayer", &LayerManager::removeLayer)
         .def("findLayer", &LayerManager::findLayer)
         .def("getLayerIdentifiers", PyLayerManager::getLayerIdentifiers);

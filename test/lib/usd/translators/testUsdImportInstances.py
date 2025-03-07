@@ -22,6 +22,8 @@ import unittest
 from maya import cmds
 from maya import standalone
 
+from pxr import Gf
+
 import fixturesUtils
 
 class testUsdImportInstances(unittest.TestCase):
@@ -145,6 +147,92 @@ class testUsdImportInstances(unittest.TestCase):
 
         for clique in expected_cliques:
             self.assertEqual(clique, self.sortedPathsTo(clique[0]))
+
+    def testImportGeomWithTransform(self):
+        """
+        Test importing the following optimized USD instancing scenario:
+
+        Top [Xform]
+            Cup_1 [Xform] (instance GeomWithTrf.usda)
+            Cup_2 [Xform] (instance GeomWithTrf.usda)
+            Cup_3 [Xform] (instance GeomWithTrf.usda)
+
+        The referenced GeomWithTrf prototype contains:
+
+        Cup [Xform] (will be overlaid over what is referencing it: Cup_1, Cup2, Cup3)
+            Geom [Xform]
+                Cup [Mesh] (with transforms on it)
+
+        The goal would be for Maya to end up with this:
+
+        Top [transform]
+            Cup_1 [transform]
+                Geom [transform]  (instance "source")
+                    Cup [transform]
+                        CupShape [mesh]
+            Cup_2 [transform]
+                Geom [transform] (instance Cup_1|Geom)
+            Cup_3 [transform]
+                Geom [transform] (instance Cup_1|Geom)
+        """
+        usd_file = os.path.join(self._path, "UsdImportInstancesTest",
+                                "UsdImportInstancesTest_GeomWithTrf.usda")
+
+        cmds.mayaUSDImport(file=usd_file,
+                           primPath="/")
+
+        # Format is sorted all paths of an instance clique:
+        expected_cliques = [
+            # Cup_1, Cup_2, Cup_3 are instances:
+            ('Cup_1',),
+            ('Cup_2',),
+            ('Cup_3',),
+
+            # Correctly shared via instancing:
+            ('Cup_1|Geom',
+             'Cup_2|Geom',
+             'Cup_3|Geom'),
+             
+            ('Cup_1|Geom|Cup',
+             'Cup_2|Geom|Cup',
+             'Cup_3|Geom|Cup'),
+        ]
+
+        for clique in expected_cliques:
+            self.assertEqual(clique, self.sortedPathsTo(clique[0]))
+
+        # Verify the position, which are affected by the transform on the geom.
+        def _GetMayaTransform(transformName):
+            selectionList = om.MSelectionList()
+            selectionList.add(transformName)
+            mObj = selectionList.getDependNode(0)
+
+            return om.MFnTransform(mObj)
+
+        cup_and_pos = [
+            ('Cup_1', [11., 11., 0.]),
+            ('Cup_2', [-11., 11., 0.]),
+            ('Cup_3', [11., -11., 0.]),
+            ('Cup_1|Geom', [0., 0., 0.]),
+            ('Cup_2|Geom', [0., 0., 0.]),
+            ('Cup_3|Geom', [0., 0., 0.]),
+            # Note: these used to be lost before the EMSUSD-986 fix.
+            ('Cup_1|Geom|Cup', [-205.55, 128.622, -80.4]),
+            ('Cup_2|Geom|Cup', [-205.55, 128.622, -80.4]),
+            ('Cup_3|Geom|Cup', [-205.55, 128.622, -80.4]),
+        ]
+
+        EPSILON = 1e-3
+
+        for name, expectedTranslation in cup_and_pos:
+            mayaTransform = _GetMayaTransform(name)
+            transformationMatrix = mayaTransform.transformation()
+
+            actualTranslation = list(
+                transformationMatrix.translation(om.MSpace.kTransform))
+            
+            self.assertTrue(
+                Gf.IsClose(expectedTranslation, actualTranslation, EPSILON))
 
     def testImportExportInstancesTest(self):
         """

@@ -71,6 +71,9 @@ public:
     /// Maps XML element paths of MaterialX inputs to their names in the generated shader.
     const mx::StringMap& getPathInputMap() const;
 
+    /// Maps a generated shader texture input to its library path.
+    const mx::StringMap& getEmbeddedTextureMap() const;
+
     /// Return whether the element to render represents a surface shader graph
     /// as opposed to a texture graph.
     bool isElementAShader() const;
@@ -105,13 +108,14 @@ private:
     template <typename GLSL_GENERATOR_WRAPPER>
     OgsFragment(mx::ElementPtr, GLSL_GENERATOR_WRAPPER&&);
 
-    mx::ElementPtr _element;        ///< The MaterialX element.
-    std::string    _fragmentName;   ///< An automatically generated fragment name.
-    std::string    _fragmentSource; ///< The generated fragment source.
-    std::string    _lightRigName;   ///< An automatically generated light rig name.
-    std::string    _lightRigSource; ///< The generated light rig for surface fragments.
-    mx::StringMap  _pathInputMap;   ///< Maps MaterialX element paths to fragment input names.
-    mx::ShaderPtr  _glslShader;     ///< The MaterialX-generated GLSL shader.
+    mx::ElementPtr _element;          ///< The MaterialX element.
+    std::string    _fragmentName;     ///< An automatically generated fragment name.
+    std::string    _fragmentSource;   ///< The generated fragment source.
+    std::string    _lightRigName;     ///< An automatically generated light rig name.
+    std::string    _lightRigSource;   ///< The generated light rig for surface fragments.
+    mx::StringMap  _pathInputMap;     ///< Maps MaterialX element paths to fragment input names.
+    mx::StringMap  _embeddedTextures; ///< Maps texture entry points to library paths.
+    mx::ShaderPtr  _glslShader;       ///< The MaterialX-generated GLSL shader.
 };
 
 } // namespace MaterialXMaya

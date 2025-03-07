@@ -16,11 +16,11 @@
 #include "primUpdaterManager.h"
 
 #include <mayaUsd/base/tokens.h>
-#include <mayaUsd/fileio/fallbackPrimUpdater.h>
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/utils/proxyAccessorUtil.h>
 #ifdef HAS_ORPHANED_NODES_MANAGER
 #include <mayaUsd/fileio/orphanedNodesManager.h>
 #endif
@@ -37,7 +37,6 @@
 #include <mayaUsd/utils/traverseLayer.h>
 #include <mayaUsd/utils/trieVisitor.h>
 
-#include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 
@@ -353,52 +352,13 @@ PullImportPaths pullImport(
     const bool isCopy = context.GetArgs()._copyOperation;
     if (!isCopy) {
         progressBar.addSteps(4);
-
-        // Quick workaround to reuse some POC code - to rewrite later
-
-        // Communication to current proxyAccessor code is through the global
-        // selection, so we must save the current selection for proper undo.
-        // This is not logically necessary, and should be re-written to avoid
-        // going through the global selection.
-        if (!UfeSelectionUndoItem::select(
-                "Pre-proxyAccessor selection", *Ufe::GlobalSelection::get())) {
-            TF_WARN("Cannot save the selection.");
-            return PullImportPaths();
-        }
-
-        // The "child" is the node that will receive the computed parent
-        // transformation, in its offsetParentMatrix attribute.  We are using
-        // the pull parent for this purpose, so pop the path of the ufeChild to
-        // get to its pull parent.
-        auto ufeChild = MayaUsd::ufe::dagPathToUfe(addedDagPath).pop();
-
         // Since we haven't pulled yet, obtaining the parent is simple, and
         // doesn't require going through the Hierarchy interface, which can do
         // non-trivial work on pulled objects to get their parent.
         auto ufeParent = ufePulledPath.pop();
 
-        MString pyCommand;
-        pyCommand.format(
-            "from mayaUsd.lib import proxyAccessor as pa\n"
-            "import maya.cmds as cmds\n"
-            "cmds.select('^1s', '^2s')\n"
-            "pa.parent()\n"
-            "cmds.select(clear=True)\n",
-            Ufe::PathString::string(ufeChild).c_str(),
-            Ufe::PathString::string(ufeParent).c_str());
-
-        MString pyUndoCommand;
-        pyUndoCommand.format(
-            "from mayaUsd.lib import proxyAccessor as pa\n"
-            "import maya.cmds as cmds\n"
-            "cmds.select('^1s', '^2s')\n"
-            "pa.unparent()\n"
-            "cmds.select(clear=True)\n",
-            Ufe::PathString::string(ufeChild).c_str(),
-            Ufe::PathString::string(ufeParent).c_str());
-
-        if (!PythonUndoItem::execute(
-                "Pull import proxy accessor parenting", pyCommand, pyUndoCommand)) {
+        if (!utils::ProxyAccessorUndoItem::parentPulledObject(
+                "Pull import proxy accessor parenting", addedDagPath, ufeParent)) {
             TF_WARN("Cannot parent pulled object.");
             return PullImportPaths();
         }
@@ -558,6 +518,7 @@ struct PushExportResult
     SdfLayerRefPtr                       layer;
     std::shared_ptr<UsdPathToDagPathMap> usdToDag;
     std::vector<SdfPath>                 materialPaths;
+    std::vector<SdfPath>                 extraPrimsPaths;
 };
 
 PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterContext& context)
@@ -579,14 +540,19 @@ PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterC
 
     fillUserArgsFileIfEmpty(userArgs, fileName);
 
-    MFnDagNode fnDag(mayaObject);
-    MDagPath   dagPath;
-    fnDag.getPath(dagPath);
-
     UsdMayaUtil::MDagPathSet dagPaths;
     MSelectionList           fullObjectList;
-    dagPaths.insert(dagPath);
-    fullObjectList.add(dagPath);
+    MDagPath                 dagPath;
+    {
+        MFnDagNode fnDag;
+        if (fnDag.setObject(mayaObject)) {
+            fnDag.getPath(dagPath);
+            dagPaths.insert(dagPath);
+            fullObjectList.add(dagPath);
+        } else {
+            fullObjectList.add(mayaObject);
+        }
+    }
 
     std::vector<double> timeSamples;
     UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
@@ -620,6 +586,7 @@ PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterC
     if (!writeJob.Write(fileName, false /* append */)) {
         return result;
     }
+    result.extraPrimsPaths = writeJob.GetExtraPrimsPaths();
     progressBar.advance();
 
     result.srcRootPath = writeJob.MapDagPathToSdfPath(dagPath);
@@ -1592,55 +1559,9 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
     MayaUsdProxyShapeBase* dstProxyShape
         = dstPath.empty() ? nullptr : MayaUsd::ufe::getProxyShape(dstPath);
 
-    PushPullScope scopeIt(_inPushPull);
-
     // Copy from USD to DG
     if (srcProxyShape && dstProxyShape == nullptr) {
-        auto srcPrim = MayaUsd::ufe::ufePathToPrim(srcPath);
-        if (!srcPrim) {
-            return {};
-        }
-
-        MayaUsd::ProgressBarScope progressBar(3, "Duplicating to Maya Data");
-
-        auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobImportArgs::GetDefaultDictionary());
-
-        // We will only do copy between two data models, setting this in arguments
-        // to configure the updater
-        ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
-
-        // Note: when copying, we don't want to automatically authors a USD kind
-        //       on the root prim.
-        ctxArgs[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = true;
-
-        // Set destination of duplicate. The Maya world MDagPath is not valid,
-        // so don't try to validate the path if it is the world root.
-        MDagPath pullParentPath;
-        if (!MayaUsd::ufe::isMayaWorldPath(dstPath) && !dstPath.empty()) {
-            pullParentPath = MayaUsd::ufe::ufeToDagPath(dstPath);
-            if (!pullParentPath.isValid()) {
-                return {};
-            }
-        }
-        ctxArgs[kPullParentPathKey] = VtValue(std::string(pullParentPath.fullPathName().asChar()));
-
-        UsdMayaPrimUpdaterContext context(
-            srcProxyShape->getTime(), srcProxyShape->getUsdStage(), ctxArgs);
-        context._pullExtras.initRecursive(Ufe::Hierarchy::createItem(srcPath));
-        progressBar.advance();
-
-        PullImportPaths importedPaths = pullImport(srcPath, srcPrim, context);
-        progressBar.advance();
-
-        scopeIt.end();
-        executeAdditionalCommands(context);
-        progressBar.advance();
-
-        std::vector<Ufe::Path> dstPaths;
-        for (const auto& dagAndUfe : importedPaths)
-            dstPaths.push_back(MayaUsd::ufe::dagPathToUfe(dagAndUfe.first));
-
-        return dstPaths;
+        return duplicateToMaya(srcPath, dstPath, userArgs);
     }
     // Copy from DG to USD
     else if (srcProxyShape == nullptr && dstProxyShape) {
@@ -1649,110 +1570,189 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
             return {};
         }
 
-        MayaUsd::ProgressBarScope progressBar(6, "Duplicating to USD");
-
-        auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
-
-        // Note: when copying, we don't want to automatically authors a USD kind
-        //       on the root prim.
-        ctxArgs[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = true;
-
-        // Setting the export-selected flag will allow filtering materials so that
-        // only materials in the prim selected to be copied will be included.
-        ctxArgs[UsdMayaJobExportArgsTokens->exportSelected] = true;
-
-        const UsdStageRefPtr  dstStage = dstProxyShape->getUsdStage();
-        const SdfLayerHandle& layer = dstStage->GetEditTarget().GetLayer();
-        if (!layer->IsAnonymous())
-            fillUserArgsFileIfEmpty(ctxArgs, layer->GetIdentifier());
-
-        // Record all USD modifications in an undo block and item.
-        UsdUfe::UsdUndoBlock undoBlock(
-            &UsdUndoableItemUndoItem::create("Duplicate USD data modifications"));
-        progressBar.advance();
-
-        // We will only do copy between two data models, setting this in arguments
-        // to configure the updater
-        ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
-        UsdMayaPrimUpdaterContext context(dstProxyShape->getTime(), dstStage, ctxArgs);
-
-        // Export out to a temporary layer.
-        PushExportResult pushExportResult = pushExport(dagPath.node(), context);
-        if (pushExportResult.srcRootPath.IsEmpty()) {
-            return {};
-        }
-        progressBar.advance();
-
-        // Copy the temporary layer contents out to the proper destination.
-        const auto& srcStage = pushExportResult.stage;
-        const auto& srcLayer = pushExportResult.layer;
-        const auto& editTarget = dstStage->GetEditTarget();
-        const auto& dstLayer = editTarget.GetLayer();
-
-        // Validate that the destination parent prim is valid.
-        UsdPrim dstParentPrim = MayaUsd::ufe::ufePathToPrim(dstPath);
-        if (!dstParentPrim.IsValid()) {
-            return {};
-        }
-        progressBar.advance();
-
-        // We need the parent path of the source and destination to
-        // fixup the paths of the source prims we copy to their
-        // destination paths.
-        const SdfPath srcParentPath = pushExportResult.srcRootPath.GetParentPath();
-        const SdfPath dstParentPath = dstParentPrim.GetPath();
-
-        if (TF_VERIFY(pushExportResult.usdToDag)) {
-            processPushExtras(
-                context._pushExtras, *pushExportResult.usdToDag, srcParentPath, dstParentPath);
-        }
-
-        CopyLayerPrimsOptions options;
-        options.progressBar = &progressBar;
-        options.mergeScopes = true;
-
-        CopyLayerPrimsResult copyResult = copyLayerPrims(
-            srcStage,
-            srcLayer,
-            srcParentPath,
-            dstStage,
-            dstLayer,
-            dstParentPath,
-            { pushExportResult.srcRootPath },
-            options);
-
-        context._pushExtras.finalize(MayaUsd::ufe::stagePath(dstStage), copyResult.renamedPaths);
-
-        auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
-        if (TF_VERIFY(ufeItem)) {
-            Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(ufeItem));
-        }
-        progressBar.advance();
-
-        scopeIt.end();
-        executeAdditionalCommands(context);
-        progressBar.advance();
-
-        SdfPath finalUsdPath(pushExportResult.srcRootPath);
-        {
-            auto copiedIt = copyResult.copiedPaths.find(finalUsdPath);
-            if (copiedIt != copyResult.copiedPaths.end()) {
-                finalUsdPath = copiedIt->second;
-            }
-        }
-        {
-            auto renamedIt = copyResult.renamedPaths.find(finalUsdPath);
-            if (renamedIt != copyResult.renamedPaths.end()) {
-                finalUsdPath = renamedIt->second;
-            }
-        }
-
-        Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(finalUsdPath);
-        return { Ufe::Path(dstPath + pathSegment) };
+        return duplicateToUsd(dagPath.node(), dstPath, userArgs);
     }
 
     // Copy operations to the same data model not supported here.
     return {};
+}
+
+std::vector<Ufe::Path> PrimUpdaterManager::duplicateToMaya(
+    const Ufe::Path&    srcPath,
+    const Ufe::Path&    dstPath,
+    const VtDictionary& userArgs)
+{
+    if (srcPath.empty())
+        return {};
+
+    MayaUsdProxyShapeBase* srcProxyShape = MayaUsd::ufe::getProxyShape(srcPath);
+    if (!srcProxyShape)
+        return {};
+
+    auto srcPrim = MayaUsd::ufe::ufePathToPrim(srcPath);
+    if (!srcPrim) {
+        return {};
+    }
+
+    PushPullScope scopeIt(_inPushPull);
+
+    MayaUsd::ProgressBarScope progressBar(3, "Duplicating to Maya Data");
+
+    auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobImportArgs::GetDefaultDictionary());
+
+    // We will only do copy between two data models, setting this in arguments
+    // to configure the updater
+    ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
+
+    // Note: when copying, we don't want to automatically authors a USD kind
+    //       on the root prim.
+    ctxArgs[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = true;
+
+    // Set destination of duplicate. The Maya world MDagPath is not valid,
+    // so don't try to validate the path if it is the world root.
+    MDagPath pullParentPath;
+    if (!MayaUsd::ufe::isMayaWorldPath(dstPath) && !dstPath.empty()) {
+        pullParentPath = MayaUsd::ufe::ufeToDagPath(dstPath);
+        if (!pullParentPath.isValid()) {
+            return {};
+        }
+    }
+    ctxArgs[kPullParentPathKey] = VtValue(std::string(pullParentPath.fullPathName().asChar()));
+
+    UsdMayaPrimUpdaterContext context(
+        srcProxyShape->getTime(), srcProxyShape->getUsdStage(), ctxArgs);
+    context._pullExtras.initRecursive(Ufe::Hierarchy::createItem(srcPath));
+    progressBar.advance();
+
+    PullImportPaths importedPaths = pullImport(srcPath, srcPrim, context);
+    progressBar.advance();
+
+    scopeIt.end();
+    executeAdditionalCommands(context);
+    progressBar.advance();
+
+    std::vector<Ufe::Path> dstPaths;
+    for (const auto& dagAndUfe : importedPaths)
+        dstPaths.push_back(MayaUsd::ufe::dagPathToUfe(dagAndUfe.first));
+
+    return dstPaths;
+}
+
+std::vector<Ufe::Path> PrimUpdaterManager::duplicateToUsd(
+    const MObject&      mayaObject,
+    const Ufe::Path&    dstPath,
+    const VtDictionary& userArgs)
+{
+    if (dstPath.empty())
+        return {};
+
+    MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dstPath);
+    if (!dstProxyShape)
+        return {};
+
+    PushPullScope scopeIt(_inPushPull);
+
+    MayaUsd::ProgressBarScope progressBar(6, "Duplicating to USD");
+
+    auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
+
+    // Note: when copying, we don't want to automatically authors a USD kind
+    //       on the root prim.
+    ctxArgs[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = true;
+
+    // Setting the export-selected flag will allow filtering materials so that
+    // only materials in the prim selected to be copied will be included.
+    ctxArgs[UsdMayaJobExportArgsTokens->exportSelected] = true;
+    ctxArgs[UsdMayaJobExportArgsTokens->isDuplicating] = true;
+
+    const UsdStageRefPtr  dstStage = dstProxyShape->getUsdStage();
+    const SdfLayerHandle& layer = dstStage->GetEditTarget().GetLayer();
+    if (!layer->IsAnonymous())
+        fillUserArgsFileIfEmpty(ctxArgs, layer->GetIdentifier());
+
+    // Record all USD modifications in an undo block and item.
+    UsdUfe::UsdUndoBlock undoBlock(
+        &UsdUndoableItemUndoItem::create("Duplicate USD data modifications"));
+    progressBar.advance();
+
+    // We will only do copy between two data models, setting this in arguments
+    // to configure the updater
+    ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
+    UsdMayaPrimUpdaterContext context(dstProxyShape->getTime(), dstStage, ctxArgs);
+
+    // Export out to a temporary layer.
+    PushExportResult pushExportResult = pushExport(mayaObject, context);
+    if (pushExportResult.srcRootPath.IsEmpty()) {
+        return {};
+    }
+    progressBar.advance();
+
+    // Copy the temporary layer contents out to the proper destination.
+    const auto& srcStage = pushExportResult.stage;
+    const auto& srcLayer = pushExportResult.layer;
+    const auto& editTarget = dstStage->GetEditTarget();
+    const auto& dstLayer = editTarget.GetLayer();
+
+    // Validate that the destination parent prim is valid.
+    UsdPrim dstParentPrim = MayaUsd::ufe::ufePathToPrim(dstPath);
+    if (!dstParentPrim.IsValid()) {
+        return {};
+    }
+    progressBar.advance();
+
+    // We need the parent path of the source and destination to
+    // fixup the paths of the source prims we copy to their
+    // destination paths.
+    const SdfPath srcParentPath = pushExportResult.srcRootPath.GetParentPath();
+    const SdfPath dstParentPath = dstParentPrim.GetPath();
+
+    if (TF_VERIFY(pushExportResult.usdToDag)) {
+        processPushExtras(
+            context._pushExtras, *pushExportResult.usdToDag, srcParentPath, dstParentPath);
+    }
+
+    CopyLayerPrimsOptions options;
+    options.progressBar = &progressBar;
+    options.mergeScopes = true;
+
+    std::vector<SdfPath> primsToCopy = { pushExportResult.srcRootPath };
+    primsToCopy.reserve(primsToCopy.size() + pushExportResult.extraPrimsPaths.size());
+    primsToCopy.insert(
+        primsToCopy.end(),
+        pushExportResult.extraPrimsPaths.begin(),
+        pushExportResult.extraPrimsPaths.end());
+
+    CopyLayerPrimsResult copyResult = copyLayerPrims(
+        srcStage, srcLayer, srcParentPath, dstStage, dstLayer, dstParentPath, primsToCopy, options);
+
+    context._pushExtras.finalize(MayaUsd::ufe::stagePath(dstStage), copyResult.renamedPaths);
+
+    auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
+    if (TF_VERIFY(ufeItem)) {
+        Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(ufeItem));
+    }
+    progressBar.advance();
+
+    scopeIt.end();
+    executeAdditionalCommands(context);
+    progressBar.advance();
+
+    SdfPath finalUsdPath(pushExportResult.srcRootPath);
+    {
+        auto copiedIt = copyResult.copiedPaths.find(finalUsdPath);
+        if (copiedIt != copyResult.copiedPaths.end()) {
+            finalUsdPath = copiedIt->second;
+        }
+    }
+    {
+        auto renamedIt = copyResult.renamedPaths.find(finalUsdPath);
+        if (renamedIt != copyResult.renamedPaths.end()) {
+            finalUsdPath = renamedIt->second;
+        }
+    }
+
+    Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(finalUsdPath);
+    return { Ufe::Path(dstPath + pathSegment) };
 }
 
 void PrimUpdaterManager::onProxyContentChanged(

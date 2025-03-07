@@ -107,6 +107,13 @@ if (UFE_HAS_NATIVE_TYPE_METADATA)
     )
 endif()
 
+if (UFE_CAMERAHANDLER_HAS_FINDALL)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_CAMERAHANDLER_HAS_FINDALL=1
+    )
+endif()
+
 set(HEADERS
     Global.h
     SetVariantSelectionCommand.h

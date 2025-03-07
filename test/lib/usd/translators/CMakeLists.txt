@@ -26,6 +26,8 @@ set(TEST_SCRIPT_FILES
     testUsdExportUsdPreviewSurface.py
     testUsdExportRootPrim.py
     testUsdExportTypes.py
+    testUsdExportUnits.py
+    testUsdExportUpAxis.py
 
     # To investigate: following test asserts in MFnParticleSystem, but passes.
     # PPT, 17-Jun-20.
@@ -87,6 +89,8 @@ set(TEST_SCRIPT_FILES
     testUsdImportUSDZTextures.py
     testUsdExportImportRoundtripPreviewSurface.py
     testUsdImportSkeleton.py
+    testUsdImportUnits.py
+    testUsdImportUpAxis.py
     testUsdImportXforms.py
     testUsdImportXformAnim.py
     testUsdImportEulerFilter.py

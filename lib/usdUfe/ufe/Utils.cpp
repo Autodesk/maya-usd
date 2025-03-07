@@ -21,6 +21,7 @@
 #include <usdUfe/ufe/UsdAttributes.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/trf/XformOpUtils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editability.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
@@ -34,6 +35,7 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
+#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/resolver.h>
@@ -410,6 +412,54 @@ SdfPath uniqueChildPath(const UsdStage& stage, const SdfPath& path)
 
     return path.ReplaceName(TfToken(uniqueName));
 }
+
+std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& baseName)
+{
+    std::string name = uniqueChildName(usdParent, baseName);
+
+    // For new prim, apply extra checks so that other prims that are "around" it
+    // have different names, too.
+
+    TfToken::HashSet relativesNames;
+    for (auto child : usdParent.GetFilteredChildren(
+             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+        relativesNames.insert(child.GetName());
+    }
+
+    // Add all direct ancestors to the names t be avoided
+    for (UsdPrim ancestor = usdParent; ancestor; ancestor = ancestor.GetParent()) {
+        relativesNames.insert(ancestor.GetName());
+    }
+
+    // Add the closest 1000 descendants to the names to be avoided.
+    static const int maxDescendantCount = 1000;
+    int              descendantCount = 0;
+    for (auto child : usdParent.GetFilteredDescendants(
+             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+        relativesNames.insert(child.GetName());
+        if (++descendantCount >= maxDescendantCount)
+            break;
+    }
+
+    // Add the closest 1000 descendants of the root to the names to be avoided.
+    UsdPrim rootPrim = usdParent.GetPrimAtPath(SdfPath::AbsoluteRootPath());
+    if (rootPrim != usdParent) {
+        descendantCount = 0;
+        for (auto child : rootPrim.GetFilteredDescendants(
+                 UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+            relativesNames.insert(child.GetName());
+            if (++descendantCount >= maxDescendantCount)
+                break;
+        }
+    }
+
+    std::string childName { name };
+    if (relativesNames.find(TfToken(childName)) != relativesNames.end()) {
+        childName = uniqueName(relativesNames, childName);
+    }
+    return childName;
+}
+
 bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
 {
     if (!item) {
@@ -1499,6 +1549,58 @@ bool isSessionLayerGroupMetadata(const std::string& groupName, std::string* adju
         *adjustedGroupName = groupName.substr(sessionLayerPrefix.size());
 
     return true;
+}
+
+void removeSessionLeftOvers(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfPath&        primPath,
+    UsdUndoableItem*              undoableItem,
+    bool                          extraEdits)
+{
+    // Delete any information left in the session layer, adding any action taken
+    // to the undoable items. Note that if an undo/redo cycle already happened,
+    // the removal of the session data will already been done by the previous
+    // undo since this first undo captured removing the session data. In that
+    // case, the code below will do nothing and we won't capture double-removal
+    // of session data.
+    if (!stage)
+        return;
+
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    UsdUndoBlock   undoBlock(undoableItem, extraEdits);
+    stage->RemovePrim(primPath);
+}
+
+Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childFilter)
+{
+    // Note: for now the only child filter flags we support are "Inactive Prims"
+    //       and "Class Prims".
+    //       See UsdHierarchyHandler::childFilter()
+
+    bool showInactive = false;
+    bool showClass = false;
+
+    for (const Ufe::ChildFilterFlag& filter : childFilter) {
+        if (filter.name == "InactivePrims") {
+            showInactive = filter.value;
+        } else if (filter.name == "ClassPrims") {
+            showClass = filter.value;
+        }
+    }
+
+    // Note: unfortunately, the way the USD predicate are implemented,
+    //       we cannot use && on a Usd_PrimFlagsPredicate, only on a
+    //       Usd_Term or a Usd_PrimFlagsConjunction.
+
+    auto predicate = Usd_PrimFlagsConjunction(Usd_Term(UsdPrimIsDefined));
+
+    if (!showInactive)
+        predicate &= UsdPrimIsActive;
+
+    if (!showClass)
+        predicate &= !UsdPrimIsAbstract;
+
+    return predicate;
 }
 
 } // namespace USDUFE_NS_DEF

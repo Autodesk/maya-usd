@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import testUtils
 
 from maya import cmds
 from maya import standalone
@@ -28,6 +29,7 @@ import mayaUsd.ufe
 import ufe
 
 import unittest
+import collections
 
 
 class ChildFilterTestCase(unittest.TestCase):
@@ -58,7 +60,7 @@ class ChildFilterTestCase(unittest.TestCase):
         rid = ufe.RunTimeMgr.instance().getId('USD')
         usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
         cf = usdHierHndlr.childFilter()
-        self.assertEqual(1, len(cf))
+        self.assertEqual(2, len(cf))
 
         # Make sure the USD hierarchy handler has an inactive prims filter
         self.assertEqual('InactivePrims', cf[0].name)
@@ -68,7 +70,7 @@ class ChildFilterTestCase(unittest.TestCase):
         rid = ufe.RunTimeMgr.instance().getId('Maya-DG')
         mayaHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
         mayaCf = mayaHierHndlr.childFilter()
-        self.assertEqual(1, len(mayaCf))
+        self.assertEqual(2, len(mayaCf))
         self.assertEqual(cf[0].name, mayaCf[0].name)
         self.assertEqual(cf[0].label, mayaCf[0].label)
         self.assertEqual(cf[0].value, mayaCf[0].value)
@@ -115,6 +117,60 @@ class ChildFilterTestCase(unittest.TestCase):
         children = propsHier.filteredChildren(cf)
         self.assertEqual(6, len(children))
         self.assertIn(ball3Item, children)
+
+    def testFilteredClassPrims(self):
+        classPrimFileName = testUtils.getTestScene('classPrims', 'class-prims.usda')
+        shapeNode, stage = mayaUtils.createProxyFromFile(classPrimFileName)
+        self.assertTrue(stage)
+        cmds.select(clear=True)
+
+        # Check that we see the 2 active prims
+        topPathStr = shapeNode + ',/top'
+        topPath = ufe.PathString.path(topPathStr)
+        topItem = ufe.Hierarchy.createItem(topPath)
+        topHier = ufe.Hierarchy.hierarchy(topItem)
+        self.assertEqual(2, len(topHier.children()))
+
+        # Get the child filter for the hierarchy handler corresponding
+        # to the runtime of the top item.
+        usdHierarchyHandler = ufe.RunTimeMgr.instance().hierarchyHandler(topItem.runTimeId())
+        childrenFilters = usdHierarchyHandler.childFilter()
+
+        # The prims that can be found in the file.
+        activeConeItem = ufe.Hierarchy.createItem(ufe.PathString.path(topPathStr + '/active_cone'))
+        activeCubeItem = ufe.Hierarchy.createItem(ufe.PathString.path(topPathStr + '/active_cube'))
+        inactiveCylinderItem = ufe.Hierarchy.createItem(ufe.PathString.path(topPathStr + '/inactive_cylinder'))
+        activeClassItem = ufe.Hierarchy.createItem(ufe.PathString.path(topPathStr + '/active_class'))
+        inactiveClassItem = ufe.Hierarchy.createItem(ufe.PathString.path(topPathStr + '/inactive_class'))
+
+        # Declare different filter settings that will be tested.
+        FilterSettings = collections.namedtuple('FilterSettings', ['filters', 'expecteditems'])
+        filterSettings = [
+            FilterSettings(
+                filters={ 'InactivePrims': False, 'ClassPrims': False },
+                expecteditems=[ activeConeItem, activeCubeItem ]),
+            FilterSettings(
+                filters={ 'InactivePrims': False, 'ClassPrims': True  },
+                expecteditems=[ activeConeItem, activeCubeItem, activeClassItem ]),
+            FilterSettings(
+                filters={ 'InactivePrims': True,  'ClassPrims': False },
+                expecteditems=[ activeConeItem, activeCubeItem, inactiveCylinderItem ]),
+            FilterSettings(
+                filters={ 'InactivePrims': True,  'ClassPrims': True  },
+                expecteditems=[ activeConeItem, activeCubeItem, inactiveCylinderItem, activeClassItem, inactiveClassItem ]),
+        ]
+
+        for settings in filterSettings:
+            # Set the children settings according to the desired test settings.
+            for filter in childrenFilters:
+                self.assertIn(filter.name, settings.filters)
+                filter.value = settings.filters[filter.name]
+            
+            # Verify we have the expected count of children.
+            children = topHier.filteredChildren(childrenFilters)
+            self.assertEqual(len(settings.expecteditems), len(children))
+            for item in settings.expecteditems:
+                self.assertIn(item, children)
 
     def testProxyShapeFilteredChildren(self):
         mayaUtils.openGroupBallsScene()

@@ -18,6 +18,14 @@
 # paths like pxr/base/lib/tf but we #include using paths like pxr/base/tf,
 # i.e. without 'lib/'.  So we copy the headers (public and private) into
 # the build tree under paths of the latter scheme.
+
+# Handle the change in USD which introduced a "python" module.
+if(USD_VERSION VERSION_GREATER_EQUAL "0.24.11")
+    set(PYTHON_MODULES python_modules)
+else()
+    set(PYTHON_MODULES python)
+endif()
+
 function(_copy_headers LIBRARY_NAME)
     set(options  "")
     set(oneValueArgs PREFIX)
@@ -174,7 +182,7 @@ function(_install_python LIBRARY_NAME)
     add_custom_target(${LIBRARY_NAME}_pythonfiles
         DEPENDS ${files_copied}
     )
-    add_dependencies(python ${LIBRARY_NAME}_pythonfiles)
+    add_dependencies(${PYTHON_MODULES} ${LIBRARY_NAME}_pythonfiles)
 
     _get_folder("_python" folder)
     set_target_properties(${LIBRARY_NAME}_pythonfiles
@@ -254,7 +262,7 @@ function(_install_pyside_ui_files LIBRARY_NAME)
     add_custom_target(${LIBRARY_NAME}_pysideuifiles
         DEPENDS ${uiFiles}
     )
-    add_dependencies(python ${LIBRARY_NAME}_pythonfiles)
+    add_dependencies(${PYTHON_MODULES} ${LIBRARY_NAME}_pythonfiles)
 
     _get_folder("_pysideuifiles" folder)
     set_target_properties(
@@ -847,7 +855,7 @@ function(_pxr_python_module NAME)
     # compiler configuration
     mayaUsd_compile_config(${LIBRARY_NAME})
 
-    add_dependencies(python ${LIBRARY_NAME})
+    add_dependencies(${PYTHON_MODULES} ${LIBRARY_NAME})
     if(args_PYTHON_FILES)
         add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_pythonfiles)
     endif()

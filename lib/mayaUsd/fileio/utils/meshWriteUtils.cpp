@@ -419,6 +419,36 @@ MStatus UsdMayaMeshWriteUtils::getSkinClustersUpstreamOfMesh(
     return stat;
 }
 
+void UsdMayaMeshWriteUtils::getBlendShapesOfMesh(
+    const MObject& mesh,
+    MObjectArray&  blendShapes,
+    MStatus*       stat)
+{
+    if (mesh.isNull() || !mesh.hasFn(MFn::kMesh)) {
+        if (stat) {
+            *stat = MStatus::kInvalidParameter;
+        }
+        return;
+    }
+
+    blendShapes.clear();
+    MObject            searchObj = MObject(mesh);
+    MItDependencyGraph itDg(
+        searchObj,
+        MFn::kInvalid,
+        MItDependencyGraph::kUpstream,
+        MItDependencyGraph::kDepthFirst,
+        MItDependencyGraph::kNodeLevel,
+        stat);
+    while (!itDg.isDone()) {
+        MObject curNode = itDg.currentItem();
+        if (curNode.hasFn(MFn::kBlendShape)) {
+            blendShapes.append(curNode);
+        }
+        itDg.next();
+    }
+}
+
 MBoundingBox UsdMayaMeshWriteUtils::calcBBoxOfMeshes(const MObjectArray& meshes)
 {
     unsigned int numMeshes = meshes.length();

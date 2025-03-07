@@ -5,6 +5,7 @@
 /// Helpers
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/render/MaterialXGenOgsXml/LobePruner.h>
 
 #include <MaterialXCore/Document.h>
 
@@ -19,7 +20,34 @@ namespace ShaderGenUtil {
 class MAYAUSD_CORE_PUBLIC TopoNeutralGraph
 {
 public:
+    /*! Creates a barebones TopoNeutralGraph that will process the provided material and generate a
+     * topo neutral version of it.
+     * @param[in] material the material to process
+     */
     explicit TopoNeutralGraph(const mx::ElementPtr& material);
+
+    /*! Creates a TopoNeutralGraph that will process the provided material and generate a topo
+     * neutral version of it. It will also substitute lobe pruned categories if a LobePruner is
+     * provided.
+     * @param[in] material the material to process
+     * @param[in] lobePruner an instance of a LobePruner. These are usually singletons that
+     * accumulate pruned NodeDefs
+     */
+    TopoNeutralGraph(const mx::ElementPtr& material, const LobePruner::Ptr& lobePruner);
+
+    /*! Creates a TopoNeutralGraph that will process the provided material and generate a topo
+     * neutral version of it. It will also substitute lobe pruned categories if a LobePruner is
+     * provided.
+     * @param[in] material the material to process
+     * @param[in] lobePruner an instance of a LobePruner. These are usually singletons that
+     * accumulate pruned NodeDefs
+     * @param[in] textured is true if the full material is to be processed. When false, we will
+     * generate an untextured topo neutral material instead
+     */
+    TopoNeutralGraph(
+        const mx::ElementPtr&  material,
+        const LobePruner::Ptr& lobePruner,
+        bool                   textured);
     ~TopoNeutralGraph() = default;
 
     TopoNeutralGraph() = delete;
@@ -34,6 +62,10 @@ public:
     mx::DocumentPtr           getDocument() const;
     static const std::string& getMaterialName();
     const std::string&        getOriginalPath(const std::string& topoPath) const;
+
+    // Get the list of node.attribute paths used by the LobePruner to optimize surface shader nodes
+    // found in the material that was processed.
+    const mx::StringVec& getOptimizedAttributes() const;
 
     // As we traverse the shader graph, remember all elements that should be watched for value
     // changes
@@ -51,10 +83,12 @@ public:
     mx::NodeGraphPtr& getNodeGraph();
 
 protected:
+    void          computeGraph(const mx::ElementPtr& material, bool textured);
     mx::NodePtr   cloneNode(const mx::Node& node, mx::GraphElement& container);
     mx::OutputPtr findNodeGraphOutput(const mx::Input& input, const std::string& outputName);
     std::string   gatherChannels(const mx::Input& input);
     std::string   gatherOutput(const mx::Input& input);
+    std::string   gatherDefaultGeomProp(const mx::Input& input);
     void          cloneConnection(
                  const mx::Input&   sourceInput,
                  mx::Node&          destNode,
@@ -85,6 +119,9 @@ protected:
     std::unordered_map<std::string, std::string> _pathMap;
     // All visited nodes/nodeGraphs elements we should monitor for value changes
     WatchList _watchList;
+    // Optional LobePruner that can replace a heavy surface shader with a lightweight version.
+    LobePruner::Ptr _lobePruner;
+    mx::StringVec   _optimizedAttributes;
 };
 
 } // namespace ShaderGenUtil

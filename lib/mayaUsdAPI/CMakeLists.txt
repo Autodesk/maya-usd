@@ -59,16 +59,6 @@ if (UFE_CLIPBOARD_SUPPORT)
     )
 endif()
 
-#------------------------------------------------------------------------------
-# modules and definitions
-#------------------------------------------------------------------------------
-if(NOT DEFINED ENV{BOOST_ROOT})
-    set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
-endif()
-if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
-    set(Boost_USE_DEBUG_PYTHON ON)
-endif()
-
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------

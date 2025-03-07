@@ -12,6 +12,7 @@ set(TEST_SCRIPT_FILES
     testDuplicateCmd.py
     testDuplicateProxyShape.py
     testEditRouting.py
+    testPrimMetadataEditRouting.py
     testGroupCmd.py
     testMatrices.py
     testMayaPickwalk.py
@@ -34,9 +35,11 @@ set(TEST_SCRIPT_FILES
     testSelection.py
     testSelectionNotification.py
     testSelectionByArray.py
+    testSchemas.py
     testToggleCommands.py
     testTransform3dChainOfResponsibility.py
     testTransform3dTranslate.py
+    testTransform3dTranslateWithTimeSamples.py
     testUIInfoHandler.py
     testUfePythonImport.py
     testVariant.py
@@ -169,6 +172,8 @@ foreach(script ${TEST_SCRIPT_FILES})
             "UFE_CAMERA_HAS_RENDERABLE=${UFE_CAMERA_HAS_RENDERABLE}"
             "UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH=${UFE_SCENE_SEGMENT_HANDLER_ROOT_PATH}"
             "UFE_VOLUME_LIGHTS_SUPPORT=${UFE_VOLUME_LIGHTS_SUPPORT}"
+            "UFE_SCENEITEM_HAS_METADATA=${UFE_SCENEITEM_HAS_METADATA}"
+            "HAS_LOOKDEVXUSD=${BUILD_LOOKDEVXUSD_LIBRARY}"
     )
 
     # Add a ctest label to these tests for easy filtering.

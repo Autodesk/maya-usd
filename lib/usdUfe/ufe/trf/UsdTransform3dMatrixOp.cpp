@@ -173,7 +173,11 @@ public:
         const UsdGeomXformOp& op,
         const UsdTimeCode&    writeTime)
         : MatrixOpUndoableCmdBase(path, op, writeTime)
-        , _opTransform(op.GetOpTransform(writeTime))
+        // Note: we use the time of the proxy shape, not the writeTime,
+        //       because when the command is created, the time is not
+        //       passed and we are always receiving the USD DefaultTime(),
+        //       which may not be the time sample we are editing.
+        , _opTransform(op.GetOpTransform(UsdUfe::getTime(path)))
     {
     }
 
@@ -199,7 +203,11 @@ public:
         const UsdTimeCode&    writeTime)
         : MatrixOpUndoableCmdBase(path, op, writeTime)
     {
-        GfMatrix4d opTransform = op.GetOpTransform(writeTime);
+        // Note: we use the time of the proxy shape, not the writeTime,
+        //       because when the command is created, the time is not
+        //       passed and we are always receiving the USD DefaultTime(),
+        //       which may not be the time sample we are editing.
+        GfMatrix4d opTransform = op.GetOpTransform(UsdUfe::getTime(path));
 
         // Other matrix decomposition code from AL:
         // from

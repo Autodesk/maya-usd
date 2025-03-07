@@ -1,5 +1,8 @@
 #include "ShaderGenUtil.h"
 
+#include "LobePruner.h"
+#include "MaterialXCore/Types.h"
+
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 
 #include <MaterialXCore/Document.h>
@@ -54,7 +57,26 @@ const std::string& TopoNeutralGraph::getMaterialName()
     return kMaterialName;
 }
 
-TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
+TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material) { computeGraph(material, true); }
+
+TopoNeutralGraph::TopoNeutralGraph(
+    const mx::ElementPtr&  material,
+    const LobePruner::Ptr& lobePruner)
+{
+    _lobePruner = lobePruner;
+    computeGraph(material, true);
+}
+
+TopoNeutralGraph::TopoNeutralGraph(
+    const mx::ElementPtr&  material,
+    const LobePruner::Ptr& lobePruner,
+    bool                   textured)
+{
+    _lobePruner = lobePruner;
+    computeGraph(material, textured);
+}
+
+void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material, bool textured)
 {
     if (!material) {
         throw mx::Exception("Invalid material element");
@@ -126,8 +148,26 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
             if (!sourceInput) {
                 continue;
             }
-
             auto connectedNode = sourceInput->getConnectedNode();
+
+            // In textured mode we traverse everything, but in untextured mode we only traverse PBR
+            // level connections.
+            static const auto kPbrConnectionTypes = std::set<std::string>
+            {
+#if MX_COMBINED_VERSION >= 13807
+                mx::BSDF_TYPE_STRING, mx::EDF_TYPE_STRING, mx::VDF_TYPE_STRING,
+#else
+                "BSDF", "EDF", "VDF",
+#endif
+                    mx::SURFACE_SHADER_TYPE_STRING, mx::DISPLACEMENT_SHADER_TYPE_STRING,
+                    mx::VOLUME_SHADER_TYPE_STRING
+            };
+
+            if (!textured && kPbrConnectionTypes.count(sourceInput->getType()) == 0) {
+                connectedNode = nullptr;
+            }
+
+            const std::string defaultGeomPropString = gatherDefaultGeomProp(*sourceInput);
             if (connectedNode) {
                 auto        destConnectedIt = _nodeMap.find(connectedNode->getNamePath());
                 mx::NodePtr destConnectedNode;
@@ -163,6 +203,19 @@ TopoNeutralGraph::TopoNeutralGraph(const mx::ElementPtr& material)
                         = destNode->addInput(sourceInput->getName(), sourceInput->getType());
                     destInput->setValueString(valueString);
                 }
+            } else if (!defaultGeomPropString.empty()) {
+                auto destInput = destNode->addInput(sourceInput->getName(), sourceInput->getType());
+                const std::string interfaceName = "dgp_" + defaultGeomPropString;
+                destInput->setInterfaceName(interfaceName);
+                const auto parent = destNode->getParent();
+                if (parent && parent->isA<mx::NodeGraph>()) {
+                    const auto nodeGraph = parent->asA<mx::NodeGraph>();
+                    auto       nodeGraphInput = nodeGraph->getInput(interfaceName);
+                    if (!nodeGraphInput) {
+                        nodeGraphInput = nodeGraph->addInput(interfaceName, sourceInput->getType());
+                        nodeGraphInput->setDefaultGeomPropString(defaultGeomPropString);
+                    }
+                }
             }
         }
     }
@@ -180,7 +233,20 @@ mx::NodePtr TopoNeutralGraph::cloneNode(const mx::Node& node, mx::GraphElement& 
     if (!nodeDef) {
         throw mx::Exception("Ambiguous node is not fully resolvable");
     }
-    destNode->setNodeDefString(nodeDef->getName());
+    auto optimizedNodeDef
+        = _lobePruner ? _lobePruner->getOptimizedNodeDef(node) : mx::NodeDefPtr {};
+    if (optimizedNodeDef) {
+        const auto nsPrefix = optimizedNodeDef->hasNamespace()
+            ? optimizedNodeDef->getNamespace() + ":"
+            : std::string {};
+        destNode->setCategory(nsPrefix + optimizedNodeDef->getNodeString());
+        destNode->setNodeDefString(optimizedNodeDef->getName());
+        for (const auto& attrName : _lobePruner->getOptimizedAttributeNames(nodeDef)) {
+            _optimizedAttributes.push_back(node.getNamePath() + "." + attrName);
+        }
+    } else {
+        destNode->setNodeDefString(nodeDef->getName());
+    }
     return destNode;
 }
 
@@ -191,6 +257,11 @@ const std::string& TopoNeutralGraph::getOriginalPath(const std::string& topoPath
         throw mx::Exception("Could not find original path for " + topoPath);
     }
     return it->second;
+}
+
+const mx::StringVec& TopoNeutralGraph::getOptimizedAttributes() const
+{
+    return _optimizedAttributes;
 }
 
 const TopoNeutralGraph::WatchList& TopoNeutralGraph::getWatchList() const { return _watchList; }
@@ -306,6 +377,17 @@ std::string TopoNeutralGraph::gatherChannels(const mx::Input& input)
         }
     }
     return combinedChannels;
+}
+
+std::string TopoNeutralGraph::gatherDefaultGeomProp(const mx::Input& input)
+{
+    if (input.hasInterfaceName()) {
+        const auto interfaceInput = input.getInterfaceInput();
+        if (interfaceInput && interfaceInput->hasDefaultGeomPropString()) {
+            return interfaceInput->getDefaultGeomPropString();
+        }
+    }
+    return {};
 }
 
 std::string TopoNeutralGraph::gatherOutput(const mx::Input& input)

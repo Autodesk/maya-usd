@@ -64,11 +64,27 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool discardEdits(const MDagPath& dagPath);
 
-    /// \brief Copy USD data into USD or Maya data.
+    /// \brief Copy Maya nodes to USD data or USD data to Maya nodes.
     /// \return list of destination paths.
     MAYAUSD_CORE_PUBLIC
     std::vector<Ufe::Path> duplicate(
         const Ufe::Path&    srcPath,
+        const Ufe::Path&    dstPath,
+        const VtDictionary& userArgs = VtDictionary());
+
+    /// \brief Copy USD data to Maya nodes.
+    /// \return list of destination paths.
+    MAYAUSD_CORE_PUBLIC
+    std::vector<Ufe::Path> duplicateToMaya(
+        const Ufe::Path&    srcPath,
+        const Ufe::Path&    dstPath,
+        const VtDictionary& userArgs = VtDictionary());
+
+    /// \brief Copy Maya nodes to USD data.
+    /// \return list of destination paths.
+    MAYAUSD_CORE_PUBLIC
+    std::vector<Ufe::Path> duplicateToUsd(
+        const MObject&      mayaObject,
         const Ufe::Path&    dstPath,
         const VtDictionary& userArgs = VtDictionary());
 
