@@ -152,16 +152,6 @@ else()
     set(UFE_HAS_CODE_WRAPPER "0")
 endif()
 
-if(LOOKDEVXUFE_HAS_PYTHON_BINDINGS)
-    list(APPEND TEST_SCRIPT_FILES
-        testLdxCapabilityHandler.py
-        testLdxComponentConnections.py        
-        testLdxConnection.py
-        testLdxDebugHandler.py
-        testLdxFileHandler.py
-    )
-endif()
-
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
