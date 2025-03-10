@@ -21,13 +21,7 @@
 #include <mayaUsd/fileio/registryHelper.h>
 
 #include <pxr/base/tf/pyPolymorphic.h>
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/return_internal_reference.hpp>
-#include <boost/python/suite/indexing/map_indexing_suite.hpp>
-#include <boost/python/wrapper.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -80,15 +74,16 @@ public:
         UsdMayaExportChaser*
         operator()(const UsdMayaExportChaserRegistry::FactoryContext& factoryContext)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return nullptr;
             }
-            auto                  chaser = new ExportChaserWrapper();
-            TfPyLock              pyLock;
-            boost::python::object instance = pyClass(factoryContext, (uintptr_t)chaser);
-            boost::python::incref(instance.ptr());
+            auto                               chaser = new ExportChaserWrapper();
+            TfPyLock                           pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::object instance
+                = pyClass(factoryContext, (uintptr_t)chaser);
+            PXR_BOOST_PYTHON_NAMESPACE::incref(instance.ptr());
             initialize_wrapper(instance.ptr(), chaser);
             return chaser;
         }
@@ -97,7 +92,7 @@ public:
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
         static UsdMayaExportChaserRegistry::FactoryFn
-        Register(boost::python::object cl, const std::string& mayaTypeName)
+        Register(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaTypeName));
             if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
@@ -111,7 +106,8 @@ public:
 
         // Unregister a class for a given purpose. This will cause the associated factory
         // function to stop producing this Python class.
-        static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+        static void
+        Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
         {
             UnregisterPythonObject(cl, GetKey(cl, mayaTypeName));
         }
@@ -125,13 +121,14 @@ public:
 
         // Generates a unique key based on the name of the class, along with the class
         // purpose:
-        static std::string GetKey(boost::python::object cl, const std::string& mayaTypeName)
+        static std::string
+        GetKey(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
         {
             return ClassName(cl) + "," + mayaTypeName + "," + ",ExportChaser";
         }
     };
 
-    static void Register(boost::python::object cl, const std::string& mayaTypeName)
+    static void Register(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
     {
         UsdMayaExportChaserRegistry::FactoryFn fn = FactoryFnWrapper::Register(cl, mayaTypeName);
         if (fn) {
@@ -139,7 +136,7 @@ public:
         }
     }
 
-    static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+    static void Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
     {
         FactoryFnWrapper::Unregister(cl, mayaTypeName);
     }
@@ -148,21 +145,22 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapExportChaserRegistryFactoryContext()
 {
-    boost::python::class_<UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap>("DagToUsdMap")
-        .def(boost::python::map_indexing_suite<
+    PXR_BOOST_PYTHON_NAMESPACE::class_<UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap>(
+        "DagToUsdMap")
+        .def(PXR_BOOST_PYTHON_NAMESPACE::map_indexing_suite<
              UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap>());
 
-    boost::python::class_<UsdMayaExportChaserRegistry::FactoryContext>(
-        "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<UsdMayaExportChaserRegistry::FactoryContext>(
+        "UsdMayaExportChaserRegistryFactoryContext", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("GetStage", &UsdMayaExportChaserRegistry::FactoryContext::GetStage)
         .def(
             "GetDagToUsdMap",
             &UsdMayaExportChaserRegistry::FactoryContext::GetDagToUsdMap,
-            boost::python::return_internal_reference<>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
         .def(
             "GetJobArgs",
             &UsdMayaExportChaserRegistry::FactoryContext::GetJobArgs,
-            boost::python::return_internal_reference<>());
+            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -170,14 +168,25 @@ void wrapExportChaser()
 {
     typedef UsdMayaExportChaser This;
 
-    boost::python::class_<ExportChaserWrapper, boost::noncopyable>(
-        "ExportChaser", boost::python::no_init)
-        .def("__init__", make_constructor(&ExportChaserWrapper::New))
-        .def("ExportDefault", &This::ExportDefault, &ExportChaserWrapper::default_ExportDefault)
-        .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
-        .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
-        .def("Register", &ExportChaserWrapper::Register)
-        .staticmethod("Register")
-        .def("Unregister", &ExportChaserWrapper::Unregister)
-        .staticmethod("Unregister");
+    PXR_BOOST_PYTHON_NAMESPACE::
+        class_<ExportChaserWrapper, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "ExportChaser", PXR_BOOST_PYTHON_NAMESPACE::no_init)
+            .def("__init__", make_constructor(&ExportChaserWrapper::New))
+            .def("ExportDefault", &This::ExportDefault, &ExportChaserWrapper::default_ExportDefault)
+            .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
+            .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
+            .def(
+                "RegisterExtraPrimsPaths",
+                &This::RegisterExtraPrimsPaths,
+                PXR_BOOST_PYTHON_NAMESPACE::arg("extraPrimPaths"),
+                "Method to cache the path for any extra prim path created by the chaser.")
+            .def(
+                "GetExtraPrimsPaths",
+                &This::GetExtraPrimsPaths,
+                PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>(),
+                "Get the array of the currently cached extra paths.")
+            .def("Register", &ExportChaserWrapper::Register)
+            .staticmethod("Register")
+            .def("Unregister", &ExportChaserWrapper::Unregister)
+            .staticmethod("Unregister");
 }

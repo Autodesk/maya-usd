@@ -329,6 +329,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
+        const bool isClassPrim = prim().IsAbstract();
+
         if (!_isAGatewayType) {
             // Working set management (load and unload):
             const auto itemLabelPairs = _computeLoadAndUnloadItems(prim());
@@ -363,10 +365,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             // Default Prim:
             //     - If the prim is the default prim, add clearing the default prim
             //     - Otherwise, if the prim is a root prim, add set default prim
-            if (prim().GetStage()->GetDefaultPrim() == prim()) {
-                items.emplace_back(kUSDClearDefaultPrim, kUSDClearDefaultPrim);
-            } else if (prim().GetPath().IsRootPrimPath()) {
-                items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
+            if (!isClassPrim) {
+                if (prim().GetStage()->GetDefaultPrim() == prim()) {
+                    items.emplace_back(kUSDClearDefaultPrim, kUSDClearDefaultPrim);
+                } else if (prim().GetPath().IsRootPrimPath()) {
+                    items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
+                }
             }
 
             // Prim active state:
@@ -748,6 +752,7 @@ UsdContextOps::SchemaNameMap UsdContextOps::getSchemaPluginNiceNames() const
         { "usdSkel", "Skeleton" },
         { "usdUI", "UI" },
         { "usdVol", "Volumes" },
+        { "usdArnold", "Arnold" }
     };
     // clang-format on
     return schemaPluginNiceNames;

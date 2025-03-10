@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    defaultPrim = "RootPrim"
+    metersPerUnit = 0.001
+    upAxis = "Y"
+)
+
+def Xform "RootPrim"
+{
+    def Mesh "SimpleMesh"
+    {
+        uniform bool doubleSided = 1
+        float3[] extent = [(-1, -1, 0), (1, 1, 0)]
+        int[] faceVertexCounts = [3]
+        int[] faceVertexIndices = [0, 1, 2]
+        point3f[] points = [(-1, -1, 0), (1, -1, 0), (0, 1, 0)]
+        color3f[] primvars:displayColor = [(0.2, 0, 0)]
+    }
+}
+

@@ -33,8 +33,9 @@ using AL::usdmaya::fileio::AnimationTranslator;
 /// \brief  Test USD to attribute enum mappings
 //----------------------------------------------------------------------------------------------------------------------
 namespace {
-MPlug m_outTime;
-void  setUp()
+MPlug   m_outTime;
+MString m_addDoubleLinearNodeName;
+void    setUp()
 {
     AL_OUTPUT_TEST_NAME("test_translators_AnimationTranslator");
     MGlobal::selectByName("time1", MGlobal::kReplaceList);
@@ -44,8 +45,20 @@ void  setUp()
     sl.getDependNode(0, obj);
     MFnDependencyNode time1Fn(obj);
     m_outTime = time1Fn.findPlug("outTime");
-}
 
+    if (m_addDoubleLinearNodeName.length() == 0) {
+        MFnDependencyNode fnb;
+        MStatus           status;
+        MObject           addDoubleLinear1 = fnb.create("addDoubleLinear", &status);
+        m_addDoubleLinearNodeName = MFAIL(status) ? "addDL" : "addDoubleLinear";
+
+        if (!MFAIL(status)) {
+            MDGModifier mod;
+            mod.deleteNode(addDoubleLinear1);
+            mod.doIt();
+        }
+    }
+}
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -56,7 +69,7 @@ TEST(translators_AnimationTranslator, animationDrivenPlug)
     MStatus status;
 
     MFnDependencyNode fnb;
-    MObject           addDoubleLinear1 = fnb.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear1 = fnb.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnAnimCurve fna;
@@ -197,11 +210,11 @@ TEST(translators_AnimationTranslator, animationDrivenIndirectPlug)
     MStatus status;
 
     MFnDependencyNode fnb;
-    MObject           addDoubleLinear1 = fnb.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear1 = fnb.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnDependencyNode fnc;
-    MObject           addDoubleLinear2 = fnc.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear2 = fnc.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnAnimCurve fna;
@@ -229,7 +242,7 @@ TEST(translators_AnimationTranslator, expressionDrivenPlug)
     setUp();
     MStatus           status;
     MFnDependencyNode fnb;
-    MObject           addDoubleLinear1 = fnb.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear1 = fnb.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnExpression fna;
@@ -253,11 +266,11 @@ TEST(translators_AnimationTranslator, expressionDrivenIndirectPlug)
     setUp();
     MStatus           status;
     MFnDependencyNode fnb;
-    MObject           addDoubleLinear1 = fnb.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear1 = fnb.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnDependencyNode fnc;
-    MObject           addDoubleLinear2 = fnc.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear2 = fnc.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnExpression fna;
@@ -284,7 +297,7 @@ TEST(translators_AnimationTranslator, expressionDrivenPlugNoTimeInput)
     setUp();
     MStatus           status;
     MFnDependencyNode fnb;
-    MObject           addDoubleLinear1 = fnb.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear1 = fnb.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnExpression fna;
@@ -308,11 +321,11 @@ TEST(translators_AnimationTranslator, expressionDrivenIndirectPlugNoTimeInput)
     setUp();
     MStatus           status;
     MFnDependencyNode fnb;
-    MObject           addDoubleLinear1 = fnb.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear1 = fnb.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnDependencyNode fnc;
-    MObject           addDoubleLinear2 = fnc.create("addDoubleLinear", &status);
+    MObject           addDoubleLinear2 = fnc.create(m_addDoubleLinearNodeName, &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     MFnExpression fna;

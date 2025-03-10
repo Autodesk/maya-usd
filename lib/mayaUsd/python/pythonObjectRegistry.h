@@ -17,8 +17,7 @@
 #define USDMAYA_PYTHON_CLASS_REGISTRY_H
 
 #include <pxr/pxr.h>
-
-#include <boost/python/class.hpp>
+#include <pxr_python.h>
 
 #include <map>
 #include <string>
@@ -35,24 +34,29 @@ protected:
     static const size_t UPDATED = 0xFFFFFFFF;
 
     // Registers or updates a Python class for the provided key.
-    static size_t RegisterPythonObject(boost::python::object cl, const std::string& key);
+    static size_t
+    RegisterPythonObject(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& key);
 
     // Unregister a Python class for a given key. This will cause the associated factory function to
     // stop producing this Python class.
-    static void UnregisterPythonObject(boost::python::object cl, const std::string& key);
+    static void
+    UnregisterPythonObject(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& key);
 
-    static boost::python::object GetPythonObject(size_t index) { return _sClassVec[index]; }
+    static PXR_BOOST_PYTHON_NAMESPACE::object GetPythonObject(size_t index)
+    {
+        return _sClassVec[index];
+    }
 
-    static bool IsPythonClass(boost::python::object cl);
+    static bool IsPythonClass(PXR_BOOST_PYTHON_NAMESPACE::object cl);
 
-    static std::string ClassName(boost::python::object cl);
+    static std::string ClassName(PXR_BOOST_PYTHON_NAMESPACE::object cl);
 
 private:
     // Static table of all registered Python classes, with associated index:
-    typedef std::vector<boost::python::object> TClassVec;
-    static TClassVec                           _sClassVec;
-    typedef std::map<std::string, size_t>      TClassIndex;
-    static TClassIndex                         _sIndex;
+    typedef std::vector<PXR_BOOST_PYTHON_NAMESPACE::object> TClassVec;
+    static TClassVec                                        _sClassVec;
+    typedef std::map<std::string, size_t>                   TClassIndex;
+    static TClassIndex                                      _sIndex;
 
     static void HookInterpreterExit();
 

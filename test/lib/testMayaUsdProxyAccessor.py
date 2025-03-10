@@ -276,6 +276,83 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         v1 = cmds.getAttr('{}.wm[0]'.format(childNodeDagPath))
         self.assertVectorAlmostEqual(v1, [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 8.0, 5.0, 1.0])
 
+    def validateUnparentingDagObjectFromUsdPrim(self, cachingScope):
+        """
+        Parent then unparent DagObject from UsdPrim
+        """
+        nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
+
+        # Animate proxy shape transform
+        transform = cmds.listRelatives(nodeDagPath, parent=True)[0]
+        cmds.setKeyframe( '{}.ry'.format(transform), time=1.0, value=0 )
+        cmds.setKeyframe( '{}.ry'.format(transform), time=100.0, value=90 )
+
+        # Create locators to parent under /ParentA/Sphere
+        # and apply offset on their translateY
+        cmds.spaceLocator()
+        childNode1DagPath = cmds.ls(sl=True, l=True)[0]
+        cmds.setAttr('{}.ty'.format(childNode1DagPath), 3)
+
+        cmds.spaceLocator()
+        childNode2DagPath = cmds.ls(sl=True, l=True)[0]
+        cmds.setAttr('{}.ty'.format(childNode2DagPath), 3)
+
+        def _waitForCache():
+            cachingScope.checkValidFrames(self.cache_empty)
+            cachingScope.waitForCache()
+            cachingScope.checkValidFrames(self.cache_allFrames)
+
+        def _verifyChildXformAtTime(dagPath, time, mat4):
+            cmds.currentTime(time)
+            self.assertVectorAlmostEqual(cmds.getAttr('{}.wm[0]'.format(dagPath)), mat4)
+
+        def _verifyParentIdentityXform(dagPath):
+            # Verify we only have the xform from the locator
+            _verifyChildXformAtTime(dagPath, 1, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 3.0, 0.0, 1.0])
+            _verifyChildXformAtTime(dagPath, 100, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 3.0, 0.0, 1.0])
+
+        def _verifyInheritedXform(dagPath):
+            # Verify we inherit the animation from the proxyShape
+            _verifyChildXformAtTime(dagPath, 1, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 5.0, 3.0, 0.0, 1.0])
+            _verifyChildXformAtTime(dagPath, 100, [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 8.0, 5.0, 1.0])
+
+        _waitForCache()
+        _verifyParentIdentityXform(childNode1DagPath)
+        _verifyParentIdentityXform(childNode2DagPath)
+
+        # Get UFE items
+        ufeItemSphere = createUfeSceneItem(nodeDagPath, '/ParentA/Sphere')
+        ufeItemChild1 = createUfeSceneItem(childNode1DagPath)
+        ufeItemChild2 = createUfeSceneItem(childNode2DagPath)
+
+        # Parent
+        pa.parentItems([ufeItemChild1], ufeItemSphere)
+        pa.parentItems([ufeItemChild2], ufeItemSphere)
+
+        _waitForCache()
+        _verifyInheritedXform(childNode1DagPath)
+        _verifyInheritedXform(childNode2DagPath)
+
+        # Parenting ufeItemChild1 again fails
+        with self.assertRaises(RuntimeError):
+            pa.parentItems([ufeItemChild1], ufeItemSphere)
+
+        # Un-parenting.
+        pa.unparentItems([ufeItemChild1])
+
+        _waitForCache()
+        _verifyParentIdentityXform(childNode1DagPath)
+        _verifyInheritedXform(childNode2DagPath)
+
+        # Parenting ufeItemChild1 now succeeds
+        try:
+            pa.parentItems([ufeItemChild1], ufeItemSphere)
+        except Exception:
+            self.fail("pa.parentItems unexpected Exception")
+
+        _waitForCache()
+        _verifyInheritedXform(childNode1DagPath)
+
     def validateSerialization(self,fileName, fileType):
         """
         Helper method for testing serialization.
@@ -956,6 +1033,26 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         with CachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
             self.validateParentingDagObjectUnderUsdPrim(thisScope)
+ 
+    def testUnParentingDagObjectFromUsdPrim_NoCaching(self):
+        """
+        Test parenting of dag object under usd prim.
+        Cached playback is disabled in this test.
+        """
+        cmds.file(new=True, force=True)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
+            self.validateUnparentingDagObjectFromUsdPrim(thisScope)
+ 
+    def testUnParentingDagObjectFromUsdPrim_Caching(self):
+        """
+        Test parenting of dag object under usd prim.
+        Cached playback is ENABLED in this test.
+        """
+        cmds.file(new=True, force=True)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
+            self.validateUnparentingDagObjectFromUsdPrim(thisScope)
  
     def testPassiveManipulation_NoCaching(self):
         """

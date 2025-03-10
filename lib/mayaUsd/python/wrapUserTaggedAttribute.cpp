@@ -21,14 +21,12 @@
 #include <pxr/base/tf/pyStaticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
 
 #include <string>
 #include <vector>
@@ -51,7 +49,7 @@ _GetUserTaggedAttributesForNode(const std::string& nodeName)
 
 void wrapUserTaggedAttribute()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
     TF_PY_WRAP_PUBLIC_TOKENS(
         "UserTaggedAttributeTokens", UsdMayaUserTaggedAttributeTokens, PXRUSDMAYA_ATTR_TOKENS);

@@ -14,6 +14,7 @@ list(APPEND scripts_src
     mayaUsdMergeToUSDOptions.py
     mayaUsdMergeToUsd.py
     mayaUsdOptions.py
+    mayaUsdStageConversion.py
     mayaUsdUtils.py
     mayaUsdMayaReferenceUtils.py
 )

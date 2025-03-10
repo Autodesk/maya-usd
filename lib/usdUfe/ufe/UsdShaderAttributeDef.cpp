@@ -180,7 +180,8 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
         }
 #else
         const auto sdfTypeIndicator = _shaderAttributeDef->GetTypeAsSdfType();
-        if (sdfTypeIndicator.HasSdfType()) {
+        if (sdfTypeIndicator.HasSdfType()
+            && sdfTypeIndicator.GetSdfType() != SdfValueTypeNames->Token) {
             return Ufe::Value(sdfTypeIndicator.GetSdfType().GetAsToken().GetString());
         } else {
             return Ufe::Value(sdfTypeIndicator.GetNdrType().GetString());

@@ -22,10 +22,12 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdr/shaderNode.h>
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/primFlags.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <ufe/attribute.h>
+#include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/types.h>
@@ -50,6 +52,7 @@ UFE_NS_DEF
 namespace USDUFE_NS_DEF {
 
 class UsdAttribute;
+class UsdUndoableItem;
 
 // DCC specific accessor functions.
 typedef PXR_NS::UsdStageWeakPtr (*StageAccessorFn)(const Ufe::Path&);
@@ -195,6 +198,12 @@ void setUniqueChildNameFn(UniqueChildNameFn fn);
 //! Return a unique child name.
 USDUFE_PUBLIC
 std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+
+//! Return a relatively unique prim name.
+//! That is, make some effort so that the name is unique relative to other prims
+//! "around" it, like ancestors and some descendants.
+USDUFE_PUBLIC
+std::string relativelyUniqueName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
 
 //! Default uniqueChildName() implementation. Uses all the prim's children.
 USDUFE_PUBLIC
@@ -466,6 +475,21 @@ const char* getTransform3dMatrixOpName();
 //! \note the prefix-less name is only filled when returning true.
 USDUFE_PUBLIC
 bool isSessionLayerGroupMetadata(const std::string& groupName, std::string* adjustedGroupName);
+
+//! Remove data left behind in the session layer for the given prim path in the given stage
+//! and store the undos as extra undos in the given undo items.
+USDUFE_PUBLIC
+void removeSessionLeftOvers(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfPath&        primPath,
+    UsdUndoableItem*              undoableItem,
+    bool                          extraEdits = true);
+
+//! Return the USD prims predicate for the given UFE child filter.
+//! Note: an empty filter or unknown filter will filter out everything.
+//!       Yes, that means no-filter actually means filter everything out.
+USDUFE_PUBLIC
+PXR_NS::Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childFilter);
 
 } // namespace USDUFE_NS_DEF
 

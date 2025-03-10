@@ -22,12 +22,14 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
+#include <mayaUsd/utils/dynamicAttribute.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
@@ -36,7 +38,6 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usd/usd/primRange.h>
-#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usd/variantSets.h>
@@ -53,12 +54,14 @@
 #include <maya/MDagPathArray.h>
 #include <maya/MDistance.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MTime.h>
 
+#include <cctype>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -254,22 +257,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     UsdEditContext editContext(stage, stage->GetSessionLayer());
     stage->SetEditTarget(stage->GetSessionLayer());
     _setTimeSampleMultiplierFrom(stage->GetTimeCodesPerSecond());
-    progressBar.advance();
-
-    // XXX Currently all distance values are set directly from USD and will be
-    // interpreted as centimeters (Maya's internal distance unit). Future work
-    // could include converting distance values based on the specified meters-
-    // per-unit in the USD stage metadata. For now, simply warn.
-    if (UsdGeomStageHasAuthoredMetersPerUnit(stage)) {
-        MDistance::Unit mdistanceUnit = UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(
-            UsdGeomGetStageMetersPerUnit(stage));
-
-        if (mdistanceUnit != MDistance::internalUnit()) {
-            TF_WARN("Distance unit conversion is not yet supported. "
-                    "All distance values will be imported in Maya's internal "
-                    "distance unit.");
-        }
-    }
     progressBar.advance();
 
     // If the import time interval isn't empty, we expand the Min/Max time
@@ -480,9 +467,344 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     }
     progressBar.advance();
 
+    _ConvertUpAxisAndUnits(stage);
+    progressBar.advance();
+
     UsdMayaReadUtil::mapFileHashes.clear();
 
     return (status == MS::kSuccess);
+}
+
+static bool getMayaUpAxisZ() { return MGlobal::isZAxisUp(); }
+
+static bool getUSDUpAxisZ(const UsdStageRefPtr& stage)
+{
+    return UsdGeomGetStageUpAxis(stage) == UsdGeomTokens->z;
+}
+
+void UsdMaya_ReadJob::_ConvertUpAxisAndUnits(const UsdStageRefPtr& stage)
+{
+    ConversionInfo conversion;
+
+    // Convert up-axis based if required and different between Maya and USD.
+    const bool convertUpAxis = mArgs.upAxis;
+    conversion.isMayaUpAxisZ = getMayaUpAxisZ();
+    conversion.isUSDUpAxisUZ = getUSDUpAxisZ(stage);
+    conversion.needUpAxisConversion
+        = (convertUpAxis && (conversion.isMayaUpAxisZ != conversion.isUSDUpAxisUZ));
+
+    // Convert units if required and different between Maya and USD.
+    const bool convertUnits = mArgs.unit;
+    // Note: when changing preference, we need to compare to the UI units.
+    //       When adding scaling transforms, we need to compare to internal units.
+    const MDistance::Unit mayaUnits
+        = (mArgs.axisAndUnitMethod == UsdMayaJobImportArgsTokens->overwritePrefs)
+        ? MDistance::uiUnit()
+        : MDistance::internalUnit();
+    conversion.mayaMetersPerUnit = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaUnits);
+    conversion.usdMetersPerUnit = UsdGeomGetStageMetersPerUnit(stage);
+    conversion.needUnitsConversion
+        = (convertUnits && (conversion.mayaMetersPerUnit != conversion.usdMetersPerUnit));
+
+    // If neither up-axis nor units need to change, do nothing.
+    if (!conversion.needUpAxisConversion && !conversion.needUnitsConversion)
+        return;
+
+    if (mArgs.axisAndUnitMethod == UsdMayaJobImportArgsTokens->rotateScale)
+        _ConvertUpAxisAndUnitsByModifyingData(stage, conversion, false);
+    else if (mArgs.axisAndUnitMethod == UsdMayaJobImportArgsTokens->addTransform)
+        _ConvertUpAxisAndUnitsByModifyingData(stage, conversion, true);
+    else if (mArgs.axisAndUnitMethod == UsdMayaJobImportArgsTokens->overwritePrefs)
+        _ConvertUpAxisAndUnitsByChangingMayaPrefs(stage, conversion);
+    else
+        TF_WARN(
+            "Unknown method of converting the USD up axis and units to Maya: %s",
+            mArgs.axisAndUnitMethod.c_str());
+}
+
+// Construct list of top level DAG nodes.
+static std::vector<MDagPath> _findAllRootDagNodePaths(
+    const UsdMayaPrimReaderContext::ObjectRegistry& newNodes,
+    const MDagPath&                                 rootPath)
+{
+    std::vector<MDagPath> rootNodePaths;
+
+    for (auto& it : newNodes) {
+        // Do not process the root DAG path, which was not part of the import.
+        if (it.second == rootPath.node())
+            continue;
+
+        // Note: if it is not a DAG node, then it is a DG node and we don't
+        //       need to process it.
+        MStatus    dagStatus;
+        MFnDagNode dagFn(it.second, &dagStatus);
+        if (dagStatus != MS::kSuccess)
+            continue;
+
+        MDagPathArray paths;
+        dagFn.getAllPaths(paths);
+        for (const MDagPath& path : paths) {
+            if (path.length() == 1) {
+                rootNodePaths.emplace_back(path);
+            }
+        }
+    }
+
+    return rootNodePaths;
+}
+
+static std::vector<std::string> _convertDagPathToNames(const std::vector<MDagPath>& dagNodePaths)
+{
+    std::vector<std::string> dagNodeNames;
+
+    dagNodeNames.reserve(dagNodePaths.size());
+    for (const MDagPath& path : dagNodePaths)
+        dagNodeNames.emplace_back(path.fullPathName().asChar());
+
+    return dagNodeNames;
+}
+
+static std::string _cleanMayaNodeName(const std::string& name)
+{
+    std::string cleaned(name);
+    for (char& c : cleaned) {
+        if (!std::isalpha(c) && !std::isdigit(c))
+            c = '_';
+    }
+    return cleaned;
+}
+
+static void _addOrignalUpAxisAttribute(const std::vector<MDagPath>& dagNodePaths, bool isUSDUpAxisZ)
+{
+    const MString originalUpAxis = isUSDUpAxisZ ? "Z" : "Y";
+    const MString attrName = "OriginalUpAxis";
+    for (const MDagPath& dagPath : dagNodePaths) {
+        MFnDependencyNode depNode(dagPath.node());
+        using namespace MayaUsd;
+        const auto flags = DynamicAttrFlags::kDefaults & ~DynamicAttrFlags::kHidden;
+        MayaUsd::setDynamicAttribute(depNode, attrName, originalUpAxis, flags);
+    }
+}
+
+static void
+_addOrignalUnitsAttribute(const std::vector<MDagPath>& dagNodePaths, double usdMetersPerUnit)
+{
+    MString originalUnits;
+    originalUnits.set(usdMetersPerUnit);
+    const MString attrName = "OriginalMetersPerUnit";
+    for (const MDagPath& dagPath : dagNodePaths) {
+        MFnDependencyNode depNode(dagPath.node());
+        using namespace MayaUsd;
+        const auto flags = DynamicAttrFlags::kDefaults & ~DynamicAttrFlags::kHidden;
+        MayaUsd::setDynamicAttribute(depNode, attrName, originalUnits, flags);
+    }
+}
+
+void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByModifyingData(
+    const UsdStageRefPtr& stage,
+    const ConversionInfo& conversion,
+    bool                  keepParentGroup)
+{
+    std::vector<MDagPath> dagNodePaths
+        = _findAllRootDagNodePaths(mNewNodeRegistry, mMayaRootDagPath);
+    if (dagNodePaths.size() <= 0)
+        return;
+
+    std::vector<std::string> dagNodeNames = _convertDagPathToNames(dagNodePaths);
+
+    std::string fullScript;
+
+    // The rules for the group name are:
+    //
+    //    - If there is a single root object, use that object name + _converted
+    //    - Otherwise use the import file name + _converted
+    std::string groupName;
+    {
+        if (dagNodeNames.size() == 1) {
+            groupName = dagNodeNames[0];
+            if (TfStringContains(groupName, "|")) {
+                groupName = TfStringGetSuffix(groupName, '|');
+            }
+        } else {
+            groupName = TfGetBaseName(mImportData.filename());
+        }
+
+        static const char groupNameSuffix[] = "_converted";
+        groupName = _cleanMayaNodeName(groupName);
+        groupName = groupName + groupNameSuffix;
+    }
+
+    // Group all root node under a new group:
+    //
+    //    - Use -name to force the desired group name
+    //    - Use -absolute to keep the grouped node world positions
+    //    - Use -parent if the import was done under a given Maya node
+    //    - Use -world to create the group under the root ofthe scene
+    //      if the import was done at the root of the scene
+    //    - Capture the new group name in a MEL variable called $groupName
+
+    {
+        std::string groupCmd;
+
+        // Note: for the group commands, the node names must be separated  by, literally, " ",
+        //       so that they form a space-separated serie of quoted names.
+        static const char nodeNameSeparator[] = "\" \"";
+        std::string       joinedDAGNodeNames = TfStringJoin(dagNodeNames, nodeNameSeparator);
+
+        if (mMayaRootDagPath.node() != MObject::kNullObj) {
+            static const char groupUnderParentCmdFormat[]
+                = "string $groupName = `group -name \"%s\" -absolute -parent \"%s\" \"%s\"`;\n";
+            std::string rootName = mMayaRootDagPath.fullPathName().asChar();
+            groupCmd = TfStringPrintf(
+                groupUnderParentCmdFormat,
+                groupName.c_str(),
+                joinedDAGNodeNames.c_str(),
+                rootName.c_str());
+        } else {
+            static const char groupUnderWorldCmdFormat[]
+                = "string $groupName = `group -name \"%s\" -absolute -world \"%s\"`;\n";
+            groupCmd = TfStringPrintf(
+                groupUnderWorldCmdFormat, groupName.c_str(), joinedDAGNodeNames.c_str());
+        }
+
+        fullScript += groupCmd;
+    }
+
+    // Rotate the group to align with the desired axis.
+    //
+    //    - Use relative rotation since we want to rotate the group as it is already positioned
+    //    - Use -euler to make teh angle be relative to the current angle
+    //    - Use forceOrderXYZ to force  the rotation to be relative to world
+    //    - Use -pivot to make sure we are rotating relative to the origin
+    //      (The group is positioned at the center of all sub-object, so we need to specify the
+    //      pivot)
+    if (conversion.needUpAxisConversion) {
+        static const char rotationCmdFormat[]
+            = "rotate -relative -euler -pivot 0 0 0 -forceOrderXYZ %d 0 0 $groupName;\n";
+        const int   angleYtoZ = 90;
+        const int   angleZtoY = -90;
+        std::string rotationCmd
+            = TfStringPrintf(rotationCmdFormat, conversion.isMayaUpAxisZ ? angleYtoZ : angleZtoY);
+        fullScript += rotationCmd;
+    }
+
+    if (conversion.needUnitsConversion) {
+        static const char scalingCmdFormat[]
+            = "scale -relative -pivot 0 0 0 -scaleXYZ %f %f %f $groupName;\n";
+        const double usdToMayaScaling = conversion.usdMetersPerUnit / conversion.mayaMetersPerUnit;
+        std::string  scalingCmd = TfStringPrintf(
+            scalingCmdFormat, usdToMayaScaling, usdToMayaScaling, usdToMayaScaling);
+        fullScript += scalingCmd;
+    }
+
+    if (!keepParentGroup) {
+        static const char ungroupCmdFormat[] = "ungroup -absolute \"%s\";\n";
+        std::string       ungroupCmd = TfStringPrintf(ungroupCmdFormat, groupName.c_str());
+        fullScript += ungroupCmd;
+    }
+
+    if (!MGlobal::executeCommand(fullScript.c_str())) {
+        MGlobal::displayWarning("Failed to add a transform to convert the up-axis to align "
+                                "the USD data with Maya up-axis.");
+        return;
+    }
+
+    if (keepParentGroup) {
+        MDagPath groupDagPath;
+        {
+            MSelectionList sel;
+            sel.add(groupName.c_str());
+            sel.getDagPath(0, groupDagPath);
+        }
+        if (conversion.needUpAxisConversion)
+            _addOrignalUpAxisAttribute({ groupDagPath }, conversion.isUSDUpAxisUZ);
+        if (conversion.needUnitsConversion)
+            _addOrignalUnitsAttribute({ groupDagPath }, conversion.usdMetersPerUnit);
+    } else {
+        if (conversion.needUpAxisConversion)
+            _addOrignalUpAxisAttribute(dagNodePaths, conversion.isUSDUpAxisUZ);
+        if (conversion.needUnitsConversion)
+            _addOrignalUnitsAttribute(dagNodePaths, conversion.usdMetersPerUnit);
+    }
+
+    MGlobal::displayInfo(
+        "Mismatching axis and units have been converted for accurate orientation and scale.");
+}
+
+void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByChangingMayaPrefs(
+    const UsdStageRefPtr& stage,
+    const ConversionInfo& conversion)
+{
+    bool success = true;
+
+    // Close preference window if needed.
+    {
+        static const char* closePrefsCmd
+            = "global string $gPreferenceWindow;\n"
+              "if (`window -query -exists $gPreferenceWindow`) {\n"
+              "    if (`window -query -visible $gPreferenceWindow`) {\n"
+              "         string $title = getMayaUsdLibString(\"kAboutToChangePrefsTitle\");\n"
+              "         string $body = getMayaUsdLibString(\"kAboutToChangePrefs\");\n"
+              "         string $ok = getMayaUsdLibString(\"kSavePrefsChange\");\n"
+              "         string $cancel = getMayaUsdLibString(\"kDiscardPrefsChange\");\n"
+              "         string $result = `confirmDialog -title $title -message $body\n"
+              "                          -button $ok -button $cancel\n"
+              "                          -defaultButton $ok\n"
+              "                          -cancelButton $cancel`;\n"
+              "         if ($result == $ok) {\n"
+              "             savePrefsChanges;\n"
+              "         }\n"
+              "         else {\n"
+              "             cancelPrefsChanges;\n"
+              "         }\n"
+              "    }\n"
+              "}\n";
+
+        if (!MGlobal::executeCommand(closePrefsCmd)) {
+            MGlobal::displayWarning("Failed to close the Maya preferences windows.");
+        }
+    }
+
+    // Set up-axis preferences if needed.
+    if (conversion.needUpAxisConversion) {
+        const bool    rotateView = true;
+        const MStatus status = conversion.isUSDUpAxisUZ ? MGlobal::setZAxisUp(rotateView)
+                                                        : MGlobal::setYAxisUp(rotateView);
+        if (!status) {
+            MGlobal::displayWarning(
+                "Failed to change the Maya up-axis preferences to match USD data up-axis.");
+            success = false;
+        }
+    }
+
+    // Set units preferences if needed.
+    if (conversion.needUnitsConversion) {
+        const MDistance::Unit mayaUnit
+            = UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(conversion.usdMetersPerUnit);
+        if (mayaUnit == MDistance::kInvalid) {
+            MGlobal::displayWarning(
+                "Unable to convert <unit> to a Maya unit. Supported units include millimeters, "
+                "centimeters, meters, kilometers, inches, feet, yards and miles.");
+            success = false;
+        } else {
+            const MString mayaUnitText = UsdMayaUtil::ConvertMDistanceUnitToText(mayaUnit);
+            MString       changeUnitsCmd;
+            changeUnitsCmd.format("currentUnit -linear ^1s;", mayaUnitText);
+
+            // Note: we *must* execute the units change on-idle because the import process
+            //       saves and restores all units! If we change it now, the change would be lost.
+            if (!MGlobal::executeCommandOnIdle(changeUnitsCmd)) {
+                MGlobal::displayWarning(
+                    "Failed to change the Maya units preferences to match USD data "
+                    "because the units are not supported by Maya.");
+                success = false;
+            }
+        }
+    }
+
+    if (success)
+        MGlobal::displayInfo(
+            "Changed Maya preferences to match up-axis and units from the imported USD scene.");
 }
 
 bool UsdMaya_ReadJob::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
@@ -561,6 +883,9 @@ void UsdMaya_ReadJob::_DoImportInstanceIt(
     const SdfPath prototypePath = prototype.GetPath();
     MObject       prototypeObject = readCtx.GetMayaNode(prototypePath, false);
     if (prototypeObject == MObject::kNullObj) {
+        // Note: we are not passing the primReaderMap to _ImportPrototype because
+        //       _ImportPrototype does its own prim range loop and immediate post-visit
+        //       on the prims of the prototype.
         _ImportPrototype(prototype, usdRootPrim, readCtx);
         prototypeObject = readCtx.GetMayaNode(prototypePath, false);
         if (prototypeObject == MObject::kNullObj) {
@@ -602,26 +927,12 @@ void UsdMaya_ReadJob::_ImportPrototype(
     const UsdPrim&            usdRootPrim,
     UsdMayaPrimReaderContext& readCtx)
 {
-    _PrimReaderMap     primReaderMap;
     const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(prototype);
-    for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
-        const UsdPrim&           prim = *primIt;
-        UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
-        readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
-        if (prim.IsInstance()) {
-            _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
-        } else {
-            _DoImportPrimIt(primIt, usdRootPrim, readCtx, primReaderMap);
-        }
-    }
+    _ImportPrimRange(range, usdRootPrim);
 }
 
-bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
+bool UsdMaya_ReadJob::_DoImport(const UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
-    const bool buildInstances = mArgs.importInstances;
-
-    MayaUsd::ProgressBarScope progressBar(0);
-
     // We want both pre- and post- visit iterations over the prims in this
     // method. To do so, iterate over all the root prims of the input range,
     // and create new PrimRanges to iterate over their subtrees.
@@ -629,58 +940,70 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
         const UsdPrim& rootPrim = *rootIt;
         rootIt.PruneChildren();
 
-        _PrimReaderMap     primReaderMap;
-        const UsdPrimRange range = buildInstances
+        const UsdPrimRange range = mArgs.importInstances
             ? UsdPrimRange::PreAndPostVisit(rootPrim)
             : UsdPrimRange::PreAndPostVisit(
                 rootPrim, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
-
-        const int                     loopSize = std::distance(range.begin(), range.end());
-        MayaUsd::ProgressBarLoopScope instanceLoop(loopSize);
-        for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
-            const UsdPrim&           prim = *primIt;
-            UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
-            readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
-
-            if (buildInstances && prim.IsInstance()) {
-                _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
-            } else {
-                _DoImportPrimIt(primIt, usdRootPrim, readCtx, primReaderMap);
-            }
-            instanceLoop.loopAdvance();
-        }
+        _ImportPrimRange(range, usdRootPrim);
     }
 
-    if (buildInstances) {
-        progressBar.addSteps(1);
+    return _CleanupPrototypes(usdRootPrim);
+}
 
-        MDGModifier              deletePrototypeMod;
+void UsdMaya_ReadJob::_ImportPrimRange(const UsdPrimRange& range, const UsdPrim& usdRootPrim)
+{
+    const int                     loopSize = std::distance(range.begin(), range.end());
+    MayaUsd::ProgressBarLoopScope instanceLoop(loopSize);
+
+    _PrimReaderMap primReaderMap;
+
+    for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
+        const UsdPrim&           prim = *primIt;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
 
-        auto                          prototypes = usdRootPrim.GetStage()->GetPrototypes();
-        const int                     loopSize = prototypes.size();
-        MayaUsd::ProgressBarLoopScope prototypesLoop(loopSize);
-        for (const auto& prototype : prototypes) {
-
-            const SdfPath prototypePath = prototype.GetPath();
-            MObject       prototypeObject = readCtx.GetMayaNode(prototypePath, false);
-            if (prototypeObject != MObject::kNullObj) {
-                MStatus    status;
-                MFnDagNode prototypeNode(prototypeObject, &status);
-                if (status) {
-                    while (prototypeNode.childCount()) {
-                        prototypeNode.removeChildAt(prototypeNode.childCount() - 1);
-                    }
-                }
-                deletePrototypeMod.deleteNode(prototypeObject, false);
-                mNewNodeRegistry.erase(prototypePath.GetString());
-            }
-            prototypesLoop.loopAdvance();
+        if (mArgs.importInstances && prim.IsInstance()) {
+            _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
+        } else {
+            _DoImportPrimIt(primIt, usdRootPrim, readCtx, primReaderMap);
         }
-        deletePrototypeMod.doIt();
-        progressBar.advance();
+        instanceLoop.loopAdvance();
     }
+}
+
+bool UsdMaya_ReadJob::_CleanupPrototypes(const UsdPrim& usdRootPrim)
+{
+    if (!mArgs.importInstances)
+        return true;
+
+    MayaUsd::ProgressBarScope progressBar(1);
+
+    MDGModifier              deletePrototypeMod;
+    UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
+    readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
+
+    auto                          prototypes = usdRootPrim.GetStage()->GetPrototypes();
+    const int                     loopSize = prototypes.size();
+    MayaUsd::ProgressBarLoopScope prototypesLoop(loopSize);
+    for (const auto& prototype : prototypes) {
+
+        const SdfPath prototypePath = prototype.GetPath();
+        MObject       prototypeObject = readCtx.GetMayaNode(prototypePath, false);
+        if (prototypeObject != MObject::kNullObj) {
+            MStatus    status;
+            MFnDagNode prototypeNode(prototypeObject, &status);
+            if (status) {
+                while (prototypeNode.childCount()) {
+                    prototypeNode.removeChildAt(prototypeNode.childCount() - 1);
+                }
+            }
+            deletePrototypeMod.deleteNode(prototypeObject, false);
+            mNewNodeRegistry.erase(prototypePath.GetString());
+        }
+        prototypesLoop.loopAdvance();
+    }
+    deletePrototypeMod.doIt();
+    progressBar.advance();
 
     return true;
 }

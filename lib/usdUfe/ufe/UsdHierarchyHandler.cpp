@@ -58,6 +58,7 @@ Ufe::Hierarchy::ChildFilter UsdHierarchyHandler::childFilter() const
 {
     Ufe::Hierarchy::ChildFilter childFilters;
     childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
+    childFilters.emplace_back("ClassPrims", "Class Prims", false);
     return childFilters;
 }
 

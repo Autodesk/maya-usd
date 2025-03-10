@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME}
         editTargetCommand.cpp
         layerEditorCommand.cpp
         layerEditorWindowCommand.cpp
+        schemaCommand.cpp
 )
 
 set(HEADERS
@@ -21,6 +22,7 @@ set(HEADERS
         editTargetCommand.h
         layerEditorCommand.h
         layerEditorWindowCommand.h
+        schemaCommand.h
 )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)

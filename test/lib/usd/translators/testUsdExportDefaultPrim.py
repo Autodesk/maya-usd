@@ -50,6 +50,38 @@ class testUsdExportMesh(unittest.TestCase):
         self.assertTrue(defaultPrim)
         self.assertEqual(defaultPrim.GetName(), 'pSphere1')
 
+    def testExportNamespaceDefaultPrim(self):
+        '''Export to USD with a mesh inside a Maya namespace set as the default prim.'''
+        cmds.namespace(add="hello")
+        cmds.namespace(setNamespace=":hello")
+        cubeNames = cmds.polyCube()
+        cmds.namespace(setNamespace=":")
+        self.assertEqual(len(cubeNames), 2)
+
+        usdFile = os.path.abspath('UsdExportNamespaceDefaultPrim.usda')
+
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none', defaultPrim=cubeNames[0])
+        
+        stage = Usd.Stage.Open(usdFile)
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+        self.assertEqual(defaultPrim.GetName(), 'hello_pCube1')
+
+    def testExportRootsNoDefaultPrim(self):
+        '''Export to USD with the export roots argument and no default prim should select a root as default.'''
+        cubeNames = cmds.polyCube()
+        self.assertEqual(len(cubeNames), 2)
+
+        usdFile = os.path.abspath('UsdExportRootsNoDefaultPrim.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none', exportRoots=['|' + cubeNames[0]])
+
+        stage = Usd.Stage.Open(usdFile)
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+        self.assertEqual(defaultPrim.GetName(), cubeNames[0])
+
     def testExportLightDefaultPrim(self):
         '''Export to USD with a light set as the default prim.'''
         usdFile = os.path.abspath('UsdExportLightDefaultPrim.usda')

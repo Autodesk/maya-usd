@@ -148,6 +148,20 @@ double UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Uni
     }
 }
 
+MString UsdMayaUtil::ConvertMDistanceUnitToText(const MDistance::Unit mdistanceUnit)
+{
+    static std::map<MDistance::Unit, const char*> unitsConversionMap
+        = { { MDistance::kMillimeters, "mm" }, { MDistance::kCentimeters, "cm" },
+            { MDistance::kMeters, "m" },       { MDistance::kKilometers, "km" },
+            { MDistance::kInches, "inch" },    { MDistance::kFeet, "foot" },
+            { MDistance::kYards, "yard" },     { MDistance::kMiles, "mile" } };
+
+    const auto iter = unitsConversionMap.find(mdistanceUnit);
+    if (iter == unitsConversionMap.end())
+        return "cm";
+    return iter->second;
+}
+
 MDistance::Unit UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit)
 {
     if (UsdGeomLinearUnitsAre(linearUnit, UsdGeomLinearUnits::millimeters)) {
@@ -175,8 +189,7 @@ MDistance::Unit UsdMayaUtil::ConvertUsdGeomLinearUnitToMDistanceUnit(const doubl
         return MDistance::kMiles;
     }
 
-    TF_CODING_ERROR("Invalid UsdGeomLinearUnit %f. Assuming centimeters", linearUnit);
-    return MDistance::kCentimeters;
+    return MDistance::kInvalid;
 }
 
 double UsdMayaUtil::GetExportDistanceConversionScalar(const double metersPerUnit)
@@ -1333,6 +1346,15 @@ bool UsdMayaUtil::isShape(const MDagPath& dagPath)
     unsigned int numberOfShapesDirectlyBelow = 0;
     parentDagPath.numberOfShapesDirectlyBelow(numberOfShapesDirectlyBelow);
     return (numberOfShapesDirectlyBelow == 1);
+}
+
+std::string
+UsdMayaUtil::MayaNodeNameToPrimName(const std::string& nodeName, const bool stripNamespaces)
+{
+    // Note: When not found, rfind returns std::string::npos.
+    //       npos == -1, so npos+1 is zero, so it always works.
+    const std::string::size_type pos = nodeName.rfind('|');
+    return MayaNodeNameToSdfPath(nodeName.substr(pos + 1), stripNamespaces).GetString();
 }
 
 SdfPath UsdMayaUtil::MayaNodeNameToSdfPath(const std::string& nodeName, const bool stripNamespaces)
@@ -2570,4 +2592,11 @@ SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
     }
 
     return surfaceShaderNodeDefs;
+}
+
+bool UsdMayaUtil::isNodeInReference(const MObject& node, const MString& referenceFileName)
+{
+    MSelectionList nodes;
+    MFileIO::getReferenceNodes(referenceFileName, nodes);
+    return nodes.hasItem(node);
 }

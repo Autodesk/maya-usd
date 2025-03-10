@@ -39,7 +39,9 @@ public:
     static MayaUsdHierarchyHandler::Ptr create();
 
     // UsdHierarchyHandler overrides
-    Ufe::Hierarchy::Ptr hierarchy(const Ufe::SceneItem::Ptr& item) const override;
+    Ufe::Hierarchy::Ptr         hierarchy(const Ufe::SceneItem::Ptr& item) const override;
+    Ufe::Hierarchy::ChildFilter childFilter() const override;
+
 }; // MayaUsdHierarchyHandler
 
 } // namespace ufe

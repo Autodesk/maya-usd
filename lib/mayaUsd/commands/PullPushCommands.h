@@ -175,9 +175,6 @@ public:
 private:
     // Make sure callers need to call creator().
     DuplicateCommand();
-
-    Ufe::Path _srcPath;
-    Ufe::Path _dstPath;
 };
 
 } // namespace ufe

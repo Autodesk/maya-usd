@@ -56,8 +56,11 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         cls._testDir = os.path.abspath('.')
 
         cls._imageVersion = None
-        if maya.mel.eval("defaultShaderName") != "standardSurface1":
+        defaultSurfaceName = maya.mel.eval("defaultShaderName")
+        if defaultSurfaceName == "lambert1":
             cls._imageVersion = 'lambertDefaultMaterial'
+        elif defaultSurfaceName in ("openPBRSurface1", "openPBR_shader1"):
+            cls._imageVersion = 'openPBRSurfaceDefaultMaterial'
 
     @classmethod
     def tearDownClass(cls):

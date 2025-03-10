@@ -26,6 +26,7 @@
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/refPtr.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGModifier.h>
@@ -34,10 +35,6 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MSelectionList.h>
-
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
-#include <boost/python/def.hpp>
 
 #include <functional>
 #include <memory>
@@ -52,20 +49,22 @@ struct MStatusFromPythonBool
     static void Register()
     {
         // from-python
-        boost::python::converter::registry::push_back(
-            &_convertible, &_construct, boost::python::type_id<MStatus>());
+        PXR_BOOST_PYTHON_NAMESPACE::converter::registry::push_back(
+            &_convertible, &_construct, PXR_BOOST_PYTHON_NAMESPACE::type_id<MStatus>());
     }
 
 private:
     // from-python
     static void* _convertible(PyObject* p) { return PyBool_Check(p) ? p : nullptr; }
-    static void
-    _construct(PyObject* p, boost::python::converter::rvalue_from_python_stage1_data* data)
+    static void  _construct(
+         PyObject*                                                              p,
+         PXR_BOOST_PYTHON_NAMESPACE::converter::rvalue_from_python_stage1_data* data)
     {
         // Turn the python float into a C++ double, make a GfHalf from that
         // double, and store it where boost.python expects it.
         void* storage
-            = ((boost::python::converter::rvalue_from_python_storage<MStatus>*)data)->storage.bytes;
+            = ((PXR_BOOST_PYTHON_NAMESPACE::converter::rvalue_from_python_storage<MStatus>*)data)
+                  ->storage.bytes;
         MStatus status = PyObject_IsTrue(p) ? MStatus::kSuccess : MStatus::kFailure;
         new (storage) MStatus(status);
         data->convertible = storage;
@@ -105,14 +104,14 @@ public:
     std::size_t generateUniqueKey(const UsdPrim& prim) const override
     {
         if (Override o = GetOverride("generateUniqueKey")) {
-            auto res = std::function<boost::python::object(const UsdPrim&)>(
-                TfPyCall<boost::python::object>(o))(prim);
+            auto res = std::function<PXR_BOOST_PYTHON_NAMESPACE::object(const UsdPrim&)>(
+                TfPyCall<PXR_BOOST_PYTHON_NAMESPACE::object>(o))(prim);
             if (!res) {
                 return 0;
             }
-            TfPyLock                            pyLock;
-            boost::python::str                  strObj(res);
-            boost::python::extract<std::string> strValue(strObj);
+            TfPyLock                                         pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::str                  strObj(res);
+            PXR_BOOST_PYTHON_NAMESPACE::extract<std::string> strValue(strObj);
             if (strValue.check()) {
                 return std::hash<std::string> {}(strValue);
             }
@@ -226,7 +225,7 @@ public:
         const AL::usdmaya::fileio::ExporterParams& params) override
     {
         // note: an incomplete list, add as needed
-        boost::python::dict pyParams;
+        PXR_BOOST_PYTHON_NAMESPACE::dict pyParams;
         pyParams["dynamicAttributes"] = params.m_dynamicAttributes;
         pyParams["m_minFrame"] = params.m_minFrame;
         pyParams["m_maxFrame"] = params.m_maxFrame;
@@ -235,8 +234,8 @@ public:
         // pass a dagPath name and dictionary of params to the python method
         if (Override o = GetOverride("exportObject")) {
             return std::function<UsdPrim(
-                UsdStageRefPtr, const char*, SdfPath, boost::python::dict)>(TfPyCall<UsdPrim>(o))(
-                stage, name.c_str(), usdPath, pyParams);
+                UsdStageRefPtr, const char*, SdfPath, PXR_BOOST_PYTHON_NAMESPACE::dict)>(
+                TfPyCall<UsdPrim>(o))(stage, name.c_str(), usdPath, pyParams);
         }
         return UsdPrim();
     }
@@ -273,9 +272,8 @@ public:
 
     UsdStageRefPtr stage() const { return context()->getUsdStage(); }
 
-    void insertItem(
-        const boost::shared_ptr<UsdPrim>& primBeingImported,
-        const std::string&                nodeNameOrPath)
+    void
+    insertItem(const std::shared_ptr<UsdPrim>& primBeingImported, const std::string& nodeNameOrPath)
     {
         MSelectionList sl;
         MObject        object;
@@ -285,13 +283,13 @@ public:
         ctx->insertItem(*primBeingImported, object);
     }
 
-    void removeItems(const boost::shared_ptr<SdfPath>& primPathBeingRemoved)
+    void removeItems(const std::shared_ptr<SdfPath>& primPathBeingRemoved)
     {
         auto ctx = context();
         ctx->removeItems(*primPathBeingRemoved);
     }
 
-    std::vector<std::string> getMObjects(boost::shared_ptr<UsdPrim> prim)
+    std::vector<std::string> getMObjects(std::shared_ptr<UsdPrim> prim)
     {
         MObjectHandleArray returned;
         context()->getMObjects(*prim, returned);
@@ -318,19 +316,24 @@ void wrapTranslatorBase()
     typedef TfWeakPtr<TranslatorBaseWrapper>                           TranslatorBaseWrapperPtr;
     typedef TfRefPtr<AL::usdmaya::fileio::translators::TranslatorBase> TranslatorBasePtr;
 
-    boost::python::import("maya");
+    PXR_BOOST_PYTHON_NAMESPACE::import("maya");
 
-    boost::python::enum_<ExportFlag>("ExportFlag")
+    PXR_BOOST_PYTHON_NAMESPACE::enum_<ExportFlag>("ExportFlag")
         .value("kNotSupported", ExportFlag::kNotSupported)
         .value("kFallbackSupport", ExportFlag::kFallbackSupport)
         .value("kSupported", ExportFlag::kSupported);
 
-    boost::python::class_<TranslatorBaseWrapper, TranslatorBaseWrapperPtr, boost::noncopyable>(
-        "TranslatorBase", boost::python::no_init)
+    PXR_BOOST_PYTHON_NAMESPACE::class_<
+        TranslatorBaseWrapper,
+        TranslatorBaseWrapperPtr,
+        PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+        "TranslatorBase", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(&TranslatorBaseWrapper::New))
         .def("initialize", &TranslatorBase::initialize, &TranslatorBaseWrapper::default_initialize)
-        .def("getTranslatedType", boost::python::pure_virtual(&TranslatorBase::getTranslatedType))
+        .def(
+            "getTranslatedType",
+            PXR_BOOST_PYTHON_NAMESPACE::pure_virtual(&TranslatorBase::getTranslatedType))
         .def(
             "generateUniqueKey",
             &TranslatorBase::generateUniqueKey,
@@ -361,7 +364,8 @@ void wrapTranslatorBase()
         .def(
             "registerTranslator",
             &TranslatorBaseWrapper::registerTranslator,
-            (boost::python::arg("translator"), boost::python::arg("assetType") = TfToken()))
+            (PXR_BOOST_PYTHON_NAMESPACE::arg("translator"),
+             PXR_BOOST_PYTHON_NAMESPACE::arg("assetType") = TfToken()))
         .staticmethod("registerTranslator")
         .def("clearTranslators", &TranslatorBaseWrapper::clearTranslators)
         .staticmethod("clearTranslators")
@@ -372,7 +376,7 @@ void wrapTranslatorBase()
         .def("getPythonTranslators", &TranslatorManufacture::getPythonTranslators)
         .staticmethod("getPythonTranslators");
 
-    boost::python::to_python_converter<
+    PXR_BOOST_PYTHON_NAMESPACE::to_python_converter<
         std::vector<TranslatorBasePtr>,
         TfPySequenceToPython<std::vector<TranslatorBasePtr>>>();
 

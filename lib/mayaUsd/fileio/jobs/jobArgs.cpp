@@ -729,6 +729,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , ignoreWarnings(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->ignoreWarnings))
     , includeEmptyTransforms(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->includeEmptyTransforms))
+    , isDuplicating(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->isDuplicating))
     , materialCollectionsPath(
           extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->materialCollectionsPath))
     , materialsScopeName(_GetMaterialsScopeName(
@@ -747,6 +748,30 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaJobExportArgsTokens->rootPrimType,
           UsdMayaJobExportArgsTokens->scope,
           { UsdMayaJobExportArgsTokens->xform }))
+    , upAxis(extractToken(
+          userArgs,
+          UsdMayaJobExportArgsTokens->upAxis,
+          UsdMayaJobExportArgsTokens->mayaPrefs,
+          { UsdMayaJobExportArgsTokens->none,
+            UsdMayaJobExportArgsTokens->y,
+            UsdMayaJobExportArgsTokens->z }))
+    , unit(extractToken(
+          userArgs,
+          UsdMayaJobExportArgsTokens->unit,
+          UsdMayaJobExportArgsTokens->mayaPrefs,
+          { UsdMayaJobExportArgsTokens->none,
+            UsdMayaJobExportArgsTokens->nm,
+            UsdMayaJobExportArgsTokens->um,
+            UsdMayaJobExportArgsTokens->mm,
+            UsdMayaJobExportArgsTokens->cm,
+            UsdMayaJobExportArgsTokens->dm,
+            UsdMayaJobExportArgsTokens->m,
+            UsdMayaJobExportArgsTokens->km,
+            UsdMayaJobExportArgsTokens->lightyear,
+            UsdMayaJobExportArgsTokens->inch,
+            UsdMayaJobExportArgsTokens->foot,
+            UsdMayaJobExportArgsTokens->yard,
+            UsdMayaJobExportArgsTokens->mile }))
     , renderLayerMode(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->renderLayerMode,
@@ -840,7 +865,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "file: " << exportArgs.file << std::endl
         << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl
         << "includeEmptyTransforms: " << TfStringify(exportArgs.includeEmptyTransforms)
-        << std::endl;
+        << "isDuplicating: " << TfStringify(exportArgs.isDuplicating) << std::endl;
     out << "includeAPINames (" << exportArgs.includeAPINames.size() << ")" << std::endl;
     for (const std::string& includeAPIName : exportArgs.includeAPINames) {
         out << "    " << includeAPIName << std::endl;
@@ -1103,7 +1128,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportAssignedMaterials] = true;
         d[UsdMayaJobExportArgsTokens->legacyMaterialScope] = false;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = false;
-        d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = true;
+        d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = false;
         d[UsdMayaJobExportArgsTokens->exportInstances] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
         d[UsdMayaJobExportArgsTokens->referenceObjectMode]
@@ -1124,6 +1149,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->filterTypes] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = false;
         d[UsdMayaJobExportArgsTokens->includeEmptyTransforms] = true;
+        d[UsdMayaJobExportArgsTokens->isDuplicating] = false;
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
         d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = false;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
@@ -1137,6 +1163,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->parentScope] = std::string(); // Deprecated
         d[UsdMayaJobExportArgsTokens->rootPrim] = std::string();
         d[UsdMayaJobExportArgsTokens->rootPrimType] = UsdMayaJobExportArgsTokens->scope.GetString();
+        d[UsdMayaJobExportArgsTokens->upAxis] = UsdMayaJobExportArgsTokens->mayaPrefs.GetString();
+        d[UsdMayaJobExportArgsTokens->unit] = UsdMayaJobExportArgsTokens->mayaPrefs.GetString();
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = std::string();
         d[UsdMayaJobExportArgsTokens->renderableOnly] = false;
@@ -1228,6 +1256,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->filterTypes] = _stringVector;
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = _boolean;
         d[UsdMayaJobExportArgsTokens->includeEmptyTransforms] = _boolean;
+        d[UsdMayaJobExportArgsTokens->isDuplicating] = _boolean;
         d[UsdMayaJobExportArgsTokens->kind] = _string;
         d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = _boolean;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = _string;
@@ -1241,6 +1270,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->parentScope] = _string; // Deprecated
         d[UsdMayaJobExportArgsTokens->rootPrim] = _string;
         d[UsdMayaJobExportArgsTokens->rootPrimType] = _string;
+        d[UsdMayaJobExportArgsTokens->upAxis] = _string;
+        d[UsdMayaJobExportArgsTokens->unit] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = _string;
         d[UsdMayaJobExportArgsTokens->pythonPostCallback] = _string;
         d[UsdMayaJobExportArgsTokens->renderableOnly] = _boolean;
@@ -1344,6 +1375,15 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
             UsdMayaJobImportArgsTokens->absolute,
             UsdMayaJobImportArgsTokens->relative,
             UsdMayaJobImportArgsTokens->none }))
+    , axisAndUnitMethod(extractToken(
+          userArgs,
+          UsdMayaJobImportArgsTokens->axisAndUnitMethod,
+          UsdMayaJobImportArgsTokens->rotateScale,
+          { UsdMayaJobImportArgsTokens->rotateScale,
+            UsdMayaJobImportArgsTokens->addTransform,
+            UsdMayaJobImportArgsTokens->overwritePrefs }))
+    , upAxis(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->upAxis))
+    , unit(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->unit))
     , importInstances(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(extractBoolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
     , importWithProxyShapes(importWithProxyShapes)
@@ -1432,6 +1472,10 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = "";
         d[UsdMayaJobImportArgsTokens->importRelativeTextures]
             = UsdMayaJobImportArgsTokens->none.GetString();
+        d[UsdMayaJobImportArgsTokens->axisAndUnitMethod]
+            = UsdMayaJobImportArgsTokens->rotateScale.GetString();
+        d[UsdMayaJobImportArgsTokens->upAxis] = true;
+        d[UsdMayaJobImportArgsTokens->unit] = true;
         d[UsdMayaJobImportArgsTokens->pullImportStage] = UsdStageRefPtr();
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = false;
@@ -1514,6 +1558,9 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = _string;
         d[UsdMayaJobImportArgsTokens->importRelativeTextures] = _string;
+        d[UsdMayaJobImportArgsTokens->axisAndUnitMethod] = _string;
+        d[UsdMayaJobImportArgsTokens->upAxis] = _boolean;
+        d[UsdMayaJobImportArgsTokens->unit] = _boolean;
         d[UsdMayaJobImportArgsTokens->pullImportStage] = _usdStageRefPtr;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = _boolean;
         d[UsdMayaJobImportArgsTokens->preserveTimeline] = _boolean;
@@ -1604,6 +1651,9 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "importUSDZTextures: " << TfStringify(importArgs.importUSDZTextures) << std::endl
         << "importUSDZTexturesFilePath: " << TfStringify(importArgs.importUSDZTexturesFilePath)
         << "importRelativeTextures: " << TfStringify(importArgs.importRelativeTextures) << std::endl
+        << "axisAndUnitMethod: " << TfStringify(importArgs.axisAndUnitMethod) << std::endl
+        << "upAxis: " << TfStringify(importArgs.upAxis) << std::endl
+        << "unit: " << TfStringify(importArgs.unit) << std::endl
         << "pullImportStage: " << TfStringify(importArgs.pullImportStage) << std::endl
         << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl

@@ -52,6 +52,10 @@ UFE_NS_DEF { class Path; }
 #include <mayaUsd/utils/mayaNodeObserver.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
 
+namespace MAYAUSD_NS_DEF {
+class LayerManager;
+}
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -139,6 +143,9 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     static MObject variantFallbacksAttr;
+
+    MAYAUSD_CORE_PUBLIC
+    static MObject layerManagerAttr;
 
     /// Delegate function for computing the closest point and surface normal
     /// on the proxy shape to a given ray.
@@ -309,6 +316,14 @@ public:
     /// Returns the observer for all proxy shapes instance.
     MAYAUSD_CORE_PUBLIC
     static MayaUsd::MayaNodeTypeObserver& getProxyShapesObserver();
+
+    /// Retrieve the layer manager that is connected to this proxy shape,
+    /// if any.
+    MAYAUSD_CORE_PUBLIC
+    MayaUsd::LayerManager* getLayerManager();
+
+    MAYAUSD_CORE_PUBLIC
+    void setLayerManager(MayaUsd::LayerManager* lm);
 
 protected:
     MAYAUSD_CORE_PUBLIC

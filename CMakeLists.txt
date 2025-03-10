@@ -22,6 +22,7 @@ project(maya-usd)
 #------------------------------------------------------------------------------
 option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_MAYAUSDAPI_LIBRARY "Build the mayaUsdAPI subset library that provides a stable versioned interface to mayaUsd for external plugins." ON)
+option(BUILD_LOOKDEVXUSD_LIBRARY "Build LookdevXUsd library using LookdevXUfe." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
@@ -128,6 +129,11 @@ if (BUILD_MAYAUSDAPI_LIBRARY)
     set(MAYAUSDAPI_VERSION "${MAYAUSDAPI_MAJOR_VERSION}.${MAYAUSDAPI_MINOR_VERSION}.${MAYAUSDAPI_PATCH_LEVEL}")
 endif()
 
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    if (NOT BUILD_MAYAUSD_LIBRARY)
+        message(FATAL_ERROR "Building mayaUsdAPI library requires MayaUsd core libraries to be built, please enable BUILD_MAYAUSD_LIBRARY.")
+    endif()
+endif()
 
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_EXECUTABLE)
     SET(PYTHON_INCLUDE_DIRS "${PYTHON_INCLUDE_DIR}")
@@ -226,6 +232,43 @@ if(BUILD_MAYAUSD_LIBRARY)
     endif()
 endif()
 
+if (NOT BUILD_ADSK_PLUGIN)
+        set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
+endif()
+# Need LookdevXUfe/MayaUsdAPI when building LookdevXUsd.
+if(BUILD_LOOKDEVXUSD_LIBRARY)
+    if(NOT BUILD_MAYAUSDAPI_LIBRARY)
+        message(FATAL_ERROR "Building LookdevXUsd requires MayaUsdAPI.")
+    endif()
+
+    if(MAYA_APP_VERSION VERSION_GREATER 2025)
+        find_package(LookdevXUfe) # Optional component - if not found, disable LookdevXUsd.
+    else()
+        set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
+        message(WARNING "Disabling LookdevXUsd: it is not supported by Maya ${MAYA_APP_VERSION}.")
+    endif()
+    if (LookdevXUfe_FOUND)
+        message(STATUS "Build LookdevXUsd with LookdevXUfe version: ${LookdevXUfe_VERSION}")
+        message(STATUS "   LookdevXUfe include dir: ${LookdevXUfe_INCLUDE_DIR}")
+        message(STATUS "   LookdevXUfe library    : ${LookdevXUfe_LIBRARY}")
+    else()
+        set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
+        message(WARNING "Disabling LookdevXUsd as LookdevXUfe was not found (in Maya devkit).")
+    endif()
+endif()
+
+if(BUILD_MAYAUSD_LIBRARY AND (USD_VERSION VERSION_GREATER_EQUAL "0.24.11"))
+    # In USD v24.11 Pixar USD has completely removed Boost.
+    # However MayaUsd is still using a few of the Boost components, so
+    # when using USD v24.11 (or greater) we need to find Boost ourselves
+    # (from the USD build, since Boost is still required for OpenImageIO).
+    if(NOT DEFINED ENV{BOOST_ROOT})
+        set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
+    endif()
+
+    find_package(Boost REQUIRED COMPONENTS headers)
+endif()
+
 #------------------------------------------------------------------------------
 # compiler configuration
 #------------------------------------------------------------------------------
@@ -284,12 +327,6 @@ endif()
 if (BUILD_PXR_PLUGIN OR BUILD_AL_PLUGIN OR BUILD_ADSK_PLUGIN)
     if (NOT BUILD_MAYAUSD_LIBRARY)
         message(FATAL_ERROR "Building plugins requires MayaUsd core libraries.")
-    endif()
-endif()
-
-if (BUILD_MAYAUSDAPI_LIBRARY)
-    if (NOT BUILD_MAYAUSD_LIBRARY)
-        message(FATAL_ERROR "Building mayaUsdAPI library requires MayaUsd core libraries to be built, please enable BUILD_MAYAUSD_LIBRARY.")
     endif()
 endif()
 
@@ -353,3 +390,12 @@ if (BUILD_AL_PLUGIN)
     endif()
     install(FILES ${PROJECT_BINARY_DIR}/alUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()
+
+
+#------------------------------------------------------------------------------
+# Special file for handling boost vs pxr::boost
+#------------------------------------------------------------------------------
+mayaUsd_promoteHeaderList(HEADERS pxr_python.h BASEDIR "NONE")
+install(FILES ${CMAKE_BINARY_DIR}/include/pxr_python.h
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)

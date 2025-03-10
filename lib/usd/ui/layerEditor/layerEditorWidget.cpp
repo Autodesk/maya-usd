@@ -108,20 +108,23 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
     auto buttonAlignment = Qt::AlignLeft | Qt::AlignRight;
 
     auto addHIGButton
-        = [buttonSize, toolbar, buttonAlignment](const QString& iconName, const QString& tooltip) {
+        = [buttonSize, toolbar, buttonAlignment](
+              const QString& iconName, const QString& tooltip, const QString& uiName) {
               auto higButtonYOffset = DPIScale(4);
               auto higBtn = new QPushButton();
               higBtn->move(0, higButtonYOffset);
               QtUtils::setupButtonWithHIGBitmaps(higBtn, iconName);
               higBtn->setFixedSize(buttonSize, buttonSize);
               higBtn->setToolTip(tooltip);
+              higBtn->setObjectName(uiName);
               toolbar->addWidget(higBtn, 0, buttonAlignment);
               return higBtn;
           };
 
     _buttons._newLayer = addHIGButton(
         ":/UsdLayerEditor/LE_add_layer",
-        StringResources::getAsQString(StringResources::kAddNewLayer));
+        StringResources::getAsQString(StringResources::kAddNewLayer),
+        "LayerEditorAddLayerButton");
     // clicked callback
     connect(
         _buttons._newLayer,
@@ -149,7 +152,8 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
 
     _buttons._loadLayer = addHIGButton(
         ":/UsdLayerEditor/LE_import_layer",
-        StringResources::getAsQString(StringResources::kLoadExistingLayer));
+        StringResources::getAsQString(StringResources::kLoadExistingLayer),
+        "LayerEditorImportLayerButton");
     // clicked callback
     connect(
         _buttons._loadLayer,
@@ -182,6 +186,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         saveStageBtn->setFixedSize(saveButtonSize);
         QtUtils::setupButtonWithHIGBitmaps(saveStageBtn, ":/UsdLayerEditor/LE_save_all");
         saveStageBtn->setFixedSize(buttonSize, buttonSize);
+        saveStageBtn->setObjectName("LayerEditorSaveAllButton");
 
         saveStageBtn->setToolTip(
             StringResources::getAsQString(StringResources::kSaveAllEditsInLayerStack));

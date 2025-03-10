@@ -28,13 +28,7 @@
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
 #include <pxr/base/tf/pyResultConversions.h>
-
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/return_internal_reference.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/wrapper.hpp>
+#include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -44,7 +38,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 template <typename T = UsdMayaPrimWriter>
 class PrimWriterWrapper
     : public T
-    , public TfPyPolymorphic<UsdMayaPrimWriter>
+    , public TfPyPolymorphic<T>
 {
 public:
     typedef PrimWriterWrapper This;
@@ -105,15 +99,16 @@ public:
     const SdfPathVector& default_GetModelPaths() const { return base_t::GetModelPaths(); }
     const SdfPathVector& GetModelPaths() const override
     {
-        if (Override o = GetOverride("GetModelPaths")) {
-            auto res = std::function<boost::python::object()>(TfPyCall<boost::python::object>(o))();
+        if (TfPyOverride o = this->GetOverride("GetModelPaths")) {
+            auto res = std::function<PXR_BOOST_PYTHON_NAMESPACE::object()>(
+                TfPyCall<PXR_BOOST_PYTHON_NAMESPACE::object>(o))();
             if (res) {
                 const_cast<SdfPathVector*>(&_modelPaths)->clear();
                 TfPyLock pyLock;
 
-                boost::python::list keys(res);
+                PXR_BOOST_PYTHON_NAMESPACE::list keys(res);
                 for (int i = 0; i < len(keys); ++i) {
-                    boost::python::extract<SdfPath> extractedKey(keys[i]);
+                    PXR_BOOST_PYTHON_NAMESPACE::extract<SdfPath> extractedKey(keys[i]);
                     if (!extractedKey.check()) {
                         TF_CODING_ERROR(
                             "PrimWriterWrapper.GetModelPaths: SdfPath key expected, not "
@@ -136,29 +131,30 @@ public:
     }
     const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagToUsdPathMapping() const override
     {
-        if (Override o = GetOverride("GetDagToUsdPathMapping")) {
-            auto res = std::function<boost::python::object()>(TfPyCall<boost::python::object>(o))();
+        if (TfPyOverride o = this->GetOverride("GetDagToUsdPathMapping")) {
+            auto res = std::function<PXR_BOOST_PYTHON_NAMESPACE::object()>(
+                TfPyCall<PXR_BOOST_PYTHON_NAMESPACE::object>(o))();
             if (res) {
                 const_cast<UsdMayaUtil::MDagPathMap<SdfPath>*>(&_dagPathMap)->clear();
                 TfPyLock pyLock;
 
-                boost::python::list tuples(res);
+                PXR_BOOST_PYTHON_NAMESPACE::list tuples(res);
                 for (int i = 0; i < len(tuples); ++i) {
-                    boost::python::tuple t(tuples[i]);
-                    if (boost::python::len(t) != 2) {
+                    PXR_BOOST_PYTHON_NAMESPACE::tuple t(tuples[i]);
+                    if (PXR_BOOST_PYTHON_NAMESPACE::len(t) != 2) {
                         TF_CODING_ERROR("PrimWriterWrapper.GetDagToUsdPathMapping: list<tuples> "
                                         "key expected, not "
                                         "found!");
                         return _dagPathMap;
                     }
-                    boost::python::extract<MDagPath> extractedDagPath(t[0]);
+                    PXR_BOOST_PYTHON_NAMESPACE::extract<MDagPath> extractedDagPath(t[0]);
                     if (!extractedDagPath.check()) {
                         TF_CODING_ERROR(
                             "PrimWriterWrapper.GetDagToUsdPathMapping: MDagPath key expected, not "
                             "found!");
                         return _dagPathMap;
                     }
-                    boost::python::extract<SdfPath> extractedSdfPath(t[1]);
+                    PXR_BOOST_PYTHON_NAMESPACE::extract<SdfPath> extractedSdfPath(t[1]);
                     if (!extractedSdfPath.check()) {
                         TF_CODING_ERROR(
                             "PrimWriterWrapper.GetDagToUsdPathMapping: SdfPath key expected, not "
@@ -193,15 +189,15 @@ public:
             const SdfPath&           usdPath,
             UsdMayaWriteJobContext&  jobCtx)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return nullptr;
             }
-            auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
-            TfPyLock              pyLock;
-            boost::python::object instance = pyClass((uintptr_t)&sptr);
-            boost::python::incref(instance.ptr());
+            auto     sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+            TfPyLock pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::object instance = pyClass((uintptr_t)&sptr);
+            PXR_BOOST_PYTHON_NAMESPACE::incref(instance.ptr());
             initialize_wrapper(instance.ptr(), sptr.get());
             return sptr;
         }
@@ -210,16 +206,16 @@ public:
         operator()(const UsdMayaJobExportArgs& exportArgs, const MObject& exportObj)
         {
 
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return UsdMayaPrimWriter::ContextSupport::Unsupported;
             }
             TfPyLock pyLock;
             if (PyObject_HasAttrString(pyClass.ptr(), "CanExport")) {
-                boost::python::object CanExport = pyClass.attr("CanExport");
-                PyObject*             callable = CanExport.ptr();
-                auto res = boost::python::call<int>(callable, exportArgs, exportObj);
+                PXR_BOOST_PYTHON_NAMESPACE::object CanExport = pyClass.attr("CanExport");
+                PyObject*                          callable = CanExport.ptr();
+                auto res = PXR_BOOST_PYTHON_NAMESPACE::call<int>(callable, exportArgs, exportObj);
                 return UsdMayaPrimWriter::ContextSupport(res);
             } else {
                 return UsdMayaPrimWriter::ContextSupport::Fallback;
@@ -229,8 +225,10 @@ public:
         // Create a new wrapper for a Python class that is seen for the first time for a given
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
-        static FactoryFnWrapper
-        Register(boost::python::object cl, const std::string& mayaTypeName, bool& updated)
+        static FactoryFnWrapper Register(
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 mayaTypeName,
+            bool&                              updated)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaTypeName));
             updated = (classIndex == UsdMayaPythonObjectRegistry::UPDATED);
@@ -240,7 +238,8 @@ public:
 
         // Unregister a class for a given purpose. This will cause the associated factory
         // function to stop producing this Python class.
-        static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+        static void
+        Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
         {
             UnregisterPythonObject(cl, GetKey(cl, mayaTypeName));
         }
@@ -254,13 +253,14 @@ public:
 
         // Generates a unique key based on the name of the class, along with the class
         // purpose:
-        static std::string GetKey(boost::python::object cl, const std::string& mayaTypeName)
+        static std::string
+        GetKey(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
         {
             return ClassName(cl) + "," + mayaTypeName + "," + ",PrimWriter";
         }
     };
 
-    static void Register(boost::python::object cl, const std::string& mayaTypeName)
+    static void Register(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
     {
         bool             updated = false;
         FactoryFnWrapper fn = FactoryFnWrapper::Register(cl, mayaTypeName, updated);
@@ -272,7 +272,7 @@ public:
         }
     }
 
-    static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+    static void Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& mayaTypeName)
     {
         FactoryFnWrapper::Unregister(cl, mayaTypeName);
     }
@@ -358,11 +358,11 @@ public:
             const SdfPath&           usdPath,
             UsdMayaWriteJobContext&  jobCtx)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
-            auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
-            TfPyLock              pyLock;
-            boost::python::object instance = pyClass((uintptr_t)&sptr);
-            boost::python::incref(instance.ptr());
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
+            auto     sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+            TfPyLock pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::object instance = pyClass((uintptr_t)&sptr);
+            PXR_BOOST_PYTHON_NAMESPACE::incref(instance.ptr());
             initialize_wrapper(instance.ptr(), sptr.get());
             return sptr;
         }
@@ -370,23 +370,25 @@ public:
         // We can have multiple function objects, this one apapts the CanImport function:
         UsdMayaPrimWriter::ContextSupport operator()(const UsdMayaJobExportArgs& exportArgs)
         {
-            boost::python::object pyClass = GetPythonObject(_classIndex);
+            PXR_BOOST_PYTHON_NAMESPACE::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return UsdMayaPrimWriter::ContextSupport::Unsupported;
             }
-            TfPyLock              pyLock;
-            boost::python::object CanExport = pyClass.attr("CanExport");
-            PyObject*             callable = CanExport.ptr();
-            auto                  res = boost::python::call<int>(callable, exportArgs);
+            TfPyLock                           pyLock;
+            PXR_BOOST_PYTHON_NAMESPACE::object CanExport = pyClass.attr("CanExport");
+            PyObject*                          callable = CanExport.ptr();
+            auto res = PXR_BOOST_PYTHON_NAMESPACE::call<int>(callable, exportArgs);
             return UsdMayaPrimWriter::ContextSupport(res);
         }
 
         // Create a new wrapper for a Python class that is seen for the first time for a given
         // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
-        static FactoryFnWrapper
-        Register(boost::python::object cl, const std::string& usdShaderId, bool& updated)
+        static FactoryFnWrapper Register(
+            PXR_BOOST_PYTHON_NAMESPACE::object cl,
+            const std::string&                 usdShaderId,
+            bool&                              updated)
         {
             size_t classIndex = RegisterPythonObject(cl, GetKey(cl, usdShaderId));
             updated = classIndex == UsdMayaPythonObjectRegistry::UPDATED;
@@ -396,7 +398,8 @@ public:
 
         // Unregister a class for a given purpose. This will cause the associated factory
         // function to stop producing this Python class.
-        static void Unregister(boost::python::object cl, const std::string& usdShaderId)
+        static void
+        Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& usdShaderId)
         {
             UnregisterPythonObject(cl, GetKey(cl, usdShaderId));
         }
@@ -410,13 +413,14 @@ public:
 
         // Generates a unique key based on the name of the class, along with the class
         // purpose:
-        static std::string GetKey(boost::python::object cl, const std::string& usdShaderId)
+        static std::string
+        GetKey(PXR_BOOST_PYTHON_NAMESPACE::object cl, const std::string& usdShaderId)
         {
             return ClassName(cl) + "," + usdShaderId + "," + ",ShaderWriter";
         }
     };
 
-    static void Register(boost::python::object cl, const TfToken& usdShaderId)
+    static void Register(PXR_BOOST_PYTHON_NAMESPACE::object cl, const TfToken& usdShaderId)
     {
         bool             updated = false;
         FactoryFnWrapper fn = FactoryFnWrapper::Register(cl, usdShaderId, updated);
@@ -425,16 +429,16 @@ public:
         }
     }
 
-    static void Unregister(boost::python::object cl, const TfToken& usdShaderId)
+    static void Unregister(PXR_BOOST_PYTHON_NAMESPACE::object cl, const TfToken& usdShaderId)
     {
         FactoryFnWrapper::Unregister(cl, usdShaderId);
     }
 
     static void RegisterSymmetric(
-        boost::python::object cl,
-        const TfToken&        mayaNodeTypeName,
-        const TfToken&        usdShaderId,
-        const TfToken&        materialConversionName)
+        PXR_BOOST_PYTHON_NAMESPACE::object cl,
+        const TfToken&                     mayaNodeTypeName,
+        const TfToken&                     usdShaderId,
+        const TfToken&                     materialConversionName)
     {
         UsdMayaSymmetricShaderWriter::RegisterWriter(
             mayaNodeTypeName, usdShaderId, materialConversionName, true);
@@ -443,26 +447,32 @@ public:
 
 namespace {
 
-boost::python::object get_allChaserArgs(UsdMayaJobExportArgs& self)
+PXR_BOOST_PYTHON_NAMESPACE::object get_allChaserArgs(UsdMayaJobExportArgs& self)
 {
-    boost::python::dict allChaserArgs;
+    PXR_BOOST_PYTHON_NAMESPACE::dict allChaserArgs;
     for (auto&& perChaser : self.allChaserArgs) {
-        auto perChaserDict = boost::python::dict();
+        auto perChaserDict = PXR_BOOST_PYTHON_NAMESPACE::dict();
         for (auto&& perItem : perChaser.second) {
             perChaserDict[perItem.first] = perItem.second;
         }
         allChaserArgs[perChaser.first] = perChaserDict;
     }
-    return boost::python::object(allChaserArgs);
+    return PXR_BOOST_PYTHON_NAMESPACE::object(allChaserArgs);
 }
 
-boost::python::object get_remapUVSetsTo(UsdMayaJobExportArgs& self)
+bool get_ExportCameras(UsdMayaJobExportArgs& self) { return self.isExportingCameras(); }
+
+bool get_ExportMeshes(UsdMayaJobExportArgs& self) { return self.isExportingMeshes(); }
+
+bool get_ExportLights(UsdMayaJobExportArgs& self) { return self.isExportingLights(); }
+
+PXR_BOOST_PYTHON_NAMESPACE::object get_remapUVSetsTo(UsdMayaJobExportArgs& self)
 {
-    boost::python::dict uvSetRemaps;
+    PXR_BOOST_PYTHON_NAMESPACE::dict uvSetRemaps;
     for (auto&& remap : self.remapUVSetsTo) {
         uvSetRemaps[remap.first] = remap.second;
     }
-    return boost::python::object(uvSetRemaps);
+    return PXR_BOOST_PYTHON_NAMESPACE::object(uvSetRemaps);
 }
 
 // This class is used to expose protected members of UsdMayaPrimWriter to Python
@@ -494,7 +504,7 @@ MayaUsdLibSparseValueWriter unprotect_GetSparseValueWriter(UsdMayaPrimWriter& pw
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobExportArgs()
 {
-    using namespace boost::python;
+    using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
     class_<UsdMayaJobExportArgs>("JobExportArgs", no_init)
         .add_property("allChaserArgs", ::get_allChaserArgs)
@@ -548,6 +558,7 @@ void wrapJobExportArgs()
             make_getter(
                 &UsdMayaJobExportArgs::exportRelativeTextures,
                 return_value_policy<return_by_value>()))
+        .def_readonly("legacyMaterialScope", &UsdMayaJobExportArgs::legacyMaterialScope)
         .add_property(
             "referenceObjectMode",
             make_getter(
@@ -565,6 +576,12 @@ void wrapJobExportArgs()
         .def_readonly("rootPrim", &UsdMayaJobExportArgs::rootPrim)
         .def_readonly("rootPrimType", &UsdMayaJobExportArgs::rootPrimType)
         .add_property(
+            "exportRoots",
+            make_getter(
+                &UsdMayaJobExportArgs::exportRoots, return_value_policy<TfPySequenceToSet>()))
+        .def_readonly("upAxis", &UsdMayaJobExportArgs::upAxis)
+        .def_readonly("unit", &UsdMayaJobExportArgs::unit)
+        .add_property(
             "filteredTypeIds",
             make_getter(
                 &UsdMayaJobExportArgs::filteredTypeIds, return_value_policy<TfPySequenceToSet>()))
@@ -574,6 +591,7 @@ void wrapJobExportArgs()
                 &UsdMayaJobExportArgs::geomSidedness, return_value_policy<return_by_value>()))
         .def_readonly("ignoreWarnings", &UsdMayaJobExportArgs::ignoreWarnings)
         .def_readonly("includeEmptyTransforms", &UsdMayaJobExportArgs::includeEmptyTransforms)
+        .def_readonly("isDuplicating", &UsdMayaJobExportArgs::isDuplicating)
         .add_property(
             "includeAPINames",
             make_getter(
@@ -597,6 +615,7 @@ void wrapJobExportArgs()
         .def_readonly("normalizeNurbs", &UsdMayaJobExportArgs::normalizeNurbs)
         .def_readonly("preserveUVSetNames", &UsdMayaJobExportArgs::preserveUVSetNames)
         .def_readonly("writeDefaults", &UsdMayaJobExportArgs::writeDefaults)
+        .def_readonly("metersPerUnit", &UsdMayaJobExportArgs::metersPerUnit)
         .add_property(
             "parentScope",
             make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))
@@ -607,6 +626,12 @@ void wrapJobExportArgs()
             "rootPrimType",
             make_getter(
                 &UsdMayaJobExportArgs::rootPrimType, return_value_policy<return_by_value>()))
+        .add_property(
+            "upAxis",
+            make_getter(&UsdMayaJobExportArgs::upAxis, return_value_policy<return_by_value>()))
+        .add_property(
+            "unit",
+            make_getter(&UsdMayaJobExportArgs::unit, return_value_policy<return_by_value>()))
         .def_readonly("pythonPerFrameCallback", &UsdMayaJobExportArgs::pythonPerFrameCallback)
         .def_readonly("pythonPostCallback", &UsdMayaJobExportArgs::pythonPostCallback)
         .add_property(
@@ -616,6 +641,7 @@ void wrapJobExportArgs()
         .add_property(
             "rootKind",
             make_getter(&UsdMayaJobExportArgs::rootKind, return_value_policy<return_by_value>()))
+        .def_readonly("disableModelKindProcessor", &UsdMayaJobExportArgs::disableModelKindProcessor)
         .add_property(
             "rootMapFunction",
             make_getter(
@@ -634,6 +660,9 @@ void wrapJobExportArgs()
             make_getter(
                 &UsdMayaJobExportArgs::usdModelRootOverridePath,
                 return_value_policy<return_by_value>()))
+        .add_property("exportMeshes", ::get_ExportMeshes)
+        .add_property("exportCameras", ::get_ExportCameras)
+        .add_property("exportLights", ::get_ExportLights)
         .def_readonly("verbose", &UsdMayaJobExportArgs::verbose)
         .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName)
         .def("GetDefaultMaterialsScopeName", &UsdMayaJobExportArgs::GetDefaultMaterialsScopeName)
@@ -650,10 +679,10 @@ TF_REGISTRY_FUNCTION(TfEnum)
 void wrapPrimWriter()
 {
 
-    boost::python::class_<PrimWriterWrapper<>, boost::noncopyable> c(
-        "PrimWriter", boost::python::no_init);
+    PXR_BOOST_PYTHON_NAMESPACE::class_<PrimWriterWrapper<>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
+        c("PrimWriter", PXR_BOOST_PYTHON_NAMESPACE::no_init);
 
-    boost::python::scope s(c);
+    PXR_BOOST_PYTHON_NAMESPACE::scope s(c);
 
     TfPyWrapEnum<UsdMayaPrimWriter::ContextSupport>();
 
@@ -669,11 +698,12 @@ void wrapPrimWriter()
         .def(
             "GetMayaObject",
             &PrimWriterWrapper<>::GetMayaObject,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
         .def(
             "GetUsdPrim",
             &PrimWriterWrapper<>::GetUsdPrim,
-            boost::python::return_internal_reference<>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
         .def("_SetUsdPrim", &::unprotect_SetUsdPrim)
         .def(
             "MakeSingleSamplesStatic",
@@ -691,21 +721,24 @@ void wrapPrimWriter()
         .def(
             "_GetExportArgs",
             &::unprotect_GetExportArgs,
-            boost::python::return_internal_reference<>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
         .def("_GetSparseValueWriter", &::unprotect_GetSparseValueWriter)
 
         .def(
             "GetDagPath",
             &PrimWriterWrapper<>::GetDagPath,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
         .def(
             "GetUsdStage",
             &UsdMayaPrimWriter::GetUsdStage,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
         .def(
             "GetUsdPath",
             &UsdMayaPrimWriter::GetUsdPath,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<
+                PXR_BOOST_PYTHON_NAMESPACE::return_by_value>())
 
         .def("Register", &PrimWriterWrapper<>::Register)
         .staticmethod("Register")
@@ -716,11 +749,13 @@ void wrapPrimWriter()
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShaderWriter()
 {
-    boost::python::
-        class_<ShaderWriterWrapper, boost::python::bases<PrimWriterWrapper<>>, boost::noncopyable>
-            c("ShaderWriter", boost::python::no_init);
+    PXR_BOOST_PYTHON_NAMESPACE::class_<
+        ShaderWriterWrapper,
+        PXR_BOOST_PYTHON_NAMESPACE::bases<UsdMayaPrimWriter>,
+        PXR_BOOST_PYTHON_NAMESPACE::noncopyable>
+        c("ShaderWriter", PXR_BOOST_PYTHON_NAMESPACE::no_init);
 
-    boost::python::scope s(c);
+    PXR_BOOST_PYTHON_NAMESPACE::scope s(c);
 
     c.def("__init__", make_constructor(&ShaderWriterWrapper::New))
         .def(

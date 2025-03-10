@@ -66,7 +66,7 @@ class ReferenceCommandsTestCase(unittest.TestCase):
 
         # paths to the files used in this test
         newFile = testUtils.getTestScene('twoSpheres', 'spherexform.usda')
-        oldFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+        oldFile = testUtils.getTestScene('twoSpheres', 'sphere_ext.usda')
         bkFile  = testUtils.getTestScene('twoSpheres', 'sphere_bk.usda')
         refFile = testUtils.getTestScene('twoSpheres', 'spheres_ref.usda')
 

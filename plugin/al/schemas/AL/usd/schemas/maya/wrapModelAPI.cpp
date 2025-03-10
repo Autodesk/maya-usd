@@ -22,12 +22,11 @@
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/pyConversions.h>
 #include <pxr/usd/usd/schemaBase.h>
-
-#include <boost/python.hpp>
+#include <pxr_python.h>
 
 #include <string>
 
-using namespace boost::python;
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

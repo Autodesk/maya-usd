@@ -18,6 +18,8 @@
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
@@ -30,6 +32,24 @@
 #include <exception>
 
 namespace USDUFE_NS_DEF {
+
+namespace {
+
+void setSceneItemCustomDataByKey(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& key,
+    const Ufe::Value&      value)
+{
+    std::string errMsg;
+    if (!UsdUfe::isPrimMetadataEditAllowed(prim, PXR_NS::SdfFieldKeys->CustomData, key, &errMsg)) {
+        // Note: we don't throw an exception because this would break bulk actions.
+        TF_RUNTIME_ERROR(errMsg);
+    } else {
+        prim.SetCustomDataByKey(key, ufeValueToVtValue(value));
+    }
+}
+
+} // namespace
 
 USDUFE_VERIFY_CLASS_SETUP(
     UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>,
@@ -63,9 +83,11 @@ SetSceneItemMetadataCommand::SetSceneItemMetadataCommand(
 void SetSceneItemMetadataCommand::setKeyMetadata()
 {
     const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+    const PXR_NS::TfToken key(_key);
 
     // If this is not a grouped metadata, set the _value directly on the _key
-    prim.SetCustomDataByKey(TfToken(_key), ufeValueToVtValue(_value));
+    PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData, key);
+    setSceneItemCustomDataByKey(prim, key, _value);
 }
 
 void SetSceneItemMetadataCommand::setGroupMetadata()
@@ -73,15 +95,22 @@ void SetSceneItemMetadataCommand::setGroupMetadata()
     const PXR_NS::UsdPrim prim = _stage->GetPrimAtPath(_primPath);
 
     // When the group name starts with "SessionLayer-", remove that prefix
-    // and write in the session layer.
+    // and write in the session layer if the operation is not editRouted.
     std::string prefixlessGroupName;
     if (isSessionLayerGroupMetadata(_group, &prefixlessGroupName)) {
-        PXR_NS::UsdEditContext editCtx(_stage, _stage->GetSessionLayer());
-        PXR_NS::TfToken        fullKey(prefixlessGroupName + std::string(":") + _key);
-        prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
+        PXR_NS::TfToken fullKey(prefixlessGroupName + std::string(":") + _key);
+
+        PrimMetadataEditRouterContext ctx(
+            prim,
+            PXR_NS::SdfFieldKeys->CustomData,
+            fullKey,
+            /*fallbackLayer=*/_stage->GetSessionLayer());
+
+        setSceneItemCustomDataByKey(prim, fullKey, _value);
     } else {
-        PXR_NS::TfToken fullKey(_group + std::string(":") + _key);
-        prim.SetCustomDataByKey(fullKey, ufeValueToVtValue(_value));
+        PXR_NS::TfToken               fullKey(_group + std::string(":") + _key);
+        PrimMetadataEditRouterContext ctx(prim, PXR_NS::SdfFieldKeys->CustomData, fullKey);
+        setSceneItemCustomDataByKey(prim, fullKey, _value);
     }
 }
 

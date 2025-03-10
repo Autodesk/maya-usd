@@ -5,6 +5,8 @@
 
 #include "GlslFragmentGenerator.h"
 
+#include "Nodes/MayaDarkClosureNode.h"
+#include "Nodes/MayaShaderGraph.h"
 #include "Nodes/SurfaceNodeMaya.h"
 #include "Nodes/TexcoordNodeMaya.h"
 #if MX_COMBINED_VERSION < 13809
@@ -17,9 +19,13 @@
 #include "Nodes/MayaHwImageNode.h"
 #include "Nodes/MayaSourceCodeNode.h"
 #endif
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+#include "Nodes/MayaClosureSourceCodeNode.h"
+#endif
 
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslOcioNodeImpl.h>
+#include <mayaUsd/render/MaterialXGenOgsXml/LobePruner.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
 
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
@@ -114,6 +120,19 @@ void fixupVertexDataInstance(ShaderStage& stage)
         = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$](" + d(HW::T_TEXCOORD) + "_[0-9]+)";
     static const std::regex vdCleanTexRegex(vdCleanTexSource.c_str());
 
+    // Find keywords:                                (as text)
+    //
+    //  HW::T_VERTEX_DATA_INSTANCE.(T_COLOR_INDEX)   $vd.$color_0;
+    //
+    // And replace with:
+    //
+    //  (T_COLOR_INDEX)                              color_0;
+    //
+
+    static const std::string vdCleanColorSource
+        = "[$]" + d(HW::T_VERTEX_DATA_INSTANCE) + "[.][$](" + d(HW::T_COLOR) + "_[0-9]+)";
+    static const std::regex vdCleanColorRegex(vdCleanColorSource.c_str());
+
     std::string code = stage.getSourceCode();
     code = std::regex_replace(code, paramRegex, "vec3 unused_$1");
     code = std::regex_replace(code, vtxRegex, "$$$1( PIX_IN.$$$1 )");
@@ -121,6 +140,7 @@ void fixupVertexDataInstance(ShaderStage& stage)
     code = std::regex_replace(code, texcoordParamRegex, "vec$1 unused_$2");
     code = std::regex_replace(code, vdCleanGeoRegex, "PIX_IN.$1");
     code = std::regex_replace(code, vdCleanTexRegex, "PIX_IN.$1");
+    code = std::regex_replace(code, vdCleanColorRegex, "$1");
 
 #if MX_COMBINED_VERSION >= 13804
     stage.setSourceCode(code);
@@ -190,6 +210,13 @@ GlslFragmentGenerator::GlslFragmentGenerator()
             "IM_texcoord_vector3_" + GlslShaderGenerator::TARGET, TexcoordNodeGlslMaya::create);
     }
 
+    registerImplementation(
+        MaterialXMaya::ShaderGenUtil::LobePruner::getDarkBaseImplementationName(),
+        MayaDarkClosureNode::create);
+    registerImplementation(
+        MaterialXMaya::ShaderGenUtil::LobePruner::getDarkLayerImplementationName(),
+        MayaDarkClosureNode::create);
+
     // The MaterialX transform node will crash if one of the "space" inputs is empty. This will be
     // fixed in 1.38.9. In the meantime we use patched nodes to replace those previously added in
     // the base class.
@@ -239,12 +266,222 @@ ShaderPtr GlslFragmentGenerator::createShader(
     ElementPtr    element,
     GenContext&   context) const
 {
+#if MX_COMBINED_VERSION >= 13810
+    // Create the root shader graph
+    ShaderGraphPtr graph = MayaShaderGraph::create(nullptr, name, element, context);
+    ShaderPtr      shader = std::make_shared<Shader>(name, graph);
+
+    // Check if there are inputs with default geomprops assigned. In order to bind the
+    // corresponding data to these inputs we insert geomprop nodes in the graph.
+    bool geomNodeAdded = false;
+    for (ShaderGraphInputSocket* socket : graph->getInputSockets()) {
+        if (!socket->getGeomProp().empty()) {
+            ConstDocumentPtr doc = element->getDocument();
+            GeomPropDefPtr   geomprop = doc->getGeomPropDef(socket->getGeomProp());
+            if (geomprop) {
+                // A default geomprop was assigned to this graph input.
+                // For all internal connections to this input, break the connection
+                // and assign a geomprop node that generates this data.
+                // Note: If a geomprop node exists already it is reused,
+                // so only a single node per geometry type is created.
+                ShaderInputVec connections = socket->getConnections();
+                for (auto connection : connections) {
+                    connection->breakConnection();
+                    graph->addDefaultGeomNode(connection, *geomprop, context);
+                    geomNodeAdded = true;
+                }
+            }
+        }
+    }
+    // If nodes were added we need to re-sort the nodes in topological order.
+    if (geomNodeAdded) {
+        graph->topologicalSort();
+    }
+
+    // Create vertex stage.
+    ShaderStagePtr vs = createStage(Stage::VERTEX, *shader);
+    vs->createInputBlock(HW::VERTEX_INPUTS, "i_vs");
+
+    // Each Stage must have three types of uniform blocks:
+    // Private, Public and Sampler blocks
+    // Public uniforms are inputs that should be published in a user interface for user interaction,
+    // while private uniforms are internal variables needed by the system which should not be
+    // exposed in UI. So when creating these uniforms for a shader node, if the variable is
+    // user-facing it should go into the public block, and otherwise the private block. All texture
+    // based objects should be added to Sampler block
+
+    vs->createUniformBlock(HW::PRIVATE_UNIFORMS, "u_prv");
+    vs->createUniformBlock(HW::PUBLIC_UNIFORMS, "u_pub");
+
+    // Create required variables for vertex stage
+    VariableBlock& vsInputs = vs->getInputBlock(HW::VERTEX_INPUTS);
+    vsInputs.add(Type::VECTOR3, HW::T_IN_POSITION);
+    VariableBlock& vsPrivateUniforms = vs->getUniformBlock(HW::PRIVATE_UNIFORMS);
+    vsPrivateUniforms.add(Type::MATRIX44, HW::T_WORLD_MATRIX);
+    vsPrivateUniforms.add(Type::MATRIX44, HW::T_VIEW_PROJECTION_MATRIX);
+
+    // Create pixel stage.
+    ShaderStagePtr   ps = createStage(Stage::PIXEL, *shader);
+    VariableBlockPtr psOutputs = ps->createOutputBlock(HW::PIXEL_OUTPUTS, "o_ps");
+
+    // Create required Uniform blocks and any additonal blocks if needed.
+    VariableBlockPtr psPrivateUniforms = ps->createUniformBlock(HW::PRIVATE_UNIFORMS, "u_prv");
+    VariableBlockPtr psPublicUniforms = ps->createUniformBlock(HW::PUBLIC_UNIFORMS, "u_pub");
+    VariableBlockPtr lightData = ps->createUniformBlock(HW::LIGHT_DATA, HW::T_LIGHT_DATA_INSTANCE);
+    lightData->add(Type::INTEGER, "type");
+
+    // Add a block for data from vertex to pixel shader.
+    addStageConnectorBlock(HW::VERTEX_DATA, HW::T_VERTEX_DATA_INSTANCE, *vs, *ps);
+
+    // Add uniforms for transparent rendering.
+    if (context.getOptions().hwTransparency) {
+        psPrivateUniforms->add(Type::FLOAT, HW::T_ALPHA_THRESHOLD, Value::createValue(0.001f));
+    }
+
+    // Add uniforms for shadow map rendering.
+    if (context.getOptions().hwShadowMap) {
+        psPrivateUniforms->add(Type::FILENAME, HW::T_SHADOW_MAP);
+        psPrivateUniforms->add(
+            Type::MATRIX44, HW::T_SHADOW_MATRIX, Value::createValue(Matrix44::IDENTITY));
+    }
+
+    // Add inputs and uniforms for ambient occlusion.
+    if (context.getOptions().hwAmbientOcclusion) {
+        addStageInput(HW::VERTEX_INPUTS, Type::VECTOR2, HW::T_IN_TEXCOORD + "_0", *vs);
+        addStageConnector(HW::VERTEX_DATA, Type::VECTOR2, HW::T_TEXCOORD + "_0", *vs, *ps);
+        psPrivateUniforms->add(Type::FILENAME, HW::T_AMB_OCC_MAP);
+        psPrivateUniforms->add(Type::FLOAT, HW::T_AMB_OCC_GAIN, Value::createValue(1.0f));
+    }
+
+    // Add uniforms for environment lighting.
+    bool lighting = graph->hasClassification(
+                        ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE)
+        || graph->hasClassification(ShaderNode::Classification::BSDF);
+    if (lighting && context.getOptions().hwSpecularEnvironmentMethod != SPECULAR_ENVIRONMENT_NONE) {
+        const Matrix44 yRotationPI = Matrix44::createScale(Vector3(-1, 1, -1));
+        psPrivateUniforms->add(Type::MATRIX44, HW::T_ENV_MATRIX, Value::createValue(yRotationPI));
+        psPrivateUniforms->add(Type::FILENAME, HW::T_ENV_RADIANCE);
+        psPrivateUniforms->add(Type::FLOAT, HW::T_ENV_LIGHT_INTENSITY, Value::createValue(1.0f));
+        psPrivateUniforms->add(Type::INTEGER, HW::T_ENV_RADIANCE_MIPS, Value::createValue<int>(1));
+        psPrivateUniforms->add(
+            Type::INTEGER, HW::T_ENV_RADIANCE_SAMPLES, Value::createValue<int>(16));
+        psPrivateUniforms->add(Type::FILENAME, HW::T_ENV_IRRADIANCE);
+        psPrivateUniforms->add(Type::BOOLEAN, HW::T_REFRACTION_TWO_SIDED);
+    }
+
+    // Add uniforms for the directional albedo table.
+    if (context.getOptions().hwDirectionalAlbedoMethod == DIRECTIONAL_ALBEDO_TABLE
+        || context.getOptions().hwWriteAlbedoTable) {
+        psPrivateUniforms->add(Type::FILENAME, HW::T_ALBEDO_TABLE);
+        psPrivateUniforms->add(Type::INTEGER, HW::T_ALBEDO_TABLE_SIZE, Value::createValue<int>(64));
+    }
+
+    // Add uniforms for environment prefiltering.
+    if (context.getOptions().hwWriteEnvPrefilter) {
+        psPrivateUniforms->add(Type::FILENAME, HW::T_ENV_RADIANCE);
+        psPrivateUniforms->add(Type::FLOAT, HW::T_ENV_LIGHT_INTENSITY, Value::createValue(1.0f));
+        psPrivateUniforms->add(Type::INTEGER, HW::T_ENV_PREFILTER_MIP, Value::createValue<int>(1));
+        const Matrix44 yRotationPI = Matrix44::createScale(Vector3(-1, 1, -1));
+        psPrivateUniforms->add(Type::MATRIX44, HW::T_ENV_MATRIX, Value::createValue(yRotationPI));
+        psPrivateUniforms->add(Type::INTEGER, HW::T_ENV_RADIANCE_MIPS, Value::createValue<int>(1));
+    }
+
+    // Create uniforms for the published graph interface
+    for (ShaderGraphInputSocket* inputSocket : graph->getInputSockets()) {
+        // Only for inputs that are connected/used internally,
+        // and are editable by users.
+        if (!inputSocket->getConnections().empty() && graph->isEditable(*inputSocket)) {
+            psPublicUniforms->add(inputSocket->getSelf());
+        }
+    }
+
+    // Add the pixel stage output. This needs to be a color4 for rendering,
+    // so copy name and variable from the graph output but set type to color4.
+    // TODO: Improve this to support multiple outputs and other data types.
+    ShaderGraphOutputSocket* outputSocket = graph->getOutputSocket();
+    ShaderPort*              output = psOutputs->add(Type::COLOR4, outputSocket->getName());
+    output->setVariable(outputSocket->getVariable());
+    output->setPath(outputSocket->getPath());
+
+    // Create shader variables for all nodes that need this.
+    createVariables(graph, context, *shader);
+
+    HwLightShadersPtr lightShaders
+        = context.getUserData<HwLightShaders>(HW::USER_DATA_LIGHT_SHADERS);
+
+    // For surface shaders we need light shaders
+    if (lightShaders
+        && graph->hasClassification(
+            ShaderNode::Classification::SHADER | ShaderNode::Classification::SURFACE)) {
+        // Create shader variables for all bound light shaders
+        for (const auto& it : lightShaders->get()) {
+            ShaderNode* node = it.second.get();
+            node->getImplementation().createVariables(*node, context, *shader);
+        }
+    }
+
+    //
+    // For image textures we need to convert filenames into uniforms (texture samplers).
+    // Any unconnected filename input on file texture nodes needs to have a corresponding
+    // uniform.
+    //
+
+    // Start with top level graphs.
+    vector<ShaderGraph*> graphStack = { graph.get() };
+    if (lightShaders) {
+        for (const auto& it : lightShaders->get()) {
+            ShaderNode*  node = it.second.get();
+            ShaderGraph* lightGraph = node->getImplementation().getGraph();
+            if (lightGraph) {
+                graphStack.push_back(lightGraph);
+            }
+        }
+    }
+
+    while (!graphStack.empty()) {
+        ShaderGraph* g = graphStack.back();
+        graphStack.pop_back();
+
+        for (ShaderNode* node : g->getNodes()) {
+            if (node->hasClassification(ShaderNode::Classification::FILETEXTURE)) {
+                for (ShaderInput* input : node->getInputs()) {
+                    if (!input->getConnection() && *input->getType() == *Type::FILENAME) {
+                        // Create the uniform using the filename type to make this uniform into a
+                        // texture sampler.
+                        ShaderPort* filename = psPublicUniforms->add(
+                            Type::FILENAME, input->getVariable(), input->getValue());
+                        filename->setPath(input->getPath());
+
+                        // Assing the uniform name to the input value
+                        // so we can reference it during code generation.
+                        input->setValue(Value::createValue(input->getVariable()));
+                    }
+                }
+            }
+            // Push subgraphs on the stack to process these as well.
+            ShaderGraph* subgraph = node->getImplementation().getGraph();
+            if (subgraph) {
+                graphStack.push_back(subgraph);
+            }
+        }
+    }
+
+    if (context.getOptions().hwTransparency) {
+        // Flag the shader as being transparent.
+        shader->setAttribute(HW::ATTR_TRANSPARENT);
+    }
+#else
     ShaderPtr    shader = GlslShaderGenerator::createShader(name, element, context);
     ShaderGraph& graph = shader->getGraph();
+#endif
     ShaderStage& pixelStage = shader->getStage(Stage::PIXEL);
 
     // Add uniforms for environment lighting.
+#if MX_COMBINED_VERSION >= 13810
+    if (requiresLighting(*graph) && OgsXmlGenerator::useLightAPI() < 2) {
+#else
     if (requiresLighting(graph) && OgsXmlGenerator::useLightAPI() < 2) {
+#endif
         VariableBlock& psPrivateUniforms = pixelStage.getUniformBlock(HW::PUBLIC_UNIFORMS);
         psPrivateUniforms.add(
             Type::COLOR3, LIGHT_LOOP_RESULT, Value::createValue(Color3(0.0f, 0.0f, 0.0f)));
@@ -334,21 +571,33 @@ ShaderPtr GlslFragmentGenerator::generate(
             emitLineBreak(pixelStage);
             MX_EMIT_INCLUDE(
                 libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+            emitLine("#define MAYA_MX39_USING_ENVIRONMENT_FIS", pixelStage, false);
+#endif
         } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
             if (OgsXmlGenerator::useLightAPI() < 2) {
                 MX_EMIT_INCLUDE(
                     libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl",
                     context,
                     pixelStage);
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+                emitLine("#define MAYA_MX39_USING_ENVIRONMENT_PREFILTER_V1", pixelStage, false);
+#endif
             } else {
                 MX_EMIT_INCLUDE(
                     libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl",
                     context,
                     pixelStage);
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+                emitLine("#define MAYA_MX39_USING_ENVIRONMENT_PREFILTER_V2", pixelStage, false);
+#endif
             }
         } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
             MX_EMIT_INCLUDE(
                 libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+            emitLine("#define MAYA_MX39_USING_ENVIRONMENT_NONE", pixelStage, false);
+#endif
         } else {
             throw ExceptionShaderGenError(
                 "Invalid hardware specular environment method specified: '"
@@ -729,6 +978,19 @@ GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& con
         context.addNodeImplementation(name, impl);
 
         return impl;
+#ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
+    } else if (
+        implElement->getName() == "IM_dielectric_tf_bsdf_genglsl"
+        || implElement->getName() == "IM_generalized_schlick_tf_82_bsdf_genglsl") {
+        // We need to inject lighting code into the backported OpenPBR:
+        impl = MayaClosureSourceCodeNode::create();
+        impl->initialize(*implElement, context);
+
+        // Cache it.
+        context.addNodeImplementation(name, impl);
+
+        return impl;
+#endif
     }
     return GlslShaderGenerator::getImplementation(nodedef, context);
 }

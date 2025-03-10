@@ -16,6 +16,8 @@
 # limitations under the License.
 #
 
+import unittest
+
 import fixturesUtils
 import imageUtils
 
@@ -238,7 +240,8 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")
         options = ["shadingMode=[[useRegistry,UsdPreviewSurface]]",
                    "primPath=/",
-                   "preferredMaterial=none"]
+                   "preferredMaterial=none",
+                   "upAxis=0"]
         cmds.file(testFile, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
                   namespace="Test", pr=True, importTimeRange="combine",
@@ -270,6 +273,44 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         self.assertSnapshotClose('doubleSided_disabled_front.png')
         mayaUtils.setBasicCamera(3)
         self.assertSnapshotClose('doubleSided_disabled_back.png')
+
+    @unittest.skipUnless(int(os.getenv("MAYA_LIGHTAPI_VERSION")) >= 2, 'UsdPreviewSurface fragment graph for light API v1 does not support opacityThreshold')
+    def testOpacityThreshold(self):
+        '''
+        Test UsdPreviewSurface transparency cut-out. The surface fragments should be
+        should be fully transparent or fully opaque when opacityThreshold is positive.
+        '''
+        cmds.file(new=True, force=True)
+        mayaUtils.loadPlugin('mayaUsdPlugin')
+
+        # Import the USD file.
+        testFile = testUtils.getTestScene('UsdPreviewSurface', 'TestOpacityThreshold.usda')
+        mayaUtils.createProxyFromFile(testFile)
+        
+        # Frame the scene for the snapshot.
+        cmds.xform("persp", t= (0, 1, 2.25))
+        cmds.xform("persp", ro=[-25, 0, 0], ws=True)
+
+        # Create a light to cast a shadow.
+        white_light = cmds.directionalLight(rgb=(1, 1, 1))
+        white_transform = cmds.listRelatives(white_light, parent=True)[0]
+        cmds.xform(white_transform, ro=(-35, -35, 0), ws=True)
+    
+        # Turn on texturing, lighting, shadows.
+        cmds.modelEditor(
+            mayaUtils.activeModelPanel(),
+            edit=True,
+            displayTextures=True,
+            displayLights='all',
+            shadows=True,
+            lights=False
+        )
+
+        # This option is needed for VP2 to discard shadow map samples.
+        cmds.setAttr('hardwareRenderingGlobals.transparentShadow', True)
+
+        # Snapshot and assert similarity.
+        self.assertSnapshotClose('opacityThreshold.png')
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

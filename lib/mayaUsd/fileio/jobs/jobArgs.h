@@ -93,6 +93,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (filterTypes) \
     (ignoreWarnings) \
     (includeEmptyTransforms) \
+    (isDuplicating) \
     (kind) \
     (disableModelKindProcessor) \
     (materialCollectionsPath) \
@@ -106,6 +107,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (parentScope) \
     (rootPrim) \
     (rootPrimType) \
+    (upAxis) \
+    (unit) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
     (renderableOnly) \
@@ -125,6 +128,26 @@ TF_DECLARE_PUBLIC_TOKENS(
     (excludeExportTypes) \
     /* Special "none" token */ \
     (none) \
+    /* up axis values */ \
+    /* (none) */ \
+    (mayaPrefs) \
+    (y) \
+    (z) \
+    /* unit values */ \
+    /* (none) */ \
+    /* (mayaPrefs) */ \
+    (nm) \
+    (um) \
+    (mm) \
+    (cm) \
+    (dm) \
+    (m) \
+    (km) \
+    (lightyear) \
+    (inch) \
+    (foot) \
+    (yard) \
+    (mile) \
     /* relative textures values */ \
     (automatic) \
     (absolute) \
@@ -174,6 +197,13 @@ TF_DECLARE_PUBLIC_TOKENS(
     (pullImportStage) \
     (preserveTimeline) \
     (remapUVSetsTo) \
+    (upAxis) \
+    (unit) \
+    (axisAndUnitMethod) \
+    /* values for axis and unit method */ \
+    (rotateScale) \
+    (addTransform) \
+    (overwritePrefs) \
     /* values for import relative textures */ \
     (automatic) \
     (absolute) \
@@ -232,6 +262,7 @@ struct UsdMayaJobExportArgs
     const std::string file;
     const bool        ignoreWarnings;
     const bool        includeEmptyTransforms;
+    const bool        isDuplicating;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of
@@ -258,6 +289,8 @@ struct UsdMayaJobExportArgs
     const SdfPath      parentScope; // Deprecated, use rootPrim instead.
     const SdfPath      rootPrim;
     const TfToken      rootPrimType;
+    const TfToken      upAxis;
+    const TfToken      unit;
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
     const bool         disableModelKindProcessor;
@@ -403,6 +436,9 @@ struct UsdMayaJobImportArgs
     const std::string    importUSDZTexturesFilePath;
     const bool           importUSDZTextures;
     const std::string    importRelativeTextures;
+    const std::string    axisAndUnitMethod;
+    const bool           upAxis;
+    const bool           unit;
     const bool           importInstances;
     const bool           useAsAnimationCache;
     const bool           importWithProxyShapes;

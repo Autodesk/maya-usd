@@ -22,6 +22,59 @@
 
 namespace MAYAUSD_NS_DEF {
 
+/*! \brief flags used to create the dynamic attribute.
+ **        By default it is readable, writable, storable and hidden.
+ */
+enum class DynamicAttrFlags : unsigned
+{
+    kNone = 0,
+
+    kAppearance = 1 << 0,
+    kCached = 1 << 1,
+    kConnectable = 1 << 2,
+    kFilename = 1 << 3,
+    kHidden = 1 << 4,
+    kKeyable = 1 << 5,
+    kReadable = 1 << 6,
+    kStorable = 1 << 7,
+    kWorldspace = 1 << 8,
+    kWritable = 1 << 9,
+
+    kDefaults = kReadable | kWritable | kHidden | kStorable,
+
+    kAll = unsigned(-1)
+};
+
+MAYAUSD_CORE_PUBLIC
+inline DynamicAttrFlags operator|(const DynamicAttrFlags lhs, const DynamicAttrFlags rhs)
+{
+    return DynamicAttrFlags(unsigned(lhs) | unsigned(rhs));
+}
+
+MAYAUSD_CORE_PUBLIC
+inline DynamicAttrFlags operator&(const DynamicAttrFlags lhs, const DynamicAttrFlags rhs)
+{
+    return DynamicAttrFlags(unsigned(lhs) & unsigned(rhs));
+}
+
+MAYAUSD_CORE_PUBLIC
+inline DynamicAttrFlags operator^(const DynamicAttrFlags lhs, const DynamicAttrFlags rhs)
+{
+    return DynamicAttrFlags(unsigned(lhs) ^ unsigned(rhs));
+}
+
+MAYAUSD_CORE_PUBLIC
+inline DynamicAttrFlags operator~(const DynamicAttrFlags flags)
+{
+    return DynamicAttrFlags(unsigned(DynamicAttrFlags::kAll) & ~unsigned(flags));
+}
+
+MAYAUSD_CORE_PUBLIC
+inline bool isFlagSet(const DynamicAttrFlags lhs, const DynamicAttrFlags rhs)
+{
+    return unsigned(lhs & rhs) != 0;
+}
+
 /*! \brief verify if the named dynamic attribute is present on the Maya node.
  */
 MAYAUSD_CORE_PUBLIC
@@ -30,7 +83,10 @@ bool hasDynamicAttribute(const MFnDependencyNode& depNode, const MString& attrNa
 /*! \brief create the named dynamic attribute on the Maya node.
  */
 MAYAUSD_CORE_PUBLIC
-MStatus createDynamicAttribute(MFnDependencyNode& depNode, const MString& attrName);
+MStatus createDynamicAttribute(
+    MFnDependencyNode&     depNode,
+    const MString&         attrName,
+    const DynamicAttrFlags flags = DynamicAttrFlags::kDefaults);
 
 /*! \brief get the string value of the named dynamic attribute from the Maya node.
  */
@@ -41,8 +97,11 @@ getDynamicAttribute(const MFnDependencyNode& depNode, const MString& attrName, M
 /*! \brief set the named dynamic attribute to the given string value on the Maya node.
  */
 MAYAUSD_CORE_PUBLIC
-MStatus
-setDynamicAttribute(MFnDependencyNode& depNode, const MString& attrName, const MString& value);
+MStatus setDynamicAttribute(
+    MFnDependencyNode&     depNode,
+    const MString&         attrName,
+    const MString&         value,
+    const DynamicAttrFlags flags = DynamicAttrFlags::kDefaults);
 
 } // namespace MAYAUSD_NS_DEF
 

@@ -4,7 +4,7 @@
 )
 
 def Xform "Xform1" (
-    prepend references = @sphere.usda@
+    prepend references = @sphere_ext.usda@
 )
 {
 }

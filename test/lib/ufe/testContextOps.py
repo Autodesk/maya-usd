@@ -748,6 +748,50 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(ufeObs.nbAddNotif(), 2)
         self.assertEqual(ufeObs.nbDeleteNotif(), 2)
 
+    def testUndoAddNewPrimCleanSessionLayer(self):
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShape).GetStage()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Add a new prim.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The proxy shape should now have a single UFE child item.
+        proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 1)
+
+        # Add a new prim to the prim we just added.
+        cmds.pickWalk(d='down')
+
+        # Get the scene item from the UFE selection.
+        snIter = iter(ufe.GlobalSelection.get())
+        xformItem = next(snIter)
+        xformPrim = usdUtils.getPrimFromSceneItem(xformItem)
+        xformPath = xformPrim.GetPath()
+
+        # Add data in the session layer.
+        metadataName = 'instanceable'
+        sessionLayer = stage.GetSessionLayer()
+        with Usd.EditContext(stage, sessionLayer):
+            xformPrim.SetMetadata(metadataName, True)
+
+        self.assertTrue(xformPrim.HasAuthoredMetadata(metadataName))
+        self.assertTrue(sessionLayer.GetPrimAtPath(xformPath))
+
+        # Verify that after undo the sessin layer got cleaned.
+        cmd.undo()
+        self.assertFalse(sessionLayer.GetPrimAtPath(xformPath))
+
     def testAddNewPrimInWeakerLayer(self):
         cmds.file(new=True, force=True)
 
@@ -910,6 +954,34 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(capsuleBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/Material1"))
         cmds.redo()
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialCreationInLockedLayer(self):
+        """This test creates a material in a locked layer. This should fail but not crash."""
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        proxyShape, stage = mayaUtils.createProxyAndStage()
+
+        # Create a cube prim without material.
+        cubeUsdPathStr = '/MyCube'
+        cubePrim = stage.DefinePrim(cubeUsdPathStr, 'Cube')
+        self.assertFalse(cubePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        # Create a sub-layer, target it and lock it.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        stage.SetEditTarget(subLayer)
+        subLayer.SetPermissionToEdit(False)
+
+        # try to create a material on the cube prim.
+        cubeSceneItem = ufeUtils.createUfeSceneItem(proxyShape, cubeUsdPathStr)
+        contextOps = ufe.ContextOps.contextOps(cubeSceneItem)
+        cmdPS = contextOps.doOpCmd(['Assign New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmdPS)
+        ufeCmd.execute(cmdPS)
+
+        # Verify the command filed due to the lock, but did not crash.
+        self.assertFalse(cubePrim.HasAPI(UsdShade.MaterialBindingAPI))
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testMaterialCreationForSingleObject(self):
@@ -1829,7 +1901,9 @@ class ContextOpsTestCase(unittest.TestCase):
         dagPath.extendToShape()
 
         with mayaUsd.lib.OpUndoItemList():
-            mayaUsd.lib.PrimUpdaterManager.duplicate(cmds.ls(cubeXForm, long=True)[0], psPathStr)
+            mayaUsd.lib.PrimUpdaterManager.duplicate(
+                cmds.ls(cubeXForm, long=True)[0], psPathStr, 
+                {'exportComponentTags': True})
 
         topPath = ufe.PathString.path(psPathStr + ',/' + cubeXForm + "/" + "top")
         topItem = ufe.Hierarchy.createItem(topPath)

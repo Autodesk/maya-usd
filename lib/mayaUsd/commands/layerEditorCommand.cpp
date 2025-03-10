@@ -825,8 +825,6 @@ public:
         if (!stage)
             return false;
 
-        saveSelection();
-
         std::set<PXR_NS::SdfLayerRefPtr> layersToUpdate;
         if (_includeSublayers) {
             // If _includeSublayers is True, we attempt to refresh the system lock status of all
@@ -866,7 +864,9 @@ public:
             MayaUsd::lockLayer(_proxyShapePath, curLayer, _lockType, true);
         }
 
-        updateEditTarget(stage);
+        if (_updateEditTarget) {
+            updateEditTarget(stage);
+        }
 
         return true;
     }
@@ -894,9 +894,10 @@ public:
                     _proxyShapePath, _layers[layerIndex], _previousStates[layerIndex], true);
             }
         }
-        restoreSelection();
 
-        updateEditTarget(stage);
+        if (_updateEditTarget) {
+            updateEditTarget(stage);
+        }
 
         return true;
     }
@@ -904,6 +905,7 @@ public:
     MayaUsd::LayerLockType _lockType = MayaUsd::LayerLockType::LayerLock_Locked;
     bool                   _includeSublayers = false;
     bool                   _skipSystemLockedLayers = false;
+    bool                   _updateEditTarget = true;
     std::string            _proxyShapePath;
 
 private:
@@ -914,36 +916,6 @@ private:
         return stage;
     }
 
-    void saveSelection()
-    {
-        // Make a copy of the global selection, to restore it on unlock.
-        auto globalSn = Ufe::GlobalSelection::get();
-        _savedSn.replaceWith(*globalSn);
-        // Filter the global selection, removing items below our proxy shape.
-        // We know the path to the proxy shape has a single segment.  Not
-        // using Ufe::PathString::path() for UFE v1 compatibility, which
-        // unfortunately reveals leading "world" path component implementation
-        // detail.
-        Ufe::Path path(
-            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, path));
-    }
-
-    void restoreSelection()
-    {
-        // Restore the saved selection to the global selection.  If a saved
-        // selection item started with the proxy shape path, re-create it.
-        // We know the path to the proxy shape has a single segment.  Not
-        // using Ufe::PathString::path() for UFE v1 compatibility, which
-        // unfortunately reveals leading "world" path component implementation
-        // detail.
-        Ufe::Path path(
-            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
-    }
-
-    Ufe::Selection                      _savedSn;
     std::vector<MayaUsd::LayerLockType> _previousStates;
     SdfLayerHandleVector                _layers;
 };
@@ -982,10 +954,12 @@ public:
             }
         }
 
-        updateEditTarget(stage);
-
-        if (_layers.size() > 0) {
+        if (!_layers.empty()) {
             _notifySystemLockIsRefreshed();
+
+            // Finally update edit target after layer locks were changed
+            // by the command or a callback.
+            updateEditTarget(stage);
         }
 
         return true;
@@ -1006,10 +980,12 @@ public:
             }
         }
 
-        updateEditTarget(stage);
-
-        if (_layers.size() > 0) {
+        if (!_layers.empty()) {
             _notifySystemLockIsRefreshed();
+
+            // Finally update edit target after layer locks were changed
+            // by the command or a callback.
+            updateEditTarget(stage);
         }
 
         return true;
@@ -1053,6 +1029,8 @@ private:
                         cmd->_lockType = MayaUsd::LayerLockType::LayerLock_Unlocked;
                         cmd->_includeSublayers = false;
                         cmd->_proxyShapePath = _proxyShapePath;
+                        // Edit target will be updated once at the end of the refresh command.
+                        cmd->_updateEditTarget = false;
 
                         // Add the lock command and its parameter to be executed
                         _lockCommands.push_back(std::move(cmd));
@@ -1066,6 +1044,8 @@ private:
                         cmd->_lockType = MayaUsd::LayerLockType::LayerLock_SystemLocked;
                         cmd->_includeSublayers = false;
                         cmd->_proxyShapePath = _proxyShapePath;
+                        // Edit target will be updated once at the end of the refresh command.
+                        cmd->_updateEditTarget = false;
 
                         // Add the lock command and its parameter to be executed
                         _lockCommands.push_back(std::move(cmd));
@@ -1078,8 +1058,7 @@ private:
 
     void _notifySystemLockIsRefreshed()
     {
-        auto dstCallbacks = UsdUfe::getUICallbacks(TfToken("onRefreshSystemLock"));
-        if (dstCallbacks.size() == 0)
+        if (!UsdUfe::isUICallbackRegistered(TfToken("onRefreshSystemLock")))
             return;
 
         PXR_NS::VtDictionary callbackContext;
@@ -1095,8 +1074,7 @@ private:
         VtStringArray lockedArray(affectedLayers.begin(), affectedLayers.end());
         callbackData["affectedLayerIds"] = lockedArray;
 
-        for (UsdUfe::UICallback::Ptr& dstCallback : dstCallbacks)
-            (*dstCallback)(callbackContext, callbackData);
+        UsdUfe::triggerUICallback(TfToken("onRefreshSystemLock"), callbackContext, callbackData);
     }
 
     UsdStageWeakPtr getStage()

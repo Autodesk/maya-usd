@@ -275,6 +275,38 @@ getAttrEditRouterLayer(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrN
     return _extractLayer(found->second);
 }
 
+PXR_NS::SdfLayerHandle getPrimMetadataEditRouterLayer(
+    const PXR_NS::UsdPrim& prim,
+    const PXR_NS::TfToken& metadataName,
+    const PXR_NS::TfToken& metadataKeyPath)
+{
+    static const PXR_NS::TfToken metadataOp(EditRoutingTokens->RoutePrimMetadata);
+
+    const EditRouter::Ptr dstEditRouter = getEditRouter(metadataOp);
+    if (!dstEditRouter)
+        return nullptr;
+
+    // Optimize the case where we have a per-stage layer routing.
+    // This avoid creating dictionaries just to pass and receive a value.
+    if (auto layerRouter = std::dynamic_pointer_cast<LayerPerStageEditRouter>(dstEditRouter))
+        return layerRouter->getLayerForStage(prim.GetStage());
+
+    PXR_NS::VtDictionary context;
+    PXR_NS::VtDictionary routingData;
+    context[EditRoutingTokens->Prim] = PXR_NS::VtValue(prim);
+    context[EditRoutingTokens->Operation] = metadataOp;
+    context[EditRoutingTokens->KeyPath] = PXR_NS::VtValue(metadataKeyPath);
+    context[metadataOp] = PXR_NS::VtValue(metadataName);
+    (*dstEditRouter)(context, routingData);
+
+    // Try to retrieve the layer from the routing data.
+    const auto found = routingData.find(EditRoutingTokens->Layer);
+    if (found == routingData.end())
+        return nullptr;
+
+    return _extractLayer(found->second);
+}
+
 PXR_NS::UsdEditTarget
 getEditRouterEditTarget(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim)
 {
