@@ -823,6 +823,12 @@ bool UsdMaya_WriteJob::_FinishWriting()
         chasersLoop.loopAdvance();
     }
 
+    // Collect extra prim paths from the instanced prims.
+    {
+        std::vector<SdfPath> masterPaths = mJobCtx.GetAlInstanceMasterPaths();
+        _extrasPrimsPaths.insert(_extrasPrimsPaths.end(), masterPaths.begin(), masterPaths.end());
+    }
+
     _PostCallback();
     progressBar.advance();
 

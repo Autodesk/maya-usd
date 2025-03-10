@@ -103,6 +103,9 @@ class Theme(object):
 
         return result
     
+    def themeLabel(self, label: str) -> str:
+        return label
+    
     def themeTab(self, tab: QTabWidget):
         tab.setDocumentMode(True)
         tab.tabBar().setCursor(Qt.ArrowCursor)

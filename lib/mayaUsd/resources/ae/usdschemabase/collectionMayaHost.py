@@ -1,11 +1,13 @@
 
 from usd_shared_components.common.host import Host, MessageType
 from usd_shared_components.common.theme import Theme
+from usd_shared_components.common.persistentStorage import PersistentStorage
 from usd_shared_components.usdData.usdCollectionData import UsdCollectionData
 from usd_shared_components.usdData.usdCollectionStringListData import CollectionStringListData
 
 from maya.api.OpenMaya import MPxCommand, MFnPlugin, MGlobal, MSyntax, MArgDatabase
 import mayaUsd.lib
+import mayaUsd.ufe
 import maya.mel as mel
 import maya.cmds as cmds
 
@@ -191,6 +193,11 @@ class _RemoveAllIncludeExcludeCommand(_UsdUndoBlockCommand):
     def __init__(self):
         super().__init__()
 
+class _ClearIncludeExcludeOpinionsCommand(_UsdUndoBlockCommand):
+    commandName = 'usdCollectionClearOpinions'
+    def __init__(self):
+        super().__init__()
+
 
 class _SetExansionRuleCommand(_UsdUndoBlockCommand):
     commandName = 'usdCollectionSetExpansionRule'
@@ -215,14 +222,20 @@ class _RemoveItemsCommand(_UsdUndoBlockCommand):
     def __init__(self):
         super().__init__()
 
+class _ReplaceItemsCommand(_UsdUndoBlockCommand):
+    commandName = 'usdCollectionReplaceItems'
+    def __init__(self):
+        super().__init__()
 
 _allCommandClasses = [
     _SetIncludeAllCommand,
     _RemoveAllIncludeExcludeCommand,
+    _ClearIncludeExcludeOpinionsCommand,
     _SetExansionRuleCommand,
     _SetMembershipExpressionCommand,
     _AddItemsCommand,
-    _RemoveItemsCommand]
+    _RemoveItemsCommand,
+    _ReplaceItemsCommand]
 
 def registerCommands(pluginName):
     '''
@@ -277,6 +290,10 @@ class MayaCollectionData(UsdCollectionData):
         with _UsdUndoBlockContext(_RemoveAllIncludeExcludeCommand.commandName):
             super().removeAllIncludeExclude()
 
+    def clearIncludeExcludeOpinions(self):
+        with _UsdUndoBlockContext(_ClearIncludeExcludeOpinionsCommand.commandName):
+            super().clearIncludeExcludeOpinions()
+
     # Expression
 
     def setExpansionRule(self, rule):
@@ -295,19 +312,26 @@ class MayaStringListData(CollectionStringListData):
     def __init__(self, collection, isInclude: bool):
         super().__init__(collection, isInclude)
 
-    def addStrings(self, items: Sequence[AnyStr]):
+    def addStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Add the given strings to the model.
         '''
         with _UsdUndoBlockContext(_AddItemsCommand.commandName):
-            super().addStrings(items)
+            return super().addStrings(items)
 
-    def removeStrings(self, items: Sequence[AnyStr]):
+    def removeStrings(self, items: Sequence[AnyStr]) -> bool:
         '''
         Remove the given strings from the model.
         '''
         with _UsdUndoBlockContext(_RemoveItemsCommand.commandName):
-            super().removeStrings(items)
+            return super().removeStrings(items)
+
+    def replaceStrings(self, oldString, newString) -> bool:
+        '''
+        Replace the old string with thew newString on the model.
+        '''
+        with _UsdUndoBlockContext(_ReplaceItemsCommand.commandName):
+            return super().replaceStrings(oldString, newString)
 
 class MayaTheme(Theme):
     def __init__(self):
@@ -353,8 +377,53 @@ class MayaHost(Host):
         # Note: we need the UFE selection in order to have USD items.
         return cmds.ls(selection=True, ufe=True, long=True)
 
+    def setSelectionFromText(self, paths: Sequence[str]) -> bool:
+        if not paths:
+            return False
+        cmds.select(paths, replace=True)
+        return True
+
+    def getStagePath(self, stage: Usd.Stage) -> str:
+        return mayaUsd.ufe.stagePath(stage)
+
     def createCollectionData(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         return MayaCollectionData(prim, collection)
     
     def createStringListData(self, collection: Usd.CollectionAPI, isInclude: bool):
         return MayaStringListData(collection, isInclude)
+
+
+class MayaPersistentStorage(PersistentStorage):
+    '''Implement the persistent storage using Maya option vars.'''
+
+    def __init__(self):
+        pass
+
+    def _getOptVarName(self, group: str, key: str) -> str:
+        if not group:
+            return None
+        if not key:
+            return None
+        return '%s_%s' % (group, key)
+
+    def set(self, group: str, key: str, value: object) -> bool:
+        # Note: we allow empty value but not None
+        if value is None:
+            return False
+
+        varName = self._getOptVarName(group, key)
+        if not varName:
+            return False
+
+        return cmds.optionVar(stringValue=(varName, str(value)))
+
+    def get(self, group: str, key: str, default: object = None) -> object:
+        varName = self._getOptVarName(group, key)
+        if not varName:
+            return default
+
+        if not cmds.optionVar(exists=varName):
+            return default
+
+        varType = str if default is None else type(default)
+        return varType(cmds.optionVar(query=varName))

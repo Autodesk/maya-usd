@@ -28,6 +28,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportTypes.py
     testUsdExportUnits.py
     testUsdExportUpAxis.py
+    testUsdExportUVSetsSwitch.py
 
     # To investigate: following test asserts in MFnParticleSystem, but passes.
     # PPT, 17-Jun-20.

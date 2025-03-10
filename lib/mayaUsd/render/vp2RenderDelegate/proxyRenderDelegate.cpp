@@ -24,6 +24,7 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/render/px_vp20/utils.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/selectability.h>
 
@@ -607,14 +608,12 @@ bool ProxyRenderDelegate::requiresUpdate(
     const MSubSceneContainer& container,
     const MFrameContext&      frameContext) const
 {
-#if defined(BUILD_HDMAYA)
-    // If the current viewport renderer is an mtoh one, skip this update, as
-    // mtoh already has special handling for proxy shapes, and we don't want to
-    // build out a render index we don't need
-    if (IsMtohRenderOverride(frameContext)) {
+    // Hydra-based render overrides already take care of USD data,
+    // so avoid duplicating the effort.
+    if (px_vp20Utils::HasHydraRenderOverride(frameContext)) {
         return false;
     }
-#endif
+
     return true;
 }
 

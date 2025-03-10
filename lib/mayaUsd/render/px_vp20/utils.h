@@ -114,6 +114,11 @@ public:
     static void
     OutputDisplayStatusToStream(const MHWRender::DisplayStatus displayStatus, std::ostream& stream);
 
+    // Returns true if the frameContext has a render override and it's a Hydra-based one.
+    // Returns false otherwise.
+    MAYAUSD_CORE_PUBLIC
+    static bool HasHydraRenderOverride(const MHWRender::MFrameContext& frameContext);
+
 private:
     px_vp20Utils() = delete;
     ~px_vp20Utils() = delete;

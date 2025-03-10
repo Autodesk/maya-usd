@@ -211,6 +211,71 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertEqual([1, 2, 3], usdGroup1T3d.translation().vector)
         self.assertEqual([-4, -5, -6], usdGroup2T3d.translation().vector)
 
+    def testDuplicateGroupedInstancesAsUsd(self):
+        '''Duplicate Maya grouped instances to USD.'''
+
+        # Create a hierarchy.  Because group1 is selected upon creation, group2
+        # will be its parent.
+        cmds.polyCube()
+        cmds.instance()
+        cube1 = 'pCube1'
+        cube2 = 'pCube2'
+        group = cmds.group(cube1, cube2)
+        self.assertEqual(cmds.listRelatives(cube1, parent=True)[0], group)
+        self.assertEqual(cmds.listRelatives(cube2, parent=True)[0], group)
+
+        cmds.setAttr(cube1 + '.translate', 1, 2, 3)
+        cmds.setAttr(cube2 + '.translate', -4, -5, -6)
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        
+        # Duplicate Maya data as USD data.  As of 17-Nov-2021 no single-segment
+        # path handler registered to UFE for Maya path strings, so use absolute
+        # path.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
+                cmds.ls(group, long=True)[0], psPathStr))
+
+        # Maya hierarchy should be duplicated in USD.
+        usdGroupPathStr = psPathStr + ',/' + group
+        usdCube1PathStr = usdGroupPathStr + '/' + cube1
+        usdCube2PathStr = usdGroupPathStr + '/' + cube2
+
+        usdGroupPath = ufe.PathString.path(usdGroupPathStr)
+        usdCube1Path = ufe.PathString.path(usdCube1PathStr)
+        usdCube2Path = ufe.PathString.path(usdCube2PathStr)
+
+        # group1 is the child of group2
+        usdGroup = ufe.Hierarchy.createItem(usdGroupPath)
+        usdCube1 = ufe.Hierarchy.createItem(usdCube1Path)
+        usdCube2 = ufe.Hierarchy.createItem(usdCube2Path)
+
+        usdGroupHier = ufe.Hierarchy.hierarchy(usdGroup)
+        usdCube1Hier = ufe.Hierarchy.hierarchy(usdCube1)
+        usdCube2Hier = ufe.Hierarchy.hierarchy(usdCube2)
+        self.assertEqual(usdGroup, usdCube1Hier.parent())
+        self.assertEqual(usdGroup, usdCube2Hier.parent())
+        self.assertEqual(len(usdGroupHier.children()), 2)
+
+        # Translations have been preserved.
+        usdCube1T3d = ufe.Transform3d.transform3d(usdCube1)
+        usdCube2T3d = ufe.Transform3d.transform3d(usdCube2)
+        self.assertEqual([1, 2, 3], usdCube1T3d.translation().vector)
+        self.assertEqual([-4, -5, -6], usdCube2T3d.translation().vector)
+
+        usdCube1ShapePathStr = usdCube1PathStr + '/' + 'pCubeShape1'
+        usdCube2ShapePathStr = usdCube2PathStr + '/' + 'pCubeShape1'
+
+        usdCube1ShapePath = ufe.PathString.path(usdCube1ShapePathStr)
+        usdCube2ShapePath = ufe.PathString.path(usdCube2ShapePathStr)
+
+        usdCube1Shape = ufe.Hierarchy.createItem(usdCube1ShapePath)
+        usdCube2Shape = ufe.Hierarchy.createItem(usdCube2ShapePath)
+
+        self.assertTrue(usdCube1Shape)
+        self.assertTrue(usdCube2Shape)
+
     def testDuplicateAsNonRootUsd(self):
         '''Duplicate a Maya transform hierarchy to a non-root node in USD.'''
 

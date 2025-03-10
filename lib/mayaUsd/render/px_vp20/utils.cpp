@@ -965,6 +965,38 @@ void px_vp20Utils::OutputDisplayStatusToStream(
     }
 }
 
+/* static */
+bool px_vp20Utils::HasHydraRenderOverride(const MHWRender::MFrameContext& frameContext)
+{
+    static const auto HYDRA_RENDER_OVERRIDE_PREFIXES = {
+#if defined(BUILD_HDMAYA)
+        "mtohRenderOverride_",
+#endif
+        "mayaHydraRenderOverride_",
+    };
+
+    MHWRender::MFrameContext::RenderOverrideInformation overrideInfo;
+    frameContext.getRenderOverrideInformation(overrideInfo);
+
+    if (overrideInfo.overrideName.length() == 0U) {
+        // No render override, avoid checking for prefixes
+        return false;
+    }
+
+    // Loop over the prefixes to see if the render override name has one
+    for (const auto& prefix : HYDRA_RENDER_OVERRIDE_PREFIXES) {
+        const auto prefixLength = std::strlen(prefix);
+        if (overrideInfo.overrideName.length() < prefixLength) {
+            continue;
+        } else if (overrideInfo.overrideName.substring(0, prefixLength - 1) == prefix) {
+            return true;
+        }
+    }
+
+    // No matching prefix found; this is not a Hydra-based render override
+    return false;
+}
+
 GLUniformBufferBindingsSaver::GLUniformBufferBindingsSaver()
 {
     for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {

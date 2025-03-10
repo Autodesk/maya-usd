@@ -19,6 +19,7 @@
 import unittest
 import os
 from maya import cmds
+from pxr import Usd
 
 
 class MayaUsdPythonImportTestCase(unittest.TestCase):
@@ -63,3 +64,25 @@ class MayaUsdPythonImportTestCase(unittest.TestCase):
 
         # If the script was safe, we should have a second script node:
         self.assertEqual(cmds.getAttr("script2.st"), 0)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 23, 11), 'Requires recent USD for MaterialX.')
+    def testMaterialXBindings(self):
+        '''
+        Test that MaterialX Python bindings can be imported.
+        Verify a few of the expected classes to make sure the bindings are working.
+        '''
+        import MaterialX as mx
+        mxTypes = dir(mx)
+        for cls in ['Color3', 'Color4', 'Vector2', 'Vector3', 'Vector4']:
+            self.assertIn(cls, mxTypes)
+
+        import MaterialX.PyMaterialXRender as mxr
+        mxrTypes = dir(mxr)
+        for cls in ['Camera', 'GeometryHandler', 'LightHandler']:
+            self.assertIn(cls, mxrTypes)
+
+        import MaterialX.PyMaterialXGenShader
+        import MaterialX.PyMaterialXGenGlsl as mxgl
+        mxglTypes = dir(mxgl)
+        for cls in ['GlslShaderGenerator']:
+            self.assertIn(cls, mxglTypes)

@@ -41,13 +41,6 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
 
-if(DEFINED UFE_PREVIEW_VERSION_NUM)
-    target_compile_definitions(${PROJECT_NAME}
-        PUBLIC
-            UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}
-    )
-endif()
-
 message(STATUS "USD_HAS_COLOR4_SDR_SUPPORT is ${USD_HAS_COLOR4_SDR_SUPPORT}")
 if (USD_HAS_COLOR4_SDR_SUPPORT)
     target_compile_definitions(${PROJECT_NAME}
