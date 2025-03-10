@@ -115,60 +115,22 @@ static tuple _isRelationshipEditAllowed(
         result = UsdUfe::isRelationshipEditAllowed(
             relationship, &targetsToAddVec, &targetsToRemoveVec, &errMsg);
 
-        // pass the removal of elements to the python lists
+        // This code need to modify the lists IN PLACE, so we need to clear the
+        // lists and then extend them with the new values - instead of just
+        // reassigning them.
         int i = len(targetsToAdd);
-        if (i > 0) {
-            int finalLen = static_cast<int>(targetsToAddVec.size());
-            if (finalLen != i) {
-                if (finalLen == 0) {
-                    // all elements were removed
-                    while (i > 0) {
-                        targetsToAdd.pop();
-                        --i;
-                    }
-                } else {
-                    --i;
-                    for (auto it = targetsToAddVec.crbegin(); it != targetsToAddVec.crend();) {
-                        if (*it != extract<PXR_NS::SdfPath>(targetsToAdd[i])) {
-                            targetsToAdd.pop(i);
-                        } else {
-                            ++it;
-                        }
-                        if (i == finalLen) {
-                            break;
-                        }
-                        --i;
-                    }
-                }
+        if (i > 0 && i != static_cast<int>(targetsToAddVec.size())) {
+            while (i-- > 0) {
+                targetsToAdd.pop();
             }
+            targetsToAdd.extend(list(targetsToAddVec));
         }
-
         i = len(targetsToRemove);
-        if (i > 0) {
-            int finalLen = static_cast<int>(targetsToRemoveVec.size());
-            if (finalLen != i) {
-                if (finalLen == 0) {
-                    // all elements were removed
-                    while (i > 0) {
-                        targetsToRemove.pop();
-                        --i;
-                    }
-                } else {
-                    --i;
-                    for (auto it = targetsToRemoveVec.crbegin();
-                         it != targetsToRemoveVec.crend();) {
-                        if (*it != extract<PXR_NS::SdfPath>(targetsToRemove[i])) {
-                            targetsToRemove.pop(i);
-                        } else {
-                            ++it;
-                        }
-                        if (i == finalLen) {
-                            break;
-                        }
-                        --i;
-                    }
-                }
+        if (i > 0 && i != static_cast<int>(targetsToRemoveVec.size())) {
+            while (i-- > 0) {
+                targetsToRemove.pop();
             }
+            targetsToRemove.extend(list(targetsToRemoveVec));
         }
     }
     return make_tuple<bool, std::string>(result, errMsg);
