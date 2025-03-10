@@ -130,18 +130,6 @@ UsdUfe::Transform3dMatrixOpNameFn  gTransform3dMatrixOpNameFn = nullptr;
 UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
     = { nullptr };
 
-inline std::string joinStrings(const std::vector<std::string>& items)
-{
-    std::string result;
-    for (const auto& item : items) {
-        if (!result.empty()) {
-            result += ", ";
-        }
-        result += item;
-    }
-    return result;
-}
-
 } // anonymous namespace
 
 namespace USDUFE_NS_DEF {
@@ -1326,7 +1314,7 @@ bool isRelationshipEditAllowed(
             *errMsg += TfStringPrintf(
                 "Cannot add [%s] to the targets of [%s] because "
                 "there is a stronger opinion in [%s].\n",
-                joinStrings(block.second).c_str(),
+                TfStringJoin(block.second, ", ").c_str(),
                 relationship.GetBaseName().GetText(),
                 block.first.c_str());
         }
@@ -1335,7 +1323,7 @@ bool isRelationshipEditAllowed(
             *errMsg += TfStringPrintf(
                 "Cannot remove [%s] from the targets of [%s] because "
                 "there is a stronger opinion in [%s].\n",
-                joinStrings(block.second).c_str(),
+                TfStringJoin(block.second, ", ").c_str(),
                 relationship.GetBaseName().GetText(),
                 block.first.c_str());
         }
