@@ -88,8 +88,12 @@ void ADSKMayaUSDGetMaterialsForRenderersCommand::appendMaterialXMaterials() cons
 
 void ADSKMayaUSDGetMaterialsForRenderersCommand::appendArnoldMaterials() const
 {
-    auto&      sdrRegistry = PXR_NS::SdrRegistry::GetInstance();
+    auto& sdrRegistry = PXR_NS::SdrRegistry::GetInstance();
+#if PXR_VERSION >= 2505
+    const auto sourceTypes = sdrRegistry.GetAllShaderNodeSourceTypes();
+#else
     const auto sourceTypes = sdrRegistry.GetAllNodeSourceTypes();
+#endif
     const bool hasArnoldMaterials
         = std::find(sourceTypes.cbegin(), sourceTypes.cend(), TfToken("arnold"))
         != sourceTypes.cend();
