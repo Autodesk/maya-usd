@@ -109,7 +109,7 @@ void GizmoGeometryOverride::updateRenderItems(
         if (!ufePathPlug.isNull()) {
             MString val = ufePathPlug.asString();
             // MString val;
-            if (status = ufePathPlug.getValue(val)) {
+            if (status == ufePathPlug.getValue(val)) {
                 m_geometryDirty = true;
                 fUfePath = val;
             }
