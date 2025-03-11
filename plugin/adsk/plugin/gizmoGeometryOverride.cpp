@@ -17,11 +17,19 @@
 
 #include "drawUtils.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdLux/rectLight.h>
+
 #include <maya/M3dView.h>
+#include <maya/MFnAttribute.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MHWGeometry.h>
 #include <maya/MHWGeometryUtilities.h>
+#include <ufe/pathString.h>
 
 namespace {
 static MString colorParameterName_ = "solidColor";
@@ -95,6 +103,18 @@ void GizmoGeometryOverride::updateRenderItems(
     MStatus           status;
     MFnDependencyNode depNode(path.node(), &status);
     if (MStatus::kSuccess == status) {
+        // Get the UFE path to retrieve the USD prim in case some parameters
+        // are missing from the UFE scene item itself.
+        MPlug ufePathPlug = depNode.findPlug("ufePath", true, &status);
+        if (!ufePathPlug.isNull()) {
+            MString val = ufePathPlug.asString();
+            // MString val;
+            if (status = ufePathPlug.getValue(val)) {
+                m_geometryDirty = true;
+                fUfePath = val;
+            }
+        }
+
         MPlug shapeTypePlug = depNode.findPlug("shapeType", true, &status);
         if (!shapeTypePlug.isNull()) {
             int val;
@@ -105,23 +125,47 @@ void GizmoGeometryOverride::updateRenderItems(
             }
         }
 
-        MPlug widthPlug = depNode.findPlug("width", true, &status);
-        if (!widthPlug.isNull()) {
-            float val;
-            status = widthPlug.getValue(val);
-            if (MStatus::kSuccess == status) {
-                m_geometryDirty = m_geometryDirty || (fWidth != val);
-                fWidth = val;
+        // By default, we use the width and height plugs to update the geometry.
+        bool updateWidthHeightFromPlugs = true;
+
+        // Special case for Ufe::Light::AreaInterface as it doesn't have width / height members
+        // which are needed for UsdLuxRectLight
+        if (fShapeType == GizmoData::ShapeType::Quad) {
+            const Ufe::Path ufePath = Ufe::PathString::path(std::string(fUfePath.asChar()));
+            auto            prim = MayaUsd::ufe::ufePathToPrim(ufePath);
+            if (prim && prim.IsA<PXR_NS::UsdLuxRectLight>()) {
+                const PXR_NS::UsdLuxRectLight rectLight(prim);
+                const PXR_NS::UsdAttribute    widthAttribute = rectLight.GetWidthAttr();
+                const PXR_NS::UsdAttribute    heightAttribute = rectLight.GetHeightAttr();
+
+                widthAttribute.Get(&fWidth);
+                heightAttribute.Get(&fHeight);
+                // We've already set fWidth and fHeight, skip reading the width / height plugs.
+                updateWidthHeightFromPlugs = false;
             }
+            // No else clause here as we want to allow the normal work flow for all other cases of
+            // ShapeType::Quad
         }
 
-        MPlug heightPlug = depNode.findPlug("height", true, &status);
-        if (!heightPlug.isNull()) {
-            float val;
-            status = heightPlug.getValue(val);
-            if (MStatus::kSuccess == status) {
-                m_geometryDirty = m_geometryDirty || (fHeight != val);
-                fHeight = val;
+        if (updateWidthHeightFromPlugs) {
+            MPlug widthPlug = depNode.findPlug("width", true, &status);
+            if (!widthPlug.isNull()) {
+                float val;
+                status = widthPlug.getValue(val);
+                if (MStatus::kSuccess == status) {
+                    m_geometryDirty = m_geometryDirty || (fWidth != val);
+                    fWidth = val;
+                }
+            }
+
+            MPlug heightPlug = depNode.findPlug("height", true, &status);
+            if (!heightPlug.isNull()) {
+                float val;
+                status = heightPlug.getValue(val);
+                if (MStatus::kSuccess == status) {
+                    m_geometryDirty = m_geometryDirty || (fHeight != val);
+                    fHeight = val;
+                }
             }
         }
 
