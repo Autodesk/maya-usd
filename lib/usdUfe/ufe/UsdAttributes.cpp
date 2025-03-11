@@ -267,8 +267,14 @@ std::vector<std::string> UsdAttributes::attributeNames() const
                       nameSet.insert(name);
                   }
               };
+#if PXR_VERSION >= 2505
+        addAttributeNames(shaderNode->GetShaderInputNames(), PXR_NS::UsdShadeAttributeType::Input);
+        addAttributeNames(
+            shaderNode->GetShaderOutputNames(), PXR_NS::UsdShadeAttributeType::Output);
+#else
         addAttributeNames(shaderNode->GetInputNames(), PXR_NS::UsdShadeAttributeType::Input);
         addAttributeNames(shaderNode->GetOutputNames(), PXR_NS::UsdShadeAttributeType::Output);
+#endif
     }
 #endif
     if (_prim) {

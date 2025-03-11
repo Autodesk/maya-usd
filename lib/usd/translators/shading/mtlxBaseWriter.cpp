@@ -528,7 +528,11 @@ TfToken MtlxUsd_BaseWriter::_GetOutputName(const TfToken& nodeID)
     SdrRegistry&          registry = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(nodeID);
     if (shaderNodeDef) {
+#if PXR_VERSION >= 2505
+        const SdrTokenVec& outputNames = shaderNodeDef->GetShaderOutputNames();
+#else
         const NdrTokenVec& outputNames = shaderNodeDef->GetOutputNames();
+#endif
         if (!outputNames.empty()) {
             return outputNames.front();
         }

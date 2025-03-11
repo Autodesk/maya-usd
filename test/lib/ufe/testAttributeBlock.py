@@ -352,8 +352,8 @@ class AttributeBlockTestCase(unittest.TestCase):
         '''
         Verify a edit target layer from a referenced prim can be allowed to edit if it's a stronger layer.
         '''
-        rootLaerPath = testUtils.getTestScene("attributeBlock", "root.usda")
-        stage = Usd.Stage.Open(rootLaerPath)
+        rootLayerPath = testUtils.getTestScene("attributeBlock", "root.usda")
+        stage = Usd.Stage.Open(rootLayerPath)
         
         primA = stage.GetPrimAtPath("/root/a")
         self.assertTrue(primA.IsValid())

@@ -668,7 +668,13 @@ bool UsdMaterialValidator::validateShader(const UsdShadeShader& shader)
         return false;
     }
 
-    auto inputNames = std::set<TfToken>{shaderNode->GetInputNames().cbegin(), shaderNode->GetInputNames().cend()};
+#if PXR_VERSION >= 2505
+    auto inputNames = std::set<TfToken>{shaderNode->GetShaderInputNames().cbegin(),
+                                        shaderNode->GetShaderInputNames().cend()};
+#else
+    auto inputNames = std::set<TfToken>{shaderNode->GetInputNames().cbegin(),
+                                        shaderNode->GetInputNames().cend()};
+#endif
     for (auto&& input : shader.GetInputs())
     {
         if (inputNames.count(input.GetBaseName()) == 0)
@@ -678,7 +684,9 @@ bool UsdMaterialValidator::validateShader(const UsdShadeShader& shader)
             continue;
         }
         auto currentTypeName = input.GetTypeName().GetAsToken();
-#if PXR_VERSION > 2408
+#if PXR_VERSION >= 2505
+        auto expectedTypeName = shaderNode->GetShaderInput(input.GetBaseName())->GetTypeAsSdfType().GetSdfType().GetAsToken();
+#elif PXR_VERSION > 2408
         auto expectedTypeName = shaderNode->GetInput(input.GetBaseName())->GetTypeAsSdfType().GetSdfType().GetAsToken();
 #else
         auto expectedTypeName = shaderNode->GetInput(input.GetBaseName())->GetTypeAsSdfType().first.GetAsToken();
@@ -692,7 +700,12 @@ bool UsdMaterialValidator::validateShader(const UsdShadeShader& shader)
             continue;
         }
     }
+
+#if PXR_VERSION >= 2505
+    auto outputNames = std::set<TfToken>{shaderNode->GetShaderOutputNames().cbegin(), shaderNode->GetShaderOutputNames().cend()};
+#else
     auto outputNames = std::set<TfToken>{shaderNode->GetOutputNames().cbegin(), shaderNode->GetOutputNames().cend()};
+#endif
     for (auto&& output : shader.GetOutputs())
     {
         if (outputNames.count(output.GetBaseName()) == 0)
@@ -703,7 +716,10 @@ bool UsdMaterialValidator::validateShader(const UsdShadeShader& shader)
             continue;
         }
         auto currentTypeName = output.GetTypeName().GetAsToken();
-#if PXR_VERSION > 2408
+#if PXR_VERSION >= 2505
+        auto expectedTypeName =
+            shaderNode->GetShaderOutput(output.GetBaseName())->GetTypeAsSdfType().GetSdfType().GetAsToken();
+#elif PXR_VERSION > 2408
         auto expectedTypeName =
             shaderNode->GetOutput(output.GetBaseName())->GetTypeAsSdfType().GetSdfType().GetAsToken();
 #else
@@ -839,7 +855,11 @@ void UsdMaterialValidator::validateMaterialXShader(const UsdShadeConnectableAPI&
     {
         // For all the other MaterialX nodes, look for a defaultgeomprop entry, and flag it if it requires a manual
         // reader node.
+#if PXR_VERSION >= 2505
+        for (auto&& inputName : shaderNode->GetShaderInputNames())
+#else
         for (auto&& inputName : shaderNode->GetInputNames())
+#endif
         {
             const SdrShaderPropertyConstPtr input = shaderNode->GetShaderInput(inputName);
             const auto hints = input->GetHints();
@@ -895,7 +915,11 @@ void UsdMaterialValidator::validateMaterialXShader(const UsdShadeConnectableAPI&
     }
     if (shaderNode->GetFamily() == MtlxTokens::geomcolor() || shaderNode->GetFamily() == MtlxTokens::texcoord() ||
         shaderNode->GetFamily() == MtlxTokens::bitangent() || shaderNode->GetFamily() == MtlxTokens::tangent() ||
+#if PXR_VERSION >= 2505
+        (shaderNode->GetShaderInput(MtlxTokens::uvindex()) && shaderNode->GetFamily().GetString().rfind("gltf_", 0) == 0))
+#else
         (shaderNode->GetInput(MtlxTokens::uvindex()) && shaderNode->GetFamily().GetString().rfind("gltf_", 0) == 0))
+#endif
     {
         // These MaterialX nodes use index-based streams. Some renderers will convert them to named primvar readers if
         // there is an established naming convention, but support will be limited.
