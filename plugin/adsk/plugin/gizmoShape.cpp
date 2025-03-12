@@ -65,7 +65,7 @@ MStatus GizmoShape::initialize()
     MFnTypedAttribute     tAttr;
 
     // The ufePath is currently exclusive to shapeType::Quad. This is necessary
-    // for retrieving the width / height directly from a UsdLuxRectLight as
+    // for retrieving the width / height directly from a UsdLuxRectLight / UsdLuxPortalLight as
     // Ufe::Light::AreaInterface currently doesn't include width / height attributes.
     ufePath = tAttr.create("ufePath", "ufePth", MFnData::kString, MObject::kNullObj, &status);
     CHECK_MSTATUS(status);

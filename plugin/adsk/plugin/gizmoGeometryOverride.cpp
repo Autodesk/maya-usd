@@ -21,6 +21,7 @@
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdLux/portalLight.h>
 #include <pxr/usd/usdLux/rectLight.h>
 
 #include <maya/M3dView.h>
@@ -107,9 +108,9 @@ void GizmoGeometryOverride::updateRenderItems(
         // are missing from the UFE scene item itself.
         MPlug ufePathPlug = depNode.findPlug("ufePath", true, &status);
         if (!ufePathPlug.isNull()) {
-            MString val = ufePathPlug.asString();
-            // MString val;
-            if (status == ufePathPlug.getValue(val)) {
+            MString val;
+            status == ufePathPlug.getValue(val);
+            if (MStatus::kSuccess == status) {
                 m_geometryDirty = true;
                 fUfePath = val;
             }
@@ -129,20 +130,34 @@ void GizmoGeometryOverride::updateRenderItems(
         bool updateWidthHeightFromPlugs = true;
 
         // Special case for Ufe::Light::AreaInterface as it doesn't have width / height members
-        // which are needed for UsdLuxRectLight
+        // which are needed for UsdLuxRectLight and UsdLuxPortalLight
         if (fShapeType == GizmoData::ShapeType::Quad) {
-            const Ufe::Path ufePath = Ufe::PathString::path(std::string(fUfePath.asChar()));
-            auto            prim = MayaUsd::ufe::ufePathToPrim(ufePath);
-            if (prim && prim.IsA<PXR_NS::UsdLuxRectLight>()) {
-                const PXR_NS::UsdLuxRectLight rectLight(prim);
-                const PXR_NS::UsdAttribute    widthAttribute = rectLight.GetWidthAttr();
-                const PXR_NS::UsdAttribute    heightAttribute = rectLight.GetHeightAttr();
+            try {
+                const Ufe::Path ufePath = Ufe::PathString::path(std::string(fUfePath.asChar()));
+                auto            prim = MayaUsd::ufe::ufePathToPrim(ufePath);
+                if (prim && prim.IsA<PXR_NS::UsdLuxRectLight>()) {
+                    const PXR_NS::UsdLuxRectLight rectLight(prim);
+                    const PXR_NS::UsdAttribute    widthAttribute = rectLight.GetWidthAttr();
+                    const PXR_NS::UsdAttribute    heightAttribute = rectLight.GetHeightAttr();
 
-                widthAttribute.Get(&fWidth);
-                heightAttribute.Get(&fHeight);
-                // We've already set fWidth and fHeight, skip reading the width / height plugs.
-                updateWidthHeightFromPlugs = false;
+                    widthAttribute.Get(&fWidth);
+                    heightAttribute.Get(&fHeight);
+                    // We've already set fWidth and fHeight, skip reading the width / height plugs.
+                    updateWidthHeightFromPlugs = false;
+                } else if (prim && prim.IsA<PXR_NS::UsdLuxPortalLight>()) {
+                    const PXR_NS::UsdLuxPortalLight portalLight(prim);
+                    const PXR_NS::UsdAttribute      widthAttribute = portalLight.GetWidthAttr();
+                    const PXR_NS::UsdAttribute      heightAttribute = portalLight.GetHeightAttr();
+
+                    widthAttribute.Get(&fWidth);
+                    heightAttribute.Get(&fHeight);
+                    // We've already set fWidth and fHeight, skip reading the width / height plugs.
+                    updateWidthHeightFromPlugs = false;
+                }
+            } catch (const std::exception&) {
+                // Do nothing
             }
+
             // No else clause here as we want to allow the normal work flow for all other cases of
             // ShapeType::Quad
         }
