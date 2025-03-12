@@ -144,7 +144,11 @@ void GizmoGeometryOverride::updateRenderItems(
                     heightAttribute.Get(&fHeight);
                     // We've already set fWidth and fHeight, skip reading the width / height plugs.
                     updateWidthHeightFromPlugs = false;
-                } else if (prim && prim.IsA<PXR_NS::UsdLuxPortalLight>()) {
+                }
+                // UsdLuxPortalLight:: GetWidthAttr and GetHeightAttr were only added after USD
+                // v23.11
+#if PXR_VERSION > 2311
+                else if (prim && prim.IsA<PXR_NS::UsdLuxPortalLight>()) {
                     const PXR_NS::UsdLuxPortalLight portalLight(prim);
                     const PXR_NS::UsdAttribute      widthAttribute = portalLight.GetWidthAttr();
                     const PXR_NS::UsdAttribute      heightAttribute = portalLight.GetHeightAttr();
@@ -154,6 +158,7 @@ void GizmoGeometryOverride::updateRenderItems(
                     // We've already set fWidth and fHeight, skip reading the width / height plugs.
                     updateWidthHeightFromPlugs = false;
                 }
+#endif
             } catch (const std::exception&) {
                 // Do nothing
             }
