@@ -16,6 +16,7 @@
 
 #include "layerEditorWidget.h"
 
+#include "layerEditorWidgetManager.h"
 #include "abstractCommandHook.h"
 #include "dirtyLayersCountBadge.h"
 #include "layerTreeModel.h"
@@ -38,6 +39,7 @@
 #include <QtWidgets/QActionGroup>
 #endif
 
+#include <usdUfe/ufe/Utils.h>
 #include <QtWidgets/QGraphicsOpacityEffect>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QMainWindow>
@@ -53,6 +55,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 using namespace UsdLayerEditor;
+class LayerEditorWidgetManager;
 
 // create the default menus on the parent QMainWindow
 void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
@@ -97,6 +100,8 @@ LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow*
 {
     setupLayout();
     ::setupDefaultMenu(&in_sessionState, in_parent);
+    auto layerEditorManager = LayerEditorWidgetManager::getInstance();
+    layerEditorManager->setWidget(this);
 }
 
 // helper for setupLayout
@@ -149,6 +154,13 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         &QItemSelectionModel::selectionChanged,
         this,
         &LayerEditorWidget::updateNewLayerButton);
+
+    // send callback notification to usdufe when selection changes
+    connect(
+        _treeView->selectionModel(),
+        &QItemSelectionModel::selectionChanged,
+        this,
+        &LayerEditorWidget::onSelectionChanged);
 
     _buttons._loadLayer = addHIGButton(
         ":/UsdLayerEditor/LE_import_layer",
@@ -346,9 +358,9 @@ void LayerEditorWidget::onNewLayerButtonClicked()
 
 void LayerEditorWidget::onLoadLayersButtonClicked()
 {
-    auto           model = _treeView->layerTreeModel();
-    auto           selectionModel = _treeView->selectionModel();
-    auto           selection = selectionModel->selectedRows();
+    const auto     model = _treeView->layerTreeModel();
+    const auto     selectionModel = _treeView->selectionModel();
+    const auto     selection = selectionModel->selectedRows();
     LayerTreeItem* layerTreeItem;
     if (selection.size() == 0) {
         layerTreeItem = model->layerItemFromIndex(model->rootLayerIndex());
@@ -356,8 +368,64 @@ void LayerEditorWidget::onLoadLayersButtonClicked()
         layerTreeItem = model->layerItemFromIndex(selection[0]);
     }
     layerTreeItem->loadSubLayers(this);
+    layerTreeItem->loadSubLayers(this);
 }
 
 void LayerEditorWidget::onSaveStageButtonClicked() { _treeView->layerTreeModel()->saveStage(this); }
+
+void LayerEditorWidget::onSelectionChanged(
+    const QItemSelection& selected,
+    const QItemSelection& deselected)
+{
+    if (!UsdUfe::isUICallbackRegistered(TfToken("onLayerEditorSelectionChanged"))) {
+        return;
+    }
+
+    const std::vector<std::string> selectedLayerIDs = getSelectedLayers();
+
+    PXR_NS::VtDictionary callbackContext;
+    callbackContext["objectPath"]
+        = PXR_NS::VtValue(UsdUfe::stagePath(_sessionState.stageEntry()._stage).string().c_str());
+    PXR_NS::VtDictionary callbackData;
+
+    VtStringArray layerIds(selectedLayerIDs.begin(), selectedLayerIDs.end());
+    callbackData["layerIds"] = layerIds;
+
+    UsdUfe::triggerUICallback(
+        TfToken("onLayerEditorSelectionChanged"), callbackContext, callbackData);
+}
+
+std::vector<std::string> LayerEditorWidget::getSelectedLayers()
+{
+    const auto               model = _treeView->layerTreeModel();
+    const auto               selectionModel = _treeView->selectionModel();
+    const auto               selection = selectionModel->selectedRows();
+    std::vector<std::string> selectedLayerIDs;
+    for (int i = 0; i < selection.size(); ++i) {
+        selectedLayerIDs.emplace_back(
+            model->layerItemFromIndex(selection[i])->layer()->GetIdentifier());
+    }
+
+    return selectedLayerIDs;
+}
+
+void LayerEditorWidget::selectLayers(const std::vector<std::string>& layerIdentifiers)
+{
+    const auto model = _treeView->layerTreeModel();
+    const auto selectionModel = _treeView->selectionModel();
+
+    // clear selection first
+    selectionModel->clearSelection();
+
+    // apply selection if layer exists in stage
+    for (const auto& layerId : layerIdentifiers) {
+        const auto sdfLayer = SdfLayer::Find(layerId);
+        if (sdfLayer) {
+            if (const auto item = model->findUSDLayerItem(sdfLayer)) {
+                selectionModel->select(item->index(), QItemSelectionModel::Select);
+            }
+        }
+    }
+}
 
 } // namespace UsdLayerEditor
