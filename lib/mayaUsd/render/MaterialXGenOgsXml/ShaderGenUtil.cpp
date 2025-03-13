@@ -3,8 +3,6 @@
 #include "LobePruner.h"
 #include "MaterialXCore/Types.h"
 
-#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
-
 #include <MaterialXCore/Document.h>
 
 #include <list>
@@ -178,15 +176,25 @@ void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material, bool texture
                     nodesToTraverse.push_back(connectedNode);
                 }
 
+#if MX_COMBINED_VERSION < 13900
                 const std::string channelInfo = gatherChannels(*sourceInput);
+#endif
                 const std::string outputString = gatherOutput(*sourceInput);
 
                 if (sourceNode != surfaceShader) {
                     cloneConnection(
-                        *sourceInput, *destNode, destConnectedNode, channelInfo, outputString);
+                        *sourceInput, *destNode, destConnectedNode,
+#if MX_COMBINED_VERSION < 13900
+                        channelInfo,
+#endif
+                        outputString);
                 } else {
                     cloneNodeGraphConnection(
-                        *sourceInput, *destNode, destConnectedNode, channelInfo, outputString);
+                        *sourceInput, *destNode, destConnectedNode,
+#if MX_COMBINED_VERSION < 13900
+                        channelInfo,
+#endif
+                        outputString);
                 }
             } else if (isTopological) {
                 std::string valueString = sourceInput->getValueString();
@@ -305,6 +313,7 @@ TopoNeutralGraph::findNodeGraphOutput(const mx::Input& input, const std::string&
     return nodeGraph->getOutput(outputName);
 }
 
+#if MX_COMBINED_VERSION < 13900
 std::string TopoNeutralGraph::gatherChannels(const mx::Input& input)
 {
     // The info we seek might be on the interface of a standalone NodeGraph:
@@ -378,6 +387,7 @@ std::string TopoNeutralGraph::gatherChannels(const mx::Input& input)
     }
     return combinedChannels;
 }
+#endif
 
 std::string TopoNeutralGraph::gatherDefaultGeomProp(const mx::Input& input)
 {
@@ -419,14 +429,18 @@ void TopoNeutralGraph::cloneConnection(
     const mx::Input&   sourceInput,
     mx::Node&          destNode,
     mx::NodePtr&       destConnectedNode,
+#if MX_COMBINED_VERSION < 13900
     const std::string& channelInfo,
+#endif
     const std::string& output)
 {
     auto destInput = destNode.addInput(sourceInput.getName(), sourceInput.getType());
     destInput->setConnectedNode(destConnectedNode);
+#if MX_COMBINED_VERSION < 13900
     if (!channelInfo.empty()) {
         destInput->setChannels(channelInfo);
     }
+#endif
     if (!output.empty()) {
         destInput->setOutputString(output);
     }
@@ -436,11 +450,17 @@ void TopoNeutralGraph::cloneNodeGraphConnection(
     const mx::Input&   sourceInput,
     mx::Node&          destNode,
     mx::NodePtr&       destConnectedNode,
+#if MX_COMBINED_VERSION < 13900
     const std::string& channelInfo,
+#endif
     const std::string& output)
 {
-    std::string outputKey = destConnectedNode->getName() + "(t)" + sourceInput.getType() + "(c)"
-        + channelInfo + "(o)" + output;
+    std::string outputKey = destConnectedNode->getName() + "(t)" + sourceInput.getType()
+#if MX_COMBINED_VERSION < 13900
+         + "(c)" + channelInfo + "(o)" + output;
+#else
+         + "(o)" + output;
+#endif
     mx::OutputPtr graphOutput;
     auto          outputIt = _outputMap.find(outputKey);
     if (outputIt != _outputMap.end()) {
@@ -448,9 +468,11 @@ void TopoNeutralGraph::cloneNodeGraphConnection(
     } else {
         graphOutput
             = getNodeGraph()->addOutput("O" + std::to_string(_outputIndex), sourceInput.getType());
+#if MX_COMBINED_VERSION < 13900
         if (!channelInfo.empty()) {
             graphOutput->setChannels(channelInfo);
         }
+#endif
         if (!output.empty()) {
             graphOutput->setOutputString(output);
         }
