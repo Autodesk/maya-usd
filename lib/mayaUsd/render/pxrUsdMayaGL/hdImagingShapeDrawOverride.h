@@ -83,7 +83,7 @@ public:
 
     // wantUserSelection() and userSelect() are overridden to make sure
     // HdImagingShape is not selectable. It causes a deadlock in VP2 in x-ray
-    // mode, if this node is selectable. (MAYA-2941)
+    // mode, if this node is selectable.
     MAYAUSD_CORE_PUBLIC
     bool wantUserSelection() const override { return true; }
     MAYAUSD_CORE_PUBLIC
