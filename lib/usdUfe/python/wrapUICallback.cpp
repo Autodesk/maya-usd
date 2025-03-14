@@ -47,9 +47,21 @@ public:
     PyUICallback(PyObject* pyCallable)
         : _pyCb(pyCallable)
     {
+        if (_pyCb) {
+            // As long as we may use this object, we need to keep a reference to
+            // it to keep the garbage collector away.
+            Py_IncRef(_pyCb);
+        }
     }
 
-    ~PyUICallback() override { }
+    ~PyUICallback() override
+    {
+        if (_pyCb) {
+            PXR_NS::TfPyLock pyLock;
+            // Release the reference to the python object.
+            Py_DecRef(_pyCb);
+        }
+    }
 
     void
     operator()(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& callbackData) override

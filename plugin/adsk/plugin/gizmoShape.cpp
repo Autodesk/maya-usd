@@ -15,12 +15,18 @@
 //
 #include "gizmoShape.h"
 
+#include <maya/MFnData.h>
+#include <maya/MFnEnumAttribute.h>
+#include <maya/MFnLightDataAttribute.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnTypedAttribute.h>
 #include <maya/MShaderManager.h>
 
 namespace MAYAUSD_NS_DEF {
 
 const MString GizmoShape::typeName("mayaUsdGeometryGizmoShape");
 const MTypeId GizmoShape::id(0x5800019C);
+MObject       GizmoShape::ufePath;
 MObject       GizmoShape::shapeType;
 MObject       GizmoShape::width;
 MObject       GizmoShape::height;
@@ -45,7 +51,7 @@ void GizmoShape::nodeDirtyEventCallback(MObject& node, MPlug& plug, void* client
     if (plug.attribute() == shapeType || plug.attribute() == width || plug.attribute() == height
         || plug.attribute() == radius || plug.attribute() == penumbraAngle
         || plug.attribute() == coneAngle || plug.attribute() == dropOff
-        || plug.attribute() == lightAngle) {
+        || plug.attribute() == lightAngle || plug.attribute() == ufePath) {
         MHWRender::MRenderer::setGeometryDrawDirty(node);
     }
 }
@@ -56,6 +62,16 @@ MStatus GizmoShape::initialize()
     MFnEnumAttribute      enAttr;
     MFnNumericAttribute   nAttr;
     MFnLightDataAttribute lAttr;
+    MFnTypedAttribute     tAttr;
+
+    // The ufePath is currently exclusive to shapeType::Quad. This is necessary
+    // for retrieving the width / height directly from a UsdLuxRectLight / UsdLuxPortalLight as
+    // Ufe::Light::AreaInterface currently doesn't include width / height attributes.
+    ufePath = tAttr.create("ufePath", "ufePth", MFnData::kString, MObject::kNullObj, &status);
+    CHECK_MSTATUS(status);
+    tAttr.setStorable(true);
+    tAttr.setKeyable(true);
+    addAttribute(ufePath);
 
     shapeType = enAttr.create("shapeType", "shapeType", 0, &status);
     CHECK_MSTATUS(status);

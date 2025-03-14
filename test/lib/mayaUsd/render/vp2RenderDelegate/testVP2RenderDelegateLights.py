@@ -130,7 +130,7 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         
         self._RunTest()
 
-    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 9, 'Requires parent command fix in Maya.')
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() == 9, 'Requires parent command fix in Maya.')
     def testCustomGizmos(self):
         self._StartTest('RenderLightsCustomGizmos')
 
@@ -141,6 +141,16 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         
         self._RunTest()
 
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 10, 'Requires parent command fix in Maya for UFE Light\'s areaInterface.')
+    def testCustomRectLightGizmo(self):
+        self._StartTest('RenderLightsCustomRectLightGizmo')
+
+        cmds.move(-10, 15, 20, 'persp')
+        cmds.rotate(-30, -30, 0, 'persp')
+        cmds.modelEditor('modelPanel4', edit=True, grid=False, displayLights = 'default')
+        cmds.displayColor('light', 21, active=True)
+        
+        self._RunTest()
 
 
 if __name__ == '__main__':

@@ -24,9 +24,6 @@
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MFnEnumAttribute.h>
-#include <maya/MFnLightDataAttribute.h>
-#include <maya/MFnNumericAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPxSurfaceShape.h>
@@ -66,6 +63,7 @@ private:
     MCallbackId nodeDirtyId;
 
     // Attributes
+    static MObject ufePath;
     static MObject shapeType;
     static MObject width;
     static MObject height;
