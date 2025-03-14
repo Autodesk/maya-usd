@@ -125,7 +125,7 @@ DiskPrimitive::DiskPrimitive(
 QuadPrimitive::QuadPrimitive(double scale[3])
 {
     static const float l_vertices[] = {
-        -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, 0.5f, 0.0f,
     };
 
     static const unsigned int l_indices[] = {
@@ -228,7 +228,9 @@ ConePrimitive::ConePrimitive(
     double circleOffset[3] = { 0.0, 0.0, -height };
 
     // Cone circle
-    const float   coneAngleInRadians = (coneAngle / 2.0f * M_PI) / 180.0f;
+    // Note: In USD, the cone angle is the angle from the center axis to the edge of the cone.
+    // In Maya, the cone angle is the full angle of the cone.
+    const float   coneAngleInRadians = degToRad(coneAngle / 2.0f);
     const float   coneRadius = height * tan(coneAngleInRadians);
     DiskPrimitive coneDisk(circleOffset, coneRadius, true);
     wirePositions = coneDisk.wirePositions;
@@ -237,7 +239,7 @@ ConePrimitive::ConePrimitive(
 
     // Penumbra circle
     if (showPenumbra) {
-        const float   penumbraAngleInRadians = (penumbraAngle / 2.0f * M_PI) / 180.0f;
+        const float   penumbraAngleInRadians = degToRad(penumbraAngle / 2.0f);
         const float   penumbraRadius = height * tan(penumbraAngleInRadians);
         DiskPrimitive penumbraDisk(circleOffset, penumbraRadius, true);
 

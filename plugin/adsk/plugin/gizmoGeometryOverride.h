@@ -31,6 +31,7 @@
 #include <maya/MTypeId.h>
 #include <maya/MUintArray.h>
 #include <maya/MUserData.h>
+#include <ufe/path.h>
 
 #include <iostream>
 #include <vector>
@@ -105,6 +106,7 @@ private:
     float             m_offset[3];
     float             m_wireframeColor[4];
 
+    MString              fUfePath;
     GizmoData::ShapeType fShapeType;
     float                fWidth;
     float                fHeight;
