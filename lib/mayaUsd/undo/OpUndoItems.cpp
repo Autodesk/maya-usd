@@ -531,6 +531,9 @@ bool UfeCommandUndoItem::redo()
 
 namespace {
 
+//! Returns whether the given node might be locked by LockNodesUndoItem.
+bool isLockableNode(const MFnDependencyNode& node) { return !node.isFromReferencedFile(); }
+
 //! Lock or unlock hierarchy starting at given root.
 void lockNodes(const MDagPath& root, bool state)
 {
@@ -538,7 +541,7 @@ void lockNodes(const MDagPath& root, bool state)
     dagIt.reset(root);
     for (; !dagIt.isDone(); dagIt.next()) {
         MFnDependencyNode node(dagIt.currentItem());
-        if (node.isFromReferencedFile()) {
+        if (!isLockableNode(node)) {
             dagIt.prune();
             continue;
         }
@@ -547,6 +550,8 @@ void lockNodes(const MDagPath& root, bool state)
 }
 
 } // namespace
+
+bool LockNodesUndoItem::isLockable(const MFnDependencyNode& node) { return isLockableNode(node); }
 
 LockNodesUndoItem::LockNodesUndoItem(const std::string name, const MDagPath& root, bool lock)
     : OpUndoItem(std::move(name))
