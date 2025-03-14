@@ -72,12 +72,11 @@ MStatus SetSelectedWidgetLayersMpxCommand::parse(const MString& layersString)
     MStatus status = MS::kSuccess;
 
     if (layersString.length() > 0) {
-        int i, length;
         MStringArray layersList;
         layersString.split(';', layersList); // break out all the layers
 
-        length = layersList.length();
-        for (i = 0; i < length; ++i) {
+        int length = layersList.length();
+        for (int i = 0; i < length; ++i) {
             layers.emplace_back(layersList[i].asChar());
         }
     }

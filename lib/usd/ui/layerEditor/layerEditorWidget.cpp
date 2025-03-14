@@ -368,7 +368,6 @@ void LayerEditorWidget::onLoadLayersButtonClicked()
         layerTreeItem = model->layerItemFromIndex(selection[0]);
     }
     layerTreeItem->loadSubLayers(this);
-    layerTreeItem->loadSubLayers(this);
 }
 
 void LayerEditorWidget::onSaveStageButtonClicked() { _treeView->layerTreeModel()->saveStage(this); }
