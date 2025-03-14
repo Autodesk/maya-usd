@@ -86,7 +86,7 @@ class StringListPanel(QWidget):
         def __init__(self, headerTitle: str = "", parent=None):
             super(StringListPanel.HeaderWidget, self).__init__(parent)
             self._headerTitle = headerTitle
-            self.setMinimumHeight(Theme.instance().uiScaled(22))
+            self.setMinimumHeight(Theme.instance().uiScaled(24))
 
         def paintEvent(self, event):
             painter = QStylePainter(self)

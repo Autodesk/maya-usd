@@ -58,6 +58,11 @@ class FilteredStringDelegate(QItemDelegate):
         # Note: set focus on list view to avoid starting to edit items in outliner.
         self._listView.setFocus()
 
+    def sizeHint(self, option, index):
+        size = super(FilteredStringDelegate, self).sizeHint(option, index)
+        size.setHeight(Theme.instance().uiScaled(24))
+        return size
+
 
 class FilteredStringListView(QListView):
 
