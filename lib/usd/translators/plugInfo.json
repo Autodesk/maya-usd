@@ -17,7 +17,6 @@
                 "UsdGeomScope",
                 "UsdGeomXform",
                 "UsdLuxDistantLight",
-                "UsdLuxGeometryLight",
                 "UsdLuxRectLight",
                 "UsdLuxSphereLight",
                 "UsdShadeMaterial",

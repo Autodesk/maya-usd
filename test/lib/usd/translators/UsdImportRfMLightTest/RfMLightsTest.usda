@@ -83,22 +83,6 @@ def Xform "RfMLightsTest" (
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }
 
-        def GeometryLight "MeshLight" (
-            prepend apiSchemas = ["ShapingAPI", "ShadowAPI"]
-        )
-        {
-            color3f inputs:color = (0.5, 0.5, 0.5)
-            float inputs:colorTemperature = 6505
-            float inputs:diffuse = 1.5
-            bool inputs:enableColorTemperature = 1
-            float inputs:exposure = 0.5
-            float inputs:intensity = 1.5
-            bool inputs:normalize = 1
-            float inputs:specular = 1.5
-            double3 xformOp:translate = (5, 5, 5)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
-        }
-
         def RectLight "RectLight" (
             prepend apiSchemas = ["ShapingAPI", "ShadowAPI"]
         )
