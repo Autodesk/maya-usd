@@ -22,6 +22,10 @@ target_sources(${PROJECT_NAME}
         generatedIconButton.cpp
         layerEditorWidget.cpp
         layerEditorWidget.h
+        layerEditorWidgetManager.cpp
+        layerEditorWidgetManager.h
+        layerEditorCommands.cpp
+        layerEditorCommands.h
         layerTreeItem.cpp
         layerTreeItem.h
         layerTreeItemDelegate.cpp
@@ -70,6 +74,7 @@ target_link_libraries(${PROJECT_NAME}
 # -----------------------------------------------------------------------------
 set(HEADERS
     batchSaveLayersUIDelegate.h
+    layerEditorCommands.h
 )
 
 mayaUsd_promoteHeaderList( 

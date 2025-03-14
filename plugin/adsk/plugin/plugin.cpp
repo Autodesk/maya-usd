@@ -75,6 +75,7 @@
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
 #include <mayaUsdUI/ui/initStringResources.h>
+#include <mayaUsdUI/ui/layerEditorCommands.h>
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -181,6 +182,8 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    registerCommandCheck<UsdLayerEditor::GetSelectedWidgetLayersMpxCommand>(plugin);
+    registerCommandCheck<UsdLayerEditor::SetSelectedWidgetLayersMpxCommand>(plugin);
     registerCommandCheck<MayaUsd::SchemaCommand>(plugin);
     registerCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)
