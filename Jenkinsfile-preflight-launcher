@@ -3,9 +3,9 @@ isAzure = env.JENKINS_URL.contains('c12-cot') as boolean
 
 GITHUB_ORG_NAME = 'media-and-entertainment'
 PROJECT_NAME = 'ecg-maya-usd'
-EXTRA_PR_FOLDER = isAzure ? 'health' : ''
 TOP_FOLDER = isAzure ? 'EMS/ECG' : 'ECP'
-DISPATCH_POOL = isAzure ? 'aws-linux' : 'mayausd-preload-pool'
+DISPATCH_POOL = isAzure ? 'az-cot-dispatch-linux-rocky-8-intel-nogpu-prod' : 'mayausd-preload-pool'
+JOB_NAME = isAzure ? 'health/update-submodule-master' : 'ecg-mayausd-preflight-update-submodule-master'
 
 pipeline {
     agent {
@@ -17,7 +17,7 @@ pipeline {
                 sh 'env|sort'
                 script {
                         build(
-                            job: "${TOP_FOLDER}/${PROJECT_NAME}/${EXTRA_PR_FOLDER}/ecg-mayausd-preflight-update-submodule-master",
+                            job: "${TOP_FOLDER}/${PROJECT_NAME}/${JOB_NAME}",
                             parameters: [
                                 string(name:'DISABLE_MAIL_NOTIFICATIONS', value:'ON')
                             ],
