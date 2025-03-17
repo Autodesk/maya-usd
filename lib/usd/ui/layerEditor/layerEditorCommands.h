@@ -19,6 +19,8 @@
 
 #include <maya/MPxCommand.h>
 
+#include <vector>
+
 namespace UsdLayerEditor {
 
 /**
