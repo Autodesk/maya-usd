@@ -15,34 +15,34 @@
 //
 #pragma once
 
-#include <QtCore/QPointer>
-
 #include <maya/MStringArray.h>
 
+#include <QtCore/QPointer>
 
 namespace UsdLayerEditor {
-    class LayerEditorWidget;
+class LayerEditorWidget;
 
-    /**
-     * @brief Lightweight LayerEditorWidget manager class, created to have an minimal interface between dll boundaries
-     * (in particular, for the _UsdLayerEditor project's code that creates python bindings for accessing data in the widget)
-     **/
-    class LayerEditorWidgetManager
-    {
-    public:
-        ~LayerEditorWidgetManager() = default;
+/**
+ * @brief Lightweight LayerEditorWidget manager class, created to have an minimal interface between
+ *dll boundaries (in particular, for the _UsdLayerEditor project's code that creates python bindings
+ *for accessing data in the widget)
+ **/
+class LayerEditorWidgetManager
+{
+public:
+    ~LayerEditorWidgetManager() = default;
 
-        static LayerEditorWidgetManager* getInstance();
-        void                             setWidget(LayerEditorWidget* widget);
+    static LayerEditorWidgetManager* getInstance();
+    void                             setWidget(LayerEditorWidget* widget);
 
-        std::vector<std::string> getSelectedLayers();
-        void               selectLayers(std::vector<std::string> layerIds);
+    std::vector<std::string> getSelectedLayers();
+    void                     selectLayers(std::vector<std::string> layerIds);
 
-    private:
-        LayerEditorWidgetManager();
+private:
+    LayerEditorWidgetManager();
 
-        QPointer<LayerEditorWidget>      layerWidgetInstance;
-        static std::unique_ptr<LayerEditorWidgetManager> instance;
-    };
+    QPointer<LayerEditorWidget>                      layerWidgetInstance;
+    static std::unique_ptr<LayerEditorWidgetManager> instance;
+};
 
 } // namespace UsdLayerEditor

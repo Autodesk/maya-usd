@@ -19,49 +19,49 @@
 
 #include <maya/MPxCommand.h>
 
-
 namespace UsdLayerEditor {
 
-    /**
-     * @brief Class that defines the "mayaUsdGetSelectedLayers" MEL command.
-     *
-     * This command allows the user to query the selected layers (i.e. selected rows)
-     * in the layer editor widget.
-     **/
-    class MAYAUSD_UI_PUBLIC GetSelectedWidgetLayersMpxCommand : public MPxCommand
-    {
-    public:
-        // plugin registration requirements
-        static const MString commandName;
-        static void* creator();
-        static MSyntax    createSyntax();
+/**
+ * @brief Class that defines the "mayaUsdGetSelectedLayers" MEL command.
+ *
+ * This command allows the user to query the selected layers (i.e. selected rows)
+ * in the layer editor widget.
+ **/
+class MAYAUSD_UI_PUBLIC GetSelectedWidgetLayersMpxCommand : public MPxCommand
+{
+public:
+    // plugin registration requirements
+    static const MString commandName;
+    static void*         creator();
+    static MSyntax       createSyntax();
 
-        MStatus doIt(const MArgList& args) override;
-        bool    isUndoable() const override { return false; }
-    };
+    MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override { return false; }
+};
 
-    /**
-     * @brief Class that defines the "mayaUsdSetSelectedLayers -l 'layer_id_1;layer_id_2" MEL command.
-     *
-     * This command allows the user to set the selected layers (i.e. selected rows)
-     * in the layer editor widget.
-     **/
-    class MAYAUSD_UI_PUBLIC SetSelectedWidgetLayersMpxCommand : public MPxCommand
-    {
-    public:
-        // plugin registration requirements
-        static const MString commandName;
-        static void*         creator();
-        static MSyntax       createSyntax();
+/**
+ * @brief Class that defines the "mayaUsdSetSelectedLayers -l 'layer_id_1;layer_id_2" MEL command.
+ *
+ * This command allows the user to set the selected layers (i.e. selected rows)
+ * in the layer editor widget.
+ **/
+class MAYAUSD_UI_PUBLIC SetSelectedWidgetLayersMpxCommand : public MPxCommand
+{
+public:
+    // plugin registration requirements
+    static const MString commandName;
+    static void*         creator();
+    static MSyntax       createSyntax();
 
-        MStatus doIt(const MArgList& args) override;
-        bool    isUndoable() const override { return false; }
+    MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override { return false; }
 
-        MStatus parse(const MString& layersString);
-    private:
-        std::vector<std::string> layers;
-        static constexpr auto    kLayersFlag = "l";
-        static constexpr auto    kLayersFlagLong = "layers";
-    };
+    MStatus parse(const MString& layersString);
+
+private:
+    std::vector<std::string> layers;
+    static constexpr auto    kLayersFlag = "l";
+    static constexpr auto    kLayersFlagLong = "layers";
+};
 
 } // namespace UsdLayerEditor

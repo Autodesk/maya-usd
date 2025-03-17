@@ -15,6 +15,7 @@
 //
 
 #include "layerEditorWidgetManager.h"
+
 #include "layerEditorWidget.h"
 
 #include <maya/MSyntax.h>
@@ -23,52 +24,51 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-    std::unique_ptr<LayerEditorWidgetManager> LayerEditorWidgetManager::instance;
+std::unique_ptr<LayerEditorWidgetManager> LayerEditorWidgetManager::instance;
 
-    LayerEditorWidgetManager::LayerEditorWidgetManager()
-        : layerWidgetInstance(nullptr)
-    {
+LayerEditorWidgetManager::LayerEditorWidgetManager()
+    : layerWidgetInstance(nullptr)
+{
+}
+
+LayerEditorWidgetManager* LayerEditorWidgetManager::getInstance()
+{
+    if (!instance) {
+        instance = std::unique_ptr<LayerEditorWidgetManager>(new LayerEditorWidgetManager);
+    }
+    return instance.get();
+}
+
+void LayerEditorWidgetManager::setWidget(LayerEditorWidget* widget)
+{
+    if (layerWidgetInstance != nullptr) {
+        TF_WARN("LayerEditorWidgetManager already has a LayerEditorWidget set. Overriding "
+                "previously set widget.");
+    }
+    layerWidgetInstance = widget;
+}
+
+std::vector<std::string> LayerEditorWidgetManager::getSelectedLayers()
+{
+    std::vector<std::string> selLayers;
+    if (layerWidgetInstance) {
+        selLayers = layerWidgetInstance->getSelectedLayers();
+    } else {
+        TF_CODING_ERROR(
+            "No LayerEditorWidget set in the LayerEditorWidgetManager. No layers to retrieve.");
     }
 
-    LayerEditorWidgetManager* LayerEditorWidgetManager::getInstance()
-    {
-        if (!instance) {
-            instance = std::unique_ptr<LayerEditorWidgetManager>(new LayerEditorWidgetManager);
-        }
-        return instance.get();
+    return selLayers;
+}
+
+void LayerEditorWidgetManager::selectLayers(std::vector<std::string> layerIds)
+{
+    if (layerWidgetInstance) {
+        layerWidgetInstance->selectLayers(layerIds);
+    } else {
+        TF_CODING_ERROR(
+            "No LayerEditorWidget set in the LayerEditorWidgetManager. Layers cannot be selected.");
     }
+}
 
-    void LayerEditorWidgetManager::setWidget(LayerEditorWidget* widget)
-    {
-        if (layerWidgetInstance != nullptr) {
-            TF_WARN("LayerEditorWidgetManager already has a LayerEditorWidget set. Overriding previously set widget.");
-        }
-        layerWidgetInstance = widget;
-    }
-
-    std::vector<std::string> LayerEditorWidgetManager::getSelectedLayers()
-    {
-        std::vector<std::string> selLayers;
-        if (layerWidgetInstance) {
-            selLayers = layerWidgetInstance->getSelectedLayers();
-        }
-        else {
-            TF_CODING_ERROR(
-                "No LayerEditorWidget set in the LayerEditorWidgetManager. No layers to retrieve.");
-        }
-
-        return selLayers;
-    }
-
-    void LayerEditorWidgetManager::selectLayers(std::vector<std::string> layerIds)
-    {
-        if (layerWidgetInstance) {
-            layerWidgetInstance->selectLayers(layerIds);
-        }
-        else {
-            TF_CODING_ERROR(
-                "No LayerEditorWidget set in the LayerEditorWidgetManager. Layers cannot be selected.");
-        }
-    }
-
-    } // namespace UsdLayerEditor
+} // namespace UsdLayerEditor

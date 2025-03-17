@@ -16,9 +16,9 @@
 
 #include "layerEditorWidget.h"
 
-#include "layerEditorWidgetManager.h"
 #include "abstractCommandHook.h"
 #include "dirtyLayersCountBadge.h"
+#include "layerEditorWidgetManager.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 #include "qtUtils.h"
@@ -40,6 +40,7 @@
 #endif
 
 #include <usdUfe/ufe/Utils.h>
+
 #include <QtWidgets/QGraphicsOpacityEffect>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QMainWindow>

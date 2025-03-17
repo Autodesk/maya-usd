@@ -53,7 +53,7 @@ public Q_SLOTS:
     void updateButtonsOnIdle();
 
 public:
-    LayerTreeView* layerTree() { return _treeView.data(); }
+    LayerTreeView*           layerTree() { return _treeView.data(); }
     std::vector<std::string> getSelectedLayers();
     void                     selectLayers(const std::vector<std::string>& layerIdentifiers);
 

@@ -14,14 +14,15 @@
 // limitations under the License.
 //
 
-#include "layerEditorWidgetManager.h"
 #include "layerEditorCommands.h"
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/diagnosticLite.h>
+#include "layerEditorWidgetManager.h"
 
-#include <maya/MSyntax.h>
+#include <pxr/base/tf/diagnosticLite.h>
+#include <pxr/pxr.h>
+
 #include <maya/MArgParser.h>
+#include <maya/MSyntax.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -43,9 +44,8 @@ MStatus GetSelectedWidgetLayersMpxCommand::doIt(const MArgList& args)
 {
     MStatus status(MS::kSuccess);
 
-    std::vector<std::string> layers
-        = LayerEditorWidgetManager::getInstance()->getSelectedLayers();
-    MStringArray results;
+    std::vector<std::string> layers = LayerEditorWidgetManager::getInstance()->getSelectedLayers();
+    MStringArray             results;
     for (int i = 0; i < layers.size(); i++) {
         results.append(layers[i].c_str());
     }
@@ -85,7 +85,7 @@ MStatus SetSelectedWidgetLayersMpxCommand::parse(const MString& layersString)
 
 MStatus SetSelectedWidgetLayersMpxCommand::doIt(const MArgList& args)
 {
-    MStatus status(MS::kSuccess);
+    MStatus    status(MS::kSuccess);
     MArgParser argData(syntax(), args, &status);
 
     if (argData.isFlagSet("l", &status)) {
