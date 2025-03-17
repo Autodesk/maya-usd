@@ -46,8 +46,8 @@ MStatus GetSelectedWidgetLayersMpxCommand::doIt(const MArgList& args)
 
     std::vector<std::string> layers = LayerEditorWidgetManager::getInstance()->getSelectedLayers();
     MStringArray             results;
-    for (int i = 0; i < layers.size(); i++) {
-        results.append(layers[i].c_str());
+    for (const auto& layer : layers) {
+        results.append(layer.c_str());
     }
     setResult(results);
     return status;
@@ -75,8 +75,8 @@ MStatus SetSelectedWidgetLayersMpxCommand::parse(const MString& layersString)
         MStringArray layersList;
         layersString.split(';', layersList); // break out all the layers
 
-        int length = layersList.length();
-        for (int i = 0; i < length; ++i) {
+        unsigned int length = layersList.length();
+        for (unsigned int i = 0; i < length; ++i) {
             layers.emplace_back(layersList[i].asChar());
         }
     }
