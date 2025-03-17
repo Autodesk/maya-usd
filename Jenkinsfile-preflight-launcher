@@ -28,4 +28,9 @@ pipeline {
             }
         }
     }
+    post {
+        failure {
+            emailext body: 'Jenkins job failed, please investigate.', subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILURE!", to: 'ecp.maya.usd.build@autodesk.com', from: 'ecg.jenkins@autodesk.com'
+        }
+    }
 }
