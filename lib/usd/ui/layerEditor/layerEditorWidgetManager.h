@@ -41,8 +41,8 @@ public:
 private:
     LayerEditorWidgetManager();
 
-    QPointer<LayerEditorWidget>                      layerWidgetInstance;
-    static std::unique_ptr<LayerEditorWidgetManager> instance;
+    QPointer<LayerEditorWidget>                      _layerWidgetInstance;
+    static std::unique_ptr<LayerEditorWidgetManager> _instance;
 };
 
 } // namespace UsdLayerEditor

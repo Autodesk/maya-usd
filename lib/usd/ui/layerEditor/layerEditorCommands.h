@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
 
 #include <mayaUsdUI/ui/api.h>
 
@@ -61,7 +60,7 @@ public:
     MStatus parse(const MString& layersString);
 
 private:
-    std::vector<std::string> layers;
+    std::vector<std::string> _layers;
     static constexpr auto    kLayersFlag = "l";
     static constexpr auto    kLayersFlagLong = "layers";
 };

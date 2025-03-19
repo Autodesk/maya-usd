@@ -77,7 +77,7 @@ MStatus SetSelectedWidgetLayersMpxCommand::parse(const MString& layersString)
 
         unsigned int length = layersList.length();
         for (unsigned int i = 0; i < length; ++i) {
-            layers.emplace_back(layersList[i].asChar());
+            _layers.emplace_back(layersList[i].asChar());
         }
     }
     return status;
@@ -97,7 +97,7 @@ MStatus SetSelectedWidgetLayersMpxCommand::doIt(const MArgList& args)
         return MS::kFailure;
     }
 
-    LayerEditorWidgetManager::getInstance()->selectLayers(layers);
+    LayerEditorWidgetManager::getInstance()->selectLayers(_layers);
 
     return status;
 };

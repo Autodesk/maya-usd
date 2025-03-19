@@ -385,6 +385,8 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     deregisterCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    deregisterCommandCheck<UsdLayerEditor::GetSelectedWidgetLayersMpxCommand>(plugin);
+    deregisterCommandCheck<UsdLayerEditor::SetSelectedWidgetLayersMpxCommand>(plugin);
     deregisterCommandCheck<MayaUsd::SchemaCommand>(plugin);
     deregisterCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)

@@ -24,35 +24,35 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-std::unique_ptr<LayerEditorWidgetManager> LayerEditorWidgetManager::instance;
+std::unique_ptr<LayerEditorWidgetManager> LayerEditorWidgetManager::_instance;
 
 LayerEditorWidgetManager::LayerEditorWidgetManager()
-    : layerWidgetInstance(nullptr)
+    : _layerWidgetInstance(nullptr)
 {
 }
 
 LayerEditorWidgetManager* LayerEditorWidgetManager::getInstance()
 {
-    if (!instance) {
-        instance = std::unique_ptr<LayerEditorWidgetManager>(new LayerEditorWidgetManager);
+    if (!_instance) {
+        _instance = std::unique_ptr<LayerEditorWidgetManager>(new LayerEditorWidgetManager);
     }
-    return instance.get();
+    return _instance.get();
 }
 
 void LayerEditorWidgetManager::setWidget(LayerEditorWidget* widget)
 {
-    if (layerWidgetInstance != nullptr) {
+    if (_layerWidgetInstance != nullptr) {
         TF_WARN("LayerEditorWidgetManager already has a LayerEditorWidget set. Overriding "
                 "previously set widget.");
     }
-    layerWidgetInstance = widget;
+    _layerWidgetInstance = widget;
 }
 
 std::vector<std::string> LayerEditorWidgetManager::getSelectedLayers()
 {
     std::vector<std::string> selLayers;
-    if (layerWidgetInstance) {
-        selLayers = layerWidgetInstance->getSelectedLayers();
+    if (_layerWidgetInstance) {
+        selLayers = _layerWidgetInstance->getSelectedLayers();
     } else {
         TF_CODING_ERROR(
             "No LayerEditorWidget set in the LayerEditorWidgetManager. No layers to retrieve.");
@@ -63,8 +63,8 @@ std::vector<std::string> LayerEditorWidgetManager::getSelectedLayers()
 
 void LayerEditorWidgetManager::selectLayers(std::vector<std::string> layerIds)
 {
-    if (layerWidgetInstance) {
-        layerWidgetInstance->selectLayers(layerIds);
+    if (_layerWidgetInstance) {
+        _layerWidgetInstance->selectLayers(layerIds);
     } else {
         TF_CODING_ERROR(
             "No LayerEditorWidget set in the LayerEditorWidgetManager. Layers cannot be selected.");
