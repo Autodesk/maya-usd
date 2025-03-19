@@ -269,6 +269,7 @@ void GizmoGeometryOverride::updateRenderItems(
 
         wireframeItem->setDrawMode(MHWRender::MGeometry::kAll);
         wireframeItem->depthPriority(MHWRender::MRenderItem::sDormantWireDepthPriority);
+        wireframeItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeLights);
         wireframeItem->enable(true);
         wireframeItem->setCompatibleWithMayaInstancer(true);
         list.append(wireframeItem);
@@ -312,6 +313,7 @@ void GizmoGeometryOverride::updateRenderItems(
         activeWireframeItem->setSelectionMask(MSelectionMask::kSelectLights);
         activeWireframeItem->setWantConsolidation(true);
         activeWireframeItem->depthPriority(MHWRender::MRenderItem::sActiveLineDepthPriority);
+        wireframeItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeLights);
         list.append(activeWireframeItem);
     } else {
         activeWireframeItem = list.itemAt(index);
