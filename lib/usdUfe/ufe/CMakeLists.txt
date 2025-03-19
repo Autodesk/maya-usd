@@ -77,6 +77,13 @@ if (UFE_CAMERA_HAS_RENDERABLE)
     )
 endif()
 
+if (UFE_CAMERA_HAS_COMPUTEDVISIBILITY)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_CAMERA_HAS_COMPUTEDVISIBILITY=1
+    )
+endif()
+
 if (UFE_CLIPBOARD_SUPPORT)
     target_sources(${PROJECT_NAME}
         PRIVATE
