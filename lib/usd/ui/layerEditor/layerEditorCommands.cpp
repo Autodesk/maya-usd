@@ -22,8 +22,8 @@
 #include <pxr/pxr.h>
 
 #include <maya/MArgParser.h>
-#include <maya/MSyntax.h>
 #include <maya/MStringArray.h>
+#include <maya/MSyntax.h>
 
 namespace UsdLayerEditor {
 const MString GetSelectedWidgetLayersMpxCommand::commandName("mayaUsdGetSelectedLayers");
