@@ -541,6 +541,10 @@ private:
 class LockNodesUndoItem : public OpUndoItem
 {
 public:
+    /// \brief returns whether the given node might be locked by a lock node item.
+    MAYAUSD_CORE_PUBLIC
+    static bool isLockable(const MFnDependencyNode& node);
+
     /// \brief create and execute a lock node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
     static bool

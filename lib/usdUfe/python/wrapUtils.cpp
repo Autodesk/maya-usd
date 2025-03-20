@@ -101,6 +101,41 @@ bool _isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     return UsdUfe::isAttributeEditAllowed(attr);
 }
 
+static tuple _isRelationshipEditAllowed(
+    const PXR_NS::UsdRelationship& relationship,
+    list&                          targetsToAdd,
+    list&                          targetsToRemove)
+{
+    std::string errMsg;
+    bool        result = true;
+    {
+        PXR_NS::SdfPathVector targetsToAddVec = extract<PXR_NS::SdfPathVector>(targetsToAdd);
+        PXR_NS::SdfPathVector targetsToRemoveVec = extract<PXR_NS::SdfPathVector>(targetsToRemove);
+
+        result = UsdUfe::isRelationshipEditAllowed(
+            relationship, &targetsToAddVec, &targetsToRemoveVec, &errMsg);
+
+        // This code need to modify the lists IN PLACE, so we need to clear the
+        // lists and then extend them with the new values - instead of just
+        // reassigning them.
+        int i = len(targetsToAdd);
+        if (i > 0 && i != static_cast<int>(targetsToAddVec.size())) {
+            while (i-- > 0) {
+                targetsToAdd.pop();
+            }
+            targetsToAdd.extend(list(targetsToAddVec));
+        }
+        i = len(targetsToRemove);
+        if (i > 0 && i != static_cast<int>(targetsToRemoveVec.size())) {
+            while (i-- > 0) {
+                targetsToRemove.pop();
+            }
+            targetsToRemove.extend(list(targetsToRemoveVec));
+        }
+    }
+    return make_tuple<bool, std::string>(result, errMsg);
+}
+
 static dict _convertSchemaInfo(const UsdUfe::SchemaInfo& info)
 {
     dict infoDict;
@@ -193,6 +228,7 @@ void wrapUtils()
     def("getTime", _getTime);
     def("prettifyName", &UsdUfe::prettifyName);
     def("isAttributeEditAllowed", _isAttributeEditAllowed);
+    def("isRelationshipEditAllowed", _isRelationshipEditAllowed);
     def("getKnownApplicableSchemas", _getKnownApplicableSchemas);
     def("applySchemaToPrim", _applySchemaToPrim);
     def("applyMultiSchemaToPrim", _applyMultiSchemaToPrim);

@@ -151,7 +151,7 @@ class IncludeExcludeWidget(QWidget):
             "USD_Light_Linking",
             "IncludeListHeight",
             self,
-            defaultSize=Theme.instance().uiScaled(80),
+            defaultSize=Theme.instance().uiScaled(124),
         )
         self._resizableInclude.minContentSize = Theme.instance().uiScaled(44)
         mainLayout.addWidget(self._resizableInclude)
@@ -162,7 +162,7 @@ class IncludeExcludeWidget(QWidget):
             "USD_Light_Linking",
             "ExcludeListHeight",
             self,
-            defaultSize=Theme.instance().uiScaled(80),
+            defaultSize=Theme.instance().uiScaled(124),
         )
         self._resizableExclude.minContentSize = Theme.instance().uiScaled(44)
         mainLayout.addWidget(self._resizableExclude)

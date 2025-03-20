@@ -24,6 +24,7 @@ set(TEST_SCRIPT_FILES
     testPointInstances.py
     testPythonWrappers.py
     testReferenceCommands.py
+    testRelationshipBlock.py
     testRename.py
     testReorderCmd.py
     testRotateCmd.py

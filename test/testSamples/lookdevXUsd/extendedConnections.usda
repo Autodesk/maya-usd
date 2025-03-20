@@ -1,0 +1,357 @@
+#usda 1.0
+
+def Scope "mtl"
+{
+    def Material "standard_surface1" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+        customData = {
+            dictionary Autodesk = {
+                string ldx_inputPos = "-669.5 -72.5"
+                string ldx_outputPos = "226 -61"
+            }
+        }
+    )
+    {
+        token outputs:mtlx:surface.connect = </mtl/standard_surface1/standard_surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (-1.0916667, -0.84444445)
+
+        def Shader "standard_surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            float inputs:base.connect = </mtl/standard_surface1/adsk_converter2.outputs:out>
+            color3f inputs:base_color.connect = </mtl/standard_surface1/adsk_converter1.outputs:out>
+            color3f inputs:specular_color.connect = </mtl/standard_surface1/regularNode1.outputs:out>
+            color3f inputs:subsurface_color.connect = </mtl/standard_surface1/combine2.outputs:out>
+            color3f inputs:transmission_color.connect = </mtl/standard_surface1/combine1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-0.43888888, -0.20555556)
+        }
+
+        def Shader "converterNode1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_float"
+            float outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.2027779, -0.08888889)
+        }
+
+        def Shader "adsk_converter1" (
+            customData = {
+                dictionary Autodesk = {
+                    string hiddenInternalConverter = "true"
+                    string internalConverter = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_adsk_converter_float_color3"
+            float inputs:in.connect = </mtl/standard_surface1/converterNode1.outputs:out>
+            color3f outputs:out
+        }
+
+        def Shader "regularNode1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.225, 1.1722223)
+        }
+
+        def Shader "componentNode1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.2416666, 2.3666666)
+        }
+
+        def Shader "separate1" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_separate3_color3"
+            color3f inputs:in.connect = </mtl/standard_surface1/componentNode1.outputs:out>
+            float outputs:outb
+            float outputs:outr
+        }
+
+        def Shader "combine1" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1 = 1
+            float inputs:in2 = 1
+            float inputs:in3 = 1
+            float inputs:in3.connect = </mtl/standard_surface1/separate1.outputs:outr>
+            color3f outputs:out
+        }
+
+        def Shader "combine2" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1 = 1
+            float inputs:in2 = 1
+            float inputs:in3 = 1
+            float inputs:in3.connect = </mtl/standard_surface1/separate1.outputs:outb>
+            color3f outputs:out
+        }
+
+        def Shader "converterNode2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.2305555, 3.9277778)
+        }
+
+        def Shader "adsk_converter2" (
+            customData = {
+                dictionary Autodesk = {
+                    string hiddenInternalConverter = "true"
+                    string internalConverter = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_adsk_converter_color3_float"
+            color3f inputs:in.connect = </mtl/standard_surface1/converterNode2.outputs:out>
+            float outputs:out
+        }
+
+        def Shader "add1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_color3"
+            color3f inputs:in1.connect = </mtl/standard_surface1/combine5.outputs:out>
+            color3f inputs:in2.connect = </mtl/standard_surface1/combine6.outputs:out>
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-0.5744389, 6.488055)
+        }
+
+        def Shader "add2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+            customData = {
+                dictionary ClipboardMetadata = {
+                    string materialName = "standard_surface1"
+                    string shaderName = "add1"
+                    string stagePath = "|world|stage1|stageShape1"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_add_color3"
+            color3f inputs:in1.connect = </mtl/standard_surface1/adsk_converter3.outputs:out>
+            color3f inputs:in2.connect = </mtl/standard_surface1/adsk_converter4.outputs:out>
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-0.43286943, 9.2105)
+        }
+
+        def Shader "componentNode2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.774139, 7.4027777)
+        }
+
+        def Shader "constant2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_float"
+            float outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.7305777, 9.243167)
+        }
+
+        def Shader "componentNode3" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+            customData = {
+                dictionary ClipboardMetadata = {
+                    string materialName = "standard_surface1"
+                    string shaderName = "add1"
+                    string stagePath = "|world|stage1|stageShape1"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_add_color3"
+            color3f inputs:in1.connect = </mtl/standard_surface1/combine3.outputs:out>
+            color3f inputs:in2.connect = </mtl/standard_surface1/combine4.outputs:out>
+            uniform float2 ui:nodegraph:node:pos = (1.6797223, 6.4989996)
+        }
+
+        def Shader "add4" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_add_float"
+            float inputs:in1.connect = </mtl/standard_surface1/adsk_converter5.outputs:out>
+            float inputs:in2.connect = </mtl/standard_surface1/adsk_converter6.outputs:out>
+            uniform float2 ui:nodegraph:node:pos = (1.8212833, 9.068945)
+        }
+
+        def Shader "separate2" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_separate3_color3"
+            color3f inputs:in.connect = </mtl/standard_surface1/add1.outputs:out>
+            float outputs:outb
+            float outputs:outg
+            float outputs:outr
+        }
+
+        def Shader "combine3" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/standard_surface1/separate2.outputs:outr>
+            color3f outputs:out
+        }
+
+        def Shader "combine4" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in2.connect = </mtl/standard_surface1/separate2.outputs:outg>
+            float inputs:in3.connect = </mtl/standard_surface1/separate2.outputs:outb>
+            color3f outputs:out
+        }
+
+        def Shader "separate3" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_separate3_color3"
+            color3f inputs:in.connect = </mtl/standard_surface1/componentNode2.outputs:out>
+            float outputs:outb
+            float outputs:outg
+            float outputs:outr
+        }
+
+        def Shader "combine5" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in1.connect = </mtl/standard_surface1/separate3.outputs:outr>
+            float inputs:in2.connect = </mtl/standard_surface1/separate3.outputs:outg>
+            color3f outputs:out
+        }
+
+        def Shader "combine6" (
+            customData = {
+                dictionary Autodesk = {
+                    string hidden = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_combine3_color3"
+            float inputs:in3.connect = </mtl/standard_surface1/separate3.outputs:outb>
+            color3f outputs:out
+        }
+
+        def Shader "adsk_converter3" (
+            customData = {
+                dictionary Autodesk = {
+                    string hiddenInternalConverter = "true"
+                    string internalConverter = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_adsk_converter_float_color3"
+            float inputs:in.connect = </mtl/standard_surface1/constant2.outputs:out>
+            color3f outputs:out
+        }
+
+        def Shader "adsk_converter4" (
+            customData = {
+                dictionary Autodesk = {
+                    string hiddenInternalConverter = "true"
+                    string internalConverter = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_adsk_converter_float_color3"
+            float inputs:in.connect = </mtl/standard_surface1/constant2.outputs:out>
+            color3f outputs:out
+        }
+
+        def Shader "adsk_converter5" (
+            customData = {
+                dictionary Autodesk = {
+                    string hiddenInternalConverter = "true"
+                    string internalConverter = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_adsk_converter_color3_float"
+            color3f inputs:in.connect = </mtl/standard_surface1/add2.outputs:out>
+            float outputs:out
+        }
+
+        def Shader "adsk_converter6" (
+            customData = {
+                dictionary Autodesk = {
+                    string hiddenInternalConverter = "true"
+                    string internalConverter = "true"
+                }
+            }
+        )
+        {
+            uniform token info:id = "ND_adsk_converter_color3_float"
+            color3f inputs:in.connect = </mtl/standard_surface1/add2.outputs:out>
+            float outputs:out
+        }
+    }
+}
+

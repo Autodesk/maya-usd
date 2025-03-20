@@ -21,7 +21,13 @@
 #include <usdUfe/utils/Utils.h>
 
 #include <pxr/base/tf/token.h>
+
+#if PXR_VERSION >= 2505
+#include <pxr/usd/sdr/declare.h>
+#else
 #include <pxr/usd/ndr/declare.h>
+#endif
+
 #include <pxr/usd/sdr/shaderProperty.h>
 
 #include <map>
@@ -127,9 +133,13 @@ static const MetadataMap _metaMap = {
               { Ufe::Attribute::kColorFloat4, std::string { "0,0,0,0" } },
 #endif
           };
-          // If there is a UIMin value, use it as the soft min.
+    // If there is a UIMin value, use it as the soft min.
+#if PXR_VERSION >= 2505
+          const SdrTokenMap& metadata = p.GetMetadata();
+#else
           const NdrTokenMap& metadata = p.GetMetadata();
-          auto               it = metadata.find(UsdUfe::MetadataTokens->UIMin);
+#endif
+          auto it = metadata.find(UsdUfe::MetadataTokens->UIMin);
           if (it != metadata.cend()) {
               return Ufe::Value(it->second);
           }
@@ -151,9 +161,13 @@ static const MetadataMap _metaMap = {
               { Ufe::Attribute::kColorFloat4, std::string { "1,1,1,1" } },
 #endif
           };
-          // If there is a UIMax value, use it as the soft max.
+    // If there is a UIMax value, use it as the soft max.
+#if PXR_VERSION >= 2505
+          const SdrTokenMap& metadata = p.GetMetadata();
+#else
           const NdrTokenMap& metadata = p.GetMetadata();
-          auto               it = metadata.find(UsdUfe::MetadataTokens->UIMax);
+#endif
+          auto it = metadata.find(UsdUfe::MetadataTokens->UIMax);
           if (it != metadata.cend()) {
               return Ufe::Value(it->second);
           }
@@ -184,19 +198,31 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
             && sdfTypeIndicator.GetSdfType() != SdfValueTypeNames->Token) {
             return Ufe::Value(sdfTypeIndicator.GetSdfType().GetAsToken().GetString());
         } else {
+#if PXR_VERSION >= 2505
+            return Ufe::Value(sdfTypeIndicator.GetSdrType().GetString());
+#else
             return Ufe::Value(sdfTypeIndicator.GetNdrType().GetString());
+#endif
         }
 #endif // PXR_VERSION
     }
 #endif // UFE_HAS_NATIVE_TYPE_METADATA
 
-    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
-    auto               it = metadata.find(TfToken(key));
+#if PXR_VERSION >= 2505
+    const SdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
+#else
+    const NdrTokenMap&       metadata = _shaderAttributeDef->GetMetadata();
+#endif
+    auto it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
     }
 
-    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
+#if PXR_VERSION >= 2505
+    const SdrTokenMap& hints = _shaderAttributeDef->GetHints();
+#else
+    const NdrTokenMap&       hints = _shaderAttributeDef->GetHints();
+#endif
     it = hints.find(TfToken(key));
     if (it != hints.cend()) {
         return Ufe::Value(it->second);
@@ -220,13 +246,21 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
     }
 #endif
 
-    const NdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
-    auto               it = metadata.find(TfToken(key));
+#if PXR_VERSION >= 2505
+    const SdrTokenMap& metadata = _shaderAttributeDef->GetMetadata();
+#else
+    const NdrTokenMap&       metadata = _shaderAttributeDef->GetMetadata();
+#endif
+    auto it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return true;
     }
 
-    const NdrTokenMap& hints = _shaderAttributeDef->GetHints();
+#if PXR_VERSION >= 2505
+    const SdrTokenMap& hints = _shaderAttributeDef->GetHints();
+#else
+    const NdrTokenMap&       hints = _shaderAttributeDef->GetHints();
+#endif
     it = hints.find(TfToken(key));
     if (it != hints.cend()) {
         return true;
