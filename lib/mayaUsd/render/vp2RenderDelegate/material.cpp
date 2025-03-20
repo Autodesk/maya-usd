@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "debugCodes.h"
 #include "material.h"
+
+#include "debugCodes.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "renderDelegate.h"

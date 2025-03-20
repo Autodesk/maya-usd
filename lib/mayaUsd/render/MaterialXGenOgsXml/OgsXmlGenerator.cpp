@@ -286,7 +286,7 @@ void xmlAddValues(pugi::xml_node& parent, const VariableBlock& block, bool skipL
 #if MX_COMBINED_VERSION < 13900
             auto type = getOgsTypeMap().find(p->getType()->getName());
 #else
-            auto type = getOgsTypeMap().find(p->getType().getName());
+            auto       type = getOgsTypeMap().find(p->getType().getName());
 #endif
             if (type != getOgsTypeMap().end()) {
                 pugi::xml_node val = parent.append_child(type->second);
@@ -530,11 +530,11 @@ string OgsXmlGenerator::generateLightRig(
 
     // Add Light Rig properties:
 #if MX_COMBINED_VERSION < 13900
-    auto           vec3OGSType = getOgsTypeMap().find(Type::VECTOR3->getName())->second;
-    auto           intOGSType = getOgsTypeMap().find(Type::INTEGER->getName())->second;
+    auto vec3OGSType = getOgsTypeMap().find(Type::VECTOR3->getName())->second;
+    auto intOGSType = getOgsTypeMap().find(Type::INTEGER->getName())->second;
 #else
-    auto           vec3OGSType = getOgsTypeMap().find(Type::VECTOR3.getName())->second;
-    auto           intOGSType = getOgsTypeMap().find(Type::INTEGER.getName())->second;
+    auto vec3OGSType = getOgsTypeMap().find(Type::VECTOR3.getName())->second;
+    auto intOGSType = getOgsTypeMap().find(Type::INTEGER.getName())->second;
 #endif
     pugi::xml_node xmlLightProp = xmlProperties.append_child(vec3OGSType);
     xmlLightProp.append_attribute(NAME) = IRRADIANCEENV;

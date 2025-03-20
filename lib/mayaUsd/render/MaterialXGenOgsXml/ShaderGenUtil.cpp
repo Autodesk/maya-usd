@@ -183,14 +183,18 @@ void TopoNeutralGraph::computeGraph(const mx::ElementPtr& material, bool texture
 
                 if (sourceNode != surfaceShader) {
                     cloneConnection(
-                        *sourceInput, *destNode, destConnectedNode,
+                        *sourceInput,
+                        *destNode,
+                        destConnectedNode,
 #if MX_COMBINED_VERSION < 13900
                         channelInfo,
 #endif
                         outputString);
                 } else {
                     cloneNodeGraphConnection(
-                        *sourceInput, *destNode, destConnectedNode,
+                        *sourceInput,
+                        *destNode,
+                        destConnectedNode,
 #if MX_COMBINED_VERSION < 13900
                         channelInfo,
 #endif
@@ -426,9 +430,9 @@ std::string TopoNeutralGraph::gatherOutput(const mx::Input& input)
 }
 
 void TopoNeutralGraph::cloneConnection(
-    const mx::Input&   sourceInput,
-    mx::Node&          destNode,
-    mx::NodePtr&       destConnectedNode,
+    const mx::Input& sourceInput,
+    mx::Node&        destNode,
+    mx::NodePtr&     destConnectedNode,
 #if MX_COMBINED_VERSION < 13900
     const std::string& channelInfo,
 #endif
@@ -447,9 +451,9 @@ void TopoNeutralGraph::cloneConnection(
 }
 
 void TopoNeutralGraph::cloneNodeGraphConnection(
-    const mx::Input&   sourceInput,
-    mx::Node&          destNode,
-    mx::NodePtr&       destConnectedNode,
+    const mx::Input& sourceInput,
+    mx::Node&        destNode,
+    mx::NodePtr&     destConnectedNode,
 #if MX_COMBINED_VERSION < 13900
     const std::string& channelInfo,
 #endif
@@ -457,9 +461,9 @@ void TopoNeutralGraph::cloneNodeGraphConnection(
 {
     std::string outputKey = destConnectedNode->getName() + "(t)" + sourceInput.getType()
 #if MX_COMBINED_VERSION < 13900
-         + "(c)" + channelInfo + "(o)" + output;
+        + "(c)" + channelInfo + "(o)" + output;
 #else
-         + "(o)" + output;
+        + "(o)" + output;
 #endif
     mx::OutputPtr graphOutput;
     auto          outputIt = _outputMap.find(outputKey);

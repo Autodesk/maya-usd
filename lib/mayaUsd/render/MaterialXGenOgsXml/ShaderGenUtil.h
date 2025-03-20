@@ -88,22 +88,22 @@ protected:
     mx::NodePtr   cloneNode(const mx::Node& node, mx::GraphElement& container);
     mx::OutputPtr findNodeGraphOutput(const mx::Input& input, const std::string& outputName);
 #if MX_COMBINED_VERSION < 13900
-    std::string   gatherChannels(const mx::Input& input);
+    std::string gatherChannels(const mx::Input& input);
 #endif
-    std::string   gatherOutput(const mx::Input& input);
-    std::string   gatherDefaultGeomProp(const mx::Input& input);
-    void          cloneConnection(
-                 const mx::Input&   sourceInput,
-                 mx::Node&          destNode,
-                 mx::NodePtr&       destConnectedNode,
+    std::string gatherOutput(const mx::Input& input);
+    std::string gatherDefaultGeomProp(const mx::Input& input);
+    void        cloneConnection(
+               const mx::Input& sourceInput,
+               mx::Node&        destNode,
+               mx::NodePtr&     destConnectedNode,
 #if MX_COMBINED_VERSION < 13900
-                 const std::string& channelInfo,
+        const std::string& channelInfo,
 #endif
-                 const std::string& output);
+        const std::string& output);
     void cloneNodeGraphConnection(
-        const mx::Input&   sourceInput,
-        mx::Node&          destNode,
-        mx::NodePtr&       destConnectedNode,
+        const mx::Input& sourceInput,
+        mx::Node&        destNode,
+        mx::NodePtr&     destConnectedNode,
 #if MX_COMBINED_VERSION < 13900
         const std::string& channelInfo,
 #endif
