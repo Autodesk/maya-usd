@@ -23,8 +23,7 @@
 
 #include <maya/MArgParser.h>
 #include <maya/MSyntax.h>
-
-PXR_NAMESPACE_USING_DIRECTIVE
+#include <maya/MStringArray.h>
 
 namespace UsdLayerEditor {
 const MString GetSelectedWidgetLayersMpxCommand::commandName("mayaUsdGetSelectedLayers");
@@ -85,6 +84,8 @@ MStatus SetSelectedWidgetLayersMpxCommand::parse(const MString& layersString)
 
 MStatus SetSelectedWidgetLayersMpxCommand::doIt(const MArgList& args)
 {
+    PXR_NAMESPACE_USING_DIRECTIVE
+
     MStatus    status(MS::kSuccess);
     MArgParser argData(syntax(), args, &status);
 

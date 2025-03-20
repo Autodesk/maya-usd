@@ -13,10 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
-
-#include <maya/MStringArray.h>
-
 #include <QtCore/QPointer>
 
 namespace UsdLayerEditor {
@@ -42,7 +38,7 @@ private:
     LayerEditorWidgetManager();
 
     QPointer<LayerEditorWidget>                      _layerWidgetInstance;
-    static std::unique_ptr<LayerEditorWidgetManager> _instance;
+    static std::unique_ptr<LayerEditorWidgetManager> instance;
 };
 
 } // namespace UsdLayerEditor

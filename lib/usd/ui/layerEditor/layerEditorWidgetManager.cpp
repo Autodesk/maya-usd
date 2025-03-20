@@ -18,13 +18,9 @@
 
 #include "layerEditorWidget.h"
 
-#include <maya/MSyntax.h>
-
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace UsdLayerEditor {
 
-std::unique_ptr<LayerEditorWidgetManager> LayerEditorWidgetManager::_instance;
+std::unique_ptr<LayerEditorWidgetManager> LayerEditorWidgetManager::instance;
 
 LayerEditorWidgetManager::LayerEditorWidgetManager()
     : _layerWidgetInstance(nullptr)
@@ -33,10 +29,10 @@ LayerEditorWidgetManager::LayerEditorWidgetManager()
 
 LayerEditorWidgetManager* LayerEditorWidgetManager::getInstance()
 {
-    if (!_instance) {
-        _instance = std::unique_ptr<LayerEditorWidgetManager>(new LayerEditorWidgetManager);
+    if (!instance) {
+        instance = std::unique_ptr<LayerEditorWidgetManager>(new LayerEditorWidgetManager);
     }
-    return _instance.get();
+    return instance.get();
 }
 
 void LayerEditorWidgetManager::setWidget(LayerEditorWidget* widget)
