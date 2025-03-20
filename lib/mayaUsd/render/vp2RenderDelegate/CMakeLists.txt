@@ -9,7 +9,7 @@ target_sources(${PROJECT_NAME}
         drawItem.cpp
         extComputation.cpp
         instancer.cpp
-        material.cpp
+        vp2Material.cpp
         mayaPrimCommon.cpp
         mesh.cpp
         meshViewportCompute.cpp

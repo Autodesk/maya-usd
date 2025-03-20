@@ -159,14 +159,28 @@ const string& HwSpecularEnvironmentSamples::name()
     return USER_DATA_ENV_SAMPLES;
 }
 
+#if MX_COMBINED_VERSION >= 13900
+
+GlslFragmentSyntax::GlslFragmentSyntax(TypeSystemPtr typeSystem)
+    : GlslSyntax(typeSystem)
+{
+}
+
+SyntaxPtr GlslFragmentSyntax::create(TypeSystemPtr typeSystem)
+{
+    return std::make_shared<GlslFragmentSyntax>(typeSystem);
+}
+
+#endif
+
 string GlslFragmentSyntax::getVariableName(
-    const string&   name,
+    const string& name,
 #if MX_COMBINED_VERSION < 13900
     const TypeDesc* type,
 #else
     TypeDesc type,
 #endif
-    IdentifierMap&  identifiers) const
+    IdentifierMap& identifiers) const
 {
     string variable = GlslSyntax::getVariableName(name, type, identifiers);
     // A filename input corresponds to a texture sampler uniform
@@ -183,10 +197,18 @@ string GlslFragmentSyntax::getVariableName(
 const string GlslFragmentGenerator::MATRIX3_TO_MATRIX4_POSTFIX = "4";
 
 GlslFragmentGenerator::GlslFragmentGenerator()
+#if MX_COMBINED_VERSION < 13903
     : GlslShaderGenerator()
+#else
+    : GlslShaderGenerator(TypeSystem::create())
+#endif
 {
     // Use our custom syntax class
+#if MX_COMBINED_VERSION < 13903
     _syntax = std::make_shared<GlslFragmentSyntax>();
+#else
+    _syntax = GlslFragmentSyntax::create(_typeSystem);
+#endif
 
     // Set identifier names to match OGS naming convention.
     _tokenSubstitutions[HW::T_POSITION_WORLD] = "Pw";
@@ -479,7 +501,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
         shader->setAttribute(HW::ATTR_TRANSPARENT);
     }
 #else
-    ShaderPtr    shader = GlslShaderGenerator::createShader(name, element, context);
+    ShaderPtr shader = GlslShaderGenerator::createShader(name, element, context);
     ShaderGraph& graph = shader->getGraph();
 #endif
     ShaderStage& pixelStage = shader->getStage(Stage::PIXEL);
@@ -789,7 +811,7 @@ ShaderPtr GlslFragmentGenerator::generate(
         // TODO: Emit a mayaSurfaceShaderOutput result to plug into mayaComputeSurfaceFinal
         //
         if (const ShaderOutput* const outputConnection = outputSocket->getConnection()) {
-            string        finalOutput = outputConnection->getVariable();
+            string finalOutput = outputConnection->getVariable();
 #if MX_COMBINED_VERSION < 13900
             const string& channels = outputSocket->getChannels();
             if (!channels.empty()) {
@@ -938,7 +960,7 @@ void GlslFragmentGenerator::toVec3(const TypeDesc& type, string& variable)
         variable = "vec3(" + variable + ", 0.0)";
     } else if (type.isFloat4()) {
         variable = variable + ".xyz";
-#endif        
+#endif
     } else if (type == Type::FLOAT || type == Type::INTEGER) {
         variable = "vec3(" + variable + ", " + variable + ", " + variable + ")";
     } else if (type == Type::BSDF || type == Type::EDF) {
@@ -993,8 +1015,10 @@ GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& con
 
 #if MX_COMBINED_VERSION < 13900
     const TypeDesc* outputType = TypeDesc::get(outputs[0]->getType());
-#else
+#elif MX_COMBINED_VERSION < 13903
     const TypeDesc outputType = TypeDesc::get(outputs[0]->getType());
+#else
+    const TypeDesc outputType = context.getTypeDesc(outputs[0]->getType());
 #endif
 
 #if MX_COMBINED_VERSION < 13900

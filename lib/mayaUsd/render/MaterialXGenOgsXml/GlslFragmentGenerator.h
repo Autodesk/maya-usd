@@ -54,10 +54,13 @@ class GlslFragmentSyntax : public GlslSyntax
 public:
 #if MX_COMBINED_VERSION < 13900
     string getVariableName(const string& name, const TypeDesc* type, IdentifierMap& identifiers)
-#else
-    string getVariableName(const string& name, TypeDesc type, IdentifierMap& identifiers)
-#endif
         const override;
+#else
+    GlslFragmentSyntax(TypeSystemPtr typeSystem);
+    static SyntaxPtr create(TypeSystemPtr typeSystem);
+    string
+                getVariableName(const string& name, TypeDesc type, IdentifierMap& identifiers) const override;
+#endif
 };
 
 using GlslFragmentGeneratorPtr = shared_ptr<class GlslFragmentGenerator>;

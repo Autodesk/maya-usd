@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <surfacematerial name="N0" type="material" nodedef="ND_surfacematerial">
+    <input name="surfaceshader" type="surfaceshader" nodename="N1" />
+  </surfacematerial>
+  <standard_surface name="N1" type="surfaceshader" nodedef="ND_standard_surface_surfaceshader">
+    <input name="base" type="float" output="O0" nodegraph="NG0" />
+  </standard_surface>
+  <nodegraph name="NG0">
+    <extract name="N2" type="float" nodedef="ND_extract_color3">
+      <input name="in" type="color3" nodename="N3" />
+    </extract>
+    <output name="O0" type="float" nodename="N2" />
+    <constant name="N3" type="color3" nodedef="ND_constant_color3">
+      <input name="value" type="color3" value="0.263273, 0.263273, 0.263273" />
+    </constant>
+  </nodegraph>
+</materialx>
