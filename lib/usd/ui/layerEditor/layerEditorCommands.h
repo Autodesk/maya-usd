@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef LAYER_EDITOR_COMMANDS_H
+#define LAYER_EDITOR_COMMANDS_H
 
 #include <mayaUsdUI/ui/api.h>
 
@@ -66,3 +68,5 @@ private:
 };
 
 } // namespace UsdLayerEditor
+
+#endif //LAYER_EDITOR_COMMANDS_H

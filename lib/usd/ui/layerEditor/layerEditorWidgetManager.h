@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef LAYER_EDITOR_WIDGETMANAGER_H
+#define LAYER_EDITOR_WIDGETMANAGER_H
+
 #include <QtCore/QPointer>
 
 namespace UsdLayerEditor {
@@ -42,3 +45,5 @@ private:
 };
 
 } // namespace UsdLayerEditor
+
+#endif //LAYER_EDITOR_WIDGETMANAGER_H
