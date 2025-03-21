@@ -54,6 +54,11 @@ TF_DECLARE_PUBLIC_TOKENS(
 #define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
     (animation) \
+    (animationType) \
+    /* animationType values */ \
+    (timesamples) \
+    (curves) \
+    (both) \
     (startTime) \
     (endTime) \
     (frameStride) \
@@ -293,6 +298,7 @@ struct UsdMayaJobExportArgs
     const TfToken      unit;
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
+    const TfToken      animationType;
     const bool         disableModelKindProcessor;
     const TfToken      shadingMode;
     TfToken            convertMaterialsTo; // Can not be const, iteration variable.

@@ -261,6 +261,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
     // These are additional flags under our control.
     syntax.addFlag(
         kMetersPerUnit, UsdMayaJobExportArgsTokens->metersPerUnit.GetText(), MSyntax::kDouble);
+    syntax.addFlag(
+        kAnimationTypeFlag, UsdMayaJobExportArgsTokens->animationType.GetText(), MSyntax::kString);
     syntax.addFlag(kFrameRangeFlag, kFrameRangeFlagLong, MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag(kFrameStrideFlag, kFrameStrideFlagLong, MSyntax::kDouble);
     syntax.addFlag(kFrameSampleFlag, kFrameSampleFlagLong, MSyntax::kDouble);

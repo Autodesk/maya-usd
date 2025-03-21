@@ -21,10 +21,15 @@
 #include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/converter.h>
 
-#include <pxr/base/gf/gamma.h>
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/token.h>
+#if PXR_VERSION > 2411
+#include <pxr/base/ts/knot.h>
+#include <pxr/base/ts/spline.h>
+#include <pxr/base/ts/typeHelpers.h>
+#include <pxr/base/ts/types.h>
+#endif
 #include <pxr/base/vt/types.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
@@ -40,13 +45,11 @@
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdRi/statementsAPI.h>
-#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MDoubleArray.h>
-#include <maya/MFnAttribute.h>
+#include <maya/MFnAnimCurve.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnDoubleArrayData.h>
-#include <maya/MFnEnumAttribute.h>
 #include <maya/MFnFloatArrayData.h>
 #include <maya/MFnIntArrayData.h>
 #include <maya/MFnMatrixData.h>
@@ -67,6 +70,7 @@
 #include <maya/MVector.h>
 #include <maya/MVectorArray.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -1274,5 +1278,83 @@ std::vector<double> UsdMayaWriteUtil::GetTimeSamples(
     std::sort(samples.begin(), samples.end());
     return samples;
 }
+
+#if PXR_VERSION > 2411
+static TsExtrapMode _ConvertExtrapolationType(MFnAnimCurve::InfinityType mayaExtrapolation)
+{
+    switch (mayaExtrapolation) {
+    case MFnAnimCurve::InfinityType::kLinear: return TsExtrapMode::TsExtrapLinear;
+    case MFnAnimCurve::InfinityType::kCycle: return TsExtrapMode::TsExtrapLoopReset;
+    case MFnAnimCurve::InfinityType::kOscillate: return TsExtrapMode::TsExtrapLoopOscillate;
+    case MFnAnimCurve::InfinityType::kCycleRelative: return TsExtrapMode::TsExtrapLoopRepeat;
+    case MFnAnimCurve::InfinityType::kConstant:
+    default: return TsExtrapMode::TsExtrapHeld;
+    }
+}
+
+bool UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+    const MFnDependencyNode&   depNode,
+    const MString&             name,
+    UsdAttribute&              attr,
+    const std::vector<double>& timeSamples,
+    float                      scaling)
+{
+    if (timeSamples.empty()) {
+        return false;
+    }
+
+    MStatus status;
+    depNode.attribute(name, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false)
+    MPlug plug = depNode.findPlug(name, true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false)
+
+    // get the animation curve for the given maya attribute
+    MFnAnimCurve flAnimCurve(plug, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false)
+
+    // No keys, so nothing to do.
+    auto numKeys = flAnimCurve.numKeys();
+    if (numKeys == 0) {
+        return true;
+    }
+
+    auto spline = TsSpline(Ts_GetType<float>());
+
+    TsExtrapolation preExtrapolation, postExtrapolation;
+    preExtrapolation.mode = _ConvertExtrapolationType(flAnimCurve.preInfinityType());
+    postExtrapolation.mode = _ConvertExtrapolationType(flAnimCurve.postInfinityType());
+    spline.SetPreExtrapolation(preExtrapolation);
+    spline.SetPostExtrapolation(postExtrapolation);
+
+    TsKnotMap knots;
+    for (unsigned int k = 0; k < numKeys; ++k) {
+        auto time = flAnimCurve.time(k).value();
+        if (std::find(timeSamples.begin(), timeSamples.end(), time) == timeSamples.end()) {
+            continue;
+        }
+
+        auto   value = flAnimCurve.value(k) * scaling;
+        double inTangentX, inTangentY;
+        double outTangentX, outTangentY;
+        flAnimCurve.getTangent(k, inTangentX, inTangentY, true);
+        flAnimCurve.getTangent(k, outTangentX, outTangentY, false);
+
+        TsKnot knot(Ts_GetType<float>());
+        knot.SetTime(time);
+        knot.SetValue(static_cast<float>(value));
+        knot.SetPostTanSlope(static_cast<float>(outTangentY));
+        knot.SetPreTanSlope(static_cast<float>(inTangentY));
+        knot.SetPostTanWidth(static_cast<float>(outTangentX));
+        knot.SetPreTanWidth(static_cast<float>(inTangentX));
+
+        knots.insert(knot);
+    }
+
+    spline.SetKnots(knots);
+
+    return attr.SetSpline(spline);
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

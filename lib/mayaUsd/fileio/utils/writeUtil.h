@@ -327,6 +327,19 @@ struct UsdMayaWriteUtil
         return valueWriter ? valueWriter->SetAttribute(attr, VtValue::Take(*value), time)
                            : attr.Set(*value, time);
     }
+
+    /// \brief Reads the animation curve for attribute \p name on \p depNode and authors the
+    /// equivalent Usd Spline curve to the \p attr.
+    ///
+    /// If there are no keys in the curve, no spline value will be authored in the \p attr.
+#if PXR_VERSION > 2411
+    MAYAUSD_CORE_PUBLIC static bool CreateSplineFromPlugToAttr(
+        const MFnDependencyNode&   depNode,
+        const MString&             name,
+        UsdAttribute&              attr,
+        const std::vector<double>& timeSamples,
+        float                      scaling = 1.f);
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

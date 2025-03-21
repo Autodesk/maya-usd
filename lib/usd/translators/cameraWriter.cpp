@@ -24,6 +24,10 @@
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/diagnostic.h>
+#if PXR_VERSION > 2411
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/ts/spline.h>
+#endif
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -31,8 +35,10 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MFnAnimCurve.h>
 #include <maya/MFnCamera.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -69,7 +75,204 @@ void PxrUsdTranslators_CameraWriter::Write(const UsdTimeCode& usdTime)
     UsdMayaPrimWriter::Write(usdTime);
 
     UsdGeomCamera primSchema(_usdPrim);
-    writeCameraAttrs(usdTime, primSchema);
+
+    auto animType = _writeJobCtx.GetArgs().animationType;
+    if (usdTime.IsDefault() && animType != UsdMayaJobExportArgsTokens->timesamples) {
+        writeCameraSplinesAttrs(primSchema, _writeJobCtx.GetArgs().timeSamples);
+    }
+
+    if (animType != UsdMayaJobExportArgsTokens->curves) {
+        writeCameraAttrs(usdTime, primSchema);
+    }
+}
+
+bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(
+    UsdGeomCamera&             primSchema,
+    const std::vector<double>& timeSamples)
+{
+#if PXR_VERSION > 2411
+    MStatus   status;
+    MFnCamera camFn(GetDagPath(), &status);
+    CHECK_MSTATUS_AND_RETURN(status, false)
+
+    auto primName = primSchema.GetPrim().GetPath().GetAsString();
+
+    auto focalLengthAttr = primSchema.GetFocalLengthAttr();
+    UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+        camFn, "focalLength", focalLengthAttr, timeSamples);
+
+    auto focusDistanceAttr = primSchema.GetFocusDistanceAttr();
+    UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+        camFn, "focusDistance", focusDistanceAttr, timeSamples);
+
+    if (camFn.isDepthOfField()) {
+        auto depthOfFieldAttr = primSchema.GetFStopAttr();
+        UsdMayaWriteUtil::CreateSplineFromPlugToAttr(camFn, "fStop", depthOfFieldAttr, timeSamples);
+    }
+
+    // TODO: Clipping range is not yet supported in USD Spline curves.
+
+    if (camFn.isOrtho(&status)) {
+
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetProjectionAttr(),
+            UsdGeomTokens->orthographic,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
+
+        auto projectionAttr = primSchema.GetProjectionAttr();
+        if (!UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+                camFn,
+                "fStop",
+                projectionAttr,
+                timeSamples,
+                UsdMayaUtil::kMillimetersPerCentimeter)) {
+            MGlobal::displayError(
+                TfStringPrintf("Error adding spline attribute to fStop on prim '%s'.", primName)
+                    .c_str());
+        }
+
+        auto horizontalApertureAttr = primSchema.GetHorizontalApertureAttr();
+        if (!UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+                camFn,
+                "orthoWidth",
+                horizontalApertureAttr,
+                timeSamples,
+                UsdMayaUtil::kMillimetersPerCentimeter)) {
+            MGlobal::displayError(
+                TfStringPrintf(
+                    "Error adding spline attribute to horizontalAperture on prim '%s'.", primName)
+                    .c_str());
+        }
+
+        auto verticalApertureAttr = primSchema.GetVerticalApertureAttr();
+        if (!UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+                camFn,
+                "orthoWidth",
+                verticalApertureAttr,
+                timeSamples,
+                UsdMayaUtil::kMillimetersPerCentimeter)) {
+            MGlobal::displayError(
+                TfStringPrintf(
+                    "Error adding spline attribute to verticalAperture on prim '%s'.", primName)
+                    .c_str());
+        }
+    } else {
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetProjectionAttr(),
+            UsdGeomTokens->perspective,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
+
+        auto horizontalApertureAttr = primSchema.GetHorizontalApertureAttr();
+        if (UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+                camFn, "horizontalFilmAperture", horizontalApertureAttr, timeSamples)) {
+
+            MPlug        lensSqueezePlug = camFn.findPlug("lensSqueezeRatio", true, &status);
+            MFnAnimCurve lensSqueezeCurve(lensSqueezePlug, &status);
+
+            // Horizontal aperture needs to be multiplied by the lens squeeze ratio.
+            TsSpline horizontalApertureSpline = horizontalApertureAttr.GetSpline();
+            auto     knots = horizontalApertureSpline.GetKnots();
+            for (auto knot : knots) {
+                VtValue value;
+                auto    time = knot.GetTime();
+                knot.GetValue(&value);
+
+                float squeezeRatio = static_cast<float>(lensSqueezeCurve.evaluate(time));
+                knot.SetValue(UsdMayaUtil::ConvertInchesToMM(value.Get<float>() * squeezeRatio));
+            }
+
+            horizontalApertureSpline.ClearKnots();
+            horizontalApertureSpline.SetKnots(knots);
+            if (!horizontalApertureAttr.SetSpline(horizontalApertureSpline)) {
+                MGlobal::displayError(TfStringPrintf(
+                                          "Error adding spline attribute to perspective "
+                                          "horizontalFilmAperture on prim '%s'.",
+                                          primName)
+                                          .c_str());
+            }
+        }
+
+        auto verticalApertureAttr = primSchema.GetVerticalApertureAttr();
+        UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+            camFn,
+            "verticalFilmAperture",
+            verticalApertureAttr,
+            timeSamples,
+            UsdMayaUtil::kMillimetersPerCentimeter);
+
+        const bool hasCameraShake = camFn.shakeEnabled();
+        auto       horizontalApertureOffsetAttr = primSchema.GetHorizontalApertureOffsetAttr();
+        if (UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+                camFn, "horizontalFilmOffset", horizontalApertureOffsetAttr, timeSamples)) {
+
+            MPlug        horizontalShakePlug = camFn.findPlug("horizontalShake", true, &status);
+            MFnAnimCurve horizontalShakeCurve(horizontalShakePlug, &status);
+
+            MPlug horizontalFilmOffsetPlug = camFn.findPlug("horizontalFilmOffset", true, &status);
+            MFnAnimCurve horizontalFilmOffsetCurve(horizontalFilmOffsetPlug, &status);
+
+            TsSpline horizontalApertureOffsetSpline = horizontalApertureOffsetAttr.GetSpline();
+            auto     knots = horizontalApertureOffsetSpline.GetKnots();
+            for (auto knot : knots) {
+                VtValue v;
+                auto    time = knot.GetTime();
+                knot.GetValue(&v);
+
+                // If the camera has camera shake, make sure to add that to the camera offset.
+                float shakeOffset = hasCameraShake ? horizontalShakeCurve.evaluate(time) : 0.f;
+
+                knot.SetValue(UsdMayaUtil::ConvertInchesToMM(v.Get<float>() + shakeOffset));
+            }
+
+            horizontalApertureOffsetSpline.ClearKnots();
+            horizontalApertureOffsetSpline.SetKnots(knots);
+            if (!horizontalApertureAttr.SetSpline(horizontalApertureOffsetSpline)) {
+                MGlobal::displayError(TfStringPrintf(
+                                          "Error adding spline attribute to perspective "
+                                          "horizontalFilmOffset on prim '%s'.",
+                                          primName)
+                                          .c_str());
+            }
+        }
+
+        auto verticalApertureOffsetAttr = primSchema.GetVerticalApertureOffsetAttr();
+        if (UsdMayaWriteUtil::CreateSplineFromPlugToAttr(
+                camFn, "verticalFilmOffset", verticalApertureOffsetAttr, timeSamples)) {
+
+            MPlug        verticalShakePlug = camFn.findPlug("verticalShake", true, &status);
+            MFnAnimCurve verticalShakeCurve(verticalShakePlug, &status);
+
+            MPlug verticalFilmOffsetPlug = camFn.findPlug("verticalFilmOffset", true, &status);
+            MFnAnimCurve verticalFilmOffsetCurve(verticalFilmOffsetPlug, &status);
+
+            TsSpline verticalApertureOffsetSpline = verticalApertureOffsetAttr.GetSpline();
+            auto     knots = verticalApertureOffsetSpline.GetKnots();
+            for (auto knot : knots) {
+                VtValue v;
+                auto    time = knot.GetTime();
+                knot.GetValue(&v);
+
+                // If the camera has camera shake, make sure to add that to the camera offset.
+                float shakeOffset = hasCameraShake ? verticalShakeCurve.evaluate(time) : 0.f;
+
+                knot.SetValue(UsdMayaUtil::ConvertInchesToMM(v.Get<float>() + shakeOffset));
+            }
+
+            verticalApertureOffsetSpline.ClearKnots();
+            verticalApertureOffsetSpline.SetKnots(knots);
+            if (!horizontalApertureAttr.SetSpline(verticalApertureOffsetSpline)) {
+                MGlobal::displayError(TfStringPrintf(
+                                          "Error adding spline attribute to perspective "
+                                          "horizontalFilmOffset on prim '%s'.",
+                                          primName)
+                                          .c_str());
+            }
+        }
+    }
+#endif
+    return true;
 }
 
 bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(
