@@ -66,7 +66,7 @@ Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> getAllStages();
 
-//! Return all the USD stages' paths without rebuilding the stage list.
+//! Return all the USD stages' paths.
 MAYAUSD_CORE_PUBLIC
 std::vector<Ufe::Path> getAllStagesPaths();
 
