@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <materialx version="1.38" colorspace="lin_rec709">
+  <!-- Needs to be 1.38 in order force an upgrade of the "channels" used in test data -->
 
   <!-- Simple use of channels on output node -->
   <nodegraph name="Ng1">

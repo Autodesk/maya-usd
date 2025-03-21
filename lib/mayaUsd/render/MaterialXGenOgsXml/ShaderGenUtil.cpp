@@ -461,10 +461,10 @@ void TopoNeutralGraph::cloneNodeGraphConnection(
 {
     std::string outputKey = destConnectedNode->getName() + "(t)" + sourceInput.getType()
 #if MX_COMBINED_VERSION < 13900
-        + "(c)" + channelInfo + "(o)" + output;
-#else
-        + "(o)" + output;
+        + "(c)" + channelInfo
 #endif
+        + "(o)" + output;
+
     mx::OutputPtr graphOutput;
     auto          outputIt = _outputMap.find(outputKey);
     if (outputIt != _outputMap.end()) {
