@@ -69,4 +69,4 @@ private:
 
 } // namespace UsdLayerEditor
 
-#endif //LAYER_EDITOR_COMMANDS_H
+#endif // LAYER_EDITOR_COMMANDS_H

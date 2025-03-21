@@ -46,4 +46,4 @@ private:
 
 } // namespace UsdLayerEditor
 
-#endif //LAYER_EDITOR_WIDGETMANAGER_H
+#endif // LAYER_EDITOR_WIDGETMANAGER_H
