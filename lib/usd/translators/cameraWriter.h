@@ -42,11 +42,8 @@ public:
     void Write(const UsdTimeCode& usdTime) override;
 
 protected:
-    bool writeCameraAttrs(
-        const UsdTimeCode&         usdTime,
-        UsdGeomCamera&             primSchema);
-    bool writeCameraSplinesAttrs(UsdGeomCamera& primSchema,
-    const std::vector<double>& timeSamples);
+    bool writeCameraAttrs(const UsdTimeCode& usdTime, UsdGeomCamera& primSchema);
+    bool writeCameraSplinesAttrs(UsdGeomCamera& primSchema, const std::vector<double>& timeSamples);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
