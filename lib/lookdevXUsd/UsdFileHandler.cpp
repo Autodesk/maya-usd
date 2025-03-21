@@ -12,12 +12,11 @@
 
 #include <mayaUsdAPI/utils.h>
 
-#include <pxr/usd/sdf/layerUtils.h>
+#include <pxr/usd/usdShade/udimUtils.h>
 
 #include <LookdevXUfe/UfeUtils.h>
 
 #include <algorithm>
-#include <string_view>
 
 namespace LookdevXUsd
 {
@@ -44,68 +43,20 @@ std::string getRelativePath(const Ufe::AttributeFilename::Ptr& fnAttr, const std
     return path;
 }
 
-// This function is basically:
-//    return prefix + middle + suffix;
-// But in a way that allocates memory only once and keeps clang-tidy happy.
-//  See: performance-inefficient-string-concatenation in clang-tidy docs.
-std::string buildFullPath(const std::string_view& prefix,
-                          const std::string_view& middle,
-                          const std::string_view& suffix)
-{
-    std::string path;
-    path.reserve(prefix.size() + middle.size() + suffix.size() + 1);
-    path.append(prefix);
-    path.append(middle);
-    path.append(suffix);
-    return path;
-}
-
-std::string resolveUdimPath(const std::string& path, const Ufe::Attribute::Ptr& attribute)
-{
-    constexpr auto kUdimMin = 1001;
-    constexpr auto kUdimMax = 1100;
-    constexpr auto kUdimNumSize = 4;
-    constexpr std::string_view kUdimTag = "<UDIM>";
-
-    const auto udimPos = path.rfind(kUdimTag);
-    if (udimPos == std::string::npos)
-    {
-        return {};
-    }
-
-    const auto stage = MayaUsdAPI::usdStage(attribute);
-    if (!stage || !stage->GetEditTarget().GetLayer())
-    {
-        return {};
-    }
-
-    // Going for minimal alloc code using string_view to the fullest :)
-    const auto udimPrefix = std::string_view{path.data(), udimPos};
-    const auto udimEndPos = udimPos + kUdimTag.size();
-
-    const auto udimPostfix =
-        std::string_view{path.data() + static_cast<ptrdiff_t>(udimEndPos), path.size() - udimEndPos};
-
-    // Build numericPath once and re-use it in the loop:
-    auto numericPath = buildFullPath(udimPrefix, std::to_string(kUdimMin), udimPostfix);
-    const auto numericStart = numericPath.begin() + static_cast<std::string::difference_type>(udimPrefix.size());
-    const auto numericEnd = numericStart + static_cast<std::string::difference_type>(kUdimNumSize);
-
-    for (auto i = kUdimMin; i < kUdimMax; ++i)
-    {
-        numericPath.replace(numericStart, numericEnd, std::to_string(i));
-
-        const auto resolved =
-            PXR_NS::SdfComputeAssetPathRelativeToLayer(stage->GetEditTarget().GetLayer(), numericPath);
-        if (resolved.size() != numericPath.size())
-        {
-            // Restore the <UDIM> tag in the resolved path:
-            const auto prefixLength = resolved.size() - udimPostfix.size() - kUdimNumSize;
-            return buildFullPath({resolved.data(), prefixLength}, kUdimTag, udimPostfix);
+// From USD's materialParamsUtil.cpp:
+// We need to find the first layer that changes the value
+// of the parameter so that we anchor relative paths to that.
+static
+PXR_NS::SdfLayerHandle 
+findLayerHandle(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time) {
+    for (const auto& spec: attr.GetPropertyStack(time)) {
+        if (spec->HasDefaultValue() ||
+            spec->GetLayer()->GetNumTimeSamplesForPath(
+                spec->GetPath()) > 0) {
+            return spec->GetLayer();
         }
     }
-
-    return {};
+    return PXR_NS::TfNullPtr;
 }
 
 } // namespace
@@ -123,15 +74,20 @@ std::string UsdFileHandler::getResolvedPath(const Ufe::AttributeFilename::Ptr& f
         auto attributeType = MayaUsdAPI::usdAttributeType(fnAttr);
         if (attributeType == PXR_NS::SdfValueTypeNames->Asset)
         {
-            PXR_NS::VtValue vt;
-            if (MayaUsdAPI::getUsdValue(fnAttr, vt, MayaUsdAPI::getTime(fnAttr->sceneItem()->path())) &&
-                vt.IsHolding<PXR_NS::SdfAssetPath>())
+            const auto prim = MayaUsdAPI::getPrimForUsdSceneItem(fnAttr->sceneItem());
+            const auto usdAttribute = prim.GetAttribute(PXR_NS::TfToken(fnAttr->name()));
+            const auto attrQuery = PXR_NS::UsdAttributeQuery(usdAttribute);
+            const auto time = MayaUsdAPI::getTime(fnAttr->sceneItem()->path());
+            PXR_NS::SdfAssetPath assetPath;
+
+            if (attrQuery.Get(&assetPath, time))
             {
-                const auto& assetPath = vt.UncheckedGet<PXR_NS::SdfAssetPath>();
                 auto path = assetPath.GetResolvedPath();
-                if (path.empty())
+                if (path.empty() && PXR_NS::UsdShadeUdimUtils::IsUdimIdentifier(assetPath.GetAssetPath()))
                 {
-                    path = resolveUdimPath(assetPath.GetAssetPath(), fnAttr);
+                    path = 
+                        PXR_NS::UsdShadeUdimUtils::ResolveUdimPath(
+                            assetPath.GetAssetPath(), findLayerHandle(usdAttribute, time));
                 }
 #ifdef _WIN32
                 std::replace(path.begin(), path.end(), '\\', '/');

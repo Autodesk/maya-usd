@@ -27,6 +27,7 @@ from maya import cmds
 
 import ufe
 import os
+import unittest
 
 class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
     """
@@ -118,6 +119,7 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         ufeItem = ufe.Hierarchy.createItem(ufePath)
         return ufeItem
 
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() <= 8, 'Requires parent command fix in Maya.')
     def testPoints(self):
         self._StartTest('RenderLights')
 
@@ -128,6 +130,27 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         
         self._RunTest()
 
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() == 9, 'Requires parent command fix in Maya.')
+    def testCustomGizmos(self):
+        self._StartTest('RenderLightsCustomGizmos')
+
+        cmds.move(-10, 15, 20, 'persp')
+        cmds.rotate(-30, -30, 0, 'persp')
+        cmds.modelEditor('modelPanel4', edit=True, grid=False, displayLights = 'default')
+        cmds.displayColor('light', 21, active=True)
+        
+        self._RunTest()
+
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 10, 'Requires parent command fix in Maya for UFE Light\'s areaInterface.')
+    def testCustomRectLightGizmo(self):
+        self._StartTest('RenderLightsCustomRectLightGizmo')
+
+        cmds.move(-10, 15, 20, 'persp')
+        cmds.rotate(-30, -30, 0, 'persp')
+        cmds.modelEditor('modelPanel4', edit=True, grid=False, displayLights = 'default')
+        cmds.displayColor('light', 21, active=True)
+        
+        self._RunTest()
 
 
 if __name__ == '__main__':

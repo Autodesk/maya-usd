@@ -515,7 +515,11 @@ UFE_LIGHT_BASE::VolumeProps getLightDiskVolumeProps(const UsdPrim& prim)
 
 UFE_LIGHT_BASE::VolumeProps getLightDomeVolumeProps(const UsdPrim& prim)
 {
+    const UsdLuxDomeLight      lightSchema(prim);
+    const PXR_NS::UsdAttribute guideRadiusAttribute = lightSchema.GetGuideRadiusAttr();
+
     UFE_LIGHT_BASE::VolumeProps vp;
+    guideRadiusAttribute.Get(&vp.radius);
     return vp;
 }
 
