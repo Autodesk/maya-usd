@@ -31,7 +31,6 @@
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/schema.h>
@@ -676,10 +675,10 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const MSelectionList&           fullList,
     const std::vector<double>&      timeSamples)
     : compatibility(extractToken(
-          userArgs,
-          UsdMayaJobExportArgsTokens->compatibility,
-          UsdMayaJobExportArgsTokens->none,
-          { UsdMayaJobExportArgsTokens->appleArKit }))
+        userArgs,
+        UsdMayaJobExportArgsTokens->compatibility,
+        UsdMayaJobExportArgsTokens->none,
+        { UsdMayaJobExportArgsTokens->appleArKit }))
     , defaultMeshScheme(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->defaultMeshScheme,
@@ -1371,12 +1370,12 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
     const bool          importWithProxyShapes,
     const GfInterval&   timeInterval)
     : assemblyRep(extractToken(
-          userArgs,
-          UsdMayaJobImportArgsTokens->assemblyRep,
-          UsdMayaJobImportArgsTokens->Collapsed,
-          { UsdMayaJobImportArgsTokens->Full,
-            UsdMayaJobImportArgsTokens->Import,
-            UsdMayaJobImportArgsTokens->Unloaded }))
+        userArgs,
+        UsdMayaJobImportArgsTokens->assemblyRep,
+        UsdMayaJobImportArgsTokens->Collapsed,
+        { UsdMayaJobImportArgsTokens->Full,
+          UsdMayaJobImportArgsTokens->Import,
+          UsdMayaJobImportArgsTokens->Unloaded }))
     , excludePrimvarNames(extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->excludePrimvar))
     , excludePrimvarNamespaces(
           extractTokenSet(userArgs, UsdMayaJobImportArgsTokens->excludePrimvarNamespace))
