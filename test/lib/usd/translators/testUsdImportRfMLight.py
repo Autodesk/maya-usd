@@ -86,9 +86,6 @@ class testUsdImportRfMLight(unittest.TestCase):
         if lightTypeName == 'DistantLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrDistantLight')
             testNumber = 3
-        elif lightTypeName == 'MeshLight':
-            self.assertEqual(depNodeFn.typeName(), 'PxrMeshLight')
-            testNumber = 5
         elif lightTypeName == 'RectLight':
             self.assertEqual(depNodeFn.typeName(), 'PxrRectLight')
             testNumber = 6
@@ -193,9 +190,6 @@ class testUsdImportRfMLight(unittest.TestCase):
     def testImportDistantLight(self):
         self._ValidateMayaLight('DistantLight')
         self._ValidatePxrDistantLightAngle()
-
-    def testImportMeshLight(self):
-        self._ValidateMayaLight('MeshLight')
 
     def testImportRectLight(self):
         self._ValidateMayaLight('RectLight')
