@@ -586,6 +586,15 @@ OgsFragment::OgsFragment(mx::ElementPtr element, mx::GenContext& genContext)
 {
 }
 
+static bool IsSemanticFilename(const mx::ShaderPort* const port)
+{
+#if MX_COMBINED_VERSION < 13900
+    return port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME;
+#else
+    return port->getType().getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME;
+#endif
+}
+
 template <typename GLSL_GENERATOR_WRAPPER>
 OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGeneratorWrapper)
     : _element(element)
@@ -647,7 +656,7 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
         for (size_t i = 0; i < uniforms.size(); ++i) {
             const mx::ShaderPort* const port = uniforms[i];
             if (!port->getNode()) {
-                if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
+                if (IsSemanticFilename(port)) {
                     // Might be an embedded texture. Retrieve the filename.
                     std::string textureName
                         = mx::OgsXmlGenerator::samplerToTextureName(port->getVariable());
@@ -675,7 +684,7 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
                 path += originalName;
             }
             if (!path.empty()) {
-                if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
+                if (IsSemanticFilename(port)) {
                     std::string textureName
                         = mx::OgsXmlGenerator::samplerToTextureName(variableName);
                     if (!textureName.empty()) {

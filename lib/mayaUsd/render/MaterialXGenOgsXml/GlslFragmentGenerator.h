@@ -9,6 +9,8 @@
 /// @file
 /// GLSL fragment generator
 
+#include "CombinedMaterialXVersion.h"
+
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
 #include <MaterialXGenGlsl/GlslSyntax.h>
 #include <MaterialXGenShader/GenUserData.h>
@@ -50,8 +52,15 @@ public:
 class GlslFragmentSyntax : public GlslSyntax
 {
 public:
+    GlslFragmentSyntax();
+
+#if MX_COMBINED_VERSION < 13900
     string getVariableName(const string& name, const TypeDesc* type, IdentifierMap& identifiers)
         const override;
+#else
+    string getVariableName(const string& name, const TypeDesc type, IdentifierMap& identifiers)
+        const override;
+#endif
 };
 
 using GlslFragmentGeneratorPtr = shared_ptr<class GlslFragmentGenerator>;
@@ -84,7 +93,11 @@ public:
 #endif
 
 protected:
+#if MX_COMBINED_VERSION < 13900
     static void toVec3(const TypeDesc* type, string& variable);
+#else
+    static void toVec3(const TypeDesc type, string& variable);
+#endif
 };
 
 MATERIALX_NAMESPACE_END

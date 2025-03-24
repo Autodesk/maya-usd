@@ -5,6 +5,7 @@
 
 #include "OgsXmlGenerator.h"
 
+#include "CombinedMaterialXVersion.h"
 #include "PugiXML/pugixml.hpp"
 
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslFragmentGenerator.h>
@@ -20,18 +21,31 @@ MATERIALX_NAMESPACE_BEGIN
 namespace {
 typedef std::unordered_map<string, const pugi::char_t*> OGS_TYPE_MAP_T;
 
+#if MX_COMBINED_VERSION < 13900
+static const std::string& GetMxTypeString(const MaterialX::TypeDesc* type)
+{
+    return type->getName();
+}
+#else
+static const std::string& GetMxTypeString(MaterialX::TypeDesc type) { return type.getName(); }
+#endif
+
 const OGS_TYPE_MAP_T& getOgsTypeMap()
 {
     // Data types used by OGS
     // Delayed initialization to survive C++ init order fiasco.
     // Keyed by string to survive multiple redefinitions of global symbols.
-    static const OGS_TYPE_MAP_T OGS_TYPE_MAP
-        = { { Type::BOOLEAN->getName(), "bool" },     { Type::FLOAT->getName(), "float" },
-            { Type::INTEGER->getName(), "int" },      { Type::STRING->getName(), "int" },
-            { Type::COLOR3->getName(), "float3" },    { Type::COLOR4->getName(), "float4" },
-            { Type::VECTOR2->getName(), "float2" },   { Type::VECTOR3->getName(), "float3" },
-            { Type::VECTOR4->getName(), "float4" },   { Type::MATRIX33->getName(), "float4x4" },
-            { Type::MATRIX44->getName(), "float4x4" } };
+    static const OGS_TYPE_MAP_T OGS_TYPE_MAP = { { GetMxTypeString(Type::BOOLEAN), "bool" },
+                                                 { GetMxTypeString(Type::FLOAT), "float" },
+                                                 { GetMxTypeString(Type::INTEGER), "int" },
+                                                 { GetMxTypeString(Type::STRING), "int" },
+                                                 { GetMxTypeString(Type::COLOR3), "float3" },
+                                                 { GetMxTypeString(Type::COLOR4), "float4" },
+                                                 { GetMxTypeString(Type::VECTOR2), "float2" },
+                                                 { GetMxTypeString(Type::VECTOR3), "float3" },
+                                                 { GetMxTypeString(Type::VECTOR4), "float4" },
+                                                 { GetMxTypeString(Type::MATRIX33), "float4x4" },
+                                                 { GetMxTypeString(Type::MATRIX44), "float4x4" } };
     return OGS_TYPE_MAP;
 }
 
@@ -230,7 +244,7 @@ void xmlAddProperties(
                     sampler, shaderPort->getName(), samplerName, parameterFlags, refNode);
             }
         } else {
-            const auto type = getOgsTypeMap().find(shaderPort->getType()->getName());
+            const auto type = getOgsTypeMap().find(GetMxTypeString(shaderPort->getType()));
             if (type != getOgsTypeMap().end()) {
                 pugi::xml_node prop = parent.append_child(type->second);
                 if (shaderPort->getType() == Type::MATRIX33) {
@@ -262,7 +276,7 @@ void xmlAddValues(pugi::xml_node& parent, const VariableBlock& block, bool skipL
             continue;
         }
         if (p->getValue()) {
-            auto type = getOgsTypeMap().find(p->getType()->getName());
+            auto type = getOgsTypeMap().find(GetMxTypeString(p->getType()));
             if (type != getOgsTypeMap().end()) {
                 pugi::xml_node val = parent.append_child(type->second);
                 if (p->getType() == Type::MATRIX33) {
@@ -415,8 +429,8 @@ string OgsXmlGenerator::generate(
         throw ExceptionShaderGenError("Shader stage has no output");
     }
     pugi::xml_node xmlOutputs = xmlRoot.append_child(OUTPUTS);
-    pugi::xml_node xmlOut = xmlOutputs.append_child(
-        getOgsTypeMap().at(hwTransparency ? Type::COLOR4->getName() : Type::COLOR3->getName()));
+    pugi::xml_node xmlOut = xmlOutputs.append_child(getOgsTypeMap().at(
+        hwTransparency ? GetMxTypeString(Type::COLOR4) : GetMxTypeString(Type::COLOR3)));
     xmlOut.append_attribute(NAME) = OUTPUT_NAME.c_str();
 
     // Add implementations
@@ -499,15 +513,15 @@ string OgsXmlGenerator::generateLightRig(
         baseShaderName.c_str());
 
     // Add Light Rig properties:
-    auto           vec3OGSType = getOgsTypeMap().find(Type::VECTOR3->getName())->second;
-    auto           intOGSType = getOgsTypeMap().find(Type::INTEGER->getName())->second;
+    auto           vec3OGSType = getOgsTypeMap().find(GetMxTypeString(Type::VECTOR3))->second;
+    auto           intOGSType = getOgsTypeMap().find(GetMxTypeString(Type::INTEGER))->second;
     pugi::xml_node xmlLightProp = xmlProperties.append_child(vec3OGSType);
     xmlLightProp.append_attribute(NAME) = IRRADIANCEENV;
     xmlLightProp.append_attribute(REF) = DOT_COMBINE(baseShaderName.c_str(), DIFFUSEI).c_str();
     xmlLightProp = xmlProperties.append_child(vec3OGSType);
     xmlLightProp.append_attribute(NAME) = SPECULARENV;
     xmlLightProp.append_attribute(REF) = DOT_COMBINE(baseShaderName.c_str(), SPECULARI).c_str();
-    xmlLightProp = xmlProperties.append_child(Type::STRING->getName().c_str());
+    xmlLightProp = xmlProperties.append_child(GetMxTypeString(Type::STRING).c_str());
     xmlLightProp.append_attribute(NAME) = SELECTOR;
     xmlLightProp.append_attribute(REF) = DOT_COMBINE(LIGHT_ACCUM, SELECTOR).c_str();
     xmlLightProp = xmlProperties.append_child(intOGSType);
@@ -536,7 +550,7 @@ string OgsXmlGenerator::generateLightRig(
     xmlLightValue = xmlValues.append_child(vec3OGSType);
     xmlLightValue.append_attribute(NAME) = SPECULARI;
     xmlLightValue.append_attribute(VALUE) = "0, 0, 0";
-    xmlLightValue = xmlValues.append_child(Type::STRING->getName().c_str());
+    xmlLightValue = xmlValues.append_child(GetMxTypeString(Type::STRING).c_str());
     xmlLightValue.append_attribute(NAME) = SELECTOR;
     xmlLightValue.append_attribute(VALUE) = LIGHT_SELECTOR;
 
@@ -547,8 +561,8 @@ string OgsXmlGenerator::generateLightRig(
     }
     pugi::xml_node xmlOutputs = xmlRoot.append_child(OUTPUTS);
     const bool     hwTransparency = glslShader.hasAttribute(HW::ATTR_TRANSPARENT);
-    pugi::xml_node xmlOut = xmlOutputs.append_child(
-        getOgsTypeMap().at(hwTransparency ? Type::COLOR4->getName() : Type::COLOR3->getName()));
+    pugi::xml_node xmlOut = xmlOutputs.append_child(getOgsTypeMap().at(
+        hwTransparency ? GetMxTypeString(Type::COLOR4) : GetMxTypeString(Type::COLOR3)));
     xmlOut.append_attribute(NAME) = OUTPUT_NAME.c_str();
     xmlOut.append_attribute(REF)
         = DOT_COMBINE(baseShaderName.c_str(), OgsXmlGenerator::OUTPUT_NAME.c_str()).c_str();
