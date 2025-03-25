@@ -26,6 +26,9 @@
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
 #include <pxr/usd/usdUI/nodeGraphNodeAPI.h>
+#if PXR_VERSION >= 2505
+#include <pxr/usd/usdMtlx/tokens.h>
+#endif
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>

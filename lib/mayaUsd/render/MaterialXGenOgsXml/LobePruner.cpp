@@ -486,13 +486,11 @@ mx::NodeDefPtr LobePrunerImpl::getOrAddOptimizedNodeDef(
     auto optimizedNodeDef
         = _library->addNodeDef(optimizedNodeDefName, "surfaceshader", optimizedNodeName);
     optimizedNodeDef->copyContentFrom(originalNodeDef);
-    optimizedNodeDef->setSourceUri("");
     optimizedNodeDef->setNodeString(optimizedNodeName);
 
     auto optimizedNodeGraph
         = _library->addNodeGraph(nsPrefix + "LPOPTING_" + optimizedNodeName + "_surfaceshader");
     optimizedNodeGraph->copyContentFrom(originalNodeGraph);
-    optimizedNodeGraph->setSourceUri("");
     optimizedNodeGraph->setNodeDefString(optimizedNodeDefName);
 
     ReverseCnxMap reverseMap;
