@@ -20,7 +20,6 @@ import unittest
 
 from pxr import Usd
 from pxr import UsdGeom
-from pxr import Ts
 from pxr import Sdf
 from pxr import Gf
 
@@ -70,6 +69,7 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         """
         Tests exporting perspective camera's attributes with splines.
         """
+        from pxr import Ts
         usdCamera = self._GetUsdCamera('perspCamera')
 
         horizontalOffsetAttr = usdCamera.GetPrim().GetAttribute('horizontalApertureOffset')
@@ -104,6 +104,7 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         """
         Tests exporting ortographic camera's attributes with splines.
         """
+        from pxr import Ts
         usdCamera = self._GetUsdCamera('orthoCamera')
 
         focalLengthAttr = usdCamera.GetPrim().GetAttribute('focalLength')
