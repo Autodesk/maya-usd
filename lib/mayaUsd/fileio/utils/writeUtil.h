@@ -41,6 +41,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION >= 2411
+class TsKnotMap;
+#endif
+
 class FlexibleSparseValueWriter;
 struct UsdMayaJobExportArgs;
 
@@ -328,17 +332,20 @@ struct UsdMayaWriteUtil
                            : attr.Set(*value, time);
     }
 
-    /// \brief Reads the animation curve for attribute \p name on \p depNode and authors the
-    /// equivalent Usd Spline curve to the \p attr.
+#if PXR_VERSION >= 2411
+    /// Get the UsdKnots from a Maya curve.
     ///
-    /// If there are no keys in the curve, no spline value will be authored in the \p attr.
-#if PXR_VERSION > 2411
-    MAYAUSD_CORE_PUBLIC static bool CreateSplineFromPlugToAttr(
-        const MFnDependencyNode&   depNode,
-        const MString&             name,
-        UsdAttribute&              attr,
-        const std::vector<double>& timeSamples,
-        float                      scaling = 1.f);
+    /// Returns an empty TsKnotMap if the curve doesn't exist or has no keys.
+    MAYAUSD_CORE_PUBLIC static TsKnotMap GetKnotsFromMayaCurve(
+        const MFnDependencyNode& depNode,
+        const MString&           name,
+        float                    scaling = 1.f);
+
+    /// Get the UsdSpline from a Maya curve.
+    ///
+    /// The spline will have different configuration based on the wanted curve.
+    MAYAUSD_CORE_PUBLIC static TsSpline
+    GetSplineFromMayaCurve(const MFnDependencyNode& depNode, const MString& name);
 #endif
 };
 
