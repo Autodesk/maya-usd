@@ -93,7 +93,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
     MFnCamera camFn(GetDagPath(), &status);
     CHECK_MSTATUS_AND_RETURN(status, false)
 
-    auto primName = primSchema.GetPrim().GetPath().GetAsString().c_str();
+    auto primName = primSchema.GetPrim().GetPath().GetAsString();
 
     TsKnotMap knots = UsdMayaWriteUtil::GetKnotsFromMayaCurve(camFn, "focalLength");
     if (!knots.empty()) {
@@ -103,7 +103,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
         if (!focalLengthAttr.SetSpline(spline)) {
             MGlobal::displayError(
                 TfStringPrintf(
-                    "Error setting spline attribute on focalLength on prim '%s'.", primName)
+                    "Error setting spline attribute on focalLength on prim '%s'.", primName.c_str())
                     .c_str());
         }
     }
@@ -116,7 +116,8 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
         if (!focusDistanceAttr.SetSpline(spline)) {
             MGlobal::displayError(
                 TfStringPrintf(
-                    "Error setting spline attribute on focusDistance on prim '%s'.", primName)
+                    "Error setting spline attribute on focusDistance on prim '%s'.",
+                    primName.c_str())
                     .c_str());
         }
     }
@@ -131,7 +132,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
             if (!depthOfFieldAttr.SetSpline(spline)) {
                 MGlobal::displayError(
                     TfStringPrintf(
-                        "Error setting spline attribute on fStop on prim '%s'.", primName)
+                        "Error setting spline attribute on fStop on prim '%s'.", primName.c_str())
                         .c_str());
             }
         }
@@ -158,7 +159,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
                 MGlobal::displayError(
                     TfStringPrintf(
                         "Error adding spline attribute to horizontalAperture on prim '%s'.",
-                        primName)
+                        primName.c_str())
                         .c_str());
             }
 
@@ -166,7 +167,8 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
             if (!verticalApertureAttr.SetSpline(spline)) {
                 MGlobal::displayError(
                     TfStringPrintf(
-                        "Error adding spline attribute to verticalAperture on prim '%s'.", primName)
+                        "Error adding spline attribute to verticalAperture on prim '%s'.",
+                        primName.c_str())
                         .c_str());
             }
         }
@@ -200,7 +202,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
                 MGlobal::displayError(
                     TfStringPrintf(
                         "Error adding spline attribute to horizontalAperture on prim '%s'.",
-                        primName)
+                        primName.c_str())
                         .c_str());
             }
         }
@@ -216,7 +218,8 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
             if (!verticalApertureAttr.SetSpline(spline)) {
                 MGlobal::displayError(
                     TfStringPrintf(
-                        "Error adding spline attribute to verticalAperture on prim '%s'.", primName)
+                        "Error adding spline attribute to verticalAperture on prim '%s'.",
+                        primName.c_str())
                         .c_str());
             }
         }
@@ -246,7 +249,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
                 MGlobal::displayError(TfStringPrintf(
                                           "Error adding spline attribute to perspective "
                                           "horizontalFilmOffset on prim '%s'.",
-                                          primName)
+                                          primName.c_str())
                                           .c_str());
             }
         }
@@ -274,7 +277,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
                 MGlobal::displayError(TfStringPrintf(
                                           "Error adding spline attribute to perspective "
                                           "verticalFilmOffset on prim '%s'.",
-                                          primName)
+                                          primName.c_str())
                                           .c_str());
             }
         }
