@@ -93,7 +93,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
     MFnCamera camFn(GetDagPath(), &status);
     CHECK_MSTATUS_AND_RETURN(status, false)
 
-    auto primName = primSchema.GetPrim().GetPath().GetAsString();
+    auto primName = primSchema.GetPrim().GetPath().GetAsString().c_str();
 
     TsKnotMap knots = UsdMayaWriteUtil::GetKnotsFromMayaCurve(camFn, "focalLength");
     if (!knots.empty()) {
