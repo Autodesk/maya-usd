@@ -365,7 +365,6 @@ void LayerTreeView::onModelReset()
 
     if (_cachedModelState) {
         _cachedModelState->restore(*this, *_model);
-        _cachedModelState.reset();
     } else {
         expandAll();
     }
