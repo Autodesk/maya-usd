@@ -81,6 +81,9 @@ public:
 
     void selectProxyShape(const char* shapePath) override;
 
+    std::vector<std::string> getSelectedLayers() override;
+    void                     selectLayers(std::vector<std::string> layerIds) override;
+
 public:
     void onClearUIOnSceneReset();
     void onCreateUI();

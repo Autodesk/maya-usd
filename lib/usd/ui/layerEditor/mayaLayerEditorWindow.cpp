@@ -306,4 +306,27 @@ void MayaLayerEditorWindow::onShowContextMenu(const QPoint& pos)
     contextMenu.exec(treeView()->mapToGlobal(pos));
 }
 
+std::vector<std::string> MayaLayerEditorWindow::getSelectedLayers()
+{
+    std::vector<std::string> selLayers;
+    if (_layerEditor) {
+        selLayers = _layerEditor->getSelectedLayers();
+    } else {
+        TF_CODING_ERROR(
+            "No LayerEditorWidget set in the MayaLayerEditorWindow. No layers to retrieve.");
+    }
+
+    return selLayers;
+}
+
+void MayaLayerEditorWindow::selectLayers(std::vector<std::string> layerIds)
+{
+    if (_layerEditor) {
+        _layerEditor->selectLayers(layerIds);
+    } else {
+        TF_CODING_ERROR(
+            "No LayerEditorWidget set in the MayaLayerEditorWindow. Layers cannot be selected.");
+    }
+}
+
 } // namespace UsdLayerEditor

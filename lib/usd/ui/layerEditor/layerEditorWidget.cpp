@@ -18,7 +18,6 @@
 
 #include "abstractCommandHook.h"
 #include "dirtyLayersCountBadge.h"
-#include "layerEditorWidgetManager.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 #include "qtUtils.h"
@@ -56,7 +55,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 using namespace UsdLayerEditor;
-class LayerEditorWidgetManager;
 
 // create the default menus on the parent QMainWindow
 void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
@@ -101,8 +99,6 @@ LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow*
 {
     setupLayout();
     ::setupDefaultMenu(&in_sessionState, in_parent);
-    auto layerEditorManager = LayerEditorWidgetManager::getInstance();
-    layerEditorManager->setWidget(this);
 }
 
 // helper for setupLayout
