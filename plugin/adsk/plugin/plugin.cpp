@@ -180,6 +180,7 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ADSKMayaUSDExportCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
+    registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
     registerCommandCheck<MayaUsd::SchemaCommand>(plugin);
     registerCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)
