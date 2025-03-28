@@ -26,6 +26,7 @@ from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
 
+import unittest
 import ufe
 import os
 
@@ -123,6 +124,7 @@ class testVP2RenderDelegateCameras(imageUtils.ImageDiffingTestCase):
         ufeItem = ufe.Hierarchy.createItem(ufePath)
         return ufeItem
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2025, 'Requires Maya fixes only available after Maya 2025.')
     def testCameras(self):
         self._StartTest('RenderCameras')
 
