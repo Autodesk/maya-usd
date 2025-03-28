@@ -114,6 +114,7 @@ public:
     static constexpr auto kFileFlagLong = "file";
     static constexpr auto kSelectionFlag = "sl";
     static constexpr auto kSelectionFlagLong = "selection";
+    static constexpr auto kAnimationTypeFlag = "at";
     static constexpr auto kFrameSampleFlag = "fs";
     static constexpr auto kFrameSampleFlagLong = "frameSample";
     static constexpr auto kFrameStrideFlag = "fst";

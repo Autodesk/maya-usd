@@ -76,6 +76,10 @@ proc mayaUsdTranslatorExport_SetOptionMenuByAnnotation(
     }
 }
 
+proc int mayaUsdTranslatorExport_ShouldEnableSplines() {
+    return `python("from pxr import Usd; Usd.GetVersion() >= (0, 24, 11)")`;
+}
+
 proc mayaUsdTranslatorExport_SetOptionMenuByBool (
         string $ann, int $enable, string $widget) {
 
@@ -788,6 +792,9 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
         if (stringArrayContains("animation-data", $sectionNames)) {
             checkBoxGrp -e -en 1 animationCheckBox;
         }
+        if (mayaUsdTranslatorExport_ShouldEnableSplines()) {
+            optionMenuGrp -e -en 1 exportAnimationTypePopup;
+        }
         checkBoxGrp -e -en 1 eulerFilterCheckBox;
         checkBoxGrp -e -en 1 staticSingleSampleCheckBox;
         intFieldGrp -e -en1 1 -en2 1 frameRangeFields;
@@ -912,6 +919,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "defaultUSDFormatPopup");
             } else if ($optionBreakDown[0] == "animation") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "animationCheckBox");
+            } else if ($optionBreakDown[0] == "animationType") {
+                mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "exportAnimationTypePopup");
             } else if ($optionBreakDown[0] == "eulerFilter") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "eulerFilterCheckBox");
             } else if ($optionBreakDown[0] == "staticSingleSample") {
@@ -1281,6 +1290,13 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 }
 
                 columnLayout -width 100 animOptsCol;
+                    if (mayaUsdTranslatorExport_ShouldEnableSplines()) {
+                        optionMenuGrp -l `getMayaUsdString("kExportAnimationTypeLbl")` -annotation `getMayaUsdString("kExportAnimationTypeAnn")` exportAnimationTypePopup;
+                            menuItem -l `getMayaUsdString("kExportAnimationTypeTimeSamplesLbl")` -ann "timesamples";
+                            menuItem -l `getMayaUsdString("kExportAnimationTypeCurvesLbl")` -ann "curves";
+                            menuItem -l `getMayaUsdString("kExportAnimationTypeBothLbl")` -ann "both";
+                    }
+
                     rowLayout -numberOfColumns 2 -columnAttach 2 "left" 20;
                         intFieldGrp -l `getMayaUsdString("kExportFrameRangeLbl")` -numberOfFields 2 -v1 1 -v2 200 frameRangeFields;
                         button -l `getMayaUsdString("kExportFrameRangeBtn")` -command ("mayaUsdTranslatorExport_AnimationRangeCB") animRangeButton;
@@ -1397,6 +1413,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         if (stringArrayContains("animation", $sectionNames)) {
             if (stringArrayContains("animation-data", $sectionNames)) {
                 $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
+            }
+            if (mayaUsdTranslatorExport_ShouldEnableSplines()) {
+                $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "animationType", "exportAnimationTypePopup");
             }
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "staticSingleSample", "staticSingleSampleCheckBox");
