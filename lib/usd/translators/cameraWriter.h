@@ -43,6 +43,7 @@ public:
 
 protected:
     bool writeCameraAttrs(const UsdTimeCode& usdTime, UsdGeomCamera& primSchema);
+    bool writeCameraSplinesAttrs(UsdGeomCamera& primSchema);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
