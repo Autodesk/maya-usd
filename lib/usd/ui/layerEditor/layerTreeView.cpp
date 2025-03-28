@@ -326,6 +326,10 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
 
 void LayerTreeView::updateFromSessionState()
 {
+    if (_cachedModelState == nullptr) {
+        return;
+    }
+
     auto allStages = _model->sessionState()->allStages();
     std::map<LayerViewMemento::ItemId, LayerViewMemento::ItemState> newState;
     std::map<LayerViewMemento::ItemId, LayerViewMemento::ItemState> oldState
