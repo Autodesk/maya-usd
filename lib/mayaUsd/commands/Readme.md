@@ -709,3 +709,5 @@ The purpose of this command is to control the layer editor window.
 | `-isSessionLayer`       | `-sl`      | Query if the layer is a session layer         |
 | `-selectPrimsWithSpec`  | `-sp`      | Select the prims with spec in a layer         |
 | `-saveEdits`            | `-sv`      | Save the modifications                        |
+| `-getSelectedLayers`    | `-gsl`     | Query the selected layers in the layer editor (note this is different from the edit target). Returns layer ids of the selected layers.    |
+| `-setSelectedLayers`    | `-ssl`     | Set the selected layers in the layer editor with a semicolon delimited string of layer ids. Eg: -ssl "layer_id_1;layer_id_2"   |
