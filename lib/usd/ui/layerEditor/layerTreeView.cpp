@@ -334,7 +334,7 @@ void LayerTreeView::updateFromSessionState()
     // Only keep the state of stages that still exist
     for (auto const& stageEntry : allStages) {
         auto stageLayers = stageEntry._stage->GetLayerStack();
-        for (const auto stageLayer : stageLayers) {
+        for (const auto& stageLayer : stageLayers) {
             newState[stageLayer->GetIdentifier()] = oldState[stageLayer->GetIdentifier()];
         }
     }

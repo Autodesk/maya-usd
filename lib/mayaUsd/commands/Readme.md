@@ -711,3 +711,17 @@ The purpose of this command is to control the layer editor window.
 | `-saveEdits`            | `-sv`      | Save the modifications                        |
 | `-getSelectedLayers`    | `-gsl`     | Query the selected layers in the layer editor (note this is different from the edit target). Returns layer ids of the selected layers.    |
 | `-setSelectedLayers`    | `-ssl`     | Set the selected layers in the layer editor with a semicolon delimited string of layer ids. Eg: -ssl "layer_id_1;layer_id_2"   |
+
+In order to get notifications on layer selection changes, you can use `mayaUsd.lib.registerUICallback` with the `onLayerEditorSelectionChanged` notification:
+```
+    import mayaUsd.lib
+    def exampleCallback(context, callbackData):
+        # Get the stage object path
+        objectPath = context.get('objectPath')
+        # Get the list of selected layers
+        layerIds = callbackData.get('layerIds')
+        for layerId in layerIds:
+            print(layerIds)
+
+    mayaUsd.lib.registerUICallback('onLayerEditorSelectionChanged', exampleCallback)
+```
