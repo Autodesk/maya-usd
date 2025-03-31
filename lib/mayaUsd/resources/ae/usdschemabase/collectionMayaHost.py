@@ -391,6 +391,10 @@ class MayaHost(Host):
     
     def createStringListData(self, collection: Usd.CollectionAPI, isInclude: bool):
         return MayaStringListData(collection, isInclude)
+    
+    def openHelp(self) -> bool:
+        from mayaUsdUtils import showHelpMayaUSD
+        showHelpMayaUSD('UsdEditDuplicateAsMaya');
 
 
 class MayaPersistentStorage(PersistentStorage):

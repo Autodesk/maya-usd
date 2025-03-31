@@ -46,6 +46,7 @@ class FilteredStringDelegate(QItemDelegate):
         if editLine and self._listView:
             suggestions = self._listView.model()._collData.getSuggestions()
             self._completer = QCompleter(suggestions)
+            self._completer.setCaseSensitivity(Qt.CaseInsensitive)
             editLine.setCompleter(self._completer)
         return editLine
 
