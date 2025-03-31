@@ -394,7 +394,7 @@ class MayaHost(Host):
     
     def openHelp(self) -> bool:
         from mayaUsdUtils import showHelpMayaUSD
-        showHelpMayaUSD('UsdEditDuplicateAsMaya');
+        showHelpMayaUSD('MayaUsdCollectionWidget');
 
 
 class MayaPersistentStorage(PersistentStorage):
