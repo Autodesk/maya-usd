@@ -277,7 +277,7 @@ void LayerTreeItemDelegate::paint_drawText(QPainter* painter, const ItemPaintCon
     }
 
     QFontMetrics fm = painter->fontMetrics();
-    QString      elidedText = fm.elidedText(text, Qt::ElideRight, textRect.width());
+    QString      elidedText = fm.elidedText(text, Qt::ElideMiddle, textRect.width());
 
     QRect boundingRect;
     {
