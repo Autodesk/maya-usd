@@ -18,6 +18,7 @@ set(TREEVIEW_ICONS
     LightPortal
     Material
     Mesh
+    NodeGraph
     NurbsPatch
     PluginLight
     PointInstancer
