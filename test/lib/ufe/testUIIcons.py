@@ -111,7 +111,7 @@ class UIIconsTestCase(unittest.TestCase):
             ('Material',                'out_USD_Material.png'),
             ('MayaReference',           'out_USD_MayaReference.png'),
             ('Mesh',                    'out_USD_Mesh.png'),
-            ('NodeGraph',               'out_USD_Shader.png'),
+            ('NodeGraph',               'out_USD_NodeGraph.png'),
             ('NurbsCurves',             'out_USD_UsdGeomCurves.png'),
             ('NurbsPatch',              'out_USD_NurbsPatch.png'),
             ('OpenVDBAsset',            'out_USD_UsdGeomXformable.png'),
