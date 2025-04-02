@@ -261,3 +261,8 @@ class UsdCollectionData(CollectionData):
             return members
         else:
             return Usd.CollectionAPI.ComputeIncludedPaths(query, self._prim.GetStage())
+        
+    def openHelp(self) -> bool:
+        from ..common.host import Host
+
+        return Host.instance().openHelp()

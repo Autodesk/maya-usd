@@ -189,7 +189,7 @@ UsdUIInfoHandler::SupportedTypesMap UsdUIInfoHandler::getSupportedIconTypes() co
         { "Sphere", "out_USD_Sphere.png" },
         { "Volume", "out_USD_Volume.png" },
         { "Material", "out_USD_Material.png" },
-        { "NodeGraph", "out_USD_Shader.png" },
+        { "NodeGraph", "out_USD_NodeGraph.png" },
         { "Shader", "out_USD_Shader.png" },
     };
     return supportedTypes;

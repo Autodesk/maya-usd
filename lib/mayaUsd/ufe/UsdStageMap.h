@@ -28,6 +28,7 @@
 #include <ufe/path.h>
 
 #include <unordered_map>
+#include <vector>
 
 // Pending rework of mayaUsd namespaces, MayaUsdProxyShapeBase is in the Pixar
 // namespace.  PPT, 9-Mar-2021.
@@ -82,6 +83,12 @@ public:
 
     //! Return all the USD stages.
     StageSet allStages();
+
+    //! Return all the USD stage paths.
+    std::vector<Ufe::Path> allStagesPaths();
+
+    //! Returns true if the a stage with the given path exists, returns false otherwise.
+    bool isInStagesCache(const Ufe::Path& path);
 
     //! Set the stage map as dirty. It will be cleared immediately, but
     //! only repopulated when stage info is requested.

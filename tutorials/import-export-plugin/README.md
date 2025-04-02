@@ -6,8 +6,8 @@ This folder contains an example of a MayaUSD export plugin written in Python. It
 - How to save your options in a persistent Maya option variable.
 - How to register this export plugin with MayaUSD.
 
-There is also an example impot plugin. Everything that applies to the export
-plugin has an equivalent. often identical, in th eimport plugin. That includes:
+There is also an example import plugin. Everything that applies to the export
+plugin has an equivalent. often identical, in the import plugin. That includes:
 - Hook into the import process to force some options on or off.
 - Callback to present a UI to the user to set options specific to your export plugin.
 - Register this import plugin with MayaUSD.

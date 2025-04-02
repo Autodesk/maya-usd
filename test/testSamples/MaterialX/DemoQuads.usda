@@ -581,7 +581,7 @@ def Scope "mtl"
         def Shader "normalmap1"
         {
             uniform token info:id = "ND_normalmap"
-            float3 inputs:normal.connect = </mtl/standard_surface1/image1.outputs:out>
+            float3 inputs:in.connect = </mtl/standard_surface1/image1.outputs:out>
             float3 outputs:out
         }
 

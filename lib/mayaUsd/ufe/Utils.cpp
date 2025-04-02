@@ -100,6 +100,13 @@ Ufe::Path stagePath(UsdStageWeakPtr stage) { return UsdStageMap::getInstance().p
 
 TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return UsdStageMap::getInstance().allStages(); }
 
+std::vector<Ufe::Path> getAllStagesPaths() { return UsdStageMap::getInstance().allStagesPaths(); }
+
+bool isInStagesCache(const Ufe::Path& path)
+{
+    return UsdStageMap::getInstance().isInStagesCache(path);
+}
+
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
     // When called we do not make any assumption on whether or not the

@@ -18,6 +18,7 @@ REMOVE_ALL_LABEL = "Remove All"
 CLEAR_OPINIONS_LABEL = "Clear Opinions from Target Layer"
 PRINT_PRIMS_LABEL = "Print Prims to Script Editor"
 COPY_COLLECTION_PATH_LABEL = "Copy Collection Path"
+HELP_LABEL = "Help"
 
 
 class ExpressionMenu(QMenu):
@@ -31,6 +32,7 @@ class ExpressionMenu(QMenu):
         self._clearOpinionsAction = QAction(theme.themeLabel(CLEAR_OPINIONS_LABEL), self)
         self._printPrimsAction = QAction(theme.themeLabel(PRINT_PRIMS_LABEL), self)
         self._copyCollectionPathAction = QAction(theme.themeLabel(COPY_COLLECTION_PATH_LABEL), self)
+        self._helpAction = QAction(theme.themeLabel(HELP_LABEL), self)
 
         self.addActions([self._removeAllAction, self._clearOpinionsAction])
         self.addSeparator()
@@ -40,6 +42,7 @@ class ExpressionMenu(QMenu):
         self._clearOpinionsAction.triggered.connect(self._onClearOpinions)
         self._printPrimsAction.triggered.connect(self._onPrintPrims)
         self._copyCollectionPathAction.triggered.connect(self._copyCollectionPathToClipboard)
+        self._helpAction.triggered.connect(self._showHelpAction)
 
         self._collData.dataChanged.connect(self._onDataChanged)
         expansionRulesMenu = QMenu("Expansion Rules", self)
@@ -53,6 +56,8 @@ class ExpressionMenu(QMenu):
         for action in expansionRulesMenu.actions():
             actionGroup.addAction(action)
         self.addMenu(expansionRulesMenu)
+
+        self.addAction(self._helpAction)
 
         actionGroup.triggered.connect(self.onExpressionSelected)
 
@@ -74,12 +79,15 @@ class ExpressionMenu(QMenu):
         self._collData.clearIncludeExcludeOpinions()
 
     def _onPrintPrims(self):
-        self._collData.printCollection()        
+        self._collData.printCollection()
 
     def _copyCollectionPathToClipboard(self):
         path = self._collData.getNamedCollectionPath()
         if path:
             QApplication.clipboard().setText(path)
+
+    def _showHelpAction(self):
+        self._collData.openHelp()
 
     def onExpressionSelected(self, menuOption):
         if menuOption == self.expandPrimsAction:

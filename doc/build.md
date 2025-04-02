@@ -11,17 +11,17 @@ Before building the project, consult the following table to ensure you use the r
 |        Required       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
 |    Operating System   |       Windows 10/11        | High Sierra (10.13)<br>Mojave (10.14)<br>Catalina (10.15)<br>Big Sur (11.2.x)<br>Monterey (12.6) | CentOS 7/8<br>RHEL 8.6<br>Rocky 8.6    |
-|   Compiler Requirement| Maya 2022 (VS 2017/2019)<br>Maya 2023 (VS 2019)<br>Maya 2024 (VS 2022)<br>Maya 2025 (VS 2022) | Maya 2022 (Xcode 10.2.1)<br>Maya 2023 (Xcode 10.2.1)<br>Maya 2024 (Xcode 13.4)<br>Maya 2025 (Xcode 14.3) | Maya 2022 (gcc 6.3.1/9.3.1)<br>Maya 2023 (gcc 9.3.1)<br>Maya 2024 (gcc 11.2.1)<br>Maya 2025 (gcc 11.2.1) |
+|   Compiler Requirement| Maya 2022 (VS 2017/2019)<br>Maya 2023 (VS 2019)<br>Maya 2024 (VS 2022)<br>Maya 2025 (VS 2022)<br>Maya 2026 (VS 2022) | Maya 2022 (Xcode 10.2.1)<br>Maya 2023 (Xcode 10.2.1)<br>Maya 2024 (Xcode 13.4)<br>Maya 2025 (Xcode 14.3)<br>Maya 2026 (Xcode 14.3) | Maya 2022 (gcc 6.3.1/9.3.1)<br>Maya 2023 (gcc 9.3.1)<br>Maya 2024 (gcc 11.2.1)<br>Maya 2025 (gcc 11.2.1)<br>Maya 2026 (gcc 11.2.1) |
 | CMake Version (min/max) |        3.13 - 3.17      |                              3.13 - 3.17                     |           3.13 - 3.17       |
 |         Python        | 2.7.15/3.7.7/3.9.7/3.10/3.11 |               2.7.15/3.7.7/3.9.7/3.10/3.11                | 2.7.15/3.7.7/3.9.7/3.10/3.11 |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              | PyYAML, PySide, PyOpenGL, Jinja2 |
 |    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
 |    Command processor  | Visual Studio X64 {2017/2019/2022} command prompt |                  bash                |             bash            |
-| Supported Maya Version|   2022, 2023, 2024, 2025  |                    2022, 2023, 2024, 2025                    |   2022, 2023, 2024, 2025    |
+| Supported Maya Version| 2023, 2024, 2025, 2026<br>2022: builds no longer provided | 2023, 2024, 2025, 2026<br>2022: builds no longer provided | 2023, 2024, 2025, 2026<br>2022: builds no longer provided |
 
 |        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
-|          Qt           | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3 | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3 | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3 |
+|          Qt           | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3<br>Maya 2026 = 6.5.3 | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3<br>Maya 2026 = 6.5.3 | Maya 2022 = 5.15.2<br>Maya 2023 = 5.15.2<br>Maya 2024 = 5.15.2<br>Maya 2025 = 6.5.3<br>Maya 2026 = 6.5.3 |
 
 ***NOTE:*** Visit the online Maya developer help document under ***Setting up your build environment*** for additional compiler requirements on different platforms.
 
@@ -31,7 +31,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          | USD version used in Maya | USD source for MayaUsd |
 |:------------: |:---------------:                  |:------------------------:|:-------------------------:|
-|  CommitID/Tags | Officially supported:<br> [v21.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.11), [v22.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.11), [v23.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v23.11)<br>Other versions used:<br> [v22.05b](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.05b), [v22.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.08), [v23.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v23.02), [v23.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v23.08) | Maya 2022 = v21.11<br>Maya 2023 = v21.11<br>Maya 2024 = v22.11<br>Maya 2025 = v23.11 | [v21.11-MayaUsd-Public](https://github.com/autodesk-forks/USD/tree/v21.11-MayaUsd-Public)<br>[v22.11-MayaUsd-Public](https://github.com/autodesk-forks/USD/tree/v22.11-MayaUsd-Public)<br>[v23.11-MayaUsd-Public](https://github.com/autodesk-forks/USD/tree/v23.11-MayaUsd-Public) |
+|  CommitID/Tags | Officially supported:<br> [v21.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.11), [v22.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.11), [v23.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v23.11), [v24.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v24.11)<br>Other versions used:<br> [v22.05b](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.05b), [v22.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v22.08)<br>[v23.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v23.02), [v23.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v23.08)<br>[v24.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v24.05), [v24.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v24.08) | Maya 2022 = v21.11<br>Maya 2023 = v21.11<br>Maya 2024 = v22.11<br>Maya 2025 = v23.11<br>Maya 2026 = v24.11 | [v21.11-MayaUsd-Public](https://github.com/autodesk-forks/USD/tree/v21.11-MayaUsd-Public)<br> <br>[v22.11-MayaUsd-Public](https://github.com/autodesk-forks/USD/tree/v22.11-MayaUsd-Public)<br>[v23.11-MayaUsd-Public](https://github.com/autodesk-forks/USD/tree/v23.11-MayaUsd-Public)<br>[v24.11-MayaUsd-Public](https://github.com/autodesk-forks/USD/tree/v24.11-MayaUsd-Public) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -48,8 +48,9 @@ The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to br
 | v2.0.0<br>v2.0.3<br>v2.1.0 | Maya 2022 <br>Maya 2022.1/2022.2/2022.3<br>Maya 2022.4 | https://help.autodesk.com/view/MAYAUL/2022/ENU/?guid=Maya_SDK_ufe_ref_index_html |
 | v3.0.0<br>v3.2.0<br>v3.3.0 | Maya 2023/2023.1<br>Maya 2023.2<br>Maya 2023.3         | https://help.autodesk.com/view/MAYAUL/2023/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
 | v4.0.0<br>v4.1.0<br>v4.2.0 | Maya 2024<br>Maya 2024.1<br>Maya 2024.2                | https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
-| v5.0.0<br>                 | Maya 2025                                              | https://help.autodesk.com/view/MAYADEV/2025/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
-| v0.6.x                     | Maya BETA                                              | |
+| v5.0.0<br>v5.1.0<br>v5.3.0<br>v5.5.0 | Maya 2025<br>Maya 2025.1<br>Maya 2025.2<br>Maya 2025.3 | https://help.autodesk.com/view/MAYADEV/2025/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
+| v6.0.0<br> | Maya 2026 | https://help.autodesk.com/view/MAYADEV/2026/ENU/?guid=MAYA_API_REF_ufe_ref_index_html |
+| v0.7.x                     | Maya BETA                                              | |
 
 To build the project with UFE support, you will need to use the headers and libraries included in the ***Maya Devkit***:
 
@@ -211,7 +212,7 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 
 It is important to use the Python version shipped with Maya and not the system version when building USD on MacOS. Note that this is primarily an issue on MacOS, where Maya's version of Python is likely to conflict with the version provided by the system. 
 
-To build USD and the Maya plug-ins on MacOS for Maya (2022, 2023, 2024, 2025), run:
+To build USD and the Maya plug-ins on MacOS for Maya (2022, 2023, 2024, 2025, 2026), run:
 ```
 /Applications/Autodesk/maya2025/Maya.app/Contents/bin/mayapy build_usd.py ~/Desktop/BUILD
 ```

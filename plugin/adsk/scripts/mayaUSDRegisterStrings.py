@@ -169,6 +169,12 @@ __mayaUSDStringResources = {
     # All strings for export dialog:
     "kExportAnimDataAnn": "Exports Maya animation data as USD time samples.",
     "kExportAnimDataLbl": "Animation Data",
+    "kExportAnimationTypeLbl": "Type",
+    "kExportAnimationTypeTimeSamplesLbl": "Time Samples",
+    "kExportAnimationTypeCurvesLbl": "Animation Curves",
+    "kExportAnimationTypeBothLbl": "Both Samples and Curves",
+    "kExportAnimationTypeAnn": "Select how animations should be stored: Time Samples, Animation Curves, or both.\n" + 
+                               "Animation Curves are not fully supported. Where unsupported, the system falls back to Time Samples.",
     "kExportBlendShapesAnn": "Exports Maya Blend Shapes as USD blendshapes. Requires skeletons to be exported as well.",
     "kExportBlendShapesLbl": "Blend Shapes",
     "kExportColorSetsAnn": "Exports Maya Color Sets as USD primvars.",

@@ -75,8 +75,13 @@ MayaShaderGraph::MayaShaderGraph(
         addInputSockets(*interface, context);
 
         // Create the given output socket
+#if MX_COMBINED_VERSION < 13903
         ShaderGraphOutputSocket* outputSocket
             = addOutputSocket(output->getName(), TypeDesc::get(output->getType()));
+#else
+        ShaderGraphOutputSocket* outputSocket
+            = addOutputSocket(output->getName(), context.getTypeDesc(output->getType()));
+#endif
         outputSocket->setPath(output->getNamePath());
         const string& outputUnit = output->getUnit();
         if (!outputUnit.empty()) {
@@ -101,7 +106,11 @@ MayaShaderGraph::MayaShaderGraph(
         addInputSockets(*nodeDef, context);
 
         // Create output sockets
+#if MX_COMBINED_VERSION < 13903
         addOutputSockets(*nodeDef);
+#else
+        addOutputSockets(*nodeDef, context);
+#endif
 
         // Create this shader node in the graph.
         ShaderNodePtr newNode = ShaderNode::create(this, node->getName(), *nodeDef, context);
@@ -132,10 +141,19 @@ MayaShaderGraph::MayaShaderGraph(
             if (nodeInput) {
                 ValuePtr value = nodeInput->getResolvedValue();
                 if (value) {
-                    const string&                        valueString = value->getValueString();
+                    const string& valueString = value->getValueString();
+#if MX_COMBINED_VERSION < 13900
                     std::pair<const TypeDesc*, ValuePtr> enumResult;
                     const TypeDesc* type = TypeDesc::get(nodedefInput->getType());
-                    const string&   enumNames
+#else
+                    std::pair<TypeDesc, ValuePtr> enumResult;
+#if MX_COMBINED_VERSION < 13903
+                    TypeDesc                      type = TypeDesc::get(nodedefInput->getType());
+#else
+                    const TypeDesc type = context.getTypeDesc(nodedefInput->getType());
+#endif
+#endif
+                    const string& enumNames
                         = nodedefInput->getAttribute(ValueElement::ENUM_ATTRIBUTE);
                     if (context.getShaderGenerator().getSyntax().remapEnumeration(
                             valueString, type, enumNames, enumResult)) {
@@ -204,7 +222,11 @@ MayaShaderGraph::MayaShaderGraph(
     addInputSockets(*nodeGraph.getNodeDef(), context);
 
     // Create output sockets from the nodegraph
+#if MX_COMBINED_VERSION < 13903
     addOutputSockets(nodeGraph);
+#else
+    addOutputSockets(nodeGraph, context);
+#endif
 
     // Traverse all outputs and create all internal nodes
     for (OutputPtr graphOutput : nodeGraph.getActiveOutputs()) {

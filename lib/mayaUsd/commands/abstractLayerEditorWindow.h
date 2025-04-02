@@ -105,7 +105,9 @@ public:
     virtual void lockLayer() = 0;
     virtual void lockLayerAndSubLayers() = 0;
 
-    virtual void selectProxyShape(const char* shapePath) = 0;
+    virtual void                     selectProxyShape(const char* shapePath) = 0;
+    virtual std::vector<std::string> getSelectedLayers() = 0;
+    virtual void                     selectLayers(std::vector<std::string> layerIds) = 0;
 };
 
 } // namespace MAYAUSD_NS_DEF
