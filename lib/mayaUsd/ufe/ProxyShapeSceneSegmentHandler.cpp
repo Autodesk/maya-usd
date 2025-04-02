@@ -20,6 +20,7 @@
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MItDag.h>
+#include <maya/MProfiler.h>
 #include <ufe/hierarchy.h>
 #include <ufe/runTimeMgr.h>
 
@@ -28,17 +29,29 @@ namespace ufe {
 
 namespace {
 
+const int kSegmentHandlerProfilerCategory = MProfiler::addCategory("USDStages", "USDStages");
+
 // Find the gateway items into USD which are descendants of path within path's scene segment. If
 // path is a gateway node then search the scene segment which is an immediate child of path.
 void findUsdGatewayItems(const Ufe::Path& path, Ufe::Selection& result)
 {
-    for (const auto& stage : getAllStages()) {
-        const Ufe::Path proxyShapePath = stagePath(stage);
+    MProfilingScope profilingScope(
+        kSegmentHandlerProfilerCategory, MProfiler::kColorB_L1, "findUsdGatewayItems");
+
+    // We know that USD stages do not contain other gateway items.
+    // It is leaf node  in a tree of gateways.
+    if (isInStagesCache(path)) {
+        return;
+    }
+
+    auto stages = getAllStagesPaths();
+
+    for (const auto& stagePath : stages) {
         // recall that findGatewayItems searches for descendants of path that are
         // gateway nodes. If path itself is a gateway node it should not be included
         // in the results.
-        if (proxyShapePath.startsWith(path) && proxyShapePath != path) {
-            result.append(Ufe::Hierarchy::createItem(proxyShapePath));
+        if (stagePath.startsWith(path) && stagePath != path) {
+            result.append(Ufe::Hierarchy::createItem(stagePath));
         }
     }
 }

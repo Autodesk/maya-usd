@@ -31,6 +31,9 @@ namespace {
 DEF_FLAG(rl, reload)
 DEF_FLAG(ps, proxyShape)
 
+DEF_FLAG(gsl, getSelectedLayers)
+DEF_FLAG(ssl, setSelectedLayers)
+
 // query flags
 DEF_FLAG(se, selectionLength)
 DEF_FLAG(il, isInvalidLayer)
@@ -120,6 +123,8 @@ MSyntax LayerEditorWindowCommand::createSyntax()
 
     ADD_FLAG(reload);
     syntax.addFlag(k_proxyShapeFlag, k_proxyShapeFlagLong, MSyntax::kString);
+    syntax.addFlag(k_getSelectedLayersFlag, k_getSelectedLayersFlagLong, MSyntax::kString);
+    syntax.addFlag(k_setSelectedLayersFlag, k_setSelectedLayersFlagLong, MSyntax::kString);
 
     ADD_FLAG(selectionLength);
     ADD_FLAG(isInvalidLayer);
@@ -270,6 +275,23 @@ MStatus LayerEditorWindowCommand::doIt(const MArgList& argList)
                 layerEditorWindow->selectProxyShape(proxyShapeName.asChar());
             }
         }
+
+        if (argParser.isFlagSet(k_setSelectedLayersFlag)) {
+            MString layersString;
+            argParser.getFlagArgument(k_setSelectedLayersFlag, 0, layersString);
+
+            std::vector<std::string> layers;
+            if (layersString.length() > 0) {
+                MStringArray layersList;
+                layersString.split(';', layersList); // break out all the layers
+
+                unsigned int length = layersList.length();
+                for (unsigned int i = 0; i < length; ++i) {
+                    layers.emplace_back(layersList[i].asChar());
+                }
+            }
+            layerEditorWindow->selectLayers(layers);
+        }
     }
 
     return MS::kSuccess;
@@ -337,8 +359,27 @@ MStatus LayerEditorWindowCommand::handleQueries(
     HANDLE_Q_FLAG(layerIsSystemLocked)
     HANDLE_Q_FLAG(layerHasSubLayers)
 
-    if (argParser.isFlagSet(FLAG(proxyShape)) && argParser.isQuery()) {
+    if (argParser.isFlagSet(FLAG(proxyShape))) {
+        if (notQuery) {
+            errorMsg += FLAG(proxyShape);
+            displayError(errorMsg);
+            return MS::kInvalidParameter;
+        }
         setResult(layerEditor->proxyShapeName().c_str());
+    }
+
+    if (argParser.isFlagSet(FLAG(getSelectedLayers))) {
+        if (notQuery) {
+            errorMsg += FLAG(getSelectedLayers);
+            displayError(errorMsg);
+            return MS::kInvalidParameter;
+        }
+        std::vector<std::string> layers = layerEditor->getSelectedLayers();
+        MStringArray             results;
+        for (const auto& layer : layers) {
+            results.append(layer.c_str());
+        }
+        setResult(results);
     }
 
     return MS::kSuccess;

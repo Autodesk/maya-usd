@@ -5,6 +5,8 @@
 
 #include "SurfaceNodeMaya.h"
 
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
+
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
 #include <MaterialXGenShader/Shader.h>
 
@@ -113,9 +115,22 @@ void SurfaceNodeMaya::emitLightLoop(
     shadergen.emitLineBreak(stage);
 
     shadergen.emitComment("Calculate the BSDF response for this light source", stage);
+#if MX_COMBINED_VERSION < 13903
     context.pushClosureContext(&_callReflection);
     shadergen.emitFunctionCall(*bsdf, context, stage);
     context.popClosureContext();
+#else
+    if (bsdf->hasClassification(ShaderNode::Classification::BSDF_R)) {
+        shadergen.emitLine(
+            "ClosureData closureData = ClosureData(CLOSURE_TYPE_REFLECTION, L, V, N, P, occlusion)",
+            stage);
+        shadergen.emitFunctionCall(*bsdf, context, stage);
+    } else {
+        shadergen.emitLineBegin(stage);
+        shadergen.emitOutput(bsdf->getOutput(), true, true, context, stage);
+        shadergen.emitLineEnd(stage);
+    }
+#endif
 
     shadergen.emitComment("Accumulate the light's contribution", stage);
     shadergen.emitLine(

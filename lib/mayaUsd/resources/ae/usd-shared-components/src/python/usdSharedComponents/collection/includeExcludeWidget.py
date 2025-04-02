@@ -124,6 +124,7 @@ class IncludeExcludeWidget(QWidget):
         theme.themeMenuButton(self._selectBtn, False)
 
         self._warningWidget = WarningWidget(headerWidget)
+        self._warningWidget.setConflicted(self._collData.hasDataConflict())
         self._warningSeparator = QFrame()
         self._warningSeparator.setFrameShape(QFrame.VLine)
         self._warningSeparator.setMaximumHeight(Theme.instance().uiScaled(20))
@@ -145,7 +146,7 @@ class IncludeExcludeWidget(QWidget):
         mainLayout.addWidget(headerWidget)
 
         self._include = StringListPanel(data.getIncludeData(), True, theme.themeLabel(INCLUDE_LABEL), self)
-        self._include.cbIncludeAll.stateChanged.connect(self.onIncludeAllToggle)
+        self._include.cbIncludeAll.clicked.connect(self.onIncludeAllToggle)
         self._resizableInclude = Resizable(
             self._include,
             "USD_Light_Linking",
@@ -237,7 +238,7 @@ class IncludeExcludeWidget(QWidget):
         multilineSelection = Host.instance().getSelectionAsText()
         if not multilineSelection:
             return
-        # Note: we use addMultiLineStrings becuase it validates the given path.
+        # Note: we use addMultiLineStrings because it validates the given path.
         #
         # TODO: maybe move the validation into the addStrings and removeStrings
         #       functions instead? But that would cause code duplication...
@@ -252,7 +253,7 @@ class IncludeExcludeWidget(QWidget):
         self.onListSelectionChanged()
 
     def onRemoveSelectionFromBoth(self):
-        # Note: need to retrieve both the lists becuase change cuase UI updates.
+        # Note: need to retrieve both the lists because change cause UI updates.
         included = self._include.list.selectedItems()
         excluded = self._exclude.list.selectedItems()
         self._collData.getIncludeData().removeStrings(included)
@@ -310,6 +311,7 @@ class IncludeExcludeWidget(QWidget):
             self._deleteBtn.setPopupMode(QToolButton.DelayedPopup)
             Theme.instance().themeMenuButton(self._deleteBtn, False)
 
-    def onIncludeAllToggle(self, _: Qt.CheckState):
-        incAll = self._include.cbIncludeAll.isChecked()
-        self._collData.setIncludeAll(incAll)
+    def onIncludeAllToggle(self, checked: bool):
+        self._collData.setIncludeAll(checked)
+        # the operation may fail, so we may need to change the UI back.
+        self._include.cbIncludeAll.setChecked(self._collData.includesAll())

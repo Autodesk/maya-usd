@@ -34,16 +34,6 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxDistantLight, args, context)
     return UsdMayaTranslatorLight::Read(args, context);
 }
 
-/*
-PXRUSDMAYA_DEFINE_READER(UsdLuxGeometryLight, args, context)
-{
-    if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {
-        return UsdMayaTranslatorRfMLight::Read(args, context);
-    }
-    return false;
-}
-*/
-
 PXRUSDMAYA_DEFINE_READER(UsdLuxRectLight, args, context)
 {
     if (TfGetEnvSetting(MAYAUSD_IMPORT_RFM_LIGHTS)) {

@@ -66,7 +66,7 @@ class Host(object):
         Report an error message using the DCC-specific logging system.
         By default, simply print the error with an "Error: " prefix.
         '''
-        print('%s: %s' % (msgType, message))
+        print('%s: %s' % (msgType.name, message))
 
     def getSelectionAsText(self) -> Sequence[str]:
         '''
@@ -108,3 +108,9 @@ class Host(object):
         '''
         from ..usdData.usdCollectionStringListData import CollectionStringListData
         return CollectionStringListData(collection, isInclude)
+    
+    def openHelp(self) -> bool:
+        '''
+        Open the help URL in the DCC-specific help system.
+        '''
+        pass

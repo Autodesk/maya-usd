@@ -24,6 +24,7 @@
 
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
+#include <maya/MProfiler.h>
 #include <ufe/pathString.h>
 
 #include <cassert>
@@ -31,6 +32,8 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
+
+const int kUsdStageMapProfilerCategory = MProfiler::addCategory("USDStages", "USDStages");
 
 MObjectHandle nameLookup(const Ufe::Path& path)
 {
@@ -162,6 +165,9 @@ void UsdStageMap::addItem(const Ufe::Path& path)
 
 UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path, bool rebuildCacheIfNeeded)
 {
+    MProfilingScope profilingScope(
+        kUsdStageMapProfilerCategory, MProfiler::kColorB_L1, "UsdStageMap::stage()");
+
     // Non-const MObject& requires an lvalue.
     auto obj = proxyShape(path, rebuildCacheIfNeeded);
     return objToStage(obj);
@@ -169,6 +175,9 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path, bool rebuildCacheIfNee
 
 MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded)
 {
+    MProfilingScope profilingScope(
+        kUsdStageMapProfilerCategory, MProfiler::kColorB_L1, "UsdStageMap::proxyShape()");
+
     // Optimization: if there are not proxy shape instances,
     // there is nothing that can be mapped.
     if (MayaUsdProxyShapeBase::countProxyShapeInstances() == 0)
@@ -234,6 +243,8 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
 
 MayaUsdProxyShapeBase* UsdStageMap::proxyShapeNode(const Ufe::Path& path, bool rebuildCacheIfNeeded)
 {
+    MProfilingScope profilingScope(
+        kUsdStageMapProfilerCategory, MProfiler::kColorB_L1, "UsdStageMap::proxyShapeNode()");
     auto obj = proxyShape(path, rebuildCacheIfNeeded);
     if (obj.isNull()) {
         return nullptr;
@@ -244,6 +255,8 @@ MayaUsdProxyShapeBase* UsdStageMap::proxyShapeNode(const Ufe::Path& path, bool r
 
 Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
 {
+    MProfilingScope profilingScope(
+        kUsdStageMapProfilerCategory, MProfiler::kColorB_L1, "UsdStageMap::path()");
     rebuildIfDirty();
 
     // A stage is bound to a single Dag proxy shape.
@@ -255,6 +268,9 @@ Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
 
 UsdStageMap::StageSet UsdStageMap::allStages()
 {
+    MProfilingScope profilingScope(
+        kUsdStageMapProfilerCategory, MProfiler::kColorB_L1, "UsdStageMap::allStages()");
+
     rebuildIfDirty();
 
     StageSet stages;
@@ -276,6 +292,27 @@ UsdStageMap::StageSet UsdStageMap::allStages()
     return stages;
 }
 
+std::vector<Ufe::Path> UsdStageMap::allStagesPaths()
+{
+    MProfilingScope profilingScope(
+        kUsdStageMapProfilerCategory, MProfiler::kColorB_L1, "UsdStageMap::allStagesPaths()");
+
+    rebuildIfDirty();
+
+    std::vector<Ufe::Path> _stagePaths;
+    for (auto it = _pathToObject.begin(); it != _pathToObject.end(); ++it) {
+        const auto&      pair = *it;
+        const Ufe::Path& path = pair.first;
+        _stagePaths.push_back(path);
+    }
+    return _stagePaths;
+}
+
+bool UsdStageMap::isInStagesCache(const Ufe::Path& path)
+{
+    return _pathToObject.find(path) != _pathToObject.end();
+}
+
 void UsdStageMap::setDirty()
 {
     _pathToObject.clear();
@@ -285,6 +322,9 @@ void UsdStageMap::setDirty()
 
 bool UsdStageMap::rebuildIfDirty()
 {
+    MProfilingScope profilingScope(
+        kUsdStageMapProfilerCategory, MProfiler::kColorB_L1, "UsdStageMap::rebuildIfDirty()");
+
     if (!_dirty)
         return false;
 

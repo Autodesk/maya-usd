@@ -102,8 +102,12 @@ class CollectionStringListData(StringListData):
 
     @validateCollection(False)
     def replaceStrings(self, oldString, newString) -> bool:
-        return self.addStrings([newString]) and self.removeStrings([oldString])
-    
+        if newString == oldString:
+            return True
+        success: bool = False
+        with Sdf.ChangeBlock():
+            success = self.addStrings([newString]) and self.removeStrings([oldString])
+        return success
 
     @validateCollection((None, "Could not add prim to the collection."))
     def convertToCollectionString(self, text) -> Tuple[AnyStr, AnyStr]:
@@ -123,7 +127,7 @@ class CollectionStringListData(StringListData):
 
         if not prim or not prim.IsValid():
             return None, "Only objects in the same stage as the collection can be added."
-        
+
         # We don't allow adding a prim to its own collection.
         if prim == self._prim:
             return None, "Prim cannot be added to its own collection."
@@ -137,5 +141,5 @@ class CollectionStringListData(StringListData):
         # Protect in case the stage was deleted.
         if not stagePath:
             return []
-        
+
         return ['%s,%s' % (stagePath, item) for item in items if items]

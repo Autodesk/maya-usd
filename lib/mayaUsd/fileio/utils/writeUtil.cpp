@@ -21,10 +21,16 @@
 #include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/converter.h>
 
-#include <pxr/base/gf/gamma.h>
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/token.h>
+#if PXR_VERSION >= 2411
+#include <pxr/base/ts/knot.h>
+#include <pxr/base/ts/spline.h>
+#include <pxr/base/ts/tangentConversions.h>
+#include <pxr/base/ts/typeHelpers.h>
+#include <pxr/base/ts/types.h>
+#endif
 #include <pxr/base/vt/types.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
@@ -40,13 +46,11 @@
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdRi/statementsAPI.h>
-#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MDoubleArray.h>
-#include <maya/MFnAttribute.h>
+#include <maya/MFnAnimCurve.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnDoubleArrayData.h>
-#include <maya/MFnEnumAttribute.h>
 #include <maya/MFnFloatArrayData.h>
 #include <maya/MFnIntArrayData.h>
 #include <maya/MFnMatrixData.h>
@@ -67,6 +71,7 @@
 #include <maya/MVector.h>
 #include <maya/MVectorArray.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -1274,5 +1279,94 @@ std::vector<double> UsdMayaWriteUtil::GetTimeSamples(
     std::sort(samples.begin(), samples.end());
     return samples;
 }
+
+#if PXR_VERSION >= 2411
+static TsExtrapMode _ConvertExtrapolationType(MFnAnimCurve::InfinityType mayaExtrapolation)
+{
+    switch (mayaExtrapolation) {
+    case MFnAnimCurve::InfinityType::kLinear: return TsExtrapMode::TsExtrapLinear;
+    case MFnAnimCurve::InfinityType::kCycle: return TsExtrapMode::TsExtrapLoopReset;
+    case MFnAnimCurve::InfinityType::kOscillate: return TsExtrapMode::TsExtrapLoopOscillate;
+    case MFnAnimCurve::InfinityType::kCycleRelative: return TsExtrapMode::TsExtrapLoopRepeat;
+    case MFnAnimCurve::InfinityType::kConstant:
+    default: return TsExtrapMode::TsExtrapHeld;
+    }
+}
+
+TsKnotMap UsdMayaWriteUtil::GetKnotsFromMayaCurve(
+    const MFnDependencyNode& depNode,
+    const MString&           name,
+    float                    scaling)
+{
+    TsKnotMap knots;
+
+    MStatus status;
+    depNode.attribute(name, &status);
+    CHECK_MSTATUS_AND_RETURN(status, knots)
+    MPlug plug = depNode.findPlug(name, true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, knots)
+
+    // get the animation curve for the given maya attribute if there's one
+    MFnAnimCurve flAnimCurve(plug, &status);
+    if (status != MStatus::kSuccess) {
+        return knots;
+    }
+
+    // No keys, so nothing to do.
+    auto numKeys = flAnimCurve.numKeys();
+    for (unsigned int k = 0; k < numKeys; ++k) {
+        auto time = flAnimCurve.time(k).value();
+
+        auto   value = flAnimCurve.value(k);
+        double inTangentX, inTangentY;
+        double outTangentX, outTangentY;
+        flAnimCurve.getTangent(k, inTangentX, inTangentY, true);
+        flAnimCurve.getTangent(k, outTangentX, outTangentY, false);
+
+        TsTime inTime, outTime;
+        float  inSlope, outSlope;
+        TsConvertToStandardTangent(
+            inTangentX, static_cast<float>(inTangentY), true, true, false, &inTime, &inSlope);
+        TsConvertToStandardTangent(
+            outTangentX, static_cast<float>(outTangentY), true, true, false, &outTime, &outSlope);
+
+        TsKnot knot(Ts_GetType<float>());
+        knot.SetTime(time);
+        knot.SetValue(static_cast<float>(value) * scaling);
+        knot.SetPostTanSlope(static_cast<float>(outTangentY));
+        knot.SetPreTanSlope(static_cast<float>(inTangentY));
+        knot.SetPostTanWidth(static_cast<float>(outTangentX));
+        knot.SetPreTanWidth(static_cast<float>(inTangentX));
+
+        knots.insert(knot);
+    }
+
+    return knots;
+}
+
+TsSpline
+UsdMayaWriteUtil::GetSplineFromMayaCurve(const MFnDependencyNode& depNode, const MString& name)
+{
+    auto spline = TsSpline(Ts_GetType<float>());
+
+    MStatus status;
+    depNode.attribute(name, &status);
+    CHECK_MSTATUS_AND_RETURN(status, spline)
+    MPlug plug = depNode.findPlug(name, true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, spline)
+
+    // get the animation curve for the given maya attribute
+    MFnAnimCurve flAnimCurve(plug, &status);
+    CHECK_MSTATUS_AND_RETURN(status, spline)
+
+    TsExtrapolation preExtrapolation, postExtrapolation;
+    preExtrapolation.mode = _ConvertExtrapolationType(flAnimCurve.preInfinityType());
+    postExtrapolation.mode = _ConvertExtrapolationType(flAnimCurve.postInfinityType());
+    spline.SetPreExtrapolation(preExtrapolation);
+    spline.SetPostExtrapolation(postExtrapolation);
+
+    return spline;
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
