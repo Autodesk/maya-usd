@@ -73,7 +73,7 @@ bool MayaUsdObject3d::visibility() const
             // check if the parent is visible
             auto parentItem = Ufe::Hierarchy::createItem(parentPath);
             auto parentObject3d = Ufe::Object3d::object3d(parentItem);
-            if (!parentObject3d->visibility()) {
+            if (parentObject3d && !parentObject3d->visibility()) {
                 return false;
             }
             parentPath = parentPath.pop();
