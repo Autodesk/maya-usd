@@ -1235,3 +1235,20 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         with CachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
             self.validateRecursiveCompute(thisScope)
+
+    def testDuplicatedProxyShape(self):
+        """
+        Validate that duplicated proxy shape is working correctly.
+        EMSUSD-2222: [Github #4142] Duplicating a ProxyStage and hiding the duplicate causes Maya to Crash
+        """
+        cmds.file(new=True, force=True)
+
+        # Create an empty proxy shape and duplicate it.
+        proxyShape,_ = createProxyAndStage()
+        cmds.select(proxyShape)
+        duplicatedProxyShape = cmds.duplicate()
+
+        # Before the fix the proxy accessor on the duplicated proxy shape had
+        # and invalid attribute pointer for the attribute forceCompute which
+        # would cause a crash when hiding the duplicated proxy shape.
+        cmds.hide(duplicatedProxyShape)
