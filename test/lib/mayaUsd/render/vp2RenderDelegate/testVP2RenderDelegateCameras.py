@@ -26,6 +26,8 @@ from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
 
+from pxr import Usd
+
 import unittest
 import ufe
 import os
@@ -117,12 +119,33 @@ class testVP2RenderDelegateCameras(imageUtils.ImageDiffingTestCase):
         cmds.currentTime(4)
         self.assertSnapshotClose('%s_animation.png' % (self._testName))
 
+        # test camera creation and visibility
+        self._TestUsdCameraCreationAndVisibility()
+
     def _GetSceneItem(self, mayaPathString, usdPathString):
         mayaPathSegment = mayaUtils.createUfePathSegment(mayaPathString)
         usdPathSegment = usdUtils.createUfePathSegment(usdPathString)
         ufePath = ufe.Path([mayaPathSegment, usdPathSegment])
         ufeItem = ufe.Hierarchy.createItem(ufePath)
         return ufeItem
+    
+    def _TestUsdCameraCreationAndVisibility(self):
+        usdFilePath = cmds.internalVar(utd=1) + '/testCamera.usda'
+        stage = Usd.Stage.CreateNew(usdFilePath)
+        # Create camera under a def
+        scope = stage.DefinePrim('/parent', 'Scope')
+        defPrim = stage.DefinePrim('/cam', '')
+        camera = stage.DefinePrim('/parent/cam/camera1', 'Camera')
+        stage.GetRootLayer().Save()
+        proxyShape = cmds.createNode('mayaUsdProxyShape')
+        cmds.setAttr('mayaUsdProxyShape1.filePath', usdFilePath, type='string')
+        ufeItem = ufeUtils.createItem('|mayaUsdProxy1|mayaUsdProxyShape1,/parent')
+        object3d = ufe.Object3d.object3d(ufeItem)
+        object3d.setVisibility(False)
+        self.assertSnapshotClose('%s_invisibile.png' % (self._testName))
+        object3d.setVisibility(True)
+        self.assertSnapshotClose('%s_visibile.png' % (self._testName))
+
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2025, 'Requires Maya fixes only available after Maya 2025.')
     def testCameras(self):
