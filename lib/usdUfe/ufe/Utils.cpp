@@ -1373,9 +1373,21 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
 
     if (editLayer && !editLayer->PermissionToEdit()) {
         if (errMsg) {
-            std::string err = TfStringPrintf(
-                "Cannot edit [%s] because it is locked. Unlock it to proceed.",
-                editLayer->GetDisplayName().c_str());
+            auto isSystemLocked = [](const SdfLayerHandle& layer) {
+                return !layer->PermissionToEdit() && !layer->PermissionToSave();
+                };
+
+            std::string err;
+            if (isSystemLocked(editLayer)) {
+                err = TfStringPrintf(
+                    "Cannot edit [%s] because it is system locked. Unlock it to proceed.",
+                    editLayer->GetDisplayName().c_str());
+            }
+            else {
+                err = TfStringPrintf(
+                    "Cannot edit [%s] because it is locked. Unlock it to proceed.",
+                    editLayer->GetDisplayName().c_str());
+            }
 
             *errMsg = err;
         }
