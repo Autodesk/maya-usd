@@ -112,14 +112,13 @@ class Theme(object):
 
     def themeMenuButton(self, menuButton: QToolButton, showMenuIndicator: bool):
         if showMenuIndicator:
-            theme = Theme.instance()
             menuButton.setStyleSheet("""
                 QToolButton { border: 0px; }
                 QToolButton::menu-indicator {
-                position: absolute;""" + """
-                width: {}px;
-                left: {}px;""".format(theme.uiScaled(16), theme.uiScaled(16))+"""
-                top: 0px;
+                subcontrol-position: right bottom;
+                subcontrol-origin: border;
+                top: 4px;
+                left: 4px;
                 }""")
         else:
             menuButton.setStyleSheet("""
