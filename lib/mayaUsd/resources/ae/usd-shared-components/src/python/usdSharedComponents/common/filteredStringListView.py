@@ -12,12 +12,15 @@ try:
         Signal,
         QMimeData
     )
-    from PySide6.QtGui import QDrag, QPaintEvent # type: ignore
+    from PySide6.QtGui import QDrag, QPaintEvent, QPalette, QPainter # type: ignore
     from PySide6.QtWidgets import (  # type: ignore
         QLabel,
         QListView,
         QItemDelegate,
-        QCompleter
+        QCompleter,
+        QFrame,
+        QStyledItemDelegate,
+        QStyleOptionViewItem
     )
 except:
     from PySide2.QtCore import (  # type: ignore
@@ -27,14 +30,30 @@ except:
         Signal,
         QMimeData
     )
-    from PySide2.QtGui import QDrag, QPaintEvent # type: ignore
-    from PySide2.QtWidgets import QLabel, QListView, QCompleter, QItemDelegate # type: ignore
-
+    from PySide2.QtGui import QDrag, QPaintEvent, QPalette, QPainter # type: ignore
+    from PySide2.QtWidgets import ( # type: ignore
+        QLabel,
+        QListView,
+        QItemDelegate,
+        QCompleter,
+        QFrame,
+        QStyledItemDelegate,
+        QStyleOptionViewItem
+    )
 
 NO_OBJECTS_FOUND_LABEL = "No objects found"
 DRAG_OBJECTS_HERE_LABEL = "Drag objects here"
 PICK_OBJECTS_LABEL = "Click '+' to add"
 DRAG_OR_PICK_OBJECTS_LABEL = "Drag objects here or click '+' to add"
+
+class CompleterItemDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super(CompleterItemDelegate, self).__init__(parent)
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index):
+        pal = QPalette()
+        painter.fillRect(option.rect, pal.color(QPalette.ColorRole.AlternateBase))
+        return super().paint(painter, option, index)
 
 class FilteredStringDelegate(QItemDelegate):
     def __init__(self, listView, parent=None):
@@ -47,6 +66,9 @@ class FilteredStringDelegate(QItemDelegate):
             suggestions = self._listView.model()._collData.getSuggestions()
             self._completer = QCompleter(suggestions)
             self._completer.setCaseSensitivity(Qt.CaseInsensitive)
+            self._completer.popup().setFrameStyle(QFrame.Shape.StyledPanel)
+            itemDelegate = CompleterItemDelegate(self._completer)
+            self._completer.popup().setItemDelegate(itemDelegate)
             editLine.setCompleter(self._completer)
         return editLine
 
