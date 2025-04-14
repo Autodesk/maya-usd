@@ -60,10 +60,21 @@ class UsdCollectionData(CollectionData):
         if not self._prim or not self._prim.IsValid() or not self._collection:
             self._untrackCollectionNotifications()
             return
-        # TODO: check if the collection was actually touched by this change!
-        self.dataChanged.emit()
-        self._includes.dataChanged.emit()
-        self._excludes.dataChanged.emit()
+        if notice:
+            # GetResyncedPaths carry changes caused by the resynched of the layer
+            # GetChangedInfoOnlyPaths carry changes made to a specific property
+            changedPaths = notice.GetResyncedPaths() + notice.GetChangedInfoOnlyPaths()
+            for path in changedPaths:
+                if path.IsPropertyPath() and path.GetParentPath() == self._prim.GetPath():
+                    # Collection properties are defined using `:`
+                    # The last element being `includes` or `excludes`
+                    self.dataChanged.emit()
+                    splitFields = str(path).split(":")
+                    if len(splitFields) > 2:
+                        if splitFields[-1] == "includes":
+                            self._includes.dataChanged.emit()
+                        elif splitFields[-1] == "excludes":
+                            self._excludes.dataChanged.emit()
 
     # Data conflicts
 
