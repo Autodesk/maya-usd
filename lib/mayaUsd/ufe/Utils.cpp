@@ -273,8 +273,8 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
     if (!TF_VERIFY(!path.empty())) {
         return nullptr;
     }
-
-    return UsdStageMap::getInstance().proxyShapeNode(path);
+    const bool rebuildCacheIfNeeded = false;
+    return UsdStageMap::getInstance().proxyShapeNode(path, rebuildCacheIfNeeded);
 }
 
 SdfPath getProxyShapePrimPath(const Ufe::Path& path)
