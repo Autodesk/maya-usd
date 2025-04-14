@@ -51,7 +51,9 @@ void findUsdGatewayItems(const Ufe::Path& path, Ufe::Selection& result)
         // gateway nodes. If path itself is a gateway node it should not be included
         // in the results.
         if (stagePath.startsWith(path) && stagePath != path) {
-            result.append(Ufe::Hierarchy::createItem(stagePath));
+            if (auto item = Ufe::Hierarchy::createItem(stagePath)) {
+                result.append(item);
+            }
         }
     }
 }
