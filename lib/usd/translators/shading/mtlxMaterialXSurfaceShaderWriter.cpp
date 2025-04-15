@@ -79,6 +79,25 @@ MaterialX::ConstNodeDefPtr _GetNodeDef(const MaterialX::NodePtr& node, const Ufe
     return nodeDefPtr;
 }
 
+void _SetAutodeskMetaData(const MaterialX::NodePtr& node, const UsdPrim& usdPrim)
+{
+    static const std::string adskString = UsdUfe::MetadataTokens->Autodesk.GetString() + ":";
+    if (node->hasAttribute("Autodesk-hidden")) {
+        usdPrim.SetCustomDataByKey(
+            TfToken(adskString + "hidden"), VtValue(node->getAttribute("Autodesk-hidden")));
+    }
+    if (node->hasAttribute("Autodesk-hiddenInternalConverter")) {
+        usdPrim.SetCustomDataByKey(
+            TfToken(adskString + "hiddenInternalConverter"),
+            VtValue(node->getAttribute("Autodesk-hiddenInternalConverter")));
+    }
+    if (node->hasAttribute("Autodesk-internalConverter")) {
+        usdPrim.SetCustomDataByKey(
+            TfToken(adskString + "internalConverter"),
+            VtValue(node->getAttribute("Autodesk-internalConverter")));
+    }
+}
+
 // Sets shader info:id attribute on a USD ShadeShader based on a MaterialX node.
 void _SetShaderInfoAttributes(
     const MaterialX::NodePtr& node,
@@ -342,6 +361,7 @@ void _AddNode(
 
     auto shaderPrim = shader.GetPrim();
     _SetShaderUIAttribute(node, shaderPrim);
+    _SetAutodeskMetaData(node, shaderPrim);
     auto shaderUfePath = ufePath + node->getName();
     _SetShaderInfoAttributes(node, shader, shaderUfePath);
 
