@@ -17,7 +17,6 @@
 
 import os
 import platform
-from tkinter import N, SEL
 import unittest
 
 import testUtils, mayaUtils
