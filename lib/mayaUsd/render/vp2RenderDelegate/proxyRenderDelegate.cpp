@@ -2045,7 +2045,11 @@ HdVP2SelectionStatus ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path
 MColor ProxyRenderDelegate::GetWireframeColor()
 {
     static const MColor defaultColor(0.f, 0.f, 0.f);
+#if MAYA_API_VERSION < 20230000
+    return defaultColor;
+#else
     return _GetDisplayColor(_wireframeColorCache, "polymeshDormant", false, defaultColor);
+#endif
 }
 
 GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
@@ -2166,7 +2170,11 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
 {
     static const MColor kDefaultLeadColor(0.056f, 1.0f, 0.366f, 1.0f);
     static const MColor kDefaultActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
-
+#if MAYA_API_VERSION < 20230000
+    // Taken from v0.14.0 of mayaUSD plugin
+    // https://github.com/Autodesk/maya-usd/blob/69e465032c423f4559bfef75c77bca0836366950/lib/mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.cpp#L1433
+    return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
+#else
     // Prepare to construct the query command.
     bool         fromPalette = true;
     const char*  queryName = "unsupported";
@@ -2252,6 +2260,7 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
     // Update the cache and return
     colorCache->second = _frameCounter;
     return colorCache->first;
+#endif // MAYA_API_VERSION < 20230000
 }
 
 bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
