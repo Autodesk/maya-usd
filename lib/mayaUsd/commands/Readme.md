@@ -676,42 +676,42 @@ The purpose of this command is to control the layer editor window.
 
 ### Command Flags
 
-| Long flag               | Short flag | Description                                   |
-| ----------------------- | ---------- | --------------------------------------------- |
-| `-edit`                 | `-e`       | Edit various aspects of the editor window     |
-| `-query`                | `-q`       | Retrieve various aspects of the editor window |
-| `-addAnonymousSublayer` | `-aa`      | Add an anonynous layer at the top of the stack, returns it |
-| `-addParentLayer`       | `-ap`      | Add a parent layer                            |
-| `-loadSubLayers`        | `-lo`      | Open a dialog to load sub-layers              |
-| `-removeSubLayer`       | `-rs`      | Remove sub-layers                             |
-| `-clearLayer`           | `-cl`      | Erase everything in a layer                   |
-| `-discardEdits`         | `-de`      | Discard changes made on a layer               |
-| `-layerHasSubLayers`    | `-ll`      | Query if the layer has sub-layers             |
-| `-isAnonymousLayer`     | `-al`      | Query if the layer is anonymous               |
-| `-isLayerDirty`         | `-dl`      | Query if the layer has been modified          |
-| `-isInvalidLayer`       | `-il`      | Query if the layer is not found or invalid    |
-| `-isSubLayer`           | `-su`      | Query if the layer is a sub-layer             |
-| `-isIncomingLayer`      | `-in`      | Query if the layer is incoming (connection)   |
-| `-layerAppearsMuted`    | `-am`      | Query if the layer or any parent is muted     |
-| `-layerIsMuted`         | `-mu`      | Query if the layer itself is muted            |
-| `-layerIsReadOnly`      | `-r`       | Query if the layer or any parent is read only |
-| `-muteLayer`            | `-mt`      | Toggle the muting of a layer                  |
-| `-layerAppearsLocked`   | `-al`      | Query if the layer's parent is locked         |
-| `-layerIsLocked`        | `-lo`      | Query if the layer itself is locked           |
-| `-layerAppearsSystemLocked` | `-as`      | Query if the layer's parent is system-locked  |
-| `-layerIsSystemLocked`  | `-ls`      | Query if the layer itself is system-locked    |
-| `-lockLayer`            | `-lk`      | Lock or unlock a layer.                       |
-| `-lockLayerAndSubLayers`| `-la`      | Lock or unlocks a layer and its sublayers.    |
-| `-layerNeedsSaving`     | `-ns`      | Query if the layer is dirty or anonymous      |
-| `-printLayer`           | `-pl`      | Print the layer to the script editor output   |
-| `-proxyShape`           | `-ps`      | Query the proxyShape path or sets the selected shape by its path. Takes the path as argument |
-| `-reload`               | `-rl`      | Open or show the editor window                |
-| `-selectionLength`      | `-se`      | Query the number of items selected            |
-| `-isSessionLayer`       | `-sl`      | Query if the layer is a session layer         |
-| `-selectPrimsWithSpec`  | `-sp`      | Select the prims with spec in a layer         |
-| `-saveEdits`            | `-sv`      | Save the modifications                        |
-| `-getSelectedLayers`    | `-gsl`     | Query the selected layers in the layer editor (note this is different from the edit target). Returns layer ids of the selected layers.    |
-| `-setSelectedLayers`    | `-ssl`     | Set the selected layers in the layer editor with a semicolon delimited string of layer ids. Eg: -ssl "layer_id_1;layer_id_2"   |
+| Long flag               | Short flag |  Mode  | Description                                   |
+| ----------------------- | ---------- | ------ | --------------------------------------------- |
+| `-edit`                 | `-e`       |        | Edit various aspects of the editor window     |
+| `-query`                | `-q`       |        | Retrieve various aspects of the editor window |
+| `-addAnonymousSublayer` | `-aa`      |  Edit  | Add an anonynous layer at the top of the stack, returns it |
+| `-addParentLayer`       | `-ap`      |  Edit  | Add a parent layer                            |
+| `-loadSubLayers`        | `-lo`      |  Edit  | Open a dialog to load sub-layers              |
+| `-removeSubLayer`       | `-rs`      |  Edit  | Remove sub-layers                             |
+| `-clearLayer`           | `-cl`      |  Edit  | Erase everything in a layer                   |
+| `-discardEdits`         | `-de`      |  Edit  | Discard changes made on a layer               |
+| `-layerHasSubLayers`    | `-ll`      | Query  | Query if the layer has sub-layers             |
+| `-isAnonymousLayer`     | `-al`      | Query  | Query if the layer is anonymous               |
+| `-isLayerDirty`         | `-dl`      | Query  | Query if the layer has been modified          |
+| `-isInvalidLayer`       | `-il`      | Query  | Query if the layer is not found or invalid    |
+| `-isSubLayer`           | `-su`      | Query  | Query if the layer is a sub-layer             |
+| `-isIncomingLayer`      | `-in`      | Query  | Query if the layer is incoming (connection)   |
+| `-layerAppearsMuted`    | `-am`      | Query  | Query if the layer or any parent is muted     |
+| `-layerIsMuted`         | `-mu`      | Query  | Query if the layer itself is muted            |
+| `-layerIsReadOnly`      | `-r`       | Query  | Query if the layer or any parent is read only |
+| `-muteLayer`            | `-ml`      |  Edit  | Toggle the muting of a layer                  |
+| `-layerAppearsLocked`   | `-al`      | Query  | Query if the layer's parent is locked         |
+| `-layerIsLocked`        | `-lo`      | Query  | Query if the layer itself is locked           |
+| `-layerAppearsSystemLocked` | `-as`  | Query  | Query if the layer's parent is system-locked  |
+| `-layerIsSystemLocked`  | `-ls`      | Query  | Query if the layer itself is system-locked    |
+| `-lockLayer`            | `-lk`      |  Edit  | Lock or unlock a layer.                       |
+| `-lockLayerAndSubLayers`| `-la`      |  Edit  | Lock or unlocks a layer and its sublayers.    |
+| `-layerNeedsSaving`     | `-ns`      | Query  | Query if the layer is dirty or anonymous      |
+| `-printLayer`           | `-pl`      |  Edit  | Print the layer to the script editor output   |
+| `-proxyShape`           | `-ps`      |Query<br>Create| Query the proxyShape path or (Create) sets the selected shape by its path. Takes the path as argument |                    |   
+| `-reload`               | `-rl`      |Query<br>Create<br>Edit| Open or show the editor window                |
+| `-selectionLength`      | `-se`      | Query  | Query the number of items selected            |
+| `-isSessionLayer`       | `-sl`      | Query  | Query if the layer is a session layer         |
+| `-selectPrimsWithSpec`  | `-sp`      |  Edit  | Select the prims with spec in a layer         |
+| `-saveEdits`            | `-sv`      |  Edit  | Save the modifications                        |
+| `-getSelectedLayers`    | `-gsl`     | Query | Query the selected layers in the layer editor (note this is different from the edit target). Returns      yer i     ds |of the selected layers.    |
+| `-setSelectedLayers`    | `-ssl`     |  Edit  | Set the selected layers in the layer editor with a semicolon delimited string of layer ids. Eg: `-e -ssl "layer_id_1;layer_id_2"`   |
 
 In order to get notifications on layer selection changes, you can use `mayaUsd.lib.registerUICallback` with the `onLayerEditorSelectionChanged` notification:
 ```

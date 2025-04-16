@@ -29,10 +29,11 @@ namespace {
 #define FLAG(long) k_##long##FlagLong
 
 DEF_FLAG(rl, reload)
-DEF_FLAG(ps, proxyShape)
 
-DEF_FLAG(gsl, getSelectedLayers)
-DEF_FLAG(ssl, setSelectedLayers)
+DEF_FLAG(ps, proxyShape) // Create/Query flag
+
+DEF_FLAG(gsl, getSelectedLayers) // Query flag
+DEF_FLAG(ssl, setSelectedLayers) // Edit flag
 
 // query flags
 DEF_FLAG(se, selectionLength)
@@ -119,7 +120,7 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     syntax.enableQuery(true);
     syntax.enableEdit(true);
 
-#define ADD_FLAG(name) syntax.addFlag(k_##name##Flag, k_##name##FlagLong)
+#define ADD_FLAG(FLAG_NAME) syntax.addFlag(k_##FLAG_NAME##Flag, k_##FLAG_NAME##FlagLong)
 
     ADD_FLAG(reload);
     syntax.addFlag(k_proxyShapeFlag, k_proxyShapeFlagLong, MSyntax::kString);
@@ -162,15 +163,9 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     return syntax;
 }
 
-LayerEditorWindowCommand::LayerEditorWindowCommand()
-{
-    //
-}
-bool LayerEditorWindowCommand::isUndoable() const
-{
-    //
-    return false;
-}
+LayerEditorWindowCommand::LayerEditorWindowCommand() { }
+
+bool LayerEditorWindowCommand::isUndoable() const { return false; }
 
 MStatus LayerEditorWindowCommand::doIt(const MArgList& argList)
 {
@@ -275,23 +270,6 @@ MStatus LayerEditorWindowCommand::doIt(const MArgList& argList)
                 layerEditorWindow->selectProxyShape(proxyShapeName.asChar());
             }
         }
-
-        if (argParser.isFlagSet(k_setSelectedLayersFlag)) {
-            MString layersString;
-            argParser.getFlagArgument(k_setSelectedLayersFlag, 0, layersString);
-
-            std::vector<std::string> layers;
-            if (layersString.length() > 0) {
-                MStringArray layersList;
-                layersString.split(';', layersList); // break out all the layers
-
-                unsigned int length = layersList.length();
-                for (unsigned int i = 0; i < length; ++i) {
-                    layers.emplace_back(layersList[i].asChar());
-                }
-            }
-            layerEditorWindow->selectLayers(layers);
-        }
     }
 
     return MS::kSuccess;
@@ -311,35 +289,33 @@ void LayerEditorWindowCommand::cleanupOnPluginUnload()
     }
 }
 
-MStatus LayerEditorWindowCommand::undoIt()
-{
-    //
-    return MS::kSuccess;
-}
+MStatus LayerEditorWindowCommand::undoIt() { return MS::kSuccess; }
 
-MStatus LayerEditorWindowCommand::redoIt()
-{
-    //
-    return MS::kSuccess;
-}
+MStatus LayerEditorWindowCommand::redoIt() { return MS::kSuccess; }
 
 MStatus LayerEditorWindowCommand::handleQueries(
     const MArgParser&          argParser,
     AbstractLayerEditorWindow* layerEditor)
 {
-    // this methis is written so that it'll return an error
+    // This method is written so that it'll return an error
     // if a query flag is used in non-query mode.
     bool    notQuery = !argParser.isQuery();
     MString errorMsg("Need -query mode for parameter ");
+    MString noCurrentLayerItemMsg("There is no current layer item, needed for parameter ");
 
-#define HANDLE_Q_FLAG(name)                \
-    if (argParser.isFlagSet(FLAG(name))) { \
-        if (notQuery) {                    \
-            errorMsg += FLAG(name);        \
-            displayError(errorMsg);        \
-            return MS::kInvalidParameter;  \
-        }                                  \
-        setResult(layerEditor->name());    \
+#define HANDLE_Q_FLAG(FLAG_NAME)                                                                  \
+    if (argParser.isFlagSet(FLAG(FLAG_NAME))) {                                                   \
+        if (notQuery) {                                                                           \
+            errorMsg += FLAG(FLAG_NAME);                                                          \
+            displayError(errorMsg);                                                               \
+            return MS::kInvalidParameter;                                                         \
+        }                                                                                         \
+        if (!argParser.isFlagSet(FLAG(selectionLength)) && !layerEditor->hasCurrentLayerItem()) { \
+            noCurrentLayerItemMsg += FLAG(FLAG_NAME);                                             \
+            displayError(noCurrentLayerItemMsg);                                                  \
+            return MS::kInvalidParameter;                                                         \
+        }                                                                                         \
+        setResult(layerEditor->FLAG_NAME());                                                      \
     }
 
     HANDLE_Q_FLAG(selectionLength)
@@ -359,13 +335,9 @@ MStatus LayerEditorWindowCommand::handleQueries(
     HANDLE_Q_FLAG(layerIsSystemLocked)
     HANDLE_Q_FLAG(layerHasSubLayers)
 
-    if (argParser.isFlagSet(FLAG(proxyShape))) {
-        if (notQuery) {
-            errorMsg += FLAG(proxyShape);
-            displayError(errorMsg);
-            return MS::kInvalidParameter;
-        }
-        setResult(layerEditor->proxyShapeName().c_str());
+    // proxyShape flag is both create/query.
+    if (argParser.isFlagSet(FLAG(proxyShape)) && argParser.isQuery()) {
+        setResult(layerEditor->proxyShapeName(true /*fullPath*/).c_str());
     }
 
     if (argParser.isFlagSet(FLAG(getSelectedLayers))) {
@@ -389,34 +361,61 @@ MStatus LayerEditorWindowCommand::handleEdits(
     const MArgParser&          argParser,
     AbstractLayerEditorWindow* layerEditor)
 {
-    //
-    // this method is written so that it'll return an error
-    // if a query flag is used in non-query mode.
+    // This method is written so that it'll return an error
+    // if an edit flag is used in non-edit mode.
     bool    notEdit = !argParser.isEdit();
     MString errorMsg("Need -edit mode for parameter ");
+    MString noCurrentLayerItemMsg("There is no current layer item, needed for parameter ");
 
-#define HANDLE_E_FLAG(name)                \
-    if (argParser.isFlagSet(FLAG(name))) { \
-        if (notEdit) {                     \
-            errorMsg += FLAG(name);        \
-            displayError(errorMsg);        \
-            return MS::kInvalidParameter;  \
-        }                                  \
-        layerEditor->name();               \
+#define HANDLE_E_FLAG(FLAG_NAME, CHECK)                     \
+    if (argParser.isFlagSet(FLAG(FLAG_NAME))) {             \
+        if (notEdit) {                                      \
+            errorMsg += FLAG(FLAG_NAME);                    \
+            displayError(errorMsg);                         \
+            return MS::kInvalidParameter;                   \
+        }                                                   \
+        if (CHECK && !layerEditor->hasCurrentLayerItem()) { \
+            noCurrentLayerItemMsg += FLAG(FLAG_NAME);       \
+            displayError(noCurrentLayerItemMsg);            \
+            return MS::kInvalidParameter;                   \
+        }                                                   \
+        layerEditor->FLAG_NAME();                           \
     }
 
-    HANDLE_E_FLAG(removeSubLayer)
-    HANDLE_E_FLAG(saveEdits)
-    HANDLE_E_FLAG(discardEdits)
-    HANDLE_E_FLAG(addAnonymousSublayer)
-    HANDLE_E_FLAG(addParentLayer)
-    HANDLE_E_FLAG(loadSubLayers)
-    HANDLE_E_FLAG(muteLayer)
-    HANDLE_E_FLAG(printLayer)
-    HANDLE_E_FLAG(clearLayer)
-    HANDLE_E_FLAG(selectPrimsWithSpec)
-    HANDLE_E_FLAG(lockLayer)
-    HANDLE_E_FLAG(lockLayerAndSubLayers)
+    HANDLE_E_FLAG(removeSubLayer, false)
+    HANDLE_E_FLAG(saveEdits, true)
+    HANDLE_E_FLAG(discardEdits, false)
+    HANDLE_E_FLAG(addAnonymousSublayer, false)
+    HANDLE_E_FLAG(addParentLayer, false)
+    HANDLE_E_FLAG(loadSubLayers, true)
+    HANDLE_E_FLAG(muteLayer, true)
+    HANDLE_E_FLAG(printLayer, false)
+    HANDLE_E_FLAG(clearLayer, false)
+    HANDLE_E_FLAG(selectPrimsWithSpec, true)
+    HANDLE_E_FLAG(lockLayer, true)
+    HANDLE_E_FLAG(lockLayerAndSubLayers, true)
+
+    if (argParser.isFlagSet(FLAG(setSelectedLayers))) {
+        if (notEdit) {
+            errorMsg += FLAG(setSelectedLayers);
+            displayError(errorMsg);
+            return MS::kInvalidParameter;
+        }
+        MString layersString;
+        argParser.getFlagArgument(k_setSelectedLayersFlag, 0, layersString);
+
+        std::vector<std::string> layers;
+        if (layersString.length() > 0) {
+            MStringArray layersList;
+            layersString.split(';', layersList); // break out all the layers
+
+            unsigned int length = layersList.length();
+            for (unsigned int i = 0; i < length; ++i) {
+                layers.emplace_back(layersList[i].asChar());
+            }
+        }
+        layerEditor->selectLayers(layers);
+    }
 
     return MS::kSuccess;
 }
