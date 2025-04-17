@@ -251,23 +251,22 @@ Headers should be included in the following order, with each section separated b
 Respect the minimum supported version for Maya and USD stated in [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) .
 
 ### std over boost
-Recent extensions to the C++ standard introduce many features previously only found in [boost](http://boost.org). To avoid introducing additional dependencies, developers should strive to use functionality in the C++ std over boost. If you encounter usage of boost in the code, consider converting this to the equivalent std mechanism. 
-Our library currently has the following boost dependencies:
+In USD v0.24.11 Pixar completely removed the use of Boost from the USD codebase. This means that all new code should not use Boost.
+MayaUsd currently only has the following boost dependencies:
 * `boost::python` for USD version < 24.11
-* `boost::make_shared` (preferable to replace with `std::shared_ptr`), `boost::static_pointer_cast`
-* `boost::hash{_range/_value}`, `boost::mpl`, `boost::multi_index`, `boost::optional`
+* `boost::optional` for C++14 (USD version <= 23.11)
+
+*Note*: The legacy C++ support (C++14) is handled by using [cxx17_legacy_support.h](https://github.com/autodesk/maya-usd/cxx17_legacy_support.h). This file uses `ifdef` checks to support C++14 vs C++17.
 
 *Note*: all these Boost dependencies are header only and thus don't require linking to actual Boost libraries.
 
 ***Update:***
-* `boost::filesystem` and `boost::system` are removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the project.
+* Use of `boost::filesystem` and `boost::system` are not allowed and have been removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the entire MayaUsd project.
 
-* Dependency on `boost::thread` is removed from Animal Logic plugin.
-
-* `boost::hash_combine` is replaced with `MayaUsd::hash_combine` and should be used instead across the project.
+* `boost::hash_combine` is also not allowed and `MayaUsd::hash_combine` should be used instead.
 
 ***USD version >= 24.11:***
-* In USD v24.11 Pixar has removed Boost as a dependency for the USD build. This includes Boost python which is no longer used to build the python bindings. Instead Pixar has created their own boost python in a separate `pxr/external/boost` folder. Since MayaUsd supports many versions of USD we have created a boost porting python file [pxr_python.h](https://github.com/autodesk/maya-usd/pxr_python.h). This file has uses `ifdef` checks to support all versions of USD and which python it uses. Not python (Boost or Pixar Boost) header files should be included directly in C++ source files. Instead always include only `<pxr_python.h>` and use the `PXR_BOOST_PYTHON_NAMESPACE` define to refer to the Boost python code, ex: `PXR_BOOST_PYTHON_NAMESPACE::object`
+* In USD v24.11 Pixar has removed Boost as a dependency for the USD build. This includes Boost python which is no longer used to build the python bindings. Instead Pixar has created their own boost python in a separate `pxr/external/boost` folder. Since MayaUsd supports many versions of USD we have created a boost porting python file [pxr_python.h](https://github.com/autodesk/maya-usd/pxr_python.h). This file uses `ifdef` checks to support all versions of USD and which python it uses. No python (Boost or Pixar Boost) header files should be included directly in C++ source files. Instead always include only `<pxr_python.h>` and use the `PXR_BOOST_PYTHON_NAMESPACE` define to refer to the Boost python code, ex: `PXR_BOOST_PYTHON_NAMESPACE::object`
 
 ## Modern C++
 Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) following modern C++ practices. We’ll follow the [C++ Core Guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and pay attention to:

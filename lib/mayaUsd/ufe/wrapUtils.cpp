@@ -123,7 +123,7 @@ void wrapUtils()
 #endif
 
     // Because mayaUsd and UFE have incompatible Python bindings that do not
-    // know about each other (provided by Boost Python and pybind11,
+    // know about each other (provided by Boost/Pxr Python and pybind11,
     // respectively), we cannot pass in or return UFE objects such as Ufe::Path
     // here, and are forced to use strings.  Use the tentative string
     // representation of Ufe::Path as comma-separated segments.  We know that

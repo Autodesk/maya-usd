@@ -33,11 +33,6 @@
 
 #include <iostream>
 
-#if HDX_API_VERSION < 7
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -279,14 +274,8 @@ void HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, HdxShadowParams
         : std::min(
             GetDelegate()->GetParams().maximumShadowMapResolution, dmapResolutionPlug.asInt());
 
-    params.shadowMatrix =
-#if HDX_API_VERSION >= 7
-        std::make_shared<HdMayaConstantShadowMatrix>(GetTransform() * _shadowProjectionMatrix);
-#else
-        boost::static_pointer_cast<HdxShadowMatrixComputation>(
-            boost::make_shared<HdMayaConstantShadowMatrix>(
-                GetTransform() * _shadowProjectionMatrix));
-#endif
+    params.shadowMatrix
+        = std::make_shared<HdMayaConstantShadowMatrix>(GetTransform() * _shadowProjectionMatrix);
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull() ? 0.0
                                               : (static_cast<double>(dmapFilterSizePlug.asInt()))

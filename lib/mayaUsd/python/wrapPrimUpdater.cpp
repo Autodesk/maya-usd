@@ -28,7 +28,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaPrimUpdater
+/// \brief Python binding for the UsdMayaPrimUpdater
 //----------------------------------------------------------------------------------------------------------------------
 class PrimUpdaterWrapper
     : public UsdMayaPrimUpdater

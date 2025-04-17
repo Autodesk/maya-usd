@@ -64,8 +64,8 @@ endif()
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME} 
     PUBLIC
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_DEBUG_PYTHON>
+        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_LINKING_PYTHON>
     PRIVATE
         MAYAUSD_API_EXPORT
         MFB_PACKAGE_NAME="${PROJECT_NAME}"

@@ -109,23 +109,6 @@ find_library(USD_LIBRARY
 
 get_filename_component(USD_LIBRARY_DIR ${USD_LIBRARY} DIRECTORY)
 
-# Get the boost version from the one built with USD
-if(USD_INCLUDE_DIR)
-    file(GLOB _USD_VERSION_HPP_FILE "${USD_INCLUDE_DIR}/boost-*/boost/version.hpp")
-    list(LENGTH _USD_VERSION_HPP_FILE found_one)
-    if(${found_one} STREQUAL "1")
-        list(GET _USD_VERSION_HPP_FILE 0 USD_VERSION_HPP)
-        file(STRINGS
-            "${USD_VERSION_HPP}"
-            _usd_tmp
-            REGEX "#define BOOST_VERSION .*$")
-        string(REGEX MATCH "[0-9]+" USD_BOOST_VERSION ${_usd_tmp})
-        unset(_usd_tmp)
-        unset(_USD_VERSION_HPP_FILE)
-        unset(USD_VERSION_HPP)
-    endif()
-endif()
-
 # See if USD changetracker has instance count.
 set(USD_HAS_TRACKER_INSTANCE_COUNT FALSE CACHE INTERNAL "USD.Track.InstanceCount")
 if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/imaging/hd/changeTracker.h")
@@ -203,7 +186,4 @@ if (USD_FOUND)
     endif()
     message(STATUS "   USD version: ${USD_VERSION}")
     message(STATUS "   Autodesk USD version: ${ADSK_USD_VERSION}")
-    if(DEFINED USD_BOOST_VERSION)
-        message(STATUS "   USD Boost::boost version: ${USD_BOOST_VERSION}")
-    endif()
 endif()

@@ -2111,8 +2111,8 @@ bool checkPrimMetadata(
     const TfToken& falseToken,
     CacheT&        cache)
 {
-    TfHashSet<UsdPrim, boost::hash<UsdPrim>> cachedPrims;
-    auto                                     updateCache = [&cache, &cachedPrims](bool value) {
+    TfHashSet<UsdPrim, TfHash> cachedPrims;
+    auto                       updateCache = [&cache, &cachedPrims](bool value) {
         for (auto&& cachedPrim : cachedPrims) {
             cache.insert(std::make_pair(cachedPrim, value));
         }
