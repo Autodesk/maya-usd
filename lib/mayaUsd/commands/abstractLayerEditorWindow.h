@@ -74,6 +74,7 @@ public:
 
     // queries about the current selection
     virtual int         selectionLength() = 0;
+    virtual bool        hasCurrentLayerItem() = 0;
     virtual bool        isInvalidLayer() = 0;
     virtual bool        isSessionLayer() = 0;
     virtual bool        isLayerDirty() = 0;
@@ -89,7 +90,7 @@ public:
     virtual bool        layerIsSystemLocked() = 0;
     virtual bool        layerIsReadOnly() = 0;
     virtual bool        layerHasSubLayers() = 0;
-    virtual std::string proxyShapeName() const = 0;
+    virtual std::string proxyShapeName(const bool fullPath = false) const = 0;
 
     virtual void removeSubLayer() = 0;
     virtual void saveEdits() = 0;

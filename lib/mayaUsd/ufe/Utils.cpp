@@ -273,8 +273,15 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
     if (!TF_VERIFY(!path.empty())) {
         return nullptr;
     }
-
-    return UsdStageMap::getInstance().proxyShapeNode(path);
+    const bool             rebuildCacheIfNeeded = false;
+    MayaUsdProxyShapeBase* result
+        = UsdStageMap::getInstance().proxyShapeNode(path, rebuildCacheIfNeeded);
+    if (result == nullptr) {
+        // If no proxy shape was found without rebuilding the cache, try rebuilding the cache.
+        return UsdStageMap::getInstance().proxyShapeNode(path);
+    } else {
+        return result;
+    }
 }
 
 SdfPath getProxyShapePrimPath(const Ufe::Path& path)
@@ -384,8 +391,8 @@ void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& m
             displayLayer.add(dagPath);
 
             // In case display layer membership was removed from the USD prim that we are
-            // replicating, we want to restore it here to make sure that the prim will stay in its
-            // display layer on DiscardEdits
+            // replicating, we want to restore it here to make sure that the prim will stay in
+            // its display layer on DiscardEdits
             displayLayer.add(Ufe::PathString::string(path).c_str());
         }
     }

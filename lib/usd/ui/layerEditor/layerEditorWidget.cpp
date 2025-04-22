@@ -393,15 +393,14 @@ void LayerEditorWidget::onSelectionChanged(
 
 std::vector<std::string> LayerEditorWidget::getSelectedLayers()
 {
-    const auto               model = _treeView->layerTreeModel();
-    const auto               selectionModel = _treeView->selectionModel();
-    const auto               selection = selectionModel->selectedRows();
+    auto                     selectedLayerItems = _treeView->getSelectedLayerItems();
     std::vector<std::string> selectedLayerIDs;
-    for (int i = 0; i < selection.size(); ++i) {
-        selectedLayerIDs.emplace_back(
-            model->layerItemFromIndex(selection[i])->layer()->GetIdentifier());
+    selectedLayerIDs.reserve(selectedLayerItems.size());
+    for (const auto& item : selectedLayerItems) {
+        if (item) {
+            selectedLayerIDs.emplace_back(item->layer()->GetIdentifier());
+        }
     }
-
     return selectedLayerIDs;
 }
 
@@ -414,13 +413,28 @@ void LayerEditorWidget::selectLayers(const std::vector<std::string>& layerIdenti
     selectionModel->clearSelection();
 
     // apply selection if layer exists in stage
+    QItemSelection* selection = nullptr;
     for (const auto& layerId : layerIdentifiers) {
         const auto sdfLayer = SdfLayer::Find(layerId);
         if (sdfLayer) {
             if (const auto item = model->findUSDLayerItem(sdfLayer)) {
-                selectionModel->select(item->index(), QItemSelectionModel::Select);
+                auto index = item->index();
+                if (nullptr == selection) {
+                    selection = new QItemSelection();
+
+                    // Set the current index to the first item in the selection.
+                    // This is necessary since the other command flags (like isSessionLayer) act
+                    // on the current index.
+                    selectionModel->setCurrentIndex(index, QItemSelectionModel::NoUpdate);
+                }
+                selection->select(index, index);
             }
         }
+    }
+    if (selection != nullptr) {
+        selectionModel->select(
+            *selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        delete selection;
     }
 }
 
