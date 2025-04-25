@@ -24,9 +24,16 @@
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/textFileFormat.h>
+
+#if PXR_VERSION < 2508
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
+#else
+#include <pxr/usd/sdf/usdFileFormat.h>
+#include <pxr/usd/sdf/usdaFileFormat.h>
+#include <pxr/usd/sdf/usdcFileFormat.h>
+#endif
 
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MDGModifier.h>
