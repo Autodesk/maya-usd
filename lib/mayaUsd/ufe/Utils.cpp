@@ -276,11 +276,6 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path, bool rebuildCacheIfN
 
     MayaUsdProxyShapeBase* result
         = UsdStageMap::getInstance().proxyShapeNode(path, rebuildCacheIfNeeded);
-    if (rebuildCacheIfNeeded)
-    {
-        // Further slowdowns.
-        return result;
-    }
     return result;
 }
 
