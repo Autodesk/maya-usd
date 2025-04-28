@@ -267,21 +267,16 @@ bool isMayaWorldPath(const Ufe::Path& ufePath)
     return (ufePath.runTimeId() == g_MayaRtid && ufePath.size() == 1);
 }
 
-MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
+MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded /*= true*/)
 {
     // Path should not be empty.
     if (!TF_VERIFY(!path.empty())) {
         return nullptr;
     }
-    const bool             rebuildCacheIfNeeded = false;
+
     MayaUsdProxyShapeBase* result
         = UsdStageMap::getInstance().proxyShapeNode(path, rebuildCacheIfNeeded);
-    if (result == nullptr) {
-        // If no proxy shape was found without rebuilding the cache, try rebuilding the cache.
-        return UsdStageMap::getInstance().proxyShapeNode(path);
-    } else {
-        return result;
-    }
+    return result;
 }
 
 SdfPath getProxyShapePrimPath(const Ufe::Path& path)
