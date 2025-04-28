@@ -108,7 +108,8 @@ bool isMayaWorldPath(const Ufe::Path& ufePath);
 
 //! Return the gateway node (i.e. proxy shape)
 MAYAUSD_CORE_PUBLIC
-PXR_NS::MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path);
+PXR_NS::MayaUsdProxyShapeBase*
+getProxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded = true);
 
 //! Return the primPath for the gateway node.
 //! The gateway node may specify a path that UFE should be restricted to.
