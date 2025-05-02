@@ -42,7 +42,7 @@ import unittest
 
 def UsdHasDefaultForMatrix33():
     r = Sdr.Registry()
-    n = r.GetNodeByIdentifier("ND_add_matrix33")
+    n = r.GetShaderNodeByIdentifier("ND_add_matrix33")
     i = n.GetShaderInput("in1")
     return i.GetDefaultValue() is not None
 
