@@ -540,6 +540,7 @@ Ufe::Attribute::Type _UsdTypeToUfe(const SdfValueTypeName& usdType)
     static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe {
         { SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },           // bool
         { SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },             // int32_t
+        { SdfValueTypeNames->UInt.GetHash(), Ufe::Attribute::kUInt },           // unsigned int
         { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },         // float
         { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },       // double
         { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },       // std::string
@@ -696,6 +697,7 @@ SdfValueTypeName ufeTypeToUsd(const Ufe::Attribute::Type ufeType)
     static const std::unordered_map<Ufe::Attribute::Type, SdfValueTypeName> sUfeTypeToUsd {
         { Ufe::Attribute::kBool, SdfValueTypeNames->Bool },
         { Ufe::Attribute::kInt, SdfValueTypeNames->Int },
+        { Ufe::Attribute::kUInt, SdfValueTypeNames->UInt },
         { Ufe::Attribute::kFloat, SdfValueTypeNames->Float },
         { Ufe::Attribute::kDouble, SdfValueTypeNames->Double },
         { Ufe::Attribute::kString, SdfValueTypeNames->String },

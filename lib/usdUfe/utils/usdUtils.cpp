@@ -438,6 +438,9 @@ VtValue vtValueFromString(const SdfValueTypeName& typeName, const std::string& s
             { SdfValueTypeNames->Int.GetCPPTypeName(),
               [](const std::string& s) {
                   return s.empty() ? VtValue() : VtValue(std::stoi(s.c_str())); } },
+            { SdfValueTypeNames->UInt.GetCPPTypeName(),
+                [](const std::string& s) {
+                  return s.empty() ? VtValue() : VtValue(std::stoul(s.c_str())); } },
             { SdfValueTypeNames->Float.GetCPPTypeName(),
               [](const std::string& s) {
                   return s.empty() ? VtValue() : VtValue(std::stof(s.c_str())); } },

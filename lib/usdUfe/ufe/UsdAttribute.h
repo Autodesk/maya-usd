@@ -354,6 +354,19 @@ public:
     create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
 }; // UsdAttributeInt
 
+//! \brief Interface for USD unsigned int attributes.
+class UsdAttributeUInt : public TypedUsdAttribute<unsigned int>
+{
+public:
+    typedef std::shared_ptr<UsdAttributeUInt> Ptr;
+
+    using TypedUsdAttribute<unsigned int>::TypedUsdAttribute;
+
+    //! Create a UsdAttributeUInt with a scene item and USD attribute
+    static UsdAttributeUInt::Ptr
+    create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
+}; // UsdAttributeUInt
+
 //! \brief Interface for USD float attributes.
 class UsdAttributeFloat : public TypedUsdAttribute<float>
 {
