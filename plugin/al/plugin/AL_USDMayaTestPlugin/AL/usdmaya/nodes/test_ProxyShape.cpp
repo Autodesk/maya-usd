@@ -24,9 +24,14 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
+
+#if PXR_VERSION < 2508
+#include <pxr/usd/usd/usdaFileFormat.h>
+#else
+#include <pxr/usd/sdf/usdaFileFormat.h>
+#endif
 
 #include <maya/MCommonSystemUtils.h>
 #include <maya/MDagModifier.h>
@@ -1089,9 +1094,13 @@ TEST(ProxyShape, editTargetChangeAndSave)
 
         auto stage = proxy->getUsdStage();
 
-        auto newLayer = SdfLayer::New(
-            SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id),
-            buildTempPath("AL_USDMayaTests_fresh_layer.usda"));
+#if PXR_VERSION < 2508
+        auto fileFormat = SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
+#else
+        auto fileFormat = SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id);
+#endif
+        auto newLayer
+            = SdfLayer::New(fileFormat, buildTempPath("AL_USDMayaTests_fresh_layer.usda"));
 
         stage->GetSessionLayer()->InsertSubLayerPath(newLayer->GetIdentifier());
         // At the time newLayer is made the edit target, it shouldn't be dirty!
