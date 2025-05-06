@@ -22,7 +22,7 @@ import unittest
 from maya import cmds
 from maya import standalone
 
-from pxr import Usd, UsdGeom
+from pxr import Usd, UsdGeom, Sdf
 
 class testUsdExportPackage(unittest.TestCase):
 
@@ -89,7 +89,11 @@ class testUsdExportPackage(unittest.TestCase):
 
         # Lets make sure that the root layer is the first file and that all
         # the references were localized ok.
-        zipFile = Usd.ZipFile.Open(usdFile)
+        if Usd.GetVersion() < (0, 25, 8):
+            zipFile = Usd.ZipFile.Open(usdFile)
+        else:
+            zipFile = Sdf.ZipFile.Open(usdFile)
+
         fileNames = zipFile.GetFileNames()
 
         # TODO: https://github.com/Autodesk/maya-usd/pull/555#discussion_r434170321
@@ -127,7 +131,11 @@ class testUsdExportPackage(unittest.TestCase):
         # the references were localized ok.
         # Note that the path of "card.png" in the usdz archive may have changed
         # because of the flattening step.
-        zipFile = Usd.ZipFile.Open(usdFile)
+        if Usd.GetVersion() < (0, 25, 8):
+            zipFile = Usd.ZipFile.Open(usdFile)
+        else:
+            zipFile = Sdf.ZipFile.Open(usdFile)
+
         fileNames = zipFile.GetFileNames()
         self.assertEqual(len(fileNames), 2)
         self.assertEqual(fileNames[0], "MyAwesomeArKitCompatibleFile.usdc")
