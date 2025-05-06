@@ -25,9 +25,14 @@
 #include <pxr/usd/usd/payloads.h>
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/gprim.h>
+
+#if PXR_VERSION < 2508
+#include <pxr/usd/usd/usdFileFormat.h>
+#else
+#include <pxr/usd/sdf/usdFileFormat.h>
+#endif
 
 namespace {
 

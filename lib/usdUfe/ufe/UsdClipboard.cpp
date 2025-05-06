@@ -17,9 +17,15 @@
 #include "UsdClipboard.h"
 
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
+
+#if PXR_VERSION < 2508
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
-#include <pxr/usd/usdShade/connectableAPI.h>
+#else
+#include <pxr/usd/sdf/usdFileFormat.h>
+#include <pxr/usd/sdf/usdcFileFormat.h>
+#endif
 
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
@@ -67,7 +73,11 @@ static_assert(!std::is_move_assignable<UsdClipboard>::value);
 UsdClipboard::UsdClipboard()
 {
     setClipboardPath(std::filesystem::temp_directory_path().string());
+#if PXR_VERSION < 2508
     setClipboardFileFormat(PXR_NS::UsdUsdcFileFormatTokens->Id.GetText()); // Default = binary
+#else
+    setClipboardFileFormat(PXR_NS::SdfUsdcFileFormatTokens->Id.GetText()); // Default = binary
+#endif
 }
 
 UsdClipboard::~UsdClipboard() { cleanClipboard(); }
@@ -79,7 +89,11 @@ void UsdClipboard::setClipboardData(const PXR_NS::UsdStageWeakPtr& clipboardData
     // Note: export the root layer directly as the stage export will flatten which removes
     //       variant sets, payloads, etc.
     PXR_NS::SdfFileFormat::FileFormatArguments args;
+#if PXR_VERSION < 2508
     args[PXR_NS::UsdUsdFileFormatTokens->FormatArg] = _clipboardFileFormat;
+#else
+    args[PXR_NS::SdfUsdFileFormatTokens->FormatArg] = _clipboardFileFormat;
+#endif
     if (!clipboardData->GetRootLayer()->Export(_clipboardFilePath, "UsdUfe clipboard", args)) {
         const std::string error
             = "Failed to export Clipboard stage with destination: " + _clipboardFilePath + ".";
