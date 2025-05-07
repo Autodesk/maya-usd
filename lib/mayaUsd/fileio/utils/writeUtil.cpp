@@ -1293,6 +1293,15 @@ static TsExtrapMode _ConvertExtrapolationType(MFnAnimCurve::InfinityType mayaExt
     }
 }
 
+static TsInterpMode _ConvertMayaTanTypeToUsdTanType(MFnAnimCurve::TangentType mayaTangentType)
+{
+    switch (mayaTangentType) {
+    case MFnAnimCurve::TangentType::kTangentStep: return TsInterpHeld;
+    case MFnAnimCurve::TangentType::kTangentLinear: return TsInterpLinear;
+    default: return TsInterpCurve;
+    }
+}
+
 TsKnotMap UsdMayaWriteUtil::GetKnotsFromMayaCurve(
     const MFnDependencyNode& depNode,
     const MString&           name,
@@ -1323,20 +1332,54 @@ TsKnotMap UsdMayaWriteUtil::GetKnotsFromMayaCurve(
         flAnimCurve.getTangent(k, inTangentX, inTangentY, true);
         flAnimCurve.getTangent(k, outTangentX, outTangentY, false);
 
-        TsTime inTime, outTime;
-        float  inSlope, outSlope;
+        TsTime inTime {}, outTime {};
+        float  inSlope = 0.f, outSlope = 0.f;
         TsConvertToStandardTangent(
-            inTangentX, static_cast<float>(inTangentY), true, true, false, &inTime, &inSlope);
-        TsConvertToStandardTangent(
-            outTangentX, static_cast<float>(outTangentY), true, true, false, &outTime, &outSlope);
+            static_cast<float>(inTangentX),
+            static_cast<float>(inTangentY),
+            true,
+            true,
+            true,
+            &inTime,
+            &inSlope);
 
-        TsKnot knot(Ts_GetType<float>());
+        TsKnot     knot(Ts_GetType<float>());
+        const auto outTanType = flAnimCurve.outTangentType(k);
+        const auto convertedValue = static_cast<float>(value) * scaling;
+
+        // Deal with the case where slope would be infinite,
+        // Because when there's a step on the curve is discontinuous
+        if (outTanType == MFnAnimCurve::kTangentStepNext) {
+            // Maya's step next is a special case where the value jumps to the next key's value.
+            // If this is the last key, then set the value to the current value, making it behave
+            // like a step.
+            knot.SetPreValue(convertedValue);
+            if (k + 1 < numKeys) {
+                knot.SetValue(static_cast<float>(flAnimCurve.value(k + 1)) * scaling);
+            } else {
+                knot.SetValue(convertedValue);
+            }
+        } else if (outTanType == MFnAnimCurve::kTangentStep) {
+            // no need to convert tangent in this case because it is 0 for the step.
+            knot.SetValue(static_cast<float>(value) * scaling);
+        } else {
+            TsConvertToStandardTangent(
+                static_cast<float>(outTangentX),
+                static_cast<float>(outTangentY),
+                true,
+                true,
+                false,
+                &outTime,
+                &outSlope);
+            knot.SetValue(static_cast<float>(value) * scaling);
+        }
+
         knot.SetTime(time);
-        knot.SetValue(static_cast<float>(value) * scaling);
-        knot.SetPostTanSlope(static_cast<float>(outTangentY));
-        knot.SetPreTanSlope(static_cast<float>(inTangentY));
-        knot.SetPostTanWidth(static_cast<float>(outTangentX));
-        knot.SetPreTanWidth(static_cast<float>(inTangentX));
+        knot.SetPostTanSlope(outSlope);
+        knot.SetPreTanSlope(inSlope);
+        knot.SetPostTanWidth(outTime);
+        knot.SetPreTanWidth(inTime);
+        knot.SetNextInterpolation(_ConvertMayaTanTypeToUsdTanType(outTanType));
 
         knots.insert(knot);
     }
