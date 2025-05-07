@@ -95,8 +95,17 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(len(knots), 2)
         self.assertEqual(knots[0].GetTime(), 0)
         self.assertEqual(knots[0].GetValue(), 1)
+        self.assertTrue(Gf.IsClose(knots[0].GetPreTanWidth(), 0.33333333, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[0].GetPostTanWidth(), 0.33333333, 1e-6))
+        self.assertEqual(knots[0].GetPostTanSlope(), 0)
+        self.assertEqual(knots[0].GetPreTanSlope(), 0)
+
         self.assertEqual(knots[5].GetTime(), 5)
         self.assertEqual(knots[5].GetValue(), 5)
+        self.assertTrue(Gf.IsClose(knots[5].GetPreTanWidth(), 0.33333333, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetPostTanWidth(), 0.33333333, 1e-6))
+        self.assertEqual(knots[5].GetPostTanSlope(), 0)
+        self.assertEqual(knots[5].GetPreTanSlope(), 0)
 
 
     @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
@@ -117,8 +126,18 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(len(knots), 3)
         self.assertEqual(knots[0].GetTime(), 0)
         self.assertEqual(knots[0].GetValue(), 35)
+        self.assertTrue(Gf.IsClose(knots[0].GetPreTanWidth(), 0.33333333, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[0].GetPostTanWidth(), 0.33333333, 1e-6))
+        self.assertEqual(knots[0].GetPostTanSlope(), 0)
+        self.assertEqual(knots[0].GetPreTanSlope(), 0)
+
         self.assertEqual(knots[3].GetTime(), 3)
         self.assertTrue(Gf.IsClose(knots[3].GetValue(), 89.22748, 1e-5))
+        self.assertTrue(Gf.IsClose(knots[3].GetPreTanWidth(), 0.0007473, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[3].GetPostTanWidth(), 0.0007473, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[3].GetPostTanSlope(), -446.04614, 1e-5))
+        self.assertTrue(Gf.IsClose(knots[3].GetPreTanSlope(), 446.0461, 1e-4))
+
         self.assertEqual(knots[5].GetTime(), 5)
         self.assertEqual(knots[5].GetValue(), 2.5)
 
@@ -133,6 +152,10 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertTrue(Gf.IsClose(knots[0].GetValue(), 5.0465837, 1e-6))
         self.assertEqual(knots[2].GetTime(), 2)
         self.assertTrue(Gf.IsClose(knots[2].GetValue(), 7.160621, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[2].GetPreTanWidth(), 0.037513, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[2].GetPostTanWidth(), 0.037513, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[2].GetPostTanSlope(), 8.8293495, 1e-5))
+        self.assertTrue(Gf.IsClose(knots[2].GetPreTanSlope(), -8.829347, 1e-5))
         self.assertEqual(knots[5].GetTime(), 5)
         self.assertTrue(Gf.IsClose(knots[5].GetValue(), 10.046584, 1e-6))
 
