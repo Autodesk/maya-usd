@@ -875,6 +875,7 @@ UsdAttributeInt::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&
 // UsdAttributeUInt:
 //------------------------------------------------------------------------------
 
+#ifdef UFE_HAS_UNSIGNED_INT
 USDUFE_VERIFY_CLASS_SETUP(TypedUsdAttribute<unsigned int>, UsdAttributeUInt);
 
 /*static*/
@@ -884,6 +885,7 @@ UsdAttributeUInt::create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr
     auto attr = std::make_shared<UsdAttributeUInt>(item, std::move(attrHolder));
     return attr;
 }
+#endif
 
 //------------------------------------------------------------------------------
 // UsdAttributeFloat:

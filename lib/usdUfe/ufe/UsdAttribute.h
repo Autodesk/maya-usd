@@ -354,6 +354,7 @@ public:
     create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
 }; // UsdAttributeInt
 
+#ifdef UFE_HAS_UNSIGNED_INT
 //! \brief Interface for USD unsigned int attributes.
 class UsdAttributeUInt : public TypedUsdAttribute<unsigned int>
 {
@@ -366,6 +367,7 @@ public:
     static UsdAttributeUInt::Ptr
     create(const UsdSceneItem::Ptr& item, UsdAttributeHolder::UPtr&& attrHolder);
 }; // UsdAttributeUInt
+#endif
 
 //! \brief Interface for USD float attributes.
 class UsdAttributeFloat : public TypedUsdAttribute<float>
