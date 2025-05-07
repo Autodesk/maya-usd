@@ -37,7 +37,7 @@ set(MSVC_FLAGS
     # standards compliant.
     /Zc:rvalueCast
     # Enable standard compliant preprocessor to fix issues with Intellisense
-    $<$<BOOL:$<VERSION_GREATER_EQUAL:${USD_VERSION},"0.24.08">>:/Zc:preprocessor>
+    $<$<BOOL:$<VERSION_GREATER_EQUAL:${USD_VERSION},0.24.08>>:/Zc:preprocessor>
     # The /Zc:inline option strips out the "arch_ctor_<name>" symbols used for
     # library initialization by ARCH_CONSTRUCTOR starting in Visual Studio 2019,
     # causing release builds to fail. Disable the option for this and later
