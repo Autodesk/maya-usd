@@ -160,7 +160,7 @@ endif()
 
 set(UFE_HAS_UNSIGNED_INT FALSE CACHE INTERNAL "ufeHasUnsignedInt")
 if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attribute.h")
-    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/attribute.h UFE_HAS_API REGEX "kUInt")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/attribute.h UFE_HAS_API REGEX "AttributeUInt")
     if(UFE_HAS_API)
         set(UFE_HAS_UNSIGNED_INT TRUE CACHE INTERNAL "ufeHasUnsignedInt")
         message(STATUS "Maya has UFE Attribute type Unsigned Int")
