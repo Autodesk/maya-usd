@@ -278,7 +278,7 @@ static bool _CreatePlugSpline(
         auto outTanType = _ConvertUsdTanTypeToMayaTanType(knot.GetNextInterpolation());
         if (knot.IsDualValued() && outTanType == MFnAnimCurve::kTangentStep) {
             knot.GetPreValue(&value);
-            //preTanType = MFnAnimCurve::TangentType::kTangentFixed;
+            // preTanType = MFnAnimCurve::TangentType::kTangentFixed;
             outTanType = MFnAnimCurve::TangentType::kTangentStepNext;
         } else {
             knot.GetValue(&value);
@@ -308,13 +308,13 @@ static bool _CreatePlugSpline(
         TsConvertFromStandardTangent(
             knot.GetPostTanWidth(), outUsdSlope, true, true, false, &outMayaTime, &outMayaSlope);
 
-        auto keyIdx = animFn.addKeyframe(MTime(knot.GetTime()), value, preTanType, outTanType) -1;
-        //auto keyIdx = animFn.addKeyframe(MTime(knot.GetTime()), value) - 1;
+        auto keyIdx = animFn.addKeyframe(MTime(knot.GetTime()), value, preTanType, outTanType) - 1;
+        // auto keyIdx = animFn.addKeyframe(MTime(knot.GetTime()), value) - 1;
         animFn.setTangentsLocked(keyIdx, true);
         animFn.setTangent(keyIdx, inMayaTime, inMayaSlope, true);
         animFn.setTangent(keyIdx, outMayaTime, outMayaSlope, false);
-        //animFn.setInTangentType(keyIdx, preTanType);
-        //animFn.setOutTangentType(keyIdx, outTanType);
+        // animFn.setInTangentType(keyIdx, preTanType);
+        // animFn.setOutTangentType(keyIdx, outTanType);
 
         // valuesArray.set(value, knotIdx);
         // timeArray.set(MTime(knot.GetTime()), knotIdx);
@@ -329,8 +329,8 @@ static bool _CreatePlugSpline(
             || outTanType == MFnAnimCurve::kTangentStepNext) {
             knotTracker.emplace_back(knotIdx);
             preTanType = MFnAnimCurve::TangentType::kTangentFixed;
-            //tangentInTypeArray2.emplace_back(preTanType);
-            //tangentOutTypeArray2.emplace_back(outTanType);
+            // tangentInTypeArray2.emplace_back(preTanType);
+            // tangentOutTypeArray2.emplace_back(outTanType);
         } else {
             preTanType = outTanType;
         }
