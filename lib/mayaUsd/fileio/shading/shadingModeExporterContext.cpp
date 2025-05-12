@@ -667,7 +667,7 @@ public:
                     if (!status) {
                         TF_WARN(
                             "Failed to initialize MFnMesh for shape object \"%s\".",
-                            iter.shapeName);
+                            iter.shapeName.GetText());
                         continue;
                     }
                     // Get the UV set names
@@ -675,7 +675,8 @@ public:
                     status = meshFn.getUVSetNames(uvSetNames);
                     if (!status || uvSetNames.length() == 0) {
                         TF_WARN(
-                            "Failed to get UV set names for shape object \"%s\".", iter.shapeName);
+                            "Failed to get UV set names for shape object \"%s\".",
+                            iter.shapeName.GetText());
                         continue;
                     }
 
