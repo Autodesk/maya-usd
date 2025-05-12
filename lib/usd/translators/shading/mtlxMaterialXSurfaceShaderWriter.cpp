@@ -203,7 +203,7 @@ void _ConnectToNode(
     if (!connectedNode) {
         TF_WARN(
             "Can't find node '%s' connected to input '%s' on node '%s'",
-            input->getNodeName(),
+            input->getNodeName().c_str(),
             input->getName().c_str(),
             input->getParent()->getName().c_str());
         return;
@@ -427,7 +427,8 @@ void _AddGeompropValueNode(
     UsdShadeShader&           imageShader)
 {
     MaterialX::NodePtr connectedNode;
-    TfToken inputName(TfStringPrintf("%s:%s", node->getName(), _GetVarnameName().GetText()));
+    TfToken            inputName(
+        TfStringPrintf("%s:%s", node->getName().c_str(), _GetVarnameName().GetText()));
     if (auto textCoordInput = node->getInput(TrMtlxTokens->texcoord.GetString())) {
         connectedNode = textCoordInput->getConnectedNode();
     }
@@ -446,7 +447,7 @@ void _AddGeompropValueNode(
             = stage->GetPrimAtPath(parentPath.AppendPath(SdfPath(connectedNode->getName())));
         if (!TF_VERIFY(
                 geompropPrim,
-                "Could not find geompropvalue prim at path \"s\"",
+                "Could not find geompropvalue prim at path '%s'",
                 geompropPrim.GetPath().GetText())) {
             return;
         }
