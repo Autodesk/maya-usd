@@ -419,7 +419,7 @@ void _ExposeGeomPropAttributeToMaterial(
         .ConnectToSource(geompropShaderOutput);
 }
 
-// Adds a geompromvalue node to the USD stage, if needed, based on a MaterialX
+// Adds a geompromvalue node to the USD stage if needed, this is intended to be used on image nodes.
 void _AddGeompropValueNode(
     const MaterialX::NodePtr& node,
     const UsdStagePtr&        stage,
