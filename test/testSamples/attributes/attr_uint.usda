@@ -1,0 +1,18 @@
+#usda 1.0
+
+def Material "Material1" (
+    prepend apiSchemas = ["NodeGraphNodeAPI"]
+)
+{
+    uniform float2 ui:nodegraph:node:pos = (0.055555556, 0.055555556)
+
+    def Shader "gltf_pbr1" (
+        prepend apiSchemas = ["NodeGraphNodeAPI"]
+    )
+    {
+        uniform token info:id = "ND_gltf_pbr_surfaceshader"
+        uint inputs:test = 1
+        uniform float2 ui:nodegraph:node:pos = (-0.6370389, -0.8)
+    }
+}
+
