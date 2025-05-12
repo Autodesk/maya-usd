@@ -666,7 +666,8 @@ public:
                     MFnMesh meshFn(shapeObj, &status);
                     if (!status) {
                         TF_WARN(
-                            "Failed to initialize MFnMesh for shape object \"%s\".", iter.shapeName);
+                            "Failed to initialize MFnMesh for shape object \"%s\".",
+                            iter.shapeName);
                         continue;
                     }
                     // Get the UV set names
@@ -674,8 +675,7 @@ public:
                     status = meshFn.getUVSetNames(uvSetNames);
                     if (!status || uvSetNames.length() == 0) {
                         TF_WARN(
-                            "Failed to get UV set names for shape object \"%s\".",
-                            iter.shapeName);
+                            "Failed to get UV set names for shape object \"%s\".", iter.shapeName);
                         continue;
                     }
 
@@ -683,8 +683,7 @@ public:
                     MString uvSetName = UsdMayaWriteUtil::UVSetExportedName(
                         uvSetNames, _exportArgs.preserveUVSetNames, _exportArgs.remapUVSetsTo, 0);
 
-                    _shapeNameToUVNames[iter.shapeName].push_back(
-                        TfToken(uvSetName.asChar()));
+                    _shapeNameToUVNames[iter.shapeName].push_back(TfToken(uvSetName.asChar()));
                 }
             } else {
                 MString uvLinkCmd;
