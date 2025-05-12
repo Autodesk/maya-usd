@@ -46,7 +46,7 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
 
         cmds.file(f=True, new=True)
 
-        mtlxFile = os.path.join("D:\\Dev\\maya\\maya-usd\\test\\lib\\usd\\translators", 'UsdExportMaterialXSurfaceShader',
+        mtlxFile = os.path.join(self._inputPath, 'UsdExportMaterialXSurfaceShader',
             'MaterialXStackExport.mtlx')
 
         stackName = mel.eval("createNode materialxStack")
