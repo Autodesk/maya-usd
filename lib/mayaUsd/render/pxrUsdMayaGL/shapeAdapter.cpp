@@ -227,7 +227,11 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayStyle(unsigned int displayStyle)
     if (flatShadedStyle) {
         if (!shadeActiveOnlyStyle || isActive) {
             if (wireframeStyle) {
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 80
+                reprSelector = HdReprSelector(HdReprTokens->solidWireOnSurf);
+#else
                 reprSelector = HdReprSelector(HdReprTokens->wireOnSurf);
+#endif // HD_API_VERSION >= 80
             } else {
                 reprSelector = HdReprSelector(HdReprTokens->hull);
             }
@@ -238,7 +242,11 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayStyle(unsigned int displayStyle)
     } else if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kGouraudShaded) {
         if (!shadeActiveOnlyStyle || isActive) {
             if (wireframeStyle) {
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 80
+                reprSelector = HdReprSelector(HdReprTokens->refinedSolidWireOnSurf);
+#else
                 reprSelector = HdReprSelector(HdReprTokens->refinedWireOnSurf);
+#endif // HD_API_VERSION >= 80
             } else {
                 reprSelector = HdReprSelector(HdReprTokens->refined);
             }
@@ -303,13 +311,21 @@ MStatus PxrMayaHdShapeAdapter::_SetDagPath(const MDagPath& dagPath)
 
     // Create entries in the collection and render task ID maps for each repr
     // we might use.
-    static const std::vector<HdReprSelector> allMayaReprs(
-        { HdReprSelector(HdReprTokens->hull),
-          HdReprSelector(HdReprTokens->refined),
-          HdReprSelector(HdReprTokens->refinedWire),
-          HdReprSelector(HdReprTokens->refinedWireOnSurf),
-          HdReprSelector(HdReprTokens->wire),
-          HdReprSelector(HdReprTokens->wireOnSurf) });
+    static const std::vector<HdReprSelector> allMayaReprs({
+        HdReprSelector(HdReprTokens->hull), HdReprSelector(HdReprTokens->refined),
+            HdReprSelector(HdReprTokens->refinedWire),
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 80
+            HdReprSelector(HdReprTokens->refinedSolidWireOnSurf),
+#else
+            HdReprSelector(HdReprTokens->refinedWireOnSurf),
+#endif // HD_API_VERSION >= 80
+            HdReprSelector(HdReprTokens->wire),
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 80
+            HdReprSelector(HdReprTokens->solidWireOnSurf)
+#else
+            HdReprSelector(HdReprTokens->wireOnSurf)
+#endif // HD_API_VERSION >= 80
+    });
 
     for (const HdReprSelector& reprSelector : allMayaReprs) {
         const TfToken rprimCollectionName
