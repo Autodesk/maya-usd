@@ -207,7 +207,7 @@ void LayerTreeItem::fetchData(RebuildChildren in_rebuild, RecursionDetector* in_
 QVariant LayerTreeItem::data(int role) const
 {
     switch (role) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_DISABLE_DEPRECATED_BEFORE || QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     case Qt::ForegroundRole: return QColor(200, 200, 200);
 #else
     case Qt::TextColorRole: return QColor(200, 200, 200);
