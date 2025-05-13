@@ -565,12 +565,10 @@ class AttributeTestCase(unittest.TestCase):
         self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
 
         # # Run test using Maya's setAttr command.
-        # self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1)
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1)
 
         # Run test using Maya's getAttr command.
-        # self.runMayaGetAttrTest(ufeAttr)
-
-        # AssertionError: '45' != 45
+        self.runMayaGetAttrTest(ufeAttr)
 
     @unittest.skipIf(os.getenv('UFE_ATTRIBUTES_GET_ENUMS', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE Attributes has a getEnums() method')
     def testAttributeIntEnum(self):
