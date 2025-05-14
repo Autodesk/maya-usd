@@ -479,7 +479,10 @@ class testProxyShapeBase(unittest.TestCase):
             cmds.file(new=True, force=True)
 
             # Open target-root-layerrma scene in testSamples
-            mayaUtils.openTestScene("targetRootLayer", "target-root-layer.ma")
+            if Usd.GetVersion() < (0, 25, 8):
+                mayaUtils.openTestScene("targetRootLayer", "target-root-layer.ma")
+            else:
+                mayaUtils.openTestScene("targetRootLayer", "target-root-layer-usda-2508.ma")
 
             # check that the stage is shared and the root is the right one
             stage, proxyShapePath = self._getStage()
