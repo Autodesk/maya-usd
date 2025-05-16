@@ -537,8 +537,7 @@ void _AddNode(
         = _GetNodeWithGeompropInputFromLib();
     // Special case for Nodes that contains a defaultgeomprop attribute set to UV0.
     // A geompropvalue node might be needed.
-    if (geompropValueNodes.find(node->getCategory())
-        != geompropValueNodes.end()) {
+    if (geompropValueNodes.find(node->getCategory()) != geompropValueNodes.end()) {
         _AddGeompropValueNode(node, stage, parentPath, shader);
     }
 }
