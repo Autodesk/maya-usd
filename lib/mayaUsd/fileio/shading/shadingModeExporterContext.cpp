@@ -715,7 +715,6 @@ public:
                     selList.getPlug(0, uvNamePlug);
 
                     MFnMesh meshFn(uvNamePlug.node());
-                    MGlobal::displayInfo(meshFn.name());
                     TfToken shapeName(meshFn.name().asChar());
                     if (!exportedShapes.count(shapeName)) {
                         continue;

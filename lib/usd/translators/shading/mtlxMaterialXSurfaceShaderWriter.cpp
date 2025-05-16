@@ -83,6 +83,23 @@ MaterialX::ConstNodeDefPtr _GetNodeDef(const MaterialX::NodePtr& node, const Ufe
     return nodeDefPtr;
 }
 
+// Browse the MtlX library for nodes containing an input that has a "defaultgeomprop" set to "UV0"
+std::unordered_set<std::string> _GetNodeWithGeompropInputFromLib()
+{
+    auto                            standardDoc = _GetStandardLibraryDocument();
+    std::unordered_set<std::string> nodeNames;
+    for (auto nodeDef : standardDoc->getNodeDefs()) {
+        for (auto input : nodeDef->getInputs()) {
+            if (input->hasDefaultGeomPropString()) {
+                if (input->getDefaultGeomPropString() == "UV0") {
+                    nodeNames.insert(nodeDef->getNodeString());
+                }
+            }
+        }
+    }
+    return nodeNames;
+}
+
 void _SetAutodeskMetaData(const MaterialX::NodePtr& node, const UsdPrim& usdPrim)
 {
     static const std::string adskString = UsdUfe::MetadataTokens->Autodesk.GetString() + ":";
@@ -516,9 +533,12 @@ void _AddNode(
         _AddShaderInput(input, shader, parentPath, shaderUfePath, stage);
     }
 
-    // Special case for Image Nodes.
-    // A geompromvalue node might be needed.
-    if (node->getCategory() == "tiledimage" || node->getCategory() == "image") {
+    const static std::unordered_set<std::string> geompropValueNodes
+        = _GetNodeWithGeompropInputFromLib();
+    // Special case for Nodes that contains a defaultgeomprop attribute set to UV0.
+    // A geompropvalue node might be needed.
+    if (geompropValueNodes.find(node->getCategory())
+        != geompropValueNodes.end()) {
         _AddGeompropValueNode(node, stage, parentPath, shader);
     }
 }
@@ -668,8 +688,7 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
     // This is the material node
     auto ufePath = Ufe::PathString::path(ufePathString.asChar());
     // This is the document node
-    auto                ufeParentPath = ufePath.pop();
-    Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufeParentPath);
+    auto ufeParentPath = ufePath.pop();
 
     // Render Document is the MaterialX document
     childPlug = depNodeFn.findPlug("renderDocument", true, &status);
