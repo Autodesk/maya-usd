@@ -18,8 +18,6 @@
 
 /// \file
 
-#include <mayaUsd/base/api.h>
-
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -27,6 +25,8 @@
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
+
+#include <mayaUsd/base/api.h>
 
 #include <maya/MPlug.h>
 

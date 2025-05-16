@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "writeJob.h"
 
 #include <pxr/base/tf/fileUtils.h>
 #include <pxr/base/tf/hash.h>
@@ -25,6 +24,15 @@
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/variantSetSpec.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdUtils/dependencies.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MAnimControl.h>
 #include <maya/MComputation.h>
@@ -54,15 +62,7 @@
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/usd/sdf/variantSetSpec.h>
-#include <pxr/usd/usd/editContext.h>
-#include <pxr/usd/usd/modelAPI.h>
-#include <pxr/usd/usd/primRange.h>
-#include <pxr/usd/usd/variantSets.h>
-#include <pxr/usd/usdGeom/metrics.h>
-#include <pxr/usd/usdGeom/xform.h>
-#include <pxr/usd/usdUtils/dependencies.h>
-#include <pxr/usd/usdUtils/pipeline.h>
+#include "writeJob.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

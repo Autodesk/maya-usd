@@ -13,31 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "proxyShapeBase.h"
-
-#include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/base/tokens.h>
-#include <mayaUsd/fileio/utils/readUtil.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/listeners/proxyShapeNotice.h>
-#include <mayaUsd/nodes/layerManager.h>
-#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
-#include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/OpUndoItemMuting.h>
-#include <mayaUsd/utils/customLayerData.h>
-#include <mayaUsd/utils/diagnosticDelegate.h>
-#include <mayaUsd/utils/layerLocking.h>
-#include <mayaUsd/utils/layerMuting.h>
-#include <mayaUsd/utils/loadRules.h>
-#include <mayaUsd/utils/query.h>
-#include <mayaUsd/utils/stageCache.h>
-#include <mayaUsd/utils/targetLayer.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/utilFileSystem.h>
-#include <mayaUsd/utils/variantFallbacks.h>
-
-#include <usdUfe/utils/layers.h>
 
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
@@ -70,6 +45,30 @@
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/stageCache.h>
+
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/base/tokens.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/nodes/proxyShapeStageExtraData.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
+#include <mayaUsd/utils/customLayerData.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/layerLocking.h>
+#include <mayaUsd/utils/layerMuting.h>
+#include <mayaUsd/utils/loadRules.h>
+#include <mayaUsd/utils/query.h>
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/targetLayer.h>
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
+#include <mayaUsd/utils/variantFallbacks.h>
+
+#include <usdUfe/utils/layers.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGContext.h>
@@ -114,6 +113,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "proxyShapeBase.h"
 
 using MayaUsd::LayerManager;
 using MayaUsd::ProxyAccessor;
