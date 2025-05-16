@@ -18,6 +18,7 @@
 
 /// \file
 
+// clang-format off
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -31,6 +32,7 @@
 #include <maya/MPlug.h>
 
 #include <string>
+// clang-format on
 
 PXR_NAMESPACE_OPEN_SCOPE
 

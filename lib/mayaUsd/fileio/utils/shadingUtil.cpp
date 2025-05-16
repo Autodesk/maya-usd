@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+// clang-format off
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
@@ -42,6 +43,7 @@
 #include <system_error>
 
 #include "shadingUtil.h"
+// clang-format on
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+// clang-format off
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
 #include <pxr/base/gf/ray.h>
@@ -115,6 +116,7 @@
 #include <vector>
 
 #include "proxyShapeBase.h"
+// clang-format on
 
 using MayaUsd::LayerManager;
 using MayaUsd::ProxyAccessor;

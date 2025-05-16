@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+// clang-format off
 #include <pxr/base/tf/fileUtils.h>
 #include <pxr/base/tf/hash.h>
 #include <pxr/base/tf/hashset.h>
@@ -63,6 +64,7 @@
 #include <mayaUsd/utils/util.h>
 
 #include "writeJob.h"
+// clang-format on
 
 PXR_NAMESPACE_OPEN_SCOPE
 
