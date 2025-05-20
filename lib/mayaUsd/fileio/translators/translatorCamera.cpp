@@ -255,20 +255,17 @@ static bool _CreatePlugSpline(
     MObject      animObj = animFn.create(plug, nullptr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false)
 
-    unsigned int                           numKnots = static_cast<unsigned int>(knots.size());
-    MTimeArray                             timeArray(numKnots, 0.0);
-    MDoubleArray                           valuesArray(numKnots, 0.0);
-    MIntArray                              tangentInTypeArray(numKnots, 0);
-    std::vector<unsigned int>              knotTracker;
-    MIntArray                              tangentOutTypeArray(numKnots, 0);
-    std::vector<MFnAnimCurve::TangentType> tangentInTypeArray2;
-    std::vector<MFnAnimCurve::TangentType> tangentOutTypeArray2;
-    MIntArray                              tangentsLockedArray(numKnots, 1);
-    MIntArray                              weightsLockedArray(numKnots, 0);
-    MDoubleArray                           tangentInXArray(numKnots, 0.0);
-    MDoubleArray                           tangentInYArray(numKnots, 0.0);
-    MDoubleArray                           tangentOutXArray(numKnots, 0.0);
-    MDoubleArray                           tangentOutYArray(numKnots, 0.0);
+    unsigned int numKnots = static_cast<unsigned int>(knots.size());
+    MTimeArray   timeArray(numKnots, 0.0);
+    MDoubleArray valuesArray(numKnots, 0.0);
+    MIntArray    tangentInTypeArray(numKnots, 0);
+    MIntArray    tangentOutTypeArray(numKnots, 0);
+    MIntArray    tangentsLockedArray(numKnots, 1);
+    MIntArray    weightsLockedArray(numKnots, 0);
+    MDoubleArray tangentInXArray(numKnots, 0.0);
+    MDoubleArray tangentInYArray(numKnots, 0.0);
+    MDoubleArray tangentOutXArray(numKnots, 0.0);
+    MDoubleArray tangentOutYArray(numKnots, 0.0);
 
     unsigned int  knotIdx = 0;
     volatile auto preTanType = MFnAnimCurve::TangentType::kTangentFixed;
@@ -278,7 +275,6 @@ static bool _CreatePlugSpline(
         auto outTanType = _ConvertUsdTanTypeToMayaTanType(knot.GetNextInterpolation());
         if (knot.IsDualValued() && outTanType == MFnAnimCurve::kTangentStep) {
             knot.GetPreValue(&value);
-            // preTanType = MFnAnimCurve::TangentType::kTangentFixed;
             outTanType = MFnAnimCurve::TangentType::kTangentStepNext;
         } else {
             knot.GetValue(&value);
@@ -308,50 +304,44 @@ static bool _CreatePlugSpline(
         TsConvertFromStandardTangent(
             knot.GetPostTanWidth(), outUsdSlope, true, true, false, &outMayaTime, &outMayaSlope);
 
-        auto keyIdx = animFn.addKeyframe(MTime(knot.GetTime()), value, preTanType, outTanType) - 1;
-        // auto keyIdx = animFn.addKeyframe(MTime(knot.GetTime()), value) - 1;
-        animFn.setTangentsLocked(keyIdx, true);
-        animFn.setTangent(keyIdx, inMayaTime, inMayaSlope, true);
-        animFn.setTangent(keyIdx, outMayaTime, outMayaSlope, false);
-        // animFn.setInTangentType(keyIdx, preTanType);
-        // animFn.setOutTangentType(keyIdx, outTanType);
+        timeArray.set(MTime(knot.GetTime()), knotIdx);
+        valuesArray.set(value, knotIdx);
+        tangentInTypeArray.set(preTanType, knotIdx);
+        tangentOutTypeArray.set(outTanType, knotIdx);
 
-        // valuesArray.set(value, knotIdx);
-        // timeArray.set(MTime(knot.GetTime()), knotIdx);
-        // tangentInTypeArray.set(preTanType, knotIdx);
-        // tangentOutTypeArray.set(outTanType, knotIdx);
-        // tangentInXArray.set(inMayaTime, knotIdx);
-        // tangentInYArray.set(inMayaSlope, knotIdx);
-        // tangentOutXArray.set(outMayaTime, knotIdx);
-        // tangentOutYArray.set(outMayaSlope, knotIdx);
-        //
+        // When tangent type is step or step next, maya requires the tangent values to be set to
+        // DBL_MAX.
         if (outTanType == MFnAnimCurve::kTangentStep
             || outTanType == MFnAnimCurve::kTangentStepNext) {
-            knotTracker.emplace_back(knotIdx);
             preTanType = MFnAnimCurve::TangentType::kTangentFixed;
-            // tangentInTypeArray2.emplace_back(preTanType);
-            // tangentOutTypeArray2.emplace_back(outTanType);
+            tangentInXArray.set(DBL_MAX, knotIdx);
+            tangentInYArray.set(DBL_MAX, knotIdx);
+            tangentOutXArray.set(DBL_MAX, knotIdx);
+            tangentOutYArray.set(DBL_MAX, knotIdx);
         } else {
             preTanType = outTanType;
+            tangentInXArray.set(inMayaTime, knotIdx);
+            tangentInYArray.set(inMayaSlope, knotIdx);
+            tangentOutXArray.set(outMayaTime, knotIdx);
+            tangentOutYArray.set(outMayaSlope, knotIdx);
         }
-        // preTanType = outTanType;
         knotIdx++;
     }
 
     // set all keys and angles
-    // status = animFn.addKeysWithTangents(
-    //    &timeArray,
-    //    &valuesArray,
-    //    MFnAnimCurve::kTangentGlobal,
-    //    MFnAnimCurve::kTangentGlobal,
-    //    &tangentInTypeArray,
-    //    &tangentOutTypeArray,
-    //    &tangentInXArray,
-    //    &tangentInYArray,
-    //    &tangentOutXArray,
-    //    &tangentOutYArray,
-    //    &tangentsLockedArray,
-    //    &weightsLockedArray);
+    status = animFn.addKeysWithTangents(
+        &timeArray,
+        &valuesArray,
+        MFnAnimCurve::kTangentGlobal,
+        MFnAnimCurve::kTangentGlobal,
+        &tangentInTypeArray,
+        &tangentOutTypeArray,
+        &tangentInXArray,
+        &tangentInYArray,
+        &tangentOutXArray,
+        &tangentOutYArray,
+        &tangentsLockedArray,
+        &weightsLockedArray);
 
     CHECK_MSTATUS_AND_RETURN(status, false)
 
