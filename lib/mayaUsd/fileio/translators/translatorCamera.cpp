@@ -270,7 +270,7 @@ static bool _CreatePlugSpline(
     unsigned int knotIdx = 0;
     auto         preTanType = MFnAnimCurve::TangentType::kTangentFixed;
     for (const TsKnot& knot : knots) {
-        float value{};
+        float value {};
 
         auto outTanType = _ConvertUsdTanTypeToMayaTanType(knot.GetNextInterpolation());
         if (knot.IsDualValued() && outTanType == MFnAnimCurve::kTangentStep) {
