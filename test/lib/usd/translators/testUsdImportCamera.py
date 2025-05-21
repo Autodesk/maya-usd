@@ -63,6 +63,7 @@ class testUsdImportCamera(unittest.TestCase):
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
     def testPerspCameraSplineImport(self):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
         cmds.file(new=True, force=True)
@@ -100,6 +101,7 @@ class testUsdImportCamera(unittest.TestCase):
         }
         self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
     def testOrthoCameraSplineImport(self):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
         cmds.file(new=True, force=True)
