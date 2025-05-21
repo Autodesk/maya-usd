@@ -13,20 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "material.h"
 
-#include "debugCodes.h"
-#include "pxr/usd/sdr/registry.h"
-#include "pxr/usd/sdr/shaderNode.h"
-#include "renderDelegate.h"
-#include "tokens.h"
-
-#include <mayaUsd/base/tokens.h>
-#include <mayaUsd/render/vp2RenderDelegate/colorManagementPreferences.h>
-#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
-#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
-#include <mayaUsd/utils/hash.h>
-
+// clang-format off
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/vec2f.h>
@@ -37,7 +25,6 @@
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
-
 #ifdef WANT_MATERIALX_BUILD
 #include <pxr/imaging/hdMtlx/hdMtlx.h>
 #endif
@@ -49,6 +36,20 @@
 #include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
+#include "pxr/usd/sdr/registry.h"
+#include "pxr/usd/sdr/shaderNode.h"
+#include <pxr/imaging/hdSt/udimTextureObject.h>
+#include <pxr/imaging/hio/image.h>
+
+#include "debugCodes.h"
+#include "renderDelegate.h"
+#include "tokens.h"
+
+#include <mayaUsd/base/tokens.h>
+#include <mayaUsd/render/vp2RenderDelegate/colorManagementPreferences.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
+#include <mayaUsd/utils/hash.h>
 
 #include <maya/M3dView.h>
 #include <maya/MEventMessage.h>
@@ -83,9 +84,6 @@
 #include <MaterialXRender/ImageHandler.h>
 #endif
 
-#include <pxr/imaging/hdSt/udimTextureObject.h>
-#include <pxr/imaging/hio/image.h>
-
 #include <boost/functional/hash.hpp>
 #include <ghc/filesystem.hpp>
 #include <tbb/parallel_for.h>
@@ -95,6 +93,9 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include "material.h"
+// clang-format on
 
 #ifdef WANT_MATERIALX_BUILD
 namespace mx = MaterialX;
