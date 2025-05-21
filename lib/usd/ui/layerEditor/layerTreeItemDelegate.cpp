@@ -255,7 +255,7 @@ void LayerTreeItemDelegate::paint_drawArrow(QPainter* painter, const ItemPaintCo
 
 void LayerTreeItemDelegate::paint_drawText(QPainter* painter, const ItemPaintContext& ctx) const
 {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_DISABLE_DEPRECATED_BEFORE || QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QColor penColor = ctx.item->data(Qt::ForegroundRole).value<QColor>();
 #else
     QColor penColor = ctx.item->data(Qt::TextColorRole).value<QColor>();

@@ -63,7 +63,7 @@ USDImportDialog::USDImportDialog(
             _rootPrimPath = defPrim.GetPath().GetAsString();
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_DISABLE_DEPRECATED_BEFORE || QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     int minW = _uiView->nbPrimsInScopeLabel->fontMetrics().horizontalAdvance("12345");
 #else
     int minW = _uiView->nbPrimsInScopeLabel->fontMetrics().width("12345");
