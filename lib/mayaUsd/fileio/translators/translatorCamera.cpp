@@ -267,8 +267,8 @@ static bool _CreatePlugSpline(
     MDoubleArray tangentOutXArray(numKnots, 0.0);
     MDoubleArray tangentOutYArray(numKnots, 0.0);
 
-    unsigned int  knotIdx = 0;
-    volatile auto preTanType = MFnAnimCurve::TangentType::kTangentFixed;
+    unsigned int knotIdx = 0;
+    auto         preTanType = MFnAnimCurve::TangentType::kTangentFixed;
     for (const TsKnot& knot : knots) {
         float value;
 
