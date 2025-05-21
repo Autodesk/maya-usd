@@ -13,20 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "mtlxBaseWriter.h"
-#include "shadingTokens.h"
-
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/shaderWriterRegistry.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/utils/shadingUtil.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/converter.h>
-#include <mayaUsd/utils/util.h>
-
-#include <usdUfe/utils/Utils.h>
-
+// clang-format off
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -48,6 +35,20 @@
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
+#include "mtlxBaseWriter.h"
+#include "shadingTokens.h"
+
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/converter.h>
+#include <mayaUsd/utils/util.h>
+
+#include <usdUfe/utils/Utils.h>
+
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
@@ -57,6 +58,7 @@
 #include <maya/MString.h>
 
 #include <regex>
+// clang-format on
 
 PXR_NAMESPACE_OPEN_SCOPE
 
