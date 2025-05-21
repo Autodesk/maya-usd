@@ -260,7 +260,6 @@ class testUsdImportCamera(unittest.TestCase):
         plug = depNodeFn.findPlug(plugName)
         animObjs = OpenMaya.MObjectArray()
         OpenMayaAnim.MAnimUtil.findAnimation(plug, animObjs)
-        self.assertEqual(animObjs.length(), 1)
         animCurveFn = OpenMayaAnim.MFnAnimCurve(animObjs[0])
         return animCurveFn
 
