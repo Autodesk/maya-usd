@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<materialx version="1.38" colorspace="lin_rec709">
+  <nodegraph name="NG_ImageWithoutGeomProp">
+    <tiledimage name="image_color" type="color3">
+      <input name="file" type="filename" value="../textures/RGB.png" colorspace="srgb_texture" />
+      <input name="uvtiling" type="vector2" value="4.0, 4.0" />
+    </tiledimage>
+    <tiledimage name="image_roughness" type="float">
+      <input name="file" type="filename" value="../textures/Mono.png" />
+      <input name="uvtiling" type="vector2" value="4.0, 4.0" />
+    </tiledimage>
+    <output name="out_color" type="color3" nodename="image_color" />
+    <output name="out_roughness" type="float" nodename="image_roughness" />
+  </nodegraph>
+  <standard_surface name="SR_ImageWithoutGeomProp" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" nodegraph="NG_ImageWithoutGeomProp" output="out_color" />
+    <input name="specular" type="float" value="0.4" />
+    <input name="specular_roughness" type="float" nodegraph="NG_ImageWithoutGeomProp" output="out_roughness" />
+  </standard_surface>
+  <surfacematerial name="ImageWithoutGeomProp" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_ImageWithoutGeomProp" />
+  </surfacematerial>
+</materialx>

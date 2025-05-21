@@ -102,6 +102,13 @@ set(TEST_SCRIPT_FILES
     testUsdMayaAdaptorUndoRedo.py
 )
 
+# This test is disabled by default since it requires the LookdevX plugin
+#if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2025)
+#    list(APPEND TEST_SCRIPT_FILES        
+#        testUsdExportMaterialXSurfaceShader.py
+#    )
+#endif()
+
 if(BUILD_PXR_PLUGIN)
     # This test uses the file "UsdExportUVTransforms.ma" which
     # requires the plugin "pxrUsdPreviewSurface" that is built by the
