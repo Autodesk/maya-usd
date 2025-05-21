@@ -593,7 +593,8 @@ public:
     _UVMappingManager(
         const UsdShadeMaterial&                                  material,
         const UsdMayaShadingModeExportContext::AssignmentVector& assignmentsToBind,
-        const UsdMayaJobExportArgs&                              exportArgs)
+        const UsdMayaJobExportArgs&                              exportArgs,
+        const std::string&                                       materialType)
         : _material(material)
         , _exportArgs(exportArgs)
     {
@@ -652,57 +653,91 @@ public:
         }
 
         // Ask Maya about UV linkage:
-
         for (size_t i = 0; i < _nodesWithUVInput.size(); ++i) {
             const TfToken& nodeName = _nodesWithUVInput[i];
-            MString        uvLinkCmd;
-            uvLinkCmd.format(
-                "stringArrayToString(`uvLink -q -t \"^1s\"`, \" \");", nodeName.GetText());
-            std::string uvLinkResult = MGlobal::executeCommandStringResult(uvLinkCmd).asChar();
-            const std::vector<std::string> uvSets = TfStringTokenize(uvLinkResult);
-            // If there are not UV sets, then the node has no valid UV input we must remove it.
-            // Otherwise, assumptions in the code below won't be satisfied.
-            if (uvSets.empty()) {
-                TF_WARN(
-                    "Could not determine the UV link of the UV input of the node \"%s\".",
-                    nodeName.GetText());
-                _nodesWithUVInput.erase(_nodesWithUVInput.begin() + i);
-                --i;
-                continue;
-            }
 
-            for (std::string uvSetRef : uvSets) {
-                // NOTE: If the mesh shape has the same name as the transform, then we will get a
-                //       complete path like
-                //           |mesh|mesh.uvSet[0].uvSetName
-                //       the best way to prevent confusion is to move to the object model
-                //       immediately and process from there.
-                MSelectionList selList;
-                selList.add(uvSetRef.c_str());
-                MPlug uvNamePlug;
-                selList.getPlug(0, uvNamePlug);
+            // The MaterialXSurfaceShader does not support the uvLink command for now.
+            // LookDevX is only looking at the first UV set, do the same here.
+            if (materialType == "MaterialXSurfaceShader") {
+                for (const auto& iter : assignmentsToBind) {
+                    MObject shapeObj = iter.shapeObj.object();
+                    MStatus status;
+                    // Create an MFnMesh to work with the mesh object
+                    MFnMesh meshFn(shapeObj, &status);
+                    if (!status) {
+                        TF_WARN(
+                            "Failed to initialize MFnMesh for shape object \"%s\".",
+                            iter.shapeName.GetText());
+                        continue;
+                    }
+                    // Get the UV set names
+                    MStringArray uvSetNames;
+                    status = meshFn.getUVSetNames(uvSetNames);
+                    if (!status || uvSetNames.length() == 0) {
+                        TF_WARN(
+                            "Failed to get UV set names for shape object \"%s\".",
+                            iter.shapeName.GetText());
+                        continue;
+                    }
 
-                MFnMesh meshFn(uvNamePlug.node());
+                    // UV Renaming based on options
+                    MString uvSetName = UsdMayaWriteUtil::UVSetExportedName(
+                        uvSetNames, _exportArgs.preserveUVSetNames, _exportArgs.remapUVSetsTo, 0);
 
-                TfToken shapeName(meshFn.name().asChar());
-                if (!exportedShapes.count(shapeName)) {
+                    _shapeNameToUVNames[iter.shapeName].push_back(TfToken(uvSetName.asChar()));
+                }
+            } else {
+                MString uvLinkCmd;
+                uvLinkCmd.format(
+                    "stringArrayToString(`uvLink -q -t \"^1s\"`, \" \");", nodeName.GetText());
+                std::string uvLinkResult = MGlobal::executeCommandStringResult(uvLinkCmd).asChar();
+                std::vector<std::string> uvSets = TfStringTokenize(uvLinkResult);
+                // If there are not UV sets, then the node has no valid UV input we must remove it.
+                // Otherwise, assumptions in the code below won't be satisfied.
+                if (uvSets.empty()) {
+                    TF_WARN(
+                        "Could not determine the UV link of the UV input of the node \"%s\".",
+                        nodeName.GetText());
+                    _nodesWithUVInput.erase(_nodesWithUVInput.begin() + i);
+                    --i;
                     continue;
                 }
 
-                MString uvSetName = uvNamePlug.asString();
+                for (std::string uvSetRef : uvSets) {
+                    // NOTE: If the mesh shape has the same name as the transform, then we will get
+                    //       a complete path like
+                    //           |mesh|mesh.uvSet[0].uvSetName
+                    //       the best way to prevent confusion is to move to the object model
+                    //       immediately and process from there.
+                    MSelectionList selList;
+                    selList.add(uvSetRef.c_str());
+                    MPlug uvNamePlug;
+                    selList.getPlug(0, uvNamePlug);
 
-                // UV set renaming still exists. See if the UV was renamed:
-                MStringArray uvSets;
-                meshFn.getUVSetNames(uvSets);
-                for (unsigned int i = 0; i < uvSets.length(); i++) {
-                    if (uvSets[i] == uvSetName) {
-                        uvSetName = UsdMayaWriteUtil::UVSetExportedName(
-                            uvSets, _exportArgs.preserveUVSetNames, _exportArgs.remapUVSetsTo, i);
-                        break;
+                    MFnMesh meshFn(uvNamePlug.node());
+                    TfToken shapeName(meshFn.name().asChar());
+                    if (!exportedShapes.count(shapeName)) {
+                        continue;
                     }
-                }
 
-                _shapeNameToUVNames[shapeName].push_back(TfToken(uvSetName.asChar()));
+                    MString uvSetName = uvNamePlug.asString();
+
+                    // UV set renaming still exists. See if the UV was renamed:
+                    MStringArray uvSets;
+                    meshFn.getUVSetNames(uvSets);
+                    for (unsigned int i = 0; i < uvSets.length(); i++) {
+                        if (uvSets[i] == uvSetName) {
+                            uvSetName = UsdMayaWriteUtil::UVSetExportedName(
+                                uvSets,
+                                _exportArgs.preserveUVSetNames,
+                                _exportArgs.remapUVSetsTo,
+                                i);
+                            break;
+                        }
+                    }
+
+                    _shapeNameToUVNames[shapeName].push_back(TfToken(uvSetName.asChar()));
+                }
             }
         }
 
@@ -979,7 +1014,11 @@ void UsdMayaShadingModeExportContext::BindStandardMaterialPrim(
         return;
     }
 
-    _UVMappingManager uvMappingManager(material, assignmentsToBind, GetExportArgs());
+    _UVMappingManager uvMappingManager(
+        material,
+        assignmentsToBind,
+        GetExportArgs(),
+        MFnDependencyNode(GetSurfaceShader()).typeName().asChar());
 
     UsdStageRefPtr stage = GetUsdStage();
     TfToken        materialNameToken(materialPrim.GetName());

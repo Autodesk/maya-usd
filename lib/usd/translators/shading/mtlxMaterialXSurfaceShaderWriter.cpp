@@ -29,6 +29,10 @@
 #if PXR_VERSION >= 2505
 #include <pxr/usd/usdMtlx/tokens.h>
 #endif
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/sdr/shaderNode.h>
+#include <pxr/usd/sdr/shaderProperty.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
@@ -77,6 +81,23 @@ MaterialX::ConstNodeDefPtr _GetNodeDef(const MaterialX::NodePtr& node, const Ufe
         nodeDefPtr = _GetStandardLibraryDocument()->getNodeDef(nodeDefName);
     }
     return nodeDefPtr;
+}
+
+// Browse the MtlX library for nodes containing an input that has a "defaultgeomprop" set to "UV0"
+std::unordered_set<std::string> _GetNodeWithGeompropInputFromLib()
+{
+    auto                            standardDoc = _GetStandardLibraryDocument();
+    std::unordered_set<std::string> nodeNames;
+    for (auto nodeDef : standardDoc->getNodeDefs()) {
+        for (auto input : nodeDef->getInputs()) {
+            if (input->hasDefaultGeomPropString()) {
+                if (input->getDefaultGeomPropString() == "UV0") {
+                    nodeNames.insert(nodeDef->getNodeString());
+                }
+            }
+        }
+    }
+    return nodeNames;
 }
 
 void _SetAutodeskMetaData(const MaterialX::NodePtr& node, const UsdPrim& usdPrim)
@@ -195,6 +216,15 @@ void _ConnectToNode(
     const UsdStagePtr&         stage)
 {
     auto connectedNode = input->getConnectedNode();
+
+    if (!connectedNode) {
+        TF_WARN(
+            "Can't find node '%s' connected to input '%s' on node '%s'",
+            input->getNodeName().c_str(),
+            input->getName().c_str(),
+            input->getParent()->getName().c_str());
+        return;
+    }
 
     std::string outputName = _GetOutputName(input, connectedNode, ufePath);
     auto        nodeOutput = UsdShadeShader(stage->GetPrimAtPath(
@@ -340,6 +370,131 @@ UsdShadeOutput _GetPrimOutput(UsdPrim& prim, const TfToken& outputName)
     return output;
 }
 
+// Retrieves the varname name based on the USD version.
+TfToken _GetVarnameName()
+{
+    static TfToken _varnameName;
+    if (_varnameName.IsEmpty()) {
+        // UsdPrimvarReaders varname input went from TfToken to std::string in USD 20.11. Fetch the
+        // type directly from the registry:
+        SdrRegistry&          registry = SdrRegistry::GetInstance();
+        SdrShaderNodeConstPtr shaderNodeDef
+            = registry.GetShaderNodeByIdentifier(TrUsdTokens->UsdPrimvarReader_float2);
+        SdfValueTypeName varnameType = shaderNodeDef
+#if PXR_VERSION <= 2408
+            ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().first
+#else
+            ? shaderNodeDef->GetShaderInput(TrUsdTokens->varname)->GetTypeAsSdfType().GetSdfType()
+#endif
+            : SdfValueTypeNames->Token;
+
+        // If UsdPrimvarReaders use string varnames, then we do not need to use varnameStr anymore.
+        _varnameName = varnameType == SdfValueTypeNames->String ? TrUsdTokens->varname
+                                                                : TrMtlxTokens->varnameStr;
+    }
+    return _varnameName;
+}
+
+// Exposes a geomprop attribute to the material to allow easy specialization based on UV mappings.
+void _ExposeGeomPropAttributeToMaterial(
+    UsdShadeShader& imageShader,
+    const TfToken&  inputName,
+    const UsdPrim&  geompropPrim)
+{
+    UsdPrim          materialPrim = geompropPrim.GetParent();
+    UsdShadeMaterial materialSchema(materialPrim);
+    auto             geompropShader = UsdShadeShader(geompropPrim);
+    UsdShadeInput    varnameInput
+        = geompropShader.CreateInput(TrMtlxTokens->geomprop, SdfValueTypeNames->String);
+
+    // Traverse the hierarchy to find the material and connect intermediate inputs
+    while (!materialSchema && materialPrim) {
+        UsdShadeNodeGraph intermediateNodeGraph(materialPrim);
+        if (intermediateNodeGraph) {
+            UsdShadeInput intermediateInput
+                = intermediateNodeGraph.CreateInput(inputName, SdfValueTypeNames->String);
+            varnameInput.ConnectToSource(intermediateInput);
+            varnameInput = intermediateInput;
+        }
+        // Move up the hierarchy
+        materialPrim = materialPrim.GetParent();
+        materialSchema = UsdShadeMaterial(materialPrim);
+    }
+    // If a material is found, create the material input and connect it
+    if (materialSchema) {
+        UsdShadeInput materialInput
+            = materialSchema.CreateInput(inputName, SdfValueTypeNames->String);
+        materialInput.Set(UsdUtilsGetPrimaryUVSetName().GetString());
+        varnameInput.ConnectToSource(materialInput);
+    }
+
+    auto geompropShaderOutput
+        = geompropShader.CreateOutput(UsdMtlxTokens->DefaultOutputName, SdfValueTypeNames->Float2);
+
+    // Connect the output of the geomprop shader to the texture coordinate input of the UV texture
+    imageShader.CreateInput(TrMtlxTokens->texcoord, SdfValueTypeNames->Float2)
+        .ConnectToSource(geompropShaderOutput);
+}
+
+// Adds a geompromvalue node to the USD stage if needed, this is intended to be used on image nodes.
+void _AddGeompropValueNode(
+    const MaterialX::NodePtr& node,
+    const UsdStagePtr&        stage,
+    const SdfPath&            parentPath,
+    UsdShadeShader&           imageShader)
+{
+    MaterialX::NodePtr connectedNode;
+    TfToken            inputName(
+        TfStringPrintf("%s:%s", node->getName().c_str(), _GetVarnameName().GetText()));
+    if (auto textCoordInput = node->getInput(TrMtlxTokens->texcoord.GetString())) {
+        connectedNode = textCoordInput->getConnectedNode();
+    }
+    // Handle existing geompropvalue nodes.
+    if (connectedNode && connectedNode->getCategory() == "geompropvalue") {
+        // There already is a geompromvalue node connected to the input.
+        if (auto geompropInput = connectedNode->getInput("geomprop")) {
+            auto geompropValue = geompropInput->getValueString();
+            if (!geompropValue.empty()) {
+                // Nothing to do the user already set a value.
+                return;
+            }
+        }
+        // Expose the geomprop attribute to the material.
+        auto geompropPrim
+            = stage->GetPrimAtPath(parentPath.AppendPath(SdfPath(connectedNode->getName())));
+        if (!TF_VERIFY(
+                geompropPrim,
+                "Could not find geompropvalue prim at path '%s'",
+                geompropPrim.GetPath().GetText())) {
+            return;
+        }
+        auto geompropShader = UsdShadeShader(geompropPrim);
+        geompropShader.CreateIdAttr(VtValue(TrMtlxTokens->ND_geompropvalue_vector2));
+        _ExposeGeomPropAttributeToMaterial(imageShader, inputName, geompropPrim);
+        return;
+    }
+    // Bail out if the connected node is not a geompropvalue.
+    if (connectedNode) {
+        return;
+    }
+
+    // Create a geompromvalue node in USD and connect it to the input.
+    auto geompropPrim = stage->DefinePrim(
+        parentPath.AppendPath(SdfPath("geompropvalue_" + node->getName())), TfToken("Shader"));
+
+    if (!TF_VERIFY(
+            geompropPrim,
+            "Could not define UsdShadeShader at path '%s'\n",
+            geompropPrim.GetPath().GetText())) {
+        return;
+    }
+
+    auto geompropShader = UsdShadeShader(geompropPrim);
+    geompropShader.CreateIdAttr(VtValue(TrMtlxTokens->ND_geompropvalue_vector2));
+
+    _ExposeGeomPropAttributeToMaterial(imageShader, inputName, geompropPrim);
+}
+
 // Adds a Shader prim to the USD stage based on a MaterialX node.
 void _AddNode(
     const MaterialX::NodePtr& node,
@@ -376,6 +531,14 @@ void _AddNode(
 
     for (auto input : node->getInputs()) {
         _AddShaderInput(input, shader, parentPath, shaderUfePath, stage);
+    }
+
+    const static std::unordered_set<std::string> geompropValueNodes
+        = _GetNodeWithGeompropInputFromLib();
+    // Special case for Nodes that contains a defaultgeomprop attribute set to UV0.
+    // A geompropvalue node might be needed.
+    if (geompropValueNodes.find(node->getCategory()) != geompropValueNodes.end()) {
+        _AddGeompropValueNode(node, stage, parentPath, shader);
     }
 }
 
@@ -524,8 +687,7 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
     // This is the material node
     auto ufePath = Ufe::PathString::path(ufePathString.asChar());
     // This is the document node
-    auto                ufeParentPath = ufePath.pop();
-    Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufeParentPath);
+    auto ufeParentPath = ufePath.pop();
 
     // Render Document is the MaterialX document
     childPlug = depNodeFn.findPlug("renderDocument", true, &status);
