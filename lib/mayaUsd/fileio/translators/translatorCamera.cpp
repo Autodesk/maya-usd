@@ -20,16 +20,13 @@
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/splineUtils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/tf/type.h>
-#if PXR_VERSION >= 2411
-#include <pxr/base/ts/spline.h>
-#include <pxr/base/ts/tangentConversions.h>
-#endif
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
@@ -208,157 +205,6 @@ static bool _CreateAnimCurveForPlug(
     return true;
 }
 
-#if PXR_VERSION >= 2411
-static MFnAnimCurve::InfinityType _ConvertUsdExtrapolationTypeToMaya(TsExtrapMode usdExtrapolation)
-{
-    switch (usdExtrapolation) {
-    case TsExtrapLinear: return MFnAnimCurve::InfinityType::kLinear;
-    case TsExtrapLoopReset: return MFnAnimCurve::InfinityType::kCycle;
-    case TsExtrapLoopOscillate: return MFnAnimCurve::InfinityType::kOscillate;
-    case TsExtrapLoopRepeat: return MFnAnimCurve::InfinityType::kCycleRelative;
-    case TsExtrapHeld:
-    default: return MFnAnimCurve::InfinityType::kConstant;
-    }
-}
-
-static MFnAnimCurve::TangentType _ConvertUsdTanTypeToMayaTanType(TsInterpMode usdTanType)
-{
-    switch (usdTanType) {
-    case TsInterpMode::TsInterpHeld: return MFnAnimCurve::TangentType::kTangentStep;
-    case TsInterpMode::TsInterpLinear: return MFnAnimCurve::TangentType::kTangentLinear;
-    default: return MFnAnimCurve::TangentType::kTangentAuto;
-    }
-}
-
-static bool _CreatePlugSpline(
-    MPlug&                    plug,
-    TsSpline                  spline,
-    UsdMayaPrimReaderContext* context,
-    const MDistance::Unit     convertToUnit = MDistance::kMillimeters)
-{
-    auto valueType = spline.GetValueType();
-    if (valueType != Ts_GetType<float>()) {
-        TF_CODING_ERROR(
-            "Unsupported type name for Spline attribute '%s': %s",
-            plug.partialName().asChar(),
-            valueType.GetTypeName().c_str());
-        return false;
-    }
-
-    TsKnotMap knots = spline.GetKnots();
-    if (knots.empty()) {
-        return false;
-    }
-
-    MFnAnimCurve animFn;
-    MStatus      status;
-    MObject      animObj = animFn.create(plug, nullptr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false)
-
-    unsigned int numKnots = static_cast<unsigned int>(knots.size());
-    MTimeArray   timeArray(numKnots, 0.0);
-    MDoubleArray valuesArray(numKnots, 0.0);
-    MIntArray    tangentInTypeArray(numKnots, 0);
-    MIntArray    tangentOutTypeArray(numKnots, 0);
-    MIntArray    tangentsLockedArray(numKnots, 1);
-    MIntArray    weightsLockedArray(numKnots, 0);
-    MDoubleArray tangentInXArray(numKnots, 0.0);
-    MDoubleArray tangentInYArray(numKnots, 0.0);
-    MDoubleArray tangentOutXArray(numKnots, 0.0);
-    MDoubleArray tangentOutYArray(numKnots, 0.0);
-
-    unsigned int knotIdx = 0;
-    auto         preTanType = MFnAnimCurve::TangentType::kTangentFixed;
-    for (const TsKnot& knot : knots) {
-        float value {};
-
-        auto outTanType = _ConvertUsdTanTypeToMayaTanType(knot.GetNextInterpolation());
-        if (knot.IsDualValued() && outTanType == MFnAnimCurve::kTangentStep) {
-            knot.GetPreValue(&value);
-            outTanType = MFnAnimCurve::TangentType::kTangentStepNext;
-        } else {
-            knot.GetValue(&value);
-        }
-
-        switch (convertToUnit) {
-        case MDistance::kInches: value = UsdMayaUtil::ConvertMMToInches(value); break;
-        case MDistance::kCentimeters: value = UsdMayaUtil::ConvertMMToCM(value); break;
-        default:
-            // The input is expected to be in millimeters.
-            break;
-        }
-
-        TsTime inMayaTime {}, outMayaTime {};
-        float  inUsdSlope = 0.f, outUsdSlope = 0.f, inMayaSlope = 0.f, outMayaSlope = 0.f;
-        knot.GetPreTanSlope(&inUsdSlope);
-        knot.GetPostTanSlope(&outUsdSlope);
-
-        // Converting from standard (Usd) tangent to Maya tangent:
-        // Usd tangents are specified by slope and length and Slopes are "rise over run": height
-        // divided by length.
-        // Maya tangents are specified by height and length. Height and length are both specified
-        // multiplied by 3 Heights are positive for upward-sloping post-tangents, and negative for
-        // upward-sloping pre-tangents.
-        TsConvertFromStandardTangent(
-            knot.GetPreTanWidth(), inUsdSlope, true, true, true, &inMayaTime, &inMayaSlope);
-        TsConvertFromStandardTangent(
-            knot.GetPostTanWidth(), outUsdSlope, true, true, false, &outMayaTime, &outMayaSlope);
-
-        timeArray.set(MTime(knot.GetTime()), knotIdx);
-        valuesArray.set(value, knotIdx);
-        tangentInTypeArray.set(preTanType, knotIdx);
-        tangentOutTypeArray.set(outTanType, knotIdx);
-
-        // When tangent type is step or step next, maya requires the tangent values to be set to
-        // DBL_MAX.
-        if (outTanType == MFnAnimCurve::kTangentStep
-            || outTanType == MFnAnimCurve::kTangentStepNext) {
-            preTanType = MFnAnimCurve::TangentType::kTangentFixed;
-            tangentInXArray.set(DBL_MAX, knotIdx);
-            tangentInYArray.set(DBL_MAX, knotIdx);
-            tangentOutXArray.set(DBL_MAX, knotIdx);
-            tangentOutYArray.set(DBL_MAX, knotIdx);
-        } else {
-            preTanType = outTanType;
-            tangentInXArray.set(inMayaTime, knotIdx);
-            tangentInYArray.set(inMayaSlope, knotIdx);
-            tangentOutXArray.set(outMayaTime, knotIdx);
-            tangentOutYArray.set(outMayaSlope, knotIdx);
-        }
-        knotIdx++;
-    }
-
-    // set all keys and angles
-    status = animFn.addKeysWithTangents(
-        &timeArray,
-        &valuesArray,
-        MFnAnimCurve::kTangentGlobal,
-        MFnAnimCurve::kTangentGlobal,
-        &tangentInTypeArray,
-        &tangentOutTypeArray,
-        &tangentInXArray,
-        &tangentInYArray,
-        &tangentOutXArray,
-        &tangentOutYArray,
-        &tangentsLockedArray,
-        &weightsLockedArray);
-
-    CHECK_MSTATUS_AND_RETURN(status, false)
-
-    animFn.setPreInfinityType(
-        _ConvertUsdExtrapolationTypeToMaya(spline.GetPreExtrapolation().mode));
-    animFn.setPostInfinityType(
-        _ConvertUsdExtrapolationTypeToMaya(spline.GetPostExtrapolation().mode));
-    animFn.setIsWeighted(false);
-
-    if (context) {
-        // used for undo/redo
-        context->RegisterNewMayaNode(animFn.name().asChar(), animObj);
-    }
-    return true;
-}
-#endif
-
 static bool _TranslateAnimatedUsdAttributeToPlug(
     const UsdAttribute&          usdAttr,
     MPlug&                       plug,
@@ -369,7 +215,8 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
 #if PXR_VERSION >= 2411
     // If the attribute has a spline, we ignore time samples.
     if (usdAttr.HasSpline()) {
-        if (_CreatePlugSpline(plug, usdAttr.GetSpline(), context, convertToUnit)) {
+        if (UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
+                plug, usdAttr.GetSpline(), context, convertToUnit)) {
             return true;
         }
     }
