@@ -24,17 +24,64 @@
 
 namespace MAYAUSD_NS_DEF {
 
-const MString GizmoShape::typeName("mayaUsdGeometryGizmoShape");
-const MTypeId GizmoShape::id(0x5800019C);
-MObject       GizmoShape::ufePath;
-MObject       GizmoShape::shapeType;
-MObject       GizmoShape::width;
-MObject       GizmoShape::height;
-MObject       GizmoShape::radius;
-MObject       GizmoShape::penumbraAngle;
-MObject       GizmoShape::coneAngle;
-MObject       GizmoShape::dropOff;
-MObject       GizmoShape::lightAngle;
+const MString GizmoShape::typeNamePrefix("ufeLight");
+const MTypeId GizmoShape::idDefault(0x5800009C);
+const MTypeId GizmoShape::idDistant(0x5800009D);
+const MTypeId GizmoShape::idRect(0x5800009E);
+const MTypeId GizmoShape::idDomeLight(0x5800009F);
+// Skipping 0x580000A0 and 0x580000A1 since they are currently used by internal Maya
+const MTypeId GizmoShape::idSphere(0x580000A2);
+const MTypeId GizmoShape::idDisk(0x580000A3);
+const MTypeId GizmoShape::idCone(0x580000A4);
+const MTypeId GizmoShape::idCylinder(0x580000A5);
+
+const MString
+    GizmoShape::dbClassificationGeometryOverride("drawdb/geometry/mayaUsdGizmoGeometryOverride");
+// Note: The first part of the classification is the to let Maya know that we want to use Maya's own
+// internal light shading. The second part matches the override we registered for the gizmo.
+const MString GizmoShape::dbClassificationDefault(
+    MString("light:drawdb/light/pointLight") + ":" + dbClassificationGeometryOverride);
+const MString GizmoShape::dbClassificationDistant(
+    MString("light:drawdb/light/directionalLight") + ":" + dbClassificationGeometryOverride);
+const MString GizmoShape::dbClassificationRect(
+    MString("light:drawdb/light/areaLight") + ":" + dbClassificationGeometryOverride);
+const MString GizmoShape::dbClassificationShapingAPICone(
+    MString("light:drawdb/light/spotLight") + ":" + dbClassificationGeometryOverride);
+
+MObject GizmoShape::ufePath;
+MObject GizmoShape::shapeType;
+MObject GizmoShape::width;
+MObject GizmoShape::height;
+MObject GizmoShape::radius;
+MObject GizmoShape::penumbraAngle;
+MObject GizmoShape::coneAngle;
+MObject GizmoShape::dropOff;
+MObject GizmoShape::lightAngle;
+
+// Internal Maya Light Input attributes
+MObject GizmoShape::aColor;
+MObject GizmoShape::aIntensity;
+MObject GizmoShape::aExposure;
+MObject GizmoShape::aEmitDiffuse;
+MObject GizmoShape::aEmitSpecular;
+MObject GizmoShape::aDecayRate;
+MObject GizmoShape::aLocatorScale;
+
+// Output attributes
+MObject GizmoShape::aOutColor;
+
+#define MAKE_INPUT(attr)                   \
+    CHECK_MSTATUS(attr.setKeyable(true));  \
+    CHECK_MSTATUS(attr.setStorable(true)); \
+    CHECK_MSTATUS(attr.setReadable(true)); \
+    CHECK_MSTATUS(attr.setWritable(true)); \
+    CHECK_MSTATUS(attr.setAffectsAppearance(true));
+
+#define MAKE_OUTPUT(attr)                   \
+    CHECK_MSTATUS(attr.setKeyable(false));  \
+    CHECK_MSTATUS(attr.setStorable(false)); \
+    CHECK_MSTATUS(attr.setReadable(true));  \
+    CHECK_MSTATUS(attr.setWritable(false));
 
 void GizmoShape::postConstructor()
 {
@@ -56,6 +103,23 @@ void GizmoShape::nodeDirtyEventCallback(MObject& node, MPlug& plug, void* client
     }
 }
 
+MStatus GizmoShape::compute(const MPlug& plug, MDataBlock& data)
+{
+
+    if ((plug != aOutColor) && (plug.parent() != aOutColor)) {
+        return MS::kUnknownParameter;
+    }
+
+    // Set outColor be color
+    MFloatVector  resultColor = data.inputValue(aColor).asFloatVector();
+    MDataHandle   outColorHandle = data.outputValue(aOutColor);
+    MFloatVector& outColor = outColorHandle.asFloatVector();
+    outColor = resultColor;
+    outColorHandle.setClean();
+
+    return MS::kSuccess;
+}
+
 MStatus GizmoShape::initialize()
 {
     MStatus               status;
@@ -63,6 +127,54 @@ MStatus GizmoShape::initialize()
     MFnNumericAttribute   nAttr;
     MFnLightDataAttribute lAttr;
     MFnTypedAttribute     tAttr;
+
+    // Internal Maya Light Attributes
+    aColor = nAttr.createColor("color", "cl");
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(0.5f, 0.5f, 0.5f));
+
+    aEmitDiffuse = nAttr.create("emitDiffuse", "ed", MFnNumericData::kBoolean);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(true));
+
+    aEmitSpecular = nAttr.create("emitSpecular", "sn", MFnNumericData::kBoolean);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(true));
+
+    aIntensity = nAttr.create("intensity", "i", MFnNumericData::kFloat);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(1.0f));
+
+    aExposure = nAttr.create("exposure", "exp", MFnNumericData::kFloat);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(0.0f));
+
+    aLocatorScale = nAttr.create("locatorScale", "lls", MFnNumericData::kDouble);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(1.0));
+
+    aDecayRate = nAttr.create("decayRate", "de", MFnNumericData::kShort);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(0));
+
+    CHECK_MSTATUS(addAttribute(aColor));
+    CHECK_MSTATUS(addAttribute(aIntensity));
+    CHECK_MSTATUS(addAttribute(aExposure));
+    CHECK_MSTATUS(addAttribute(aEmitDiffuse));
+    CHECK_MSTATUS(addAttribute(aEmitSpecular));
+    CHECK_MSTATUS(addAttribute(aLocatorScale));
+    CHECK_MSTATUS(addAttribute(aDecayRate));
+
+    // Note that "oc" conflicts with objectColor so we use something else.
+    aOutColor = nAttr.createColor("outColor", "ocl");
+    MAKE_OUTPUT(nAttr);
+    CHECK_MSTATUS(addAttribute(aOutColor));
+
+    CHECK_MSTATUS(attributeAffects(aColor, aOutColor));
+    CHECK_MSTATUS(attributeAffects(aIntensity, aOutColor));
+    CHECK_MSTATUS(attributeAffects(aExposure, aOutColor));
+    CHECK_MSTATUS(attributeAffects(aEmitDiffuse, aOutColor));
+    CHECK_MSTATUS(attributeAffects(aEmitSpecular, aOutColor));
 
     // The ufePath is currently exclusive to shapeType::Quad. This is necessary
     // for retrieving the width / height directly from a UsdLuxRectLight / UsdLuxPortalLight as
