@@ -150,14 +150,7 @@ void PxrUsdTranslators_SpotLightWriter::Write(const UsdTimeCode& usdTime)
 {
     MStatus status;
     UsdMayaPrimWriter::Write(usdTime);
-    // Since write() above will take care of any animation on the light's
-    // transform, we only want to proceed here if:
-    // - We are at the default time and NO attributes on the shape are animated.
-    //    OR
-    // - We are at a non-default time and some attribute on the shape IS animated.
-    if (usdTime.IsDefault() == _HasAnimCurves()) {
-        return;
-    }
+
     UsdLuxSphereLight primSchema(_usdPrim);
     MFnSpotLight      lightFn(GetDagPath(), &status);
     if (!status) {
@@ -165,12 +158,22 @@ void PxrUsdTranslators_SpotLightWriter::Write(const UsdTimeCode& usdTime)
         CHECK_MSTATUS(status);
         return;
     }
-    // First write the base light attributes
-    UsdMayaTranslatorLight::WriteLightAttrs(
-        usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
-    // Then write the specialized attributes for spot lights
-    UsdMayaTranslatorLight::WriteSpotLightAttrs(
-        usdTime, primSchema, lightFn, _GetSparseValueWriter());
+
+    auto animType = _writeJobCtx.GetArgs().animationType;
+    if (usdTime.IsDefault() && animType != UsdMayaJobExportArgsTokens->timesamples) {
+        MGlobal::displayWarning("Curves");
+        UsdMayaTranslatorLight::WriteLightSplinesAttrs(
+            primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
+    }
+    if (animType != UsdMayaJobExportArgsTokens->curves) {
+        MGlobal::displayWarning("NOT Curves");
+        // First write the base light attributes
+        UsdMayaTranslatorLight::WriteLightAttrs(
+            usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
+        // Then write the specialized attributes for spot lights
+        UsdMayaTranslatorLight::WriteSpotLightAttrs(
+            usdTime, primSchema, lightFn, _GetSparseValueWriter());
+    }
 }
 
 /// areaLight

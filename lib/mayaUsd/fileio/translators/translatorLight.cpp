@@ -24,6 +24,7 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/splineUtils.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -41,6 +42,12 @@
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
 #include <pxr/usd/usdLux/sphereLight.h>
+#include <pxr/imaging/hd/light.h>
+#include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/light.h"
+#if PXR_VERSION >= 2411
+#include <pxr/base/ts/spline.h>
+#endif
 
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
@@ -132,6 +139,53 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(
     UsdMayaWriteUtil::SetAttribute(
         usdLight.GetSpecularAttr(), lightSpecular ? 1.f : 0.f, usdTime, valueWriter);
 
+    return true;
+}
+
+// Export the "common" light attributes from MFnLights to UsdLuxLightAPI
+bool UsdMayaTranslatorLight::WriteLightSplinesAttrs(
+    const UsdLuxLightAPI&      usdLight,
+    MFnLight&                  mayaLight,
+    FlexibleSparseValueWriter* valueWriter)
+{
+#if PXR_VERSION >= 2411
+    MStatus status;
+    auto    usdPrim = usdLight.GetPrim();
+    // Get the MObject from the MFnLight
+    MObject lightObject = mayaLight.object();
+
+    // Initialize an MFnDependencyNode with the MObject
+    MFnDependencyNode depNode(lightObject, &status);
+    
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->IntensityPlugName.GetString(), UsdLuxTokens->inputsIntensity);
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->EmitDiffusePlugName.GetString(), UsdLuxTokens->inputsDiffuse);
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->EmitSpecularPlugName.GetString(), UsdLuxTokens->inputsSpecular);
+
+    UsdLuxShadowAPI shadowAPI = UsdLuxShadowAPI::Apply(usdPrim);
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode,
+        usdPrim,
+        _tokens->UseRayTraceShadowsPlugName.GetString(),
+        UsdLuxTokens->inputsShadowEnable);
+
+#if PXR_VERSION >= 2505
+    UsdMayaSplineUtils::WriteSplineAttribute<GfVec3f>(
+        depNode,
+        usdPrim,
+        _tokens->ShadowColorPlugName.GetString(),
+        UsdLuxTokens->inputsShadowColor);
+#endif
+
+// Type not available in previous USD versions
+#if PXR_VERSION >= 2505
+    UsdMayaSplineUtils::WriteSplineAttribute<GfVec3f>(
+        depNode, usdLight, _tokens->ColorPlugName.GetString(), UsdLuxTokens->inputsColor);
+#endif
+
+#endif
     return true;
 }
 

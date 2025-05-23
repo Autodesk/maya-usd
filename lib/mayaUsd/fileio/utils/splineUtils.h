@@ -15,6 +15,7 @@
 //
 #ifndef PXRUSDMAYA_SPLINEUTILS_H
 #define PXRUSDMAYA_SPLINEUTILS_H
+#include <maya/MGlobal.h>
 #include <pxr/pxr.h>
 
 #if PXR_VERSION >= 2411
@@ -235,6 +236,36 @@ struct UsdMayaSplineUtils
         class UsdMayaPrimReaderContext* context,
         const TfType&                   valueType,
         const MDistance::Unit           convertToUnit = MDistance::kMillimeters);
+
+
+    template <typename T>
+    static bool WriteSplineAttribute(
+        const MFnDependencyNode& depNode,
+        UsdPrim&     prim,
+        const std::string& mayaAttrName,
+        const TfToken&     usdAttrName)
+    {
+        TsKnotMap knots
+            = UsdMayaSplineUtils::GetKnotsFromMayaCurve<T>(depNode, mayaAttrName.c_str());
+        if (knots.empty()) {
+            return false;
+        }
+
+        auto usdAttr = prim.GetAttribute(usdAttrName);
+        if (!usdAttr) {
+            return false;
+        }
+
+        TsSpline spline
+            = UsdMayaSplineUtils::GetSplineFromMayaCurve<T>(depNode, mayaAttrName.c_str());
+        spline.SetKnots(knots);
+
+        if (!usdAttr.SetSpline(spline)) {
+            return false;
+        }
+
+        return true;
+    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

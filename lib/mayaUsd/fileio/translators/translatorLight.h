@@ -49,6 +49,12 @@ struct UsdMayaTranslatorLight
         MFnLight&                  mayaLight,
         FlexibleSparseValueWriter* valueWriter = nullptr);
 
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteLightSplinesAttrs(
+        const UsdLuxLightAPI&      usdLight,
+        MFnLight&                  mayaLight,
+        FlexibleSparseValueWriter* valueWriter);
+
     /// Exports Maya's directional light attributes using UsdLuxDistantLight schema
     MAYAUSD_CORE_PUBLIC
     static bool WriteDirectionalLightAttrs(
