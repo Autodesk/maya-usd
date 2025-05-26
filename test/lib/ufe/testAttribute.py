@@ -536,6 +536,40 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+    @unittest.skipIf(os.getenv('UFE_HAS_UNSIGNED_INT', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE has unsigned int support')
+    def testAttributeUInt(self):
+        '''Test the UInt attribute type.'''
+
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use an unsigned integer typed attribute.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/Room_set/Props/Ball_35',
+            attrName='testVal',
+            ufeAttrClass=ufe.AttributeUInt,
+            ufeAttrType=ufe.Attribute.kUInt)
+
+        # Now we test the UInt specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Set the attribute in UFE with a different value.
+        ufeAttr.set(ufeAttr.get() + random.randint(1,5))
+
+        # Then make sure that new UFE value matches what it is in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
+
+        # # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1)
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     @unittest.skipIf(os.getenv('UFE_ATTRIBUTES_GET_ENUMS', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE Attributes has a getEnums() method')
     def testAttributeIntEnum(self):
         '''Test the Int attribute type when it is an enum.'''
