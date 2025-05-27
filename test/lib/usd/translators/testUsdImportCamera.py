@@ -63,6 +63,107 @@ class testUsdImportCamera(unittest.TestCase):
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
+    def testPerspCameraSplineImport(self):
+        inputPath = fixturesUtils.readOnlySetUpClass(__file__)
+        cmds.file(new=True, force=True)
+
+        # Import the USD file.
+        usdFilePath = os.path.join(inputPath, "UsdImportCameraTest", "UsdImportCameraSplineTest.usd")
+        cmds.usdImport(file=usdFilePath, readAnimData=True)
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertEqual(stage.GetStartTimeCode(), 0)
+        self.assertEqual(stage.GetEndTimeCode(), 10)
+
+        # Get the imported perspective camera.
+        cameraTransformFullName = '|UsdImportCameraSplineTest|%s' % 'perspCamera'
+        cameraShapeFullName = '%s|%sShape' % (cameraTransformFullName, 'perspCamera')
+        selectionList = OpenMaya.MSelectionList()
+        selectionList.add(cameraShapeFullName)
+        cameraObj = OpenMaya.MObject()
+        selectionList.getDependNode(0, cameraObj)
+        cameraFn = OpenMaya.MFnCamera(cameraObj)
+
+        animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'horizontalFilmOffset')
+        self.assertEqual(animCurveFn.numKeys(), 2)
+        expectedTimesToValues = {
+            0.0: 0.03937,
+            5.0: 0.11811,
+        }
+        self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
+
+        animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'verticalFilmOffset')
+        self.assertEqual(animCurveFn.numKeys(), 2)
+        expectedTimesToValues = {
+            0.0: 0.03937,
+            5.0: 0.19685,
+        }
+        self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
+    def testOrthoCameraSplineImport(self):
+        inputPath = fixturesUtils.readOnlySetUpClass(__file__)
+        cmds.file(new=True, force=True)
+
+        # Import the USD file.
+        usdFilePath = os.path.join(inputPath, "UsdImportCameraTest", "UsdImportCameraSplineTest.usd")
+        cmds.usdImport(file=usdFilePath, readAnimData=True)
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertEqual(stage.GetStartTimeCode(), 0)
+        self.assertEqual(stage.GetEndTimeCode(), 10)
+
+        # Get the imported perspective camera.
+        cameraTransformFullName = '|UsdImportCameraSplineTest|%s' % 'orthoCamera'
+        cameraShapeFullName = '%s|%sShape' % (cameraTransformFullName, 'orthoCamera')
+        selectionList = OpenMaya.MSelectionList()
+        selectionList.add(cameraShapeFullName)
+        cameraObj = OpenMaya.MObject()
+        selectionList.getDependNode(0, cameraObj)
+        cameraFn = OpenMaya.MFnCamera(cameraObj)
+
+        animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'focusDistance')
+        self.assertEqual(animCurveFn.numKeys(), 3)
+        expectedTimesToValues = {
+            0.0: 5.046584,
+            2.0: 7.160621,
+            5.0: 10.046584,
+        }
+        self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
+
+        animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'focalLength')
+        self.assertEqual(animCurveFn.numKeys(), 3)
+        expectedTimesToValues = {
+            0.0: 35,
+            3.0: 89.227478,
+            5.0: 2.5,
+        }
+        self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
+
+        animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'horizontalFilmAperture')
+        self.assertEqual(animCurveFn.numKeys(), 2)
+        expectedTimesToValues = {
+            0.0: 3.9370079,
+            5.0: 11.811023712158203,
+        }
+        self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
+
+        animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'verticalFilmAperture')
+        self.assertEqual(animCurveFn.numKeys(), 2)
+        expectedTimesToValues = {
+            0.0: 3.9370079,
+            5.0: 11.811023712158203,
+        }
+        self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
+
+        #animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'fStop')
+        #self.assertEqual(animCurveFn.numKeys(), 2)
+        #expectedTimesToValues = {
+        #    0.0: 1.7974684,
+        #    5.0: 7.7784810,
+        #}
+        #self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
+
     def testStageOpens(self):
         self.assertTrue(self._stage)
 
@@ -168,7 +269,7 @@ class testUsdImportCamera(unittest.TestCase):
         for time in expectedTimesToValues.keys():
             expectedValue = expectedTimesToValues[time]
             value = animCurveFn.evaluate(OpenMaya.MTime(time, timeUnit))
-            self.assertTrue(Gf.IsClose(expectedValue, value, 1e-6))
+            self.assertTrue(Gf.IsClose(expectedValue, value, 1e-6), "Expected %s, got %s" % (expectedValue, value))
 
     def testImportPerspectiveCameraAnimatedTransform(self):
         (cameraFn, transformFn) = self._GetMayaCameraAndTransform('PerspCamAnimTransform')
