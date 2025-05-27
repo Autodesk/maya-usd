@@ -48,7 +48,7 @@ public:
 
     static void nodeDirtyEventCallback(MObject& node, MPlug& plug, void* clientData);
 
-    MStatus compute(const MPlug& plug, MDataBlock& data) override { return MS::kUnknownParameter; }
+    MStatus compute(const MPlug& plug, MDataBlock& data) override;
 
     static void*   creator() { return new GizmoShape(); }
     static MStatus initialize();
@@ -56,8 +56,26 @@ public:
     MSelectionMask getShapeSelectionMask() const override;
 
     //! The node name that can be used to create the GizmoShape
-    static const MString typeName;
-    static const MTypeId id;
+    static const MString typeNamePrefix;
+    //! The default typeId that supports Maya's internal Point light shading
+    static const MTypeId idDefault;
+    //! The typeId that supports Maya's internal Directional light shading
+    static const MTypeId idDistant;
+    //! The typeId that supports Maya's internal light shading
+    static const MTypeId idRect;
+    static const MTypeId idDomeLight;
+    static const MTypeId idSphere;
+    static const MTypeId idDisk;
+    static const MTypeId idCone;
+    static const MTypeId idCylinder;
+    //! The classification string for the gizmo geometry override. This is used to draw custom
+    //! gizmos for all light types. This is appended to the light classification string.
+    static const MString dbClassificationGeometryOverride;
+
+    static const MString dbClassificationDefault;
+    static const MString dbClassificationDistant;
+    static const MString dbClassificationRect;
+    static const MString dbClassificationShapingAPICone;
 
 private:
     MCallbackId nodeDirtyId;
@@ -72,6 +90,18 @@ private:
     static MObject coneAngle;
     static MObject dropOff;
     static MObject lightAngle;
+
+    // Input attributes to mimic an Maya internal light
+    static MObject aColor;
+    static MObject aIntensity;
+    static MObject aExposure;
+    static MObject aEmitDiffuse;
+    static MObject aEmitSpecular;
+    static MObject aLocatorScale;
+    static MObject aDecayRate;
+
+    // General output color attribute
+    static MObject aOutColor;
 
 }; // class GizmoShape
 

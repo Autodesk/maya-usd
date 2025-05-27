@@ -38,6 +38,7 @@ static MString colorParameterName_ = "solidColor";
 
 namespace MAYAUSD_NS_DEF {
 
+// Classification for drawing the gizmo
 const MString
         GizmoGeometryOverride::dbClassification("drawdb/geometry/mayaUsdGizmoGeometryOverride");
 MString GizmoGeometryOverride::s_wireframeItemName = "Gizmo";
