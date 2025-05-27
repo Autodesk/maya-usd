@@ -1296,7 +1296,8 @@ static TsExtrapMode _ConvertExtrapolationType(MFnAnimCurve::InfinityType mayaExt
 static TsInterpMode _ConvertMayaTanTypeToUsdTanType(MFnAnimCurve::TangentType mayaTangentType)
 {
     switch (mayaTangentType) {
-    case MFnAnimCurve::TangentType::kTangentStep: return TsInterpHeld;
+    case MFnAnimCurve::TangentType::kTangentStep:
+    case MFnAnimCurve::TangentType::kTangentStepNext: return TsInterpHeld;
     case MFnAnimCurve::TangentType::kTangentLinear: return TsInterpLinear;
     default: return TsInterpCurve;
     }
@@ -1321,19 +1322,31 @@ TsKnotMap UsdMayaWriteUtil::GetKnotsFromMayaCurve(
         return knots;
     }
 
-    // No keys, so nothing to do.
     auto numKeys = flAnimCurve.numKeys();
     for (unsigned int k = 0; k < numKeys; ++k) {
         auto time = flAnimCurve.time(k).value();
 
         auto   value = flAnimCurve.value(k);
+        MTime  convert(1.0, MTime::kSeconds);
         double inTangentX, inTangentY;
         double outTangentX, outTangentY;
         flAnimCurve.getTangent(k, inTangentX, inTangentY, true);
         flAnimCurve.getTangent(k, outTangentX, outTangentY, false);
 
+        // This was taken from the .getTangent() docs:
+        // Need to multiply the value with the time unit conversion factor
+        inTangentX *= convert.as(MTime::uiUnit());
+        outTangentX *= convert.as(MTime::uiUnit());
+
         TsTime inTime {}, outTime {};
         float  inSlope = 0.f, outSlope = 0.f;
+
+        // Converting from maya tangent to standard (Usd) tangent:
+        // Usd tangents are specified by slope and length and Slopes are "rise over run": height
+        // divided by length.
+        // Maya tangents are specified by height and length. Height and length
+        // are both specified multiplied by 3 Heights are positive for upward-sloping post-tangents,
+        // and negative for upward-sloping pre-tangents.
         TsConvertToStandardTangent(
             static_cast<float>(inTangentX),
             static_cast<float>(inTangentY),
@@ -1402,9 +1415,8 @@ UsdMayaWriteUtil::GetSplineFromMayaCurve(const MFnDependencyNode& depNode, const
     MFnAnimCurve flAnimCurve(plug, &status);
     CHECK_MSTATUS_AND_RETURN(status, spline)
 
-    TsExtrapolation preExtrapolation, postExtrapolation;
-    preExtrapolation.mode = _ConvertExtrapolationType(flAnimCurve.preInfinityType());
-    postExtrapolation.mode = _ConvertExtrapolationType(flAnimCurve.postInfinityType());
+    TsExtrapolation preExtrapolation(_ConvertExtrapolationType(flAnimCurve.preInfinityType()));
+    TsExtrapolation postExtrapolation(_ConvertExtrapolationType(flAnimCurve.postInfinityType()));
     spline.SetPreExtrapolation(preExtrapolation);
     spline.SetPostExtrapolation(postExtrapolation);
 

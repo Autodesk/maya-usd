@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    defaultPrim = "UsdImportCameraSplineTest"
+    endTimeCode = 10
+    framesPerSecond = 24
+    metersPerUnit = 0.01
+    startTimeCode = 0
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Xform "UsdImportCameraSplineTest" (
+    kind = "assembly"
+)
+{
+    def Camera "orthoCamera"
+    {
+        float focalLength.spline = {
+            bezier,
+            0: 35; pre (8, -0); post curve (3.1416830978200827, 0),
+            3: 89.22748; pre (0.007013454008335453, 18.585255); post curve (0.004675635673154628, -18.585257),
+            5: 2.5; pre (2.094455395291928, -0); post curve (8, 0),
+        }
+        float focusDistance.spline = {
+            bezier,
+            0: 5.0465837; pre (8, -0); post curve (2.3877691317941667, 0),
+            2: 7.160621; pre (0.09938495996088101, -1); post held,
+            5: 10.046584; post curve (8, 0),
+        }
+        float fStop.spline = {
+            bezier,
+            0: 1.7974684; pre (8, -0); post curve (5.894554241097652, 0),
+            5: 7.778481; pre (0.20514907400813936, -1.1962025); post curve (8, 0),
+        }
+        float horizontalAperture.spline = {
+            0: 100 & 300; pre (8, -0); post held,
+            5: 300; post curve (8, 0),
+        }
+        token projection = "orthographic"
+        float verticalAperture.spline = {
+            0: 100 & 300; pre (8, -0); post held,
+            5: 300; post curve (8, 0),
+        }
+        double3 xformOp:translate = (0, 0, 2.9412288986260604)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Camera "perspCamera"
+    {
+        float horizontalApertureOffset.spline = {
+            bezier,
+            0: 1; pre (8, -0); post curve (4.99995, 0),
+            5: 3; pre (4.99995, -0); post curve (8, 0),
+        }
+        float verticalApertureOffset.spline = {
+            bezier,
+            0: 1; pre (8, -0); post curve (4.99995, 0),
+            5: 5; pre (4.99995, -0); post curve (8, 0),
+        }
+        double3 xformOp:translate = (0, 0, 2.9412288986260604)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
