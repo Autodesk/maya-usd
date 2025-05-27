@@ -215,13 +215,17 @@ TEST(ProxyShapeImport, sessionLayer)
     constexpr double EPSILON = 1e-5;
 #if PXR_VERSION < 2508
     constexpr auto SESSION_LAYER_CONTENTS = R"ESC(#sdf 1.4.32
-#else
-    constexpr auto   SESSION_LAYER_CONTENTS = R"ESC(#usda 1.0
-#endif
 over "root" {
   float3 xformOp:translate = (1.2, 2.3, 3.4)
   uniform token[] xformOpOrder = ["xformOp:translate"]
 })ESC";
+#else
+    constexpr auto SESSION_LAYER_CONTENTS = R"ESC(#usda 1.0
+over "root" {
+  float3 xformOp:translate = (1.2, 2.3, 3.4)
+  uniform token[] xformOpOrder = ["xformOp:translate"]
+})ESC";
+#endif
 
     MFileIO::newFile(true);
     auto constructTransformChain = []() {
