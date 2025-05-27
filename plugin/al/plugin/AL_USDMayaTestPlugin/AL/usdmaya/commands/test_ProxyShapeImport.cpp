@@ -217,7 +217,7 @@ TEST(ProxyShapeImport, sessionLayer)
     constexpr auto SESSION_LAYER_CONTENTS = R"ESC(#sdf 1.4.32
 #else
     constexpr auto   SESSION_LAYER_CONTENTS = R"ESC(#usda 1.0
-#fi
+#endif
 over "root" {
   float3 xformOp:translate = (1.2, 2.3, 3.4)
   uniform token[] xformOpOrder = ["xformOp:translate"]
