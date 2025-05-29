@@ -412,7 +412,8 @@ private:
         }
     }
 
-    static MFnAnimCurve::InfinityType _ConvertUsdExtrapolationTypeToMaya(TsExtrapMode usdExtrapolation)
+    static MFnAnimCurve::InfinityType
+    _ConvertUsdExtrapolationTypeToMaya(TsExtrapMode usdExtrapolation)
     {
         switch (usdExtrapolation) {
         case TsExtrapLinear: return MFnAnimCurve::InfinityType::kLinear;
