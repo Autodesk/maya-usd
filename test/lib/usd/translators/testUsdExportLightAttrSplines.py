@@ -315,8 +315,9 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         shadowAPI = UsdLux.ShadowAPI(lightPrim)
         self.assertTrue(shadowAPI)
         self.assertFalse(shadowAPI.GetShadowEnableAttr().Get())
-        
-    def testExportLights(self):
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')    
+    def testExportLightsAttrSplines(self):
         """
         Tests that Maya lights export as UsdLux schema USD prims
         correctly.
