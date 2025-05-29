@@ -366,10 +366,10 @@ struct UsdMayaSplineUtils
 
         // Iterate through the knots and apply the lambda function
         for (auto knot : resultSpline.GetKnots()) {
-            T v;
+            T v = T();
             knot.GetValue(&v);
 
-            T v2;
+            T v2 = T();
             if (!secondarySpline.IsEmpty()) {
                 // Find the knot in the secondary spline that matches the time of the current knot
                 auto   time = knot.GetTime();
