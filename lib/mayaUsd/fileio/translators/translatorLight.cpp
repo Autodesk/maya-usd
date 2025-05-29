@@ -144,8 +144,8 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(
 }
 
 bool UsdMayaTranslatorLight::WriteLightSplinesAttrs(
-    const UsdLuxLightAPI&      usdLight,
-    MFnLight&                  mayaLight)
+    const UsdLuxLightAPI& usdLight,
+    MFnLight&             mayaLight)
 {
 #if PXR_VERSION >= 2411
     MStatus status;
@@ -175,9 +175,7 @@ bool UsdMayaTranslatorLight::WriteLightSplinesAttrs(
     MColor color = mayaLight.color(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     UsdMayaWriteUtil::SetAttribute(
-        usdLight.GetColorAttr(),
-        GfVec3f(color.r, color.g, color.b),
-        UsdTimeCode::Default());
+        usdLight.GetColorAttr(), GfVec3f(color.r, color.g, color.b), UsdTimeCode::Default());
 
     const MColor shadowColor = mayaLight.shadowColor(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -256,8 +254,8 @@ static bool _ReadLightAttrs(
 
 // Export the specialized MFnDirectionalLight attributes
 bool UsdMayaTranslatorLight::WriteDirectionalLightSplineAttrs(
-    const UsdLuxLightAPI&      usdLight,
-    MFnDirectionalLight&       mayaLight)
+    const UsdLuxLightAPI& usdLight,
+    MFnDirectionalLight&  mayaLight)
 {
 #if PXR_VERSION >= 2411
 
@@ -312,8 +310,8 @@ static bool _ReadDirectionalLight(
 }
 
 bool UsdMayaTranslatorLight::WritePointLightSplineAttrs(
-    const UsdLuxLightAPI&      usdLight,
-    MFnLight&                  mayaLight)
+    const UsdLuxLightAPI& usdLight,
+    MFnLight&             mayaLight)
 {
 #if PXR_VERSION >= 2411
     MStatus status;
@@ -392,8 +390,8 @@ static bool _ReadPointLight(
 }
 
 bool UsdMayaTranslatorLight::WriteSpotLightSplineAttrs(
-    const UsdLuxLightAPI&      usdLight,
-    MFnLight&                  mayaLight)
+    const UsdLuxLightAPI& usdLight,
+    MFnLight&             mayaLight)
 {
 #if PXR_VERSION >= 2411
     MStatus status;
@@ -452,8 +450,7 @@ bool UsdMayaTranslatorLight::WriteSpotLightSplineAttrs(
         penumbraAngle = GfRadiansToDegrees(penumbraAngle);
 
         float cutoff = static_cast<float>(coneAngle + penumbraAngle);
-        UsdMayaWriteUtil::SetAttribute(
-            shapingConeAttr, cutoff, UsdTimeCode::Default());
+        UsdMayaWriteUtil::SetAttribute(shapingConeAttr, cutoff, UsdTimeCode::Default());
 
         float softness = static_cast<float>(cutoff > 0 ? penumbraAngle / cutoff : 0.f);
         if (softness > 0) {
@@ -592,8 +589,8 @@ static bool _ReadSpotLight(
 }
 
 bool UsdMayaTranslatorLight::WriteAreaLightSplineAttrs(
-    const UsdLuxRectLight&     usdLight,
-    MFnAreaLight&              mayaLight)
+    const UsdLuxRectLight& usdLight,
+    MFnAreaLight&          mayaLight)
 {
 #if PXR_VERSION >= 2411
     MStatus status;

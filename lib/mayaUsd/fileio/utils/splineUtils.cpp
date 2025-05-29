@@ -18,7 +18,6 @@
 
 #if PXR_VERSION >= 2411
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool UsdMayaSplineUtils::WriteUsdSplineToPlug(
