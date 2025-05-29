@@ -41,52 +41,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class FlexibleSparseValueWriter;
-struct UsdMayaJobExportArgs;
-
-static TsInterpMode _ConvertMayaTanTypeToUsdTanType(MFnAnimCurve::TangentType mayaTangentType)
-{
-    switch (mayaTangentType) {
-    case MFnAnimCurve::TangentType::kTangentStep:
-    case MFnAnimCurve::TangentType::kTangentStepNext: return TsInterpHeld;
-    case MFnAnimCurve::TangentType::kTangentLinear: return TsInterpLinear;
-    default: return TsInterpCurve;
-    }
-}
-
-static TsExtrapMode _ConvertUsdExtrapolationToMaya(MFnAnimCurve::InfinityType mayaExtrapolation)
-{
-    switch (mayaExtrapolation) {
-    case MFnAnimCurve::InfinityType::kLinear: return TsExtrapMode::TsExtrapLinear;
-    case MFnAnimCurve::InfinityType::kCycle: return TsExtrapMode::TsExtrapLoopReset;
-    case MFnAnimCurve::InfinityType::kOscillate: return TsExtrapMode::TsExtrapLoopOscillate;
-    case MFnAnimCurve::InfinityType::kCycleRelative: return TsExtrapMode::TsExtrapLoopRepeat;
-    case MFnAnimCurve::InfinityType::kConstant:
-    default: return TsExtrapMode::TsExtrapHeld;
-    }
-}
-
-static MFnAnimCurve::InfinityType _ConvertUsdExtrapolationTypeToMaya(TsExtrapMode usdExtrapolation)
-{
-    switch (usdExtrapolation) {
-    case TsExtrapLinear: return MFnAnimCurve::InfinityType::kLinear;
-    case TsExtrapLoopReset: return MFnAnimCurve::InfinityType::kCycle;
-    case TsExtrapLoopOscillate: return MFnAnimCurve::InfinityType::kOscillate;
-    case TsExtrapLoopRepeat: return MFnAnimCurve::InfinityType::kCycleRelative;
-    case TsExtrapHeld:
-    default: return MFnAnimCurve::InfinityType::kConstant;
-    }
-}
-
-static MFnAnimCurve::TangentType _ConvertUsdTanTypeToMayaTanType(TsInterpMode usdTanType)
-{
-    switch (usdTanType) {
-    case TsInterpMode::TsInterpHeld: return MFnAnimCurve::TangentType::kTangentStep;
-    case TsInterpMode::TsInterpLinear: return MFnAnimCurve::TangentType::kTangentLinear;
-    default: return MFnAnimCurve::TangentType::kTangentAuto;
-    }
-}
-
 /// This struct contains helpers for writing USD (thus reading Maya data).
 struct UsdMayaSplineUtils
 {
@@ -433,6 +387,50 @@ struct UsdMayaSplineUtils
             knot.SetValue(resultValue);
         }
         return resultSpline;
+    }
+
+private:
+    static TsInterpMode _ConvertMayaTanTypeToUsdTanType(MFnAnimCurve::TangentType mayaTangentType)
+    {
+        switch (mayaTangentType) {
+        case MFnAnimCurve::TangentType::kTangentStep:
+        case MFnAnimCurve::TangentType::kTangentStepNext: return TsInterpHeld;
+        case MFnAnimCurve::TangentType::kTangentLinear: return TsInterpLinear;
+        default: return TsInterpCurve;
+        }
+    }
+
+    static TsExtrapMode _ConvertUsdExtrapolationToMaya(MFnAnimCurve::InfinityType mayaExtrapolation)
+    {
+        switch (mayaExtrapolation) {
+        case MFnAnimCurve::InfinityType::kLinear: return TsExtrapMode::TsExtrapLinear;
+        case MFnAnimCurve::InfinityType::kCycle: return TsExtrapMode::TsExtrapLoopReset;
+        case MFnAnimCurve::InfinityType::kOscillate: return TsExtrapMode::TsExtrapLoopOscillate;
+        case MFnAnimCurve::InfinityType::kCycleRelative: return TsExtrapMode::TsExtrapLoopRepeat;
+        case MFnAnimCurve::InfinityType::kConstant:
+        default: return TsExtrapMode::TsExtrapHeld;
+        }
+    }
+
+    static MFnAnimCurve::InfinityType _ConvertUsdExtrapolationTypeToMaya(TsExtrapMode usdExtrapolation)
+    {
+        switch (usdExtrapolation) {
+        case TsExtrapLinear: return MFnAnimCurve::InfinityType::kLinear;
+        case TsExtrapLoopReset: return MFnAnimCurve::InfinityType::kCycle;
+        case TsExtrapLoopOscillate: return MFnAnimCurve::InfinityType::kOscillate;
+        case TsExtrapLoopRepeat: return MFnAnimCurve::InfinityType::kCycleRelative;
+        case TsExtrapHeld:
+        default: return MFnAnimCurve::InfinityType::kConstant;
+        }
+    }
+
+    static MFnAnimCurve::TangentType _ConvertUsdTanTypeToMayaTanType(TsInterpMode usdTanType)
+    {
+        switch (usdTanType) {
+        case TsInterpMode::TsInterpHeld: return MFnAnimCurve::TangentType::kTangentStep;
+        case TsInterpMode::TsInterpLinear: return MFnAnimCurve::TangentType::kTangentLinear;
+        default: return MFnAnimCurve::TangentType::kTangentAuto;
+        }
     }
 };
 
