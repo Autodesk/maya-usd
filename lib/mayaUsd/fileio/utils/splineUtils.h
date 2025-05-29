@@ -21,6 +21,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/type.h>
@@ -89,9 +90,20 @@ static MFnAnimCurve::TangentType _ConvertUsdTanTypeToMayaTanType(TsInterpMode us
 /// This struct contains helpers for writing USD (thus reading Maya data).
 struct UsdMayaSplineUtils
 {
-    /// Get the UsdKnots from a Maya curve.
-    ///
-    /// Returns an empty TsKnotMap if the curve doesn't exist or has no keys.
+    /**
+     * @brief Extracts knot data from a Maya animation curve and converts it into a USD knot map.
+     *
+     * This function retrieves the animation curve associated with a specified Maya attribute,
+     * processes its keyframes, and converts the tangent and value data into a USD knot
+     * map.
+     *
+     * @param depNode The Maya dependency node containing the attribute.
+     * @param name The name of the Maya attribute to retrieve the animation curve from.
+     * @param scaling A scaling factor applied to the values extracted from the curve (default
+     * is 1.0).
+     * @return TsKnotMap A USD knot map containing the processed keyframe data from the Maya
+     * animation curve.
+     */
     template <typename T>
     static TsKnotMap GetKnotsFromMayaCurve(
         const MFnDependencyNode& depNode,
@@ -165,7 +177,7 @@ struct UsdMayaSplineUtils
                 }
             } else if (outTanType == MFnAnimCurve::kTangentStep) {
                 // no need to convert tangent in this case because it is 0 for the step.
-                knot.SetValue(static_cast<float>(value) * scaling);
+                knot.SetValue(static_cast<T>(value) * scaling);
             } else {
                 TsConvertToStandardTangent(
                     static_cast<float>(outTangentX),
@@ -175,7 +187,7 @@ struct UsdMayaSplineUtils
                     false,
                     &outTime,
                     &outSlope);
-                knot.SetValue(static_cast<float>(value) * scaling);
+                knot.SetValue(static_cast<T>(value) * scaling);
             }
 
             knot.SetTime(time);
@@ -191,9 +203,17 @@ struct UsdMayaSplineUtils
         return knots;
     }
 
-    /// Get the UsdSpline from a Maya curve.
-    ///
-    /// The spline will have different configuration based on the wanted curve.
+    /**
+     * @brief Retrieves a USD spline from a Maya curve attribute.
+     *
+     * This function extracts the spline data from a specified Maya attribute and converts it into
+     * a USD spline. The USD spline includes pre- and post-extrapolation settings based on the Maya
+     * curve's infinity types.
+     *
+     * @param depNode The Maya dependency node containing the attribute.
+     * @param name The name of the Maya attribute to retrieve the spline data from.
+     * @return TsSpline The USD spline created from the Maya curve attribute.
+     */
     template <typename T>
     static TsSpline GetSplineFromMayaCurve(const MFnDependencyNode& depNode, const MString& name)
     {
@@ -235,6 +255,185 @@ struct UsdMayaSplineUtils
         class UsdMayaPrimReaderContext* context,
         const TfType&                   valueType,
         const MDistance::Unit           convertToUnit = MDistance::kMillimeters);
+
+    /**
+     * @brief Writes a Maya spline attribute to a USD attribute.
+     *
+     * This function retrieves the knots and spline data from a Maya attribute and writes them to
+     * the corresponding USD attribute. If the Maya attribute does not have a spline, it writes the
+     * constant value instead.
+     *
+     * @param depNode The Maya dependency node containing the attribute.
+     * @param prim The USD primitive to which the attribute will be written.
+     * @param mayaAttrName The name of the Maya attribute to retrieve the spline data from.
+     * @param usdAttrName The name of the USD attribute to write the spline data to.
+     * @return bool Returns true if the attribute was successfully written, false otherwise.
+     */
+    template <typename T>
+    static bool WriteSplineAttribute(
+        const MFnDependencyNode& depNode,
+        UsdPrim&                 prim,
+        const std::string&       mayaAttrName,
+        const TfToken&           usdAttrName)
+    {
+        auto usdAttr = prim.GetAttribute(usdAttrName);
+        if (!usdAttr) {
+            return false;
+        }
+
+        TsKnotMap knots
+            = UsdMayaSplineUtils::GetKnotsFromMayaCurve<T>(depNode, mayaAttrName.c_str());
+        if (knots.empty()) {
+            MStatus status;
+            auto    plug = depNode.findPlug(mayaAttrName.c_str(), true, &status);
+            T       val;
+            plug.getValue(val);
+            if (UsdMayaWriteUtil::SetAttribute(usdAttr, val, UsdTimeCode::Default())) {
+                return true;
+            }
+
+            return false;
+        }
+
+        TsSpline spline
+            = UsdMayaSplineUtils::GetSplineFromMayaCurve<T>(depNode, mayaAttrName.c_str());
+        spline.SetKnots(knots);
+
+        if (!usdAttr.SetSpline(spline)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @brief Converts a float-based USD spline into a boolean-based USD spline using a lambda
+     * function.
+     *
+     * This function iterates through the knots of a given float-based USD spline, applies a
+     * user-defined lambda function to convert the float values into boolean values, and updates the
+     * spline accordingly.
+     *
+     * @param spline The input float-based USD spline to be converted.
+     * @param lambda A function that takes a float value and returns a boolean value.
+     * @return TsSpline The resulting boolean-based USD spline after applying the lambda function.
+     */
+    MAYAUSD_CORE_PUBLIC static TsSpline
+    BoolSplineFromFloatSpline(const TsSpline& spline, const std::function<bool(float)>& lambda)
+    {
+        auto    boolSpline = spline;
+        auto    knots = boolSpline.GetKnots();
+        VtValue val;
+        for (auto& knot : knots) {
+            knot.GetValue(&val);
+#if PXR_VERSION >= 2505
+            knot.SetValue(lambda(val.Get<float>()));
+#else
+            knot.SetValue(static_cast<float>(lambda(val.Get<float>())));
+#endif
+        }
+        boolSpline.SetKnots(knots);
+        return boolSpline;
+    }
+
+    /**
+     * @brief Combines two Maya curves into a single USD spline by applying a lambda function to
+     * their values.
+     *
+     * This function retrieves spline data from two Maya attributes, applies a user-defined lambda
+     * function to combine their values, and returns the resulting USD spline. If one of the
+     * attributes does not have a curve, the constant value from the plug is used instead. If both
+     * attributes lack curves, an empty spline is returned.
+     *
+     * @param depNode The Maya dependency node containing the attributes.
+     * @param attrName1 The name of the first Maya attribute.
+     * @param attrName2 The name of the second Maya attribute.
+     * @param lambda A function that takes two values (from the two attributes) and
+     * returns the computed value.
+     * @return TsSpline The resulting USD spline after combining the values of the two Maya
+     * attributes.
+     */
+    template <typename T>
+    static TsSpline CombineMayaCurveToUsdSpline(
+        const MFnDependencyNode&      depNode,
+        const MString&                attrName1,
+        const MString&                attrName2,
+        const std::function<T(T, T)>& lambda)
+    {
+        // Retrieve spline for the first attribute
+        TsSpline  spline1 = GetSplineFromMayaCurve<T>(depNode, attrName1);
+        TsKnotMap knots = GetKnotsFromMayaCurve<T>(depNode, attrName1);
+        spline1.SetKnots(knots);
+        T    constantValue1 = T();
+        bool hasCurve1 = !spline1.IsEmpty();
+
+        // Retrieve spline for the second attribute
+        TsSpline spline2 = GetSplineFromMayaCurve<T>(depNode, attrName2);
+        knots = GetKnotsFromMayaCurve<T>(depNode, attrName2);
+        spline2.SetKnots(knots);
+        T    constantValue2 = T();
+        bool hasCurve2 = !spline2.IsEmpty();
+
+        // If both curves are empty, return an empty spline
+        if (!hasCurve1 && !hasCurve2) {
+            return TsSpline(TfType::Find<T>());
+        }
+
+        if (!hasCurve1) {
+            // If no curve, retrieve the constant value from the plug
+            MPlug plug1 = depNode.findPlug(attrName1, true);
+            if (!plug1.isNull()) {
+                plug1.getValue(constantValue1);
+            }
+        }
+
+        if (!hasCurve2) {
+            // If no curve, retrieve the constant value from the plug
+            MPlug plug2 = depNode.findPlug(attrName2, true);
+            if (!plug2.isNull()) {
+                plug2.getValue(constantValue2);
+            }
+        }
+
+        TsSpline resultSpline;
+        TsSpline secondarySpline;
+        T        constVal = T();
+
+        // Arbitrarily choose the spline with more knots as the result spline
+        if (spline1.GetKnots().size() > spline2.GetKnots().size()) {
+            resultSpline = spline1;
+            secondarySpline = spline2;
+            constVal = constantValue2;
+        } else {
+            resultSpline = spline2;
+            secondarySpline = spline1;
+            constVal = constantValue1;
+        }
+
+        // Iterate through the knots and apply the lambda function
+        for (auto knot : resultSpline.GetKnots()) {
+            T v;
+            knot.GetValue(&v);
+
+            T v2;
+            if (!secondarySpline.IsEmpty()) {
+                // Find the knot in the secondary spline that matches the time of the current knot
+                auto   time = knot.GetTime();
+                TsKnot secondaryKnot;
+                if (secondarySpline.GetKnot(time, &secondaryKnot)) {
+                    secondaryKnot.GetValue(&v2);
+                } else {
+                    secondarySpline.Eval(time, &v2);
+                }
+            } else {
+                v2 = constVal;
+            }
+
+            T resultValue = lambda(v, v2);
+            knot.SetValue(resultValue);
+        }
+        return resultSpline;
+    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

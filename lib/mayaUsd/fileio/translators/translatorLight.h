@@ -49,6 +49,11 @@ struct UsdMayaTranslatorLight
         MFnLight&                  mayaLight,
         FlexibleSparseValueWriter* valueWriter = nullptr);
 
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteLightSplinesAttrs(
+        const UsdLuxLightAPI&      usdLight,
+        MFnLight&                  mayaLight);
+
     /// Exports Maya's directional light attributes using UsdLuxDistantLight schema
     MAYAUSD_CORE_PUBLIC
     static bool WriteDirectionalLightAttrs(
@@ -56,6 +61,11 @@ struct UsdMayaTranslatorLight
         const UsdLuxDistantLight&  usdLight,
         MFnDirectionalLight&       mayaLight,
         FlexibleSparseValueWriter* valueWriter = nullptr);
+
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteDirectionalLightSplineAttrs(
+        const UsdLuxLightAPI&      usdLight,
+        MFnDirectionalLight&       mayaLight);
 
     /// Exports Maya's point light attributes using UsdLuxSphereLight schema
     MAYAUSD_CORE_PUBLIC
@@ -65,6 +75,11 @@ struct UsdMayaTranslatorLight
         MFnPointLight&             mayaLight,
         FlexibleSparseValueWriter* valueWriter = nullptr);
 
+    MAYAUSD_CORE_PUBLIC
+    static bool WritePointLightSplineAttrs(
+        const UsdLuxLightAPI&      usdLight,
+        MFnLight&                  mayaLight);
+
     /// Exports Maya's spot light attributes using UsdLuxSphereLight and UsdLuxShapingAPI schemas
     MAYAUSD_CORE_PUBLIC
     static bool WriteSpotLightAttrs(
@@ -73,6 +88,11 @@ struct UsdMayaTranslatorLight
         MFnSpotLight&              mayaLight,
         FlexibleSparseValueWriter* valueWriter = nullptr);
 
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteSpotLightSplineAttrs(
+        const UsdLuxLightAPI&      usdLight,
+        MFnLight&                  mayaLight);
+
     /// Exports Maya's area light attributes using UsdLuxRectLight schema
     MAYAUSD_CORE_PUBLIC
     static bool WriteAreaLightAttrs(
@@ -80,6 +100,11 @@ struct UsdMayaTranslatorLight
         const UsdLuxRectLight&     usdLight,
         MFnAreaLight&              mayaLight,
         FlexibleSparseValueWriter* valueWriter = nullptr);
+
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteAreaLightSplineAttrs(
+        const UsdLuxRectLight&     usdLight,
+        MFnAreaLight&              mayaLight);
 
     /// Import a UsdLuxLightAPI schema as a corresponding Maya light.
     /// Return true if the maya light was properly created and imported
