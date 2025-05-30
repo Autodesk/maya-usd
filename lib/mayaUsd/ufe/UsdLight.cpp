@@ -24,6 +24,7 @@
 #include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/domeLight.h>
+#include <pxr/usd/usdLux/domeLight_1.h>
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/portalLight.h>
 #include <pxr/usd/usdLux/rectLight.h>
@@ -120,7 +121,7 @@ Ufe::Light::Type UsdLight::type() const
         return Ufe::Light::Cylinder;
     } else if (usdPrim.IsA<UsdLuxDiskLight>()) {
         return Ufe::Light::Disk;
-    } else if (usdPrim.IsA<UsdLuxDomeLight>()) {
+    } else if (usdPrim.IsA<UsdLuxDomeLight>() || usdPrim.IsA<UsdLuxDomeLight_1>()) {
         return Ufe::Light::Dome;
 #endif
     }
@@ -516,7 +517,9 @@ UFE_LIGHT_BASE::VolumeProps getLightDiskVolumeProps(const UsdPrim& prim)
 UFE_LIGHT_BASE::VolumeProps getLightDomeVolumeProps(const UsdPrim& prim)
 {
     const UsdLuxDomeLight      lightSchema(prim);
-    const PXR_NS::UsdAttribute guideRadiusAttribute = lightSchema.GetGuideRadiusAttr();
+    const UsdLuxDomeLight_1    light_1Schema(prim);
+    const PXR_NS::UsdAttribute guideRadiusAttribute
+        = light_1Schema ? light_1Schema.GetGuideRadiusAttr() : lightSchema.GetGuideRadiusAttr();
 
     UFE_LIGHT_BASE::VolumeProps vp;
     guideRadiusAttribute.Get(&vp.radius);

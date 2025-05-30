@@ -37,6 +37,7 @@
 #include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/domeLight.h>
+#include <pxr/usd/usdLux/domeLight_1.h>
 #include <pxr/usd/usdLux/geometryLight.h>
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/meshLightAPI.h>
@@ -67,6 +68,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DiskLightMayaTypeName, "PxrDiskLight"))
     ((DistantLightMayaTypeName, "PxrDistantLight"))
     ((DomeLightMayaTypeName, "PxrDomeLight"))
+    ((DomeLight_1MayaTypeName, "PxrDomeLight_1"))
     ((EnvDayLightMayaTypeName, "PxrEnvDayLight"))
     ((MeshLightMayaTypeName, "PxrMeshLight"))
     ((RectLightMayaTypeName, "PxrRectLight"))
@@ -131,6 +133,8 @@ static UsdLuxLightAPI _DefineUsdLuxLightForMayaLight(
         lightSchema = UsdLuxDistantLight::Define(stage, authorPath).LightAPI();
     } else if (mayaLightTypeToken == _tokens->DomeLightMayaTypeName) {
         lightSchema = UsdLuxDomeLight::Define(stage, authorPath).LightAPI();
+    } else if (mayaLightTypeToken == _tokens->DomeLight_1MayaTypeName) {
+        lightSchema = UsdLuxDomeLight_1::Define(stage, authorPath).LightAPI();
     } else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
         lightSchema
             = UsdLuxLightAPI(stage->DefinePrim(authorPath, _tokens->EnvDayLightMayaTypeName));
@@ -207,6 +211,8 @@ static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLightAPI& lightSchema
         return _tokens->DistantLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxDomeLight>()) {
         return _tokens->DomeLightMayaTypeName;
+    } else if (lightPrim.IsA<UsdLuxDomeLight_1>()) {
+        return _tokens->DomeLight_1MayaTypeName;
     } else if (lightType.IsA(pxrEnvDayLightType)) {
         return _tokens->EnvDayLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxGeometryLight>()) {

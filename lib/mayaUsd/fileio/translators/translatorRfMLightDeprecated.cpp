@@ -29,6 +29,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/domeLight.h>
+#include <pxr/usd/usdLux/domeLight_1.h>
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
@@ -497,9 +498,10 @@ static bool _ReadDistantLightAngle(const UsdLuxLightAPI& lightSchema, MFnDepende
 
 static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
 {
-    UsdLuxRectLight rectLightSchema(lightSchema);
-    UsdLuxDomeLight domeLightSchema(lightSchema);
-    if (!rectLightSchema && !domeLightSchema) {
+    UsdLuxRectLight   rectLightSchema(lightSchema);
+    UsdLuxDomeLight   domeLightSchema(lightSchema);
+    UsdLuxDomeLight_1 domeLight_1Schema(lightSchema);
+    if (!rectLightSchema && !domeLightSchema && !domeLight_1Schema) {
         return false;
     }
 
@@ -525,6 +527,8 @@ static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLightAP
         rectLightSchema.CreateTextureFileAttr(VtValue(lightTextureAssetPath), true);
     } else if (domeLightSchema) {
         domeLightSchema.CreateTextureFileAttr(VtValue(lightTextureAssetPath), true);
+    } else if (domeLight_1Schema) {
+        domeLight_1Schema.CreateTextureFileAttr(VtValue(lightTextureAssetPath), true);
     }
 
     return true;
@@ -532,9 +536,10 @@ static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLightAP
 
 static bool _ReadLightTextureFile(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
 {
-    const UsdLuxRectLight rectLightSchema(lightSchema);
-    const UsdLuxDomeLight domeLightSchema(lightSchema);
-    if (!rectLightSchema && !domeLightSchema) {
+    const UsdLuxRectLight   rectLightSchema(lightSchema);
+    const UsdLuxDomeLight   domeLightSchema(lightSchema);
+    const UsdLuxDomeLight_1 domeLight_1Schema(lightSchema);
+    if (!rectLightSchema && !domeLightSchema && !domeLight_1Schema) {
         return false;
     }
 
@@ -549,6 +554,8 @@ static bool _ReadLightTextureFile(const UsdLuxLightAPI& lightSchema, MFnDependen
         rectLightSchema.GetTextureFileAttr().Get(&lightTextureAssetPath);
     } else if (domeLightSchema) {
         domeLightSchema.GetTextureFileAttr().Get(&lightTextureAssetPath);
+    } else if (domeLight_1Schema) {
+        domeLight_1Schema.GetTextureFileAttr().Get(&lightTextureAssetPath);
     }
     const std::string lightTextureFile = lightTextureAssetPath.GetAssetPath();
 
