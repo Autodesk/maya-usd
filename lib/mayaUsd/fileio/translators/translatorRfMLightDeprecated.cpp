@@ -29,7 +29,10 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/domeLight.h>
+// UsdLuxDomeLight_1 was only added after USD v23.11
+#if PXR_VERSION >= 2311
 #include <pxr/usd/usdLux/domeLight_1.h>
+#endif
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
@@ -498,12 +501,18 @@ static bool _ReadDistantLightAngle(const UsdLuxLightAPI& lightSchema, MFnDepende
 
 static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
 {
-    UsdLuxRectLight   rectLightSchema(lightSchema);
-    UsdLuxDomeLight   domeLightSchema(lightSchema);
+    UsdLuxRectLight rectLightSchema(lightSchema);
+    UsdLuxDomeLight domeLightSchema(lightSchema);
+#if PXR_VERSION >= 2311
     UsdLuxDomeLight_1 domeLight_1Schema(lightSchema);
     if (!rectLightSchema && !domeLightSchema && !domeLight_1Schema) {
         return false;
     }
+#else
+    if (!rectLightSchema && !domeLightSchema) {
+        return false;
+    }
+#endif
 
     MStatus     status;
     const MPlug lightTextureFilePlug
@@ -527,21 +536,30 @@ static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLightAP
         rectLightSchema.CreateTextureFileAttr(VtValue(lightTextureAssetPath), true);
     } else if (domeLightSchema) {
         domeLightSchema.CreateTextureFileAttr(VtValue(lightTextureAssetPath), true);
-    } else if (domeLight_1Schema) {
+    }
+#if PXR_VERSION >= 2311
+    else if (domeLight_1Schema) {
         domeLight_1Schema.CreateTextureFileAttr(VtValue(lightTextureAssetPath), true);
     }
+#endif
 
     return true;
 }
 
 static bool _ReadLightTextureFile(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
 {
-    const UsdLuxRectLight   rectLightSchema(lightSchema);
-    const UsdLuxDomeLight   domeLightSchema(lightSchema);
+    const UsdLuxRectLight rectLightSchema(lightSchema);
+    const UsdLuxDomeLight domeLightSchema(lightSchema);
+#if PXR_VERSION >= 2311
     const UsdLuxDomeLight_1 domeLight_1Schema(lightSchema);
     if (!rectLightSchema && !domeLightSchema && !domeLight_1Schema) {
         return false;
     }
+#else
+    if (!rectLightSchema && !domeLightSchema) {
+        return false;
+    }
+#endif
 
     MStatus status;
     MPlug   lightTextureFilePlug = depFn.findPlug(_tokens->TextureFilePlugName.GetText(), &status);
@@ -554,9 +572,12 @@ static bool _ReadLightTextureFile(const UsdLuxLightAPI& lightSchema, MFnDependen
         rectLightSchema.GetTextureFileAttr().Get(&lightTextureAssetPath);
     } else if (domeLightSchema) {
         domeLightSchema.GetTextureFileAttr().Get(&lightTextureAssetPath);
-    } else if (domeLight_1Schema) {
+    }
+#if PXR_VERSION >= 2311
+    else if (domeLight_1Schema) {
         domeLight_1Schema.GetTextureFileAttr().Get(&lightTextureAssetPath);
     }
+#endif
     const std::string lightTextureFile = lightTextureAssetPath.GetAssetPath();
 
     status = lightTextureFilePlug.setValue(MString(lightTextureFile.c_str()));

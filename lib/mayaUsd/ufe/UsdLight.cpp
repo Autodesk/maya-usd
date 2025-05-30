@@ -24,7 +24,10 @@
 #include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/domeLight.h>
+// UsdLuxDomeLight_1 was only added after USD v23.11
+#if PXR_VERSION >= 2311
 #include <pxr/usd/usdLux/domeLight_1.h>
+#endif
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/portalLight.h>
 #include <pxr/usd/usdLux/rectLight.h>
@@ -121,8 +124,12 @@ Ufe::Light::Type UsdLight::type() const
         return Ufe::Light::Cylinder;
     } else if (usdPrim.IsA<UsdLuxDiskLight>()) {
         return Ufe::Light::Disk;
-    } else if (usdPrim.IsA<UsdLuxDomeLight>() || usdPrim.IsA<UsdLuxDomeLight_1>()) {
+    } else if (usdPrim.IsA<UsdLuxDomeLight>()) {
         return Ufe::Light::Dome;
+#if PXR_VERSION >= 2311
+    } else if (usdPrim.IsA<UsdLuxDomeLight_1>()) {
+        return Ufe::Light::Dome;
+#endif
 #endif
     }
     // In case of unknown light type, fallback to point light
@@ -516,10 +523,14 @@ UFE_LIGHT_BASE::VolumeProps getLightDiskVolumeProps(const UsdPrim& prim)
 
 UFE_LIGHT_BASE::VolumeProps getLightDomeVolumeProps(const UsdPrim& prim)
 {
-    const UsdLuxDomeLight      lightSchema(prim);
+    const UsdLuxDomeLight lightSchema(prim);
+#if PXR_VERSION >= 2311
     const UsdLuxDomeLight_1    light_1Schema(prim);
     const PXR_NS::UsdAttribute guideRadiusAttribute
         = light_1Schema ? light_1Schema.GetGuideRadiusAttr() : lightSchema.GetGuideRadiusAttr();
+#else
+    const PXR_NS::UsdAttribute guideRadiusAttribute = lightSchema.GetGuideRadiusAttr();
+#endif
 
     UFE_LIGHT_BASE::VolumeProps vp;
     guideRadiusAttribute.Get(&vp.radius);
