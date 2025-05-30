@@ -18,6 +18,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportInstances.py
     testUsdExportLayerAttributes.py
     testUsdExportLight.py
+    testUsdExportLightAttrSplines.py
     testUsdExportLocator.py
     testUsdExportMayaInstancer.py
     testUsdExportMesh.py

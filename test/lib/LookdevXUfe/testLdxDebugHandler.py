@@ -66,10 +66,16 @@ class LookdevXUfeDebugHandlerTestCase(unittest.TestCase):
         # Use the debug handler to get the data model string representation for the scene item.
         debugHandler = lxufe.DebugHandler.get(stdSurfaceSceneItem.runTimeId())
         sceneItemDump = debugHandler.exportToString(stdSurfaceSceneItem)
+        
+        if Usd.GetVersion() < (0, 25, 8):
+            # Look for the #sdf header to ensure it's a valid file, and look for signs
+            # of the xform primitive.
+            self.assertTrue("#sdf" in sceneItemDump)
+        else:
+            # Look for the #usda header to ensure it's a valid file, and look for signs
+            # of the xform primitive.
+            self.assertTrue("#usda" in sceneItemDump)
 
-        # Look for the #sdf header to ensure it's a valid file, and look for signs
-        # of the xform primitive.
-        self.assertTrue("#sdf" in sceneItemDump)
         self.assertTrue('def Shader "standard_surface1"' in sceneItemDump)
 
         nodeDefHandler = ufe.RunTimeMgr.instance().nodeDefHandler(ufe.RunTimeMgr.instance().getId('USD'))
