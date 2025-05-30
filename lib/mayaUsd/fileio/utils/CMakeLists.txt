@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME}
         readUtil.cpp
         roundTripUtil.cpp
         shadingUtil.cpp
+        splineUtils.cpp
         userTaggedAttribute.cpp
         writeUtil.cpp
         xformStack.cpp
@@ -31,6 +32,7 @@ set(HEADERS
     readUtil.h
     roundTripUtil.h
     shadingUtil.h
+    splineUtils.h
     userTaggedAttribute.h
     writeUtil.h
     xformStack.h
