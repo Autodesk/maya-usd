@@ -30,6 +30,11 @@ import unittest
 
 _customRigTypeName = None
 
+if Usd.GetVersion() < (0, 25, 8):
+    USD_HEADER = "#sdf 1.4.32"
+else:
+    USD_HEADER = "#usda 1.0"
+
 class customRigPrimReader(mayaUsdLib.PrimReader):
     def Read(self, context):
         usdPrim = self._GetArgs().GetUsdPrim()
@@ -162,8 +167,7 @@ class testCustomRig(unittest.TestCase):
         self.assertTrue(stage)
         
         layer = stage.GetRootLayer()
-        layer.ImportFromString(
-        ''' #sdf 1
+        layer.ImportFromString(USD_HEADER + '''
             (
                 defaultPrim = "world"
             )
@@ -227,8 +231,7 @@ class testCustomRig(unittest.TestCase):
         self.assertTrue(stage)
         
         layer = stage.GetRootLayer()
-        layer.ImportFromString(
-        ''' #sdf 1
+        layer.ImportFromString(USD_HEADER + '''
             (
                 defaultPrim = "world"
             )
@@ -298,8 +301,7 @@ class testCustomRig(unittest.TestCase):
         self.assertTrue(stage)
         
         layer = stage.GetRootLayer()
-        layer.ImportFromString(
-        ''' #sdf 1
+        layer.ImportFromString(USD_HEADER + '''
             (
                 defaultPrim = "world"
             )
@@ -331,8 +333,7 @@ class testCustomRig(unittest.TestCase):
         self.assertTrue(stage)
         
         layer = stage.GetRootLayer()
-        layer.ImportFromString(
-        ''' #sdf 1
+        layer.ImportFromString(USD_HEADER + '''
             (
                 defaultPrim = "world"
             )

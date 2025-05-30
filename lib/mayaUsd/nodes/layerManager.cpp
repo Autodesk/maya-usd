@@ -32,11 +32,11 @@
 #include <pxr/base/tf/instantiateType.h>
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/usd/ar/resolver.h>
-#include <pxr/usd/sdf/textFileFormat.h>
 #include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usdUtils/authoring.h>
 
 #if PXR_VERSION < 2508
+#include <pxr/usd/sdf/textFileFormat.h>
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>

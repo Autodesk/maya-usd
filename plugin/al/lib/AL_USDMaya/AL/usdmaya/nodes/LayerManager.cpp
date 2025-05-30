@@ -23,9 +23,9 @@
 #include <mayaUsd/listeners/notice.h>
 
 #include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/sdf/textFileFormat.h>
 
 #if PXR_VERSION < 2508
+#include <pxr/usd/sdf/textFileFormat.h>
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
