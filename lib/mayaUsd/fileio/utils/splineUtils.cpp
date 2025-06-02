@@ -22,7 +22,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 bool UsdMayaSplineUtils::WriteUsdSplineToPlug(
     MPlug&                    plug,
-    TsSpline                  spline,
+    const TsSpline&           spline,
     UsdMayaPrimReaderContext* context,
     const TfType&             valueType,
     const MDistance::Unit     convertToUnit)

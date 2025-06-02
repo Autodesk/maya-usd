@@ -203,9 +203,24 @@ struct UsdMayaSplineUtils
         return WriteUsdSplineToPlug(plug, spline, context, TfType::Find<T>(), convertToUnit);
     }
 
+    /**
+     * @brief Writes a USD spline to a Maya plug.
+     *
+     * This function converts a USD spline into a Maya animation curve and writes it to the
+     * specified plug. It handles tangent conversion, knot mapping, and unit conversion as needed.
+     *
+     * @param plug The Maya plug where the animation curve will be written.
+     * @param spline The USD spline containing the knot data to be converted.
+     * @param context The context used for undo/redo operations (optional).
+     * @param valueType The type of values stored in the spline.
+     * @param convertToUnit The unit to which the values should be converted (default is
+     * millimeters).
+     * @return bool Returns true if the spline was successfully written to the plug, false
+     * otherwise.
+     */
     MAYAUSD_CORE_PUBLIC static bool WriteUsdSplineToPlug(
         MPlug&                          plug,
-        TsSpline                        spline,
+        const TsSpline&                 spline,
         class UsdMayaPrimReaderContext* context,
         const TfType&                   valueType,
         const MDistance::Unit           convertToUnit = MDistance::kMillimeters);
@@ -258,36 +273,6 @@ struct UsdMayaSplineUtils
         }
 
         return true;
-    }
-
-    /**
-     * @brief Converts a float-based USD spline into a boolean-based USD spline using a lambda
-     * function.
-     *
-     * This function iterates through the knots of a given float-based USD spline, applies a
-     * user-defined lambda function to convert the float values into boolean values, and updates the
-     * spline accordingly.
-     *
-     * @param spline The input float-based USD spline to be converted.
-     * @param lambda A function that takes a float value and returns a boolean value.
-     * @return TsSpline The resulting boolean-based USD spline after applying the lambda function.
-     */
-    MAYAUSD_CORE_PUBLIC static TsSpline
-    BoolSplineFromFloatSpline(const TsSpline& spline, const std::function<bool(float)>& lambda)
-    {
-        auto    boolSpline = spline;
-        auto    knots = boolSpline.GetKnots();
-        VtValue val;
-        for (auto& knot : knots) {
-            knot.GetValue(&val);
-#if PXR_VERSION >= 2505
-            knot.SetValue(lambda(val.Get<float>()));
-#else
-            knot.SetValue(static_cast<float>(lambda(val.Get<float>())));
-#endif
-        }
-        boolSpline.SetKnots(knots);
-        return boolSpline;
     }
 
     /**
@@ -353,8 +338,11 @@ struct UsdMayaSplineUtils
         TsSpline secondarySpline;
         T        constVal = T();
 
+        // Make sure we call pass the argument to the lambda in the correct order
+        bool lambdaArgOrder = true;
+
         // Arbitrarily choose the spline with more knots as the result spline
-        if (spline1.GetKnots().size() > spline2.GetKnots().size()) {
+        if (spline1.GetKnots().size() >= spline2.GetKnots().size()) {
             resultSpline = spline1;
             secondarySpline = spline2;
             constVal = constantValue2;
@@ -362,12 +350,13 @@ struct UsdMayaSplineUtils
             resultSpline = spline2;
             secondarySpline = spline1;
             constVal = constantValue1;
+            lambdaArgOrder = false;
         }
-
         // Iterate through the knots and apply the lambda function
-        for (auto knot : resultSpline.GetKnots()) {
+        auto resKnots = resultSpline.GetKnots();
+        for (auto& knot : resKnots) {
             T v = T();
-            knot.GetValue(&v);
+            knot.GetValue<T>(&v);
 
             T v2 = T();
             if (!secondarySpline.IsEmpty()) {
@@ -375,17 +364,88 @@ struct UsdMayaSplineUtils
                 auto   time = knot.GetTime();
                 TsKnot secondaryKnot;
                 if (secondarySpline.GetKnot(time, &secondaryKnot)) {
-                    secondaryKnot.GetValue(&v2);
+                    secondaryKnot.GetValue<T>(&v2);
                 } else {
-                    secondarySpline.Eval(time, &v2);
+                    secondarySpline.Eval<T>(time, &v2);
                 }
             } else {
                 v2 = constVal;
             }
 
-            T resultValue = lambda(v, v2);
-            knot.SetValue(resultValue);
+            T resultValue = T();
+            if (lambdaArgOrder) {
+                resultValue = lambda(v, v2);
+            } else {
+                resultValue = lambda(v2, v);
+            }
+            knot.SetValue<T>(resultValue);
         }
+        resultSpline.SetKnots(resKnots);
+        return resultSpline;
+    }
+
+    template <typename T>
+    static TsSpline CombineUsdAttrsSplines(
+        const UsdAttribute&           attr1,
+        const UsdAttribute&           attr2,
+        const std::function<T(T, T)>& lambda,
+        UsdTimeCode                   timeCode = UsdTimeCode::Default())
+    {
+        TsSpline spline1 = attr1.GetSpline();
+        TsSpline spline2 = attr2.GetSpline();
+
+        if (spline1.IsEmpty() && spline2.IsEmpty()) {
+            return TsSpline(TfType::Find<T>());
+        }
+
+        TsSpline resultSpline;
+        TsSpline secondarySpline;
+        VtValue  constVal;
+
+        // Make sure we call pass the argument to the lambda in the correct order
+        bool lambdaArgOrder = true;
+
+        // Arbitrarily choose the spline with more knots as the result spline
+        if (spline1.GetKnots().size() >= spline2.GetKnots().size()) {
+            resultSpline = spline1;
+            secondarySpline = spline2;
+            attr2.Get(&constVal, timeCode);
+        } else {
+            resultSpline = spline2;
+            secondarySpline = spline1;
+            attr1.Get(&constVal, timeCode);
+            lambdaArgOrder = false;
+        }
+
+        // Iterate through the knots and apply the lambda function
+        auto resKnots = resultSpline.GetKnots();
+        for (auto& knot : resKnots) {
+            T v = T();
+            knot.GetValue<T>(&v);
+
+            T v2 = T();
+            if (!secondarySpline.IsEmpty()) {
+                // Find the knot in the secondary spline that matches the time of the current knot
+                auto   time = knot.GetTime();
+                TsKnot secondaryKnot;
+                if (secondarySpline.GetKnot(time, &secondaryKnot)) {
+                    secondaryKnot.GetValue<T>(&v2);
+                } else {
+                    secondarySpline.Eval<T>(time, &v2);
+                }
+            } else {
+                v2 = constVal.Get<T>();
+            }
+
+            T resultValue = T();
+            if (lambdaArgOrder) {
+                resultValue = lambda(v, v2);
+            } else {
+                resultValue = lambda(v2, v);
+            }
+            knot.SetValue<T>(resultValue);
+        }
+        resultSpline.SetKnots(resKnots);
         return resultSpline;
     }
 

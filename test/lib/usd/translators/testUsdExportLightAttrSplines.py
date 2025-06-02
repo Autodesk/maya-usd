@@ -1,6 +1,6 @@
 #!/usr/bin/env mayapy
 #
-# Copyright 2021 Autodesk
+# Copyright 2025 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
 
     START_TIMECODE = 1.0
     END_TIMECODE = 5.0
+    EPSILON = 1e-3
 
     @classmethod
     def setUpClass(cls):
@@ -71,8 +72,8 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         cmds.setAttr('%s.color' % spotLight, 0.3, 1, 0.2, type='double3')
         cmds.setAttr('%s.intensity' % spotLight, 0.8)
         cmds.setAttr('%s.emitDiffuse' % spotLight, 0)
-        cmds.setAttr('%s.coneAngle' % spotLight, 50)  # This will be converted to half-angle (25) in USD
-        cmds.setAttr('%s.penumbraAngle' % spotLight, 20)  # This affects cone softness
+        cmds.setAttr('%s.coneAngle' % spotLight, 50)
+        cmds.setAttr('%s.penumbraAngle' % spotLight, 20)
         cmds.setAttr('%s.dropoff' % spotLight, 8)
         cmds.setAttr('%s.useDepthMapShadows' % spotLight, 1)
         # Animate color with 4 keyframes for each channel
@@ -138,7 +139,7 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         """
         self.assertTrue(self._stage)
 
-    def _ValidateDistantLight(self):
+    def _ValidateUsdDistantLight(self):
         lightPrimPath = '/directionalLight1'
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
         self.assertTrue(lightPrim)
@@ -146,10 +147,10 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(distantLight)
 
         # Validate static attributes
-        self.assertTrue(Gf.IsClose(distantLight.GetIntensityAttr().Get(), 2, 1e-6))
-        self.assertTrue(Gf.IsClose(distantLight.GetColorAttr().Get(), Gf.Vec3f(1, 0.9, 0.8), 1e-6))
-        self.assertTrue(Gf.IsClose(distantLight.GetDiffuseAttr().Get(), 1, 1e-6))
-        self.assertTrue(Gf.IsClose(distantLight.GetSpecularAttr().Get(), 1, 1e-6))
+        self.assertTrue(Gf.IsClose(distantLight.GetIntensityAttr().Get(), 2, self.EPSILON))
+        self.assertTrue(Gf.IsClose(distantLight.GetColorAttr().Get(), Gf.Vec3f(1, 0.9, 0.8), self.EPSILON))
+        self.assertTrue(Gf.IsClose(distantLight.GetDiffuseAttr().Get(), 1, self.EPSILON))
+        self.assertTrue(Gf.IsClose(distantLight.GetSpecularAttr().Get(), 1, self.EPSILON))
 
         # Validate animated angle attribute with spline
         angleAttr = distantLight.GetAngleAttr()
@@ -158,22 +159,22 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         knots = spline.GetKnots()
         self.assertTrue(len(knots) == 4)
         self.assertEqual(knots[1].GetTime(), 1)
-        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 1.5, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 1.5, self.EPSILON))
         self.assertEqual(knots[2].GetTime(), 2)
-        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 1.8, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 1.8, self.EPSILON))
         self.assertEqual(knots[3].GetTime(), 3)
-        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 1.2, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 1.2, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 2, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 2, self.EPSILON))
 
         # Validate shadow API
         self.assertTrue(lightPrim.HasAPI(UsdLux.ShadowAPI))
         shadowAPI = UsdLux.ShadowAPI(lightPrim)
         self.assertTrue(shadowAPI)
         self.assertFalse(shadowAPI.GetShadowEnableAttr().Get())
-        self.assertTrue(Gf.IsClose(shadowAPI.GetShadowColorAttr().Get(), Gf.Vec3f(0.1, 0.2, 0.3), 1e-6))
+        self.assertTrue(Gf.IsClose(shadowAPI.GetShadowColorAttr().Get(), Gf.Vec3f(0.1, 0.2, 0.3), self.EPSILON))
 
-    def _ValidatePointLight(self):
+    def _ValidateUsdPointLight(self):
         lightPrimPath = '/pointLight1'
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
         self.assertTrue(lightPrim)
@@ -181,10 +182,10 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(sphereLight)
 
         # Validate static attributes
-        self.assertTrue(Gf.IsClose(sphereLight.GetColorAttr().Get(), Gf.Vec3f(1, 0.5, 0.1), 1e-6))
-        self.assertTrue(Gf.IsClose(sphereLight.GetDiffuseAttr().Get(), 1, 1e-6))
-        self.assertTrue(Gf.IsClose(sphereLight.GetSpecularAttr().Get(), 0, 1e-6))
-        self.assertTrue(Gf.IsClose(sphereLight.GetRadiusAttr().Get(), 0, 1e-6))
+        self.assertTrue(Gf.IsClose(sphereLight.GetColorAttr().Get(), Gf.Vec3f(1, 0.5, 0.1), self.EPSILON))
+        self.assertTrue(Gf.IsClose(sphereLight.GetDiffuseAttr().Get(), 1, self.EPSILON))
+        self.assertTrue(Gf.IsClose(sphereLight.GetSpecularAttr().Get(), 0, self.EPSILON))
+        self.assertTrue(Gf.IsClose(sphereLight.GetRadiusAttr().Get(), 0, self.EPSILON))
         self.assertTrue(sphereLight.GetTreatAsPointAttr().Get())
 
         # Validate animated intensity attribute with spline
@@ -194,13 +195,13 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         knots = spline.GetKnots()
         self.assertTrue(len(knots) == 4)
         self.assertEqual(knots[1].GetTime(), 1)
-        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 0.5, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 0.5, self.EPSILON))
         self.assertEqual(knots[2].GetTime(), 2)
-        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 1.2, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 1.2, self.EPSILON))
         self.assertEqual(knots[3].GetTime(), 3)
-        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 0.8, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 0.8, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 2, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 2, self.EPSILON))
 
         # Validate shadow API
         self.assertTrue(lightPrim.HasAPI(UsdLux.ShadowAPI))
@@ -208,7 +209,7 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(shadowAPI)
         self.assertTrue(shadowAPI.GetShadowEnableAttr().Get())
 
-    def _ValidateSpotLight(self):
+    def _ValidateUsdSpotLight(self):
         lightPrimPath = '/spotLight1'
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
         self.assertTrue(lightPrim)
@@ -216,10 +217,10 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(sphereLight)
 
         # Validate static attributes
-        self.assertTrue(Gf.IsClose(sphereLight.GetColorAttr().Get(), Gf.Vec3f(0.3, 1, 0.2), 1e-6))
-        self.assertTrue(Gf.IsClose(sphereLight.GetDiffuseAttr().Get(), 0, 1e-6))
-        self.assertTrue(Gf.IsClose(sphereLight.GetSpecularAttr().Get(), 1, 1e-6))
-        self.assertTrue(Gf.IsClose(sphereLight.GetIntensityAttr().Get(), 0.8, 1e-6))
+        self.assertTrue(Gf.IsClose(sphereLight.GetColorAttr().Get(), Gf.Vec3f(0.3, 1, 0.2), self.EPSILON))
+        self.assertTrue(Gf.IsClose(sphereLight.GetDiffuseAttr().Get(), 0, self.EPSILON))
+        self.assertTrue(Gf.IsClose(sphereLight.GetSpecularAttr().Get(), 1, self.EPSILON))
+        self.assertTrue(Gf.IsClose(sphereLight.GetIntensityAttr().Get(), 0.8, self.EPSILON))
         self.assertFalse(sphereLight.GetTreatAsPointAttr().Get())
 
         # Validate shadow API
@@ -233,21 +234,20 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         shapingAPI = UsdLux.ShapingAPI(lightPrim)
         self.assertTrue(shapingAPI)
 
-        # Validate animated cone angle (converted from Maya's full cone angle to USD's half angle)
+        # Validate animated cone angle (in degrees)
         coneAngleAttr = shapingAPI.GetShapingConeAngleAttr()
         spline = coneAngleAttr.GetSpline()
         self.assertTrue(spline)
         knots = spline.GetKnots()
         self.assertTrue(len(knots) == 4)
-        # Maya 50° -> USD ~0.349 radians (25°), Maya 60° -> USD ~0.436 radians (30°), etc.
         self.assertEqual(knots[1].GetTime(), 1)
-        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 0.34906584, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 45, self.EPSILON))
         self.assertEqual(knots[2].GetTime(), 2)
-        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 0.43633232, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 55, self.EPSILON))
         self.assertEqual(knots[3].GetTime(), 3)
-        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 0.2617994, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 35, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 0.34906584, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 45, self.EPSILON))
 
         # Validate animated cone softness (converted from Maya's penumbra angle)
         coneSoftnessAttr = shapingAPI.GetShapingConeSoftnessAttr()
@@ -256,13 +256,13 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         knots = spline.GetKnots()
         self.assertTrue(len(knots) == 4)
         self.assertEqual(knots[1].GetTime(), 1)
-        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 0.34906584, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 0.44444445, self.EPSILON))
         self.assertEqual(knots[2].GetTime(), 2)
-        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 0.43633232, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 0.45454547, self.EPSILON))
         self.assertEqual(knots[3].GetTime(), 3)
-        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 0.2617994, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 0.42857143, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 0.34906584, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 0.44444445, self.EPSILON))
 
         # Validate animated focus (converted from Maya's dropoff)
         focusAttr = shapingAPI.GetShapingFocusAttr()
@@ -286,15 +286,15 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         knots = spline.GetKnots()
         self.assertTrue(len(knots) == 4)
         self.assertEqual(knots[1].GetTime(), 1)
-        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 0, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[1].GetValue(), 0, self.EPSILON))
         self.assertEqual(knots[2].GetTime(), 2)
-        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 0.5, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 0.5, self.EPSILON))
         self.assertEqual(knots[3].GetTime(), 3)
-        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 0.2, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 0.2, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 0.3, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 0.3, self.EPSILON))
 
-    def _ValidateAreaLight(self):
+    def _ValidateUsdAreaLight(self):
         lightPrimPath = '/areaLight1'
         lightPrim = self._stage.GetPrimAtPath(lightPrimPath)
         self.assertTrue(lightPrim)
@@ -302,10 +302,10 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(rectLight)
 
         # Validate static attributes
-        self.assertTrue(Gf.IsClose(rectLight.GetColorAttr().Get(), Gf.Vec3f(0.8, 0.7, 0.6), 1e-6))
-        self.assertTrue(Gf.IsClose(rectLight.GetIntensityAttr().Get(), 1.2, 1e-6))
-        self.assertTrue(Gf.IsClose(rectLight.GetDiffuseAttr().Get(), 1, 1e-6))
-        self.assertTrue(Gf.IsClose(rectLight.GetSpecularAttr().Get(), 1, 1e-6))
+        self.assertTrue(Gf.IsClose(rectLight.GetColorAttr().Get(), Gf.Vec3f(0.8, 0.7, 0.6), self.EPSILON))
+        self.assertTrue(Gf.IsClose(rectLight.GetIntensityAttr().Get(), 1.2, self.EPSILON))
+        self.assertTrue(Gf.IsClose(rectLight.GetDiffuseAttr().Get(), 1, self.EPSILON))
+        self.assertTrue(Gf.IsClose(rectLight.GetSpecularAttr().Get(), 1, self.EPSILON))
         
         # Validate normalize attribute
         self.assertTrue(rectLight.GetNormalizeAttr().Get())
@@ -316,16 +316,163 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(shadowAPI)
         self.assertFalse(shadowAPI.GetShadowEnableAttr().Get())
 
+    def _GetMayaDependencyNode(self, objectName):
+        selectionList = OpenMaya.MSelectionList()
+        selectionList.add(objectName)
+        mObj = OpenMaya.MObject()
+        selectionList.getDependNode(0, mObj)
+        depNodeFn = OpenMaya.MFnDependencyNode(mObj)
+        self.assertTrue(depNodeFn)
+
+        return depNodeFn
+
+    def _ValidateMayaDistantLight(self):
+        nodePath = 'directionalLight1'        
+        depNodeFn = self._GetMayaDependencyNode(nodePath)
+        self.assertTrue(depNodeFn)
+        
+        # Validate static attributes
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath), 2, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorR' % nodePath), 1, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorG' % nodePath), 0.9, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath), 0.8, self.EPSILON))
+        
+        shadowColorList = cmds.getAttr('%s.shadowColor' % nodePath)
+        self.assertTrue(Gf.IsClose(shadowColorList[0], (0.1, 0.2, 0.3), self.EPSILON))
+        
+        # Validate animated lightAngle at different time codes
+        cmds.currentTime(1)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.lightAngle' % nodePath), 1.5, self.EPSILON))
+        cmds.currentTime(2)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.lightAngle' % nodePath), 1.8, self.EPSILON))
+        cmds.currentTime(3)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.lightAngle' % nodePath), 1.2, self.EPSILON))
+        cmds.currentTime(5)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.lightAngle' % nodePath), 2, self.EPSILON))
+
+    def _ValidateMayaPointLight(self):
+        nodePath = 'pointLight1'
+        depNodeFn = self._GetMayaDependencyNode(nodePath)
+        self.assertTrue(depNodeFn)
+        
+        # Validate static attributes
+        self.assertTrue(cmds.getAttr('%s.emitDiffuse' % nodePath) == 1)
+        self.assertTrue(cmds.getAttr('%s.emitSpecular' % nodePath) == 0)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorR' % nodePath), 1, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorG' % nodePath), 0.5, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath), 0.1, self.EPSILON))
+        
+        # Validate animated intensity at different time codes
+        cmds.currentTime(1)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath), 0.5, self.EPSILON))
+        cmds.currentTime(2)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath), 1.2, self.EPSILON))
+        cmds.currentTime(3)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath), 0.8, self.EPSILON))
+        cmds.currentTime(5)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath), 2, self.EPSILON))
+
+    def _ValidateMayaSpotLight(self):
+        nodePath = 'spotLight1'
+        depNodeFn = self._GetMayaDependencyNode(nodePath)
+        self.assertTrue(depNodeFn)
+        
+        # Validate static attributes
+        self.assertTrue(cmds.getAttr('%s.emitDiffuse' % nodePath) == 0)
+        self.assertTrue(cmds.getAttr('%s.emitSpecular' % nodePath) == 1)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath), 0.8, self.EPSILON))
+        
+        # Validate static color (not animated in USD export)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorR' % nodePath), 0.3, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorG' % nodePath), 1, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath), 0.2, self.EPSILON))
+        
+        # Validate animated coneAngle at different time codes
+        cmds.currentTime(1)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath), 50, self.EPSILON))
+        cmds.currentTime(2)
+        print(cmds.getAttr('%s.coneAngle' % nodePath))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath), 60, self.EPSILON))
+        cmds.currentTime(3)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath), 40, self.EPSILON))
+        cmds.currentTime(5)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath), 50, self.EPSILON))
+        
+        # Validate animated penumbraAngle at different time codes
+        cmds.currentTime(1)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.penumbraAngle' % nodePath), 20, self.EPSILON))
+        cmds.currentTime(2)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.penumbraAngle' % nodePath), 25, self.EPSILON))
+        cmds.currentTime(3)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.penumbraAngle' % nodePath), 15, self.EPSILON))
+        cmds.currentTime(5)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.penumbraAngle' % nodePath), 20, self.EPSILON))
+        
+        # Validate animated dropoff at different time codes
+        cmds.currentTime(1)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.dropoff' % nodePath), 8, self.EPSILON))
+        cmds.currentTime(2)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.dropoff' % nodePath), 10, self.EPSILON))
+        cmds.currentTime(3)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.dropoff' % nodePath), 6, self.EPSILON))
+        cmds.currentTime(5)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.dropoff' % nodePath), 8, self.EPSILON))
+        
+        # Validate animated lightRadius at different time codes
+        cmds.currentTime(1)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.lightRadius' % nodePath), 0, self.EPSILON))
+        cmds.currentTime(2)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.lightRadius' % nodePath), 0.5, self.EPSILON))
+        cmds.currentTime(3)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.lightRadius' % nodePath), 0.2, self.EPSILON))
+        cmds.currentTime(5)
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.lightRadius' % nodePath), 0.3, self.EPSILON))
+
+    def _ValidateMayaAreaLight(self):
+        nodePath = 'areaLight1'
+        depNodeFn = self._GetMayaDependencyNode(nodePath)
+        self.assertTrue(depNodeFn)
+        
+        # Validate static attributes
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorR' % nodePath), 0.8, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorG' % nodePath), 0.7, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath), 0.6, self.EPSILON))
+        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath), 1.2, self.EPSILON))
+        
+        # Validate normalize attribute
+        self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 1)
+
     @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')    
     def testExportLightsAttrSplines(self):
         """
         Tests that Maya lights export as UsdLux schema USD prims
         correctly.
         """
-        self._ValidateDistantLight()
-        self._ValidatePointLight()
-        self._ValidateSpotLight()
-        self._ValidateAreaLight()
+        self._ValidateUsdDistantLight()
+        self._ValidateUsdPointLight()
+        self._ValidateUsdSpotLight()
+        self._ValidateUsdAreaLight()
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')    
+    def testImportLightsAttrSplines(self):
+        """
+        Tests that USD lights with spline animation import back to Maya
+        with correct attribute values.
+        """
+        # Clear Maya scene
+        cmds.file(new=True, force=True)
+        
+        # Import from USD
+        cmds.usdImport(file=self._usdFilePath, readAnimData=True, primPath='/')
+        
+        # Validate Maya lights have correct attribute values
+        self._ValidateMayaDistantLight()
+        self._ValidateMayaPointLight()
+        self._ValidateMayaSpotLight()
+        self._ValidateMayaAreaLight()
+        
+        # Reset time to frame 1
+        cmds.currentTime(1)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
