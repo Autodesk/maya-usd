@@ -212,6 +212,10 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
     UsdMayaPrimReaderContext*    context,
     const MDistance::Unit        convertToUnit = MDistance::kMillimeters)
 {
+    if (args.GetTimeInterval().IsEmpty()) {
+        return false;
+    }
+
 #if PXR_VERSION >= 2411
     // If the attribute has a spline, we ignore time samples.
     if (usdAttr.HasSpline()) {
@@ -221,10 +225,6 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
         }
     }
 #endif
-
-    if (args.GetTimeInterval().IsEmpty()) {
-        return false;
-    }
 
     MTimeArray   timeArray;
     MDoubleArray valueArray;
