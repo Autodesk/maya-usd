@@ -414,7 +414,7 @@ bool UsdMayaTranslatorLight::WriteSpotLightSplineAttrs(
     if (cutOffSpline.IsEmpty()) {
         double coneAngle;
         UsdMayaUtil::getPlugValue(depNode, _tokens->ConeAnglePlugName.data(), &coneAngle);
-        coneAngle = coneAngle * 0.5;
+        coneAngle = GfRadiansToDegrees(coneAngle) * 0.5;
         double penumbraAngle;
         UsdMayaUtil::getPlugValue(depNode, _tokens->PenumbraAnglePlugName.data(), &penumbraAngle);
 
@@ -528,9 +528,9 @@ static bool _ReadSpotLight(
     // and Usd shapingFocus, shapingConeAngle, shapingConeSoftness
     success &= UsdMayaReadUtil::ReadUsdAttribute(
         shapingAPI.GetShapingFocusAttr(), depFn, _tokens->DropoffPlugName, args, &context);
-
+#if PXR_VERSION >= 2411
     if (args.GetTimeInterval().IsEmpty()) {
-
+#endif
         float UsdConeAngle = 1.f;
         shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
         float coneSoftness = 0.f;
@@ -556,6 +556,7 @@ static bool _ReadSpotLight(
         } else {
             success = false;
         }
+#if PXR_VERSION >= 2411
     } else {
 
         MPlug penumbraAnglePlug = depFn.findPlug(_tokens->PenumbraAnglePlugName.GetText(), &status);
@@ -605,6 +606,7 @@ static bool _ReadSpotLight(
             }
         }
     }
+#endif
     return success;
 }
 
