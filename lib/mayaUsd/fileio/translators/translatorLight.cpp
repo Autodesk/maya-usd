@@ -163,7 +163,7 @@ bool UsdMayaTranslatorLight::WriteLightSplinesAttrs(
         depNode, usdPrim, _tokens->EmitSpecularPlugName.GetString(), UsdLuxTokens->inputsSpecular);
 
     UsdLuxShadowAPI shadowAPI = UsdLuxShadowAPI::Apply(usdPrim);
-    UsdMayaSplineUtils::WriteSplineAttribute<bool>(
+    UsdMayaSplineUtils::WriteSplineAttribute<float, bool>(
         depNode,
         usdPrim,
         _tokens->UseRayTraceShadowsPlugName.GetString(),
@@ -622,7 +622,7 @@ bool UsdMayaTranslatorLight::WriteAreaLightSplineAttrs(
     // Initialize an MFnDependencyNode with the MObject
     MFnDependencyNode depNode(lightObject, &status);
 
-    UsdMayaSplineUtils::WriteSplineAttribute<bool>(
+    UsdMayaSplineUtils::WriteSplineAttribute<float, bool>(
         depNode, usdPrim, _tokens->normalizeAttrName.GetString(), UsdLuxTokens->inputsNormalize);
 #endif
     return true;
