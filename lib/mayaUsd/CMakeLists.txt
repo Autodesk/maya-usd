@@ -179,6 +179,13 @@ if (UFE_CLIPBOARD_SUPPORT)
     )
 endif()
 
+if (USD_SUPPORTS_SPLINES)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            USD_SUPPORTS_SPLINES=1
+    )
+endif()
+
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(MSVC)
     target_compile_options(${PROJECT_NAME}
