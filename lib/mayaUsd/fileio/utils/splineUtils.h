@@ -39,6 +39,8 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
+#include <cmath>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// This struct contains helpers for writing USD (thus reading Maya data).
@@ -51,6 +53,10 @@ struct UsdMayaSplineUtils
      * processes its keyframes, and converts the tangent and value data into a USD knot
      * map.
      *
+     * Template parameters:
+     * T - The type of the value stored in the knot tangent (e.g., float, double).
+     * V - The type of the value stored in the knot value (e.g., float, double).
+     *
      * @param depNode The Maya dependency node containing the attribute.
      * @param name The name of the Maya attribute to retrieve the animation curve from.
      * @param scaling A scaling factor applied to the values extracted from the curve (default
@@ -58,14 +64,14 @@ struct UsdMayaSplineUtils
      * @return TsKnotMap A USD knot map containing the processed keyframe data from the Maya
      * animation curve.
      */
-    template <typename T>
+    template <typename TANGENT, typename VALUE = TANGENT>
     static TsKnotMap GetKnotsFromMayaCurve(
         const MFnDependencyNode& depNode,
         const MString&           name,
         float                    scaling = 1.f)
     {
         TsKnotMap knots;
-        auto      valueType = TfType::Find<T>();
+        auto      valueType = TfType::Find<VALUE>();
 
         MStatus status;
         depNode.attribute(name, &status);
@@ -83,10 +89,10 @@ struct UsdMayaSplineUtils
         for (unsigned int k = 0; k < numKeys; ++k) {
             auto time = flAnimCurve.time(k).value();
 
-            auto   value = flAnimCurve.value(k);
+            VALUE  value = static_cast<VALUE>(flAnimCurve.value(k));
             MTime  convert(1.0, MTime::kSeconds);
-            double inTangentX, inTangentY;
-            double outTangentX, outTangentY;
+            double inTangentX {}, outTangentX {};
+            double inTangentY {}, outTangentY {};
             flAnimCurve.getTangent(k, inTangentX, inTangentY, true);
             flAnimCurve.getTangent(k, outTangentX, outTangentY, false);
 
@@ -95,8 +101,8 @@ struct UsdMayaSplineUtils
             inTangentX *= convert.as(MTime::uiUnit());
             outTangentX *= convert.as(MTime::uiUnit());
 
-            TsTime inTime {}, outTime {};
-            float  inSlope = 0.f, outSlope = 0.f;
+            TsTime  inTime {}, outTime {};
+            TANGENT inSlope {}, outSlope {};
 
             // Converting from maya tangent to standard (Usd) tangent:
             // Usd tangents are specified by slope and length and Slopes are "rise over run": height
@@ -105,17 +111,15 @@ struct UsdMayaSplineUtils
             // are both specified multiplied by 3 Heights are positive for upward-sloping
             // post-tangents, and negative for upward-sloping pre-tangents.
             TsConvertToStandardTangent(
-                static_cast<float>(inTangentX),
-                static_cast<float>(inTangentY),
-                true,
-                true,
-                true,
-                &inTime,
-                &inSlope);
+                inTangentX, TANGENT(inTangentY), true, true, true, &inTime, &inSlope);
+
+            if (std::isnan(inSlope)) {
+                inSlope = TANGENT(0);
+            }
 
             TsKnot     knot(valueType);
             const auto outTanType = flAnimCurve.outTangentType(k);
-            const auto convertedValue = static_cast<T>(value) * scaling;
+            const auto convertedValue = value * scaling;
 
             // Deal with the case where slope would be infinite,
             // Because when there's a step on the curve is discontinuous
@@ -125,23 +129,20 @@ struct UsdMayaSplineUtils
                 // behave like a step.
                 knot.SetPreValue(convertedValue);
                 if (k + 1 < numKeys) {
-                    knot.SetValue(static_cast<T>(flAnimCurve.value(k + 1)) * scaling);
+                    knot.SetValue(static_cast<VALUE>(flAnimCurve.value(k + 1)) * scaling);
                 } else {
                     knot.SetValue(convertedValue);
                 }
             } else if (outTanType == MFnAnimCurve::kTangentStep) {
                 // no need to convert tangent in this case because it is 0 for the step.
-                knot.SetValue(static_cast<T>(value) * scaling);
+                knot.SetValue(value * scaling);
             } else {
                 TsConvertToStandardTangent(
-                    static_cast<float>(outTangentX),
-                    static_cast<float>(outTangentY),
-                    true,
-                    true,
-                    false,
-                    &outTime,
-                    &outSlope);
-                knot.SetValue(static_cast<T>(value) * scaling);
+                    outTangentX, TANGENT(outTangentY), true, true, false, &outTime, &outSlope);
+                if (std::isnan(outSlope)) {
+                    outSlope = TANGENT(0);
+                }
+                knot.SetValue(value * scaling);
             }
 
             knot.SetTime(time);
@@ -168,10 +169,10 @@ struct UsdMayaSplineUtils
      * @param name The name of the Maya attribute to retrieve the spline data from.
      * @return TsSpline The USD spline created from the Maya curve attribute.
      */
-    template <typename T>
+    template <typename TANGENT>
     static TsSpline GetSplineFromMayaCurve(const MFnDependencyNode& depNode, const MString& name)
     {
-        auto spline = TsSpline(TfType::Find<T>());
+        auto spline = TsSpline(TfType::Find<TANGENT>());
 
         MStatus status;
         depNode.attribute(name, &status);
@@ -193,14 +194,14 @@ struct UsdMayaSplineUtils
         return spline;
     }
 
-    template <typename T>
+    template <typename TANGENT>
     static bool WriteUsdSplineToPlug(
         MPlug&                          plug,
         TsSpline                        spline,
         class UsdMayaPrimReaderContext* context,
         const MDistance::Unit           convertToUnit = MDistance::kMillimeters)
     {
-        return WriteUsdSplineToPlug(plug, spline, context, TfType::Find<T>(), convertToUnit);
+        return WriteUsdSplineToPlug(plug, spline, context, TfType::Find<TANGENT>(), convertToUnit);
     }
 
     /**
@@ -232,16 +233,20 @@ struct UsdMayaSplineUtils
      * the corresponding USD attribute. If the Maya attribute does not have a spline, it writes the
      * constant value instead.
      *
+     * Template parameters:
+     * T - The type of the value stored in the knot tangent (e.g., float, double).
+     * V - The type of the value stored in the knot value (e.g., float, double).
+     *
      * @param depNode The Maya dependency node containing the attribute.
      * @param prim The USD primitive to which the attribute will be written.
      * @param mayaAttrName The name of the Maya attribute to retrieve the spline data from.
      * @param usdAttrName The name of the USD attribute to write the spline data to.
      * @return bool Returns true if the attribute was successfully written, false otherwise.
      */
-    template <typename T>
+    template <typename TANGENT, typename VALUE = TANGENT>
     static bool WriteSplineAttribute(
         const MFnDependencyNode& depNode,
-        UsdPrim&                 prim,
+        const UsdPrim&           prim,
         const std::string&       mayaAttrName,
         const TfToken&           usdAttrName)
     {
@@ -250,12 +255,12 @@ struct UsdMayaSplineUtils
             return false;
         }
 
-        TsKnotMap knots
-            = UsdMayaSplineUtils::GetKnotsFromMayaCurve<T>(depNode, mayaAttrName.c_str());
+        TsKnotMap knots = UsdMayaSplineUtils::GetKnotsFromMayaCurve<TANGENT, VALUE>(
+            depNode, mayaAttrName.c_str());
         if (knots.empty()) {
             MStatus status;
             auto    plug = depNode.findPlug(mayaAttrName.c_str(), true, &status);
-            T       val;
+            VALUE   val;
             plug.getValue(val);
             if (UsdMayaWriteUtil::SetAttribute(usdAttr, val, UsdTimeCode::Default())) {
                 return true;
@@ -265,7 +270,7 @@ struct UsdMayaSplineUtils
         }
 
         TsSpline spline
-            = UsdMayaSplineUtils::GetSplineFromMayaCurve<T>(depNode, mayaAttrName.c_str());
+            = UsdMayaSplineUtils::GetSplineFromMayaCurve<TANGENT>(depNode, mayaAttrName.c_str());
         spline.SetKnots(knots);
 
         if (!usdAttr.SetSpline(spline)) {

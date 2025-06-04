@@ -72,6 +72,11 @@ if (USD_VERSION VERSION_LESS "0.23.02")
     endif()
 endif()
 
+set(USD_SUPPORTS_SPLINES FALSE CACHE INTERNAL "usdSupportsSplines")
+if(NOT USD_VERSION VERSION_LESS "0.25.05")
+    set(USD_SUPPORTS_SPLINES TRUE CACHE INTERNAL "usdSupportsSplines")
+endif()
+
 # USD_LIB_PREFIX should match the PXR_LIB_PREFIX used
 # for building USD (and shouldn't need to be touched if PXR_LIB_PREFIX was not
 # used / left at it's default value). Starting with USD 21.11, the default
