@@ -84,6 +84,7 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
             selection.append(self._GetSceneItem('|stage|stageShape', '/lights/diskLight'))
             selection.append(self._GetSceneItem('|stage|stageShape', '/lights/cylinderLight'))
             selection.append(self._GetSceneItem('|stage|stageShape', '/lights/domeLight'))
+            selection.append(self._GetSceneItem('|stage|stageShape', '/lights/domeLight_1'))
         globalSelection.replaceWith(selection)
         self.assertSnapshotClose('%s_selected%s.png' % (self._testName, self._suffix))
 

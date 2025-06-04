@@ -37,6 +37,10 @@
 #include <pxr/usd/usdLux/diskLight.h>
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/domeLight.h>
+// UsdLuxDomeLight_1 was only added after USD v23.11
+#if PXR_VERSION >= 2311
+#include <pxr/usd/usdLux/domeLight_1.h>
+#endif
 #include <pxr/usd/usdLux/geometryLight.h>
 #include <pxr/usd/usdLux/lightAPI.h>
 #include <pxr/usd/usdLux/meshLightAPI.h>
@@ -67,6 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((DiskLightMayaTypeName, "PxrDiskLight"))
     ((DistantLightMayaTypeName, "PxrDistantLight"))
     ((DomeLightMayaTypeName, "PxrDomeLight"))
+    ((DomeLight_1MayaTypeName, "PxrDomeLight_1"))
     ((EnvDayLightMayaTypeName, "PxrEnvDayLight"))
     ((MeshLightMayaTypeName, "PxrMeshLight"))
     ((RectLightMayaTypeName, "PxrRectLight"))
@@ -131,7 +136,13 @@ static UsdLuxLightAPI _DefineUsdLuxLightForMayaLight(
         lightSchema = UsdLuxDistantLight::Define(stage, authorPath).LightAPI();
     } else if (mayaLightTypeToken == _tokens->DomeLightMayaTypeName) {
         lightSchema = UsdLuxDomeLight::Define(stage, authorPath).LightAPI();
-    } else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
+    }
+#if PXR_VERSION >= 2311
+    else if (mayaLightTypeToken == _tokens->DomeLight_1MayaTypeName) {
+        lightSchema = UsdLuxDomeLight_1::Define(stage, authorPath).LightAPI();
+    }
+#endif
+    else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
         lightSchema
             = UsdLuxLightAPI(stage->DefinePrim(authorPath, _tokens->EnvDayLightMayaTypeName));
 #if PXR_VERSION < 2209
@@ -207,7 +218,13 @@ static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLightAPI& lightSchema
         return _tokens->DistantLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxDomeLight>()) {
         return _tokens->DomeLightMayaTypeName;
-    } else if (lightType.IsA(pxrEnvDayLightType)) {
+    }
+#if PXR_VERSION >= 2311
+    else if (lightPrim.IsA<UsdLuxDomeLight_1>()) {
+        return _tokens->DomeLight_1MayaTypeName;
+    }
+#endif
+    else if (lightType.IsA(pxrEnvDayLightType)) {
         return _tokens->EnvDayLightMayaTypeName;
     } else if (lightPrim.IsA<UsdLuxGeometryLight>()) {
         return _tokens->MeshLightMayaTypeName;
