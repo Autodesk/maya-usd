@@ -179,13 +179,13 @@ void UsdMayaTransformWriter::_ComputeXformOps(
             if (UsdGeomXformOp::GetPrecisionFromValueTypeName(
                     animChannel.op.GetAttr().GetTypeName())
                 == UsdGeomXformOp::PrecisionDouble) {
-                UsdMayaSplineUtils::WriteSplineAttribute<double, double>(
+                UsdMayaSplineUtils::WriteSplineAttribute<double>(
                     MFnDependencyNode(GetMayaObject()),
                     GetUsdPrim(),
                     animChannel.valueAttrName,
                     animChannel.op.GetAttr().GetName());
             } else {
-                UsdMayaSplineUtils::WriteSplineAttribute<float, float>(
+                UsdMayaSplineUtils::WriteSplineAttribute<float>(
                     MFnDependencyNode(GetMayaObject()),
                     GetUsdPrim(),
                     animChannel.valueAttrName,
