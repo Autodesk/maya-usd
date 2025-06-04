@@ -139,7 +139,7 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                     const TfToken& lookupName = animChannel.suffix.IsEmpty()
                         ? UsdGeomXformOp::GetOpTypeToken(animChannel.usdOpType)
                         : animChannel.suffix;
-                    auto           findResult = previousRotates->find(lookupName);
+                    auto findResult = previousRotates->find(lookupName);
                     if (findResult == previousRotates->end()) {
                         MEulerRotation::RotationOrder rotOrder
                             = UsdMayaXformStack::RotateOrderFromOpType(
