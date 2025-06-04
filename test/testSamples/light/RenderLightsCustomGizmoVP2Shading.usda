@@ -77,6 +77,15 @@ def Xform "lights"
         double3 xformOp:translate = (1.8846862607790644, 2.8008199375209295, -7.701754664974189)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
+    
+    def DomeLight_1 "domeLight_1"
+    {
+        float guideRadius = 8
+        color3f inputs:color = (0, 1, 0)
+        float inputs:intensity = 0.1
+        double3 xformOp:translate = (-4.743307407621989, 2.8008199375209295, -7.701754664974189)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
 }
 
 def Xform "lights2"
