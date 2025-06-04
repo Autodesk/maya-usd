@@ -141,11 +141,12 @@ bool _TypeSupportsColorSpace(const MaterialX::InputPtr& mxElem, const Ufe::Path&
     bool colorImageNode = false;
     if (type == "filename") {
         // verify the output is color3 or color4
-        auto node = mxElem->getParent()->asA<MaterialX::Node>();
-        if (auto parentNodeDef = _GetNodeDef(node, ufePath)) {
-            for (const MaterialX::OutputPtr& output : parentNodeDef->getOutputs()) {
-                const std::string& type = output->getType();
-                colorImageNode |= type == "color3" || type == "color4";
+        if (auto node = mxElem->getParent()->asA<MaterialX::Node>()) {
+            if (auto parentNodeDef = _GetNodeDef(node, ufePath)) {
+                for (const MaterialX::OutputPtr& output : parentNodeDef->getOutputs()) {
+                    const std::string& type = output->getType();
+                    colorImageNode |= type == "color3" || type == "color4";
+                }
             }
         }
     }
