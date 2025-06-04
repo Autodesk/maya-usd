@@ -39,6 +39,7 @@ class testUsdExportSplineXforms(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.setUpClass(__file__)
         # Create a new Maya scene
         cmds.file(new=True, force=True)
         
@@ -178,7 +179,7 @@ class testUsdExportSplineXforms(unittest.TestCase):
         cls._stage = Usd.Stage.Open(cls._usdFilePath)
 
     @unittest.skipUnless(Usd.GetVersion() >= (0, 25, 5), 'Splines transforms are only supported in USD 0.25.05 and later')    
-    def testExportSphereTransformSplines(self):
+    def testExportTransformSplines(self):
         """
         Tests that Maya sphere transform animation exports as USD xform 
         correctly with spline curves for translation, rotation, and scale.
