@@ -39,14 +39,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \hideinitializer
 #define PXRUSDMAYA_XFORM_STACK_TOKENS \
     (translate) \
+    (translateX) \
+    (translateY) \
+    (translateZ) \
     (rotatePivotTranslate) \
     (rotatePivot) \
     (rotate) \
+    (rotateX) \
+    (rotateY) \
+    (rotateZ) \
     (rotateAxis) \
     (scalePivotTranslate) \
     (scalePivot) \
     (shear) \
     (scale) \
+    (scaleX) \
+    (scaleY) \
+    (scaleZ) \
     (pivot) \
     (pivotTranslate) \
     (transform) \
