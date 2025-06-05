@@ -89,7 +89,7 @@ struct UsdMayaSplineUtils
         for (unsigned int k = 0; k < numKeys; ++k) {
             auto time = flAnimCurve.time(k).value();
 
-            T  value = static_cast<T>(flAnimCurve.value(k));
+            T      value = static_cast<T>(flAnimCurve.value(k));
             MTime  convert(1.0, MTime::kSeconds);
             double inTangentX {}, outTangentX {};
             double inTangentY {}, outTangentY {};
@@ -101,8 +101,8 @@ struct UsdMayaSplineUtils
             inTangentX *= convert.as(MTime::uiUnit());
             outTangentX *= convert.as(MTime::uiUnit());
 
-            TsTime  inTime {}, outTime {};
-            T inSlope {}, outSlope {};
+            TsTime inTime {}, outTime {};
+            T      inSlope {}, outSlope {};
 
             // Converting from maya tangent to standard (Usd) tangent:
             // Usd tangents are specified by slope and length and Slopes are "rise over run": height
@@ -255,12 +255,12 @@ struct UsdMayaSplineUtils
             return false;
         }
 
-        TsKnotMap knots = UsdMayaSplineUtils::GetKnotsFromMayaCurve<T>(
-            depNode, mayaAttrName.c_str(), scaling);
+        TsKnotMap knots
+            = UsdMayaSplineUtils::GetKnotsFromMayaCurve<T>(depNode, mayaAttrName.c_str(), scaling);
         if (knots.empty()) {
             MStatus status;
             auto    plug = depNode.findPlug(mayaAttrName.c_str(), true, &status);
-            T   val;
+            T       val;
             plug.getValue(val);
             val = val * scaling;
             if (UsdMayaWriteUtil::SetAttribute(usdAttr, val, UsdTimeCode::Default())) {
