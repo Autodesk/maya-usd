@@ -248,7 +248,8 @@ struct UsdMayaSplineUtils
         const MFnDependencyNode& depNode,
         const UsdPrim&           prim,
         const std::string&       mayaAttrName,
-        const TfToken&           usdAttrName)
+        const TfToken&           usdAttrName,
+        float                    scaling = 1.f)
     {
         auto usdAttr = prim.GetAttribute(usdAttrName);
         if (!usdAttr) {
@@ -256,12 +257,13 @@ struct UsdMayaSplineUtils
         }
 
         TsKnotMap knots = UsdMayaSplineUtils::GetKnotsFromMayaCurve<TANGENT, VALUE>(
-            depNode, mayaAttrName.c_str());
+            depNode, mayaAttrName.c_str(), scaling);
         if (knots.empty()) {
             MStatus status;
             auto    plug = depNode.findPlug(mayaAttrName.c_str(), true, &status);
             VALUE   val;
             plug.getValue(val);
+            val = val * scaling;
             if (UsdMayaWriteUtil::SetAttribute(usdAttr, val, UsdTimeCode::Default())) {
                 return true;
             }
@@ -307,22 +309,25 @@ struct UsdMayaSplineUtils
         // Retrieve spline for the first attribute
         TsSpline  spline1 = GetSplineFromMayaCurve<T>(depNode, attrName1);
         TsKnotMap knots = GetKnotsFromMayaCurve<T>(depNode, attrName1);
-        spline1.SetKnots(knots);
-        T    constantValue1 = T();
-        bool hasCurve1 = !spline1.IsEmpty();
+        bool      hasCurve1 = !knots.empty();
+        if (hasCurve1) {
+            spline1.SetKnots(knots);
+        }
 
         // Retrieve spline for the second attribute
         TsSpline spline2 = GetSplineFromMayaCurve<T>(depNode, attrName2);
         knots = GetKnotsFromMayaCurve<T>(depNode, attrName2);
-        spline2.SetKnots(knots);
-        T    constantValue2 = T();
-        bool hasCurve2 = !spline2.IsEmpty();
+        bool hasCurve2 = !knots.empty();
+        if (hasCurve2) {
+            spline2.SetKnots(knots);
+        }
 
         // If both curves are empty, return an empty spline
         if (!hasCurve1 && !hasCurve2) {
             return TsSpline(TfType::Find<T>());
         }
 
+        T constantValue1 = T();
         if (!hasCurve1) {
             // If no curve, retrieve the constant value from the plug
             MPlug plug1 = depNode.findPlug(attrName1, true);
@@ -331,6 +336,7 @@ struct UsdMayaSplineUtils
             }
         }
 
+        T constantValue2 = T();
         if (!hasCurve2) {
             // If no curve, retrieve the constant value from the plug
             MPlug plug2 = depNode.findPlug(attrName2, true);
