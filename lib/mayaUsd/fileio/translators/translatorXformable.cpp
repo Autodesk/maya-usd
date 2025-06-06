@@ -238,7 +238,7 @@ static bool _pushUSDXformOpToMayaXform(
     const UsdMayaPrimReaderArgs&    args,
     const UsdMayaPrimReaderContext* context)
 {
-#if USD_SUPPORTS_SPLINES
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
     // If the xformop has a spline, we write it to the plug directly
     const auto& opAttr = xformop.GetAttr();
     if (opAttr.HasSpline()) {

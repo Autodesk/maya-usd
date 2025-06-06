@@ -25,9 +25,22 @@ TF_DEFINE_PUBLIC_TOKENS(UsdMayaXformStackTokens, PXRUSDMAYA_XFORM_STACK_TOKENS);
 
 namespace {
 const UsdGeomXformOp::Type RotateOpTypes[] = {
+    UsdGeomXformOp::TypeRotateX,   UsdGeomXformOp::TypeRotateY,   UsdGeomXformOp::TypeRotateZ,
     UsdGeomXformOp::TypeRotateXYZ, UsdGeomXformOp::TypeRotateXZY, UsdGeomXformOp::TypeRotateYXZ,
     UsdGeomXformOp::TypeRotateYZX, UsdGeomXformOp::TypeRotateZXY, UsdGeomXformOp::TypeRotateZYX
 };
+
+bool _isSingleAxisTransforms(UsdGeomXformOp::Type opType)
+{
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+    return (
+        opType == UsdGeomXformOp::TypeTranslateX || opType == UsdGeomXformOp::TypeTranslateY
+        || opType == UsdGeomXformOp::TypeTranslateZ || opType == UsdGeomXformOp::TypeScaleX
+        || opType == UsdGeomXformOp::TypeScaleY || opType == UsdGeomXformOp::TypeScaleZ);
+#else
+    return false;
+#endif
+}
 
 bool _isThreeAxisRotate(UsdGeomXformOp::Type opType)
 {
@@ -196,18 +209,9 @@ std::vector<TfToken> UsdMayaXformOpClassification::CompatibleAttrNames() const
             result.reserve(std::extent<decltype(RotateOpTypes)>::value * 3);
             // Special handling for rotate, to deal with rotateX/rotateZXY/etc
             for (UsdGeomXformOp::Type rotateType : RotateOpTypes) {
-                // Add, ie, xformOp::rotateX
-                result.emplace_back(
-                    TfToken(UsdGeomXformOp::GetOpName(rotateType).GetString(), TfToken::Immortal));
                 // Add, ie, xformOp::rotateX::rotate
                 result.emplace_back(TfToken(
                     UsdGeomXformOp::GetOpName(rotateType, UsdMayaXformStackTokens->rotate)
-                        .GetString(),
-                    TfToken::Immortal));
-                // Add, ie, xformOp::rotateX::rotateX
-                result.emplace_back(TfToken(
-                    UsdGeomXformOp::GetOpName(
-                        rotateType, UsdGeomXformOp::GetOpTypeToken(rotateType))
                         .GetString(),
                     TfToken::Immortal));
             }
@@ -240,7 +244,7 @@ bool UsdMayaXformOpClassification::IsCompatibleType(UsdGeomXformOp::Type otherTy
     if (_isThreeAxisRotate(GetOpType())) {
         return _isOneOrThreeAxisRotate(otherType);
     }
-    return false;
+    return _isSingleAxisTransforms(otherType);
 }
 
 bool UsdMayaXformOpClassification::operator==(const UsdMayaXformOpClassification& other) const
@@ -528,7 +532,7 @@ UsdMayaXformStack::OpClassList UsdMayaXformStack::FirstMatchingSubstack(
 
 const UsdMayaXformStack& UsdMayaXformStack::MayaStack()
 {
-#if USD_SUPPORTS_SPLINES
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
     static UsdMayaXformStack mayaStack(
         // ops
         {
@@ -603,12 +607,6 @@ const UsdMayaXformStack& UsdMayaXformStack::MayaStack()
             UsdMayaXformOpClassification(
                 UsdMayaXformStackTokens->rotate, UsdGeomXformOp::TypeRotateXYZ),
             UsdMayaXformOpClassification(
-                UsdMayaXformStackTokens->rotateX, UsdGeomXformOp::TypeRotateX),
-            UsdMayaXformOpClassification(
-                UsdMayaXformStackTokens->rotateY, UsdGeomXformOp::TypeRotateY),
-            UsdMayaXformOpClassification(
-                UsdMayaXformStackTokens->rotateZ, UsdGeomXformOp::TypeRotateZ),
-            UsdMayaXformOpClassification(
                 UsdMayaXformStackTokens->rotateAxis, UsdGeomXformOp::TypeRotateXYZ),
             UsdMayaXformOpClassification(
                 UsdMayaXformStackTokens->rotatePivot,
@@ -633,9 +631,9 @@ const UsdMayaXformStack& UsdMayaXformStack::MayaStack()
 
         // inversionTwins
         {
-            { 1, 15 },
-            { 3, 9 },
-            { 11, 14 },
+            { 1, 12 },
+            { 3, 6 },
+            { 8, 11 },
         });
 #endif
 
@@ -644,41 +642,6 @@ const UsdMayaXformStack& UsdMayaXformStack::MayaStack()
 
 const UsdMayaXformStack& UsdMayaXformStack::CommonStack()
 {
-#if USD_SUPPORTS_SPLINES
-    static UsdMayaXformStack commonStack(
-        // ops
-        { UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->translate, UsdGeomXformOp::TypeTranslate),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->translateX, UsdGeomXformOp::TypeTranslateX),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->translateY, UsdGeomXformOp::TypeTranslateY),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->translateZ, UsdGeomXformOp::TypeTranslateZ),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->pivot, UsdGeomXformOp::TypeTranslate),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotate, UsdGeomXformOp::TypeRotateXYZ),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotateX, UsdGeomXformOp::TypeRotateX),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotateY, UsdGeomXformOp::TypeRotateY),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotateZ, UsdGeomXformOp::TypeRotateZ),
-          UsdMayaXformOpClassification(UsdMayaXformStackTokens->scale, UsdGeomXformOp::TypeScale),
-          UsdMayaXformOpClassification(UsdMayaXformStackTokens->scaleX, UsdGeomXformOp::TypeScaleX),
-          UsdMayaXformOpClassification(UsdMayaXformStackTokens->scaleY, UsdGeomXformOp::TypeScaleY),
-          UsdMayaXformOpClassification(UsdMayaXformStackTokens->scaleZ, UsdGeomXformOp::TypeScaleZ),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->pivot,
-              UsdGeomXformOp::TypeTranslate,
-              true /* isInvertedTwin */) },
-
-        // inversionTwins
-        {
-            { 4, 13 },
-        });
-#else
     static UsdMayaXformStack commonStack(
         // ops
         { UsdMayaXformOpClassification(
@@ -687,12 +650,6 @@ const UsdMayaXformStack& UsdMayaXformStack::CommonStack()
               UsdMayaXformStackTokens->pivot, UsdGeomXformOp::TypeTranslate),
           UsdMayaXformOpClassification(
               UsdMayaXformStackTokens->rotate, UsdGeomXformOp::TypeRotateXYZ),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotateX, UsdGeomXformOp::TypeRotateX),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotateY, UsdGeomXformOp::TypeRotateY),
-          UsdMayaXformOpClassification(
-              UsdMayaXformStackTokens->rotateZ, UsdGeomXformOp::TypeRotateZ),
           UsdMayaXformOpClassification(UsdMayaXformStackTokens->scale, UsdGeomXformOp::TypeScale),
           UsdMayaXformOpClassification(
               UsdMayaXformStackTokens->pivot,
@@ -701,9 +658,8 @@ const UsdMayaXformStack& UsdMayaXformStack::CommonStack()
 
         // inversionTwins
         {
-            { 1, 7 },
+            { 1, 4 },
         });
-#endif
 
     return commonStack;
 }

@@ -174,7 +174,7 @@ void UsdMayaTransformWriter::_ComputeXformOps(
             }
         }
 
-#if USD_SUPPORTS_SPLINES
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
         if (animChannel.valueType == _ValueType::Value && usdTime == UsdTimeCode::Default()) {
             if (UsdGeomXformOp::GetPrecisionFromValueTypeName(
                     animChannel.op.GetAttr().GetTypeName())
@@ -323,7 +323,7 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
         } else {
             return false;
         }
-#if USD_SUPPORTS_SPLINES
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
         // when using usd spline animation, we need to break down the transform elements as it's
         // smallest components. USD spline only supports floating point numbers and vec2.
         if (animType != UsdMayaJobExportArgsTokens->timesamples) {
