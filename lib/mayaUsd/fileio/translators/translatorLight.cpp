@@ -162,24 +162,25 @@ bool UsdMayaTranslatorLight::WriteLightSplinesAttrs(
     UsdMayaSplineUtils::WriteSplineAttribute<float>(
         depNode, usdPrim, _tokens->EmitSpecularPlugName.GetString(), UsdLuxTokens->inputsSpecular);
 
-    UsdLuxShadowAPI shadowAPI = UsdLuxShadowAPI::Apply(usdPrim);
-    UsdMayaSplineUtils::WriteSplineAttribute<float, bool>(
-        depNode,
-        usdPrim,
-        _tokens->UseRayTraceShadowsPlugName.GetString(),
-        UsdLuxTokens->inputsShadowEnable);
-
     MColor color = mayaLight.color(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     UsdMayaWriteUtil::SetAttribute(
         usdLight.GetColorAttr(), GfVec3f(color.r, color.g, color.b), UsdTimeCode::Default());
 
-    const MColor shadowColor = mayaLight.shadowColor(&status);
+    bool rayTraceShadows = mayaLight.useRayTraceShadows(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    UsdMayaWriteUtil::SetAttribute(
-        shadowAPI.CreateShadowColorAttr(),
-        GfVec3f(shadowColor.r, shadowColor.g, shadowColor.b),
-        UsdTimeCode::Default());
+
+    if (rayTraceShadows) {
+        UsdLuxShadowAPI shadowAPI = UsdLuxShadowAPI::Apply(usdPrim);
+        UsdMayaWriteUtil::SetAttribute(shadowAPI.CreateShadowEnableAttr(), true);
+
+        const MColor shadowColor = mayaLight.shadowColor(&status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        UsdMayaWriteUtil::SetAttribute(
+            shadowAPI.CreateShadowColorAttr(),
+            GfVec3f(shadowColor.r, shadowColor.g, shadowColor.b),
+            UsdTimeCode::Default());
+    }
 
 #endif
     return true;
@@ -608,24 +609,6 @@ static bool _ReadSpotLight(
     }
 #endif
     return success;
-}
-
-bool UsdMayaTranslatorLight::WriteAreaLightSplineAttrs(
-    const UsdLuxRectLight& usdLight,
-    MFnAreaLight&          mayaLight)
-{
-#if PXR_VERSION >= 2411
-    MStatus status;
-    auto    usdPrim = usdLight.GetPrim();
-    // Get the MObject from the MFnLight
-    MObject lightObject = mayaLight.object();
-    // Initialize an MFnDependencyNode with the MObject
-    MFnDependencyNode depNode(lightObject, &status);
-
-    UsdMayaSplineUtils::WriteSplineAttribute<float, bool>(
-        depNode, usdPrim, _tokens->normalizeAttrName.GetString(), UsdLuxTokens->inputsNormalize);
-#endif
-    return true;
 }
 
 // Export the specialized MFnAreaLight attributes

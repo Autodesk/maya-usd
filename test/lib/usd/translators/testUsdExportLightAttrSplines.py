@@ -167,12 +167,8 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertEqual(knots[5].GetTime(), 5)
         self.assertTrue(Gf.IsClose(knots[5].GetValue(), 2, self.EPSILON))
 
-        # Validate shadow API
-        self.assertTrue(lightPrim.HasAPI(UsdLux.ShadowAPI))
-        shadowAPI = UsdLux.ShadowAPI(lightPrim)
-        self.assertTrue(shadowAPI)
-        self.assertFalse(shadowAPI.GetShadowEnableAttr().Get())
-        self.assertTrue(Gf.IsClose(shadowAPI.GetShadowColorAttr().Get(), Gf.Vec3f(0.1, 0.2, 0.3), self.EPSILON))
+        # Validate that the shadow API is not present
+        self.assertFalse(lightPrim.HasAPI(UsdLux.ShadowAPI))
 
     def _ValidateUsdPointLight(self):
         lightPrimPath = '/pointLight1'
@@ -222,12 +218,6 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(Gf.IsClose(sphereLight.GetSpecularAttr().Get(), 1, self.EPSILON))
         self.assertTrue(Gf.IsClose(sphereLight.GetIntensityAttr().Get(), 0.8, self.EPSILON))
         self.assertFalse(sphereLight.GetTreatAsPointAttr().Get())
-
-        # Validate shadow API
-        self.assertTrue(lightPrim.HasAPI(UsdLux.ShadowAPI))
-        shadowAPI = UsdLux.ShadowAPI(lightPrim)
-        self.assertTrue(shadowAPI)
-        self.assertFalse(shadowAPI.GetShadowEnableAttr().Get())
 
         # Validate shaping API with animated attributes
         self.assertTrue(lightPrim.HasAPI(UsdLux.ShapingAPI))
@@ -310,12 +300,6 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         # Validate normalize attribute
         self.assertTrue(rectLight.GetNormalizeAttr().Get())
 
-        # Validate shadow API
-        self.assertTrue(lightPrim.HasAPI(UsdLux.ShadowAPI))
-        shadowAPI = UsdLux.ShadowAPI(lightPrim)
-        self.assertTrue(shadowAPI)
-        self.assertFalse(shadowAPI.GetShadowEnableAttr().Get())
-
     def _GetMayaDependencyNode(self, objectName):
         selectionList = OpenMaya.MSelectionList()
         selectionList.add(objectName)
@@ -336,9 +320,6 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorR' % nodePath), 1, self.EPSILON))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorG' % nodePath), 0.9, self.EPSILON))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath), 0.8, self.EPSILON))
-        
-        shadowColorList = cmds.getAttr('%s.shadowColor' % nodePath)
-        self.assertTrue(Gf.IsClose(shadowColorList[0], (0.1, 0.2, 0.3), self.EPSILON))
         
         # Validate animated lightAngle at different time codes
         cmds.currentTime(1)
@@ -391,7 +372,6 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         cmds.currentTime(1)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath), 50, self.EPSILON))
         cmds.currentTime(2)
-        print(cmds.getAttr('%s.coneAngle' % nodePath))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath), 60, self.EPSILON))
         cmds.currentTime(3)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath), 40, self.EPSILON))

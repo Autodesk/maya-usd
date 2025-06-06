@@ -70,7 +70,7 @@ void PxrUsdTranslators_DirectionalLightWriter::Write(const UsdTimeCode& usdTime)
         // First write the base light attributes
         UsdMayaTranslatorLight::WriteLightAttrs(
             usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
-        // Then write the specialized attributes for spot lights
+        // Then write the specialized attributes for Directional lights
         UsdMayaTranslatorLight::WriteDirectionalLightAttrs(
             usdTime, primSchema, lightFn, _GetSparseValueWriter());
     }
@@ -119,7 +119,7 @@ void PxrUsdTranslators_PointLightWriter::Write(const UsdTimeCode& usdTime)
         // First write the base light attributes
         UsdMayaTranslatorLight::WriteLightAttrs(
             usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
-        // Then write the specialized attributes for spot lights
+        // Then write the specialized attributes for Point lights
         UsdMayaTranslatorLight::WritePointLightAttrs(
             usdTime, primSchema, lightFn, _GetSparseValueWriter());
     }
@@ -211,13 +211,16 @@ void PxrUsdTranslators_AreaLightWriter::Write(const UsdTimeCode& usdTime)
     auto animType = _writeJobCtx.GetArgs().animationType;
     if (usdTime.IsDefault() && animType != UsdMayaJobExportArgsTokens->timesamples) {
         UsdMayaTranslatorLight::WriteLightSplinesAttrs(primSchema.LightAPI(), lightFn);
-        UsdMayaTranslatorLight::WriteAreaLightSplineAttrs(primSchema, lightFn);
+        // No splines for area lights, but we call the function to ensure that all attribute are
+        // written
+        UsdMayaTranslatorLight::WriteAreaLightAttrs(
+            usdTime, primSchema, lightFn, _GetSparseValueWriter());
     }
     if (animType != UsdMayaJobExportArgsTokens->curves) {
         // First write the base light attributes
         UsdMayaTranslatorLight::WriteLightAttrs(
             usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
-        // Then write the specialized attributes for spot lights
+        // Then write the specialized attributes for area lights
         UsdMayaTranslatorLight::WriteAreaLightAttrs(
             usdTime, primSchema, lightFn, _GetSparseValueWriter());
     }
