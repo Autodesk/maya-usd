@@ -2,7 +2,7 @@ if (USD_SUPPORT_INDIVIDUAL_TRANSFROMS)
     set(TEST_SCRIPT_FILES
         testReadWriteUtils.py
         #need to re-add this test once properly fixed
-        #testXformStackSeparateTransforms.py
+        testXformStackSeparateTransforms.py
     )
 else()
     set(TEST_SCRIPT_FILES

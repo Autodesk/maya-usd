@@ -244,16 +244,16 @@ public:
     /// \brief The standard Maya xform stack
     ///
     /// Consists of these xform operators:
-    ///    translate
+    ///    translate (and translate x, y, z)
     ///    rotatePivotTranslate
     ///    rotatePivot
-    ///    rotate
+    ///    rotate (and rotate x, y, z)
     ///    rotateAxis
     ///    rotatePivot^-1 (inverted twin)
     ///    scalePivotTranslate
     ///    scalePivot
     ///    shear
-    ///    scale
+    ///    scale (and scale x, y, z)
     ///    scalePivot^-1 (inverted twin)
     MAYAUSD_CORE_PUBLIC
     static const UsdMayaXformStack& MayaStack();
