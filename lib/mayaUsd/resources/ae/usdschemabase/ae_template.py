@@ -113,7 +113,12 @@ class AEShaderLayout(object):
 
         # Best option: Use ordering metadata found the Sdr properties:
         hasMetadataOrdering = False
-        for inputName in nodeDef.GetInputNames():
+        if Usd.GetVersion() < (0, 25, 5):
+            inputNames = nodeDef.GetInputNames()
+        else:
+            inputNames = nodeDef.GetShaderInputNames()
+
+        for inputName in inputNames:
             input = nodeDef.GetShaderInput(inputName)
             metadata = input.GetHints()
             metadata.update(input.GetMetadata())
@@ -124,7 +129,7 @@ class AEShaderLayout(object):
         if hasMetadataOrdering:
             # Prefer metadata over GetPages. The metadata can contain subgroups.
             unorderedIndex = 10000
-            for inputName in nodeDef.GetInputNames():
+            for inputName in inputNames:
                 input = nodeDef.GetShaderInput(inputName)
                 metadata = input.GetHints()
                 metadata.update(input.GetMetadata())
@@ -148,7 +153,7 @@ class AEShaderLayout(object):
 
         if not pages:
             # Worst case: Flat layout
-            for name in nodeDef.GetInputNames():
+            for name in inputNames:
                 self._attributeLayout.items.append(UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input))
             return
 
@@ -158,7 +163,12 @@ class AEShaderLayout(object):
                 pageLabel = 'Extra Shader Attributes'
             group = AEShaderLayout.Group(pageLabel)
             for name in nodeDef.GetPropertyNamesForPage(page):
-                if nodeDef.GetInput(name):
+                if Usd.GetVersion() < (0, 25, 5):
+                    nodeInput = nodeDef.GetInput(name)
+                else:
+                    nodeInput = nodeDef.GetShaderInput(name)
+
+                if nodeInput:
                     name = UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input)
                     group.items.append(name)
             if group.items:
@@ -326,6 +336,8 @@ class AETemplate(object):
                 # so we check for supression at each loop
                 if attrName in self.suppressedAttrs:
                     break
+                if attrName in self.addedAttrs:
+                    break
 
                 try:
                     createdControl = controlCreator(self, attrName)
@@ -341,8 +353,7 @@ class AETemplate(object):
         cmds.editorTemplate(suppress=attrName)
         self.suppressedAttrs.append(attrName)
 
-    @staticmethod
-    def defineCustom(customObj, attrs=[]):
+    def defineCustom(self, customObj, attrs=[]):
         create = lambda *args : customObj.onCreate(args)
         replace = lambda *args : customObj.onReplace(args)
         cmds.editorTemplate(attrs, callCustom=[create, replace])
@@ -352,6 +363,8 @@ class AETemplate(object):
         # of the attributes from the input list exists.
         for attr in attrList:
             if attr in self.suppressedAttrs:
+                continue
+            if attr in self.addedAttrs:
                 continue
             if self.attrS.hasAttribute(attr):
                 with ufeAeTemplate.Layout(self, layoutName, collapse):
@@ -521,9 +534,9 @@ class AETemplate(object):
             typeAndInstance = Usd.SchemaRegistry().GetTypeNameAndInstance(schema)
             typeName        = typeAndInstance[0]
             schemaType      = Usd.SchemaRegistry().GetTypeFromName(typeName)
+            isMultipleApplyAPISchema = Usd.SchemaRegistry().IsMultipleApplyAPISchema(typeName)
 
             if schemaType.pythonClass:
-                isMultipleApplyAPISchema = Usd.SchemaRegistry().IsMultipleApplyAPISchema(typeName)
                 if isMultipleApplyAPISchema:
                     # get the attributes names. They will not include the namespace and instance name.
                     instanceName = typeAndInstance[1]
@@ -535,12 +548,22 @@ class AETemplate(object):
                     if usdVer < (0, 22, 3):
                         namespace = Usd.SchemaRegistry().GetPropertyNamespacePrefix(typeName)
                         prefix = namespace + ":" + instanceName + ":"
-                        attrList = [prefix + i for i in attrList]
+                        attrList = [namespace + ":" + instanceName] + [prefix + i for i in attrList]
+                    elif usdVer <= (0, 22, 11):
+                        attrList = [schema] + attrList
 
                     typeName = instanceName + typeName
                 else:
                     attrList = schemaType.pythonClass.GetSchemaAttributeNames(False)
 
+                schemasAttributes[typeName] = attrList
+            else:
+                schemaPrimDef   = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(typeName)
+                attrList = schemaPrimDef.GetPropertyNames()
+                attrList = [name for name in attrList if schemaPrimDef.GetAttributeDefinition(name)]
+                if isMultipleApplyAPISchema:
+                    instanceName = typeAndInstance[1]
+                    attrList = [name.replace('__INSTANCE_NAME__', instanceName) for name in attrList]
                 schemasAttributes[typeName] = attrList
 
         return schemasAttributes

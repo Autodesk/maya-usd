@@ -32,7 +32,13 @@
 #include <usdUfe/utils/Utils.h>
 
 #include <pxr/base/tf/token.h>
+
+#if PXR_VERSION >= 2505
+#include <pxr/usd/sdr/declare.h>
+#else
 #include <pxr/usd/ndr/declare.h>
+#endif
+
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -57,6 +63,15 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 {
     Ufe::ConstAttributeDefs attrs;
     const bool              input = (IOTYPE == Ufe::AttributeDef::INPUT_ATTR);
+#if PXR_VERSION >= 2505
+    auto names
+        = input ? shaderNodeDef->GetShaderInputNames() : shaderNodeDef->GetShaderOutputNames();
+    attrs.reserve(names.size());
+    for (const TfToken& name : names) {
+        SdrShaderPropertyConstPtr property
+            = input ? shaderNodeDef->GetShaderInput(name) : shaderNodeDef->GetShaderOutput(name);
+        TF_VERIFY(property);
+#else
     auto names = input ? shaderNodeDef->GetInputNames() : shaderNodeDef->GetOutputNames();
     attrs.reserve(names.size());
     for (const TfToken& name : names) {
@@ -68,6 +83,7 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
             // SdrNode::GetShaderInput has to downcast a NdrProperty pointer.
             continue;
         }
+#endif
 #ifndef UFE_V4_FEATURES_AVAILABLE
         std::ostringstream defaultValue;
         defaultValue << property->GetDefaultValue();
@@ -220,7 +236,11 @@ std::vector<std::string> UsdShaderNodeDef::inputNames() const
 {
     TF_DEV_AXIOM(_shaderNodeDef);
     std::vector<std::string> retVal;
-    auto names = _shaderNodeDef->GetInputNames();
+#if PXR_VERSION >= 2505
+    auto names = _shaderNodeDef->GetShaderInputNames();
+#else
+    auto               names = _shaderNodeDef->GetInputNames();
+#endif
     retVal.reserve(names.size());
     for (auto&& n : names) {
         retVal.emplace_back(n.GetString());
@@ -253,7 +273,11 @@ std::vector<std::string> UsdShaderNodeDef::outputNames() const
 {
     TF_DEV_AXIOM(_shaderNodeDef);
     std::vector<std::string> retVal;
-    auto names = _shaderNodeDef->GetOutputNames();
+#if PXR_VERSION >= 2505
+    auto names = _shaderNodeDef->GetShaderOutputNames();
+#else
+    auto               names = _shaderNodeDef->GetOutputNames();
+#endif
     retVal.reserve(names.size());
     for (auto&& n : names) {
         retVal.emplace_back(n.GetString());
@@ -309,7 +333,11 @@ static const MetadataMap _metaMap = {
 Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(_shaderNodeDef);
+#if PXR_VERSION >= 2505
+    const SdrTokenMap& metadata = _shaderNodeDef->GetMetadata();
+#else
     const NdrTokenMap& metadata = _shaderNodeDef->GetMetadata();
+#endif
     auto it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
@@ -326,7 +354,11 @@ Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
 bool UsdShaderNodeDef::hasMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(_shaderNodeDef);
+#if PXR_VERSION >= 2505
+    const SdrTokenMap& metadata = _shaderNodeDef->GetMetadata();
+#else
     const NdrTokenMap& metadata = _shaderNodeDef->GetMetadata();
+#endif
     auto it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return true;

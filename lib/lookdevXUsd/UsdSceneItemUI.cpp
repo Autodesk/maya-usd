@@ -36,6 +36,25 @@ bool isLegacyHiddenItem(const Ufe::SceneItem::Ptr& item)
            (isSeparateOrCombine || (soloingHandler && soloingHandler->isSoloingItem(item)));
 }
 
+std::string getHiddenKeyMetadata(const Ufe::SceneItemPtr& item)
+{
+    if (item)
+    {
+        // Short circuit the NodeDef handler. Works even if the LookdevX converter nodes are unavailable in Sdr.
+        auto usdShaderItem = pxr::UsdShadeShader(MayaUsdAPI::getPrimForUsdSceneItem(item));
+        if (usdShaderItem)
+        {
+            pxr::TfToken mxNodeType;
+            usdShaderItem.GetIdAttr().Get(&mxNodeType);
+            if (mxNodeType.GetString().rfind("ND_adsk_converter", 0) != std::string::npos)
+            {
+                return std::string(LookdevXUfe::kInternalConverter);
+            }
+        }
+    }
+    // Default to the base implementation:
+    return LookdevXUfe::SceneItemUI::getHiddenKeyMetadata(item);
+}
 } // namespace
 
 namespace LookdevXUsd
@@ -66,12 +85,12 @@ Ufe::SceneItem::Ptr UsdSceneItemUI::sceneItem() const
 bool UsdSceneItemUI::hidden() const
 {
     return isLegacyHiddenItem(m_item) ||
-           LookdevXUfe::getAutodeskMetadata(m_item, getHiddenKeyMetadata(m_item)).get<std::string>() == "true";
+           LookdevXUfe::getAutodeskMetadata(m_item, ::getHiddenKeyMetadata(m_item)).get<std::string>() == "true";
 }
 
 Ufe::UndoableCommand::Ptr UsdSceneItemUI::setHiddenCmd(bool hidden)
 {
-    return LookdevXUfe::setAutodeskMetadataCmd(m_item, getHiddenKeyMetadata(m_item),
+    return LookdevXUfe::setAutodeskMetadataCmd(m_item, ::getHiddenKeyMetadata(m_item),
                                                hidden ? std::string("true") : std::string("false"));
 }
 

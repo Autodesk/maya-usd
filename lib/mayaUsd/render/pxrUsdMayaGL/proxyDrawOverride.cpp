@@ -202,14 +202,11 @@ MUserData* UsdMayaProxyDrawOverride::prepareForDraw(
         return nullptr;
     }
 
-#if defined(BUILD_HDMAYA)
-    // If the current viewport renderer is an mtoh one, skip this update, as
-    // mtoh already has special handling for proxy shapes, and we don't want to
-    // build out a render index we don't need
-    if (IsMtohRenderOverride(frameContext)) {
+    // Hydra-based render overrides already take care of USD data,
+    // so avoid duplicating the effort.
+    if (px_vp20Utils::HasHydraRenderOverride(frameContext)) {
         return nullptr;
     }
-#endif
 
     MayaUsdProxyShapeBase* shape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     if (!shape) {
@@ -243,10 +240,12 @@ bool UsdMayaProxyDrawOverride::wantUserSelection() const
 
 /* virtual */
 bool UsdMayaProxyDrawOverride::userSelect(
-    MHWRender::MSelectionInfo&     selectionInfo,
+    const MSelectionInfo&          selectionInfo,
     const MHWRender::MDrawContext& context,
-    MPoint&                        hitPoint,
-    const MUserData*               data)
+    const MDagPath&                objPath,
+    const MUserData*               data,
+    MSelectionList&                selectionList,
+    MPointArray&                   worldSpaceHitPts)
 {
     TRACE_FUNCTION();
 
@@ -254,6 +253,12 @@ bool UsdMayaProxyDrawOverride::userSelect(
         UsdMayaGLBatchRenderer::ProfilerCategory,
         MProfiler::kColorE_L2,
         "USD Proxy Shape userSelect() (Viewport 2.0)");
+
+    // Hydra-based render overrides already take care of USD data,
+    // so avoid duplicating the effort.
+    if (px_vp20Utils::HasHydraRenderOverride(context)) {
+        return false;
+    }
 
     M3dView    view;
     const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
@@ -294,7 +299,9 @@ bool UsdMayaProxyDrawOverride::userSelect(
 #else
     const GfVec3f& gfHitPoint = nearestHit->worldSpaceHitPoint;
 #endif
-    hitPoint = MPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
+    selectionList.add(objPath);
+    MPoint hitPoint = MPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
+    worldSpaceHitPts.append(hitPoint);
 
     return true;
 }

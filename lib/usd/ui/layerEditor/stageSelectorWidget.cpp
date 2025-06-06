@@ -253,16 +253,37 @@ SessionState::StageEntry const StageSelectorWidget::selectedStage()
 // repopulates the combo based on the session stage list
 void StageSelectorWidget::updateFromSessionState(SessionState::StageEntry const& entryToSelect)
 {
+    // Keep track of the current stage before we recreate the dropdown items
+    auto     currentEntry = selectedStage();
+    QVariant currentEntryQVariant;
+    currentEntryQVariant.setValue(currentEntry);
+
     QSignalBlocker blocker(_dropDown);
     _dropDown->clear();
     auto allStages = _sessionState->allStages();
     for (auto const& stageEntry : allStages) {
-        _dropDown->addItem(
-            QString(stageEntry._displayName.c_str()), QVariant::fromValue(stageEntry));
+        QVariant stageEntryQVariant;
+        stageEntryQVariant.setValue(stageEntry);
+
+        // Reuse same QVariant as in the currentEntry if we are processing
+        // the same stages
+        if (stageEntry._id == currentEntry._id) {
+            stageEntryQVariant = currentEntryQVariant;
+        }
+
+        _dropDown->addItem(QString(stageEntry._displayName.c_str()), stageEntryQVariant);
     }
-    if (!entryToSelect._stage) {
-        const auto& newEntry = selectedStage();
-        _sessionState->setStageEntry(newEntry);
+
+    // Either no entry was selected or we have a stage pinned
+    if (!entryToSelect._stage || _pinStageSelection) {
+        // If the current/previous entry is still part of the list, keep it set.
+        int idx = _dropDown->findData(currentEntryQVariant);
+        if (idx != -1) {
+            _sessionState->setStageEntry(currentEntry);
+            _dropDown->setCurrentIndex(idx);
+        } else {
+            _sessionState->setStageEntry(selectedStage());
+        }
     } else {
         _sessionState->setStageEntry(entryToSelect);
     }
@@ -282,8 +303,9 @@ static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item
     if (!hierarchy)
         return nullptr;
 
+    const bool rebuildCacheIfNeeded = false;
     for (const auto& subItem : hierarchy->children()) {
-        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(subItem->path());
+        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(subItem->path(), rebuildCacheIfNeeded);
         if (!proxyShapePtr)
             continue;
 
@@ -306,8 +328,9 @@ void StageSelectorWidget::selectionChanged()
     // We will set the currently selected stage to be the stage of the first item
     // that is a USD item. So if multiple stages are selected, the first one wins.
     const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
+    const bool            rebuildCacheIfNeeded = false;
     for (const auto& item : ufeSelection) {
-        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(item->path());
+        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(item->path(), rebuildCacheIfNeeded);
         if (!proxyShapePtr) {
             proxyShapePtr = getChildProxyShape(item);
             if (!proxyShapePtr) {

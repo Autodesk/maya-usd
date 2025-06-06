@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<materialx version="1.38" xpos="-1.73807" ypos="-0.576422">
+  <standard_surface name="standard_surface1" type="surfaceshader" nodedef="ND_standard_surface_surfaceshader" xpos="0.0751267" ypos="0.188889">
+    <input name="base_color" type="color3" output="out" nodegraph="compound1" />
+  </standard_surface>
+  <surfacematerial name="Standard_Surface1" type="material" nodedef="ND_surfacematerial" xpos="1.75" ypos="0.0555556">
+    <input name="surfaceshader" type="surfaceshader" nodename="standard_surface1" />
+    <input name="displacementshader" type="displacementshader" nodename="displacement1" />
+  </surfacematerial>
+  <nodegraph name="compound1" xpos="-1.4161" ypos="0.499575">
+    <output name="out" type="color3" nodename="checkerboard1" />
+    <checkerboard name="checkerboard1" type="color3" nodedef="ND_checkerboard_color3" xpos="-1.42915" ypos="0.199481" />
+  </nodegraph>
+  <displacement name="displacement1" type="displacementshader" nodedef="ND_displacement_float" xpos="0.104134" ypos="2.43383">
+    <input name="displacement" type="float" nodename="hexagon1" />
+  </displacement>
+  <hexagon name="hexagon1" type="float" nodedef="ND_hexagon_float" xpos="-1.21878" ypos="2.56717">
+    <input name="radius" type="float" value="1" />
+  </hexagon>
+</materialx>

@@ -565,7 +565,6 @@ HdTaskSharedPtrVector PxrMayaHdSceneDelegate::GetRenderTasks(
         renderSetupTaskParams.viewport = _viewport;
 
         // Set the parameters that are constant for all draws.
-        renderSetupTaskParams.enableIdRender = false;
         renderSetupTaskParams.alphaThreshold = 0.1f;
         renderSetupTaskParams.enableSceneMaterials = true;
         renderSetupTaskParams.depthBiasUseDefault = true;

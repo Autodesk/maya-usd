@@ -1,13 +1,13 @@
 try:
     from PySide6 import QtSvg
-    from PySide6.QtCore import QRect, Qt  # type: ignore
+    from PySide6.QtCore import Qt  # type: ignore
     from PySide6.QtGui import QImage, QPixmap, QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
-    from PySide6.QtWidgets import QWidget, QTabWidget  # type: ignore
+    from PySide6.QtWidgets import QWidget, QTabWidget, QToolButton  # type: ignore
 except:
     from PySide2 import QtSvg # type: ignore
-    from PySide2.QtCore import QRect, Qt  # type: ignore
+    from PySide2.QtCore import Qt  # type: ignore
     from PySide2.QtGui import QImage, QPixmap, QPalette, QPainter, QColor, QPen, QIcon  # type: ignore
-    from PySide2.QtWidgets import QWidget, QTabWidget  # type: ignore
+    from PySide2.QtWidgets import QWidget, QTabWidget, QToolButton  # type: ignore
 
 from enum import Flag, auto
 from typing import Union
@@ -52,7 +52,6 @@ class Theme(object):
             super(Theme.Palette, self)
             self.colorResizeBorderActive: QColor = QColor(0x5285a6)
 
-
             pal = QPalette()
             self.colorPlaceHolderText = pal.color(QPalette.ColorRole.WindowText)
             self.colorPlaceHolderText.setAlphaF(0.7)
@@ -80,9 +79,10 @@ class Theme(object):
         iconFolder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons", theme))
         if os.path.exists(iconFolder):
             icons = fnmatch.filter(os.listdir(iconFolder), f"{name}.svg")
+            theme = Theme.instance()
             for icon in icons:
                 svg_renderer = QtSvg.QSvgRenderer(os.path.join(iconFolder, icon))
-                image = QImage(64, 64, QImage.Format_ARGB32)
+                image = QImage(theme.uiScaled(64), theme.uiScaled(64), QImage.Format_ARGB32)
                 image.fill(0x00000000)
                 svg_renderer.render(QPainter(image))
                 pixmap = QPixmap.fromImage(image)
@@ -94,7 +94,7 @@ class Theme(object):
             icons = fnmatch.filter(os.listdir(iconFolder), f"{name}*.png")
             for icon in icons:
                 svg_renderer = QtSvg.QSvgRenderer(os.path.join(iconFolder, icon))
-                image = QImage(64, 64, QImage.Format_ARGB32)
+                image = QImage(theme.uiScaled(64), theme.uiScaled(64), QImage.Format_ARGB32)
                 image.fill(0x00000000)
                 svg_renderer.render(QPainter(image))
                 pixmap = QPixmap.fromImage(image)
@@ -103,9 +103,29 @@ class Theme(object):
 
         return result
     
+    def themeLabel(self, label: str) -> str:
+        return label
+    
     def themeTab(self, tab: QTabWidget):
         tab.setDocumentMode(True)
         tab.tabBar().setCursor(Qt.ArrowCursor)
+
+    def themeMenuButton(self, menuButton: QToolButton, showMenuIndicator: bool):
+        if showMenuIndicator:
+            menuButton.setStyleSheet("""
+                QToolButton { border: 0px; }
+                QToolButton::menu-indicator {
+                subcontrol-position: right bottom;
+                subcontrol-origin: border;
+                top: 4px;
+                left: 4px;
+                }""")
+        else:
+            menuButton.setStyleSheet("""
+                QToolButton { border: 0px; }
+                QToolButton::menu-indicator {
+                width: 0px;
+                }""")
 
     @property
     def palette(self) -> Palette:

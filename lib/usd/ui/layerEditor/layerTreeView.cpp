@@ -85,7 +85,7 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
 {
     _model = new LayerTreeModel(in_sessionState, this);
     setModel(_model);
-    connect(_model, &LayerTreeModel::selectLayerSignal, this, &LayerTreeView::selectLayerRquest);
+    connect(_model, &LayerTreeModel::selectLayerSignal, this, &LayerTreeView::selectLayerRequest);
 
     // clang-format off
     QString styleSheet = 
@@ -131,6 +131,12 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     connect(this, &QTreeView::expanded, this, &LayerTreeView::onExpanded);
     connect(this, &QTreeView::collapsed, this, &LayerTreeView::onCollapsed);
 
+    connect(
+        _model->sessionState(),
+        &SessionState::stageListChangedSignal,
+        this,
+        &LayerTreeView::updateFromSessionState);
+
     auto buttonDefinitions = LayerTreeItem::actionButtonsDefinition();
     auto muteActionIter = buttonDefinitions.find(LayerActionType::Mute);
     if (muteActionIter != buttonDefinitions.end()) {
@@ -174,7 +180,7 @@ LayerTreeItem* LayerTreeView::layerItemFromIndex(const QModelIndex& index) const
 
 LayerTreeModel* LayerTreeView::layerTreeModel() const { return _model.data(); }
 
-void LayerTreeView::selectLayerRquest(const QModelIndex& index)
+void LayerTreeView::selectLayerRequest(const QModelIndex& index)
 {
     // slot called when the user manually adds a sublayer with the UI
     // we use this to select the new layer
@@ -318,19 +324,42 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
     }
 }
 
+void LayerTreeView::updateFromSessionState()
+{
+    if (_cachedModelState == nullptr) {
+        return;
+    }
+
+    auto allStages = _model->sessionState()->allStages();
+    std::map<LayerViewMemento::ItemId, LayerViewMemento::ItemState> newState;
+    std::map<LayerViewMemento::ItemId, LayerViewMemento::ItemState> oldState
+        = _cachedModelState->getItemsState();
+
+    // Only keep the state of stages that still exist
+    for (auto const& stageEntry : allStages) {
+        auto stageLayers = stageEntry._stage->GetLayerStack();
+        for (const auto& stageLayer : stageLayers) {
+            newState[stageLayer->GetIdentifier()] = oldState[stageLayer->GetIdentifier()];
+        }
+    }
+    _cachedModelState->setItemsState(newState);
+}
+
 void LayerTreeView::onModelAboutToBeReset()
 {
     if (!_model)
         return;
 
-    // Don't allow recursive saving of the tree view state.
-    // Could happen if notifications are sent in response
-    // to other notifications or Qt events.
-    if (_cachedModelState)
-        return;
+    if (_cachedModelState == nullptr) {
+        LayerViewMemento memento(*this, *_model);
+        if (memento.empty())
+            return;
 
-    LayerViewMemento memento(*this, *_model);
-    _cachedModelState = std::make_unique<LayerViewMemento>(std::move(memento));
+        _cachedModelState = std::make_unique<LayerViewMemento>(std::move(memento));
+    } else {
+        // Save the state before resetting
+        _cachedModelState->preserve(*this, *_model);
+    }
 }
 
 void LayerTreeView::onModelReset()
@@ -340,7 +369,6 @@ void LayerTreeView::onModelReset()
 
     if (_cachedModelState) {
         _cachedModelState->restore(*this, *_model);
-        _cachedModelState.reset();
     } else {
         expandAll();
     }

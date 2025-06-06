@@ -11,9 +11,8 @@ class MenuButton(QToolButton):
         super(MenuButton, self).__init__(parent)
         self.setIcon(Theme.instance().icon("menu"))
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setMaximumWidth(Theme.instance().uiScaled(16))
         self.setArrowType(Qt.NoArrow)
         self.setPopupMode(QToolButton.InstantPopup)
-        self.setStyleSheet("""
-            QToolButton::menu-indicator { width: 0px; }
-        """)
+        Theme.instance().themeMenuButton(self, False)
         self.setMenu(menu)

@@ -89,6 +89,11 @@ public:
 #ifdef UFE_CAMERA_HAS_RENDERABLE
     bool renderable() const override;
 #endif // UFE_CAMERA_HAS_RENDERABLE
+
+#ifdef UFE_CAMERA_HAS_COMPUTEDVISIBILITY
+    bool computedVisibility() const override;
+#endif // UFE_CAMERA_HAS_COMPUTEDVISIBILITY
+
 private:
     UsdSceneItem::Ptr _item;
 

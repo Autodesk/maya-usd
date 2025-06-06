@@ -38,7 +38,7 @@ Usually, you will need to modify these places:
 	- Read the UI values in mayaUsdTranslatorImport "query"
 	- Add the UI in EnableAllControls
 	- Add filling the UI with data in SetFromOptions
-	- Maybe add some callback when UI valeu change when UI affect other UI.
+	- Maybe add some callback when UI value change when UI affect other UI.
 
 ## Handling the option in code
 

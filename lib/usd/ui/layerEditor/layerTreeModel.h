@@ -113,6 +113,8 @@ public:
     // for debugging
     void forceRefresh() { rebuildModelOnIdle(); }
 
+    LayerTreeItem* findUSDLayerItem(const PXR_NS::SdfLayerRefPtr& usdLayer) const;
+
 Q_SIGNALS:
     void selectLayerSignal(const QModelIndex&);
 
@@ -142,8 +144,6 @@ protected:
     void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);
-
-    LayerTreeItem* findUSDLayerItem(const PXR_NS::SdfLayerRefPtr& usdLayer) const;
 };
 
 } // namespace UsdLayerEditor

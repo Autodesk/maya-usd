@@ -57,13 +57,16 @@ public:
 
     bool empty() const { return _itemsState.empty(); }
 
-private:
     using ItemId = std::string;
     struct ItemState
     {
         bool _expanded = false;
     };
 
+    std::map<ItemId, ItemState> getItemsState() { return _itemsState; }
+    void setItemsState(const std::map<ItemId, ItemState>& newState) { _itemsState = newState; }
+
+private:
     std::map<ItemId, ItemState> _itemsState;
     int                         _horizontalScrollbarPosition { 0 };
     int                         _verticalScrollbarPosition { 0 };
@@ -138,7 +141,10 @@ protected:
     void collapseChildren(const QModelIndex& index);
 
     // delayed signal to select a layer on idle
-    void selectLayerRquest(const QModelIndex& index);
+    void selectLayerRequest(const QModelIndex& index);
+
+    // Updates the _cachedModelState using stage data from the session
+    void updateFromSessionState();
 
     LayerTreeViewStyle       _treeViewStyle;
     QPointer<LayerTreeModel> _model;

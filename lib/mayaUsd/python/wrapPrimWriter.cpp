@@ -641,6 +641,10 @@ void wrapJobExportArgs()
         .add_property(
             "rootKind",
             make_getter(&UsdMayaJobExportArgs::rootKind, return_value_policy<return_by_value>()))
+        .add_property(
+            "animationType",
+            make_getter(
+                &UsdMayaJobExportArgs::animationType, return_value_policy<return_by_value>()))
         .def_readonly("disableModelKindProcessor", &UsdMayaJobExportArgs::disableModelKindProcessor)
         .add_property(
             "rootMapFunction",

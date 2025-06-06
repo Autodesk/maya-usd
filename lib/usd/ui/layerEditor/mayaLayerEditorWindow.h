@@ -48,6 +48,7 @@ public:
 
     // tree commands
     int         selectionLength() override;
+    bool        hasCurrentLayerItem() override;
     bool        isInvalidLayer() override;
     bool        isSessionLayer() override;
     bool        isLayerDirty() override;
@@ -58,7 +59,7 @@ public:
     bool        layerAppearsMuted() override;
     bool        layerIsMuted() override;
     bool        layerIsReadOnly() override;
-    std::string proxyShapeName() const override;
+    std::string proxyShapeName(const bool fullPath = false) const override;
     bool        layerAppearsLocked() override;
     bool        layerIsLocked() override;
     bool        layerAppearsSystemLocked() override;
@@ -80,6 +81,9 @@ public:
     void lockLayerAndSubLayers() override;
 
     void selectProxyShape(const char* shapePath) override;
+
+    std::vector<std::string> getSelectedLayers() override;
+    void                     selectLayers(std::vector<std::string> layerIds) override;
 
 public:
     void onClearUIOnSceneReset();
