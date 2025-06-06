@@ -209,11 +209,24 @@ std::vector<TfToken> UsdMayaXformOpClassification::CompatibleAttrNames() const
             result.reserve(std::extent<decltype(RotateOpTypes)>::value * 3);
             // Special handling for rotate, to deal with rotateX/rotateZXY/etc
             for (UsdGeomXformOp::Type rotateType : RotateOpTypes) {
+#if !USD_SUPPORT_INDIVIDUAL_TRANSFROMS // remove those to avoid duplication from maya stack
+                // Add, ie, xformOp::rotateX
+                result.emplace_back(
+                    TfToken(UsdGeomXformOp::GetOpName(rotateType).GetString(), TfToken::Immortal));
+#endif
                 // Add, ie, xformOp::rotateX::rotate
                 result.emplace_back(TfToken(
                     UsdGeomXformOp::GetOpName(rotateType, UsdMayaXformStackTokens->rotate)
                         .GetString(),
                     TfToken::Immortal));
+#if !USD_SUPPORT_INDIVIDUAL_TRANSFROMS // remove those to avoid duplication from maya stack
+                // Add, ie, xformOp::rotateX::rotateX
+                result.emplace_back(TfToken(
+                    UsdGeomXformOp::GetOpName(
+                        rotateType, UsdGeomXformOp::GetOpTypeToken(rotateType))
+                        .GetString(),
+                    TfToken::Immortal));
+#endif
             }
         } else {
             result.reserve(std::extent<decltype(RotateOpTypes)>::value);
