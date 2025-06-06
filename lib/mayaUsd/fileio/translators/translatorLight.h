@@ -95,9 +95,6 @@ struct UsdMayaTranslatorLight
         MFnAreaLight&              mayaLight,
         FlexibleSparseValueWriter* valueWriter = nullptr);
 
-    MAYAUSD_CORE_PUBLIC
-    static bool WriteAreaLightSplineAttrs(const UsdLuxRectLight& usdLight, MFnAreaLight& mayaLight);
-
     /// Import a UsdLuxLightAPI schema as a corresponding Maya light.
     /// Return true if the maya light was properly created and imported
     MAYAUSD_CORE_PUBLIC

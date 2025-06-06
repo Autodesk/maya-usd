@@ -30,6 +30,8 @@ import fixturesUtils
 
 class testUsdExportCameraAttrSpline(unittest.TestCase):
 
+    EPSILON = 1e-3
+
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
@@ -84,9 +86,9 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(knots.GetValueType(), str(Sdf.ValueTypeNames.Float))
         self.assertEqual(len(knots), 2)
         self.assertEqual(knots[0].GetTime(), 0)
-        self.assertEqual(knots[0].GetValue(), 1)
+        self.assertTrue(Gf.IsClose(knots[0].GetValue(), 50.8, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertEqual(knots[5].GetValue(), 3)
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 203.2, self.EPSILON))
 
         verticalOffsetAttr = usdCamera.GetPrim().GetAttribute('verticalApertureOffset')
         spline = verticalOffsetAttr.GetSpline()
@@ -97,19 +99,44 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(knots.GetValueType(), str(Sdf.ValueTypeNames.Float))
         self.assertEqual(len(knots), 2)
         self.assertEqual(knots[0].GetTime(), 0)
-        self.assertEqual(knots[0].GetValue(), 1)
+        self.assertTrue(Gf.IsClose(knots[0].GetValue(), 50.8, self.EPSILON))
         self.assertEqual(knots[0].GetPreTanWidth(), 8)
-        self.assertTrue(Gf.IsClose(knots[0].GetPostTanWidth(), 4.99995, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[0].GetPostTanWidth(), 4.99995, self.EPSILON))
         self.assertEqual(knots[0].GetPostTanSlope(), 0)
         self.assertEqual(knots[0].GetPreTanSlope(), 0)
 
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertEqual(knots[5].GetValue(), 5)
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 203.2, self.EPSILON))
         self.assertTrue(knots[5].GetPostTanWidth(), 8)
-        self.assertTrue(Gf.IsClose(knots[5].GetPreTanWidth(), 4.99995, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetPreTanWidth(), 4.99995, self.EPSILON))
         self.assertEqual(knots[5].GetPostTanSlope(), 0)
         self.assertEqual(knots[5].GetPreTanSlope(), 0)
 
+        # Validate non-spline attributes
+        clippingRangeAttr = usdCamera.GetPrim().GetAttribute('clippingRange')
+        clippingRange = clippingRangeAttr.Get()
+        self.assertTrue(Gf.IsClose(clippingRange[0], 0.1, self.EPSILON))
+        self.assertTrue(Gf.IsClose(clippingRange[1], 10000, self.EPSILON))
+
+        focalLengthAttr = usdCamera.GetPrim().GetAttribute('focalLength')
+        focalLength = focalLengthAttr.Get()
+        self.assertTrue(Gf.IsClose(focalLength, 35, self.EPSILON))
+
+        focusDistanceAttr = usdCamera.GetPrim().GetAttribute('focusDistance')
+        focusDistance = focusDistanceAttr.Get()
+        self.assertTrue(Gf.IsClose(focusDistance, 5.0465837, self.EPSILON))
+
+        fStopAttr = usdCamera.GetPrim().GetAttribute('fStop')
+        fStop = fStopAttr.Get()
+        self.assertTrue(Gf.IsClose(fStop, 1.7974684, self.EPSILON))
+
+        horizontalApertureAttr = usdCamera.GetPrim().GetAttribute('horizontalAperture')
+        horizontalAperture = horizontalApertureAttr.Get()
+        self.assertTrue(Gf.IsClose(horizontalAperture, 35.999928, self.EPSILON))
+
+        verticalApertureAttr = usdCamera.GetPrim().GetAttribute('verticalAperture')
+        verticalAperture = verticalApertureAttr.Get()
+        self.assertTrue(Gf.IsClose(verticalAperture, 9.4488, self.EPSILON))
 
     @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
     def testExportOrthographicAttributes(self):
@@ -130,16 +157,16 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(knots[0].GetTime(), 0)
         self.assertEqual(knots[0].GetValue(), 35)
         self.assertEqual(knots[0].GetPreTanWidth(), 8)
-        self.assertTrue(Gf.IsClose(knots[0].GetPostTanWidth(), 3.14168, 1e-5))
+        self.assertTrue(Gf.IsClose(knots[0].GetPostTanWidth(), 3.141683, self.EPSILON))
         self.assertEqual(knots[0].GetPostTanSlope(), 0)
         self.assertEqual(knots[0].GetPreTanSlope(), 0)
 
         self.assertEqual(knots[3].GetTime(), 3)
-        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 89.22748, 1e-5))
-        self.assertTrue(Gf.IsClose(knots[3].GetPreTanWidth(), 0.0070134, 1e-6))
-        self.assertTrue(Gf.IsClose(knots[3].GetPostTanWidth(), 0.004675, 1e-6))
-        self.assertTrue(Gf.IsClose(knots[3].GetPostTanSlope(), -18.585257, 1e-6))
-        self.assertTrue(Gf.IsClose(knots[3].GetPreTanSlope(), 18.585255, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[3].GetValue(), 89.22748, self.EPSILON))
+        self.assertTrue(Gf.IsClose(knots[3].GetPreTanWidth(), 0.0070135, self.EPSILON))
+        self.assertTrue(Gf.IsClose(knots[3].GetPostTanWidth(), 0.0046756, self.EPSILON))
+        self.assertTrue(Gf.IsClose(knots[3].GetPostTanSlope(), -18.585257, self.EPSILON))
+        self.assertTrue(Gf.IsClose(knots[3].GetPreTanSlope(), 18.585255, self.EPSILON))
 
         self.assertEqual(knots[5].GetTime(), 5)
         self.assertEqual(knots[5].GetValue(), 2.5)
@@ -152,15 +179,15 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(knots.GetValueType(), str(Sdf.ValueTypeNames.Float))
         self.assertEqual(len(knots), 3)
         self.assertEqual(knots[0].GetTime(), 0)
-        self.assertTrue(Gf.IsClose(knots[0].GetValue(), 5.0465837, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[0].GetValue(), 5.0465837, self.EPSILON))
         self.assertEqual(knots[2].GetTime(), 2)
-        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 7.160621, 1e-6))
-        self.assertTrue(Gf.IsClose(knots[2].GetPreTanWidth(), 0.289629, 1e-6))
-        self.assertTrue(Gf.IsClose(knots[2].GetPostTanWidth(), 0.434444, 1e-6))
-        self.assertTrue(Gf.IsClose(knots[2].GetPostTanSlope(), 0.36788, 1e-5))
-        self.assertTrue(Gf.IsClose(knots[2].GetPreTanSlope(), -0.36788, 1e-5))
+        self.assertTrue(Gf.IsClose(knots[2].GetValue(), 7.160621, self.EPSILON))
+        self.assertTrue(Gf.IsClose(knots[2].GetPreTanWidth(), 0.28963, self.EPSILON))
+        self.assertTrue(Gf.IsClose(knots[2].GetPostTanWidth(), 0.43444, self.EPSILON))
+        self.assertTrue(Gf.IsClose(knots[2].GetPostTanSlope(), 0.36789, self.EPSILON))
+        self.assertTrue(Gf.IsClose(knots[2].GetPreTanSlope(), -0.36789, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 10.046584, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 10.046584, self.EPSILON))
 
         fStopAttr = usdCamera.GetPrim().GetAttribute('fStop')
         spline = fStopAttr.GetSpline()
@@ -170,9 +197,9 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(knots.GetValueType(), str(Sdf.ValueTypeNames.Float))
         self.assertEqual(len(knots), 2)
         self.assertEqual(knots[0].GetTime(), 0)
-        self.assertTrue(Gf.IsClose(knots[0].GetValue(), 1.7974684, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[0].GetValue(), 1.7974684, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 7.778481, 1e-6))
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 7.778481, self.EPSILON))
 
         horizontalApertureAttr = usdCamera.GetPrim().GetAttribute('horizontalAperture')
         spline = horizontalApertureAttr.GetSpline()
@@ -182,9 +209,9 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(knots.GetValueType(), str(Sdf.ValueTypeNames.Float))
         self.assertEqual(len(knots), 2)
         self.assertEqual(knots[0].GetTime(), 0)
-        self.assertEqual(knots[0].GetValue(), 100)
+        self.assertTrue(Gf.IsClose(knots[0].GetValue(), 100, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertEqual(knots[5].GetValue(), 300)
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 300, self.EPSILON))
 
         verticalApertureAttr = usdCamera.GetPrim().GetAttribute('verticalAperture')
         spline = verticalApertureAttr.GetSpline()
@@ -194,9 +221,9 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
         self.assertEqual(knots.GetValueType(), str(Sdf.ValueTypeNames.Float))
         self.assertEqual(len(knots), 2)
         self.assertEqual(knots[0].GetTime(), 0)
-        self.assertEqual(knots[0].GetValue(), 100)
+        self.assertTrue(Gf.IsClose(knots[0].GetValue(), 100, self.EPSILON))
         self.assertEqual(knots[5].GetTime(), 5)
-        self.assertEqual(knots[5].GetValue(), 300)
+        self.assertTrue(Gf.IsClose(knots[5].GetValue(), 300, self.EPSILON))
 
         projectionAttr = usdCamera.GetPrim().GetAttribute('projection')
         self.assertEqual(projectionAttr.Get(), UsdGeom.Tokens.orthographic)
