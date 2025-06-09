@@ -37,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
 /// \hideinitializer
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
 #define PXRUSDMAYA_XFORM_STACK_TOKENS \
     (translate) \
     (translateX) \
@@ -60,6 +61,22 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pivotTranslate) \
     (transform) \
     (offsetParentMatrix)
+#else
+#define PXRUSDMAYA_XFORM_STACK_TOKENS \
+    (translate) \
+    (rotatePivotTranslate) \
+    (rotatePivot) \
+    (rotate) \
+    (rotateAxis) \
+    (scalePivotTranslate) \
+    (scalePivot) \
+    (shear) \
+    (scale) \
+    (pivot) \
+    (pivotTranslate) \
+    (transform) \
+    (offsetParentMatrix)
+#endif
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
