@@ -19,6 +19,7 @@
 #include "abstractCommandHook.h"
 #include "mayaSessionState.h"
 
+#include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
@@ -29,6 +30,10 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
+#include <ufe/hierarchy.h>
+#include <ufe/path.h>
+#include <ufe/pathString.h>
+#include <ufe/selection.h>
 
 #include <QtCore/QStringList>
 
@@ -243,40 +248,23 @@ void MayaCommandHook::showLayerEditorHelp()
 // this method is used to select the prims with spec in a layer
 void MayaCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)
 {
-    std::string script;
-    script = "proxyShapePath = '" + proxyShapePath() + "'\n";
-    script += "primPathList = [";
-
-    QStringList array;
+    Ufe::Selection sn;
     for (auto prim : _sessionState->stage()->Traverse()) {
         auto primSpec = usdLayer->GetPrimAtPath(prim.GetPath());
         if (primSpec) {
-            array.append(prim.GetPath().GetString().c_str());
+            auto ufePath
+                = Ufe::PathString::path(proxyShapePath() + "," + prim.GetPath().GetString());
+            auto ufeSceneItem = Ufe::Hierarchy::createItem(ufePath);
+            if (ufeSceneItem) {
+                sn.append(ufeSceneItem);
+            }
         }
     }
-    if (array.size() == 0)
+    if (sn.empty()) {
         return;
-    script += ("'");
-    script += array.join("','").toStdString();
-    script += ("']\n");
+    }
 
-    script += R"PYTHON(
-# Ufe
-import ufe
-from maya.internal.ufeSupport import ufeSelectCmd
-
-# create a selection list
-sn = ufe.Selection()
-
-for primPath in primPathList:
-    ufePath = ufe.PathString.path(proxyShapePath + ',' + primPath)
-    ufeSceneItem = ufe.Hierarchy.createItem(ufePath)
-    sn.append(ufeSceneItem)
-
-ufeSelectCmd.replaceWith(sn)
-)PYTHON";
-
-    MGlobal::executePythonCommand(script.c_str(), true, false);
+    MayaUsd::UfeSelectionUndoItem::select("selectPrimsWithSpec", sn);
 }
 
 bool MayaCommandHook::isProxyShapeStageIncoming(const std::string& proxyShapePath)

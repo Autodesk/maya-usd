@@ -63,7 +63,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         imageUtils.snapshot(snapshotImage, width=w, height=h)
         return self.assertImagesClose(baselineImage, snapshotImage)
 
-    def _StartTest(self, testName, textured=True):
+    def _StartTest(self, testName, textured=True, suffix = ""):
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, displayTextures=textured)
@@ -73,7 +73,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         mayaUtils.createProxyFromFile(testFile)
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
-        self.assertSnapshotClose('%s_render.png' % self._testName)
+        self.assertSnapshotClose('%s_render%s.png' % (self._testName, suffix))
 
     def _GetPrim(self, mayaPathString, usdPathString):
         mayaPathSegment = mayaUtils.createUfePathSegment(mayaPathString)
@@ -178,8 +178,16 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.setAttr(light+".intensity", 2)
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, lights=True, displayLights="all", displayTextures=True)
-
-        self._StartTest('DemoQuads')
+        if getMaterialXVersion() >= [1, 38, 8]:
+            self._StartTest('DemoQuads')
+        else:
+            # There are two major fixes between 1.38.5 and 1.38.8 that changes normal mapping
+            # results sufficiently to warrant a separate baseline. The 1.38.8 result is superior.
+            # See:
+            #  MaterialX PR 1156: Support explicitly authored bitangents in GLSL backend
+            #  MaterialX PR 1177: Fix missing basis orthogonalizations in GLSL backend
+            # Latter one most likely to explain the differences, as seen in the PR discussion.
+            self._StartTest('DemoQuads', True, '_1.38.5')
 
     @unittest.skipIf(os.getenv("USD_HAS_MX_OPENPBR_SURFACE", 'FALSE') != 'TRUE', 'Requires OpenPBR in MaterialX')
     def testOpenPBRSupport(self):
@@ -233,6 +241,10 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
                   namespace="Test", pr=True, importTimeRange="combine",
                   options=";".join(import_options))
         cmds.move(0, 0, 2, "Test1:locator1")
+
+        # Set all filtering to OFF to prevent aliasing from causing differences
+        for fn in cmds.ls(exactType="file"):
+            cmds.setAttr(fn + ".filterType", 0)
 
         self.assertSnapshotClose('OpenPBRShowcase_UsdPS_Import_render.png', 960, 960)
 

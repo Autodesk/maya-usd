@@ -8,6 +8,9 @@ set(GNU_CLANG_FLAGS
     $<$<CONFIG:DEBUG>:-fstack-check>
     # optimization
     -msse4.2
+    # According to gcc help, -Og should be the optimization level of choice.
+    # It is a better choice that default -O0 for producing debuggable code.
+    $<$<CONFIG:DEBUG>:-Og>
     # disable warnings
     -Wno-deprecated
     -Wno-deprecated-declarations

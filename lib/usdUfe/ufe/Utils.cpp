@@ -608,6 +608,8 @@ Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderPropert
         TokenToSdfTypeMap::const_iterator it
 #if PXR_VERSION <= 2408
             = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
+#elif PXR_VERSION >= 2505
+            = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().GetSdrType());
 #else
             = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().GetNdrType());
 #endif
@@ -1202,6 +1204,147 @@ void enforceAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     }
 }
 
+bool isRelationshipEditAllowed(
+    const PXR_NS::UsdRelationship& relationship,
+    PXR_NS::SdfPathVector*         targetsToAdd,
+    PXR_NS::SdfPathVector*         targetsToRemove,
+    std::string*                   errMsg)
+{
+    if (Editability::isLocked(relationship)) {
+        if (errMsg) {
+            *errMsg = TfStringPrintf(
+                "Cannot edit the targets of [%s] because its lock metadata is [on].",
+                relationship.GetBaseName().GetText());
+        }
+        return false;
+    }
+
+    if (errMsg) {
+        errMsg->clear();
+    }
+
+    // get the property spec in the edit target's layer
+    const auto& prim = relationship.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& editTarget = stage->GetEditTarget();
+
+    if (!UsdUfe::isEditTargetLayerModifiable(stage, errMsg)) {
+        return false;
+    }
+
+    // get the index to edit target layer
+    const auto targetLayerIndex = findLayerIndex(prim, editTarget.GetLayer());
+
+    // layer.displayName -> [paths.text]
+    std::map<std::string, std::vector<std::string>> blockedAdditions;
+    std::map<std::string, std::vector<std::string>> blockedRemovals;
+
+    const auto propSpecPath = editTarget.MapToSpecPath(relationship.GetPath());
+    const auto propSpecStack = relationship.GetPropertyStack();
+    for (const auto& propSpec : propSpecStack) {
+        if (!propSpec) {
+            continue;
+        }
+        if (const auto propLayer = propSpec->GetLayer()) {
+
+            if (findLayerIndex(prim, propLayer) >= targetLayerIndex) {
+                // done - lower entries are not hindering us
+                break;
+            }
+            auto specs = propLayer->GetRelationshipAtPath(propSpecPath);
+            if (!specs) {
+                continue;
+            }
+            auto targets = specs->GetTargetPathList();
+            if (!targets) {
+                continue;
+            }
+            if (targets.IsExplicit()) {
+                // explicit targets are overriding all the lower lists.
+                if (errMsg) {
+                    *errMsg = TfStringPrintf(
+                        "Cannot edit the targets of [%s] because there is a stronger opinion "
+                        "in [%s].\n",
+                        relationship.GetBaseName().GetText(),
+                        propLayer->GetDisplayName().c_str());
+                }
+                return false;
+
+            } else {
+                if (targetsToAdd) {
+                    // Checking if some of the targets are deleted using a
+                    // stronger opinion.
+                    for (auto it = targetsToAdd->begin(); it != targetsToAdd->end();) {
+                        if (targets.GetDeletedItems().Find(*it) != size_t(-1)) {
+                            blockedAdditions[propLayer->GetDisplayName()].push_back(it->GetText());
+                            it = targetsToAdd->erase(it);
+                        } else {
+                            ++it;
+                        }
+                    }
+                }
+                if (targetsToRemove) {
+                    // Checking if some of the items are added, prepended or
+                    // appended back using a stronger opinion.
+                    for (auto it = targetsToRemove->begin(); it != targetsToRemove->end();) {
+                        if (targets.GetAddedItems().Find(*it) != size_t(-1)
+                            || targets.GetPrependedItems().Find(*it) != size_t(-1)
+                            || targets.GetAppendedItems().Find(*it) != size_t(-1)) {
+                            blockedRemovals[propLayer->GetDisplayName()].push_back(it->GetText());
+                            it = targetsToRemove->erase(it);
+                        } else {
+                            ++it;
+                        }
+                    }
+                }
+
+                if (targetsToAdd && targetsToRemove) {
+                    if (targetsToAdd->empty() && targetsToRemove->empty()) {
+                        break;
+                    }
+                } else if (targetsToAdd && targetsToAdd->empty()) {
+                    break;
+                } else if (targetsToRemove && targetsToRemove->empty()) {
+                    break;
+                }
+            }
+        }
+    }
+
+    if (errMsg) {
+        for (const auto& block : blockedAdditions) {
+            *errMsg += TfStringPrintf(
+                "Cannot add [%s] to the targets of [%s] because "
+                "there is a stronger opinion in [%s].\n",
+                TfStringJoin(block.second, ", ").c_str(),
+                relationship.GetBaseName().GetText(),
+                block.first.c_str());
+        }
+
+        for (const auto& block : blockedRemovals) {
+            *errMsg += TfStringPrintf(
+                "Cannot remove [%s] from the targets of [%s] because "
+                "there is a stronger opinion in [%s].\n",
+                TfStringJoin(block.second, ", ").c_str(),
+                relationship.GetBaseName().GetText(),
+                block.first.c_str());
+        }
+
+        if (!errMsg->empty()) {
+            errMsg->erase(errMsg->end() - 1);
+        }
+    }
+
+    if (targetsToAdd && targetsToRemove) {
+        return !(targetsToAdd->empty() && targetsToRemove->empty());
+    } else if (targetsToAdd) {
+        return !targetsToAdd->empty();
+    } else if (targetsToRemove) {
+        return !targetsToRemove->empty();
+    }
+    return true;
+}
+
 bool isAnyLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg /* = nullptr */)
 {
     PXR_NS::SdfLayerHandleVector layers = stage->GetLayerStack(false);
@@ -1230,9 +1373,20 @@ bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMs
 
     if (editLayer && !editLayer->PermissionToEdit()) {
         if (errMsg) {
-            std::string err = TfStringPrintf(
-                "Cannot edit [%s] because it is locked. Unlock it to proceed.",
-                editLayer->GetDisplayName().c_str());
+            auto isSystemLocked = [](const SdfLayerHandle& layer) {
+                return !layer->PermissionToEdit() && !layer->PermissionToSave();
+            };
+
+            std::string err;
+            if (isSystemLocked(editLayer)) {
+                err = TfStringPrintf(
+                    "Cannot edit [%s] because it has been locked by the system or administrator.",
+                    editLayer->GetDisplayName().c_str());
+            } else {
+                err = TfStringPrintf(
+                    "Cannot edit [%s] because it is locked. Unlock it to proceed.",
+                    editLayer->GetDisplayName().c_str());
+            }
 
             *errMsg = err;
         }

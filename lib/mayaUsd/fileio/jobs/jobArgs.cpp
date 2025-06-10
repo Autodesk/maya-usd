@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/utilDictionary.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -30,7 +31,6 @@
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/schema.h>
@@ -345,12 +345,7 @@ PcpMapFunction::PathMap _ExportRootsMap(
 {
     PcpMapFunction::PathMap pathMap;
 
-    auto addExportRootPathPairFn = [&pathMap, stripNamespaces](const MDagPath& rootDagPath) {
-        if (!rootDagPath.isValid())
-            return;
-
-        SdfPath rootSdfPath = UsdMayaUtil::MDagPathToUsdPath(rootDagPath, false, stripNamespaces);
-
+    auto addSdfPathToMapFn = [&pathMap](const SdfPath& rootSdfPath) {
         if (rootSdfPath.IsEmpty())
             return;
 
@@ -358,6 +353,15 @@ PcpMapFunction::PathMap _ExportRootsMap(
             = rootSdfPath.ReplacePrefix(rootSdfPath.GetParentPath(), SdfPath::AbsoluteRootPath());
 
         pathMap[rootSdfPath] = newRootSdfPath;
+    };
+
+    auto addExportRootPathPairFn = [addSdfPathToMapFn,
+                                    stripNamespaces](const MDagPath& rootDagPath) {
+        if (!rootDagPath.isValid())
+            return;
+
+        SdfPath rootSdfPath = UsdMayaUtil::MDagPathToUsdPath(rootDagPath, false, stripNamespaces);
+        addSdfPathToMapFn(rootSdfPath);
     };
 
     bool includeEntireSelection = false;
@@ -376,6 +380,12 @@ PcpMapFunction::PathMap _ExportRootsMap(
         for (const MDagPath& dagPath : dagPaths) {
             addExportRootPathPairFn(dagPath);
         }
+    }
+
+    // If we export at least one root, then add the instance masters as root too.
+    // Otherwise they would fail to map to anything and thus fail to be created.
+    if (exportRoots.size() > 0) {
+        addSdfPathToMapFn(UsdMayaWriteJobContext::GetInstanceMasterBasePath());
     }
 
     return pathMap;
@@ -779,6 +789,15 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           { UsdMayaJobExportArgsTokens->currentLayer,
             UsdMayaJobExportArgsTokens->modelingVariant }))
     , rootKind(extractString(userArgs, UsdMayaJobExportArgsTokens->kind))
+    , animationType(extractToken(
+          userArgs,
+          UsdMayaJobExportArgsTokens->animationType,
+          UsdMayaJobExportArgsTokens->timesamples,
+          {
+              UsdMayaJobExportArgsTokens->timesamples,
+              UsdMayaJobExportArgsTokens->curves,
+              UsdMayaJobExportArgsTokens->both,
+          }))
     , disableModelKindProcessor(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->disableModelKindProcessor))
     , shadingMode(extractToken(
@@ -885,6 +904,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "defaultPrim: " << TfStringify(exportArgs.defaultPrim) << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
+        << "animationType: " << exportArgs.animationType << std::endl
         << "disableModelKindProcessor: " << exportArgs.disableModelKindProcessor << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
         << "allMaterialConversions: " << std::endl;
@@ -1110,6 +1130,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
     std::call_once(once, []() {
         // Base defaults.
         d[UsdMayaJobExportArgsTokens->animation] = false;
+        d[UsdMayaJobExportArgsTokens->animationType]
+            = UsdMayaJobExportArgsTokens->timesamples.GetString();
         d[UsdMayaJobExportArgsTokens->startTime] = 1.0;
         d[UsdMayaJobExportArgsTokens->endTime] = 1.0;
         d[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
@@ -1217,6 +1239,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
 
         // Provide guide types for the parser:
         d[UsdMayaJobExportArgsTokens->animation] = _boolean;
+        d[UsdMayaJobExportArgsTokens->animationType] = _string;
         d[UsdMayaJobExportArgsTokens->startTime] = _double;
         d[UsdMayaJobExportArgsTokens->endTime] = _double;
         d[UsdMayaJobExportArgsTokens->frameStride] = _double;

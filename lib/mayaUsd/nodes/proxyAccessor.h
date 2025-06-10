@@ -97,9 +97,14 @@ public:
 
         auto accessor = Owner(new ProxyAccessor(stageProvider));
 
-        // add hidden attribute to force compute when USD changes
+        // When creating the node, we need to add hidden attribute to
+        // force compute when USD changes.
+        // When duplicating a node it will already have this attribute.
         MFnDependencyNode fnDep(node.thisMObject());
-        {
+
+        if (fnDep.hasAttribute("forceCompute")) {
+            accessor->_forceCompute = fnDep.attribute("forceCompute");
+        } else {
             MFnNumericAttribute attr;
 
             accessor->_forceCompute

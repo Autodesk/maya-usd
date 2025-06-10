@@ -94,7 +94,7 @@ const auto kUsedInStagesTooltip          { create("kUsedInStagesTooltip", "<b>Us
 const auto kSetLayerAsTargetLayerTooltip { create("kSetLayerAsTargetLayerTooltip", "Set layer as target layer. Edits are added to the target layer.") };
 const auto kUsdLayerIdentifier           { create("kUsdLayerIdentifier", "USD Layer identifier: ^1s") };
 const auto kUsdStage                     { create("kUsdStage", "USD Stage:") };
-const auto kPinUsdStageTooltip           { create("kPinUsdStage", "When unpinned, follow the USD stage selected in the outliner.") };
+const auto kPinUsdStageTooltip           { create("kPinUsdStage", "Pin the current stage to keep your Layer Editor view fixed while you select different stages.") };
 
 const auto kSaveAnonymousLayersErrorsTitle { create("kSaveAnonymousLayersErrorsTitle", "Save All Layers Error")};
 const auto kSaveAnonymousLayersErrorsMsg { create("kSaveAnonymousLayersErrorsMsg", "Errors were encountered while saving layers.  Check Script Editor for details.")};

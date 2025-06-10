@@ -1,6 +1,6 @@
 from typing import Sequence
 from enum import Enum
-from pxr import Usd
+from pxr import Usd, Sdf
 
 
 class MessageType(Enum):
@@ -13,6 +13,10 @@ class MessageType(Enum):
 
 
 class Host(object):
+    '''
+    Class to interact with the host DCC app (Digital Contents Creation application).
+    Sub-classed by the host DCC app to provide the functionality.
+    '''
     _instance = None
 
     def __init__(self):
@@ -62,7 +66,26 @@ class Host(object):
         Report an error message using the DCC-specific logging system.
         By default, simply print the error with an "Error: " prefix.
         '''
-        print('%s: %s', (msgType, message))
+        print('%s: %s' % (msgType.name, message))
+
+    def getSelectionAsText(self) -> Sequence[str]:
+        '''
+        Retrieve the current selection as a list of item paths in text form.
+        '''
+        return []
+    
+    def setSelectionFromText(self, paths: Sequence[str]) -> bool:
+        '''
+        Set the DCC current selection to the given list of paths.
+        '''
+        return False
+    
+    def getStagePath(self, stage: Usd.Stage) -> str:
+        '''
+        Retrieve the DCC path to where the given stage lives in the DCC.
+        This is used to convert USD collection data back into UFE path.
+        '''
+        return None
     
     def createCollectionData(self, prim: Usd.Prim, collection: Usd.CollectionAPI):
         '''
@@ -85,3 +108,9 @@ class Host(object):
         '''
         from ..usdData.usdCollectionStringListData import CollectionStringListData
         return CollectionStringListData(collection, isInclude)
+    
+    def openHelp(self) -> bool:
+        '''
+        Open the help URL in the DCC-specific help system.
+        '''
+        pass

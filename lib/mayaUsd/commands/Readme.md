@@ -44,7 +44,7 @@ Each base command class is documented in the following sections.
 | `-parent`                     | `-p`       | string         | none                              | Name of the Maya scope that will be the parent of the imported data. |
 | `-primPath`                   | `-pp`      | string         | none (defaultPrim)                | Name of the USD scope where traversing will being. The prim at the specified primPath (including the prim) will be imported. Specifying the pseudo-root (`/`) means you want to import everything in the file. If the passed prim path is empty, it will first try to import the defaultPrim for the rootLayer if it exists. Otherwise, it will behave as if the pseudo-root was passed in. |
 | `-preferredMaterial`          | `-prm`     | string         | `lambert`                         | Indicate a preference towards a Maya native surface material for importers that can resolve to multiple Maya materials. Allowed values are `none` (prefer plugin nodes like pxrUsdPreviewSurface and aiStandardSurface) or one of `lambert`, `standardSurface`, `blinn`, `phong`. In displayColor shading mode, a value of `none` will default to `lambert`.
-| `-primVariant`                   | `-pv`      | string (multi)        | none                           | Specifies variant choices to be imported on a prim. The variant specified will be the one to be imported, otherwise, the default variant will be imported. This flag is repeatable. Repeating the flag allows for extra prims and variant choices to be imported.| 
+| `-primVariant`                | `-pv`      | string (multi) | none                              | Specifies variant choices to be imported on a prim. The variant specified will be the one to be imported, otherwise, the default variant will be imported. This flag is repeatable. Repeating the flag allows for extra prims and variant choices to be imported.| 
 | `-readAnimData`               | `-ani`     | bool           | false                             | Read animation data from prims while importing the specified USD file. If the USD file being imported specifies `startTimeCode` and/or `endTimeCode`, Maya's MinTime and/or MaxTime will be expanded if necessary to include that frame range. **Note**: Only some types of animation are currently supported, for example: animated visibility, animated transforms, animated cameras, mesh and NURBS surface animation via blend shape deformers. Other types are not yet supported, for example: time-varying curve points, time-varying mesh points/normals, time-varying NURBS surface points |
 | `-remapUVSetsTo`              | `-ruv`     | string[2](multi) | none                            | Specify UV sets by name to rename on import. Each argument should be a pair of the form: (`<from set name>`, `<to set name>`). |
 | `-shadingMode`                | `-shd`     | string[2] multi| `useRegistry` `UsdPreviewSurface` | Ordered list of shading mode importers to try when importing materials. The search stops as soon as one valid material is found. Allowed values for the first parameter are: `none` (stop search immediately, must be used to signal no material import), `displayColor` (if there are bound materials in the USD, create corresponding Lambertian shaders and bind them to the appropriate Maya geometry nodes), `pxrRis` (attempt to reconstruct a Maya shading network from (presumed) Renderman RIS shading networks in the USD), `useRegistry` (attempt to reconstruct a Maya shading network from (presumed) UsdShade shading networks in the USD) the second item in the parameter pair is a convertMaterialFrom flag which allows specifying which one of the registered USD material sources to explore. The full list of registered USD material sources can be found via the `mayaUSDListShadingModesCommand` command. |
@@ -56,7 +56,7 @@ Each base command class is documented in the following sections.
 | `-importRelativeTextures`     | `-rtx`     | string         | none                              | Selects how textures filenames are generated: absolute, relative, automatic or none. When automatic, the filename is relative if the source filename of the texture being imported is relative. When none, the file path is left alone, for backward compatible behavior. |
 | `-upAxis`                     | `-upa`     | bool           | true                              | Enable changing axis on import. |
 | `-unit`                       | `-unt`     | bool           | true                              | Enable changing units on import. |
-| `-axisAndUnitMethod`          | `-aum`     | string         | rotateScale                       | Selects how the unit and axis are handled during import. |
+| `-axisAndUnitMethod`          | `-aum`     | string         | rotateScale                       | Select how units and axis are handled during import. You can choose only one of the following options: *rotateScale*: Adjusts imported units and axis by rotating and scaling them to fit the scene. *addTransform*: Adds a parent transform to the imported object, aligning it with the scene while preserving original settings. *overwritePrefs*: Replaces the current scene's unit and axis preferences with those of the imported file. Note: Only one option can be selected at a time. |
 
 ### Return Value
 
@@ -175,6 +175,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-eulerFilter`                   | `-ef`      | bool             | false               | Exports the euler angle filtering that was performed in Maya                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `-filterTypes`                   | `-ft`      | string (multi)   | none                | Maya type names to exclude when exporting. If a type is excluded, all inherited types are also excluded, e.g. excluding `surfaceShape` will exclude `mesh` as well. When a node is excluded based on its type name, its subtree hierarchy will be pruned from the export, and its descendants will not be exported.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `-file`                          | `-f`       | string           |                     | The name of the file being exported. The file format used for export is determined by the extension: `(none)`: By default, adds `.usd` extension and uses USD's crate (binary) format, `.usd`: usdc (binary) format, `.usda`: usda (ASCII), format, `.usdc`: usdc (binary) format, `.usdz`: usdz (packaged) format. This will also package asset dependencies, such as textures and other layers, into the usdz package. See `-compatibility` flag for more details.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `-animationType`                 |`-at`       | string           | timesamples         | Sets the prefered animation type to be used on export. |
 | `-frameRange`                    | `-fr`      | double[2]        | `[1, 1]`            | Sets the first and last frame for an anim export (inclusive).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `-frameSample`                   | `-fs`      | double (multi)   | `0.0`               | Specifies sample times used to multi-sample frames during animation export, where `0.0` refers to the current time sample. **This is an advanced option**; chances are, you probably want to set the `frameStride` parameter instead. But if you really do need fine-grained control on multi-sampling frames, see "Frame Samples" below.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `-frameStride`                   | `-fst`     | double           | `1.0`               | Specifies the increment between frames during animation export, e.g. a stride of `0.5` will give you twice as many time samples, whereas a stride of `2.0` will only give you time samples every other frame. The frame stride is computed before the frame samples are taken into account. **Note**: Depending on the frame stride, the last frame of the frame range may be skipped. For example, if your frame range is `[1.0, 3.0]` but you specify a stride of `0.3`, then the time samples in your USD file will be `1.0, 1.3, 1.6, 1.9, 2.2, 2.5, 2.8`, skipping the last frame time (`3.0`).                                                                                                                                                                                                                                                                                                                                                                            |
@@ -675,37 +676,53 @@ The purpose of this command is to control the layer editor window.
 
 ### Command Flags
 
-| Long flag               | Short flag | Description                                   |
-| ----------------------- | ---------- | --------------------------------------------- |
-| `-edit`                 | `-e`       | Edit various aspects of the editor window     |
-| `-query`                | `-q`       | Retrieve various aspects of the editor window |
-| `-addAnonymousSublayer` | `-aa`      | Add an anonynous layer at the top of the stack, returns it |
-| `-addParentLayer`       | `-ap`      | Add a parent layer                            |
-| `-loadSubLayers`        | `-lo`      | Open a dialog to load sub-layers              |
-| `-removeSubLayer`       | `-rs`      | Remove sub-layers                             |
-| `-clearLayer`           | `-cl`      | Erase everything in a layer                   |
-| `-discardEdits`         | `-de`      | Discard changes made on a layer               |
-| `-layerHasSubLayers`    | `-ll`      | Query if the layer has sub-layers             |
-| `-isAnonymousLayer`     | `-al`      | Query if the layer is anonymous               |
-| `-isLayerDirty`         | `-dl`      | Query if the layer has been modified          |
-| `-isInvalidLayer`       | `-il`      | Query if the layer is not found or invalid    |
-| `-isSubLayer`           | `-su`      | Query if the layer is a sub-layer             |
-| `-isIncomingLayer`      | `-in`      | Query if the layer is incoming (connection)   |
-| `-layerAppearsMuted`    | `-am`      | Query if the layer or any parent is muted     |
-| `-layerIsMuted`         | `-mu`      | Query if the layer itself is muted            |
-| `-layerIsReadOnly`      | `-r`       | Query if the layer or any parent is read only |
-| `-muteLayer`            | `-mt`      | Toggle the muting of a layer                  |
-| `-layerAppearsLocked`   | `-al`      | Query if the layer's parent is locked         |
-| `-layerIsLocked`        | `-lo`      | Query if the layer itself is locked           |
-| `-layerAppearsSystemLocked` | `-as`      | Query if the layer's parent is system-locked  |
-| `-layerIsSystemLocked`  | `-ls`      | Query if the layer itself is system-locked    |
-| `-lockLayer`            | `-lk`      | Lock or unlock a layer.                       |
-| `-lockLayerAndSubLayers`| `-la`      | Lock or unlocks a layer and its sublayers.    |
-| `-layerNeedsSaving`     | `-ns`      | Query if the layer is dirty or anonymous      |
-| `-printLayer`           | `-pl`      | Print the layer to the script editor output   |
-| `-proxyShape`           | `-ps`      | Query the proxyShape path or sets the selected shape by its path. Takes the path as argument |
-| `-reload`               | `-rl`      | Open or show the editor window                |
-| `-selectionLength`      | `-se`      | Query the number of items selected            |
-| `-isSessionLayer`       | `-sl`      | Query if the layer is a session layer         |
-| `-selectPrimsWithSpec`  | `-sp`      | Select the prims with spec in a layer         |
-| `-saveEdits`            | `-sv`      | Save the modifications                        |
+| Long flag               | Short flag |  Mode  | Description                                   |
+| ----------------------- | ---------- | ------ | --------------------------------------------- |
+| `-edit`                 | `-e`       |        | Edit various aspects of the editor window     |
+| `-query`                | `-q`       |        | Retrieve various aspects of the editor window |
+| `-addAnonymousSublayer` | `-aa`      |  Edit  | Add an anonynous layer at the top of the stack, returns it |
+| `-addParentLayer`       | `-ap`      |  Edit  | Add a parent layer                            |
+| `-loadSubLayers`        | `-lo`      |  Edit  | Open a dialog to load sub-layers              |
+| `-removeSubLayer`       | `-rs`      |  Edit  | Remove sub-layers                             |
+| `-clearLayer`           | `-cl`      |  Edit  | Erase everything in a layer                   |
+| `-discardEdits`         | `-de`      |  Edit  | Discard changes made on a layer               |
+| `-layerHasSubLayers`    | `-ll`      | Query  | Query if the layer has sub-layers             |
+| `-isAnonymousLayer`     | `-al`      | Query  | Query if the layer is anonymous               |
+| `-isLayerDirty`         | `-dl`      | Query  | Query if the layer has been modified          |
+| `-isInvalidLayer`       | `-il`      | Query  | Query if the layer is not found or invalid    |
+| `-isSubLayer`           | `-su`      | Query  | Query if the layer is a sub-layer             |
+| `-isIncomingLayer`      | `-in`      | Query  | Query if the layer is incoming (connection)   |
+| `-layerAppearsMuted`    | `-am`      | Query  | Query if the layer or any parent is muted     |
+| `-layerIsMuted`         | `-mu`      | Query  | Query if the layer itself is muted            |
+| `-layerIsReadOnly`      | `-r`       | Query  | Query if the layer or any parent is read only |
+| `-muteLayer`            | `-ml`      |  Edit  | Toggle the muting of a layer                  |
+| `-layerAppearsLocked`   | `-al`      | Query  | Query if the layer's parent is locked         |
+| `-layerIsLocked`        | `-lo`      | Query  | Query if the layer itself is locked           |
+| `-layerAppearsSystemLocked` | `-as`  | Query  | Query if the layer's parent is system-locked  |
+| `-layerIsSystemLocked`  | `-ls`      | Query  | Query if the layer itself is system-locked    |
+| `-lockLayer`            | `-lk`      |  Edit  | Lock or unlock a layer.                       |
+| `-lockLayerAndSubLayers`| `-la`      |  Edit  | Lock or unlocks a layer and its sublayers.    |
+| `-layerNeedsSaving`     | `-ns`      | Query  | Query if the layer is dirty or anonymous      |
+| `-printLayer`           | `-pl`      |  Edit  | Print the layer to the script editor output   |
+| `-proxyShape`           | `-ps`      |Query<br>Create| Query the proxyShape path or (Create) sets the selected shape by its path. Takes the path as argument |                    |   
+| `-reload`               | `-rl`      |Query<br>Create<br>Edit| Open or show the editor window                |
+| `-selectionLength`      | `-se`      | Query  | Query the number of items selected            |
+| `-isSessionLayer`       | `-sl`      | Query  | Query if the layer is a session layer         |
+| `-selectPrimsWithSpec`  | `-sp`      |  Edit  | Select the prims with spec in a layer         |
+| `-saveEdits`            | `-sv`      |  Edit  | Save the modifications                        |
+| `-getSelectedLayers`    | `-gsl`     | Query | Query the selected layers in the layer editor (note this is different from the edit target). Returns      yer i     ds |of the selected layers.    |
+| `-setSelectedLayers`    | `-ssl`     |  Edit  | Set the selected layers in the layer editor with a semicolon delimited string of layer ids. Eg: `-e -ssl "layer_id_1;layer_id_2"`   |
+
+In order to get notifications on layer selection changes, you can use `mayaUsd.lib.registerUICallback` with the `onLayerEditorSelectionChanged` notification:
+```
+    import mayaUsd.lib
+    def exampleCallback(context, callbackData):
+        # Get the stage object path
+        objectPath = context.get('objectPath')
+        # Get the list of selected layers
+        layerIds = callbackData.get('layerIds')
+        for layerId in layerIds:
+            print(layerIds)
+
+    mayaUsd.lib.registerUICallback('onLayerEditorSelectionChanged', exampleCallback)
+```

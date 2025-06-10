@@ -35,6 +35,7 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/pathUtils.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 
 #ifdef WANT_MATERIALX_BUILD
@@ -312,6 +313,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (colorSpace)
     (color3)
     (color4)
+
+    // MaterialX 1.39 bitangent support:
+    (bitangent)
+    (bump)
+    (normal)
+    (crossproduct)
+    (in1)
+    (in2)
 );
 
 // These attribute names usually indicate we have a source color space to handle.
@@ -420,6 +429,14 @@ bool _IsTopologicalNode(const HdMaterialNode2& inNode)
     if (nodeDef) {
         return MaterialXMaya::ShaderGenUtil::TopoNeutralGraph::isTopologicalNodeDef(*nodeDef);
     }
+
+#if MX_COMBINED_VERSION >= 13900
+    // Swizzles are gone in 1.39, but they are still topological when found in legacy data:
+    if (TfStringStartsWith(inNode.nodeTypeId.GetString(), "ND_swizzle_")) {
+        return true;
+    }
+#endif
+
     return false;
 }
 
@@ -437,10 +454,14 @@ bool _IsHydraColorSpace(const TfToken& paramName)
 
 bool _IsMaterialX(const HdMaterialNode& node)
 {
-    SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
+    SdrRegistry& shaderReg = SdrRegistry::GetInstance();
+#if PXR_VERSION >= 2505
+    SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(node.identifier);
+    return sdrNode && sdrNode->GetSourceType() == HdVP2Tokens->mtlx;
+#else
     NdrNodeConstPtr ndrNode = shaderReg.GetNodeByIdentifier(node.identifier);
-
     return ndrNode && ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
+#endif
 }
 
 bool _MxHasFilenameInput(const mx::NodeDefPtr nodeDef)
@@ -704,7 +725,12 @@ void _MaterialXData::_FixLibraryTangentInputs(mx::DocumentPtr& mtlxDoc)
         for (mx::NodePtr node : nodeGraph->getNodes()) {
             mx::NodeDefPtr nodeDef = node->getNodeDef();
             if (!nodeDef) {
+#if MX_COMBINED_VERSION >= 13900
+                // Can happen with legacy data. Just continue.
+                continue;
+#else
                 break;
+#endif
             }
 
             // Check the inputs of the node for Tworld and Tobject default geom properties
@@ -971,6 +997,78 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
         }
     }
 }
+
+#if MX_COMBINED_VERSION >= 13900
+// MaterialX 1.39 adds a few bitangent inputs to the standard library nodes. We need to explicitly
+// compute them from the cross product of the tangent and normal vectors.
+void _AddMissingBitangents(mx::DocumentPtr& mtlxDoc)
+{
+    // If we have no nodegraph, but need tangent input on the material node, then we create one:
+    mx::NodeGraphPtr nodeGraph = mtlxDoc->getNodeGraph(_mtlxTokens->NG_Maya.GetString());
+    if (!nodeGraph) {
+        return;
+    }
+
+    std::vector<mx::NodePtr> nodesToFix = nodeGraph->getNodes(_mtlxTokens->normalmap.GetString());
+    const auto               bumpNodes = nodeGraph->getNodes(_mtlxTokens->bump.GetString());
+    nodesToFix.insert(nodesToFix.end(), bumpNodes.begin(), bumpNodes.end());
+
+    for (mx::NodePtr node : nodesToFix) {
+        mx::NodeDefPtr nodeDef = node->getNodeDef();
+        // A missing node def is a very bad sign. No need to process further.
+        if (!TF_VERIFY(
+                nodeDef,
+                "Could not find MaterialX NodeDef for Node '%s'. Please recheck library paths.",
+                node->getNamePath().c_str())) {
+            continue;
+        }
+
+        // Is the Bitangent input connected?
+        mx::InputPtr bitangentInput = node->getInput(_mtlxTokens->bitangent.GetString());
+        if (bitangentInput && bitangentInput->getConnectedNode()) {
+            continue;
+        }
+
+        // Get the tangent input. We expect it to be connected since we get called after
+        // _AddMissingTangents has run.
+        mx::InputPtr tangentInput = node->getInput(_mtlxTokens->tangent.GetString());
+        if (!tangentInput) {
+            continue;
+        }
+
+        // Get the normal input. It can possibly be unconnected.
+        mx::InputPtr normalInput = node->getInput(_mtlxTokens->normal.GetString());
+
+        // Create the cross product node:
+        mx::NodePtr crossProductNode = nodeGraph->addNode(
+            _mtlxTokens->crossproduct.GetString(),
+            _mtlxTokens->crossproduct.GetString(),
+            _mtlxTokens->vector3.GetString());
+
+        mx::InputPtr crossProductInput1 = crossProductNode->addInput(
+            _mtlxTokens->in1.GetString(), _mtlxTokens->vector3.GetString());
+        mx::InputPtr crossProductInput2 = crossProductNode->addInput(
+            _mtlxTokens->in2.GetString(), _mtlxTokens->vector3.GetString());
+
+        crossProductInput2->setConnectedNode(tangentInput->getConnectedNode());
+        if (normalInput && normalInput->getConnectedNode()) {
+            crossProductInput1->setConnectedNode(normalInput->getConnectedNode());
+        } else {
+            // Add a normal node to the graph:
+            mx::NodePtr normalNode = nodeGraph->addNode(
+                _mtlxTokens->normal.GetString(),
+                _mtlxTokens->normal.GetString(),
+                _mtlxTokens->vector3.GetString());
+            normalNode->addInputFromNodeDef("space")->setValueString("world");
+            crossProductInput1->setConnectedNode(normalNode);
+        }
+        bitangentInput
+            = node->addInput(_mtlxTokens->bitangent.GetString(), _mtlxTokens->vector3.GetString());
+        bitangentInput->setConnectedNode(crossProductNode);
+    }
+}
+
+#endif
 
 #endif // WANT_MATERIALX_BUILD
 
@@ -1370,16 +1468,21 @@ bool _IsMaskedTransparency(const HdMaterialNetwork& network)
     };
 
 #ifdef WANT_MATERIALX_BUILD
-    const auto ndrNode = SdrRegistry::GetInstance().GetNodeByIdentifier(surfaceShader.identifier);
+#if PXR_VERSION >= 2505
+    const auto node
+        = SdrRegistry::GetInstance().GetShaderNodeByIdentifier(surfaceShader.identifier);
+#else
+    const auto node = SdrRegistry::GetInstance().GetNodeByIdentifier(surfaceShader.identifier);
+#endif
 
     // Handle MaterialX shaders.
-    if (ndrNode->GetSourceType() == HdVP2Tokens->mtlx) {
+    if (node->GetSourceType() == HdVP2Tokens->mtlx) {
         // Check UsdPreviewSurface node based on opacityThreshold.
-        if (ndrNode->GetFamily() == UsdImagingTokens->UsdPreviewSurface) {
+        if (node->GetFamily() == UsdImagingTokens->UsdPreviewSurface) {
             return testParamValue(_tokens->opacityThreshold, std::greater<>(), 0.0f);
         }
         // Check if glTF PBR's alpha_mode is `MASK` and that transmission is disabled.
-        if (ndrNode->GetFamily() == _tokens->gltf_pbr) {
+        if (node->GetFamily() == _tokens->gltf_pbr) {
             return testParamValue(_tokens->alpha_mode, std::equal_to<>(), 1)
                 && testParamValue(_tokens->transmission, std::equal_to<>(), 0.0f);
         }
@@ -2717,10 +2820,9 @@ TfToken _RequiresColorManagement(
     const HdMaterialNetwork2& inNet)
 #endif
 {
-    const mx::NodeDefPtr nodeDef = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.nodeTypeId);
     const mx::NodeDefPtr upstreamDef
         = _GetMaterialXData()._mtlxLibrary->getNodeDef(upstream.nodeTypeId);
-    if (!nodeDef || !upstreamDef) {
+    if (!upstreamDef) {
         return {};
     }
 
@@ -3078,6 +3180,9 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
 
             // Touchups required to fix input stream issues:
             _AddMissingTangents(mtlxDoc);
+#if MX_COMBINED_VERSION >= 13900
+            _AddMissingBitangents(mtlxDoc);
+#endif
 
             _surfaceShaderId = terminalPath;
 
@@ -3377,6 +3482,12 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                 // A topo node does not emit editable parameters:
                 continue;
             }
+#if MX_COMBINED_VERSION >= 13900
+            if (!nodeDef && TfStringStartsWith(node.identifier.GetString(), "ND_swizzle_")) {
+                // Swizzle was a topo node in 1.38 with no editable parameters.
+                continue;
+            }
+#endif
             nodeName += _nodePathMap[node.path].GetName().c_str();
             if (node.path == _surfaceShaderId) {
                 nodeName = "";

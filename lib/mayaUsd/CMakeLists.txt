@@ -46,13 +46,6 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
 
-if(DEFINED UFE_PREVIEW_VERSION_NUM)
-    target_compile_definitions(${PROJECT_NAME}
-        PUBLIC
-            UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}
-    )
-endif()
-
 message(STATUS "MAYA_HAS_DEFAULT_MATERIAL_API is ${MAYA_HAS_DEFAULT_MATERIAL_API}")
 if (MAYA_HAS_DEFAULT_MATERIAL_API)
     target_compile_definitions(${PROJECT_NAME}
@@ -251,7 +244,7 @@ target_link_libraries(${PROJECT_NAME}
         usdShade
         usdSkel
         usdUtils
-        $<$<BOOL:$<VERSION_GREATER_EQUAL:${UFE_PREVIEW_VERSION_NUM},4023>>:usdUI>
+        usdUI
         vt
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}

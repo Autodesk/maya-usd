@@ -145,6 +145,12 @@ int MayaLayerEditorWindow::selectionLength()
     return static_cast<int>(selection.size());
 }
 
+bool MayaLayerEditorWindow::hasCurrentLayerItem()
+{
+    auto item = treeView()->currentLayerItem();
+    return (item != nullptr);
+}
+
 #define CALL_CURRENT_ITEM(method)               \
     auto item = treeView()->currentLayerItem(); \
     return (item == nullptr) ? false : item->method()
@@ -165,9 +171,10 @@ bool MayaLayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appea
 bool MayaLayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
 bool MayaLayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers); }
 
-std::string MayaLayerEditorWindow::proxyShapeName() const
+std::string MayaLayerEditorWindow::proxyShapeName(const bool fullPath) const
 {
-    return _sessionState.stageEntry()._displayName;
+    auto stageEntry = _sessionState.stageEntry();
+    return fullPath ? stageEntry._proxyShapePath : stageEntry._displayName;
 }
 
 void MayaLayerEditorWindow::removeSubLayer()
@@ -304,6 +311,29 @@ void MayaLayerEditorWindow::onShowContextMenu(const QPoint& pos)
         /*undo*/ false);
 
     contextMenu.exec(treeView()->mapToGlobal(pos));
+}
+
+std::vector<std::string> MayaLayerEditorWindow::getSelectedLayers()
+{
+    std::vector<std::string> selLayers;
+    if (_layerEditor) {
+        selLayers = _layerEditor->getSelectedLayers();
+    } else {
+        TF_CODING_ERROR(
+            "No LayerEditorWidget set in the MayaLayerEditorWindow. No layers to retrieve.");
+    }
+
+    return selLayers;
+}
+
+void MayaLayerEditorWindow::selectLayers(std::vector<std::string> layerIds)
+{
+    if (_layerEditor) {
+        _layerEditor->selectLayers(layerIds);
+    } else {
+        TF_CODING_ERROR(
+            "No LayerEditorWidget set in the MayaLayerEditorWindow. Layers cannot be selected.");
+    }
 }
 
 } // namespace UsdLayerEditor

@@ -264,6 +264,11 @@ global proc createStageFromExistingSetup(string $parent, int $forceFactorySettin
     stageFromFile_UIInit($parent, "");
 }
 
+global proc mayaUsd_showStageFromFileHelp(string $helpTag) {
+	python("from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD('" + $helpTag + "')");
+}
+
+
 global proc mayaUsd_createStageFromFileOptions()
 {
     global int $gOptionBoxTemplateFrameSpacing;
@@ -319,7 +324,18 @@ global proc mayaUsd_createStageFromFileOptions()
 
     setOptionBoxTitle(getMayaUsdString("kCreateUsdStageFromFileOptions"));
 
-    setOptionBoxHelpTag( "" );
+    // Note: we use setOptionBoxHelpTag so that the help menu item
+    //       will be localize by Maya.
+    string $helpTag = "CreateStageFromFile";
+    setOptionBoxHelpTag($helpTag);
+    string $helpItem = getOptionBoxHelpItem();
+    if ($helpItem != "") {
+        menuItem -edit
+            -command ("mayaUsd_showStageFromFileHelp" + " " + $helpTag)
+            $helpItem;
+        global string $gOptionBoxHelpTag;
+        $gOptionBoxHelpTag = $helpTag;
+    }			
 
     eval (($setup + " " + $parent + " " + 0));	
 

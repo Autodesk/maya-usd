@@ -223,7 +223,7 @@ void removeAllPullInformation(const Ufe::Path& ufePulledPath)
 //------------------------------------------------------------------------------
 //
 // Turn on the mesh flag to allow topological modifications.
-bool allowTopologyModifications(MDagPath& root)
+bool allowTopologyModificationsAfterLockNodes(MDagPath& root)
 {
     MDGModifier& dgMod = MDGModifierUndoItem::create("Allow topology modifications");
 
@@ -231,10 +231,12 @@ bool allowTopologyModifications(MDagPath& root)
     dagIt.reset(root, MItDag::kDepthFirst, MFn::kMesh);
     for (; !dagIt.isDone(); dagIt.next()) {
         MFnDependencyNode depNode(dagIt.item());
-        MPlug             topoPlug = depNode.findPlug("allowTopologyMod");
-        if (topoPlug.isNull())
-            continue;
-        dgMod.newPlugValueBool(topoPlug, true);
+        if (LockNodesUndoItem::isLockable(depNode)) {
+            MPlug topoPlug = depNode.findPlug("allowTopologyMod");
+            if (topoPlug.isNull())
+                continue;
+            dgMod.newPlugValueBool(topoPlug, true);
+        }
     }
 
     return dgMod.doIt();
@@ -590,9 +592,19 @@ PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterC
     progressBar.advance();
 
     result.srcRootPath = writeJob.MapDagPathToSdfPath(dagPath);
+
+    // If there are no correspondences, it may be due to the fact the
+    // source DAG node was excluded from the export.  In this case, try
+    // to find a material or extra prim to use as the source root path.
     if (result.srcRootPath.IsEmpty()) {
         for (const SdfPath& matPath : writeJob.GetMaterialPaths()) {
             result.srcRootPath = matPath.GetParentPath();
+            break;
+        }
+    }
+    if (result.srcRootPath.IsEmpty()) {
+        for (const SdfPath& extraPath : result.extraPrimsPaths) {
+            result.srcRootPath = extraPath;
             break;
         }
     }
@@ -1276,7 +1288,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
             return false;
 
         // Allow editing topology, which gets turned of by locking.
-        if (!allowTopologyModifications(pullParentPath))
+        if (!allowTopologyModificationsAfterLockNodes(pullParentPath))
             return false;
     }
     progressBar.advance();

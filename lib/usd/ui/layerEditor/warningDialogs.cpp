@@ -80,8 +80,10 @@ bool confirmDialog_internal(
     if (!showIcon)
         msgBox.setStyleSheet(QString("QLabel{min-width: %1px;}").arg(DPIScale(400)));
 
-    if (okButtonText != nullptr)
+    if (okButtonText != nullptr) {
         msgBox.button(QMessageBox::Ok)->setText(*okButtonText);
+        msgBox.button(QMessageBox::Ok)->setFocus();
+    }
 
     return msgBox.exec() == QMessageBox::Ok;
 }

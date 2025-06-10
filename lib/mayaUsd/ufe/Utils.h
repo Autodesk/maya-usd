@@ -35,6 +35,7 @@
 #include <ufe/types.h>
 
 #include <cstring> // memcpy
+#include <vector>
 
 UFE_NS_DEF
 {
@@ -64,6 +65,14 @@ Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage);
 //! Return all the USD stages.
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> getAllStages();
+
+//! Return all the USD stages' paths.
+MAYAUSD_CORE_PUBLIC
+std::vector<Ufe::Path> getAllStagesPaths();
+
+//! Returns true if the a stage with the given path exists, returns false otherwise.
+MAYAUSD_CORE_PUBLIC
+bool isInStagesCache(const Ufe::Path& path);
 
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
@@ -99,7 +108,8 @@ bool isMayaWorldPath(const Ufe::Path& ufePath);
 
 //! Return the gateway node (i.e. proxy shape)
 MAYAUSD_CORE_PUBLIC
-PXR_NS::MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path);
+PXR_NS::MayaUsdProxyShapeBase*
+getProxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded = true);
 
 //! Return the primPath for the gateway node.
 //! The gateway node may specify a path that UFE should be restricted to.

@@ -5,6 +5,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportBindTransform.py
     testUsdExportBlendshapes.py
     testUsdExportCamera.py
+    testUsdExportCameraAttrSpline.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
     testUsdExportDefaultPrim.py
@@ -28,6 +29,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportTypes.py
     testUsdExportUnits.py
     testUsdExportUpAxis.py
+    testUsdExportUVSetsSwitch.py
 
     # To investigate: following test asserts in MFnParticleSystem, but passes.
     # PPT, 17-Jun-20.

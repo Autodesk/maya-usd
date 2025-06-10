@@ -34,7 +34,11 @@ TEST(ShaderGenUtils, topoChannels)
     doc->importLibrary(library);
 
     const mx::XmlReadOptions readOptions;
+#if MX_COMBINED_VERSION < 13900
     mx::readFromXmlFile(doc, testPath / "topology_tests.mtlx", mx::EMPTY_STRING, &readOptions);
+#else
+    mx::readFromXmlFile(doc, testPath / "topology_tests_1_39.mtlx", mx::EMPTY_STRING, &readOptions);
+#endif
 
     for (const mx::NodePtr& material : doc->getMaterialNodes()) {
         auto topoNetwork = MaterialXMaya::ShaderGenUtil::TopoNeutralGraph(material);
@@ -87,16 +91,24 @@ TEST(ShaderGenUtils, topoGraphAPI)
     ASSERT_EQ(topoNetwork.getOriginalPath("N1"), "Surf9");
     ASSERT_EQ(topoNetwork.getOriginalPath("NG0/N2"), "Ng9b/add9b");
     ASSERT_EQ(topoNetwork.getOriginalPath("NG0/N3"), "add9a");
+#if MX_COMBINED_VERSION < 13900
     ASSERT_EQ(topoNetwork.getOriginalPath("NG0/N4"), "Ng9a/constant");
+#else
+    // Swizzle became explicit extract, so constant moved down one notch.
+    ASSERT_EQ(topoNetwork.getOriginalPath("NG0/N5"), "Ng9a/constant");
+#endif
 
     // Test watch list API:
     const auto& watchList = topoNetwork.getWatchList();
     auto        it = watchList.find(doc->getDescendant("Surf9"));
     ASSERT_NE(it, watchList.end());
     ASSERT_EQ(it->second, sgu::TopoNeutralGraph::ElementType::eRegular);
+#if MX_COMBINED_VERSION < 13900
     it = watchList.find(doc->getDescendant("Ng9b"));
     ASSERT_NE(it, watchList.end());
     ASSERT_EQ(it->second, sgu::TopoNeutralGraph::ElementType::eRegular);
+    // Nodegraph itself is no longer topological in v1.39 since the swizzle was removed.
+#endif
     it = watchList.find(doc->getDescendant("Ng9b/add9b"));
     ASSERT_NE(it, watchList.end());
     ASSERT_EQ(it->second, sgu::TopoNeutralGraph::ElementType::eRegular);

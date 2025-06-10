@@ -55,6 +55,7 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
         ${MAYAUSD_SHARED_COMPONENTS}/collection/widget.py
         ${MAYAUSD_SHARED_COMPONENTS}/collection/includeExcludeWidget.py
         ${MAYAUSD_SHARED_COMPONENTS}/collection/expressionWidget.py
+        ${MAYAUSD_SHARED_COMPONENTS}/collection/warningWidget.py
         ${MAYAUSD_SHARED_COMPONENTS}/collection/expressionRulesMenu.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/collection/
     )
@@ -87,14 +88,14 @@ if(MAYA_APP_VERSION VERSION_GREATER_EQUAL 2023)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/usdData/
     )
 
-    set(LIB_ICONS
+    set(SHARED_COMPONENTS_ICONS
         ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/add
         ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/delete
         ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/menu
         ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/selector
         ${MAYAUSD_SHARED_COMPONENTS}/icons/dark/warning
     )
-    foreach(ICON_BASE ${LIB_ICONS})
+    foreach(ICON_BASE ${SHARED_COMPONENTS_ICONS})
         install(FILES "${ICON_BASE}.svg"
             DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/python/usd_shared_components/icons/dark"
         )

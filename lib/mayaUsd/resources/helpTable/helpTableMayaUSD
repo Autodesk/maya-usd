@@ -10,3 +10,7 @@ UsdLayerEditor
 ?contextId=UsdLayerEditor
 UsdMergeMayaEditsToUsd
 ?contextId=UsdMergeMayaEditsToUsd
+CreateStageFromFile
+?guid=GUID-4D29A90A-FD4E-41F8-A68F-202B8DAAAC23
+MayaUsdCollectionWidget
+?contextId=MayaUsdCollectionWidget

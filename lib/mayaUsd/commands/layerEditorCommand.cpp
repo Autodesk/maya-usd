@@ -619,7 +619,7 @@ private:
         if (!layer)
             return;
 
-        if (layer->IsDirty()) {
+        if (layer->IsDirty() || _cmdId == CmdId::kClearLayer) {
             _backupLayer = SdfLayer::CreateAnonymous();
             _backupLayer->TransferContent(layer);
         }

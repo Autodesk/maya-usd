@@ -100,6 +100,13 @@ Ufe::Path stagePath(UsdStageWeakPtr stage) { return UsdStageMap::getInstance().p
 
 TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return UsdStageMap::getInstance().allStages(); }
 
+std::vector<Ufe::Path> getAllStagesPaths() { return UsdStageMap::getInstance().allStagesPaths(); }
+
+bool isInStagesCache(const Ufe::Path& path)
+{
+    return UsdStageMap::getInstance().isInStagesCache(path);
+}
+
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
     // When called we do not make any assumption on whether or not the
@@ -260,14 +267,16 @@ bool isMayaWorldPath(const Ufe::Path& ufePath)
     return (ufePath.runTimeId() == g_MayaRtid && ufePath.size() == 1);
 }
 
-MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
+MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded /*= true*/)
 {
     // Path should not be empty.
     if (!TF_VERIFY(!path.empty())) {
         return nullptr;
     }
 
-    return UsdStageMap::getInstance().proxyShapeNode(path);
+    MayaUsdProxyShapeBase* result
+        = UsdStageMap::getInstance().proxyShapeNode(path, rebuildCacheIfNeeded);
+    return result;
 }
 
 SdfPath getProxyShapePrimPath(const Ufe::Path& path)
@@ -377,8 +386,8 @@ void ReplicateExtrasFromUSD::processItem(const Ufe::Path& path, const MObject& m
             displayLayer.add(dagPath);
 
             // In case display layer membership was removed from the USD prim that we are
-            // replicating, we want to restore it here to make sure that the prim will stay in its
-            // display layer on DiscardEdits
+            // replicating, we want to restore it here to make sure that the prim will stay in
+            // its display layer on DiscardEdits
             displayLayer.add(Ufe::PathString::string(path).c_str());
         }
     }

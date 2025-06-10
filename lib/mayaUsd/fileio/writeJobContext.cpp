@@ -81,9 +81,14 @@ inline SdfPath _GetRootOverridePath(
     return path;
 }
 
-const SdfPath INSTANCES_SCOPE_PATH("/MayaExportedInstanceSources");
-
 } // anonymous namespace
+
+/*static*/
+const SdfPath& UsdMayaWriteJobContext::GetInstanceMasterBasePath()
+{
+    static const SdfPath INSTANCES_SCOPE_PATH("/MayaExportedInstanceSources");
+    return INSTANCES_SCOPE_PATH;
+}
 
 UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
     : mArgs(args)
@@ -209,6 +214,19 @@ SdfPath UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) con
         path = path.ReplacePrefix(SdfPath::AbsoluteRootPath(), mRootPrimPath);
     }
     return _GetRootOverridePath(mArgs, path, /* modelRootOverride = */ true, /* rootMap = */ false);
+}
+
+std::vector<SdfPath> UsdMayaWriteJobContext::GetAlInstanceMasterPaths() const
+{
+    std::vector<SdfPath> masterPaths;
+
+    for (const auto& objToMasters : _objectsToMasterPaths) {
+        // Note: the second element of the iteration value is the pair of master paths,
+        //       the first of which is the true path in the stage of the instance master.
+        //       See the documentation about the _ExportAndRefPaths type.
+        masterPaths.emplace_back(objToMasters.second.first);
+    }
+    return masterPaths;
 }
 
 UsdMayaWriteJobContext::_ExportAndRefPaths
@@ -484,7 +502,7 @@ bool UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
     }
 
     if (mArgs.exportInstances) {
-        mInstancesPrim = mStage->OverridePrim(INSTANCES_SCOPE_PATH);
+        mInstancesPrim = mStage->OverridePrim(GetInstanceMasterBasePath());
     }
 
     return true;
