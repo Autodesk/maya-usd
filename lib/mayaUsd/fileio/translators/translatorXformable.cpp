@@ -607,7 +607,10 @@ void UsdMayaTranslatorXformable::Read(
     // matrix decomposition
 
     UsdMayaXformStack::OpClassList stackOps = UsdMayaXformStack::FirstMatchingSubstack(
-        { &UsdMayaXformStack::MayaStack(), &UsdMayaXformStack::CommonStack() }, xformops);
+        { &UsdMayaXformStack::MayaStack(),
+          &UsdMayaXformStack::CommonStack(),
+          &UsdMayaXformStack::MayaIndividualTransformsStack() },
+        xformops);
 
     MFnDagNode MdagNode(mayaNode);
     if (!stackOps.empty()) {

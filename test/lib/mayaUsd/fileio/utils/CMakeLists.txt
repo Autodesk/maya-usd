@@ -1,15 +1,7 @@
-if (USD_SUPPORT_INDIVIDUAL_TRANSFROMS)
-    set(TEST_SCRIPT_FILES
-        testReadWriteUtils.py
-        #need to re-add this test once properly fixed
-        testXformStackSeparateTransforms.py
-    )
-else()
-    set(TEST_SCRIPT_FILES
-        testReadWriteUtils.py
-        testXformStack.py
-    )
-endif()
+set(TEST_SCRIPT_FILES
+    testReadWriteUtils.py
+    testXformStack.py
+)
 
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})

@@ -275,6 +275,21 @@ public:
     MAYAUSD_CORE_PUBLIC
     static const UsdMayaXformStack& MayaStack();
 
+    /// \brief The Maya stack to accomodate for USD broken down transforms.
+    ///
+    /// Consists of these xform operators:
+    ///    translateX
+    ///    translateY
+    ///    translateZ
+    ///    rotateX
+    ///    rotateY
+    ///    rotateZ
+    ///    scaleX
+    ///    scaleY
+    ///    scaleZ
+    MAYAUSD_CORE_PUBLIC
+    static const UsdMayaXformStack& MayaIndividualTransformsStack();
+
     /// \brief The Common API xform stack
     ///
     /// Consists of these xform operators:
