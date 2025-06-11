@@ -135,21 +135,33 @@ class testXformStack(unittest.TestCase):
 
         translateOp = commonStack.FindOp('translate')
         for opType in UsdGeom.XformOp.Type.allValues:
-            if opType == UsdGeom.XformOp.TypeTranslate or opType == UsdGeom.XformOp.TypeTranslateX or opType == UsdGeom.XformOp.TypeTranslateY or opType == UsdGeom.XformOp.TypeTranslateZ:
-                self.assertTrue(translateOp.IsCompatibleType(opType),
+            if Usd.GetVersion() >= (0, 25, 5):
+                if opType == UsdGeom.XformOp.TypeTranslate or opType == UsdGeom.XformOp.TypeTranslateX or opType == UsdGeom.XformOp.TypeTranslateY or opType == UsdGeom.XformOp.TypeTranslateZ:
+                    self.assertTrue(translateOp.IsCompatibleType(opType),
                                 "{} should be compatible with {}".format(
                                     translateOp.GetName(),
                                     opType))
-            elif opType == UsdGeom.XformOp.TypeScaleX or opType == UsdGeom.XformOp.TypeScaleY or opType == UsdGeom.XformOp.TypeScaleZ:
-                self.assertTrue(translateOp.IsCompatibleType(opType),
-                                "{} should be compatible with {}".format(
-                                    translateOp.GetName(),
-                                    opType))
+                elif Usd.GetVersion() >= (0, 25, 5) and (opType == UsdGeom.XformOp.TypeScaleX or opType == UsdGeom.XformOp.TypeScaleY or opType == UsdGeom.XformOp.TypeScaleZ):
+                    self.assertTrue(translateOp.IsCompatibleType(opType),
+                                    "{} should be compatible with {}".format(
+                                        translateOp.GetName(),
+                                        opType))
+                else:
+                    self.assertFalse(translateOp.IsCompatibleType(opType),
+                                    "{} should not be compatible with {}".format(
+                                        translateOp.GetName(),
+                                        opType))
             else:
-                self.assertFalse(translateOp.IsCompatibleType(opType),
-                                "{} should not be compatible with {}".format(
+                if opType == UsdGeom.XformOp.TypeTranslate:
+                    self.assertTrue(translateOp.IsCompatibleType(opType),
+                                "{} should be compatible with {}".format(
                                     translateOp.GetName(),
                                     opType))
+                else:
+                    self.assertFalse(translateOp.IsCompatibleType(opType),
+                                    "{} should not be compatible with {}".format(
+                                        translateOp.GetName(),
+                                        opType))
 
         rotateOp = commonStack.FindOp('rotate')
         for opType in UsdGeom.XformOp.Type.allValues:
