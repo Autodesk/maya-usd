@@ -608,8 +608,10 @@ void UsdMayaTranslatorXformable::Read(
 
     UsdMayaXformStack::OpClassList stackOps = UsdMayaXformStack::FirstMatchingSubstack(
         { &UsdMayaXformStack::MayaStack(),
-          &UsdMayaXformStack::CommonStack(),
-          &UsdMayaXformStack::MayaIndividualTransformsStack() },
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+          &UsdMayaXformStack::MayaIndividualTransformsStack(),
+#endif
+          &UsdMayaXformStack::CommonStack() },
         xformops);
 
     MFnDagNode MdagNode(mayaNode);
