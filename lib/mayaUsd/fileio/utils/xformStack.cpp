@@ -589,6 +589,7 @@ const UsdMayaXformStack& UsdMayaXformStack::MayaStack()
 
 const UsdMayaXformStack& UsdMayaXformStack::MayaIndividualTransformsStack()
 {
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
     static UsdMayaXformStack mayaIndividualTransformStack(
         // ops
         {
@@ -613,7 +614,13 @@ const UsdMayaXformStack& UsdMayaXformStack::MayaIndividualTransformsStack()
         },
 
         {});
+#else
+    static UsdMayaXformStack mayaIndividualTransformStack(
+        // ops
+        {},
+        {});
 
+#endif
     return mayaIndividualTransformStack;
 }
 
