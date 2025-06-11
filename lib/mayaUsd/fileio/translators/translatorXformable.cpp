@@ -609,9 +609,9 @@ void UsdMayaTranslatorXformable::Read(
     UsdMayaXformStack::OpClassList stackOps = UsdMayaXformStack::FirstMatchingSubstack(
         {
             &UsdMayaXformStack::MayaStack(),
- #if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
                 &UsdMayaXformStack::MayaIndividualTransformsStack(),
- #endif
+#endif
                 &UsdMayaXformStack::CommonStack()
         },
         xformops);
