@@ -91,13 +91,23 @@ UsdMayaXformStack::TokenIndexPairMap _buildAttrNamesToIdxs(
         if (op.IsInvertedTwin())
             continue;
 
-        for (auto attrName : op.CompatibleAttrNames()) {
+        for (const auto& attrName : op.CompatibleAttrNames()) {
             UsdMayaXformStack::IndexPair indexPair = _makeInversionIndexPair(i, inversionMap);
-            // Insert, and check if it already existed
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+            if (result.find(attrName) == result.end()) {
+                // Insert, and check if it already existed
+                TF_VERIFY(
+                    result.insert({ attrName, indexPair }).second,
+                    "AttrName %s already found in attrName lookup map",
+                    attrName.GetText());
+            }
+#else
+            //// Insert, and check if it already existed
             TF_VERIFY(
                 result.insert({ attrName, indexPair }).second,
                 "AttrName %s already found in attrName lookup map",
                 attrName.GetText());
+#endif
         }
     }
     return result;
@@ -187,7 +197,7 @@ bool UsdMayaXformOpClassification::IsInvertedTwin() const { return _sharedData->
 std::vector<TfToken> UsdMayaXformOpClassification::CompatibleAttrNames() const
 {
     // Note that we make tokens immortal because UsdMayaXformOpClassification
-    // is currently not publically creatable, and is only used to make
+    // is currently not publicly creatable, and is only used to make
     // some global constants (ie, MayaStack and CommonStack)
     std::vector<TfToken> result;
     std::string          attrName;
@@ -574,6 +584,74 @@ const UsdMayaXformStack& UsdMayaXformStack::MayaStack()
 
     return mayaStack;
 }
+
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+const UsdMayaXformStack& UsdMayaXformStack::MayaIndividualTransformsStack()
+{
+    static UsdMayaXformStack mayaIndividualTransformStack(
+        // ops
+        {
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->translateX, UsdGeomXformOp::TypeTranslateX),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->translateY, UsdGeomXformOp::TypeTranslateY),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->translateZ, UsdGeomXformOp::TypeTranslateZ),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->translate, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->pivot, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotatePivotTranslate, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotatePivot, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotateX, UsdGeomXformOp::TypeRotateX),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotateY, UsdGeomXformOp::TypeRotateY),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotateZ, UsdGeomXformOp::TypeRotateZ),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotate, UsdGeomXformOp::TypeRotateXYZ),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotateAxis, UsdGeomXformOp::TypeRotateXYZ),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->rotatePivot,
+                UsdGeomXformOp::TypeTranslate,
+                true /* isInvertedTwin */),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scalePivotTranslate, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scalePivot, UsdGeomXformOp::TypeTranslate),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->shear, UsdGeomXformOp::TypeTransform),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scaleX, UsdGeomXformOp::TypeScaleX),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scaleY, UsdGeomXformOp::TypeScaleY),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scaleZ, UsdGeomXformOp::TypeScaleZ),
+            UsdMayaXformOpClassification(UsdMayaXformStackTokens->scale, UsdGeomXformOp::TypeScale),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->scalePivot,
+                UsdGeomXformOp::TypeTranslate,
+                true /* isInvertedTwin */),
+            UsdMayaXformOpClassification(
+                UsdMayaXformStackTokens->pivot,
+                UsdGeomXformOp::TypeTranslate,
+                true /* isInvertedTwin */),
+        },
+
+        // inversionTwins
+        {
+            { 4, 21 },
+            { 6, 12 },
+            { 14, 20 },
+        });
+
+    return mayaIndividualTransformStack;
+}
+#endif
 
 const UsdMayaXformStack& UsdMayaXformStack::CommonStack()
 {

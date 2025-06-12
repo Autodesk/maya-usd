@@ -250,5 +250,47 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
         self.assertEqual(geomRoughnessInput.GetConnectedSources()[0][0].source.GetPrim().GetName(), "NG_ImageWithoutGeomProp")
         self.assertEqual(geomRoughnessInput.GetConnectedSources()[0][0].sourceName, "image_roughness:varname")
 
+
+    def testExportWithRelativePath(self):
+        cmds.file(f=True, new=True)
+        mtlxFile = os.path.join(self._inputPath, 'UsdExportMaterialXSurfaceShader',
+            'RelativePath.mtlx')
+        
+        stackName = mel.eval("createNode materialxStack")
+        stackPathString = mel.eval("ls -l " + stackName)[0]
+        stackItem = ufe.Hierarchy.createItem(ufe.PathString.path(stackPathString))
+        stackHierarchy = ufe.Hierarchy.hierarchy(stackItem)
+        stackContextOps = ufe.ContextOps.contextOps(stackItem)
+        stackContextOps.doOp(['MxImportDocument', mtlxFile])
+        documentItem = stackHierarchy.children()[-1]
+        sphere = cmds.polySphere()
+        surfPathString = ufe.PathString.string(documentItem.path()) + "%RelPath"
+        cmds.select(sphere)
+        materialContextOps = ufe.ContextOps.contextOps(ufe.Hierarchy.createItem(ufe.PathString.path(surfPathString)))
+        materialContextOps.doOp(['Assign Material to Selection']) 
+
+        # Export to USD.
+        usdFilePath = os.path.abspath('RelPath.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            defaultPrim='None', exportRelativeTextures='relative')
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+
+        prim = stage.GetPrimAtPath("/Looks/RelPathSG")
+        self.assertTrue(prim)
+        material = UsdShade.Material(prim)
+        self.assertTrue(material)
+
+        # Validate the texture path
+        fileAttrName = 'inputs:file'
+        prim = stage.GetPrimAtPath("/Looks/RelPathSG/NG_RelPath/image_color")
+        fileAttr = prim.GetAttribute(fileAttrName)
+        self.assertTrue(fileAttr, fileAttrName)
+        exportedTexturePath = fileAttr.Get()
+        self.assertTrue(os.path.exists(exportedTexturePath.resolvedPath),
+                        'The exported texture %s is not resolved by USD' % exportedTexturePath)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

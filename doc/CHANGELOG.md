@@ -1,5 +1,94 @@
 # Changelog
 
+## [v0.32.0] - 2025-06-04
+
+**Build:**
+* Update diffCore.cpp [#4188](https://github.com/Autodesk/maya-usd/pull/4188)
+* Add ABI checker to MayaUsd preflight to verify MayaUsdAPI [#4169](https://github.com/Autodesk/maya-usd/pull/4169)
+* Use new Sdr API [#4141](https://github.com/Autodesk/maya-usd/pull/4141)
+* Add LookdevXUsd unit tests [#4113](https://github.com/Autodesk/maya-usd/pull/4113)
+* MayaUsd: rerun failed tests to make random failures more stable [#4090](https://github.com/Autodesk/maya-usd/pull/4090)
+* Remove all the UFE_PREVIEW_VERSION_NUM v5/v6 checks [#4104](https://github.com/Autodesk/maya-usd/pull/4104)
+
+**Translation Framework:**
+* Hidden LookdevX nodes are exposed when exporting Mtlx to USD stage [#4191](https://github.com/Autodesk/maya-usd/pull/4191)
+* Added export splines anim for camera attributes [#4164](https://github.com/Autodesk/maya-usd/pull/4164)
+* Removing UsdLuxGeometryLight reader [#4147](https://github.com/Autodesk/maya-usd/pull/4147)
+* Avoid crash when shader has no uvLink [#4136](https://github.com/Autodesk/maya-usd/pull/4136)
+* Export instances with exportRoots [#4118](https://github.com/Autodesk/maya-usd/pull/4118)
+* Support MaterialX document in USD Exporter [#4107](https://github.com/Autodesk/maya-usd/pull/4107)
+* ShadingModeExporter: Fix potential crash when exporting collection-based material bindings [#4106](https://github.com/Autodesk/maya-usd/pull/4106)
+
+**Workflow:**
+* Layer Editor
+    * Disables cache rebuild due to layer editor [#4202](https://github.com/Autodesk/maya-usd/pull/4202)
+    * Fix: Clear Layer not undoable after save on not dirty layer. Wrong focus button for Reload Layer dialog. Layer editor pin stage not respected randomly when list changes [#4196](https://github.com/Autodesk/maya-usd/pull/4196)
+    * Fixed a bug that Layer Editor Won't Launch [#4195](https://github.com/Autodesk/maya-usd/pull/4195)
+    * Avoids rebuilding cache when trying to getProxyShape [#4190](https://github.com/Autodesk/maya-usd/pull/4190)
+    * Remember expand/collapse state of layers. Middle Truncation for Layer Names. New Pin Tooltip. Query Selected Layers. [#4168](https://github.com/Autodesk/maya-usd/pull/4168)
+
+* Properly handle deleted attributes [#4186](https://github.com/Autodesk/maya-usd/pull/4186)
+* Add logic to distinguish between system and regular locks for layer editing error message [#4185](https://github.com/Autodesk/maya-usd/pull/4185)
+* Check that the stagePath points to a valid Ufe item [#4184](https://github.com/Autodesk/maya-usd/pull/4184)
+* Creating or parenting a camera under a USD def will crash Maya [#4183](https://github.com/Autodesk/maya-usd/pull/4183)
+* Show Def in AE [#4081](https://github.com/Autodesk/maya-usd/pull/4081)
+* Duplicating a ProxyStage and hiding the dup causes crash [#4180](https://github.com/Autodesk/maya-usd/pull/4180)
+* Add Outliner icons for NodeGraphs [#4172](https://github.com/Autodesk/maya-usd/pull/4172)
+* Port over recent layer editor changes [#4168](https://github.com/Autodesk/maya-usd/pull/4168)
+* Fixes a performance issue regarding findGatwayItems() / cameras [#4158](https://github.com/Autodesk/maya-usd/pull/4158)
+* UsdUfe.registerUICallback can crash with python lambdas [#4155](https://github.com/Autodesk/maya-usd/pull/4155)
+* PrimUpdaterManager: Avoid spurious `allowTopologyMod` reference edits [#4153](https://github.com/Autodesk/maya-usd/pull/4153)
+* Adding or removing of items in collections should respect the edit restrictions as other attributes [#4143](https://github.com/Autodesk/maya-usd/pull/4143)
+* Adds a cutom gizmo shape and geometry [#4140](https://github.com/Autodesk/maya-usd/pull/4140)
+* Make materialX bindings accessible in Maya [#4137](https://github.com/Autodesk/maya-usd/pull/4137)
+* Fix schemas in AE [#4131](https://github.com/Autodesk/maya-usd/pull/4131)
+* Duplicate material to USD with Arnold [#4124](https://github.com/Autodesk/maya-usd/pull/4124)
+* Honor the target-session option var [#4120](https://github.com/Autodesk/maya-usd/pull/4120)
+* Applied schemas in AE [#4114](https://github.com/Autodesk/maya-usd/pull/4114)
+* Make USD camera invisible when the parents turn invisible [#4110](https://github.com/Autodesk/maya-usd/pull/4110)
+* Support grouped instance in dup to USD [#4108](https://github.com/Autodesk/maya-usd/pull/4108)
+* Disable edit as maya for geometry light [#4056](https://github.com/Autodesk/maya-usd/pull/4056)
+
+**Render:**
+* Fixes missing color settings [#4189](https://github.com/Autodesk/maya-usd/pull/4189)
+* Fixed the bug that Selectable imaging node caused issues with XRay shading [#4146](https://github.com/Autodesk/maya-usd/pull/4146)
+* Update to MaterialX 1.39.3 [#4160](https://github.com/Autodesk/maya-usd/pull/4160)
+* Fixes viewport filter for USD lights [#4159](https://github.com/Autodesk/maya-usd/pull/4159)
+* Light Gizmo workaround for Rect Light / Portal Light [#4152](https://github.com/Autodesk/maya-usd/pull/4152)
+* Improve reliability of OpenPBR VP2 test [#4138](https://github.com/Autodesk/maya-usd/pull/4138)
+* Deprecating enableIdRender UsdImagingGLRenderParams [#4109](https://github.com/Autodesk/maya-usd/pull/4109)
+* Fix double texture loading when using Hydra [#4094](https://github.com/Autodesk/maya-usd/pull/4094)
+
+**Shared Components:**
+* Collections:
+    * "Remove selected" also deselects items from the opposite list [#4187](https://github.com/Autodesk/maya-usd/pull/4187)
+    * Help link to point to training docs for Collections [#4171](https://github.com/Autodesk/maya-usd/pull/4171)
+    * Fix multiple collection UI issues [#4130](https://github.com/Autodesk/maya-usd/pull/4130)
+    * Support the collection UI in Maya 2023 [#4101](https://github.com/Autodesk/maya-usd/pull/4101)
+    * Print collection membership [#4100](https://github.com/Autodesk/maya-usd/pull/4100)
+    * Save collection list view size [#4086](https://github.com/Autodesk/maya-usd/pull/4086)
+    * Adjust collection UI spacing [#4080](https://github.com/Autodesk/maya-usd/pull/4080)
+    * Add the selection to a collection [#4076](https://github.com/Autodesk/maya-usd/pull/4076)
+
+* Adjust some sizes of the light linking widget to better match the design [#4154](https://github.com/Autodesk/maya-usd/pull/4154)
+* Add remove from both menu item [#4132](https://github.com/Autodesk/maya-usd/pull/4132)
+* Set status tip when setting tool tips [#4103](https://github.com/Autodesk/maya-usd/pull/4103)
+* Bringing code back from shared repo [#4102](https://github.com/Autodesk/maya-usd/pull/4102)
+* Fix warning icon not disappearing [#4099](https://github.com/Autodesk/maya-usd/pull/4099)
+* Fix collections for Maya 2023 [#4098](https://github.com/Autodesk/maya-usd/pull/4098)
+* Sync drag and drop from max [#4097](https://github.com/Autodesk/maya-usd/pull/4097)
+* Detect data conflicts [#4093](https://github.com/Autodesk/maya-usd/pull/4093)
+* Clear include/exclude opinions [#4091](https://github.com/Autodesk/maya-usd/pull/4091)
+* Sync internal Include/Exclude editor [#4089](https://github.com/Autodesk/maya-usd/pull/4089)
+* Select include/exclude or expression items [#4088](https://github.com/Autodesk/maya-usd/pull/4088)
+* Multiple small UI fixes [#4083](https://github.com/Autodesk/maya-usd/pull/4083)
+
+**Documentation:**
+* Update README.md [#4179](https://github.com/Autodesk/maya-usd/pull/4179) [#4161](https://github.com/Autodesk/maya-usd/pull/4161) [#4161](https://github.com/Autodesk/maya-usd/pull/4161)
+* Publish USD v24.11 branch [#4170](https://github.com/Autodesk/maya-usd/pull/4170)
+* Add details to the axis and units import flag doc [#4149](https://github.com/Autodesk/maya-usd/pull/4149)
+* Add help for create stage option box [#4111](https://github.com/Autodesk/maya-usd/pull/4111)
+
 ## [v0.31.0] - 2025-03-07
 
 **Build:**

@@ -16,7 +16,7 @@
 #include "translatorXformable.h"
 
 #include <mayaUsd/fileio/translators/translatorPrim.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/splineUtils.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
 
 #include <pxr/base/gf/math.h>
@@ -37,7 +37,6 @@
 #include <maya/MFnTransform.h>
 #include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
-#include <maya/MObjectArray.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -46,7 +45,6 @@
 #include <maya/MVector.h>
 
 #include <algorithm>
-#include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -240,6 +238,36 @@ static bool _pushUSDXformOpToMayaXform(
     const UsdMayaPrimReaderArgs&    args,
     const UsdMayaPrimReaderContext* context)
 {
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+    // If the xformop has a spline, we write it to the plug directly
+    const auto& opAttr = xformop.GetAttr();
+    if (opAttr.HasSpline()) {
+        MPlug plg = MdagNode.findPlug(MString(opName.GetString().c_str()), false);
+        if (!plg.isNull()) {
+            auto                       spline = opAttr.GetSpline();
+            const UsdGeomXformOp::Type opType = xformop.GetOpType();
+            if (opType == UsdGeomXformOp::TypeRotateX || opType == UsdGeomXformOp::TypeRotateY
+                || opType == UsdGeomXformOp::TypeRotateZ) {
+                MFnTransform trans;
+                if (trans.setObject(MdagNode.object())) {
+                    auto rotOrder = UsdMayaXformStack::RotateOrderFromOpType<
+                        MTransformationMatrix::RotationOrder>(xformop.GetOpType());
+                    MPlug plgRotateOrder = MdagNode.findPlug("rotateOrder", false);
+                    if (!plgRotateOrder.isNull()) {
+                        trans.setRotationOrder(rotOrder, /*no need to reorder*/ false);
+                    }
+                }
+            }
+
+            if (UsdGeomXformOp::GetPrecisionFromValueTypeName(xformop.GetAttr().GetTypeName())
+                == UsdGeomXformOp::PrecisionDouble) {
+                return UsdMayaSplineUtils::WriteUsdSplineToPlug<double>(plg, spline, context);
+            }
+
+            return UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(plg, spline, context);
+        }
+    }
+#endif
     MTime::Unit timeUnit = MTime::uiUnit();
     double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
 
@@ -579,7 +607,14 @@ void UsdMayaTranslatorXformable::Read(
     // matrix decomposition
 
     UsdMayaXformStack::OpClassList stackOps = UsdMayaXformStack::FirstMatchingSubstack(
-        { &UsdMayaXformStack::MayaStack(), &UsdMayaXformStack::CommonStack() }, xformops);
+        {
+            &UsdMayaXformStack::MayaStack(),
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+                &UsdMayaXformStack::MayaIndividualTransformsStack(),
+#endif
+                &UsdMayaXformStack::CommonStack()
+        },
+        xformops);
 
     MFnDagNode MdagNode(mayaNode);
     if (!stackOps.empty()) {
