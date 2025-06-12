@@ -10,7 +10,6 @@ target_sources(${PROJECT_NAME}
         readUtil.cpp
         roundTripUtil.cpp
         shadingUtil.cpp
-        splineUtils.cpp
         userTaggedAttribute.cpp
         writeUtil.cpp
         xformStack.cpp

@@ -179,10 +179,10 @@ if (UFE_CLIPBOARD_SUPPORT)
     )
 endif()
 
-if (USD_SUPPORTS_SPLINES)
+if (USD_SUPPORT_INDIVIDUAL_TRANSFROMS)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
-            USD_SUPPORTS_SPLINES=1
+            USD_SUPPORT_INDIVIDUAL_TRANSFROMS=1
     )
 endif()
 
