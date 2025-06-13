@@ -81,7 +81,7 @@ private:
     bool executeCommand();
 
     Ufe::Path m_ancestor;
-    Ufe::SceneItem::Ptr m_materialParent;
+    Ufe::Path m_materialParent;
     std::shared_ptr<Ufe::CompositeUndoableCommand> m_cmds;
 }; // MayaUsdCreateLookdevEnvironmentCommand
 

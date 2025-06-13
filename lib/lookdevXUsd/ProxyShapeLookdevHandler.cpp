@@ -12,6 +12,8 @@
 
 #include <mayaUsdAPI/utils.h>
 
+#include <ufe/hierarchy.h>
+
 namespace LookdevXUsd
 {
 
@@ -83,7 +85,7 @@ bool ProxyShapeLookdevHandler::isLookdevContainerImpl(const Ufe::SceneItem::Ptr&
 }
 
 MayaUsdCreateLookdevEnvironmentCommand::MayaUsdCreateLookdevEnvironmentCommand(Ufe::Path ancestor)
-    : m_ancestor(std::move(ancestor)), m_materialParent(nullptr),
+    : m_ancestor(std::move(ancestor)),
       m_cmds(std::make_shared<Ufe::CompositeUndoableCommand>())
 {
 }
@@ -95,7 +97,7 @@ MayaUsdCreateLookdevEnvironmentCommand::Ptr MayaUsdCreateLookdevEnvironmentComma
 
 Ufe::SceneItem::Ptr MayaUsdCreateLookdevEnvironmentCommand::sceneItem() const
 {
-    return m_materialParent;
+    return Ufe::Hierarchy::createItem(m_materialParent);
 }
 
 void MayaUsdCreateLookdevEnvironmentCommand::execute()
@@ -176,7 +178,7 @@ bool MayaUsdCreateLookdevEnvironmentCommand::executeCommand()
         return false;
     }
     m_cmds->append(createMaterialsScopeCmd);
-    m_materialParent = materialsScope;
+    m_materialParent = materialsScope->path();
 
     return true;
 }
@@ -186,7 +188,7 @@ void MayaUsdCreateLookdevEnvironmentCommand::undo()
     if (m_cmds)
     {
         m_cmds->undo();
-        m_materialParent.reset();
+        m_materialParent = {};
     }
 }
 

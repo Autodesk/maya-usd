@@ -17,6 +17,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/usd/usdGeom/subset.h>
 #include <pxr/usd/usdShade/material.h>
 
 namespace LookdevXUsd
@@ -39,6 +40,14 @@ LookdevXUfe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Pt
     using namespace PXR_NS;
 
     if (!TF_VERIFY(MayaUsdAPI::isUsdSceneItem(item), "Invalid item\n"))
+    {
+        return nullptr;
+    }
+
+    // Test if this item is imageable or a geom subset. If not, then we cannot create a material
+    // interface for it, which is a valid case (such as for a material node type).
+    const auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
+    if (!PXR_NS::UsdGeomImageable(prim) && !prim.IsA<UsdGeomSubset>())
     {
         return nullptr;
     }
