@@ -43,14 +43,6 @@ LookdevXUfe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Pt
         return nullptr;
     }
 
-    // Test if this item is imageable. If not, then we cannot create a material
-    // interface for it, which is a valid case (such as for a material node type).
-    PXR_NS::UsdGeomImageable primSchema(MayaUsdAPI::getPrimForUsdSceneItem(item));
-    if (!primSchema)
-    {
-        return nullptr;
-    }
-
     return UsdMaterial::create(item);
 }
 
