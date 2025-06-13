@@ -250,6 +250,7 @@ target_link_libraries(${PROJECT_NAME}
         usdRi
         usdShade
         usdSkel
+	usdSkelImaging
         usdUtils
         usdUI
         vt
