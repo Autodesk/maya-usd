@@ -168,10 +168,13 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                     value = value * distanceConversionScalar;
                 }
             }
-
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
             if (_GetExportArgs().animationType != UsdMayaJobExportArgsTokens->curves) {
                 animChannel.setXformOp(value, matrix, usdTime, valueWriter);
             }
+#else
+            animChannel.setXformOp(value, matrix, usdTime, valueWriter);
+#endif
         }
 
 #if USD_SUPPORT_INDIVIDUAL_TRANSFROMS

@@ -189,7 +189,7 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
 
         # This file node should have stayed "sRGB":
         if not ignoreColorSpaceFileRules:
-            self.assertEqual(cmds.getAttr(file_node + ".colorSpace"), "sRGB")
+            self.assertIn(cmds.getAttr(file_node + ".colorSpace"), ["sRGB", "sRGB Encoded Rec.709 (sRGB)"])
 
         cmds.defaultNavigation(
             createNew=True, destination="%s.roughness" % shading_node
