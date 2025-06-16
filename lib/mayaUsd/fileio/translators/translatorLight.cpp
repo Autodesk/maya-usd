@@ -574,7 +574,7 @@ static bool _ReadSpotLight(
                 timeCode);
 
             if (!UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
-                    penumbraAnglePlug, penumbraAngleSpline, &context, MDistance::kInvalid)) {
+                    penumbraAnglePlug, penumbraAngleSpline, &context)) {
                 float UsdConeAngle = 1.f;
                 shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
                 float coneSoftness = 0.f;
@@ -598,7 +598,7 @@ static bool _ReadSpotLight(
                 timeCode);
 
             if (!UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
-                    coneAnglePlug, coneAngleSpline, &context, MDistance::kInvalid)) {
+                    coneAnglePlug, coneAngleSpline, &context)) {
                 float UsdConeAngle = 1.f;
                 shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
                 float coneSoftness = 0.f;

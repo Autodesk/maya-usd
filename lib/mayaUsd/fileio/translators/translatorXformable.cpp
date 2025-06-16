@@ -246,8 +246,9 @@ static bool _pushUSDXformOpToMayaXform(
         if (!plg.isNull()) {
             auto                       spline = opAttr.GetSpline();
             const UsdGeomXformOp::Type opType = xformop.GetOpType();
-            if (opType == UsdGeomXformOp::TypeRotateX || opType == UsdGeomXformOp::TypeRotateY
-                || opType == UsdGeomXformOp::TypeRotateZ) {
+            bool                       rotOp = opType == UsdGeomXformOp::TypeRotateX
+                || opType == UsdGeomXformOp::TypeRotateY || opType == UsdGeomXformOp::TypeRotateZ;
+            if (rotOp) {
                 MFnTransform trans;
                 if (trans.setObject(MdagNode.object())) {
                     auto rotOrder = UsdMayaXformStack::RotateOrderFromOpType<
@@ -264,7 +265,8 @@ static bool _pushUSDXformOpToMayaXform(
                 return UsdMayaSplineUtils::WriteUsdSplineToPlug<double>(plg, spline, context);
             }
 
-            return UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(plg, spline, context);
+            return UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
+                plg, spline, context, rotOp ? M_PI / 180.0 : 1.f);
         }
     }
 #endif

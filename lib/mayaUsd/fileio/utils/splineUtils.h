@@ -199,7 +199,7 @@ struct UsdMayaSplineUtils
         MPlug&                                plug,
         TsSpline                              spline,
         const class UsdMayaPrimReaderContext* context,
-        const MDistance::Unit                 convertToUnit = MDistance::kMillimeters)
+        const T                               scale = 1)
     {
         TsKnotMap knots = spline.GetKnots();
         if (knots.empty()) {
@@ -236,13 +236,8 @@ struct UsdMayaSplineUtils
                 knot.GetValue(&value);
             }
 
-            switch (convertToUnit) {
-            case MDistance::kInches: value = UsdMayaUtil::ConvertMMToInches(value); break;
-            case MDistance::kCentimeters: value = UsdMayaUtil::ConvertMMToCM(value); break;
-            default:
-                // The input is expected to be in millimeters.
-                break;
-            }
+            // Apply scaling to the value
+            value = value * scale;
 
             TsTime inMayaTime {}, outMayaTime {};
             T      inUsdSlope = 0.f, outUsdSlope = 0.f, inMayaSlope = 0.f, outMayaSlope = 0.f;
