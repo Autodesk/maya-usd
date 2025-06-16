@@ -654,11 +654,11 @@ void UsdMayaTranslatorXformable::Read(
                                     { "zx", MTransformationMatrix::RotationOrder::kZXY },
                                     { "zy", MTransformationMatrix::RotationOrder::kZYX },
                                     { "x", MTransformationMatrix::RotationOrder::kXYZ },
-                                    { "y", MTransformationMatrix::RotationOrder::kYXZ },
-                                    { "z", MTransformationMatrix::RotationOrder::kZXY } };
+                                    { "y", MTransformationMatrix::RotationOrder::kXYZ },
+                                    { "z", MTransformationMatrix::RotationOrder::kXYZ } };
 
                 auto it = rotOrderMap.find(rotOrderStr);
-                auto rotOrder = it != rotOrderMap.end() ? it->second : [&]() {
+                auto rotOrder = (it != rotOrderMap.end()) ? it->second : [&]() {
                     TF_WARN(
                         "Unsupported rotation order '%s' for prim <%s>",
                         rotOrderStr.c_str(),
