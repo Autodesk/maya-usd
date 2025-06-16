@@ -47,7 +47,7 @@ LookdevXUfe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Pt
     // Test if this item is imageable or a geom subset. If not, then we cannot create a material
     // interface for it, which is a valid case (such as for a material node type).
     const auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
-    if (!PXR_NS::UsdGeomImageable(prim) && !prim.IsA<UsdGeomSubset>())
+    if (!UsdGeomImageable(prim) && !prim.IsA<UsdGeomSubset>())
     {
         return nullptr;
     }
