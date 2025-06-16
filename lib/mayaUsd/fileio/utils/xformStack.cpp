@@ -471,7 +471,7 @@ UsdMayaXformStack::MatchingSubstack(const std::vector<UsdGeomXformOp>& xformops)
                 }
             }
             const auto& opType = xformOp.GetOpType();
-            bool singleRotation
+            bool        singleRotation
                 = (opType == UsdGeomXformOp::TypeRotateX || opType == UsdGeomXformOp::TypeRotateY
                    || opType == UsdGeomXformOp::TypeRotateZ);
             if (singleRotation && lastOpIsSingleRot) {
