@@ -17,6 +17,7 @@
 
 import os
 import unittest
+import math
 
 from pxr import Gf
 from pxr import Usd
@@ -207,9 +208,9 @@ class testUsdExportSplineXforms(unittest.TestCase):
         self.assertEqual(xformOps[0].GetOpName(), "xformOp:translateX")
         self.assertEqual(xformOps[1].GetOpName(), "xformOp:translateY")
         self.assertEqual(xformOps[2].GetOpName(), "xformOp:translateZ")
-        self.assertEqual(xformOps[3].GetOpName(), "xformOp:rotateX")
+        self.assertEqual(xformOps[3].GetOpName(), "xformOp:rotateZ")
         self.assertEqual(xformOps[4].GetOpName(), "xformOp:rotateY")
-        self.assertEqual(xformOps[5].GetOpName(), "xformOp:rotateZ")
+        self.assertEqual(xformOps[5].GetOpName(), "xformOp:rotateX")
         self.assertEqual(xformOps[6].GetOpName(), "xformOp:scaleX")
         self.assertEqual(xformOps[7].GetOpName(), "xformOp:scaleY")
         self.assertEqual(xformOps[8].GetOpName(), "xformOp:scaleZ")
@@ -232,24 +233,23 @@ class testUsdExportSplineXforms(unittest.TestCase):
         self._validateTransformSpline(xformOps[1], expectedYValues)
         self._validateTransformSpline(xformOps[2], expectedZValues)
         
-        # Test rotation splines (values in radians)
-        import math
+        # Test rotation splines (values in degrees)
         expectedRotXValues = [
-            (1, 0), (2, 0), (3, math.radians(30)), (4, math.radians(45)), (5, math.radians(90)),
-            (6, 0), (7, math.radians(60)), (8, math.radians(-45)), (9, math.radians(15)), (10, 0)
+            (1, 0), (2, 0), (3, 30), (4, 45), (5, 90),
+            (6, 0), (7, 60), (8, -45), (9, 15), (10, 0)
         ]
         expectedRotYValues = [
-            (1, 0), (2, math.radians(45)), (3, math.radians(90)), (4, math.radians(45)), (5, math.radians(180)),
-            (6, 0), (7, math.radians(270)), (8, math.radians(-90)), (9, math.radians(15)), (10, 0)
+            (1, 0), (2, 45), (3, 90), (4, 45), (5, 180),
+            (6, 0), (7, 270), (8, -90), (9, 15), (10, 0)
         ]
         expectedRotZValues = [
-            (1, 0), (2, 0), (3, 0), (4, math.radians(30)), (5, math.radians(60)),
-            (6, math.radians(120)), (7, math.radians(90)), (8, math.radians(-30)), (9, math.radians(15)), (10, 0)
+            (1, 0), (2, 0), (3, 0), (4, 30), (5, 60),
+            (6, 120), (7, 90), (8, -30), (9, 15), (10, 0)
         ]
         
-        self._validateTransformSpline(xformOps[3], expectedRotXValues)
+        self._validateTransformSpline(xformOps[5], expectedRotXValues)
         self._validateTransformSpline(xformOps[4], expectedRotYValues)
-        self._validateTransformSpline(xformOps[5], expectedRotZValues)
+        self._validateTransformSpline(xformOps[3], expectedRotZValues)
         
         # Test scale splines
         expectedScaleXValues = [
