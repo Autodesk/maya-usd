@@ -45,6 +45,7 @@
 #include <maya/MVector.h>
 
 #include <algorithm>
+#include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -246,25 +247,16 @@ static bool _pushUSDXformOpToMayaXform(
         if (!plg.isNull()) {
             auto                       spline = opAttr.GetSpline();
             const UsdGeomXformOp::Type opType = xformop.GetOpType();
-            if (opType == UsdGeomXformOp::TypeRotateX || opType == UsdGeomXformOp::TypeRotateY
-                || opType == UsdGeomXformOp::TypeRotateZ) {
-                MFnTransform trans;
-                if (trans.setObject(MdagNode.object())) {
-                    auto rotOrder = UsdMayaXformStack::RotateOrderFromOpType<
-                        MTransformationMatrix::RotationOrder>(xformop.GetOpType());
-                    MPlug plgRotateOrder = MdagNode.findPlug("rotateOrder", false);
-                    if (!plgRotateOrder.isNull()) {
-                        trans.setRotationOrder(rotOrder, /*no need to reorder*/ false);
-                    }
-                }
-            }
+            bool                       rotOp = opType == UsdGeomXformOp::TypeRotateX
+                || opType == UsdGeomXformOp::TypeRotateY || opType == UsdGeomXformOp::TypeRotateZ;
 
             if (UsdGeomXformOp::GetPrecisionFromValueTypeName(xformop.GetAttr().GetTypeName())
                 == UsdGeomXformOp::PrecisionDouble) {
                 return UsdMayaSplineUtils::WriteUsdSplineToPlug<double>(plg, spline, context);
             }
 
-            return UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(plg, spline, context);
+            return UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
+                plg, spline, context, rotOp ? M_PI / 180.0 : 1.f);
         }
     }
 #endif
@@ -619,6 +611,7 @@ void UsdMayaTranslatorXformable::Read(
     MFnDagNode MdagNode(mayaNode);
     if (!stackOps.empty()) {
         // make sure stackIndices.size() == xformops.size()
+        std::string rotOrderStr = "";
         for (unsigned int i = 0; i < stackOps.size(); i++) {
             const UsdGeomXformOp&               xformop(xformops[i]);
             const UsdMayaXformOpClassification& opDef(stackOps[i]);
@@ -630,7 +623,55 @@ void UsdMayaTranslatorXformable::Read(
             const TfToken& opName(opDef.GetName());
 
             _pushUSDXformOpToMayaXform(xformop, opName, MdagNode, args, context);
+
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+            // If we have an individual rotation, we need to build the rotation order
+            if (opName == UsdMayaXformStackTokens->rotateX) {
+                rotOrderStr.insert(0, "x");
+            } else if (opName == UsdMayaXformStackTokens->rotateY) {
+                rotOrderStr.insert(0, "y");
+            } else if (opName == UsdMayaXformStackTokens->rotateZ) {
+                rotOrderStr.insert(0, "z");
+            }
+#endif
         }
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+        if (!rotOrderStr.empty()) {
+            MFnTransform trans;
+            if (trans.setObject(MdagNode.object())) {
+                // Static lookup table for rotation order mapping
+                static const std::unordered_map<std::string, MTransformationMatrix::RotationOrder>
+                    rotOrderMap = { { "xyz", MTransformationMatrix::RotationOrder::kXYZ },
+                                    { "xzy", MTransformationMatrix::RotationOrder::kXZY },
+                                    { "yxz", MTransformationMatrix::RotationOrder::kYXZ },
+                                    { "yzx", MTransformationMatrix::RotationOrder::kYZX },
+                                    { "zxy", MTransformationMatrix::RotationOrder::kZXY },
+                                    { "zyx", MTransformationMatrix::RotationOrder::kZYX },
+                                    { "xy", MTransformationMatrix::RotationOrder::kXYZ },
+                                    { "xz", MTransformationMatrix::RotationOrder::kXZY },
+                                    { "yx", MTransformationMatrix::RotationOrder::kYXZ },
+                                    { "yz", MTransformationMatrix::RotationOrder::kYZX },
+                                    { "zx", MTransformationMatrix::RotationOrder::kZXY },
+                                    { "zy", MTransformationMatrix::RotationOrder::kZYX },
+                                    { "x", MTransformationMatrix::RotationOrder::kXYZ },
+                                    { "y", MTransformationMatrix::RotationOrder::kXYZ },
+                                    { "z", MTransformationMatrix::RotationOrder::kXYZ } };
+
+                auto it = rotOrderMap.find(rotOrderStr);
+                auto rotOrder = (it != rotOrderMap.end()) ? it->second : [&]() {
+                    TF_WARN(
+                        "Unsupported rotation order '%s' for prim <%s>",
+                        rotOrderStr.c_str(),
+                        xformSchema.GetPath().GetText());
+                    return MTransformationMatrix::RotationOrder::kXYZ;
+                }();
+                MPlug plgRotateOrder = MdagNode.findPlug("rotateOrder", false);
+                if (!plgRotateOrder.isNull()) {
+                    trans.setRotationOrder(rotOrder, /*no need to reorder*/ false);
+                }
+            }
+        }
+#endif
     } else {
         if (!_pushUSDXformToMayaXform(xformSchema, MdagNode, args, context)) {
             TF_RUNTIME_ERROR(

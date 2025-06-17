@@ -459,7 +459,37 @@ UsdMayaXformStack::MatchingSubstack(const std::vector<UsdGeomXformOp>& xformops)
             // not less than nextOp...
             const UsdMayaXformStack::IndexPair& foundIdxPair = foundTokenIdxPairIter->second;
 
-            if (foundIdxPair.first >= nextOpIndex) {
+            // For rotation, the order of the op can be different from the stack.
+            // RotX, RotY, RotZ can be in any order.
+            bool lastOpIsSingleRot = false;
+            if (!ret.empty()) {
+                const auto& lastOp = ret.back();
+                if (lastOp.GetOpType() == UsdGeomXformOp::TypeRotateX
+                    || lastOp.GetOpType() == UsdGeomXformOp::TypeRotateY
+                    || lastOp.GetOpType() == UsdGeomXformOp::TypeRotateZ) {
+                    lastOpIsSingleRot = true;
+                }
+            }
+            const auto& opType = xformOp.GetOpType();
+            bool        singleRotation
+                = (opType == UsdGeomXformOp::TypeRotateX || opType == UsdGeomXformOp::TypeRotateY
+                   || opType == UsdGeomXformOp::TypeRotateZ);
+            if (singleRotation && lastOpIsSingleRot) {
+                {
+                    if (foundIdxPair.first == NO_INDEX && foundIdxPair.second == NO_INDEX) {
+                        // If we didn't find any op, then we can't match
+                        TF_WARN("Cannot find xform op %s", opName.GetText());
+                        return _NO_MATCH;
+                    }
+                    if (foundIdxPair.first == NO_INDEX) {
+                        foundOpIdx = foundIdxPair.second;
+                    } else {
+                        foundOpIdx = foundIdxPair.first;
+                    }
+                }
+            }
+
+            else if (foundIdxPair.first >= nextOpIndex) {
                 foundOpIdx = foundIdxPair.first;
             } else if (foundIdxPair.second >= nextOpIndex && foundIdxPair.second != NO_INDEX) {
                 foundOpIdx = foundIdxPair.second;

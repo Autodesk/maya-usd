@@ -220,9 +220,9 @@ class testUsdImportXformAnim(unittest.TestCase):
         self.assertEqual(xformOps[0].GetOpName(), "xformOp:translateX")
         self.assertEqual(xformOps[1].GetOpName(), "xformOp:translateY")
         self.assertEqual(xformOps[2].GetOpName(), "xformOp:translateZ")
-        self.assertEqual(xformOps[3].GetOpName(), "xformOp:rotateX")
+        self.assertEqual(xformOps[3].GetOpName(), "xformOp:rotateZ")
         self.assertEqual(xformOps[4].GetOpName(), "xformOp:rotateY")
-        self.assertEqual(xformOps[5].GetOpName(), "xformOp:rotateZ")
+        self.assertEqual(xformOps[5].GetOpName(), "xformOp:rotateX")
         self.assertEqual(xformOps[6].GetOpName(), "xformOp:scaleX")
         self.assertEqual(xformOps[7].GetOpName(), "xformOp:scaleY")
         self.assertEqual(xformOps[8].GetOpName(), "xformOp:scaleZ")
@@ -236,14 +236,14 @@ class testUsdImportXformAnim(unittest.TestCase):
         self._validateTransformSpline(xformOps[1], expectedTranslateYValues)
         self._validateTransformSpline(xformOps[2], expectedTranslateZValues)
         
-        # Test rotation splines (values in radians)
-        expectedRotateXValues = [(1, math.radians(0)), (2, math.radians(30)), (3, math.radians(60)), (4, math.radians(45)), (5, math.radians(0))]
-        expectedRotateYValues = [(1, math.radians(0)), (2, math.radians(45)), (3, math.radians(90)), (4, math.radians(120)), (5, math.radians(0))]
-        expectedRotateZValues = [(1, math.radians(0)), (2, math.radians(15)), (3, math.radians(30)), (4, math.radians(60)), (5, math.radians(0))]
+        # Test rotation splines (values in degrees)
+        expectedRotateXValues = [(1, 0), (2, 30), (3, 60), (4, 45), (5, 0)]
+        expectedRotateYValues = [(1, 0), (2, 45), (3, 90), (4, 120), (5, 0)]
+        expectedRotateZValues = [(1, 0), (2, 15), (3, 30), (4, 60), (5, 0)]
         
-        self._validateTransformSpline(xformOps[3], expectedRotateXValues)
+        self._validateTransformSpline(xformOps[5], expectedRotateXValues)
         self._validateTransformSpline(xformOps[4], expectedRotateYValues)
-        self._validateTransformSpline(xformOps[5], expectedRotateZValues)
+        self._validateTransformSpline(xformOps[3], expectedRotateZValues)
         
         # Test scale splines
         expectedScaleXValues = [(1, 1), (2, 1.5), (3, 2), (4, 0.7), (5, 1)]

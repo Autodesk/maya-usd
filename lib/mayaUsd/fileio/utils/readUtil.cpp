@@ -1036,8 +1036,7 @@ static bool _ReadAnimatedUsdAttribute(
     if (usdAttr.HasSpline()) {
         // For now only float splines are supported.
         // USD 25.05 will allow support for other types.
-        if (UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
-                plug, usdAttr.GetSpline(), context, MDistance::kInvalid)) {
+        if (UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(plug, usdAttr.GetSpline(), context)) {
             return true;
         }
     }

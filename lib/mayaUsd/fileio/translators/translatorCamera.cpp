@@ -217,10 +217,19 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
     }
 
 #if PXR_VERSION >= 2411
+
+    double scale = 1.0;
+    switch (convertToUnit) {
+    case MDistance::kInches: scale = UsdMayaUtil::ConvertMMToInches(scale); break;
+    case MDistance::kCentimeters: scale = UsdMayaUtil::ConvertMMToCM(scale); break;
+    default:
+        // The input is expected to be in millimeters.
+        break;
+    }
     // If the attribute has a spline, we ignore time samples.
     if (usdAttr.HasSpline()) {
         if (UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
-                plug, usdAttr.GetSpline(), context, convertToUnit)) {
+                plug, usdAttr.GetSpline(), context, static_cast<float>(scale))) {
             return true;
         }
     }

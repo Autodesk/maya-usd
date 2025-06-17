@@ -110,16 +110,18 @@ void UsdMayaTransformWriter::_ComputeXformOps(
         bool               hasAnimated = false;
         bool               hasStatic = false;
         const unsigned int plugCount = animChannel.valueType == _ValueType::Matrix ? 1u : 3u;
-        for (unsigned int i = 0u; i < plugCount; ++i) {
-            if (animChannel.sampleType[i] == _SampleType::Animated) {
-                if (animChannel.valueType == _ValueType::Matrix) {
-                    matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
-                } else {
-                    value[i] = animChannel.GetSourceData(i).Get<double>();
+        if (animChannel.valueType != _ValueType::Value) {
+            for (unsigned int i = 0u; i < plugCount; ++i) {
+                if (animChannel.sampleType[i] == _SampleType::Animated) {
+                    if (animChannel.valueType == _ValueType::Matrix) {
+                        matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
+                    } else {
+                        value[i] = animChannel.GetSourceData(i).Get<double>();
+                    }
+                    hasAnimated = true;
+                } else if (animChannel.sampleType[i] == _SampleType::Static) {
+                    hasStatic = true;
                 }
-                hasAnimated = true;
-            } else if (animChannel.sampleType[i] == _SampleType::Static) {
-                hasStatic = true;
             }
         }
 
@@ -186,13 +188,17 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                     MFnDependencyNode(GetMayaObject()),
                     GetUsdPrim(),
                     animChannel.valueAttrName,
-                    animChannel.op.GetAttr().GetName());
+                    animChannel.op.GetAttr().GetName(),
+                    // For translation, we need to apply the distanceConversionScalar
+                    animChannel.opType == _XformType::Translate ? distanceConversionScalar : 1.f);
             } else {
                 UsdMayaSplineUtils::WriteSplineAttribute<float>(
                     MFnDependencyNode(GetMayaObject()),
                     GetUsdPrim(),
                     animChannel.valueAttrName,
-                    animChannel.op.GetAttr().GetName());
+                    animChannel.op.GetAttr().GetName(),
+                    // For rotations, we need to convert radians to degrees
+                    animChannel.opType == _XformType::Rotate ? 180.0 / M_PI : 1.f);
             }
         }
 #endif
@@ -346,34 +352,34 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
 
                 switch (iTrans.rotationOrder()) {
                 case MTransformationMatrix::kYZX:
-                    oAnimChanList->push_back(chanY);
-                    oAnimChanList->push_back(chanZ);
                     oAnimChanList->push_back(chanX);
+                    oAnimChanList->push_back(chanZ);
+                    oAnimChanList->push_back(chanY);
                     break;
                 case MTransformationMatrix::kZXY:
-                    oAnimChanList->push_back(chanZ);
-                    oAnimChanList->push_back(chanX);
                     oAnimChanList->push_back(chanY);
+                    oAnimChanList->push_back(chanX);
+                    oAnimChanList->push_back(chanZ);
                     break;
                 case MTransformationMatrix::kXZY:
-                    oAnimChanList->push_back(chanX);
-                    oAnimChanList->push_back(chanZ);
                     oAnimChanList->push_back(chanY);
+                    oAnimChanList->push_back(chanZ);
+                    oAnimChanList->push_back(chanX);
                     break;
                 case MTransformationMatrix::kXYZ:
-                    oAnimChanList->push_back(chanX);
-                    oAnimChanList->push_back(chanY);
                     oAnimChanList->push_back(chanZ);
+                    oAnimChanList->push_back(chanY);
+                    oAnimChanList->push_back(chanX);
                     break;
                 case MTransformationMatrix::kYXZ:
-                    oAnimChanList->push_back(chanY);
-                    oAnimChanList->push_back(chanX);
                     oAnimChanList->push_back(chanZ);
+                    oAnimChanList->push_back(chanX);
+                    oAnimChanList->push_back(chanY);
                     break;
                 case MTransformationMatrix::kZYX:
-                    oAnimChanList->push_back(chanZ);
-                    oAnimChanList->push_back(chanY);
                     oAnimChanList->push_back(chanX);
+                    oAnimChanList->push_back(chanY);
+                    oAnimChanList->push_back(chanZ);
                     break;
                 default: break;
                 }
