@@ -57,8 +57,9 @@ _getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeC
 {
     bool retValue = false;
 
-#ifndef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
-    if (xformOp.GetTypeName().IsScalar()) {
+#ifdef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+    if (xformOp.GetTypeName() == SdfValueTypeNames->Float
+        || xformOp.GetTypeName() == SdfValueTypeNames->Double) {
         return retValue;
     }
 #endif
