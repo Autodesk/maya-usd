@@ -316,7 +316,7 @@ static bool _pushUSDXformOpToMayaXform(
     bool                isSingleTransformOp = false;
     std::vector<double> singleTransformOp;
 #if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
-    double              singleVal = 0.0;
+    double singleVal = 0.0;
 #endif
     MString             singleOpName;
     std::vector<double> timeSamples;
