@@ -57,6 +57,11 @@ _getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeC
 {
     bool retValue = false;
 
+#ifndef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+    if (xformOp.GetTypeName().IsScalar()) {
+        return retValue;
+    }
+#endif
     const UsdGeomXformOp::Type opType = xformOp.GetOpType();
 
     if (opType == UsdGeomXformOp::TypeScale) {
@@ -70,9 +75,11 @@ _getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeC
     double angleMult = GfDegreesToRadians(1.0);
 
     switch (opType) {
+#ifndef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
     case UsdGeomXformOp::TypeRotateX: rotAxis = 0; break;
     case UsdGeomXformOp::TypeRotateY: rotAxis = 1; break;
     case UsdGeomXformOp::TypeRotateZ: rotAxis = 2; break;
+#endif
     case UsdGeomXformOp::TypeRotateXYZ:
     case UsdGeomXformOp::TypeRotateXZY:
     case UsdGeomXformOp::TypeRotateYXZ:
@@ -115,6 +122,42 @@ _getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeC
             value[1] = valued[1] * angleMult;
             value[2] = valued[2] * angleMult;
         }
+    }
+
+    return retValue;
+}
+
+static bool
+_getSingleXformOp(const UsdGeomXformOp& xformOp, double& value, const UsdTimeCode& usdTime)
+{
+    bool retValue = false;
+
+    const UsdGeomXformOp::Type opType = xformOp.GetOpType();
+
+    if (opType == UsdGeomXformOp::TypeScale) {
+        value = 1.0;
+    } else {
+        value = 0.0;
+    }
+
+    double angleMult = 1.0;
+    switch (opType) {
+    case UsdGeomXformOp::TypeRotateX: angleMult = GfDegreesToRadians(1.0); break;
+    case UsdGeomXformOp::TypeRotateY: angleMult = GfDegreesToRadians(1.0); break;
+    case UsdGeomXformOp::TypeRotateZ: angleMult = GfDegreesToRadians(1.0); break;
+    default:
+        // This XformOp is not a rotation, so we're not converting an
+        // angular value from degrees to radians.
+        break;
+    }
+
+    retValue = xformOp.GetAs<double>(&value, usdTime);
+    if (retValue) {
+        value *= angleMult;
+        if (xformOp.IsInverseOp()) {
+            value = -value;
+        }
+        retValue = true;
     }
 
     return retValue;
@@ -267,6 +310,10 @@ static bool _pushUSDXformOpToMayaXform(
     std::vector<double> yValue;
     std::vector<double> zValue;
     GfVec3d             value;
+    bool                isSingleTransformOp = false;
+    std::vector<double> singleTransformOp;
+    double              singleVal = 0.0;
+    MString             singleOpName;
     std::vector<double> timeSamples;
 
     bool applyEulerFilter = args.GetJobArguments().applyEulerFilter;
@@ -280,6 +327,7 @@ static bool _pushUSDXformOpToMayaXform(
         xValue.resize(timeSamples.size());
         yValue.resize(timeSamples.size());
         zValue.resize(timeSamples.size());
+        singleTransformOp.resize(timeSamples.size());
         for (unsigned int ti = 0; ti < timeSamples.size(); ++ti) {
             UsdTimeCode time(timeSamples[ti]);
             if (_getXformOpAsVec3d(xformop, value, time)) {
@@ -287,7 +335,14 @@ static bool _pushUSDXformOpToMayaXform(
                 yValue[ti] = value[1];
                 zValue[ti] = value[2];
                 timeArray.set(MTime(timeSamples[ti] * timeSampleMultiplier, timeUnit), ti);
-            } else {
+            }
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+            else if (_getSingleXformOp(xformop, singleVal, time)) {
+                singleTransformOp[ti] = singleVal;
+                isSingleTransformOp = true;
+            }
+#endif
+            else {
                 TF_RUNTIME_ERROR(
                     "Missing sampled data on xformOp: %s", xformop.GetName().GetText());
             }
@@ -302,11 +357,24 @@ static bool _pushUSDXformOpToMayaXform(
             xValue[0] = value[0];
             yValue[0] = value[1];
             zValue[0] = value[2];
-        } else {
+        }
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+        else if (_getSingleXformOp(xformop, singleVal, time)) {
+            singleTransformOp.resize(1);
+            singleTransformOp[0] = singleVal;
+            isSingleTransformOp = true;
+        }
+#endif
+        else {
             TF_RUNTIME_ERROR("Missing default data on xformOp: %s", xformop.GetName().GetText());
         }
     }
-    if (!xValue.empty()) {
+    if (isSingleTransformOp) {
+        std::string transformType = opName.GetString();
+        transformType.pop_back(); // remove the last character, which is the axis
+        singleOpName = MString(transformType.c_str());
+    }
+    if (!xValue.empty() || isSingleTransformOp) {
         if (opName == UsdMayaXformStackTokens->shear) {
             _setMayaAttribute(
                 MdagNode,
@@ -365,7 +433,56 @@ static bool _pushUSDXformOpToMayaXform(
                 "Y",
                 "Z",
                 context);
-        } else {
+        }
+#ifdef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+        else if (
+            opName == UsdMayaXformStackTokens->translateX
+            || opName == UsdMayaXformStackTokens->rotateX
+            || opName == UsdMayaXformStackTokens->scaleX) {
+            _setMayaAttribute(
+                MdagNode,
+                singleTransformOp,
+                yValue,
+                zValue,
+                timeArray,
+                singleOpName,
+                "X",
+                "",
+                "",
+                context);
+        } else if (
+            opName == UsdMayaXformStackTokens->translateY
+            || opName == UsdMayaXformStackTokens->rotateY
+            || opName == UsdMayaXformStackTokens->scaleY) {
+            _setMayaAttribute(
+                MdagNode,
+                xValue,
+                singleTransformOp,
+                zValue,
+                timeArray,
+                singleOpName,
+                "",
+                "Y",
+                "",
+                context);
+        } else if (
+            opName == UsdMayaXformStackTokens->translateZ
+            || opName == UsdMayaXformStackTokens->rotateZ
+            || opName == UsdMayaXformStackTokens->scaleZ) {
+            _setMayaAttribute(
+                MdagNode,
+                xValue,
+                yValue,
+                singleTransformOp,
+                timeArray,
+                singleOpName,
+                "",
+                "",
+                "Z",
+                context);
+        }
+#endif
+        else {
             if (opName == UsdMayaXformStackTokens->rotate) {
                 MFnTransform trans;
                 if (trans.setObject(MdagNode.object())) {
