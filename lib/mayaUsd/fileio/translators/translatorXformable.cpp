@@ -128,6 +128,7 @@ _getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeC
     return retValue;
 }
 
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
 static bool
 _getSingleXformOp(const UsdGeomXformOp& xformOp, double& value, const UsdTimeCode& usdTime)
 {
@@ -163,6 +164,7 @@ _getSingleXformOp(const UsdGeomXformOp& xformOp, double& value, const UsdTimeCod
 
     return retValue;
 }
+#endif
 
 // Sets the animation curve (a knot per frame) for a given plug/attribute
 static MObject _setAnimPlugData(
@@ -313,7 +315,9 @@ static bool _pushUSDXformOpToMayaXform(
     GfVec3d             value;
     bool                isSingleTransformOp = false;
     std::vector<double> singleTransformOp;
+#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
     double              singleVal = 0.0;
+#endif
     MString             singleOpName;
     std::vector<double> timeSamples;
 
