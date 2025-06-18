@@ -24,7 +24,6 @@ add_library(${PROJECT_NAME} SHARED)
 target_sources(${PROJECT_NAME}
     PRIVATE
         LookdevXUsd.cpp
-        ProxyShapeLookdevHandler.cpp
         UsdCapabilityHandler.cpp
         UsdClipboardHandler.cpp
         UsdComponentConnections.cpp
@@ -54,7 +53,6 @@ target_sources(${PROJECT_NAME}
 set(HEADERS
     Export.h
     LookdevXUsd.h
-    ProxyShapeLookdevHandler.h
     UsdCapabilityHandler.h
     UsdClipboardHandler.h
     UsdComponentConnections.h
