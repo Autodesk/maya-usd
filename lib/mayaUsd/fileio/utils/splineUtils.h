@@ -101,6 +101,9 @@ struct UsdMayaSplineUtils
             inTangentX *= convert.as(MTime::uiUnit());
             outTangentX *= convert.as(MTime::uiUnit());
 
+            inTangentY *= scaling;
+            outTangentY *= scaling;
+
             TsTime inTime {}, outTime {};
             T      inSlope {}, outSlope {};
 

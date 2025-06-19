@@ -292,6 +292,149 @@ class testUsdImportXformAnim(unittest.TestCase):
         self._validateMayaTransformAnimation('animatedSphere', 'translate', expectedTranslationValues)
         self._validateMayaTransformAnimation('animatedSphere', 'rotate', expectedRotationValues)
         self._validateMayaTransformAnimation('animatedSphere', 'scale', expectedScaleValues)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 25, 5), 'Splines transforms are only supported in USD 0.25.05 and later')    
+    def testUsdImportXformSingleSplineAnim(self):
+        """
+        Tests that single-axis xform spline animation is imported correctly.
+        This test animates only one axis per transform type (translateX, rotateY, scaleZ)
+        while setting static non-default values for the non-animated axes.
+        """
+        # Create a Maya scene with animated sphere transform - single axis per transform type
+        sphereResult = cmds.polySphere(name='singleAxisSphere', radius=1)
+        sphere = sphereResult[0]  # Get the transform node
+        
+        # Set keyframes for translation X only (animated)
+        cmds.setKeyframe('%s.translateX' % sphere, time=self.START_TIMECODE, value=0)
+        cmds.setKeyframe('%s.translateX' % sphere, time=2, value=3)
+        cmds.setKeyframe('%s.translateX' % sphere, time=3, value=6)
+        cmds.setKeyframe('%s.translateX' % sphere, time=4, value=2)
+        cmds.setKeyframe('%s.translateX' % sphere, time=self.END_TIMECODE, value=0)
+        
+        # Set static values for non-animated translation axes
+        cmds.setAttr('%s.translateY' % sphere, 2.5)
+        cmds.setAttr('%s.translateZ' % sphere, -1.5)
+        
+        # Set keyframes for rotation Y only (animated)
+        cmds.setKeyframe('%s.rotateY' % sphere, time=self.START_TIMECODE, value=0)
+        cmds.setKeyframe('%s.rotateY' % sphere, time=2, value=60)
+        cmds.setKeyframe('%s.rotateY' % sphere, time=3, value=120)
+        cmds.setKeyframe('%s.rotateY' % sphere, time=4, value=180)
+        cmds.setKeyframe('%s.rotateY' % sphere, time=self.END_TIMECODE, value=0)
+        
+        # Set static values for non-animated rotation axes
+        cmds.setAttr('%s.rotateX' % sphere, 15)
+        cmds.setAttr('%s.rotateZ' % sphere, -30)
+        
+        # Set keyframes for scale Z only (animated)
+        cmds.setKeyframe('%s.scaleZ' % sphere, time=self.START_TIMECODE, value=1)
+        cmds.setKeyframe('%s.scaleZ' % sphere, time=2, value=2)
+        cmds.setKeyframe('%s.scaleZ' % sphere, time=3, value=0.5)
+        cmds.setKeyframe('%s.scaleZ' % sphere, time=4, value=3)
+        cmds.setKeyframe('%s.scaleZ' % sphere, time=self.END_TIMECODE, value=1)
+        
+        # Set static values for non-animated scale axes
+        cmds.setAttr('%s.scaleX' % sphere, 1.2)
+        cmds.setAttr('%s.scaleY' % sphere, 0.8)
+
+        # Export to USD with spline curves
+        usdFilePath = os.path.abspath('testUsdImportXformSingleSplineAnim.usda')
+        cmds.usdExport(mergeTransformAndShape=True,
+            file=usdFilePath,
+            shadingMode='none',
+            animationType='curves',
+            frameRange=(self.START_TIMECODE, self.END_TIMECODE))
+
+        # Validate that USD file was created and contains spline data
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+
+        # Test that the sphere exists as a prim
+        spherePrimPath = '/singleAxisSphere'
+        spherePrim = stage.GetPrimAtPath(spherePrimPath)
+        self.assertTrue(spherePrim)
+        
+        # Test that it is a valid mesh
+        mesh = UsdGeom.Mesh(spherePrim)
+        self.assertTrue(mesh)
+        
+        # Get the xformable interface
+        sphereXformable = UsdGeom.Xformable(spherePrim)
+        self.assertTrue(sphereXformable)
+
+        # Verify transform operations - should have individual axis transforms
+        xformOps = sphereXformable.GetOrderedXformOps()
+        self.assertTrue(len(xformOps) >= 3)  # At least translateX, rotateY, scaleZ
+        
+        # Find the specific single-axis operations
+        translateXOp = None
+        rotateYOp = None  
+        scaleZOp = None
+        
+        for op in xformOps:
+            opName = op.GetOpName()
+            if opName == "xformOp:translateX":
+                translateXOp = op
+            elif opName == "xformOp:rotateY":
+                rotateYOp = op
+            elif opName == "xformOp:scaleZ":
+                scaleZOp = op
+        
+        # Validate that we found the expected operations
+        self.assertIsNotNone(translateXOp, "translateX operation not found")
+        self.assertIsNotNone(rotateYOp, "rotateY operation not found") 
+        self.assertIsNotNone(scaleZOp, "scaleZ operation not found")
+        
+        # Test translation X spline
+        expectedTranslateXValues = [(1, 0), (2, 3), (3, 6), (4, 2), (5, 0)]
+        self._validateTransformSpline(translateXOp, expectedTranslateXValues)
+        
+        # Test rotation Y spline (values in degrees)
+        expectedRotateYValues = [(1, 0), (2, 60), (3, 120), (4, 180), (5, 0)]
+        self._validateTransformSpline(rotateYOp, expectedRotateYValues)
+        
+        # Test scale Z spline
+        expectedScaleZValues = [(1, 1), (2, 2), (3, 0.5), (4, 3), (5, 1)]
+        self._validateTransformSpline(scaleZOp, expectedScaleZValues)
+        
+        # Clear Maya scene and import the USD file
+        cmds.file(new=True, force=True)
+        
+        # Import from USD with animation data
+        cmds.usdImport(file=usdFilePath, readAnimData=True, primPath='/')
+        
+        # Validate imported sphere exists
+        self.assertTrue(cmds.objExists('singleAxisSphere'))
+        
+        # Expected animation values for validation - X animated, Y/Z static
+        expectedTranslationValues = [
+            (1, (0, 2.5, -1.5)),    # X animated, Y/Z static
+            (2, (3, 2.5, -1.5)),
+            (3, (6, 2.5, -1.5)),
+            (4, (2, 2.5, -1.5)),
+            (5, (0, 2.5, -1.5))
+        ]
+        
+        expectedRotationValues = [
+            (1, (15, 0, -30)),    # Y animated, X/Z static
+            (2, (15, 60, -30)),
+            (3, (15, 120, -30)),
+            (4, (15, 180, -30)),
+            (5, (15, 0, -30))
+        ]
+        
+        expectedScaleValues = [
+            (1, (1.2, 0.8, 1)),    # Z animated, X/Y static
+            (2, (1.2, 0.8, 2)),
+            (3, (1.2, 0.8, 0.5)),
+            (4, (1.2, 0.8, 3)),
+            (5, (1.2, 0.8, 1))
+        ]
+        
+        # Validate single-axis transform animations using helper method
+        self._validateMayaTransformAnimation('singleAxisSphere', 'translate', expectedTranslationValues)
+        self._validateMayaTransformAnimation('singleAxisSphere', 'rotate', expectedRotationValues)
+        self._validateMayaTransformAnimation('singleAxisSphere', 'scale', expectedScaleValues)
         
 
 if __name__ == '__main__':
