@@ -52,14 +52,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // This function retrieves a value for a given xformOp and given time sample. It
 // knows how to deal with different type of ops and angle conversion
-static bool
-_getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeCode& usdTime)
+static bool _getXformOpAsVec3d(
+    const UsdGeomXformOp& xformOp,
+    const TfToken&        opName,
+    GfVec3d&              value,
+    const UsdTimeCode&    usdTime)
 {
     bool retValue = false;
 
 #ifdef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
-    if (xformOp.GetTypeName() == SdfValueTypeNames->Float
-        || xformOp.GetTypeName() == SdfValueTypeNames->Double) {
+    if ((xformOp.GetTypeName() == SdfValueTypeNames->Float
+         || xformOp.GetTypeName() == SdfValueTypeNames->Double)
+        && opName != UsdMayaXformStackTokens->rotateAxis) {
         return retValue;
     }
 #endif
@@ -76,11 +80,9 @@ _getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeC
     double angleMult = GfDegreesToRadians(1.0);
 
     switch (opType) {
-#ifndef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
     case UsdGeomXformOp::TypeRotateX: rotAxis = 0; break;
     case UsdGeomXformOp::TypeRotateY: rotAxis = 1; break;
     case UsdGeomXformOp::TypeRotateZ: rotAxis = 2; break;
-#endif
     case UsdGeomXformOp::TypeRotateXYZ:
     case UsdGeomXformOp::TypeRotateXZY:
     case UsdGeomXformOp::TypeRotateYXZ:
@@ -335,7 +337,7 @@ static bool _pushUSDXformOpToMayaXform(
         singleTransformOp.resize(timeSamples.size());
         for (unsigned int ti = 0; ti < timeSamples.size(); ++ti) {
             UsdTimeCode time(timeSamples[ti]);
-            if (_getXformOpAsVec3d(xformop, value, time)) {
+            if (_getXformOpAsVec3d(xformop, opName, value, time)) {
                 xValue[ti] = value[0];
                 yValue[ti] = value[1];
                 zValue[ti] = value[2];
@@ -355,7 +357,7 @@ static bool _pushUSDXformOpToMayaXform(
     } else {
         // pick the first available sample or default
         UsdTimeCode time = UsdTimeCode::EarliestTime();
-        if (_getXformOpAsVec3d(xformop, value, time)) {
+        if (_getXformOpAsVec3d(xformop, opName, value, time)) {
             xValue.resize(1);
             yValue.resize(1);
             zValue.resize(1);
