@@ -63,6 +63,8 @@ static bool _getXformOpAsVec3d(
 #ifdef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
     if ((xformOp.GetTypeName() == SdfValueTypeNames->Float
          || xformOp.GetTypeName() == SdfValueTypeNames->Double)
+        // RotateAxis is an individual transform that was supported before usd2505.
+        // Keep the existing behavior
         && opName != UsdMayaXformStackTokens->rotateAxis) {
         return retValue;
     }
