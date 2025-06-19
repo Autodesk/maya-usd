@@ -289,13 +289,13 @@ static bool _pushUSDXformOpToMayaXform(
 {
 #if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
     // If the xformop has a spline, we write it to the plug directly
-    const auto& opAttr = xformop.GetAttr();
+    const auto&                opAttr = xformop.GetAttr();
+    const UsdGeomXformOp::Type opType = xformop.GetOpType();
     if (opAttr.HasSpline()) {
         MPlug plg = MdagNode.findPlug(MString(opName.GetString().c_str()), false);
         if (!plg.isNull()) {
-            auto                       spline = opAttr.GetSpline();
-            const UsdGeomXformOp::Type opType = xformop.GetOpType();
-            bool                       rotOp = opType == UsdGeomXformOp::TypeRotateX
+            auto spline = opAttr.GetSpline();
+            bool rotOp = opType == UsdGeomXformOp::TypeRotateX
                 || opType == UsdGeomXformOp::TypeRotateY || opType == UsdGeomXformOp::TypeRotateZ;
 
             if (UsdGeomXformOp::GetPrecisionFromValueTypeName(xformop.GetAttr().GetTypeName())
@@ -378,7 +378,10 @@ static bool _pushUSDXformOpToMayaXform(
     }
     if (isSingleTransformOp) {
         std::string transformType = opName.GetString();
-        transformType.pop_back(); // remove the last character, which is the axis
+        char        axis = transformType.back(); // get the last character, which is possibly axis
+        if (axis == 'X' || axis == 'Y' || axis == 'Z') {
+            transformType.pop_back();
+        }
         singleOpName = MString(transformType.c_str());
     }
     if (!xValue.empty() || isSingleTransformOp) {
@@ -443,9 +446,9 @@ static bool _pushUSDXformOpToMayaXform(
         }
 #ifdef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
         else if (
-            opName == UsdMayaXformStackTokens->translateX
-            || opName == UsdMayaXformStackTokens->rotateX
-            || opName == UsdMayaXformStackTokens->scaleX) {
+            (opType == UsdGeomXformOp::TypeTranslateX || opType == UsdGeomXformOp::TypeRotateX
+             || opType == UsdGeomXformOp::TypeScaleX)
+            && isSingleTransformOp) {
             _setMayaAttribute(
                 MdagNode,
                 singleTransformOp,
@@ -458,9 +461,9 @@ static bool _pushUSDXformOpToMayaXform(
                 "",
                 context);
         } else if (
-            opName == UsdMayaXformStackTokens->translateY
-            || opName == UsdMayaXformStackTokens->rotateY
-            || opName == UsdMayaXformStackTokens->scaleY) {
+            (opType == UsdGeomXformOp::TypeTranslateY || opType == UsdGeomXformOp::TypeRotateY
+             || opType == UsdGeomXformOp::TypeScaleY)
+            && isSingleTransformOp) {
             _setMayaAttribute(
                 MdagNode,
                 xValue,
@@ -473,9 +476,9 @@ static bool _pushUSDXformOpToMayaXform(
                 "",
                 context);
         } else if (
-            opName == UsdMayaXformStackTokens->translateZ
-            || opName == UsdMayaXformStackTokens->rotateZ
-            || opName == UsdMayaXformStackTokens->scaleZ) {
+            (opType == UsdGeomXformOp::TypeTranslateZ || opType == UsdGeomXformOp::TypeRotateZ
+             || opType == UsdGeomXformOp::TypeScaleZ)
+            && isSingleTransformOp) {
             _setMayaAttribute(
                 MdagNode,
                 xValue,
