@@ -85,6 +85,9 @@ struct UsdMayaSplineUtils
             return knots;
         }
 
+        const bool isWeighted = flAnimCurve.isWeighted();
+        flAnimCurve.setIsWeighted(true);
+
         auto numKeys = flAnimCurve.numKeys();
         for (unsigned int k = 0; k < numKeys; ++k) {
             auto time = flAnimCurve.time(k).value();
@@ -114,7 +117,7 @@ struct UsdMayaSplineUtils
             // are both specified multiplied by 3 Heights are positive for upward-sloping
             // post-tangents, and negative for upward-sloping pre-tangents.
             TsConvertToStandardTangent(
-                T(inTangentX), T(inTangentY), true, true, true, &inTime, &inSlope);
+                T(inTangentX), T(inTangentY), true, true, false, &inTime, &inSlope);
 
             if (std::isnan(inSlope)) {
                 inSlope = T(0);
@@ -157,6 +160,8 @@ struct UsdMayaSplineUtils
 
             knots.insert(knot);
         }
+
+        flAnimCurve.setIsWeighted(isWeighted);
 
         return knots;
     }
@@ -254,7 +259,7 @@ struct UsdMayaSplineUtils
             // specified multiplied by 3 Heights are positive for upward-sloping post-tangents, and
             // negative for upward-sloping pre-tangents.
             TsConvertFromStandardTangent(
-                knot.GetPreTanWidth(), inUsdSlope, true, true, true, &inMayaTime, &inMayaSlope);
+                knot.GetPreTanWidth(), inUsdSlope, true, true, false, &inMayaTime, &inMayaSlope);
             TsConvertFromStandardTangent(
                 knot.GetPostTanWidth(),
                 outUsdSlope,
