@@ -85,6 +85,8 @@ struct UsdMayaSplineUtils
             return knots;
         }
 
+        bool isWeigted = flAnimCurve.isWeighted();
+
         auto numKeys = flAnimCurve.numKeys();
         for (unsigned int k = 0; k < numKeys; ++k) {
             auto time = flAnimCurve.time(k).value();
@@ -107,14 +109,8 @@ struct UsdMayaSplineUtils
             TsTime inTime {}, outTime {};
             T      inSlope {}, outSlope {};
 
-            // Converting from maya tangent to standard (Usd) tangent:
-            // Usd tangents are specified by slope and length and Slopes are "rise over run": height
-            // divided by length.
-            // Maya tangents are specified by height and length. Height and length
-            // are both specified multiplied by 3 Heights are positive for upward-sloping
-            // post-tangents, and negative for upward-sloping pre-tangents.
             TsConvertToStandardTangent(
-                T(inTangentX), T(inTangentY), true, true, true, &inTime, &inSlope);
+                T(inTangentX), T(inTangentY), true, isWeigted, false, &inTime, &inSlope);
 
             if (std::isnan(inSlope)) {
                 inSlope = T(0);
@@ -137,15 +133,14 @@ struct UsdMayaSplineUtils
                     knot.SetValue(convertedValue);
                 }
             } else if (outTanType == MFnAnimCurve::kTangentStep) {
-                // no need to convert tangent in this case because it is 0 for the step.
-                knot.SetValue(value * scaling);
+                knot.SetValue(convertedValue);
             } else {
                 TsConvertToStandardTangent(
-                    outTangentX, T(outTangentY), true, true, false, &outTime, &outSlope);
+                    T(outTangentX), T(outTangentY), true, isWeigted, false, &outTime, &outSlope);
                 if (std::isnan(outSlope)) {
                     outSlope = T(0);
                 }
-                knot.SetValue(value * scaling);
+                knot.SetValue(convertedValue);
             }
 
             knot.SetTime(time);
@@ -254,7 +249,7 @@ struct UsdMayaSplineUtils
             // specified multiplied by 3 Heights are positive for upward-sloping post-tangents, and
             // negative for upward-sloping pre-tangents.
             TsConvertFromStandardTangent(
-                knot.GetPreTanWidth(), inUsdSlope, true, true, true, &inMayaTime, &inMayaSlope);
+                knot.GetPreTanWidth(), inUsdSlope, true, true, false, &inMayaTime, &inMayaSlope);
             TsConvertFromStandardTangent(
                 knot.GetPostTanWidth(),
                 outUsdSlope,
