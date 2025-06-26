@@ -86,3 +86,11 @@ class MayaUsdPythonImportTestCase(unittest.TestCase):
         mxglTypes = dir(mxgl)
         for cls in ['GlslShaderGenerator']:
             self.assertIn(cls, mxglTypes)
+
+    @unittest.skipUnless('MULTI_USD_VERSION' in os.environ, 'Skipping test as this Maya is not a Multi-USD version.')
+    def testMultiUsd(self):
+        # Verify that the USD version matches the expected version.
+        from pxr import Usd
+        usdVer = Usd.GetVersion()
+        usdVerStr = ".".join(str(item) for item in usdVer)
+        self.assertEqual(usdVerStr, os.environ['MULTI_USD_VERSION'])
