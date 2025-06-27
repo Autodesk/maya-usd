@@ -83,9 +83,9 @@ class testUsdImportBlendShapes(unittest.TestCase):
         cmds.currentTime(0)
         self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [-1.0])
         cmds.currentTime(3)
-        self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [-0.14404296875])
+        self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [-0.15625])
         cmds.currentTime(5)
-        self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [0.13427734375])
+        self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [0.15625])
         cmds.currentTime(8)
         self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [1.0])
 

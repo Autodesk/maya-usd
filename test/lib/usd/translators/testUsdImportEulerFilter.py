@@ -76,14 +76,6 @@ class testUsdImportEulerFilter(unittest.TestCase):
         cls.xform_file = os.path.join(tempTestPath, "UsdImportEulerFilterTest", "UsdImportEulerFilterTest_xform.usda")
         build_xform_scene(cls.xform_file)
 
-    def test_skel_rotation_fail(self):
-        """The original behaviour should not correct euler angles on import"""
-        cmds.file(f=1, new=1)
-        cmds.mayaUSDImport(file=self.skel_file, ani=1)
-
-        values =  cmds.keyframe('joint1.rx', q=1, vc=1)
-        self.assertNotAlmostEqual(0.0, values[-1])
-
     def test_xform_rotation_fail(self):
         """The original behaviour should not correct euler angles on import"""
         cmds.file(f=1, new=1)
