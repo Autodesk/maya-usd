@@ -85,18 +85,60 @@ struct UsdMayaSplineUtils
             return knots;
         }
 
-        bool isWeigted = flAnimCurve.isWeighted();
+        bool         isWeighted = flAnimCurve.isWeighted();
+        MFnAnimCurve convertedCurve;
+        // TODO: Revisit this when USD supports Hermite curves.
+        if (!isWeighted) {
+            convertedCurve.create(flAnimCurve.animCurveType());
+            // Copy keys from original curve to convert it to a weighted curve
+            for (size_t i = 0; i < flAnimCurve.numKeys(); ++i) {
+                auto inTangentType = flAnimCurve.inTangentType(i);
+                auto outTangentType = flAnimCurve.outTangentType(i);
 
-        auto numKeys = flAnimCurve.numKeys();
+                // Add the key with basic data
+                if (flAnimCurve.isUnitlessInput()) {
+                    convertedCurve.addKey(
+                        flAnimCurve.unitlessInput(i),
+                        flAnimCurve.value(i),
+                        inTangentType,
+                        outTangentType);
+                } else {
+                    convertedCurve.addKey(
+                        flAnimCurve.time(i), flAnimCurve.value(i), inTangentType, outTangentType);
+                }
+
+                convertedCurve.setTangentsLocked(i, false);
+                convertedCurve.setWeightsLocked(i, false);
+
+                if (inTangentType == MFnAnimCurve::TangentType::kTangentFixed) {
+                    MAngle angle;
+                    double weight;
+                    flAnimCurve.getTangent(i, angle, weight, true);
+                    convertedCurve.setTangent(i, angle, weight, true);
+                }
+
+                if (outTangentType == MFnAnimCurve::TangentType::kTangentFixed) {
+                    MAngle angle;
+                    double weight;
+                    flAnimCurve.getTangent(i, angle, weight, false);
+                    convertedCurve.setTangent(i, angle, weight, false);
+                }
+            }
+            // Convert it to a weighted curve
+            convertedCurve.setIsWeighted(true);
+        }
+
+        const auto& animCurve = isWeighted ? flAnimCurve : convertedCurve;
+        auto        numKeys = animCurve.numKeys();
         for (unsigned int k = 0; k < numKeys; ++k) {
-            auto time = flAnimCurve.time(k).value();
+            auto time = animCurve.time(k).value();
 
-            T      value = static_cast<T>(flAnimCurve.value(k));
+            T      value = static_cast<T>(animCurve.value(k));
             MTime  convert(1.0, MTime::kSeconds);
             double inTangentX {}, outTangentX {};
             double inTangentY {}, outTangentY {};
-            flAnimCurve.getTangent(k, inTangentX, inTangentY, true);
-            flAnimCurve.getTangent(k, outTangentX, outTangentY, false);
+            animCurve.getTangent(k, inTangentX, inTangentY, true);
+            animCurve.getTangent(k, outTangentX, outTangentY, false);
 
             // This was taken from the .getTangent() docs:
             // Need to multiply the value with the time unit conversion factor
@@ -110,25 +152,25 @@ struct UsdMayaSplineUtils
             T      inSlope {}, outSlope {};
 
             TsConvertToStandardTangent(
-                T(inTangentX), T(inTangentY), true, isWeigted, false, &inTime, &inSlope);
+                T(inTangentX), T(inTangentY), true, true, false, &inTime, &inSlope);
 
             if (std::isnan(inSlope)) {
                 inSlope = T(0);
             }
 
             TsKnot     knot(valueType);
-            const auto outTanType = flAnimCurve.outTangentType(k);
+            const auto outTanType = animCurve.outTangentType(k);
             const auto convertedValue = value * scaling;
 
             // Deal with the case where slope would be infinite,
             // Because when there's a step on the curve is discontinuous
             if (outTanType == MFnAnimCurve::kTangentStepNext) {
-                // Maya's step next is a special case where the value jumps to the next key's value.
-                // If this is the last key, then set the value to the current value, making it
-                // behave like a step.
+                // Maya's step next is a special case where the value jumps to the next key's
+                // value. If this is the last key, then set the value to the current value,
+                // making it behave like a step.
                 knot.SetPreValue(convertedValue);
                 if (k + 1 < numKeys) {
-                    knot.SetValue(static_cast<T>(flAnimCurve.value(k + 1)) * scaling);
+                    knot.SetValue(static_cast<T>(animCurve.value(k + 1)) * scaling);
                 } else {
                     knot.SetValue(convertedValue);
                 }
@@ -136,7 +178,7 @@ struct UsdMayaSplineUtils
                 knot.SetValue(convertedValue);
             } else {
                 TsConvertToStandardTangent(
-                    T(outTangentX), T(outTangentY), true, isWeigted, false, &outTime, &outSlope);
+                    T(outTangentX), T(outTangentY), true, true, false, &outTime, &outSlope);
                 if (std::isnan(outSlope)) {
                     outSlope = T(0);
                 }
@@ -208,13 +250,14 @@ struct UsdMayaSplineUtils
         MStatus      status;
         MObject      animObj = animFn.create(plug, nullptr, &status);
         CHECK_MSTATUS_AND_RETURN(status, false)
+        animFn.setIsWeighted(true);
 
         unsigned int numKnots = static_cast<unsigned int>(knots.size());
         MTimeArray   timeArray(numKnots, 0.0);
         MDoubleArray valuesArray(numKnots, 0.0);
         MIntArray    tangentInTypeArray(numKnots, 0);
         MIntArray    tangentOutTypeArray(numKnots, 0);
-        MIntArray    tangentsLockedArray(numKnots, 1);
+        MIntArray    tangentsLockedArray(numKnots, 0);
         MIntArray    weightsLockedArray(numKnots, 0);
         MDoubleArray tangentInXArray(numKnots, 0.0);
         MDoubleArray tangentInYArray(numKnots, 0.0);
@@ -304,7 +347,6 @@ struct UsdMayaSplineUtils
             _ConvertUsdExtrapolationTypeToMaya(spline.GetPreExtrapolation().mode));
         animFn.setPostInfinityType(
             _ConvertUsdExtrapolationTypeToMaya(spline.GetPostExtrapolation().mode));
-        animFn.setIsWeighted(false);
 
         if (context) {
             // used for undo/redo
