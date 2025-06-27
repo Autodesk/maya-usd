@@ -107,6 +107,9 @@ struct UsdMayaSplineUtils
                         flAnimCurve.time(i), flAnimCurve.value(i), inTangentType, outTangentType);
                 }
 
+                convertedCurve.setTangentsLocked(i, false);
+                convertedCurve.setWeightsLocked(i, false);
+
                 if (inTangentType == MFnAnimCurve::TangentType::kTangentFixed) {
                     MAngle angle;
                     double weight;
