@@ -167,7 +167,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
             cameraPrim,
             "verticalFilmAperture",
             HdCameraTokens->verticalAperture,
-            UsdMayaUtil::kMillimetersPerCentimeter);
+            UsdMayaUtil::ConvertInchesToMM(1));
 
         if (camFn.shakeEnabled()) {
             std::function shakeLambda = [](float apertureOffset, float shakeOffset) {

@@ -145,7 +145,7 @@ class testUsdExportCameraAttrSpline(unittest.TestCase):
 
         verticalApertureAttr = usdCamera.GetPrim().GetAttribute('verticalAperture')
         verticalAperture = verticalApertureAttr.Get()
-        self.assertTrue(Gf.IsClose(verticalAperture, 9.4488, self.EPSILON))
+        self.assertTrue(Gf.IsClose(verticalAperture, 23.999952, self.EPSILON))
 
     @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
     def testExportOrthographicAttributes(self):
