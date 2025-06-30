@@ -560,7 +560,8 @@ bool _CopyAnimFromSkel(
             xforms[i] = samples[i][jointIdx];
         }
 
-        if (!_SetTransformAnim(jointDep, xforms, mayaTimes, context, true))
+        if (!_SetTransformAnim(
+                jointDep, xforms, mayaTimes, context, args.GetJobArguments().applyEulerFilter))
             return false;
     }
     return true;
