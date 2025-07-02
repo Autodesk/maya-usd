@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
 /// \hideinitializer
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
 #define PXRUSDMAYA_XFORM_STACK_TOKENS \
     (translate) \
     (translateX) \
@@ -287,7 +287,7 @@ public:
     ///    scaleX
     ///    scaleY
     ///    scaleZ
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
     MAYAUSD_CORE_PUBLIC
     static const UsdMayaXformStack& MayaIndividualTransformsStack();
 #endif
