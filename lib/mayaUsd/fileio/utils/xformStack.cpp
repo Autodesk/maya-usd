@@ -93,7 +93,7 @@ UsdMayaXformStack::TokenIndexPairMap _buildAttrNamesToIdxs(
 
         for (const auto& attrName : op.CompatibleAttrNames()) {
             UsdMayaXformStack::IndexPair indexPair = _makeInversionIndexPair(i, inversionMap);
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
             if (result.find(attrName) == result.end()) {
                 // Insert, and check if it already existed
                 TF_VERIFY(
@@ -615,7 +615,7 @@ const UsdMayaXformStack& UsdMayaXformStack::MayaStack()
     return mayaStack;
 }
 
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
 const UsdMayaXformStack& UsdMayaXformStack::MayaIndividualTransformsStack()
 {
     static UsdMayaXformStack mayaIndividualTransformStack(
