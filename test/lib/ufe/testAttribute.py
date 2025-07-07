@@ -1613,6 +1613,15 @@ class AttributeTestCase(unittest.TestCase):
         md = attr.getMetadata('documentation')
         origDocMD = str(md)
 
+        # Verify that this attribute has documentation metadata.
+        # The use of the documentation field in schema prim/property definitions
+        # to store API doc has been deprecated, so only verify on older versions
+        # of USD
+        if Usd.GetVersion() <= (0, 25, 5):
+            self.assertTrue(attr.hasMetadata('documentation'))
+            self.assertIsNotNone(md)
+            self.assertIsNotNone(origDocMD)
+
         # Change the metadata and make sure it changed
         self.assertTrue(attr.setMetadata('documentation', 'New doc'))
         self.assertTrue(attr.hasMetadata('documentation'))
