@@ -1607,16 +1607,20 @@ class AttributeTestCase(unittest.TestCase):
         # Test for non-existing metdata.
         self.assertFalse(attr.hasMetadata('NotAMetadata'))
 
-        # Verify that this attribute has documentation metadata.
-        self.assertTrue(attr.hasMetadata('documentation'))
-        md = attr.getMetadata('documentation')
-        self.assertIsNotNone(md)
-        self.assertIsNotNone(str(md))
-
         # Store this original documentation metadata value for testing of the clear.
         # Note: USD doc has some fallback values, so clearing doc might not actually
         #       set it to empty.
+        md = attr.getMetadata('documentation')
         origDocMD = str(md)
+
+        # Verify that this attribute has documentation metadata.
+        # The use of the documentation field in schema prim/property definitions
+        # to store API doc has been deprecated, so only verify on older versions
+        # of USD
+        if Usd.GetVersion() <= (0, 25, 5):
+            self.assertTrue(attr.hasMetadata('documentation'))
+            self.assertIsNotNone(md)
+            self.assertIsNotNone(origDocMD)
 
         # Change the metadata and make sure it changed
         self.assertTrue(attr.setMetadata('documentation', 'New doc'))
