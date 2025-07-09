@@ -91,7 +91,7 @@ class UIIconsTestCase(unittest.TestCase):
         primTypes = [
             # Prim Type                 # Icon file name
             ('ALMayaReference',         'out_USD_MayaReference.png'),
-            ('Backdrop',                'out_USD_UsdTyped.png'),
+            ('Backdrop',                'out_USD_UI.png'),
             ('BasisCurves',             'out_USD_UsdGeomCurves.png'),
             ('BlendShape',              'out_USD_BlendShape.png'),
             ('Camera',                  'out_USD_Camera.png'),
@@ -121,9 +121,10 @@ class UIIconsTestCase(unittest.TestCase):
             ('Points',                  'out_USD_Points.png'),
             ('PortalLight',             'out_USD_UsdLuxBoundableLightBase.png' if usdVer >= (0, 21, 11) else 'out_USD_UsdLuxLight.png'),
             ('RectLight',               'out_USD_UsdLuxBoundableLightBase.png' if usdVer >= (0, 21, 11) else 'out_USD_UsdLuxLight.png'),
-            ('RenderProduct',           'out_USD_UsdTyped.png'),
-            ('RenderSettings',          'out_USD_UsdTyped.png'),
-            ('RenderVar',               'out_USD_UsdTyped.png'),
+            ('RenderPass',              'out_USD_Render.png'),
+            ('RenderProduct',           'out_USD_Render.png'),
+            ('RenderSettings',          'out_USD_Render.png'),
+            ('RenderVar',               'out_USD_Render.png'),
             ('Scope',                   'out_USD_Scope.png'),
             ('Shader',                  'out_USD_Shader.png'),
             ('SkelAnimation',           'out_USD_SkelAnimation.png'),
@@ -137,18 +138,33 @@ class UIIconsTestCase(unittest.TestCase):
         ]
         if usdVer >= (0, 21, 11):
             primTypes.extend([
-                ('PhysicsCollisionGroup',   'out_USD_UsdTyped.png'),
-                ('PhysicsDistanceJoint',    'out_USD_UsdTyped.png'),
-                ('PhysicsFixedJoint',       'out_USD_UsdTyped.png'),
-                ('PhysicsJoint',            'out_USD_UsdTyped.png'),
-                ('PhysicsPrismaticJoint',   'out_USD_UsdTyped.png'),
-                ('PhysicsRevoluteJoint',    'out_USD_UsdTyped.png'),
-                ('PhysicsScene',            'out_USD_UsdTyped.png'),
-                ('PhysicsSphericalJoint',   'out_USD_UsdTyped.png')
+                ('PhysicsCollisionGroup',   'out_USD_PhysicsJoint.png'),
+                ('PhysicsDistanceJoint',    'out_USD_PhysicsJoint.png'),
+                ('PhysicsFixedJoint',       'out_USD_PhysicsJoint.png'),
+                ('PhysicsJoint',            'out_USD_PhysicsJoint.png'),
+                ('PhysicsPrismaticJoint',   'out_USD_PhysicsJoint.png'),
+                ('PhysicsRevoluteJoint',    'out_USD_PhysicsJoint.png'),
+                ('PhysicsScene',            'out_USD_PhysicsJoint.png'),
+                ('PhysicsSphericalJoint',   'out_USD_PhysicsJoint.png')
+            ])
+        if usdVer >= (0, 22, 8):
+            primTypes.extend([
+                ('GenerativeProcedural',    'out_USD_Procedural.png'),
+                ('Plane',                   'out_USD_UsdGeomXformable.png'),
             ])
         if usdVer <= (0, 23, 8):
             primTypes.extend([
                 ('PackedJointAnimation',    'out_USD_SkelAnimation.png')
+            ])
+        if usdVer >= (0, 23, 11):
+            primTypes.extend([
+                ('Capsule_1',               'out_USD_Capsule.png'),
+                ('Cylinder_1',              'out_USD_Cylinder.png'),
+                ('DomeLight_1',             'out_USD_UsdLuxNonboundableLightBase.png')
+            ])
+        if usdVer >= (0, 24, 3):
+            primTypes.extend([
+                ('TetMesh',                 'out_USD_UsdGeomXformable.png')
             ])
 
         # Special case for node types which are in an AL schema.

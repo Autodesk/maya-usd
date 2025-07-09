@@ -20,15 +20,19 @@ set(TREEVIEW_ICONS
     Mesh
     NodeGraph
     NurbsPatch
+    PhysicsJoint
     PluginLight
     PointInstancer
     Points
+    Procedural
+    Render
     Scope
     Shader
     SkelAnimation
     Skeleton
     SkelRoot
     Sphere
+    UI
     UsdGeomCurves
     UsdGeomXformable
     UsdLuxBoundableLightBase
