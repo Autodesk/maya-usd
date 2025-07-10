@@ -76,6 +76,9 @@ static constexpr char    kUSDSetAsDefaultPrim[] = "Set as Default Prim";
 static constexpr char    kUSDClearDefaultPrim[] = "Clear Default Prim";
 static constexpr char    kUSDAddNewPrimItem[] = "Add New Prim";
 static constexpr char    kUSDAddNewPrimLabel[] = "Add New Prim";
+static constexpr char    kUSDClassPrimItem[] = "Class";
+static constexpr char    kUSDClassPrimLabel[] = "Class";
+static const std::string kUSDClassPrimImage { "out_USD_Class.png" };
 static constexpr char    kUSDDefPrimItem[] = "Def";
 static constexpr char    kUSDDefPrimLabel[] = "Def";
 static const std::string kUSDDefPrimImage { "out_USD_Def.png" };
@@ -421,6 +424,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         }     // Variant sets
         else if (itemPath[0] == kUSDAddNewPrimItem) {
             if (itemPath.size() == 1u) { // Root setup
+                items.emplace_back(kUSDClassPrimItem, kUSDClassPrimLabel, kUSDClassPrimImage);
                 items.emplace_back(
                     kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
                 items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);

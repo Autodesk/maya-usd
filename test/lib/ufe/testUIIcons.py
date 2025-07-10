@@ -96,6 +96,7 @@ class UIIconsTestCase(unittest.TestCase):
             ('BlendShape',              'out_USD_BlendShape.png'),
             ('Camera',                  'out_USD_Camera.png'),
             ('Capsule',                 'out_USD_Capsule.png'),
+            ('Class',                   'out_USD_Class.png'),
             ('Cone',                    'out_USD_Cone.png'),
             ('Cube',                    'out_USD_Cube.png'),
             ('Cylinder',                'out_USD_Cylinder.png'),
@@ -176,7 +177,10 @@ class UIIconsTestCase(unittest.TestCase):
         ])
 
         for ty,iname in primTypes:
-            prim = self.stage.DefinePrim('/%s' % ty, ty)
+            if ty == 'Class':
+                prim = self.stage.CreateClassPrim('/%s' % ty)
+            else:
+                prim = self.stage.DefinePrim('/%s' % ty, ty)
             ufeIcon = self._getUIInfoIcon(ty)
             if ufeIcon:
                 self.assertEqual(ufeIcon, iname, msg='for prim type "%s"' % ty)

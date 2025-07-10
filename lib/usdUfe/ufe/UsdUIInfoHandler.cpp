@@ -172,6 +172,7 @@ UsdUIInfoHandler::SupportedTypesMap UsdUIInfoHandler::getSupportedIconTypes() co
         { "BlendShape", "out_USD_BlendShape.png" },
         { "Camera", "out_USD_Camera.png" },
         { "Capsule", "out_USD_Capsule.png" },   // Includes Capsule_1
+        // { "Class", "out_USD_Class.png" },    // Special case handled in treeViewIcon()
         { "Cone", "out_USD_Cone.png" },
         { "Cube", "out_USD_Cube.png" },
         { "Cylinder", "out_USD_Cylinder.png" }, // Includes Cylinder_1
@@ -232,11 +233,18 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
         icon.baseIcon = search->second;
     }
 
-    // Check if we have any composition meta data - if yes we display a special badge.
     auto usdItem = downcast(item);
-    if (usdItem && usdItem->prim()) {
+    auto usdPrim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
+
+    // Special case for Class prims.
+    if (usdPrim && usdPrim.GetSpecifier() == PXR_NS::SdfSpecifierClass) {
+        icon.baseIcon = "out_USD_Class.png";
+    }
+
+    // Check if we have any composition meta data - if yes we display a special badge.
+    if (usdPrim) {
         // Variants
-        if (!usdItem->prim().GetVariantSets().GetNames().empty()) {
+        if (!usdPrim.GetVariantSets().GetNames().empty()) {
             icon.badgeIcon = "out_USD_CompArcBadgeV.png";
             icon.pos = Ufe::UIInfoHandler::LowerRight;
         } else {
@@ -247,7 +255,7 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
                     PXR_NS::SdfFieldKeys->InheritPaths,
                     PXR_NS::SdfFieldKeys->Specializes };
             for (const auto& k : compKeys) {
-                if (usdItem->prim().HasMetadata(k)) {
+                if (usdPrim.HasMetadata(k)) {
                     icon.badgeIcon = "out_USD_CompArcBadge.png";
                     icon.pos = Ufe::UIInfoHandler::LowerRight;
                     break;

@@ -7,6 +7,7 @@ set(TREEVIEW_ICONS
     BlendShape
     Camera
     Capsule
+    Class
     CompArcBadge
     CompArcBadgeV
     Cone
