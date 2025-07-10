@@ -334,7 +334,11 @@ bool UsdMayaTranslatorBlendShape::ReadAnimations(
                         animWeightsAttribute.Get(&weights, animatedTimeSamples[timeSample]);
                         valueArray[timeSample] = weights[blendShapeIndex];
                     }
-                    animFn.addKeys(&timeArray, &valueArray);
+                    animFn.addKeys(
+                        &timeArray,
+                        &valueArray,
+                        MFnAnimCurve::kTangentLinear,
+                        MFnAnimCurve::kTangentLinear);
                 }
             }
         }
