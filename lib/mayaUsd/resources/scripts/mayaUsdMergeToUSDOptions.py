@@ -282,4 +282,5 @@ def getDefaultMergeToUSDOptionsDict():
         "writeDefaults":            1,
         "stripNamespaces":          0,
         "worldspace":               0,
+        "hideSourceData":           0,
     }

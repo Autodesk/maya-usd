@@ -237,6 +237,8 @@ __mayaUSDStringResources = {
     "kExportNamespacesLbl": "Include Namespaces",
     "kExportWorldspaceAnn": "Exports the root prims with their worldspace transform instead of their local transform.",
     "kExportWorldspaceLbl": "Worldspace Roots",
+    "kHideSourceDataAnn": "Hide the Maya nodes that are used as the source data.",
+    "kHideSourceDataLbl": "Hide Source Data",
     "kExportRootPrimAnn": "Name the root/parent prim for your exported data.",
     "kExportRootPrimLbl": "Create Root Prim:",
     "kExportRootPrimPht": "USD Prim Name",
