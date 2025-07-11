@@ -190,6 +190,7 @@ UsdUIInfoHandler::SupportedTypesMap UsdUIInfoHandler::getSupportedIconTypes() co
         // Are all covered by the ancestorNodeType (out_USD_PhysicsJoint.png).
         { "PhysicsCollisionGroup", "out_USD_PhysicsJoint.png" },
         { "PhysicsScene", "out_USD_PhysicsJoint.png" },
+        { "Plane", "out_USD_Plane.png" },
         { "PluginLight", "out_USD_PluginLight.png" },
         { "PointInstancer", "out_USD_PointInstancer.png" },
         { "Points", "out_USD_Points.png" },

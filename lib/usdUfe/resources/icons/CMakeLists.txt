@@ -22,6 +22,7 @@ set(TREEVIEW_ICONS
     NodeGraph
     NurbsPatch
     PhysicsJoint
+    Plane
     PluginLight
     PointInstancer
     Points

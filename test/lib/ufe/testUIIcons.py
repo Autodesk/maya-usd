@@ -151,7 +151,7 @@ class UIIconsTestCase(unittest.TestCase):
         if usdVer >= (0, 22, 8):
             primTypes.extend([
                 ('GenerativeProcedural',    'out_USD_Procedural.png'),
-                ('Plane',                   'out_USD_UsdGeomXformable.png'),
+                ('Plane',                   'out_USD_Plane.png'),
             ])
         if usdVer <= (0, 23, 8):
             primTypes.extend([

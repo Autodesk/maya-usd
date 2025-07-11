@@ -100,6 +100,11 @@ static const std::string kUSDCubePrimImage { "out_USD_Cube.png" };
 static constexpr char    kUSDCylinderPrimItem[] = "Cylinder";
 static constexpr char    kUSDCylinderPrimLabel[] = "Cylinder";
 static const std::string kUSDCylinderPrimImage { "out_USD_Cylinder.png" };
+#if PXR_VERSION >= 2208
+static constexpr char    kUSDPlanePrimItem[] = "Plane";
+static constexpr char    kUSDPlanePrimLabel[] = "Plane";
+static const std::string kUSDPlanePrimImage { "out_USD_Plane.png" };
+#endif
 static constexpr char    kUSDSpherePrimItem[] = "Sphere";
 static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
 static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
@@ -435,6 +440,9 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
                 items.emplace_back(
                     kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
+#if PXR_VERSION >= 2208
+                items.emplace_back(kUSDPlanePrimItem, kUSDPlanePrimLabel, kUSDPlanePrimImage);
+#endif
                 items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
                 items.emplace_back(Ufe::ContextItem::kSeparator);
                 items.emplace_back(
