@@ -128,6 +128,13 @@ if (UFE_HAS_UNSIGNED_INT)
     )
 endif()
 
+if (UFE_HAS_COLOR_MANAGEMENT_HANDLER)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HAS_COLOR_MANAGEMENT_HANDLER=1
+    )
+endif()
+
 set(HEADERS
     Global.h
     SetVariantSelectionCommand.h

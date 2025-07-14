@@ -374,6 +374,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
+        self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Change to 'blue.png' and verify the return in UFE.
         ufeAttr.set("blue.png")
@@ -382,11 +383,33 @@ class AttributeTestCase(unittest.TestCase):
         # Verify that the new UFE value matches what is directly in USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Change back to 'red.png' using a command.
-        self.runUndoRedo(ufeAttr, "red.png")
+        # File rule for PNG files is sRGB texture:
+        self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+
+        # Explicitly ignore file rules:
+        ufeAttr.sceneItem().setGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules, "true")
+
+        # Change to 'raw.exr' and verify the return in UFE.
+        ufeAttr.set("raw.exr")
+        self.assertEqual(ufeAttr.get(), "raw.exr")
+
+        # Verify that the new UFE value matches what is directly in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        # File rules should have been skipped and previous color space kept.
+        self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+
+        # Allow file rules:
+        ufeAttr.sceneItem().clearGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules)
+
+        # Change back to 'red.exr' using a command. File rules should change color space.
+        self.runUndoRedo(ufeAttr, "red.exr")
+        self.assertEqual(usdAttr.GetColorSpace(), "none")
 
         # Run test using Maya's setAttr command.
+        ufeAttr.setMetadata(ufe.ColorManagementHandler.kIgnoreColorManagementFileRules, True)
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, "green.png")
+        self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
