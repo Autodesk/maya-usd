@@ -151,8 +151,7 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
     // Note: removed 'UsdPrimIsAbstract' from the predicate since the Maya
     //       Outliner can show class prims now.
     TfToken::HashSet allChildrenNames;
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+    for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         allChildrenNames.insert(child.GetName());
     }
 

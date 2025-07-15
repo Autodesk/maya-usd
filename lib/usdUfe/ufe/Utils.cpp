@@ -394,8 +394,7 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
     //       unique sibling.
     //
     // Note: our UsdHierarchy uses instance proxies, so we also use them here.
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+    for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         childrenNames.insert(child.GetName());
     }
     std::string childName { name };
@@ -424,8 +423,7 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     // have different names, too.
 
     TfToken::HashSet relativesNames;
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+    for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         relativesNames.insert(child.GetName());
     }
 
@@ -437,8 +435,8 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     // Add the closest 1000 descendants to the names to be avoided.
     static const int maxDescendantCount = 1000;
     int              descendantCount = 0;
-    for (auto child : usdParent.GetFilteredDescendants(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+    for (auto child :
+         usdParent.GetFilteredDescendants(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         relativesNames.insert(child.GetName());
         if (++descendantCount >= maxDescendantCount)
             break;
@@ -448,8 +446,8 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     UsdPrim rootPrim = usdParent.GetPrimAtPath(SdfPath::AbsoluteRootPath());
     if (rootPrim != usdParent) {
         descendantCount = 0;
-        for (auto child : rootPrim.GetFilteredDescendants(
-                 UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+        for (auto child :
+             rootPrim.GetFilteredDescendants(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
             relativesNames.insert(child.GetName());
             if (++descendantCount >= maxDescendantCount)
                 break;

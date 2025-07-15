@@ -171,7 +171,7 @@ UsdUIInfoHandler::SupportedTypesMap UsdUIInfoHandler::getSupportedIconTypes() co
         { "Backdrop", "out_USD_UI.png" },
         { "BlendShape", "out_USD_BlendShape.png" },
         { "Camera", "out_USD_Camera.png" },
-        { "Capsule", "out_USD_Capsule.png" },   // Includes Capsule_1
+        { "Capsule", "out_USD_Capsule.png" }, // Includes Capsule_1
         // { "Class", "out_USD_Class.png" },    // Special case handled in treeViewIcon()
         { "Cone", "out_USD_Cone.png" },
         { "Cube", "out_USD_Cube.png" },

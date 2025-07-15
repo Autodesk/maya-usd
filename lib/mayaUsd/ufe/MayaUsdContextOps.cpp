@@ -870,6 +870,5 @@ void MayaUsdContextOps::enableOutlinerClassPrims() const
     MGlobal::executeCommand(script, false /*display*/, true /*undoable*/);
 }
 
-
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
