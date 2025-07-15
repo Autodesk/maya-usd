@@ -132,6 +132,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->stripNamespaces.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kHideSourceDataFlag,
+        UsdMayaJobExportArgsTokens->hideSourceData.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kEulerFilterFlag, UsdMayaJobExportArgsTokens->eulerFilter.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
         kDefaultMeshSchemeFlag,

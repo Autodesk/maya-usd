@@ -59,6 +59,7 @@ public:
     static constexpr auto kWriteDefaults = "wd";
     static constexpr auto kMergeTransformAndShapeFlag = "mt";
     static constexpr auto kStripNamespacesFlag = "sn";
+    static constexpr auto kHideSourceDataFlag = "hsd";
     static constexpr auto kExportRefsAsInstanceableFlag = "eri";
     static constexpr auto kExportDisplayColorFlag = "dsp";
     static constexpr auto kExportDistanceUnitFlag = "edu";
