@@ -728,7 +728,7 @@ bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
 
 bool UsdMaya_WriteJob::_FinishWriting()
 {
-    MayaUsd::ProgressBarScope progressBar(7);
+    MayaUsd::ProgressBarScope progressBar(8);
 
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -833,6 +833,9 @@ bool UsdMaya_WriteJob::_FinishWriting()
     progressBar.advance();
 
     _PruneEmpties();
+    progressBar.advance();
+
+    _HideSourceData();
     progressBar.advance();
 
     // Restore Maya's up-axis if needed.
@@ -1105,6 +1108,32 @@ void UsdMaya_WriteJob::_PruneEmpties()
                 if (isEmptyPrim(mJobCtx.mStage, path))
                     toRemove.emplace_back(path);
     }
+}
+
+void UsdMaya_WriteJob::_HideSourceData()
+{
+    if (!mJobCtx.mArgs.hideSourceData)
+        return;
+
+    MString hideCommand("hide");
+
+    const auto end = mJobCtx.mArgs.dagPaths.end();
+    for (auto iter = mJobCtx.mArgs.dagPaths.begin(); iter != end; ++iter) {
+        MDagPath curDagPath = *iter;
+        if (!curDagPath.isValid())
+            continue;
+
+        MString curDagPathStr(curDagPath.partialPathName());
+        if (curDagPathStr.length() <= 0)
+            continue;
+
+        hideCommand += " ";
+        hideCommand += curDagPathStr;
+    }
+
+    bool displayEnabled = false;
+    bool undoEnabled = true;
+    MGlobal::executeCommand(hideCommand, displayEnabled, undoEnabled);
 }
 
 void UsdMaya_WriteJob::_CreatePackage() const

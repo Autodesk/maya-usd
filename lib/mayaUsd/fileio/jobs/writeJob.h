@@ -85,6 +85,9 @@ private:
     /// Remove empty xform and scope recursively if the options to include them is off.
     void _PruneEmpties();
 
+    /// Hides the source data in the Maya scene.
+    void _HideSourceData();
+
     /// Creates a usdz package from the write job's current USD stage.
     void _CreatePackage() const;
 
