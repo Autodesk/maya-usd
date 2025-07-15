@@ -22,6 +22,7 @@
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys
 #include <pxr/usd/usd/variantSets.h>
 
+#include <cctype>
 #include <map>
 #include <vector>
 
