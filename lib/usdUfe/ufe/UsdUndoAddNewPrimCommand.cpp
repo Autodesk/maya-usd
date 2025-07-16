@@ -72,7 +72,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
 
         // The type of prim we were asked to create.
         // Note: "Def" means create typeless prim.
-        _primToken = (type.empty() || type == "Def") ? TfToken() : TfToken(type);
+        _primToken = (type.empty() || type == "Def") ? PXR_NS::TfToken() : PXR_NS::TfToken(type);
     }
 }
 
@@ -87,8 +87,13 @@ void UsdUndoAddNewPrimCommand::execute()
         if (!UsdUfe::isEditTargetLayerModifiable(_stage, &errMsg)) {
             TF_RUNTIME_ERROR("%s", errMsg.c_str());
         } else {
+            UsdPrim                        prim;
             UsdUfe::InAddOrDeleteOperation ad;
-            auto                           prim = _stage->DefinePrim(_primPath, _primToken);
+            if (_primToken.GetText() == PXR_NS::TfToken("Class")) {
+                prim = _stage->CreateClassPrim(_primPath);
+            } else {
+                prim = _stage->DefinePrim(_primPath, _primToken);
+            }
             if (!prim.IsValid()) {
                 TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
                 _stage->RemovePrim(_primPath);
