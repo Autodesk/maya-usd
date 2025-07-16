@@ -315,7 +315,7 @@ void UsdUndoInsertChildCommand::execute()
         // Create a new segment if parent and child are in different run-times.
         // parenting a USD node to the proxy shape node implies two different run-times
         auto cRtId = _ufeSrcPath.runTimeId();
-        if (_ufeParentPath.runTimeId() == cRtId) {
+        if ((_ufeParentPath.runTimeId() == cRtId) && (_ufeParentPath.nbSegments() > 1)) {
             _ufeDstPath = _ufeParentPath + childName;
         } else {
             auto cSep = _ufeSrcPath.getSegments().back().separator();

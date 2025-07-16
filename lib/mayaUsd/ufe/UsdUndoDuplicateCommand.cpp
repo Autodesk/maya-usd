@@ -21,6 +21,7 @@
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UfeNotifGuard.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
@@ -79,7 +80,7 @@ UsdUndoDuplicateCommand::create(const UsdUfe::UsdSceneItem::Ptr& srcItem)
 
 UsdUfe::UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 {
-    return createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
+    return UsdUfe::createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
 }
 
 void UsdUndoDuplicateCommand::execute()
