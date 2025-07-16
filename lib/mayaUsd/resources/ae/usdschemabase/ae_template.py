@@ -21,6 +21,7 @@ from .connectionsCustomControl import ConnectionsCustomControl
 from .displayCustomControl import DisplayCustomControl
 from .materialCustomControl import MaterialCustomControl
 from .metadataCustomControl import MetadataCustomControl
+from .assetInfoCustomControl import AssetInfoCustomControl
 from .observers import UfeAttributesObserver, UfeConnectionChangedObserver, UsdNoticeListener
 try:
     from .collectionCustomControl import CollectionCustomControl
@@ -255,6 +256,7 @@ class AETemplate(object):
         schemasAttributes = {
             'customCallbacks' : [],
             'extraAttributes' : [],
+            'assetInfo' : [],
             'metadata' : [],
         }
         
@@ -308,6 +310,7 @@ class AETemplate(object):
             'transforms',
             'display',
             'extraAttributes',
+            'assetInfo',
             'metadata',
         ]
 
@@ -490,6 +493,17 @@ class AETemplate(object):
             self.defineCustom(customDataControl)
             self.defineCustom(usdNoticeControl)
 
+    def createAssetInfoSection(self, sectionName, attrs, collapse):
+        if not AssetInfoCustomControl.hasAssetInfo(self.prim):
+            return
+
+        # We don't use createSection() because these are metadata (not attributes).
+        with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelAssetInfo'), collapse=collapse):
+            assetInfoControl = AssetInfoCustomControl(self.item, self.prim, self.useNiceName)
+            usdNoticeControl = UsdNoticeListener(self.prim, [assetInfoControl])
+            self.defineCustom(assetInfoControl)
+            self.defineCustom(usdNoticeControl)
+    
     def createMetadataSection(self, sectionName, attrs, collapse):
         # We don't use createSection() because these are metadata (not attributes).
         with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelMetadata'), collapse=collapse):
@@ -683,6 +697,7 @@ class AETemplate(object):
             'transforms': self.createTransformAttributesSection,
             'display': self.createDisplaySection,
             'extraAttributes': self.createCustomExtraAttrs,
+            'assetInfo': self.createAssetInfoSection,
             'metadata': self.createMetadataSection,
             'customCallbacks': self.createCustomCallbackSection,
         }

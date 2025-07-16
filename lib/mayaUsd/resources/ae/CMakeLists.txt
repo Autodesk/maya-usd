@@ -24,6 +24,7 @@ foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
         ${_SUBDIR}/ae_template.py
         ${_SUBDIR}/aeUITemplate.py
         ${_SUBDIR}/arrayCustomControl.py
+        ${_SUBDIR}/assetInfoCustomControl.py
         ${_SUBDIR}/attributeCustomControl.py
         ${_SUBDIR}/connectionsCustomControl.py
         ${_SUBDIR}/displayCustomControl.py
