@@ -389,10 +389,12 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
     // Note: removed 'UsdPrimIsLoaded' from the predicate. When it is present the
     //		 filter doesn't properly return the inactive prims. UsdView doesn't
     //		 use loaded either in _computeDisplayPredicate().
+    // Note: removed 'UsdPrimIsAbstract' from the predicate since when naming
+    //       we want to consider all the prims (even if hidden) to generate a real
+    //       unique sibling.
     //
     // Note: our UsdHierarchy uses instance proxies, so we also use them here.
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+    for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         childrenNames.insert(child.GetName());
     }
     std::string childName { name };
@@ -421,8 +423,7 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     // have different names, too.
 
     TfToken::HashSet relativesNames;
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+    for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         relativesNames.insert(child.GetName());
     }
 
@@ -434,8 +435,8 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     // Add the closest 1000 descendants to the names to be avoided.
     static const int maxDescendantCount = 1000;
     int              descendantCount = 0;
-    for (auto child : usdParent.GetFilteredDescendants(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+    for (auto child :
+         usdParent.GetFilteredDescendants(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         relativesNames.insert(child.GetName());
         if (++descendantCount >= maxDescendantCount)
             break;
@@ -445,8 +446,8 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     UsdPrim rootPrim = usdParent.GetPrimAtPath(SdfPath::AbsoluteRootPath());
     if (rootPrim != usdParent) {
         descendantCount = 0;
-        for (auto child : rootPrim.GetFilteredDescendants(
-                 UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+        for (auto child :
+             rootPrim.GetFilteredDescendants(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
             relativesNames.insert(child.GetName());
             if (++descendantCount >= maxDescendantCount)
                 break;
