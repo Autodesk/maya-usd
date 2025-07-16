@@ -392,7 +392,8 @@ class AttributeTestCase(unittest.TestCase):
             self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Explicitly ignore file rules:
-        ufeAttr.sceneItem().setGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules, "true")
+        if hasColorManagementOnSet:
+            ufeAttr.sceneItem().setGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules, "true")
 
         # Change to 'raw.exr' and verify the return in UFE.
         ufeAttr.set("raw.exr")
@@ -408,7 +409,8 @@ class AttributeTestCase(unittest.TestCase):
             self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Allow file rules:
-        ufeAttr.sceneItem().clearGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules)
+        if hasColorManagementOnSet:
+            ufeAttr.sceneItem().clearGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules)
 
         # Change back to 'red.exr' using a command. File rules should change color space.
         self.runUndoRedo(ufeAttr, "red.exr")
@@ -418,7 +420,6 @@ class AttributeTestCase(unittest.TestCase):
             self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Run test using Maya's setAttr command.
-        ufeAttr.setMetadata(ufe.ColorManagementHandler.kIgnoreColorManagementFileRules, True)
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, "green.png")
         if hasColorManagementOnSet:
             self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
