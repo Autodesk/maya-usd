@@ -372,6 +372,8 @@ class AttributeTestCase(unittest.TestCase):
 
         # Now we test the Filename specific methods.
 
+        hasColorManagementOnSet = hasattr(ufe, "ColorManagementHandler")
+
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
         self.assertEqual(usdAttr.GetColorSpace(), "")
@@ -384,7 +386,10 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
         # File rule for PNG files is sRGB texture:
-        self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        if hasColorManagementOnSet:
+            self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        else:
+            self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Explicitly ignore file rules:
         ufeAttr.sceneItem().setGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules, "true")
@@ -397,19 +402,28 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
         # File rules should have been skipped and previous color space kept.
-        self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        if hasColorManagementOnSet:
+            self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        else:
+            self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Allow file rules:
         ufeAttr.sceneItem().clearGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules)
 
         # Change back to 'red.exr' using a command. File rules should change color space.
         self.runUndoRedo(ufeAttr, "red.exr")
-        self.assertEqual(usdAttr.GetColorSpace(), "none")
+        if hasColorManagementOnSet:
+            self.assertEqual(usdAttr.GetColorSpace(), "none")
+        else:
+            self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Run test using Maya's setAttr command.
         ufeAttr.setMetadata(ufe.ColorManagementHandler.kIgnoreColorManagementFileRules, True)
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, "green.png")
-        self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        if hasColorManagementOnSet:
+            self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        else:
+            self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
