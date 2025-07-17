@@ -58,11 +58,11 @@ public:
 
     // Retrieve all exported material paths.
     MAYAUSD_CORE_PUBLIC
-    const std::vector<SdfPath>& GetMaterialPaths() { return mJobCtx.GetMaterialPaths(); }
+    const std::vector<SdfPath>& GetMaterialPaths() const { return mJobCtx.GetMaterialPaths(); }
 
     // Cached prims paths from chasers
     MAYAUSD_CORE_PUBLIC
-    const std::vector<SdfPath>& GetExtraPrimsPaths() { return _extrasPrimsPaths; }
+    const std::vector<SdfPath>& GetExtraPrimsPaths() const { return _extrasPrimsPaths; }
 
 private:
     /// Begins constructing the USD stage, writing out the values at the default
