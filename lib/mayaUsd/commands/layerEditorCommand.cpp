@@ -142,6 +142,10 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
     if (stage->GetEditTarget().GetLayer() == stage->GetSessionLayer())
         return;
 
+    // If the currently targeted layer isn't locked, we don't need to change it.
+    if (!MayaUsd::isLayerLocked(stage->GetEditTarget().GetLayer()))
+        return;
+
     // If there are no target-able layers, we set the target to session layer.
     std::string errMsg;
     if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
