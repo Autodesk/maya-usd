@@ -20,9 +20,9 @@
 /// @file
 /// GLSL OCIO node implementation
 
-#include <MaterialXGenGlsl/GlslShaderGenerator.h>
-
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
+
+#include <MaterialXGenGlsl/GlslShaderGenerator.h>
 
 MATERIALX_NAMESPACE_BEGIN
 
@@ -30,14 +30,12 @@ MATERIALX_NAMESPACE_BEGIN
 /// makes it compatible with the shadergen
 class GlslOcioNodeImpl
 #if MX_COMBINED_VERSION >= 13904
- : public HwImplementation
+    : public HwImplementation
 #else
- : public GlslImplementation
+    : public GlslImplementation
 #endif
 {
 public:
-
-
     static ShaderNodeImplPtr create();
 
     void

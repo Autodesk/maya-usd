@@ -6,9 +6,9 @@
 #ifndef MATERIALX_TEXCOORDNODEGLSLMAYA_H
 #define MATERIALX_TEXCOORDNODEGLSLMAYA_H
 
-#include <MaterialXGenGlsl/GlslShaderGenerator.h>
-
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
+
+#include <MaterialXGenGlsl/GlslShaderGenerator.h>
 
 MATERIALX_NAMESPACE_BEGIN
 
@@ -16,9 +16,9 @@ MATERIALX_NAMESPACE_BEGIN
 /// names
 class TexcoordNodeGlslMaya
 #if MX_COMBINED_VERSION >= 13904
- : public HwImplementation
+    : public HwImplementation
 #else
- : public GlslImplementation
+    : public GlslImplementation
 #endif
 {
 public:

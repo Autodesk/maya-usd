@@ -6,18 +6,18 @@
 #ifndef MATERIALX_MAYATRANSFORMVECTORNODEGLSL_H
 #define MATERIALX_MAYATRANSFORMVECTORNODEGLSL_H
 
-#include <MaterialXGenGlsl/GlslShaderGenerator.h>
-
 #include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
+
+#include <MaterialXGenGlsl/GlslShaderGenerator.h>
 
 MATERIALX_NAMESPACE_BEGIN
 
 /// TransformVector node implementation for GLSL
 class MayaTransformVectorNodeGlsl
 #if MX_COMBINED_VERSION >= 13904
- : public HwImplementation
+    : public HwImplementation
 #else
- : public GlslImplementation
+    : public GlslImplementation
 #endif
 {
 public:
