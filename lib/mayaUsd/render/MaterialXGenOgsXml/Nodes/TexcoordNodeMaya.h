@@ -8,11 +8,18 @@
 
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
 
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
+
 MATERIALX_NAMESPACE_BEGIN
 
 /// Re-implementation of an index-based texcood node into a geompropvalue using standard USD primvar
 /// names
-class TexcoordNodeGlslMaya : public GlslImplementation
+class TexcoordNodeGlslMaya
+#if MX_COMBINED_VERSION >= 13904
+ : public HwImplementation
+#else
+ : public GlslImplementation
+#endif
 {
 public:
     static ShaderNodeImplPtr create();
