@@ -107,106 +107,94 @@ static TfToken _GetFallbackExtension(const TfToken& compatibilityMode)
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
+/// Fallback USD unit (centimeters).
+static double _GetMetersPerUnitFallback() { return UsdGeomLinearUnits::centimeters; }
+
+/// Converts Maya units to metersPerUnit values used in USD metadata.
+static double _ConvertMayaUnitToMetersPerUnit(MDistance::Unit mayaUnit)
+{
+    switch (mayaUnit) {
+    case MDistance::kMillimeters: return UsdGeomLinearUnits::millimeters;
+    case MDistance::kCentimeters: return UsdGeomLinearUnits::centimeters;
+    case MDistance::kMeters: return UsdGeomLinearUnits::meters;
+    case MDistance::kKilometers: return UsdGeomLinearUnits::kilometers;
+    case MDistance::kInches: return UsdGeomLinearUnits::inches;
+    case MDistance::kFeet: return UsdGeomLinearUnits::feet;
+    case MDistance::kYards: return UsdGeomLinearUnits::yards;
+    case MDistance::kMiles: return UsdGeomLinearUnits::miles;
+    default: return _GetMetersPerUnitFallback();
+    }
+}
+
+/// Converts export option tokens to metersPerUnit values used in USD metadata.
+static double _WantedUSDMetersPerUnit(const TfToken& unitOption)
+{
+    if (unitOption == UsdMayaJobExportArgsTokens->mayaPrefs) {
+        return _ConvertMayaUnitToMetersPerUnit(MDistance::uiUnit());
+    }
+
+    static const std::map<TfToken, double> unitsConversionMap
+        = { { UsdMayaJobExportArgsTokens->nm, UsdGeomLinearUnits::nanometers },
+            { UsdMayaJobExportArgsTokens->um, UsdGeomLinearUnits::micrometers },
+            { UsdMayaJobExportArgsTokens->mm, UsdGeomLinearUnits::millimeters },
+            { UsdMayaJobExportArgsTokens->cm, UsdGeomLinearUnits::centimeters },
+            // Note: there is no official USD decimeter units, we have to roll our own.
+            { UsdMayaJobExportArgsTokens->dm, 0.1 },
+            { UsdMayaJobExportArgsTokens->m, UsdGeomLinearUnits::meters },
+            { UsdMayaJobExportArgsTokens->km, UsdGeomLinearUnits::kilometers },
+            { UsdMayaJobExportArgsTokens->lightyear, UsdGeomLinearUnits::lightYears },
+            { UsdMayaJobExportArgsTokens->inch, UsdGeomLinearUnits::inches },
+            { UsdMayaJobExportArgsTokens->foot, UsdGeomLinearUnits::feet },
+            { UsdMayaJobExportArgsTokens->yard, UsdGeomLinearUnits::yards },
+            { UsdMayaJobExportArgsTokens->mile, UsdGeomLinearUnits::miles } };
+
+    const auto iter = unitsConversionMap.find(unitOption);
+    return (iter == unitsConversionMap.end()) ? _GetMetersPerUnitFallback() : iter->second;
+}
+
+/// Converts upAxis export option tokens to USD upAxis tokens.
+static TfToken _WantedUSDUpAxis(const TfToken& upAxisOption)
+{
+    if (upAxisOption == UsdMayaJobExportArgsTokens->mayaPrefs)
+        return MGlobal::isZAxisUp() ? UsdGeomTokens->z : UsdGeomTokens->y;
+
+    if (upAxisOption == UsdMayaJobExportArgsTokens->z)
+        return UsdGeomTokens->z;
+
+    return UsdGeomTokens->y;
+}
+
 /// Class to automatically change and restore the up-axis and units of the Maya scene.
 class AutoUpAxisAndUnitsChanger : public MayaUsd::AutoUndoCommands
 {
 public:
-    AutoUpAxisAndUnitsChanger(
-        const PXR_NS::UsdStageRefPtr& stage,
-        const PXR_NS::TfToken&        upAxisOption,
-        const PXR_NS::TfToken&        unitsOption)
-        : AutoUndoCommands(
-            "change up-axis and units",
-            _prepareCommands(stage, upAxisOption, unitsOption))
+    /// Constructs AutoUndoCommands that changes optionally maya upAxis or metersPerUnit
+    AutoUpAxisAndUnitsChanger(const TfToken* upAxis, const double* metersPerUnit)
+        : AutoUndoCommands("change up-axis and units", _prepareCommands(upAxis, metersPerUnit))
     {
     }
 
 private:
-    static double _convertOptionUnitsToUSDUnits(const TfToken& unitsOption)
+    static std::string _prepareUnitsCommands(double metersPerUnit)
     {
-        static std::map<TfToken, double> unitsConversionMap
-            = { { UsdMayaJobExportArgsTokens->nm, UsdGeomLinearUnits::nanometers },
-                { UsdMayaJobExportArgsTokens->um, UsdGeomLinearUnits::micrometers },
-                { UsdMayaJobExportArgsTokens->mm, UsdGeomLinearUnits::millimeters },
-                { UsdMayaJobExportArgsTokens->cm, UsdGeomLinearUnits::centimeters },
-                // Note: there is no official USD decimeter units, we have to roll our own.
-                { UsdMayaJobExportArgsTokens->dm, 0.1 },
-                { UsdMayaJobExportArgsTokens->m, UsdGeomLinearUnits::meters },
-                { UsdMayaJobExportArgsTokens->km, UsdGeomLinearUnits::kilometers },
-                { UsdMayaJobExportArgsTokens->lightyear, UsdGeomLinearUnits::lightYears },
-                { UsdMayaJobExportArgsTokens->inch, UsdGeomLinearUnits::inches },
-                { UsdMayaJobExportArgsTokens->foot, UsdGeomLinearUnits::feet },
-                { UsdMayaJobExportArgsTokens->yard, UsdGeomLinearUnits::yards },
-                { UsdMayaJobExportArgsTokens->mile, UsdGeomLinearUnits::miles } };
-
-        const auto iter = unitsConversionMap.find(unitsOption);
-        if (iter == unitsConversionMap.end())
-            return UsdGeomLinearUnits::centimeters;
-        return iter->second;
-    }
-
-    static TfToken _convertMayaUnitsToOptionUnits(MDistance::Unit mayaUnits)
-    {
-        static std::map<MDistance::Unit, TfToken> unitsConversionMap
-            = { { MDistance::kMillimeters, UsdMayaJobExportArgsTokens->mm },
-                { MDistance::kCentimeters, UsdMayaJobExportArgsTokens->cm },
-                { MDistance::kMeters, UsdMayaJobExportArgsTokens->m },
-                { MDistance::kKilometers, UsdMayaJobExportArgsTokens->km },
-                { MDistance::kInches, UsdMayaJobExportArgsTokens->inch },
-                { MDistance::kFeet, UsdMayaJobExportArgsTokens->foot },
-                { MDistance::kYards, UsdMayaJobExportArgsTokens->yard },
-                { MDistance::kMiles, UsdMayaJobExportArgsTokens->mile } };
-
-        const auto iter = unitsConversionMap.find(mayaUnits);
-        if (iter == unitsConversionMap.end())
-            return UsdMayaJobExportArgsTokens->cm;
-        return iter->second;
-    }
-
-    static std::string
-    _prepareUnitsCommands(const UsdStageRefPtr& stage, const TfToken& unitsOption)
-    {
-        // If the user don't want to author the unit, we won't need to change the Maya unit.
-        if (unitsOption == UsdMayaJobExportArgsTokens->none)
-            return {};
-
-        // If the user want the unit authored in USD, well, author it.
-        const bool    wantMayaPrefs = (unitsOption == UsdMayaJobExportArgsTokens->mayaPrefs);
-        const TfToken mayaUIUnits = _convertMayaUnitsToOptionUnits(MDistance::uiUnit());
-        const TfToken mayaDataUnits = _convertMayaUnitsToOptionUnits(MDistance::internalUnit());
-        const TfToken wantedUnits = wantMayaPrefs ? mayaUIUnits : unitsOption;
-        const double  usdMetersPerUnit = _convertOptionUnitsToUSDUnits(wantedUnits);
-        UsdGeomSetStageMetersPerUnit(stage, usdMetersPerUnit);
+        const double mayaMetersPerUnit = _ConvertMayaUnitToMetersPerUnit(MDistance::internalUnit());
 
         // If the Maya data unit is already the right one, we dont have to modify the Maya scene.
-        if (wantedUnits == mayaDataUnits)
+        if (mayaMetersPerUnit == metersPerUnit)
             return {};
 
         static const char scalingCommandsFormat[]
             = "scale -relative -pivot 0 0 0 -scaleXYZ %f %f %f $groupName;\n";
 
-        const double mayaMetersPerUnit = _convertOptionUnitsToUSDUnits(mayaDataUnits);
-        const double requiredScale = mayaMetersPerUnit / usdMetersPerUnit;
+        const double requiredScale = mayaMetersPerUnit / metersPerUnit;
 
         return TfStringPrintf(scalingCommandsFormat, requiredScale, requiredScale, requiredScale);
     }
 
-    static std::string
-    _prepareUpAxisCommands(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::TfToken& upAxisOption)
+    static std::string _prepareUpAxisCommands(const TfToken& upAxis)
     {
-        // If the user don't want to author the up-axis, we won't need to change the Maya up-axis.
-        if (upAxisOption == UsdMayaJobExportArgsTokens->none)
-            return {};
-
-        // If the user want the up-axis authored in USD, well, author it.
-        const bool wantMayaPrefs = (upAxisOption == UsdMayaJobExportArgsTokens->mayaPrefs);
-        const bool isMayaUpAxisZ = MGlobal::isZAxisUp();
-        const bool wantUpAxisZ
-            = (wantMayaPrefs && isMayaUpAxisZ) || (upAxisOption == UsdMayaJobExportArgsTokens->z);
-        UsdGeomSetStageUpAxis(stage, wantUpAxisZ ? UsdGeomTokens->z : UsdGeomTokens->y);
-
         // If the Maya up-axis is already the right one, we dont have to modify the Maya scene.
-        if (wantUpAxisZ == isMayaUpAxisZ)
+        if (upAxis == _WantedUSDUpAxis(UsdMayaJobExportArgsTokens->mayaPrefs))
             return {};
 
         static const char rotationCommandsFormat[] =
@@ -223,15 +211,12 @@ private:
 
         const int angleYtoZ = 90;
         const int angleZtoY = -90;
-        const int rotationAngle = wantUpAxisZ ? angleYtoZ : angleZtoY;
+        const int rotationAngle = upAxis == UsdGeomTokens->z ? angleYtoZ : angleZtoY;
 
         return TfStringPrintf(rotationCommandsFormat, rotationAngle);
     }
 
-    static std::string _prepareCommands(
-        const PXR_NS::UsdStageRefPtr& stage,
-        const PXR_NS::TfToken&        upAxisOption,
-        const PXR_NS::TfToken&        unitsOption)
+    static std::string _prepareCommands(const TfToken* upAxis, const double* metersPerUnit)
     {
         // These commands wrap the scene-changing commands by providing:
         //
@@ -261,14 +246,21 @@ private:
             // Restore the selection.
             "select -replace $selection;\n";
 
-        const std::string upAxisCommands = _prepareUpAxisCommands(stage, upAxisOption);
-        const std::string unitsCommands = _prepareUnitsCommands(stage, unitsOption);
+        std::string commands;
+
+        // If the user don't want to author the up-axis, we won't need to change the Maya up-axis.
+        if (upAxis != nullptr)
+            commands += _prepareUpAxisCommands(*upAxis);
+
+        // If the user don't want to author the unit, we won't need to change the Maya unit.
+        if (metersPerUnit != nullptr)
+            commands += _prepareUnitsCommands(*metersPerUnit);
 
         // If both are empty, we don't need to do anything.
-        if (upAxisCommands.empty() && unitsCommands.empty())
+        if (commands.empty())
             return {};
 
-        const std::string fullScript = scriptPrefix + upAxisCommands + unitsCommands + scriptSuffix;
+        const std::string fullScript = scriptPrefix + commands + scriptSuffix;
         return fullScript;
     }
 };
@@ -277,12 +269,22 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
 {
     const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
 
+    const auto usdUpAxis = _WantedUSDUpAxis(mJobCtx.mArgs.upAxis);
+    const auto usdMetersPerUnit = _WantedUSDMetersPerUnit(mJobCtx.mArgs.unit);
+
     // Non-animated export doesn't show progress.
     const bool showProgress = !timeSamples.empty();
 
     // Animated export shows frame-by-frame progress.
-    int                       nbSteps = 1 + timeSamples.size();
+    int                       nbSteps = 2 + timeSamples.size();
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
+
+    // Temporarily change Maya's up-axis and unit if needed.
+    const AutoUpAxisAndUnitsChanger unitsChanger(
+        mJobCtx.mArgs.upAxis == UsdMayaJobExportArgsTokens->none ? nullptr : &usdUpAxis,
+        mJobCtx.mArgs.unit == UsdMayaJobExportArgsTokens->none ? nullptr : &usdMetersPerUnit);
+
+    progressBar.advance();
 
     // Default-time export.
     if (!_BeginWriting(fileName, append)) {
@@ -496,10 +498,13 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         mJobCtx.mStage->SetFramesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsDouble());
     }
 
-    // Temporarily change Maya's up-axis if needed.
-    _autoAxisAndUnitsChanger = std::make_unique<AutoUpAxisAndUnitsChanger>(
-        mJobCtx.mStage, mJobCtx.mArgs.upAxis, mJobCtx.mArgs.unit);
-
+    // Author USD units and up axis if requested.
+    if (mJobCtx.mArgs.unit != UsdMayaJobExportArgsTokens->none) {
+        UsdGeomSetStageMetersPerUnit(mJobCtx.mStage, _WantedUSDMetersPerUnit(mJobCtx.mArgs.unit));
+    }
+    if (mJobCtx.mArgs.upAxis != UsdMayaJobExportArgsTokens->none) {
+        UsdGeomSetStageUpAxis(mJobCtx.mStage, _WantedUSDUpAxis(mJobCtx.mArgs.upAxis));
+    }
     // Set the customLayerData on the layer
     if (!mJobCtx.mArgs.customLayerData.empty()) {
         mJobCtx.mStage->GetRootLayer()->SetCustomLayerData(mJobCtx.mArgs.customLayerData);
@@ -837,9 +842,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
 
     _HideSourceData();
     progressBar.advance();
-
-    // Restore Maya's up-axis if needed.
-    _autoAxisAndUnitsChanger.reset();
 
     TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
