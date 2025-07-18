@@ -78,10 +78,6 @@ bool isInStagesCache(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 
-MAYAUSD_CORE_PUBLIC
-UsdUfe::UsdSceneItem::Ptr
-createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
-
 //! Returns a unique child name following the Maya standard naming rules.
 MAYAUSD_CORE_PUBLIC
 std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name);

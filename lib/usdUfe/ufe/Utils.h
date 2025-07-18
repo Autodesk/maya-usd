@@ -118,6 +118,10 @@ void setUfePathToPrimFn(UfePathToPrimFn fn);
 USDUFE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 
+USDUFE_PUBLIC
+UsdSceneItem::Ptr
+createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
+
 //! Set the DCC specific time accessor function.
 //! It cannot be empty.
 //! \excpection std::invalid_argument if fn is empty.

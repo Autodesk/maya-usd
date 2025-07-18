@@ -230,6 +230,13 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     return gUfePathToPrimFn(path);
 }
 
+UsdSceneItem::Ptr
+createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
+{
+    auto ufeSiblingPath = ufeSrcPath.sibling(Ufe::PathComponent(siblingName));
+    return UsdSceneItem::create(ufeSiblingPath, ufePathToPrim(ufeSiblingPath));
+}
+
 void setTimeAccessorFn(TimeAccessorFn fn)
 {
     if (nullptr == fn) {

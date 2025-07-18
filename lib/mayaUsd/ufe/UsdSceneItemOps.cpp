@@ -15,10 +15,11 @@
 //
 #include "UsdSceneItemOps.h"
 
-#include <mayaUsd/ufe/UsdUndoDeleteCommand.h>
+#include <mayaUsd/ufe/MayaUsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
-#include <mayaUsd/ufe/UsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/UsdUndoDeleteCommand.h>
 
 #include <maya/MGlobal.h>
 
@@ -52,13 +53,13 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const { return _item; }
 #ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmdNoExecute()
 {
-    return UsdUndoDeleteCommand::create(prim());
+    return UsdUfe::UsdUndoDeleteCommand::create(prim());
 }
 #endif
 
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 {
-    auto deleteCmd = UsdUndoDeleteCommand::create(prim());
+    auto deleteCmd = UsdUfe::UsdUndoDeleteCommand::create(prim());
     deleteCmd->execute();
     return deleteCmd;
 }
@@ -66,7 +67,7 @@ Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 bool UsdSceneItemOps::deleteItem()
 {
     if (prim()) {
-        auto deleteCmd = UsdUndoDeleteCommand::create(prim());
+        auto deleteCmd = UsdUfe::UsdUndoDeleteCommand::create(prim());
         deleteCmd->execute();
         return true;
     }
@@ -98,20 +99,20 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::duplicateItem()
 Ufe::SceneItemResultUndoableCommand::Ptr
 UsdSceneItemOps::renameItemCmdNoExecute(const Ufe::PathComponent& newName)
 {
-    return UsdUndoRenameCommand::create(_item, newName);
+    return MayaUsdUndoRenameCommand::create(_item, newName);
 }
 #endif
 
 Ufe::Rename UsdSceneItemOps::renameItemCmd(const Ufe::PathComponent& newName)
 {
-    auto renameCmd = UsdUndoRenameCommand::create(_item, newName);
+    auto renameCmd = MayaUsdUndoRenameCommand::create(_item, newName);
     renameCmd->execute();
     return Ufe::Rename(renameCmd->renamedItem(), renameCmd);
 }
 
 Ufe::SceneItem::Ptr UsdSceneItemOps::renameItem(const Ufe::PathComponent& newName)
 {
-    auto renameCmd = UsdUndoRenameCommand::create(_item, newName);
+    auto renameCmd = MayaUsdUndoRenameCommand::create(_item, newName);
     renameCmd->execute();
     return renameCmd->renamedItem();
 }
