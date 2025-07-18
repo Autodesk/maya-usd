@@ -30,10 +30,12 @@ target_sources(${PROJECT_NAME}
         UsdUndoClearPayloadsCommand.cpp
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
+        UsdUndoDeleteCommand.cpp
         UsdUndoInsertChildCommand.cpp
         UsdUndoLongDurationCommand.cpp
         UsdUndoPayloadCommand.cpp
         UsdUndoReloadRefCommand.cpp
+        UsdUndoRenameCommand.cpp
         UsdUndoReorderCommand.cpp
         UsdUndoSelectAfterCommand.cpp
         UsdUndoSetKindCommand.cpp
@@ -156,10 +158,12 @@ set(HEADERS
     UsdUndoClearPayloadsCommand.h
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h
+    UsdUndoDeleteCommand.h
     UsdUndoInsertChildCommand.h
     UsdUndoLongDurationCommand.h
     UsdUndoPayloadCommand.h
     UsdUndoReloadRefCommand.h
+    UsdUndoRenameCommand.h
     UsdUndoReorderCommand.h
     UsdUndoSelectAfterCommand.h
     UsdUndoSetKindCommand.h

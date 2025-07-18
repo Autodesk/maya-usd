@@ -135,13 +135,6 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
 }
 
-UsdUfe::UsdSceneItem::Ptr
-createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
-{
-    auto ufeSiblingPath = ufeSrcPath.sibling(Ufe::PathComponent(siblingName));
-    return UsdUfe::UsdSceneItem::create(ufeSiblingPath, ufePathToPrim(ufeSiblingPath));
-}
-
 std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name)
 {
     if (!usdParent.IsValid())
