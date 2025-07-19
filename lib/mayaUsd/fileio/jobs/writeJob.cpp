@@ -164,6 +164,56 @@ static TfToken _WantedUSDUpAxis(const TfToken& upAxisOption)
     return UsdGeomTokens->y;
 }
 
+static MObject _WantedRenderLayerNode(const TfToken& renderLayerMode)
+{
+    // Return the wanted render layer node based on the requested render layer mode:
+    //     defaultLayer    - Switch to the default render layer before exporting,
+    //                       then switch back afterwards (no layer switching if
+    //                       the current layer IS the default layer).
+    //     currentLayer    - No layer switching before or after exporting. Just
+    //                       use whatever is the current render layer for export.
+    //     modelingVariant - Switch to the default render layer before exporting,
+    //                       and export each render layer in the scene as a
+    //                       modeling variant, then switch back afterwards (no
+    //                       layer switching if the current layer IS the default
+    //                       layer). The default layer will be made the default
+    //                       modeling variant.
+    if (renderLayerMode == UsdMayaJobExportArgsTokens->currentLayer) {
+        return MFnRenderLayer::currentLayer();
+    }
+    return MFnRenderLayer::defaultRenderLayer();
+}
+
+MStatus _ActivateRenderLayer(const MObject& renderLayerNode)
+{
+    static const MString cmdFmt("editRenderLayerGlobals( -currentRenderLayer ^1s");
+    if (renderLayerNode != MFnRenderLayer::currentLayer()) {
+        MStatus        status;
+        MFnRenderLayer renderLayerFn(renderLayerNode, &status);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+
+        MString cmd;
+        cmd.format(cmdFmt, renderLayerFn.name());
+        status = MGlobal::executeCommand(cmd, /*displayEnabled=*/false, /*undoEnabled=*/false);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+    }
+    return MS::kSuccess;
+}
+
+/// RAII class to backup and restore the current render layer.
+class CurrentRenderLayerGuard
+{
+public:
+    CurrentRenderLayerGuard()
+        : _prevLayer(MFnRenderLayer::currentLayer())
+    {
+    }
+    ~CurrentRenderLayerGuard() { _ActivateRenderLayer(_prevLayer); }
+
+private:
+    const MObject _prevLayer;
+};
+
 /// Class to automatically change and restore the up-axis and units of the Maya scene.
 class AutoUpAxisAndUnitsChanger : public MayaUsd::AutoUndoCommands
 {
@@ -271,6 +321,7 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
 
     const auto usdUpAxis = _WantedUSDUpAxis(mJobCtx.mArgs.upAxis);
     const auto usdMetersPerUnit = _WantedUSDMetersPerUnit(mJobCtx.mArgs.unit);
+    const auto renderLayer = _WantedRenderLayerNode(mJobCtx.mArgs.renderLayerMode);
 
     // Non-animated export doesn't show progress.
     const bool showProgress = !timeSamples.empty();
@@ -279,10 +330,15 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     int                       nbSteps = 2 + timeSamples.size();
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
-    // Temporarily change Maya's up-axis and unit if needed.
+    // Temporarily tweak the Maya scene for export if needed.
     const AutoUpAxisAndUnitsChanger unitsChanger(
         mJobCtx.mArgs.upAxis == UsdMayaJobExportArgsTokens->none ? nullptr : &usdUpAxis,
         mJobCtx.mArgs.unit == UsdMayaJobExportArgsTokens->none ? nullptr : &usdMetersPerUnit);
+
+    const CurrentRenderLayerGuard currentLayerGuard;
+    if (!_ActivateRenderLayer(renderLayer)) {
+        return false;
+    }
 
     progressBar.advance();
 
@@ -384,7 +440,7 @@ static MStringArray GetExportDefaultPrimCandidates(const UsdMayaJobExportArgs& e
 
 bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 {
-    MayaUsd::ProgressBarScope progressBar(8);
+    MayaUsd::ProgressBarScope progressBar(7);
 
     // If no default prim for the exported root layer was given, select one from
     // the available root nodes of the Maya scene in order for materials to be
@@ -509,34 +565,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     if (!mJobCtx.mArgs.customLayerData.empty()) {
         mJobCtx.mStage->GetRootLayer()->SetCustomLayerData(mJobCtx.mArgs.customLayerData);
     }
-
-    // Setup the requested render layer mode:
-    //     defaultLayer    - Switch to the default render layer before exporting,
-    //                       then switch back afterwards (no layer switching if
-    //                       the current layer IS the default layer).
-    //     currentLayer    - No layer switching before or after exporting. Just
-    //                       use whatever is the current render layer for export.
-    //     modelingVariant - Switch to the default render layer before exporting,
-    //                       and export each render layer in the scene as a
-    //                       modeling variant, then switch back afterwards (no
-    //                       layer switching if the current layer IS the default
-    //                       layer). The default layer will be made the default
-    //                       modeling variant.
-    MFnRenderLayer currentLayer(MFnRenderLayer::currentLayer());
-    mCurrentRenderLayerName = currentLayer.name();
-
-    // Switch to the default render layer unless the renderLayerMode is
-    // 'currentLayer', or the default layer is already the current layer.
-    if ((mJobCtx.mArgs.renderLayerMode != UsdMayaJobExportArgsTokens->currentLayer)
-        && (MFnRenderLayer::currentLayer() != MFnRenderLayer::defaultRenderLayer())) {
-        // Set the RenderLayer to the default render layer
-        MFnRenderLayer defaultLayer(MFnRenderLayer::defaultRenderLayer());
-        MGlobal::executeCommand(
-            MString("editRenderLayerGlobals -currentRenderLayer ") + defaultLayer.name(),
-            false,
-            false);
-    }
-    progressBar.advance();
 
     // Pre-process the argument dagPath path names into two sets. One set
     // contains just the arg dagPaths, and the other contains all parents of
@@ -733,7 +761,7 @@ bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
 
 bool UsdMaya_WriteJob::_FinishWriting()
 {
-    MayaUsd::ProgressBarScope progressBar(8);
+    MayaUsd::ProgressBarScope progressBar(7);
 
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -757,16 +785,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
         //     than "variant" values, but "referencing" will cause the variant values
         //     to take precedence.
         defaultPrim = _WriteVariants(usdRootPrim);
-    }
-    progressBar.advance();
-
-    // Restoring the currentRenderLayer
-    MFnRenderLayer currentLayer(MFnRenderLayer::currentLayer());
-    if (currentLayer.name() != mCurrentRenderLayerName) {
-        MGlobal::executeCommand(
-            MString("editRenderLayerGlobals -currentRenderLayer ") + mCurrentRenderLayerName,
-            false,
-            false);
     }
     progressBar.advance();
 
@@ -944,23 +962,21 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
     usdRootPrim.SetActive(false);
 
     // Loop over all the renderLayers
-    for (unsigned int ir = 0; ir < mRenderLayerObjs.length(); ++ir) {
+    for (const auto& renderLayerNode : mRenderLayerObjs) {
         SdfPathTable<bool> tableOfActivePaths;
-        MFnRenderLayer     renderLayerFn(mRenderLayerObjs[ir]);
-        MString            renderLayerName = renderLayerFn.name();
-        std::string        variantName(renderLayerName.asChar());
+        MFnRenderLayer     renderLayerFn(renderLayerNode);
+        std::string        variantName(renderLayerFn.name().asChar());
         // Determine default variant. Currently unsupported
         // MPlug renderLayerDisplayOrderPlug = renderLayerFn.findPlug("displayOrder", true);
         // int renderLayerDisplayOrder = renderLayerDisplayOrderPlug.asShort();
 
         // The Maya default RenderLayer is also the default modeling variant
-        if (mRenderLayerObjs[ir] == MFnRenderLayer::defaultRenderLayer()) {
+        if (renderLayerNode == MFnRenderLayer::defaultRenderLayer()) {
             defaultModelingVariant = variantName;
         }
 
         // Make the renderlayer being looped the current one
-        MGlobal::executeCommand(
-            MString("editRenderLayerGlobals -currentRenderLayer ") + renderLayerName, false, false);
+        _ActivateRenderLayer(renderLayerNode);
 
         // == ModelingVariants ==
         // Identify prims to activate

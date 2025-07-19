@@ -101,9 +101,6 @@ private:
     // Name of destination packaged archive.
     std::string _packageName;
 
-    // Name of current layer since it should be restored after looping over them
-    MString mCurrentRenderLayerName;
-
     // List of renderLayerObjects. Currently used for variants
     MObjectArray mRenderLayerObjs;
 
