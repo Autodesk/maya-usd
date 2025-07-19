@@ -37,8 +37,12 @@
 #include <maya/MStatus.h>
 #include <maya/MUuid.h>
 
+#include <functional>
+#include <iterator>
 #include <limits>
 #include <map>
+#include <set>
+
 // Needed for directly removing a UsdVariant via Sdf
 //   Remove when UsdVariantSet::RemoveVariant() is exposed
 //   XXX [bug 75864]
@@ -50,6 +54,7 @@
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/autoUndoCommands.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/util.h>
@@ -320,25 +325,140 @@ private:
     }
 };
 
-bool UsdMaya_WriteJob::Write()
+class UsdMaya_WriteJobImpl
 {
-    const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
+public:
+    /// Helper for Write methods.
+    static bool WriteJobs(const std::vector<UsdMaya_WriteJob*>&);
 
-    const auto usdUpAxis = _WantedUSDUpAxis(mJobCtx.mArgs.upAxis);
-    const auto usdMetersPerUnit = _WantedUSDMetersPerUnit(mJobCtx.mArgs.unit);
-    const auto renderLayer = _WantedRenderLayerNode(mJobCtx.mArgs.renderLayerMode);
+private:
+    using TimeSamples = std::vector<double>;
+
+    /// Helper class to write a job sequence of frames,
+    /// WriteFrameIfNeeded must be called for all timeSamples of the job in non-decreasing order.
+    class JobFramesWriter
+    {
+    public:
+        JobFramesWriter() = delete;
+        explicit JobFramesWriter(UsdMaya_WriteJob* job);
+
+        bool Finished() const { return _next == _end; }
+        auto AllSamples() const -> const TimeSamples&;
+        bool WriteFrameIfNeeded(double frame);
+
+    private:
+        UsdMaya_WriteJob*           _job;
+        TimeSamples::const_iterator _next;
+        TimeSamples::const_iterator _end;
+    };
+    using JobFramesWriters = std::vector<JobFramesWriter>;
+
+    /// Computes the ordered union of all \p writers time-samples.
+    static TimeSamples _UnionTimeSamples(const JobFramesWriters& writers);
+};
+
+UsdMaya_WriteJobImpl::JobFramesWriter::JobFramesWriter(UsdMaya_WriteJob* job)
+    : _job(job)
+    , _next(job->mJobCtx.GetArgs().timeSamples.cbegin())
+    , _end(job->mJobCtx.GetArgs().timeSamples.cend())
+{
+}
+
+bool UsdMaya_WriteJobImpl::JobFramesWriter::WriteFrameIfNeeded(double frame)
+{
+    if (Finished())
+        return false;
+
+    if (frame != *_next)
+        return true;
+
+    ++_next;
+    return _job->_WriteFrame(frame);
+}
+
+auto UsdMaya_WriteJobImpl::JobFramesWriter::AllSamples() const -> const TimeSamples&
+{
+    return _job->mJobCtx.GetArgs().timeSamples;
+}
+
+// static
+auto UsdMaya_WriteJobImpl::_UnionTimeSamples(const JobFramesWriters& writers) -> TimeSamples
+{
+    if (writers.empty())
+        return {};
+
+    TimeSamples unioned = writers.front().AllSamples();
+
+    TimeSamples storage;
+    for (auto itr = writers.cbegin() + 1; itr != writers.cend(); ++itr)
+        UsdMayaWriteUtil::UpdateTimeSamples(unioned, itr->AllSamples(), &storage);
+
+    return unioned;
+}
+
+// static
+bool UsdMaya_WriteJobImpl::WriteJobs(const std::vector<UsdMaya_WriteJob*>& jobs)
+{
+    if (jobs.empty())
+        return true;
+
+    // Get the wanted upAxis, unit and renderLayer node.
+    const auto* firstJob = jobs.front();
+    const auto& firstArgs = firstJob->mJobCtx.GetArgs();
+
+    const auto usdUpAxis = _WantedUSDUpAxis(firstArgs.upAxis);
+    const auto usdMetersPerUnit = _WantedUSDMetersPerUnit(firstArgs.unit);
+    const auto renderLayer = _WantedRenderLayerNode(firstArgs.renderLayerMode);
+
+    // Validate that multiple jobs can be exported all together.
+    if (jobs.size() > 1) {
+        auto argsAreCompatible = [&](const UsdMayaJobExportArgs& args) -> bool {
+            return (_WantedUSDUpAxis(args.upAxis) == usdUpAxis)
+                && (_WantedUSDMetersPerUnit(args.unit) == usdMetersPerUnit)
+                && (_WantedRenderLayerNode(args.renderLayerMode) == renderLayer);
+        };
+
+        std::set<std::string> seenFileNames;
+        for (auto& job : jobs) {
+            // Verify that we are not writing twice to the same filename.
+            if (!seenFileNames.insert(job->_fileName).second) {
+                MGlobal::displayError("Cannot write twice to the same whole USD file.");
+                return false;
+            }
+            // Verify that all job upAxis and unit are compatible.
+            if (job != firstJob && !argsAreCompatible(job->mJobCtx.GetArgs())) {
+                MGlobal::displayError("Cannot write two USD files with different upAxes or units.");
+                return false;
+            }
+        }
+    }
+
+    // Collect timeSampled jobs for animation export, and determine which timeSamples to evaluate.
+    JobFramesWriters jobFramesWriters;
+    jobFramesWriters.reserve(jobs.size());
+
+    for (auto& job : jobs) {
+        JobFramesWriter framesWriter(job);
+        if (!framesWriter.Finished())
+            jobFramesWriters.push_back(std::move(framesWriter));
+    }
+
+    auto unionedSamples
+        = (jobFramesWriters.size() > 1) ? _UnionTimeSamples(jobFramesWriters) : TimeSamples();
+    const auto& timeSamples
+        = (jobFramesWriters.size() == 1) ? jobFramesWriters.front().AllSamples() : unionedSamples;
 
     // Non-animated export doesn't show progress.
     const bool showProgress = !timeSamples.empty();
 
     // Animated export shows frame-by-frame progress.
-    int                       nbSteps = 3 + timeSamples.size();
+    int                       nbSteps = (jobs.size() * 3) + timeSamples.size() + 1;
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
     // Temporarily tweak the Maya scene for export if needed.
     const AutoUpAxisAndUnitsChanger unitsChanger(
-        mJobCtx.mArgs.upAxis == UsdMayaJobExportArgsTokens->none ? nullptr : &usdUpAxis,
-        mJobCtx.mArgs.unit == UsdMayaJobExportArgsTokens->none ? nullptr : &usdMetersPerUnit);
+        firstArgs.upAxis == UsdMayaJobExportArgsTokens->none ? nullptr : &usdUpAxis,
+        firstArgs.unit == UsdMayaJobExportArgsTokens->none ? nullptr : &usdMetersPerUnit);
 
     const CurrentRenderLayerGuard currentLayerGuard;
     if (!_ActivateRenderLayer(renderLayer)) {
@@ -347,12 +467,14 @@ bool UsdMaya_WriteJob::Write()
 
     progressBar.advance();
 
-    // Default-time export.
-    if (!_BeginWriting()) {
-        return false;
+    // Default-time exports.
+    for (auto& job : jobs) {
+        if (!job->_BeginWriting())
+            return false;
+        progressBar.advance();
     }
 
-    // Time-sampled export.
+    // Time-sampled exports.
     if (!timeSamples.empty()) {
         const MTime oldCurTime = MAnimControl::currentTime();
 
@@ -361,9 +483,12 @@ bool UsdMaya_WriteJob::Write()
             progressBar.advance();
 
             // Process per frame data.
-            if (!_WriteFrame(t)) {
-                MGlobal::viewFrame(oldCurTime);
-                return false;
+            for (auto itr = jobFramesWriters.begin(); itr != jobFramesWriters.end(); /**/) {
+                if (!itr->WriteFrameIfNeeded(t)) {
+                    MGlobal::viewFrame(oldCurTime);
+                    return false;
+                }
+                itr = itr->Finished() ? jobFramesWriters.erase(itr) : std::next(itr);
             }
 
             // Allow user cancellation.
@@ -376,17 +501,26 @@ bool UsdMaya_WriteJob::Write()
         MGlobal::viewFrame(oldCurTime);
     }
 
-    // Finalize the export, close the stage.
-    if (!_PostExport()) {
-        return false;
+    // Finalize the exports.
+    for (auto& job : jobs) {
+        if (!job->_PostExport())
+            return false;
+        progressBar.advance();
     }
 
-    progressBar.advance();
-
-    _FinishWriting();
-    progressBar.advance();
+    for (auto& job : jobs) {
+        job->_FinishWriting();
+        progressBar.advance();
+    }
 
     return true;
+}
+
+// static
+bool UsdMaya_WriteJob::Write()
+{
+    std::vector<UsdMaya_WriteJob*> oneJob { this };
+    return UsdMaya_WriteJobImpl::WriteJobs(oneJob);
 }
 
 static MStringArray GetExportDefaultPrimCandidates(const UsdMayaJobExportArgs& exportArgs)
@@ -1262,6 +1396,26 @@ bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath& path, const MDagPath& da
 const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_WriteJob::GetDagPathToUsdPathMap() const
 {
     return mDagPathToUsdPathMap;
+}
+
+void UsdMaya_WriteJobBatch::AddJob(
+    const UsdMayaJobExportArgs& args,
+    const std::string&          fileName,
+    bool                        appendToFile)
+{
+    m_jobs.emplace_back(std::make_unique<UsdMaya_WriteJob>(args, fileName, appendToFile));
+}
+
+const UsdMaya_WriteJob& UsdMaya_WriteJobBatch::JobAt(std::size_t index) const
+{
+    return *m_jobs.at(index);
+}
+
+bool UsdMaya_WriteJobBatch::Write()
+{
+    std::vector<UsdMaya_WriteJob*> jobs(m_jobs.size());
+    std::transform(m_jobs.begin(), m_jobs.end(), jobs.begin(), [](auto& p) { return p.get(); });
+    return UsdMaya_WriteJobImpl::WriteJobs(jobs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

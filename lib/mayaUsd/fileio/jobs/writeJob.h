@@ -26,11 +26,14 @@
 
 #include <maya/MObjectHandle.h>
 
+#include <memory>
 #include <string>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMaya_ModelKindProcessor;
+class UsdMaya_WriteJobImpl;
 
 class UsdMaya_WriteJob
 {
@@ -67,6 +70,8 @@ public:
     const std::vector<SdfPath>& GetExtraPrimsPaths() const { return _extrasPrimsPaths; }
 
 private:
+    friend class UsdMaya_WriteJobImpl;
+
     /// Begins constructing the USD stage, writing out the values at the default
     /// time. Returns \c true if the stage can be created successfully.
     bool _BeginWriting();
@@ -128,6 +133,36 @@ private:
     UsdMayaWriteJobContext mJobCtx;
 
     std::unique_ptr<UsdMaya_ModelKindProcessor> _modelKindProcessor;
+};
+
+/// This class queues several independent `UsdMaya_WriteJob`s, each writing to a **different**
+/// output stage/file. It aims to optimize the export of multiple USD stages from an animated
+/// Maya scene by reducing redundant evaluations to a single timeline pass.
+class UsdMaya_WriteJobBatch
+{
+public:
+    /// Add a job at the end of this batch with \p iArgs args. The stage to the given USD
+    /// \p fileName.
+    MAYAUSD_CORE_PUBLIC
+    void AddJob(
+        const UsdMayaJobExportArgs& args,
+        const std::string&          fileName,
+        bool                        appendToFile = false);
+
+    /// Get the job at \p index.
+    MAYAUSD_CORE_PUBLIC
+    const UsdMaya_WriteJob& JobAt(std::size_t index) const;
+
+    /// Runs all the write jobs in the batch, writing the Maya stages to their respective USD files.
+    /// The Maya animation evaluation is optimized by performing a single timeline pass through all
+    /// frames needed by the jobs in this batch, each frame beeing evaluated only once.
+    /// In case of error, none of the destination USD files will be written to disk.
+    /// Returns \c true if successful, or \c false if an error was encountered.
+    MAYAUSD_CORE_PUBLIC
+    bool Write();
+
+private:
+    std::vector<std::unique_ptr<UsdMaya_WriteJob>> m_jobs;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
