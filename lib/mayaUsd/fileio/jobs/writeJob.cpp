@@ -327,7 +327,7 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     const bool showProgress = !timeSamples.empty();
 
     // Animated export shows frame-by-frame progress.
-    int                       nbSteps = 2 + timeSamples.size();
+    int                       nbSteps = 3 + timeSamples.size();
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
     // Temporarily tweak the Maya scene for export if needed.
@@ -375,10 +375,13 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     }
 
     // Finalize the export, close the stage.
-    if (!_FinishWriting()) {
+    if (!_PostExport()) {
         return false;
     }
 
+    progressBar.advance();
+
+    _FinishWriting();
     progressBar.advance();
 
     return true;
@@ -759,9 +762,9 @@ bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
     return true;
 }
 
-bool UsdMaya_WriteJob::_FinishWriting()
+bool UsdMaya_WriteJob::_PostExport()
 {
-    MayaUsd::ProgressBarScope progressBar(7);
+    MayaUsd::ProgressBarScope progressBar(5);
 
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -861,6 +864,13 @@ bool UsdMaya_WriteJob::_FinishWriting()
     _HideSourceData();
     progressBar.advance();
 
+    return true;
+}
+
+void UsdMaya_WriteJob::_FinishWriting()
+{
+    MayaUsd::ProgressBarScope progressBar(2);
+
     TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
         mJobCtx.mStage->GetRootLayer()->Save();
@@ -885,8 +895,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
         TfDeleteFile(_fileName);
     }
     progressBar.advance();
-
-    return true;
 }
 
 TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)

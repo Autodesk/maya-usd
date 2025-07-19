@@ -74,9 +74,11 @@ private:
     /// WriteFrame() call, internal code may generate errors.
     bool _WriteFrame(double iFrame);
 
-    /// Runs any post-export processes, closes the USD stage, and writes it out
-    /// to disk.
-    bool _FinishWriting();
+    /// Runs any post-export processes.
+    bool _PostExport();
+
+    /// Closes the USD stage, and writes it out to disk.
+    void _FinishWriting();
 
     /// Writes the root prim variants based on the Maya render layers.
     TfToken _WriteVariants(const UsdPrim& usdRootPrim);
