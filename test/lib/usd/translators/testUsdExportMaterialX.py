@@ -182,7 +182,7 @@ class testUsdExportMaterialX(unittest.TestCase):
                          "ND_standard_surface_surfaceshader")
         mxNode = Sdr.Registry().GetShaderNodeByIdentifier("ND_standard_surface_surfaceshader")
         if mxNode:
-            self.assertEqual(outputName, mxNode.GetOutputNames()[0])
+            self.assertEqual(outputName, mxNode.GetShaderOutputNames()[0])
 
         # With a connected file texture on base_color going to baseColor on the
         # nodegraph:
