@@ -19,6 +19,8 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
 
+#include <maya/MGlobal.h>
+
 #include <cassert>
 
 // For TF_WARN macro
@@ -87,7 +89,8 @@ ProgressBarScope::~ProgressBarScope()
         // The "did not advance" warning below is not necessarily relevant -- we
         // may have advanced the correct number of steps, but the `progBar`
         // failed for other reasons, for example, running without the UI.
-        if (progress != -1 && progress != totalStepsAdded) {
+        if (progress != -1 && progress != totalStepsAdded
+            && MGlobal::mayaState() == MGlobal::kInteractive) {
             TF_WARN("ProgressBarScope: did not advance progress bar correct number of steps.");
         }
         totalStepsAdded = 0;
