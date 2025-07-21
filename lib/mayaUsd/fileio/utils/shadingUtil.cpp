@@ -13,12 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "shadingUtil.h"
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/utils/utilFileSystem.h>
-
+// clang-format off
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
@@ -33,6 +29,10 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/utils/utilFileSystem.h>
+
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
@@ -41,6 +41,9 @@
 #include <regex>
 #include <string>
 #include <system_error>
+
+#include "shadingUtil.h"
+// clang-format on
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

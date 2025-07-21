@@ -13,16 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/proxyShape.h"
-
-#include <mayaUsd/nodes/hdImagingShape.h>
-#include <mayaUsd/nodes/proxyShapePlugin.h>
-#include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/utils/query.h>
-#include <mayaUsd/utils/stageCache.h>
-#include <mayaUsd/utils/util.h>
-
+// clang-format off
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
 #include <pxr/base/gf/ray.h>
@@ -46,6 +37,16 @@
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/stageCache.h>
+
+#include "usdMaya/proxyShape.h"
+
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/utils/query.h>
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGContext.h>
@@ -76,6 +77,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+// clang-format on
 
 PXR_NAMESPACE_OPEN_SCOPE
 

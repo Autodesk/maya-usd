@@ -16,6 +16,7 @@
 #ifndef PXRUSDMAYA_PROXY_SHAPE_BASE_H
 #define PXRUSDMAYA_PROXY_SHAPE_BASE_H
 
+// clang-format off
 #include <pxr/base/gf/ray.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -51,6 +52,7 @@ UFE_NS_DEF { class Path; }
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/mayaNodeObserver.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
+// clang-format on
 
 namespace MAYAUSD_NS_DEF {
 class LayerManager;

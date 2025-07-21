@@ -18,8 +18,7 @@
 
 /// \file
 
-#include <mayaUsd/base/api.h>
-
+// clang-format off
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -28,9 +27,12 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 
+#include <mayaUsd/base/api.h>
+
 #include <maya/MPlug.h>
 
 #include <string>
+// clang-format on
 
 PXR_NAMESPACE_OPEN_SCOPE
 

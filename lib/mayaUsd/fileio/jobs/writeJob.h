@@ -15,19 +15,19 @@
 //
 #ifndef PXRUSDMAYA_WRITE_JOB_H
 #define PXRUSDMAYA_WRITE_JOB_H
+// clang-format off
+#include <pxr/base/tf/hashmap.h>
+#include <pxr/pxr.h>
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/chaser/exportChaser.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/base/tf/hashmap.h>
-#include <pxr/pxr.h>
-
 #include <maya/MObjectHandle.h>
 
 #include <string>
-
+// clang-format on
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMaya_ModelKindProcessor;
