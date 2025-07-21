@@ -352,9 +352,6 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
         const MTime oldCurTime = MAnimControl::currentTime();
 
         for (double t : timeSamples) {
-            if (mJobCtx.mArgs.verbose) {
-                TF_STATUS("%f", t);
-            }
             MGlobal::viewFrame(t);
             progressBar.advance();
 
