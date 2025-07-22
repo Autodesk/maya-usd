@@ -24,7 +24,9 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
 
+#include <maya/MArgList.h>
 #include <maya/MArgParser.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MStringArray.h>
@@ -147,13 +149,24 @@ MStatus parseObjectArg(const MArgParser& argParser, int index, MObject& outputOb
     return PXR_NS::UsdMayaUtil::GetMObjectByName(text, outputObject);
 }
 
-MStatus parseDagPathArg(const MArgParser& argParser, int index, MDagPath& outputDagPath)
+MStatus parseDagObjects(const MArgParser& argParser, MDagPathArray& outputDagPaths)
 {
-    MObject obj;
-    MStatus status = parseObjectArg(argParser, index, obj);
+    MStringArray stringObjects;
+    MStatus      status = argParser.getObjects(stringObjects);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    return MDagPath::getAPathTo(obj, outputDagPath);
+    for (const MString& text : stringObjects) {
+        MObject obj;
+        status = PXR_NS::UsdMayaUtil::GetMObjectByName(text, obj);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+
+        MDagPath dagPath;
+        status = MDagPath::getAPathTo(obj, dagPath);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+
+        outputDagPaths.append(dagPath);
+    }
+    return MS::kSuccess;
 }
 
 MString parseTextArg(const MArgDatabase& argData, const char* flag, const MString& defaultValue)
@@ -162,6 +175,21 @@ MString parseTextArg(const MArgDatabase& argData, const char* flag, const MStrin
     if (argData.isFlagSet(flag))
         argData.getFlagArgument(flag, 0, value);
     return value;
+}
+
+MStringArray parseTextArrayArg(const MArgDatabase& argData, const char* flag)
+{
+    MStringArray values;
+    if (argData.isFlagSet(flag)) {
+        const auto count = argData.numberOfFlagUses(flag);
+        values.setLength(count);
+        for (unsigned int i = 0; i < count; i++) {
+            MArgList tmpArgList;
+            if (argData.getFlagArgumentList(flag, i, tmpArgList))
+                values[i] = tmpArgList.asString(0);
+        }
+    }
+    return values;
 }
 
 } // namespace
@@ -251,8 +279,12 @@ void* MergeToUsdCommand::creator()
 // MPxCommand API to register the command syntax.
 MSyntax MergeToUsdCommand::createSyntax()
 {
-    MSyntax syntax = createSyntaxWithUfeArgs(1);
+    MSyntax syntax;
+    syntax.enableQuery(false);
+    syntax.enableEdit(false);
+    syntax.setObjectType(MSyntax::kStringObjects, /*minimumObjects=*/1);
     syntax.addFlag(kExportOptionsFlag, kExportOptionsFlagLong, MSyntax::kString);
+    syntax.makeFlagMultiUse(kExportOptionsFlag);
     syntax.addFlag(kIgnoreVariantsFlag, kIgnoreVariantsFlagLong, MSyntax::kBoolean);
     return syntax;
 }
@@ -264,14 +296,12 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
 
     setCommandString(commandName);
 
-    PXR_NS::VtDictionary userArgs;
-
     MStatus    status = MS::kSuccess;
     MArgParser argParser(syntax(), argList, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    MDagPath dagPath;
-    status = parseDagPathArg(argParser, 0, dagPath);
+    MDagPathArray dagPaths;
+    status = parseDagObjects(argParser, dagPaths);
     if (status != MS::kSuccess)
         return reportError(status);
 
@@ -279,33 +309,51 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    const MString exportOptions = parseTextArg(argData, kExportOptionsFlag, "");
-    if (exportOptions.length() > 0) {
-        status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
-            exportOptions, &userArgs);
-        CHECK_MSTATUS_AND_RETURN_IT(status);
-    }
+    const MStringArray exportOptions = parseTextArrayArg(argData, kExportOptionsFlag);
+    const bool         hasExportOptions = exportOptions.length() > 0;
 
+    if (hasExportOptions && (exportOptions.length() != dagPaths.length()))
+        reportError("You must provide the same number of dag objets and exportOptions");
+
+    PXR_NS::VtDictionary commandUserArgs;
     if (argData.isFlagSet(kIgnoreVariantsFlag)) {
         const int index = 0;
-        userArgs[UsdMayaPrimUpdaterArgsTokens->ignoreVariants]
+        commandUserArgs[UsdMayaPrimUpdaterArgsTokens->ignoreVariants]
             = argData.flagArgumentBool(kIgnoreVariantsFlag, index);
     }
 
-    const auto mergeArgs = PXR_NS::PushToUsdArgs::forMerge(dagPath, userArgs);
-    if (!mergeArgs)
-        return reportError(MS::kInvalidParameter);
+    std::vector<PushToUsdArgs> mergeArgsVect;
+    mergeArgsVect.reserve(dagPaths.length());
+
+    for (unsigned int i = 0; i < dagPaths.length(); i++) {
+        PXR_NS::VtDictionary dagUserArgs;
+
+        if (hasExportOptions) {
+            status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
+                exportOptions[i], &dagUserArgs);
+
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+        }
+
+        VtDictionaryOver(commandUserArgs, &dagUserArgs);
+
+        auto mergeArgs = PXR_NS::PushToUsdArgs::forMerge(dagPaths[i], dagUserArgs);
+        if (!mergeArgs)
+            return reportError(MS::kInvalidParameter);
+
+        mergeArgsVect.push_back(std::move(mergeArgs));
+    }
 
     // Scope the undo item recording so we can undo on failure.
     {
         OpUndoItemRecorder undoRecorder(_undoItemList);
 
         auto&      manager = PXR_NS::PrimUpdaterManager::getInstance();
-        const auto mergedPaths = manager.mergeToUsd({ mergeArgs });
-        status = mergedPaths.empty() ? MS::kFailure : MS::kSuccess;
+        const auto mergedPaths = manager.mergeToUsd(mergeArgsVect);
+        status = mergedPaths.size() == mergeArgsVect.size() ? MS::kSuccess : MS::kFailure;
 
         if (status == MS::kSuccess) {
-            // Select the merged prim.  See DuplicateCommand::doIt() comments.
+            // Select the merged prims.  See DuplicateCommand::doIt() comments.
             Ufe::Selection sn;
             for (const auto& mergedPath : mergedPaths)
                 sn.append(Ufe::Hierarchy::createItem(mergedPath));
