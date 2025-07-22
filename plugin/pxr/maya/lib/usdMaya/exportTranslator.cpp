@@ -79,10 +79,9 @@ MStatus UsdMayaExportTranslator::writer(
 
     auto jobArgs
         = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, objSelList, timeSamples);
-    bool append = false;
 
-    UsdMaya_WriteJob writeJob(jobArgs);
-    if (!writeJob.Write(fileName, append)) {
+    UsdMaya_WriteJob writeJob(jobArgs, fileName);
+    if (!writeJob.Write()) {
         return MS::kFailure;
     }
 

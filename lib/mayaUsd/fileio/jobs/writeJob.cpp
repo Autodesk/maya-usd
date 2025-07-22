@@ -66,8 +66,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMaya_WriteJob::UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs)
-    : mJobCtx(iArgs)
+UsdMaya_WriteJob::UsdMaya_WriteJob(
+    const UsdMayaJobExportArgs& iArgs,
+    const std::string&          fileName,
+    bool                        append)
+    : _fileName(fileName)
+    , _appendToFile(append)
+    , mJobCtx(iArgs)
     , _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
 {
 }
@@ -315,7 +320,7 @@ private:
     }
 };
 
-bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
+bool UsdMaya_WriteJob::Write()
 {
     const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
 
@@ -343,7 +348,7 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     progressBar.advance();
 
     // Default-time export.
-    if (!_BeginWriting(fileName, append)) {
+    if (!_BeginWriting()) {
         return false;
     }
 
@@ -438,7 +443,7 @@ static MStringArray GetExportDefaultPrimCandidates(const UsdMayaJobExportArgs& e
     return roots;
 }
 
-bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
+bool UsdMaya_WriteJob::_BeginWriting()
 {
     MayaUsd::ProgressBarScope progressBar(7);
 
@@ -484,49 +489,49 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     progressBar.advance();
 
     // Make sure the file name is a valid one with a proper USD extension.
-    TfToken     fileExt(TfGetExtension(fileName));
+    TfToken     fileExt(TfGetExtension(_fileName));
     std::string fileNameWithExt;
-    if (!(SdfLayer::IsAnonymousLayerIdentifier(fileName)
+    if (!(SdfLayer::IsAnonymousLayerIdentifier(_fileName)
           || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionDefault
           || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionASCII
           || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionCrate
           || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage)) {
         // No extension; get fallback extension based on compatibility profile.
         fileExt = _GetFallbackExtension(mJobCtx.mArgs.compatibility);
-        fileNameWithExt = TfStringPrintf("%s.%s", fileName.c_str(), fileExt.GetText());
+        fileNameWithExt = TfStringPrintf("%s.%s", _fileName.c_str(), fileExt.GetText());
     } else {
         // Has correct extension; use as-is.
-        fileNameWithExt = fileName;
+        fileNameWithExt = _fileName;
     }
     progressBar.advance();
 
     // Setup file structure for export based on whether we are doing a
     // "standard" flat file export or a "packaged" export to usdz.
     if (fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-        if (append) {
+        if (_appendToFile) {
             TF_RUNTIME_ERROR("Cannot append to USDZ packages");
             return false;
         }
 
         // We don't write to fileNameWithExt directly; instead, we write to
         // a temp stage file.
-        _fileName = _MakeTmpStageName(TfGetPathName(fileNameWithExt));
-        if (TfPathExists(_fileName)) {
+        _realFilename = _MakeTmpStageName(TfGetPathName(fileNameWithExt));
+        if (TfPathExists(_realFilename)) {
             // This shouldn't happen (since we made the temp stage name from
             // a UUID). Don't try to recover.
-            TF_RUNTIME_ERROR("Temporary stage '%s' already exists", _fileName.c_str());
+            TF_RUNTIME_ERROR("Temporary stage '%s' already exists", _realFilename.c_str());
             return false;
         }
 
         // The packaged file gets written to fileNameWithExt.
         _packageName = fileNameWithExt;
     } else {
-        _fileName = fileNameWithExt;
+        _realFilename = fileNameWithExt;
         _packageName = std::string();
     }
     progressBar.advance();
 
-    TF_STATUS("Opening layer '%s' for writing", _fileName.c_str());
+    TF_STATUS("Opening layer '%s' for writing", _realFilename.c_str());
     if (mJobCtx.mArgs.renderLayerMode == UsdMayaJobExportArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
         MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
@@ -541,7 +546,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-    if (!mJobCtx._OpenFile(_fileName, append)) {
+    if (!mJobCtx._OpenFile(_realFilename, _appendToFile)) {
         return false;
     }
     progressBar.advance();
@@ -884,12 +889,12 @@ void UsdMaya_WriteJob::_FinishWriting()
     mJobCtx.mStage = UsdStageRefPtr();
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
 
-    // In the usdz case, the layer at _fileName was just a temp file, so
+    // In the usdz case, the layer at _realFilename was just a temp file, so
     // clean it up now. Do this after mJobCtx.mStage is reset to ensure
     // there are no outstanding handles to the file, which will cause file
     // access issues on Windows.
     if (!_packageName.empty()) {
-        TfDeleteFile(_fileName);
+        TfDeleteFile(_realFilename);
     }
     progressBar.advance();
 }
@@ -1166,8 +1171,8 @@ void UsdMaya_WriteJob::_CreatePackage() const
     // the package layer name specified by the user.
     // (Otherwise, the name inside the package will be a random string!)
     const std::string firstLayerBaseName = TfStringGetBeforeSuffix(TfGetBaseName(_packageName));
-    const std::string firstLayerName
-        = TfStringPrintf("%s.%s", firstLayerBaseName.c_str(), TfGetExtension(_fileName).c_str());
+    const std::string firstLayerName = TfStringPrintf(
+        "%s.%s", firstLayerBaseName.c_str(), TfGetExtension(_realFilename).c_str());
 
     if (mJobCtx.mArgs.compatibility == UsdMayaJobExportArgsTokens->appleArKit) {
         // If exporting with compatibility=appleArKit, there are additional
@@ -1176,19 +1181,20 @@ void UsdMaya_WriteJob::_CreatePackage() const
         // UsdUtilsCreateNewARKitUsdzPackage will automatically flatten and
         // enforce that the first layer has a .usdc extension.
         if (!UsdUtilsCreateNewARKitUsdzPackage(
-                SdfAssetPath(_fileName), _packageName, firstLayerName)) {
+                SdfAssetPath(_realFilename), _packageName, firstLayerName)) {
             TF_RUNTIME_ERROR(
                 "Could not create package '%s' from temporary stage '%s'",
                 _packageName.c_str(),
-                _fileName.c_str());
+                _realFilename.c_str());
         }
     } else {
         // No compatibility options (standard).
-        if (!UsdUtilsCreateNewUsdzPackage(SdfAssetPath(_fileName), _packageName, firstLayerName)) {
+        if (!UsdUtilsCreateNewUsdzPackage(
+                SdfAssetPath(_realFilename), _packageName, firstLayerName)) {
             TF_RUNTIME_ERROR(
                 "Could not create package '%s' from temporary stage '%s'",
                 _packageName.c_str(),
-                _fileName.c_str());
+                _realFilename.c_str());
         }
     }
 }

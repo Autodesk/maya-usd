@@ -35,19 +35,22 @@ class UsdMaya_ModelKindProcessor;
 class UsdMaya_WriteJob
 {
 public:
+    /// Constructs a job that will write the Maya stage to the given USD file name \p fileName,
+    /// If \p append is \c true, adds to an existing stage. Otherwise, replaces any existing file.
     MAYAUSD_CORE_PUBLIC
-    UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs);
+    UsdMaya_WriteJob(
+        const UsdMayaJobExportArgs& iArgs,
+        const std::string&          fileName,
+        bool                        append = false);
 
     MAYAUSD_CORE_PUBLIC
     ~UsdMaya_WriteJob();
 
-    /// Writes the Maya stage to the given USD file name, If \p append is
-    /// \c true, adds to an existing stage. Otherwise, replaces any existing
-    /// file.
+    /// Writes the Maya stage to the associated USD file.
     /// This will write the entire frame range specified by the export args.
     /// Returns \c true if successful, or \c false if an error was encountered.
     MAYAUSD_CORE_PUBLIC
-    bool Write(const std::string& fileName, bool append);
+    bool Write();
 
     MAYAUSD_CORE_PUBLIC
     SdfPath MapDagPathToSdfPath(const MDagPath& dagPath) const;
@@ -66,7 +69,7 @@ public:
 private:
     /// Begins constructing the USD stage, writing out the values at the default
     /// time. Returns \c true if the stage can be created successfully.
-    bool _BeginWriting(const std::string& fileName, bool append);
+    bool _BeginWriting();
 
     /// Writes the stage values at the given frame.
     /// Warning: this function must be called with non-decreasing frame numbers.
@@ -97,8 +100,14 @@ private:
 
     bool _CheckNameClashes(const SdfPath& path, const MDagPath& dagPath);
 
-    // Name of the created/appended USD file
+    // Name of the destination USD file.
     std::string _fileName;
+
+    /// Should content be appended to an existing stage, or replace any existing USD file.
+    bool _appendToFile = false;
+
+    // Name of the real written USD file. It will be a temporary file if _fileName is a package.
+    std::string _realFilename;
 
     // Name of destination packaged archive.
     std::string _packageName;

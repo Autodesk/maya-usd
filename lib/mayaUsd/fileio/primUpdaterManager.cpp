@@ -584,8 +584,8 @@ PushExportResult pushExport(const MObject& mayaObject, const UsdMayaPrimUpdaterC
         userArgs, dagPaths, fullObjectList, timeSamples);
     progressBar.advance();
 
-    UsdMaya_WriteJob writeJob(jobArgs);
-    if (!writeJob.Write(fileName, false /* append */)) {
+    UsdMaya_WriteJob writeJob(jobArgs, srcLayer->GetIdentifier());
+    if (!writeJob.Write()) {
         return result;
     }
     result.extraPrimsPaths = writeJob.GetExtraPrimsPaths();
