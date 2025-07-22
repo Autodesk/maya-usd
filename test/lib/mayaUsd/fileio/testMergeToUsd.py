@@ -19,7 +19,7 @@
 import fixturesUtils
 
 from mayaUtils import setMayaTranslation, setMayaRotation
-from usdUtils import createSimpleXformScene, mayaUsd_createStageWithNewLayer, createLayeredStage, createSimpleXformSceneInCurrentLayer
+from usdUtils import createSimpleXformScene, createDuoXformScene, mayaUsd_createStageWithNewLayer, createLayeredStage, createSimpleXformSceneInCurrentLayer
 from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
@@ -968,6 +968,91 @@ class MergeToUsdTestCase(unittest.TestCase):
         for i, expectedValue in enumerate(newXValues):
             knotValue = knotsAfterMerge[timeFrames[i]].GetValue()
             self.assertAlmostEqual(knotValue, expectedValue, places=5)
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testBatchMergeToUsd(self):
+        '''Merge edits on two transforms back to USD in one call.'''
+
+        # To merge back to USD, we must edit as Maya first.
+        (ps,
+         aXlateOp, _, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, _, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createDuoXformScene()
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+            aMayaItem = ufe.GlobalSelection.get().front()
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+            bMayaItem = ufe.GlobalSelection.get().front()
+
+        (aMayaPath, aMayaPathStr, _, aMayaMatrix) = \
+            setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
+
+        (bMayaPath, bMayaPathStr, _, bMayaMatrix) = \
+            setMayaTranslation(bMayaItem, om.MVector(10, 11, 12))
+
+        # There should be a path mapping for the edit as Maya hierarchy.
+        for (mayaItem, mayaPath, usdUfePath) in \
+            zip([aMayaItem, bMayaItem], [aMayaPath, bMayaPath],
+                [aUsdUfePath, bUsdUfePath]):
+            mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(mayaItem)
+            self.assertEqual(mayaToUsd.fromHost(mayaPath), usdUfePath)
+
+        # It is not allowed to merge twice times the same pulled dag.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertSequenceEqual(
+                mayaUsd.lib.PrimUpdaterManager.mergeToUsd([(aMayaPathStr, {}), (aMayaPathStr, {})]),
+                [])
+
+        # It is not allowed to merge dags with varying USD upAxis.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertSequenceEqual(
+                mayaUsd.lib.PrimUpdaterManager.mergeToUsd([
+                    (aMayaPathStr, {'upAxis': 'y'}),
+                    (bMayaPathStr, {'upAxis': 'z'})
+                ]),
+                [])
+
+        # It is not allowed to merge dags with varying USD units.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertSequenceEqual(
+                mayaUsd.lib.PrimUpdaterManager.mergeToUsd([
+                    (aMayaPathStr, {'unit': 'cm'}),
+                    (bMayaPathStr, {'unit': 'm'})
+                ]),
+                [])
+
+        # We can merge multiple pulled dags back to USD in a single batch.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertSequenceEqual(
+                mayaUsd.lib.PrimUpdaterManager.mergeToUsd([(aMayaPathStr, {}), (bMayaPathStr, {})]),
+                [aUsdUfePathStr, bUsdUfePathStr])
+
+        # Check that edits have been preserved in USD.
+        for (usdUfePathStr, mayaMatrix, xlateOp) in \
+            zip([aUsdUfePathStr, bUsdUfePathStr], [aMayaMatrix, bMayaMatrix],
+                [aXlateOp, bXlateOp]):
+            usdMatrix = xlateOp.GetOpTransform(
+                mayaUsd.ufe.getTime(usdUfePathStr))
+            mayaValues = [v for v in mayaMatrix]
+            usdValues = [v for row in usdMatrix for v in row]
+            assertVectorAlmostEqual(self, mayaValues, usdValues)
+
+        # There no longer are any Maya to USD path mappings.
+        for mayaPath in [aMayaPath, bMayaPath]:
+            self.assertEqual(len(mayaToUsd.fromHost(mayaPath)), 0)
+
+        # Hierarchy is restored: USD item is child of proxy shape, Maya item is
+        # not.  Be careful to use the Maya path rather than the Maya item, which
+        # should no longer exist.
+        psHier = ufe.Hierarchy.hierarchy(ps)
+        for (usdItem, mayaPath) in zip([aUsdItem, bUsdItem], [aMayaPath, bMayaPath]):
+            self.assertIn(usdItem, psHier.children())
+            self.assertNotIn(mayaPath, [child.path() for child in psHier.children()])
+
+        # Maya nodes are removed.
+        for mayaPathStr in [aMayaPathStr, bMayaPathStr]:
+            with self.assertRaises(RuntimeError):
+                om.MSelectionList().add(mayaPathStr)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
