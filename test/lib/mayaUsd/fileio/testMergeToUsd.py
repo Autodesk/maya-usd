@@ -225,6 +225,96 @@ class MergeToUsdTestCase(unittest.TestCase):
         verifyMergeToUsd()
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testBatchedMergeToUsdUndoRedo(self):
+        '''Merge multiple dags back to USD in a single mayaUsdMergeToUsd call, and use undo redo.'''
+        (ps,
+         aXlateOp, _, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, _, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createDuoXformScene()
+
+        # To merge back to USD, we must edit as Maya first.
+        cmds.mayaUsdEditAsMaya(aUsdUfePathStr)
+        aMayaItem = ufe.GlobalSelection.get().front()
+
+        (aMayaPath, aMayaPathStr, _, aMayaMatrix) = \
+            setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
+
+        cmds.mayaUsdEditAsMaya(bUsdUfePathStr)
+        bMayaItem = ufe.GlobalSelection.get().front()
+
+        (bMayaPath, bMayaPathStr, _, bMayaMatrix) = \
+            setMayaTranslation(bMayaItem, om.MVector(10, 11, 12))
+
+        psHier = ufe.Hierarchy.hierarchy(ps)
+        mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(aMayaItem)
+
+        # Make a selection before merge edits back to USD.
+        cmds.select('persp')
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
+
+        def verifyMergeToUsd():
+            # Check that edits have been preserved in USD.
+            for (usdUfePathStr, mayaMatrix, xlateOp) in \
+                zip([aUsdUfePathStr, bUsdUfePathStr], [aMayaMatrix, bMayaMatrix],
+                    [aXlateOp, bXlateOp]):
+                usdMatrix = xlateOp.GetOpTransform(
+                    mayaUsd.ufe.getTime(usdUfePathStr))
+                mayaValues = [v for v in mayaMatrix]
+                usdValues = [v for row in usdMatrix for v in row]
+                assertVectorAlmostEqual(self, mayaValues, usdValues)
+
+            # There no longer are any Maya to USD path mappings.
+            for mayaPath in [aMayaPath, bMayaPath]:
+                self.assertEqual(len(mayaToUsd.fromHost(mayaPath)), 0)
+
+            # Hierarchy is restored: USD item is child of proxy shape, Maya item is
+            # not.  Be careful to use the Maya path rather than the Maya item, which
+            # should no longer exist.
+            psChildren = psHier.children()
+            for usdItem in [aUsdItem, bUsdItem]:
+                self.assertIn(usdItem, psChildren)
+
+            psChildrenPaths = [child.path() for child in psChildren]
+            for mayaPath in [aMayaPath, bMayaPath]:
+                self.assertNotIn(aMayaPath, psChildrenPaths)
+
+            # Maya nodes are removed.
+            for mayaPathStr in [aMayaPathStr, bMayaPathStr]:
+                with self.assertRaises(RuntimeError):
+                    om.MSelectionList().add(mayaPathStr)
+
+            # Selection is on the restored USD objects.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertSequenceEqual(sn, [aUsdUfePathStr, bUsdUfePathStr])
+
+        def verifyMergeIsUndone():
+            # There should be a path mapping for the edit as Maya hierarchy.
+            for mayaPath, usdUfePath in zip([aMayaPath, bMayaPath], [aUsdUfePath, bUsdUfePath]):
+                self.assertEqual(
+                    ufe.PathString.string(mayaToUsd.fromHost(mayaPath)),
+                    ufe.PathString.string(usdUfePath))
+
+            # Maya nodes are back.
+            for mayaPathStr in [aMayaPathStr, bMayaPathStr]:
+                try:
+                    om.MSelectionList().add(mayaPathStr)
+                except Exception:
+                    self.assertTrue(False, "Selecting node should not have raise an exception")
+            # Selection is restored.
+            self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
+
+        verifyMergeIsUndone()
+
+        # Merge edits back to USD in a single call.
+        cmds.mayaUsdMergeToUsd(aMayaPathStr, bMayaPathStr, exportOptions=("", ""))
+        verifyMergeToUsd()
+
+        cmds.undo()
+        verifyMergeIsUndone()
+
+        cmds.redo()
+        verifyMergeToUsd()
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testMergeToUsdToNonRootTargetInSessionLayer(self):
         '''Merge edits on a USD transform back to USD targeting a non-root destination path that
            does not exists in the destination layer.'''
