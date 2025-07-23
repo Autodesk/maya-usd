@@ -1448,7 +1448,10 @@ PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
     return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
 }
 
-Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+Ufe::Selection removeDescendants(
+    const Ufe::Selection& src,
+    const Ufe::Path&      filterPath,
+    bool*                 itemRemoved /*= nullptr*/)
 {
     // Filter the src selection, removing items below the filterPath
     Ufe::Selection dst;
@@ -1457,6 +1460,8 @@ Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& fil
         // The filterPath itself is still valid.
         if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
             dst.append(item);
+        } else if (nullptr != itemRemoved) {
+            *itemRemoved = true;
         }
     }
     return dst;
