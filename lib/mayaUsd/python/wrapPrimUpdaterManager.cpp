@@ -60,7 +60,7 @@ bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDi
     if (!mergeArgs)
         return false;
 
-    const auto mergedPaths = PrimUpdaterManager::getInstance().mergeToUsd(mergeArgs);
+    const auto mergedPaths = PrimUpdaterManager::getInstance().mergeToUsd({ mergeArgs });
     return !mergedPaths.empty();
 }
 

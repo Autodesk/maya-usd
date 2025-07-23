@@ -528,77 +528,106 @@ struct PushExportResult
     std::vector<SdfPath>                 extraPrimsPaths;
 };
 
-PushExportResult pushExport(const PushToUsdArgs& pushArgs)
+using PushExportResults = std::vector<PushExportResult>;
+
+PushExportResults pushExport(const std::vector<PushToUsdArgs>& pushArgsVect)
 {
-    MayaUsd::ProgressBarScope progressBar(3);
+    MayaUsd::ProgressBarScope progressBar((pushArgsVect.size() * 3) + 1);
 
-    UsdStageRefPtr srcStage = UsdStage::CreateInMemory();
-    SdfLayerRefPtr srcLayer = srcStage->GetRootLayer();
+    // Populate the writeJobBatch batch to execute and collect source stages and layers in results.
+    UsdMaya_WriteJobBatch writeJobBatch;
+    PushExportResults     results;
+    results.reserve(pushArgsVect.size());
 
-    PushExportResult result(srcStage, srcLayer);
+    for (const auto& pushArgs : pushArgsVect) {
+        UsdStageRefPtr srcStage = UsdStage::CreateInMemory();
+        SdfLayerRefPtr srcLayer = srcStage->GetRootLayer();
 
-    // Copy to be able to update the filename.
-    VtDictionary userArgs = pushArgs.userArgs;
+        results.emplace_back(srcStage, srcLayer);
 
-    std::string fileName = srcLayer->GetIdentifier();
+        // Copy to be able to update the filename.
+        VtDictionary userArgs = pushArgs.userArgs;
 
-    fillUserArgsFileIfEmpty(userArgs, fileName);
+        std::string fileName = srcLayer->GetIdentifier();
 
-    UsdMayaUtil::MDagPathSet dagPaths;
-    MSelectionList           fullObjectList;
-    MDagPath                 dagPath;
-    {
+        fillUserArgsFileIfEmpty(userArgs, fileName);
+
+        UsdMayaUtil::MDagPathSet dagPaths;
+        MSelectionList           fullObjectList;
+        MDagPath                 dagPath;
+        {
+            MFnDagNode fnDag;
+            if (fnDag.setObject(pushArgs.srcMayaObject)) {
+                fnDag.getPath(dagPath);
+                dagPaths.insert(dagPath);
+                fullObjectList.add(dagPath);
+            } else {
+                fullObjectList.add(pushArgs.srcMayaObject);
+            }
+        }
+
+        std::vector<double> timeSamples;
+        UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
+
+        UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
+            userArgs, dagPaths, fullObjectList, timeSamples);
+
+        writeJobBatch.AddJob(jobArgs, srcLayer->GetIdentifier());
+        progressBar.advance();
+    }
+
+    // Execute all write jobs in a single maya timeline pass.
+    if (!writeJobBatch.Write()) {
+        return {};
+    }
+    progressBar.advance();
+
+    // Populate results from each write job for further processing.
+    for (size_t pushIdx = 0; pushIdx < results.size(); ++pushIdx) {
+        const auto& mayaObject = pushArgsVect.at(pushIdx).srcMayaObject;
+        const auto& writeJob = writeJobBatch.JobAt(pushIdx);
+        auto&       result = results[pushIdx];
+
+        result.extraPrimsPaths = writeJob.GetExtraPrimsPaths();
+        progressBar.advance();
+
         MFnDagNode fnDag;
-        if (fnDag.setObject(pushArgs.srcMayaObject)) {
+        if (fnDag.setObject(mayaObject)) {
+            MDagPath dagPath;
             fnDag.getPath(dagPath);
-            dagPaths.insert(dagPath);
-            fullObjectList.add(dagPath);
-        } else {
-            fullObjectList.add(pushArgs.srcMayaObject);
+            result.srcRootPath = writeJob.MapDagPathToSdfPath(dagPath);
         }
-    }
 
-    std::vector<double> timeSamples;
-    UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
-
-    UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
-        userArgs, dagPaths, fullObjectList, timeSamples);
-    progressBar.advance();
-
-    UsdMaya_WriteJob writeJob(jobArgs, srcLayer->GetIdentifier());
-    if (!writeJob.Write()) {
-        return result;
-    }
-    result.extraPrimsPaths = writeJob.GetExtraPrimsPaths();
-    progressBar.advance();
-
-    result.srcRootPath = writeJob.MapDagPathToSdfPath(dagPath);
-
-    // If there are no correspondences, it may be due to the fact the
-    // source DAG node was excluded from the export.  In this case, try
-    // to find a material or extra prim to use as the source root path.
-    if (result.srcRootPath.IsEmpty()) {
-        for (const SdfPath& matPath : writeJob.GetMaterialPaths()) {
-            result.srcRootPath = matPath.GetParentPath();
-            break;
+        // If there are no correspondences, it may be due to the fact the
+        // source DAG node was excluded from the export.  In this case, try
+        // to find a material or extra prim to use as the source root path.
+        if (result.srcRootPath.IsEmpty()) {
+            for (const SdfPath& matPath : writeJob.GetMaterialPaths()) {
+                result.srcRootPath = matPath.GetParentPath();
+                break;
+            }
         }
-    }
-    if (result.srcRootPath.IsEmpty()) {
-        for (const SdfPath& extraPath : result.extraPrimsPaths) {
-            result.srcRootPath = extraPath;
-            break;
+        if (result.srcRootPath.IsEmpty()) {
+            for (const SdfPath& extraPath : result.extraPrimsPaths) {
+                result.srcRootPath = extraPath;
+                break;
+            }
         }
+        // Export failed.
+        if (result.srcRootPath.IsEmpty()) {
+            return {};
+        }
+
+        // Invert the Dag path to USD path map, to return it for prim updater use.
+        result.usdToDag = std::make_shared<UsdPathToDagPathMap>();
+        for (const auto& v : writeJob.GetDagPathToUsdPathMap()) {
+            result.usdToDag->insert(UsdPathToDagPathMap::value_type(v.second, v.first));
+        }
+
+        progressBar.advance();
     }
 
-    // Invert the Dag path to USD path map, to return it for prim updater use.
-    result.usdToDag = std::make_shared<UsdPathToDagPathMap>();
-    for (const auto& v : writeJob.GetDagPathToUsdPathMap()) {
-        result.usdToDag->insert(UsdPathToDagPathMap::value_type(v.second, v.first));
-    }
-
-    progressBar.advance();
-
-    return result;
+    return results;
 }
 
 //------------------------------------------------------------------------------
@@ -1098,186 +1127,235 @@ PushToUsdArgs PushToUsdArgs::forDuplicate(
     return { object, dstPath, std::move(ctxArgs) };
 }
 
-std::vector<Ufe::Path> PrimUpdaterManager::mergeToUsd(const PushToUsdArgs& mergeArgs)
+std::vector<Ufe::Path>
+PrimUpdaterManager::mergeToUsd(const std::vector<PushToUsdArgs>& mergeArgsVect)
 {
-    if (!mergeArgs) {
-        return {};
-    }
-
-    const auto& pulledPath = mergeArgs.dstUfePath;
-
-    MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
-    if (!proxyShape) {
-        return {};
-    }
-
-    auto pulledPrim = MayaUsd::ufe::ufePathToPrim(pulledPath);
-    if (!pulledPrim) {
-        return {};
-    }
-
-    // Are we doing a merge or cache?
-    MString progStr(
-        VtDictionaryIsHolding<std::string>(
-            mergeArgs.userArgs, MayaUsdEditRoutingTokens->DestinationPrimName)
-            ? "Caching to USD"
-            : "Merging to USD");
-    MayaUsd::ProgressBarScope progressBar(10, progStr);
+    MayaUsd::ProgressBarScope progressBar((7 * mergeArgsVect.size()) + 3, "Merging to USD");
     PushPullScope             scopeIt(_inPushPull);
 
-    auto       mayaPath = usdToMaya(pulledPath);
-    auto       mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
-    MDagPath   pullParentPath;
-    const bool isCopy = mergeArgs.updaterArgs._copyOperation;
-    if (!isCopy) {
-        // The pull parent is simply the parent of the pulled path.
-        pullParentPath = MayaUsd::ufe::ufeToDagPath(mayaPath.pop());
-        if (!TF_VERIFY(pullParentPath.isValid())) {
+    // Verify and collect pulled paths for each dag path edited as Maya. Also validate userArgs
+    // dictionaries for PrimUpdaterContext use. And finally get ready to delete pulled maya
+    // nodes.
+    auto&                    scene = Ufe::Scene::instance();
+    UsdMayaUtil::MDagPathSet seenDagPaths;
+
+    for (const auto& mergeArgs : mergeArgsVect) {
+        if (!mergeArgs) {
+            TF_WARN("Cannot merge, got an invalid pulled object");
             return {};
         }
-        if (!LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false)) {
+
+        const auto& pulledPath = mergeArgs.dstUfePath;
+
+        auto pulledPrim = MayaUsd::ufe::ufePathToPrim(pulledPath);
+        if (!pulledPrim) {
+            TF_WARN("Cannot merge to non-USD item '%s'.", pulledPath.string().c_str());
             return {};
         }
+
+        if (VtDictionaryIsHolding<std::string>(
+                mergeArgs.userArgs, MayaUsdEditRoutingTokens->DestinationPrimName)) {
+            progressBar.setProgressString("Caching to USD");
+        }
+
+        const auto mayaPath = usdToMaya(pulledPath);
+        const auto mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
+
+        // Verify that the dag paths are valid for merging.
+        if (!seenDagPaths.emplace(mayaDagPath).second) {
+            TF_WARN(
+                "Cannot merge multiple sources to this dag '%s'",
+                mayaDagPath.fullPathName().asChar());
+            return {};
+        }
+
+        const bool isCopy = mergeArgs.updaterArgs._copyOperation;
+        if (!isCopy) {
+            // The pull parent is simply the parent of the pulled path.
+            const MDagPath pullParentPath = MayaUsd::ufe::ufeToDagPath(mayaPath.pop());
+            if (!TF_VERIFY(pullParentPath.isValid())) {
+                return {};
+            }
+            if (!LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false)) {
+                return {};
+            }
+
+            auto ufeMayaItem = Ufe::Hierarchy::createItem(mayaPath);
+            if (TF_VERIFY(ufeMayaItem))
+                scene.notify(Ufe::ObjectPreDelete(ufeMayaItem));
+
+                // Remove the pulled path from the orphan node manager *before* exporting
+                // and merging into the original USD. Otherwise, the orphan manager can
+                // receive notification mid-way through the merge process, while the variants
+                // have not all been authored and think the variant set has changed back
+                // to the correct variant and thus decide to deactivate the USD prim again,
+                // thinking the Maya data shoudl be shown again...
+#ifdef HAS_ORPHANED_NODES_MANAGER
+            if (_orphanedNodesManager) {
+                if (!TF_VERIFY(RemovePullVariantInfoUndoItem::execute(
+                        _orphanedNodesManager, pulledPath, mayaDagPath))) {
+                    return {};
+                }
+            }
+#endif
+        }
+        progressBar.advance();
     }
-    progressBar.advance();
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
     if (!UfeSelectionUndoItem::clear("Merge to USD selection reset")) {
-        TF_WARN("Cannot reset the selection.");
+        TF_WARN("Cannot mergeToUsd, failed to reset the selection.");
         return {};
     }
 
-    UsdStageRefPtr proxyStage = proxyShape->usdPrim().GetStage();
-
-    auto  ufeMayaItem = Ufe::Hierarchy::createItem(mayaPath);
-    auto& scene = Ufe::Scene::instance();
-    if (!isCopy && TF_VERIFY(ufeMayaItem))
-        scene.notify(Ufe::ObjectPreDelete(ufeMayaItem));
     progressBar.advance();
-
-    // Remove the pulled path from the orphan node manager *before* exporting
-    // and merging into the original USD. Otherwise, the orphan manager can
-    // receive notification mid-way through the merge process, while the variants
-    // have not all been authored and think the variant set has changed back
-    // to the correct variant and thus decide to deactivate the USD prim again,
-    // thinking the Maya data shoudl be shown again...
-#ifdef HAS_ORPHANED_NODES_MANAGER
-    if (_orphanedNodesManager) {
-        if (!TF_VERIFY(RemovePullVariantInfoUndoItem::execute(
-                _orphanedNodesManager, pulledPath, mayaDagPath))) {
-            return {};
-        }
-    }
-#endif
 
     // Record all USD modifications in an undo block and item.
     UsdUfe::UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Merge to Maya USD data modifications"));
 
     // The push is done in two stages:
-    // 1) Perform the export into a temporary layer.
-    // 2) Traverse the layer and call the prim updater for each prim, for
+    // 1) Perform all exports to temporary layers.
+    // 2) Traverse each layer and call the prim updater for each prim, for
     //    per-prim customization.
 
-    // 1) Perform the export to the temporary layer.
-    PushExportResult pushExportResult = pushExport(mergeArgs);
-    progressBar.advance();
-
-    UsdMayaPrimUpdaterContext context(
-        proxyShape->getTime(), proxyStage, mergeArgs.updaterArgs, mergeArgs.userArgs);
-
-    if (TF_VERIFY(pushExportResult.usdToDag)) {
-        const auto dstRootPath
-            = getDstSdfPath(mergeArgs.dstUfePath, pushExportResult.srcRootPath, isCopy);
-        processPushExtras(
-            context._pushExtras,
-            *pushExportResult.usdToDag,
-            pushExportResult.srcRootPath,
-            dstRootPath);
-    }
-
-    // 2) Traverse the in-memory layer, creating a prim updater for each prim,
-    // and call Push for each updater.  Build a new context with the USD path
-    // to Maya path mapping information.
-    context.SetUsdPathToDagPathMap(pushExportResult.usdToDag);
-
-    if (!isCopy) {
-        if (!FunctionUndoItem::execute(
-                "Merge to Maya rendering inclusion",
-                [pulledPath]() {
-                    removeExcludeFromRendering(pulledPath);
-                    return true;
-                },
-                [pulledPath]() { return addExcludeFromRendering(pulledPath); })) {
-            TF_WARN("Cannot re-enable original USD data in viewport rendering.");
-            return {};
-        }
-    }
-    progressBar.advance();
-
-    if (!pushCustomize(pulledPath, pushExportResult, context)) {
+    // 1) Perform all the exports to temporary layers.
+    const auto pushExportResults = pushExport(mergeArgsVect);
+    if (pushExportResults.size() != mergeArgsVect.size()) {
+        TF_WARN("Cannot mergeToUsd, failed to export to %zu USD prim(s).", mergeArgsVect.size());
         return {};
     }
     progressBar.advance();
 
-    if (!isCopy) {
-        if (!FunctionUndoItem::execute(
-                "Merge to Maya pull info removal",
-                [pulledPath]() {
-                    removeAllPullInformation(pulledPath);
-                    return true;
-                },
-                [pulledPath, mayaDagPath]() {
-                    return writeAllPullInformation(pulledPath, mayaDagPath);
-                })) {
-            TF_WARN("Cannot remove pull information metadata.");
+    // 2) Traverse each in-memory layer, creating a prim updater for each prim,
+    // and call Push for each updater. Also gather all additional commands that will be executed
+    // at the end.
+    std::vector<Ufe::Path> resultPaths;
+    resultPaths.reserve(mergeArgsVect.size());
+
+    auto finalCommandsQueue = std::make_shared<Ufe::CompositeUndoableCommand>();
+
+    for (size_t pushIdx = 0; pushIdx < mergeArgsVect.size(); ++pushIdx) {
+        const auto& pushExportResult = pushExportResults.at(pushIdx);
+        const auto& mergeArgs = mergeArgsVect[pushIdx];
+        const auto& pulledPath = mergeArgs.dstUfePath;
+        const auto  mayaDagPath = MayaUsd::ufe::ufeToDagPath(usdToMaya(pulledPath));
+
+        const MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
+        if (!TF_VERIFY(proxyShape != nullptr))
+            return {};
+
+        UsdStageRefPtr proxyStage = proxyShape->usdPrim().GetStage();
+
+        // Build a context with the USD path to Maya path mapping information.
+        UsdMayaPrimUpdaterContext context(
+            proxyShape->getTime(), proxyStage, mergeArgs.updaterArgs, mergeArgs.userArgs);
+
+        const bool isCopy = context.GetArgs()._copyOperation;
+
+        if (TF_VERIFY(pushExportResult.usdToDag)) {
+            const auto dstRootPath
+                = getDstSdfPath(mergeArgs.dstUfePath, pushExportResult.srcRootPath, isCopy);
+            processPushExtras(
+                context._pushExtras,
+                *pushExportResult.usdToDag,
+                pushExportResult.srcRootPath,
+                dstRootPath);
+        }
+
+        context.SetUsdPathToDagPathMap(pushExportResult.usdToDag);
+
+        // Save pull parent path before discarding its pulled descendants.
+        MDagPath pullParentPath = mayaDagPath;
+        pullParentPath.pop();
+
+        if (!isCopy) {
+            if (!FunctionUndoItem::execute(
+                    "Merge to Maya rendering inclusion",
+                    [pulledPath]() {
+                        removeExcludeFromRendering(pulledPath);
+                        return true;
+                    },
+                    [pulledPath]() { return addExcludeFromRendering(pulledPath); })) {
+                TF_WARN("Cannot re-enable original USD data in viewport rendering.");
+                return {};
+            }
+        }
+        progressBar.advance();
+
+        if (!pushCustomize(pulledPath, pushExportResult, context)) {
             return {};
         }
-    }
-    progressBar.advance();
+        progressBar.advance();
 
-    // Discard all pulled Maya nodes.
-    std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
-    MayaUsd::ProgressBarLoopScope toApplyOnLoop(toApplyOn.size());
-    for (const MDagPath& curDagPath : toApplyOn) {
-        MStatus status = NodeDeletionUndoItem::deleteNode(
-            "Merge to USD Maya scene cleanup", curDagPath.fullPathName(), curDagPath.node());
-        if (status != MS::kSuccess) {
-            TF_WARN(
-                "Merge to USD Maya scene cleanup: cannot delete node \"%s\".",
-                curDagPath.fullPathName().asChar());
-            return {};
+        const auto additionalFinalCommands = context.GetAdditionalFinalCommands();
+        if (!additionalFinalCommands->cmdsList().empty()) {
+            finalCommandsQueue->append(additionalFinalCommands);
         }
-        toApplyOnLoop.loopAdvance();
-    }
 
-    if (!isCopy) {
-        if (!TF_VERIFY(removePullParent(pullParentPath, pulledPath))) {
-            return {};
+        if (!isCopy) {
+            if (!FunctionUndoItem::execute(
+                    "Merge to Maya pull info removal",
+                    [pulledPath]() {
+                        removeAllPullInformation(pulledPath);
+                        return true;
+                    },
+                    [pulledPath, mayaDagPath]() {
+                        return writeAllPullInformation(pulledPath, mayaDagPath);
+                    })) {
+                TF_WARN("Cannot remove pull information metadata.");
+                return {};
+            }
         }
-    }
-    progressBar.advance();
+        progressBar.advance();
 
-    context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()), {});
-    progressBar.advance();
+        // Discard all pulled Maya nodes.
+        std::vector<MDagPath> toApplyOn
+            = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
+
+        MayaUsd::ProgressBarLoopScope toApplyOnLoop(toApplyOn.size());
+        for (const MDagPath& curDagPath : toApplyOn) {
+            MStatus status = NodeDeletionUndoItem::deleteNode(
+                "Merge to USD Maya scene cleanup", curDagPath.fullPathName(), curDagPath.node());
+            if (status != MS::kSuccess) {
+                TF_WARN(
+                    "Merge to USD Maya scene cleanup: cannot delete node \"%s\".",
+                    curDagPath.fullPathName().asChar());
+                return {};
+            }
+            toApplyOnLoop.loopAdvance();
+        }
+
+        if (!isCopy) {
+            if (!TF_VERIFY(removePullParent(pullParentPath, pulledPath))) {
+                return {};
+            }
+        }
+        progressBar.advance();
+
+        context._pushExtras.finalize(MayaUsd::ufe::stagePath(context.GetUsdStage()), {});
+        progressBar.advance();
+
+        // Some updaters (like MayaReference) may be writing and changing the variant during merge.
+        // This will change the hierarchy around pulled prim. Grab hierarchy from the parent.
+        auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath.pop());
+        auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
+        if (TF_VERIFY(hier)) {
+            scene.notify(Ufe::SubtreeInvalidate(hier->parent()));
+        }
+        progressBar.advance();
+        resultPaths.push_back(pulledPath);
+    }
 
     discardPullSetIfEmpty();
 
-    // Some updaters (like MayaReference) may be writing and changing the variant during merge.
-    // This will change the hierarchy around pulled prim. Grab hierarchy from the parent.
-    auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath.pop());
-    auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
-    if (TF_VERIFY(hier)) {
-        scene.notify(Ufe::SubtreeInvalidate(hier->parent()));
-    }
-    progressBar.advance();
-
     scopeIt.end();
-    executeAdditionalCommands(context);
+
+    UfeCommandUndoItem::execute("Additional final commands", finalCommandsQueue);
     progressBar.advance();
 
-    return { pulledPath };
+    return resultPaths;
 }
 
 bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& userArgs)
@@ -1746,10 +1824,11 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicateToUsd(
     progressBar.advance();
 
     // Export out to a temporary layer.
-    PushExportResult pushExportResult = pushExport(dupArgs);
-    if (pushExportResult.srcRootPath.IsEmpty()) {
+    const auto pushExportResults = pushExport({ dupArgs });
+    if (pushExportResults.empty())
         return {};
-    }
+
+    const auto& pushExportResult = pushExportResults.front();
     progressBar.advance();
 
     // Copy the temporary layer contents out to the proper destination.

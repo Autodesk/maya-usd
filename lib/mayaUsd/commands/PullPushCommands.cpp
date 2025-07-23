@@ -301,7 +301,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
         OpUndoItemRecorder undoRecorder(_undoItemList);
 
         auto&      manager = PXR_NS::PrimUpdaterManager::getInstance();
-        const auto mergedPaths = manager.mergeToUsd(mergeArgs);
+        const auto mergedPaths = manager.mergeToUsd({ mergeArgs });
         status = mergedPaths.empty() ? MS::kFailure : MS::kSuccess;
 
         if (status == MS::kSuccess) {

@@ -75,9 +75,9 @@ public:
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(PrimUpdaterManager);
     ~PrimUpdaterManager();
 
-    /// \brief merges edited Maya data into its corresponding USD stages.
+    /// \brief merges multiple edited Maya data into their corresponding USD stages.
     MAYAUSD_CORE_PUBLIC
-    std::vector<Ufe::Path> mergeToUsd(const PushToUsdArgs& mergeArgs);
+    std::vector<Ufe::Path> mergeToUsd(const std::vector<PushToUsdArgs>& mergeArgsVect);
 
     /// \brief edit USD data as Maya data.
     MAYAUSD_CORE_PUBLIC
