@@ -17,6 +17,8 @@
 #ifdef FIX_NODEGRAPH_UDIM_SCALE_OFFSET
 #include "Nodes/MayaCompoundNode.h"
 #include "Nodes/MayaHwImageNode.h"
+#endif
+#ifdef FIX_DUPLICATE_INCLUDED_SHADER_CODE
 #include "Nodes/MayaSourceCodeNode.h"
 #endif
 #ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
@@ -292,7 +294,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
     ElementPtr    element,
     GenContext&   context) const
 {
-#if MX_COMBINED_VERSION >= 13810
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
     // Create the root shader graph
     ShaderGraphPtr graph = MayaShaderGraph::create(nullptr, name, element, context);
     ShaderPtr      shader = std::make_shared<Shader>(name, graph);
@@ -507,7 +509,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
     ShaderStage& pixelStage = shader->getStage(Stage::PIXEL);
 
     // Add uniforms for environment lighting.
-#if MX_COMBINED_VERSION >= 13810
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
     if (requiresLighting(*graph) && OgsXmlGenerator::useLightAPI() < 2) {
 #else
     if (requiresLighting(graph) && OgsXmlGenerator::useLightAPI() < 2) {
@@ -1036,13 +1038,10 @@ GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& con
         context.addNodeImplementation(name, impl);
 
         return impl;
+#ifdef FIX_DUPLICATE_INCLUDED_SHADER_CODE
     } else if (
         implElement->isA<Implementation>() && !_implFactory.classRegistered(name)
-#if MX_COMBINED_VERSION < 13900
         && !outputType->isClosure()) {
-#else
-        && !outputType.isClosure()) {
-#endif
         // Backporting 1.39 fix done in
         //  https://github.com/AcademySoftwareFoundation/MaterialX/pull/1754
         impl = MayaSourceCodeNode::create();
@@ -1052,6 +1051,7 @@ GlslFragmentGenerator::getImplementation(const NodeDef& nodedef, GenContext& con
         context.addNodeImplementation(name, impl);
 
         return impl;
+#endif
 #ifdef USD_HAS_BACKPORTED_MX39_OPENPBR
     } else if (
         implElement->getName() == "IM_dielectric_tf_bsdf_genglsl"

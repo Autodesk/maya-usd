@@ -29,7 +29,7 @@ std::string makeValidName(const NodeGraph& nodeGraph, GenContext& context)
 
 } // namespace
 
-#if MX_COMBINED_VERSION >= 13810
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
 //
 // ShaderGraph methods
 //
@@ -213,7 +213,9 @@ MayaShaderGraph::MayaShaderGraph(
         makeValidName(nodeGraph, context),
         nodeGraph.getDocument(),
         context.getReservedWords())
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
     , _shouldPropagateInputs(true)
+#endif
 {
     // Clear classification
     _classification = 0;
@@ -239,7 +241,7 @@ MayaShaderGraph::MayaShaderGraph(
 
 MayaShaderGraph::~MayaShaderGraph() = default;
 
-#if MX_COMBINED_VERSION >= 13810
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
 ShaderGraphPtr MayaShaderGraph::create(
     const ShaderGraph* parent,
     const string&      name,
@@ -261,9 +263,11 @@ MayaShaderGraph::create(const ShaderGraph* parent, const NodeGraph& nodeGraph, G
 
 void MayaShaderGraph::addPropagatedInput(ShaderNode& node, string const& name)
 {
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
     if (!_shouldPropagateInputs) {
         return;
     }
+#endif
 
     auto* nodeInput = node.getInput(name);
     if (nodeInput) {
@@ -279,7 +283,7 @@ void MayaShaderGraph::addPropagatedInput(ShaderNode& node, string const& name)
 
 StringVec const& MayaShaderGraph::getPropagatedInputs() const { return _propagatedInputs; }
 
-#if MX_COMBINED_VERSION >= 13810
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
 void MayaShaderGraph::createConnectedNodes(
     const ElementPtr& downstreamElement,
     const ElementPtr& upstreamElement,

@@ -29,9 +29,11 @@
 #include <pxr/usd/usdGeom/xformOp.h>
 
 #include <ufe/attributes.h>
+#include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
 #include <ufe/object3d.h>
 #include <ufe/object3dNotification.h>
+#include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
@@ -539,12 +541,8 @@ void StagesSubject::stageChanged(
                 sendObjectDestroyed(ufePath);
 
                 // If we are not in an add or delete operation, and a prim is
-                // removed, we need to trigger a subtree invalidation.  This is
-                // necessary in order to prevent stale items from being kept in
-                // the global selection set.
-                // Note: at the point of this notif the prim is not valid anymore
-                // and thus we cannot create a scene item to simply remove
-                // the item from selection list.
+                // removed, we need to cleanup the selection list in order to
+                // prevent stale items from being kept in the global selection set.
                 if (!InAddOrDeleteOperation::inAddOrDeleteOperation()) {
                     auto       parentPath = changedPath.GetParentPath();
                     const auto parentUfePath = parentPath == SdfPath::AbsoluteRootPath()
@@ -553,9 +551,15 @@ void StagesSubject::stageChanged(
                             + Ufe::PathSegment(
                                 parentPath.GetString(), UsdUfe::getUsdRunTimeId(), '/');
 
-                    auto parentItem = Ufe::Hierarchy::createItem(parentUfePath);
-                    if (parentItem) {
-                        sendSubtreeInvalidate(parentItem);
+                    // Filter the global selection, removing items below our parent prim.
+                    auto globalSn = Ufe::GlobalSelection::get();
+                    if (!globalSn->empty()) {
+                        bool itemRemoved = false;
+                        auto newSel
+                            = UsdUfe::removeDescendants(*globalSn, parentUfePath, &itemRemoved);
+                        if (itemRemoved) {
+                            globalSn->replaceWith(newSel);
+                        }
                     }
                 }
             } else {

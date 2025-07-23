@@ -294,7 +294,10 @@ PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src);
 
 //! Filter a source selection by removing descendants of filterPath.
 USDUFE_PUBLIC
-Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
+Ufe::Selection removeDescendants(
+    const Ufe::Selection& src,
+    const Ufe::Path&      filterPath,
+    bool*                 itemRemoved = nullptr);
 
 //! Re-build a source selection by copying scene items that are not descendants
 //! of filterPath to the destination, and re-creating the others into the
