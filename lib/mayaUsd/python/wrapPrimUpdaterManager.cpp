@@ -56,15 +56,12 @@ bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDi
     if (status != MStatus::kSuccess)
         return false;
 
-    MFnDagNode dagNode(dagPath, &status);
-    if (status != MStatus::kSuccess)
+    const auto mergeArgs = PushToUsdArgs::forMerge(dagPath, userArgs);
+    if (!mergeArgs)
         return false;
 
-    Ufe::Path path;
-    if (!MayaUsd::readPullInformation(dagPath, path))
-        return false;
-
-    return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path, userArgs);
+    const auto mergedPaths = PrimUpdaterManager::getInstance().mergeToUsd(mergeArgs);
+    return !mergedPaths.empty();
 }
 
 PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(mergeToUsd_overloads, mergeToUsd, 1, 2)

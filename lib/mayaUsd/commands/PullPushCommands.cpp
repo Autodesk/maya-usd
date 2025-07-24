@@ -275,15 +275,6 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    MFnDagNode dagNode;
-    status = dagNode.setObject(dagPath);
-    if (status != MS::kSuccess)
-        return reportError(status);
-
-    Ufe::Path pulledPath;
-    if (!readPullInformation(dagPath, pulledPath))
-        return reportError(MS::kInvalidParameter);
-
     MArgDatabase argData(syntax(), argList, &status);
     if (status != MS::kSuccess)
         return reportError(status);
@@ -301,17 +292,23 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
             = argData.flagArgumentBool(kIgnoreVariantsFlag, index);
     }
 
+    const auto mergeArgs = PXR_NS::PushToUsdArgs::forMerge(dagPath, userArgs);
+    if (!mergeArgs)
+        return reportError(MS::kInvalidParameter);
+
     // Scope the undo item recording so we can undo on failure.
     {
         OpUndoItemRecorder undoRecorder(_undoItemList);
 
-        auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        status = manager.mergeToUsd(dagNode, pulledPath, userArgs) ? MS::kSuccess : MS::kFailure;
+        auto&      manager = PXR_NS::PrimUpdaterManager::getInstance();
+        const auto mergedPaths = manager.mergeToUsd(mergeArgs);
+        status = mergedPaths.empty() ? MS::kFailure : MS::kSuccess;
 
         if (status == MS::kSuccess) {
             // Select the merged prim.  See DuplicateCommand::doIt() comments.
             Ufe::Selection sn;
-            sn.append(Ufe::Hierarchy::createItem(pulledPath));
+            for (const auto& mergedPath : mergedPaths)
+                sn.append(Ufe::Hierarchy::createItem(mergedPath));
             if (!UfeSelectionUndoItem::select("mergeToUsd: select merged prim", sn)) {
                 return MS::kFailure;
             }

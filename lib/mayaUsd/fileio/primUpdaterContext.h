@@ -48,8 +48,12 @@ public:
     UsdMayaPrimUpdaterContext(
         const UsdTimeCode&            timeCode,
         const UsdStageRefPtr&         stage,
+        const UsdMayaPrimUpdaterArgs& args,
         const VtDictionary&           userArgs,
         const UsdPathToDagPathMapPtr& pathMap = nullptr);
+
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaPrimUpdaterContext(const UsdTimeCode& timeCode, const UsdStageRefPtr& stage);
 
     /// \brief returns the time frame where data should be edited.
     const UsdTimeCode& GetTimeCode() const { return _timeCode; }
