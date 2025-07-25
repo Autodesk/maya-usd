@@ -776,15 +776,32 @@ void MayaUsdRPrim::_SyncDisplayLayerModes(SdfPath const& id, bool instancedPrim)
     _displayLayerModesFrame = drawScene.GetFrameCounter();
 
     // Obtain scene prim path
-    HdInstancerContext instancerContext;
-    int                instanceIndex = instancedPrim ? 0 : UsdImagingDelegate::ALL_INSTANCES;
-    auto               usdPath = drawScene.GetScenePrimPath(id, instanceIndex, &instancerContext);
+    SdfPath usdPath;
 
-    // Native instances use per-instance _displayLayerModes
-    if (instancedPrim && instancerContext.empty()) {
-        _useInstancedDisplayLayerModes = true;
-        _displayLayerModes = DisplayLayerModes();
-        return;
+    if (instancedPrim) {
+        auto delegate = drawScene.GetUsdImagingDelegate();
+        auto instancerId = delegate->GetInstancerId(id);
+
+        VtIntArray indices = delegate->GetInstanceIndices(instancerId, id);
+        const int  instanceIndex = indices.empty() ? 0 : indices[0];
+
+        // The additional condition below is to prevent a crash in USD function GetScenePrimPath
+        bool instanced = !instancerId.IsEmpty();
+        instanced = (instanced && !indices.empty());
+
+        HdInstancerContext instancerContext;
+        usdPath = instanced ? drawScene.GetScenePrimPath(id, instanceIndex, &instancerContext)
+                            : SdfPath();
+
+        // Native instances use per-instance _displayLayerModes
+        if (instancerContext.empty()) {
+            _useInstancedDisplayLayerModes = true;
+            _displayLayerModes = DisplayLayerModes();
+            return;
+        }
+    } else {
+        const int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+        usdPath = drawScene.GetScenePrimPath(id, instanceIndex, nullptr);
     }
 
     // Otherwise, populate display layer modes
