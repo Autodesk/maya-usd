@@ -172,7 +172,7 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
         PXR_NS::SdfPath        finalPath = path;
         auto                   itPath = otherPairs.begin();
         const auto             endPath = otherPairs.end();
-        bool       isExternalPath = true;
+        bool                   isExternalPath = true;
         for (; itPath != endPath; ++itPath) {
             if (*itPath == duplicatePair) {
                 // That one was correctly processed by USD when duplicating.
