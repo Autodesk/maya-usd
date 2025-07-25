@@ -112,7 +112,6 @@ global proc mayaUsd_PrefUntexturedModeChanged()
 
 global proc mayaUsd_AssetResolverMayaToken()
 {
-	print "Changed AR setting";
 	if (`checkBoxGrp -exists usdAssetResolverMayaTokens`) {
 		int $v = `checkBoxGrp -q -v1 usdAssetResolverMayaTokens`;
 		optionVar -iv mayaUsd_AdskAssetResolverIncludeMayaToken $v;

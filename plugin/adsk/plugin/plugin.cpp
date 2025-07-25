@@ -403,6 +403,26 @@ MStatus initializePlugin(MObject obj)
     PrimUpdaterManager::getInstance();
 #endif
 
+    // TODO: Put a define here
+    static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
+    if (MGlobal::optionVarExists(IncludeMayaTokenInAR) && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
+        MGlobal::executePythonCommand(
+            "try:\n"
+            "    import maya.cmds as cmds\n"
+            "    import AdskAssetResolver as ar\n"
+            "    directory = cmds.workspace(q=True, directory=True)\n"
+            "    tokenList = cmds.workspace(fileRuleList=True)\n"
+            "    mayaUsdResolver = ar.AssetResolverContextDataManager.RegisterContextData('MayaUSDExtension')\n"
+            "    if mayaUsdResolver is not None:\n"
+            "        mayaUsdResolver.AddStaticToken('Project', directory)\n"
+            "        for token in tokenList:\n"
+            "            tokenValue = cmds.workspace(fileRuleEntry=token)\n"
+            "            mayaUsdResolver.AddStaticToken(token, tokenValue)\n"
+            "except Exception as e:\n"
+            "    om.MGlobal.displayError('Error in resolver setup: {}'.format(e))\n");
+
+    }
+
     return status;
 }
 
