@@ -170,13 +170,8 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
     for (size_t i = 0; i < pathVec.size(); ++i) {
         const PXR_NS::SdfPath& path = pathVec[i];
         PXR_NS::SdfPath        finalPath = path;
-        // Paths are lexicographically ordered, this means we can search quickly for bounds of
-        // candidate paths.
-        auto itPath = otherPairs.lower_bound(finalPath);
-        if (itPath != otherPairs.begin()) {
-            --itPath;
-        }
-        const auto endPath = otherPairs.upper_bound(finalPath);
+        auto                   itPath = otherPairs.begin();
+        const auto             endPath = otherPairs.end();
         bool       isExternalPath = true;
         for (; itPath != endPath; ++itPath) {
             if (*itPath == duplicatePair) {
