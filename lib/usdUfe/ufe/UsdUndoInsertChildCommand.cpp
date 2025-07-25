@@ -238,14 +238,25 @@ static void doInsertion(
     UsdUfe::MergePrimsOptions options;
     options.verbosity = UsdUfe::MergeVerbosity::None;
     options.mergeChildren = true;
+
+    const bool includeTopLayer = true;
+    const auto sessionLayers
+        = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
         const auto layer = layerAndPath->GetLayer();
         const auto path = layerAndPath->GetPath();
-        const bool result = isFirst
-            ? SdfCopySpec(layer, path, dstLayer, dstUsdPath)
-            : UsdUfe::mergePrims(stage, layer, path, stage, dstLayer, dstUsdPath, options);
+
+        // We want to leave session data in the session layers.
+        // If a layer is a session layer then we set the target to be that same layer.
+        const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
+        const auto targetLayer = isInSession ? layer : dstLayer;
+
+        const bool result = (isFirst || isInSession)
+            ? SdfCopySpec(layer, path, targetLayer, dstUsdPath)
+            : UsdUfe::mergePrims(stage, layer, path, stage, targetLayer, dstUsdPath, options);
 
         if (!result) {
             const std::string error = TfStringPrintf(
@@ -257,7 +268,9 @@ static void doInsertion(
             throw std::runtime_error(error);
         }
 
-        isFirst = false;
+        // We only set the first-layer flag to false once we have processed a non-session layer.
+        if (!isInSession)
+            isFirst = false;
     }
 
     // Remove all scene descriptions for the source path and its subtree in the source layer.
