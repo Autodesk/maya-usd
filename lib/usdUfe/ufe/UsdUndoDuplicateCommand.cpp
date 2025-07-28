@@ -132,14 +132,24 @@ void UsdUndoDuplicateCommand::execute()
     SdfPrimSpecHandleVector authLayerAndPaths = getDefiningPrimStack(prim);
     std::reverse(authLayerAndPaths.begin(), authLayerAndPaths.end());
 
+    const bool includeTopLayer = true;
+    const auto sessionLayers
+        = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
         const auto layer = layerAndPath->GetLayer();
         const auto localPath = layerAndPath->GetPath();
-        const bool result = isFirst
-            ? SdfCopySpec(layer, localPath, dstLayer, _usdDstPath)
-            : UsdUfe::mergePrims(stage, layer, localPath, _dstStage, dstLayer, _usdDstPath);
+
+        // We want to leave session data in the session layers.
+        // If a layer is a session layer then we set the target to be that same layer.
+        const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
+        const auto targetLayer = isInSession ? layer : dstLayer;
+
+        const bool result = (isFirst || isInSession)
+            ? SdfCopySpec(layer, localPath, targetLayer, _usdDstPath)
+            : UsdUfe::mergePrims(stage, layer, localPath, _dstStage, targetLayer, _usdDstPath);
 
         TF_VERIFY(
             result,
@@ -148,7 +158,9 @@ void UsdUndoDuplicateCommand::execute()
             layer->GetDisplayName().c_str(),
             _usdDstPath.GetText());
 
-        isFirst = false;
+        // We only set the first-layer flag to false once we have processed a non-session layer.
+        if (!isInSession)
+            isFirst = false;
     }
 }
 
