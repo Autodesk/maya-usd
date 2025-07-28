@@ -54,6 +54,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "BindMaterial"; })
 
 private:
     Ufe::Path               _primPath;
@@ -75,6 +76,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "UnbindMaterial"; })
 
 private:
     Ufe::Path               _primPath;
@@ -112,6 +114,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "AssignNewMaterial"; })
 
 private:
     void markAsFailed();
@@ -147,6 +150,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "AddNewMaterial"; })
 
     // Can we add a material to this item.
     static bool CompatiblePrim(const Ufe::SceneItem::Ptr& target);
@@ -187,6 +191,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "CreateMaterialsScope"; })
 
 private:
     bool doExecute();

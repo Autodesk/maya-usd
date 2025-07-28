@@ -56,6 +56,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "DuplicateSelection"; })
 
     //! Retrieve all the duplicated items.
     Ufe::SceneItemList targetItems() const;

@@ -45,6 +45,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "SetKind"; })
 
 private:
     PXR_NS::UsdPrim _prim;

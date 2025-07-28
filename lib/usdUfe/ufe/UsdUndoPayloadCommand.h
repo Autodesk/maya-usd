@@ -58,6 +58,7 @@ public:
 
     void redo() override;
     void undo() override;
+    UFE_V4(std::string commandString() const override { return "LoadPayload"; })
 };
 
 //! \brief Undoable command for unloading a USD prim.
@@ -68,6 +69,7 @@ public:
 
     void redo() override;
     void undo() override;
+    UFE_V4(std::string commandString() const override { return "UnloadPayload"; })
 };
 
 } // namespace USDUFE_NS_DEF

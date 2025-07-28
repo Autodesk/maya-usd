@@ -38,6 +38,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "ClearDefaultPrim"; })
 
 private:
     PXR_NS::UsdStageRefPtr _stage;

@@ -52,6 +52,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "Duplicate"; })
 
 private:
     UsdUndoableItem _undoableItem;

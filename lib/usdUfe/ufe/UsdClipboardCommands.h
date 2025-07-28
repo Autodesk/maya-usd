@@ -48,6 +48,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "Copy"; })
 
 private:
     // The items to copy to the clipboard.
@@ -79,6 +80,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "Cut"; })
 
 private:
     UsdUndoableItem _undoableItem;
@@ -121,6 +123,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "Paste"; })
 
     // Overridden from Ufe::PasteClipboardCommand
     Ufe::SceneItemList     targetItems() const override;

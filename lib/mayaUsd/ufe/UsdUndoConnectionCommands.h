@@ -53,6 +53,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "CreateConnection"; })
 
     std::shared_ptr<Ufe::Connection> connection() const override;
 
