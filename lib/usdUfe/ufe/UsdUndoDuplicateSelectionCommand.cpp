@@ -161,42 +161,72 @@ Ufe::SceneItemList UsdUndoDuplicateSelectionCommand::targetItems() const
 }
 
 bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
-    PXR_NS::SdfPathVector&               pathVec,
-    const DuplicatePathsMap::value_type& duplicatePair,
-    const DuplicatePathsMap&             otherPairs)
+    PXR_NS::SdfPathVector&               referencedPaths,
+    const DuplicatePathsMap::value_type& thisPair,
+    const DuplicatePathsMap&             allPairs)
 {
-    bool              hasChanged = false;
+    const auto& [originalPrimPath, duplicatePrimPath] = thisPair;
     std::list<size_t> indicesToRemove;
-    for (size_t i = 0; i < pathVec.size(); ++i) {
-        const PXR_NS::SdfPath& path = pathVec[i];
-        PXR_NS::SdfPath        finalPath = path;
-        auto                   itPath = otherPairs.begin();
-        const auto             endPath = otherPairs.end();
-        bool                   isExternalPath = true;
-        for (; itPath != endPath; ++itPath) {
-            if (*itPath == duplicatePair) {
-                // That one was correctly processed by USD when duplicating.
-                isExternalPath
-                    = !finalPath.HasPrefix(itPath->first) && !finalPath.HasPrefix(itPath->second);
-                continue;
-            }
-            finalPath = finalPath.ReplacePrefix(itPath->first, itPath->second);
-            if (path != finalPath) {
-                pathVec[i] = finalPath;
-                hasChanged = true;
-                isExternalPath = false;
-                break;
-            }
+    bool              referencedPathsChanged = false;
+
+    // A set of prims got duplicated. Let's call the set of prims that got duplicated "original set"
+    // and the set of prims that got created through the duplication "duplicate set".
+    //
+    // Properties of prims in the duplicate set might reference other prims. The duplicate set
+    // should be self-contained, so we have to ensure that only prims within the duplicate set are
+    // referenced.
+    //
+    // There are three cases to consider:
+    // 1. A property references a prim in the duplicate set.
+    //        -> Nothing to do.
+    // 2. A property references a prim in the original set.
+    //        -> Update the reference to point to the respective prim in the duplicate set.
+    // 3. A property references a prim that's in neither set.
+    //        -> Delete the reference.
+    for (size_t i = 0; i < referencedPaths.size(); ++i) {
+        const auto& referencedPath = referencedPaths[i];
+
+        // If the referenced path points to a prim in the duplicate set, there's nothing to do.
+        const bool isInDuplicateSet = referencedPath.HasPrefix(duplicatePrimPath);
+        if (isInDuplicateSet) {
+            continue;
         }
-        if (isExternalPath) {
-            hasChanged = true;
+
+        // Check if the original set contains the referenced path. This is true if any path in the
+        // DuplicatePathsMap is a prefix of the referenced path.
+        //
+        // Since paths are ordered lexicographically, a prefix of a path is always less then or
+        // equal to the path itself. Also, the prefix will always be "close to" the path itself.
+        // Thus, we can get away with checking only a single candidate: The last path thats less
+        // than or equal to the reference path.
+        //
+        // `upper_bound()` returns the first path that's greater than the referenced path. Our
+        // candidate is the path before that.
+        const auto firstLargerPath = allPairs.upper_bound(referencedPath);
+        if (firstLargerPath == allPairs.begin()) {
+            // All paths in the source set are greater, so none of them can be a prefix.
             indicesToRemove.push_front(i);
+            continue;
         }
+
+        // Check if our candidate is a prefix of the referenced path.
+        const auto lastSmallerPath = std::prev(firstLargerPath);
+        const bool isInOriginalSet = referencedPath.HasPrefix(lastSmallerPath->first);
+        if (!isInOriginalSet) {
+            indicesToRemove.push_front(i);
+            continue;
+        }
+
+        // Update the path to point to the respective path in the duplicate set.
+        referencedPath.ReplacePrefix(lastSmallerPath->first, lastSmallerPath->second);
+        referencedPathsChanged = true;
     }
+
     for (size_t toRemove : indicesToRemove) {
-        pathVec.erase(pathVec.cbegin() + toRemove);
+        referencedPaths.erase(referencedPaths.cbegin() + toRemove);
     }
-    return hasChanged;
+
+    return referencedPathsChanged || !indicesToRemove.empty();
 }
 
 void UsdUndoDuplicateSelectionCommand::undo() { _undoableItem.undo(); }
