@@ -537,5 +537,50 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         # Verify that the connection was copied.
         self.assertEqual(1, len(connectionHandler.sourceConnections(pastedNodeGraph).allConnections()))
 
+
+    def testClipboardCopyConnections(self):
+        '''Regression test to ensure connections between duplicated items get copied.'''
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Create a NodeGraph and add an output attribute.
+        stage.DefinePrim('/Material1', 'Material')
+        materialItem = ufeUtils.createItem(psPathStr + ',/Material1')
+
+        # Create two shaders within the NodeGraph.
+        nodeDef = ufe.NodeDef.definition(materialItem.runTimeId(), 'ND_add_color3')
+        srcItem = nodeDef.createNode(materialItem, ufe.PathComponent('src1'))
+        dstItem = nodeDef.createNode(materialItem, ufe.PathComponent('dst1'))
+
+        # Connect the shaders.
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem.runTimeId())
+        srcOutput = ufe.Attributes.attributes(srcItem).attribute('outputs:out')
+        dstInput = ufe.Attributes.attributes(dstItem).attribute('inputs:in1')
+        connection = connectionHandler.connect(srcOutput, dstInput)
+        self.assertIsNotNone(connection)
+
+        # Copy both shaders.
+        ch = ufe.ClipboardHandler.clipboardHandler(materialItem.runTimeId())
+        ufe.ClipboardHandler.preCopy()
+        copyCmd = ch.copyCmd_(ufe.Selection([srcItem, dstItem]))
+        copyCmd.execute()
+
+        # Clear the selection before pasting.
+        ufe.GlobalSelection.get().clear()
+
+        # Paste both shaders.
+        pasteCmd = ch.pasteCmd_(materialItem)
+        pasteCmd.execute()
+        self.assertIsNotNone(pasteCmd.targetItems())
+        self.assertEqual(2, len(pasteCmd.targetItems()))
+        pastedSrcItem = pasteCmd.targetItems()[0]
+        pastedDstItem = pasteCmd.targetItems()[1]
+
+        # Verify that the connection was copied.
+        self.assertEqual(1, len(connectionHandler.sourceConnections(pastedDstItem).allConnections()))
+        pastedConnection = connectionHandler.sourceConnections(pastedDstItem).allConnections()[0]
+        self.assertEqual(pastedConnection.src.path, pastedSrcItem.path())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
