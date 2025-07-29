@@ -197,20 +197,21 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
         //
         // Since paths are ordered lexicographically, a prefix of a path is always less then or
         // equal to the path itself. Also, the prefix will always be "close to" the path itself.
-        // Thus, we can get away with checking only a single candidate: The last path thats less
-        // than or equal to the reference path.
+        // Thus, we can get away with checking only a single candidate: The last path that's less
+        // than or equal to the referenced path.
         //
         // `upper_bound()` returns the first path that's greater than the referenced path. Our
         // candidate is the path before that.
-        const auto firstLargerPath = allPairs.upper_bound(referencedPath);
-        if (firstLargerPath == allPairs.begin()) {
-            // All paths in the source set are greater, so none of them can be a prefix.
+        const auto firstGreaterPath = allPairs.upper_bound(referencedPath);
+        if (firstGreaterPath == allPairs.begin()) {
+            // All paths in the original set are greater, so none of them can be a prefix.
             indicesToRemove.push_front(i);
             continue;
         }
+        const auto lastSmallerPath = std::prev(firstGreaterPath);
 
-        // Check if our candidate is a prefix of the referenced path.
-        const auto lastSmallerPath = std::prev(firstLargerPath);
+        // Check if our candidate is a prefix of the referenced path. HasPrefix() returns true for
+        // equal paths.
         const bool isInOriginalSet = referencedPath.HasPrefix(lastSmallerPath->first);
         if (!isInOriginalSet) {
             indicesToRemove.push_front(i);
@@ -222,6 +223,7 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
         referencedPathsChanged = true;
     }
 
+    // The indices to remove are in descending order due to push_front(). Simply iterate and erase.
     for (size_t toRemove : indicesToRemove) {
         referencedPaths.erase(referencedPaths.cbegin() + toRemove);
     }
