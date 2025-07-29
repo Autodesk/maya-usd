@@ -546,22 +546,24 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         
         # Create a NodeGraph and add an output attribute.
         stage.DefinePrim('/Material1', 'Material')
-        materialItem = ufeUtils.createItem(psPathStr + ',/Material1')
+        stage.DefinePrim('/Material2', 'Material')
+        materialItem1 = ufeUtils.createItem(psPathStr + ',/Material1')
+        materialItem2 = ufeUtils.createItem(psPathStr + ',/Material2')
 
         # Create two shaders within the NodeGraph.
-        nodeDef = ufe.NodeDef.definition(materialItem.runTimeId(), 'ND_add_color3')
-        srcItem = nodeDef.createNode(materialItem, ufe.PathComponent('src1'))
-        dstItem = nodeDef.createNode(materialItem, ufe.PathComponent('dst1'))
+        nodeDef = ufe.NodeDef.definition(materialItem1.runTimeId(), 'ND_add_color3')
+        srcItem = nodeDef.createNode(materialItem1, ufe.PathComponent('src1'))
+        dstItem = nodeDef.createNode(materialItem1, ufe.PathComponent('dst1'))
 
         # Connect the shaders.
-        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem.runTimeId())
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem1.runTimeId())
         srcOutput = ufe.Attributes.attributes(srcItem).attribute('outputs:out')
         dstInput = ufe.Attributes.attributes(dstItem).attribute('inputs:in1')
         connection = connectionHandler.connect(srcOutput, dstInput)
         self.assertIsNotNone(connection)
 
         # Copy both shaders.
-        ch = ufe.ClipboardHandler.clipboardHandler(materialItem.runTimeId())
+        ch = ufe.ClipboardHandler.clipboardHandler(materialItem1.runTimeId())
         ufe.ClipboardHandler.preCopy()
         copyCmd = ch.copyCmd_(ufe.Selection([srcItem, dstItem]))
         copyCmd.execute()
@@ -570,12 +572,12 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().clear()
 
         # Paste both shaders.
-        pasteCmd = ch.pasteCmd_(materialItem)
+        pasteCmd = ch.pasteCmd_(materialItem2)
         pasteCmd.execute()
         self.assertIsNotNone(pasteCmd.targetItems())
         self.assertEqual(2, len(pasteCmd.targetItems()))
-        pastedSrcItem = pasteCmd.targetItems()[0]
-        pastedDstItem = pasteCmd.targetItems()[1]
+        pastedSrcItem = ufe.Hierarchy.createItem(materialItem2.path() + srcItem.nodeName())
+        pastedDstItem = ufe.Hierarchy.createItem(materialItem2.path() + dstItem.nodeName())
 
         # Verify that the connection was copied.
         self.assertEqual(1, len(connectionHandler.sourceConnections(pastedDstItem).allConnections()))
