@@ -31,6 +31,7 @@ namespace UsdLayerEditor {
 class DirtyLayersCountBadge;
 class LayerTreeView;
 class SessionState;
+class LayerContentsWidget;
 
 /**
  * @brief Widget that manages a menu, a combo box to select a USD stage, and  USD Layer Tree view
@@ -51,6 +52,7 @@ public Q_SLOTS:
     void onLoadLayersButtonClicked();
     void onSaveStageButtonClicked();
     void updateButtonsOnIdle();
+    void showDisplayLayerContents(bool show);
 
 public:
     LayerTreeView*           layerTree() { return _treeView.data(); }
@@ -73,7 +75,10 @@ protected:
 
     void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
-    QPointer<LayerTreeView> _treeView;
+    void updateLayerContentsWidget();
+
+    QPointer<LayerTreeView>       _treeView;
+    QPointer<LayerContentsWidget> _layerContents;
 
     bool _updateButtonsOnIdle = false; // true if request to update on idle is pending
 };

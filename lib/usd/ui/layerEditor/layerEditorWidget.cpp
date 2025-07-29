@@ -18,6 +18,7 @@
 
 #include "abstractCommandHook.h"
 #include "dirtyLayersCountBadge.h"
+#include "layerContentsWidget.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 #include "qtUtils.h"
@@ -57,7 +58,10 @@ namespace {
 using namespace UsdLayerEditor;
 
 // create the default menus on the parent QMainWindow
-void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
+void setupDefaultMenu(
+    LayerEditorWidget* in_layerEditor,
+    SessionState*      in_sessionState,
+    QMainWindow*       in_parent)
 {
     auto menuBar = in_parent->menuBar();
     // don't add menu twice -- this window is destroyed and re-created on new scene
@@ -74,12 +78,26 @@ void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
         QObject::connect(createMenu, &QMenu::aboutToShow, in_parent, aboutToShowCallback);
 
         auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
-        auto action = optionMenu->addAction(
+
+        auto autoHideAction = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
         QObject::connect(
-            action, &QAction::toggled, in_sessionState, &SessionState::setAutoHideSessionLayer);
-        action->setCheckable(true);
-        action->setChecked(in_sessionState->autoHideSessionLayer());
+            autoHideAction,
+            &QAction::toggled,
+            in_sessionState,
+            &SessionState::setAutoHideSessionLayer);
+        autoHideAction->setCheckable(true);
+        autoHideAction->setChecked(in_sessionState->autoHideSessionLayer());
+
+        auto displayLayerContentsAction = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kDisplayLayerContents));
+        QObject::connect(
+            displayLayerContentsAction,
+            &QAction::toggled,
+            in_layerEditor,
+            &LayerEditorWidget::showDisplayLayerContents);
+        displayLayerContentsAction->setCheckable(true);
+        displayLayerContentsAction->setChecked(in_sessionState->displayLayerContents());
 
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
         helpMenu->addAction(
@@ -98,7 +116,7 @@ LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow*
     , _sessionState(in_sessionState)
 {
     setupLayout();
-    ::setupDefaultMenu(&in_sessionState, in_parent);
+    ::setupDefaultMenu(this, &in_sessionState, in_parent);
 }
 
 // helper for setupLayout
@@ -158,6 +176,13 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         &QItemSelectionModel::selectionChanged,
         this,
         &LayerEditorWidget::onSelectionChanged);
+
+    // update layer contents widget on selection change
+    connect(
+        _treeView->selectionModel(),
+        &QItemSelectionModel::selectionChanged,
+        this,
+        &LayerEditorWidget::updateLayerContentsWidget);
 
     _buttons._loadLayer = addHIGButton(
         ":/UsdLayerEditor/LE_import_layer",
@@ -229,20 +254,41 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
 
 void LayerEditorWidget::setupLayout()
 {
-    _treeView = new LayerTreeView(&_sessionState, this);
+    // Horizontal splitter that will contain the Layer Editor and Display Layer
+    // Contents Window.
+    auto mainHSplitter = new QSplitter(Qt::Horizontal);
 
-    auto mainVLayout = new QVBoxLayout();
-    mainVLayout->setSpacing(DPIScale(4));
+    // Main LayerEditor widget that will contain the Stage Selector widget, toolbar
+    // and Layer Editor tree view.
+    auto mainVWidget = new QWidget();
+    {
+        _treeView = new LayerTreeView(&_sessionState, mainVWidget);
 
-    auto stageSelector = new StageSelectorWidget(&_sessionState, this);
-    mainVLayout->addWidget(stageSelector);
+        auto mainVLayout = new QVBoxLayout();
+        mainVLayout->setSpacing(DPIScale(4));
+        mainVLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto toolbarLayout = setupLayout_toolbar();
-    mainVLayout->addLayout(toolbarLayout);
+        auto stageSelector = new StageSelectorWidget(&_sessionState, mainVWidget);
+        mainVLayout->addWidget(stageSelector);
 
-    mainVLayout->addWidget(_treeView);
+        auto toolbarLayout = setupLayout_toolbar();
+        mainVLayout->addLayout(toolbarLayout);
 
-    setLayout(mainVLayout);
+        mainVLayout->addWidget(_treeView);
+
+        mainVWidget->setLayout(mainVLayout);
+        mainHSplitter->addWidget(mainVWidget);
+    }
+
+    _layerContents = new LayerContentsWidget(this);
+    mainHSplitter->addWidget(_layerContents);
+    _layerContents->setVisible(_sessionState.displayLayerContents());
+
+    auto mainLayout = new QVBoxLayout(this);
+    mainLayout->setSpacing(0);
+    mainLayout->setContentsMargins(DPIScale(4), DPIScale(4), DPIScale(4), DPIScale(4));
+    mainLayout->addWidget(mainHSplitter);
+    setLayout(mainLayout);
 
     updateNewLayerButton();
     updateButtons();
@@ -389,6 +435,33 @@ void LayerEditorWidget::onSelectionChanged(
 
     UsdUfe::triggerUICallback(
         TfToken("onLayerEditorSelectionChanged"), callbackContext, callbackData);
+}
+
+void LayerEditorWidget::showDisplayLayerContents(bool showIt)
+{
+    _sessionState.setDisplayLayerContents(showIt);
+    _layerContents->setVisible(showIt);
+    if (showIt) {
+        updateLayerContentsWidget();
+    }
+}
+
+void LayerEditorWidget::updateLayerContentsWidget()
+{
+    // If the layer contents widget is not visible, we don't need to update it.
+    if (_layerContents->isVisible()) {
+        // Update the layer contents widget with the current selection
+        // if there is one selected item.
+        const auto selection = _treeView->selectionModel()->selectedRows();
+        if (selection.size() == 1) {
+            const auto model = _treeView->layerTreeModel();
+            auto       layerTreeItem = model->layerItemFromIndex(selection[0]);
+            _layerContents->setLayer(layerTreeItem->layer());
+        } else {
+            // If there is no selection or multiple items selected, clear the contents.
+            _layerContents->setLayer(nullptr);
+        }
+    }
 }
 
 std::vector<std::string> LayerEditorWidget::getSelectedLayers()
