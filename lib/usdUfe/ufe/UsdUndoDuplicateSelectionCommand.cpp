@@ -184,7 +184,7 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
     // 3. A property references a prim that's in neither set.
     //        -> Delete the reference.
     for (size_t i = 0; i < referencedPaths.size(); ++i) {
-        const auto& referencedPath = referencedPaths[i];
+        auto& referencedPath = referencedPaths[i];
 
         // If the referenced path points to a prim in the duplicate set, there's nothing to do.
         const bool isInDuplicateSet = referencedPath.HasPrefix(duplicatePrimPath);
@@ -219,7 +219,8 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
         }
 
         // Update the path to point to the respective path in the duplicate set.
-        referencedPath.ReplacePrefix(lastSmallerPath->first, lastSmallerPath->second);
+        referencedPath
+            = referencedPath.ReplacePrefix(lastSmallerPath->first, lastSmallerPath->second);
         referencedPathsChanged = true;
     }
 
