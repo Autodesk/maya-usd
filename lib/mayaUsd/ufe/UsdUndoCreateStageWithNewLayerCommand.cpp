@@ -15,7 +15,6 @@
 //
 #include "UsdUndoCreateStageWithNewLayerCommand.h"
 
-#include <mayaUsd/ufe/UsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemRecorder.h>
 #include <mayaUsd/undo/OpUndoItems.h>

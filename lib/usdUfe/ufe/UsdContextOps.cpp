@@ -76,6 +76,9 @@ static constexpr char    kUSDSetAsDefaultPrim[] = "Set as Default Prim";
 static constexpr char    kUSDClearDefaultPrim[] = "Clear Default Prim";
 static constexpr char    kUSDAddNewPrimItem[] = "Add New Prim";
 static constexpr char    kUSDAddNewPrimLabel[] = "Add New Prim";
+static constexpr char    kUSDClassPrimItem[] = "Class";
+static constexpr char    kUSDClassPrimLabel[] = "Class";
+static const std::string kUSDClassPrimImage { "out_USD_Class.png" };
 static constexpr char    kUSDDefPrimItem[] = "Def";
 static constexpr char    kUSDDefPrimLabel[] = "Def";
 static const std::string kUSDDefPrimImage { "out_USD_Def.png" };
@@ -97,6 +100,11 @@ static const std::string kUSDCubePrimImage { "out_USD_Cube.png" };
 static constexpr char    kUSDCylinderPrimItem[] = "Cylinder";
 static constexpr char    kUSDCylinderPrimLabel[] = "Cylinder";
 static const std::string kUSDCylinderPrimImage { "out_USD_Cylinder.png" };
+#if PXR_VERSION >= 2208
+static constexpr char    kUSDPlanePrimItem[] = "Plane";
+static constexpr char    kUSDPlanePrimLabel[] = "Plane";
+static const std::string kUSDPlanePrimImage { "out_USD_Plane.png" };
+#endif
 static constexpr char    kUSDSpherePrimItem[] = "Sphere";
 static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
 static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
@@ -421,6 +429,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         }     // Variant sets
         else if (itemPath[0] == kUSDAddNewPrimItem) {
             if (itemPath.size() == 1u) { // Root setup
+                items.emplace_back(kUSDClassPrimItem, kUSDClassPrimLabel, kUSDClassPrimImage);
                 items.emplace_back(
                     kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
                 items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
@@ -431,6 +440,9 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
                 items.emplace_back(
                     kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
+#if PXR_VERSION >= 2208
+                items.emplace_back(kUSDPlanePrimItem, kUSDPlanePrimLabel, kUSDPlanePrimImage);
+#endif
                 items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
                 items.emplace_back(Ufe::ContextItem::kSeparator);
                 items.emplace_back(

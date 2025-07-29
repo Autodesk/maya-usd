@@ -30,10 +30,12 @@ target_sources(${PROJECT_NAME}
         UsdUndoClearPayloadsCommand.cpp
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
+        UsdUndoDeleteCommand.cpp
         UsdUndoInsertChildCommand.cpp
         UsdUndoLongDurationCommand.cpp
         UsdUndoPayloadCommand.cpp
         UsdUndoReloadRefCommand.cpp
+        UsdUndoRenameCommand.cpp
         UsdUndoReorderCommand.cpp
         UsdUndoSelectAfterCommand.cpp
         UsdUndoSetKindCommand.cpp
@@ -128,6 +130,13 @@ if (UFE_HAS_UNSIGNED_INT)
     )
 endif()
 
+if (UFE_HAS_COLOR_MANAGEMENT_HANDLER)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HAS_COLOR_MANAGEMENT_HANDLER=1
+    )
+endif()
+
 set(HEADERS
     Global.h
     SetVariantSelectionCommand.h
@@ -156,10 +165,12 @@ set(HEADERS
     UsdUndoClearPayloadsCommand.h
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h
+    UsdUndoDeleteCommand.h
     UsdUndoInsertChildCommand.h
     UsdUndoLongDurationCommand.h
     UsdUndoPayloadCommand.h
     UsdUndoReloadRefCommand.h
+    UsdUndoRenameCommand.h
     UsdUndoReorderCommand.h
     UsdUndoSelectAfterCommand.h
     UsdUndoSetKindCommand.h

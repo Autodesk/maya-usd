@@ -47,7 +47,12 @@ target_compile_definitions(${PROJECT_NAME}
 
 # QT_NO_KEYWORDS prevents Qt from defining the foreach, signals, slots and emit macros.
 # this avoids overlap between Qt macros, and enforces using Q_ macros.
-set_target_properties(Qt::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+get_target_property(qt_core_aliased Qt::Core ALIASED_TARGET)
+if (qt_core_aliased)
+    set_target_properties(${qt_core_aliased} PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+else()
+    set_target_properties(Qt::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+endif()
 
 mayaUsd_compile_config(${PROJECT_NAME})
 

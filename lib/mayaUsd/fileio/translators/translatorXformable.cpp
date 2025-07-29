@@ -60,7 +60,7 @@ static bool _getXformOpAsVec3d(
 {
     bool retValue = false;
 
-#ifdef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#ifdef USD_SUPPORT_INDIVIDUAL_TRANSFORMS
     if ((xformOp.GetTypeName() == SdfValueTypeNames->Float
          || xformOp.GetTypeName() == SdfValueTypeNames->Double)
         // RotateAxis is an individual transform that was supported before usd2505.
@@ -132,7 +132,7 @@ static bool _getXformOpAsVec3d(
     return retValue;
 }
 
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
 static bool
 _getSingleXformOp(const UsdGeomXformOp& xformOp, double& value, const UsdTimeCode& usdTime)
 {
@@ -186,7 +186,8 @@ static MObject _setAnimPlugData(
     MObject animObj = animFn.create(plg, nullptr, &status);
     if (status == MS::kSuccess) {
         MDoubleArray valueArray(&value[0], value.size());
-        animFn.addKeys(&timeArray, &valueArray);
+        animFn.addKeys(
+            &timeArray, &valueArray, MFnAnimCurve::kTangentLinear, MFnAnimCurve::kTangentLinear);
         if (context) {
             context->RegisterNewMayaNode(animFn.name().asChar(), animObj);
         }
@@ -289,7 +290,7 @@ static bool _pushUSDXformOpToMayaXform(
     const UsdMayaPrimReaderArgs&    args,
     const UsdMayaPrimReaderContext* context)
 {
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
     // If the xformop has a spline, we write it to the plug directly
     const auto&                opAttr = xformop.GetAttr();
     const UsdGeomXformOp::Type opType = xformop.GetOpType();
@@ -319,7 +320,7 @@ static bool _pushUSDXformOpToMayaXform(
     GfVec3d             value;
     bool                isSingleTransformOp = false;
     std::vector<double> singleTransformOp;
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
     double singleVal = 0.0;
 #endif
     MString             singleOpName;
@@ -345,7 +346,7 @@ static bool _pushUSDXformOpToMayaXform(
                 zValue[ti] = value[2];
                 timeArray.set(MTime(timeSamples[ti] * timeSampleMultiplier, timeUnit), ti);
             }
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
             else if (_getSingleXformOp(xformop, singleVal, time)) {
                 singleTransformOp[ti] = singleVal;
                 isSingleTransformOp = true;
@@ -367,7 +368,7 @@ static bool _pushUSDXformOpToMayaXform(
             yValue[0] = value[1];
             zValue[0] = value[2];
         }
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
         else if (_getSingleXformOp(xformop, singleVal, time)) {
             singleTransformOp.resize(1);
             singleTransformOp[0] = singleVal;
@@ -446,7 +447,7 @@ static bool _pushUSDXformOpToMayaXform(
                 "Z",
                 context);
         }
-#ifdef USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#ifdef USD_SUPPORT_INDIVIDUAL_TRANSFORMS
         else if (
             (opType == UsdGeomXformOp::TypeTranslateX || opType == UsdGeomXformOp::TypeRotateX
              || opType == UsdGeomXformOp::TypeScaleX)
@@ -730,7 +731,7 @@ void UsdMayaTranslatorXformable::Read(
     UsdMayaXformStack::OpClassList stackOps = UsdMayaXformStack::FirstMatchingSubstack(
         {
             &UsdMayaXformStack::MayaStack(),
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
                 &UsdMayaXformStack::MayaIndividualTransformsStack(),
 #endif
                 &UsdMayaXformStack::CommonStack()
@@ -753,7 +754,7 @@ void UsdMayaTranslatorXformable::Read(
 
             _pushUSDXformOpToMayaXform(xformop, opName, MdagNode, args, context);
 
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
             // If we have an individual rotation, we need to build the rotation order
             if (opName == UsdMayaXformStackTokens->rotateX) {
                 rotOrderStr.insert(0, "x");
@@ -764,7 +765,7 @@ void UsdMayaTranslatorXformable::Read(
             }
 #endif
         }
-#if USD_SUPPORT_INDIVIDUAL_TRANSFROMS
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
         if (!rotOrderStr.empty()) {
             MFnTransform trans;
             if (trans.setObject(MdagNode.object())) {

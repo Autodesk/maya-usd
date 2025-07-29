@@ -1,5 +1,6 @@
 set(TEST_SCRIPT_FILES
     testUsdExport8BitNormalMap.py
+    testUsdExportAndHide.py
     testUsdExportAnimation.py
     testUsdExportAsClip.py
     testUsdExportBindTransform.py

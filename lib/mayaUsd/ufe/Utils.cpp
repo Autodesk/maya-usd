@@ -135,22 +135,16 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
 }
 
-UsdUfe::UsdSceneItem::Ptr
-createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
-{
-    auto ufeSiblingPath = ufeSrcPath.sibling(Ufe::PathComponent(siblingName));
-    return UsdUfe::UsdSceneItem::create(ufeSiblingPath, ufePathToPrim(ufeSiblingPath));
-}
-
 std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name)
 {
     if (!usdParent.IsValid())
         return std::string();
 
     // See uniqueChildNameDefault() in lib\usdUfe\ufe\Utils.cpp for details.
+    // Note: removed 'UsdPrimIsAbstract' from the predicate since the Maya
+    //       Outliner can show class prims now.
     TfToken::HashSet allChildrenNames;
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+    for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         allChildrenNames.insert(child.GetName());
     }
 

@@ -372,8 +372,11 @@ class AttributeTestCase(unittest.TestCase):
 
         # Now we test the Filename specific methods.
 
+        hasColorManagementOnSet = hasattr(ufe, "ColorManagementHandler")
+
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
+        self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Change to 'blue.png' and verify the return in UFE.
         ufeAttr.set("blue.png")
@@ -382,11 +385,46 @@ class AttributeTestCase(unittest.TestCase):
         # Verify that the new UFE value matches what is directly in USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Change back to 'red.png' using a command.
-        self.runUndoRedo(ufeAttr, "red.png")
+        # File rule for PNG files is sRGB texture:
+        if hasColorManagementOnSet:
+            self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        else:
+            self.assertEqual(usdAttr.GetColorSpace(), "")
+
+        # Explicitly ignore file rules:
+        if hasColorManagementOnSet:
+            ufeAttr.sceneItem().setGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules, "true")
+
+        # Change to 'raw.exr' and verify the return in UFE.
+        ufeAttr.set("raw.exr")
+        self.assertEqual(ufeAttr.get(), "raw.exr")
+
+        # Verify that the new UFE value matches what is directly in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        # File rules should have been skipped and previous color space kept.
+        if hasColorManagementOnSet:
+            self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        else:
+            self.assertEqual(usdAttr.GetColorSpace(), "")
+
+        # Allow file rules:
+        if hasColorManagementOnSet:
+            ufeAttr.sceneItem().clearGroupMetadata("Autodesk", ufe.ColorManagementHandler.kIgnoreColorManagementFileRules)
+
+        # Change back to 'red.exr' using a command. File rules should change color space.
+        self.runUndoRedo(ufeAttr, "red.exr")
+        if hasColorManagementOnSet:
+            self.assertEqual(usdAttr.GetColorSpace(), "none")
+        else:
+            self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Run test using Maya's setAttr command.
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, "green.png")
+        if hasColorManagementOnSet:
+            self.assertEqual(usdAttr.GetColorSpace(), "srgb_texture")
+        else:
+            self.assertEqual(usdAttr.GetColorSpace(), "")
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
@@ -1607,16 +1645,20 @@ class AttributeTestCase(unittest.TestCase):
         # Test for non-existing metdata.
         self.assertFalse(attr.hasMetadata('NotAMetadata'))
 
-        # Verify that this attribute has documentation metadata.
-        self.assertTrue(attr.hasMetadata('documentation'))
-        md = attr.getMetadata('documentation')
-        self.assertIsNotNone(md)
-        self.assertIsNotNone(str(md))
-
         # Store this original documentation metadata value for testing of the clear.
         # Note: USD doc has some fallback values, so clearing doc might not actually
         #       set it to empty.
+        md = attr.getMetadata('documentation')
         origDocMD = str(md)
+
+        # Verify that this attribute has documentation metadata.
+        # The use of the documentation field in schema prim/property definitions
+        # to store API doc has been deprecated, so only verify on older versions
+        # of USD
+        if Usd.GetVersion() <= (0, 25, 5):
+            self.assertTrue(attr.hasMetadata('documentation'))
+            self.assertIsNotNone(md)
+            self.assertIsNotNone(origDocMD)
 
         # Change the metadata and make sure it changed
         self.assertTrue(attr.setMetadata('documentation', 'New doc'))

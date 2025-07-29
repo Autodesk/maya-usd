@@ -118,6 +118,10 @@ void setUfePathToPrimFn(UfePathToPrimFn fn);
 USDUFE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 
+USDUFE_PUBLIC
+UsdSceneItem::Ptr
+createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
+
 //! Set the DCC specific time accessor function.
 //! It cannot be empty.
 //! \excpection std::invalid_argument if fn is empty.
@@ -290,7 +294,10 @@ PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src);
 
 //! Filter a source selection by removing descendants of filterPath.
 USDUFE_PUBLIC
-Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
+Ufe::Selection removeDescendants(
+    const Ufe::Selection& src,
+    const Ufe::Path&      filterPath,
+    bool*                 itemRemoved = nullptr);
 
 //! Re-build a source selection by copying scene items that are not descendants
 //! of filterPath to the destination, and re-creating the others into the

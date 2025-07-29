@@ -90,7 +90,11 @@ void UsdMayaTranslatorPrim::Read(
         plg = depFn.findPlug("visibility");
         if (!plg.isNull()) {
             MObject animObj = animFn.create(plg, nullptr, &status);
-            animFn.addKeys(&timeArray, &valueArray);
+            animFn.addKeys(
+                &timeArray,
+                &valueArray,
+                MFnAnimCurve::kTangentLinear,
+                MFnAnimCurve::kTangentLinear);
             if (context) {
                 context->RegisterNewMayaNode(animFn.name().asChar(), animObj); // used for undo/redo
             }
