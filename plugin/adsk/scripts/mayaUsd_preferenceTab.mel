@@ -125,7 +125,6 @@ global proc mayaUsd_AssetResolverMayaToken()
 			// This is done by calling the python function that does it.
 			python("import mayaUsd_AdskAssetResolver; mayaUsd_AdskAssetResolver.unload_maya_project_tokens()");
 		}
-		//python("import mayaUsd_AdskAssetResolver; mayaUsd_AdskAssetResolver.include_maya_project_tokens()");
 	}
 }
 
