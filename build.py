@@ -527,9 +527,9 @@ def BuildAndInstall(context, buildArgs, stages):
         # Many people on Windows may not have python with the 
         # debugging symbol (python27_d.lib) installed, this is the common case.
         if context.buildDebug and context.debugPython:
-            extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
+            extraArgs.append('-DMAYAUSD_DEFINE_DEBUG_PYTHON_FLAG=ON')
         else:
-            extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
+            extraArgs.append('-DMAYAUSD_DEFINE_DEBUG_PYTHON_FLAG=OFF')
 
         extraArgs += buildArgs
         stagesArgs += stages
@@ -631,7 +631,7 @@ varGroup.add_argument("--build-relwithdebug", dest="build_relwithdebug", action=
                     help="Build in RelWithDebInfo mode (default: %(default)s)")
 
 parser.add_argument("--debug-python", dest="debug_python", action="store_true",
-                      help="Define Boost Python Debug if your Python library comes with Debugging symbols (default: %(default)s).")
+                      help="Define Python Debug if your Python library comes with Debugging symbols (default: %(default)s).")
 
 parser.add_argument("--qt-location", type=str,
                     help="DEPRECATED: Qt is found automatically in Maya devkit.")

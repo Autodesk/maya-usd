@@ -72,7 +72,7 @@ private:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the PluginTranslator
+/// \brief Python binding for the PluginTranslator
 //----------------------------------------------------------------------------------------------------------------------
 class TranslatorBaseWrapper
     : public TranslatorBase

@@ -31,7 +31,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaSchemaApiAdaptor
+/// \brief Python binding for the UsdMayaSchemaApiAdaptor
 //----------------------------------------------------------------------------------------------------------------------
 class SchemaApiAdaptorWrapper
     : public UsdMayaSchemaApiAdaptor

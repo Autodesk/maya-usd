@@ -76,8 +76,6 @@
 #include <maya/MStringArray.h>
 #include <maya/MTime.h>
 
-#include <boost/functional/hash.hpp>
-
 #include <cctype>
 #include <regex>
 #include <sstream>
@@ -1039,7 +1037,7 @@ template <typename T> struct _ValuesHash
 // so we need an explicit opt-in here.
 template <> struct _ValuesHash<float>
 {
-    std::size_t operator()(const float& value) const { return boost::hash_value(value); }
+    std::size_t operator()(const float& value) const { return std::hash<float> {}(value); }
 };
 
 template <typename T> struct _ValuesEqual

@@ -32,28 +32,17 @@ public:
     {
     }
 
-#if HDX_API_VERSION >= 6
-
-#if HDX_API_VERSION >= 8
     inline std::vector<GfMatrix4d>
     Compute(const CameraUtilFraming& framing, CameraUtilConformWindowPolicy policy) override
     {
         return { _shadowMatrix };
     }
-#endif
 
     inline std::vector<GfMatrix4d>
     Compute(const GfVec4f& viewport, CameraUtilConformWindowPolicy policy) override
     {
         return { _shadowMatrix };
     }
-#else
-    inline GfMatrix4d
-    Compute(const GfVec4f& viewport, CameraUtilConformWindowPolicy policy) override
-    {
-        return _shadowMatrix;
-    }
-#endif
 
 private:
     GfMatrix4d _shadowMatrix;

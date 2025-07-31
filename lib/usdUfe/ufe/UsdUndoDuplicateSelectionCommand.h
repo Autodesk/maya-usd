@@ -78,9 +78,9 @@ private:
     DstStagesMap _stagesMap;
 
     bool updateSdfPathVector(
-        PXR_NS::SdfPathVector&               pathVec,
-        const DuplicatePathsMap::value_type& duplicatePair,
-        const DuplicatePathsMap&             otherPairs);
+        PXR_NS::SdfPathVector&               referencedPaths,
+        const DuplicatePathsMap::value_type& thisPair,
+        const DuplicatePathsMap&             allPairs);
 
     // Convenience map to have a map between the source item and the duplicated one.
     DuplicatedItemsMap _duplicatedItemsMap;

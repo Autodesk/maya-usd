@@ -300,7 +300,7 @@ set(UFE_PYTHON_MODULE_NAME ufe)
 # target (UFE Python Bindings)
 # -----------------------------------------------------------------------------
 # UFE Python Bindings
-if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+if(IS_WINDOWS AND MAYAUSD_DEFINE_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(UFE_PYTHON_TARGET_NAME "_${UFE_PYTHON_MODULE_NAME}_d")
 else()

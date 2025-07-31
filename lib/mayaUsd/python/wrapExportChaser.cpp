@@ -26,7 +26,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaExportChaser
+/// \brief Python binding for the UsdMayaExportChaser
 //----------------------------------------------------------------------------------------------------------------------
 class ExportChaserWrapper
     : public UsdMayaExportChaser
