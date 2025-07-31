@@ -26,8 +26,8 @@ set(HEADERS
 target_compile_definitions(${TARGET_NAME}
     PUBLIC
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_DEBUG_PYTHON>
+        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_LINKING_PYTHON>
 )
 
 mayaUsd_compile_config(${TARGET_NAME})
@@ -144,7 +144,7 @@ endif()
 #------------------------------------------------------------------------------
 set(SCHEMAS_LIBRARY_NAME schemas)
 
-if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+if(IS_WINDOWS AND MAYAUSD_DEFINE_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(TARGET_PYTHON_NAME "_${SCHEMAS_LIBRARY_NAME}_d")
 else()

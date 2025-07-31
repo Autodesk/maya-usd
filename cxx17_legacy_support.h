@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2025 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,24 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_UTILS_HASH_H
-#define MAYAUSD_UTILS_HASH_H
 
-#include <mayaUsd/base/api.h>
+#ifndef MAYAUSD_CXX_LEGACY_SUPPORT_H
+#define MAYAUSD_CXX_LEGACY_SUPPORT_H
 
-#include <cstddef>
-#include <functional>
+//
+// Helper header to compile with C++14 vs C++17.
+//
 
-namespace MAYAUSD_NS_DEF {
+#if (__cplusplus >= 201703L)
 
-// hash combiner taken from:
-// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0814r0.pdf
+#include <optional>
 
-template <typename T> inline void hash_combine(std::size_t& seed, const T& value)
-{
-    ::std::hash<T> hasher;
-    seed ^= hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+namespace MayaUsdCxxLegacySupport {
+using std::optional;
 }
-} // namespace MAYAUSD_NS_DEF
 
-#endif // MAYAUSD_UTILS_HASH_H
+#else
+
+#include <boost/optional.hpp>
+
+namespace MayaUsdCxxLegacySupport {
+using boost::optional;
+}
+
+#endif
+
+#endif // MAYAUSD_CXX_LEGACY_SUPPORT_H

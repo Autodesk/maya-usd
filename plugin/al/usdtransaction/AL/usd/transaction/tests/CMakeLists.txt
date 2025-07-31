@@ -10,8 +10,8 @@ mayaUsd_compile_config(${TARGET_NAME})
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_DEBUG_PYTHON>
+        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_LINKING_PYTHON>
 )
 
 target_sources(${TARGET_NAME}
@@ -33,7 +33,6 @@ target_link_libraries(${TARGET_NAME}
     arch
     usd
     vt
-    $<$<BOOL:${IS_LINUX}>:${Boost_PYTHON_LIBRARY}>
     ${USDTRANSACTION_LIBRARY_NAME}
 )
 
