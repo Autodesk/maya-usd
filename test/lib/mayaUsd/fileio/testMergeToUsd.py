@@ -27,7 +27,7 @@ import mayaUsd.lib
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Gf, Sdf, Usd
+from pxr import UsdGeom, Gf, Sdf, Usd, Ts
 
 from maya import cmds
 from maya import standalone
@@ -869,6 +869,104 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         switchRootVisVariant()
         verifySwitch()
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 25, 5), 'Splines transforms are only supported in USD 0.25.05 and later')
+    def testSplineTransformMergeToUsd(self):
+        '''Test merge of animated spline transforms back to USD.'''
+
+        # Create a stage in memory
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        aPrim = stage.DefinePrim('/A', 'Xform')
+        self.assertTrue(aPrim)
+        aXformable = UsdGeom.Xformable(aPrim)
+        
+        # Add individual translate component operations
+        aTranslateXOp = aXformable.AddTranslateXOp()
+        aTranslateYOp = aXformable.AddTranslateYOp()
+        aTranslateZOp = aXformable.AddTranslateZOp()
+        
+        timeFrames = [1.0, 5.0, 10.0]
+        xValues = [0.0, 5.0, 10.0]
+        yValues = [0.0, 3.0, 0.0]
+        zValues = [0.0, 2.0, 5.0]
+        
+        # Create splines for each translation component
+        for op, values in [(aTranslateXOp, xValues), (aTranslateYOp, yValues), (aTranslateZOp, zValues)]:
+            spline = Ts.Spline()
+            
+            # Add knots to the spline
+            knots = Ts.KnotMap()
+            for time, value in zip(timeFrames, values):
+                knot = Ts.Knot()
+                knot.SetTime(time)
+                knot.SetValue(value)
+                knots[time] = knot
+            
+            spline.SetKnots(knots)
+            
+            # Set the spline on each component attribute
+            attr = op.GetAttr()
+            attr.SetSpline(spline)
+        
+        aUsdUfePathStr = psPathStr + ',/A'
+        
+        xformOps = aXformable.GetOrderedXformOps()
+        self.assertEqual(len(xformOps), 3)  # translateX, translateY, translateZ
+        
+        # Verify splines exist on each component
+        for op in [aTranslateXOp, aTranslateYOp, aTranslateZOp]:
+            attr = op.GetAttr()
+            splineData = attr.GetSpline()
+            self.assertIsNotNone(splineData)
+            
+            knots = splineData.GetKnots()
+            self.assertEqual(len(knots), 3)
+        
+        # Verify spline values at keyframes for X component
+        xAttr = aTranslateXOp.GetAttr()
+        xSplineData = xAttr.GetSpline()
+        xKnots = xSplineData.GetKnots()
+        for i, expectedValue in enumerate(xValues):
+            knotValue = xKnots[timeFrames[i]].GetValue()
+            self.assertAlmostEqual(knotValue, expectedValue, places=5)
+        
+        # Test edit as Maya and merge back to USD
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        
+        mayaNodeName = aMayaPathStr.split('|')[-1]
+        
+        # Modify the translateX animation in Maya by setting new keyframes
+        newXValues = [0.0, 20.0, 15.0]
+        for time, xValue in zip(timeFrames, newXValues):
+            cmds.setKeyframe('%s.translateX' % mayaNodeName, time=time, value=xValue)
+        
+        # Merge edits back to USD
+        with mayaUsd.lib.OpUndoItemList():
+            options = { "animationType": "curves" }
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, options))
+        
+        # Verify the updated translateX values are correctly in USD after merge
+        aPrim = stage.GetPrimAtPath('/A')
+        aXformable = UsdGeom.Xformable(aPrim)
+        xformOps = aXformable.GetOrderedXformOps()
+        self.assertEqual(len(xformOps), 3)
+        
+        translateXOp = xformOps[0]
+        xAttrAfterMerge = translateXOp.GetAttr()
+        self.assertIsNotNone(xAttrAfterMerge, "TranslateX operation should be preserved after merge")
+        
+        splineDataAfterMerge = xAttrAfterMerge.GetSpline()
+        knotsAfterMerge = splineDataAfterMerge.GetKnots()
+        for i, expectedValue in enumerate(newXValues):
+            knotValue = knotsAfterMerge[timeFrames[i]].GetValue()
+            self.assertAlmostEqual(knotValue, expectedValue, places=5)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
