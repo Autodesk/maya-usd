@@ -27,7 +27,7 @@ import mayaUsd.lib
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Gf, Sdf, Usd, Ts
+from pxr import UsdGeom, Gf, Sdf, Usd
 
 from maya import cmds
 from maya import standalone
@@ -873,6 +873,7 @@ class MergeToUsdTestCase(unittest.TestCase):
     @unittest.skipUnless(Usd.GetVersion() >= (0, 25, 5), 'Splines transforms are only supported in USD 0.25.05 and later')
     def testSplineTransformMergeToUsd(self):
         '''Test merge of animated spline transforms back to USD.'''
+        from pxr import Ts
 
         # Create a stage in memory
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
