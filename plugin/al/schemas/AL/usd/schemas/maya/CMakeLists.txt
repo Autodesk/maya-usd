@@ -68,8 +68,9 @@ target_compile_definitions(AL_USDMayaSchemas
     PRIVATE
         AL_USDMAYASCHEMAS_EXPORTS
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_DEBUG_PYTHON>
-        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_LINKING_PYTHON>
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 target_include_directories(AL_USDMayaSchemas 
@@ -122,8 +123,9 @@ mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_DEBUG_PYTHON>
-        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_LINKING_PYTHON>
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         MFB_PACKAGE_NAME=AL_USDMayaSchemas
         MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemas
         MFB_PACKAGE_MODULE=AL.usd.schemas.maya

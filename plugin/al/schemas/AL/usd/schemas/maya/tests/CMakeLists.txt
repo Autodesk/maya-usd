@@ -9,8 +9,9 @@ mayaUsd_compile_config(${TARGET_NAME})
 
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
-        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_DEBUG_PYTHON>
-        $<$<AND:$<VERSION_LESS:${USD_VERSION},0.24.11>,$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>>:BOOST_LINKING_PYTHON>
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 target_sources(${TARGET_NAME}
