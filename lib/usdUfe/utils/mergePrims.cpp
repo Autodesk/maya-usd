@@ -224,6 +224,7 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
     // Note that the UsdAttribute API to get value automatically interpolates values
     // where samples are missing when queried.
     std::vector<double> times;
+    bool                isTimeVarying = false;
     {
         std::vector<UsdAttribute> trfAttrs = getTransformAttributes(srcPrim);
         std::vector<UsdAttribute> dstTrfAttrs = getTransformAttributes(dstPrim);
@@ -233,11 +234,24 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
         // the transform was modified.
         if (!UsdAttribute::GetUnionedTimeSamples(trfAttrs, &times))
             return true;
+
+        // GetUnionedTimeSamples doesn't consider splines when retrieving time samples.
+        // If there are no time samples, then check if the attributes are time-varying because they
+        // still could have splines affecting them.
+        if (times.empty()) {
+            for (const auto& attr : trfAttrs) {
+                if (attr.ValueMightBeTimeVarying()) {
+                    isTimeVarying = true;
+                    break;
+                }
+            }
+        }
     }
 
     // If there are no time samples, then USD uses the default value.
-    if (times.size() == 0)
-        return isLocalTransformModified(srcPrim, dstPrim, UsdTimeCode::Default());
+    if (times.empty()) {
+        return isLocalTransformModified(srcPrim, dstPrim, UsdTimeCode::Default()) || isTimeVarying;
+    }
 
     for (const double time : times) {
         if (isLocalTransformModified(srcPrim, dstPrim, time)) {
