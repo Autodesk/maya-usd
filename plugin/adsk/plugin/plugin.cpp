@@ -50,6 +50,7 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/usd/ar/resolver.h>
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnDagNode.h>
@@ -402,6 +403,22 @@ MStatus initializePlugin(MObject obj)
     // Install notifications
     PrimUpdaterManager::getInstance();
 #endif
+
+    // Load Maya tokens to AdskAssetResolver if option variable is set.
+    PlugRegistry& plugReg = PlugRegistry::GetInstance();
+    PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
+    if (resolverPlugin) {
+        static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
+        if (MGlobal::optionVarExists(IncludeMayaTokenInAR)
+            && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
+            MGlobal::executePythonCommand(
+                "try:\n"
+                "    import maya_AdskAssetResolver\n"
+                "    maya_AdskAssetResolver.include_maya_project_tokens()\n"
+                "except:\n"
+                "    pass\n");
+        }
+    }
 
     return status;
 }

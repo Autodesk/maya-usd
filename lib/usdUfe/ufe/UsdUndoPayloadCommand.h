@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOPAYLOADCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/payloads.h>
@@ -58,6 +59,7 @@ public:
 
     void redo() override;
     void undo() override;
+    UFE_V4(std::string commandString() const override { return "LoadPayload"; })
 };
 
 //! \brief Undoable command for unloading a USD prim.
@@ -68,6 +70,7 @@ public:
 
     void redo() override;
     void undo() override;
+    UFE_V4(std::string commandString() const override { return "UnloadPayload"; })
 };
 
 } // namespace USDUFE_NS_DEF

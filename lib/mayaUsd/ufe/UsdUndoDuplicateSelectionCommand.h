@@ -19,6 +19,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
 
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
@@ -52,6 +53,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "DuplicateSelection"; })
 
     Ufe::SceneItem::Ptr targetItem(const Ufe::Path& sourcePath) const override;
 
