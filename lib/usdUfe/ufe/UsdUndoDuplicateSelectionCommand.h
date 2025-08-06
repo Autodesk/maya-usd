@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDODUPLICATESELECTIONCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
@@ -56,6 +57,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "DuplicateSelection"; })
 
     //! Retrieve all the duplicated items.
     Ufe::SceneItemList targetItems() const;

@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOCREATEGROUPCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/hierarchy.h>
@@ -54,6 +55,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "CreateGroup"; })
 
 private:
     UsdSceneItem::Ptr  _parentItem;

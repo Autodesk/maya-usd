@@ -19,6 +19,8 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/undo/OpUndoItemList.h>
 
+#include <usdUfe/ufe/UfeVersionCompat.h>
+
 #include <ufe/path.h>
 #include <ufe/undoableCommand.h>
 
@@ -42,6 +44,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "EditAsMaya"; })
 
 private:
     OpUndoItemList _undoItemList;
