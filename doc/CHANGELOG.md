@@ -1,5 +1,44 @@
 # Changelog
 
+## [v0.33.0] - 2025-08-06
+
+**Build:**
+* Fix define typo [#4258](https://github.com/Autodesk/maya-usd/pull/4258)
+* API doc is no longer included schema's "doc" field [#4256](https://github.com/Autodesk/maya-usd/pull/4256)
+* Recognize new default sRGB color space name [#4239](https://github.com/Autodesk/maya-usd/pull/4239)
+* Future proof fileformat usage [#4220](https://github.com/Autodesk/maya-usd/pull/4220)
+* Fixes for building with QT_DISABLE_DEPRECATED_BEFORE [#4219](https://github.com/Autodesk/maya-usd/pull/4219)
+* Move deprecated Usd ZipFile-related codesites [#4201](https://github.com/Autodesk/maya-usd/pull/4201)
+* Move deprecated Usd CreateInfo and file format codesites [#4200](https://github.com/Autodesk/maya-usd/pull/4200)
+* Update Ndr callsite in test [#4199](https://github.com/Autodesk/maya-usd/pull/4199)
+
+**Translation Framework:**
+* Anim spline, fix vertical aperture incorrect unit [#4254](https://github.com/Autodesk/maya-usd/pull/4254)
+* Some tangent are not translated correctly on export [#4248](https://github.com/Autodesk/maya-usd/pull/4248)
+* Some tangent usage are not translated correctly in 25.05 on Stage Creation [#4241](https://github.com/Autodesk/maya-usd/pull/4241)
+* Rotation is incorrectly written on export to USD when using splines [#4240](https://github.com/Autodesk/maya-usd/pull/4240)
+* Transforms are lost If objects contain transform data and Animation Curves is set on export [#4236](https://github.com/Autodesk/maya-usd/pull/4236)
+* Texture paths are not saved as relative when exporting an object with MaterialX Document [#4234](https://github.com/Autodesk/maya-usd/pull/4234)
+* Import Xform transformations with Animation Curves [#4232](https://github.com/Autodesk/maya-usd/pull/4232)
+* Default Camera Attributes are not exported when using Animation Curve option [#4231](https://github.com/Autodesk/maya-usd/pull/4231)
+* Crash if the file port is promoted to the top level of the graph [#4230](https://github.com/Autodesk/maya-usd/pull/4230)
+* Export Xform transformations with Animation Curves [#4229](https://github.com/Autodesk/maya-usd/pull/4229)
+* Support Import for spline attribute of USD Lights [#4228](https://github.com/Autodesk/maya-usd/pull/4228)
+* Ability to export light animation curves [#4225](https://github.com/Autodesk/maya-usd/pull/4225)
+* Mtlx-USD export should add ND_geompropvalue node to the image node during convertion [#4217](https://github.com/Autodesk/maya-usd/pull/4217)
+* Support import camera animation curves [#4216](https://github.com/Autodesk/maya-usd/pull/4216)
+* Fix Wrong/Missing info on Camera spline exporting properties [#4214](https://github.com/Autodesk/maya-usd/pull/4214)
+
+**Workflow:**
+* Material prims break AE on Maya 2023 / 2022 [#4243](https://github.com/Autodesk/maya-usd/pull/4243)
+* `UsdAttributeUInt`: unsigned int ufe type support [#4211](https://github.com/Autodesk/maya-usd/pull/4211)
+
+**Render:**
+* Move ProxyShapeLookdevHandler to MayaUSD [#4244](https://github.com/Autodesk/maya-usd/pull/4244) [#4238](https://github.com/Autodesk/maya-usd/pull/4238)
+* Added support for USD Domelight_1 [#4227](https://github.com/Autodesk/maya-usd/pull/4227)
+* Add internal Maya light shading to USD lights [#4222](https://github.com/Autodesk/maya-usd/pull/4222)
+* Use new wireframe draw modes [#4218](https://github.com/Autodesk/maya-usd/pull/4218)
+
 ## [v0.32.0] - 2025-06-04
 
 **Build:**
