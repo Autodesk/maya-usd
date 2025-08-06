@@ -18,6 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <ufe/attribute.h>

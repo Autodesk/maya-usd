@@ -19,6 +19,8 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/undo/OpUndoItemList.h>
 
+#include <usdUfe/ufe/UfeVersionCompat.h>
+
 #include <ufe/path.h>
 #include <ufe/undoableCommand.h>
 

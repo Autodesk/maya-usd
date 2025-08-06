@@ -19,6 +19,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
 
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 

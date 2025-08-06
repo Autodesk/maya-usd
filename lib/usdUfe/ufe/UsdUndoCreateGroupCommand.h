@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOCREATEGROUPCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/hierarchy.h>

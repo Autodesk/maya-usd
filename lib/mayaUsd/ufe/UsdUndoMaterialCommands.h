@@ -18,6 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE

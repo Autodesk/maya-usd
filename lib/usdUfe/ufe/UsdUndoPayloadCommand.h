@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOPAYLOADCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/payloads.h>

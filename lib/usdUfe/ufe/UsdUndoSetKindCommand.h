@@ -17,6 +17,7 @@
 #define USDUFE_UNDO_SET_KIND_COMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/base/tf/token.h>

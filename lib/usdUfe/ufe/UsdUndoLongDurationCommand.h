@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOLONGDURATIONCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 
 #include <ufe/undoableCommand.h>
 

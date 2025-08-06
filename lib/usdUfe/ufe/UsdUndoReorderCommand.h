@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOREORDERCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>

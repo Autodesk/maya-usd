@@ -18,6 +18,7 @@
 //
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdClipboard.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>

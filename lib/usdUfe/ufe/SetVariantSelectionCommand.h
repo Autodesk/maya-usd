@@ -17,6 +17,7 @@
 #define USDUFE_SETVARIANTSELECTIONCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/variantSets.h>
