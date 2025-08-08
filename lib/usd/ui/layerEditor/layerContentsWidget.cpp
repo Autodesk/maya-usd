@@ -51,6 +51,10 @@ void LayerContentsWidget::createUI()
 void LayerContentsWidget::setLayer(const PXR_NS::SdfLayerRefPtr in_layer)
 {
     if (_layerContents) {
+        // Always clear the contents first as an input layer of nullptr means clear.
+        // Note: that will be the case when there is no layer selected, or if there is
+        //       more than one layer selected. We only display the contents of a layer
+        //       when there is exactly one layer selected.
         _layerContents->clear();
         if (nullptr != in_layer) {
             std::string layerText;
