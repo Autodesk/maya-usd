@@ -104,6 +104,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("ClearDefaultPrimCommand", no_init)
             .def("__init__", make_constructor(ClearDefaultPrimCommandInit))
             .def("execute", &UsdUfe::UsdUndoClearDefaultPrimCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoClearDefaultPrimCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoClearDefaultPrimCommand::undo)
             .def("redo", &UsdUfe::UsdUndoClearDefaultPrimCommand::redo);
     }
@@ -112,6 +115,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("SetDefaultPrimCommand", no_init)
             .def("__init__", make_constructor(SetDefaultPrimCommandInit))
             .def("execute", &UsdUfe::UsdUndoSetDefaultPrimCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoSetDefaultPrimCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoSetDefaultPrimCommand::undo)
             .def("redo", &UsdUfe::UsdUndoSetDefaultPrimCommand::redo);
     }
@@ -120,6 +126,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("AddPayloadCommand", no_init)
             .def("__init__", make_constructor(AddPayloadCommandInit))
             .def("execute", &UsdUfe::UsdUndoAddPayloadCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoAddPayloadCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoAddPayloadCommand::undo)
             .def("redo", &UsdUfe::UsdUndoAddPayloadCommand::redo);
     }
@@ -128,6 +137,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("ClearPayloadsCommand", no_init)
             .def("__init__", make_constructor(ClearPayloadsCommandInit))
             .def("execute", &UsdUfe::UsdUndoClearPayloadsCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoClearPayloadsCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoClearPayloadsCommand::undo)
             .def("redo", &UsdUfe::UsdUndoClearPayloadsCommand::redo);
     }
@@ -136,6 +148,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("AddReferenceCommand", no_init)
             .def("__init__", make_constructor(AddReferenceCommandInit))
             .def("execute", &UsdUfe::UsdUndoAddReferenceCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoAddReferenceCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoAddReferenceCommand::undo)
             .def("redo", &UsdUfe::UsdUndoAddReferenceCommand::redo);
     }
@@ -144,6 +159,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("ClearReferencesCommand", no_init)
             .def("__init__", make_constructor(ClearReferencesCommandInit))
             .def("execute", &UsdUfe::UsdUndoClearReferencesCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoClearReferencesCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoClearReferencesCommand::undo)
             .def("redo", &UsdUfe::UsdUndoClearReferencesCommand::redo);
     }
@@ -152,6 +170,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("ReloadReferenceCommand", no_init)
             .def("__init__", make_constructor(ReloadReferenceCommand))
             .def("execute", &UsdUfe::UsdUndoReloadRefCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoReloadRefCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoReloadRefCommand::undo)
             .def("redo", &UsdUfe::UsdUndoReloadRefCommand::redo);
     }
@@ -160,6 +181,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("ToggleActiveCommand", no_init)
             .def("__init__", make_constructor(ToggleActiveCommandInit))
             .def("execute", &UsdUfe::UsdUndoToggleActiveCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoToggleActiveCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoToggleActiveCommand::undo)
             .def("redo", &UsdUfe::UsdUndoToggleActiveCommand::redo);
     }
@@ -168,6 +192,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("ToggleInstanceableCommand", no_init)
             .def("__init__", make_constructor(ToggleInstanceableCommandInit))
             .def("execute", &UsdUfe::UsdUndoToggleInstanceableCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoToggleInstanceableCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoToggleInstanceableCommand::undo)
             .def("redo", &UsdUfe::UsdUndoToggleInstanceableCommand::redo);
     }
@@ -176,6 +203,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("SetKindCommand", no_init)
             .def("__init__", make_constructor(SetKindCommandInit))
             .def("execute", &UsdUfe::UsdUndoSetKindCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoSetKindCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoSetKindCommand::undo)
             .def("redo", &UsdUfe::UsdUndoSetKindCommand::redo);
     }
@@ -184,6 +214,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("LoadPayloadCommand", no_init)
             .def("__init__", make_constructor(LoadPayloadCommandInit))
             .def("execute", &UsdUfe::UsdUndoLoadPayloadCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoLoadPayloadCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoLoadPayloadCommand::undo)
             .def("redo", &UsdUfe::UsdUndoLoadPayloadCommand::redo);
     }
@@ -192,6 +225,9 @@ void wrapCommands()
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("UnloadPayloadCommand", no_init)
             .def("__init__", make_constructor(UnloadPayloadCommandInit))
             .def("execute", &UsdUfe::UsdUndoUnloadPayloadCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoUnloadPayloadCommand::commandString)
+#endif
             .def("undo", &UsdUfe::UsdUndoUnloadPayloadCommand::undo)
             .def("redo", &UsdUfe::UsdUndoUnloadPayloadCommand::redo);
     }
