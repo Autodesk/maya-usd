@@ -254,6 +254,9 @@ static void doInsertion(
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : dstLayer;
 
+        if (isInSession)
+            SdfJustCreatePrimInLayer(targetLayer, dstUsdPath);
+
         const bool result = (isFirst || isInSession)
             ? SdfCopySpec(layer, path, targetLayer, dstUsdPath)
             : UsdUfe::mergePrims(stage, layer, path, stage, targetLayer, dstUsdPath, options);
