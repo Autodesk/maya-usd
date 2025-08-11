@@ -310,10 +310,13 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
         return reportError(status);
 
     const MStringArray exportOptions = parseTextArrayArg(argData, kExportOptionsFlag);
-    const bool         hasExportOptions = exportOptions.length() > 0;
+    const auto         numExportOptions = exportOptions.length();
 
-    if (hasExportOptions && (exportOptions.length() != dagPaths.length()))
-        reportError("You must provide the same number of dag objets and exportOptions");
+    if ((numExportOptions > 1) && (numExportOptions != dagPaths.length())) {
+        reportError("When providing multiple exportOptions, the number of exportOptions "
+                    "must match the number of dag objects.");
+        return MS::kFailure;
+    }
 
     PXR_NS::VtDictionary commandUserArgs;
     if (argData.isFlagSet(kIgnoreVariantsFlag)) {
@@ -328,9 +331,12 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     for (unsigned int i = 0; i < dagPaths.length(); i++) {
         PXR_NS::VtDictionary dagUserArgs;
 
-        if (hasExportOptions) {
+        if (numExportOptions > 0) {
+            // Fewer exportOptions than dag objects means one applies to all objects.
+            const auto& dagExportOptions = exportOptions[std::min(i, numExportOptions - 1)];
+
             status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
-                exportOptions[i], &dagUserArgs);
+                dagExportOptions, &dagUserArgs);
 
             CHECK_MSTATUS_AND_RETURN_IT(status);
         }
@@ -350,7 +356,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
 
         auto&      manager = PXR_NS::PrimUpdaterManager::getInstance();
         const auto mergedPaths = manager.mergeToUsd(mergeArgsVect);
-        status = mergedPaths.size() == mergeArgsVect.size() ? MS::kSuccess : MS::kFailure;
+        status = (mergedPaths.size() == mergeArgsVect.size()) ? MS::kSuccess : MS::kFailure;
 
         if (status == MS::kSuccess) {
             // Select the merged prims.  See DuplicateCommand::doIt() comments.
