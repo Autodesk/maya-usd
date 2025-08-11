@@ -317,7 +317,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         if relativePath:
             if self.stage.GetRootLayer().anonymous:
                 self.assertNotIn('payload = @testCacheToUsd/cache.usda', self.stage.GetRootLayer().ExportToString())
-                self.assertRegex(self.stage.GetRootLayer().ExportToString(), 'payload = @.*testCacheToUsd/cache.usda')
+                self.assertIn('payload = @' + cacheFile, self.stage.GetRootLayer().ExportToString())
                 self.makeRootLayerNotAnonymous()
                 mayaUsd.lib.Util.updatePostponedRelativePaths(self.stage.GetRootLayer())
                 
