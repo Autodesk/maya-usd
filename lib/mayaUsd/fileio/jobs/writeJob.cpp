@@ -117,30 +117,11 @@ static TfToken _GetFallbackExtension(const TfToken& compatibilityMode)
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
-/// Fallback USD unit (centimeters).
-static double _GetMetersPerUnitFallback() { return UsdGeomLinearUnits::centimeters; }
-
-/// Converts Maya units to metersPerUnit values used in USD metadata.
-static double _ConvertMayaUnitToMetersPerUnit(MDistance::Unit mayaUnit)
-{
-    switch (mayaUnit) {
-    case MDistance::kMillimeters: return UsdGeomLinearUnits::millimeters;
-    case MDistance::kCentimeters: return UsdGeomLinearUnits::centimeters;
-    case MDistance::kMeters: return UsdGeomLinearUnits::meters;
-    case MDistance::kKilometers: return UsdGeomLinearUnits::kilometers;
-    case MDistance::kInches: return UsdGeomLinearUnits::inches;
-    case MDistance::kFeet: return UsdGeomLinearUnits::feet;
-    case MDistance::kYards: return UsdGeomLinearUnits::yards;
-    case MDistance::kMiles: return UsdGeomLinearUnits::miles;
-    default: return _GetMetersPerUnitFallback();
-    }
-}
-
 /// Converts export option tokens to metersPerUnit values used in USD metadata.
 static double _WantedUSDMetersPerUnit(const TfToken& unitOption)
 {
     if (unitOption == UsdMayaJobExportArgsTokens->mayaPrefs) {
-        return _ConvertMayaUnitToMetersPerUnit(MDistance::uiUnit());
+        return UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::uiUnit());
     }
 
     static const std::map<TfToken, double> unitsConversionMap
@@ -159,7 +140,7 @@ static double _WantedUSDMetersPerUnit(const TfToken& unitOption)
             { UsdMayaJobExportArgsTokens->mile, UsdGeomLinearUnits::miles } };
 
     const auto iter = unitsConversionMap.find(unitOption);
-    return (iter == unitsConversionMap.end()) ? _GetMetersPerUnitFallback() : iter->second;
+    return (iter == unitsConversionMap.end()) ? UsdGeomLinearUnits::centimeters : iter->second;
 }
 
 /// Converts upAxis export option tokens to USD upAxis tokens.
@@ -237,7 +218,8 @@ public:
 private:
     static std::string _prepareUnitsCommands(double metersPerUnit)
     {
-        const double mayaMetersPerUnit = _ConvertMayaUnitToMetersPerUnit(MDistance::internalUnit());
+        const double mayaMetersPerUnit
+            = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
 
         // If the Maya data unit is already the right one, we dont have to modify the Maya scene.
         if (mayaMetersPerUnit == metersPerUnit)
