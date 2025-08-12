@@ -37,7 +37,7 @@ Ufe::Light2::Ptr UsdLight2Handler::light(const Ufe::SceneItem::Ptr& item) const
     assert(usdItem);
 #endif
 
-    // Test if this item is an area light. 
+    // Test if this item is an area light.
     // For the time being, we only handle Rect Light here.
     PXR_NS::UsdLuxRectLight lightSchema(usdItem->prim());
     if (!lightSchema)
