@@ -161,6 +161,13 @@ if (UFE_CAMERAHANDLER_HAS_FINDALL)
     )
 endif()
 
+if (UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET=1
+    )
+endif()
+
 if(UFE_CAMERAHANDLER_HAS_FINDALL)
     target_sources(${PROJECT_NAME}
         PRIVATE

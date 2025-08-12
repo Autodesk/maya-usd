@@ -396,6 +396,107 @@ class BatchOpsHandlerTestCase(unittest.TestCase):
         self.assertTrue(dNgPrim.HasProperty("inputs:file4:varname"))
         self.assertTrue(dNgPrim.HasProperty("outputs:baseColor"))
 
+    @unittest.skipUnless(os.getenv('UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET', 'FALSE') == 'TRUE', 'Test requires kDstParentPath option.')
+    def testDuplicatedToTarget_invalidDstParentPath(self):
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        materialItem = ufeUtils.createUfeSceneItem(shapeNode, '/mtl/ss3SG')
+        childItem = ufe.Hierarchy.createItem(materialItem.path() + 'ss3')
+
+        # Get the USD BatchOpsHandler
+        kDstParentPath = ufe.BatchOpsHandler.kDstParentPath
+        batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(materialItem.runTimeId())
+        self.assertIsNotNone(batchOpsHandler)
+
+        # Calling the method with a non-existent path should return None.
+        nonExistentPath = materialItem.path() + "nonExistentItem"
+        nonExistentPathString = ufe.PathString.string(nonExistentPath)
+        self.assertIsNone(batchOpsHandler.duplicateSelectionCmd_(ufe.Selection(childItem), {kDstParentPath: nonExistentPathString}))
+
+        # Calling the method with an incorrect type should return None.
+        self.assertIsNone(batchOpsHandler.duplicateSelectionCmd_(ufe.Selection(childItem), {kDstParentPath: False}))
+
+        # Calling the method with an empty selection should return None.
+        validParentPathString = ufe.PathString.string(materialItem.path())
+        self.assertIsNone(batchOpsHandler.duplicateSelectionCmd_(ufe.Selection(), {kDstParentPath: validParentPathString}))
+
+    @unittest.skipUnless(os.getenv('UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET', 'FALSE') == 'TRUE', 'Test requires kDstParentPath option.')
+    def testDuplicateToTarget_validDstParentPath(self):
+        """Test duplicating a selection of items from multiple locations to a target location.
+           Verify that connections between the items are maintained but external connections are
+           removed."""
+        testFile = testUtils.getTestScene('MaterialX', 'BatchOpsTestScene.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        materialItem1 = ufeUtils.createUfeSceneItem(shapeNode, '/mtl/ss3SG')
+        materialItem2 = ufeUtils.createUfeSceneItem(shapeNode, '/mtl/ss4SG')
+
+        # Items to duplicate:
+        ss1 = ufe.Hierarchy.createItem(materialItem1.path() + 'ss3')
+        compound1 = ufe.Hierarchy.createItem(materialItem1.path() + 'MayaNG_ss3SG')
+        ss2 = ufe.Hierarchy.createItem(materialItem2.path() + 'ss4')
+        compound2 = ufe.Hierarchy.createItem(materialItem2.path() + 'MayaNG_ss4SG')
+        compound2Child1 = ufe.Hierarchy.createItem(compound2.path() + 'place2dTexture4')
+        compound2Child2 = ufe.Hierarchy.createItem(compound2.path() + 'file4')
+        selection = ufe.Selection([ss1, compound1, ss2, compound2Child1, compound2Child2])
+
+        # Duplicate this selection to `compound2`.
+        dstParentPathString = ufe.PathString.string(compound2.path())
+        duplicateCmd = ufe.BatchOpsHandler.duplicateSelectionCmd(selection, {ufe.BatchOpsHandler.kDstParentPath: dstParentPathString})
+        self.assertIsNotNone(duplicateCmd)
+        numChildrenBefore = len(ufe.Hierarchy.hierarchy(compound2).children())
+        duplicateCmd.execute()
+        numChildrenAfter = len(ufe.Hierarchy.hierarchy(compound2).children())
+
+        # Delete the materials and undo to make all scene items go stale. Undoing and redoing the 
+        # duplicate command should still work correctly afterwards.
+        deleteMaterial1Cmd = ufe.SceneItemOps.sceneItemOps(materialItem1).deleteItemCmdNoExecute()
+        deleteMaterial1Cmd.execute()
+        deleteMaterial1Cmd.undo()
+        deleteMaterial2Cmd = ufe.SceneItemOps.sceneItemOps(materialItem2).deleteItemCmdNoExecute()
+        deleteMaterial2Cmd.execute()
+        deleteMaterial2Cmd.undo()
+
+        # Undo should delete the duplicated items and redo should recreate them.
+        compound2Hierarchy = ufe.Hierarchy.hierarchy(ufe.Hierarchy.createItem(compound2.path()))
+        duplicateCmd.undo()
+        self.assertEqual(numChildrenBefore, len(compound2Hierarchy.children()))
+        duplicateCmd.redo()
+        self.assertEqual(numChildrenAfter, len(compound2Hierarchy.children()))
+
+        # Verify that all duplicated items are children of the specified parent item.
+        self.assertEqual(compound2.path(), duplicateCmd.targetItem(ss1.path()).path().pop())
+        self.assertEqual(compound2.path(), duplicateCmd.targetItem(compound1.path()).path().pop())
+        self.assertEqual(compound2.path(), duplicateCmd.targetItem(ss2.path()).path().pop())
+        self.assertEqual(compound2.path(), duplicateCmd.targetItem(compound2Child1.path()).path().pop())
+        self.assertEqual(compound2.path(), duplicateCmd.targetItem(compound2Child2.path()).path().pop())
+
+        # Verify that the connections of the duplicated items are correct. Connections between the
+        # items should be maintained but external connections should be removed. The following
+        # connections are expected between the duplicated items:
+        # - compound1 -> ss1
+        # - compound1/someChild -> compound1
+        # - compound2Child1 -> compound2Child2
+        ch = ufe.RunTimeMgr.instance().connectionHandler(materialItem1.runTimeId())
+
+        ss1Connections = ch.sourceConnections(duplicateCmd.targetItem(ss1.path())).allConnections()
+        self.assertEqual(len(ss1Connections), 1)
+        self.assertEqual(ss1Connections[0].src.path, duplicateCmd.targetItem(compound1.path()).path())
+
+        compound1Connections = ch.sourceConnections(duplicateCmd.targetItem(compound1.path())).allConnections()
+        self.assertEqual(len(compound1Connections), 1)
+        self.assertEqual(compound1Connections[0].src.path.pop(), duplicateCmd.targetItem(compound1.path()).path())
+
+        ss2Connections = ch.sourceConnections(duplicateCmd.targetItem(ss2.path())).allConnections()
+        self.assertEqual(len(ss2Connections), 0)
+
+        child1Connections = ch.sourceConnections(duplicateCmd.targetItem(compound2Child1.path())).allConnections()
+        self.assertEqual(len(child1Connections), 0)
+
+        child2Connections = ch.sourceConnections(duplicateCmd.targetItem(compound2Child2.path())).allConnections()
+        self.assertEqual(len(child2Connections), 1)
+        self.assertEqual(child2Connections[0].src.path, duplicateCmd.targetItem(compound2Child1.path()).path())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

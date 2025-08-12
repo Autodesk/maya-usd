@@ -175,6 +175,7 @@ foreach(script ${TEST_SCRIPT_FILES})
             "UFE_SCENEITEM_HAS_METADATA=${UFE_SCENEITEM_HAS_METADATA}"
             "HAS_LOOKDEVXUSD=${BUILD_LOOKDEVXUSD_LIBRARY}"
             "UFE_HAS_UNSIGNED_INT=${UFE_HAS_UNSIGNED_INT}"
+            "UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET=${UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET}"
     )
 
     # Add a ctest label to these tests for easy filtering.
