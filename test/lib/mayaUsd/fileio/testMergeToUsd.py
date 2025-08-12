@@ -305,7 +305,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         verifyMergeIsUndone()
 
         # Merge edits back to USD in a single call.
-        cmds.mayaUsdMergeToUsd(aMayaPathStr, bMayaPathStr, exportOptions=("", ""))
+        cmds.mayaUsdMergeToUsd(aMayaPathStr, bMayaPathStr)
         verifyMergeToUsd()
 
         cmds.undo()
@@ -313,6 +313,50 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         cmds.redo()
         verifyMergeToUsd()
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testBatchedMergeToUsdWithExportOptions(self):
+        '''Merge multiple dags back to USD in a single mayaUsdMergeToUsd call without or with single or multiple export options'''
+        (_,
+         _, _, aUsdUfePathStr, _, _,
+         _, _, bUsdUfePathStr, _, _) = createDuoXformScene()
+        allUsdUfePaths = [aUsdUfePathStr, bUsdUfePathStr]
+
+        def editAsMaya(usdPaths):
+            mayaPaths = []
+            for usdPath in usdPaths:
+                cmds.mayaUsdEditAsMaya(usdPath)
+                mayaPaths.append(ufe.PathString.string(ufe.GlobalSelection.get().front().path()))
+            return mayaPaths
+
+        def verifyMergedToUsd(mayaPaths, usdPaths):
+            self.assertListEqual(
+                usdPaths,
+                [ufe.PathString.string(item.path()) for item in ufe.GlobalSelection.get()])
+
+            for mayaPath in mayaPaths:
+                with self.assertRaises(RuntimeError):
+                    om.MSelectionList().add(mayaPath)
+
+        # Verify that we can mergeToUsd without options.
+        mayaPaths = editAsMaya(allUsdUfePaths)
+        cmds.mayaUsdMergeToUsd(*mayaPaths)
+        verifyMergedToUsd(mayaPaths, allUsdUfePaths)
+
+        # Verify that mayaUsdMergeToUsd can merge with single option string applying to all objects.
+        mayaPaths = editAsMaya(allUsdUfePaths)
+        cmds.mayaUsdMergeToUsd(*mayaPaths, exportOptions='shadingMode=none')
+        verifyMergedToUsd(mayaPaths, allUsdUfePaths)
+
+        # Verify that mayaUsdMergeToUsd can merge with option strings per dag object.
+        mayaPaths = editAsMaya(allUsdUfePaths)
+        cmds.mayaUsdMergeToUsd(*mayaPaths, exportOptions=['shadingMode=none'] * len(mayaPaths))
+        verifyMergedToUsd(mayaPaths, allUsdUfePaths)
+
+        # Verify that mayaUsdMergeToUsd does not accept multiple options that do not match number of dags.
+        mayaPaths = editAsMaya(allUsdUfePaths)
+        with self.assertRaises(RuntimeError):
+            cmds.mayaUsdMergeToUsd(*mayaPaths, exportOptions=['shadingMode=none'] * 10)
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testMergeToUsdToNonRootTargetInSessionLayer(self):
