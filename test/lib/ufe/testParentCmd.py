@@ -1244,11 +1244,15 @@ class ParentCmdTestCase(unittest.TestCase):
 
         verifySessionData(rootCapsuleUSDPath)
 
+        self.assertIsNone(sessionLayer.GetPrimAtPath(xformName))
+
         with Usd.EditContext(stage, stage.GetRootLayer()):
             cmds.parent(rootCapsuleUFEPath, xformUFEPathStr)
 
         newRootCapsuleUSDPath = xformName + rootCapsuleUSDPath
         self.assertTrue(stage.GetPrimAtPath(newRootCapsuleUSDPath))
+
+        self.assertIsNotNone(sessionLayer.GetPrimAtPath(xformName))
 
         # This is the key bit: the session data should still be there.
         verifySessionData(newRootCapsuleUSDPath)

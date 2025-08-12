@@ -147,6 +147,9 @@ void UsdUndoDuplicateCommand::execute()
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : dstLayer;
 
+        if (isInSession)
+            SdfJustCreatePrimInLayer(targetLayer, _usdDstPath);
+
         const bool result = (isFirst || isInSession)
             ? SdfCopySpec(layer, localPath, targetLayer, _usdDstPath)
             : UsdUfe::mergePrims(stage, layer, localPath, _dstStage, targetLayer, _usdDstPath);
