@@ -309,15 +309,6 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    const MStringArray exportOptions = parseTextArrayArg(argData, kExportOptionsFlag);
-    const auto         numExportOptions = exportOptions.length();
-
-    if ((numExportOptions > 1) && (numExportOptions != dagPaths.length())) {
-        reportError("When providing multiple exportOptions, the number of exportOptions "
-                    "must match the number of dag objects.");
-        return MS::kFailure;
-    }
-
     PXR_NS::VtDictionary commandUserArgs;
     if (argData.isFlagSet(kIgnoreVariantsFlag)) {
         const int index = 0;
@@ -325,25 +316,40 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
             = argData.flagArgumentBool(kIgnoreVariantsFlag, index);
     }
 
+    // Parse exportOptions strings, decoding them to UsdMayaJobExportArgs dictionaries.
+    std::vector<PXR_NS::VtDictionary> dagUserArgs;
+    {
+        const MStringArray exportOptions = parseTextArrayArg(argData, kExportOptionsFlag);
+        const auto         numExportOptions = exportOptions.length();
+
+        if (numExportOptions == 0) {
+            dagUserArgs.push_back(commandUserArgs);
+        } else {
+            if ((numExportOptions != 1) && (numExportOptions != dagPaths.length())) {
+                reportError("When providing multiple exportOptions, the number of exportOptions "
+                            "must match the number of dag objects.");
+                return MS::kFailure;
+            }
+
+            dagUserArgs.resize(numExportOptions);
+            for (unsigned int i = 0; i < numExportOptions; i++) {
+                status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
+                    exportOptions[i], &dagUserArgs[i]);
+
+                CHECK_MSTATUS_AND_RETURN_IT(status);
+
+                PXR_NS::VtDictionaryOver(commandUserArgs, &dagUserArgs[i]);
+            }
+        }
+    }
+
+    // Create the merge operations args for each given dagPath.
     std::vector<PushToUsdArgs> mergeArgsVect;
     mergeArgsVect.reserve(dagPaths.length());
 
-    for (unsigned int i = 0; i < dagPaths.length(); i++) {
-        PXR_NS::VtDictionary dagUserArgs;
-
-        if (numExportOptions > 0) {
-            // Fewer exportOptions than dag objects means one applies to all objects.
-            const auto& dagExportOptions = exportOptions[std::min(i, numExportOptions - 1)];
-
-            status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
-                dagExportOptions, &dagUserArgs);
-
-            CHECK_MSTATUS_AND_RETURN_IT(status);
-        }
-
-        VtDictionaryOver(commandUserArgs, &dagUserArgs);
-
-        auto mergeArgs = PXR_NS::PushToUsdArgs::forMerge(dagPaths[i], dagUserArgs);
+    for (std::size_t i = 0; i < dagPaths.length(); i++) {
+        const auto& userArgs = dagUserArgs.at(std::min(i, dagUserArgs.size() - 1));
+        auto        mergeArgs = PXR_NS::PushToUsdArgs::forMerge(dagPaths[i], userArgs);
         if (!mergeArgs)
             return reportError(MS::kInvalidParameter);
 
