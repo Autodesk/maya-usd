@@ -348,8 +348,10 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     mergeArgsVect.reserve(dagPaths.length());
 
     for (std::size_t i = 0; i < dagPaths.length(); i++) {
+        // Fewer exportOptions than dag objects means one applies to all objects.
         const auto& userArgs = dagUserArgs.at(std::min(i, dagUserArgs.size() - 1));
         auto        mergeArgs = PXR_NS::PushToUsdArgs::forMerge(dagPaths[i], userArgs);
+
         if (!mergeArgs)
             return reportError(MS::kInvalidParameter);
 
