@@ -66,6 +66,8 @@ MObject GizmoShape::aEmitDiffuse;
 MObject GizmoShape::aEmitSpecular;
 MObject GizmoShape::aDecayRate;
 MObject GizmoShape::aLocatorScale;
+MObject GizmoShape::aNormalize;
+MObject GizmoShape::aUseRayTraceShadows;
 
 // Output attributes
 MObject GizmoShape::aOutColor;
@@ -157,6 +159,14 @@ MStatus GizmoShape::initialize()
     MAKE_INPUT(nAttr);
     CHECK_MSTATUS(nAttr.setDefault(0));
 
+    aNormalize = nAttr.create("normalize", "nrm", MFnNumericData::kBoolean);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(true));
+
+    aUseRayTraceShadows = nAttr.create("useRayTraceShadows", "urs", MFnNumericData::kBoolean);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(true));
+
     CHECK_MSTATUS(addAttribute(aColor));
     CHECK_MSTATUS(addAttribute(aIntensity));
     CHECK_MSTATUS(addAttribute(aExposure));
@@ -164,6 +174,8 @@ MStatus GizmoShape::initialize()
     CHECK_MSTATUS(addAttribute(aEmitSpecular));
     CHECK_MSTATUS(addAttribute(aLocatorScale));
     CHECK_MSTATUS(addAttribute(aDecayRate));
+    CHECK_MSTATUS(addAttribute(aNormalize));
+    CHECK_MSTATUS(addAttribute(aUseRayTraceShadows));
 
     // Note that "oc" conflicts with objectColor so we use something else.
     aOutColor = nAttr.createColor("outColor", "ocl");

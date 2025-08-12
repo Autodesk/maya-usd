@@ -59,6 +59,19 @@ if (UFE_LIGHTS_SUPPORT)
     endif()
 endif()
 
+if (UFE_LIGHTS2_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdLight2.cpp
+            UsdLight2Handler.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_LIGHTS2_SUPPORT=1
+    )
+endif()
+
 if (UFE_MATERIALS_SUPPORT)
     target_sources(${PROJECT_NAME}
         PRIVATE
@@ -224,6 +237,13 @@ if (UFE_LIGHTS_SUPPORT)
     list(APPEND HEADERS
         UsdLight.h
         UsdLightHandler.h
+    )
+endif()
+
+if (UFE_LIGHTS2_SUPPORT)
+    list(APPEND HEADERS
+        UsdLight2.h
+        UsdLight2Handler.h
     )
 endif()
 

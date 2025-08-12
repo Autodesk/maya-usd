@@ -49,6 +49,10 @@
 #include <mayaUsd/ufe/UsdLightHandler.h>
 #endif
 
+#if UFE_LIGHTS2_SUPPORT
+#include <mayaUsd/ufe/UsdLight2Handler.h>
+#endif
+
 #if UFE_MATERIALS_SUPPORT
 #include <mayaUsd/ufe/UsdMaterialHandler.h>
 #endif
@@ -255,6 +259,10 @@ MStatus initialize()
     handlers.lightHandler = UsdLightHandler::create();
 #endif
 
+#if UFE_LIGHTS2_SUPPORT
+    handlers.light2Handler = UsdLight2Handler::create();
+#endif
+
 #if UFE_MATERIALS_SUPPORT
     handlers.materialHandler = UsdMaterialHandler::create();
 #endif
@@ -327,6 +335,10 @@ MStatus initialize()
 #ifdef UFE_V4_FEATURES_AVAILABLE
     if (handlers.lightHandler)
         runTimeMgr.setLightHandler(usdRtid, handlers.lightHandler);
+#if UFE_LIGHTS2_SUPPORT
+    if (handlers.light2Handler)
+        runTimeMgr.setLight2Handler(usdRtid, handlers.light2Handler);
+#endif
     if (handlers.materialHandler)
         runTimeMgr.setMaterialHandler(usdRtid, handlers.materialHandler);
     if (handlers.nodeDefHandler)
@@ -357,6 +369,9 @@ MStatus initialize()
 
 #if UFE_LIGHTS_SUPPORT
     runTimeMgr.setLightHandler(usdRtid, UsdLightHandler::create());
+#endif
+#if UFE_LIGHTS2_SUPPORT
+    runTimeMgr.setLight2Handler(usdRtid, UsdLight2Handler::create());
 #endif
 #if UFE_MATERIALS_SUPPORT
     runTimeMgr.setMaterialHandler(usdRtid, UsdMaterialHandler::create());
