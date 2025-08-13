@@ -16,11 +16,11 @@
 
 #include "UsdUndoDuplicateSelectionCommand.h"
 
-#include "ufe/hierarchy.h"
-
 #include <usdUfe/ufe/UsdUndoDuplicateCommand.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+
+#include <ufe/hierarchy.h>
 
 namespace USDUFE_NS_DEF {
 

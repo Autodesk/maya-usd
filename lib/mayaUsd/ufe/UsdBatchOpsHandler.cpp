@@ -18,9 +18,11 @@
 #include <mayaUsd/ufe/UsdUndoDuplicateSelectionCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
-#include <usdUfe/ufe/UsdUndoDuplicateSelectionCommand.h>
-
 #include <ufe/pathString.h>
+
+#ifdef UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET
+#include <usdUfe/ufe/UsdUndoDuplicateSelectionCommand.h>
+#endif
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
