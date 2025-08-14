@@ -253,7 +253,11 @@ MStatus initializePlugin(MObject obj)
         MayaUsd::GizmoShape::creator,
         MayaUsd::GizmoShape::initialize,
         nullptr,
+#if UFE_LIGHTS2_SUPPORT
         &MayaUsd::GizmoShape::dbClassificationRect);
+#else
+        &MayaUsd::GizmoShape::dbClassificationDefault);
+#endif
     CHECK_MSTATUS(status);
 
     status = plugin.registerShape(

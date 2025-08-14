@@ -99,8 +99,10 @@ private:
     static MObject aEmitSpecular;
     static MObject aLocatorScale;
     static MObject aDecayRate;
+#if UFE_LIGHTS2_SUPPORT
     static MObject aNormalize;
     static MObject aUseRayTraceShadows;
+#endif
 
     // General output color attribute
     static MObject aOutColor;
