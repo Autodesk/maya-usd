@@ -388,6 +388,7 @@ __mayaUSDStringResources = {
     "KAssetResolver": "Asset Resolver",
     "KIncludeMayaTokens": "Include Maya Project Tokens",
     "KIncludeMayaTokensAnn": "Enable this option to include Maya project tokens in the USD Asset Resolver. Note: Changing this setting will refresh the Asset Resolver.",
+    "KArMappingFile": "Mapping File",
     "kSaveLayerUsdFileFormatAnn": "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary) or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this preference.",
     "kSaveLayerUsdFileFormatSbm": "Select whether the .usd file is written out in binary or ASCII",
     "kConfirmExistFileSave": "Confirm Save of Existing Files",

@@ -128,8 +128,6 @@ global proc mayaUsd_AssetResolverMayaToken()
 	}
 }
 
-
-
 global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 {
 	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
@@ -343,9 +341,44 @@ global proc mayaUsd_PrefCreateTab()
 			-v1 false	// Default -> not checked
 			-changeCommand mayaUsd_AssetResolverMayaToken
 			usdAssetResolverMayaTokens;
+	
+		rowLayout
+			-nc 3
+			-adj 2
+			-columnAttach 1 "right" 0
+			-columnAttach 2 "both" 0
+			-columnAttach 3 "left" 5
+			-columnWidth 1 142      // label width (match your checkbox label width)
+			-columnWidth 3 28       // browse button width
+			fileRow;
+
+			text -label `uiRes("m_scriptEditorPanel.kFile")` -ann `getMayaUsdString("KArMappingFile")`;
+			textField -text (`getenv "ADSK_AR_MAPPING_FILE"`) mayaUsdArMappingFilePath;
+			symbolButton -image "navButtonBrowse.png" -c "mayaUsdArMappingFileBrowser()" browseBtn;
 	setUITemplate -popTemplate;
 
 	mayaUsd_PrefUpdate();
+}
+
+global proc mayaUsdArMappingFilePathUpdate()
+{
+	string $mayaUsdArMappingFilePath = `textField -q -fileName mayaUsdArMappingFilePath`;
+
+	python("import mayaUsd_AdskAssetResolver; mayaUsd_AdskAssetResolver.load_mappingfile('" + $mayaUsdArMappingFilePath + "')");
+}
+
+global proc  mayaUsdArMappingFileBrowser()
+{
+    string $cmd = "mappingFileLocationBrowserCallBack";
+    string $open = "Select";
+    fileBrowser ($cmd, $open, "", 0); // 0 here indicates Open File Dialog
+}
+
+global proc int mappingFileLocationBrowserCallBack(string $path, string $fileType)
+{
+    textField -e -fileName $path mayaUsdArMappingFilePath;
+    mayaUsdArMappingFilePathUpdate();
+    return true;
 }
 
 global proc mayaUsd_PrefCreateFrameLayout()
