@@ -177,7 +177,7 @@ static MObject _WantedRenderLayerNode(const TfToken& renderLayerMode)
 
 MStatus _ActivateRenderLayer(const MObject& renderLayerNode)
 {
-    static const MString cmdFmt("editRenderLayerGlobals( -currentRenderLayer ^1s");
+    static const MString cmdFmt("editRenderLayerGlobals -currentRenderLayer ^1s");
     if (renderLayerNode != MFnRenderLayer::currentLayer()) {
         MStatus        status;
         MFnRenderLayer renderLayerFn(renderLayerNode, &status);
