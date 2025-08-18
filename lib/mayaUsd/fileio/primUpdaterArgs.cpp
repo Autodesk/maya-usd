@@ -15,28 +15,21 @@
 //
 #include "primUpdaterArgs.h"
 
+#include <mayaUsd/utils/utilDictionary.h>
+
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaPrimUpdaterArgsTokens, PXRUSDMAYA_UPDATER_ARGS_TOKENS);
 
-/// Extracts a bool at \p key from \p userArgs, or false if it can't extract.
-static bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
-{
-    if (!VtDictionaryIsHolding<bool>(userArgs, key)) {
-        TF_CODING_ERROR(
-            "Dictionary is missing required key '%s' or key is "
-            "not bool type",
-            key.GetText());
-        return false;
-    }
-    return VtDictionaryGet<bool>(userArgs, key);
-}
+using namespace MayaUsd::DictUtils;
 
 UsdMayaPrimUpdaterArgs::UsdMayaPrimUpdaterArgs(const VtDictionary& userArgs)
-    : _copyOperation(_Boolean(userArgs, UsdMayaPrimUpdaterArgsTokens->copyOperation))
-    , _ignoreVariants(_Boolean(userArgs, UsdMayaPrimUpdaterArgsTokens->ignoreVariants))
+    : _copyOperation(extractBoolean(userArgs, UsdMayaPrimUpdaterArgsTokens->copyOperation))
+    , _ignoreVariants(extractBoolean(userArgs, UsdMayaPrimUpdaterArgsTokens->ignoreVariants))
+    , _pushSelection(
+          extractVector<std::string>(userArgs, UsdMayaPrimUpdaterArgsTokens->pushSelection))
 {
 }
 
@@ -54,6 +47,7 @@ const VtDictionary& UsdMayaPrimUpdaterArgs::getDefaultDictionary()
     std::call_once(once, []() {
         d[UsdMayaPrimUpdaterArgsTokens->copyOperation] = false;
         d[UsdMayaPrimUpdaterArgsTokens->ignoreVariants] = false;
+        d[UsdMayaPrimUpdaterArgsTokens->pushSelection] = std::vector<VtValue>();
     });
 
     return d;

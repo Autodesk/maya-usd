@@ -552,18 +552,33 @@ PushExportResults pushExport(const std::vector<PushToUsdArgs>& pushArgsVect)
 
         fillUserArgsFileIfEmpty(userArgs, fileName);
 
-        UsdMayaUtil::MDagPathSet dagPaths;
-        MSelectionList           fullObjectList;
-        MDagPath                 dagPath;
+        MDagPath dagPath;
         {
             MFnDagNode fnDag;
             if (fnDag.setObject(pushArgs.srcMayaObject)) {
                 fnDag.getPath(dagPath);
+            }
+        }
+
+        // Populate the dag hierarchies to export.
+        MSelectionList           fullObjectList;
+        UsdMayaUtil::MDagPathSet dagPaths;
+
+        if (dagPath.isValid()) {
+            if (pushArgs.updaterArgs._pushSelection.empty()) {
+                // If the user did not provide a pushSelection, we export the whole dag branch.
                 dagPaths.insert(dagPath);
                 fullObjectList.add(dagPath);
             } else {
-                fullObjectList.add(pushArgs.srcMayaObject);
+                // Validate and populate the fullObjectList and the dagPaths from pushSelection.
+                for (const auto& nodeName : pushArgs.updaterArgs._pushSelection) {
+                    const auto status = fullObjectList.add(nodeName.c_str());
+                    CHECK_MSTATUS_AND_RETURN(status, PushExportResults());
+                }
+                UsdMayaUtil::GetFilteredSelectionToExport(false, fullObjectList, dagPaths);
             }
+        } else {
+            fullObjectList.add(pushArgs.srcMayaObject);
         }
 
         std::vector<double> timeSamples;
