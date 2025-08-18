@@ -49,6 +49,9 @@ static constexpr auto kExportOptionsFlagLong = "exportOptions";
 static constexpr auto kIgnoreVariantsFlag = "iva";
 static constexpr auto kIgnoreVariantsFlagLong = "ignoreVariants";
 
+static constexpr auto kSelectionFlag = "sel";
+static constexpr auto kSelectionFlagLong = "selection";
+
 // Reports an error to the Maya scripting console.
 void reportError(const MString& errorString) { MGlobal::displayError(errorString); }
 
@@ -286,6 +289,8 @@ MSyntax MergeToUsdCommand::createSyntax()
     syntax.addFlag(kExportOptionsFlag, kExportOptionsFlagLong, MSyntax::kString);
     syntax.makeFlagMultiUse(kExportOptionsFlag);
     syntax.addFlag(kIgnoreVariantsFlag, kIgnoreVariantsFlagLong, MSyntax::kBoolean);
+    syntax.addFlag(kSelectionFlag, kSelectionFlagLong, MSyntax::kString);
+    syntax.makeFlagMultiUse(kSelectionFlag);
     return syntax;
 }
 
@@ -310,10 +315,22 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
         return reportError(status);
 
     PXR_NS::VtDictionary commandUserArgs;
+
     if (argData.isFlagSet(kIgnoreVariantsFlag)) {
         const int index = 0;
         commandUserArgs[UsdMayaPrimUpdaterArgsTokens->ignoreVariants]
             = argData.flagArgumentBool(kIgnoreVariantsFlag, index);
+    }
+
+    const MStringArray pushSelectionArgVal = parseTextArrayArg(argData, kSelectionFlag);
+    if (pushSelectionArgVal.length() > 0) {
+        std::vector<PXR_NS::VtValue> pushSelection;
+        pushSelection.reserve(pushSelectionArgVal.length());
+
+        for (const auto& nodeName : pushSelectionArgVal)
+            pushSelection.emplace_back(std::string(nodeName.asChar(), nodeName.length()));
+
+        commandUserArgs[UsdMayaPrimUpdaterArgsTokens->pushSelection] = pushSelection;
     }
 
     // Parse exportOptions strings, decoding them to UsdMayaJobExportArgs dictionaries.
