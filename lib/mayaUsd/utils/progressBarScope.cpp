@@ -140,6 +140,8 @@ bool ProgressBarScope::isInterruptRequested() const
 
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProgressBarLoopScope);
 
+const int ProgressBarLoopScope::maxStepsForLoops;
+
 ProgressBarLoopScope::ProgressBarLoopScope(int nbLoopSteps)
     : ProgressBarScope(0) // Start with adding 0 steps
     , _nbLoopSteps(std::max(0, nbLoopSteps))
