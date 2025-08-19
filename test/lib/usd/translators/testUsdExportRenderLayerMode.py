@@ -29,17 +29,13 @@ from maya import OpenMayaRender as OMR
 
 import fixturesUtils
 
-# Initialize Maya standalone mode early, since we call cmds.mayaHasRenderSetup()
-# in a decorator on the test class, which will be evaluated *before*
-# setUpClass() is called.
-standalone.initialize('usd')
-
-@unittest.skipIf(cmds.mayaHasRenderSetup(), "USD render layer functionality can only be tested with Maya set to legacy render layer mode.")
 class testUsdExportRenderLayerMode(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.inputPath = fixturesUtils.setUpClass(__file__)
+        # USD render layer functionality can only be tested with Maya set to legacy render layer mode.
+        cmds.mayaHasRenderSetup(e=True, enableCurrentSession=False)
 
     @classmethod
     def tearDownClass(cls):
