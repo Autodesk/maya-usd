@@ -130,8 +130,6 @@ bool UsdLight2::hasMetadata(const std::string& key) const
     return metaData.find(key) != metaData.end();
 }
 
-// aram
-
 float getLight2Intensity(const UsdPrim& prim)
 {
     const UsdLuxLightAPI       lightSchema(prim);
