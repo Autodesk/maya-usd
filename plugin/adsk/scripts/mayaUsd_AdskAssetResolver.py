@@ -7,7 +7,7 @@ import AdskAssetResolver as ar
 
 def include_maya_project_tokens():
     ''' Include Maya project tokens in the USD Asset Resolver. '''
-    directory = cmds.workspace(q=True, directory=True)
+    directory = cmds.workspace(q=True, rd=True)
     tokenList = cmds.workspace(fileRuleList=True)
     mayaUsdResolver = ar.AssetResolverContextDataManager.RegisterContextData("MayaUSDExtension")
     if mayaUsdResolver is not None:

@@ -413,8 +413,8 @@ MStatus initializePlugin(MObject obj)
             && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
             MGlobal::executePythonCommand(
                 "try:\n"
-                "    import maya_AdskAssetResolver\n"
-                "    maya_AdskAssetResolver.include_maya_project_tokens()\n"
+                "    import mayaUsd_AdskAssetResolver\n"
+                "    mayaUsd_AdskAssetResolver.include_maya_project_tokens()\n"
                 "except:\n"
                 "    pass\n");
         }
