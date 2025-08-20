@@ -16,7 +16,7 @@
 
 #include "ufeHandlers.h"
 
-#include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
+#include <mayaUsd/ufe/MayaUsdSceneItemOpsHandler.h>
 
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
 
@@ -47,7 +47,7 @@ Ufe::NodeDefHandler::Ptr createUsdShaderNodeDefHandler()
 
 Ufe::SceneItemOpsHandler::Ptr createUsdSceneItemOpsHandler()
 {
-    return MayaUsd::ufe::UsdSceneItemOpsHandler::create();
+    return MayaUsd::ufe::MayaUsdSceneItemOpsHandler::create();
 }
 
 Ufe::HierarchyHandler::Ptr createUsdHierarchyHandler()

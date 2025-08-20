@@ -22,6 +22,8 @@ target_sources(${PROJECT_NAME}
         UsdObject3dHandler.cpp
         UsdRootChildHierarchy.cpp
         UsdSceneItem.cpp
+        UsdSceneItemOps.cpp
+        UsdSceneItemOpsHandler.cpp
         UsdUIInfoHandler.cpp
         UsdUndoAddNewPrimCommand.cpp
         UsdUndoAddPayloadCommand.cpp
@@ -157,6 +159,8 @@ set(HEADERS
     UsdObject3dHandler.h
     UsdRootChildHierarchy.h
     UsdSceneItem.h
+    UsdSceneItemOps.h
+    UsdSceneItemOpsHandler.h
     UsdUIInfoHandler.h
     UsdUndoAddNewPrimCommand.h
     UsdUndoAddPayloadCommand.h
