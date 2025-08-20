@@ -259,10 +259,6 @@ MStatus initialize()
     handlers.lightHandler = UsdLightHandler::create();
 #endif
 
-#if UFE_LIGHTS2_SUPPORT
-    handlers.light2Handler = UsdLight2Handler::create();
-#endif
-
 #if UFE_MATERIALS_SUPPORT
     handlers.materialHandler = UsdMaterialHandler::create();
 #endif
@@ -336,8 +332,9 @@ MStatus initialize()
     if (handlers.lightHandler)
         runTimeMgr.setLightHandler(usdRtid, handlers.lightHandler);
 #if UFE_LIGHTS2_SUPPORT
-    if (handlers.light2Handler)
-        runTimeMgr.setLight2Handler(usdRtid, handlers.light2Handler);
+    auto light2Handler = UsdLight2Handler::create();
+    if (light2Handler)
+        runTimeMgr.setLight2Handler(usdRtid, light2Handler);
 #endif
     if (handlers.materialHandler)
         runTimeMgr.setMaterialHandler(usdRtid, handlers.materialHandler);

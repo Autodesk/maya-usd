@@ -69,6 +69,13 @@ if(BUILD_LOOKDEVXUSD_LIBRARY)
     )
 endif()
 
+if (UFE_LIGHTS2_SUPPORT)
+    target_compile_definitions(${TARGET_NAME}
+    PRIVATE
+        UFE_LIGHTS2_SUPPORT=1
+    )
+endif()
+
 mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
