@@ -154,7 +154,7 @@ bool UsdSyntaxHighlighter::loadConfigFromJson(const QString& configPath)
         // Handle word patterns array
         if (category.contains("wordPatterns")) {
             QJsonArray patterns = category.value("wordPatterns").toArray();
-            for (const auto& patternValue : patterns) {
+            for (const auto&& patternValue : patterns) {
                 // Add in the word boundary to the pattern.
                 QString pattern = QString("\\b%1\\b").arg(patternValue.toString());
                 addRule(pattern, format);
@@ -163,7 +163,7 @@ bool UsdSyntaxHighlighter::loadConfigFromJson(const QString& configPath)
         // Handle patterns array
         else if (category.contains("patterns")) {
             QJsonArray patterns = category.value("patterns").toArray();
-            for (const auto& patternValue : patterns) {
+            for (const auto&& patternValue : patterns) {
                 QString pattern = patternValue.toString();
                 addRule(pattern, format);
             }
@@ -182,7 +182,7 @@ bool UsdSyntaxHighlighter::loadConfigFromJson(const QString& configPath)
         QTextCharFormat format = createFormat(color, weight);
 
         PXR_NS::TfTokenVector primTypes = getConcretePrimTypes();
-        for (const auto type : primTypes) {
+        for (const auto& type : primTypes) {
             QString pattern = QString("\\b%1\\b").arg(QString::fromStdString(type.GetString()));
             addRule(pattern, format);
         }
