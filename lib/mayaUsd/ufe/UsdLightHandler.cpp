@@ -22,6 +22,9 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usdLux/lightAPI.h>
+#if UFE_LIGHTS2_SUPPORT
+#include <pxr/usd/usdLux/rectLight.h>
+#endif // UFE_LIGHTS2_SUPPORT
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -36,6 +39,14 @@ Ufe::Light::Ptr UsdLightHandler::light(const Ufe::SceneItem::Ptr& item) const
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif
+
+#if UFE_LIGHTS2_SUPPORT
+    // Check if the item is a Rect Light, and if so, avoid handling it here.
+    // Rect Light is handled by UsdLight2Handler.
+    PXR_NS::UsdLuxRectLight rectLightSchema(usdItem->prim());
+    if (rectLightSchema)
+        return nullptr;
+#endif // UFE_LIGHTS2_SUPPORT
 
     // Test if this item is a light. If not, then we cannot create a light
     // interface for it, which is a valid case (such as for a mesh node type).
