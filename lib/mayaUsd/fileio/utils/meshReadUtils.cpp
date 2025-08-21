@@ -182,7 +182,7 @@ MIntArray getMayaFaceVertexAssignmentIds(
                 // We need to adjust the face-vertex index to match the corrected order.
                 // Find the position of this vertex within its face and reverse it.
                 const int faceId = itFV.faceId();
-                int vertexCount = meshFn.polygonVertexCount(faceId);
+                int       vertexCount = meshFn.polygonVertexCount(faceId);
 
                 // Find which vertex we are within this face
                 unsigned int baseFvi = 0;
@@ -222,7 +222,7 @@ bool isPrimitiveLeftHanded(const UsdGeomMesh& mesh)
     if (!mesh.GetOrientationAttr().Get(&orientation)) {
         return false;
     }
-    
+
     return orientation == UsdGeomTokens->leftHanded;
 }
 
@@ -331,7 +331,8 @@ bool assignUVSetPrimvarToMesh(
     // Build an array of value assignments for each face vertex in the mesh.
     // Any assignments left as -1 will not be assigned a value.
     const bool isLeftHanded = isPrimitiveLeftHanded(mesh);
-    MIntArray uvIds = getMayaFaceVertexAssignmentIds(meshFn, interpolation, assignmentIndices, -1, isLeftHanded);
+    MIntArray  uvIds = getMayaFaceVertexAssignmentIds(
+        meshFn, interpolation, assignmentIndices, -1, isLeftHanded);
 
     MIntArray vertexCounts;
     MIntArray vertexList;
@@ -537,7 +538,7 @@ bool assignColorSetPrimvarToMesh(
     // Build an array of value assignments for each face vertex in the mesh.
     // Any assignments left as -1 will not be assigned a value.
     const bool isLeftHanded = isPrimitiveLeftHanded(mesh);
-    MIntArray colorIds = getMayaFaceVertexAssignmentIds(
+    MIntArray  colorIds = getMayaFaceVertexAssignmentIds(
         meshFn, interpolation, assignmentIndices, unauthoredValuesIndex, isLeftHanded);
 
     status = meshFn.assignColors(colorIds, &colorSetName);
@@ -706,7 +707,8 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             // Otherwise, if env variable for reading Float2
             // as uv sets is turned on, we assume that Float2Array primvars
             // are UV sets.
-            if (!assignUVSetPrimvarToMesh(mesh, primvar, meshFn, firstUVPrimvar, uvSetNameRemappings)) {
+            if (!assignUVSetPrimvarToMesh(
+                    mesh, primvar, meshFn, firstUVPrimvar, uvSetNameRemappings)) {
                 TF_WARN(
                     "Unable to retrieve and assign data for UV set <%s> on "
                     "mesh <%s>",
