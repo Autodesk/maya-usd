@@ -10,7 +10,7 @@
 # UFE_INCLUDE_DIR           Path to the UFE include directory
 # UFE_VERSION               UFE version (major.minor.patch) from ufe.h
 # UFE_LIGHTS_SUPPORT        Presence of UFE lights support
-# UFE_LIGHTS_SUPPORT        Presence of UFE lights2 support
+# UFE_LIGHTS2_SUPPORT        Presence of UFE lights2 support
 # UFE_MATERIALS_SUPPORT     Presence of UFE materials support
 # UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
 # UFE_CLIPBOARD_SUPPORT     Presence of UFE clipboard support
