@@ -367,9 +367,6 @@ MStatus initialize()
 #if UFE_LIGHTS_SUPPORT
     runTimeMgr.setLightHandler(usdRtid, UsdLightHandler::create());
 #endif
-#if UFE_LIGHTS2_SUPPORT
-    runTimeMgr.setLight2Handler(usdRtid, UsdLight2Handler::create());
-#endif
 #if UFE_MATERIALS_SUPPORT
     runTimeMgr.setMaterialHandler(usdRtid, UsdMaterialHandler::create());
 #endif
