@@ -157,13 +157,24 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         
         self._RunTest()
 
-    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 11, 'Requires parent command fix in Maya for UFE Light\'s VP2 shading.')
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 11 and os.getenv('UFE_LIGHTS2_SUPPORT', 'FALSE') == 'FALSE', 'Requires parent command fix in Maya for UFE Light\'s VP2 shading.')
     def testCustomRectLightGizmo(self):
         self._StartTest('RenderLightsCustomGizmoVP2Shading')
 
         cmds.move(-10, 15, 20, 'persp')
         cmds.rotate(-30, -30, 0, 'persp')
         cmds.modelEditor('modelPanel4', edit=True, grid=False, displayLights = 'all')
+        cmds.displayColor('light', 21, active=True)
+        
+        self._RunTest()
+
+    @unittest.skipUnless(os.getenv('UFE_LIGHTS2_SUPPORT', 'FALSE') == 'TRUE', 'Requires UFE Lights2 API.')
+    def testRectLightInLight2(self):
+        self._StartTest('RenderLights2VP2Shading')
+
+        cmds.move(-10, 15, 20, 'persp')
+        cmds.rotate(-30, -30, 0, 'persp')
+        cmds.modelEditor('modelPanel4', edit=True, grid=False, displayLights = 'all', shadows=True)
         cmds.displayColor('light', 21, active=True)
         
         self._RunTest()

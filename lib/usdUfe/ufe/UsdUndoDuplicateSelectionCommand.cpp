@@ -20,6 +20,8 @@
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 
+#include <ufe/hierarchy.h>
+
 namespace USDUFE_NS_DEF {
 
 // Ensure that UsdUndoDuplicateSelectionCommand is properly setup.
@@ -235,5 +237,18 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
 void UsdUndoDuplicateSelectionCommand::undo() { _undoableItem.undo(); }
 
 void UsdUndoDuplicateSelectionCommand::redo() { _undoableItem.redo(); }
+
+Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
+{
+    const auto it = std::find_if(
+        _duplicatedItemsMap.begin(), _duplicatedItemsMap.end(), [&sourcePath](const auto& pair) {
+            return pair.first->path() == sourcePath;
+        });
+    if (it == _duplicatedItemsMap.end()) {
+        return nullptr;
+    }
+
+    return Ufe::Hierarchy::createItem(it->second->path());
+}
 
 } // namespace USDUFE_NS_DEF
