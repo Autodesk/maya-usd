@@ -23,6 +23,12 @@ void SessionState::setAutoHideSessionLayer(bool hideIt)
     Q_EMIT autoHideSessionLayerSignal(_autoHideSessionLayer);
 }
 
+void SessionState::setDisplayLayerContents(bool showIt)
+{
+    _displayLayerContents = showIt;
+    Q_EMIT showDisplayLayerContents(showIt);
+}
+
 void SessionState::setStageEntry(StageEntry const& in_entry)
 {
     if (_currentStageEntry != in_entry) {

@@ -46,6 +46,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 MString PROXY_NODE_TYPE = "mayaUsdProxyShapeBase";
 MString AUTO_HIDE_OPTION_VAR = "MayaUSDLayerEditor_AutoHideSessionLayer";
+MString DISPLAY_LAYER_CONTENTS_OPTION_VAR = "MayaUSDLayerEditor_DisplayLayerContents";
 } // namespace
 
 namespace UsdLayerEditor {
@@ -55,6 +56,9 @@ MayaSessionState::MayaSessionState()
 {
     if (MGlobal::optionVarExists(AUTO_HIDE_OPTION_VAR)) {
         _autoHideSessionLayer = MGlobal::optionVarIntValue(AUTO_HIDE_OPTION_VAR) != 0;
+    }
+    if (MGlobal::optionVarExists(DISPLAY_LAYER_CONTENTS_OPTION_VAR)) {
+        _displayLayerContents = MGlobal::optionVarIntValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR) != 0;
     }
 
     registerNotifications();
@@ -428,6 +432,13 @@ void MayaSessionState::setAutoHideSessionLayer(bool hideIt)
     int value = hideIt ? 1 : 0;
     MGlobal::setOptionVarValue(AUTO_HIDE_OPTION_VAR, value);
     PARENT_CLASS::setAutoHideSessionLayer(hideIt);
+}
+
+void MayaSessionState::setDisplayLayerContents(bool showIt)
+{
+    int value = showIt ? 1 : 0;
+    MGlobal::setOptionVarValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR, value);
+    PARENT_CLASS::setDisplayLayerContents(showIt);
 }
 
 void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
