@@ -44,6 +44,16 @@
 #include <cstddef>
 #include <string>
 
+// Disables updateEditTarget's functionality is set.
+// Areas that will be affected are:
+// - Mute layer
+// - Lock layer
+// - System lock layer
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_LAYEREDITOR_DISABLE_AUTOTARGET,
+    false,
+    "When set, disables auto retargeting of layers based on the file and permission status.");
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -133,9 +143,15 @@ void BaseCmd::holdOntoSubLayers(SdfLayerHandle layer)
     }
 }
 
-// Set the edit target to Session layer if no other layers are modifiable
+// Set the edit target to Session layer if no other layers are modifiable,
+// unless the user has disabled this feature with an env var.
 void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
 {
+    //// User-controlled environment variable to disable automatic target change.
+    if (TfGetEnvSetting(MAYAUSD_LAYEREDITOR_DISABLE_AUTOTARGET)) {
+        return;
+    }
+
     if (!stage)
         return;
 
