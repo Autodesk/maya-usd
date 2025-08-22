@@ -29,6 +29,7 @@
 #include <usdUfe/utils/uiCallback.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/envSetting.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
@@ -43,16 +44,6 @@
 
 #include <cstddef>
 #include <string>
-
-// Disables updateEditTarget's functionality is set.
-// Areas that will be affected are:
-// - Mute layer
-// - Lock layer
-// - System lock layer
-TF_DEFINE_ENV_SETTING(
-    MAYAUSD_LAYEREDITOR_DISABLE_AUTOTARGET,
-    false,
-    "When set, disables auto retargeting of layers based on the file and permission status.");
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -80,6 +71,15 @@ const char kSkipSystemLockedFlagL[] = "skipSystemLocked";
 const char kRefreshSystemLockFlag[] = "rl";
 const char kRefreshSystemLockFlagL[] = "refreshSystemLock";
 
+// Disables updateEditTarget's functionality is set.
+// Areas that will be affected are:
+// - Mute layer
+// - Lock layer
+// - System lock layer
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_LAYEREDITOR_DISABLE_AUTOTARGET,
+    false,
+    "When set, disables auto retargeting of layers based on the file and permission status.");
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
