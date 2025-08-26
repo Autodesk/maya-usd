@@ -49,7 +49,7 @@ class testUsdExportPackage(unittest.TestCase):
 
         # Write the file out
         path = os.path.join(self.temp_dir, 'testExportSelfContainedPackage.usdz')
-        cmds.mayaUSDExport(f=path, compatibility='appleArKit', legacyMaterialScope=False, defaultPrim='None')
+        cmds.mayaUSDExport(f=path, convertMaterialsTo=['UsdPreviewSurface'], compatibility='appleArKit', legacyMaterialScope=False, defaultPrim='None')
 
         # Check with USD what the path to the texture is
         stage = Usd.Stage.Open(path)
