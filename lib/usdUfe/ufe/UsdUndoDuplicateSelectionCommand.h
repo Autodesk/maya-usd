@@ -36,7 +36,7 @@ namespace USDUFE_NS_DEF {
 using DuplicatedItemsMap = std::unordered_map<UsdSceneItem::Ptr, UsdSceneItem::Ptr>;
 
 //! \brief UsdUndoDuplicateSelectionCommand
-class USDUFE_PUBLIC UsdUndoDuplicateSelectionCommand : public Ufe::UndoableCommand
+class USDUFE_PUBLIC UsdUndoDuplicateSelectionCommand : public Ufe::SelectionUndoableCommand
 {
 public:
     using Ptr = std::shared_ptr<UsdUndoDuplicateSelectionCommand>;
@@ -58,6 +58,8 @@ public:
     void undo() override;
     void redo() override;
     UFE_V4(std::string commandString() const override { return "DuplicateSelection"; })
+
+    Ufe::SceneItem::Ptr targetItem(const Ufe::Path& sourcePath) const override;
 
     //! Retrieve all the duplicated items.
     Ufe::SceneItemList targetItems() const;
