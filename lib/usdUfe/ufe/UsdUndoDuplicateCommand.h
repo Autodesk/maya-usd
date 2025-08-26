@@ -51,7 +51,7 @@ public:
     //! Create a UsdUndoDuplicateCommand from a SceneItem and its parent destination.
     static Ptr create(const UsdSceneItem::Ptr& srcItem, const UsdSceneItem::Ptr& dstParentItem);
 
-    UsdSceneItem::Ptr   duplicatedItem() const;
+    UsdSceneItem::Ptr duplicatedItem() const;
     UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); })
 
     void execute() override;

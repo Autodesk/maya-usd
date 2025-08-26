@@ -282,7 +282,6 @@ void UsdCopyClipboardCommand::redo()
 // Ensure that UsdCutClipboardCommand is properly setup.
 USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdCutClipboardCommand);
 
-
 UsdCutClipboardCommand::UsdCutClipboardCommand(
     const Ufe::Selection&    selection,
     const UsdClipboard::Ptr& clipboard)
