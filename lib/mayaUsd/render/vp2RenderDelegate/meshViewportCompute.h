@@ -112,22 +112,7 @@
 #include <opensubdiv/version.h>
 #endif
 
-#if defined(__has_include)
-#if __has_include(<tbb/tbb_stddef.h>)
-    // Not OneTBB case - we need this because Maya and Usd can have different TBB
-    // versions and both are in include paths.
-#else
-#if __has_include(<tbb/version.h>)
-#include <tbb/version.h>
-#endif
-#endif
-#endif
-
-#ifdef ONETBB_SPEC_VERSION
 #include <tbb/task_arena.h>
-#else
-#include <tbb/task.h>
-#endif
 
 #include <fstream>
 #include <streambuf>
