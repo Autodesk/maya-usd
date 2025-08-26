@@ -33,6 +33,8 @@ target_sources(${PROJECT_NAME}
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
         UsdUndoDeleteCommand.cpp
+        UsdUndoDuplicateCommand.cpp
+        UsdUndoDuplicateSelectionCommand.cpp
         UsdUndoInsertChildCommand.cpp
         UsdUndoLongDurationCommand.cpp
         UsdUndoPayloadCommand.cpp
@@ -94,8 +96,6 @@ if (UFE_CLIPBOARD_SUPPORT)
             UsdClipboard.cpp
             UsdClipboardCommands.cpp
             UsdClipboardHandler.cpp
-            UsdUndoDuplicateCommand.cpp
-            UsdUndoDuplicateSelectionCommand.cpp
     )
 
     target_compile_definitions(${PROJECT_NAME}
@@ -170,6 +170,8 @@ set(HEADERS
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h
     UsdUndoDeleteCommand.h
+    UsdUndoDuplicateCommand.h
+    UsdUndoDuplicateSelectionCommand.h
     UsdUndoInsertChildCommand.h
     UsdUndoLongDurationCommand.h
     UsdUndoPayloadCommand.h
@@ -205,8 +207,6 @@ if (UFE_CLIPBOARD_SUPPORT)
         UsdClipboard.h
         UsdClipboardCommands.h
         UsdClipboardHandler.h
-        UsdUndoDuplicateCommand.h
-        UsdUndoDuplicateSelectionCommand.h
     )
 endif()
 

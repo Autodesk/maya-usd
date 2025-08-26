@@ -29,7 +29,11 @@
 namespace USDUFE_NS_DEF {
 
 //! \brief UsdUndoDuplicateCommand
+#ifdef UFE_V4_FEATURES_AVAILABLE
 class USDUFE_PUBLIC UsdUndoDuplicateCommand : public Ufe::SceneItemResultUndoableCommand
+#else
+class USDUFE_PUBLIC UsdUndoDuplicateCommand : public Ufe::UndoableCommand
+#endif
 {
 public:
     using Ptr = std::shared_ptr<UsdUndoDuplicateCommand>;
@@ -48,7 +52,7 @@ public:
     static Ptr create(const UsdSceneItem::Ptr& srcItem, const UsdSceneItem::Ptr& dstParentItem);
 
     UsdSceneItem::Ptr   duplicatedItem() const;
-    Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); };
+    UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); })
 
     void execute() override;
     void undo() override;
