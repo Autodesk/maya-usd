@@ -86,3 +86,13 @@ class MayaUsdPythonImportTestCase(unittest.TestCase):
         mxglTypes = dir(mxgl)
         for cls in ['GlslShaderGenerator']:
             self.assertIn(cls, mxglTypes)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Requires recent USD for AdskAssetResolver.')
+    def testAdskAssetResolver(self):
+        '''
+        Test that AdskAssetResolver Python can be imported.
+        Verify a few of the expected classes to make sure the bindings are working.
+        '''
+        import AdskAssetResolver as ar
+        version = ar.VersionInfo()
+        self.assertIsNotNone(version)
