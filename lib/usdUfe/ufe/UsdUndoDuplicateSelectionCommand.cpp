@@ -233,6 +233,7 @@ void UsdUndoDuplicateSelectionCommand::undo() { _undoableItem.undo(); }
 
 void UsdUndoDuplicateSelectionCommand::redo() { _undoableItem.redo(); }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
 {
     const auto it = std::find_if(
@@ -245,5 +246,6 @@ Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path
 
     return Ufe::Hierarchy::createItem(it->second->path());
 }
+#endif
 
 } // namespace USDUFE_NS_DEF
