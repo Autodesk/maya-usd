@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2025 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,26 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_USDSCENEITEMOPSHANDLER_H
-#define MAYAUSD_USDSCENEITEMOPSHANDLER_H
+#ifndef USD_USDSCENEITEMOPSHANDLER_H
+#define USD_USDSCENEITEMOPSHANDLER_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItemOps.h>
+#include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UsdSceneItemOps.h>
 
 #include <ufe/sceneItemOpsHandler.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Interface to create a UsdSceneItemOps interface object.
-class MAYAUSD_CORE_PUBLIC UsdSceneItemOpsHandler : public Ufe::SceneItemOpsHandler
+class USDUFE_PUBLIC UsdSceneItemOpsHandler : public Ufe::SceneItemOpsHandler
 {
 public:
     typedef std::shared_ptr<UsdSceneItemOpsHandler> Ptr;
 
     UsdSceneItemOpsHandler() = default;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSceneItemOpsHandler);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdSceneItemOpsHandler);
 
     //! Create a UsdSceneItemOpsHandler.
     static UsdSceneItemOpsHandler::Ptr create();
@@ -41,7 +40,6 @@ public:
     Ufe::SceneItemOps::Ptr sceneItemOps(const Ufe::SceneItem::Ptr& item) const override;
 }; // UsdSceneItemOpsHandler
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDSCENEITEMOPSHANDLER_H
+#endif // USD_USDSCENEITEMOPSHANDLER_H

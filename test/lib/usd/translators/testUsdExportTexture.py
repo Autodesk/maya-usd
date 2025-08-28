@@ -78,6 +78,7 @@ class testUsdExportTexture(unittest.TestCase):
 
         with testUtils.TemporaryEnvironmentVariable(PROJ_ENV_VAR_NAME, projectFolder):
             cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, 
+                convertMaterialsTo=['UsdPreviewSurface'],
                 exportRelativeTextures=relativeMode, legacyMaterialScope=False,
                 defaultPrim='None')
 

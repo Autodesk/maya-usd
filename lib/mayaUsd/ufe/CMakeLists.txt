@@ -9,14 +9,14 @@ target_sources(${PROJECT_NAME}
         MayaUsdContextOpsHandler.cpp
         MayaUsdObject3d.cpp
         MayaUsdObject3dHandler.cpp
+        MayaUsdSceneItemOps.cpp
+        MayaUsdSceneItemOpsHandler.cpp
         MayaUsdUIInfoHandler.cpp
         MayaUsdUndoRenameCommand.cpp
         ProxyShapeContextOpsHandler.cpp
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
-        UsdSceneItemOps.cpp
-        UsdSceneItemOpsHandler.cpp
         UsdStageMap.cpp
         UsdUIUfeObserver.cpp
         UsdUndoDuplicateCommand.cpp
@@ -210,14 +210,14 @@ set(HEADERS
     MayaUsdContextOpsHandler.h
     MayaUsdObject3d.h
     MayaUsdObject3dHandler.h
+    MayaUsdSceneItemOps.h
+    MayaUsdSceneItemOpsHandler.h
     MayaUsdUIInfoHandler.h
     MayaUsdUndoRenameCommand.h
     ProxyShapeContextOpsHandler.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
-    UsdSceneItemOps.h
-    UsdSceneItemOpsHandler.h
     UsdStageMap.h
     UsdUIUfeObserver.h
     UsdUndoDuplicateCommand.h

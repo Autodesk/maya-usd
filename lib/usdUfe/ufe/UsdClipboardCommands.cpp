@@ -221,12 +221,7 @@ pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection
 namespace USDUFE_NS_DEF {
 
 // Ensure that UsdCopyClipboardCommand is properly setup.
-static_assert(std::is_base_of<Ufe::UndoableCommand, UsdCopyClipboardCommand>::value);
-static_assert(std::has_virtual_destructor<UsdCopyClipboardCommand>::value);
-static_assert(!std::is_copy_constructible<UsdCopyClipboardCommand>::value);
-static_assert(!std::is_copy_assignable<UsdCopyClipboardCommand>::value);
-static_assert(!std::is_move_constructible<UsdCopyClipboardCommand>::value);
-static_assert(!std::is_move_assignable<UsdCopyClipboardCommand>::value);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdCopyClipboardCommand);
 
 UsdCopyClipboardCommand::UsdCopyClipboardCommand(
     const Ufe::Selection&    selection,
@@ -285,12 +280,7 @@ void UsdCopyClipboardCommand::redo()
 }
 
 // Ensure that UsdCutClipboardCommand is properly setup.
-static_assert(std::is_base_of<Ufe::UndoableCommand, UsdCutClipboardCommand>::value);
-static_assert(std::has_virtual_destructor<UsdCutClipboardCommand>::value);
-static_assert(!std::is_copy_constructible<UsdCutClipboardCommand>::value);
-static_assert(!std::is_copy_assignable<UsdCutClipboardCommand>::value);
-static_assert(!std::is_move_constructible<UsdCutClipboardCommand>::value);
-static_assert(!std::is_move_assignable<UsdCutClipboardCommand>::value);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdCutClipboardCommand);
 
 UsdCutClipboardCommand::UsdCutClipboardCommand(
     const Ufe::Selection&    selection,
@@ -345,12 +335,7 @@ Ufe::Selection getNewSelectionFromCommand(const UsdCutClipboardCommand& cmd)
 }
 
 // Ensure that UsdPasteClipboardCommand is properly setup.
-static_assert(std::is_base_of<Ufe::UndoableCommand, UsdPasteClipboardCommand>::value);
-static_assert(std::has_virtual_destructor<UsdPasteClipboardCommand>::value);
-static_assert(!std::is_copy_constructible<UsdPasteClipboardCommand>::value);
-static_assert(!std::is_copy_assignable<UsdPasteClipboardCommand>::value);
-static_assert(!std::is_move_constructible<UsdPasteClipboardCommand>::value);
-static_assert(!std::is_move_assignable<UsdPasteClipboardCommand>::value);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdPasteClipboardCommand);
 
 UsdPasteClipboardCommand::UsdPasteClipboardCommand(
     const Ufe::Selection&    dstParentItems,

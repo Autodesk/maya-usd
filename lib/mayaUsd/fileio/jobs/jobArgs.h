@@ -42,7 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((UsdFileExtensionCrate, "usdc")) \
     ((UsdFileExtensionPackage, "usdz")) \
     ((UsdReadableFileFilter, "*.usd *.usda *.usdc *.usdz")) \
-    ((UsdWritableFileFilter, "*.usd *.usda *.usdc *.usdz"))
+    ((UsdWritableFileFilter, "*.usd *.usda *.usdc *.usdz")) \
+    ((materialX, "MaterialX"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(

@@ -48,12 +48,7 @@ bool isAttributeConnected(
 namespace USDUFE_NS_DEF {
 
 // Ensure that UsdClipboardHandler is properly setup.
-static_assert(std::is_base_of<Ufe::ClipboardHandler, UsdClipboardHandler>::value);
-static_assert(std::has_virtual_destructor<UsdClipboardHandler>::value);
-static_assert(!std::is_copy_constructible<UsdClipboardHandler>::value);
-static_assert(!std::is_copy_assignable<UsdClipboardHandler>::value);
-static_assert(!std::is_move_constructible<UsdClipboardHandler>::value);
-static_assert(!std::is_move_assignable<UsdClipboardHandler>::value);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::ClipboardHandler, UsdClipboardHandler);
 
 UsdClipboardHandler::UsdClipboardHandler() { _clipboard = std::make_shared<UsdClipboard>(); }
 
