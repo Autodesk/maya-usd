@@ -21,11 +21,11 @@
 #include <mayaUsd/ufe/MayaStagesSubject.h>
 #include <mayaUsd/ufe/MayaUsdContextOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
+#include <mayaUsd/ufe/MayaUsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdUIInfoHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
-#include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/trf/UsdTransform3dFallbackMayaXformStack.h>
@@ -248,7 +248,7 @@ MStatus initialize()
 #ifdef UFE_V3_FEATURES_AVAILABLE
     usdUfeHandlers.hierarchyHandler = MayaUsdHierarchyHandler::create();
 #endif
-    handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
+    usdUfeHandlers.sceneItemOpsHandler = MayaUsdSceneItemOpsHandler::create();
     usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
     usdUfeHandlers.contextOpsHandler = MayaUsdContextOpsHandler::create();
     usdUfeHandlers.uiInfoHandler = MayaUsdUIInfoHandler::create();

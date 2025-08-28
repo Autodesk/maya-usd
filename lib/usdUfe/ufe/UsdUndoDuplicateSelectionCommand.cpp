@@ -25,12 +25,7 @@
 namespace USDUFE_NS_DEF {
 
 // Ensure that UsdUndoDuplicateSelectionCommand is properly setup.
-static_assert(std::is_base_of<Ufe::UndoableCommand, UsdUndoDuplicateSelectionCommand>::value);
-static_assert(std::has_virtual_destructor<UsdUndoDuplicateSelectionCommand>::value);
-static_assert(!std::is_copy_constructible<UsdUndoDuplicateSelectionCommand>::value);
-static_assert(!std::is_copy_assignable<UsdUndoDuplicateSelectionCommand>::value);
-static_assert(!std::is_move_constructible<UsdUndoDuplicateSelectionCommand>::value);
-static_assert(!std::is_move_assignable<UsdUndoDuplicateSelectionCommand>::value);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDuplicateSelectionCommand);
 
 UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
     const Ufe::Selection&    selection,
@@ -73,7 +68,7 @@ void UsdUndoDuplicateSelectionCommand::execute()
         auto duplicateCmd = UsdUndoDuplicateCommand::create(usdItem, _dstParentItem);
         duplicateCmd->execute();
 
-        _duplicatedItemsMap.emplace(usdItem, downcast(duplicateCmd->sceneItem()));
+        _duplicatedItemsMap.emplace(usdItem, downcast(duplicateCmd->duplicatedItem()));
 
         PXR_NS::UsdPrim srcPrim = usdItem->prim();
         PXR_NS::UsdPrim dstPrim = duplicateCmd->duplicatedItem()->prim();
@@ -167,7 +162,7 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
     const DuplicatePathsMap::value_type& thisPair,
     const DuplicatePathsMap&             allPairs)
 {
-    const auto& [originalPrimPath, duplicatePrimPath] = thisPair;
+    const auto&       duplicatePrimPath = thisPair.second;
     std::list<size_t> indicesToRemove;
     bool              referencedPathsChanged = false;
 
@@ -238,6 +233,7 @@ void UsdUndoDuplicateSelectionCommand::undo() { _undoableItem.undo(); }
 
 void UsdUndoDuplicateSelectionCommand::redo() { _undoableItem.redo(); }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
 {
     const auto it = std::find_if(
@@ -250,5 +246,6 @@ Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path
 
     return Ufe::Hierarchy::createItem(it->second->path());
 }
+#endif
 
 } // namespace USDUFE_NS_DEF

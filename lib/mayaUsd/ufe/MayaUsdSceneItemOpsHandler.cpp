@@ -13,32 +13,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "UsdSceneItemOpsHandler.h"
+#include "MayaUsdSceneItemOpsHandler.h"
 
+#include <mayaUsd/ufe/MayaUsdSceneItemOps.h>
 #include <mayaUsd/ufe/Utils.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemOpsHandler, UsdSceneItemOpsHandler);
+MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdSceneItemOpsHandler, MayaUsdSceneItemOpsHandler);
 
 /*static*/
-UsdSceneItemOpsHandler::Ptr UsdSceneItemOpsHandler::create()
+MayaUsdSceneItemOpsHandler::Ptr MayaUsdSceneItemOpsHandler::create()
 {
-    return std::make_shared<UsdSceneItemOpsHandler>();
+    return std::make_shared<MayaUsdSceneItemOpsHandler>();
 }
 
 //------------------------------------------------------------------------------
 // Ufe::SceneItemOpsHandler overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItemOps::Ptr UsdSceneItemOpsHandler::sceneItemOps(const Ufe::SceneItem::Ptr& item) const
+Ufe::SceneItemOps::Ptr
+MayaUsdSceneItemOpsHandler::sceneItemOps(const Ufe::SceneItem::Ptr& item) const
 {
     auto usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif
-    return UsdSceneItemOps::create(usdItem);
+    return MayaUsdSceneItemOps::create(usdItem);
 }
 
 } // namespace ufe

@@ -34,12 +34,11 @@
 namespace USDUFE_NS_DEF {
 
 // Ensure that UsdUndoDuplicateCommand is properly setup.
-static_assert(std::is_base_of<Ufe::UndoableCommand, UsdUndoDuplicateCommand>::value);
-static_assert(std::has_virtual_destructor<UsdUndoDuplicateCommand>::value);
-static_assert(!std::is_copy_constructible<UsdUndoDuplicateCommand>::value);
-static_assert(!std::is_copy_assignable<UsdUndoDuplicateCommand>::value);
-static_assert(!std::is_move_constructible<UsdUndoDuplicateCommand>::value);
-static_assert(!std::is_move_assignable<UsdUndoDuplicateCommand>::value);
+#ifdef UFE_V4_FEATURES_AVAILABLE
+USDUFE_VERIFY_CLASS_SETUP(Ufe::SceneItemResultUndoableCommand, UsdUndoDuplicateCommand);
+#else
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDuplicateCommand);
+#endif
 
 namespace {
 
