@@ -1210,8 +1210,10 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
             = UsdMayaJobExportArgsTokens->defaultLayer.GetString();
         d[UsdMayaJobExportArgsTokens->shadingMode]
             = UsdMayaShadingModeTokens->useRegistry.GetString();
+        // The default convertMaterialsTo string matches shadingTokens.h:
+        // TrMtlxTokens->conversionName
         d[UsdMayaJobExportArgsTokens->convertMaterialsTo]
-            = std::vector<VtValue> { VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) };
+            = std::vector<VtValue> { VtValue(UsdMayaTranslatorTokens->materialX.GetText()) };
         d[UsdMayaJobExportArgsTokens->apiSchema] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->jobContext] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
