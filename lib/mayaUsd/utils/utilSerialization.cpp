@@ -41,7 +41,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include <string>
 
@@ -527,7 +527,7 @@ SdfLayerRefPtr saveAnonymousLayer(
                 = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
         } else if (isSubLayer) {
             filePath = UsdMayaUtilFileSystem::getPathRelativeToLayerFile(filePath, parentLayer);
-            if (boost::filesystem::path(filePath).is_absolute()) {
+            if (ghc::filesystem::path(filePath).is_absolute()) {
                 UsdMayaUtilFileSystem::markPathAsPostponedRelative(parentLayer, filePath);
             }
         } else {
