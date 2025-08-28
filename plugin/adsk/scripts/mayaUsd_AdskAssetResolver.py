@@ -54,9 +54,16 @@ def load_mappingfile(mappingFilePath=None):
         adskResolver = pxrAr.GetUnderlyingResolver()
         ctx = adskResolver.GetCurrentContext()
         ctx = ar.AdskResolverContext()
-        ctx.SetMappingFile(mappingFilePath)
+        ar.AssetResolverContextDataManager.RemoveContextData("Environment Mapping")
+        ar.AssetResolverContextDataManager.RegisterContextDataWithMappingFile("Environment Mapping", mappingFilePath)
+        # Keep Environment Mapping always at the end of the list
+        listOfContextData = ar.AssetResolverContextDataManager.GetActiveContextData()
+        # Change the name "Environment Mapping" to the end of the list
+        listOfContextData.remove("Environment Mapping")
+        listOfContextData.append("Environment Mapping")
+        ar.AssetResolverContextDataManager.SetActiveContextData(listOfContextData)
         adskResolver.RefreshContext(ctx)
-    
+
     except Exception as e:
         MGlobal.displayError(f"Error loading mapping file: {e}")
         return
