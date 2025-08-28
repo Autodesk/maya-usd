@@ -3,9 +3,6 @@ from mayaUSDRegisterStrings import getMayaUsdString
 from maya.OpenMaya import MGlobal
 import AdskAssetResolver as ar
 from pxr import Ar as pxrAr
-import os
-import subprocess
-import platform
 from pathlib import Path
 
 def get_resolver_version():
