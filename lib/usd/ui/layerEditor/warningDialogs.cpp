@@ -72,7 +72,8 @@ bool confirmDialog_internal(
 
     if (okCancel) {
         msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-        msgBox.setDefaultButton(QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        msgBox.button(QMessageBox::Ok)->setFocus();
     } else {
         msgBox.setStandardButtons(QMessageBox::Ok);
     }
@@ -80,10 +81,8 @@ bool confirmDialog_internal(
     if (!showIcon)
         msgBox.setStyleSheet(QString("QLabel{min-width: %1px;}").arg(DPIScale(400)));
 
-    if (okButtonText != nullptr) {
+    if (okButtonText != nullptr)
         msgBox.button(QMessageBox::Ok)->setText(*okButtonText);
-        msgBox.button(QMessageBox::Ok)->setFocus();
-    }
 
     return msgBox.exec() == QMessageBox::Ok;
 }
