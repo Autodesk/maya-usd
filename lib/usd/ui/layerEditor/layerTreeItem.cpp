@@ -150,14 +150,14 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
         if (_stage && SdfVariableExpression::IsExpression(path)) {
             auto resolveExprVarsFromLayer =
                 [](SdfVariableExpression& varExpr, SdfLayerRefPtr fromLayer, std::string& outPath) {
-                if (fromLayer && fromLayer->HasExpressionVariables()) {
-                    auto expressionVars = fromLayer->GetExpressionVariables();
-                    auto result = varExpr.Evaluate(expressionVars);
-                    if (result.errors.empty() && !result.value.IsEmpty()) {
-                        outPath = result.value.UncheckedGet<std::string>();
+                    if (fromLayer && fromLayer->HasExpressionVariables()) {
+                        auto expressionVars = fromLayer->GetExpressionVariables();
+                        auto result = varExpr.Evaluate(expressionVars);
+                        if (result.errors.empty() && !result.value.IsEmpty()) {
+                            outPath = result.value.UncheckedGet<std::string>();
+                        }
                     }
-                }
-            };
+                };
 
             SdfVariableExpression varExpr(path);
             // Get the root layer's expression variables for resolution context
