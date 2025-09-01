@@ -98,6 +98,7 @@ class LayerTreeItem : public QStandardItem
 public:
     LayerTreeItem(
         PXR_NS::SdfLayerRefPtr in_usdLayer,
+        PXR_NS::UsdStageRefPtr in_stage,
         LayerType              in_layerType = LayerType::SubLayer,
         std::string            in_subLayerPath = "",
         std::set<std::string>* in_incomingLayers = nullptr,
@@ -127,8 +128,6 @@ public:
     const std::string& displayName() const { return _displayName; }
     // if a sublayer, get the path we were saved with in the parent
     const std::string& subLayerPath() const { return _subLayerPath; }
-    // shortcut to get stage from model
-    PXR_NS::UsdStageRefPtr const& stage() const;
 
     // is the layer muted at the stage level?
     bool isMuted() const;
@@ -202,6 +201,7 @@ public:
 
 protected:
     PXR_NS::SdfLayerRefPtr _layer;
+    PXR_NS::UsdStageRefPtr _stage;
     std::string            _displayName;
     bool                   _isTargetLayer = false;
     LayerType              _layerType = LayerType::SubLayer;
