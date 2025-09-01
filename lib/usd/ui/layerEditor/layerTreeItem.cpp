@@ -148,7 +148,8 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
         // Resolve any variable expressions in the path using the stage's expression variables
         std::string resolvedPath = path;
         if (_stage && SdfVariableExpression::IsExpression(path)) {
-            auto resolveExprVarsFromLayer = [](SdfVariableExpression& varExpr, SdfLayerRefPtr fromLayer, std::string& outPath) {
+            auto resolveExprVarsFromLayer =
+                [](SdfVariableExpression& varExpr, SdfLayerRefPtr fromLayer, std::string& outPath) {
                 if (fromLayer && fromLayer->HasExpressionVariables()) {
                     auto expressionVars = fromLayer->GetExpressionVariables();
                     auto result = varExpr.Evaluate(expressionVars);
@@ -156,7 +157,7 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
                         outPath = result.value.UncheckedGet<std::string>();
                     }
                 }
-                };
+            };
 
             SdfVariableExpression varExpr(path);
             // Get the root layer's expression variables for resolution context

@@ -352,7 +352,13 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         }
 
         appendRow(new LayerTreeItem(
-            rootLayer, _sessionState->stage(), LayerType::RootLayer, "", &incomingLayers, sharedStage, &sharedLayers));
+            rootLayer,
+            _sessionState->stage(),
+            LayerType::RootLayer,
+            "",
+            &incomingLayers,
+            sharedStage,
+            &sharedLayers));
 
         updateTargetLayer(InRebuildModel::Yes);
 
