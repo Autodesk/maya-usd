@@ -355,6 +355,14 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value())
+
+            # Generic overload of setCmd.
+            self.assertIsNone(ufeAttr.setCmd(ufe.Value()))
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeFilename(self):
         '''Test the Filename attribute type.'''
@@ -429,6 +437,25 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.get(), "green.png")
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = "red.exr"
+            ufeAttr.setCmd(ufe.Value(newValue)).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
+            # Typed overload of setCmd.
+            newValue = "green.png"
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
     def testAttributeEnumString(self):
         '''Test the EnumString attribute type.'''
 
@@ -468,6 +495,25 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
+
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.get(), UsdGeom.Tokens.invisible)
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = UsdGeom.Tokens.inherited
+            ufeAttr.setCmd(ufe.Value(newValue)).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
+            # Typed overload of setCmd.
+            newValue = UsdGeom.Tokens.invisible
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
 
     @unittest.skipIf(os.getenv('USD_HAS_MX_METADATA_SUPPORT', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if USD can read MaterialX metadata')
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'nodeDefHandler is only available in UFE v4 or greater')
@@ -540,6 +586,24 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = not ufeAttr.get()
+            ufeAttr.setCmd(ufe.Value(newValue)).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
+            # Typed overload of setCmd.
+            newValue = not ufeAttr.get()
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
     def testAttributeInt(self):
         '''Test the Int attribute type.'''
 
@@ -574,6 +638,24 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get() + 1
+            ufeAttr.setCmd(ufe.Value(newValue)).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get() + 1
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
     @unittest.skipIf(os.getenv('UFE_HAS_UNSIGNED_INT', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE has unsigned int support')
     def testAttributeUInt(self):
         '''Test the UInt attribute type.'''
@@ -607,6 +689,28 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
+
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Because Python only has signed integers, there is no way convert from a Python integer
+            # to a ufe.Value holding an unsigned integer or vise versa. Thus, this test can't make
+            # as many comparisons as the others.
+
+            # Generic getter.
+            oldValue = ufeAttr.value()
+            self.assertFalse(oldValue.empty())
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get() + 1
+            ufeAttr.setCmd(newValue).execute()
+            # Almost equal due to 64 vs 32 bit floating points.
+            self.assertAlmostEqual(ufeAttr.get(), newValue)
+            self.assertNotEqual(ufeAttr.value(), oldValue)
+
+            ufeAttr.setCmd(oldValue).execute()
+            self.assertEqual(ufeAttr.value(), oldValue)
+            self.assertNotAlmostEqual(ufeAttr.get(), newValue)
 
     @unittest.skipIf(os.getenv('UFE_ATTRIBUTES_GET_ENUMS', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE Attributes has a getEnums() method')
     def testAttributeIntEnum(self):
@@ -673,6 +777,28 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr, decimalPlaces=6)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Because Python only has doubles, there is no way convert from a Python floating point
+            # to a ufe.Value holding a 32bit float or vise versa. Thus, this test can't make as many
+            # comparisons as the others.
+
+            # Generic getter.
+            oldValue = ufeAttr.value()
+            self.assertFalse(oldValue.empty())
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get() + 1.0
+            ufeAttr.setCmd(newValue).execute()
+            # Almost equal due to 64 vs 32 bit floating points.
+            self.assertAlmostEqual(ufeAttr.get(), newValue, 6)
+            self.assertNotEqual(ufeAttr.value(), oldValue)
+
+            ufeAttr.setCmd(oldValue).execute()
+            self.assertEqual(ufeAttr.value(), oldValue)
+            self.assertNotAlmostEqual(ufeAttr.get(), newValue, 6)
+
     def _testAttributeDouble(self):
         '''Test the Double attribute type.'''
 
@@ -715,6 +841,24 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get() + "foo"
+            ufeAttr.setCmd(ufe.Value(newValue)).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get() + "bar"
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
     def testAttributeStringToken(self):
         '''Test the String (Token) attribute type.'''
 
@@ -748,6 +892,24 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
+
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get() + "foo"
+            ufeAttr.setCmd(ufe.Value(newValue)).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get() + "bar"
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
 
     @unittest.skipIf(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test not available in UFE v4 or greater')
     def testAttributeColorFloat3(self):
@@ -827,6 +989,27 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Color3f(newValue.r() + 1.0, newValue.g() + 2.0, newValue.b() + 3.0)
+            newValue = ufe.Value(newValue)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufe.Value(ufeAttr.get()), newValue)
+            self.assertEqual(ufeAttr.value(), newValue)
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Color3f(newValue.r() + 1.0, newValue.g() + 2.0, newValue.b() + 3.0)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE preview v4 or greater')
     def testAttributeColorFloat4(self):
         '''Test the ColorFloat4 attribute type.'''
@@ -863,6 +1046,27 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
+
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Color4f(newValue.r() + 1.0, newValue.g() + 2.0, newValue.b() + 3.0, newValue.a() + 4.0)
+            newValue = ufe.Value(newValue)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufe.Value(ufeAttr.get()), newValue)
+            self.assertEqual(ufeAttr.value(), newValue)
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Color4f(newValue.r() + 1.0, newValue.g() + 2.0, newValue.b() + 3.0, newValue.a() + 4.0)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
 
     def _testAttributeInt3(self):
         '''Test the Int3 attribute type.'''
@@ -907,6 +1111,27 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Vector2f(newValue.x() + 1.0, newValue.y() + 2.0)
+            newValue = ufe.Value(newValue)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufe.Value(ufeAttr.get()), newValue)
+            self.assertEqual(ufeAttr.value(), newValue)
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Vector2f(newValue.x() + 1.0, newValue.y() + 2.0)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
     def testAttributeFloat3(self):
         '''Test the Float3 attribute type.'''
 
@@ -943,6 +1168,27 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
+
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Vector3f(newValue.x() + 1.0, newValue.y() + 2.0, newValue.z() + 3.0)
+            newValue = ufe.Value(newValue)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufe.Value(ufeAttr.get()), newValue)
+            self.assertEqual(ufeAttr.value(), newValue)
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Vector3f(newValue.x() + 1.0, newValue.y() + 2.0, newValue.z() + 3.0)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeFloat4(self):
@@ -984,6 +1230,27 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Vector4f(newValue.x() + 1.0, newValue.y() + 2.0, newValue.z() + 3.0, newValue.w() + 4.0)
+            newValue = ufe.Value(newValue)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufe.Value(ufeAttr.get()), newValue)
+            self.assertEqual(ufeAttr.value(), newValue)
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Vector4f(newValue.x() + 1.0, newValue.y() + 2.0, newValue.z() + 3.0, newValue.w() + 4.0)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
     def testAttributeDouble3(self):
         '''Test the Double3 attribute type.'''
 
@@ -1019,6 +1286,27 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
+
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Vector3d(newValue.x() - 1.0, newValue.y() - 2.0, newValue.z() - 3.0)
+            newValue = ufe.Value(newValue)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufe.Value(ufeAttr.get()), newValue)
+            self.assertEqual(ufeAttr.value(), newValue)
+
+            # Typed overload of setCmd.
+            newValue = ufeAttr.get()
+            newValue = ufe.Vector3d(newValue.x() - 1.0, newValue.y() - 2.0, newValue.z() - 3.0)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMatrix3d(self):
@@ -1057,6 +1345,25 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufe.Matrix3d([[mat[i][j] + mat[i][j] for j in range(3)] for i in range(3)])
+            newValue = ufe.Value(newValue)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufe.Value(ufeAttr.get()), newValue)
+            self.assertEqual(ufeAttr.value(), newValue)
+
+            # Typed overload of setCmd.
+            newValue = ufe.Matrix3d([[mat[i][j] + mat[i][j] for j in range(3)] for i in range(3)])
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAttributeMatrix4d(self):
         '''Test the Matrix4d attribute type.'''
@@ -1093,6 +1400,25 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
+
+        # Test the generic getter and setter of ufe.Attribute. Ensure both
+        # overloads of setCmd work correctly.
+        if hasattr(ufe.Attribute, "value"):
+            # Generic getter.
+            self.assertEqual(ufeAttr.value(), ufe.Value(ufeAttr.get()))
+
+            # Generic overload of setCmd.
+            newValue = ufe.Matrix4d([[mat[i][j] + mat[i][j] for j in range(4)] for i in range(4)])
+            newValue = ufe.Value(newValue)
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufe.Value(ufeAttr.get()), newValue)
+            self.assertEqual(ufeAttr.value(), newValue)
+
+            # Typed overload of setCmd.
+            newValue = ufe.Matrix4d([[mat[i][j] + mat[i][j] for j in range(4)] for i in range(4)])
+            ufeAttr.setCmd(newValue).execute()
+            self.assertEqual(ufeAttr.get(), newValue)
+            self.assertEqual(ufeAttr.value(), ufe.Value(newValue))
 
     @unittest.skipIf(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v3 and earlier')
     def testObservation(self):
