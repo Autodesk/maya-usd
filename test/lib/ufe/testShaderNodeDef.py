@@ -100,6 +100,10 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         for mtlxDef in mtlxDefs:
             self.assertTrue(mtlxDef in nodeDefTypes)
 
+        nodeDef = nodeDefHandler.definition("ND_noise2d_color3")
+        self.assertEqual(nodeDef.classification(nodeDef.nbClassifications() - 1), "MaterialX")
+
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'filename and float2 are no longer generic starting with Ufe v4')
     def testDefinitionByType(self):
         type = "ND_image_color3"
