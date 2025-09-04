@@ -343,6 +343,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         if (showSessionLayer) {
             appendRow(new LayerTreeItem(
                 sessionLayer,
+                _sessionState->stage(),
                 LayerType::SessionLayer,
                 "",
                 &incomingLayers,
@@ -351,7 +352,13 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         }
 
         appendRow(new LayerTreeItem(
-            rootLayer, LayerType::RootLayer, "", &incomingLayers, sharedStage, &sharedLayers));
+            rootLayer,
+            _sessionState->stage(),
+            LayerType::RootLayer,
+            "",
+            &incomingLayers,
+            sharedStage,
+            &sharedLayers));
 
         updateTargetLayer(InRebuildModel::Yes);
 
