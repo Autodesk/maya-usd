@@ -27,9 +27,15 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/usd/stageCacheContext.h>
+#if PXR_VERSION < 2508
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
+#else
+#include <pxr/usd/sdf/usdFileFormat.h>
+#include <pxr/usd/sdf/usdaFileFormat.h>
+#include <pxr/usd/sdf/usdcFileFormat.h>
+#endif
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MGlobal.h>
@@ -219,7 +225,11 @@ std::string generateUniqueFileName(const std::string& basename)
     std::string newFileName = UsdMayaUtilFileSystem::getUniqueFileName(
         getSceneFolder(),
         !basename.empty() ? basename : "anonymous",
+#if PXR_VERSION < 2508
         PXR_NS::UsdUsdFileFormatTokens->Id.GetText());
+#else
+        PXR_NS::SdfUsdFileFormatTokens->Id.GetText());
+#endif
     return newFileName;
 }
 
@@ -229,7 +239,11 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
     if (layer)
         layerNumber = UsdMayaUtilFileSystem::getNumberSuffix(layer->GetDisplayName());
 
+#if PXR_VERSION < 2508
     const std::string ext = PXR_NS::UsdUsdFileFormatTokens->Id.GetText();
+#else
+    const std::string ext = PXR_NS::SdfUsdFileFormatTokens->Id.GetText();
+#endif
     const std::string layerFilename = basename + "-layer" + layerNumber + "." + ext;
     const std::string dir = getSceneFolder();
 
@@ -247,8 +261,13 @@ std::string usdFormatArgOption()
     } else {
         MGlobal::setOptionVarValue(kSaveLayerFormatBinaryOption, 1);
     }
+#if PXR_VERSION < 2508
     return binary ? PXR_NS::UsdUsdcFileFormatTokens->Id.GetText()
                   : PXR_NS::UsdUsdaFileFormatTokens->Id.GetText();
+#else
+    return binary ? PXR_NS::SdfUsdcFileFormatTokens->Id.GetText()
+                  : PXR_NS::SdfUsdaFileFormatTokens->Id.GetText();
+#endif
 }
 
 /* static */
@@ -343,7 +362,11 @@ static bool isCompatibleWithSave(
     if (layer->GetRealPath() != filePath)
         return false;
 
+#if PXR_VERSION < 2508
     const TfToken underlyingFormat = UsdUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
+#else
+    const TfToken underlyingFormat = SdfUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
+#endif
     if (underlyingFormat.size()) {
         return underlyingFormat == formatArg;
     } else {
@@ -401,7 +424,11 @@ bool saveLayerWithFormat(
         }
     } else {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
+#if PXR_VERSION < 2508
         args[UsdUsdFileFormatTokens->FormatArg] = formatArg;
+#else
+        args[SdfUsdFileFormatTokens->FormatArg] = formatArg;
+#endif
         if (!layer->Export(filePath, "", args)) {
             return false;
         }
