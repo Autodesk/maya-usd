@@ -289,7 +289,7 @@ install(FILES
 )
 install(CODE
     "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/python/AL/__init__.py\"
-    \"try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\")"
+    \"from pkgutil import extend_path\n__path__ = extend_path(__path__, __name__)\n\")"
 )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/python/AL/__init__.py
     DESTINATION ${AL_INSTALL_PREFIX}/lib/python/AL
