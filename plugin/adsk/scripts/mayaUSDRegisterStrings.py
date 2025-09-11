@@ -310,6 +310,8 @@ __mayaUSDStringResources = {
     "kImportAnimationDataLbl": "Animation Data",
     "kImportCustomFrameRangeLbl": "Custom Frame Range",
     "kImportFrameRangeLbl": "Frame Range Start/End: ",
+    "kImportApplyEulerFilterAnn": "Import using the euler angle filtering that was performed in Maya.",
+    "kImportApplyEulerFilterLbl": "Apply Euler Filter",
     "kImportHierarchyViewLbl": "Hierarchy View",
     "kImportJobContextAnn": "Select a loaded plug-in configuration to modify import options",
     "kImportJobContextLbl": "Plug-in Configuration:",
