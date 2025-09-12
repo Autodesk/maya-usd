@@ -1703,7 +1703,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
         << "preserveTimeline: " << TfStringify(importArgs.preserveTimeline) << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl
-        << "applyEulerFilter: " << importArgs.applyEulerFilter << std::endl;
+        << "applyEulerFilter: " << TfStringify(importArgs.applyEulerFilter) << std::endl;
 
     out << "jobContextNames (" << importArgs.jobContextNames.size() << ")" << std::endl;
     for (const std::string& jobContextName : importArgs.jobContextNames) {
