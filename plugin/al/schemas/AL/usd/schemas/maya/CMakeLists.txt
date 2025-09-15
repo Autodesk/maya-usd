@@ -45,7 +45,7 @@ execute_process(
     RESULT_VARIABLE
         usdgen_res
 )
-if(usdgen_res)
+if(usdgen_res EQUAL 1)
     message(FATAL_ERROR "Schemas generation failed")
 endif()
 
