@@ -577,7 +577,8 @@ class AETemplate(object):
             else:
                 schemaPrimDef   = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(typeName)
                 attrList = schemaPrimDef.GetPropertyNames()
-                attrList = [name for name in attrList if schemaPrimDef.GetAttributeDefinition(name)]
+                if hasattr(schemaPrimDef, 'GetAttributeDefinition'):
+                    attrList = [name for name in attrList if schemaPrimDef.GetAttributeDefinition(name)]
                 if isMultipleApplyAPISchema:
                     instanceName = typeAndInstance[1]
                     attrList = [name.replace('__INSTANCE_NAME__', instanceName) for name in attrList]
