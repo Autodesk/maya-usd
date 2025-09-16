@@ -432,11 +432,13 @@ MStatus initializePlugin(MObject obj)
             MGlobal::executePythonCommand(
                 "try:\n"
                 "    import mayaUsd_AdskAssetResolver\n"
-                "    mayaUsd_AdskAssetResolver.load_mappingfile(r\""+ file+ "\" )\n"
-                "except:\n"
-                "    from maya.OpenMaya import MGlobal\n"
-                "    MGlobal.displayError('Error loading mapping File at start')\n"
-                "    pass\n");
+                "    mayaUsd_AdskAssetResolver.load_mappingfile(r\""
+                + file
+                + "\" )\n"
+                  "except:\n"
+                  "    from maya.OpenMaya import MGlobal\n"
+                  "    MGlobal.displayError('Error loading mapping File at start')\n"
+                  "    pass\n");
         }
     }
 
