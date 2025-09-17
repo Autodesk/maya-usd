@@ -72,7 +72,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* option var to remember if use display color when texture mode off */ \
     ((ShowDisplayColorTextureOff, "mayaUsd_ShowDisplayColorTextureOff")) \
     /* option var to remember if include Maya tokens in AdskAssetResolver */ \
-    ((IncludeMayaTokenInAR, "mayaUsd_AdskAssetResolverIncludeMayaToken"))
+    ((IncludeMayaTokenInAR, "mayaUsd_AdskAssetResolverIncludeMayaToken")) \
+    /* option var to remember AdskAssetResolver mapping file */ \
+    ((AdskAssetResolverMappingFile, "mayaUsd_AdskAssetResolverMappingFile")) \
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);

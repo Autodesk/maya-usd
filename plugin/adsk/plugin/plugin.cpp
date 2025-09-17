@@ -422,6 +422,24 @@ MStatus initializePlugin(MObject obj)
                 "except:\n"
                 "    pass\n");
         }
+
+        static const MString AdskAssetResolverMappingFile = "mayaUsd_AdskAssetResolverMappingFile";
+        MGlobal::displayInfo("mayaUsdPlugin: AdskAssetResolver plugin found.");
+        if (MGlobal::optionVarExists(AdskAssetResolverMappingFile)) {
+            MString file = MGlobal::optionVarStringValue(AdskAssetResolverMappingFile);
+            MGlobal::displayInfo(
+                MString("mayaUsdPlugin: Loading AdskAssetResolver mapping file ") + file);
+            MGlobal::executePythonCommand(
+                "try:\n"
+                "    import mayaUsd_AdskAssetResolver\n"
+                "    mayaUsd_AdskAssetResolver.load_mappingfile(r\""
+                + file
+                + "\" )\n"
+                  "except:\n"
+                  "    from maya.OpenMaya import MGlobal\n"
+                  "    MGlobal.displayError('Error loading mapping File at start')\n"
+                  "    pass\n");
+        }
     }
 
     return status;

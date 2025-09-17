@@ -128,8 +128,6 @@ global proc mayaUsd_AssetResolverMayaToken()
 	}
 }
 
-
-
 global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 {
 	string $saveLayerFormatArgBinaryOptionPref = `python("import mayaUsd.lib as mlib; mlib.OptionVarTokens.SaveLayerFormatArgBinaryOption")`;
@@ -141,6 +139,12 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
             optionVar -transient -iv mayaUsd_PrefUntexturedModeChanged 1;
         }
     }
+	if ($forceFactoryDefault && `optionVar -exists "mayaUsd_AdskAssetResolverMappingFile"`) {
+        if (`optionVar -q "mayaUsd_AdskAssetResolverMappingFile"`) {
+            optionVar -transient -sv mayaUsd_PrefArMappingFileChanged "";
+        }
+    }
+
 
 	int $mjv = `about -majorVersion`;
 	if ($mjv <= 2022) {
@@ -176,6 +180,9 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_AdskAssetResolverIncludeMayaToken`) {
 			optionVar -intValue mayaUsd_AdskAssetResolverIncludeMayaToken false;
 		}
+		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_AdskAssetResolverMappingFile`) {
+			optionVar -stringValue mayaUsd_AdskAssetResolverMappingFile "";
+		}
 
 	} else {
 		optionVar -init $forceFactoryDefault -category "MayaUsd"
@@ -194,6 +201,8 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 			-iv mayaUsd_MakePathRelativeToEditTargetLayer false
 			-iv mayaUsd_MakePathRelativeToImageEditTargetLayer false
 			-iv mayaUsd_ShowDisplayColorTextureOff false
+			-iv mayaUsd_AdskAssetResolverIncludeMayaToken false
+			-sv mayaUsd_AdskAssetResolverMappingFile ""
 		;
 	}
     
@@ -343,9 +352,45 @@ global proc mayaUsd_PrefCreateTab()
 			-v1 false	// Default -> not checked
 			-changeCommand mayaUsd_AssetResolverMayaToken
 			usdAssetResolverMayaTokens;
+	
+		rowLayout
+			-nc 3
+			-adj 2
+			-columnAttach 1 "right" 0
+			-columnAttach 2 "both" 0
+			-columnAttach 3 "left" 5
+			-columnWidth 1 142      // label width (match your checkbox label width)
+			-columnWidth 3 28       // browse button width
+			fileRow;
+
+			text -label `getMayaUsdString("KArMappingFile")` -ann `getMayaUsdString("KArMappingFileAnn")`;
+			textField -text (`optionVar -q mayaUsd_AdskAssetResolverMappingFile`) -cc ("mayaUsdArMappingFilePathUpdate") mayaUsdArMappingFilePath;
+			symbolButton -image "navButtonBrowse.png" -c "mayaUsdArMappingFileBrowser()" browseBtn;
 	setUITemplate -popTemplate;
 
 	mayaUsd_PrefUpdate();
+}
+
+global proc mayaUsdArMappingFilePathUpdate()
+{
+	string $mayaUsdArMappingFilePath = `textField -q -fileName mayaUsdArMappingFilePath`;
+	optionVar -transient -sv mayaUsd_PrefArMappingFileChanged $mayaUsdArMappingFilePath;
+
+	//python("import mayaUsd_AdskAssetResolver; mayaUsd_AdskAssetResolver.load_mappingfile('" + $mayaUsdArMappingFilePath + "')");
+}
+
+global proc  mayaUsdArMappingFileBrowser()
+{
+    string $cmd = "mappingFileLocationBrowserCallBack";
+    string $open = "Select";
+    fileBrowser ($cmd, $open, "", 0); // 0 here indicates Open File Dialog
+}
+
+global proc int mappingFileLocationBrowserCallBack(string $path, string $fileType)
+{
+    textField -e -fileName $path mayaUsdArMappingFilePath;
+    mayaUsdArMappingFilePathUpdate();
+    return true;
 }
 
 global proc mayaUsd_PrefCreateFrameLayout()
@@ -359,7 +404,7 @@ global proc mayaUsd_PrefUpdate()
 	global string $gPreferenceWindow;
 	setParent $gPreferenceWindow;
 	string $parent = "mayaUsd_PrefLayout";
-	
+
 	if (`columnLayout -q -numberOfChildren $parent` == 0) {
 		return;
 	}
@@ -422,9 +467,14 @@ global proc mayaUsd_PrefUpdate()
 		if ($v == false) $checkAll = false;
 	}
 
-	if (`optionVar -exists "mayaUsd_AdskAssetResolverIncludeMayaToken"`) {
+	if (`optionVar -exists "mayaUsd_AdskAssetResolverIncludeMayaToken"` && `checkBoxGrp -exists usdAssetResolverMayaTokens`) {
 		int $v = `optionVar -q "mayaUsd_AdskAssetResolverIncludeMayaToken"`;
 		checkBoxGrp -e -v1 $v usdAssetResolverMayaTokens;
+	}
+
+	if (`optionVar -exists "mayaUsd_AdskAssetResolverMappingFile"` && `textField -exists mayaUsdArMappingFilePath`) {
+		string $v = `optionVar -q "mayaUsd_AdskAssetResolverMappingFile"`;
+		textField -e -fileName $v mayaUsdArMappingFilePath;
 	}
 
 	// If any of the relative checkboxes get unchecked, also uncheck the
@@ -451,13 +501,15 @@ global proc mayaUsd_PrefHoldState(string $mode)
 		"mayaUsd_MakePathRelativeToEditTargetLayer",
 		"mayaUsd_MakePathRelativeToImageEditTargetLayer",
 		"mayaUsd_ShowDisplayColorTextureOff",
-		"mayaUsd_AdskAssetResolverIncludeMayaToken"
+		"mayaUsd_AdskAssetResolverIncludeMayaToken",
+		"mayaUsd_AdskAssetResolverMappingFile"
 	};
 	prefsHoldOptionVars($prefOptionVars, $mode); 
 
 	if ($mode == "save") {
 		// Preferences dialog was opened, make sure we don't have this transient optionVar.
 		optionVar -remove mayaUsd_PrefUntexturedModeChanged;
+		optionVar -remove mayaUsd_PrefArMappingFileChanged;
 	}
 
 	if ($mode == "restore") {
@@ -469,6 +521,12 @@ global proc mayaUsd_PrefHoldState(string $mode)
 
 	if ($mode == "remove") {
 		optionVar -remove mayaUsd_PrefUntexturedModeChanged;
+		if (`optionVar -exists mayaUsd_PrefArMappingFileChanged`) {
+			string $mayaUsdArMappingFilePath = `optionVar -q mayaUsd_PrefArMappingFileChanged`;
+			python("import mayaUsd_AdskAssetResolver; mayaUsd_AdskAssetResolver.load_mappingfile('" + $mayaUsdArMappingFilePath + "')");
+			optionVar -sv mayaUsd_AdskAssetResolverMappingFile $mayaUsdArMappingFilePath;
+			optionVar -remove mayaUsd_PrefArMappingFileChanged;
+		}
 	}
 
 	global string $gPreferenceWindow;
@@ -524,6 +582,10 @@ global proc mayaUsd_PrefHoldState(string $mode)
 			checkBoxGrp -e -v1
 				`optionVar -q mayaUsd_AssetResolverMayaToken`
 				usdAssetResolverMayaTokens;
+		}
+		if (`textField -exists mayaUsdArMappingFilePath`) {
+			string $path = `optionVar -q mayaUsd_AdskAssetResolverMappingFile`;
+			textField -e -fileName $path mayaUsdArMappingFilePath;
 		}
 	}
 }
