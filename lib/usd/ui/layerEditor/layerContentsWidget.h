@@ -42,11 +42,15 @@ public:
 
     void setLayer(const PXR_NS::SdfLayerRefPtr);
 
+    void clear();
+    bool isEmpty() const { return _isEmpty; }
+
 private:
     void createUI();
 
     QPointer<QTextEdit>          _layerContents;
     QPointer<QSyntaxHighlighter> _syntaxHighlighter;
+    bool                         _isEmpty { true };
 };
 
 } // namespace UsdLayerEditor

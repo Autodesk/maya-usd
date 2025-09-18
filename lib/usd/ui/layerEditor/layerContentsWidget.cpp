@@ -35,6 +35,7 @@ void LayerContentsWidget::createUI()
     mainLayout->setSpacing(0);
 
     _layerContents = new QTextEdit;
+    _layerContents->setFont(QFont("Courier New"));
     _layerContents->setAcceptRichText(true);
     _layerContents->setFrameStyle(QFrame::NoFrame);
     _layerContents->setPlaceholderText(
@@ -62,8 +63,17 @@ void LayerContentsWidget::setLayer(const PXR_NS::SdfLayerRefPtr in_layer)
             //       We could consider doing this in a worker thread if needed.
             if (in_layer->ExportToString(&layerText)) {
                 _layerContents->setPlainText(QString::fromStdString(layerText));
+                _isEmpty = false;
             }
         }
+    }
+}
+
+void LayerContentsWidget::clear()
+{
+    if (_layerContents) {
+        _layerContents->clear();
+        _isEmpty = true;
     }
 }
 
