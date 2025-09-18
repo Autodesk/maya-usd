@@ -22,6 +22,7 @@
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 
 #include <pxr/base/tf/registryManager.h>
+#include <pxr/base/vt/dictionary.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -38,6 +39,35 @@ class OrphanedNodesManager;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \brief Arguments used by PrimUpdaterManager pushToUsd operations mergeToUsd and duplicateToUsd.
+struct MAYAUSD_CORE_PUBLIC PushToUsdArgs
+{
+    /// The source maya object to push to USD.
+    const MObject srcMayaObject;
+    /// The UFE path to the destination USD prim.
+    const Ufe::Path dstUfePath;
+    /// User arguments dictionary.
+    const VtDictionary userArgs;
+    /// Arguments that confirure the updaters.
+    const UsdMayaPrimUpdaterArgs updaterArgs;
+
+    /// \brief Creates PushToUsdArgs for mergeToUsd. Given \p dagPath will be pushed to its
+    /// pulled USD prim with given \p usrArgs export args.
+    static PushToUsdArgs forMerge(const MDagPath& dagPath, const VtDictionary& usrArgs = {});
+
+    /// \brief Creates PushToUsdArgs for duplicateToUsd. The maya node \p object will be
+    /// duplicated to USD prim at \p dstPath with given \p usrArgs export args.
+    static PushToUsdArgs
+    forDuplicate(const MObject& object, const Ufe::Path& dstPath, const VtDictionary& usrArgs = {});
+
+    /// Are all required fields valid.
+    explicit operator bool() const;
+
+protected:
+    PushToUsdArgs();
+    PushToUsdArgs(const MObject& mayaObject, const Ufe::Path& ufePath, VtDictionary&& userArgs);
+};
+
 class PrimUpdaterManager : public PXR_NS::TfWeakBase
 {
 public:
@@ -45,12 +75,9 @@ public:
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(PrimUpdaterManager);
     ~PrimUpdaterManager();
 
-    /// \brief merges edited Maya data into its corresponding USD stage.
+    /// \brief merges multiple edited Maya data into their corresponding USD stages.
     MAYAUSD_CORE_PUBLIC
-    bool mergeToUsd(
-        const MFnDependencyNode& depNodeFn,
-        const Ufe::Path&         pulledPath,
-        const VtDictionary&      userArgs = VtDictionary());
+    std::vector<Ufe::Path> mergeToUsd(const std::vector<PushToUsdArgs>& mergeArgsVect);
 
     /// \brief edit USD data as Maya data.
     MAYAUSD_CORE_PUBLIC

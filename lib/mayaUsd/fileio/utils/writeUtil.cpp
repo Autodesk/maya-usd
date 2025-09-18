@@ -1273,4 +1273,33 @@ std::vector<double> UsdMayaWriteUtil::GetTimeSamples(
     return samples;
 }
 
+// static
+bool UsdMayaWriteUtil::UpdateTimeSamples(
+    std::vector<double>&       timesSamples,
+    const std::vector<double>& otherTimeSamples,
+    std::vector<double>*       storage)
+{
+    std::vector<double> localStorage;
+    if (nullptr == storage) {
+        storage = &localStorage;
+    } else {
+        storage->clear();
+    }
+
+    // One of the vectors might often be a subset of the other, reserve accordingly.
+    storage->reserve(std::max(timesSamples.size(), otherTimeSamples.size()));
+
+    std::set_union(
+        timesSamples.cbegin(),
+        timesSamples.cend(),
+        otherTimeSamples.cbegin(),
+        otherTimeSamples.cend(),
+        std::back_inserter(*storage));
+
+    const bool updated = (timesSamples.size() != storage->size());
+    std::swap(timesSamples, *storage);
+
+    return updated;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
