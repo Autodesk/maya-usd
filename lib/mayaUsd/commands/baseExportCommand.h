@@ -128,10 +128,6 @@ public:
 
     static MSyntax createSyntax();
     static void*   creator();
-
-protected:
-    virtual std::unique_ptr<PXR_NS::UsdMaya_WriteJob>
-    initializeWriteJob(const PXR_NS::UsdMayaJobExportArgs&);
 };
 
 } // namespace MAYAUSD_NS_DEF

@@ -296,6 +296,17 @@ struct UsdMayaWriteUtil
         const std::set<double>& subframeOffsets,
         const double            stride = 1.0);
 
+    /// Updates \p timesSamples by computing its union with \p otherTimeSamples. Both vectors are
+    /// assumed to be sorted in monotonically non-decreasing order, \p timeSamples will remain as
+    /// such. Optionally, a non-null external \p storage can be used to reduce allocations during
+    /// consecutive union operations, this is for internal use only.
+    /// Returns \c true if \p timesSamples were modified, otherwise \c false.
+    MAYAUSD_CORE_PUBLIC
+    static bool UpdateTimeSamples(
+        std::vector<double>&       timesSamples,
+        const std::vector<double>& otherTimeSamples,
+        std::vector<double>*       storage = nullptr);
+
     /// \}
 
     /// Sets the value of \p attr to \p value at \p time with optional value
