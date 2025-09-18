@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-from shutil import which as find_executable
+try:
+   from shutil import which as find_executable
+except:
+   from distutils.spawn import find_executable
+
 from glob import glob
 
 import argparse
