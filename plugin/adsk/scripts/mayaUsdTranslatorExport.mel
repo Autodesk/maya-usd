@@ -236,7 +236,10 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
         return;
     }
 
-    string $currentDefaultPrim = `optionMenuGrp -q -value exportDefaultPrim`;
+    string $currentDefaultPrim = "";
+    if (`optionMenuGrp -q -numberOfItems exportDefaultPrim` > 0) {
+        $currentDefaultPrim = `optionMenuGrp -q -value exportDefaultPrim`;
+    }
 
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
@@ -1361,7 +1364,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 }
 
                 if ($canControlUpAxisAndUnit) {
-                    columnLayout -columnOffset "left" 2;
+                    columnLayout -columnOffset "both" 4 -adj true;
                     frameLayout -label `getMayaUsdString("kExportAxisAndUnitLbl")` -collapsable true -collapse false axisAndUnitFrameLayout;
                         separator -style "none";
 
