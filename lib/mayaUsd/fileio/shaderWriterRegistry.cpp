@@ -19,7 +19,6 @@
 #include <mayaUsd/fileio/functorPrimWriter.h>
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-
 #include <mayaUsd/fileio/shading/symmetricShaderReader.h>
 #include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
