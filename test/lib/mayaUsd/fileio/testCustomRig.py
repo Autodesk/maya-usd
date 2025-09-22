@@ -321,7 +321,7 @@ class testCustomRig(unittest.TestCase):
 
         layer = stage.GetRootLayer()
         layer.ImportFromString(
-        ''' #sdf 1
+            USD_HEADER + '''
             (
                 defaultPrim = "bobs"
             )
