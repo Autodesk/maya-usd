@@ -139,7 +139,8 @@ UsdMayaShaderWriterRegistry::WriterFactoryFn UsdMayaShaderWriterRegistry::Find(
         return it->second._writer;
     }
 
-    UsdMayaSymmetricShaderWriter::RegisterWriter(mayaTypeName, mayaTypeName, TfToken("rendermanForMaya"));
+    UsdMayaSymmetricShaderWriter::RegisterWriter(
+        mayaTypeName, mayaTypeName, TfToken("rendermanForMaya"));
     it = _Find(mayaTypeName, exportArgs);
     if (it != _reg.end()) {
         return it->second._writer;
