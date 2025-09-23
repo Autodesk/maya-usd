@@ -1,31 +1,35 @@
 {
   "syntaxHighlighting": {
     "specifiers": {
-      "color": "#8080FF",
+      "color": "#E98FE6",
       "fontWeight": "normal",
       "wordPatterns": [
         "def",
         "class",
-        "over"
+        "over",
+        "variantSet"
       ]
     },
 
     "storageModifier": {
-      "color": "#93C763",
+      "color": "#5DA5E2",
       "fontWeight": "normal",
       "wordPatterns": [
+        "connect",
         "custom",
         "uniform",
         "varying"
       ]
     },
     "geomTokens": {
-      "color": "#93C763",
+      "color": "#9CDCFE",
       "fontWeight": "normal",
       "wordPatterns": [
         "accelerations",
         "all",
         "angularVelocities",
+        "apiSchemas",
+        "assetInfo",
         "axis",
         "basis",
         "bezier",
@@ -53,6 +57,7 @@
         "cubic",
         "curveVertexCounts",
         "default",
+        "defaultPrim",
         "doubleSided",
         "edge",
         "edgeAndCorner",
@@ -76,6 +81,7 @@
         "focusDistance",
         "fromTexture",
         "fStop",
+        "generated",
         "guide",
         "guideVisibility",
         "height",
@@ -86,6 +92,7 @@
         "ids",
         "inactiveIds",
         "indices",
+        "info\\:id",
         "inherited",
         "interpolateBoundary",
         "interpolation",
@@ -97,6 +104,7 @@
         "length",
         "linear",
         "loop",
+        "material\\:binding",
         "metersPerUnit",
         "model\\:applyDrawMode",
         "model\\:cardGeometry",
@@ -123,6 +131,7 @@
         "orientationsf",
         "origin",
         "orthographic",
+        "outputs\\:surface",
         "partition",
         "periodic",
         "perspective",
@@ -135,6 +144,7 @@
         "power",
         "primvars\\:displayColor",
         "primvars\\:displayOpacity",
+        "primvars\\:st\\:",
         "projection",
         "protoIndices",
         "prototypes",
@@ -158,6 +168,7 @@
         "smooth",
         "stereoRole",
         "subdivisionScheme",
+        "surface",
         "surfaceFaceVertexIndices",
         "tangents",
         "tetrahedron",
@@ -192,20 +203,25 @@
         "width",
         "widths",
         "wrap",
-        "xformOpOrder"
+        "xformOpOrder",
+        "xformOp:rotateXYZ",
+        "xformOp:scale",
+        "xformOp:translate",
+        "xformOp:"
       ]
     },
     "keywords": {
-      "color": "#628542",
+      "color": "#5DA5E2",
       "fontWeight": "normal",
       "wordPatterns": [
         "active",
         "add",
-        "append",
         "color",
         "curvature",
+        "customData",
         "delete",
         "detail",
+        "dictionary",
         "displayOpactity",
         "doc",
         "endFrame",
@@ -221,7 +237,6 @@
         "occulusion",
         "payload",
         "pivotPosition",
-        "prepend",
         "prop",
         "references",
         "rel",
@@ -232,20 +247,18 @@
         "specializes",
         "startFrame",
         "subLayers",
-        "surface",
         "timeSamples",
         "transform",
         "twoSided",
         "u_map1",
         "v_map1",
         "variants",
-        "variantSet",
         "variantSets",
         "verts"
       ]
     },
     "sdfTypes": {
-      "color": "#678CB1",
+      "color": "#5DA5E2",
       "fontWeight": "normal",
       "wordPatterns": [
         "asset",
@@ -307,14 +320,14 @@
       ]
     },
     "primitiveTypes": {
-      "color": "#FFCD22",
+      "color": "#9CDCFE",
       "fontWeight": "normal",
       "__comment": "Primitive types are dynamically read, but you can add any extra here.",
       "wordPatterns": [
       ]
     },
     "operators": {
-      "color": "#FFCD22",
+      "color": "#9CDCFE",
       "fontWeight": "normal",
       "wordPatterns": [
         "NULL",
@@ -325,52 +338,51 @@
       ]
     },
     "numbers": {
-      "color": "#FFCD22",
+      "color": "#C3DCB5",
       "fontWeight": "normal",
       "patterns": [
         "\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b"
       ]
     },
     "strings": {
-      "color": "#EC7600",
+      "color": "#DFA790",
       "fontWeight": "normal",
       "patterns": [
-        "\".*\""
+        "\".*\"",
+        "@.*@"
       ]
     },
     "comments": {
-      "color": "#FFCD22",
+      "color": "#6A9955",
       "fontWeight": "normal",
       "patterns": [
         "#[^\r\n]*"
       ]
     },
     "brackets": {
-      "color": "#E8E2A3",
-      "fontWeight": "bold",
+      "color": "#FFD853",
+      "fontWeight": "normal",
       "patterns": [
+        "\\[",
+        "\\]",
         "\\{",
         "\\}",
         "\\(",
-        "\\)",
-        "\\[",
-        "\\]"
+        "\\)"
       ]
     },
     "delimiters": {
-      "color": "#FFCD22",
+      "color": "#FFFFFF",
       "fontWeight": "normal",
       "patterns": [
-        "@"
+        ","
       ]
     },
     "angleBrackets": {
-      "color": "#FFCD22",
+      "color": "#DFA790",
       "fontWeight": "normal",
-      "_comment": "/? makes the / optional. Matches </ or just <",
       "patterns": [
-        "</?",
-        ">"
+        "<.*>"
       ]
     }
   }
