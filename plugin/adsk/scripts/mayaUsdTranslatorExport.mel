@@ -929,10 +929,18 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "staticSingleSample") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "staticSingleSampleCheckBox");
             } else if ($optionBreakDown[0] == "startTime") {
-                int $startTime = (int)$optionBreakDown[1];
+                // Start time might contain a float, but we only want the integer part.
+                string $startTimeStr = $optionBreakDown[1];
+                string $startTimeTok[];
+                tokenize $startTimeStr "." $startTimeTok;
+                int $startTime = (int)$startTimeTok[0];
                 intFieldGrp -e -v1 $startTime -en1 $enable frameRangeFields;
             } else if ($optionBreakDown[0] == "endTime") {
-                int $endTime = (int)$optionBreakDown[1];
+                // End time might contain a float, but we only want the integer part.
+                string $endTimeStr = $optionBreakDown[1];
+                string $endTimeTok[];
+                tokenize $endTimeStr "." $endTimeTok;
+                int $endTime = (int)$endTimeTok[0];
                 intFieldGrp -e -v2 $endTime -en2 $enable frameRangeFields;
             } else if ($optionBreakDown[0] == "frameStride") {
                 float $frameStride = (float)$optionBreakDown[1];
