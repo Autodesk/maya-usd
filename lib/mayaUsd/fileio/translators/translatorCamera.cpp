@@ -213,10 +213,6 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
     UsdMayaPrimReaderContext*    context,
     const MDistance::Unit        convertToUnit = MDistance::kMillimeters)
 {
-    if (args.GetTimeInterval().IsEmpty()) {
-        return false;
-    }
-
 #if PXR_VERSION >= 2411
 
     double scale = 1.0;
@@ -235,6 +231,10 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
         }
     }
 #endif
+
+    if (args.GetTimeInterval().IsEmpty()) {
+        return false;
+    }
 
     MTimeArray   timeArray;
     MDoubleArray valueArray;
