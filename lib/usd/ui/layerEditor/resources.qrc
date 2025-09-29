@@ -1,67 +1,67 @@
 <RCC>
     <qresource prefix="/UsdLayerEditor">
 
-        <file alias="LE_addCreateGeneric.png">resources/addCreateGeneric_100.png</file>
-        <file alias="LE_addCreateGeneric_150.png">resources/addCreateGeneric_150.png</file>
-        <file alias="LE_addCreateGeneric_200.png">resources/addCreateGeneric_200.png</file>
+        <file alias="addCreateGeneric.png">resources/addCreateGeneric_100.png</file>
+        <file alias="addCreateGeneric_150.png">resources/addCreateGeneric_150.png</file>
+        <file alias="addCreateGeneric_200.png">resources/addCreateGeneric_200.png</file>
 
-        <file alias="LE_save_all_100.png">resources/save_all_100.png</file>
-        <file alias="LE_save_all_150.png">resources/save_all_150.png</file>
-        <file alias="LE_save_all_200.png">resources/save_all_200.png</file>
-        <file alias="LE_save_all_hover_100.png">resources/save_all_hover_100.png</file>
-        <file alias="LE_save_all_hover_150.png">resources/save_all_hover_150.png</file>
-        <file alias="LE_save_all_hover_200.png">resources/save_all_hover_200.png</file>
-        <file alias="LE_save_all_pressed_100.png">resources/save_all_hover_100.png</file>
-        <file alias="LE_save_all_pressed_150.png">resources/save_all_hover_150.png</file>
-        <file alias="LE_save_all_pressed_200.png">resources/save_all_hover_200.png</file>
+        <file alias="save_all_100.png">resources/save_all_100.png</file>
+        <file alias="save_all_150.png">resources/save_all_150.png</file>
+        <file alias="save_all_200.png">resources/save_all_200.png</file>
+        <file alias="save_all_hover_100.png">resources/save_all_hover_100.png</file>
+        <file alias="save_all_hover_150.png">resources/save_all_hover_150.png</file>
+        <file alias="save_all_hover_200.png">resources/save_all_hover_200.png</file>
+        <file alias="save_all_pressed_100.png">resources/save_all_hover_100.png</file>
+        <file alias="save_all_pressed_150.png">resources/save_all_hover_150.png</file>
+        <file alias="save_all_pressed_200.png">resources/save_all_hover_200.png</file>
 
-        <file alias="LE_add_layer_100.png">resources/add_layer_100.png</file>
-        <file alias="LE_add_layer_150.png">resources/add_layer_150.png</file>
-        <file alias="LE_add_layer_200.png">resources/add_layer_200.png</file>
-        <file alias="LE_add_layer_hover_100.png">resources/add_layer_hover_100.png</file>
-        <file alias="LE_add_layer_hover_150.png">resources/add_layer_hover_150.png</file>
-        <file alias="LE_add_layer_hover_200.png">resources/add_layer_hover_200.png</file>
-        <file alias="LE_add_layer_pressed_100.png">resources/add_layer_hover_100.png</file>
-        <file alias="LE_add_layer_pressed_150.png">resources/add_layer_hover_150.png</file>
-        <file alias="LE_add_layer_pressed_200.png">resources/add_layer_hover_200.png</file>
+        <file alias="add_layer_100.png">resources/add_layer_100.png</file>
+        <file alias="add_layer_150.png">resources/add_layer_150.png</file>
+        <file alias="add_layer_200.png">resources/add_layer_200.png</file>
+        <file alias="add_layer_hover_100.png">resources/add_layer_hover_100.png</file>
+        <file alias="add_layer_hover_150.png">resources/add_layer_hover_150.png</file>
+        <file alias="add_layer_hover_200.png">resources/add_layer_hover_200.png</file>
+        <file alias="add_layer_pressed_100.png">resources/add_layer_hover_100.png</file>
+        <file alias="add_layer_pressed_150.png">resources/add_layer_hover_150.png</file>
+        <file alias="add_layer_pressed_200.png">resources/add_layer_hover_200.png</file>
 
-        <file alias="LE_import_layer_100.png">resources/import_layer_100.png</file>
-        <file alias="LE_import_layer_150.png">resources/import_layer_150.png</file>
-        <file alias="LE_import_layer_200.png">resources/import_layer_200.png</file>
-        <file alias="LE_import_layer_hover_100.png">resources/import_layer_hover_100.png</file>
-        <file alias="LE_import_layer_hover_150.png">resources/import_layer_hover_150.png</file>
-        <file alias="LE_import_layer_hover_200.png">resources/import_layer_hover_200.png</file>
-        <file alias="LE_import_layer_pressed_100.png">resources/import_layer_hover_100.png</file>
-        <file alias="LE_import_layer_pressed_150.png">resources/import_layer_hover_150.png</file>
-        <file alias="LE_import_layer_pressed_200.png">resources/import_layer_hover_200.png</file>
+        <file alias="import_layer_100.png">resources/import_layer_100.png</file>
+        <file alias="import_layer_150.png">resources/import_layer_150.png</file>
+        <file alias="import_layer_200.png">resources/import_layer_200.png</file>
+        <file alias="import_layer_hover_100.png">resources/import_layer_hover_100.png</file>
+        <file alias="import_layer_hover_150.png">resources/import_layer_hover_150.png</file>
+        <file alias="import_layer_hover_200.png">resources/import_layer_hover_200.png</file>
+        <file alias="import_layer_pressed_100.png">resources/import_layer_hover_100.png</file>
+        <file alias="import_layer_pressed_150.png">resources/import_layer_hover_150.png</file>
+        <file alias="import_layer_pressed_200.png">resources/import_layer_hover_200.png</file>
 
-        <file alias="LE_lock_off.png">resources/lock_off_100.png</file>
-        <file alias="LE_lock_off_150.png">resources/lock_off_150.png</file>
-        <file alias="LE_lock_off_200.png">resources/lock_off_200.png</file>
-        <file alias="LE_lock_off_hover.png">resources/lock_off_hover_100.png</file>
-        <file alias="LE_lock_off_hover_150.png">resources/lock_off_hover_150.png</file>
-        <file alias="LE_lock_off_hover_200.png">resources/lock_off_hover_200.png</file>
+        <file alias="lock_off.png">resources/lock_off_100.png</file>
+        <file alias="lock_off_150.png">resources/lock_off_150.png</file>
+        <file alias="lock_off_200.png">resources/lock_off_200.png</file>
+        <file alias="lock_off_hover.png">resources/lock_off_hover_100.png</file>
+        <file alias="lock_off_hover_150.png">resources/lock_off_hover_150.png</file>
+        <file alias="lock_off_hover_200.png">resources/lock_off_hover_200.png</file>
 
-        <file alias="LE_lock_on.png">resources/lock_on_100.png</file>
-        <file alias="LE_lock_on_150.png">resources/lock_on_150.png</file>
-        <file alias="LE_lock_on_200.png">resources/lock_on_200.png</file>
-        <file alias="LE_lock_on_hover.png">resources/lock_on_hover_100.png</file>
-        <file alias="LE_lock_on_hover_150.png">resources/lock_on_hover_150.png</file>
-        <file alias="LE_lock_on_hover_200.png">resources/lock_on_hover_200.png</file>
+        <file alias="lock_on.png">resources/lock_on_100.png</file>
+        <file alias="lock_on_150.png">resources/lock_on_150.png</file>
+        <file alias="lock_on_200.png">resources/lock_on_200.png</file>
+        <file alias="lock_on_hover.png">resources/lock_on_hover_100.png</file>
+        <file alias="lock_on_hover_150.png">resources/lock_on_hover_150.png</file>
+        <file alias="lock_on_hover_200.png">resources/lock_on_hover_200.png</file>
 
-        <file alias="LE_mute_off.png">resources/mute_off_100.png</file>
-        <file alias="LE_mute_off_150.png">resources/mute_off_150.png</file>
-        <file alias="LE_mute_off_200.png">resources/mute_off_200.png</file>
-        <file alias="LE_mute_off_hover.png">resources/mute_off_hover_100.png</file>
-        <file alias="LE_mute_off_hover_150.png">resources/mute_off_hover_150.png</file>
-        <file alias="LE_mute_off_hover_200.png">resources/mute_off_hover_200.png</file>
+        <file alias="mute_off.png">resources/mute_off_100.png</file>
+        <file alias="mute_off_150.png">resources/mute_off_150.png</file>
+        <file alias="mute_off_200.png">resources/mute_off_200.png</file>
+        <file alias="mute_off_hover.png">resources/mute_off_hover_100.png</file>
+        <file alias="mute_off_hover_150.png">resources/mute_off_hover_150.png</file>
+        <file alias="mute_off_hover_200.png">resources/mute_off_hover_200.png</file>
 
-        <file alias="LE_mute_on.png">resources/mute_on_100.png</file>
-        <file alias="LE_mute_on_150.png">resources/mute_on_150.png</file>
-        <file alias="LE_mute_on_200.png">resources/mute_on_200.png</file>
-        <file alias="LE_mute_on_hover.png">resources/mute_on_hover_100.png</file>
-        <file alias="LE_mute_on_hover_150.png">resources/mute_on_hover_150.png</file>
-        <file alias="LE_mute_on_hover_200.png">resources/mute_on_hover_200.png</file>
+        <file alias="mute_on.png">resources/mute_on_100.png</file>
+        <file alias="mute_on_150.png">resources/mute_on_150.png</file>
+        <file alias="mute_on_200.png">resources/mute_on_200.png</file>
+        <file alias="mute_on_hover.png">resources/mute_on_hover_100.png</file>
+        <file alias="mute_on_hover_150.png">resources/mute_on_hover_150.png</file>
+        <file alias="mute_on_hover_200.png">resources/mute_on_hover_200.png</file>
 
         <file alias="pin_off_100.png">resources/pin_off_100.png</file>
         <file alias="pin_off_150.png">resources/pin_off_150.png</file>
@@ -72,6 +72,7 @@
         <file alias="pin_off_pressed_100.png">resources/pin_on_hover_100.png</file>
         <file alias="pin_off_pressed_150.png">resources/pin_on_hover_150.png</file>
         <file alias="pin_off_pressed_200.png">resources/pin_on_hover_200.png</file>
+
         <file alias="pin_on_100.png">resources/pin_on_100.png</file>
         <file alias="pin_on_150.png">resources/pin_on_150.png</file>
         <file alias="pin_on_200.png">resources/pin_on_200.png</file>
@@ -90,9 +91,6 @@
         <file alias="striped_selected_150.png">resources/striped_selected_150.png</file>
         <file alias="striped_selected_200.png">resources/striped_selected_200.png</file>
 
-        <file alias="target_hover.png">resources/target_hover_100.png</file>
-        <file alias="target_hover_150.png">resources/target_hover_150.png</file>
-        <file alias="target_hover_200.png">resources/target_hover_200.png</file>
         <file alias="target_on.png">resources/target_on_100.png</file>
         <file alias="target_on_150.png">resources/target_on_150.png</file>
         <file alias="target_on_200.png">resources/target_on_200.png</file>
@@ -102,12 +100,36 @@
         <file alias="target_on_pressed.png">resources/target_on_pressed_100.png</file>
         <file alias="target_on_pressed_150.png">resources/target_on_pressed_150.png</file>
         <file alias="target_on_pressed_200.png">resources/target_on_pressed_200.png</file>
-        <file alias="target_pressed.png">resources/target_pressed_100.png</file>
-        <file alias="target_pressed_150.png">resources/target_pressed_150.png</file>
-        <file alias="target_pressed_200.png">resources/target_pressed_200.png</file>
-        <file alias="target_regular.png">resources/target_regular_100.png</file>
-        <file alias="target_regular_150.png">resources/target_regular_150.png</file>
-        <file alias="target_regular_200.png">resources/target_regular_200.png</file>
+
+        <file alias="target_off.png">resources/target_regular_100.png</file>
+        <file alias="target_off_150.png">resources/target_regular_150.png</file>
+        <file alias="target_off_200.png">resources/target_regular_200.png</file>
+        <file alias="target_off_hover.png">resources/target_hover_100.png</file>
+        <file alias="target_off_hover_150.png">resources/target_hover_150.png</file>
+        <file alias="target_off_hover_200.png">resources/target_hover_200.png</file>
+        <file alias="target_off_pressed.png">resources/target_pressed_100.png</file>
+        <file alias="target_off_pressed_150.png">resources/target_pressed_150.png</file>
+        <file alias="target_off_pressed_200.png">resources/target_pressed_200.png</file>
+
+        <file alias="contents_off_100.png">resources/contents_off_100.png</file>
+        <file alias="contents_off_150.png">resources/contents_off_150.png</file>
+        <file alias="contents_off_200.png">resources/contents_off_200.png</file>
+        <file alias="contents_off_hover_100.png">resources/contents_off_hover_100.png</file>
+        <file alias="contents_off_hover_150.png">resources/contents_off_hover_150.png</file>
+        <file alias="contents_off_hover_200.png">resources/contents_off_hover_200.png</file>
+        <file alias="contents_off_pressed_100.png">resources/contents_on_hover_100.png</file>
+        <file alias="contents_off_pressed_150.png">resources/contents_on_hover_150.png</file>
+        <file alias="contents_off_pressed_200.png">resources/contents_on_hover_200.png</file>
+
+        <file alias="contents_on_100.png">resources/contents_on_100.png</file>
+        <file alias="contents_on_150.png">resources/contents_on_150.png</file>
+        <file alias="contents_on_200.png">resources/contents_on_200.png</file>
+        <file alias="contents_on_hover_100.png">resources/contents_on_hover_100.png</file>
+        <file alias="contents_on_hover_150.png">resources/contents_on_hover_150.png</file>
+        <file alias="contents_on_hover_200.png">resources/contents_on_hover_200.png</file>
+        <file alias="contents_on_pressed_100.png">resources/contents_off_hover_100.png</file>
+        <file alias="contents_on_pressed_150.png">resources/contents_off_hover_150.png</file>
+        <file alias="contents_on_pressed_200.png">resources/contents_off_hover_200.png</file>
 
     </qresource>
 </RCC>
