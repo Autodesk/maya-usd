@@ -51,13 +51,11 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         muteActionInfo._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
 
         createPixmapPair(
-            ":/UsdLayerEditor/LE_mute_off",
+            ":/UsdLayerEditor/mute_off",
             muteActionInfo._pixmap_off,
             muteActionInfo._pixmap_off_hover);
         createPixmapPair(
-            ":/UsdLayerEditor/LE_mute_on",
-            muteActionInfo._pixmap_on,
-            muteActionInfo._pixmap_on_hover);
+            ":/UsdLayerEditor/mute_on", muteActionInfo._pixmap_on, muteActionInfo._pixmap_on_hover);
 
         _actionButtons.insert(std::make_pair(muteActionInfo._actionType, muteActionInfo));
 
@@ -70,13 +68,11 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         lockActionInfo._tooltip = StringResources::getAsQString(StringResources::kLockUnlockLayer);
 
         createPixmapPair(
-            ":/UsdLayerEditor/LE_lock_off",
+            ":/UsdLayerEditor/lock_off",
             lockActionInfo._pixmap_off,
             lockActionInfo._pixmap_off_hover);
         createPixmapPair(
-            ":/UsdLayerEditor/LE_lock_on",
-            lockActionInfo._pixmap_on,
-            lockActionInfo._pixmap_on_hover);
+            ":/UsdLayerEditor/lock_on", lockActionInfo._pixmap_on, lockActionInfo._pixmap_on_hover);
 
         _actionButtons.insert(std::make_pair(lockActionInfo._actionType, lockActionInfo));
     }

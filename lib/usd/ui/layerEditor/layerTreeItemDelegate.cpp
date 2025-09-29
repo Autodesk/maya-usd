@@ -94,7 +94,7 @@ LayerTreeItemDelegate::LayerTreeItemDelegate(LayerTreeView* in_parent)
     WARNING_IMAGE = utils->createPNGResPixmap("RS_warning");
 
     const char* targetOnPixmaps[3] { "target_on", "target_on_hover", "target_on_pressed" };
-    const char* targetOffPixmaps[3] { "target_regular", "target_hover", "target_pressed" };
+    const char* targetOffPixmaps[3] { "target_off", "target_off_hover", "target_off_pressed" };
     for (int i = 0; i < 3; i++) {
         TARGET_ON_IMAGES[i]
             = utils->createPNGResPixmap(QString(":/UsdLayerEditor/") + targetOnPixmaps[i]);
