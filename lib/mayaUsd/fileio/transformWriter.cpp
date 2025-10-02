@@ -517,6 +517,10 @@ void UsdMayaTransformWriter::_PushTransformStack(
     }
 
     // inspect the rotate pivot
+    // Track the [start, end] indices of the rotate pivot channels, which can 
+    // be split up into components due to animation splines, so we can add 
+    // inverted xform ops for them.
+    int rotPivotStartIndex = _animChannels.size();
     bool hasRotatePivot = _GatherAnimChannel(
         _XformType::Translate,
         iTrans,
@@ -562,13 +566,16 @@ void UsdMayaTransformWriter::_PushTransformStack(
 
     // invert the rotate pivot
     if (hasRotatePivot) {
-        _AnimChannel chan;
-        chan.usdOpType = UsdGeomXformOp::TypeTranslate;
-        chan.precision = UsdGeomXformOp::PrecisionFloat;
-        chan.suffix = UsdMayaXformStackTokens->rotatePivot;
-        chan.isInverse = true;
-        _animChannels.push_back(chan);
-        rotPivotINVIdx = _animChannels.size() - 1;
+        // The inverted rotate pivot channel will start at this index.
+        rotPivotINVIdx = _animChannels.size();
+        // Add inverted versions of the rotate pivot channels, in reverse 
+        // order. This also handles the case where the xform op is not split
+        // into components.
+        for (int i = rotPivotIdx; i >= rotPivotStartIndex; i--) {
+            _AnimChannel inverseChannel = _animChannels[i];
+            inverseChannel.isInverse = true;
+            _animChannels.push_back(inverseChannel);
+        }
     }
 
     // inspect the scale pivot translation
@@ -587,6 +594,10 @@ void UsdMayaTransformWriter::_PushTransformStack(
     }
 
     // inspect the scale pivot point
+    // Track the [start, end] indices of the scale pivot channels, which can be
+    // split up into components due to animation splines, so we can add 
+    // inverted xform ops for them.
+    int scalePivotStartIndex = _animChannels.size();
     bool hasScalePivot = _GatherAnimChannel(
         _XformType::Translate,
         iTrans,
@@ -633,19 +644,30 @@ void UsdMayaTransformWriter::_PushTransformStack(
 
     // inverse the scale pivot point
     if (hasScalePivot) {
-        _AnimChannel chan;
-        chan.usdOpType = UsdGeomXformOp::TypeTranslate;
-        chan.precision = UsdGeomXformOp::PrecisionFloat;
-        chan.suffix = UsdMayaXformStackTokens->scalePivot;
-        chan.isInverse = true;
-        _animChannels.push_back(chan);
-        scalePivotINVIdx = _animChannels.size() - 1;
+        // The inverted scale pivot channel will start at this index.
+        scalePivotINVIdx = _animChannels.size();
+        // Add inverted versions of the scale pivot channels, in reverse order.
+        // This also handles the case where the xform op is not split into 
+        // components.
+        for (int i = scalePivotIdx; i >= scalePivotStartIndex; i--) {
+            _AnimChannel inverseChannel = _animChannels[i];
+            inverseChannel.isInverse = true;
+            _animChannels.push_back(inverseChannel);
+        }
     }
 
     // If still potential common API, check if the pivots are the same and NOT animated/connected
     if (hasRotatePivot != hasScalePivot) {
         conformsToCommonAPI = false;
     }
+
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
+    if (animType != UsdMayaJobExportArgsTokens->timesamples) {
+        // Channels that are split up into components do not conform to the
+        // UsdGeomXformCommonAPI.
+        conformsToCommonAPI = false;
+    }
+#endif
 
     if (conformsToCommonAPI && hasRotatePivot && hasScalePivot) {
         _AnimChannel rotPivChan, scalePivChan;
