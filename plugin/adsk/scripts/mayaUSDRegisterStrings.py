@@ -388,6 +388,8 @@ __mayaUSDStringResources = {
     "KDisplayColors": "Display Colors",
     "KUntexturedModeAnn": "Choose what your colors should display as in the viewport. Select from default material colors or USD display colors. Select display colors when working in USD as material colors may be inaccurate from the endless types available.",
     "KAssetResolver": "Asset Resolver",
+    "KAssetResolverButton": "USD Asset Resolver Settings",
+    "KAssetResolverButtonAnn": "Manage USD Asset Resolver settings and search paths, used when resolving paths in a USD stage.",
     "KIncludeMayaTokens": "Include Maya Project Tokens",
     "KIncludeMayaTokensAnn": "Enable this option to include Maya project tokens in the USD Asset Resolver. Note: Changing this setting will refresh the Asset Resolver.",
     "KArMappingFile": "Mapping File:",

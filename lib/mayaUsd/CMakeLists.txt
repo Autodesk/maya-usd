@@ -42,6 +42,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
+        $<$<BOOL:${AR_FOUND}>:WANT_AR_BUILD>
 
         # this flag is needed when building maya-usd in Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>

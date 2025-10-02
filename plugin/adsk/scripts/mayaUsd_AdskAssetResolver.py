@@ -33,9 +33,9 @@ def meets_min_version(targetVersion):
 
 def include_maya_project_tokens():
     ''' Include Maya project tokens in the USD Asset Resolver. '''
-    directory = cmds.workspace(q=True, rd=True)
+    directory = cmds.workspace(q=True, fullName=True)
     tokenList = cmds.workspace(fileRuleList=True)
-    mayaUsdResolver = ar.AssetResolverContextDataManager.RegisterContextData("MayaUSDExtension")
+    mayaUsdResolver = ar.AssetResolverContextDataRegistry.RegisterContextData("MayaUSDExtension")
     if mayaUsdResolver is not None:
         mayaUsdResolver.AddStaticToken("Project", directory)
         for token in tokenList:
@@ -44,21 +44,15 @@ def include_maya_project_tokens():
 
 def unload_maya_project_tokens():
     ''' Unload Maya project tokens from the USD Asset Resolver. '''
-    ar.AssetResolverContextDataManager.RemoveContextData("MayaUSDExtension")
+    ar.AssetResolverContextDataRegistry.RemoveContextData("MayaUSDExtension")
 
 def load_mappingfile(mappingFilePath=None):
     try:
         adskResolver = pxrAr.GetUnderlyingResolver()
         ctx = adskResolver.GetCurrentContext()
         ctx = ar.AdskResolverContext()
-        ar.AssetResolverContextDataManager.RemoveContextData("Environment Mapping")
-        ar.AssetResolverContextDataManager.RegisterContextDataWithMappingFile("Environment Mapping", mappingFilePath)
-        # Keep Environment Mapping always at the end of the list
-        listOfContextData = ar.AssetResolverContextDataManager.GetActiveContextData()
-        # Change the name "Environment Mapping" to the end of the list
-        listOfContextData.remove("Environment Mapping")
-        listOfContextData.append("Environment Mapping")
-        ar.AssetResolverContextDataManager.SetActiveContextData(listOfContextData)
+        ar.AssetResolverContextDataRegistry.RemoveContextData("Maya Preference Mapping File")
+        ar.AssetResolverContextDataRegistry.RegisterContextData("Maya Preference Mapping File").LoadMappingFile(mappingFilePath)
         adskResolver.RefreshContext(ctx)
 
     except Exception as e:

@@ -24,7 +24,9 @@ add_library(${PROJECT_NAME} SHARED)
 
 add_subdirectory(layerEditor)
 add_subdirectory(importDialog)
-
+if (AR_FOUND)
+    add_subdirectory(assetResolver)
+endif()
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -59,6 +61,10 @@ mayaUsd_compile_config(${PROJECT_NAME})
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
+if(AR_FOUND)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${AR_INCLUDE_DIR})
+endif()
+
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         mayaUsd
@@ -66,6 +72,7 @@ target_link_libraries(${PROJECT_NAME}
 		Qt::Core
 		Qt::Gui
 		Qt::Widgets
+        $<$<BOOL:${AR_FOUND}>:${AR_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------
