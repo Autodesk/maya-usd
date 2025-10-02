@@ -29,7 +29,7 @@ class testUsdExportPackage(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        Ar.SetPreferredResolver("AyonUsdResolver")
+        Ar.SetPreferredResolver("ArDefaultResolver")
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
