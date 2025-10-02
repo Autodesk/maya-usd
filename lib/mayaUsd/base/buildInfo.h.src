@@ -35,6 +35,7 @@ namespace MAYAUSD_NS_DEF {
 		static const char* gitBranch();
 		static const char* cutId();
 		static const char* buildDate();
+		static bool        buildAR();
 	};
 
 } // namespace MAYAUSD_NS_DEF

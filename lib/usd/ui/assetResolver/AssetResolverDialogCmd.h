@@ -1,5 +1,5 @@
 //
-// Copyright 2024 Autodesk, Inc. All rights reserved.
+// Copyright 2025 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,22 +14,33 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/buildInfo.h>
+#ifndef MAYAUSDUI_USD_ASSETRESOLVER_CMD_H
+#define MAYAUSDUI_USD_ASSETRESOLVER_CMD_H
+
+#include <mayaUsd/mayaUsd.h>
+#include <mayaUsdUI/ui/api.h>
+
+#include <maya/MPxCommand.h>
 
 namespace MAYAUSD_NS_DEF {
 
-int         MayaUsdBuildInfo::buildNumber() { return MAYAUSD_BUILD_NUMBER; }
-const char* MayaUsdBuildInfo::gitCommit() { return MAYAUSD_GIT_COMMIT; }
-const char* MayaUsdBuildInfo::gitBranch() { return MAYAUSD_GIT_BRANCH; }
-const char* MayaUsdBuildInfo::cutId() { return MAYAUSD_CUT_ID; }
-const char* MayaUsdBuildInfo::buildDate() { return MAYAUSD_BUILD_DATE; }
-bool        MayaUsdBuildInfo::buildAR()
+class MAYAUSD_UI_PUBLIC AssetResolverDialogCmd : public MPxCommand
 {
-#ifdef WANT_AR_BUILD
-    return true;
-#else
-    return false;
-#endif
-}
+public:
+    AssetResolverDialogCmd() = default;
+    ~AssetResolverDialogCmd() override = default;
+
+    static MStatus initialize(MFnPlugin&);
+    static MStatus finalize(MFnPlugin&);
+
+    static const MString name;
+
+    static void*   creator();
+    static MSyntax createSyntax();
+
+    MStatus doIt(const MArgList& args) override;
+};
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif

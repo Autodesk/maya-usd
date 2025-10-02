@@ -58,6 +58,9 @@ constexpr auto kGitBranchLong = "-gitBranch";
 constexpr auto kBuildDate = "-bd";
 constexpr auto kBuildDateLong = "-buildDate";
 
+constexpr auto kBuildAR = "-ar";
+constexpr auto kBuildARLong = "-buildAR";
+
 } // namespace
 
 MSyntax MayaUsdInfoCommand::createSyntax()
@@ -76,6 +79,7 @@ MSyntax MayaUsdInfoCommand::createSyntax()
     syntax.addFlag(kGitCommit, kGitCommitLong);
     syntax.addFlag(kGitBranch, kGitBranchLong);
     syntax.addFlag(kBuildDate, kBuildDateLong);
+    syntax.addFlag(kBuildAR, kBuildARLong);
 
     return syntax;
 }
@@ -105,6 +109,8 @@ MStatus MayaUsdInfoCommand::doIt(const MArgList& args)
         setResult(MayaUsdBuildInfo::gitBranch());
     } else if (argData.isFlagSet(kBuildDate)) {
         setResult(MayaUsdBuildInfo::buildDate());
+    } else if (argData.isFlagSet(kBuildAR)) {
+        setResult(MayaUsdBuildInfo::buildAR());
     }
 
     return MS::kSuccess;
