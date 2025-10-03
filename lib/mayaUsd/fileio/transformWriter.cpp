@@ -517,10 +517,10 @@ void UsdMayaTransformWriter::_PushTransformStack(
     }
 
     // inspect the rotate pivot
-    // Track the [start, end] indices of the rotate pivot channels, which can 
-    // be split up into components due to animation splines, so we can add 
+    // Track the [start, end] indices of the rotate pivot channels, which can
+    // be split up into components due to animation splines, so we can add
     // inverted xform ops for them.
-    int rotPivotStartIndex = _animChannels.size();
+    int  rotPivotStartIndex = _animChannels.size();
     bool hasRotatePivot = _GatherAnimChannel(
         _XformType::Translate,
         iTrans,
@@ -568,7 +568,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
     if (hasRotatePivot) {
         // The inverted rotate pivot channel will start at this index.
         rotPivotINVIdx = _animChannels.size();
-        // Add inverted versions of the rotate pivot channels, in reverse 
+        // Add inverted versions of the rotate pivot channels, in reverse
         // order. This also handles the case where the xform op is not split
         // into components.
         for (int i = rotPivotIdx; i >= rotPivotStartIndex; i--) {
@@ -595,9 +595,9 @@ void UsdMayaTransformWriter::_PushTransformStack(
 
     // inspect the scale pivot point
     // Track the [start, end] indices of the scale pivot channels, which can be
-    // split up into components due to animation splines, so we can add 
+    // split up into components due to animation splines, so we can add
     // inverted xform ops for them.
-    int scalePivotStartIndex = _animChannels.size();
+    int  scalePivotStartIndex = _animChannels.size();
     bool hasScalePivot = _GatherAnimChannel(
         _XformType::Translate,
         iTrans,
@@ -647,7 +647,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
         // The inverted scale pivot channel will start at this index.
         scalePivotINVIdx = _animChannels.size();
         // Add inverted versions of the scale pivot channels, in reverse order.
-        // This also handles the case where the xform op is not split into 
+        // This also handles the case where the xform op is not split into
         // components.
         for (int i = scalePivotIdx; i >= scalePivotStartIndex; i--) {
             _AnimChannel inverseChannel = _animChannels[i];
