@@ -172,13 +172,17 @@ public:
         // It is assumed that as long as a standard surface node exits, the rest of the nodes as well as the
         // expected attributes also exist, and no further fine-grained error checking will happen during node creation.
 
+        // MaterialX and Arnold do not have the same soloing requirements. In the MaterialX case we need to add an explicit
+        // node to do the conversion, while Arnold can take any output type and convert it internally. This means we need to
+        // differentiate Arnold nodes from MaterialX nodes, and this is done by comparing the top level classification of
+        // the NodeDef. As you have noticed, it is currently impossible to Solo a native USD shader.
         const auto* mtlxShaderNodeDef =
             SdrRegistry::GetInstance().GetShaderNodeByIdentifier(TfToken(kMtlxStandardSurface));
         const auto nodeDefHandler = Ufe::RunTimeMgr::instance().nodeDefHandler(MayaUsdAPI::getUsdRunTimeId());
         if (mtlxShaderNodeDef)
         {
-            const auto nodeDef = nodeDefHandler->definition(kMtlxStandardSurface);
-            m_materialX = TfToken(nodeDef->classification(nodeDef->nbClassifications() - 1));
+            const auto nodeDef = nodeDefHandler ? nodeDefHandler->definition(kMtlxStandardSurface) : nullptr;
+            m_materialX = nodeDef ? TfToken(nodeDef->classification(nodeDef->nbClassifications() - 1)) : TfToken();
             registerNodeGraph(m_materialX, Ufe::Attribute::kColorFloat4, mtlxColorFloat4);
             registerNodeGraph(m_materialX, Ufe::Attribute::kFloat4, mtlxFloat4);
             registerNodeGraph(m_materialX, Ufe::Attribute::kColorFloat3, mtlxColorFloat3);
@@ -193,8 +197,8 @@ public:
             SdrRegistry::GetInstance().GetShaderNodeByIdentifier(TfToken(kArnoldStandardSurface));
         if (arnoldShaderNodeDef)
         {
-            const auto nodeDef = nodeDefHandler->definition(kArnoldStandardSurface);
-            m_arnold = TfToken(nodeDef->classification(nodeDef->nbClassifications() - 1));
+            const auto nodeDef = nodeDefHandler ? nodeDefHandler->definition(kArnoldStandardSurface) : nullptr;
+            m_arnold = TfToken(nodeDef ? nodeDef->classification(nodeDef->nbClassifications() - 1) : TfToken());
             registerNodeGraph(m_arnold, Ufe::Attribute::kColorFloat4, arnoldTypeless);
             registerNodeGraph(m_arnold, Ufe::Attribute::kColorFloat3, arnoldTypeless);
             registerNodeGraph(m_arnold, Ufe::Attribute::kFloat3, arnoldTypeless);
