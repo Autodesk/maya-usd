@@ -137,7 +137,6 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
         &Adsk::USDAssetResolverSettingsWidget::userPathsChanged,
         this,
         &USDAssetResolverDialog::OnUserPathsChanged);
-
     QObject::connect(
         settingsWidget,
         &Adsk::USDAssetResolverSettingsWidget::saveRequested,
