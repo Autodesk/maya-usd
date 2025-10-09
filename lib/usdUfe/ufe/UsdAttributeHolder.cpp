@@ -428,7 +428,7 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
                     // Strip and prettify:
                     metadata = prettifyName(input.GetBaseName().GetString());
                 }
-                return Ufe::Value(metadata);
+                return !metadata.empty() ? Ufe::Value(metadata) : Ufe::Value();
             } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
                 const PXR_NS::UsdShadeOutput output(_usdAttr);
                 std::string                  metadata = output.GetSdrMetadataByKey(tok);
@@ -436,7 +436,7 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
                     // Strip and prettify:
                     metadata = prettifyName(output.GetBaseName().GetString());
                 }
-                return Ufe::Value(metadata);
+                return !metadata.empty() ? Ufe::Value(metadata) : Ufe::Value();
             }
         }
         if (key == MetadataTokens->UIName) {
@@ -456,7 +456,7 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
             niceName = prettifyName(niceName);
 
             if (!isNamespaced) {
-                return Ufe::Value(niceName);
+                return !niceName.empty() ? Ufe::Value(niceName) : Ufe::Value();
             }
 
 #if PXR_VERSION > 2203
@@ -627,7 +627,9 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
         }
         PXR_NS::VtValue v;
         if (_usdAttr.GetMetadata(tok, &v)) {
-            if (v.IsHolding<bool>())
+            if (v.IsEmpty())
+                return Ufe::Value();
+            else if (v.IsHolding<bool>())
                 return Ufe::Value(v.Get<bool>());
             else if (v.IsHolding<int>())
                 return Ufe::Value(v.Get<int>());

@@ -1554,7 +1554,9 @@ Ufe::Value convertUsdVectorToUfe(const PXR_NS::VtValue& vtValue)
 
 Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue)
 {
-    if (vtValue.IsHolding<bool>())
+    if (vtValue.IsEmpty())
+        return Ufe::Value(); // empty value
+    else if (vtValue.IsHolding<bool>())
         return Ufe::Value(vtValue.Get<bool>());
     else if (vtValue.IsHolding<int>())
         return Ufe::Value(vtValue.Get<int>());
