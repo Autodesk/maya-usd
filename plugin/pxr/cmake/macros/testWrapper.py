@@ -111,7 +111,7 @@ def _stripPath(f, pathPattern):
             return m.group(1).replace('\\', '/')
         pathPattern = pathPattern.replace('\\', '/')
         pathPattern = pathPattern.replace('/', '[/\\\\]')
-        pathPattern = pathPattern + '(\S*)'
+        pathPattern = pathPattern + '(\\S*)'
         repl = _windowsReplacement
 
     # Read entire file and perform substitution.
