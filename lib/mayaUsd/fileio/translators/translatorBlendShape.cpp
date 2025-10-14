@@ -16,9 +16,13 @@
 //
 #include "translatorBlendShape.h"
 
+#include <mayaUsd/utils/util.h>
+
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/vt/types.h>
 #include <pxr/usd/usd/common.h>
+#include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdSkel/animQuery.h>
 #include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdSkel/binding.h>
@@ -26,10 +30,15 @@
 #include <pxr/usd/usdSkel/blendShape.h>
 #include <pxr/usd/usdSkel/root.h>
 
+#include <maya/MDistance.h>
 #include <maya/MFloatVectorArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
+#include <maya/MFnComponentListData.h>
 #include <maya/MFnGeometryFilter.h>
+#include <maya/MFnPointArrayData.h>
+#include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MPointArray.h>
 #include <maya/MStatus.h>
@@ -39,66 +48,129 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
-void _AddBlendShape(
-    MFnBlendShapeDeformer& blendShapeFn,
-    const MObject&         originalShape,
-    const MObject&         parentTransform,
-    const MPointArray&     originalPoints,
-    const GfVec3f*         originalNormals,
-    const VtIntArray&      pointIndices,
-    const std::string      name,
-    const VtVec3fArray     offsetArray,
-    const VtVec3fArray&    normalsOffsetArray,
-    int                    blendShapeTargetIndex,
-    float                  weight)
+
+struct _BlendShapeAttributesNames
 {
-    if (offsetArray.size() != pointIndices.size()) {
-        TF_RUNTIME_ERROR(
-            "BlendShape <%s> doesn't match the number of offset points.", name.c_str());
-        return;
+    const char* it { "inputTarget" };
+    const char* itg { "inputTargetGroup" };
+    const char* iti { "inputTargetItem" };
+    const char* ipt { "inputPointsTarget" };
+    const char* ict { "inputComponentsTarget" };
+    const char* sn { "supportNegativeWeights" };
+    const char* w { "weight" };
+};
+
+TfStaticData<_BlendShapeAttributesNames> _BlendShapeAttributes;
+
+void _AddBlendShape(
+    const MFnBlendShapeDeformer& fnBlendShape,
+    unsigned int                 targetIdx,
+    float                        weight,
+    const MPointArray&           deltas,
+    MIntArray&                   indices)
+{
+    const auto blendShapeObj = fnBlendShape.object();
+
+    auto inputTargetAttr = fnBlendShape.attribute(_BlendShapeAttributes->it);
+    auto inputTargetGroupAttr = fnBlendShape.attribute(_BlendShapeAttributes->itg);
+    auto inputTargetItemAttr = fnBlendShape.attribute(_BlendShapeAttributes->iti);
+    auto inputPointsTargetAttr = fnBlendShape.attribute(_BlendShapeAttributes->ipt);
+    auto inputComponentTargetAttr = fnBlendShape.attribute(_BlendShapeAttributes->ict);
+    auto inputWeight = fnBlendShape.attribute(_BlendShapeAttributes->w);
+
+    if (weight < 0.f) {
+        auto supportNegativeWeightAttr = fnBlendShape.attribute(_BlendShapeAttributes->sn);
+
+        MPlug plgSupportNegativeWeight(blendShapeObj, supportNegativeWeightAttr);
+        plgSupportNegativeWeight.setBool(true);
     }
 
-    MFnMesh blendShapeMeshFn;
+    // The weight index is an integer that maps weight values to Maya's internal representation
+    // Maya supports negative weights, so we need to handle the full range
+    // Positive weights: 5000-6000 (weight 0.001 to 1.0)
+    // Negative weights: 4000-4999 (weight -1.0 to -0.001)
+    // Zero weight: 5000
+    static const auto convertWeightToIndex = [](float weight) -> int {
+        return std::clamp(5000 + static_cast<int>(weight * 1000.f), 4001, 6000);
+    };
+
+    // Maya's blendShape api requires a copy of the original shape or a copy of the target mesh
+    // for it to work.
+    // To avoid that, use plugs to manually create the blendShape targets using only the deltas
+    // from USD.
+
     MStatus status;
-    auto    newShape = blendShapeMeshFn.copy(originalShape, parentTransform, &status);
 
-    MPointArray deltaPoints(originalPoints);
-    for (size_t pidx = 0; pidx < pointIndices.size(); ++pidx) {
-        // USD BlendShapes doesn't require to all points to have a delta.
-        // Thus, given the indicesArray, find the actual index (index) in the original shape that
-        // will be affected that the offset on that particular position.
-        int     index = pointIndices[pidx];
-        MPoint  original = originalPoints[index];
-        GfVec3f offset = offsetArray[pidx];
-
-        deltaPoints.set(
-            MPoint(original.x + offset[0], original.y + offset[1], original.z + offset[2]), index);
+    // Create the plug for the desired attribute: .it[-1].itg[-1].iti[-1].ipt
+    MPlug plgInPoints(blendShapeObj, inputPointsTargetAttr);
+    // Set the first element position in the plug: .it[0].itg[-1].iti[-1].ipt
+    status = plgInPoints.selectAncestorLogicalIndex(0, inputTargetAttr);
+    if (status != MStatus::kSuccess) {
+        TF_RUNTIME_ERROR("first position: %s.", plgInPoints.name().asChar());
     }
-    blendShapeMeshFn.setPoints(deltaPoints);
+    // Set the second plug element: .it[0].itg[targetIdx].iti[-1].ipt
+    status = plgInPoints.selectAncestorLogicalIndex(targetIdx, inputTargetGroupAttr);
+    if (status != MStatus::kSuccess) {
+        TF_RUNTIME_ERROR("Second position: %s", plgInPoints.name().asChar());
+    }
+    // Third element: .it[0].itg[targetIdx].iti[convertWeightToIndex(weight)].ipt
+    status
+        = plgInPoints.selectAncestorLogicalIndex(convertWeightToIndex(weight), inputTargetItemAttr);
+    if (status != MStatus::kSuccess) {
+        TF_RUNTIME_ERROR("Third position: %s", plgInPoints.name().asChar());
+    }
 
-    // Applying blendShape normals
-    if (!normalsOffsetArray.empty()) {
-        MFloatVectorArray deltaNormals(normalsOffsetArray.size());
-        for (size_t i = 0; i < normalsOffsetArray.size(); ++i) {
-            MFloatVector deltaNormal(
-                originalNormals[i][0], originalNormals[i][1], originalNormals[i][2]);
-
-            deltaNormal.x += normalsOffsetArray[i][0];
-            deltaNormal.y += normalsOffsetArray[i][1];
-            deltaNormal.z += normalsOffsetArray[i][2];
-            deltaNormals.set(deltaNormal, i);
+    {
+        MFnPointArrayData data;
+        MObject           dataObj = data.create();
+        data.set(deltas);
+        status = plgInPoints.setValue(dataObj);
+        if (status != MStatus::kSuccess) {
+            TF_RUNTIME_ERROR("setValue failed: %s", plgInPoints.name().asChar());
         }
-        blendShapeMeshFn.setNormals(deltaNormals);
     }
 
-    MFnDependencyNode ibDepNodeFn;
-    ibDepNodeFn.setObject(newShape);
-    ibDepNodeFn.setName(MString(name.c_str()));
+    // Now, similarly, set the inputComponentsTarget attribute (which are the indices being changed)
+    MPlug plgInCompTarget(blendShapeObj, inputComponentTargetAttr);
+    status = plgInCompTarget.selectAncestorLogicalIndex(0, inputTargetAttr);
+    if (status != MStatus::kSuccess) {
+        TF_RUNTIME_ERROR("first position comp: %s", plgInCompTarget.name().asChar());
+    }
+    plgInCompTarget.selectAncestorLogicalIndex(targetIdx, inputTargetGroupAttr);
+    if (status != MStatus::kSuccess) {
+        TF_RUNTIME_ERROR("second position comp: %s", plgInCompTarget.name().asChar());
+    }
+    plgInCompTarget.selectAncestorLogicalIndex(convertWeightToIndex(weight), inputTargetItemAttr);
+    if (status != MStatus::kSuccess) {
+        TF_RUNTIME_ERROR("third position comp: %s", plgInCompTarget.name().asChar());
+    }
+    {
+        MFnSingleIndexedComponent indexList(blendShapeObj);
+        auto                      indexListObj = indexList.create(MFn::kMeshVertComponent, &status);
+        if (status != MStatus::kSuccess) {
+            TF_RUNTIME_ERROR("create comp failed: %s", plgInCompTarget.name().asChar());
+        }
+        status = indexList.addElements(indices);
+        if (status != MStatus::kSuccess) {
+            TF_RUNTIME_ERROR("addElements failed: %s", plgInCompTarget.name().asChar());
+        }
 
-    blendShapeFn.addTarget(originalShape, blendShapeTargetIndex, newShape, weight);
-    blendShapeMeshFn.setIntermediateObject(true);
+        MFnComponentListData fnComp;
+        MObject              compObj = fnComp.create();
+        status = fnComp.add(indexListObj);
+        if (status != MStatus::kSuccess) {
+            TF_RUNTIME_ERROR("set comp failed: %s", plgInCompTarget.name().asChar());
+        }
+        status = plgInCompTarget.setValue(compObj);
+        if (status != MStatus::kSuccess) {
+            TF_RUNTIME_ERROR("setValue failed: %s", plgInCompTarget.name().asChar());
+        }
+
+        TF_STATUS("Set blendShape target: %s", plgInCompTarget.name().asChar());
+    }
 }
 
+#pragma optimize("", off)
 bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReaderContext* context)
 {
     if (!context) {
@@ -137,13 +209,6 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
     MFnMesh     originalMeshFn(originalShape);
     MPointArray originalPoints;
     originalMeshFn.getPoints(originalPoints);
-    const size_t originalNumVertices = originalPoints.length();
-
-    // There's no easy way to access the mesh's original normals.
-    // This is how it's done in other places when those are needed.
-    const float* normals = originalMeshFn.getRawNormals(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false)
-    const GfVec3f* originalNormals = reinterpret_cast<const GfVec3f*>(normals);
 
     MFnBlendShapeDeformer blendFn;
     const auto            blendShapeObj
@@ -154,14 +219,18 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
     blendShapeDepNodeFn.setName(MString(
         TfStringPrintf("%s_Deformer", meshPrim.GetPath().GetElementString().c_str()).c_str()));
 
-    MObject      deformedMeshObject;
-    VtVec3fArray deltaPoints, deltaNormals;
-    VtIntArray   pointIndices;
-    for (size_t targetIdx = 0; targetIdx < blendShapeTargets.size(); ++targetIdx) {
-        const SdfPath     blendShapePath = blendShapeTargets[targetIdx];
-        UsdSkelBlendShape blendShape(stage->GetPrimAtPath(blendShapePath));
-        std::string       blendShapeName = blendShape.GetPath().GetElementString();
+    // Calculate unit conversion from USD stage to Maya internal units
+    // const double usdMetersPerUnit = UsdGeomGetStageMetersPerUnit(stage);
+    // const double mayaInternalMetersPerUnit
+    //    = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::uiUnit());
+    // const double usdToMayaScalar = usdMetersPerUnit / mayaInternalMetersPerUnit;
 
+    for (size_t targetIdx = 0; targetIdx < blendShapeTargets.size(); ++targetIdx) {
+        const SdfPath&          blendShapePath = blendShapeTargets[targetIdx];
+        const UsdSkelBlendShape blendShape(stage->GetPrimAtPath(blendShapePath));
+        const std::string       blendShapeName = blendShape.GetPath().GetElementString();
+
+        VtVec3fArray deltaPoints;
         blendShape.GetOffsetsAttr().Get(&deltaPoints);
         if (deltaPoints.empty()) {
             TF_RUNTIME_ERROR(
@@ -171,46 +240,58 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
             continue;
         }
 
-        blendShape.GetNormalOffsetsAttr().Get(&deltaNormals);
+        VtIntArray pointIndices;
         blendShape.GetPointIndicesAttr().Get(&pointIndices);
 
         // Indices aren't authored. Use mesh default pointIndices
         if (pointIndices.empty()) {
-            pointIndices.resize(originalNumVertices);
-            for (size_t i = 0; i < originalNumVertices; ++i) {
-                pointIndices[i] = i;
+            pointIndices.reserve(deltaPoints.size());
+            for (size_t i = 0; i < deltaPoints.size(); ++i) {
+                pointIndices.emplace_back(i);
             }
         }
 
-        _AddBlendShape(
-            blendFn,
-            originalShape,
-            parentTransform,
-            originalPoints,
-            originalNormals,
-            pointIndices,
-            blendShapeName,
-            deltaPoints,
-            deltaNormals,
-            targetIdx,
-            1.0f); // The original blendShape always has full weight of 1.0f
-
-        // After adding the main blendShape - now add all the in-betweens
-
-        const std::vector<UsdSkelInbetweenShape> inBetweens = blendShape.GetInbetweens();
-        // no in-betweens, can continue to the next blendShape
-        if (inBetweens.empty()) {
+        if (deltaPoints.size() != pointIndices.size()) {
+            TF_RUNTIME_ERROR(
+                "BlendShape <%s> for mesh <%s> has mismatched number of delta points and indices.",
+                blendShapePath.GetText(),
+                meshPrim.GetPath().GetText());
             continue;
         }
 
-        for (size_t ib = 0; ib < inBetweens.size(); ++ib) {
-            const auto&       currentInBetween = inBetweens[ib];
-            const std::string inBetweenName = currentInBetween.GetAttr().GetName().GetString();
-            float             ibWeight = 0.f;
-            currentInBetween.GetWeight(&ibWeight);
+        // Convert Usd Arrays to Maya Arrays
+        MIntArray indicesIntArray(static_cast<unsigned int>(pointIndices.size()));
+        for (size_t i = 0; i < pointIndices.size(); ++i) {
+            indicesIntArray.set(pointIndices[i], static_cast<unsigned int>(i));
+        }
 
-            VtVec3fArray inBetweenDeltaPoints, inBetweenNormals;
-            currentInBetween.GetOffsets(&inBetweenDeltaPoints);
+        MPointArray deltasPointsArray(originalPoints.length());
+        for (size_t pidx = 0; pidx < pointIndices.size(); ++pidx) {
+            // USD BlendShapes doesn't require to all points to have a delta.
+            // Thus, given the indicesArray, find the actual index in the original shape
+            // that will be affected that the offset on that particular position.
+            int index = pointIndices[pidx];
+            // MPoint  original = originalPoints[index];
+            GfVec3f offset = deltaPoints[pidx];
+            // Apply unit conversion to the offset values
+            // deltasPointsArray.set(
+            //    MPoint(offset[0] + original[0], offset[1] + original[1], offset[2] + original[2]),
+            //    index);
+            deltasPointsArray.set(MPoint(offset[0], offset[1], offset[2]), index);
+        }
+
+        _AddBlendShape(
+            blendFn, static_cast<unsigned int>(targetIdx), 1.f, deltasPointsArray, indicesIntArray);
+
+        MIntArray                                inBetweenIndicesIntArray(indicesIntArray);
+        const std::vector<UsdSkelInbetweenShape> inBetweens = blendShape.GetInbetweens();
+        for (const auto& inBetween : inBetweens) {
+            const std::string inBetweenName = inBetween.GetAttr().GetName().GetString();
+            float             ibWeight = 0.f;
+            inBetween.GetWeight(&ibWeight);
+
+            VtVec3fArray inBetweenDeltaPoints;
+            inBetween.GetOffsets(&inBetweenDeltaPoints);
             if (inBetweenDeltaPoints.empty()) {
                 TF_RUNTIME_ERROR(
                     "InBetween BlendShape <%s> for mesh <%s> has no delta points.",
@@ -219,21 +300,28 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
                 continue;
             }
 
-            currentInBetween.GetNormalOffsets(&inBetweenNormals);
+            if (inBetweenDeltaPoints.size() != pointIndices.size()) {
+                TF_RUNTIME_ERROR(
+                    "InBetween BlendShape <%s> for mesh <%s> has a different number of delta "
+                    "points and indices.",
+                    inBetweenName.c_str(),
+                    meshPrim.GetPath().GetText());
+                continue;
+            }
 
-            // InBetween are new blendShapes added to the same target index
+            MPointArray inBetweenDeltasPointsArray(originalPoints.length());
+            for (size_t pidx = 0; pidx < pointIndices.size(); ++pidx) {
+                int     index = pointIndices[pidx];
+                GfVec3f offset = inBetweenDeltaPoints[pidx];
+                inBetweenDeltasPointsArray.set(MPoint(offset[0], offset[1], offset[2]), index);
+            }
+
             _AddBlendShape(
                 blendFn,
-                originalShape,
-                parentTransform,
-                originalPoints,
-                originalNormals,
-                pointIndices,
-                inBetweenName,
-                inBetweenDeltaPoints,
-                inBetweenNormals,
-                targetIdx,
-                ibWeight);
+                static_cast<unsigned int>(targetIdx),
+                ibWeight,
+                inBetweenDeltasPointsArray,
+                inBetweenIndicesIntArray);
         }
     }
     return true;
@@ -324,8 +412,17 @@ bool UsdMayaTranslatorBlendShape::ReadAnimations(
             if (!plgBsArray.isNull() && plgBsArray.isArray()) {
                 MFnAnimCurve animFn;
                 for (unsigned int idx = 0; idx < correctBlendShapeIndices.size(); ++idx) {
-                    const auto   blendShapeIndex = correctBlendShapeIndices[idx];
-                    MPlug        plg = plgBsArray.elementByLogicalIndex(idx, &status);
+                    const auto blendShapeIndex = correctBlendShapeIndices[idx];
+                    MPlug      plg = plgBsArray.elementByLogicalIndex(idx, &status);
+
+                    MFnDependencyNode ibDepNodeFn;
+                    ibDepNodeFn.setObject(plgBsArray.asMObject());
+                    ibDepNodeFn.setAlias(
+                        MString(TfStringPrintf("my name [%u]", blendShapeIndex).c_str()),
+                        MString(TfStringPrintf("weight[%u]", blendShapeIndex).c_str()),
+                        plgBsArray);
+                    // ibDepNodeFn.setName(MString("my name"));
+                    TF_RUNTIME_ERROR("changed plg name: %s.", plg.name().asChar());
                     MObject      animObj = animFn.create(plg, nullptr, &status);
                     MDoubleArray valueArray(animatedTimeSamples.size(), 0.0);
                     for (size_t timeSample = 0; timeSample < animatedTimeSamples.size();
