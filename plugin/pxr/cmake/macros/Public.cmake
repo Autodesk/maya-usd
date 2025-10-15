@@ -352,6 +352,12 @@ function(pxr_register_test TEST_NAME)
             endif()
         endif()
 
+        if(IS_MACOSX)
+            # Necessary for tests to find libraries, like python/tbb from Maya.
+            set(testWrapperCmd ${testWrapperCmd} --env-var=DYLD_LIBRARY_PATH=${MAYA_LOCATION}/Maya.app/Contents/MacOS:$ENV{DYLD_LIBRARY_PATH})
+            set(testWrapperCmd ${testWrapperCmd} --env-var=DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Maya.app/Contents/Frameworks:$ENV{DYLD_FRAMEWORK_PATH})
+        endif()
+
         # Look for resource files in the "usd" subdirectory relative to the
         # "lib" directory where the libraries are installed.
         #
