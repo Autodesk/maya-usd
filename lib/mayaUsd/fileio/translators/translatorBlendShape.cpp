@@ -58,6 +58,9 @@ struct _BlendShapeAttributesNames
     const char* ict { "inputComponentsTarget" };
     const char* sn { "supportNegativeWeights" };
     const char* w { "weight" };
+    const char* ibig { "inbetweenInfoGroup" };
+    const char* ibi { "inbetweenInfo" };
+    const char* ibtn { "inbetweenTargetName" };
 };
 
 TfStaticData<_BlendShapeAttributesNames> _BlendShapeAttributes;
@@ -68,7 +71,8 @@ void _AddBlendShape(
     unsigned int                 targetIdx,
     float                        weight,
     const MPointArray&           deltas,
-    MIntArray&                   indices)
+    MIntArray&                   indices,
+    bool                         isInBetween = false)
 {
     const auto blendShapeObj = fnBlendShape.object();
 
@@ -132,7 +136,22 @@ void _AddBlendShape(
         plgInCompTarget.setValue(compObj);
     }
 
-    if (!blendShapeName.empty()) {
+    // If weight is not 1.0, that means we are creating an inbetween shape
+    if (isInBetween) {
+        auto  inBetweenTargetNameAttr = fnBlendShape.attribute(_BlendShapeAttributes->ibtn);
+        auto  inBetweenInfoGroupAttr = fnBlendShape.attribute(_BlendShapeAttributes->ibig);
+        auto  inBetweenInfoAttr = fnBlendShape.attribute(_BlendShapeAttributes->ibi);
+        MPlug plgInBetweenTargetName(blendShapeObj, inBetweenTargetNameAttr);
+        plgInBetweenTargetName.selectAncestorLogicalIndex(targetIdx, inBetweenInfoGroupAttr);
+        plgInBetweenTargetName.selectAncestorLogicalIndex(
+            convertWeightToIndex(weight), inBetweenInfoAttr);
+
+        // USD inbetweens are named: "inbetween:<name>"
+        // Remove the inbetween prefix
+        auto inBetweenName = blendShapeName.substr(blendShapeName.find_first_of(":") + 1);
+
+        plgInBetweenTargetName.setString(MString(inBetweenName.c_str()));
+    } else {
         MPlug plgWeight(blendShapeObj, inputWeightAttr);
         plgWeight.selectAncestorLogicalIndex(targetIdx, inputWeightAttr);
 
@@ -283,11 +302,12 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
 
             _AddBlendShape(
                 blendFn,
-                "",
+                inBetweenName,
                 static_cast<unsigned int>(targetIdx),
                 ibWeight,
                 inBetweenDeltasPointsArray,
-                inBetweenIndicesIntArray);
+                inBetweenIndicesIntArray,
+                true);
         }
     }
     return true;
