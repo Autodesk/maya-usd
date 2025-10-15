@@ -86,14 +86,20 @@ void _AddBlendShape(
         plgSupportNegativeWeight.setBool(true);
     }
 
+    // clamp weight to Maya's supported range of -1.0 to 1.0
+    if (weight > 1.f) {
+        weight = 1.f;
+    } else if (weight < -1.f) {
+        weight = -1.f;
+    }
+
     // The weight index is an integer that maps weight values to Maya's internal representation
     // Maya supports negative weights, so we need to handle the full range
     // Positive weights: 5000-6000 (weight 0.001 to 1.0)
     // Negative weights: 4000-4999 (weight -1.0 to -0.001)
     // Zero weight: 5000
-    static const auto convertWeightToIndex = [](float weight) -> int {
-        return std::clamp(5000 + static_cast<int>(weight * 1000.f), 4000, 6000);
-    };
+    static const auto convertWeightToIndex
+        = [](float weight) -> int { return 5000 + static_cast<int>(weight * 1000.f); };
 
     // Maya's blendShape api requires a copy of the original shape or a copy of the target mesh
     // for it to work.
