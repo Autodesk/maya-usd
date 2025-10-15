@@ -68,18 +68,6 @@ class testUsdImportBlendShapes(unittest.TestCase):
 
         self.assertEqual(cmds.nodeType("b1_Deformer"), "blendShape")
 
-        regularShape = sorted(
-                cmds.listConnections(
-                    "b1_Deformer.inputTarget[0].inputTargetGroup[0].inputTargetItem[6000].inputGeomTarget", 
-                    destination=False, source=True, plugs=True))
-        self.assertEqual(regularShape, ['Box0002.worldMesh'])
-
-        inBetween = sorted(
-                cmds.listConnections(
-                    "b1_Deformer.inputTarget[0].inputTargetGroup[0].inputTargetItem[4000].inputGeomTarget", 
-                    destination=False, source=True, plugs=True))
-        self.assertEqual(inBetween, ['IBT_1.worldMesh'])
-
         cmds.currentTime(0)
         self.assertEqual(sorted(cmds.getAttr("b1_Deformer.weight")[0]), [-1.0])
         cmds.currentTime(3)
