@@ -20,8 +20,6 @@
 #include "HeaderWidget.h"
 #include "ui_USDAssetResolverSettingsWidget.h"
 
-#include <qstringlistmodel>
-
 #include <qaction.h>
 #include <qevent.h>
 #include <qfiledialog.h>
@@ -29,6 +27,7 @@
 #include <qlistwidget.h>
 #include <qpainter.h>
 #include <qsplitter.h>
+#include <qstringlistmodel.h>
 #include <qstyleditemdelegate.h>
 #include <qtoolbutton.h>
 
