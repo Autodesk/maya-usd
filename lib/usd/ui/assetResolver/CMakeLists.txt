@@ -18,11 +18,11 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         ApplicationHost.cpp
         HeaderWidget.cpp
-        Resizable.cpp
         USDAssetResolverSettingsWidget.cpp
         AssetResolverDialogCmd.cpp
         USDAssetResolverDialog.cpp
         USDAssetResolverSettingsWidget.ui
+        images/ui.qrc
 )
 
 
@@ -32,7 +32,6 @@ target_sources(${PROJECT_NAME}
 set(HEADERS
     ApplicationHost.h
     HeaderWidget.h
-    Resizable.h
     USDAssetResolverSettingsWidget.h
     AssetResolverDialogCmd.h
     USDAssetResolverDialog.h

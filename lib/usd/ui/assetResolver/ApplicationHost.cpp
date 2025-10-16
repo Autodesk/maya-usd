@@ -67,8 +67,8 @@ QIcon ApplicationHost::icon(const IconName& name) const
     case IconName::Add: return getIcon(":/UsdLayerEditor/addCreateGeneric");
     case IconName::OpenFile: return getIcon(":/fileOpen");
     case IconName::Delete: return getIcon(":/trash");
-    case IconName::MoveUp: return QIcon::fromTheme("go-up");
-    case IconName::MoveDown: return QIcon::fromTheme("go-down");
+    case IconName::MoveUp: return QIcon(":/assetResolver/move_up.png");
+    case IconName::MoveDown: return QIcon(":/assetResolver/move_down.png");
     default: return QIcon();
     }
 }
