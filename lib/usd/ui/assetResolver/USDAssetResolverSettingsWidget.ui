@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>USD Asset Resolver Settings</string>
   </property>
-  <layout class="QGridLayout" name="mainLayout" columnstretch="1,4">
+  <layout class="QGridLayout" name="mainLayout" columnstretch="0,4">
    <item row="1" column="1">
     <widget class="QLineEdit" name="mappingFilePath"/>
    </item>
@@ -23,14 +23,14 @@
       <string>Mapping File: </string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
    </item>
    <item row="0" column="1">
     <widget class="QCheckBox" name="includeProjectTokens">
      <property name="text">
-      <string>Include Maya Project Tokens</string>
+      <string>Include Project Tokens</string>
      </property>
     </widget>
    </item>

@@ -1,0 +1,12 @@
+<!DOCTYPE RCC><RCC version="1.0">
+	<qresource prefix="/assetResolver">
+    <file alias="move_up.png">move_up_100.png</file>
+    <file alias="move_down.png">move_down_100.png</file>
+
+    <file>move_up_150.png</file>
+    <file>move_up_200.png</file>
+    <file>move_down_150.png</file>
+    <file>move_down_200.png</file>
+  </qresource>
+</RCC>
+
