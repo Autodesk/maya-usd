@@ -66,6 +66,32 @@ find_library(LookdevXUfe_LIBRARY
     NO_DEFAULT_PATH
 )
 
+# For Windows-Maya2026.0, the LookdevXUfe lib depends on tbb12
+# We are inserting tbb12 lib into LookdevXUfe_LIBRARY
+if(IS_WINDOWS AND MAYA_API_VERSION VERSION_EQUAL 20260000)
+    find_library(TBB12_LIBRARY
+        NAMES
+            tbb12
+        HINTS
+            $ENV{LOOKDEVXUFE_LIB_ROOT}
+            ${LOOKDEVXUFE_LIB_ROOT}
+            ${MAYA_DEVKIT_LOCATION}
+            $ENV{MAYA_DEVKIT_LOCATION}
+            ${MAYA_LOCATION}
+            $ENV{MAYA_LOCATION}
+            ${MAYA_BASE_DIR}
+        PATHS
+            ${UFE_LIBRARY_DIR}
+        PATH_SUFFIXES
+            devkit/ufe/extensions/lookdevXUfe/lib
+            lib/
+        DOC
+            "tbb12 library"
+        NO_DEFAULT_PATH
+    )
+    set(LookdevXUfe_LIBRARY ${LookdevXUfe_LIBRARY} ${TBB12_LIBRARY})
+endif()
+
 # Handle the QUIETLY and REQUIRED arguments and set LookdevXUfe_FOUND to TRUE if
 # all listed variables are TRUE.
 include(FindPackageHandleStandardArgs)
