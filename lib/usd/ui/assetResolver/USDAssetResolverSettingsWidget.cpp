@@ -271,7 +271,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
     // Add a browse action to the mapping file path line edit
     QAction* browseAction
         = new QAction(host.icon(ApplicationHost::IconName::OpenFile), tr("Browse..."), this);
-    connect(&host, &ApplicationHost::iconsChanged, this, [this, browseAction]() {
+    connect(&host, &ApplicationHost::iconsChanged, this, [browseAction]() {
         browseAction->setIcon(
             ApplicationHost::instance().icon(ApplicationHost::IconName::OpenFile));
     });
@@ -363,7 +363,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
             listview->itemDelegate(),
             &QAbstractItemDelegate::closeEditor,
             this,
-            [this, d](QWidget* editor, QAbstractItemDelegate::EndEditHint hint) {
+            [this](QWidget* editor, QAbstractItemDelegate::EndEditHint hint) {
                 Q_D(USDAssetResolverSettingsWidget);
                 if (d->currentlyAddingNewUserPath.isValid()) {
                     QModelIndex index = d->currentlyAddingNewUserPath;
@@ -382,7 +382,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         auto addBrowseButton = new QToolButton(d->userPathsHeader);
         addBrowseButton->setIcon(host.icon(ApplicationHost::IconName::OpenFile));
         addBrowseButton->setToolTip(tr("Add User Path with the browser"));
-        connect(addBrowseButton, &QToolButton::clicked, this, [this, listview]() {
+        connect(addBrowseButton, &QToolButton::clicked, this, [this]() {
             Q_D(USDAssetResolverSettingsWidget);
             QString filePath
                 = QFileDialog::getExistingDirectory(this, tr("Select User Path to Add"));
