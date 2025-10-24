@@ -173,7 +173,9 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         renderIndex->InsertTask<HdxPickTask>(this, _pickingTaskId);
         _ValueCache&      cache = _valueCacheMap[_pickingTaskId];
         HdxPickTaskParams taskParams;
+#if HDX_API_VERSION < 15
         taskParams.enableSceneMaterials = true;
+#endif
         cache[HdTokens->params] = VtValue(taskParams);
 
         // Initialize empty render tags, they will be set
@@ -490,7 +492,9 @@ HdTaskSharedPtrVector PxrMayaHdSceneDelegate::GetRenderTasks(
 
         // Set the parameters that are constant for all draws.
         renderSetupTaskParams.alphaThreshold = 0.1f;
+#if HDX_API_VERSION < 15
         renderSetupTaskParams.enableSceneMaterials = true;
+#endif
         renderSetupTaskParams.depthBiasUseDefault = true;
         renderSetupTaskParams.depthFunc = HdCmpFuncLess;
 
