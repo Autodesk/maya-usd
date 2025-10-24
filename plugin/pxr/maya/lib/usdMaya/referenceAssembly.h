@@ -153,7 +153,7 @@ public:
     bool activateRep(const MString& representation) override;
     PXRUSDMAYA_API
     bool activate(const MString& representation) override;
-    
+
     // Optional overrides
     PXRUSDMAYA_API
     bool supportsEdits() const override { return true; };
