@@ -375,6 +375,16 @@ bool UsdMayaReferenceAssembly::activateRep(const MString& repMStr)
     return true;
 }
 
+bool UsdMayaReferenceAssembly::activate(const MString& repMStr)
+{
+    // Early out if repMStr is already the active representation.
+    if (getActive() == repMStr) {
+        return true;
+    }
+
+    return MPxAssembly::activate(repMStr);
+}
+
 //
 // == Optional Function Overrides
 //
