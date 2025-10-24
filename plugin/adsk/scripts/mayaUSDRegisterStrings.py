@@ -306,6 +306,14 @@ __mayaUSDStringResources = {
     "kExportUnitYardLbl": "Yard",
     "kExportUnitMileLbl": "Mile",
 
+    "kExportAccessibilityLbl": "Accessibility",
+    "kExportAccessibilityLabelLbl": "Label",
+    "kExportAccessibilityDescriptionLbl": "Description",
+    "kExportAccessibilityLabelAnn": "Create an accessibility label on the default prim. This should be short and concise.",
+    "kExportAccessibilityDescriptionAnn": "Create an accessibility description on the default prim.",
+    "kExportAccessibilityLabelPht": "A short label",
+    "kExportAccessibilityDescriptionPht": "A more verbose description",
+
     # All strings for import dialog:
     "kImportAnimationDataLbl": "Animation Data",
     "kImportCustomFrameRangeLbl": "Custom Frame Range",

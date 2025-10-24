@@ -951,6 +951,9 @@ bool UsdMaya_WriteJob::_PostExport()
 
     _extrasPrimsPaths.clear();
 
+    _AddDefaultPrimAccessibility();
+    progressBar.advance();
+
     // Run post export function on the chasers.
     MayaUsd::ProgressBarLoopScope chasersLoop(mChasers.size());
     for (const UsdMayaExportChaserRefPtr& chaser : mChasers) {
@@ -1373,6 +1376,44 @@ bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath& path, const MDagPath& da
     // mDagPathToUsdPathMap!)
     mUsdPathToDagPathMap[path] = dagPath;
     return true;
+}
+
+void UsdMaya_WriteJob::_AddDefaultPrimAccessibility()
+{
+    auto defaultPrim = mJobCtx.mStage->GetDefaultPrim();
+    if (!defaultPrim) {
+        return;
+    }
+
+    auto accessibilityLabel = mJobCtx.mArgs.accessibilityLabel;
+    auto accessibilityDescription = mJobCtx.mArgs.accessibilityDescription;
+    if (accessibilityLabel.empty() && accessibilityDescription.empty()) {
+        return;
+    }
+
+    /* The USD AccessibilityAPI is only available from OpenUSD 25.5 onwards.
+     * However, it is a very simple API and can be written ad-hoc here.
+     * Once Maya-USD switches to only supporting USD 25.5 and above in the future,
+     * we can replace these with the actual API method calls.
+     */
+    defaultPrim.AddAppliedSchema(TfToken("AccessibilityAPI:default"));
+    if (!accessibilityLabel.empty()) {
+        auto labelAttr = defaultPrim.CreateAttribute(
+            TfToken("accessibility:default:label"),
+            SdfValueTypeNames->String,
+            false,
+            SdfVariabilityVarying);
+        labelAttr.Set(accessibilityLabel);
+    }
+
+    if (!accessibilityDescription.empty()) {
+        auto descriptionAttr = defaultPrim.CreateAttribute(
+            TfToken("accessibility:default:description"),
+            SdfValueTypeNames->String,
+            false,
+            SdfVariabilityVarying);
+        descriptionAttr.Set(accessibilityDescription);
+    }
 }
 
 const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_WriteJob::GetDagPathToUsdPathMap() const
