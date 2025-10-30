@@ -104,11 +104,10 @@ void addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
     // Non-dirty, non-anonymous layers can be reloaded, so we
     // won't hold onto them.
     const bool needHolding = (layer->IsDirty() || layer->IsAnonymous());
-    if (!needHolding)
-        return;
-
-    MutedLayers& layers = getMutedLayers();
-    layers.insert(layer);
+    if (needHolding) {
+        MutedLayers& layers = getMutedLayers();
+        layers.insert(layer);
+    }
 
     // Hold onto sub-layers as well, in case they are dirty or anonymous.
     // Note: the GetSubLayerPaths function returns proxies, so we have to
