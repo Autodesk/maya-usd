@@ -70,10 +70,10 @@ MStatus copyLayerMutingFromAttribute(
 // of muted layers. That list gets cleared when a new Maya scene is created.
 
 MAYAUSD_CORE_PUBLIC
-void addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+bool addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 MAYAUSD_CORE_PUBLIC
-void removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+bool removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 MAYAUSD_CORE_PUBLIC
 void forgetMutedLayers();
