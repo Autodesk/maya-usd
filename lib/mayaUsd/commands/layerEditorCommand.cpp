@@ -745,20 +745,27 @@ public:
         auto stage = getStage();
         if (!stage)
             return false;
+
         if (_muteIt) {
+            // We prefer not holding to pointers needlessly, but we need to hold on
+            // to the muted layer. OpenUSD let go of muted layers, so anonymous
+            // layers and any dirty children would be lost if not explicitly held on.
+            // This is done before really muting the layer to ensure no sublayer is
+            // gone after the mute change.
+            _didAddOrRemMutedLayer = addMutedLayer(layer);
+
             // Muting a layer will cause all scene items under the proxy shape
             // to be stale.
             saveSelection();
             stage->MuteLayer(layer->GetIdentifier());
         } else {
             stage->UnmuteLayer(layer->GetIdentifier());
+
+            // We can release the now unmuted layers.
+            _didAddOrRemMutedLayer = removeMutedLayer(layer);
+
             restoreSelection();
         }
-
-        // We prefer not holding to pointers needlessly, but we need to hold on
-        // to the muted layer. OpenUSD let go of muted layers, so anonymous
-        // layers and any dirty children would be lost if not explicitly held on.
-        addMutedLayer(layer);
 
         updateEditTarget(stage);
 
@@ -772,16 +779,26 @@ public:
             return false;
         if (_muteIt) {
             stage->UnmuteLayer(layer->GetIdentifier());
+
+            // We can release the now unmuted layers.
+            if (_didAddOrRemMutedLayer) {
+                removeMutedLayer(layer);
+                _didAddOrRemMutedLayer = false;
+            }
+
             restoreSelection();
         } else {
+            // Hold back the layer about to be re-muted.
+            if (_didAddOrRemMutedLayer) {
+                addMutedLayer(layer);
+                _didAddOrRemMutedLayer = false;
+            }
+
             // Muting a layer will cause all scene items under the proxy shape
             // to be stale.
             saveSelection();
             stage->MuteLayer(layer->GetIdentifier());
         }
-
-        // We can release the now unmuted layers.
-        removeMutedLayer(layer);
 
         updateEditTarget(stage);
 
@@ -829,6 +846,7 @@ private:
     }
 
     Ufe::Selection _savedSn;
+    bool           _didAddOrRemMutedLayer = false;
 };
 
 class LockLayer : public BaseCmd
