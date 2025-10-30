@@ -85,7 +85,6 @@ struct SceneResetListener : public PXR_NS::TfWeakBase
 //
 // Kept in a function to avoid problem with the order of construction
 // of global variables in C++.
-using LayerRefSet = std::set<PXR_NS::SdfLayerRefPtr>;
 using MutedLayers = std::unordered_map<std::string, LayerRefSet>;
 MutedLayers& getMutedLayers()
 {
@@ -144,6 +143,20 @@ bool removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
 
     // Stop holding the layers rooted at this layer.
     return (layers.erase(layer->GetIdentifier()) > 0);
+}
+
+const LayerRefSet& getMutedLayers(const std::string& mutedIdentifier)
+{
+    const MutedLayers& mutedLayers = getMutedLayers();
+
+    const auto foundSet = mutedLayers.find(mutedIdentifier);
+
+    if (foundSet == mutedLayers.end()) {
+        static const LayerRefSet kEmpty;
+        return kEmpty;
+    }
+
+    return foundSet->second;
 }
 
 void forgetMutedLayers()
