@@ -49,8 +49,8 @@ static constexpr auto kExportOptionsFlagLong = "exportOptions";
 static constexpr auto kIgnoreVariantsFlag = "iva";
 static constexpr auto kIgnoreVariantsFlagLong = "ignoreVariants";
 
-static constexpr auto kSelectionFlag = "sel";
-static constexpr auto kSelectionFlagLong = "selection";
+static constexpr auto kNodeListFlag = "nls";
+static constexpr auto kNodeListFlagLong = "nodeList";
 
 // Reports an error to the Maya scripting console.
 void reportError(const MString& errorString) { MGlobal::displayError(errorString); }
@@ -289,8 +289,8 @@ MSyntax MergeToUsdCommand::createSyntax()
     syntax.addFlag(kExportOptionsFlag, kExportOptionsFlagLong, MSyntax::kString);
     syntax.makeFlagMultiUse(kExportOptionsFlag);
     syntax.addFlag(kIgnoreVariantsFlag, kIgnoreVariantsFlagLong, MSyntax::kBoolean);
-    syntax.addFlag(kSelectionFlag, kSelectionFlagLong, MSyntax::kString);
-    syntax.makeFlagMultiUse(kSelectionFlag);
+    syntax.addFlag(kNodeListFlag, kNodeListFlagLong, MSyntax::kString);
+    syntax.makeFlagMultiUse(kNodeListFlag);
     return syntax;
 }
 
@@ -322,12 +322,12 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
             = argData.flagArgumentBool(kIgnoreVariantsFlag, index);
     }
 
-    const MStringArray pushSelectionArgVal = parseTextArrayArg(argData, kSelectionFlag);
-    if (pushSelectionArgVal.length() > 0) {
+    const MStringArray nodeListArgVal = parseTextArrayArg(argData, kNodeListFlag);
+    if (nodeListArgVal.length() > 0) {
         std::vector<PXR_NS::VtValue> pushNodeList;
-        pushNodeList.reserve(pushSelectionArgVal.length());
+        pushNodeList.reserve(nodeListArgVal.length());
 
-        for (const auto& nodeName : pushSelectionArgVal)
+        for (const auto& nodeName : nodeListArgVal)
             pushNodeList.emplace_back(std::string(nodeName.asChar(), nodeName.length()));
 
         commandUserArgs[UsdMayaPrimUpdaterArgsTokens->pushNodeList] = pushNodeList;

@@ -675,8 +675,8 @@ class MergeToUsdTestCase(unittest.TestCase):
         # Verify that the merged prim has a sphere.
         verify(expectSphere=True)
 
-    def testMergeWithPushSelection(self):
-        '''Merge edits on a subset of the edited hierarchy with pushSelection updater arg.'''
+    def testMergeWithNodeList(self):
+        '''Merge edits on a subset of the edited hierarchy with pushNodeList updater arg.'''
 
         def createAndAssignLambert(renderable):
             shader = cmds.shadingNode("lambert", asShader=True)
@@ -706,24 +706,24 @@ class MergeToUsdTestCase(unittest.TestCase):
 
             return editedMayaPath, sphere, sphereShader, cube, cubeShader
 
-        # Merge and verify that merged prims match the mergeOnly and that others were skipped.
+        # Merge and verify that merged prims match the nodeList and that others were skipped.
         def mergeAndVerify(editedPath, mergeOnly=None, unexpectedPrimNames=[], expectedShaders=None):
             if mergeOnly:
                 # We expect to merge only the existing dags.
                 expectedChildren = cmds.ls(mergeOnly, type="dagNode")
             else:
-                # If there is no pushSelection, we expect all children to be merged.
+                # If there is no nodeList, we expect all children to be merged.
                 expectedChildren = cmds.listRelatives(editedPath)
 
             # Populate the selection election with dag leafs, to verify that the intermediate
             # tranforms, inbetween the push root and the selection, are included as well.
-            selection = []
+            nodeList = []
             for child in mergeOnly or ():
                 childLeafs = cmds.ls(mergeOnly, dag=True, leaf=True)
-                selection.extend(childLeafs or [child])
+                nodeList.extend(childLeafs or [child])
 
             # Merge the selection.
-            cmds.mayaUsdMergeToUsd(editedPath, sel=selection, exo="mergeTransformAndShape=0")
+            cmds.mayaUsdMergeToUsd(editedPath, nls=nodeList, exo="mergeTransformAndShape=0")
             mergedPrim = getPrimFromSceneItem(ufe.GlobalSelection.get().front())
 
             # Verify that the exported prim list matches expectations.
@@ -763,7 +763,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         mergeAndVerify(editedAsMaya, mergeOnly=[child, notEditedAsMaya],
                        unexpectedPrimNames=[notEditedAsMaya])
 
-        # Verify that we cannot merge with an invalid node name in pushSelection.
+        # Verify that we cannot merge with an invalid node name in pushNodeList.
         editedAsMaya, *_ = createEditedAsMayaScene()
         with self.assertRaises(RuntimeError):
             mergeAndVerify(editedAsMaya, mergeOnly=["some_missing_node"])
