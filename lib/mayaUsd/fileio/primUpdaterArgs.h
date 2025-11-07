@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* Dictionary keys */               \
     (copyOperation)                     \
     (ignoreVariants)                    \
-    (pushSelection)
+    (pushNodeList)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -45,7 +45,7 @@ struct UsdMayaPrimUpdaterArgs
 {
     const bool                     _copyOperation { false };
     const bool                     _ignoreVariants { false };
-    const std::vector<std::string> _pushSelection;
+    const std::vector<std::string> _pushNodeList;
 
     MAYAUSD_CORE_PUBLIC
     static UsdMayaPrimUpdaterArgs createFromDictionary(const VtDictionary& userArgs);

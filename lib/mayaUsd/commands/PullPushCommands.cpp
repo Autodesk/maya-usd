@@ -324,13 +324,13 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
 
     const MStringArray pushSelectionArgVal = parseTextArrayArg(argData, kSelectionFlag);
     if (pushSelectionArgVal.length() > 0) {
-        std::vector<PXR_NS::VtValue> pushSelection;
-        pushSelection.reserve(pushSelectionArgVal.length());
+        std::vector<PXR_NS::VtValue> pushNodeList;
+        pushNodeList.reserve(pushSelectionArgVal.length());
 
         for (const auto& nodeName : pushSelectionArgVal)
-            pushSelection.emplace_back(std::string(nodeName.asChar(), nodeName.length()));
+            pushNodeList.emplace_back(std::string(nodeName.asChar(), nodeName.length()));
 
-        commandUserArgs[UsdMayaPrimUpdaterArgsTokens->pushSelection] = pushSelection;
+        commandUserArgs[UsdMayaPrimUpdaterArgsTokens->pushNodeList] = pushNodeList;
     }
 
     // Parse exportOptions strings, decoding them to UsdMayaJobExportArgs dictionaries.

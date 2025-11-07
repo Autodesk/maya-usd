@@ -565,13 +565,13 @@ PushExportResults pushExport(const std::vector<PushToUsdArgs>& pushArgsVect)
         UsdMayaUtil::MDagPathSet dagPaths;
 
         if (dagPath.isValid()) {
-            if (pushArgs.updaterArgs._pushSelection.empty()) {
-                // If the user did not provide a pushSelection, we export the whole dag branch.
+            if (pushArgs.updaterArgs._pushNodeList.empty()) {
+                // If the user did not provide a pushNodeList, we export the whole dag branch.
                 dagPaths.insert(dagPath);
                 fullObjectList.add(dagPath);
             } else {
-                // Validate and populate the fullObjectList and the dagPaths from pushSelection.
-                for (const auto& nodeName : pushArgs.updaterArgs._pushSelection) {
+                // Validate and populate the fullObjectList and the dagPaths from pushNodeList.
+                for (const auto& nodeName : pushArgs.updaterArgs._pushNodeList) {
                     const auto status = fullObjectList.add(nodeName.c_str());
                     CHECK_MSTATUS_AND_RETURN(status, PushExportResults());
                 }

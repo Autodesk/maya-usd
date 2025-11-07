@@ -28,8 +28,8 @@ using namespace MayaUsd::DictUtils;
 UsdMayaPrimUpdaterArgs::UsdMayaPrimUpdaterArgs(const VtDictionary& userArgs)
     : _copyOperation(extractBoolean(userArgs, UsdMayaPrimUpdaterArgsTokens->copyOperation))
     , _ignoreVariants(extractBoolean(userArgs, UsdMayaPrimUpdaterArgsTokens->ignoreVariants))
-    , _pushSelection(
-          extractVector<std::string>(userArgs, UsdMayaPrimUpdaterArgsTokens->pushSelection))
+    , _pushNodeList(
+          extractVector<std::string>(userArgs, UsdMayaPrimUpdaterArgsTokens->pushNodeList))
 {
 }
 
@@ -47,7 +47,7 @@ const VtDictionary& UsdMayaPrimUpdaterArgs::getDefaultDictionary()
     std::call_once(once, []() {
         d[UsdMayaPrimUpdaterArgsTokens->copyOperation] = false;
         d[UsdMayaPrimUpdaterArgsTokens->ignoreVariants] = false;
-        d[UsdMayaPrimUpdaterArgsTokens->pushSelection] = std::vector<VtValue>();
+        d[UsdMayaPrimUpdaterArgsTokens->pushNodeList] = std::vector<VtValue>();
     });
 
     return d;
