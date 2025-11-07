@@ -419,7 +419,7 @@ finally:
         # Adjust PATH and PYTHONPATH to include USD.
         # These should come last (esp PYTHONPATH, in case another module is overriding
         # with pkgutil)
-    if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
             set(USD_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/${MAYAUSD_TO_USD_RELATIVE_PATH}")
         else()
             set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
@@ -442,8 +442,11 @@ finally:
             list(APPEND MAYAUSD_VARNAME_PXR_USD_WINDOWS_DLL_PATH
                 "${USD_INSTALL_LOCATION}/plugin/usd")
         endif()
-        list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
-                "${PXR_USD_LOCATION}/libraries")
+
+        if(USD_MX_STDLIB_DIR)
+            list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
+                "${USD_MX_STDLIB_DIR}")
+        endif()
 
         # NOTE: this should come after any setting of PATH/PYTHONPATH so
         #       that our entries will come first.
