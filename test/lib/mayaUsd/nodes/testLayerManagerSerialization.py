@@ -121,6 +121,21 @@ class testLayerManagerSerialization(unittest.TestCase):
 
         return stage
 
+    def confirmStageHasTestEdits(
+            self, stage, fromRootLayer, fromRootSubLayer, fromSessionLayer):
+
+        newPrimPath = "/ChangeInRoot"
+        self.assertEqual(
+            fromRootLayer, stage.GetPrimAtPath(newPrimPath).IsValid())
+
+        newPrimPath = "/ChangeInLayer_1_1"
+        self.assertEqual(
+            fromRootSubLayer, stage.GetPrimAtPath(newPrimPath).IsValid())
+
+        newPrimPath = "/ChangeInSessionLayer"
+        self.assertEqual(
+            fromSessionLayer, stage.GetPrimAtPath(newPrimPath).IsValid())
+
     def confirmEditsSavedStatus(self, fileBackedSavedStatus, sessionSavedStatus):
         '''
         Clears the Maya scene, creates a new USD stage with the root layer
@@ -130,17 +145,8 @@ class testLayerManagerSerialization(unittest.TestCase):
 
         proxyNode, stage = createProxyFromFile(self._rootUsdFile)
 
-        newPrimPath = "/ChangeInRoot"
-        self.assertEqual(
-            fileBackedSavedStatus, stage.GetPrimAtPath(newPrimPath).IsValid())
-
-        newPrimPath = "/ChangeInLayer_1_1"
-        self.assertEqual(
-            fileBackedSavedStatus, stage.GetPrimAtPath(newPrimPath).IsValid())
-
-        newPrimPath = "/ChangeInSessionLayer"
-        self.assertEqual(
-            sessionSavedStatus, stage.GetPrimAtPath(newPrimPath).IsValid())
+        self.confirmStageHasTestEdits(
+            stage, fileBackedSavedStatus, fileBackedSavedStatus, sessionSavedStatus)
 
     def testSaveWithoutStage(self):
         '''
@@ -164,7 +170,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         Verify that all USD edits are save into the Maya file.
         '''
-        stage = self.copyTestFilesAndMakeEdits()
+        self.copyTestFilesAndMakeEdits()
 
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
 
@@ -178,15 +184,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         stack = stage.GetLayerStack()
         self.assertEqual(6, len(stack))
 
-        newPrimPath = "/ChangeInRoot"
-        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
-
-        newPrimPath = "/ChangeInLayer_1_1"
-        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
-
-        newPrimPath = "/ChangeInSessionLayer"
-        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
-
+        self.confirmStageHasTestEdits(stage, True, True, True)
         self.confirmEditsSavedStatus(False, False)
 
         shutil.rmtree(self._currentTestDir)
@@ -195,7 +193,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         Verify that all USD edits are saved back to the original .usd files
         '''
-        stage = self.copyTestFilesAndMakeEdits()
+        self.copyTestFilesAndMakeEdits()
 
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 1))
 
@@ -209,15 +207,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         stack = stage.GetLayerStack()
         self.assertEqual(6, len(stack))
 
-        newPrimPath = "/ChangeInRoot"
-        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
-
-        newPrimPath = "/ChangeInLayer_1_1"
-        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
-
-        newPrimPath = "/ChangeInSessionLayer"
-        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
-
+        self.confirmStageHasTestEdits(stage, True, True, True)
         self.confirmEditsSavedStatus(True, False)
 
         shutil.rmtree(self._currentTestDir)
@@ -226,7 +216,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         Verify that all USD edits are ignored
         '''
-        stage = self.copyTestFilesAndMakeEdits()
+        self.copyTestFilesAndMakeEdits()
 
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 3))
 
@@ -240,18 +230,75 @@ class testLayerManagerSerialization(unittest.TestCase):
         stack = stage.GetLayerStack()
         self.assertEqual(6, len(stack))
 
-        newPrimPath = "/ChangeInRoot"
-        self.assertFalse(stage.GetPrimAtPath(newPrimPath))
-
-        newPrimPath = "/ChangeInLayer_1_1"
-        self.assertFalse(stage.GetPrimAtPath(newPrimPath))
-
-        newPrimPath = "/ChangeInSessionLayer"
-        self.assertFalse(stage.GetPrimAtPath(newPrimPath))
-
+        self.confirmStageHasTestEdits(stage, False, False, False)
         self.confirmEditsSavedStatus(False, False)
 
         shutil.rmtree(self._currentTestDir)
+
+    def _verifySaveMutedLayer(self, muteSessionLayer, muteRootSubLayer, serializedUsdEditsLocation):
+        '''
+        Verify saving of muted layers to maya or USD.
+        '''
+        def applyMuteState(proxyShape, state):
+            stage = mayaUsd.ufe.getStage(proxyShape)
+
+            if muteSessionLayer:
+                layerId = stage.GetSessionLayer().identifier
+                cmds.mayaUsdLayerEditor(layerId, e=True, muteLayer=(state, proxyShape))
+
+            if muteRootSubLayer:
+                layerId = stage.GetRootLayer().subLayerPaths[0]
+                layerId = Sdf.ComputeAssetPathRelativeToLayer(stage.GetRootLayer(), layerId)
+                cmds.mayaUsdLayerEditor(layerId, e=True, muteLayer=(state, proxyShape))
+
+        stage = self.copyTestFilesAndMakeEdits()
+        self.confirmStageHasTestEdits(stage, True, True, True)
+
+        # Mute the layer, and verify that the expected edits have been muted.
+        applyMuteState("|SerializationTest|SerializationTestShape", 1)
+        self.confirmStageHasTestEdits(stage, True, not muteRootSubLayer, not muteSessionLayer)
+
+        # Save and reopen the maya file.
+        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', serializedUsdEditsLocation))
+
+        cmds.file(save=True, force=True)
+        cmds.file(new=True, force=True)
+        cmds.file(self._tempMayaFile, open=True)
+
+        stage = mayaUsd.ufe.getStage("|SerializationTest|SerializationTestShape")
+
+        # The muted edits are still muted after reopening.
+        self.confirmStageHasTestEdits(stage, True, not muteRootSubLayer, not muteSessionLayer)
+
+        # Unmute and verify that the muted edits did persist.
+        applyMuteState("|SerializationTest|SerializationTestShape", 0)
+        self.confirmStageHasTestEdits(stage, True, True, True)
+
+        # The file should be still modified after reloading from USD.
+        fileBackedExpectedStatus = serializedUsdEditsLocation == 1
+        self.confirmEditsSavedStatus(fileBackedExpectedStatus, False)
+
+        shutil.rmtree(self._currentTestDir)
+
+    def testSaveMutedRootSubLayerToUsd(self):
+        '''Verify that USD edits in the root layer stack are saved to USD even if muted'''
+        self._verifySaveMutedLayer(
+            muteSessionLayer=False, muteRootSubLayer=True, serializedUsdEditsLocation=1)
+
+    def testSaveMutedRootSubLayerToMaya(self):
+        '''Verify that USD edits in the root layer stack are saved to Maya even if muted'''
+        self._verifySaveMutedLayer(
+            muteSessionLayer=False, muteRootSubLayer=True, serializedUsdEditsLocation=2)
+
+    def testSaveMutedSessionLayerToUsd(self):
+        '''Verify that USD edits in the session layer are saved to Maya even if muted'''
+        self._verifySaveMutedLayer(
+            muteSessionLayer=True, muteRootSubLayer=False, serializedUsdEditsLocation=1)
+
+    def testSaveMutedSessionLayerToMaya(self):
+        '''Verify that USD edits in the session layer are saved to Maya even if muted'''
+        self._verifySaveMutedLayer(
+            muteSessionLayer=True, muteRootSubLayer=False, serializedUsdEditsLocation=2)
 
     def testAnonymousRootToMaya(self):
         self.setupEmptyScene()

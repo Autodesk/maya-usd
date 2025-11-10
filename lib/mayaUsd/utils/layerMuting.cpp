@@ -81,11 +81,11 @@ struct SceneResetListener : public PXR_NS::TfWeakBase
     }
 };
 
-// The set of muted layers.
+// Maps muted layer identifier -> set of held layers (root + descendants).
 //
 // Kept in a function to avoid problem with the order of construction
 // of global variables in C++.
-using MutedLayers = std::set<PXR_NS::SdfLayerRefPtr>;
+using MutedLayers = std::unordered_map<std::string, LayerRefSet>;
 MutedLayers& getMutedLayers()
 {
     // Note: C++ guarantees correct multi-thread protection for static
@@ -94,52 +94,69 @@ MutedLayers& getMutedLayers()
     static MutedLayers        layers;
     return layers;
 }
-} // namespace
 
-void addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
+void holdMutedLayers(const PXR_NS::SdfLayerRefPtr& layer, LayerRefSet& heldLayers)
 {
-    if (!layer)
-        return;
-
     // Non-dirty, non-anonymous layers can be reloaded, so we
     // won't hold onto them.
     const bool needHolding = (layer->IsDirty() || layer->IsAnonymous());
-    if (!needHolding)
-        return;
-
-    MutedLayers& layers = getMutedLayers();
-    layers.insert(layer);
+    if (needHolding) {
+        heldLayers.insert(layer);
+    }
 
     // Hold onto sub-layers as well, in case they are dirty or anonymous.
     // Note: the GetSubLayerPaths function returns proxies, so we have to
     //       hold the std::string by value, not reference.
     for (const std::string subLayerPath : layer->GetSubLayerPaths()) {
         auto subLayer = SdfLayer::FindRelativeToLayer(layer, subLayerPath);
-        addMutedLayer(subLayer);
+        if (subLayer) {
+            holdMutedLayers(subLayer, heldLayers);
+        }
     }
 }
 
-void removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
+} // namespace
+
+bool addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
 {
     if (!layer)
-        return;
+        return false;
+
+    MutedLayers& mutedLayers = getMutedLayers();
+
+    // Hold the layer dirty graph, only the first time we see this mute ancestor.
+    auto ret = mutedLayers.emplace(layer->GetIdentifier(), LayerRefSet {});
+
+    if (ret.second) {
+        holdMutedLayers(layer, ret.first->second);
+    }
+
+    return ret.second;
+}
+
+bool removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    if (!layer)
+        return false;
 
     MutedLayers& layers = getMutedLayers();
-    layers.erase(layer);
 
-    // Stop holding onto sub-layers as well, in case they were previously
-    // dirty or anonymous.
-    //
-    // Note: we don't check the dirty or anonymous status while removing
-    //       in case the status changed. Trying to remove a layer that
-    //       was not held has no consequences.
-    //
-    // Note: the GetSubLayerPaths function returns proxies, so we have to
-    //       hold the std::string by value, not reference.
-    for (const std::string subLayerPath : layer->GetSubLayerPaths()) {
-        auto subLayer = SdfLayer::FindRelativeToLayer(layer, subLayerPath);
-        removeMutedLayer(subLayer);
+    // Stop holding the layers rooted at this layer.
+    return (layers.erase(layer->GetIdentifier()) > 0);
+}
+
+const LayerRefSet& getMutedLayers(const std::string& mutedIdentifier)
+{
+    const MutedLayers& mutedLayers = getMutedLayers();
+
+    const auto foundSet = mutedLayers.find(mutedIdentifier);
+
+    if (foundSet == mutedLayers.end()) {
+        static const LayerRefSet kEmpty;
+        return kEmpty;
     }
+
+    return foundSet->second;
 }
 
 void forgetMutedLayers()
