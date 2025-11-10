@@ -19,7 +19,7 @@
 import fixturesUtils
 
 from mayaUtils import setMayaTranslation, setMayaRotation
-from usdUtils import createSimpleXformScene, createDuoXformScene, mayaUsd_createStageWithNewLayer, createLayeredStage, createSimpleXformSceneInCurrentLayer
+from usdUtils import createSimpleXformScene, createDuoXformScene, mayaUsd_createStageWithNewLayer, createLayeredStage, createSimpleXformSceneInCurrentLayer, getPrimFromSceneItem
 from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
@@ -27,7 +27,7 @@ import mayaUsd.lib
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Gf, Sdf, Usd
+from pxr import Sdf, Usd, UsdShade, UsdGeom
 
 from maya import cmds
 from maya import standalone
@@ -674,6 +674,99 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         # Verify that the merged prim has a sphere.
         verify(expectSphere=True)
+
+    def testMergeWithNodeList(self):
+        '''Merge edits on a subset of the edited hierarchy with pushNodeList updater arg.'''
+
+        def createAndAssignLambert(renderable):
+            shader = cmds.shadingNode("lambert", asShader=True)
+            sg = cmds.sets(renderable=True, noSurfaceShader=True, empty=True)
+            cmds.sets(renderable, forceElement=sg)
+            cmds.connectAttr(shader + ".oc", sg + ".ss")
+            return shader
+
+        # Create an stage with a root xform edited as maya
+        # and add a sphere and a cube under the edited node.
+        def createEditedAsMayaScene():
+            psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+            stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+            stage.DefinePrim("/A", "Xform")
+
+            cmds.mayaUsdEditAsMaya(psPathStr + ",/A")
+            editedMayaItem = ufe.GlobalSelection.get().front()
+            editedMayaPath = ufe.PathString.string(editedMayaItem.path())
+
+            sphere, *_ = cmds.polySphere(sa=3, sh=3)
+            sphere, *_ = cmds.parent(sphere, editedMayaPath)
+            sphereShader = createAndAssignLambert(sphere)
+
+            cube, *_ = cmds.polyCube()
+            cube, *_ = cmds.parent(cube, editedMayaPath)
+            cubeShader = createAndAssignLambert(cube)
+
+            return editedMayaPath, sphere, sphereShader, cube, cubeShader
+
+        # Merge and verify that merged prims match the nodeList and that others were skipped.
+        def mergeAndVerify(editedPath, mergeOnly=None, unexpectedPrimNames=[], expectedShaders=None):
+            if mergeOnly:
+                # We expect to merge only the existing dags.
+                expectedChildren = cmds.ls(mergeOnly, type="dagNode")
+            else:
+                # If there is no nodeList, we expect all children to be merged.
+                expectedChildren = cmds.listRelatives(editedPath)
+
+            # Populate the selection election with dag leafs, to verify that the intermediate
+            # tranforms, inbetween the push root and the selection, are included as well.
+            nodeList = []
+            for child in mergeOnly or ():
+                childLeafs = cmds.ls(mergeOnly, dag=True, leaf=True)
+                nodeList.extend(childLeafs or [child])
+
+            # Merge the selection.
+            cmds.mayaUsdMergeToUsd(editedPath, nls=nodeList, exo="mergeTransformAndShape=0")
+            mergedPrim = getPrimFromSceneItem(ufe.GlobalSelection.get().front())
+
+            # Verify that the exported prim list matches expectations.
+            mergedChildren = [
+                p.GetName() for p in mergedPrim.GetChildren() if p.IsA(UsdGeom.Xformable)
+            ]
+            self.assertSetEqual(set(expectedChildren).difference(unexpectedPrimNames),
+                                set(mergedChildren))
+
+            if unexpectedPrimNames:
+                allPrimNames = set(p.GetName() for p in mergedPrim.GetStage().Traverse())
+                for unexpectedName in unexpectedPrimNames:
+                    self.assertNotIn(unexpectedName, allPrimNames)
+
+            if expectedShaders is not None:
+                mergedShaders = [
+                    p.GetName() for p in mergedPrim.GetStage().Traverse() if p.IsA(UsdShade.Shader)
+                ]
+                self.assertSetEqual(set(expectedShaders).difference(unexpectedPrimNames),
+                                    set(mergedShaders))
+
+        # Edit and merge back to USD all hierarchy and verify both cube and spere were merged.
+        editedAsMaya, _, shader1, _, shader2 = createEditedAsMayaScene()
+        mergeAndVerify(editedAsMaya, mergeOnly=None, expectedShaders=[shader1, shader2])
+
+        # Edit and merge back only the sphere to USD and verify cube was ignored.
+        editedAsMaya, child, shader, *_ = createEditedAsMayaScene()
+        mergeAndVerify(editedAsMaya, mergeOnly=[child], expectedShaders=[shader])
+
+        # Edit and merge back only the cube to USD and verify sphere was ignored.
+        editedAsMaya, _, _, child, shader = createEditedAsMayaScene()
+        mergeAndVerify(editedAsMaya, mergeOnly=[child], expectedShaders=[shader])
+
+        # Verify that a dag selection out of the edited branch is not pushed.
+        notEditedAsMaya = cmds.polyCube()[0]
+        editedAsMaya, child, shader, *_ = createEditedAsMayaScene()
+        mergeAndVerify(editedAsMaya, mergeOnly=[child, notEditedAsMaya],
+                       unexpectedPrimNames=[notEditedAsMaya])
+
+        # Verify that we cannot merge with an invalid node name in pushNodeList.
+        editedAsMaya, *_ = createEditedAsMayaScene()
+        with self.assertRaises(RuntimeError):
+            mergeAndVerify(editedAsMaya, mergeOnly=["some_missing_node"])
 
 
     def testMergeInSubVariant(self):
