@@ -70,13 +70,24 @@ MStatus copyLayerMutingFromAttribute(
 // of muted layers. That list gets cleared when a new Maya scene is created.
 
 MAYAUSD_CORE_PUBLIC
-void addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+bool addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 MAYAUSD_CORE_PUBLIC
-void removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+bool removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 MAYAUSD_CORE_PUBLIC
 void forgetMutedLayers();
+
+/*! Set of layer reference pointers.
+ */
+using LayerRefSet = std::set<PXR_NS::SdfLayerRefPtr>;
+
+/*! Returns layers held due to muting layer \p mutedIdentifier in a USD stage,
+ * includes the muted root (if dirty/anonymous) and all recorded descendants
+ * in its sublayer hierarchy.
+ */
+MAYAUSD_CORE_PUBLIC
+const LayerRefSet& getMutedLayers(const std::string& mutedIdentifier);
 
 } // namespace MAYAUSD_NS_DEF
 
