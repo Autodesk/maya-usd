@@ -9,14 +9,6 @@ message(STATUS "Finding Autodesk USD Component Creator")
 
 ############################################################################
 #
-# Define the install root folder
-
-if (NOT DEFINED ADSK_USD_COMPONENT_CREATOR_ROOT_DIR)
-    set(ADSK_USD_COMPONENT_CREATOR_ROOT_DIR $ENV{ADSK_USD_COMPONENT_CREATOR_ROOT_DIR})
-endif()
-
-############################################################################
-#
 # C++ headers
 
 find_path(ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR
@@ -129,7 +121,6 @@ endif()
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(AdskUsdComponentCreator
     REQUIRED_VARS
-        ADSK_USD_COMPONENT_CREATOR_ROOT_DIR
         ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR
         ADSK_USD_COMPONENT_CREATOR_MAYA_PLUGIN_DIR
         ADSK_USD_COMPONENT_CREATOR_BIN_DIR        
@@ -142,7 +133,6 @@ find_package_handle_standard_args(AdskUsdComponentCreator
 
 if (AdskUsdComponentCreator_FOUND)
     message(STATUS "   Autodesk USD Component Creator version is            ${ADSK_USD_COMPONENT_CREATOR_VERSION}")
-    message(STATUS "   Autodesk USD Component Creator root folder is        ${ADSK_USD_COMPONENT_CREATOR_ROOT_DIR}")
     message(STATUS "   Autodesk USD Component Creator include folder is     ${ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR}")
     message(STATUS "   Autodesk USD Component Creator Maya plugin folder is ${ADSK_USD_COMPONENT_CREATOR_MAYA_PLUGIN_DIR}")
     message(STATUS "   Autodesk USD Component Creator binaries folder is    ${ADSK_USD_COMPONENT_CREATOR_BIN_DIR}")
