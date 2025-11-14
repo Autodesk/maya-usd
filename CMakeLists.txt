@@ -257,6 +257,7 @@ if(BUILD_LOOKDEVXUSD_LIBRARY)
     endif()
 endif()
 
+find_package(AdskUsdComponentCreator)
 find_package(AR)
 
 #------------------------------------------------------------------------------
