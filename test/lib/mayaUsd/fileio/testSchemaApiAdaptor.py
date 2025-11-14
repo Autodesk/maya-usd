@@ -265,6 +265,8 @@ class testSchemaApiAdaptor(unittest.TestCase):
         """Test that we can adapt ShadowAPI to an existing light shape. This exercises the most
         basic callbacks exposed by a SchemaAPI adaptor:"""
 
+        cmds.file(f=True, new=True)
+
         mayaUsdLib.SchemaApiAdaptor.Register(shadowApiAdaptorShape, "light", "ShadowAPI")
 
         lightShape1 = cmds.pointLight()
@@ -300,9 +302,45 @@ class testSchemaApiAdaptor(unittest.TestCase):
         colorAttr.Set((1,0,1))
         self.assertEqual(cmds.getAttr(lightShape1 + ".shadowColor"), [(1.0, 0.0, 1.0)])
 
+    def testMultipleRegistration(self):
+        """Test that we can unregister and re-register a SchemaAPI adaptor"""
+
+        cmds.file(f=True, new=True)
+
+        mayaUsdLib.SchemaApiAdaptor.Register(shadowApiAdaptorShape, "light", "ShadowAPI")
+        mayaUsdLib.SchemaApiAdaptor.Unregister(shadowApiAdaptorShape, "light", "ShadowAPI")
+        mayaUsdLib.SchemaApiAdaptor.Register(shadowApiAdaptorShape, "light", "ShadowAPI")
+        mayaUsdLib.SchemaApiAdaptor.Unregister(shadowApiAdaptorShape, "light", "ShadowAPI")
+        mayaUsdLib.SchemaApiAdaptor.Register(shadowApiAdaptorShape, "light", "ShadowAPI")
+
+        lightShape1 = cmds.pointLight()
+        cmds.setAttr(lightShape1 + ".shadowColor", 0.5, 0.25, 0)
+
+        # Adapted:
+        adaptor = mayaUsdLib.Adaptor(lightShape1)
+        self.assertEqual(adaptor.GetAppliedSchemas(), ["ShadowAPI"])
+
+        schema = adaptor.GetSchemaByName("ShadowAPI")
+        self.assertTrue(schema)
+
+        self.assertEqual(set(schema.GetAuthoredAttributeNames()),
+                         set(["inputs:shadow:color", "inputs:shadow:enable"]))
+        colorAttr = schema.GetAttribute("inputs:shadow:color")
+        self.assertTrue(colorAttr)
+        linearizedValue = (0.21763764, 0.047366142, 0)
+        colorAttrValue = colorAttr.Get()
+        self.assertAlmostEqual(linearizedValue[0], colorAttrValue[0])
+        self.assertAlmostEqual(linearizedValue[1], colorAttrValue[1])
+        self.assertEqual(linearizedValue[2], colorAttrValue[2])
+
+        colorAttr.Set((1,0,1))
+        self.assertEqual(cmds.getAttr(lightShape1 + ".shadowColor"), [(1.0, 0.0, 1.0)])
+
     @unittest.skipUnless(HAS_BULLET and HAS_USDMAYA, 'Requires the Pixar and bullet plugins.')
     def testComplexAdaptation(self):
         """Test that we can adapt a bullet simulation"""
+
+        cmds.file(f=True, new=True)
 
         mayaUsdLib.SchemaApiAdaptor.Register(TestBulletMassShemaAdaptor, "shape", "PhysicsMassAPI")
         mayaUsdLib.SchemaApiAdaptor.Register(TestBulletRigidBodyShemaAdaptor, "shape", "PhysicsRigidBodyAPI")
