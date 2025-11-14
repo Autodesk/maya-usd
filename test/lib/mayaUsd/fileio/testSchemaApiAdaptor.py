@@ -65,6 +65,27 @@ class shadowApiAdaptorShape(mayaUsdLib.SchemaApiAdaptor):
         return shadowApiAdaptorShape._nameMapping.get(usdName, "")
 
 
+class OtherShadowApiAdaptorShape(mayaUsdLib.SchemaApiAdaptor):
+    _nameMapping = {
+        "inputs:shadow:color": "shadowColor",
+        # Two Maya enablers. Return the RayTrace one.
+        "inputs:shadow:enable": "useRayTraceShadows"
+    }
+    def CanAdapt(self):
+        node = om.MFnDependencyNode(self.mayaObject)
+        # Add a name check so we can test a bit more API
+        if node.name() == "pointLightShape1":
+            return True
+        else:
+            return False
+
+    def GetAdaptedAttributeNames(self):
+        return list(shadowApiAdaptorShape._nameMapping.keys())
+
+    def GetMayaNameForUsdAttrName(self, usdName):
+        return shadowApiAdaptorShape._nameMapping.get(usdName, "")
+
+
 def _GetBulletShape(mayaShape):
     """Navigates from a Maya shape to a bullet shape under the same transform"""
     path = om.MDagPath.getAPathTo(mayaShape)
@@ -312,6 +333,43 @@ class testSchemaApiAdaptor(unittest.TestCase):
         mayaUsdLib.SchemaApiAdaptor.Register(shadowApiAdaptorShape, "light", "ShadowAPI")
         mayaUsdLib.SchemaApiAdaptor.Unregister(shadowApiAdaptorShape, "light", "ShadowAPI")
         mayaUsdLib.SchemaApiAdaptor.Register(shadowApiAdaptorShape, "light", "ShadowAPI")
+
+        lightShape1 = cmds.pointLight()
+        cmds.setAttr(lightShape1 + ".shadowColor", 0.5, 0.25, 0)
+
+        # Adapted:
+        adaptor = mayaUsdLib.Adaptor(lightShape1)
+        self.assertEqual(adaptor.GetAppliedSchemas(), ["ShadowAPI"])
+
+        schema = adaptor.GetSchemaByName("ShadowAPI")
+        self.assertTrue(schema)
+
+        self.assertEqual(set(schema.GetAuthoredAttributeNames()),
+                         set(["inputs:shadow:color", "inputs:shadow:enable"]))
+        colorAttr = schema.GetAttribute("inputs:shadow:color")
+        self.assertTrue(colorAttr)
+        linearizedValue = (0.21763764, 0.047366142, 0)
+        colorAttrValue = colorAttr.Get()
+        self.assertAlmostEqual(linearizedValue[0], colorAttrValue[0])
+        self.assertAlmostEqual(linearizedValue[1], colorAttrValue[1])
+        self.assertEqual(linearizedValue[2], colorAttrValue[2])
+
+        colorAttr.Set((1,0,1))
+        self.assertEqual(cmds.getAttr(lightShape1 + ".shadowColor"), [(1.0, 0.0, 1.0)])
+
+    def testMultipleAdaptors(self):
+        """Test that we can unregister and re-register a SchemaAPI adaptor and have multiple adaptors"""
+
+        cmds.file(f=True, new=True)
+
+        # Register and unregister one adpator a couple of times and leave i unregistered.
+        mayaUsdLib.SchemaApiAdaptor.Register(shadowApiAdaptorShape, "light", "ShadowAPI")
+        mayaUsdLib.SchemaApiAdaptor.Unregister(shadowApiAdaptorShape, "light", "ShadowAPI")
+        mayaUsdLib.SchemaApiAdaptor.Register(shadowApiAdaptorShape, "light", "ShadowAPI")
+        mayaUsdLib.SchemaApiAdaptor.Unregister(shadowApiAdaptorShape, "light", "ShadowAPI")
+
+        # Register another one with a different name for the same schema.
+        mayaUsdLib.SchemaApiAdaptor.Register(OtherShadowApiAdaptorShape, "light", "ShadowAPI")
 
         lightShape1 = cmds.pointLight()
         cmds.setAttr(lightShape1 + ".shadowColor", 0.5, 0.25, 0)
