@@ -62,7 +62,11 @@ protected:
     void OnUserPathsFirstChanged(bool userPathsFirst);
     void OnUserPathsOnlyChanged(bool userPathsOnly);
 
-    std::vector<std::string>                                              userSearchPaths;
+#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+    Adsk::PathArray userSearchPaths;
+#else
+    std::vector<std::string> userSearchPaths;
+#endif
     std::optional<std::reference_wrapper<Adsk::AssetResolverContextData>> userDataExt;
     std::string                                                           mappingFilePath;
     bool                                                                  includeMayaProjectTokens;
