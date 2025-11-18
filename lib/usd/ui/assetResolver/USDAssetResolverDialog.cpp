@@ -55,13 +55,7 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
     MString optionVarUserSearchPaths
         = MGlobal::optionVarStringValue("mayaUsd_AdskAssetResolverUserSearchPaths");
     std::string optionVarUserSearchPathsStr(optionVarUserSearchPaths.asChar());
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-    const std::vector<std::string>& paths
-        = TfStringSplit(optionVarUserSearchPathsStr, std::string(";"));
-    userSearchPaths.AddPaths(paths);
-#else
     userSearchPaths = TfStringSplit(optionVarUserSearchPathsStr, std::string(";"));
-#endif
 
     userDataExt = AssetResolverContextDataRegistry::GetContextData(userDataExtName, false, false);
     if (userDataExt == std::nullopt) {
@@ -70,24 +64,21 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
             = AssetResolverContextDataRegistry::RegisterContextData(userDataExtName);
         userDataExt
             = AssetResolverContextDataRegistry::GetContextData(userDataExtName, false, false);
+#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+        userDataExt->get().searchPaths.Clear();
+        userDataExt->get().searchPaths.AddPaths(userSearchPaths);
+#else
         userDataExt->get().searchPaths = userSearchPaths;
+#endif
     }
 
     Adsk::AdskResolverContext adskCtx = Adsk::AdskResolverContext();
     auto                      allSearchPaths = adskCtx.GetSearchPaths();
     QStringList               extAndEnvPathList;
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-    const std::vector<std::string>& userSearchPathsVec = userSearchPaths;
-#endif
     for (const auto& path : allSearchPaths) {
         // if its not already in userDataExt, add it
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-        if (std::find(userSearchPathsVec.begin(), userSearchPathsVec.end(), path)
-            == userSearchPathsVec.end()) {
-#else
         if (std::find(userSearchPaths.begin(), userSearchPaths.end(), path)
             == userSearchPaths.end()) {
-#endif
             extAndEnvPathList << QString::fromStdString(path);
         }
     }
@@ -142,11 +133,7 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
 
     settingsWidget->setExtAndEnvPaths(extAndEnvPathList);
     QStringList userPathList;
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-    for (const auto& s : userSearchPathsVec)
-#else
     for (const auto& s : userSearchPaths)
-#endif
         userPathList << QString::fromStdString(s);
     settingsWidget->setUserPaths(userPathList);
 
@@ -187,9 +174,12 @@ void USDAssetResolverDialog::OnSaveRequested()
 {
 #if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
     Adsk::PreventContextDataChangedNotification preventNotifications;
+    userDataExt->get().searchPaths.Clear();
+    userDataExt->get().searchPaths.AddPaths(userSearchPaths);
+#else
+    userDataExt->get().searchPaths = userSearchPaths;
 #endif
 
-    userDataExt->get().searchPaths = userSearchPaths;
     // save the search paths to option var
     std::string optionVarUserSearchPathsStr = TfStringJoin(userSearchPaths, ";");
     MString     optionVarUserSearchPaths(optionVarUserSearchPathsStr.c_str());
@@ -266,19 +256,11 @@ void USDAssetResolverDialog::OnSaveRequested()
 
 void USDAssetResolverDialog::OnUserPathsChanged(const QStringList& paths)
 {
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-    userSearchPaths.Clear();
-    for (const QString& path : paths) {
-        userSearchPaths.AddPath(path.toStdString());
-        std::string pathStr = path.toStdString();
-    }
-#else
     userSearchPaths.clear();
     for (const QString& path : paths) {
         userSearchPaths.push_back(path.toStdString());
         std::string pathStr = path.toStdString();
     }
-#endif
 }
 
 void USDAssetResolverDialog::OnUserPathsFirstChanged(bool ifUserPathsFirst)
