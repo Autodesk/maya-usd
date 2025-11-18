@@ -118,6 +118,63 @@
 using MayaUsd::LayerManager;
 using MayaUsd::ProxyAccessor;
 
+#include <AdskUsdEditForward/Forwarder.h>
+#include <AdskUsdEditForward/StageRuleProvider.h>
+
+#include <AdskUsdEditForward/Host.h>
+
+#include <maya/MDGMessage.h>
+#include <maya/MMessage.h>
+
+namespace {
+AdskUsdEditForward::Forwarder::Ptr forwarder;
+
+class MayaUsdEditForwardHost : public AdskUsdEditForward::Host
+{
+public:
+    virtual ~MayaUsdEditForwardHost() = default;
+
+    void ExecuteInCmd(std::function<void()> callback, bool immediate) override
+    {
+        auto exec = [callback]() {
+            if (callback) {
+                callback();
+            }
+        };
+
+        if (immediate) {
+            exec();
+            return;
+        }
+
+        static std::vector<std::function<void()>> funcs;
+        funcs.push_back(callback);
+
+        MGlobal::executeTaskOnIdle([](void* data) {
+            for (auto f : funcs) {
+                f();
+            }
+            funcs.clear();
+        });
+
+    }
+
+    bool IsEditForwardingPaused() const override {  return paused; }
+
+    void PauseEditForwarding(bool pause) override { paused = pause; }
+
+    void TrackLayerStates(const pxr::SdfLayerHandle& layer) override
+    {
+    }
+
+private:
+    bool paused = false;
+};
+
+
+
+}
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens, MAYAUSD_PROXY_SHAPE_BASE_TOKENS);
@@ -1362,6 +1419,18 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
         outDataHandle.copy(inDataCachedHandle);
         return MS::kSuccess;
+    }
+
+        
+    std::shared_ptr<AdskUsdEditForward::IRuleProvider> prov
+        = std::make_shared<AdskUsdEditForward::StageRuleProvider>(usdStage);
+
+    if (true) {
+        using namespace AdskUsdEditForward;
+        auto mayaHost = std::make_shared<MayaUsdEditForwardHost>();
+        AdskUsdEditForward::Host::SetInstance(mayaHost);
+        auto rl = usdStage->GetRootLayer()->GetIdentifier();
+        forwarder = std::make_shared<Forwarder>(usdStage, prov, usdStage->GetSessionLayer());
     }
 
     // Get the primPath

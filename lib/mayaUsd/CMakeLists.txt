@@ -229,6 +229,36 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # -----------------------------------------------------------------------------
+# optional: usd-edit-forward external dependency
+# -----------------------------------------------------------------------------
+# Configure these to use an externally installed usd-edit-forward library.
+# Example:
+#   -DUSD_EDIT_FORWARD_ROOT="D:/repos/usd-edit-forward/build/install"
+set(USD_EDIT_FORWARD_ROOT "" CACHE PATH "Install prefix of usd-edit-forward (e.g. D:/repos/usd-edit-forward/build/install)")
+set(USD_EDIT_FORWARD_INCLUDE_DIR "" CACHE PATH "Headers directory for usd-edit-forward; defaults to <root>/include")
+set(USD_EDIT_FORWARD_LIBRARY "" CACHE FILEPATH "Path to usd-edit-forward library file (.lib/.a)")
+
+if(USD_EDIT_FORWARD_ROOT AND NOT USD_EDIT_FORWARD_INCLUDE_DIR)
+    set(USD_EDIT_FORWARD_INCLUDE_DIR "${USD_EDIT_FORWARD_ROOT}/include")
+endif()
+
+if(USD_EDIT_FORWARD_ROOT AND NOT USD_EDIT_FORWARD_LIBRARY)
+    find_library(USD_EDIT_FORWARD_LIBRARY
+        NAMES usd_edit_forward usdEditForward edit_forward editForward AdskUsdEditForward
+        PATHS
+            "${USD_EDIT_FORWARD_ROOT}/lib"
+            "${USD_EDIT_FORWARD_ROOT}/lib64"
+            "${USD_EDIT_FORWARD_ROOT}/bin"
+        NO_DEFAULT_PATH
+    )
+endif()
+
+if (NOT TARGET AdskUsdEditForward::AdskUsdEditForward AND USD_EDIT_FORWARD_INCLUDE_DIR AND EXISTS "${USD_EDIT_FORWARD_INCLUDE_DIR}")
+    message(STATUS "usd-edit-forward include dir: ${USD_EDIT_FORWARD_INCLUDE_DIR}")
+    target_include_directories(${PROJECT_NAME} PRIVATE ${USD_EDIT_FORWARD_INCLUDE_DIR})
+endif()
+
+# -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}
@@ -267,6 +297,13 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenShader>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
 )
+
+if (TARGET AdskUsdEditForward::AdskUsdEditForward)
+    target_link_libraries(${PROJECT_NAME} PRIVATE AdskUsdEditForward::AdskUsdEditForward)
+elseif (USD_EDIT_FORWARD_LIBRARY)
+    message(STATUS "usd-edit-forward library: ${USD_EDIT_FORWARD_LIBRARY}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${USD_EDIT_FORWARD_LIBRARY})
+endif()
 
 # -----------------------------------------------------------------------------
 # run-time search paths
