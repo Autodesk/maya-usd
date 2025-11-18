@@ -25,6 +25,12 @@ target_sources(${PROJECT_NAME}
         images/ui.qrc
 )
 
+if (AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY=1
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers
