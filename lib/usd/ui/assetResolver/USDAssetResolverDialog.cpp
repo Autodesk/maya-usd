@@ -172,83 +172,93 @@ void USDAssetResolverDialog::OnIncludeProjectTokensChanged(bool include)
 
 void USDAssetResolverDialog::OnSaveRequested()
 {
+    // Note: PreventContextDataChangedNotification has to be contained in a scope
+    // so that it is destructed before SendContextDataChanged is called.
+    {
 #if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-    Adsk::PreventContextDataChangedNotification preventNotifications;
-    userDataExt->get().searchPaths.Clear();
-    userDataExt->get().searchPaths.AddPaths(userSearchPaths);
+        Adsk::PreventContextDataChangedNotification preventNotifications;
+        userDataExt->get().searchPaths.Clear();
+        userDataExt->get().searchPaths.AddPaths(userSearchPaths);
 #else
-    userDataExt->get().searchPaths = userSearchPaths;
+        userDataExt->get().searchPaths = userSearchPaths;
 #endif
 
-    // save the search paths to option var
-    std::string optionVarUserSearchPathsStr = TfStringJoin(userSearchPaths, ";");
-    MString     optionVarUserSearchPaths(optionVarUserSearchPathsStr.c_str());
+        // save the search paths to option var
+        std::string optionVarUserSearchPathsStr = TfStringJoin(userSearchPaths, ";");
+        MString     optionVarUserSearchPaths(optionVarUserSearchPathsStr.c_str());
 
-    MGlobal::setOptionVarValue(
-        "mayaUsd_AdskAssetResolverUserSearchPaths", optionVarUserSearchPaths);
+        MGlobal::setOptionVarValue(
+            "mayaUsd_AdskAssetResolverUserSearchPaths", optionVarUserSearchPaths);
 
-    // apply mapping file changes if needed
-    MGlobal::setOptionVarValue(
-        "mayaUsd_AdskAssetResolverMappingFile", MString(mappingFilePath.c_str()));
+        // apply mapping file changes if needed
+        MGlobal::setOptionVarValue(
+            "mayaUsd_AdskAssetResolverMappingFile", MString(mappingFilePath.c_str()));
 
-    MGlobal::executePythonCommand(
-        "try:\n"
-        "    import mayaUsd_AdskAssetResolver\n"
-        "    mayaUsd_AdskAssetResolver.load_mappingfile(r\""
-        + MString(mappingFilePath.c_str())
-        + "\" )\n"
-          "except:\n"
-          "    from maya.OpenMaya import MGlobal\n"
-          "    MGlobal.displayError('Error loading mapping File at start')\n"
-          "    pass\n");
-
-    // apply include project tokens changes if needed
-    if (includeMayaProjectTokens) {
         MGlobal::executePythonCommand(
             "try:\n"
             "    import mayaUsd_AdskAssetResolver\n"
-            "    mayaUsd_AdskAssetResolver.include_maya_project_tokens()\n"
-            "except Exception as e:\n"
-            "    print('Error including Maya project tokens:', e)\n");
-    } else {
-        MGlobal::executePythonCommand("try:\n"
-                                      "    import mayaUsd_AdskAssetResolver\n"
-                                      "    mayaUsd_AdskAssetResolver.unload_maya_project_tokens()\n"
-                                      "except Exception as e:\n"
-                                      "    print('Error unloading Maya project tokens:', e)\n");
-    }
-    MGlobal::setOptionVarValue(
-        "mayaUsd_AdskAssetResolverIncludeMayaToken", includeMayaProjectTokens);
+            "    mayaUsd_AdskAssetResolver.load_mappingfile(r\""
+            + MString(mappingFilePath.c_str())
+            + "\" )\n"
+              "except:\n"
+              "    from maya.OpenMaya import MGlobal\n"
+              "    MGlobal.displayError('Error loading mapping File at start')\n"
+              "    pass\n");
 
-    // User Paths First
-    MGlobal::setOptionVarValue("mayaUsd_AdskAssetResolverUserPathsFirst", userPathsFirst);
-    std::vector<std::string> activeContextDataList
-        = AssetResolverContextDataRegistry::GetActiveContextData();
-    auto userPathContextIt
-        = std::find(activeContextDataList.begin(), activeContextDataList.end(), "MayaUsd_UserData");
-
-    if (userPathsFirst) {
-        if (userPathContextIt != activeContextDataList.end()) {
-            // move the user path context to the front of the list
-            std::rotate(activeContextDataList.begin(), userPathContextIt, userPathContextIt + 1);
+        // apply include project tokens changes if needed
+        if (includeMayaProjectTokens) {
+            MGlobal::executePythonCommand(
+                "try:\n"
+                "    import mayaUsd_AdskAssetResolver\n"
+                "    mayaUsd_AdskAssetResolver.include_maya_project_tokens()\n"
+                "except Exception as e:\n"
+                "    print('Error including Maya project tokens:', e)\n");
+        } else {
+            MGlobal::executePythonCommand(
+                "try:\n"
+                "    import mayaUsd_AdskAssetResolver\n"
+                "    mayaUsd_AdskAssetResolver.unload_maya_project_tokens()\n"
+                "except Exception as e:\n"
+                "    print('Error unloading Maya project tokens:', e)\n");
         }
-    } else {
-        if (userPathContextIt != activeContextDataList.end()) {
-            // move the user path context to the end of the list
-            std::rotate(userPathContextIt, userPathContextIt + 1, activeContextDataList.end());
+        MGlobal::setOptionVarValue(
+            "mayaUsd_AdskAssetResolverIncludeMayaToken", includeMayaProjectTokens);
+
+        // User Paths First
+        MGlobal::setOptionVarValue("mayaUsd_AdskAssetResolverUserPathsFirst", userPathsFirst);
+        std::vector<std::string> activeContextDataList
+            = AssetResolverContextDataRegistry::GetActiveContextData();
+        auto userPathContextIt = std::find(
+            activeContextDataList.begin(), activeContextDataList.end(), "MayaUsd_UserData");
+
+        if (userPathsFirst) {
+            if (userPathContextIt != activeContextDataList.end()) {
+                // move the user path context to the front of the list
+                std::rotate(
+                    activeContextDataList.begin(), userPathContextIt, userPathContextIt + 1);
+            }
+        } else {
+            if (userPathContextIt != activeContextDataList.end()) {
+                // move the user path context to the end of the list
+                std::rotate(userPathContextIt, userPathContextIt + 1, activeContextDataList.end());
+            }
+        }
+
+        // User Paths Only
+        MGlobal::setOptionVarValue("mayaUsd_AdskAssetResolverUserPathsOnly", userPathsOnly);
+
+        auto allContextData = AssetResolverContextDataRegistry::GetAvailableContextData();
+        for (auto& context : allContextData) {
+            if (context.first
+                == AssetResolverContextDataRegistry::GetEnvironmentMappingContextDataName()) {
+                context.second = !userPathsOnly;
+            }
         }
     }
 
-    // User Paths Only
-    MGlobal::setOptionVarValue("mayaUsd_AdskAssetResolverUserPathsOnly", userPathsOnly);
-
-    auto allContextData = AssetResolverContextDataRegistry::GetAvailableContextData();
-    for (auto& context : allContextData) {
-        if (context.first
-            == AssetResolverContextDataRegistry::GetEnvironmentMappingContextDataName()) {
-            context.second = !userPathsOnly;
-        }
-    }
+#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+    Adsk::SendContextDataChanged(Adsk::ContextDataType::ALL);
+#endif
 
     // Also close the window
     accept();
