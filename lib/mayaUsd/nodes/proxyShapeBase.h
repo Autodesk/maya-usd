@@ -52,6 +52,10 @@ UFE_NS_DEF { class Path; }
 #include <mayaUsd/utils/mayaNodeObserver.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
 
+namespace AdskUsdEditForward {
+class Forwarder;
+}
+
 namespace MAYAUSD_NS_DEF {
 class LayerManager;
 }
@@ -474,6 +478,8 @@ private:
     std::set<std::string> _incomingLayers;
 
     MCallbackId _preSaveCallbackId = 0;
+
+    std::shared_ptr<AdskUsdEditForward::Forwarder> _forwarder;
 
 public:
     // Counter for the number of times compute is re-entered

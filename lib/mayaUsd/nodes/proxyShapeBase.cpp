@@ -127,7 +127,6 @@ using MayaUsd::ProxyAccessor;
 #include <maya/MMessage.h>
 
 namespace {
-AdskUsdEditForward::Forwarder::Ptr forwarder;
 
 class MayaUsdEditForwardHost : public AdskUsdEditForward::Host
 {
@@ -147,33 +146,26 @@ public:
             return;
         }
 
-        static std::vector<std::function<void()>> funcs;
-        funcs.push_back(callback);
+        static std::vector<std::function<void()>> callbacks;
+        callbacks.push_back(callback);
 
         MGlobal::executeTaskOnIdle([](void* data) {
-            for (auto f : funcs) {
-                f();
+            for (auto cb : callbacks) {
+                cb();
             }
-            funcs.clear();
+            callbacks.clear();
         });
-
     }
 
-    bool IsEditForwardingPaused() const override {  return paused; }
-
+    bool IsEditForwardingPaused() const override { return paused; }
     void PauseEditForwarding(bool pause) override { paused = pause; }
-
-    void TrackLayerStates(const pxr::SdfLayerHandle& layer) override
-    {
-    }
+    void TrackLayerStates(const pxr::SdfLayerHandle& layer) override { }
 
 private:
     bool paused = false;
 };
 
-
-
-}
+} // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1421,16 +1413,12 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         return MS::kSuccess;
     }
 
-        
-    std::shared_ptr<AdskUsdEditForward::IRuleProvider> prov
-        = std::make_shared<AdskUsdEditForward::StageRuleProvider>(usdStage);
-
-    if (true) {
+    {
         using namespace AdskUsdEditForward;
+        std::shared_ptr<IRuleProvider> provider = std::make_shared<StageRuleProvider>(usdStage);
         auto mayaHost = std::make_shared<MayaUsdEditForwardHost>();
-        AdskUsdEditForward::Host::SetInstance(mayaHost);
-        auto rl = usdStage->GetRootLayer()->GetIdentifier();
-        forwarder = std::make_shared<Forwarder>(usdStage, prov, usdStage->GetSessionLayer());
+        Host::SetInstance(mayaHost);
+        _forwarder = std::make_shared<Forwarder>(usdStage, provider, usdStage->GetSessionLayer());
     }
 
     // Get the primPath

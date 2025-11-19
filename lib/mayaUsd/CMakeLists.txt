@@ -239,18 +239,13 @@ set(USD_EDIT_FORWARD_INCLUDE_DIR "" CACHE PATH "Headers directory for usd-edit-f
 set(USD_EDIT_FORWARD_LIBRARY "" CACHE FILEPATH "Path to usd-edit-forward library file (.lib/.a)")
 
 if(USD_EDIT_FORWARD_ROOT AND NOT USD_EDIT_FORWARD_INCLUDE_DIR)
+    message(STATUS "[DBG] Setting USD_EDIT_FORWARD_INCLUDE_DIR to ${USD_EDIT_FORWARD_ROOT}/include (because USD_EDIT_FORWARD_ROOT is set and USD_EDIT_FORWARD_INCLUDE_DIR is empty)")
     set(USD_EDIT_FORWARD_INCLUDE_DIR "${USD_EDIT_FORWARD_ROOT}/include")
 endif()
 
 if(USD_EDIT_FORWARD_ROOT AND NOT USD_EDIT_FORWARD_LIBRARY)
-    find_library(USD_EDIT_FORWARD_LIBRARY
-        NAMES usd_edit_forward usdEditForward edit_forward editForward AdskUsdEditForward
-        PATHS
-            "${USD_EDIT_FORWARD_ROOT}/lib"
-            "${USD_EDIT_FORWARD_ROOT}/lib64"
-            "${USD_EDIT_FORWARD_ROOT}/bin"
-        NO_DEFAULT_PATH
-    )
+    set(USD_EDIT_FORWARD_LIBRARY "${USD_EDIT_FORWARD_ROOT}/lib/AdskUsdEditForward.lib")
+    message(STATUS "[DBG] USD_EDIT_FORWARD_LIBRARY manually set to: ${USD_EDIT_FORWARD_LIBRARY}")
 endif()
 
 if (NOT TARGET AdskUsdEditForward::AdskUsdEditForward AND USD_EDIT_FORWARD_INCLUDE_DIR AND EXISTS "${USD_EDIT_FORWARD_INCLUDE_DIR}")
@@ -288,6 +283,7 @@ target_link_libraries(${PROJECT_NAME}
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
         usdUfe
+        ${USD_EDIT_FORWARD_LIBRARY}
     PRIVATE
         ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
@@ -298,12 +294,12 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
 )
 
-if (TARGET AdskUsdEditForward::AdskUsdEditForward)
-    target_link_libraries(${PROJECT_NAME} PRIVATE AdskUsdEditForward::AdskUsdEditForward)
-elseif (USD_EDIT_FORWARD_LIBRARY)
-    message(STATUS "usd-edit-forward library: ${USD_EDIT_FORWARD_LIBRARY}")
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${USD_EDIT_FORWARD_LIBRARY})
-endif()
+#if (TARGET AdskUsdEditForward::AdskUsdEditForward)
+#    target_link_libraries(${PROJECT_NAME} PRIVATE AdskUsdEditForward::AdskUsdEditForward)
+#elseif (USD_EDIT_FORWARD_LIBRARY)
+#    message(STATUS "usd-edit-forward library: ${USD_EDIT_FORWARD_LIBRARY}")
+#    target_link_libraries(${PROJECT_NAME} PRIVATE ${USD_EDIT_FORWARD_LIBRARY})
+#endif()
 
 # -----------------------------------------------------------------------------
 # run-time search paths
@@ -338,6 +334,16 @@ install(TARGETS ${PROJECT_NAME}
 
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}> 
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
+    )
+endif()
+
+# Install AdskUsdEditForward runtime from USD_EDIT_FORWARD_ROOT/bin on Windows
+if (IS_WINDOWS AND USD_EDIT_FORWARD_ROOT)
+    install(FILES "${USD_EDIT_FORWARD_ROOT}/bin/AdskUsdEditForward.dll"
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
+    )
+    install(FILES "${USD_EDIT_FORWARD_ROOT}/bin/AdskUsdEditForward.pdb"
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
     )
 endif()
