@@ -44,6 +44,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -276,16 +277,16 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
 
         const std::vector<UsdSkelInbetweenShape> inBetweens = blendShape.GetInbetweens();
         if (!inBetweens.empty()) {
+            // Create a mapping from index value to original position
+            std::map<int, unsigned int> indexToOriginalPos;
+            for (unsigned int i = 0; i < indicesIntArray.length(); ++i) {
+                indexToOriginalPos[indicesIntArray[i]] = i;
+            }
+
             // Create a mapping from sorted position to original position
             std::vector<unsigned int> sortedToOriginalPos(indexDeltaPairs.size());
             for (unsigned int i = 0; i < indexDeltaPairs.size(); ++i) {
-                int sortedIdx = sortedIndices[i];
-                for (unsigned int j = 0; j < indicesIntArray.length(); ++j) {
-                    if (indicesIntArray[j] == sortedIdx) {
-                        sortedToOriginalPos[i] = j;
-                        break;
-                    }
-                }
+                sortedToOriginalPos[i] = indexToOriginalPos[sortedIndices[i]];
             }
 
             for (const auto& inBetween : inBetweens) {
