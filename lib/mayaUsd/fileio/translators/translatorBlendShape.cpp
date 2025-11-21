@@ -30,7 +30,6 @@
 #include <pxr/usd/usdSkel/blendShape.h>
 #include <pxr/usd/usdSkel/root.h>
 
-#include <maya/MDistance.h>
 #include <maya/MFloatVectorArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
@@ -43,7 +42,10 @@
 #include <maya/MPointArray.h>
 #include <maya/MStatus.h>
 
+#include <algorithm>
 #include <iterator>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -95,6 +97,7 @@ void _AddBlendShape(
     // Positive weights: 5000-6000 (weight 0.001 to 1.0)
     // Negative weights: 0-4999 (weight -5.0 to -0.001)
     // Zero weight: 5000
+    // In theory, there's no upper bound for the max weight value.
     static const auto convertWeightToIndex = [](float weight) -> int {
         int result = 5000 + static_cast<int>(weight * 1000.f);
         return result >= 0 ? result : 0;
@@ -127,7 +130,7 @@ void _AddBlendShape(
     plgInCompTarget.selectAncestorLogicalIndex(targetIdx, inputTargetGroupAttr);
     plgInCompTarget.selectAncestorLogicalIndex(convertWeightToIndex(weight), inputTargetItemAttr);
     {
-        MFnSingleIndexedComponent indexList(blendShapeObj);
+        MFnSingleIndexedComponent indexList;
         auto                      indexListObj = indexList.create(MFn::kMeshVertComponent);
         indexList.addElements(indices);
         MFnComponentListData fnComp;
@@ -136,7 +139,6 @@ void _AddBlendShape(
         plgInCompTarget.setValue(compObj);
     }
 
-    // If weight is not 1.0, that means we are creating an inbetween shape
     if (isInBetween) {
         auto  inBetweenTargetNameAttr = fnBlendShape.attribute(_BlendShapeAttributes->ibtn);
         auto  inBetweenInfoGroupAttr = fnBlendShape.attribute(_BlendShapeAttributes->ibig);
@@ -171,7 +173,7 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
         return false;
     }
 
-    // It's required that the meshPrim with the blendShapes already had it's equivalent Maya node
+    // It's required that the meshPrim with the blendShapes already had its equivalent Maya node
     // created and properly registered by the writer
     MObject objToBlendShape = context->GetMayaNode(meshPrim.GetPath(), false);
     if (objToBlendShape.isNull()) {
@@ -189,20 +191,6 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
     }
 
     MStatus status;
-
-    MDagPath shapeDagPath;
-    status = MDagPath::getAPathTo(objToBlendShape, shapeDagPath);
-    CHECK_MSTATUS_AND_RETURN(status, false)
-    status = shapeDagPath.extendToShape();
-    CHECK_MSTATUS_AND_RETURN(status, false)
-    MObject originalShape = shapeDagPath.node(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false)
-    MObject parentTransform = shapeDagPath.transform(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false)
-
-    MFnMesh     originalMeshFn(originalShape);
-    MPointArray originalPoints;
-    originalMeshFn.getPoints(originalPoints);
 
     MFnBlendShapeDeformer blendFn;
     const auto            blendShapeObj
@@ -231,7 +219,7 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
         VtIntArray pointIndices;
         blendShape.GetPointIndicesAttr().Get(&pointIndices);
 
-        // Indices aren't authored. Use mesh default pointIndices
+        // If indices aren't authored, use mesh default pointIndices
         if (pointIndices.empty()) {
             pointIndices.reserve(deltaPoints.size());
             for (size_t i = 0; i < deltaPoints.size(); ++i) {
@@ -248,16 +236,34 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
         }
 
         // Convert Usd Arrays to Maya Arrays
-
-        MIntArray indicesIntArray(static_cast<unsigned int>(pointIndices.size()));
-        for (size_t i = 0; i < pointIndices.size(); ++i) {
-            indicesIntArray.set(pointIndices[i], static_cast<unsigned int>(i));
+        MIntArray indicesIntArray(
+            pointIndices.cdata(), static_cast<unsigned int>(pointIndices.size()));
+        MPointArray deltasPointsArray(static_cast<unsigned int>(pointIndices.size()));
+        for (unsigned int pidx = 0; pidx < pointIndices.size(); ++pidx) {
+            deltasPointsArray.set(
+                pidx, deltaPoints[pidx][0], deltaPoints[pidx][1], deltaPoints[pidx][2]);
         }
 
-        MPointArray deltasPointsArray(deltaPoints.size());
-        for (size_t pidx = 0; pidx < pointIndices.size(); ++pidx) {
-            const GfVec3f& offset = deltaPoints[pidx];
-            deltasPointsArray.set(MPoint(offset[0], offset[1], offset[2]), pidx);
+        // MFnSingleIndexedComponent sorts the indices automatically, so we need to sort deltas
+        // accordingly to maintain correspondence between indices and deltas.
+        std::vector<std::pair<int, MPoint>> indexDeltaPairs;
+        indexDeltaPairs.reserve(indicesIntArray.length());
+        for (unsigned int i = 0; i < indicesIntArray.length(); ++i) {
+            indexDeltaPairs.emplace_back(indicesIntArray[i], deltasPointsArray[i]);
+        }
+        std::sort(indexDeltaPairs.begin(), indexDeltaPairs.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+        });
+
+        // Extract sorted indices and deltas
+        MIntArray   sortedIndices;
+        MPointArray sortedDeltas;
+        sortedIndices.setLength(static_cast<unsigned int>(indexDeltaPairs.size()));
+        sortedDeltas.setLength(static_cast<unsigned int>(indexDeltaPairs.size()));
+        for (unsigned int i = 0; i < indexDeltaPairs.size(); ++i) {
+            sortedIndices[i] = indexDeltaPairs[i].first;
+            const MPoint& pt = indexDeltaPairs[i].second;
+            sortedDeltas.set(i, pt.x, pt.y, pt.z);
         }
 
         _AddBlendShape(
@@ -265,49 +271,64 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
             blendShapeName,
             static_cast<unsigned int>(targetIdx),
             1.f,
-            deltasPointsArray,
-            indicesIntArray);
+            sortedDeltas,
+            sortedIndices);
 
-        MIntArray                                inBetweenIndicesIntArray(indicesIntArray);
         const std::vector<UsdSkelInbetweenShape> inBetweens = blendShape.GetInbetweens();
-        for (const auto& inBetween : inBetweens) {
-            const std::string inBetweenName = inBetween.GetAttr().GetName().GetString();
-            float             ibWeight = 0.f;
-            inBetween.GetWeight(&ibWeight);
-
-            VtVec3fArray inBetweenDeltaPoints;
-            inBetween.GetOffsets(&inBetweenDeltaPoints);
-            if (inBetweenDeltaPoints.empty()) {
-                TF_RUNTIME_ERROR(
-                    "InBetween BlendShape <%s> for mesh <%s> has no delta points.",
-                    inBetweenName.c_str(),
-                    meshPrim.GetPath().GetText());
-                continue;
+        if (!inBetweens.empty()) {
+            // Create a mapping from sorted position to original position
+            std::vector<unsigned int> sortedToOriginalPos(indexDeltaPairs.size());
+            for (unsigned int i = 0; i < indexDeltaPairs.size(); ++i) {
+                int sortedIdx = sortedIndices[i];
+                for (unsigned int j = 0; j < indicesIntArray.length(); ++j) {
+                    if (indicesIntArray[j] == sortedIdx) {
+                        sortedToOriginalPos[i] = j;
+                        break;
+                    }
+                }
             }
 
-            if (inBetweenDeltaPoints.size() != pointIndices.size()) {
-                TF_RUNTIME_ERROR(
-                    "InBetween BlendShape <%s> for mesh <%s> has a different number of delta "
-                    "points and indices.",
-                    inBetweenName.c_str(),
-                    meshPrim.GetPath().GetText());
-                continue;
-            }
+            for (const auto& inBetween : inBetweens) {
+                const std::string inBetweenName = inBetween.GetAttr().GetName().GetString();
+                float             ibWeight = 0.f;
+                inBetween.GetWeight(&ibWeight);
 
-            MPointArray inBetweenDeltasPointsArray(inBetweenDeltaPoints.size());
-            for (size_t pidx = 0; pidx < pointIndices.size(); ++pidx) {
-                const GfVec3f& offset = inBetweenDeltaPoints[pidx];
-                inBetweenDeltasPointsArray.set(MPoint(offset[0], offset[1], offset[2]), pidx);
-            }
+                VtVec3fArray inBetweenDeltaPoints;
+                inBetween.GetOffsets(&inBetweenDeltaPoints);
+                if (inBetweenDeltaPoints.empty()) {
+                    TF_RUNTIME_ERROR(
+                        "InBetween BlendShape <%s> for mesh <%s> has no delta points.",
+                        inBetweenName.c_str(),
+                        meshPrim.GetPath().GetText());
+                    continue;
+                }
 
-            _AddBlendShape(
-                blendFn,
-                inBetweenName,
-                static_cast<unsigned int>(targetIdx),
-                ibWeight,
-                inBetweenDeltasPointsArray,
-                inBetweenIndicesIntArray,
-                true);
+                if (inBetweenDeltaPoints.size() != pointIndices.size()) {
+                    TF_RUNTIME_ERROR(
+                        "InBetween BlendShape <%s> for mesh <%s> has a different number of delta "
+                        "points and indices.",
+                        inBetweenName.c_str(),
+                        meshPrim.GetPath().GetText());
+                    continue;
+                }
+
+                // Sort the inbetween deltas using the same index order
+                MPointArray sortedInBetweenDeltas(
+                    static_cast<unsigned int>(indexDeltaPairs.size()));
+                for (unsigned int i = 0; i < indexDeltaPairs.size(); ++i) {
+                    const GfVec3f& offset = inBetweenDeltaPoints[sortedToOriginalPos[i]];
+                    sortedInBetweenDeltas.set(i, offset[0], offset[1], offset[2]);
+                }
+
+                _AddBlendShape(
+                    blendFn,
+                    inBetweenName,
+                    static_cast<unsigned int>(targetIdx),
+                    ibWeight,
+                    sortedInBetweenDeltas,
+                    sortedIndices,
+                    true);
+            }
         }
     }
     return true;
