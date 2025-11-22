@@ -246,6 +246,10 @@ bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
     if (!prim.ClearActive())
         return false;
 
+    if (!prim.IsActive()) {
+        prim.SetActive(true);        
+    }
+
     PXR_NS::SdfPrimSpecHandle primSpec = UsdUfe::getPrimSpecAtEditTarget(prim);
     if (sessionLayer && primSpec)
         sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
