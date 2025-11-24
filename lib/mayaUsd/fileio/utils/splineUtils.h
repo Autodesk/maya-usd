@@ -265,7 +265,8 @@ struct UsdMayaSplineUtils
         MDoubleArray tangentOutYArray(numKnots, 0.0);
 
         // Get the time sample multiplier to convert from USD time to Maya time
-        double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+        double timeSampleMultiplier
+            = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
         MTime::Unit timeUnit = MTime::uiUnit();
 
         unsigned int knotIdx = 0;
