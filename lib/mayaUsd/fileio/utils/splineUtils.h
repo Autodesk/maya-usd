@@ -264,6 +264,10 @@ struct UsdMayaSplineUtils
         MDoubleArray tangentOutXArray(numKnots, 0.0);
         MDoubleArray tangentOutYArray(numKnots, 0.0);
 
+        // Get the time sample multiplier to convert from USD time to Maya time
+        double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+        MTime::Unit timeUnit = MTime::uiUnit();
+
         unsigned int knotIdx = 0;
         auto         preTanType = MFnAnimCurve::TangentType::kTangentFixed;
         for (const TsKnot& knot : knots) {
@@ -302,7 +306,8 @@ struct UsdMayaSplineUtils
                 &outMayaTime,
                 &outMayaSlope);
 
-            timeArray.set(MTime(knot.GetTime()), knotIdx);
+            // Apply time sample multiplier to convert from USD time to Maya time
+            timeArray.set(MTime(knot.GetTime() * timeSampleMultiplier, timeUnit), knotIdx);
             valuesArray.set(value, knotIdx);
             tangentInTypeArray.set(preTanType, knotIdx);
             tangentOutTypeArray.set(outTanType, knotIdx);
@@ -318,9 +323,10 @@ struct UsdMayaSplineUtils
                 tangentOutYArray.set(DBL_MAX, knotIdx);
             } else {
                 preTanType = outTanType;
-                tangentInXArray.set(inMayaTime, knotIdx);
+                // Apply time sample multiplier to tangent widths (they represent time durations)
+                tangentInXArray.set(inMayaTime * timeSampleMultiplier, knotIdx);
                 tangentInYArray.set(inMayaSlope, knotIdx);
-                tangentOutXArray.set(outMayaTime, knotIdx);
+                tangentOutXArray.set(outMayaTime * timeSampleMultiplier, knotIdx);
                 tangentOutYArray.set(outMayaSlope, knotIdx);
             }
             knotIdx++;
