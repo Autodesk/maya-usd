@@ -31,6 +31,7 @@
 
 #include <pxr/base/tf/notice.h>
 
+#include <maya/MDagModifier.h>
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 
@@ -81,8 +82,9 @@ void LayerTreeModel::registerUsdNotifications(bool in_register)
         TfWeakPtr<LayerTreeModel> me(this);
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_layerChanged));
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_editTargetChanged));
-        _noticeKeys.push_back(TfNotice::Register(
-            me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
+        _noticeKeys.push_back(
+            TfNotice::Register(
+                me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
 
     } else {
         TfNotice::Revoke(&_noticeKeys);
@@ -252,7 +254,7 @@ void LayerTreeModel::selectUsdLayerOnIdle(const SdfLayerRefPtr& usdLayer)
     QTimer::singleShot(0, this, [this, usdLayer]() {
         auto item = findUSDLayerItem(usdLayer);
         if (item != nullptr) {
-            auto   index = indexFromItem(item);
+            auto index = indexFromItem(item);
             Q_EMIT selectLayerSignal(index);
         }
     });
@@ -625,7 +627,15 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     MayaUsd::LayerLockType::LayerLock_Locked,
                     true);
 
-                _sessionState->renameCurrentStageEntry(componentName);
+                // Rename Proxy Shape
+                MObject proxyNode;
+                UsdMayaUtil::GetMObjectByName(
+                    _sessionState->stageEntry()._proxyShapePath, proxyNode);
+                MDagModifier dagMod;
+                MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
+                if (status == MStatus::kSuccess) {
+                    dagMod.doIt();
+                }
             }
         }
         // User clicked "Cancel" - do nothing and return
