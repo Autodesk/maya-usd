@@ -109,6 +109,12 @@ public:
         return _currentStageEntry._stage && _currentStageEntry._stage->GetRootLayer();
     }
 
+    void renameCurrentStageEntry(const std::string& newDisplayName)
+    {
+        _currentStageEntry._displayName = newDisplayName;
+        Q_EMIT stageRenamedSignal(_currentStageEntry);
+    }
+
 Q_SIGNALS:
     void currentStageChangedSignal();
     void stageListChangedSignal(StageEntry const& toSelect = StageEntry());

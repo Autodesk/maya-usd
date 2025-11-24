@@ -609,6 +609,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     newRootLayer,
                     MayaUsd::LayerLockType::LayerLock_Locked,
                     true);
+
+                _sessionState->renameCurrentStageEntry(componentName);
             }
         }
         // User clicked "Cancel" - do nothing and return
