@@ -82,9 +82,8 @@ void LayerTreeModel::registerUsdNotifications(bool in_register)
         TfWeakPtr<LayerTreeModel> me(this);
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_layerChanged));
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_editTargetChanged));
-        _noticeKeys.push_back(
-            TfNotice::Register(
-                me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
+        _noticeKeys.push_back(TfNotice::Register(
+            me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
 
     } else {
         TfNotice::Revoke(&_noticeKeys);
@@ -254,7 +253,7 @@ void LayerTreeModel::selectUsdLayerOnIdle(const SdfLayerRefPtr& usdLayer)
     QTimer::singleShot(0, this, [this, usdLayer]() {
         auto item = findUSDLayerItem(usdLayer);
         if (item != nullptr) {
-            auto index = indexFromItem(item);
+            auto   index = indexFromItem(item);
             Q_EMIT selectLayerSignal(index);
         }
     });
