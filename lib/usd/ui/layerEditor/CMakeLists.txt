@@ -18,6 +18,8 @@
 target_sources(${PROJECT_NAME}
     PRIVATE
         batchSaveLayersUIDelegate.cpp
+        componentSaveDialog.cpp
+        componentSaveDialog.h
         dirtyLayersCountBadge.cpp
         generatedIconButton.cpp
         layerContentsWidget.cpp
