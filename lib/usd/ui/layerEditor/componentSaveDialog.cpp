@@ -19,14 +19,14 @@
 #include "generatedIconButton.h"
 #include "qtUtils.h"
 
+#include <mayaUsd/utils/utilSerialization.h>
+
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
-
-#include <mayaUsd/utils/utilSerialization.h>
 
 namespace UsdLayerEditor {
 
@@ -54,19 +54,18 @@ void ComponentSaveDialog::setupUI()
     // Content widget with padding
     auto contentWidget = new QWidget();
     auto contentLayout = new QGridLayout();
-    
+
     // Set padding: left, top, right, bottom
-    contentLayout->setContentsMargins(
-        DPIScale(20), DPIScale(15), DPIScale(20), DPIScale(15));
+    contentLayout->setContentsMargins(DPIScale(20), DPIScale(15), DPIScale(20), DPIScale(15));
     contentLayout->setSpacing(DPIScale(10));
 
     // Column stretch factors: 1/6, 4/6, 1/24, 3/24
     // Convert to integers: 4/24, 16/24, 1/24, 3/24
     // Use 24 as base: 4, 16, 1, 3
-    contentLayout->setColumnStretch(0, 4);   // 1/6 = 4/24
-    contentLayout->setColumnStretch(1, 16);  // 4/6 = 16/24
-    contentLayout->setColumnStretch(2, 1);   // 1/24
-    contentLayout->setColumnStretch(3, 3);   // 3/24
+    contentLayout->setColumnStretch(0, 4);  // 1/6 = 4/24
+    contentLayout->setColumnStretch(1, 16); // 4/6 = 16/24
+    contentLayout->setColumnStretch(2, 1);  // 1/24
+    contentLayout->setColumnStretch(3, 3);  // 3/24
 
     // First row, first column: "Name" label
     auto nameLabel = new QLabel("Name", this);
@@ -160,22 +159,19 @@ void ComponentSaveDialog::onBrowseFolder()
     }
 
     QString selectedFolder = QFileDialog::getExistingDirectory(
-        this, "Select Folder", currentPath, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+        this,
+        "Select Folder",
+        currentPath,
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
     if (!selectedFolder.isEmpty()) {
         _locationEdit->setText(selectedFolder);
     }
 }
 
-void ComponentSaveDialog::onSaveStage()
-{
-    accept();
-}
+void ComponentSaveDialog::onSaveStage() { accept(); }
 
-void ComponentSaveDialog::onCancel()
-{
-    reject();
-}
+void ComponentSaveDialog::onCancel() { reject(); }
 
 void ComponentSaveDialog::onShowMore()
 {
@@ -183,4 +179,3 @@ void ComponentSaveDialog::onShowMore()
 }
 
 } // namespace UsdLayerEditor
-

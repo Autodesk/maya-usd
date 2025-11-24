@@ -37,11 +37,10 @@
 #include <QtCore/QTimer>
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 
-#include <filesystem>
 namespace fs = std::filesystem;
-
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -535,9 +534,11 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
-    auto shouldDisplayComponentInitialSaveDialog = [](UsdStageRefPtr stage, std::string proxyShapePath) {
+    auto shouldDisplayComponentInitialSaveDialog = [](UsdStageRefPtr stage,
+                                                      std::string    proxyShapePath) {
         MString defineIsComponentCmd;
-        defineIsComponentCmd.format("from pxr import Sdf, Usd, UsdUtils\n"
+        defineIsComponentCmd.format(
+            "from pxr import Sdf, Usd, UsdUtils\n"
             "import mayaUsd\n"
             "import mayaUsd.ufe\n"
             "from AdskUsdComponentCreator import ComponentDescription\n"
@@ -547,7 +548,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
             "\tif component_description:\n"
             "\t\treturn 1\n"
             "\telse:\n"
-            "\t\treturn 0", proxyShapePath.c_str());
+            "\t\treturn 0",
+            proxyShapePath.c_str());
 
         int isStageAComponent = 0;
         if (MS::kSuccess == MGlobal::executePythonCommand(defineIsComponentCmd, false, false)) {
@@ -555,26 +557,27 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
             MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
         }
 
-        auto isPathInside = [](const std::string& parentDir, const std::string& childPath)
-            {
-                fs::path parent = fs::weakly_canonical(parentDir);
-                fs::path child = fs::weakly_canonical(childPath);
+        auto isPathInside = [](const std::string& parentDir, const std::string& childPath) {
+            fs::path parent = fs::weakly_canonical(parentDir);
+            fs::path child = fs::weakly_canonical(childPath);
 
-                // Iterate up from child to root
-                for (fs::path p = child; !p.empty(); p = p.parent_path()) {
-                    if (p == parent)
-                        return true;
-                }
-                return false;
-            };
+            // Iterate up from child to root
+            for (fs::path p = child; !p.empty(); p = p.parent_path()) {
+                if (p == parent)
+                    return true;
+            }
+            return false;
+        };
 
         MString tempDir;
         MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
 
-        return isStageAComponent == 1 && isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
+        return isStageAComponent == 1
+            && isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
     };
 
-    if (shouldDisplayComponentInitialSaveDialog(_sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
+    if (shouldDisplayComponentInitialSaveDialog(
+            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
         ComponentSaveDialog dlg(in_parent);
         dlg.setWindowTitle(QString(("Save " + _sessionState->stageEntry()._displayName).c_str()));
         dlg.setComponentName(QString(_sessionState->stageEntry()._displayName.c_str()));
@@ -585,24 +588,36 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
             std::string componentName(dlg.componentName().toStdString());
 
             MString defMoveComponentCmd;
-            defMoveComponentCmd.format("from pxr import Sdf, Usd, UsdUtils\n"
+            defMoveComponentCmd.format(
+                "from pxr import Sdf, Usd, UsdUtils\n"
                 "import mayaUsd\n"
                 "import mayaUsd.ufe\n"
                 "from AdskUsdComponentCreator import ComponentDescription, MoveComponent\n"
                 "def move_comp():\n"
                 "\tproxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-                "\tcomponent_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-                "\tmoved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, False)\n"
-                "\treturn moved_comp[0].root_layer_filename", _sessionState->stageEntry()._proxyShapePath.c_str(), saveLocation.c_str(), componentName.c_str());
+                "\tcomponent_description = "
+                "ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+                "\tmoved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
+                "False)\n"
+                "\treturn moved_comp[0].root_layer_filename",
+                _sessionState->stageEntry()._proxyShapePath.c_str(),
+                saveLocation.c_str(),
+                componentName.c_str());
 
             if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentCmd)) {
                 MString movedStageRootFilepath;
                 MString moveComponentCmd = "move_comp()";
                 MGlobal::executePythonCommand(moveComponentCmd, movedStageRootFilepath);
 
-                auto newRootLayer = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
+                auto newRootLayer
+                    = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
 
-                MayaUsd::utils::setNewProxyPath(MString(_sessionState->stageEntry()._proxyShapePath.c_str()), movedStageRootFilepath, MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute, newRootLayer, true);
+                MayaUsd::utils::setNewProxyPath(
+                    MString(_sessionState->stageEntry()._proxyShapePath.c_str()),
+                    movedStageRootFilepath,
+                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+                    newRootLayer,
+                    true);
 
                 MayaUsd::lockLayer(
                     _sessionState->stageEntry()._proxyShapePath,

@@ -61,15 +61,14 @@ private Q_SLOTS:
 private:
     void setupUI();
 
-    QLineEdit*  _nameEdit;
-    QLineEdit*  _locationEdit;
+    QLineEdit*           _nameEdit;
+    QLineEdit*           _locationEdit;
     GeneratedIconButton* _browseButton;
-    QLabel*     _showMoreLabel;
-    QPushButton* _saveStageButton;
-    QPushButton* _cancelButton;
+    QLabel*              _showMoreLabel;
+    QPushButton*         _saveStageButton;
+    QPushButton*         _cancelButton;
 };
 
 } // namespace UsdLayerEditor
 
 #endif // COMPONENTSAVEDIALOG_H
-
