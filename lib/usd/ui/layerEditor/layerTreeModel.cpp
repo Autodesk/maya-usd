@@ -74,11 +74,14 @@ bool shouldDisplayComponentInitialSaveDialog(
 {
     MString defineIsComponentCmd;
     defineIsComponentCmd.format(
-        "from pxr import Sdf, Usd, UsdUtils\n"
-        "import mayaUsd\n"
-        "import mayaUsd.ufe\n"
-        "from AdskUsdComponentCreator import ComponentDescription\n"
         "def usd_component_creator_is_proxy_shape_a_component():\n"
+        "    from pxr import Sdf, Usd, UsdUtils\n"
+        "    import mayaUsd\n"
+        "    import mayaUsd.ufe\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentDescription\n"
+        "    except ImportError:\n"
+        "        return -1\n"
         "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
         "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
         "    if component_description:\n"
@@ -93,9 +96,13 @@ bool shouldDisplayComponentInitialSaveDialog(
         MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
     }
 
-    // If the above script fails because the imports fail or whether we get a 0
-    // return value, this stage is not a component.
+    // Failed to import the component creator python libraries
+    if (isStageAComponent == -1) {
+        return false;
+    }
+
     if (isStageAComponent == 0) {
+        TF_WARN("Stage at proxy path '%s' is not a component.", proxyShapePath.c_str());
         return false;
     }
 
