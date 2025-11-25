@@ -90,15 +90,19 @@ bool shouldDisplayComponentInitialSaveDialog(
         "        return 0",
         proxyShapePath.c_str());
 
-    int isStageAComponent = 0;
-    if (MS::kSuccess == MGlobal::executePythonCommand(defineIsComponentCmd, false, false)) {
+    int     isStageAComponent = 0;
+    MStatus success;
+    if (MS::kSuccess
+        == (success = MGlobal::executePythonCommand(defineIsComponentCmd, false, false))) {
         MString runIsComponentCmd = "usd_component_creator_is_proxy_shape_a_component()";
-        MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
+        success = MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
     }
-    else {
-        TF_RUNTIME_ERROR("Error occurred when testing stage '%s' for component.", proxyShapePath.c_str());
+
+    if (success != MS::kSuccess) {
+        TF_RUNTIME_ERROR(
+            "Error occurred when testing stage '%s' for component.", proxyShapePath.c_str());
     }
-    
+
     if (isStageAComponent != 1) {
         return false;
     }
