@@ -332,6 +332,16 @@ bool UsdMayaTranslatorBlendShape::Read(const UsdPrim& meshPrim, UsdMayaPrimReade
             }
         }
     }
+
+    // Force MFnBlendShapeDeformer to refresh its internal cache of weight indices
+    // This is required after manually setting up targets via plugs
+    MIntArray weightIndices;
+    if (blendFn.weightIndexList(weightIndices) == MS::kSuccess) {
+        for (auto weightIndice : weightIndices) {
+            blendFn.weight(weightIndice, &status);
+        }
+    }
+
     return true;
 }
 
