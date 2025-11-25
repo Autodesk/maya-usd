@@ -574,7 +574,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     return true;
 
                 fs::path next = p.parent_path();
-                if (next == p)  // reached root (ex "C:\")
+                if (next == p) // reached root (ex "C:\")
                     break;
             }
             return false;
