@@ -51,6 +51,61 @@ namespace {
 const QString LAYER_EDITOR_MIME_TYPE = QStringLiteral("text/plain");
 const QString LAYED_EDITOR_MIME_SEP = QStringLiteral(";");
 
+bool isPathInside(const std::string& parentDir, const std::string& childPath)
+{
+    fs::path parent = fs::weakly_canonical(parentDir);
+    fs::path child = fs::weakly_canonical(childPath);
+
+    // Iterate up from child to root
+    for (fs::path p = child; !p.empty(); p = p.parent_path()) {
+        if (p == parent)
+            return true;
+
+        fs::path next = p.parent_path();
+        if (next == p) // reached root (ex "C:\")
+            break;
+    }
+    return false;
+}
+
+bool shouldDisplayComponentInitialSaveDialog(
+    const UsdStageRefPtr stage,
+    const std::string&   proxyShapePath)
+{
+    MString defineIsComponentCmd;
+    defineIsComponentCmd.format(
+        "from pxr import Sdf, Usd, UsdUtils\n"
+        "import mayaUsd\n"
+        "import mayaUsd.ufe\n"
+        "from AdskUsdComponentCreator import ComponentDescription\n"
+        "def usd_component_creator_is_proxy_shape_a_component():\n"
+        "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+        "    if component_description:\n"
+        "        return 1\n"
+        "    else:\n"
+        "        return 0",
+        proxyShapePath.c_str());
+
+    int isStageAComponent = 0;
+    if (MS::kSuccess == MGlobal::executePythonCommand(defineIsComponentCmd, false, false)) {
+        MString runIsComponentCmd = "usd_component_creator_is_proxy_shape_a_component()";
+        MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
+    }
+
+    // If the above script fails because the imports fail or whether we get a 0
+    // return value, this stage is not a component.
+    if (isStageAComponent == 0) {
+        return false;
+    }
+
+    MString tempDir;
+    MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
+
+    return isStageAComponent == 1
+        && isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
+}
+
 } // namespace
 
 namespace UsdLayerEditor {
@@ -535,58 +590,6 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
-    auto shouldDisplayComponentInitialSaveDialog = [](UsdStageRefPtr stage,
-                                                      std::string    proxyShapePath) {
-        MString defineIsComponentCmd;
-        defineIsComponentCmd.format(
-            "from pxr import Sdf, Usd, UsdUtils\n"
-            "import mayaUsd\n"
-            "import mayaUsd.ufe\n"
-            "from AdskUsdComponentCreator import ComponentDescription\n"
-            "def is_component():\n"
-            "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-            "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-            "    if component_description:\n"
-            "        return 1\n"
-            "    else:\n"
-            "        return 0",
-            proxyShapePath.c_str());
-
-        int isStageAComponent = 0;
-        if (MS::kSuccess == MGlobal::executePythonCommand(defineIsComponentCmd, false, false)) {
-            MString runIsComponentCmd = "is_component()";
-            MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
-        }
-
-        // If the above script fails because the imports fail or whether we get a 0
-        // return value, this stage is not a component.
-        if (isStageAComponent == 0) {
-            return false;
-        }
-
-        auto isPathInside = [](const std::string& parentDir, const std::string& childPath) {
-            fs::path parent = fs::weakly_canonical(parentDir);
-            fs::path child = fs::weakly_canonical(childPath);
-
-            // Iterate up from child to root
-            for (fs::path p = child; !p.empty(); p = p.parent_path()) {
-                if (p == parent)
-                    return true;
-
-                fs::path next = p.parent_path();
-                if (next == p) // reached root (ex "C:\")
-                    break;
-            }
-            return false;
-        };
-
-        MString tempDir;
-        MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
-
-        return isStageAComponent == 1
-            && isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
-    };
-
     if (shouldDisplayComponentInitialSaveDialog(
             _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
         ComponentSaveDialog dlg(in_parent);
@@ -604,7 +607,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 "import mayaUsd\n"
                 "import mayaUsd.ufe\n"
                 "from AdskUsdComponentCreator import ComponentDescription, MoveComponent\n"
-                "def move_comp():\n"
+                "def usd_component_creator_move_component():\n"
                 "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
                 "    component_description = "
                 "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
@@ -617,7 +620,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
             if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentCmd)) {
                 MString movedStageRootFilepath;
-                MString moveComponentCmd = "move_comp()";
+                MString moveComponentCmd = "usd_component_creator_move_component()";
                 MGlobal::executePythonCommand(moveComponentCmd, movedStageRootFilepath);
 
                 auto newRootLayer
