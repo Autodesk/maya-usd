@@ -95,14 +95,11 @@ bool shouldDisplayComponentInitialSaveDialog(
         MString runIsComponentCmd = "usd_component_creator_is_proxy_shape_a_component()";
         MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
     }
-
-    // Failed to import the component creator python libraries
-    if (isStageAComponent == -1) {
-        return false;
+    else {
+        TF_RUNTIME_ERROR("Error occurred when testing stage '%s' for component.", proxyShapePath.c_str());
     }
-
-    if (isStageAComponent == 0) {
-        TF_WARN("Stage at proxy path '%s' is not a component.", proxyShapePath.c_str());
+    
+    if (isStageAComponent != 1) {
         return false;
     }
 
