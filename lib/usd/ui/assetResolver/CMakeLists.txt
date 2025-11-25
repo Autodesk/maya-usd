@@ -25,6 +25,11 @@ target_sources(${PROJECT_NAME}
         images/ui.qrc
 )
 
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        BOOST_NS=PXR_INTERNAL_NS::pxr_boost
+)
+
 if (AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
