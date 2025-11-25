@@ -544,18 +544,24 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
             "import mayaUsd.ufe\n"
             "from AdskUsdComponentCreator import ComponentDescription\n"
             "def is_component():\n"
-            "\tproxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-            "\tcomponent_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-            "\tif component_description:\n"
-            "\t\treturn 1\n"
-            "\telse:\n"
-            "\t\treturn 0",
+            "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+            "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+            "    if component_description:\n"
+            "        return 1\n"
+            "    else:\n"
+            "        return 0",
             proxyShapePath.c_str());
 
         int isStageAComponent = 0;
         if (MS::kSuccess == MGlobal::executePythonCommand(defineIsComponentCmd, false, false)) {
             MString runIsComponentCmd = "is_component()";
             MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
+        }
+
+        // If the above script fails because the imports fail or whether we get a 0
+        // return value, this stage is not a component.
+        if (isStageAComponent == 0) {
+            return false;
         }
 
         auto isPathInside = [](const std::string& parentDir, const std::string& childPath) {
@@ -566,6 +572,10 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
             for (fs::path p = child; !p.empty(); p = p.parent_path()) {
                 if (p == parent)
                     return true;
+
+                fs::path next = p.parent_path();
+                if (next == p)  // reached root (ex "C:\")
+                    break;
             }
             return false;
         };
@@ -595,12 +605,12 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 "import mayaUsd.ufe\n"
                 "from AdskUsdComponentCreator import ComponentDescription, MoveComponent\n"
                 "def move_comp():\n"
-                "\tproxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-                "\tcomponent_description = "
-                "ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-                "\tmoved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
+                "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+                "    component_description = "
+                "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+                "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
                 "False)\n"
-                "\treturn moved_comp[0].root_layer_filename",
+                "    return moved_comp[0].root_layer_filename",
                 _sessionState->stageEntry()._proxyShapePath.c_str(),
                 saveLocation.c_str(),
                 componentName.c_str());
