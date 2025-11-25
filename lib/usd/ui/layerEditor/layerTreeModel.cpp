@@ -38,10 +38,9 @@
 #include <QtCore/QTimer>
 
 #include <algorithm>
-#include <filesystem>
 #include <string>
 
-namespace fs = std::filesystem;
+#include <ghc/filesystem.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -53,15 +52,15 @@ const QString LAYED_EDITOR_MIME_SEP = QStringLiteral(";");
 
 bool isPathInside(const std::string& parentDir, const std::string& childPath)
 {
-    fs::path parent = fs::weakly_canonical(parentDir);
-    fs::path child = fs::weakly_canonical(childPath);
+    ghc::filesystem::path parent = ghc::filesystem::weakly_canonical(parentDir);
+    ghc::filesystem::path child = ghc::filesystem::weakly_canonical(childPath);
 
     // Iterate up from child to root
-    for (fs::path p = child; !p.empty(); p = p.parent_path()) {
+    for (ghc::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
         if (p == parent)
             return true;
 
-        fs::path next = p.parent_path();
+        ghc::filesystem::path next = p.parent_path();
         if (next == p) // reached root (ex "C:\")
             break;
     }
