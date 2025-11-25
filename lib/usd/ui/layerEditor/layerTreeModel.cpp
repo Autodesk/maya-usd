@@ -36,11 +36,10 @@
 #include <maya/MQtUtil.h>
 
 #include <QtCore/QTimer>
+#include <ghc/filesystem.hpp>
 
 #include <algorithm>
 #include <string>
-
-#include <ghc/filesystem.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
