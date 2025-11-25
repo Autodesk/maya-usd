@@ -71,6 +71,7 @@ def SkelRoot "root"
                 weight = -1
             )
             uniform vector3f[] offsets = [(0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (-5, -5, 0), (5, -5, 0), (-5, 5, 0), (5, 5, 0)]
+            uniform int[] pointIndices = [0, 1, 2, 3, 4, 6, 7, 5]
         }
     }
 
