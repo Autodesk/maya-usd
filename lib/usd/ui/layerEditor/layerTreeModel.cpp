@@ -504,14 +504,7 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
     auto saveAllLayers = [this]() {
-        const auto layers = getAllNeedsSavingLayers();
-        for (auto layer : layers) {
-            if (!layer->isSystemLocked()) {
-                if (!layer->isAnonymous()) {
-                    layer->saveEditsNoPrompt();
-                }
-            }
-        }
+
 
         // TODO TRY CATCH
         MString saveComponent;
@@ -527,6 +520,17 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         if (MS::kSuccess == MGlobal::executePythonCommand(saveComponent)) {
             
         }
+        return;
+
+        const auto layers = getAllNeedsSavingLayers();
+        for (auto layer : layers) {
+            if (!layer->isSystemLocked()) {
+                if (!layer->isAnonymous()) {
+                    layer->saveEditsNoPrompt();
+                }
+            }
+        }
+
     };
 
     static const MString kConfirmExistingFileSave

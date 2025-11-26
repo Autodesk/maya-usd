@@ -623,26 +623,41 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
 
     // If component, special case :
 
-    
-        // TODO TRY CATCH
+    // TODO TRY CATCH
     MString getLayersFromComponent;
     getLayersFromComponent.format(
-        "from pxr import Sdf, Usd, UsdUtils\n"
-        "import mayaUsd\n"
-        "import mayaUsd.ufe\n"
-        "from usd_component_creator_plugin import MayaComponentManager\n"
-        "proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-        "layers = MayaComponentManager.GetInstance().GetSaveInfo(proxyStage)"
-        "print(layers)"
-        "\",\".join(layer)",
+        "def get_cc_files():\n"
+        "    from pxr import Sdf, Usd, UsdUtils\n"
+        "    import mayaUsd\n"
+        "    import mayaUsd.ufe\n"
+        "    from usd_component_creator_plugin import MayaComponentManager\n"
+        "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "    layers = MayaComponentManager.GetInstance().GetSaveInfo(proxyStage)\n"
+        "    test = \",\".join([l.identifier for l in layers])\n"
+        "    print(test)\n"
+        "    return test\n",
         proxyPath.c_str());
 
-    auto res = MGlobal::executePythonCommandStringResult(getLayersFromComponent);
+    auto res1 = MGlobal::executePythonCommand(getLayersFromComponent);
+    if (res1) {
+        auto res = MGlobal::executePythonCommandStringResult("get_cc_files()");
 
+        MStringArray ccLayerIds;
 
-    MStringArray resLa;
+        res.split(',', ccLayerIds);
 
-    res.split(',', resLa);
+        for (auto ccLayerId : ccLayerIds) {
+            auto ccLayer = pxr::SdfLayer::Find(ccLayerId.asUTF8());
+            if (!ccLayer || ccLayer->IsAnonymous()) {
+                continue;
+            }
+
+            auto id = ccLayer->GetIdentifier();
+
+            layersInfo._dirtyFileBackedLayers.push_back(ccLayer);
+        }
+        return;
+    }
 
 
     auto root = stage->GetRootLayer();
