@@ -19,7 +19,7 @@
 #include "generatedIconButton.h"
 #include "qtUtils.h"
 
-#include <mayaUsd/utils/utilSerialization.h>
+#include <maya/MGlobal.h>
 
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QGridLayout>
@@ -27,6 +27,37 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
+
+namespace {
+const char* getScenesFolderScript = R"(
+    global proc string UsdMayaUtilFileSystem_GetScenesFolder()
+    {
+        string $workspaceLocation = `workspace -q -fn`;
+        string $scenesFolder = `workspace -q -fileRuleEntry "scene"`;
+        $sceneFolder = $workspaceLocation + "/" + $scenesFolder;
+
+        return $sceneFolder;
+    }
+    UsdMayaUtilFileSystem_GetScenesFolder;
+    )";
+
+// This function was copied from utilFileSystem.cpp.
+// Including the headers in this class that include USD headers
+// was causing transitive compilation issues between QT headers
+// and USD headers in MayaUsd 2023.
+std::string getMayaWorkspaceScenesDir()
+{
+    MString scenesFolder;
+    ::MGlobal::executeCommand(
+        getScenesFolderScript,
+        scenesFolder,
+        /*display*/ false,
+        /*undo*/ false);
+
+    return std::string(scenesFolder.asChar(), scenesFolder.length());
+}
+
+} // namespace
 
 namespace UsdLayerEditor {
 
@@ -155,7 +186,7 @@ void ComponentSaveDialog::onBrowseFolder()
     QString currentPath = _locationEdit->text();
     // default to maya-usd scene folder
     if (currentPath.isEmpty()) {
-        currentPath = MayaUsd::utils::getSceneFolder().c_str();
+        currentPath = getMayaWorkspaceScenesDir().c_str();
     }
 
     QString selectedFolder = QFileDialog::getExistingDirectory(
