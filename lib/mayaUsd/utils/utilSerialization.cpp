@@ -621,6 +621,30 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
         return;
     }
 
+    // If component, special case :
+
+    
+        // TODO TRY CATCH
+    MString getLayersFromComponent;
+    getLayersFromComponent.format(
+        "from pxr import Sdf, Usd, UsdUtils\n"
+        "import mayaUsd\n"
+        "import mayaUsd.ufe\n"
+        "from usd_component_creator_plugin import MayaComponentManager\n"
+        "proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "layers = MayaComponentManager.GetInstance().GetSaveInfo(proxyStage)"
+        "print(layers)"
+        "\",\".join(layer)",
+        proxyPath.c_str());
+
+    auto res = MGlobal::executePythonCommandStringResult(getLayersFromComponent);
+
+
+    MStringArray resLa;
+
+    res.split(',', resLa);
+
+
     auto root = stage->GetRootLayer();
     populateChildren(
         proxyPath, stage, root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
