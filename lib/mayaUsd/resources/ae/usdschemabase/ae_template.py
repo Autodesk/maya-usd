@@ -584,6 +584,39 @@ class AETemplate(object):
                     attrList = [name.replace('__INSTANCE_NAME__', instanceName) for name in attrList]
                 schemasAttributes[typeName] = attrList
 
+        # Try to generically handle Unregistered API Schemas as well
+        # This tries to follow patterns where the schema name is <name>API:<instance>
+        # and where attributes are prefixed as such.
+        # This does not work for all unknown schemas, but it should work for most.
+        apiSchemas = self.prim.GetMetadata("apiSchemas")
+        if apiSchemas:
+            properties = self.prim.GetProperties()
+            for schema in [a for a in apiSchemas.GetAppliedItems() if a not in appliedSchemas]:
+                typeName = schema.split(":", 1)[0]
+                instanceName = None
+                if len(schema) > len(typeName):
+                    instanceName = schema[len(typeName) + 1:]
+
+                prefix = typeName.lower()
+                if typeName.endswith("API"):
+                    prefix = prefix[:-3]
+
+                if instanceName:
+                    prefix += f":{instanceName}"
+
+                prefix = prefix + ":"
+
+                typeName = instanceName + typeName
+                propList = []
+
+                for property in properties:
+                    name = property.GetName()
+                    if name.startswith(prefix):
+                        propList.append(name)
+
+                if propList:
+                    schemasAttributes[typeName] = propList
+
         return schemasAttributes
 
     @staticmethod
