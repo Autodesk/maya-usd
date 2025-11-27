@@ -63,14 +63,14 @@ class ImageCustomControl(AttributeCustomControl):
         return aeTemplate.assetPathType == typeName.type
 
     @staticmethod
-    def creator(aeTemplate, attrName):
+    def creator(aeTemplate, attrName, label=None):
         if not ImageCustomControl.isImageAttribute(aeTemplate, attrName):
             return None
         ufeAttr = aeTemplate.attrs.attribute(attrName)
-        return ImageCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName)
+        return ImageCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName, label=label)
 
-    def __init__(self, ufeAttr, prim, attrName, useNiceName):
-        super(ImageCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
+    def __init__(self, ufeAttr, prim, attrName, useNiceName, label=None):
+        super(ImageCustomControl, self).__init__(ufeAttr, attrName, useNiceName, label=label)
         self.prim = prim
         self.controlName = None
 

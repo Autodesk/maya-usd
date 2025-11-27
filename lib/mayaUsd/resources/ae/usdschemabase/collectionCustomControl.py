@@ -31,20 +31,20 @@ class CollectionCustomControl(object):
         return True
 
     @staticmethod
-    def creator(aeTemplate, attrName):
+    def creator(aeTemplate, attrName, label=None):
         '''
         If the attribute is a collection attribute then create a section to edit it.
         '''
         if CollectionCustomControl.isCollectionAttribute(aeTemplate, attrName):
             attrName, instanceName = attrName.split(':')
-            return CollectionCustomControl(aeTemplate.item, aeTemplate.prim, attrName, instanceName, aeTemplate.useNiceName)
+            return CollectionCustomControl(aeTemplate.item, aeTemplate.prim, attrName, instanceName, aeTemplate.useNiceName, label=label)
         else:
             return None
 
-    def __init__(self, item, prim, attrName, instanceName, useNiceName):
+    def __init__(self, item, prim, attrName, instanceName, useNiceName, label=None):
         # In Maya 2022.1 we need to hold onto the Ufe SceneItem to make
         # sure it doesn't go stale. This is not needed in latest Maya.
-        super(CollectionCustomControl, self).__init__()
+        super(CollectionCustomControl, self).__init__(label=label)
         mayaVer = '%s.%s' % (cmds.about(majorVersion=True), cmds.about(minorVersion=True))
         self.item = item if mayaVer == '2022.1' else None
         self.attrName = attrName

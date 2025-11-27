@@ -45,12 +45,12 @@ from mayaUsdLibRegisterStrings import getMayaUsdLibString
 from pxr import Usd, UsdGeom, UsdShade, Tf, Sdr, Vt
 
 
-def defaultControlCreator(aeTemplate, attrName):
+def defaultControlCreator(aeTemplate, attrName, label=None):
     '''
     Custom control creator for attribute not handled by any other custom control.
     '''
     ufeAttr = aeTemplate.attrs.attribute(attrName)
-    uiLabel = getNiceAttributeName(ufeAttr, attrName) if aeTemplate.useNiceName else attrName
+    uiLabel = label or (getNiceAttributeName(ufeAttr, attrName) if aeTemplate.useNiceName else attrName)
     cmds.editorTemplate(addControl=[attrName], label=uiLabel, annotation=cleanAndFormatTooltip(ufeAttr.getDocumentation()))
     return None
 
@@ -333,8 +333,8 @@ class AETemplate(object):
 
         return firstSchemas + availableSchemas + lastSchemas
 
-    def addControls(self, attrNames):
-        controls = {}
+    def addControls(self, attrNames, nameMap=None):
+        nameMap = nameMap or {}
         for attrName in attrNames:
             for controlCreator in AETemplate._controlCreators:
                 # Control can suppress attributes in the creator function
@@ -345,17 +345,14 @@ class AETemplate(object):
                     break
 
                 try:
-                    createdControl = controlCreator(self, attrName)
+                    createdControl = controlCreator(self, attrName, label=nameMap.get(attrName))
                     if createdControl:
                         self.defineCustom(createdControl, attrName)
-                        controls[attrName] = createdControl
                         break
                 except Exception as ex:
                     # Do not let one custom control failure affect others.
                     print('Failed to create control %s: %s' % (attrName, ex))
             self.addedAttrs.add(attrName)
-
-        return controls
 
     def suppress(self, attrName):
         cmds.editorTemplate(suppress=attrName)
@@ -537,8 +534,13 @@ class AETemplate(object):
 
     def createAccessibilitySection(self, sectionName, attrs, schemasAttributes, collapse):
         # We don't use createSection() because we want to provide more succinct names in a specific order
+        nameMap = {}
+        attrs.sort(key=len)
+        for attr in attrs:
+            name = attr.rsplit(":")[-1]
+            nameMap[attr] = name.title()
         with ufeAeTemplate.Layout(self, sectionName, collapse=collapse):
-            controls = self.addControls(attrs)
+            self.addControls(attrs, nameMap=nameMap)
 
     def findAppliedSchemas(self):
         # loop on all applied schemas and store all those

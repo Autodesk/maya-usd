@@ -84,19 +84,19 @@ class ArrayCustomControl(AttributeCustomControl):
         return False
 
     @staticmethod
-    def creator(aeTemplate, attrName):
+    def creator(aeTemplate, attrName, label=None):
         # Note: UsdGeom.Tokens.xformOpOrder is a exception we want it to display normally.
         if attrName == UsdGeom.Tokens.xformOpOrder:
             return None
 
         if ArrayCustomControl.isArrayAttribute(aeTemplate, attrName):
             ufeAttr = aeTemplate.attrs.attribute(attrName)
-            return ArrayCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName)
+            return ArrayCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName, label=label)
         else:
             return None
 
-    def __init__(self, ufeAttr, prim, attrName, useNiceName):
-        super(ArrayCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
+    def __init__(self, ufeAttr, prim, attrName, useNiceName, label=None):
+        super(ArrayCustomControl, self).__init__(ufeAttr, attrName, useNiceName, label=label)
         self.prim = prim
 
     def onCreate(self, *args):
