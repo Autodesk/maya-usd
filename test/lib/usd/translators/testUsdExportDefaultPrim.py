@@ -174,8 +174,8 @@ class testUsdExportMesh(unittest.TestCase):
 
         # Also check with ad-hoc properties so that we can make sure that
         # both the ad-hoc version and API version are creating the right results.
-        appliedSchemas = defaultPrim.GetAppliedSchemas()
-        self.assertTrue('AccessibilityAPI:default' in appliedSchemas)
+        appliedSchemas = defaultPrim.GetMetadata("apiSchemas")
+        self.assertTrue(appliedSchemas.HasItem('AccessibilityAPI:default'))
 
         labelAttr = defaultPrim.GetAttribute("accessibility:default:label")
         descriptionAttr = defaultPrim.GetAttribute("accessibility:default:description")
