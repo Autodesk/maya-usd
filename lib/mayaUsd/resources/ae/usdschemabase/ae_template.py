@@ -311,6 +311,7 @@ class AETemplate(object):
             'display',
             'extraAttributes',
             'assetInfo',
+            '.*AccessibilityAPI',
             'metadata',
         ]
 
