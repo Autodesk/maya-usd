@@ -166,12 +166,19 @@ class testUsdExportMesh(unittest.TestCase):
             accessibilityAPI = accessibilityAPIs[0]
             labelAttr = accessibilityAPI.GetLabelAttr()
             descriptionAttr = accessibilityAPI.GetDescriptionAttr()
-        else:
-            appliedSchemas = defaultPrim.GetAppliedSchemas()
-            self.assertTrue('AccessibilityAPI:default' in appliedSchemas)
 
-            labelAttr = defaultPrim.GetAttribute("accessibility:default:label")
-            descriptionAttr = defaultPrim.GetAttribute("accessibility:default:description")
+            self.assertTrue(labelAttr)
+            self.assertTrue(descriptionAttr)
+            self.assertEqual(labelAttr.Get(), label)
+            self.assertEqual(descriptionAttr.Get(), description)
+
+        # Also check with ad-hoc properties so that we can make sure that
+        # both the ad-hoc version and API version are creating the right results.
+        appliedSchemas = defaultPrim.GetAppliedSchemas()
+        self.assertTrue('AccessibilityAPI:default' in appliedSchemas)
+
+        labelAttr = defaultPrim.GetAttribute("accessibility:default:label")
+        descriptionAttr = defaultPrim.GetAttribute("accessibility:default:description")
 
         self.assertTrue(labelAttr)
         self.assertTrue(descriptionAttr)

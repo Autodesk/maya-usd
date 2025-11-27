@@ -69,6 +69,10 @@
 #include <pxr/usd/usdUtils/dependencies.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#if PXR_VERSION >= 2505
+<pxr/usd/usdUI/accessibilityAPI.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_WriteJob::UsdMaya_WriteJob(
@@ -1392,10 +1396,18 @@ void UsdMaya_WriteJob::_AddDefaultPrimAccessibility()
     }
 
     /* The USD AccessibilityAPI is only available from OpenUSD 25.5 onwards.
-     * However, it is a very simple API and can be written ad-hoc here.
-     * Once Maya-USD switches to only supporting USD 25.5 and above in the future,
-     * we can replace these with the actual API method calls.
+     * We support writing the data with ad-hoc attributes on pre-25.5 versions,
+     * and use the actual API for 25.5 and beyond.
      */
+#if PXR_VERSION >= 2505
+    auto api = UsdUIAccessibilityAPI::ApplyDefaultAPI(defaultPrim);
+    if (!accessibilityLabel.empty()) {
+        defaultAPI.CreateLabelAttr(VtValue(accessibilityLabel));
+    }
+    if (!accessibilityDescription.empty()) {
+        defaultAPI.CreateLabelAttr(VtValue(accessibilityDescription));
+    }
+#else
     defaultPrim.AddAppliedSchema(TfToken("AccessibilityAPI:default"));
     if (!accessibilityLabel.empty()) {
         auto labelAttr = defaultPrim.CreateAttribute(
@@ -1414,6 +1426,7 @@ void UsdMaya_WriteJob::_AddDefaultPrimAccessibility()
             SdfVariabilityVarying);
         descriptionAttr.Set(accessibilityDescription);
     }
+#endif
 }
 
 const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_WriteJob::GetDagPathToUsdPathMap() const

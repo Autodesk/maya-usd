@@ -1372,6 +1372,20 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         -value1 1 exportStagesAsRefsCheckBox;
                 }
 
+                if ($canSetAccessibility) {
+                    columnLayout -columnOffset "both" 4 -adj true;
+                    frameLayout -label `getMayaUsdString("kExportAccessibilityLbl")` -collapsable true -collapse false accessibilityFrameLayout;
+                        separator -style "none";
+
+                    textFieldGrp -l `getMayaUsdString("kExportAccessibilityLabelLbl")` -annotation `getMayaUsdString("kExportAccessibilityLabelAnn")`
+                                    -placeholderText `getMayaUsdString("kExportAccessibilityLabelPht")` accessibilityLabelField;
+                    textFieldGrp -l `getMayaUsdString("kExportAccessibilityDescriptionLbl")` -annotation `getMayaUsdString("kExportAccessibilityDescriptionAnn")`
+                                    -placeholderText `getMayaUsdString("kExportAccessibilityDescriptionPht")` accessibilityDescriptionField;
+
+                    setParent ..;
+                    setParent ..;
+                }
+
                 if ($canControlUpAxisAndUnit) {
                     columnLayout -columnOffset "both" 4 -adj true;
                     frameLayout -label `getMayaUsdString("kExportAxisAndUnitLbl")` -collapsable true -collapse false axisAndUnitFrameLayout;
@@ -1402,20 +1416,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
                             menuItem -l `getMayaUsdString("kExportUnitMileLbl")` -ann "mile";
                             // This default-select Maya Prefs item
                             optionMenuGrp -edit -select 2 unitPopup;
-
-                    setParent ..;
-                    setParent ..;
-                }
-
-                if ($canSetAccessibility) {
-                    columnLayout -columnOffset "both" 4 -adj true;
-                    frameLayout -label `getMayaUsdString("kExportAccessibilityLbl")` -collapsable true -collapse false accessibilityFrameLayout;
-                        separator -style "none";
-
-                    textFieldGrp -l `getMayaUsdString("kExportAccessibilityLabelLbl")` -annotation `getMayaUsdString("kExportAccessibilityLabelAnn")` 
-                                    -placeholderText `getMayaUsdString("kExportAccessibilityLabelPht")` accessibilityLabelField;
-                    textFieldGrp -l `getMayaUsdString("kExportAccessibilityDescriptionLbl")` -annotation `getMayaUsdString("kExportAccessibilityDescriptionAnn")` 
-                                    -placeholderText `getMayaUsdString("kExportAccessibilityDescriptionPht")` accessibilityDescriptionField;
 
                     setParent ..;
                     setParent ..;
@@ -1504,8 +1504,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         // Make sure we use the new material scope logic, not the legacy one.
         $currentOptions = $currentOptions + ";legacyMaterialScope=0";
-
-        print("Current Options: " + $currentOptions);
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
