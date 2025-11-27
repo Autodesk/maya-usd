@@ -26,8 +26,8 @@ class EnumCustomControl(AttributeCustomControl):
 
     @staticmethod
     def creator(aeTemplate, attrName):
-        ufeAttrType = aeTemplate.attrS.attributeType(attrName)
-        ufeAttr = aeTemplate.attrS.attribute(attrName)
+        ufeAttrType = aeTemplate.attrs.attributeType(attrName)
+        ufeAttr = aeTemplate.attrs.attribute(attrName)
         ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
         enums = ufeAttrs.getEnums(ufeAttr.name)
         # For now only integer enums are supported.

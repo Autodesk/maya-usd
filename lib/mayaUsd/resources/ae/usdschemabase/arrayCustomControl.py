@@ -77,7 +77,7 @@ class ArrayCustomControl(AttributeCustomControl):
         Verify if the given attribute name is an array attribute for the prim
         currently being shown in the given AE template.
         '''
-        if aeTemplate.attrS.attributeType(attrName) == ufe.Attribute.kGeneric:
+        if aeTemplate.attrs.attributeType(attrName) == ufe.Attribute.kGeneric:
             attr = aeTemplate.prim.GetAttribute(attrName)
             typeName = attr.GetTypeName()
             return typeName.isArray
@@ -90,7 +90,7 @@ class ArrayCustomControl(AttributeCustomControl):
             return None
 
         if ArrayCustomControl.isArrayAttribute(aeTemplate, attrName):
-            ufeAttr = aeTemplate.attrS.attribute(attrName)
+            ufeAttr = aeTemplate.attrs.attribute(attrName)
             return ArrayCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName)
         else:
             return None

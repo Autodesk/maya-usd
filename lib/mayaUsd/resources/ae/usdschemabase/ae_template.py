@@ -49,7 +49,7 @@ def defaultControlCreator(aeTemplate, attrName):
     '''
     Custom control creator for attribute not handled by any other custom control.
     '''
-    ufeAttr = aeTemplate.attrS.attribute(attrName)
+    ufeAttr = aeTemplate.attrs.attribute(attrName)
     uiLabel = getNiceAttributeName(ufeAttr, attrName) if aeTemplate.useNiceName else attrName
     cmds.editorTemplate(addControl=[attrName], label=uiLabel, annotation=cleanAndFormatTooltip(ufeAttr.getDocumentation()))
     return None
@@ -234,7 +234,7 @@ class AETemplate(object):
         self.prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(self.item.path()))
 
         # Get the UFE Attributes interface for this scene item.
-        self.attrS = ufe.Attributes.attributes(self.item)
+        self.attrs = ufe.Attributes.attributes(self.item)
         self.addedAttrs = set()
         self.suppressedAttrs = []
         self.hasConnectionObserver = False
@@ -334,6 +334,7 @@ class AETemplate(object):
         return firstSchemas + availableSchemas + lastSchemas
 
     def addControls(self, attrNames):
+        controls = {}
         for attrName in attrNames:
             for controlCreator in AETemplate._controlCreators:
                 # Control can suppress attributes in the creator function
@@ -347,11 +348,14 @@ class AETemplate(object):
                     createdControl = controlCreator(self, attrName)
                     if createdControl:
                         self.defineCustom(createdControl, attrName)
+                        controls[attrName] = createdControl
                         break
                 except Exception as ex:
                     # Do not let one custom control failure affect others.
                     print('Failed to create control %s: %s' % (attrName, ex))
             self.addedAttrs.add(attrName)
+
+        return controls
 
     def suppress(self, attrName):
         cmds.editorTemplate(suppress=attrName)
@@ -362,7 +366,7 @@ class AETemplate(object):
         replace = lambda *args : customObj.onReplace(args)
         cmds.editorTemplate(attrs, callCustom=[create, replace])
 
-    def createSection(self, layoutName, attrList, collapse=False):
+    def createSection(self, layoutName, attrList, schemasAttributes, collapse=False):
         # We create the section named "layoutName" if at least one
         # of the attributes from the input list exists.
         for attr in attrList:
@@ -370,7 +374,7 @@ class AETemplate(object):
                 continue
             if attr in self.addedAttrs:
                 continue
-            if self.attrS.hasAttribute(attr):
+            if self.attrs.hasAttribute(attr):
                 with ufeAeTemplate.Layout(self, layoutName, collapse):
                     # Note: addControls will silently skip any attributes
                     #       which do not exist.
@@ -423,7 +427,7 @@ class AETemplate(object):
                 if isinstance(item, AEShaderLayout.Group):
                     self.addShaderLayout(item)
                 else:
-                    if self.attrS.attribute(item):
+                    if self.attrs.attribute(item):
                         self.addControls([item])
     def isRamp(self):
         if not hasattr(ufe, "NodeDefHandler"):
@@ -434,18 +438,18 @@ class AETemplate(object):
         nodeDef = nodeDefHandler.definition(self.item)
         return nodeDef and nodeDef.type() == "ND_adsk_ramp"
 
-    def createShaderAttributesSection(self, sectionName, attrs, collapse):
+    def createShaderAttributesSection(self, sectionName, attrs, schemasAttributes, collapse):
         """Use an AEShaderLayout tool to populate the shader section"""
         # Add a custom control to monitor for connection changed
         # in order for the UI to update itself when the shader is modified.
         self.addConnectionObserver()
         # Hide all outputs:
-        for name in self.attrS.attributeNames:
+        for name in self.attrs.attributeNames:
             if UsdShade.Utils.GetBaseNameAndType(name)[1] == UsdShade.AttributeType.Output:
                 self.suppress(name)
         # Hide ramp attrs:
         if self.isRamp():
-            for name in self.attrS.attributeNames:
+            for name in self.attrs.attributeNames:
                 self.suppress(name)
         # Build a layout from USD metadata:
         layout = AEShaderLayout(self.item).get()
@@ -460,10 +464,10 @@ class AETemplate(object):
         obs = UfeConnectionChangedObserver(self.item)
         self.defineCustom(obs)
 
-    def createTransformAttributesSection(self, sectionName, attrs, collapse):
+    def createTransformAttributesSection(self, sectionName, attrs, schemasAttributes, collapse):
         # Get the xformOp order and add those attributes (in order)
         # followed by the xformOp order attribute.
-        allAttrs = self.attrS.attributeNames
+        allAttrs = self.attrs.attributeNames
         geomX = UsdGeom.Xformable(self.prim)
         xformOps = geomX.GetOrderedXformOps()
         xformOpOrderNames = [op.GetOpName() for op in xformOps]
@@ -477,7 +481,7 @@ class AETemplate(object):
             # Get the remainder of the xformOps and add them in an Unused section.
             xformOpUnusedNames = fnmatch.filter(allAttrs, 'xformOp:*')
             xformOpUnusedNames = [ele for ele in xformOpUnusedNames if ele not in xformOpOrderNames]
-            self.createSection(getMayaUsdLibString('kLabelUnusedTransformAttrs'), xformOpUnusedNames, collapse=True)
+            self.createSection(getMayaUsdLibString('kLabelUnusedTransformAttrs'), xformOpUnusedNames, schemasAttributes, collapse=True)
 
             # Then add any reamining Xformable attributes
             self.addControls(attrs)
@@ -486,7 +490,7 @@ class AETemplate(object):
             t3dObs = UfeAttributesObserver(self.item)
             self.defineCustom(t3dObs)
 
-    def createDisplaySection(self, sectionName, attrs, collapse):
+    def createDisplaySection(self, sectionName, attrs, schemasAttributes, collapse):
         with ufeAeTemplate.Layout(self, sectionName, collapse=collapse):
             self.addControls(attrs)
             customDataControl = DisplayCustomControl(self.item, self.prim)
@@ -494,7 +498,7 @@ class AETemplate(object):
             self.defineCustom(customDataControl)
             self.defineCustom(usdNoticeControl)
 
-    def createAssetInfoSection(self, sectionName, attrs, collapse):
+    def createAssetInfoSection(self, sectionName, attrs, schemasAttributes, collapse):
         if not AssetInfoCustomControl.hasAssetInfo(self.prim):
             return
 
@@ -505,7 +509,7 @@ class AETemplate(object):
             self.defineCustom(assetInfoControl)
             self.defineCustom(usdNoticeControl)
     
-    def createMetadataSection(self, sectionName, attrs, collapse):
+    def createMetadataSection(self, sectionName, attrs, schemasAttributes, collapse):
         # We don't use createSection() because these are metadata (not attributes).
         with ufeAeTemplate.Layout(self, getMayaUsdLibString('kLabelMetadata'), collapse=collapse):
             metaDataControl = MetadataCustomControl(self.item, self.prim, self.useNiceName)
@@ -513,7 +517,7 @@ class AETemplate(object):
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
     
-    def createCustomExtraAttrs(self, sectionName, attrs, collapse):
+    def createCustomExtraAttrs(self, sectionName, attrs, schemasAttributes, collapse):
         # We are not using the maya default "Extra Attributes" section
         # because we are using custom widget for array type and it's not
         # possible to inject our widget inside the maya "Extra Attributes" section.
@@ -522,9 +526,19 @@ class AETemplate(object):
         # long as the suppressed attributes are suppressed by suppress(self, control).
         # This function will keep all suppressed attributes into a list which will be use
         # by addControls(). So any suppressed attributes in extraAttrs will be ignored later.
-        extraAttrs = [attr for attr in self.attrS.attributeNames if attr not in self.addedAttrs and attr not in self.suppressedAttrs]
+        extraAttrs = []
+        otherSchemaAttrs = {item for values in schemasAttributes.values() for item in values}
+        for attr in self.attrs.attributeNames:
+            if attr in self.addedAttrs or attr in self.suppressedAttrs or attr in otherSchemaAttrs:
+                continue
+            extraAttrs.append(attr)
         sectionName = mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
-        self.createSection(sectionName, extraAttrs, collapse)
+        self.createSection(sectionName, extraAttrs, schemasAttributes, collapse)
+
+    def createAccessibilitySection(self, sectionName, attrs, schemasAttributes, collapse):
+        # We don't use createSection() because we want to provide more succinct names in a specific order
+        with ufeAeTemplate.Layout(self, sectionName, collapse=collapse):
+            controls = self.addControls(attrs)
 
     def findAppliedSchemas(self):
         # loop on all applied schemas and store all those
@@ -625,7 +639,7 @@ class AETemplate(object):
         global _aeTemplate
         return _aeTemplate
 
-    def createCustomCallbackSection(self, sectionName, attrs, collapse):
+    def createCustomCallbackSection(self, sectionName, attrs, schemasAttributes, collapse):
         '''Special custom callback section that gives users the opportunity to add
         layout section(s) to the AE template.
         See https://github.com/Autodesk/maya-usd/blob/dev/lib/mayaUsd/resources/ae/usdschemabase/Attribute-Editor-Template-Doc.md
@@ -735,17 +749,22 @@ class AETemplate(object):
             'assetInfo': self.createAssetInfoSection,
             'metadata': self.createMetadataSection,
             'customCallbacks': self.createCustomCallbackSection,
+            ".*AccessibilityAPI": self.createAccessibilitySection,
         }
-        sectionCreators = collections.defaultdict(
-            lambda : self.createSection, customAttributes)
-        
+
         # Create the section in the specified order.
         for typeName in schemasOrder:
             attrs = schemasAttributes[typeName]
             sectionName = self.sectionNameFromSchema(typeName)
             collapse = not isSectionOpen(sectionName)
-            creator = sectionCreators[typeName]
-            creator(sectionName, attrs, collapse)
+            for pattern, value in customAttributes.items():
+                if re.fullmatch(pattern, typeName):
+                    creator = value
+                    break
+            else:
+                creator = self.createSection
+
+            creator(sectionName, attrs, schemasAttributes, collapse)
 
             if sectionName == primTypeName:
                 addMatSection()
@@ -768,7 +787,7 @@ class AETemplate(object):
     def suppressArrayAttribute(self):
         # Suppress all array attributes.
         if not self.showArrayAttributes:
-            for attrName in self.attrS.attributeNames:
+            for attrName in self.attrs.attributeNames:
                 if ArrayCustomControl.isArrayAttribute(self, attrName):
                     self.suppress(attrName)
 

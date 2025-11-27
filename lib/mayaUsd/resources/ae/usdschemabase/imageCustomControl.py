@@ -48,7 +48,7 @@ class ImageCustomControl(AttributeCustomControl):
         currently being shown in the given AE template.
         '''
         kFilenameAttr = ufe.Attribute.kFilename if hasattr(ufe.Attribute, "kFilename") else 'Filename'
-        if aeTemplate.attrS.attributeType(attrName) != kFilenameAttr:
+        if aeTemplate.attrs.attributeType(attrName) != kFilenameAttr:
             return False
         shader = UsdShade.Shader(aeTemplate.prim)
         if shader and attrName.startswith("inputs:"):
@@ -66,7 +66,7 @@ class ImageCustomControl(AttributeCustomControl):
     def creator(aeTemplate, attrName):
         if not ImageCustomControl.isImageAttribute(aeTemplate, attrName):
             return None
-        ufeAttr = aeTemplate.attrS.attribute(attrName)
+        ufeAttr = aeTemplate.attrs.attribute(attrName)
         return ImageCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName)
 
     def __init__(self, ufeAttr, prim, attrName, useNiceName):

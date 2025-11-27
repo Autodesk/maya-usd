@@ -48,7 +48,7 @@ class ConnectionsCustomControl(AttributeCustomControl):
     @staticmethod
     def creator(aeTemplate, attrName):
         if ConnectionsCustomControl.isAttributeConnected(aeTemplate, attrName):
-            ufeAttr = aeTemplate.attrS.attribute(attrName)
+            ufeAttr = aeTemplate.attrs.attribute(attrName)
             return ConnectionsCustomControl(aeTemplate.item, ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName)
         else:
             return None
