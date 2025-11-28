@@ -688,7 +688,7 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
         return computeInStageDataCached(dataBlock);
     } else if (plug == outTimeAttr) {
         auto retStatus = computeOutputTime(dataBlock);
-        ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
+        ProxyAccessor::compute(_usdAccessor, plug, dataBlock, _proxyAccessorLayer);
         return retStatus;
     } else if (plug == outStageDataAttr) {
         auto ret = computeOutStageData(dataBlock);
@@ -696,7 +696,7 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     } else if (plug == outStageCacheIdAttr) {
         return computeOutStageCacheId(dataBlock);
     } else if (plug.isDynamic()) {
-        return ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
+        return ProxyAccessor::compute(_usdAccessor, plug, dataBlock, _proxyAccessorLayer);
     }
 
     return MS::kUnknownParameter;
@@ -1788,7 +1788,7 @@ MStatus MayaUsdProxyShapeBase::postEvaluation(
 
     if (context.isNormal() && evalType == PostEvaluationEnum::kEvaluatedDirectly) {
         MDataBlock dataBlock = forceCache();
-        ProxyAccessor::syncCache(_usdAccessor, thisMObject(), dataBlock);
+        ProxyAccessor::syncCache(_usdAccessor, thisMObject(), dataBlock, _proxyAccessorLayer);
     }
 
     return MPxSurfaceShape::postEvaluation(context, evaluationNode, evalType);

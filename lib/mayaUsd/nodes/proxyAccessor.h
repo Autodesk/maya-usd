@@ -140,10 +140,14 @@ public:
        Once completed, all output accessor plugs will be provided with data. \note   Call from
        MPxNode::compute()
      */
-    static MStatus compute(const Owner& accessor, const MPlug& plug, MDataBlock& dataBlock)
+    static MStatus compute(
+        const Owner&   accessor,
+        const MPlug&   plug,
+        MDataBlock&    dataBlock,
+        const MString& targetLayer)
     {
         if (accessor)
-            return accessor->compute(plug, dataBlock);
+            return accessor->compute(plug, dataBlock, targetLayer);
         else
             return MStatus::kFailure;
     }
@@ -175,10 +179,14 @@ public:
     /*! \brief  Update USD state to match what is stored in evaluation cache (when cached
        playback is on) \note   Call from MPxNode::postEvaluation()
      */
-    static MStatus syncCache(const Owner& accessor, const MObject& node, MDataBlock& dataBlock)
+    static MStatus syncCache(
+        const Owner&   accessor,
+        const MObject& node,
+        MDataBlock&    dataBlock,
+        const MString& targetLayer)
     {
         if (accessor && !accessor->inCompute())
-            return accessor->syncCache(node, dataBlock);
+            return accessor->syncCache(node, dataBlock, targetLayer);
         else
             return MStatus::kFailure;
     }
@@ -227,7 +235,7 @@ private:
     //! \brief  Notification from MPxNode to insert accessor plugs dependencies
     MStatus addDependentsDirty(const MPlug& plug, MPlugArray& plugArray);
     //! \brief  Notification from MPxNode to compute accessor plugs.
-    MStatus compute(const MPlug& plug, MDataBlock& dataBlock);
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock, const MString& targetLayer);
     //! \brief  Using acceleration structure, do computation of a given accessor input plug.
     MStatus computeInput(
         Item&                outputItemToCompute,
@@ -248,7 +256,7 @@ private:
        invalidate the cache. In order to keep USD state in sync with what was stored in
        evaluation cache, we leverage postEvaluation notification.
     */
-    MStatus syncCache(const MObject& node, MDataBlock& dataBlock);
+    MStatus syncCache(const MObject& node, MDataBlock& dataBlock, const MString& targetLayer);
 
     //! \brief  Something in USD changed and we may have to set it on plugs.
     MStatus stageChanged(const MObject& node, const UsdNotice::ObjectsChanged& notice);
