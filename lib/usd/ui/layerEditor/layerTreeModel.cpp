@@ -598,7 +598,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
     if (shouldDisplayComponentInitialSaveDialog(
             _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
-        ComponentSaveDialog dlg(in_parent);
+        ComponentSaveDialog dlg(in_parent, _sessionState->stageEntry()._proxyShapePath);
         dlg.setWindowTitle(QString(("Save " + _sessionState->stageEntry()._displayName).c_str()));
         dlg.setComponentName(QString(_sessionState->stageEntry()._displayName.c_str()));
         dlg.setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
