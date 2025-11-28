@@ -20,13 +20,28 @@
 #include "qtUtils.h"
 
 #include <maya/MGlobal.h>
+#include <maya/MString.h>
 
+#include <cwctype>
+#include <string>
+
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonValue>
+#include <QtCore/QString>
+#include <QtCore/QTimer>
+#include <QtGui/QIcon>
+#include <QtGui/QKeyEvent>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QFileIconProvider>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QScrollArea>
+#include <QtWidgets/QStyle>
+#include <QtWidgets/QTreeWidget>
 
 namespace {
 const char* getScenesFolderScript = R"(
@@ -57,11 +72,38 @@ std::string getMayaWorkspaceScenesDir()
     return std::string(scenesFolder.asChar(), scenesFolder.length());
 }
 
+// Convert Python dict string to JSON format
+QString pythonDictToJson(const QString& pythonStr)
+{
+    QString json = pythonStr;
+    // Replace single quotes with double quotes (but be careful with escaped quotes)
+    // Simple approach: replace ' with " (this works for the given format)
+    json.replace('\'', '"');
+    // Replace Python booleans
+    json.replace(QString("False"), QString("false"));
+    json.replace(QString("True"), QString("true"));
+    return json;
+}
+
+// Parse JSON string to QJsonObject
+QJsonObject parseComponentHierarchy(const std::wstring& jsonStr)
+{
+    QString qstr = QString::fromStdWString(jsonStr);
+    QString json = pythonDictToJson(qstr);
+    
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8(), &parseError);
+    if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
+        return doc.object();
+    }
+    return QJsonObject();
+}
+
 } // namespace
 
 namespace UsdLayerEditor {
 
-ComponentSaveDialog::ComponentSaveDialog(QWidget* in_parent)
+ComponentSaveDialog::ComponentSaveDialog(QWidget* in_parent, const std::string& proxyShapePath)
     : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
     , _nameEdit(nullptr)
     , _locationEdit(nullptr)
@@ -69,6 +111,13 @@ ComponentSaveDialog::ComponentSaveDialog(QWidget* in_parent)
     , _showMoreLabel(nullptr)
     , _saveStageButton(nullptr)
     , _cancelButton(nullptr)
+    , _treeScrollArea(nullptr)
+    , _treeWidget(nullptr)
+    , _treeContainer(nullptr)
+    , _isExpanded(false)
+    , _originalHeight(0)
+    , _proxyShapePath(proxyShapePath)
+    , _lastComponentName()
 {
     setupUI();
 }
@@ -131,6 +180,34 @@ void ComponentSaveDialog::setupUI()
     contentWidget->setLayout(contentLayout);
     mainLayout->addWidget(contentWidget);
 
+    // Tree view container (initially hidden)
+    _treeContainer = new QWidget(this);
+    auto treeLayout = new QVBoxLayout();
+    treeLayout->setContentsMargins(DPIScale(20), 0, DPIScale(20), DPIScale(15));
+    treeLayout->setSpacing(DPIScale(10));
+
+    auto treeLabel = new QLabel("The following file structure is created on save.", this);
+    treeLayout->addWidget(treeLabel);
+
+    _treeScrollArea = new QScrollArea(this);
+    _treeScrollArea->setWidgetResizable(true);
+    _treeScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _treeScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _treeScrollArea->setMinimumHeight(DPIScale(250));
+    _treeScrollArea->setMaximumHeight(DPIScale(300));
+
+    _treeWidget = new QTreeWidget(this);
+    _treeWidget->setHeaderHidden(true);
+    _treeWidget->setRootIsDecorated(true);
+    _treeWidget->setAlternatingRowColors(false);
+
+    _treeScrollArea->setWidget(_treeWidget);
+    treeLayout->addWidget(_treeScrollArea);
+
+    _treeContainer->setLayout(treeLayout);
+    _treeContainer->setVisible(false);
+    mainLayout->addWidget(_treeContainer);
+
     // Button layout (bottom right)
     auto buttonLayout = new QHBoxLayout();
     QtUtils::initLayoutMargins(buttonLayout, DPIScale(10));
@@ -154,6 +231,7 @@ void ComponentSaveDialog::setupUI()
     setLayout(mainLayout);
     setWindowTitle("Save Component");
     setFixedWidth(600);
+    // Don't set fixed height initially - let it size naturally, then we'll fix it after first show
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 }
 
@@ -200,13 +278,166 @@ void ComponentSaveDialog::onBrowseFolder()
     }
 }
 
+void ComponentSaveDialog::keyPressEvent(QKeyEvent* event)
+{
+    // Intercept Enter/Return key when focus is on _nameEdit
+    if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && 
+        _nameEdit && _nameEdit->hasFocus()) {
+        // If tree view is minimized (not expanded), always accept the dialog
+        if (!_isExpanded) {
+            QDialog::keyPressEvent(event);
+            return;
+        }
+        
+        // If tree view is expanded, check if name has changed
+        QString currentName = _nameEdit->text();
+        if (currentName != _lastComponentName) {
+            // Name has changed - update tree view and prevent dialog acceptance
+            updateTreeView();
+            event->accept();
+            return;
+        }
+        // Name hasn't changed - let default behavior proceed (accept dialog)
+    }
+    QDialog::keyPressEvent(event);
+}
+
+
 void ComponentSaveDialog::onSaveStage() { accept(); }
 
 void ComponentSaveDialog::onCancel() { reject(); }
 
+void ComponentSaveDialog::populateTreeView(const QJsonObject& jsonObj, QTreeWidgetItem* parentItem)
+{
+    // Get standard icons for folders and files
+    QFileIconProvider iconProvider;
+    QIcon folderIcon = iconProvider.icon(QFileIconProvider::Folder);
+    QIcon fileIcon = iconProvider.icon(QFileIconProvider::File);
+    
+    // Fallback to style icons if file icon provider doesn't work
+    if (folderIcon.isNull()) {
+        folderIcon = style()->standardIcon(QStyle::SP_DirIcon);
+    }
+    if (fileIcon.isNull()) {
+        fileIcon = style()->standardIcon(QStyle::SP_FileIcon);
+    }
+
+    for (auto it = jsonObj.begin(); it != jsonObj.end(); ++it) {
+        QString key = it.key();
+        QJsonValue value = it.value();
+
+        QTreeWidgetItem* item = nullptr;
+        if (parentItem) {
+            item = new QTreeWidgetItem(parentItem);
+        } else {
+            item = new QTreeWidgetItem(_treeWidget);
+        }
+        item->setText(0, key);
+
+        if (value.isBool()) {
+            // Boolean value represents a file
+            item->setIcon(0, fileIcon);
+        } else if (value.isObject()) {
+            // Object represents a folder
+            item->setIcon(0, folderIcon);
+            item->setExpanded(true);
+            populateTreeView(value.toObject(), item);
+        }
+    }
+}
+
+void ComponentSaveDialog::toggleExpandedState()
+{
+    if (_isExpanded) {
+        // Collapsing: hide tree and restore original size
+        _isExpanded = false;
+        _showMoreLabel->setText("<a href=\"#\">Show More</a>");
+        _treeContainer->setVisible(false);
+
+        // Restore original height
+        setFixedHeight(_originalHeight);
+    } else {
+        // Expanding: capture current height and show tree
+        _isExpanded = true;
+        // Capture current height before expanding (compact state)
+        // For whatever reason, capturing this value at the end
+        // of the SetupUI functions isn't getting the right value
+        // from height().
+        if (_originalHeight == 0) {
+            _originalHeight = height();
+        }
+        
+        _showMoreLabel->setText("<a href=\"#\">Show Less</a>");
+        _treeContainer->setVisible(true);
+        // Expand dialog by ~300px
+        setFixedHeight(_originalHeight + DPIScale(300));
+    }
+}
+
+void ComponentSaveDialog::updateTreeView()
+{
+    std::string saveLocation(_locationEdit->text().toStdString());
+    std::string componentName(_nameEdit->text().toStdString());
+
+    MString defMoveComponentPreviewCmd;
+    defMoveComponentPreviewCmd.format(
+        "def usd_component_creator_move_component_preview():\n"
+        "    from pxr import Sdf, Usd, UsdUtils\n"
+        "    import mayaUsd\n"
+        "    import mayaUsd.ufe\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentDescription, PreviewMoveComponentHierarchy\n"
+        "    except ImportError:\n"
+        "        return None\n"
+        "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "    component_description = "
+        "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+        "    if component_description:\n"
+        "        move_comp_preview = PreviewMoveComponentHierarchy(component_description, \"^2s\", \"^3s\")\n"
+        "        return move_comp_preview\n"
+        "    else:\n"
+        "        return \"\"",
+        _proxyShapePath.c_str(),
+        saveLocation.c_str(),
+        componentName.c_str());
+
+    if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentPreviewCmd)) {
+        MString result;
+        MString runComponentMovePreviewCmd = "usd_component_creator_move_component_preview()";
+        if (MS::kSuccess == MGlobal::executePythonCommand(runComponentMovePreviewCmd, result)) {
+            std::wstring jsonStr = result.asWChar();
+            QJsonObject jsonObj = parseComponentHierarchy(jsonStr); 
+            
+            if (!jsonObj.isEmpty()) {
+                // Clear existing tree
+                _treeWidget->clear();
+                
+                // Populate tree view with JSON data
+                populateTreeView(jsonObj);
+                
+                // Update last component name
+                _lastComponentName = _nameEdit->text();
+            }
+        }
+    }
+}
+
+
 void ComponentSaveDialog::onShowMore()
 {
-    // Placeholder for future implementation
+    // If collapsing, just toggle
+    if (_isExpanded) {
+        toggleExpandedState();
+        return;
+    }
+
+    // If expanding, fetch data first
+    updateTreeView();
+    
+    // Expand the dialog if we have data
+    if (_treeWidget->topLevelItemCount() > 0) {
+        toggleExpandedState();
+    }
 }
 
 } // namespace UsdLayerEditor

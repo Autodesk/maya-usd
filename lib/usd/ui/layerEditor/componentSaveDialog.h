@@ -20,9 +20,18 @@
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QtWidgets>
 
+#include <QtCore/QString>
+
+#include <string>
+
+
+class QKeyEvent;
 class QLabel;
 class QLineEdit;
 class QPushButton;
+class QScrollArea;
+class QTreeWidget;
+class QTreeWidgetItem;
 
 namespace UsdLayerEditor {
 
@@ -37,7 +46,7 @@ class ComponentSaveDialog : public QDialog
     Q_OBJECT
 
 public:
-    ComponentSaveDialog(QWidget* in_parent = nullptr);
+    ComponentSaveDialog(QWidget* in_parent = nullptr, const std::string& proxyShapePath = std::string());
     ~ComponentSaveDialog() override;
 
     // Set the component name programmatically
@@ -58,8 +67,14 @@ private Q_SLOTS:
     void onCancel();
     void onShowMore();
 
+protected:
+    void keyPressEvent(QKeyEvent* event) override;
+
 private:
     void setupUI();
+    void populateTreeView(const QJsonObject& jsonObj, QTreeWidgetItem* parentItem = nullptr);
+    void toggleExpandedState();
+    void updateTreeView();
 
     QLineEdit*           _nameEdit;
     QLineEdit*           _locationEdit;
@@ -67,6 +82,13 @@ private:
     QLabel*              _showMoreLabel;
     QPushButton*         _saveStageButton;
     QPushButton*         _cancelButton;
+    QScrollArea*         _treeScrollArea;
+    QTreeWidget*         _treeWidget;
+    QWidget*             _treeContainer;
+    bool                 _isExpanded;
+    int                  _originalHeight;
+    std::string          _proxyShapePath;
+    QString              _lastComponentName;
 };
 
 } // namespace UsdLayerEditor
