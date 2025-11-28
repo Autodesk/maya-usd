@@ -438,7 +438,7 @@ bool UsdMaya_WriteJobImpl::WriteJobs(const std::vector<UsdMaya_WriteJob*>& jobs)
     const bool showProgress = !timeSamples.empty();
 
     // Animated export shows frame-by-frame progress.
-    int                       nbSteps = (jobs.size() * 3) + timeSamples.size() + 1;
+    int                       nbSteps = (jobs.size() * 3) + timeSamples.size() + 2;
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
     // Temporarily tweak the Maya scene for export if needed.
