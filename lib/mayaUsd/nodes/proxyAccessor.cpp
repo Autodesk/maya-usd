@@ -21,6 +21,7 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/resolverScopedCache.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/editContext.h>
@@ -69,11 +70,11 @@ class ComputeContext
 {
 public:
     //! \brief  Construct compute context for both inputs and outputs
-    ComputeContext(ProxyAccessor& accessor, const MObject& ownerNode)
+    ComputeContext(ProxyAccessor& accessor, const MObject& ownerNode, const MString& targetLayer)
         : _restoreState(accessor._inCompute)
         , _accessor(accessor)
         , _stage(accessor.getUsdStage())
-        , _editContext(_stage, _stage->GetSessionLayer())
+        , _editContext(_stage, getLayer(targetLayer))
     {
         // Start with setting this context on the accessor. This is important in case
         // anything below causes compute.
@@ -94,11 +95,11 @@ public:
     }
 
     //! \brief  Construct compute context for inputs only.
-    ComputeContext(ProxyAccessor& accessor)
+    ComputeContext(ProxyAccessor& accessor, const MString& targetLayer)
         : _restoreState(accessor._inCompute)
         , _accessor(accessor)
         , _stage(accessor.getUsdStage())
-        , _editContext(_stage, _stage->GetSessionLayer())
+        , _editContext(_stage, getLayer(targetLayer))
     {
         // Start with setting this context on the accessor. This is important in case
         // anything below causes compute.
@@ -120,6 +121,22 @@ public:
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ComputeContext);
 
 private:
+    pxr::SdfLayerHandle getLayer(const MString& layerName)
+    {
+        if (layerName.length() == 0 || layerName == "session") {
+            return _stage->GetSessionLayer();
+        } else if (layerName == "target") {
+            return _stage->GetEditTarget().GetLayer();
+        } else {
+            SdfLayerHandle layer = SdfLayer::Find(layerName.asChar());
+            if (layer) {
+                return layer;
+            } else {
+                return _stage->GetSessionLayer();
+            }
+        }
+    }
+
     //! Remember context pointer at the creation of this object
     ComputeContext* _restoreState;
 
@@ -131,7 +148,7 @@ public:
 
     //! Scoped objects setting up resolver cache
     ArResolverScopedCache _resolverCache;
-    //! Scoped object changing current edit context to the session layer
+    //! Scoped object changing current edit context to the given layer
     UsdEditContext _editContext;
     //! Xform compute cache
     UsdGeomXformCache _xformCache;
@@ -424,7 +441,7 @@ MStatus ProxyAccessor::addDependentsDirty(const MPlug& plug, MPlugArray& plugArr
     return MS::kSuccess;
 }
 
-MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock)
+MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock, const MString& targetLayer)
 {
     // Special handling for nested compute
     if (inCompute()) {
@@ -486,7 +503,7 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock)
     if (_accessorInputItems.size() == 0 && _accessorOutputItems.size() == 0)
         return MS::kSuccess;
 
-    ComputeContext evalState(*this, plug.node());
+    ComputeContext evalState(*this, plug.node(), targetLayer);
 
     // Read and set inputs on the stage. If recursive computation was performed,
     // some of the inputs may have been already evaluated (see evaluationId check)
@@ -641,7 +658,8 @@ MStatus ProxyAccessor::computeOutput(
     return MS::kSuccess;
 }
 
-MStatus ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock)
+MStatus
+ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock, const MString& targetLayer)
 {
     if (inCompute())
         return MS::kSuccess;
@@ -657,7 +675,7 @@ MStatus ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock)
     if (_accessorInputItems.size() == 0)
         return MS::kSuccess;
 
-    ComputeContext evalState(*this);
+    ComputeContext evalState(*this, targetLayer);
     for (auto& item : _accessorInputItems) {
         computeInput(item, evalState._stage, dataBlock, evalState._args);
     }

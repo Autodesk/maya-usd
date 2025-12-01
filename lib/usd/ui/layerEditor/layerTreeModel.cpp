@@ -16,6 +16,7 @@
 
 #include "layerTreeModel.h"
 
+#include "componentSaveDialog.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 #include "saveLayersDialog.h"
@@ -25,14 +26,17 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/layers.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
 
+#include <maya/MDagModifier.h>
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 
 #include <QtCore/QTimer>
+#include <ghc/filesystem.hpp>
 
 #include <algorithm>
 #include <string>
@@ -44,6 +48,69 @@ namespace {
 // For now just use the plain text type to store the layer identifiers.
 const QString LAYER_EDITOR_MIME_TYPE = QStringLiteral("text/plain");
 const QString LAYED_EDITOR_MIME_SEP = QStringLiteral(";");
+
+bool isPathInside(const std::string& parentDir, const std::string& childPath)
+{
+    ghc::filesystem::path parent = ghc::filesystem::weakly_canonical(parentDir);
+    ghc::filesystem::path child = ghc::filesystem::weakly_canonical(childPath);
+
+    // Iterate up from child to root
+    for (ghc::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
+        if (p == parent)
+            return true;
+
+        ghc::filesystem::path next = p.parent_path();
+        if (next == p) // reached root (ex "C:\")
+            break;
+    }
+    return false;
+}
+
+bool shouldDisplayComponentInitialSaveDialog(
+    const UsdStageRefPtr stage,
+    const std::string&   proxyShapePath)
+{
+    MString defineIsComponentCmd;
+    defineIsComponentCmd.format(
+        "def usd_component_creator_is_proxy_shape_a_component():\n"
+        "    from pxr import Sdf, Usd, UsdUtils\n"
+        "    import mayaUsd\n"
+        "    import mayaUsd.ufe\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentDescription\n"
+        "    except ImportError:\n"
+        "        return -1\n"
+        "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+        "    if component_description:\n"
+        "        return 1\n"
+        "    else:\n"
+        "        return 0",
+        proxyShapePath.c_str());
+
+    int     isStageAComponent = 0;
+    MStatus success;
+    if (MS::kSuccess
+        == (success = MGlobal::executePythonCommand(defineIsComponentCmd, false, false))) {
+        MString runIsComponentCmd = "usd_component_creator_is_proxy_shape_a_component()";
+        success = MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
+    }
+
+    if (success != MS::kSuccess) {
+        TF_RUNTIME_ERROR(
+            "Error occurred when testing stage '%s' for component.", proxyShapePath.c_str());
+    }
+
+    if (isStageAComponent != 1) {
+        return false;
+    }
+
+    MString tempDir;
+    MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
+
+    return isStageAComponent == 1
+        && isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
+}
 
 } // namespace
 
@@ -547,7 +614,68 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
-    if (showConfirmDgl) {
+    if (shouldDisplayComponentInitialSaveDialog(
+            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
+        ComponentSaveDialog dlg(in_parent);
+        dlg.setWindowTitle(QString(("Save " + _sessionState->stageEntry()._displayName).c_str()));
+        dlg.setComponentName(QString(_sessionState->stageEntry()._displayName.c_str()));
+        dlg.setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
+
+        if (QDialog::Accepted == dlg.exec()) {
+            std::string saveLocation(dlg.folderLocation().toStdString());
+            std::string componentName(dlg.componentName().toStdString());
+
+            MString defMoveComponentCmd;
+            defMoveComponentCmd.format(
+                "from pxr import Sdf, Usd, UsdUtils\n"
+                "import mayaUsd\n"
+                "import mayaUsd.ufe\n"
+                "from AdskUsdComponentCreator import ComponentDescription, MoveComponent\n"
+                "def usd_component_creator_move_component():\n"
+                "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+                "    component_description = "
+                "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+                "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
+                "False)\n"
+                "    return moved_comp[0].root_layer_filename",
+                _sessionState->stageEntry()._proxyShapePath.c_str(),
+                saveLocation.c_str(),
+                componentName.c_str());
+
+            if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentCmd)) {
+                MString movedStageRootFilepath;
+                MString moveComponentCmd = "usd_component_creator_move_component()";
+                MGlobal::executePythonCommand(moveComponentCmd, movedStageRootFilepath);
+
+                auto newRootLayer
+                    = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
+
+                MayaUsd::utils::setNewProxyPath(
+                    MString(_sessionState->stageEntry()._proxyShapePath.c_str()),
+                    movedStageRootFilepath,
+                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+                    newRootLayer,
+                    true);
+
+                MayaUsd::lockLayer(
+                    _sessionState->stageEntry()._proxyShapePath,
+                    newRootLayer,
+                    MayaUsd::LayerLockType::LayerLock_Locked,
+                    true);
+
+                // Rename Proxy Shape
+                MObject proxyNode;
+                UsdMayaUtil::GetMObjectByName(
+                    _sessionState->stageEntry()._proxyShapePath, proxyNode);
+                MDagModifier dagMod;
+                MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
+                if (status == MStatus::kSuccess) {
+                    dagMod.doIt();
+                }
+            }
+        }
+        // User clicked "Cancel" - do nothing and return
+    } else if (showConfirmDgl) {
         bool             isExporting = false;
         SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
         if (QDialog::Accepted == dlg.exec()) {
