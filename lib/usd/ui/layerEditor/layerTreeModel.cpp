@@ -19,6 +19,7 @@
 #include "componentSaveDialog.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
+#include "mayaSessionState.h"
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 #include "warningDialogs.h"
@@ -632,20 +633,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 auto newRootLayer
                     = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
 
-                MayaUsd::utils::setNewProxyPath(
-                    MString(_sessionState->stageEntry()._proxyShapePath.c_str()),
-                    movedStageRootFilepath,
-                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
-                    newRootLayer,
-                    true);
-
-                MayaUsd::lockLayer(
-                    _sessionState->stageEntry()._proxyShapePath,
-                    newRootLayer,
-                    MayaUsd::LayerLockType::LayerLock_Locked,
-                    true);
-
-                // Rename Proxy Shape
+                // Rename Proxy Shape node
                 MObject proxyNode;
                 UsdMayaUtil::GetMObjectByName(
                     _sessionState->stageEntry()._proxyShapePath, proxyNode);
@@ -654,6 +642,32 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 if (status == MStatus::kSuccess) {
                     dagMod.doIt();
                 }
+
+                // Get the new proxyPath
+                MDagPath newProxyShapePath;
+                MDagPath::getAPathTo(proxyNode, newProxyShapePath);
+
+                // Set the updated root file path
+                MayaUsd::utils::setNewProxyPath(
+                    newProxyShapePath.fullPathName(),
+                    movedStageRootFilepath,
+                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+                    newRootLayer,
+                    true);
+
+                // Update the StageEntry to a new StageEntry which
+                // contains the proper stage object pointing to
+                // the new root layer
+                SessionState::StageEntry updatedEntry;
+                MayaSessionState::getStageEntry(&updatedEntry, newProxyShapePath.fullPathName());
+                _sessionState->setStageEntry(updatedEntry);
+
+                // Lock that layer
+                MayaUsd::lockLayer(
+                    newProxyShapePath.fullPathName().asChar(),
+                    newRootLayer,
+                    MayaUsd::LayerLockType::LayerLock_Locked,
+                    true);
             }
         }
         // User clicked "Cancel" - do nothing and return
