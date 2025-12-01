@@ -44,6 +44,9 @@
 #include <string>
 
 namespace {
+const char* SHOW_MORE_TEXT = "<a href=\"#\">Show More</a>";
+const char* SHOW_LESS_TEXT = "<a href=\"#\">Show Less</a>";
+
 const char* getScenesFolderScript = R"(
     global proc string UsdMayaUtilFileSystem_GetScenesFolder()
     {
@@ -144,7 +147,7 @@ void ComponentSaveDialog::setupUI()
     contentLayout->addWidget(_browseButton, 1, 2);
 
     // Second row, fourth column: "Show More" clickable label
-    _showMoreLabel = new QLabel("<a href=\"#\">Show More</a>", this);
+    _showMoreLabel = new QLabel(SHOW_MORE_TEXT, this);
     _showMoreLabel->setOpenExternalLinks(false);
     _showMoreLabel->setTextFormat(Qt::RichText);
     connect(_showMoreLabel, &QLabel::linkActivated, this, &ComponentSaveDialog::onShowMore);
@@ -345,7 +348,7 @@ void ComponentSaveDialog::toggleExpandedState()
     if (_isExpanded) {
         // Collapsing: hide tree and restore original size
         _isExpanded = false;
-        _showMoreLabel->setText("<a href=\"#\">Show More</a>");
+        _showMoreLabel->setText(SHOW_MORE_TEXT);
         _treeContainer->setVisible(false);
 
         // Restore original height
@@ -361,7 +364,7 @@ void ComponentSaveDialog::toggleExpandedState()
             _originalHeight = height();
         }
 
-        _showMoreLabel->setText("<a href=\"#\">Show Less</a>");
+        _showMoreLabel->setText(SHOW_LESS_TEXT);
         _treeContainer->setVisible(true);
         // Expand dialog by ~300px
         setFixedHeight(_originalHeight + DPIScale(300));
@@ -415,7 +418,7 @@ void ComponentSaveDialog::updateTreeView()
             bool hasData = false;
             
             if (parseError.error == QJsonParseError::NoError && doc.isObject() && !doc.isEmpty()) {
-                //jsonObj = doc.object();
+                jsonObj = doc.object();
                 hasData = !jsonObj.isEmpty();
             }
             
