@@ -630,13 +630,17 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 "from pxr import Sdf, Usd, UsdUtils\n"
                 "import mayaUsd\n"
                 "import mayaUsd.ufe\n"
-                "from AdskUsdComponentCreator import ComponentDescription, MoveComponent\n"
+                "from AdskUsdComponentCreator import ComponentDescription, MoveComponent, TheHost\n"
+                "from usd_component_creator_plugin import open_variant_editor_window, MayaComponentManager\n"
+                "from AdskVariantEditor import ComponentData\n"
                 "def usd_component_creator_move_component():\n"
                 "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+                "    MayaComponentManager.GetInstance().SaveComponent(proxyStage)\n"
                 "    component_description = "
                 "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
                 "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
                 "False)\n"
+                "    open_variant_editor_window(ComponentData(moved_comp[0]), TheHost.GetHost())\n"
                 "    return moved_comp[0].root_layer_filename",
                 _sessionState->stageEntry()._proxyShapePath.c_str(),
                 saveLocation.c_str(),
@@ -650,27 +654,29 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 auto newRootLayer
                     = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
 
-                MayaUsd::utils::setNewProxyPath(
-                    MString(_sessionState->stageEntry()._proxyShapePath.c_str()),
-                    movedStageRootFilepath,
-                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
-                    newRootLayer,
-                    true);
+                if (newRootLayer) {
+                    MayaUsd::utils::setNewProxyPath(
+                        MString(_sessionState->stageEntry()._proxyShapePath.c_str()),
+                        movedStageRootFilepath,
+                        MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+                        newRootLayer,
+                        true);
 
-                MayaUsd::lockLayer(
-                    _sessionState->stageEntry()._proxyShapePath,
-                    newRootLayer,
-                    MayaUsd::LayerLockType::LayerLock_Locked,
-                    true);
+                    MayaUsd::lockLayer(
+                        _sessionState->stageEntry()._proxyShapePath,
+                        newRootLayer,
+                        MayaUsd::LayerLockType::LayerLock_Locked,
+                        true);
 
-                // Rename Proxy Shape
-                MObject proxyNode;
-                UsdMayaUtil::GetMObjectByName(
-                    _sessionState->stageEntry()._proxyShapePath, proxyNode);
-                MDagModifier dagMod;
-                MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
-                if (status == MStatus::kSuccess) {
-                    dagMod.doIt();
+                    // Rename Proxy Shape
+                    MObject proxyNode;
+                    UsdMayaUtil::GetMObjectByName(
+                        _sessionState->stageEntry()._proxyShapePath, proxyNode);
+                    MDagModifier dagMod;
+                    MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
+                    if (status == MStatus::kSuccess) {
+                        dagMod.doIt();
+                    }
                 }
             }
         }
