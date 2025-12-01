@@ -70,7 +70,7 @@
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #if PXR_VERSION >= 2505
-<pxr/usd/usdUI/accessibilityAPI.h>
+#include <pxr/usd/usdUI/accessibilityAPI.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
