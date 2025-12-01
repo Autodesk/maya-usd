@@ -174,7 +174,7 @@ void ComponentSaveDialog::setupUI()
 
     // Use QStackedWidget to switch between tree and "nothing to preview" label
     auto stackedWidget = new QStackedWidget(this);
-    
+
     // Tree widget page
     _treeWidget = new QTreeWidget(this);
     _treeWidget->setHeaderHidden(true);
@@ -188,7 +188,9 @@ void ComponentSaveDialog::setupUI()
     auto nothingLayout = new QVBoxLayout();
     nothingLayout->setContentsMargins(0, 0, 0, 0);
     nothingLayout->setSpacing(0);
-    auto nothingToPreviewLabel = new QLabel("Nothing to preview since no information about the template is available.", nothingToPreviewWidget);
+    auto nothingToPreviewLabel = new QLabel(
+        "Nothing to preview since no information about the template is available.",
+        nothingToPreviewWidget);
     nothingToPreviewLabel->setAlignment(Qt::AlignCenter);
     nothingLayout->addStretch();
     nothingLayout->addWidget(nothingToPreviewLabel, 0, Qt::AlignCenter);
@@ -409,19 +411,20 @@ void ComponentSaveDialog::updateTreeView()
 
             // Clear existing tree first
             _treeWidget->clear();
-            
-            QStackedWidget* stackedWidget = qobject_cast<QStackedWidget*>(_treeScrollArea->widget());
-            
+
+            QStackedWidget* stackedWidget
+                = qobject_cast<QStackedWidget*>(_treeScrollArea->widget());
+
             QJsonParseError parseError;
             QJsonDocument   doc = QJsonDocument::fromJson(jsonStr.toUtf8(), &parseError);
-            QJsonObject jsonObj;
-            bool hasData = false;
-            
+            QJsonObject     jsonObj;
+            bool            hasData = false;
+
             if (parseError.error == QJsonParseError::NoError && doc.isObject() && !doc.isEmpty()) {
                 jsonObj = doc.object();
                 hasData = !jsonObj.isEmpty();
             }
-            
+
             if (hasData) {
                 // Populate tree view with JSON data and show tree
                 populateTreeView(jsonObj);
@@ -434,7 +437,7 @@ void ComponentSaveDialog::updateTreeView()
                     stackedWidget->setCurrentIndex(1);
                 }
             }
-            
+
             // Update last component name
             _lastComponentName = _nameEdit->text();
         }
