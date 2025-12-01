@@ -192,14 +192,35 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         v1 = cmds.getAttr('{}.{}'.format(nodeDagPath,worldMatrixPlugSphere))
         self.assertVectorAlmostEqual(v1, [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 5.0, 5.0, 1.0])
 
-    def validateInput(self, cachingScope):
+    def validateInput(self, cachingScope, targetLayer):
         """
         Validate that accessor can write data to the stage and it's propagated correctly to:
         - output plugs
         - UFE interfaces
         """
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
-        
+
+        def verifySessionLayer(expectEmpty):
+            lines = stage.GetSessionLayer().ExportToString().split('\n')
+            lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
+            if expectEmpty:
+                self.assertFalse(lines)
+            else:
+                self.assertTrue(lines)
+
+        verifySessionLayer(expectEmpty=True)
+
+        if targetLayer:
+            if targetLayer == 'root':
+                layerName = stage.GetRootLayer().identifier
+            elif targetLayer == 'target':
+                layerName = 'target'
+            elif targetLayer == 'session':
+                layerName = 'session'
+            else:
+                layerName = targetLayer
+            cmds.setAttr("{}.proxyAccessorLayer".format(nodeDagPath), layerName, type="string")
+
         # Get UFE items
         ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
@@ -238,6 +259,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         v2 = ufeTransform3dCube.segmentInclusiveMatrix()
         self.assertVectorAlmostEqual(v1, [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 10.0, 10.0, 15.0, 1.0])
         self.assertMatrixAlmostEqual(v2.matrix, [[0.0, 0.0, -1.0, 0.0], [0.0, 1.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [5.0, 10.0, 10.0, 1.0]])
+
+        verifySessionLayer(expectEmpty=bool(targetLayer and targetLayer != 'session'))
 
     def validateParentingDagObjectUnderUsdPrim(self, cachingScope):
         """
@@ -990,7 +1013,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup()
             self.validateTransformedOutput(thisScope)
     
-    def testInput_NoCaching(self):
+    def testInput_NoCaching_SessionLayer(self):
         """
         The that accessor can write data to the stage and it's propagated correctly to:
         - output plugs
@@ -1000,9 +1023,21 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
         with NonCachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
-            self.validateInput(thisScope)
+            self.validateInput(thisScope, "")
   
-    def testInput_Caching(self):
+    def testInput_NoCaching_TargetLayer(self):
+        """
+        The that accessor can write data to the stage and it's propagated correctly to:
+        - output plugs
+        - UFE interfaces
+        Cached playback is disabled in this test.
+        """
+        cmds.file(new=True, force=True)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
+            self.validateInput(thisScope, "target")
+  
+    def testInput_Caching_SessionLayer(self):
         """
         The that accessor can write data to the stage and it's propagated correctly to:
         - output plugs
@@ -1012,7 +1047,19 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
         with CachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
-            self.validateInput(thisScope)
+            self.validateInput(thisScope, 'session')
+        
+    def testInput_Caching_RootLayer(self):
+        """
+        The that accessor can write data to the stage and it's propagated correctly to:
+        - output plugs
+        - UFE interfaces
+        Cached playback is ENABLED in this test.
+        """
+        cmds.file(new=True, force=True)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
+            self.validateInput(thisScope, 'root')
         
     def testParentingDagObjectUnderUsdPrim_NoCaching(self):
         """

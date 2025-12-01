@@ -38,10 +38,17 @@ public:
     static const MString typeName;
 
     MAYAUSD_PLUGIN_PUBLIC
+    static MObject proxyAccessorLayerAttr;
+
+    MAYAUSD_PLUGIN_PUBLIC
     static void* creator();
 
     MAYAUSD_PLUGIN_PUBLIC
     static MStatus initialize();
+
+    MStatus
+            preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode) override;
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
 
     void postConstructor() override;
 
@@ -51,6 +58,9 @@ private:
     ProxyShape(const ProxyShape&);
     ~ProxyShape() override;
     ProxyShape& operator=(const ProxyShape&);
+
+    // Flag to only update the target once per evaluation.
+    bool _verifyProxyAccessorLayer { false };
 };
 
 } // namespace MAYAUSD_NS_DEF
