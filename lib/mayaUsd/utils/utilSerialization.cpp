@@ -621,6 +621,68 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
         return;
     }
 
+    // If component, special case :
+
+    // TODO TRY CATCH
+    MString getLayersFromComponent;
+    getLayersFromComponent.format(
+        "def get_cc_files():\n"
+        "    import mayaUsd\n"
+        "    import mayaUsd.ufe\n"
+        "    from usd_component_creator_plugin import MayaComponentManager\n"
+        "    print('[cc] acquiring stage...')\n"
+        "    stage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "    if stage is None:\n"
+        "        print('[cc] stage: None')\n"
+        "        return \"\"\n"
+        "    print('[cc] stage: ok')\n"
+        "    print('[cc] querying ids...')\n"
+        "    ids = MayaComponentManager.GetInstance().GetSaveInfo(stage)\n"
+        "    try:\n"
+        "        ids_list = list(ids)\n"
+        "    except Exception as e:\n"
+        "        print('[cc] list(ids) failed:', e)\n"
+        "        return \"\"\n"
+        "    print('[cc] got ids count:', len(ids_list))\n"
+        "    result = \"\"\n"
+        "    first = True\n"
+        "    for i, ident in enumerate(ids_list):\n"
+        "        print(f\"[cc] visiting index {i}: {ident!r}\")\n"
+        "        if not isinstance(ident, str) or not ident:\n"
+        "            print('[cc]   -> invalid/empty, skipping')\n"
+        "            continue\n"
+        "        if not first:\n"
+        "            result += \",\"\n"
+        "        result += ident\n"
+        "        first = False\n"
+        "        print('[cc]   -> added:', ident)\n"
+        "    print('[cc] result:', result)\n"
+        "    return result\n"
+        "get_cc_files()\n",
+        proxyPath.c_str());
+
+    auto res1 = MGlobal::executePythonCommand(getLayersFromComponent);
+    if (res1) {
+        auto res = MGlobal::executePythonCommandStringResult("get_cc_files()");
+
+        MStringArray ccLayerIds;
+
+        res.split(',', ccLayerIds);
+
+        for (auto ccLayerId : ccLayerIds) {
+            auto ccLayer = pxr::SdfLayer::Find(ccLayerId.asUTF8());
+            if (!ccLayer || ccLayer->IsAnonymous()) {
+                continue;
+            }
+
+            auto id = ccLayer->GetIdentifier();
+
+            layersInfo._dirtyFileBackedLayers.push_back(ccLayer);
+        }
+        return;
+    }
+
+
     auto root = stage->GetRootLayer();
     populateChildren(
         proxyPath, stage, root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
