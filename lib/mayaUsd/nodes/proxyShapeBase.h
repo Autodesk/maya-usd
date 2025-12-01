@@ -382,6 +382,9 @@ protected:
     MAYAUSD_CORE_PUBLIC
     void copyInternalData(MPxNode* srcNode) override;
 
+    MAYAUSD_CORE_PUBLIC
+    void setProxyAccessorLayer(const MString& layer) { _proxyAccessorLayer = layer; }
+
 private:
     // The possible the shared mode of the stage.
     // The 'Unknown' mode is when the proxy shape is created and has not yet been computed.
@@ -466,6 +469,13 @@ private:
     // transferred to this variable on the first compute. Afterward, when the edit
     // target is changed, this gets updated via a notification listener.
     SdfLayerRefPtr _targetLayer;
+
+    // The layer to be used by the proxy accessor. Can be one of:
+    //     empty: use the session layer (default)
+    //     "session": use the session layer
+    //     "target": use the current edit target
+    //     A layer ID: use that layer if it exists, otherwise use the session layer
+    MString _proxyAccessorLayer;
 
     // We need to keep track of unshared sublayers (otherwise they get removed)
     std::vector<SdfLayerRefPtr> _unsharedStageRootSublayers;
