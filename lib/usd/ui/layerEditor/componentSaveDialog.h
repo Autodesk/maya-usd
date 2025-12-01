@@ -17,13 +17,11 @@
 #ifndef COMPONENTSAVEDIALOG_H
 #define COMPONENTSAVEDIALOG_H
 
+#include <QtCore/QString>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QtWidgets>
 
-#include <QtCore/QString>
-
 #include <string>
-
 
 class QKeyEvent;
 class QLabel;
@@ -46,7 +44,9 @@ class ComponentSaveDialog : public QDialog
     Q_OBJECT
 
 public:
-    ComponentSaveDialog(QWidget* in_parent = nullptr, const std::string& proxyShapePath = std::string());
+    ComponentSaveDialog(
+        QWidget*           in_parent = nullptr,
+        const std::string& proxyShapePath = std::string());
     ~ComponentSaveDialog() override;
 
     // Set the component name programmatically

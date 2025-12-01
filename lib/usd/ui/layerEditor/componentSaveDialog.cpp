@@ -22,9 +22,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
-#include <cwctype>
-#include <string>
-
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonValue>
@@ -42,6 +39,10 @@
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QTreeWidget>
+
+#include <cwctype>
+#include <string>
+
 
 namespace {
 const char* getScenesFolderScript = R"(
@@ -90,9 +91,9 @@ QJsonObject parseComponentHierarchy(const std::wstring& jsonStr)
 {
     QString qstr = QString::fromStdWString(jsonStr);
     QString json = pythonDictToJson(qstr);
-    
+
     QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8(), &parseError);
+    QJsonDocument   doc = QJsonDocument::fromJson(json.toUtf8(), &parseError);
     if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
         return doc.object();
     }
@@ -281,14 +282,14 @@ void ComponentSaveDialog::onBrowseFolder()
 void ComponentSaveDialog::keyPressEvent(QKeyEvent* event)
 {
     // Intercept Enter/Return key when focus is on _nameEdit
-    if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && 
-        _nameEdit && _nameEdit->hasFocus()) {
+    if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && _nameEdit
+        && _nameEdit->hasFocus()) {
         // If tree view is minimized (not expanded), always accept the dialog
         if (!_isExpanded) {
             QDialog::keyPressEvent(event);
             return;
         }
-        
+
         // If tree view is expanded, check if name has changed
         QString currentName = _nameEdit->text();
         if (currentName != _lastComponentName) {
@@ -302,7 +303,6 @@ void ComponentSaveDialog::keyPressEvent(QKeyEvent* event)
     QDialog::keyPressEvent(event);
 }
 
-
 void ComponentSaveDialog::onSaveStage() { accept(); }
 
 void ComponentSaveDialog::onCancel() { reject(); }
@@ -311,9 +311,9 @@ void ComponentSaveDialog::populateTreeView(const QJsonObject& jsonObj, QTreeWidg
 {
     // Get standard icons for folders and files
     QFileIconProvider iconProvider;
-    QIcon folderIcon = iconProvider.icon(QFileIconProvider::Folder);
-    QIcon fileIcon = iconProvider.icon(QFileIconProvider::File);
-    
+    QIcon             folderIcon = iconProvider.icon(QFileIconProvider::Folder);
+    QIcon             fileIcon = iconProvider.icon(QFileIconProvider::File);
+
     // Fallback to style icons if file icon provider doesn't work
     if (folderIcon.isNull()) {
         folderIcon = style()->standardIcon(QStyle::SP_DirIcon);
@@ -323,7 +323,7 @@ void ComponentSaveDialog::populateTreeView(const QJsonObject& jsonObj, QTreeWidg
     }
 
     for (auto it = jsonObj.begin(); it != jsonObj.end(); ++it) {
-        QString key = it.key();
+        QString    key = it.key();
         QJsonValue value = it.value();
 
         QTreeWidgetItem* item = nullptr;
@@ -366,7 +366,7 @@ void ComponentSaveDialog::toggleExpandedState()
         if (_originalHeight == 0) {
             _originalHeight = height();
         }
-        
+
         _showMoreLabel->setText("<a href=\"#\">Show Less</a>");
         _treeContainer->setVisible(true);
         // Expand dialog by ~300px
@@ -386,14 +386,16 @@ void ComponentSaveDialog::updateTreeView()
         "    import mayaUsd\n"
         "    import mayaUsd.ufe\n"
         "    try:\n"
-        "        from AdskUsdComponentCreator import ComponentDescription, PreviewMoveComponentHierarchy\n"
+        "        from AdskUsdComponentCreator import ComponentDescription, "
+        "PreviewMoveComponentHierarchy\n"
         "    except ImportError:\n"
         "        return None\n"
         "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
         "    component_description = "
         "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
         "    if component_description:\n"
-        "        move_comp_preview = PreviewMoveComponentHierarchy(component_description, \"^2s\", \"^3s\")\n"
+        "        move_comp_preview = PreviewMoveComponentHierarchy(component_description, \"^2s\", "
+        "\"^3s\")\n"
         "        return move_comp_preview\n"
         "    else:\n"
         "        return \"\"",
@@ -406,22 +408,21 @@ void ComponentSaveDialog::updateTreeView()
         MString runComponentMovePreviewCmd = "usd_component_creator_move_component_preview()";
         if (MS::kSuccess == MGlobal::executePythonCommand(runComponentMovePreviewCmd, result)) {
             std::wstring jsonStr = result.asWChar();
-            QJsonObject jsonObj = parseComponentHierarchy(jsonStr); 
-            
+            QJsonObject  jsonObj = parseComponentHierarchy(jsonStr);
+
             if (!jsonObj.isEmpty()) {
                 // Clear existing tree
                 _treeWidget->clear();
-                
+
                 // Populate tree view with JSON data
                 populateTreeView(jsonObj);
-                
+
                 // Update last component name
                 _lastComponentName = _nameEdit->text();
             }
         }
     }
 }
-
 
 void ComponentSaveDialog::onShowMore()
 {
@@ -433,7 +434,7 @@ void ComponentSaveDialog::onShowMore()
 
     // If expanding, fetch data first
     updateTreeView();
-    
+
     // Expand the dialog if we have data
     if (_treeWidget->topLevelItemCount() > 0) {
         toggleExpandedState();
