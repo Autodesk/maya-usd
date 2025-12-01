@@ -40,9 +40,7 @@
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QTreeWidget>
 
-#include <cwctype>
 #include <string>
-
 
 namespace {
 const char* getScenesFolderScript = R"(
