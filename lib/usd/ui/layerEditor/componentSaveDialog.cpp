@@ -37,6 +37,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QScrollArea>
+#include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QTreeWidget>
 
@@ -69,33 +70,6 @@ std::string getMayaWorkspaceScenesDir()
         /*undo*/ false);
 
     return std::string(scenesFolder.asChar(), scenesFolder.length());
-}
-
-// Convert Python dict string to JSON format
-QString pythonDictToJson(const QString& pythonStr)
-{
-    QString json = pythonStr;
-    // Replace single quotes with double quotes (but be careful with escaped quotes)
-    // Simple approach: replace ' with " (this works for the given format)
-    json.replace('\'', '"');
-    // Replace Python booleans
-    json.replace(QString("False"), QString("false"));
-    json.replace(QString("True"), QString("true"));
-    return json;
-}
-
-// Parse JSON string to QJsonObject
-QJsonObject parseComponentHierarchy(const std::wstring& jsonStr)
-{
-    QString qstr = QString::fromStdWString(jsonStr);
-    QString json = pythonDictToJson(qstr);
-
-    QJsonParseError parseError;
-    QJsonDocument   doc = QJsonDocument::fromJson(json.toUtf8(), &parseError);
-    if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
-        return doc.object();
-    }
-    return QJsonObject();
 }
 
 } // namespace
@@ -195,12 +169,34 @@ void ComponentSaveDialog::setupUI()
     _treeScrollArea->setMinimumHeight(DPIScale(250));
     _treeScrollArea->setMaximumHeight(DPIScale(300));
 
+    // Use QStackedWidget to switch between tree and "nothing to preview" label
+    auto stackedWidget = new QStackedWidget(this);
+    
+    // Tree widget page
     _treeWidget = new QTreeWidget(this);
     _treeWidget->setHeaderHidden(true);
     _treeWidget->setRootIsDecorated(true);
     _treeWidget->setAlternatingRowColors(false);
+    stackedWidget->addWidget(_treeWidget);
 
-    _treeScrollArea->setWidget(_treeWidget);
+    // "Nothing to preview" label page - centered
+    auto nothingToPreviewWidget = new QWidget(this);
+    nothingToPreviewWidget->setMinimumHeight(DPIScale(250));
+    auto nothingLayout = new QVBoxLayout();
+    nothingLayout->setContentsMargins(0, 0, 0, 0);
+    nothingLayout->setSpacing(0);
+    auto nothingToPreviewLabel = new QLabel("Nothing to preview since no information about the template is available.", nothingToPreviewWidget);
+    nothingToPreviewLabel->setAlignment(Qt::AlignCenter);
+    nothingLayout->addStretch();
+    nothingLayout->addWidget(nothingToPreviewLabel, 0, Qt::AlignCenter);
+    nothingLayout->addStretch();
+    nothingToPreviewWidget->setLayout(nothingLayout);
+    stackedWidget->addWidget(nothingToPreviewWidget);
+
+    // Start with tree widget visible
+    stackedWidget->setCurrentWidget(_treeWidget);
+
+    _treeScrollArea->setWidget(stackedWidget);
     treeLayout->addWidget(_treeScrollArea);
 
     _treeContainer->setLayout(treeLayout);
@@ -380,6 +376,7 @@ void ComponentSaveDialog::updateTreeView()
     MString defMoveComponentPreviewCmd;
     defMoveComponentPreviewCmd.format(
         "def usd_component_creator_move_component_preview():\n"
+        "    import json\n"
         "    from pxr import Sdf, Usd, UsdUtils\n"
         "    import mayaUsd\n"
         "    import mayaUsd.ufe\n"
@@ -394,7 +391,7 @@ void ComponentSaveDialog::updateTreeView()
         "    if component_description:\n"
         "        move_comp_preview = PreviewMoveComponentHierarchy(component_description, \"^2s\", "
         "\"^3s\")\n"
-        "        return move_comp_preview\n"
+        "        return json.dumps(move_comp_preview)\n"
         "    else:\n"
         "        return \"\"",
         _proxyShapePath.c_str(),
@@ -405,19 +402,38 @@ void ComponentSaveDialog::updateTreeView()
         MString result;
         MString runComponentMovePreviewCmd = "usd_component_creator_move_component_preview()";
         if (MS::kSuccess == MGlobal::executePythonCommand(runComponentMovePreviewCmd, result)) {
-            std::wstring jsonStr = result.asWChar();
-            QJsonObject  jsonObj = parseComponentHierarchy(jsonStr);
+            QString jsonStr = QString::fromStdWString(result.asWChar());
 
-            if (!jsonObj.isEmpty()) {
-                // Clear existing tree
-                _treeWidget->clear();
-
-                // Populate tree view with JSON data
-                populateTreeView(jsonObj);
-
-                // Update last component name
-                _lastComponentName = _nameEdit->text();
+            // Clear existing tree first
+            _treeWidget->clear();
+            
+            QStackedWidget* stackedWidget = qobject_cast<QStackedWidget*>(_treeScrollArea->widget());
+            
+            QJsonParseError parseError;
+            QJsonDocument   doc = QJsonDocument::fromJson(jsonStr.toUtf8(), &parseError);
+            QJsonObject jsonObj;
+            bool hasData = false;
+            
+            if (parseError.error == QJsonParseError::NoError && doc.isObject() && !doc.isEmpty()) {
+                //jsonObj = doc.object();
+                hasData = !jsonObj.isEmpty();
             }
+            
+            if (hasData) {
+                // Populate tree view with JSON data and show tree
+                populateTreeView(jsonObj);
+                if (stackedWidget) {
+                    stackedWidget->setCurrentIndex(0);
+                }
+            } else {
+                // Show "Nothing to preview" message
+                if (stackedWidget) {
+                    stackedWidget->setCurrentIndex(1);
+                }
+            }
+            
+            // Update last component name
+            _lastComponentName = _nameEdit->text();
         }
     }
 }
@@ -433,10 +449,8 @@ void ComponentSaveDialog::onShowMore()
     // If expanding, fetch data first
     updateTreeView();
 
-    // Expand the dialog if we have data
-    if (_treeWidget->topLevelItemCount() > 0) {
-        toggleExpandedState();
-    }
+    // Always expand the dialog
+    toggleExpandedState();
 }
 
 } // namespace UsdLayerEditor

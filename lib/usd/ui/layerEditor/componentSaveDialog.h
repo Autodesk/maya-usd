@@ -28,6 +28,7 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QScrollArea;
+class QStackedWidget;
 class QTreeWidget;
 class QTreeWidgetItem;
 
