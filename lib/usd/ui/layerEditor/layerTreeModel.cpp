@@ -27,6 +27,7 @@
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
@@ -70,40 +71,8 @@ bool shouldDisplayComponentInitialSaveDialog(
     const UsdStageRefPtr stage,
     const std::string&   proxyShapePath)
 {
-    MString defineIsComponentCmd;
-    defineIsComponentCmd.format(
-        "def usd_component_creator_is_proxy_shape_a_component():\n"
-        "    from pxr import Sdf, Usd, UsdUtils\n"
-        "    import mayaUsd\n"
-        "    import mayaUsd.ufe\n"
-        "    try:\n"
-        "        from AdskUsdComponentCreator import ComponentDescription\n"
-        "    except ImportError:\n"
-        "        return -1\n"
-        "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-        "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-        "    if component_description:\n"
-        "        return 1\n"
-        "    else:\n"
-        "        return 0",
-        proxyShapePath.c_str());
 
-    int     isStageAComponent = 0;
-    MStatus success;
-    if (MS::kSuccess
-        == (success = MGlobal::executePythonCommand(defineIsComponentCmd, false, false))) {
-        MString runIsComponentCmd = "usd_component_creator_is_proxy_shape_a_component()";
-        success = MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
-    }
-
-    if (success != MS::kSuccess) {
-        TF_RUNTIME_ERROR(
-            "Error occurred when testing stage '%s' for component.", proxyShapePath.c_str());
-    }
-
-    if (isStageAComponent != 1) {
-        return false;
-    }
+    bool isStageAComponent = MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath);
 
     MString tempDir;
     MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
@@ -314,7 +283,7 @@ void LayerTreeModel::selectUsdLayerOnIdle(const SdfLayerRefPtr& usdLayer)
     QTimer::singleShot(0, this, [this, usdLayer]() {
         auto item = findUSDLayerItem(usdLayer);
         if (item != nullptr) {
-            auto   index = indexFromItem(item);
+            auto index = indexFromItem(item);
             Q_EMIT selectLayerSignal(index);
         }
     });
@@ -571,23 +540,16 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
     auto saveAllLayers = [this]() {
+        bool isComponent = MayaUsd::ComponentUtils::isAdskUsdComponent(
+            _sessionState->stageEntry()._proxyShapePath);
 
+        if (isComponent) {
 
-        // TODO TRY CATCH
-        MString saveComponent;
-        saveComponent.format(
-            "from pxr import Sdf, Usd, UsdUtils\n"
-            "import mayaUsd\n"
-            "import mayaUsd.ufe\n"
-            "from usd_component_creator_plugin import MayaComponentManager\n"
-            "proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-            "MayaComponentManager.GetInstance().SaveComponent(proxyStage)",
-            _sessionState->stageEntry()._proxyShapePath.c_str());
+            MayaUsd::ComponentUtils::saveAdskUsdComponent(
+                _sessionState->stageEntry()._proxyShapePath);
 
-        if (MS::kSuccess == MGlobal::executePythonCommand(saveComponent)) {
-            
+            return;
         }
-        return;
 
         const auto layers = getAllNeedsSavingLayers();
         for (auto layer : layers) {
@@ -631,7 +593,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 "import mayaUsd\n"
                 "import mayaUsd.ufe\n"
                 "from AdskUsdComponentCreator import ComponentDescription, MoveComponent, TheHost\n"
-                "from usd_component_creator_plugin import open_variant_editor_window, MayaComponentManager\n"
+                "from usd_component_creator_plugin import update_variant_editor_window, "
+                "MayaComponentManager\n"
                 "from AdskVariantEditor import ComponentData\n"
                 "def usd_component_creator_move_component():\n"
                 "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
@@ -640,7 +603,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
                 "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
                 "False)\n"
-                "    open_variant_editor_window(ComponentData(moved_comp[0]), TheHost.GetHost())\n"
+                "    update_variant_editor_window(ComponentData(moved_comp[0]), "
+                "TheHost.GetHost())\n"
                 "    return moved_comp[0].root_layer_filename",
                 _sessionState->stageEntry()._proxyShapePath.c_str(),
                 saveLocation.c_str(),

@@ -28,6 +28,7 @@ target_sources(${PROJECT_NAME}
         targetLayer.cpp
         traverseLayer.cpp
         undoHelperCommand.cpp
+        utilComponentCreator.cpp
         util.cpp
         utilDictionary.cpp
         utilFileSystem.cpp
@@ -65,6 +66,7 @@ set(HEADERS
     traverseLayer.h
     trieVisitor.h
     undoHelperCommand.h
+    utilComponentCreator.h
     util.h
     utilDictionary.h
     utilFileSystem.h
