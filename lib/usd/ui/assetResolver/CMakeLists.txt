@@ -27,7 +27,7 @@ target_sources(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
-        BOOST_NS=PXR_INTERNAL_NS::pxr_boost
+        BOOST_NS=PXR_NS::pxr_boost
 )
 
 if (AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY)
