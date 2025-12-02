@@ -20,8 +20,8 @@
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 #include "mayaSessionState.h"
-#include "sessionState.h"
 #include "saveLayersDialog.h"
+#include "sessionState.h"
 #include "stringResources.h"
 #include "warningDialogs.h"
 
@@ -661,7 +661,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 // the new root layer
                 auto entries = _sessionState->allStages();
                 for (const auto& entry : entries) {
-                    if (entry._proxyShapePath == std::string(newProxyShapePath.fullPathName().asUTF8())) {
+                    if (entry._proxyShapePath
+                        == std::string(newProxyShapePath.fullPathName().asUTF8())) {
                         _sessionState->setStageEntry(entry);
                         break;
                     }
