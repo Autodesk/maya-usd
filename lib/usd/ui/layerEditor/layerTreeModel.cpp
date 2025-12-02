@@ -20,6 +20,7 @@
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 #include "mayaSessionState.h"
+#include "sessionState.h"
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 #include "warningDialogs.h"
@@ -653,14 +654,18 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     movedStageRootFilepath,
                     MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
                     newRootLayer,
-                    true);
+                    false);
 
                 // Update the StageEntry to a new StageEntry which
                 // contains the proper stage object pointing to
                 // the new root layer
-                SessionState::StageEntry updatedEntry;
-                MayaSessionState::getStageEntry(&updatedEntry, newProxyShapePath.fullPathName());
-                _sessionState->setStageEntry(updatedEntry);
+                auto entries = _sessionState->allStages();
+                for (const auto& entry : entries) {
+                    if (entry._proxyShapePath == std::string(newProxyShapePath.fullPathName().asUTF8())) {
+                        _sessionState->setStageEntry(entry);
+                        break;
+                    }
+                }
 
                 // Lock that layer
                 MayaUsd::lockLayer(
