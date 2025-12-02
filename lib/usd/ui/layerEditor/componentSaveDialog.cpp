@@ -21,6 +21,8 @@
 
 #include <mayaUsd/utils/utilComponentCreator.h>
 
+#include <pxr/base/tf/diagnostic.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
@@ -304,7 +306,31 @@ void ComponentSaveDialog::keyPressEvent(QKeyEvent* event)
     QDialog::keyPressEvent(event);
 }
 
-void ComponentSaveDialog::onSaveStage() { accept(); }
+void ComponentSaveDialog::onSaveStage()
+{
+    // Block overwriting of components. The target folder must be empty.
+    // Otherwise, log an error and abord. In the future we will want to
+    // support overwriting components. This is not trivial as we need
+    // to be able to preflight all the file write operations, and only if
+    // we are certain everything will succeed, overwrite everything. We also
+    // need to handle about-to-be-overwritten, but already in memory layers,
+    // locked layers, and a possibly polluted folder if the old component had
+    // assets that would no longer be used by the new version.
+
+    std::filesystem::path location = { _locationEdit->text().toStdString() };
+
+    location.append(_nameEdit->text().toStdString());
+
+    auto ss = location.generic_string();
+
+    if (std::filesystem::exists(location) && !std::filesystem::is_empty(location)) {
+        PXR_NAMESPACE_USING_DIRECTIVE
+        TF_RUNTIME_ERROR("The target folder is not empty. Please choose an empty location for the component.");
+        return;
+    }
+
+    accept();
+}
 
 void ComponentSaveDialog::onCancel() { reject(); }
 
