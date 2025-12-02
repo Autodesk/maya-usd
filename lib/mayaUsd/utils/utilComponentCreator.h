@@ -46,6 +46,16 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
 MAYAUSD_CORE_PUBLIC
 void saveAdskUsdComponent(const std::string& proxyPath);
 
+/*! \brief Previews the structure of the Autodesk USD Component identified by \p proxyPath,
+ * when saved at the given location with the given name.
+ * \return Returns the expected component hierarchy, formatted in json.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string previewSaveAdskUsdComponent(
+    const std::string& saveLocation,
+    const std::string& componentName,
+    const std::string& proxyPath);
+
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
 

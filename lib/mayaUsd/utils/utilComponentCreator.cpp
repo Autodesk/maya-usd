@@ -120,5 +120,45 @@ void saveAdskUsdComponent(const std::string& proxyPath)
     }
 }
 
+std::string previewSaveAdskUsdComponent(
+    const std::string& saveLocation,
+    const std::string& componentName,
+    const std::string& proxyPath)
+{
+    MString defMoveComponentPreviewCmd;
+    defMoveComponentPreviewCmd.format(
+        "def usd_component_creator_move_component_preview():\n"
+        "    import json\n"
+        "    from pxr import Sdf, Usd, UsdUtils\n"
+        "    import mayaUsd\n"
+        "    import mayaUsd.ufe\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentDescription, "
+        "PreviewMoveComponentHierarchy\n"
+        "    except ImportError:\n"
+        "        return None\n"
+        "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
+        "    component_description = "
+        "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+        "    if component_description:\n"
+        "        move_comp_preview = PreviewMoveComponentHierarchy(component_description, '^2s', "
+        "'^3s')\n"
+        "        return json.dumps(move_comp_preview)\n"
+        "    else:\n"
+        "        return \"\"",
+        proxyPath.c_str(),
+        saveLocation.c_str(),
+        componentName.c_str());
+
+    if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentPreviewCmd)) {
+        MString result;
+        MString runComponentMovePreviewCmd = "usd_component_creator_move_component_preview()";
+        if (MS::kSuccess == MGlobal::executePythonCommand(runComponentMovePreviewCmd, result)) {
+            return result.asChar();
+        }
+    }
+    return {};
+}
+
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
