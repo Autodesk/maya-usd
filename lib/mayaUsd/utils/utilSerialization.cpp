@@ -624,12 +624,12 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
     }
 
     // Special case for components created by the component creator. Non-local layers,
-    // non-active layers, and non-dirty but to be renamed layer, can be impacted when saving a
+    // non-active layers, and non-dirty but to be renamed layers, can be impacted when saving a
     // component. Only the component creator knows how to save a component properly.
     if (ComponentUtils::isAdskUsdComponent(proxyPath)) {
-        auto layerIds = ComponentUtils::getAdskUsdComponentLayersToSave(proxyPath);
+        const auto layerIds = ComponentUtils::getAdskUsdComponentLayersToSave(proxyPath);
         for (const auto& ccLayerId : layerIds) {
-            auto ccLayer = pxr::SdfLayer::Find(ccLayerId);
+            auto ccLayer = pxr::SdfLayer::FindOrOpen(ccLayerId);
             if (!ccLayer || ccLayer->IsAnonymous()) {
                 continue;
             }

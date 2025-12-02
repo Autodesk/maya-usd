@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2025 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
 {
     // Ask via python what layers need to be saved for the component.
     // With the maya api we can only return a string, so we concat the ids.
-    // Use / as separator for the ids as it is an invalid character for layer ids (& file paths) in
-    // windows and linux.
     MString getLayersFromComponent;
     getLayersFromComponent.format(
         "def usd_component_creator_get_layers_to_save():\n"
@@ -59,7 +57,7 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
         auto resultString = MGlobal::executePythonCommandStringResult(
             "usd_component_creator_get_layers_to_save()");
         MStringArray layerIds;
-        resultString.split('/', layerIds);
+        resultString.split('|', layerIds);
         std::vector<std::string> toSave;
         for (const auto& id : layerIds) {
             toSave.push_back(id.asUTF8());
