@@ -280,9 +280,13 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.makeFlagMultiUse(kFilterTypesFlag);
 
     syntax.addFlag(
-        kAccessibilityLabelFlag, UsdMayaJobExportArgsTokens->accessibilityLabel.GetText(), MSyntax::kString);
+        kAccessibilityLabelFlag,
+        UsdMayaJobExportArgsTokens->accessibilityLabel.GetText(),
+        MSyntax::kString);
     syntax.addFlag(
-        kAccessibilityDescriptionFlag, UsdMayaJobExportArgsTokens->accessibilityDescription.GetText(), MSyntax::kString);
+        kAccessibilityDescriptionFlag,
+        UsdMayaJobExportArgsTokens->accessibilityDescription.GetText(),
+        MSyntax::kString);
 
     syntax.enableQuery(false);
     syntax.enableEdit(false);
