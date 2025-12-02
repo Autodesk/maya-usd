@@ -1400,7 +1400,7 @@ void UsdMaya_WriteJob::_AddDefaultPrimAccessibility()
      * and use the actual API for 25.5 and beyond.
      */
 #if PXR_VERSION >= 2505
-    auto api = UsdUIAccessibilityAPI::ApplyDefaultAPI(defaultPrim);
+    auto defaultAPI = UsdUIAccessibilityAPI::ApplyDefaultAPI(defaultPrim);
     if (!accessibilityLabel.empty()) {
         defaultAPI.CreateLabelAttr(VtValue(accessibilityLabel));
     }
