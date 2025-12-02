@@ -47,7 +47,7 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
         "    first = True\n"
         "    for id in ids:\n"
         "        if not first:\n"
-        "            result += '\n'\n"
+        "            result += '\\n'\n"
         "        result += id\n"
         "        first = False\n"
         "    return result\n",
