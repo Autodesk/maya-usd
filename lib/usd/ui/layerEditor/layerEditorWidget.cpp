@@ -311,8 +311,7 @@ void LayerEditorWidget::updateNewLayerButton()
             if (item) {
                 disabled = item->isInvalidLayer() || item->appearsMuted() || item->isReadOnly()
                     || item->isLocked();
-            }
-            else {
+            } else {
                 // if for whatever reason we get an invalid item
                 // we should disable the buttons as well
                 disabled = true;
