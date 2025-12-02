@@ -19,7 +19,6 @@
 #include "componentSaveDialog.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
-#include "mayaSessionState.h"
 #include "saveLayersDialog.h"
 #include "sessionState.h"
 #include "stringResources.h"
