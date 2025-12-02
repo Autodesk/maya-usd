@@ -1,3 +1,19 @@
+//
+// Copyright 2025 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 #ifndef MAYAUSD_UTILS_UTILCOMPONENTCREATOR_H
 #define MAYAUSD_UTILS_UTILCOMPONENTCREATOR_H
 
@@ -11,12 +27,22 @@
 namespace MAYAUSD_NS_DEF {
 namespace ComponentUtils {
 
+/*! \brief Returns whether the proxy shape at the given path identifies an Autodesk USD Component.
+ */
 MAYAUSD_CORE_PUBLIC
 bool isAdskUsdComponent(const std::string& proxyPath);
 
+/*! \brief Returns the ids of the USD layers that should be saved for the Autodesk USD Component.
+ *
+ *  \note Expects \p proxyPath to be a valid component path.
+ */
 MAYAUSD_CORE_PUBLIC
 std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& proxyPath);
 
+/*! \brief Saves the Autodesk USD Component identified by \p proxyPath.
+ *
+ *  \note Expects \p proxyPath to be a valid component path.
+ */
 MAYAUSD_CORE_PUBLIC
 void saveAdskUsdComponent(const std::string& proxyPath);
 

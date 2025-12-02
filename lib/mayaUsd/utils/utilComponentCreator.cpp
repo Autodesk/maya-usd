@@ -1,3 +1,19 @@
+//
+// Copyright 2021 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 #include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -17,7 +33,7 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
 {
     // Ask via python what layers need to be saved for the component.
     // With the maya api we can only return a string, so we concat the ids.
-    // Use /  as separator for the ids as it is an invalid character ids / file paths in
+    // Use / as separator for the ids as it is an invalid character for layer ids (& file paths) in
     // windows and linux.
     MString getLayersFromComponent;
     getLayersFromComponent.format(
@@ -42,11 +58,11 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
     if (MGlobal::executePythonCommand(getLayersFromComponent)) {
         auto resultString = MGlobal::executePythonCommandStringResult(
             "usd_component_creator_get_layers_to_save()");
-        MStringArray ccLayerIds;
-        resultString.split('/', ccLayerIds);
+        MStringArray layerIds;
+        resultString.split('/', layerIds);
         std::vector<std::string> toSave;
-        for (auto ccLayerId : ccLayerIds) {
-            toSave.push_back(ccLayerId.asUTF8());
+        for (const auto& id : layerIds) {
+            toSave.push_back(id.asUTF8());
         }
         return toSave;
     }

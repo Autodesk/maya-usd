@@ -71,14 +71,14 @@ bool shouldDisplayComponentInitialSaveDialog(
     const UsdStageRefPtr stage,
     const std::string&   proxyShapePath)
 {
-
-    bool isStageAComponent = MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath);
+    if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
+        return false;
+    }
 
     MString tempDir;
     MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
 
-    return isStageAComponent == 1
-        && isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
+    return isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
 }
 
 } // namespace
@@ -540,14 +540,13 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
     auto saveAllLayers = [this]() {
-        bool isComponent = MayaUsd::ComponentUtils::isAdskUsdComponent(
-            _sessionState->stageEntry()._proxyShapePath);
 
-        if (isComponent) {
-
+        // Special case for components created by the component creator. Only the component creator 
+        // knows how to save a component properly.
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+            _sessionState->stageEntry()._proxyShapePath)) {
             MayaUsd::ComponentUtils::saveAdskUsdComponent(
                 _sessionState->stageEntry()._proxyShapePath);
-
             return;
         }
 
