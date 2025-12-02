@@ -1405,7 +1405,7 @@ void UsdMaya_WriteJob::_AddDefaultPrimAccessibility()
         defaultAPI.CreateLabelAttr(VtValue(accessibilityLabel));
     }
     if (!accessibilityDescription.empty()) {
-        defaultAPI.CreateLabelAttr(VtValue(accessibilityDescription));
+        defaultAPI.CreateDescriptionAttr(VtValue(accessibilityDescription));
     }
 #else
     defaultPrim.AddAppliedSchema(TfToken("AccessibilityAPI:default"));
