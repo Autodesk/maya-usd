@@ -39,15 +39,15 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
         "    import mayaUsd\n"
         "    import mayaUsd.ufe\n"
         "    from usd_component_creator_plugin import MayaComponentManager\n"
-        "    stage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "    stage = mayaUsd.ufe.getStage('^1s')\n"
         "    if stage is None:\n"
-        "        return \"\"\n"
+        "        return ''\n"
         "    ids = MayaComponentManager.GetInstance().GetSaveInfo(stage)\n"
-        "    result = \"\"\n"
+        "    result = ''\n"
         "    first = True\n"
         "    for id in ids:\n"
         "        if not first:\n"
-        "            result += \"|\"\n"
+        "            result += '\n'\n"
         "        result += id\n"
         "        first = False\n"
         "    return result\n",
@@ -57,7 +57,7 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
         auto resultString = MGlobal::executePythonCommandStringResult(
             "usd_component_creator_get_layers_to_save()");
         MStringArray layerIds;
-        resultString.split('|', layerIds);
+        resultString.split('\n', layerIds);
         std::vector<std::string> toSave;
         for (const auto& id : layerIds) {
             toSave.push_back(id.asUTF8());
@@ -79,7 +79,7 @@ bool isAdskUsdComponent(const std::string& proxyShapePath)
         "        from AdskUsdComponentCreator import ComponentDescription\n"
         "    except ImportError:\n"
         "        return -1\n"
-        "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
         "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
         "    if component_description:\n"
         "        return 1\n"
@@ -111,7 +111,7 @@ void saveAdskUsdComponent(const std::string& proxyPath)
         "import mayaUsd\n"
         "import mayaUsd.ufe\n"
         "from usd_component_creator_plugin import MayaComponentManager\n"
-        "proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+        "proxyStage = mayaUsd.ufe.getStage('^1s')\n"
         "MayaComponentManager.GetInstance().SaveComponent(proxyStage)",
         proxyPath.c_str());
 
