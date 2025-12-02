@@ -19,7 +19,9 @@
 #include "componentSaveDialog.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
+#include "mayaSessionState.h"
 #include "saveLayersDialog.h"
+#include "sessionState.h"
 #include "stringResources.h"
 #include "warningDialogs.h"
 
@@ -598,7 +600,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
     if (shouldDisplayComponentInitialSaveDialog(
             _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
-        ComponentSaveDialog dlg(in_parent);
+        ComponentSaveDialog dlg(in_parent, _sessionState->stageEntry()._proxyShapePath);
         dlg.setWindowTitle(QString(("Save " + _sessionState->stageEntry()._displayName).c_str()));
         dlg.setComponentName(QString(_sessionState->stageEntry()._displayName.c_str()));
         dlg.setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
@@ -632,20 +634,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 auto newRootLayer
                     = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
 
-                MayaUsd::utils::setNewProxyPath(
-                    MString(_sessionState->stageEntry()._proxyShapePath.c_str()),
-                    movedStageRootFilepath,
-                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
-                    newRootLayer,
-                    true);
-
-                MayaUsd::lockLayer(
-                    _sessionState->stageEntry()._proxyShapePath,
-                    newRootLayer,
-                    MayaUsd::LayerLockType::LayerLock_Locked,
-                    true);
-
-                // Rename Proxy Shape
+                // Rename Proxy Shape node
                 MObject proxyNode;
                 UsdMayaUtil::GetMObjectByName(
                     _sessionState->stageEntry()._proxyShapePath, proxyNode);
@@ -654,6 +643,37 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 if (status == MStatus::kSuccess) {
                     dagMod.doIt();
                 }
+
+                // Get the new proxyPath
+                MDagPath newProxyShapePath;
+                MDagPath::getAPathTo(proxyNode, newProxyShapePath);
+
+                // Set the updated root file path
+                MayaUsd::utils::setNewProxyPath(
+                    newProxyShapePath.fullPathName(),
+                    movedStageRootFilepath,
+                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+                    newRootLayer,
+                    false);
+
+                // Update the StageEntry to a new StageEntry which
+                // contains the proper stage object pointing to
+                // the new root layer
+                auto entries = _sessionState->allStages();
+                for (const auto& entry : entries) {
+                    if (entry._proxyShapePath
+                        == std::string(newProxyShapePath.fullPathName().asUTF8())) {
+                        _sessionState->setStageEntry(entry);
+                        break;
+                    }
+                }
+
+                // Lock that layer
+                MayaUsd::lockLayer(
+                    newProxyShapePath.fullPathName().asChar(),
+                    newRootLayer,
+                    MayaUsd::LayerLockType::LayerLock_Locked,
+                    true);
             }
         }
         // User clicked "Cancel" - do nothing and return
