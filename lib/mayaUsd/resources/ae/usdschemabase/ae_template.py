@@ -42,7 +42,7 @@ from mayaUsdLibRegisterStrings import getMayaUsdLibString
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
-from pxr import Usd, UsdGeom, UsdShade, Tf, Sdr, Vt
+from pxr import Usd, UsdGeom, UsdShade, Tf, Sdf, Sdr, Vt
 
 
 def defaultControlCreator(aeTemplate, attrName, label=None):
@@ -608,7 +608,11 @@ class AETemplate(object):
         apiSchemas = self.prim.GetMetadata("apiSchemas")
         if apiSchemas:
             properties = self.prim.GetProperties()
-            for schema in [a for a in apiSchemas.GetAppliedItems() if a not in appliedSchemas]:
+            # Note: must used the more awkward ApplyOperations method instead of GetAppliedItems
+            #       to get the full list to be compatible with USD version 0.22 or less.
+            apiSchemasComputedList = []
+            apiSchemas.ApplyOperations(apiSchemasComputedList)
+            for schema in [a for a in apiSchemasComputedList if a not in appliedSchemas]:
                 typeName = schema.split(":", 1)[0]
                 instanceName = None
                 if len(schema) > len(typeName):
