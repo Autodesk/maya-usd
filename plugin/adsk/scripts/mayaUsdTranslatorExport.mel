@@ -1157,6 +1157,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         int $canExportStagesAsRefs = 1;
         int $canControlUpAxisAndUnit = 1;
         int $canHideSourceData = 0;
+        int $canSetAccessibility = 1;
         
         if (stringArrayContains("duplicate", $sectionNames)) {
             $canExportStagesAsRefs = 0;
@@ -1371,6 +1372,20 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         -value1 1 exportStagesAsRefsCheckBox;
                 }
 
+                if ($canSetAccessibility) {
+                    columnLayout -columnOffset "both" 4 -adj true;
+                    frameLayout -label `getMayaUsdString("kExportAccessibilityLbl")` -collapsable true -collapse false accessibilityFrameLayout;
+                        separator -style "none";
+
+                    textFieldGrp -l `getMayaUsdString("kExportAccessibilityLabelLbl")` -annotation `getMayaUsdString("kExportAccessibilityLabelAnn")`
+                                    -placeholderText `getMayaUsdString("kExportAccessibilityLabelPht")` accessibilityLabelField;
+                    textFieldGrp -l `getMayaUsdString("kExportAccessibilityDescriptionLbl")` -annotation `getMayaUsdString("kExportAccessibilityDescriptionAnn")`
+                                    -placeholderText `getMayaUsdString("kExportAccessibilityDescriptionPht")` accessibilityDescriptionField;
+
+                    setParent ..;
+                    setParent ..;
+                }
+
                 if ($canControlUpAxisAndUnit) {
                     columnLayout -columnOffset "both" 4 -adj true;
                     frameLayout -label `getMayaUsdString("kExportAxisAndUnitLbl")` -collapsable true -collapse false axisAndUnitFrameLayout;
@@ -1476,6 +1491,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportStagesAsRefs", "exportStagesAsRefsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "upAxis", "upAxisPopup");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "unit", "unitPopup");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "accessibilityLabel", "accessibilityLabelField");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "accessibilityDescription", "accessibilityDescriptionField");
         }
 
         if (stringArrayContains("context", $sectionNames)) {
