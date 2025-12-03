@@ -7,6 +7,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportBlendshapes.py
     testUsdExportCamera.py
     testUsdExportCameraAttrSpline.py
+    testUsdExportCameraSameName.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
     testUsdExportDefaultPrim.py
