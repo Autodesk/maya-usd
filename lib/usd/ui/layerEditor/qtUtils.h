@@ -78,6 +78,14 @@ private:
     QWidget& _widget;
 };
 
+class TfValidIdentifierValidator : public QValidator
+{
+public:
+    explicit TfValidIdentifierValidator(QObject* parent = nullptr);
+
+    State validate(QString& input, int& pos) const override;
+};
+
 #ifdef Q_OS_DARWIN
 const bool IS_MAC_OS = true;
 #else

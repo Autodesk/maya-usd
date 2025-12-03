@@ -15,6 +15,8 @@
 //
 #include "qtUtils.h"
 
+#include <pxr/base/tf/stringUtils.h>
+
 #include <QtGui/QIcon>
 #include <QtGui/QPixmap>
 #include <QtWidgets/QtWidgets>
@@ -143,6 +145,24 @@ QtDisableRepaintUpdates::~QtDisableRepaintUpdates()
     } catch (std::exception&) {
         // Don't let exceptions out of destructor.
     }
+}
+
+TfValidIdentifierValidator::TfValidIdentifierValidator(QObject* parent)
+    : QValidator(parent)
+{
+}
+
+QValidator::State TfValidIdentifierValidator::validate(QString& input, int& pos) const
+{
+    std::string orig = input.toStdString();
+    std::string valid = pxr::TfMakeValidIdentifier(orig);
+    if (input.isEmpty()) {
+        return Intermediate; // Allow user to type
+    }
+    if (orig == valid && !valid.empty()) {
+        return Acceptable;
+    }
+    return Invalid;
 }
 
 } // namespace UsdLayerEditor

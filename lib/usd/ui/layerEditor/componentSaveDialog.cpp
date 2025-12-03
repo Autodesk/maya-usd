@@ -139,28 +139,6 @@ void ComponentSaveDialog::setupUI()
     // Second row, first column: Name textbox
     _nameEdit = new QLineEdit(this);
 
-    class TfValidIdentifierValidator : public QValidator
-    {
-    public:
-        explicit TfValidIdentifierValidator(QObject* parent = nullptr)
-            : QValidator(parent)
-        {
-        }
-
-        State validate(QString& input, int& pos) const override
-        {
-            std::string orig = input.toStdString();
-            std::string valid = pxr::TfMakeValidIdentifier(orig);
-            if (input.isEmpty()) {
-                return Intermediate; // Allow user to type
-            }
-            if (orig == valid && !valid.empty()) {
-                return Acceptable;
-            }
-            return Invalid;
-        }
-    };
-
     QValidator* compNameValidator = new TfValidIdentifierValidator(this);
     _nameEdit->setValidator(compNameValidator);
 
