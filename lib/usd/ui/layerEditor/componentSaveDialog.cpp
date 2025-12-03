@@ -314,7 +314,7 @@ void ComponentSaveDialog::keyPressEvent(QKeyEvent* event)
 void ComponentSaveDialog::onSaveStage()
 {
     // Block overwriting of components. The target folder must be empty.
-    // Otherwise, log an error and abord. In the future we will want to
+    // Otherwise, log an error and abort. In the future we will want to
     // support overwriting components. This is not trivial as we need
     // to be able to preflight all the file write operations, and only if
     // we are certain everything will succeed, overwrite everything. We also

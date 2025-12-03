@@ -359,7 +359,7 @@ void LayerEditorWidget::updateButtons()
                     count--;
                 }
             }
-        }        
+        }
         _buttons._dirtyCountBadge->updateCount(count);
         bool disable = count == 0;
         QtUtils::disableHIGButton(_buttons._saveStageButton, disable);
