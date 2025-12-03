@@ -36,6 +36,8 @@
 #include <pxr/usd/sdf/usdaFileFormat.h>
 #include <pxr/usd/sdf/usdcFileFormat.h>
 #endif
+#include "utilComponentCreator.h"
+
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MGlobal.h>
@@ -618,6 +620,21 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
 {
     auto stage = UsdMayaUtil::GetStageByProxyName(proxyPath);
     if (!stage) {
+        return;
+    }
+
+    // Special case for components created by the component creator. Non-local layers,
+    // non-active layers, and non-dirty but to be renamed layers, can be impacted when saving a
+    // component. Only the component creator knows how to save a component properly.
+    if (ComponentUtils::isAdskUsdComponent(proxyPath)) {
+        const auto layerIds = ComponentUtils::getAdskUsdComponentLayersToSave(proxyPath);
+        for (const auto& ccLayerId : layerIds) {
+            auto ccLayer = pxr::SdfLayer::FindOrOpen(ccLayerId);
+            if (!ccLayer || ccLayer->IsAnonymous()) {
+                continue;
+            }
+            layersInfo._dirtyFileBackedLayers.push_back(ccLayer);
+        }
         return;
     }
 

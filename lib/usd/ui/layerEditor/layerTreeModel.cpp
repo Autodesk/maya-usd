@@ -19,7 +19,6 @@
 #include "componentSaveDialog.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
-#include "mayaSessionState.h"
 #include "saveLayersDialog.h"
 #include "sessionState.h"
 #include "stringResources.h"
@@ -29,6 +28,7 @@
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
@@ -72,46 +72,14 @@ bool shouldDisplayComponentInitialSaveDialog(
     const UsdStageRefPtr stage,
     const std::string&   proxyShapePath)
 {
-    MString defineIsComponentCmd;
-    defineIsComponentCmd.format(
-        "def usd_component_creator_is_proxy_shape_a_component():\n"
-        "    from pxr import Sdf, Usd, UsdUtils\n"
-        "    import mayaUsd\n"
-        "    import mayaUsd.ufe\n"
-        "    try:\n"
-        "        from AdskUsdComponentCreator import ComponentDescription\n"
-        "    except ImportError:\n"
-        "        return -1\n"
-        "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-        "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-        "    if component_description:\n"
-        "        return 1\n"
-        "    else:\n"
-        "        return 0",
-        proxyShapePath.c_str());
-
-    int     isStageAComponent = 0;
-    MStatus success;
-    if (MS::kSuccess
-        == (success = MGlobal::executePythonCommand(defineIsComponentCmd, false, false))) {
-        MString runIsComponentCmd = "usd_component_creator_is_proxy_shape_a_component()";
-        success = MGlobal::executePythonCommand(runIsComponentCmd, isStageAComponent);
-    }
-
-    if (success != MS::kSuccess) {
-        TF_RUNTIME_ERROR(
-            "Error occurred when testing stage '%s' for component.", proxyShapePath.c_str());
-    }
-
-    if (isStageAComponent != 1) {
+    if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
         return false;
     }
 
     MString tempDir;
     MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
 
-    return isStageAComponent == 1
-        && isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
+    return isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
 }
 
 } // namespace
@@ -573,6 +541,15 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
     auto saveAllLayers = [this]() {
+        // Special case for components created by the component creator. Only the component creator
+        // knows how to save a component properly.
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+                _sessionState->stageEntry()._proxyShapePath)) {
+            MayaUsd::ComponentUtils::saveAdskUsdComponent(
+                _sessionState->stageEntry()._proxyShapePath);
+            return;
+        }
+
         const auto layers = getAllNeedsSavingLayers();
         for (auto layer : layers) {
             if (!layer->isSystemLocked()) {
@@ -614,13 +591,19 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 "from pxr import Sdf, Usd, UsdUtils\n"
                 "import mayaUsd\n"
                 "import mayaUsd.ufe\n"
-                "from AdskUsdComponentCreator import ComponentDescription, MoveComponent\n"
+                "from AdskUsdComponentCreator import ComponentDescription, MoveComponent, TheHost\n"
+                "from usd_component_creator_plugin import update_variant_editor_window, "
+                "MayaComponentManager\n"
+                "from AdskVariantEditor import ComponentData\n"
                 "def usd_component_creator_move_component():\n"
                 "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
+                "    MayaComponentManager.GetInstance().SaveComponent(proxyStage)\n"
                 "    component_description = "
                 "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
                 "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
                 "False)\n"
+                "    update_variant_editor_window(ComponentData(moved_comp[0]), "
+                "TheHost.GetHost())\n"
                 "    return moved_comp[0].root_layer_filename",
                 _sessionState->stageEntry()._proxyShapePath.c_str(),
                 saveLocation.c_str(),
@@ -634,46 +617,49 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 auto newRootLayer
                     = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
 
-                // Rename Proxy Shape node
-                MObject proxyNode;
-                UsdMayaUtil::GetMObjectByName(
-                    _sessionState->stageEntry()._proxyShapePath, proxyNode);
-                MDagModifier dagMod;
-                MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
-                if (status == MStatus::kSuccess) {
-                    dagMod.doIt();
-                }
+                if (newRootLayer) {
 
-                // Get the new proxyPath
-                MDagPath newProxyShapePath;
-                MDagPath::getAPathTo(proxyNode, newProxyShapePath);
-
-                // Set the updated root file path
-                MayaUsd::utils::setNewProxyPath(
-                    newProxyShapePath.fullPathName(),
-                    movedStageRootFilepath,
-                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
-                    newRootLayer,
-                    false);
-
-                // Update the StageEntry to a new StageEntry which
-                // contains the proper stage object pointing to
-                // the new root layer
-                auto entries = _sessionState->allStages();
-                for (const auto& entry : entries) {
-                    if (entry._proxyShapePath
-                        == std::string(newProxyShapePath.fullPathName().asUTF8())) {
-                        _sessionState->setStageEntry(entry);
-                        break;
+                    // Rename Proxy Shape node
+                    MObject proxyNode;
+                    UsdMayaUtil::GetMObjectByName(
+                        _sessionState->stageEntry()._proxyShapePath, proxyNode);
+                    MDagModifier dagMod;
+                    MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
+                    if (status == MStatus::kSuccess) {
+                        dagMod.doIt();
                     }
-                }
 
-                // Lock that layer
-                MayaUsd::lockLayer(
-                    newProxyShapePath.fullPathName().asChar(),
-                    newRootLayer,
-                    MayaUsd::LayerLockType::LayerLock_Locked,
-                    true);
+                    // Get the new proxyPath
+                    MDagPath newProxyShapePath;
+                    MDagPath::getAPathTo(proxyNode, newProxyShapePath);
+
+                    // Set the updated root file path
+                    MayaUsd::utils::setNewProxyPath(
+                        newProxyShapePath.fullPathName(),
+                        movedStageRootFilepath,
+                        MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+                        newRootLayer,
+                        false);
+
+                    // Update the StageEntry to a new StageEntry which
+                    // contains the proper stage object pointing to
+                    // the new root layer
+                    auto entries = _sessionState->allStages();
+                    for (const auto& entry : entries) {
+                        if (entry._proxyShapePath
+                            == std::string(newProxyShapePath.fullPathName().asUTF8())) {
+                            _sessionState->setStageEntry(entry);
+                            break;
+                        }
+                    }
+
+                    // Lock that layer
+                    MayaUsd::lockLayer(
+                        newProxyShapePath.fullPathName().asChar(),
+                        newRootLayer,
+                        MayaUsd::LayerLockType::LayerLock_Locked,
+                        true);
+                }
             }
         }
         // User clicked "Cancel" - do nothing and return
