@@ -670,7 +670,9 @@ void wrapJobExportArgs()
         .def_readonly("verbose", &UsdMayaJobExportArgs::verbose)
         .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName)
         .def("GetDefaultMaterialsScopeName", &UsdMayaJobExportArgs::GetDefaultMaterialsScopeName)
-        .staticmethod("GetDefaultMaterialsScopeName");
+        .staticmethod("GetDefaultMaterialsScopeName")
+        .def_readonly("accessibilityLabel", &UsdMayaJobExportArgs::accessibilityLabel)
+        .def_readonly("accessibilityDescription", &UsdMayaJobExportArgs::accessibilityDescription);
 }
 
 TF_REGISTRY_FUNCTION(TfEnum)

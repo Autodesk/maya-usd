@@ -69,6 +69,10 @@
 #include <pxr/usd/usdUtils/dependencies.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#if PXR_VERSION >= 2505
+#include <pxr/usd/usdUI/accessibilityAPI.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_WriteJob::UsdMaya_WriteJob(
@@ -434,7 +438,7 @@ bool UsdMaya_WriteJobImpl::WriteJobs(const std::vector<UsdMaya_WriteJob*>& jobs)
     const bool showProgress = !timeSamples.empty();
 
     // Animated export shows frame-by-frame progress.
-    int                       nbSteps = (jobs.size() * 3) + timeSamples.size() + 1;
+    int                       nbSteps = (jobs.size() * 3) + timeSamples.size() + 2;
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
     // Temporarily tweak the Maya scene for export if needed.
@@ -951,6 +955,9 @@ bool UsdMaya_WriteJob::_PostExport()
 
     _extrasPrimsPaths.clear();
 
+    _AddDefaultPrimAccessibility();
+    progressBar.advance();
+
     // Run post export function on the chasers.
     MayaUsd::ProgressBarLoopScope chasersLoop(mChasers.size());
     for (const UsdMayaExportChaserRefPtr& chaser : mChasers) {
@@ -1373,6 +1380,53 @@ bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath& path, const MDagPath& da
     // mDagPathToUsdPathMap!)
     mUsdPathToDagPathMap[path] = dagPath;
     return true;
+}
+
+void UsdMaya_WriteJob::_AddDefaultPrimAccessibility()
+{
+    auto defaultPrim = mJobCtx.mStage->GetDefaultPrim();
+    if (!defaultPrim) {
+        return;
+    }
+
+    auto accessibilityLabel = mJobCtx.mArgs.accessibilityLabel;
+    auto accessibilityDescription = mJobCtx.mArgs.accessibilityDescription;
+    if (accessibilityLabel.empty() && accessibilityDescription.empty()) {
+        return;
+    }
+
+    /* The USD AccessibilityAPI is only available from OpenUSD 25.5 onwards.
+     * We support writing the data with ad-hoc attributes on pre-25.5 versions,
+     * and use the actual API for 25.5 and beyond.
+     */
+#if PXR_VERSION >= 2505
+    auto defaultAPI = UsdUIAccessibilityAPI::ApplyDefaultAPI(defaultPrim);
+    if (!accessibilityLabel.empty()) {
+        defaultAPI.CreateLabelAttr(VtValue(accessibilityLabel));
+    }
+    if (!accessibilityDescription.empty()) {
+        defaultAPI.CreateDescriptionAttr(VtValue(accessibilityDescription));
+    }
+#else
+    defaultPrim.AddAppliedSchema(TfToken("AccessibilityAPI:default"));
+    if (!accessibilityLabel.empty()) {
+        auto labelAttr = defaultPrim.CreateAttribute(
+            TfToken("accessibility:default:label"),
+            SdfValueTypeNames->String,
+            false,
+            SdfVariabilityVarying);
+        labelAttr.Set(accessibilityLabel);
+    }
+
+    if (!accessibilityDescription.empty()) {
+        auto descriptionAttr = defaultPrim.CreateAttribute(
+            TfToken("accessibility:default:description"),
+            SdfValueTypeNames->String,
+            false,
+            SdfVariabilityVarying);
+        descriptionAttr.Set(accessibilityDescription);
+    }
+#endif
 }
 
 const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_WriteJob::GetDagPathToUsdPathMap() const
