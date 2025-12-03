@@ -323,14 +323,14 @@ void ComponentSaveDialog::onSaveStage()
     // assets that would no longer be used by the new version.
 
     std::filesystem::path location = { _locationEdit->text().toStdString() };
-
     location.append(_nameEdit->text().toStdString());
 
-    MObject obj;
-    UsdMayaUtil::GetMObjectByName(_proxyShapePath, obj);
-    const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
-
     if (std::filesystem::exists(location) && !std::filesystem::is_empty(location)) {
+
+        MObject obj;
+        UsdMayaUtil::GetMObjectByName(_proxyShapePath, obj);
+        const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
+
         PXR_NAMESPACE_USING_DIRECTIVE
         TF_RUNTIME_ERROR(
             "Cannot save %s with the given name since a non-empty folder with the same "
