@@ -1,6 +1,6 @@
 #!/usr/bin/env mayapy
 #
-# Copyright 2016 Pixar
+# Copyright 2025 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,7 +64,6 @@ class testUsdExportCameraWithSameName(unittest.TestCase):
         # Verify the camera in USD
         cam = UsdGeom.Camera.Get(stage, '/cam')
         self.assertTrue(cam)
-        print(stage.GetRootLayer().ExportToString())
 
 
 if __name__ == '__main__':
