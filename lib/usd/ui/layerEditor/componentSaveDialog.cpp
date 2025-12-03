@@ -19,6 +19,8 @@
 #include "generatedIconButton.h"
 #include "qtUtils.h"
 
+#include <mayaUsd/utils/utilComponentCreator.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
@@ -378,70 +380,41 @@ void ComponentSaveDialog::updateTreeView()
     std::string saveLocation(_locationEdit->text().toStdString());
     std::string componentName(_nameEdit->text().toStdString());
 
-    MString defMoveComponentPreviewCmd;
-    defMoveComponentPreviewCmd.format(
-        "def usd_component_creator_move_component_preview():\n"
-        "    import json\n"
-        "    from pxr import Sdf, Usd, UsdUtils\n"
-        "    import mayaUsd\n"
-        "    import mayaUsd.ufe\n"
-        "    try:\n"
-        "        from AdskUsdComponentCreator import ComponentDescription, "
-        "PreviewMoveComponentHierarchy\n"
-        "    except ImportError:\n"
-        "        return None\n"
-        "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-        "    component_description = "
-        "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-        "    if component_description:\n"
-        "        move_comp_preview = PreviewMoveComponentHierarchy(component_description, \"^2s\", "
-        "\"^3s\")\n"
-        "        return json.dumps(move_comp_preview)\n"
-        "    else:\n"
-        "        return \"\"",
-        _proxyShapePath.c_str(),
-        saveLocation.c_str(),
-        componentName.c_str());
+    const auto result = MayaUsd::ComponentUtils::previewSaveAdskUsdComponent(
+        saveLocation, componentName, _proxyShapePath.c_str());
 
-    if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentPreviewCmd)) {
-        MString result;
-        MString runComponentMovePreviewCmd = "usd_component_creator_move_component_preview()";
-        if (MS::kSuccess == MGlobal::executePythonCommand(runComponentMovePreviewCmd, result)) {
-            QString jsonStr = QString::fromStdWString(result.asWChar());
+    QString jsonStr = QString::fromStdString(result);
 
-            // Clear existing tree first
-            _treeWidget->clear();
+    // Clear existing tree first
+    _treeWidget->clear();
 
-            QStackedWidget* stackedWidget
-                = qobject_cast<QStackedWidget*>(_treeScrollArea->widget());
+    QStackedWidget* stackedWidget = qobject_cast<QStackedWidget*>(_treeScrollArea->widget());
 
-            QJsonParseError parseError;
-            QJsonDocument   doc = QJsonDocument::fromJson(jsonStr.toUtf8(), &parseError);
-            QJsonObject     jsonObj;
-            bool            hasData = false;
+    QJsonParseError parseError;
+    QJsonDocument   doc = QJsonDocument::fromJson(jsonStr.toUtf8(), &parseError);
+    QJsonObject     jsonObj;
+    bool            hasData = false;
 
-            if (parseError.error == QJsonParseError::NoError && doc.isObject() && !doc.isEmpty()) {
-                jsonObj = doc.object();
-                hasData = !jsonObj.isEmpty();
-            }
+    if (parseError.error == QJsonParseError::NoError && doc.isObject() && !doc.isEmpty()) {
+        jsonObj = doc.object();
+        hasData = !jsonObj.isEmpty();
+    }
 
-            if (hasData) {
-                // Populate tree view with JSON data and show tree
-                populateTreeView(jsonObj);
-                if (stackedWidget) {
-                    stackedWidget->setCurrentIndex(0);
-                }
-            } else {
-                // Show "Nothing to preview" message
-                if (stackedWidget) {
-                    stackedWidget->setCurrentIndex(1);
-                }
-            }
-
-            // Update last component name
-            _lastComponentName = _nameEdit->text();
+    if (hasData) {
+        // Populate tree view with JSON data and show tree
+        populateTreeView(jsonObj);
+        if (stackedWidget) {
+            stackedWidget->setCurrentIndex(0);
+        }
+    } else {
+        // Show "Nothing to preview" message
+        if (stackedWidget) {
+            stackedWidget->setCurrentIndex(1);
         }
     }
+
+    // Update last component name
+    _lastComponentName = _nameEdit->text();
 }
 
 void ComponentSaveDialog::onShowMore()
