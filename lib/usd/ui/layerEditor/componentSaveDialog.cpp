@@ -19,6 +19,7 @@
 #include "generatedIconButton.h"
 #include "qtUtils.h"
 
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -137,6 +138,32 @@ void ComponentSaveDialog::setupUI()
 
     // Second row, first column: Name textbox
     _nameEdit = new QLineEdit(this);
+
+    class TfValidIdentifierValidator : public QValidator
+    {
+    public:
+        explicit TfValidIdentifierValidator(QObject* parent = nullptr)
+            : QValidator(parent)
+        {
+        }
+
+        State validate(QString& input, int& pos) const override
+        {
+            std::string orig = input.toStdString();
+            std::string valid = pxr::TfMakeValidIdentifier(orig);
+            if (input.isEmpty()) {
+                return Intermediate; // Allow user to type
+            }
+            if (orig == valid && !valid.empty()) {
+                return Acceptable;
+            }
+            return Invalid;
+        }
+    };
+
+    QValidator* compNameValidator = new TfValidIdentifierValidator(this);
+    _nameEdit->setValidator(compNameValidator);
+
     contentLayout->addWidget(_nameEdit, 1, 0);
 
     // Second row, second column: Location textbox
@@ -321,11 +348,18 @@ void ComponentSaveDialog::onSaveStage()
 
     location.append(_nameEdit->text().toStdString());
 
-    auto ss = location.generic_string();
+    MObject obj;
+    UsdMayaUtil::GetMObjectByName(_proxyShapePath, obj);
+    const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
 
     if (std::filesystem::exists(location) && !std::filesystem::is_empty(location)) {
         PXR_NAMESPACE_USING_DIRECTIVE
-        TF_RUNTIME_ERROR("The target folder is not empty. Please choose an empty location for the component.");
+        TF_RUNTIME_ERROR(
+            "Cannot save %s with the given name since a non-empty folder with the same "
+            "name is already in that location. Use a unique name or save to a different location "
+            "and try the save again. Folder path:%s",
+            stageName.asChar(),
+            location.generic_string().c_str());
         return;
     }
 
