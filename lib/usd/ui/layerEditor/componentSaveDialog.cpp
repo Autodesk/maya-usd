@@ -45,6 +45,7 @@
 #include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QTreeWidget>
+#include <ghc/filesystem.hpp>
 
 #include <string>
 
@@ -322,10 +323,10 @@ void ComponentSaveDialog::onSaveStage()
     // locked layers, and a possibly polluted folder if the old component had
     // assets that would no longer be used by the new version.
 
-    std::filesystem::path location = { _locationEdit->text().toStdString() };
+    ghc::filesystem::path location = { _locationEdit->text().toStdString() };
     location.append(_nameEdit->text().toStdString());
 
-    if (std::filesystem::exists(location) && !std::filesystem::is_empty(location)) {
+    if (ghc::filesystem::exists(location) && !ghc::filesystem::is_empty(location)) {
 
         MObject obj;
         UsdMayaUtil::GetMObjectByName(_proxyShapePath, obj);
