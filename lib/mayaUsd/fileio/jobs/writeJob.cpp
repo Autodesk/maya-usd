@@ -287,7 +287,11 @@ private:
             //    - Capture the new group name in a MEL variable called $groupName
             "string $groupName = `group -absolute -world $rootNodeNames`;\n";
 
-        static const char scriptSuffix[] = // Ungroup while preserving the rotation.
+        static const char scriptSuffix[] =
+            // Apply the transformations to avoid accumulating transforms on ungroup.
+            "makeIdentity -apply true -rotate true -scale true -normal 0 -preserveNormals true "
+            "$groupName;\n"
+            // Ungroup while preserving the rotation.
             "ungroup -absolute $groupName;\n"
             // Restore the selection.
             "select -replace $selection;\n";

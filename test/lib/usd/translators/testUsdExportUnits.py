@@ -107,8 +107,10 @@ class testUsdExportUnits(unittest.TestCase):
         self.assertTrue(spherePrim)
 
         transformUtils.assertPrimXforms(self, spherePrim, [
-            ('xformOp:translate', (0., 0., 30.)),
-            ('xformOp:scale', (10., 10., 10.))])
+            ('xformOp:translate', (0., 0., 3.)),
+            ('xformOp:translate:pivot', (0., 0., 27.)),
+            ('!invert!xformOp:translate:pivot', None),
+        ])
 
     def testExportUnitsNanometers(self):
         """Test exporting and forcing units of nanometers, different from Maya prefs."""
@@ -171,8 +173,10 @@ class testUsdExportUnits(unittest.TestCase):
 
         expectedScale = 0.01 / expectedMetersPerUnit
         transformUtils.assertPrimXforms(self, spherePrim, [
-            ('xformOp:translate', (0., 0., 3 * expectedScale)),
-            ('xformOp:scale', (expectedScale, expectedScale, expectedScale))])
+            ('xformOp:translate', (0., 0., 3.)),
+            ('xformOp:translate:pivot', (0., 0., 3 * expectedScale - 3.)),
+            ('!invert!xformOp:translate:pivot', None),
+        ])
 
 
 if __name__ == '__main__':
