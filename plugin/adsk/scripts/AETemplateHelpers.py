@@ -247,88 +247,49 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
         pass
     return False
 
-def HandleComponentReload(proxyStage):
+# Looks at wether a given stage is a Adsk USD Component, and if so, reloads it.
+# Returns true if the function handled the refresh request, false otherwise.
+def TryHandleComponentRefresh(proxyStage, stageName, filePathAttr):
     try:
-        print("Attempting to import component manager modules and check for component description...")
-        from AdskUsdComponentCreator import ComponentDescription  # type: ignore
-        from usd_component_creator_plugin import MayaComponentManager  # type: ignore
-        comp_desc = ComponentDescription.CreateFromStageMetadata(proxyStage)
-        print(f"ComponentDescription.CreateFromStageMetadata returned: {comp_desc}")
-        if not comp_desc:
-            return False
-        # Check if the component was ever saved: 
-        # If the root layer isn't dirty, it must have been saved at least once.
-        root_layer = proxyStage.GetRootLayer()
-
-        ever_saved = False
-
-        if root_layer.dirty:
-            print("Root layer is dirty, checking if it was ever saved...")
-            from pxr import Sdf
-            # Create a new in-memory layer and try to read the contents of the current root layer file
-            in_memory_layer = Sdf.Layer.CreateAnonymous()
-            print(f"Created in-memory anonymous layer: {in_memory_layer}")
-            # Only perform this check if the root layer has a real file path
-            root_layer_path = root_layer.realPath
-            print(f"Root layer realPath: {root_layer_path}")
-            ever_saved = True
-
-            # Read the file into the in-memory layer.
-            # Use Sdf.Layer.OpenAsAnonymous to open a copy of the root layer into memory (Python API equivalent)
-            from pxr import Sdf
-            print(f"Attempting to open disk version for layer path: {root_layer_path}")
-            disk_version = Sdf.Layer.OpenAsAnonymous(root_layer_path)
-            print(f"Disk version loaded: {disk_version}, IsEmpty: {disk_version.empty}")
-            ever_saved = not disk_version.empty
-
-        if ever_saved:
-            print("ever_saved is True, proceeding with component reload logic.")
-            manager = MayaComponentManager.GetInstance()
-            print(f"Obtained MayaComponentManager instance: {manager}")
-            to_save_ids = manager.GetSaveInfo(proxyStage) or []
-            print(f"Manager.GetSaveInfo returned: {to_save_ids}")
-            if to_save_ids:
-                print("There are components pending save. Prompting user for reload confirmation.")
-                kTitleFormat = getMayaUsdString("kDiscardStageEditsTitle")
-                print(f"kTitleFormat: {kTitleFormat}")
-                kMsgFormat = getMayaUsdString("kDiscardComponentEditsReloadMsg")
-                print(f"kMsgFormat: {kMsgFormat}")
-                kYes = getMayaUsdString("kButtonReload")
-                print(f"kYes: {kYes}")
-                kNo = getMayaUsdString("kButtonCancel")
-                print(f"kNo: {kNo}")
-                kTitle = cmds.format(kTitleFormat, stringArg=stageName)
-                print(f"Formatted dialog title: {kTitle}")
-                # Like the normal stage case, widen dialog by preventing message word-wrap.
-                filepath = cmds.getAttr(filePathAttr)
-                print(f"Retrieved file path from attr {filePathAttr}: {filepath}")
-                if filepath:
-                    filename = os.path.basename(filepath)
-                    print(f"Extracted file name from path: {filename}")
-                    #kMsg = "<p style='white-space:pre'>" + cmds.format(kMsgFormat, stringArg=(stageName))
-                    kMsg = cmds.format(kMsgFormat, stringArg=(stageName))
-                    print(f"Formatted dialog message: {kMsg}")
-                    print("Opening confirmation dialog for reload...")
-                    res = cmds.confirmDialog(title=kTitle,
-                                            message=kMsg, messageAlign='left',
-                                            button=[kYes, kNo], defaultButton=kYes, cancelButton=kNo, dismissString=kNo,
-                                            icon='warning')
-                    print(f"User responded to confirmDialog: {res}")
-                    if res == kYes:
-                        print('  Component reload confirmed, calling ComponentManager.ReloadComponent()')
-                        manager.ReloadComponent(proxyStage)
-
-                    else:
-                        print('  Component reload canceled by user.')
-                else:
-                    print("No filepath found; skipping dialog and reload.")
-            else:
-                print('  Component has no pending save impact, reloading without confirmation')
-                # Assumes ReloadComponent(stage) exists on the manager.
-                manager.ReloadComponent(proxyStage)
-        return True
-    except Exception as e:
+        from AdskUsdComponentCreator import ComponentDescription
+        from usd_component_creator_plugin import MayaComponentManager
+        from pxr import Sdf
+    except Exception:
         return False
+
+    comp_desc = ComponentDescription.CreateFromStageMetadata(proxyStage)
+    if not comp_desc:
+        # Not a component.
+        return False
+
+    # If the component is still only really in memory, there is nothing to refresh.
+    # Detect this case by check if the root layer is empty on disk.
+    root_layer = proxyStage.GetRootLayer()
+    # If the root layer is not dirty, then we know for sure the on disk version is non-empty.
+    if root_layer.dirty:
+        disk_version = Sdf.Layer.OpenAsAnonymous(root_layer.realPath)
+        if disk_version.empty:
+            print("The component was not saved to disk, there is nothing to refresh.")
+            return True
+
+    manager = MayaComponentManager.GetInstance()
+    to_save_ids = manager.GetSaveInfo(proxyStage) or []
+    if to_save_ids:
+        kTitleFormat = getMayaUsdString("kDiscardStageEditsTitle")
+        kMsgFormat = getMayaUsdString("kDiscardComponentEditsReloadMsg")
+        kYes = getMayaUsdString("kButtonReload")
+        kNo = getMayaUsdString("kButtonCancel")
+        kTitle = cmds.format(kTitleFormat, stringArg=stageName)
+        filepath = cmds.getAttr(filePathAttr)
+        if filepath:
+            kMsg = cmds.format(kMsgFormat, stringArg=(stageName))
+            res = cmds.confirmDialog(title=kTitle,
+                                    message=kMsg, messageAlign='left',
+                                    button=[kYes, kNo], defaultButton=kYes, cancelButton=kNo, dismissString=kNo,
+                                    icon='warning')
+            if res == kYes:
+                manager.ReloadComponent(proxyStage)
+    return True
 
 def ProxyShapeFilePathRefresh(filePathAttr):
     # Function called from the MayaUsd Proxy Shape template when the refresh
@@ -344,7 +305,7 @@ def ProxyShapeFilePathRefresh(filePathAttr):
     try:
         stageName, proxyStage = GetStageFromProxyShapeAttr(filePathAttr)
 
-        handled = TryHandleComponentRefresh(proxyStage)
+        handled = TryHandleComponentRefresh(proxyStage, stageName, filePathAttr)
         if not handled:
             # Is any layer in the layerstack dirty?
             # - If nothing is dirty, we simply reload.
