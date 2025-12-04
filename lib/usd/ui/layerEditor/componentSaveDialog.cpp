@@ -14,12 +14,6 @@
 // limitations under the License.
 //
 
-// Avoid operator conflicts with QT vs USD.
-#ifndef QT_NO_FLOAT16_OPERATORS
-#define QT_NO_FLOAT16_OPERATORS
-#endif
-#include <bitset>
-
 #include "componentSaveDialog.h"
 
 #include "generatedIconButton.h"

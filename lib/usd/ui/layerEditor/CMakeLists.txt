@@ -72,6 +72,16 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # -----------------------------------------------------------------------------
+# MSVC fix: avoid ambiguous qfloat16 arithmetic operators pulled by Qt headers
+# -----------------------------------------------------------------------------
+if (MSVC)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            QT_NO_FLOAT16_OPERATORS
+    )
+endif()
+
+# -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
 set(HEADERS
