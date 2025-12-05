@@ -71,6 +71,12 @@ public:
     // Set the original height (used by parent dialog for sizing)
     void setOriginalHeight(int height) { _originalHeight = height; }
 
+    // Set compact representation mode (hides Name/Location labels)
+    void setCompactMode(bool compact);
+
+    // Get compact representation mode
+    bool isCompactMode() const { return _isCompact; }
+
 Q_SIGNALS:
     // Emitted when the widget expands or collapses
     void expandedStateChanged(bool isExpanded);
@@ -92,10 +98,13 @@ private:
     QLineEdit*           _locationEdit;
     GeneratedIconButton* _browseButton;
     QLabel*              _showMoreLabel;
+    QLabel*              _nameLabel;
+    QLabel*              _locationLabel;
     QScrollArea*         _treeScrollArea;
     QTreeWidget*         _treeWidget;
     QWidget*             _treeContainer;
     bool                 _isExpanded;
+    bool                 _isCompact;
     int                  _originalHeight;
     std::string          _proxyShapePath;
     QString              _lastComponentName;

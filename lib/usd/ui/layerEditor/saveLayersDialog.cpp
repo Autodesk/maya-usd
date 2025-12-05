@@ -59,6 +59,7 @@ void getDialogMessages(
     const int nbAnonLayers,
     QString&  msg1,
     QString&  msg2,
+    QString&  msg3,
     bool      isExporting)
 {
     MString msg, strNbStages, strNbAnonLayers;
@@ -74,6 +75,10 @@ void getDialogMessages(
                            : StringResources::kToSaveTheStageSaveFiles;
     msg.format(StringResources::getAsMString(msgResId), strNbStages);
     msg2 = MQtUtil::toQString(msg);
+
+    // Component message: "To save the X stage(s), save the following component(s)."
+    msg.format("To save the ^1s stage(s), save the following component(s).", strNbStages);
+    msg3 = MQtUtil::toQString(msg);
 }
 
 class AnonLayerPathEdit : public QLineEdit
@@ -462,14 +467,15 @@ SaveLayersDialog::SaveLayersDialog(
             info.dagPath.partialPathName().asChar());
     }
 
-    QString msg1, msg2;
+    QString msg1, msg2, msg3;
     getDialogMessages(
         static_cast<int>(infos.size()),
         static_cast<int>(_anonLayerInfos.size()),
         msg1,
         msg2,
+        msg3,
         isExporting);
-    buildDialog(msg1, msg2);
+    buildDialog(msg1, msg2, msg3);
 }
 
 SaveLayersDialog::SaveLayersDialog(
@@ -491,9 +497,9 @@ SaveLayersDialog::SaveLayersDialog(
     }
     setWindowTitle(dialogTitle);
 
-    QString msg1, msg2;
-    getDialogMessages(1, static_cast<int>(_anonLayerInfos.size()), msg1, msg2, isExporting);
-    buildDialog(msg1, msg2);
+    QString msg1, msg2, msg3;
+    getDialogMessages(1, static_cast<int>(_anonLayerInfos.size()), msg1, msg2, msg3, isExporting);
+    buildDialog(msg1, msg2, msg3);
 }
 
 SaveLayersDialog ::~SaveLayersDialog() { QApplication::restoreOverrideCursor(); }
@@ -548,7 +554,7 @@ void SaveLayersDialog::getLayersToSave(
         std::begin(dirtyFileBackedLayersToDisplay), std::end(dirtyFileBackedLayersToDisplay));
 }
 
-void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
+void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, const QString& msg3)
 {
     const int mainMargin = DPIScale(20);
 
@@ -640,11 +646,22 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
 
     // Component stages section - create ComponentSaveWidget for each component stage
     if (haveComponentStages) {
-        for (const auto& componentInfo : _componentStageInfos) {
+        // Add message above component save section
+        if (!msg3.isEmpty()) {
+            auto componentMessage = new QLabel(msg3, this);
+            topLayout->addWidget(componentMessage);
+        }
+
+        for (size_t i = 0; i < _componentStageInfos.size(); ++i) {
+            const auto& componentInfo = _componentStageInfos[i];
             std::string proxyPath = componentInfo.dagPath.fullPathName().asChar();
             auto componentWidget = new ComponentSaveWidget(this, proxyPath);
             componentWidget->setComponentName(QString(componentInfo.dagPath.partialPathName().asChar()));
             componentWidget->setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
+            // Make compact if not the first component widget
+            if (i > 0) {
+                componentWidget->setCompactMode(true);
+            }
             topLayout->addWidget(componentWidget);
         }
         
@@ -721,7 +738,14 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
     setLayout(topLayout);
     setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
-    setSizeGripEnabled(true);
+    // If only component stages are being saved, disable height expansion
+    bool onlyComponentStages = haveComponentStages && !haveAnonLayers && !haveFileBackedLayers;
+    setSizeGripEnabled(!onlyComponentStages);
+
+    if (onlyComponentStages) {
+        setFixedHeight(sizeHint().height());
+    }
+
     QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
 

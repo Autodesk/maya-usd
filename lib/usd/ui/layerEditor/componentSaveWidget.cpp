@@ -86,10 +86,13 @@ ComponentSaveWidget::ComponentSaveWidget(QWidget* in_parent, const std::string& 
     , _locationEdit(nullptr)
     , _browseButton(nullptr)
     , _showMoreLabel(nullptr)
+    , _nameLabel(nullptr)
+    , _locationLabel(nullptr)
     , _treeScrollArea(nullptr)
     , _treeWidget(nullptr)
     , _treeContainer(nullptr)
     , _isExpanded(false)
+    , _isCompact(false)
     , _originalHeight(0)
     , _proxyShapePath(proxyShapePath)
     , _lastComponentName()
@@ -111,7 +114,7 @@ void ComponentSaveWidget::setupUI()
     auto contentLayout = new QGridLayout();
 
     // Set padding: left, top, right, bottom
-    contentLayout->setContentsMargins(DPIScale(20), DPIScale(15), DPIScale(20), DPIScale(15));
+    contentLayout->setContentsMargins(DPIScale(20), DPIScale(15), DPIScale(20), 0);
     contentLayout->setSpacing(DPIScale(10));
 
     // Column stretch factors: 1/6, 4/6, 1/24, 3/24
@@ -123,12 +126,12 @@ void ComponentSaveWidget::setupUI()
     contentLayout->setColumnStretch(3, 3);  // 3/24
 
     // First row, first column: "Name" label
-    auto nameLabel = new QLabel("Name", this);
-    contentLayout->addWidget(nameLabel, 0, 0);
+    _nameLabel = new QLabel("Name", this);
+    contentLayout->addWidget(_nameLabel, 0, 0);
 
     // First row, second column: "Location" label
-    auto locationLabel = new QLabel("Location", this);
-    contentLayout->addWidget(locationLabel, 0, 1);
+    _locationLabel = new QLabel("Location", this);
+    contentLayout->addWidget(_locationLabel, 0, 1);
 
     // Second row, first column: Name textbox
     _nameEdit = new QLineEdit(this);
@@ -142,6 +145,7 @@ void ComponentSaveWidget::setupUI()
     QIcon folderIcon = UsdLayerEditor::utils->createIcon(":/fileOpen.png");
     _browseButton = new GeneratedIconButton(this, folderIcon);
     _browseButton->setToolTip("Browse for folder");
+    _browseButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(_browseButton, &QAbstractButton::clicked, this, &ComponentSaveWidget::onBrowseFolder);
     contentLayout->addWidget(_browseButton, 1, 2);
 
@@ -398,6 +402,23 @@ void ComponentSaveWidget::onShowMore()
 
     // Always expand the dialog
     toggleExpandedState();
+}
+
+void ComponentSaveWidget::setCompactMode(bool compact)
+{
+    if (_isCompact == compact) {
+        return;
+    }
+
+    _isCompact = compact;
+
+    // Show/hide Name and Location labels based on compact mode
+    if (_nameLabel) {
+        _nameLabel->setVisible(!_isCompact);
+    }
+    if (_locationLabel) {
+        _locationLabel->setVisible(!_isCompact);
+    }
 }
 
 } // namespace UsdLayerEditor

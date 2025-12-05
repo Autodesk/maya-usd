@@ -70,7 +70,7 @@ public:
     QString              buildTooltipForLayer(SdfLayerRefPtr layer);
 
 private:
-    void buildDialog(const QString& msg1, const QString& msg2);
+    void buildDialog(const QString& msg1, const QString& msg2, const QString& msg3);
     void getLayersToSave(
         const UsdStageRefPtr& stage,
         const std::string&    proxyPath,
