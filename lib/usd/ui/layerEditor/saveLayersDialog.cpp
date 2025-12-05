@@ -578,6 +578,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
     const bool            haveComponentStages { !_componentStageInfos.empty() };
     SaveLayerPathRowArea* anonScrollArea { nullptr };
     SaveLayerPathRowArea* fileScrollArea { nullptr };
+    SaveLayerPathRowArea* componentScrollArea { nullptr };
     const int             margin { DPIScale(10) };
 
     // Anonymous layers.
@@ -646,11 +647,10 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
 
     // Component stages section - create ComponentSaveWidget for each component stage
     if (haveComponentStages) {
-        // Add message above component save section
-        if (!msg3.isEmpty()) {
-            auto componentMessage = new QLabel(msg3, this);
-            topLayout->addWidget(componentMessage);
-        }
+        auto componentLayout = new QVBoxLayout();
+        componentLayout->setContentsMargins(margin, margin, margin, 0);
+        componentLayout->setSpacing(DPIScale(8));
+        componentLayout->setAlignment(Qt::AlignTop);
 
         for (size_t i = 0; i < _componentStageInfos.size(); ++i) {
             const auto& componentInfo = _componentStageInfos[i];
@@ -662,9 +662,32 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
             if (i > 0) {
                 componentWidget->setCompactMode(true);
             }
-            topLayout->addWidget(componentWidget);
+            componentLayout->addWidget(componentWidget);
         }
-        
+
+        _componentStagesWidget = new QWidget();
+        _componentStagesWidget->setLayout(componentLayout);
+
+        // Setup the scroll area for component stages.
+        componentScrollArea = new SaveLayerPathRowArea();
+        componentScrollArea->setFrameShape(QFrame::NoFrame);
+        componentScrollArea->setBackgroundRole(QPalette::Midlight);
+        componentScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        componentScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        componentScrollArea->setWidget(_componentStagesWidget);
+        componentScrollArea->setWidgetResizable(true);
+    }
+
+    if (nullptr != componentScrollArea) {
+        // Add message above component save section
+        if (!msg3.isEmpty()) {
+            auto componentMessage = new QLabel(msg3, this);
+            topLayout->addWidget(componentMessage);
+        }
+
+        // Add the component scroll area
+        topLayout->addWidget(componentScrollArea);
+
         // Add a separator if we also have anonymous layers or file backed layers
         if (haveAnonLayers || haveFileBackedLayers) {
             auto lineSep = new QFrame();

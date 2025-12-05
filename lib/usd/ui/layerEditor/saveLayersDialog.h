@@ -85,6 +85,7 @@ private:
     QStringList                          _emptyLayers;
     QWidget*                             _anonLayersWidget { nullptr };
     QWidget*                             _fileLayersWidget { nullptr };
+    QWidget*                             _componentStagesWidget { nullptr };
     QCheckBox*                           _allAsRelative { nullptr };
     LayerInfos                           _anonLayerInfos;
     layerSet                             _dirtyFileBackedLayers;
