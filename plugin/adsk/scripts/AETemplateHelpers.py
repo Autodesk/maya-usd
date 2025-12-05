@@ -269,7 +269,6 @@ def TryHandleComponentRefresh(proxyStage, stageName, filePathAttr):
     if root_layer.dirty:
         disk_version = Sdf.Layer.OpenAsAnonymous(root_layer.realPath)
         if disk_version.empty:
-            print("The component was not saved to disk, there is nothing to refresh.")
             return True
 
     manager = MayaComponentManager.GetInstance()
