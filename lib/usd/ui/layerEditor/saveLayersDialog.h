@@ -80,18 +80,19 @@ private:
     typedef std::unordered_set<SdfLayerRefPtr, TfHash> layerSet;
     using LayerInfos = MayaUsd::utils::LayerInfos;
 
-    QStringList           _newPaths;
-    QStringList           _problemLayers;
-    QStringList           _emptyLayers;
-    QWidget*              _anonLayersWidget { nullptr };
-    QWidget*              _fileLayersWidget { nullptr };
-    QCheckBox*            _allAsRelative { nullptr };
-    LayerInfos            _anonLayerInfos;
-    layerSet              _dirtyFileBackedLayers;
-    stageLayerMap         _stageLayerMap;
-    SessionState*         _sessionState;
-    std::vector<QWidget*> _saveLayerPathRows;
-    bool                  _isExporting { false };
+    QStringList                          _newPaths;
+    QStringList                          _problemLayers;
+    QStringList                          _emptyLayers;
+    QWidget*                             _anonLayersWidget { nullptr };
+    QWidget*                             _fileLayersWidget { nullptr };
+    QCheckBox*                           _allAsRelative { nullptr };
+    LayerInfos                           _anonLayerInfos;
+    layerSet                             _dirtyFileBackedLayers;
+    stageLayerMap                        _stageLayerMap;
+    SessionState*                        _sessionState;
+    std::vector<QWidget*>                _saveLayerPathRows;
+    std::vector<MayaUsd::StageSavingInfo> _componentStageInfos;
+    bool                                 _isExporting { false };
 };
 
 }; // namespace UsdLayerEditor

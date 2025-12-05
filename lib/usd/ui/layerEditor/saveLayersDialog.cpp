@@ -1,5 +1,6 @@
 #include "saveLayersDialog.h"
 
+#include "componentSaveWidget.h"
 #include "generatedIconButton.h"
 #include "layerTreeItem.h"
 #include "layerTreeModel.h"
@@ -14,6 +15,7 @@
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/layerLocking.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -445,12 +447,18 @@ SaveLayersDialog::SaveLayersDialog(
     msg.format(StringResources::getAsMString(StringResources::kSaveXStages), nbStages);
     setWindowTitle(MQtUtil::toQString(msg));
 
-    // For each stage collect the layers to save.
+    // For each stage collect the layers to save and identify component stages.
     for (const auto& info : infos) {
+        std::string proxyPath = info.dagPath.fullPathName().asChar();
+        
+        // Check if this stage is a component stage
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+            _componentStageInfos.push_back(info);
+        }
 
         getLayersToSave(
             info.stage,
-            info.dagPath.fullPathName().asChar(),
+            proxyPath,
             info.dagPath.partialPathName().asChar());
     }
 
@@ -561,6 +569,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
 
     const bool            haveAnonLayers { !_anonLayerInfos.empty() };
     const bool            haveFileBackedLayers { !_dirtyFileBackedLayers.empty() };
+    const bool            haveComponentStages { !_componentStageInfos.empty() };
     SaveLayerPathRowArea* anonScrollArea { nullptr };
     SaveLayerPathRowArea* fileScrollArea { nullptr };
     const int             margin { DPIScale(10) };
@@ -628,6 +637,29 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
     auto topLayout = new QVBoxLayout();
     QtUtils::initLayoutMargins(topLayout, mainMargin);
     topLayout->setSpacing(DPIScale(8));
+
+    // Component stages section - create ComponentSaveWidget for each component stage
+    if (haveComponentStages) {
+        for (const auto& componentInfo : _componentStageInfos) {
+            std::string proxyPath = componentInfo.dagPath.fullPathName().asChar();
+            auto componentWidget = new ComponentSaveWidget(this, proxyPath);
+            componentWidget->setComponentName(QString(componentInfo.dagPath.partialPathName().asChar()));
+            componentWidget->setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
+            topLayout->addWidget(componentWidget);
+        }
+        
+        // Add a separator if we also have anonymous layers or file backed layers
+        if (haveAnonLayers || haveFileBackedLayers) {
+            auto lineSep = new QFrame();
+            lineSep->setFrameShape(QFrame::HLine);
+            lineSep->setLineWidth(DPIScale(1));
+            QPalette pal(lineSep->palette());
+            pal.setColor(QPalette::Base, QColor("#575757"));
+            lineSep->setPalette(pal);
+            lineSep->setBackgroundRole(QPalette::Base);
+            topLayout->addWidget(lineSep);
+        }
+    }
 
     if (nullptr != anonScrollArea) {
         // Add the first message.

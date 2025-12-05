@@ -28,13 +28,14 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QScrollArea;
+class QShowEvent;
 class QStackedWidget;
 class QTreeWidget;
 class QTreeWidgetItem;
 
 namespace UsdLayerEditor {
 
-class GeneratedIconButton;
+class ComponentSaveWidget;
 
 /**
  * @brief Dialog for saving a component with name and location fields.
@@ -62,34 +63,21 @@ public:
     // Get the folder location
     QString folderLocation() const;
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private Q_SLOTS:
-    void onBrowseFolder();
     void onSaveStage();
     void onCancel();
-    void onShowMore();
-
-protected:
-    void keyPressEvent(QKeyEvent* event) override;
+    void onWidgetExpandedStateChanged(bool isExpanded);
 
 private:
-    void setupUI();
-    void populateTreeView(const QJsonObject& jsonObj, QTreeWidgetItem* parentItem = nullptr);
-    void toggleExpandedState();
-    void updateTreeView();
+    void setupUI(const std::string& proxyShapePath);
 
-    QLineEdit*           _nameEdit;
-    QLineEdit*           _locationEdit;
-    GeneratedIconButton* _browseButton;
-    QLabel*              _showMoreLabel;
+    ComponentSaveWidget* _contentWidget;
     QPushButton*         _saveStageButton;
     QPushButton*         _cancelButton;
-    QScrollArea*         _treeScrollArea;
-    QTreeWidget*         _treeWidget;
-    QWidget*             _treeContainer;
-    bool                 _isExpanded;
     int                  _originalHeight;
-    std::string          _proxyShapePath;
-    QString              _lastComponentName;
 };
 
 } // namespace UsdLayerEditor
