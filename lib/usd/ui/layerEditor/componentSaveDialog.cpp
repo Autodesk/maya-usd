@@ -19,7 +19,10 @@
 #include "generatedIconButton.h"
 #include "qtUtils.h"
 
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
+
+#include <pxr/base/tf/diagnostic.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
@@ -42,6 +45,7 @@
 #include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QTreeWidget>
+#include <ghc/filesystem.hpp>
 
 #include <string>
 
@@ -135,6 +139,10 @@ void ComponentSaveDialog::setupUI()
 
     // Second row, first column: Name textbox
     _nameEdit = new QLineEdit(this);
+
+    QValidator* compNameValidator = new ValidTfIdentifierValidator(this);
+    _nameEdit->setValidator(compNameValidator);
+
     contentLayout->addWidget(_nameEdit, 1, 0);
 
     // Second row, second column: Location textbox
@@ -304,7 +312,38 @@ void ComponentSaveDialog::keyPressEvent(QKeyEvent* event)
     QDialog::keyPressEvent(event);
 }
 
-void ComponentSaveDialog::onSaveStage() { accept(); }
+void ComponentSaveDialog::onSaveStage()
+{
+    // Block overwriting of components. The target folder must be empty.
+    // Otherwise, log an error and abort. In the future we will want to
+    // support overwriting components. This is not trivial as we need
+    // to be able to preflight all the file write operations, and only if
+    // we are certain everything will succeed, overwrite everything. We also
+    // need to handle about-to-be-overwritten, but already in memory layers,
+    // locked layers, and a possibly polluted folder if the old component had
+    // assets that would no longer be used by the new version.
+
+    ghc::filesystem::path location = { _locationEdit->text().toStdString() };
+    location.append(_nameEdit->text().toStdString());
+
+    if (ghc::filesystem::exists(location) && !ghc::filesystem::is_empty(location)) {
+
+        MObject obj;
+        UsdMayaUtil::GetMObjectByName(_proxyShapePath, obj);
+        const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
+
+        PXR_NAMESPACE_USING_DIRECTIVE
+        TF_RUNTIME_ERROR(
+            "Cannot save %s with the given name since a non-empty folder with the same "
+            "name is already in that location. Use a unique name or save to a different location "
+            "and try the save again. Folder path:%s",
+            stageName.asChar(),
+            location.generic_string().c_str());
+        return;
+    }
+
+    accept();
+}
 
 void ComponentSaveDialog::onCancel() { reject(); }
 
