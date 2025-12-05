@@ -78,10 +78,10 @@ private:
     QWidget& _widget;
 };
 
-class TfValidIdentifierValidator : public QValidator
+class ValidTfIdentifierValidator : public QValidator
 {
 public:
-    explicit TfValidIdentifierValidator(QObject* parent = nullptr);
+    explicit ValidTfIdentifierValidator(QObject* parent = nullptr);
 
     State validate(QString& input, int& pos) const override;
 };

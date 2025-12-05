@@ -140,7 +140,7 @@ void ComponentSaveDialog::setupUI()
     // Second row, first column: Name textbox
     _nameEdit = new QLineEdit(this);
 
-    QValidator* compNameValidator = new TfValidIdentifierValidator(this);
+    QValidator* compNameValidator = new ValidTfIdentifierValidator(this);
     _nameEdit->setValidator(compNameValidator);
 
     contentLayout->addWidget(_nameEdit, 1, 0);

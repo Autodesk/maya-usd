@@ -147,12 +147,12 @@ QtDisableRepaintUpdates::~QtDisableRepaintUpdates()
     }
 }
 
-TfValidIdentifierValidator::TfValidIdentifierValidator(QObject* parent)
+ValidTfIdentifierValidator::ValidTfIdentifierValidator(QObject* parent)
     : QValidator(parent)
 {
 }
 
-QValidator::State TfValidIdentifierValidator::validate(QString& input, int& pos) const
+QValidator::State ValidTfIdentifierValidator::validate(QString& input, int& pos) const
 {
     std::string orig = input.toStdString();
     std::string valid = pxr::TfMakeValidIdentifier(orig);
