@@ -633,7 +633,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     MDagPath newProxyShapePath;
                     MDagPath::getAPathTo(proxyNode, newProxyShapePath);
 
-                    // Save the old session layer content before swapping the root, which will create a new stage.
+                    // Save the old session layer content before swapping the root, which will
+                    // create a new stage.
                     auto oldSessionLayer = _sessionState->stage()->GetSessionLayer();
 
                     // Set the updated root file path
