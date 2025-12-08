@@ -633,6 +633,10 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     MDagPath newProxyShapePath;
                     MDagPath::getAPathTo(proxyNode, newProxyShapePath);
 
+                    // Save the old session layer content before swapping the root, which will
+                    // create a new stage.
+                    auto oldSessionLayer = _sessionState->stage()->GetSessionLayer();
+
                     // Set the updated root file path
                     MayaUsd::utils::setNewProxyPath(
                         newProxyShapePath.fullPathName(),
@@ -652,6 +656,10 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                             break;
                         }
                     }
+
+                    // Transfer over the session layer contents.
+                    auto newSessionLayer = _sessionState->stage()->GetSessionLayer();
+                    newSessionLayer->TransferContent(oldSessionLayer);
 
                     // Lock that layer
                     MayaUsd::lockLayer(
