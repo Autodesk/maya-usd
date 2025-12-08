@@ -259,13 +259,13 @@ void setIsAttributeLockedFn(IsAttributeLockedFn fn)
     gIsAttributeLockedFn = fn;
 }
 
-bool isAttributedLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg /*= nullptr*/)
+bool isAttributedLocked(const PXR_NS::UsdProperty& prop, std::string* errMsg /*= nullptr*/)
 {
     // If we have (optional) attribute is locked function, use it.
     // Otherwise use the default one supplied by UsdUfe.
     if (gIsAttributeLockedFn)
-        return gIsAttributeLockedFn(attr, errMsg);
-    return Editability::isAttributeLocked(attr, errMsg);
+        return gIsAttributeLockedFn(prop, errMsg);
+    return Editability::isAttributeLocked(prop, errMsg);
 }
 
 void setSaveStageLoadRulesFn(SaveStageLoadRulesFn fn)
@@ -658,6 +658,16 @@ Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderPropert
     }
 
     return retVal;
+}
+
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdProperty& usdProp)
+{
+    if (usdProp.Is<PXR_NS::UsdAttribute>()) {
+        return usdTypeToUfe(usdProp.As<PXR_NS::UsdAttribute>());
+    } else if (usdProp.Is<PXR_NS::UsdRelationship>()) {
+        return Ufe::Attribute::kGeneric;
+    }
+    return Ufe::Attribute::kInvalid;
 }
 
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
@@ -1117,13 +1127,13 @@ bool isPropertyMetadataEditAllowed(
     return allowed;
 }
 
-bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
+bool isAttributeEditAllowed(const PXR_NS::UsdProperty& prop, std::string* errMsg)
 {
-    if (isAttributedLocked(attr, errMsg))
+    if (isAttributedLocked(prop, errMsg))
         return false;
 
     // get the property spec in the edit target's layer
-    const auto& prim = attr.GetPrim();
+    const auto& prim = prop.GetPrim();
     const auto& stage = prim.GetStage();
     const auto& editTarget = stage->GetEditTarget();
 
@@ -1145,18 +1155,18 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
 
     // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
     // opinions for this property.
-    const auto& propertyStack = attr.GetPropertyStack();
+    const auto& propertyStack = prop.GetPropertyStack();
 
     if (!propertyStack.empty()) {
         // get the strongest layer that has the attr.
-        auto strongestLayer = attr.GetPropertyStack().front()->GetLayer();
+        auto strongestLayer = prop.GetPropertyStack().front()->GetLayer();
 
         // compare the calculated index between the "attr" and "edit target" layers.
         if (findLayerIndex(prim, strongestLayer) < targetLayerIndex) {
             if (errMsg) {
                 *errMsg = TfStringPrintf(
                     "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
-                    attr.GetBaseName().GetText(),
+                    prop.GetBaseName().GetText(),
                     strongestLayer->GetDisplayName().c_str());
             }
 
@@ -1182,7 +1192,7 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName, std::s
         }
     }
     // check the attribute itself
-    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), errMsg)) {
+    if (!isAttributeEditAllowed(prim.GetProperty(attrName), errMsg)) {
         return false;
     }
 
@@ -1200,10 +1210,10 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     return true;
 }
 
-void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+void enforceAttributeEditAllowed(const PXR_NS::UsdProperty& prop)
 {
     std::string errMsg;
-    if (!isAttributeEditAllowed(attr, &errMsg)) {
+    if (!isAttributeEditAllowed(prop, &errMsg)) {
         TF_WARN(errMsg);
         throw std::runtime_error(errMsg);
     }

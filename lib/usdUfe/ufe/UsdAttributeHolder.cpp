@@ -39,12 +39,12 @@ namespace {
 static constexpr char kErrorMsgInvalidValueType[] = "Unexpected Ufe::Value type";
 
 bool setUsdNativeMetadata(
-    const PXR_NS::UsdAttribute& attr,
+    const PXR_NS::UsdProperty& prop,
     const std::string&          key,
     const Ufe::Value&           value)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    if (!UsdShadeInput::IsInput(attr) && !UsdShadeOutput::IsOutput(attr)) {
+    if (prop.Is<PXR_NS::UsdAttribute>() && (!PXR_NS::UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>()) && !PXR_NS::UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
         // Only allow for shader ports at this time. Could potentially expand
         // to dynamic attributes if requested. Editing static attributes is
         // not recommended.
@@ -62,8 +62,8 @@ bool setUsdNativeMetadata(
     };
 
     if (key == UsdUfe::MetadataTokens->UIDoc) {
-        attr.SetDocumentation(value.get<std::string>());
-        clearKnownSdrMetadata(attr, key);
+        prop.SetDocumentation(value.get<std::string>());
+        clearKnownSdrMetadata(prop.As<PXR_NS::UsdAttribute>(), key);
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIEnumLabels) {
         const auto   enumStrings = UsdUfe::splitString(value.get<std::string>(), ",");
@@ -72,8 +72,8 @@ bool setUsdNativeMetadata(
         for (const auto& tokenString : enumStrings) {
             allowedTokens.push_back(TfToken(TfStringTrim(tokenString, " ")));
         }
-        attr.SetMetadata(SdfFieldKeys->AllowedTokens, allowedTokens);
-        clearKnownSdrMetadata(attr, key);
+        prop.SetMetadata(SdfFieldKeys->AllowedTokens, allowedTokens);
+        clearKnownSdrMetadata(prop.As<PXR_NS::UsdAttribute>(), key);
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIFolder) {
         // Translate '|' to ':'.
@@ -84,51 +84,51 @@ bool setUsdNativeMetadata(
         // All three agree that the topmost group is on the left.
         std::string group = value.get<std::string>();
         std::replace(group.begin(), group.end(), '|', ':');
-        attr.SetDisplayGroup(group);
-        clearKnownSdrMetadata(attr, key);
+        prop.SetDisplayGroup(group);
+        clearKnownSdrMetadata(prop.As<PXR_NS::UsdAttribute>(), key);
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIName) {
-        attr.SetDisplayName(value.get<std::string>());
-        clearKnownSdrMetadata(attr, key);
+        prop.SetDisplayName(value.get<std::string>());
+        clearKnownSdrMetadata(prop.As<PXR_NS::UsdAttribute>(), key);
         return true;
     }
 
     return false;
 }
 
-bool hasUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::string& key)
+bool hasUsdNativeMetadata(const PXR_NS::UsdProperty& prop, const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    if (!UsdShadeInput::IsInput(attr) && !UsdShadeOutput::IsOutput(attr)) {
+    if (prop.Is<PXR_NS::UsdAttribute>() && (!UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>()) && !UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
         // Only allow for shader ports at this time. Could potentially expand
         // to dynamic attributes if requested. Editing static attributes is
         // not recommended.
         return false;
     }
     if (key == UsdUfe::MetadataTokens->UIDoc) {
-        return attr.HasAuthoredDocumentation();
+        return prop.HasAuthoredDocumentation();
     } else if (key == UsdUfe::MetadataTokens->UIEnumLabels) {
-        return attr.HasMetadata(SdfFieldKeys->AllowedTokens);
+        return prop.HasMetadata(SdfFieldKeys->AllowedTokens);
     } else if (key == UsdUfe::MetadataTokens->UIFolder) {
-        return attr.HasAuthoredDisplayGroup();
+        return prop.HasAuthoredDisplayGroup();
     } else if (key == UsdUfe::MetadataTokens->UIName) {
-        return attr.HasAuthoredDisplayName();
+        return prop.HasAuthoredDisplayName();
     }
     return false;
 }
 
-Ufe::Value getUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::string& key)
+Ufe::Value getUsdNativeMetadata(const PXR_NS::UsdProperty& prop, const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    if (!hasUsdNativeMetadata(attr, key)) {
+    if (!hasUsdNativeMetadata(prop, key)) {
         return {};
     }
     Ufe::Value retVal;
     if (key == UsdUfe::MetadataTokens->UIDoc) {
-        retVal = Ufe::Value(attr.GetDocumentation());
+        retVal = Ufe::Value(prop.GetDocumentation());
     } else if (key == UsdUfe::MetadataTokens->UIEnumLabels) {
         VtTokenArray allowedTokens;
-        if (attr.GetMetadata(SdfFieldKeys->AllowedTokens, &allowedTokens)) {
+        if (prop.GetMetadata(SdfFieldKeys->AllowedTokens, &allowedTokens)) {
             std::string enumstrings;
             for (auto const& tok : allowedTokens) {
                 if (!enumstrings.empty()) {
@@ -139,7 +139,7 @@ Ufe::Value getUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::str
             retVal = Ufe::Value(enumstrings);
         }
     } else if (key == UsdUfe::MetadataTokens->UIFolder) {
-        std::string uifolder = attr.GetDisplayGroup();
+        std::string uifolder = prop.GetDisplayGroup();
         // Translate ':' to '|'.
         // This is to transform nested group separators that differ between platform.
         // MaterialX uses "/". See "NodeDef Parameter Interface" in the spec.
@@ -149,7 +149,7 @@ Ufe::Value getUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::str
         std::replace(uifolder.begin(), uifolder.end(), ':', '|');
         retVal = Ufe::Value(uifolder);
     } else if (key == UsdUfe::MetadataTokens->UIName) {
-        retVal = Ufe::Value(attr.GetDisplayName());
+        retVal = Ufe::Value(prop.GetDisplayName());
     }
     return retVal;
 }
@@ -158,38 +158,38 @@ Ufe::Value getUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::str
 //   1- Did we handle the key: returned by value
 //   2- If we handled the key, did we actually clear the value. Returned by reference in the
 //   "cleared" variable.
-bool clearUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::string& key, bool& cleared)
+bool clearUsdNativeMetadata(const PXR_NS::UsdProperty& prop, const std::string& key, bool& cleared)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     cleared = false;
-    if (!UsdShadeInput::IsInput(attr) && !UsdShadeOutput::IsOutput(attr)) {
+    if (prop.Is<PXR_NS::UsdAttribute>() && (!UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>()) && !UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
         // Only allow for shader ports at this time. Could potentially expand
         // to dynamic attributes if requested. Editing static attributes is
         // not recommended.
         return false;
     }
     if (key == UsdUfe::MetadataTokens->UIDoc) {
-        if (attr.HasAuthoredDocumentation()) {
-            attr.ClearDocumentation();
-            cleared = !attr.HasAuthoredDocumentation();
+        if (prop.HasAuthoredDocumentation()) {
+            prop.ClearDocumentation();
+            cleared = !prop.HasAuthoredDocumentation();
         }
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIEnumLabels) {
-        if (attr.HasMetadata(SdfFieldKeys->AllowedTokens)) {
-            attr.ClearMetadata(SdfFieldKeys->AllowedTokens);
-            cleared = !attr.HasMetadata(SdfFieldKeys->AllowedTokens);
+        if (prop.HasMetadata(SdfFieldKeys->AllowedTokens)) {
+            prop.ClearMetadata(SdfFieldKeys->AllowedTokens);
+            cleared = !prop.HasMetadata(SdfFieldKeys->AllowedTokens);
         }
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIFolder) {
-        if (attr.HasAuthoredDisplayGroup()) {
-            attr.ClearDisplayGroup();
-            cleared = !attr.HasAuthoredDisplayGroup();
+        if (prop.HasAuthoredDisplayGroup()) {
+            prop.ClearDisplayGroup();
+            cleared = !prop.HasAuthoredDisplayGroup();
         }
         return true;
     } else if (key == UsdUfe::MetadataTokens->UIName) {
-        if (attr.HasAuthoredDisplayName()) {
-            attr.ClearDisplayName();
-            cleared = !attr.HasAuthoredDisplayName();
+        if (prop.HasAuthoredDisplayName()) {
+            prop.ClearDisplayName();
+            cleared = !prop.HasAuthoredDisplayName();
         }
         return true;
     }
@@ -197,7 +197,7 @@ bool clearUsdNativeMetadata(const PXR_NS::UsdAttribute& attr, const std::string&
 }
 
 bool setUsdAttrMetadata(
-    const PXR_NS::UsdAttribute& attr,
+    const PXR_NS::UsdProperty& prop,
     const std::string&          key,
     const Ufe::Value&           value)
 {
@@ -209,28 +209,28 @@ bool setUsdAttrMetadata(
     // Note: we allow the locking attribute to be changed even if attribute is locked
     //       since that is how you unlock.
     if (key == Ufe::Attribute::kLocked) {
-        return attr.SetMetadata(
+        return prop.SetMetadata(
             UsdUfe::MetadataTokens->Lock,
             value.get<bool>() ? UsdUfe::GenericTokens->On : UsdUfe::GenericTokens->Off);
     }
 
     // If attribute is locked don't allow setting Metadata.
-    UsdUfe::enforceAttributeEditAllowed(attr);
+    UsdUfe::enforceAttributeEditAllowed(prop);
 
-    UsdUfe::AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
+    UsdUfe::AttributeEditRouterContext ctx(prop.GetPrim(), prop.GetName());
 
-    if (setUsdNativeMetadata(attr, key, value)) {
+    if (setUsdNativeMetadata(prop, key, value)) {
         return true;
     }
 
     PXR_NS::TfToken tok(key);
-    if (PXR_NS::UsdShadeNodeGraph(attr.GetPrim())) {
-        if (PXR_NS::UsdShadeInput::IsInput(attr)) {
-            PXR_NS::UsdShadeInput input(attr);
+    if (PXR_NS::UsdShadeNodeGraph(prop.GetPrim())) {
+        if (PXR_NS::UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>())) {
+            PXR_NS::UsdShadeInput input(prop.As<PXR_NS::UsdAttribute>());
             input.SetSdrMetadataByKey(tok, value.get<std::string>());
             return true;
-        } else if (PXR_NS::UsdShadeOutput::IsOutput(attr)) {
-            PXR_NS::UsdShadeOutput output(attr);
+        } else if (PXR_NS::UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>())) {
+            PXR_NS::UsdShadeOutput output(prop.As<PXR_NS::UsdAttribute>());
             output.SetSdrMetadataByKey(tok, value.get<std::string>());
             return true;
         }
@@ -254,7 +254,7 @@ bool setUsdAttrMetadata(
     }
     if (!usdValue.IsEmpty()) {
         PXR_NS::TfToken tok(key);
-        return attr.SetMetadata(tok, usdValue);
+        return prop.SetMetadata(tok, usdValue);
     }
     return false;
 }
@@ -271,12 +271,12 @@ namespace USDUFE_NS_DEF {
 // Ensure that UsdAttributeHolder is properly setup.
 USDUFE_VERIFY_CLASS_VIRTUAL_DESTRUCTOR(UsdAttributeHolder);
 
-UsdAttributeHolder::UsdAttributeHolder(const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeHolder::UsdAttributeHolder(const PXR_NS::UsdProperty& usdAttr)
     : _usdAttr(usdAttr)
 {
 }
 
-UsdAttributeHolder::UPtr UsdAttributeHolder::create(const PXR_NS::UsdAttribute& usdAttr)
+UsdAttributeHolder::UPtr UsdAttributeHolder::create(const PXR_NS::UsdProperty& usdAttr)
 {
     return std::unique_ptr<UsdAttributeHolder>(new UsdAttributeHolder(usdAttr));
 }
@@ -309,8 +309,8 @@ std::string UsdAttributeHolder::nativeType() const
 #ifdef UFE_V3_FEATURES_AVAILABLE
     if (usdAttributeType() == SdfValueTypeNames->Token && PXR_NS::UsdShadeNodeGraph(usdPrim())) {
         // We might have saved the Sdr native type as metadata:
-        if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)
-            || PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
+        PXR_NS::UsdAttribute attr = usdAttribute();
+        if (PXR_NS::UsdShadeInput::IsInput(attr) || PXR_NS::UsdShadeOutput::IsOutput(attr)) {
             const auto metaValue = getMetadata(UsdAttributeGeneric::nativeSdrTypeMetadata());
             if (!metaValue.empty() && metaValue.isType<std::string>()) {
                 return metaValue.get<std::string>();
@@ -324,7 +324,7 @@ std::string UsdAttributeHolder::nativeType() const
 bool UsdAttributeHolder::get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const
 {
     if (hasValue()) {
-        return _usdAttr.Get(&value, time);
+        return usdAttribute().Get(&value, time);
     } else {
         return false;
     }
@@ -345,23 +345,28 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
     AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
 
     UsdUfe::InSetAttribute inSetAttr;
-    return _usdAttr.Set(value, time);
+    return usdAttribute().Set(value, time);
 }
 
 bool UsdAttributeHolder::isDefault()
 {
     // Checks both authored default value and authored time samples
-    return !_usdAttr.HasAuthoredValue();
+    if (isAttribute()) {
+        return !usdAttribute().HasAuthoredValue();
+    }
+    return false;
 }
 
 void UsdAttributeHolder::reset()
 {
     // Will clear all values, including time samples.
-    _usdAttr.Clear();
+    if (isAttribute()) {
+        usdAttribute().Clear();
+    }
     _usdAttr.GetPrim().RemoveProperty(_usdAttr.GetName());
 }
 
-bool UsdAttributeHolder::hasValue() const { return isValid() ? _usdAttr.HasValue() : false; }
+bool UsdAttributeHolder::hasValue() const { return isValidAttribute() ? usdAttribute().HasValue() : false; }
 
 std::string UsdAttributeHolder::name() const
 {
@@ -421,16 +426,17 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
 
         PXR_NS::TfToken tok(key);
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
-            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
-                const PXR_NS::UsdShadeInput input(_usdAttr);
+            PXR_NS::UsdAttribute attr = usdAttribute();
+            if (PXR_NS::UsdShadeInput::IsInput(attr)) {
+                const PXR_NS::UsdShadeInput input(attr);
                 std::string                 metadata = input.GetSdrMetadataByKey(tok);
                 if (metadata.empty() && key == MetadataTokens->UIName) {
                     // Strip and prettify:
                     metadata = prettifyName(input.GetBaseName().GetString());
                 }
                 return !metadata.empty() ? Ufe::Value(metadata) : Ufe::Value();
-            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
-                const PXR_NS::UsdShadeOutput output(_usdAttr);
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(attr)) {
+                const PXR_NS::UsdShadeOutput output(attr);
                 std::string                  metadata = output.GetSdrMetadataByKey(tok);
                 if (metadata.empty() && key == MetadataTokens->UIName) {
                     // Strip and prettify:
@@ -442,11 +448,11 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
         if (key == MetadataTokens->UIName) {
             std::string niceName;
             // Non-shader case, but we still have light inputs and outputs to deal with:
-            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
-                const PXR_NS::UsdShadeInput input(_usdAttr);
+            if (isAttribute() && PXR_NS::UsdShadeInput::IsInput(usdAttribute())) {
+                const PXR_NS::UsdShadeInput input(usdAttribute());
                 niceName = input.GetBaseName().GetString();
-            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
-                const PXR_NS::UsdShadeOutput output(_usdAttr);
+            } else if (isAttribute() && PXR_NS::UsdShadeOutput::IsOutput(usdAttribute())) {
+                const PXR_NS::UsdShadeOutput output(usdAttribute());
                 niceName = output.GetBaseName().GetString();
             } else {
                 niceName = _usdAttr.GetName().GetString();
@@ -622,7 +628,7 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
 #endif
             return Ufe::Value(niceName);
         } else if (key == SdfFieldKeys->ColorSpace) {
-            const auto csValue = _usdAttr.GetColorSpace();
+            const auto csValue = usdAttribute().GetColorSpace();
             return !csValue.IsEmpty() ? Ufe::Value(csValue.GetString()) : Ufe::Value();
         }
         PXR_NS::VtValue v;
@@ -655,9 +661,10 @@ bool UsdAttributeHolder::setMetadata(const std::string& key, const Ufe::Value& v
 {
     if (isValid()) {
         if (key == SdfFieldKeys->ColorSpace) {
+            PXR_NS::UsdAttribute attr = usdAttribute();
             if (!value.empty() && value.isType<std::string>()) {
-                const AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
-                _usdAttr.SetColorSpace(TfToken(value.get<std::string>()));
+                const AttributeEditRouterContext ctx(attr.GetPrim(), attr.GetName());
+                attr.SetColorSpace(TfToken(value.get<std::string>()));
                 return true;
             }
             return false;
@@ -684,10 +691,11 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
         PXR_NS::TfToken tok(key);
         // Special cases for NodeGraphs:
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
-            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
-                PXR_NS::UsdShadeInput(_usdAttr).ClearSdrMetadataByKey(tok);
-            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
-                PXR_NS::UsdShadeOutput(_usdAttr).ClearSdrMetadataByKey(tok);
+            PXR_NS::UsdAttribute attr = usdAttribute();
+            if (PXR_NS::UsdShadeInput::IsInput(attr)) {
+                PXR_NS::UsdShadeInput(attr).ClearSdrMetadataByKey(tok);
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(attr)) {
+                PXR_NS::UsdShadeOutput(attr).ClearSdrMetadataByKey(tok);
             }
             return !hasMetadata(key);
         }
@@ -698,7 +706,7 @@ bool UsdAttributeHolder::clearMetadata(const std::string& key)
         }
 
         if (key == SdfFieldKeys->ColorSpace) {
-            return _usdAttr.ClearColorSpace();
+            return usdAttribute().ClearColorSpace();
         }
         return _usdAttr.ClearMetadata(tok);
     } else {
@@ -728,10 +736,11 @@ bool UsdAttributeHolder::hasMetadata(const std::string& key) const
         PXR_NS::TfToken tok(key);
         // Special cases for NodeGraphs:
         if (PXR_NS::UsdShadeNodeGraph(usdPrim())) {
-            if (PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
-                return PXR_NS::UsdShadeInput(_usdAttr).HasSdrMetadataByKey(tok);
-            } else if (PXR_NS::UsdShadeOutput::IsOutput(_usdAttr)) {
-                return PXR_NS::UsdShadeOutput(_usdAttr).HasSdrMetadataByKey(tok);
+            PXR_NS::UsdAttribute attr = usdAttribute();
+            if (PXR_NS::UsdShadeInput::IsInput(attr)) {
+                return PXR_NS::UsdShadeInput(attr).HasSdrMetadataByKey(tok);
+            } else if (PXR_NS::UsdShadeOutput::IsOutput(attr)) {
+                return PXR_NS::UsdShadeOutput(attr).HasSdrMetadataByKey(tok);
             }
         }
         result = _usdAttr.HasMetadata(tok);
@@ -745,7 +754,11 @@ bool UsdAttributeHolder::hasMetadata(const std::string& key) const
 
 PXR_NS::SdfValueTypeName UsdAttributeHolder::usdAttributeType() const
 {
-    return _usdAttr.GetTypeName();
+    if (isAttribute()) {
+        return usdAttribute().GetTypeName();
+    } 
+    
+    return SdfValueTypeNames->Opaque;
 }
 
 Ufe::AttributeEnumString::EnumValues UsdAttributeHolder::getEnumValues() const
@@ -763,7 +776,7 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeHolder::getEnumValues() const
 UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
 {
     UsdAttributeHolder::EnumOptions retVal;
-    if (_usdAttr.IsValid()) {
+    if (usdAttribute().IsValid()) {
         PXR_NS::VtTokenArray allowedTokens;
         if (_usdAttr.GetPrim().GetPrimDefinition().GetPropertyMetadata(
                 _usdAttr.GetName(), PXR_NS::SdfFieldKeys->AllowedTokens, &allowedTokens)) {
@@ -774,7 +787,7 @@ UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
         // We might have a propagated enum copied into the created NodeGraph port, resulting from
         // connecting a shader enum property.
         PXR_NS::UsdShadeNodeGraph ngPrim(_usdAttr.GetPrim());
-        if (ngPrim && PXR_NS::UsdShadeInput::IsInput(_usdAttr)) {
+        if (ngPrim && PXR_NS::UsdShadeInput::IsInput(usdAttribute())) {
             auto getEnumLabels = [](auto const& i) {
                 std::vector<std::string> retVal;
 
@@ -793,7 +806,7 @@ UsdAttributeHolder::EnumOptions UsdAttributeHolder::getEnums() const
                 }
                 return retVal;
             };
-            const auto shaderInput = PXR_NS::UsdShadeInput { _usdAttr };
+            const auto shaderInput = PXR_NS::UsdShadeInput { usdAttribute() };
             const auto enumValues
                 = shaderInput.GetSdrMetadataByKey(UsdUfe::MetadataTokens->UIEnumValues);
             const std::vector<std::string> allLabels = getEnumLabels(shaderInput);

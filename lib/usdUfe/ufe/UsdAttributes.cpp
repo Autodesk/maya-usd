@@ -229,16 +229,24 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     if (!newAttr) {
         // No attribute for the input name was found -> create one.
         PXR_NS::TfToken      tok(name);
-        PXR_NS::UsdAttribute usdAttr = _GetAttributeType(_prim, name);
-        if (!usdAttr.IsValid()) {
-            return nullptr;
+
+        Ufe::Attribute::Type newAttrType;
+        // check if this is a relationship instead of an attribute
+        PXR_NS::UsdRelationship usdRel = _prim.GetRelationship(tok);
+        if (usdRel.IsValid()) {
+            newAttrType = Ufe::Attribute::kGeneric;
+        } else {
+            PXR_NS::UsdAttribute usdAttr = _GetAttributeType(_prim, name);
+            if (!usdAttr.IsValid()) {
+                return nullptr;
+            }
+            newAttrType = usdTypeToUfe(usdAttr);
         }
-        Ufe::Attribute::Type newAttrType = usdTypeToUfe(usdAttr);
 
         auto ctorIt = ctorMap.find(newAttrType);
         UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
         if (ctorIt != ctorMap.end())
-            newAttr = ctorIt->second(_item, UsdAttributeHolder::create(usdAttr));
+            newAttr = ctorIt->second(_item, UsdAttributeHolder::create(_prim.GetProperty(tok)));
     }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -281,7 +289,7 @@ std::vector<std::string> UsdAttributes::attributeNames() const
     }
 #endif
     if (_prim) {
-        auto primAttrs = _prim.GetAttributes();
+        auto primAttrs = _prim.GetProperties();
         for (const auto& attr : primAttrs) {
             name = attr.GetName();
             if (nameSet.find(name) == nameSet.end()) {
@@ -295,7 +303,7 @@ std::vector<std::string> UsdAttributes::attributeNames() const
 bool UsdAttributes::hasAttribute(const std::string& name) const
 {
     PXR_NS::TfToken tkName(name);
-    if (_prim.HasAttribute(tkName)) {
+    if (_prim.HasProperty(tkName)) {
         return true;
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
