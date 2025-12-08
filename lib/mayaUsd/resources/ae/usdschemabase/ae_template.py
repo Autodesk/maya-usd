@@ -23,6 +23,8 @@ from .materialCustomControl import MaterialCustomControl
 from .metadataCustomControl import MetadataCustomControl
 from .assetInfoCustomControl import AssetInfoCustomControl
 from .observers import UfeAttributesObserver, UfeConnectionChangedObserver, UsdNoticeListener
+from .layouts.shaderLayout import AEShaderLayout
+from .layouts.renderSettingsLayout import AERenderSettingsLayout, RenderSettingsTabLayout
 try:
     from .collectionCustomControl import CollectionCustomControl
     collectionsSupported = True
@@ -40,6 +42,7 @@ import mayaUsd.ufe as mayaUsdUfe
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 
+from maya.common.ui import LayoutManager, ParentManager
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
 from pxr import Usd, UsdGeom, UsdShade, Tf, Sdr, Vt
@@ -55,170 +58,6 @@ def defaultControlCreator(aeTemplate, attrName):
     return None
 
 
-class AEShaderLayout(object):
-    '''
-    This class takes care of sorting attributes that use uifolder and uiorder metadata and to prepare
-    a data structure that has the exact sequence of layouts and attributes necessary to properly
-    lay out all the attributes in the right folders.
-    '''
-    # A named tuple for attribute information:
-    _AttributeInfo = collections.namedtuple("_AttributeInfo", ["uiorder", "name", "uifolder"])
-    # A string splitter for the most commonly used separators:
-    _groupSplitter = re.compile(r"[/|\;:]")
-    # Valid uiorder:
-    _isDecimal = re.compile("^[0-9]+$")
-
-    class Group(object):
-        """Base class to return layout information. The list of items can contain subgroups."""
-        def __init__(self, name):
-            self._name = name
-            self._items = []
-        @property
-        def name(self):
-            return self._name
-        @property
-        def items(self):
-            return self._items
-
-    def __init__(self, ufeSceneItem):
-        self.item = ufeSceneItem
-        self.prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(self.item.path()))
-        self._attributeInfoList = []
-        self._canCompute = True
-        self._attributeLayout = AEShaderLayout.Group(self.item.nodeType())
-        if ufeSceneItem.nodeType() == "Shader":
-            self.parseShaderAttributes()
-        else:
-            self.parseNodeGraphAttributes()
-
-    def parseShaderAttributes(self):
-        """Parse shader attributes using the Sdr node and property APIs."""
-        if not hasattr(ufe, "NodeDef"):
-            # Ufe does not yet have unauthored attribute support. We can compute, but it won't help.
-            self._canCompute = False
-            return
-        shader = UsdShade.Shader(self.prim)
-        nodeId = shader.GetIdAttr().Get()
-        if not nodeId:
-            self._canCompute = False
-            return
-        nodeDef = Sdr.Registry().GetShaderNodeByIdentifier(nodeId)
-        if not nodeDef:
-            self._canCompute = False
-            return
-        label = nodeDef.GetLabel()
-        if not label:
-            label = nodeDef.GetFamily()
-
-        self._attributeLayout = AEShaderLayout.Group(self._attributeLayout.name + ": " + mayaUsdUfe.prettifyName(label))
-
-        # Best option: Use ordering metadata found the Sdr properties:
-        hasMetadataOrdering = False
-        if Usd.GetVersion() < (0, 25, 5):
-            inputNames = nodeDef.GetInputNames()
-        else:
-            inputNames = nodeDef.GetShaderInputNames()
-
-        for inputName in inputNames:
-            input = nodeDef.GetShaderInput(inputName)
-            metadata = input.GetHints()
-            metadata.update(input.GetMetadata())
-            if "uiorder" in metadata or "uifolder" in metadata:
-                hasMetadataOrdering = True
-                break
-
-        if hasMetadataOrdering:
-            # Prefer metadata over GetPages. The metadata can contain subgroups.
-            unorderedIndex = 10000
-            for inputName in inputNames:
-                input = nodeDef.GetShaderInput(inputName)
-                metadata = input.GetHints()
-                metadata.update(input.GetMetadata())
-                uiorder = metadata.get("uiorder", "").strip()
-                if AEShaderLayout._isDecimal.match(uiorder):
-                    uiorder = int(uiorder)
-                else:
-                    uiorder = unorderedIndex
-                    unorderedIndex += 1
-                uifolder = metadata.get("uifolder", "").strip()
-                self._attributeInfoList.append(
-                    AEShaderLayout._AttributeInfo(uiorder,
-                                                  UsdShade.Utils.GetFullName(inputName, UsdShade.AttributeType.Input),
-                                                  uifolder))
-            return
-
-        # Second best option: Use page information populated in the Sdr node at shader discovery time.
-        pages = nodeDef.GetPages()
-        if len(pages) == 1 and not pages[0]:
-            pages = []
-
-        if not pages:
-            # Worst case: Flat layout
-            for name in inputNames:
-                self._attributeLayout.items.append(UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input))
-            return
-
-        for page in pages:
-            pageLabel = page
-            if not page:
-                pageLabel = 'Extra Shader Attributes'
-            group = AEShaderLayout.Group(pageLabel)
-            for name in nodeDef.GetPropertyNamesForPage(page):
-                if Usd.GetVersion() < (0, 25, 5):
-                    nodeInput = nodeDef.GetInput(name)
-                else:
-                    nodeInput = nodeDef.GetShaderInput(name)
-
-                if nodeInput:
-                    name = UsdShade.Utils.GetFullName(name, UsdShade.AttributeType.Input)
-                    group.items.append(name)
-            if group.items:
-                self._attributeLayout.items.append(group)
-
-    def parseNodeGraphAttributes(self):
-        """NodeGraph and Material do not have associated Sdr information, but some layouting metadata
-           might have been added by shader graph editors."""
-        nodegraph = UsdShade.NodeGraph(self.prim)
-        if not nodegraph:
-            self._canCompute = False
-            return
-        # This should make sure items without uiorder appear at the end. Still no guarantee since
-        # the user can use any numbering sequence he wants.
-        unorderedIndex = 10000
-        for input in nodegraph.GetInputs():
-            uiorder = input.GetSdrMetadataByKey("uiorder").strip()
-            if AEShaderLayout._isDecimal.match(uiorder):
-                uiorder = int(uiorder)
-            else:
-                uiorder = unorderedIndex
-                unorderedIndex += 1
-            uifolder = input.GetSdrMetadataByKey("uifolder").strip()
-            self._attributeInfoList.append(AEShaderLayout._AttributeInfo(uiorder, input.GetFullName(), uifolder))
-
-    def get(self):
-        '''Computes the layout based on metadata ordering if an info list is present. If the list
-           was computed in a different way, the attribute info list will be empty, and we return the
-           computed attributeLayout unchanged.'''
-        if not self._canCompute:
-            return None
-
-        self._attributeInfoList.sort()
-        folderIndex = {(): self._attributeLayout}
-
-        for attributeInfo in self._attributeInfoList:
-            groups = tuple()
-            if attributeInfo.uifolder:
-                groups = tuple(AEShaderLayout._groupSplitter.split(attributeInfo.uifolder))
-                # Ensure the parent groups are there 
-                for i in range(len(groups)):
-                    subgroup = groups[0:i+1]
-                    if subgroup not in folderIndex:
-                        newGroup = AEShaderLayout.Group(subgroup[-1])
-                        folderIndex[subgroup[0:i]].items.append(newGroup)
-                        folderIndex[subgroup] = newGroup
-            # Add the attribute to the group
-            folderIndex[groups].items.append(attributeInfo.name)
-        return self._attributeLayout
 
 # SchemaBase template class for categorization of the attributes.
 # We no longer use the base class ufeAeTemplate.Template as we want to control
@@ -232,7 +71,7 @@ class AETemplate(object):
         self.assetPathType = Tf.Type.FindByName('SdfAssetPath')
         self.item = ufeSceneItem
         self.prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(self.item.path()))
-
+        print(f"Creating AETemplate for: {self.item.path()}")
         # Get the UFE Attributes interface for this scene item.
         self.attrS = ufe.Attributes.attributes(self.item)
         self.addedAttrs = set()
@@ -263,7 +102,7 @@ class AETemplate(object):
         schemasAttributes.update(self.findAppliedSchemas())
         schemasAttributes.update(self.findClassSchemas())
         schemasAttributes.update(self.findSpecialSections())
-
+        print(f"Schemas attributes: {schemasAttributes}")
         # Order schema sections according to designer's choices.
         orderedSchemas = self.orderSections(schemasAttributes)
 
@@ -302,17 +141,27 @@ class AETemplate(object):
             '.* Light',
             'lightLinkCollectionAPI',
             'shadowLinkCollectionAPI',
-            'customCallbacks'
+            # 'renderSettings',
         ]
 
         desiredLastSchemas = [
             'shader',
             'transforms',
             'display',
+            # 'customCallbacks',
             'extraAttributes',
             'assetInfo',
             'metadata',
         ]
+
+        # if this a UsdRender node, add the renderSettings section to the first schemas
+        # and move the customCallbacks to the last schemas
+        print("prim type name", self.prim.GetTypeName())
+        if self.prim.GetTypeName().startswith('Render'):
+            desiredFirstSchemas.append('renderSettings')
+            # desiredLastSchemas.append('customCallbacks')
+        else:
+            desiredFirstSchemas.append('customCallbacks')
 
         def addSchemas(desiredOrder, availableSchemas):
             orderedSchemas = []
@@ -349,7 +198,7 @@ class AETemplate(object):
                         break
                 except Exception as ex:
                     # Do not let one custom control failure affect others.
-                    print('Failed to create control %s: %s' % (attrName, ex))
+                    print('Failed to create control %s: %s %s' % (attrName, ex, controlCreator))
             self.addedAttrs.add(attrName)
 
     def suppress(self, attrName):
@@ -364,6 +213,7 @@ class AETemplate(object):
     def createSection(self, layoutName, attrList, collapse=False):
         # We create the section named "layoutName" if at least one
         # of the attributes from the input list exists.
+        print(f"Creating section: {layoutName}")
         for attr in attrList:
             if attr in self.suppressedAttrs:
                 continue
@@ -391,7 +241,7 @@ class AETemplate(object):
             ('UsdImagingGL', ''),
             ('UsdLux', ''),
             ('UsdMedia', ''),
-            ('UsdRender', ''),
+            ('UsdRender', 'Render'),
             ('UsdRi', ''),
             ('UsdShade', ''),
             ('UsdSkelAnimation', 'SkelAnimation'),
@@ -424,6 +274,7 @@ class AETemplate(object):
                 else:
                     if self.attrS.attribute(item):
                         self.addControls([item])
+
     def isRamp(self):
         if not hasattr(ufe, "NodeDefHandler"):
             return False
@@ -432,6 +283,59 @@ class AETemplate(object):
         nodeDefHandler = runTimeMgr.nodeDefHandler(self.item.runTimeId())
         nodeDef = nodeDefHandler.definition(self.item)
         return nodeDef and nodeDef.type() == "ND_adsk_ramp"
+    
+    def runRenderSettingsCallback(self):
+        # Create the callback context/data (empty).
+        cbContext = {
+            'ufe_path_string' : ufe.PathString.string(self.item.path()),
+        }
+        cbContextDict = Vt._ReturnDictionary(cbContext)
+        cbDataDict = Vt._ReturnDictionary({})
+
+        # Trigger the callback which will give other plugins the opportunity
+        # to add controls to our AE template.
+        global _aeTemplate
+        try:
+            _aeTemplate = self
+            cbDataDict = mayaUsdLib.triggerUICallback('onBuildRenderSettingsTabs', cbContextDict, cbDataDict)
+        except Exception as ex:
+            # Do not let any of the callback failures affect our template.
+            print('Failed triggerUICallback: %s' % ex)
+        _aeTemplate = None
+        print("cbDataDict", cbDataDict)
+        return cbDataDict
+
+    def addRenderSettingsLayout(self, group, renderSettingsLayout):
+        """recursively create the full attribute layout section"""
+        with ufeAeTemplate.Layout(self, group.name, collapse=False):
+            for item in group.items:
+                print("addRenderSettingsLayout", item)
+                if isinstance(item, AERenderSettingsLayout.Group):
+                    self.addRenderSettingsLayout(item, renderSettingsLayout)
+                else:
+                    if self.attrS.attribute(item):
+                        self.addControls([item])
+            # create the tab layout
+            if group.root:                
+                global _aeTemplate
+                _aeTemplate = self
+                renderSettingsLayout.createRendererTabsLayout()
+                _aeTemplate = None
+    
+    def createRenderSettingsSection(self, sectionName, attrs, collapse):
+        """Use AEREnderSettingsLayout class to populate the render settings section"""
+        print(f"Creating render settings section: {sectionName}")
+        # TODO make a new class for render settings layout with tabs for 3rd-party renderers based on available schemas
+
+        # Trigger the callback which will give other plugins the opportunity
+        # to add controls to our AE template.
+        global _aeTemplate
+        _aeTemplate = self
+        renderSettingsLayout = AERenderSettingsLayout(self.item, self)
+        layout = renderSettingsLayout.get()
+        if layout:
+            self.addRenderSettingsLayout(layout, renderSettingsLayout)
+        _aeTemplate = None
 
     def createShaderAttributesSection(self, sectionName, attrs, collapse):
         """Use an AEShaderLayout tool to populate the shader section"""
@@ -622,7 +526,9 @@ class AETemplate(object):
         usdSch = Usd.SchemaRegistry()
 
         specialSchemas = {
-            'UsdShadeShader', 'UsdShadeNodeGraph', 'UsdShadeMaterial', 'UsdGeomXformable', 'UsdGeomImageable' }
+            'UsdShadeShader', 'UsdShadeNodeGraph', 'UsdShadeMaterial', 'UsdGeomXformable', 'UsdGeomImageable', 
+            'UsdRenderSettingsBase', 'UsdRenderSettings', 'UsdRenderProduct' 
+            }
 
         # We use UFE for the ancestor node types since it caches the
         # results by node type.
@@ -630,8 +536,17 @@ class AETemplate(object):
             schemaType = usdSch.GetTypeFromName(schemaType)
             schemaTypeName = schemaType.typeName
             sectionName = self.sectionNameFromSchema(schemaTypeName)
-            if schemaType.pythonClass:
+            print(f"Finding class schema: {schemaTypeName} -> {sectionName}")
+            attrsToAdd = []
+            primDef = usdSch.FindConcretePrimDefinition(schemaTypeName.replace('Usd', ''))
+            if primDef: 
+                print(f"Found concrete prim definition for: {schemaTypeName}")
+                attrsToAdd = primDef.GetPropertyNames()
+            elif schemaType.pythonClass:
+                print(f"No concrete prim definition found for: {schemaTypeName}")
                 attrsToAdd = schemaType.pythonClass.GetSchemaAttributeNames(False)
+
+            if attrsToAdd:
                 if schemaTypeName in specialSchemas:
                     continue
                 schemasAttributes[sectionName] = attrsToAdd
@@ -652,8 +567,17 @@ class AETemplate(object):
             schemaType = usdSch.GetTypeFromName(schemaType)
             schemaTypeName = schemaType.typeName
             sectionName = self.sectionNameFromSchema(schemaTypeName)
-            if schemaType.pythonClass:
+            attrsToAdd = []
+            print(f"Finding concrete prim definition for: {schemaTypeName.replace('Usd', '')}")
+            primDef = usdSch.FindConcretePrimDefinition(schemaTypeName.replace('Usd', ''))
+            if primDef: 
+                print(f"Found concrete prim definition for: {schemaTypeName}")
+                attrsToAdd = primDef.GetPropertyNames()
+            elif schemaType.pythonClass:
+                print(f"No concrete prim definition found for: {schemaTypeName}")
                 attrsToAdd = schemaType.pythonClass.GetSchemaAttributeNames(False)
+            
+            if attrsToAdd:
                 if schemaTypeName in ['UsdShadeShader', 'UsdShadeNodeGraph', 'UsdShadeMaterial']:
                     # Material has NodeGraph as base. We want to process once for both schema types:
                     if hasProcessedMaterial:
@@ -668,6 +592,10 @@ class AETemplate(object):
                     schemasAttributes['transforms'] = attrsToAdd
                 elif schemaTypeName == 'UsdGeomImageable':
                     schemasAttributes['display'] = attrsToAdd
+                elif schemaTypeName in ['UsdRenderSettings', 'UsdRenderSettingsBase', 'UsdRenderProduct' ]:
+                    if 'renderSettings' not in schemasAttributes:
+                        schemasAttributes['renderSettings'] = []
+                    schemasAttributes['renderSettings'] += attrsToAdd
 
         return schemasAttributes
 
@@ -695,6 +623,7 @@ class AETemplate(object):
         # used.
         customAttributes = {
             'shader': self.createShaderAttributesSection,
+            'renderSettings': self.createRenderSettingsSection,
             'transforms': self.createTransformAttributesSection,
             'display': self.createDisplaySection,
             'extraAttributes': self.createCustomExtraAttrs,
