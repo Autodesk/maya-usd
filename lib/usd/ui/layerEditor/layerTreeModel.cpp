@@ -602,8 +602,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
                 "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
                 "False)\n"
-                "    update_variant_editor_window(ComponentData(moved_comp[0]), "
-                "TheHost.GetHost())\n"
+                "    update_variant_editor_window(ComponentData(moved_comp[0]))\n"
                 "    return moved_comp[0].root_layer_filename",
                 _sessionState->stageEntry()._proxyShapePath.c_str(),
                 saveLocation.c_str(),
