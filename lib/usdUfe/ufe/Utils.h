@@ -22,8 +22,8 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdr/shaderNode.h>
 #include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/primFlags.h>
+#include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
