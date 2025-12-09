@@ -585,44 +585,18 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         if (QDialog::Accepted == dlg.exec()) {
             std::string saveLocation(dlg.folderLocation().toStdString());
             std::string componentName(dlg.componentName().toStdString());
+            std::string proxyPath = _sessionState->stageEntry()._proxyShapePath;
 
-            MString defMoveComponentCmd;
-            defMoveComponentCmd.format(
-                "from pxr import Sdf, Usd, UsdUtils\n"
-                "import mayaUsd\n"
-                "import mayaUsd.ufe\n"
-                "from AdskUsdComponentCreator import ComponentDescription, MoveComponent, TheHost\n"
-                "from usd_component_creator_plugin import update_variant_editor_window, "
-                "MayaComponentManager\n"
-                "from AdskVariantEditor import ComponentData\n"
-                "def usd_component_creator_move_component():\n"
-                "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-                "    MayaComponentManager.GetInstance().SaveComponent(proxyStage)\n"
-                "    component_description = "
-                "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-                "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
-                "False)\n"
-                "    update_variant_editor_window(ComponentData(moved_comp[0]), "
-                "TheHost.GetHost())\n"
-                "    return moved_comp[0].root_layer_filename",
-                _sessionState->stageEntry()._proxyShapePath.c_str(),
-                saveLocation.c_str(),
-                componentName.c_str());
+            std::string newRootPath
+                = MayaUsd::ComponentUtils::moveAdskUsdComponent(saveLocation, componentName, proxyPath);
 
-            if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentCmd)) {
-                MString movedStageRootFilepath;
-                MString moveComponentCmd = "usd_component_creator_move_component()";
-                MGlobal::executePythonCommand(moveComponentCmd, movedStageRootFilepath);
-
-                auto newRootLayer
-                    = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
+            if (!newRootPath.empty()) {
+                auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
 
                 if (newRootLayer) {
-
                     // Rename Proxy Shape node
                     MObject proxyNode;
-                    UsdMayaUtil::GetMObjectByName(
-                        _sessionState->stageEntry()._proxyShapePath, proxyNode);
+                    UsdMayaUtil::GetMObjectByName(proxyPath, proxyNode);
                     MDagModifier dagMod;
                     MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
                     if (status == MStatus::kSuccess) {
@@ -636,7 +610,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     // Set the updated root file path
                     MayaUsd::utils::setNewProxyPath(
                         newProxyShapePath.fullPathName(),
-                        movedStageRootFilepath,
+                        MString(newRootPath.c_str()),
                         MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
                         newRootLayer,
                         false);
