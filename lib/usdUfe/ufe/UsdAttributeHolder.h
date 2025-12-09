@@ -20,9 +20,9 @@
 
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/relationship.h>
-#include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/property.h>
+#include <pxr/usd/usd/relationship.h>
 
 #include <ufe/attribute.h>
 
@@ -37,9 +37,15 @@ public:
     static UPtr                                 create(const PXR_NS::UsdProperty& usdProp);
     virtual ~UsdAttributeHolder() = default;
 
-    virtual bool        isAuthored() const { return isValid() && _usdAttr.IsAuthored(); }
-    virtual bool        isValidAttribute() const { return isAttribute() ? usdAttribute().IsValid() : false; }
-    virtual bool        isValidRelationship() const { return isRelationship() ? usdRelationship().IsValid() : false; }
+    virtual bool isAuthored() const { return isValid() && _usdAttr.IsAuthored(); }
+    virtual bool isValidAttribute() const
+    {
+        return isAttribute() ? usdAttribute().IsValid() : false;
+    }
+    virtual bool isValidRelationship() const
+    {
+        return isRelationship() ? usdRelationship().IsValid() : false;
+    }
     virtual bool        isValid() const { return isValidAttribute() || isValidRelationship(); }
     virtual std::string isEditAllowedMsg() const;
     virtual bool        isEditAllowed() const { return isEditAllowedMsg().empty(); }
@@ -62,11 +68,18 @@ public:
     virtual bool       hasMetadata(const std::string& key) const;
 #endif
 
-    virtual PXR_NS::UsdPrim                      usdPrim() const { return _usdAttr.GetPrim(); }
-    virtual bool                                 isAttribute() const { return _usdAttr.Is<PXR_NS::UsdAttribute>(); }
-    virtual bool                                 isRelationship() const { return _usdAttr.Is<PXR_NS::UsdRelationship>(); }
-    virtual PXR_NS::UsdAttribute                 usdAttribute() const { return isAttribute() ? _usdAttr.As<PXR_NS::UsdAttribute>() : PXR_NS::UsdAttribute(); }
-    virtual PXR_NS::UsdRelationship              usdRelationship() const { return isRelationship() ? _usdAttr.As<PXR_NS::UsdRelationship>() : PXR_NS::UsdRelationship(); }
+    virtual PXR_NS::UsdPrim usdPrim() const { return _usdAttr.GetPrim(); }
+    virtual bool            isAttribute() const { return _usdAttr.Is<PXR_NS::UsdAttribute>(); }
+    virtual bool isRelationship() const { return _usdAttr.Is<PXR_NS::UsdRelationship>(); }
+    virtual PXR_NS::UsdAttribute usdAttribute() const
+    {
+        return isAttribute() ? _usdAttr.As<PXR_NS::UsdAttribute>() : PXR_NS::UsdAttribute();
+    }
+    virtual PXR_NS::UsdRelationship usdRelationship() const
+    {
+        return isRelationship() ? _usdAttr.As<PXR_NS::UsdRelationship>()
+                                : PXR_NS::UsdRelationship();
+    }
     virtual PXR_NS::UsdProperty                  usdProperty() const { return _usdAttr; }
     virtual PXR_NS::SdfValueTypeName             usdAttributeType() const;
     virtual Ufe::AttributeEnumString::EnumValues getEnumValues() const;

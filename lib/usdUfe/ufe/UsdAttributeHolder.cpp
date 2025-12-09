@@ -40,11 +40,13 @@ static constexpr char kErrorMsgInvalidValueType[] = "Unexpected Ufe::Value type"
 
 bool setUsdNativeMetadata(
     const PXR_NS::UsdProperty& prop,
-    const std::string&          key,
-    const Ufe::Value&           value)
+    const std::string&         key,
+    const Ufe::Value&          value)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    if (prop.Is<PXR_NS::UsdAttribute>() && (!PXR_NS::UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>()) && !PXR_NS::UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
+    if (prop.Is<PXR_NS::UsdAttribute>()
+        && (!PXR_NS::UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>())
+            && !PXR_NS::UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
         // Only allow for shader ports at this time. Could potentially expand
         // to dynamic attributes if requested. Editing static attributes is
         // not recommended.
@@ -99,7 +101,9 @@ bool setUsdNativeMetadata(
 bool hasUsdNativeMetadata(const PXR_NS::UsdProperty& prop, const std::string& key)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    if (prop.Is<PXR_NS::UsdAttribute>() && (!UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>()) && !UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
+    if (prop.Is<PXR_NS::UsdAttribute>()
+        && (!UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>())
+            && !UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
         // Only allow for shader ports at this time. Could potentially expand
         // to dynamic attributes if requested. Editing static attributes is
         // not recommended.
@@ -162,7 +166,9 @@ bool clearUsdNativeMetadata(const PXR_NS::UsdProperty& prop, const std::string& 
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     cleared = false;
-    if (prop.Is<PXR_NS::UsdAttribute>() && (!UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>()) && !UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
+    if (prop.Is<PXR_NS::UsdAttribute>()
+        && (!UsdShadeInput::IsInput(prop.As<PXR_NS::UsdAttribute>())
+            && !UsdShadeOutput::IsOutput(prop.As<PXR_NS::UsdAttribute>()))) {
         // Only allow for shader ports at this time. Could potentially expand
         // to dynamic attributes if requested. Editing static attributes is
         // not recommended.
@@ -198,8 +204,8 @@ bool clearUsdNativeMetadata(const PXR_NS::UsdProperty& prop, const std::string& 
 
 bool setUsdAttrMetadata(
     const PXR_NS::UsdProperty& prop,
-    const std::string&          key,
-    const Ufe::Value&           value)
+    const std::string&         key,
+    const Ufe::Value&          value)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     UsdUfe::InSetAttribute inSetAttr;
@@ -366,7 +372,10 @@ void UsdAttributeHolder::reset()
     _usdAttr.GetPrim().RemoveProperty(_usdAttr.GetName());
 }
 
-bool UsdAttributeHolder::hasValue() const { return isValidAttribute() ? usdAttribute().HasValue() : false; }
+bool UsdAttributeHolder::hasValue() const
+{
+    return isValidAttribute() ? usdAttribute().HasValue() : false;
+}
 
 std::string UsdAttributeHolder::name() const
 {
@@ -756,8 +765,8 @@ PXR_NS::SdfValueTypeName UsdAttributeHolder::usdAttributeType() const
 {
     if (isAttribute()) {
         return usdAttribute().GetTypeName();
-    } 
-    
+    }
+
     return SdfValueTypeNames->Opaque;
 }
 

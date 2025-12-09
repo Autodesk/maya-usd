@@ -228,7 +228,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 
     if (!newAttr) {
         // No attribute for the input name was found -> create one.
-        PXR_NS::TfToken      tok(name);
+        PXR_NS::TfToken tok(name);
 
         Ufe::Attribute::Type newAttrType;
         // check if this is a relationship instead of an attribute
