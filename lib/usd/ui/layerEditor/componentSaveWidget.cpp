@@ -226,7 +226,9 @@ void ComponentSaveWidget::setComponentName(const QString& name)
 void ComponentSaveWidget::setFolderLocation(const QString& location)
 {
     if (_locationEdit) {
-        _locationEdit->setText(location);
+        QString normalized = location;
+        normalized.replace('\\', '/');
+        _locationEdit->setText(normalized);
     }
 }
 
@@ -348,8 +350,6 @@ void ComponentSaveWidget::toggleExpandedState()
 void ComponentSaveWidget::updateTreeView()
 {
     std::string saveLocation(_locationEdit->text().toStdString());
-    // Convert backslashes to forward slashes for cross-platform compatibility
-    std::replace(saveLocation.begin(), saveLocation.end(), '\\', '/');
     std::string componentName(_nameEdit->text().toStdString());
 
     const auto result = MayaUsd::ComponentUtils::previewSaveAdskUsdComponent(
