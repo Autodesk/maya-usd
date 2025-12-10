@@ -43,7 +43,7 @@ public:
     // UI to get a file path to save a layer.
     // As output returns the path.
     static bool
-                saveLayerFilePathUI(std::string& out_filePath, const PXR_NS::SdfLayerRefPtr& parentLayer);
+    saveLayerFilePathUI(std::string& out_filePath, const PXR_NS::SdfLayerRefPtr& parentLayer);
     static bool saveLayerFilePathUI(
         std::string&       out_filePath,
         bool               isRootLayer,
@@ -81,17 +81,17 @@ private:
     typedef std::unordered_set<SdfLayerRefPtr, TfHash> layerSet;
     using LayerInfos = MayaUsd::utils::LayerInfos;
 
-    QStringList                          _newPaths;
-    QStringList                          _problemLayers;
-    QStringList                          _emptyLayers;
-    QWidget*                             _anonLayersWidget { nullptr };
-    QWidget*                             _fileLayersWidget { nullptr };
-    QWidget*                             _componentStagesWidget { nullptr };
-    QCheckBox*                           _allAsRelative { nullptr };
-    LayerInfos                           _anonLayerInfos;
-    layerSet                             _dirtyFileBackedLayers;
-    stageLayerMap                        _stageLayerMap;
-    SessionState*                        _sessionState;
+    QStringList                           _newPaths;
+    QStringList                           _problemLayers;
+    QStringList                           _emptyLayers;
+    QWidget*                              _anonLayersWidget { nullptr };
+    QWidget*                              _fileLayersWidget { nullptr };
+    QWidget*                              _componentStagesWidget { nullptr };
+    QCheckBox*                            _allAsRelative { nullptr };
+    LayerInfos                            _anonLayerInfos;
+    layerSet                              _dirtyFileBackedLayers;
+    stageLayerMap                         _stageLayerMap;
+    SessionState*                         _sessionState;
     std::vector<QWidget*>                 _saveLayerPathRows;
     std::vector<MayaUsd::StageSavingInfo> _componentStageInfos;
     std::vector<ComponentSaveWidget*>     _componentSaveWidgets;

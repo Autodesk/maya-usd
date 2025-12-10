@@ -116,4 +116,3 @@ private:
 } // namespace UsdLayerEditor
 
 #endif // COMPONENTSAVEWIDGET_H
-

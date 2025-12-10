@@ -349,7 +349,7 @@ void ComponentSaveWidget::toggleExpandedState()
         _showMoreLabel->setText(SHOW_LESS_TEXT);
         _treeContainer->setVisible(true);
     }
-    
+
     // Emit signal to notify parent of state change
     Q_EMIT expandedStateChanged(_isExpanded);
 }
@@ -429,4 +429,3 @@ void ComponentSaveWidget::setCompactMode(bool compact)
 }
 
 } // namespace UsdLayerEditor
-

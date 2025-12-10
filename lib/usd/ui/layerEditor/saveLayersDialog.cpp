@@ -22,11 +22,11 @@
 
 #include <pxr/usd/sdf/layer.h>
 
+#include <maya/MDagModifier.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
-#include <maya/MDagModifier.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
@@ -38,6 +38,7 @@
 #include <ghc/filesystem.hpp>
 
 #include <string>
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -302,8 +303,8 @@ void SaveLayerPathRow::onOpenBrowser()
     // Update appropriate option var
     const char* optionVarName = parentLayer ? "mayaUsd_MakePathRelativeToParentLayer"
                                             : "mayaUsd_MakePathRelativeToSceneFile";
-    const bool optionvarExists = MGlobal::optionVarExists(optionVarName);
-    int        optionVarValue = 0;
+    const bool  optionvarExists = MGlobal::optionVarExists(optionVarName);
+    int         optionVarValue = 0;
     if (optionvarExists) {
         optionVarValue = MGlobal::optionVarIntValue(optionVarName);
         MGlobal::setOptionVarValue(optionVarName, needToSaveAsRelative() ? 1 : 0);
@@ -458,7 +459,7 @@ SaveLayersDialog::SaveLayersDialog(
     // For each stage collect the layers to save and identify component stages.
     for (const auto& info : infos) {
         std::string proxyPath = info.dagPath.fullPathName().asChar();
-        
+
         // Check if this stage is a component stage
         if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
             _componentStageInfos.push_back(info);
@@ -466,10 +467,7 @@ SaveLayersDialog::SaveLayersDialog(
             continue;
         }
 
-        getLayersToSave(
-            info.stage,
-            proxyPath,
-            info.dagPath.partialPathName().asChar());
+        getLayersToSave(info.stage, proxyPath, info.dagPath.partialPathName().asChar());
     }
 
     QString msg1, msg2, msg3;
@@ -671,8 +669,9 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
         for (size_t i = 0; i < _componentStageInfos.size(); ++i) {
             const auto& componentInfo = _componentStageInfos[i];
             std::string proxyPath = componentInfo.dagPath.fullPathName().asChar();
-            auto componentWidget = new ComponentSaveWidget(this, proxyPath);
-            componentWidget->setComponentName(QString(componentInfo.dagPath.partialPathName().asChar()));
+            auto        componentWidget = new ComponentSaveWidget(this, proxyPath);
+            componentWidget->setComponentName(
+                QString(componentInfo.dagPath.partialPathName().asChar()));
             componentWidget->setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
             // Make compact if not the first component widget
             if (i > 0) {
