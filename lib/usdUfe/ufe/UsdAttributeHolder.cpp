@@ -766,8 +766,11 @@ PXR_NS::SdfValueTypeName UsdAttributeHolder::usdAttributeType() const
     if (isAttribute()) {
         return usdAttribute().GetTypeName();
     }
-
+#if PXR_VERSION > 2305
     return SdfValueTypeNames->Opaque;
+#else
+    return SdfValueTypeNames->Token;
+#endif
 }
 
 Ufe::AttributeEnumString::EnumValues UsdAttributeHolder::getEnumValues() const

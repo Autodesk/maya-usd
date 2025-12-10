@@ -134,9 +134,15 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 
     // See if a UsdAttribute can be wrapped:
     PXR_NS::TfToken      tok(name);
-    PXR_NS::UsdAttribute usdAttr = _GetAttributeType(_prim, name);
-    if (usdAttr.IsValid()) {
-        return usdTypeToUfe(usdAttr);
+    // check if this is a relationship instead of an attribute
+    PXR_NS::UsdRelationship usdRel = _prim.GetRelationship(tok);
+    if (usdRel.IsValid()) {
+        return Ufe::Attribute::kGeneric;
+    } else {
+        PXR_NS::UsdAttribute usdAttr = _GetAttributeType(_prim, name);
+        if (usdAttr.IsValid()) {
+            return usdTypeToUfe(usdAttr);
+        }
     }
     return Ufe::Attribute::kInvalid;
 }
