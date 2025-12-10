@@ -101,6 +101,15 @@ std::string getCurrentSceneDirectory()
     return filePath.parent_path().generic_string();
 }
 
+std::string getInitialFolder()
+{
+    std::string sceneDir = getCurrentSceneDirectory();
+    if (!sceneDir.empty()) {
+        return sceneDir;
+    }
+    return getMayaWorkspaceScenesDir().c_str();
+}
+
 } // namespace
 
 namespace UsdLayerEditor {
@@ -122,6 +131,7 @@ ComponentSaveDialog::ComponentSaveDialog(QWidget* in_parent, const std::string& 
     , _lastComponentName()
 {
     setupUI();
+    setFolderLocation(QString::fromStdString(getInitialFolder()));
 }
 
 ComponentSaveDialog::~ComponentSaveDialog() { }
@@ -295,12 +305,7 @@ void ComponentSaveDialog::onBrowseFolder()
     // Default to the directory of the current Maya scene if it's saved,
     // otherwise default to maya-usd scene folder
     if (currentPath.isEmpty()) {
-        std::string sceneDir = getCurrentSceneDirectory();
-        if (!sceneDir.empty()) {
-            currentPath = sceneDir.c_str();
-        } else {
-            currentPath = getMayaWorkspaceScenesDir().c_str();
-        }
+        currentPath = QString::fromStdString(getInitialFolder());
     }
 
     QString selectedFolder = QFileDialog::getExistingDirectory(
