@@ -241,7 +241,7 @@ def ConvertMaterialTo139(usdMaterial):
         if shader:
             allNodes.append((shader.GetPrim().GetPath(),shader))
     
-    # Not necessary, but allows Python and C++ to process nodes in the exact smae order, thus producing comparable output.
+    # Not necessary, but allows Python and C++ to process nodes in the exact same order, thus producing comparable output.
     allNodes.sort()
 
     # No need to look for "channels" as this feature was never supported in USD.

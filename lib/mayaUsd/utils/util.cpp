@@ -2563,7 +2563,7 @@ SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
 {
     // TODO: Replace hard-coded materials with dynamically generated list.
     // We can add new nodes directly since the registry check will filter
-    // them out if thay are not there in the current MaterialX version.
+    // them out if they are not there in the current MaterialX version.
     static const std::set<TfToken> vettedSurfaces
         = { TfToken("ND_standard_surface_surfaceshader"),
             TfToken("ND_gltf_pbr_surfaceshader"),

@@ -6,7 +6,7 @@ set(TEST_SCRIPT_FILES
     testLdxFileHandler.py
 )
 
-if (MaterialX_VERSION VERSION_GREATER "1.39.0")
+if (LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION)
     list(APPEND TEST_SCRIPT_FILES testLdxMaterialXUpgrade.py)
 endif()
 

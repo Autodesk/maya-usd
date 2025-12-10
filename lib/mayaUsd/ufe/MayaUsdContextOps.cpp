@@ -15,8 +15,6 @@
 //
 #include "MayaUsdContextOps.h"
 
-#include <ufe/undoableCommand.h>
-
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
@@ -52,6 +50,7 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/selectionUndoableCommands.h>
+#include <ufe/undoableCommand.h>
 
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 #include <LookdevXUfe/MaterialHandler.h>

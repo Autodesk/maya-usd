@@ -387,7 +387,7 @@ TfToken _uniqueName(const std::set<std::string>& existingNames, const std::strin
     // numerical suffix from input srcName (padding with 0's if needed).
     const auto buildName = [](auto suffix, auto suffixLen, auto& suffixStr, const auto& base) -> std::string {
         suffixStr = std::to_string(suffix);
-        suffixStr = std::string("0", suffixLen - std::min(suffixLen, suffixStr.size())) + suffixStr;
+        suffixStr = std::string(suffixLen - std::min(suffixLen, suffixStr.size()), '0') + suffixStr;
         return base + suffixStr;
     };
 
@@ -607,7 +607,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
         if (shaderID == _tokens->ND_layer_bsdf) {
 
             // Convert layering of thin_film_BSDF nodes to thin-film parameters on the affected BSDF nodes.
-            if (!node.GetPrim().HasAttribute(UsdShadeUtils::GetFullName(_tokens->top, UsdShadeAttributeType::Input)) or !node.GetPrim().HasAttribute(UsdShadeUtils::GetFullName(_tokens->base, UsdShadeAttributeType::Input))) {
+            if (!node.GetPrim().HasAttribute(UsdShadeUtils::GetFullName(_tokens->top, UsdShadeAttributeType::Input)) || !node.GetPrim().HasAttribute(UsdShadeUtils::GetFullName(_tokens->base, UsdShadeAttributeType::Input))) {
                 continue;
             }
             
