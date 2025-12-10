@@ -1,0 +1,705 @@
+#usda 1.0
+(
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Scope "mtl"
+{
+    def Material "layer_update_material" (
+        prepend apiSchemas = ["NodeGraphNodeAPI", "MaterialXConfigAPI"]
+        customData = {
+            dictionary Autodesk = {
+                string ldx_inputPos = "-864.752 -179.943"
+                string ldx_outputPos = "507 -61"
+            }
+        }
+    )
+    {
+        string config:mtlx:version = "1.39"
+        float inputs:ior = 1.5 (
+            sdrMetadata = {
+                string uiorder = "0"
+                string uisoftmax = "1"
+                string uisoftmin = "0"
+            }
+        )
+        token outputs:mtlx:surface (
+            sdrMetadata = {
+                string uiorder = "3"
+            }
+        )
+        token outputs:mtlx:surface.connect = </mtl/layer_update_material/surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (-1.2169445, -0.5136428)
+
+        def Shader "surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_surface"
+            token inputs:bsdf.connect = </mtl/layer_update_material/layer2.outputs:out>
+            token inputs:edf.connect = </mtl/layer_update_material/uniform_edf1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.85841113, -0.20992611)
+        }
+
+        def Shader "uniform_edf1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_uniform_edf"
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-0.64622223, 0.65794444)
+        }
+
+        def Shader "layer2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_layer_bsdf"
+            token inputs:base.connect = </mtl/layer_update_material/layer3.outputs:out>
+            token inputs:top.connect = </mtl/layer_update_material/T_no_propagation_generalized_schlick_bsdf1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-2.4305556, -0.022222223)
+        }
+
+        def Shader "T_no_propagation_generalized_schlick_bsdf1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_generalized_schlick_bsdf"
+            string inputs:scatter_mode = "T"
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-5.852722, -0.020985723)
+        }
+
+        def Shader "R_dielectric_bsdf1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_dielectric_bsdf"
+            float inputs:thinfilm_ior.connect = </mtl/layer_update_material.inputs:ior>
+            float inputs:thinfilm_thickness = 416
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-5.923667, 2.078561)
+        }
+
+        def Shader "layer3" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_layer_bsdf"
+            token inputs:base.connect = </mtl/layer_update_material/RT_generalized_schlick_bsdf2.outputs:out>
+            token inputs:top.connect = </mtl/layer_update_material/R_dielectric_bsdf1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-3.9625053, 0.8539778)
+        }
+
+        def Shader "RT_generalized_schlick_bsdf2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_generalized_schlick_bsdf"
+            string inputs:scatter_mode = "RT"
+            float inputs:thinfilm_ior.connect = </mtl/layer_update_material.inputs:ior>
+            float inputs:thinfilm_thickness = 416
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-4.432411, 3.4057498)
+        }
+    }
+
+    def Material "subsurface_update_material" (
+        prepend apiSchemas = ["NodeGraphNodeAPI", "MaterialXConfigAPI"]
+        customData = {
+            dictionary Autodesk = {
+                string ldx_inputPos = "-613.139 -143.354"
+                string ldx_outputPos = "507 -61"
+            }
+        }
+    )
+    {
+        string config:mtlx:version = "1.39"
+        float3 inputs:radius = (1, 1, 1) (
+            sdrMetadata = {
+                string uiorder = "0"
+                string uisoftmax = "1,1,1"
+                string uisoftmin = "0,0,0"
+            }
+        )
+        token outputs:mtlx:surface (
+            sdrMetadata = {
+                string uiorder = "3"
+            }
+        )
+        token outputs:mtlx:surface.connect = </mtl/subsurface_update_material/surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (0.15657723, 0.53969556)
+
+        def Shader "surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_surface"
+            token inputs:bsdf.connect = </mtl/subsurface_update_material/subsurface_bsdf1.outputs:out>
+            token inputs:edf.connect = </mtl/subsurface_update_material/uniform_edf1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.9008611, -0.69103336)
+        }
+
+        def Shader "uniform_edf1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_uniform_edf"
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-1.2641056, 0.7098278)
+        }
+
+        def Shader "subsurface_bsdf1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_subsurface_bsdf"
+            color3f inputs:radius.connect = </mtl/subsurface_update_material/convert1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-1.4197556, -1.1674222)
+        }
+
+        def Shader "convert1"
+        {
+            uniform token info:id = "ND_convert_vector3_color3"
+            float3 inputs:in.connect = </mtl/subsurface_update_material.inputs:radius>
+            color3f outputs:out
+        }
+    }
+
+    def Material "switch_update_material" (
+        prepend apiSchemas = ["NodeGraphNodeAPI", "MaterialXConfigAPI"]
+        customData = {
+            dictionary Autodesk = {
+                string ldx_inputPos = "-732 -61"
+                string ldx_outputPos = "507 -61"
+            }
+        }
+    )
+    {
+        string config:mtlx:version = "1.39"
+        token outputs:mtlx:surface (
+            sdrMetadata = {
+                string uiorder = "3"
+            }
+        )
+        token outputs:mtlx:surface.connect = </mtl/switch_update_material/standard_surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (-0.99019444, 0.104575)
+
+        def Shader "switch1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_switch_color3"
+            float inputs:which = 0
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-1.2735388, 0.34664166)
+        }
+
+        def Shader "standard_surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            float inputs:base.connect = </mtl/switch_update_material/switch2.outputs:out>
+            color3f inputs:base_color.connect = </mtl/switch_update_material/switch1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.82539445, -0.37972832)
+        }
+
+        def Shader "switch2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_switch_floatI"
+            int inputs:which = 0
+            float outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-1.3301444, -1.51645)
+        }
+    }
+
+    def Material "swizzle_update_material" (
+        prepend apiSchemas = ["NodeGraphNodeAPI", "MaterialXConfigAPI"]
+        customData = {
+            dictionary Autodesk = {
+                string ldx_inputPos = "-50.6306 466.902"
+                string ldx_outputPos = "1230 280"
+            }
+        }
+    )
+    {
+        string config:mtlx:version = "1.39"
+        color3f inputs:in = (0.25, 0.5, 0.75) (
+            sdrMetadata = {
+                string uiorder = "0"
+                string uisoftmax = "1,1,1"
+                string uisoftmin = "0,0,0"
+            }
+        )
+        float inputs:in1 = 0.4 (
+            sdrMetadata = {
+                string uiorder = "1"
+                string uisoftmax = "1"
+                string uisoftmin = "0"
+            }
+        )
+        token outputs:mtlx:surface (
+            sdrMetadata = {
+                string uiorder = "3"
+            }
+        )
+        token outputs:mtlx:surface.connect = </mtl/swizzle_update_material/open_pbr_surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (-0.03594772, -1.0653611)
+
+        def Shader "open_pbr_surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_open_pbr_surface_surfaceshader"
+            color3f inputs:base_color.connect = </mtl/swizzle_update_material/swizzle_default_to_constant1.outputs:out>
+            color3f inputs:coat_color.connect = </mtl/swizzle_update_material/swizzle_float_to_const_color31.outputs:out>
+            color3f inputs:fuzz_color.connect = </mtl/swizzle_update_material/convert4.outputs:out>
+            float inputs:fuzz_roughness.connect = </mtl/swizzle_update_material/swizzle_color3_to_const_float1.outputs:out>
+            color3f inputs:specular_color.connect = </mtl/swizzle_update_material/swizzle_to_constant1.outputs:out>
+            color3f inputs:subsurface_color.connect = </mtl/swizzle_update_material/convert2.outputs:out>
+            float inputs:subsurface_radius.connect = </mtl/swizzle_update_material/swizzle_to_extract1.outputs:out>
+            color3f inputs:subsurface_radius_scale.connect = </mtl/swizzle_update_material/convert3.outputs:out>
+            color3f inputs:transmission_color.connect = </mtl/swizzle_update_material/swizzle_to_constant2.outputs:out>
+            color3f inputs:transmission_scatter.connect = </mtl/swizzle_update_material/convert1.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (5.138889, 1.5555556)
+        }
+
+        def Shader "swizzle_default_to_constant1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f inputs:value = (0, 0, 0)
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.4444444, 0.055555556)
+        }
+
+        def Shader "swizzle_to_constant1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f inputs:value = (0.75, 0.25, 0.25)
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.4444444, 1.2666667)
+        }
+
+        def Shader "swizzle_to_constant2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f inputs:value = (1, 0, 1)
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.4444444, 2.4833333)
+        }
+
+        def Shader "convert1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_convert_color4_color3"
+            color4f inputs:in.connect = </mtl/swizzle_update_material/not_constant1.outputs:out>
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.4444444, 3.7)
+        }
+
+        def Shader "not_constant1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_combine4_color4"
+            float inputs:in1 = 0
+            float inputs:in2 = 1
+            float inputs:in3.connect = </mtl/swizzle_update_material/separate1.outputs:outr>
+            float inputs:in4.connect = </mtl/swizzle_update_material/separate1.outputs:outr>
+            color4f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.75, 3.488889)
+        }
+
+        def Shader "not_constant2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_combine4_color4"
+            float inputs:in1 = 0
+            float inputs:in2 = 1
+            float inputs:in3.connect = </mtl/swizzle_update_material/separate2.outputs:outr>
+            float inputs:in4.connect = </mtl/swizzle_update_material/separate2.outputs:outr>
+            color4f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.75, 4.7055554)
+        }
+
+        def Shader "convert2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_convert_color4_color3"
+            color4f inputs:in.connect = </mtl/swizzle_update_material/not_constant2.outputs:out>
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.4444444, 4.7833333)
+        }
+
+        def Shader "swizzle_to_extract1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_extract_color3"
+            color3f inputs:in.connect = </mtl/swizzle_update_material.inputs:in>
+            int inputs:index = 2
+            float outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.5210001, 5.855167)
+        }
+
+        def Shader "convert3" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_convert_color4_color3"
+            color4f inputs:in.connect = </mtl/swizzle_update_material/swizzle_to_combine1.outputs:out>
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.5546834, 6.9195557)
+        }
+
+        def Shader "swizzle_to_combine1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_combine4_color4"
+            float inputs:in1 = 0.4
+            float inputs:in1.connect = </mtl/swizzle_update_material.inputs:in1>
+            float inputs:in2 = 1
+            float inputs:in3 = 0.4
+            float inputs:in3.connect = </mtl/swizzle_update_material.inputs:in1>
+            float inputs:in4 = 0.4
+            float inputs:in4.connect = </mtl/swizzle_update_material.inputs:in1>
+            color4f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.8300834, 6.704)
+        }
+
+        def Shader "convert4" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_convert_color4_color3"
+            color4f inputs:in.connect = </mtl/swizzle_update_material/swizzle_to_separate_combine1.outputs:out>
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.5883722, 7.9031115)
+        }
+
+        def Shader "swizzle_to_separate_combine1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_combine4_color4"
+            float inputs:in1.connect = </mtl/swizzle_update_material/separate3.outputs:outg>
+            float inputs:in2 = 0
+            float inputs:in3.connect = </mtl/swizzle_update_material/separate3.outputs:outr>
+            float inputs:in4.connect = </mtl/swizzle_update_material/separate3.outputs:outr>
+            color4f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.9041889, 7.8963885)
+        }
+
+        def Shader "swizzle_to_convert1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_convert_color3_color4"
+            color3f inputs:in.connect = </mtl/swizzle_update_material.inputs:in>
+            color4f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.29410833, 7.808833)
+        }
+
+        def Shader "swizzle_color3_to_const_float1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_float"
+            float inputs:value = 0.2
+            float outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.5981724, 8.935278)
+        }
+
+        def Shader "swizzle_float_to_const_color31" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_constant_color3"
+            color3f inputs:value = (0.5, 0.5, 0.5)
+            color3f outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.6774776, 10.134389)
+        }
+
+        def Shader "separate1"
+        {
+            uniform token info:id = "ND_separate3_color3"
+            color3f inputs:in = (0.3444, 0.1969, 0.0397)
+            color3f inputs:in.connect = </mtl/swizzle_update_material.inputs:in>
+            float outputs:outr
+        }
+
+        def Shader "separate2"
+        {
+            uniform token info:id = "ND_separate3_color3"
+            color3f inputs:in = (0.3444, 0.1969, 0.0397)
+            color3f inputs:in.connect = </mtl/swizzle_update_material.inputs:in>
+            float outputs:outr
+        }
+
+        def Shader "separate3"
+        {
+            uniform token info:id = "ND_separate4_color4"
+            color4f inputs:in.connect = </mtl/swizzle_update_material/swizzle_to_convert1.outputs:out>
+            float outputs:outg
+            float outputs:outr
+        }
+    }
+
+    def Material "atan_update_material" (
+        prepend apiSchemas = ["NodeGraphNodeAPI", "MaterialXConfigAPI"]
+        customData = {
+            dictionary Autodesk = {
+                string ldx_inputPos = "-456.765 -7.05882"
+                string ldx_outputPos = "305 0"
+            }
+        }
+    )
+    {
+        string config:mtlx:version = "1.39"
+        float inputs:in2 = 0.75 (
+            sdrMetadata = {
+                string uiorder = "0"
+                string uisoftmax = "1"
+                string uisoftmin = "0"
+            }
+        )
+        token outputs:mtlx:surface.connect = </mtl/atan_update_material/open_pbr_surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (0.44444445, 0.055555556)
+
+        def Shader "open_pbr_surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_open_pbr_surface_surfaceshader"
+            float inputs:base_weight.connect = </mtl/atan_update_material/atan2_1.outputs:out>
+            float3 inputs:geometry_normal.connect = </mtl/atan_update_material/atan2_2.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.33986887, -0.010457556)
+        }
+
+        def Shader "atan2_1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_atan2_float"
+            float inputs:inx = 0.75
+            float inputs:inx.connect = </mtl/atan_update_material.inputs:in2>
+            float inputs:iny = 0.25
+            float outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-1.0416666, -0.08692778)
+        }
+
+        def Shader "atan2_2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_atan2_vector3"
+            float3 inputs:inx = (0, 0.25, 0)
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (-1.0114722, 1.0075055)
+        }
+    }
+
+    def Material "normalmap_update_material" (
+        prepend apiSchemas = ["NodeGraphNodeAPI", "MaterialXConfigAPI"]
+        customData = {
+            dictionary Autodesk = {
+                string ldx_inputPos = "10 535"
+                string ldx_outputPos = "925 86"
+            }
+        }
+    )
+    {
+        string config:mtlx:version = "1.39"
+        float3 inputs:in = (0.5, 0.5, 1) (
+            sdrMetadata = {
+                string uiorder = "0"
+                string uisoftmax = "1,1,1"
+                string uisoftmin = "0,0,0"
+            }
+        )
+        token outputs:mtlx:surface.connect = </mtl/normalmap_update_material/open_pbr_surface1.outputs:out>
+        uniform float2 ui:nodegraph:node:pos = (-0.5686278, -0.7745111)
+
+        def Shader "open_pbr_surface1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_open_pbr_surface_surfaceshader"
+            float3 inputs:geometry_coat_normal.connect = </mtl/normalmap_update_material/normalmap2.outputs:out>
+            float3 inputs:geometry_coat_tangent.connect = </mtl/normalmap_update_material/normalmap4.outputs:out>
+            float3 inputs:geometry_normal.connect = </mtl/normalmap_update_material/normalmap1.outputs:out>
+            float3 inputs:geometry_tangent.connect = </mtl/normalmap_update_material/normalmap3.outputs:out>
+            token outputs:out
+            uniform float2 ui:nodegraph:node:pos = (3.4444444, 0.65)
+        }
+
+        def Shader "normalmap1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_normalize_vector3"
+            float3 inputs:in.connect = </mtl/normalmap_update_material/subtract1.outputs:out>
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.75, 0.055555556)
+        }
+
+        def Shader "normal1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_normal_vector3"
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.055555556, 0.6722222)
+        }
+
+        def Shader "tangent1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_tangent_vector3"
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.055555556, 1.7555555)
+        }
+
+        def Shader "geompropvalue_normal1" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_geompropvalue_vector3"
+            string inputs:geomprop = "normal"
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.055555556, 4.0944443)
+        }
+
+        def Shader "geompropvalue_tangent2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_geompropvalue_vector3"
+            string inputs:geomprop = "tangent"
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (0.055555556, 5.311111)
+        }
+
+        def Shader "normalmap2" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_normalmap_float"
+            float3 inputs:bitangent.connect = </mtl/normalmap_update_material/normalmap_cross_norm1.outputs:out>
+            float3 inputs:in.connect = </mtl/normalmap_update_material.inputs:in>
+            float3 inputs:normal.connect = </mtl/normalmap_update_material/normal1.outputs:out>
+            float3 inputs:tangent.connect = </mtl/normalmap_update_material/tangent1.outputs:out>
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.75, 1.6722223)
+        }
+
+        def Shader "normalmap3" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_normalize_vector3"
+            float3 inputs:in.connect = </mtl/normalmap_update_material/subtract2.outputs:out>
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.75, 3.288889)
+        }
+
+        def Shader "normalmap4" (
+            prepend apiSchemas = ["NodeGraphNodeAPI"]
+        )
+        {
+            uniform token info:id = "ND_normalmap_float"
+            float3 inputs:bitangent.connect = </mtl/normalmap_update_material/normalmap_cross_norm2.outputs:out>
+            float3 inputs:in.connect = </mtl/normalmap_update_material.inputs:in>
+            float3 inputs:normal.connect = </mtl/normalmap_update_material/geompropvalue_normal1.outputs:out>
+            float3 inputs:tangent.connect = </mtl/normalmap_update_material/geompropvalue_tangent2.outputs:out>
+            float3 outputs:out
+            uniform float2 ui:nodegraph:node:pos = (1.75, 4.9055557)
+        }
+
+        def Shader "multiply1"
+        {
+            uniform token info:id = "ND_multiply_vector3FA"
+            float3 inputs:in1.connect = </mtl/normalmap_update_material.inputs:in>
+            float inputs:in2 = 2
+            float3 outputs:out
+        }
+
+        def Shader "subtract1"
+        {
+            uniform token info:id = "ND_subtract_vector3FA"
+            float3 inputs:in1.connect = </mtl/normalmap_update_material/multiply1.outputs:out>
+            float inputs:in2 = 1
+            float3 outputs:out
+        }
+
+        def Shader "normalmap_cross1"
+        {
+            uniform token info:id = "ND_crossproduct_vector3"
+            float3 inputs:in1.connect = </mtl/normalmap_update_material/normal1.outputs:out>
+            float3 inputs:in2.connect = </mtl/normalmap_update_material/tangent1.outputs:out>
+            float3 outputs:out
+        }
+
+        def Shader "normalmap_cross_norm1"
+        {
+            uniform token info:id = "ND_normalize_vector3"
+            float3 inputs:in.connect = </mtl/normalmap_update_material/normalmap_cross1.outputs:out>
+            float3 outputs:out
+        }
+
+        def Shader "multiply2"
+        {
+            uniform token info:id = "ND_multiply_vector3FA"
+            float3 inputs:in1.connect = </mtl/normalmap_update_material.inputs:in>
+            float inputs:in2 = 2
+            float3 outputs:out
+        }
+
+        def Shader "subtract2"
+        {
+            uniform token info:id = "ND_subtract_vector3FA"
+            float3 inputs:in1.connect = </mtl/normalmap_update_material/multiply2.outputs:out>
+            float inputs:in2 = 1
+            float3 outputs:out
+        }
+
+        def Shader "normalmap_cross2"
+        {
+            uniform token info:id = "ND_crossproduct_vector3"
+            float3 inputs:in1.connect = </mtl/normalmap_update_material/geompropvalue_normal1.outputs:out>
+            float3 inputs:in2.connect = </mtl/normalmap_update_material/geompropvalue_tangent2.outputs:out>
+            float3 outputs:out
+        }
+
+        def Shader "normalmap_cross_norm2"
+        {
+            uniform token info:id = "ND_normalize_vector3"
+            float3 inputs:in.connect = </mtl/normalmap_update_material/normalmap_cross2.outputs:out>
+            float3 outputs:out
+        }
+    }
+}
+

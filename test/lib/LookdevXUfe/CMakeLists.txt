@@ -6,6 +6,10 @@ set(TEST_SCRIPT_FILES
     testLdxFileHandler.py
 )
 
+if (MaterialX_VERSION VERSION_GREATER "1.39.0")
+    list(APPEND TEST_SCRIPT_FILES testLdxMaterialXUpgrade.py)
+endif()
+
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}

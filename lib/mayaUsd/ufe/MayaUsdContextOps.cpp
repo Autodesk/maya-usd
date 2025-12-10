@@ -15,6 +15,8 @@
 //
 #include "MayaUsdContextOps.h"
 
+#include <ufe/undoableCommand.h>
+
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
@@ -51,6 +53,10 @@
 #include <ufe/pathString.h>
 #include <ufe/selectionUndoableCommands.h>
 
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+#include <LookdevXUfe/MaterialHandler.h>
+#endif
+
 #include <cassert>
 #include <map>
 #include <utility>
@@ -84,6 +90,10 @@ static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+static constexpr char kUpgradeMaterialItem[] = "Upgrade Material";
+static constexpr char kUpgradeMaterialLabel[] = "Upgrade Material";
+#endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAssignNewMaterialLabel[] = "Assign New Material";
@@ -396,8 +406,21 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
+        bool needsSeparator = false;
         if (_item->prim().IsA<UsdShadeMaterial>() && selectionSupportsShading()) {
             items.emplace_back(kBindMaterialToSelectionItem, kBindMaterialToSelectionLabel);
+            needsSeparator = true;
+        }
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+        if (_item->prim().IsA<UsdShadeMaterial>()) {
+            auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
+            if (materialHandler && materialHandler->isLegacyShaderGraph(sceneItem())) {
+                items.emplace_back(kUpgradeMaterialItem, kUpgradeMaterialLabel);
+                needsSeparator = true;
+            }
+        }
+#endif
+        if (needsSeparator) {
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
 #ifdef WANT_QT_BUILD
@@ -572,6 +595,19 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
                 kAssignExistingMaterialItem,
                 kAssignExistingMaterialLabel,
                 Ufe::ContextItem::kHasChildren);
+        }
+#endif
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+        if (_item->prim().IsA<UsdShadeMaterial>()) {
+            auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
+            if (materialHandler) {
+                for (const auto& bulkItem : _bulkItems) {
+                    if (materialHandler && materialHandler->isLegacyShaderGraph(bulkItem)) {
+                        items.emplace_back(kUpgradeMaterialItem, kUpgradeMaterialLabel);
+                        break;
+                    }
+                }
+            }
         }
 #endif
         items.emplace_back(
@@ -757,6 +793,13 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             }
         }
         return compositeCmd;
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+    } else if (itemPath[0] == kUpgradeMaterialItem) {
+        auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
+        if (materialHandler) {
+            return materialHandler->upgradeLegacyShaderGraphCmd(sceneItem());
+        }
+#endif
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(_item->path());
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -841,6 +884,20 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
             }
         }
         return compositeCmdReturn(_bulkItems);
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+    } else if (itemPath[0] == kUpgradeMaterialItem) {
+        auto bulkCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+        auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
+        if (bulkCmd && materialHandler) {
+            for (const auto& bulkItem : _bulkItems) {
+                auto cmd = materialHandler->upgradeLegacyShaderGraphCmd(bulkItem);
+                if (cmd) {
+                    bulkCmd->append(cmd);
+                }
+            }
+            return bulkCmd;
+        }
+#endif
     }
 
     return nullptr;

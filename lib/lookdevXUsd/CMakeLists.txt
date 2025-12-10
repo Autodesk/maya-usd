@@ -48,6 +48,7 @@ target_sources(${PROJECT_NAME}
         UsdSoloingHandler.cpp
         UsdUINodeGraphNode.cpp
         UsdUINodeGraphNodeHandler.cpp
+        UsdMxVersionUpgrade.cpp
         Utils.cpp
 )
 
@@ -78,6 +79,7 @@ set(HEADERS
     UsdSoloingHandler.h
     UsdUINodeGraphNode.h
     UsdUINodeGraphNodeHandler.h
+    UsdMxVersionUpgrade.h
     Utils.h
 )
 
@@ -118,12 +120,25 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # -----------------------------------------------------------------------------
+# Versionned features
+# -----------------------------------------------------------------------------
+if (LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION)
+    message(STATUS "Enabling legacy detection for MaterialX ${MaterialX_VERSION_MAJOR}.${MaterialX_VERSION_MINOR}")
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION=1
+        MaterialX_VERSION_STRING="${MaterialX_VERSION_MAJOR}.${MaterialX_VERSION_MINOR}"
+    )
+endif()
+
+# -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         sdf
         sdr
+        usdMtlx
         mayaUsdAPI
     PRIVATE
         usd
