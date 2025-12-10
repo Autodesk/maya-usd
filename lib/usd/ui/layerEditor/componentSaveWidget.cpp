@@ -114,7 +114,7 @@ void ComponentSaveWidget::setupUI()
     auto contentLayout = new QGridLayout();
 
     // Set padding: left, top, right, bottom
-    contentLayout->setContentsMargins(DPIScale(20), DPIScale(15), DPIScale(20), 0);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(DPIScale(10));
 
     // Column stretch factors: 1/6, 4/6, 1/24, 3/24

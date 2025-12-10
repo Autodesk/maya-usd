@@ -461,6 +461,8 @@ SaveLayersDialog::SaveLayersDialog(
         // Check if this stage is a component stage
         if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
             _componentStageInfos.push_back(info);
+            // Component stages are saved via the component system, skip layer collection
+            continue;
         }
 
         getLayersToSave(
@@ -764,14 +766,9 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
     setLayout(topLayout);
     setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
-    // If only component stages are being saved, disable height expansion
-    bool onlyComponentStages = haveComponentStages && !haveAnonLayers && !haveFileBackedLayers;
-    setSizeGripEnabled(!onlyComponentStages);
-
-    if (onlyComponentStages) {
-        setFixedHeight(sizeHint().height());
-    }
-    setMinimumWidth(DPIScale(700));
+    // Set initial width to 700 DPI-scaled pixels, height from sizeHint
+    resize(DPIScale(700), sizeHint().height());
+    setSizeGripEnabled(true);
 
     QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
