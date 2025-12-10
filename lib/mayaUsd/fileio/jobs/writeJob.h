@@ -105,6 +105,8 @@ private:
 
     bool _CheckNameClashes(const SdfPath& path, const MDagPath& dagPath);
 
+    void _AddDefaultPrimAccessibility();
+
     // Name of the destination USD file.
     std::string _fileName;
 

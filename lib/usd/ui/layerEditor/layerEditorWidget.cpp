@@ -27,6 +27,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <maya/MGlobal.h>
 
@@ -332,18 +333,35 @@ void LayerEditorWidget::updateButtons()
         if (_buttons._saveStageButton) {
             _buttons._saveStageButton->setVisible(true);
         }
-        const auto layers = _treeView->layerTreeModel()->getAllNeedsSavingLayers();
-        int        count = static_cast<int>(layers.size());
-        for (auto layer : layers) {
-            // The system locked layers do not count towards saving.
-            if (layer->isSystemLocked()) {
-                count--;
-            }
-            // Neither does any anonymous layer whose parent is locked or system-locked.
-            // This is because saving an anonymous layer will cause
-            // the parent layer to re-path the sub layer with a file name.
-            if (layer->isAnonymous() && (layer->appearsLocked() || layer->appearsSystemLocked())) {
-                count--;
+
+        int count = 0;
+
+        // Special case for components created by the component creator. Non-local layers,
+        // non-active layers, and non-dirty but to be renamed layers, can be impacted when saving a
+        // component. Only the component creator knows how to save a component properly, we need to
+        // ask it what layers will be impacted.
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+                _sessionState.stageEntry()._proxyShapePath)) {
+            const auto layerIds = MayaUsd::ComponentUtils::getAdskUsdComponentLayersToSave(
+                _sessionState.stageEntry()._proxyShapePath);
+            count = static_cast<int>(layerIds.size());
+        }
+        // Normal case - layers visible in the layer editor.
+        else {
+            const auto layers = _treeView->layerTreeModel()->getAllNeedsSavingLayers();
+            count = static_cast<int>(layers.size());
+            for (auto layer : layers) {
+                // The system locked layers do not count towards saving.
+                if (layer->isSystemLocked()) {
+                    count--;
+                }
+                // Neither does any anonymous layer whose parent is locked or system-locked.
+                // This is because saving an anonymous layer will cause
+                // the parent layer to re-path the sub layer with a file name.
+                if (layer->isAnonymous()
+                    && (layer->appearsLocked() || layer->appearsSystemLocked())) {
+                    count--;
+                }
             }
         }
         _buttons._dirtyCountBadge->updateCount(count);

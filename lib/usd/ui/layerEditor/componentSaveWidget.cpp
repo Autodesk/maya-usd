@@ -19,7 +19,10 @@
 #include "generatedIconButton.h"
 #include "qtUtils.h"
 
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
+
+#include <pxr/base/tf/diagnostic.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
@@ -135,6 +138,10 @@ void ComponentSaveWidget::setupUI()
 
     // Second row, first column: Name textbox
     _nameEdit = new QLineEdit(this);
+
+    QValidator* compNameValidator = new ValidTfIdentifierValidator(this);
+    _nameEdit->setValidator(compNameValidator);
+
     contentLayout->addWidget(_nameEdit, 1, 0);
 
     // Second row, second column: Location textbox

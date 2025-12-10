@@ -77,26 +77,26 @@ class ArrayCustomControl(AttributeCustomControl):
         Verify if the given attribute name is an array attribute for the prim
         currently being shown in the given AE template.
         '''
-        if aeTemplate.attrS.attributeType(attrName) == ufe.Attribute.kGeneric:
+        if aeTemplate.attrs.attributeType(attrName) == ufe.Attribute.kGeneric:
             attr = aeTemplate.prim.GetAttribute(attrName)
             typeName = attr.GetTypeName()
             return typeName.isArray
         return False
 
     @staticmethod
-    def creator(aeTemplate, attrName):
+    def creator(aeTemplate, attrName, label=None):
         # Note: UsdGeom.Tokens.xformOpOrder is a exception we want it to display normally.
         if attrName == UsdGeom.Tokens.xformOpOrder:
             return None
 
         if ArrayCustomControl.isArrayAttribute(aeTemplate, attrName):
-            ufeAttr = aeTemplate.attrS.attribute(attrName)
-            return ArrayCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName)
+            ufeAttr = aeTemplate.attrs.attribute(attrName)
+            return ArrayCustomControl(ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName, label=label)
         else:
             return None
 
-    def __init__(self, ufeAttr, prim, attrName, useNiceName):
-        super(ArrayCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
+    def __init__(self, ufeAttr, prim, attrName, useNiceName, label=None):
+        super(ArrayCustomControl, self).__init__(ufeAttr, attrName, useNiceName, label=label)
         self.prim = prim
 
     def onCreate(self, *args):

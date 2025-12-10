@@ -829,6 +829,27 @@ void SaveLayersDialog::onSaveAll()
         return;
     }
 
+    // Block overwriting of components. The target folder must be empty.
+    // Otherwise, log an error and abort.
+    for (auto* componentWidget : _componentSaveWidgets) {
+        ghc::filesystem::path location = { componentWidget->folderLocation().toStdString() };
+        location.append(componentWidget->componentName().toStdString());
+
+        if (ghc::filesystem::exists(location) && !ghc::filesystem::is_empty(location)) {
+            MObject obj;
+            UsdMayaUtil::GetMObjectByName(componentWidget->proxyShapePath(), obj);
+            const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
+
+            TF_RUNTIME_ERROR(
+                "Cannot save %s with the given name since a non-empty folder with the same "
+                "name is already in that location. Use a unique name or save to a different "
+                "location and try the save again. Folder path: %s",
+                stageName.asChar(),
+                location.generic_string().c_str());
+            return;
+        }
+    }
+
     _newPaths.clear();
     _problemLayers.clear();
     _emptyLayers.clear();

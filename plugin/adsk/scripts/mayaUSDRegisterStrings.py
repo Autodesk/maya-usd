@@ -23,6 +23,7 @@ __mayaUSDStringResources = {
     "kDiscardStageEditsTitle": "Discard Edits on ^1s's Layers",
     "kDiscardStageEditsLoadMsg": "Are you sure you want to load in a new file as the stage source?\n\nAll edits on your layers in ^1s will be discarded.",
     "kDiscardStageEditsReloadMsg": "Are you sure you want to reload ^1s as the stage source?\n\nAll edits on your layers (except the session layer) in ^2s will be discarded.",
+    "kDiscardComponentEditsReloadMsg": "Reloading ^1s discards all edits made in all layers and variants and restores the component to its original state on disk.",
     "kLoadUSDFile": "Load USD File",
     "kFileOptions": "File Options",
     "kRelativePathOptions": "Relative Pathing",
@@ -42,6 +43,7 @@ __mayaUSDStringResources = {
     "kButtonSave": "Save",
     "kButtonSet": "Set",
     "kButtonCancel": "Cancel",
+    "kButtonReload": "Reload",
     "kButtonAdd": "Add",
     "kCreateUsdStageFromFile": "Create USD Stage from File",
     "kCreateUsdStageFromFileOptions": "Create USD Stage from File Options",
@@ -305,6 +307,14 @@ __mayaUSDStringResources = {
     "kExportUnitFootLbl": "Foot",
     "kExportUnitYardLbl": "Yard",
     "kExportUnitMileLbl": "Mile",
+
+    "kExportAccessibilityLbl": "Accessibility",
+    "kExportAccessibilityLabelLbl": "Label",
+    "kExportAccessibilityDescriptionLbl": "Description",
+    "kExportAccessibilityLabelAnn": "Create an accessibility label on the default prim. This should be short and concise.",
+    "kExportAccessibilityDescriptionAnn": "Create an accessibility description on the default prim.",
+    "kExportAccessibilityLabelPht": "A short label",
+    "kExportAccessibilityDescriptionPht": "A more verbose description",
 
     # All strings for import dialog:
     "kImportAnimationDataLbl": "Animation Data",
