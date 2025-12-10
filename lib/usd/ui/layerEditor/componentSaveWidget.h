@@ -77,6 +77,9 @@ public:
     // Get compact representation mode
     bool isCompactMode() const { return _isCompact; }
 
+    // Get the proxy shape path
+    const std::string& proxyShapePath() const { return _proxyShapePath; }
+
 Q_SIGNALS:
     // Emitted when the widget expands or collapses
     void expandedStateChanged(bool isExpanded);

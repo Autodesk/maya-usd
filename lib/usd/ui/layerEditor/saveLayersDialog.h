@@ -21,6 +21,7 @@ class QWidget;
 
 namespace UsdLayerEditor {
 
+class ComponentSaveWidget;
 class SessionState;
 
 class SaveLayersDialog : public QDialog
@@ -91,9 +92,10 @@ private:
     layerSet                             _dirtyFileBackedLayers;
     stageLayerMap                        _stageLayerMap;
     SessionState*                        _sessionState;
-    std::vector<QWidget*>                _saveLayerPathRows;
+    std::vector<QWidget*>                 _saveLayerPathRows;
     std::vector<MayaUsd::StageSavingInfo> _componentStageInfos;
-    bool                                 _isExporting { false };
+    std::vector<ComponentSaveWidget*>     _componentSaveWidgets;
+    bool                                  _isExporting { false };
 };
 
 }; // namespace UsdLayerEditor

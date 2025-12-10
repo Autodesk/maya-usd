@@ -15,6 +15,7 @@
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/layerLocking.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
@@ -25,6 +26,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
+#include <maya/MDagModifier.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
@@ -663,6 +665,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
                 componentWidget->setCompactMode(true);
             }
             componentLayout->addWidget(componentWidget);
+            _componentSaveWidgets.push_back(componentWidget);
         }
 
         _componentStagesWidget = new QWidget();
@@ -768,6 +771,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
     if (onlyComponentStages) {
         setFixedHeight(sizeHint().height());
     }
+    setMinimumWidth(DPIScale(700));
 
     QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
@@ -819,6 +823,70 @@ void SaveLayersDialog::onSaveAll()
     _newPaths.clear();
     _problemLayers.clear();
     _emptyLayers.clear();
+
+    // Save component stages first
+    for (auto* componentWidget : _componentSaveWidgets) {
+        std::string saveLocation = componentWidget->folderLocation().toStdString();
+        //std::replace(saveLocation.begin(), saveLocation.end(), '\\', '/');
+        std::string componentName = componentWidget->componentName().toStdString();
+        std::string proxyPath = componentWidget->proxyShapePath();
+
+        std::string newRootPath
+            = MayaUsd::ComponentUtils::moveAdskUsdComponent(saveLocation, componentName, proxyPath);
+        if (!newRootPath.empty()) {
+            _newPaths.append(QString::fromStdString(componentName));
+            _newPaths.append(QString::fromStdString(newRootPath));
+
+            auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
+            if (newRootLayer) {
+                // Rename Proxy Shape node
+                MObject proxyNode;
+                UsdMayaUtil::GetMObjectByName(proxyPath, proxyNode);
+                MDagModifier dagMod;
+                MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
+                if (status == MStatus::kSuccess) {
+                    dagMod.doIt();
+                }
+
+                // Get the new proxyPath
+                MDagPath newProxyShapePath;
+                MDagPath::getAPathTo(proxyNode, newProxyShapePath);
+
+                // Set the updated root file path
+                MayaUsd::utils::setNewProxyPath(
+                    newProxyShapePath.fullPathName(),
+                    MString(newRootPath.c_str()),
+                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+                    newRootLayer,
+                    false);
+
+                // Update the StageEntry to a new StageEntry which
+                // contains the proper stage object pointing to
+                // the new root layer (only when sessionState is available)
+                if (_sessionState) {
+                    auto entries = _sessionState->allStages();
+                    for (const auto& entry : entries) {
+                        if (entry._proxyShapePath
+                            == std::string(newProxyShapePath.fullPathName().asUTF8())) {
+                            _sessionState->setStageEntry(entry);
+                            break;
+                        }
+                    }
+                }
+
+                // Lock that layer
+                MayaUsd::lockLayer(
+                    newProxyShapePath.fullPathName().asChar(),
+                    newRootLayer,
+                    MayaUsd::LayerLockType::LayerLock_Locked,
+                    true);
+            }
+
+        } else {
+            _problemLayers.append(QString::fromStdString(componentName));
+            _problemLayers.append(QString::fromStdString(saveLocation + "/" + componentName));
+        }
+    }
 
     // Note: must start from the end so that sub-layers are saved before their parent.
     for (int count = _saveLayerPathRows.size(), i = count - 1; i >= 0; --i) {
