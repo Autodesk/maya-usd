@@ -507,7 +507,6 @@ SaveLayersDialog::SaveLayersDialog(
             MDagPath::getAPathTo(proxyObj, info.dagPath);
             info.stage = stageEntry._stage;
             _componentStageInfos.push_back(info);
-            // Component stages are saved via the component system, skip layer collection
         } else {
             getLayersToSave(stageEntry._stage, stageEntry._proxyShapePath, stageName);
         }
@@ -837,7 +836,6 @@ void SaveLayersDialog::onSaveAll()
     // Save component stages first
     for (auto* componentWidget : _componentSaveWidgets) {
         std::string saveLocation = componentWidget->folderLocation().toStdString();
-        //std::replace(saveLocation.begin(), saveLocation.end(), '\\', '/');
         std::string componentName = componentWidget->componentName().toStdString();
         std::string proxyPath = componentWidget->proxyShapePath();
 
