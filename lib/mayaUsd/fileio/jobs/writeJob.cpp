@@ -215,35 +215,16 @@ private:
 };
 
 /// Class to automatically change and restore the up-axis and units of the Maya scene.
-class AutoUpAxisAndUnitsChanger : public MayaUsd::AutoUndoCommands
+class AutoUpAxisChanger : public MayaUsd::AutoUndoCommands
 {
 public:
-    /// Constructs AutoUndoCommands that changes optionally maya upAxis or metersPerUnit
-    AutoUpAxisAndUnitsChanger(const TfToken* upAxis, const double* metersPerUnit)
+    /// Constructs AutoUndoCommands that changes optionally maya upAxis
+    AutoUpAxisChanger(const TfToken* upAxis, const double* metersPerUnit)
         : AutoUndoCommands("change up-axis and units", _prepareCommands(upAxis, metersPerUnit))
     {
     }
 
 private:
-    static std::string _prepareUnitsCommands(double metersPerUnit)
-    {
-        return {};
-        // const double mayaMetersPerUnit
-        //     = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
-
-        // // If the Maya data unit is already the right one, we dont have to modify the Maya scene.
-        // if (mayaMetersPerUnit == metersPerUnit)
-        //     return {};
-
-        // static const char scalingCommandsFormat[]
-        //     = "scale -relative -pivot 0 0 0 -scaleXYZ %f %f %f $groupName;\n";
-
-        // const double requiredScale = mayaMetersPerUnit / metersPerUnit;
-
-        // return TfStringPrintf(scalingCommandsFormat, requiredScale, requiredScale,
-        // requiredScale);
-    }
-
     static std::string _prepareUpAxisCommands(const TfToken& upAxis)
     {
         // If the Maya up-axis is already the right one, we dont have to modify the Maya scene.
@@ -275,7 +256,6 @@ private:
         //
         //     - the list of root names as the variable $rootNodeNames
         //     - a group containing all those nodes named $groupName
-        //     -
         //
         // The scene-changing commands should mofify the group, so that ungrouping
         // these node while preserving transform changes were done on the group will
@@ -309,11 +289,7 @@ private:
         if (upAxis != nullptr)
             commands += _prepareUpAxisCommands(*upAxis);
 
-        // If the user don't want to author the unit, we won't need to change the Maya unit.
-        if (metersPerUnit != nullptr)
-            commands += _prepareUnitsCommands(*metersPerUnit);
-
-        // If both are empty, we don't need to do anything.
+        // If the command is empty, we don't need to do anything.
         if (commands.empty())
             return {};
 
@@ -453,7 +429,7 @@ bool UsdMaya_WriteJobImpl::WriteJobs(const std::vector<UsdMaya_WriteJob*>& jobs)
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
     // Temporarily tweak the Maya scene for export if needed.
-    const AutoUpAxisAndUnitsChanger unitsChanger(
+    const AutoUpAxisChanger unitsChanger(
         firstArgs.upAxis == UsdMayaJobExportArgsTokens->none ? nullptr : &usdUpAxis,
         firstArgs.unit == UsdMayaJobExportArgsTokens->none ? nullptr : &usdMetersPerUnit);
 
