@@ -162,7 +162,7 @@ void ComponentSaveWidget::setupUI()
     // Tree view container (initially hidden)
     _treeContainer = new QWidget(this);
     auto treeLayout = new QVBoxLayout();
-    treeLayout->setContentsMargins(DPIScale(20), 0, DPIScale(20), DPIScale(15));
+    treeLayout->setContentsMargins(DPIScale(20), DPIScale(10), DPIScale(20), DPIScale(15));
     treeLayout->setSpacing(DPIScale(10));
 
     auto treeLabel = new QLabel("The following file structure is created on save.", this);
