@@ -54,34 +54,6 @@ namespace {
 const char* SHOW_MORE_TEXT = "<a href=\"#\">Show More</a>";
 const char* SHOW_LESS_TEXT = "<a href=\"#\">Show Less</a>";
 
-const char* getScenesFolderScript = R"(
-    global proc string UsdMayaUtilFileSystem_GetScenesFolder()
-    {
-        string $workspaceLocation = `workspace -q -fn`;
-        string $scenesFolder = `workspace -q -fileRuleEntry "scene"`;
-        $sceneFolder = $workspaceLocation + "/" + $scenesFolder;
-
-        return $sceneFolder;
-    }
-    UsdMayaUtilFileSystem_GetScenesFolder;
-    )";
-
-// This function was copied from utilFileSystem.cpp.
-// Including the headers in this class that include USD headers
-// was causing transitive compilation issues between QT headers
-// and USD headers in MayaUsd 2023.
-std::string getMayaWorkspaceScenesDir()
-{
-    MString scenesFolder;
-    ::MGlobal::executeCommand(
-        getScenesFolderScript,
-        scenesFolder,
-        /*display*/ false,
-        /*undo*/ false);
-
-    return std::string(scenesFolder.asChar(), scenesFolder.length());
-}
-
 } // namespace
 
 namespace UsdLayerEditor {
