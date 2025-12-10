@@ -78,8 +78,9 @@ void getDialogMessages(
     msg.format(StringResources::getAsMString(msgResId), strNbStages);
     msg2 = MQtUtil::toQString(msg);
 
-    // Component message: "To save the X stage(s), save the following component(s)."
-    msg.format("To save the ^1s stage(s), save the following component(s).", strNbStages);
+    msgResId = isExporting ? StringResources::kToExportTheStageSaveComponents
+                           : StringResources::kToSaveTheStageSaveComponents;
+    msg.format(StringResources::getAsMString(msgResId), strNbStages);
     msg3 = MQtUtil::toQString(msg);
 }
 
