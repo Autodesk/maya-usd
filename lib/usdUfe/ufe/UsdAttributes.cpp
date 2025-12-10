@@ -133,7 +133,7 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 #endif
 
     // See if a UsdAttribute can be wrapped:
-    PXR_NS::TfToken      tok(name);
+    PXR_NS::TfToken tok(name);
     // check if this is a relationship instead of an attribute
     PXR_NS::UsdRelationship usdRel = _prim.GetRelationship(tok);
     if (usdRel.IsValid()) {
