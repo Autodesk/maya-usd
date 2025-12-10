@@ -82,26 +82,6 @@ std::string getMayaWorkspaceScenesDir()
     return std::string(scenesFolder.asChar(), scenesFolder.length());
 }
 
-// Get the directory of the currently saved Maya scene file.
-// Returns empty string if the scene hasn't been saved yet.
-std::string getCurrentSceneDirectory()
-{
-    MString scenePath;
-    ::MGlobal::executeCommand(
-        "file -q -sceneName",
-        scenePath,
-        /*display*/ false,
-        /*undo*/ false);
-
-    // If the scene hasn't been saved, scenePath will be empty
-    if (scenePath.isEmpty()) {
-        return {};
-    }
-
-    ghc::filesystem::path filePath(scenePath.asChar());
-    return filePath.parent_path().generic_string();
-}
-
 } // namespace
 
 namespace UsdLayerEditor {
