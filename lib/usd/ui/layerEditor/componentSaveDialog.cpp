@@ -81,6 +81,26 @@ std::string getMayaWorkspaceScenesDir()
     return std::string(scenesFolder.asChar(), scenesFolder.length());
 }
 
+// Get the directory of the currently saved Maya scene file.
+// Returns empty string if the scene hasn't been saved yet.
+std::string getCurrentSceneDirectory()
+{
+    MString scenePath;
+    ::MGlobal::executeCommand(
+        "file -q -sceneName",
+        scenePath,
+        /*display*/ false,
+        /*undo*/ false);
+
+    // If the scene hasn't been saved, scenePath will be empty
+    if (scenePath.isEmpty()) {
+        return {};
+    }
+
+    ghc::filesystem::path filePath(scenePath.asChar());
+    return filePath.parent_path().generic_string();
+}
+
 } // namespace
 
 namespace UsdLayerEditor {
@@ -272,9 +292,15 @@ QString ComponentSaveDialog::folderLocation() const
 void ComponentSaveDialog::onBrowseFolder()
 {
     QString currentPath = _locationEdit->text();
-    // default to maya-usd scene folder
+    // Default to the directory of the current Maya scene if it's saved,
+    // otherwise default to maya-usd scene folder
     if (currentPath.isEmpty()) {
-        currentPath = getMayaWorkspaceScenesDir().c_str();
+        std::string sceneDir = getCurrentSceneDirectory();
+        if (!sceneDir.empty()) {
+            currentPath = sceneDir.c_str();
+        } else {
+            currentPath = getMayaWorkspaceScenesDir().c_str();
+        }
     }
 
     QString selectedFolder = QFileDialog::getExistingDirectory(
