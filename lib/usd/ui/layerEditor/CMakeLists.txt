@@ -18,8 +18,6 @@
 target_sources(${PROJECT_NAME}
     PRIVATE
         batchSaveLayersUIDelegate.cpp
-        componentSaveDialog.cpp
-        componentSaveDialog.h
         componentSaveWidget.cpp
         componentSaveWidget.h
         dirtyLayersCountBadge.cpp
