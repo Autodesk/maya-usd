@@ -497,7 +497,19 @@ SaveLayersDialog::SaveLayersDialog(
         std::string stageName = stageEntry._displayName;
         msg.format(StringResources::getAsMString(StringResources::kSaveName), stageName.c_str());
         dialogTitle = MQtUtil::toQString(msg);
-        getLayersToSave(stageEntry._stage, stageEntry._proxyShapePath, stageName);
+
+        // Check if this stage is a component stage
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(stageEntry._proxyShapePath)) {
+            MayaUsd::StageSavingInfo info;
+            MObject                  proxyObj;
+            UsdMayaUtil::GetMObjectByName(stageEntry._proxyShapePath, proxyObj);
+            MDagPath::getAPathTo(proxyObj, info.dagPath);
+            info.stage = stageEntry._stage;
+            _componentStageInfos.push_back(info);
+            // Component stages are saved via the component system, skip layer collection
+        } else {
+            getLayersToSave(stageEntry._stage, stageEntry._proxyShapePath, stageName);
+        }
     }
     setWindowTitle(dialogTitle);
 

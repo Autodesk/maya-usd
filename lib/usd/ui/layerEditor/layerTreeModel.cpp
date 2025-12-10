@@ -16,7 +16,6 @@
 
 #include "layerTreeModel.h"
 
-#include "componentSaveDialog.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 #include "saveLayersDialog.h"
@@ -575,69 +574,10 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
+    // Show the save dialog for component stages (initial save) or if confirmation is needed
     if (shouldDisplayComponentInitialSaveDialog(
-            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
-        ComponentSaveDialog dlg(in_parent, _sessionState->stageEntry()._proxyShapePath);
-        dlg.setWindowTitle(QString(("Save " + _sessionState->stageEntry()._displayName).c_str()));
-        dlg.setComponentName(QString(_sessionState->stageEntry()._displayName.c_str()));
-        dlg.setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
-
-        if (QDialog::Accepted == dlg.exec()) {
-            std::string saveLocation(dlg.folderLocation().toStdString());
-            std::string componentName(dlg.componentName().toStdString());
-            std::string proxyPath = _sessionState->stageEntry()._proxyShapePath;
-
-            std::string newRootPath
-                = MayaUsd::ComponentUtils::moveAdskUsdComponent(saveLocation, componentName, proxyPath);
-
-            if (!newRootPath.empty()) {
-                auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
-
-                if (newRootLayer) {
-                    // Rename Proxy Shape node
-                    MObject proxyNode;
-                    UsdMayaUtil::GetMObjectByName(proxyPath, proxyNode);
-                    MDagModifier dagMod;
-                    MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
-                    if (status == MStatus::kSuccess) {
-                        dagMod.doIt();
-                    }
-
-                    // Get the new proxyPath
-                    MDagPath newProxyShapePath;
-                    MDagPath::getAPathTo(proxyNode, newProxyShapePath);
-
-                    // Set the updated root file path
-                    MayaUsd::utils::setNewProxyPath(
-                        newProxyShapePath.fullPathName(),
-                        MString(newRootPath.c_str()),
-                        MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
-                        newRootLayer,
-                        false);
-
-                    // Update the StageEntry to a new StageEntry which
-                    // contains the proper stage object pointing to
-                    // the new root layer
-                    auto entries = _sessionState->allStages();
-                    for (const auto& entry : entries) {
-                        if (entry._proxyShapePath
-                            == std::string(newProxyShapePath.fullPathName().asUTF8())) {
-                            _sessionState->setStageEntry(entry);
-                            break;
-                        }
-                    }
-
-                    // Lock that layer
-                    MayaUsd::lockLayer(
-                        newProxyShapePath.fullPathName().asChar(),
-                        newRootLayer,
-                        MayaUsd::LayerLockType::LayerLock_Locked,
-                        true);
-                }
-            }
-        }
-        // User clicked "Cancel" - do nothing and return
-    } else if (showConfirmDgl) {
+            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)
+        || showConfirmDgl) {
         bool             isExporting = false;
         SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
         if (QDialog::Accepted == dlg.exec()) {
