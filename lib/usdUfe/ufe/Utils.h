@@ -61,7 +61,7 @@ typedef PXR_NS::UsdStageWeakPtr (*StageAccessorFn)(const Ufe::Path&);
 typedef Ufe::Path (*StagePathAccessorFn)(PXR_NS::UsdStageWeakPtr);
 typedef PXR_NS::UsdPrim (*UfePathToPrimFn)(const Ufe::Path&);
 typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
-typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdProperty& prop, std::string* errMsg);
+typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdProperty& attr, std::string* errMsg);
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
 typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name);
@@ -140,9 +140,9 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 USDUFE_PUBLIC
 void setIsAttributeLockedFn(IsAttributeLockedFn fn);
 
-//! Return whether the input USD attribute is locked and therefore cannot
+//! Return whether the input USD property is locked and therefore cannot
 //! be edited.
-//! \return True if the USD attributed is locked, otherwise false (default).
+//! \return True if the USD property is locked, otherwise false (default).
 USDUFE_PUBLIC
 bool isAttributedLocked(const PXR_NS::UsdProperty& attr, std::string* errMsg = nullptr);
 
