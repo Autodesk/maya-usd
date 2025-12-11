@@ -21,6 +21,7 @@
 
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -53,34 +54,6 @@ namespace {
 const char* SHOW_MORE_TEXT = "<a href=\"#\">Show More</a>";
 const char* SHOW_LESS_TEXT = "<a href=\"#\">Show Less</a>";
 
-const char* getScenesFolderScript = R"(
-    global proc string UsdMayaUtilFileSystem_GetScenesFolder()
-    {
-        string $workspaceLocation = `workspace -q -fn`;
-        string $scenesFolder = `workspace -q -fileRuleEntry "scene"`;
-        $sceneFolder = $workspaceLocation + "/" + $scenesFolder;
-
-        return $sceneFolder;
-    }
-    UsdMayaUtilFileSystem_GetScenesFolder;
-    )";
-
-// This function was copied from utilFileSystem.cpp.
-// Including the headers in this class that include USD headers
-// was causing transitive compilation issues between QT headers
-// and USD headers in MayaUsd 2023.
-std::string getMayaWorkspaceScenesDir()
-{
-    MString scenesFolder;
-    ::MGlobal::executeCommand(
-        getScenesFolderScript,
-        scenesFolder,
-        /*display*/ false,
-        /*undo*/ false);
-
-    return std::string(scenesFolder.asChar(), scenesFolder.length());
-}
-
 } // namespace
 
 namespace UsdLayerEditor {
@@ -102,6 +75,7 @@ ComponentSaveDialog::ComponentSaveDialog(QWidget* in_parent, const std::string& 
     , _lastComponentName()
 {
     setupUI();
+    setFolderLocation(QString::fromStdString(MayaUsd::utils::getSceneFolder()));
 }
 
 ComponentSaveDialog::~ComponentSaveDialog() { }
@@ -272,9 +246,10 @@ QString ComponentSaveDialog::folderLocation() const
 void ComponentSaveDialog::onBrowseFolder()
 {
     QString currentPath = _locationEdit->text();
-    // default to maya-usd scene folder
+    // Default to the directory of the current Maya scene if it's saved,
+    // otherwise default to maya-usd scene folder
     if (currentPath.isEmpty()) {
-        currentPath = getMayaWorkspaceScenesDir().c_str();
+        currentPath = QString::fromStdString(MayaUsd::utils::getSceneFolder());
     }
 
     QString selectedFolder = QFileDialog::getExistingDirectory(
