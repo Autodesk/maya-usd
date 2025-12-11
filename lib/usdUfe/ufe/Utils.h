@@ -140,9 +140,10 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 USDUFE_PUBLIC
 void setIsAttributeLockedFn(IsAttributeLockedFn fn);
 
-//! Return whether the input USD property is locked and therefore cannot
+//! Return whether the input USD property (attribute or relationship) is locked and therefore cannot
 //! be edited.
-//! \return True if the USD property is locked, otherwise false (default).
+//! \return True if the USD property is locked, otherwise false
+//! (default).
 USDUFE_PUBLIC
 bool isAttributedLocked(const PXR_NS::UsdProperty& attr, std::string* errMsg = nullptr);
 
@@ -328,8 +329,8 @@ PXR_NS::SdrShaderNodeConstPtr usdShaderNodeFromSceneItem(const Ufe::SceneItem::P
 // Verify edit restrictions.
 //------------------------------------------------------------------------------
 
-//! Check if an attribute value is allowed to be changed.
-//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
+//! Check if an property (attribute or relationship) value is allowed to be changed.
+//! \return True, if the property value is allowed to be edited in the stage's local Layer Stack.
 USDUFE_PUBLIC
 bool isAttributeEditAllowed(const PXR_NS::UsdProperty& attr, std::string* errMsg = nullptr);
 
@@ -342,7 +343,8 @@ bool isAttributeEditAllowed(
 USDUFE_PUBLIC
 bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
 
-//! Enforce if an attribute value is allowed to be changed. Throw an exception if not allowed.
+//! Enforce if an property (attribute or relationship) value is allowed to be changed. Throw an
+//! exception if not allowed.
 USDUFE_PUBLIC
 void enforceAttributeEditAllowed(const PXR_NS::UsdProperty& attr);
 
