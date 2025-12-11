@@ -123,7 +123,7 @@ void ComponentSaveWidget::setupUI()
     contentLayout->addWidget(_locationEdit, 1, 1);
 
     // Second row, third column: Folder browse button
-    QIcon folderIcon = UsdLayerEditor::utils->createIcon(":/fileOpen.png");
+    QIcon folderIcon = utils->createIcon(":/fileOpen.png");
     _browseButton = new GeneratedIconButton(this, folderIcon);
     _browseButton->setToolTip("Browse for folder");
     _browseButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);

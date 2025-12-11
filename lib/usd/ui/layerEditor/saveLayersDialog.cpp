@@ -39,7 +39,6 @@
 
 #include <string>
 
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -303,8 +302,8 @@ void SaveLayerPathRow::onOpenBrowser()
     // Update appropriate option var
     const char* optionVarName = parentLayer ? "mayaUsd_MakePathRelativeToParentLayer"
                                             : "mayaUsd_MakePathRelativeToSceneFile";
-    const bool  optionvarExists = MGlobal::optionVarExists(optionVarName);
-    int         optionVarValue = 0;
+    const bool optionvarExists = MGlobal::optionVarExists(optionVarName);
+    int        optionVarValue = 0;
     if (optionvarExists) {
         optionVarValue = MGlobal::optionVarIntValue(optionVarName);
         MGlobal::setOptionVarValue(optionVarName, needToSaveAsRelative() ? 1 : 0);
@@ -672,7 +671,6 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
             auto        componentWidget = new ComponentSaveWidget(this, proxyPath);
             componentWidget->setComponentName(
                 QString(componentInfo.dagPath.partialPathName().asChar()));
-            componentWidget->setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
             // Make compact if not the first component widget
             if (i > 0) {
                 componentWidget->setCompactMode(true);
@@ -828,27 +826,6 @@ void SaveLayersDialog::onSaveAll()
         return;
     }
 
-    // Block overwriting of components. The target folder must be empty.
-    // Otherwise, log an error and abort.
-    for (auto* componentWidget : _componentSaveWidgets) {
-        ghc::filesystem::path location = { componentWidget->folderLocation().toStdString() };
-        location.append(componentWidget->componentName().toStdString());
-
-        if (ghc::filesystem::exists(location) && !ghc::filesystem::is_empty(location)) {
-            MObject obj;
-            UsdMayaUtil::GetMObjectByName(componentWidget->proxyShapePath(), obj);
-            const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
-
-            TF_RUNTIME_ERROR(
-                "Cannot save %s with the given name since a non-empty folder with the same "
-                "name is already in that location. Use a unique name or save to a different "
-                "location and try the save again. Folder path: %s",
-                stageName.asChar(),
-                location.generic_string().c_str());
-            return;
-        }
-    }
-
     _newPaths.clear();
     _problemLayers.clear();
     _emptyLayers.clear();
@@ -956,6 +933,27 @@ void SaveLayersDialog::onCancel() { reject(); }
 
 bool SaveLayersDialog::okToSave()
 {
+    // Block overwriting of components. The target folder must be empty.
+    // Otherwise, log an error and abort.
+    for (auto* componentWidget : _componentSaveWidgets) {
+        ghc::filesystem::path location = { componentWidget->folderLocation().toStdString() };
+        location.append(componentWidget->componentName().toStdString());
+
+        if (ghc::filesystem::exists(location) && !ghc::filesystem::is_empty(location)) {
+            MObject obj;
+            UsdMayaUtil::GetMObjectByName(componentWidget->proxyShapePath(), obj);
+            const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
+
+            TF_RUNTIME_ERROR(
+                "Cannot save %s with the given name since a non-empty folder with the same "
+                "name is already in that location. Use a unique name or save to a different "
+                "location and try the save again. Folder path: %s",
+                stageName.asChar(),
+                location.generic_string().c_str());
+            return false;
+        }
+    }
+
     // Files can have the same file names in complicated ways, with one file having two copies,
     // another three, so we keep the exact number of copies per file path.
     QMap<QString, int> alreadySeenPaths;

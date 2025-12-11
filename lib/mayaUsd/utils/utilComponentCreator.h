@@ -56,7 +56,7 @@ std::string previewSaveAdskUsdComponent(
     const std::string& componentName,
     const std::string& proxyPath);
 
-/*! \brief Moves/saves the Autodesk USD Component to a new location with a new name.
+/*! \brief Moves the Autodesk USD Component to a new location with a new name.
  * \return Returns the new root layer file path on success, empty string on failure.
  */
 MAYAUSD_CORE_PUBLIC

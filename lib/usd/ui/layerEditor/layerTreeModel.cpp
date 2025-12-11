@@ -112,9 +112,8 @@ void LayerTreeModel::registerUsdNotifications(bool in_register)
         TfWeakPtr<LayerTreeModel> me(this);
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_layerChanged));
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_editTargetChanged));
-        _noticeKeys.push_back(
-            TfNotice::Register(
-                me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
+        _noticeKeys.push_back(TfNotice::Register(
+            me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
 
     } else {
         TfNotice::Revoke(&_noticeKeys);
