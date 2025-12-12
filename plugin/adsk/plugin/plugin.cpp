@@ -78,6 +78,8 @@
 #include <mayaUsdUI/ui/initStringResources.h>
 #if defined(WANT_AR_BUILD)
 #include <mayaUsdUI/ui/AssetResolverDialogCmd.h>
+#include <mayaUsdUI/ui/AssetResolverProjectChangeTracker.h>
+#include <mayaUsdUI/ui/AssetResolverUtils.h>
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #endif
@@ -429,12 +431,7 @@ MStatus initializePlugin(MObject obj)
         static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
         if (MGlobal::optionVarExists(IncludeMayaTokenInAR)
             && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
-            MGlobal::executePythonCommand(
-                "try:\n"
-                "    import mayaUsd_AdskAssetResolver\n"
-                "    mayaUsd_AdskAssetResolver.include_maya_project_tokens()\n"
-                "except:\n"
-                "    pass\n");
+            MayaUsd::AssetResolverUtils::IncludeMayaProjectTokensInAdskAssetResolver();
         }
 
         static const MString AdskAssetResolverMappingFile = "mayaUsd_AdskAssetResolverMappingFile";
@@ -490,7 +487,10 @@ MStatus initializePlugin(MObject obj)
             }
         }
     }
-#endif
+
+    MayaUsd::AssetResolverProjectChangeTracker::startTracking();
+
+#endif // WANT_AR_BUILD
 
     return status;
 }
@@ -500,6 +500,16 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
     MStatus   status;
+
+#if defined(WANT_AR_BUILD)
+    MayaUsd::AssetResolverProjectChangeTracker::stopTracking();
+    status = MayaUsd::AssetResolverDialogCmd::finalize(plugin);
+    if (!status) {
+        MString err("deregisterCommand ");
+        err += MayaUsd::AssetResolverDialogCmd::name;
+        status.perror(err);
+    }
+#endif // WANT_AR_BUILD
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,
