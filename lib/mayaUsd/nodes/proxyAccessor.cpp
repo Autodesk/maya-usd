@@ -52,24 +52,12 @@
 #include <type_traits>
 #include <unordered_map>
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-PXR_NAMESPACE_USING_DIRECTIVE
-
-TF_DEFINE_ENV_SETTING(
-    MAYAUSD_USE_TARGETED_LAYER_IN_PROXY_ACCESSOR,
-    false,
-    "When set to a non-zero value, forces the proxy accessor to use the stage current target layer "
-    "instead of the session layer.");
-
-bool useTargetedLayerInProxyAccessor()
-{
-    return TfGetEnvSetting(MAYAUSD_USE_TARGETED_LAYER_IN_PROXY_ACCESSOR);
-}
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
 namespace MAYAUSD_NS_DEF {
+
+static bool useTargetedLayerInProxyAccessor()
+{
+    return PXR_NS::TfGetenvBool("MAYAUSD_USE_TARGETED_LAYER_IN_PROXY_ACCESSOR", false);
+}
 
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProxyAccessor);
 
