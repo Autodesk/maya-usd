@@ -39,15 +39,17 @@ void AssetResolverUtils::IncludeMayaProjectTokensInAdskAssetResolver()
         MStringArray workspaceFileRuleList;
         MStatus      status = MGlobal::executeCommand("workspace -q -frl", workspaceFileRuleList);
 
-        Adsk::AssetResolverContextExtension contextData
-            = Adsk::AssetResolverContextDataRegistry::RegisterContextData("MayaUSDExtension");
+        if (status == MS::kSuccess) {
+            Adsk::AssetResolverContextExtension contextData
+                = Adsk::AssetResolverContextDataRegistry::RegisterContextData("MayaUSDExtension");
 
-        contextData.AddStaticToken("Project", workspaceDirectory.asChar());
+            contextData.AddStaticToken("Project", workspaceDirectory.asChar());
 
-        for (unsigned int i = 0; i < workspaceFileRuleList.length(); i++) {
-            MString tokenValue = MGlobal::executeCommandStringResult(
-                MString("workspace -fileRuleEntry ") + "\"" + workspaceFileRuleList[i] + "\"");
-            contextData.AddStaticToken(workspaceFileRuleList[i].asChar(), tokenValue.asChar());
+            for (unsigned int i = 0; i < workspaceFileRuleList.length(); i++) {
+                MString tokenValue = MGlobal::executeCommandStringResult(
+                    MString("workspace -fileRuleEntry ") + "\"" + workspaceFileRuleList[i] + "\"");
+                contextData.AddStaticToken(workspaceFileRuleList[i].asChar(), tokenValue.asChar());
+            }
         }
     }
 #if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
