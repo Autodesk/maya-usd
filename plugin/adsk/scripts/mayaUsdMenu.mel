@@ -833,18 +833,23 @@ proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 		}
         
         notifyUsdContextMenuLoaded($usdContextMenu, $obj);
-        // If the USD submenu was created but is empty, remove it. 
-        // This can happen depending on selection we may have the "duplicate to USD" option or not, 
-        // and the component-creator can also add items from the callback in later maya-usd versions.
-        // In some scenarios, no items are added at all, so cleanup the unused sub-menu.
+        // Remove the USD submenu if it does not contain at least one item with a non-empty label.
         if ($usdContextMenu != $currentMenu) {
-            int $deleteUsdSubmenu = 0;
-            if (`menu -q -numberOfItems $usdContextMenu` == 0) {
-                $deleteUsdSubmenu = 1;
+            int $deleteUsdSubmenu = 1;
+            int $numItems = `menu -q -numberOfItems $usdContextMenu`;
+            if ($numItems > 0) {
+                string $itemArray[] = `menu -q -itemArray $usdContextMenu`;
+                for ($item in $itemArray) {
+                    string $itemLabel = `menuItem -q -label $item`;
+                    if (size($itemLabel) > 0) {
+                        $deleteUsdSubmenu = 0;
+                        break;
+                    }
+                }
             }
             // Reset parent back to the main context menu
             setParent -menu ..;
-            // Perform deletion of the USD submenu from its parent context
+            // Delete the USD submenu if warranted
             if ($deleteUsdSubmenu) {
                 deleteUI -mi $usdContextMenu;
             }
