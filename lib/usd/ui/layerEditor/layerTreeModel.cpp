@@ -16,7 +16,6 @@
 
 #include "layerTreeModel.h"
 
-#include "componentSaveDialog.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 #include "saveLayersDialog.h"
@@ -575,101 +574,10 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
+    // Show the save dialog for component stages (initial save) or if confirmation is needed
     if (shouldDisplayComponentInitialSaveDialog(
-            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
-        ComponentSaveDialog dlg(in_parent, _sessionState->stageEntry()._proxyShapePath);
-        dlg.setWindowTitle(QString(("Save " + _sessionState->stageEntry()._displayName).c_str()));
-        dlg.setComponentName(QString(_sessionState->stageEntry()._displayName.c_str()));
-
-        if (QDialog::Accepted == dlg.exec()) {
-            std::string saveLocation(dlg.folderLocation().toStdString());
-            std::string componentName(dlg.componentName().toStdString());
-
-            MString defMoveComponentCmd;
-            defMoveComponentCmd.format(
-                "from pxr import Sdf, Usd, UsdUtils\n"
-                "import mayaUsd\n"
-                "import mayaUsd.ufe\n"
-                "from AdskUsdComponentCreator import ComponentDescription, MoveComponent, TheHost\n"
-                "from usd_component_creator_plugin import update_variant_editor_window, "
-                "MayaComponentManager\n"
-                "from AdskVariantEditor import ComponentData\n"
-                "def usd_component_creator_move_component():\n"
-                "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-                "    MayaComponentManager.GetInstance().SaveComponent(proxyStage)\n"
-                "    component_description = "
-                "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-                "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
-                "False)\n"
-                "    update_variant_editor_window(ComponentData(moved_comp[0]))\n"
-                "    return moved_comp[0].root_layer_filename",
-                _sessionState->stageEntry()._proxyShapePath.c_str(),
-                saveLocation.c_str(),
-                componentName.c_str());
-
-            if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentCmd)) {
-                MString movedStageRootFilepath;
-                MString moveComponentCmd = "usd_component_creator_move_component()";
-                MGlobal::executePythonCommand(moveComponentCmd, movedStageRootFilepath);
-
-                auto newRootLayer
-                    = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
-
-                if (newRootLayer) {
-
-                    // Rename Proxy Shape node
-                    MObject proxyNode;
-                    UsdMayaUtil::GetMObjectByName(
-                        _sessionState->stageEntry()._proxyShapePath, proxyNode);
-                    MDagModifier dagMod;
-                    MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
-                    if (status == MStatus::kSuccess) {
-                        dagMod.doIt();
-                    }
-
-                    // Get the new proxyPath
-                    MDagPath newProxyShapePath;
-                    MDagPath::getAPathTo(proxyNode, newProxyShapePath);
-
-                    // Save the old session layer content before swapping the root, which will
-                    // create a new stage.
-                    auto oldSessionLayer = _sessionState->stage()->GetSessionLayer();
-
-                    // Set the updated root file path
-                    MayaUsd::utils::setNewProxyPath(
-                        newProxyShapePath.fullPathName(),
-                        movedStageRootFilepath,
-                        MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
-                        newRootLayer,
-                        false);
-
-                    // Update the StageEntry to a new StageEntry which
-                    // contains the proper stage object pointing to
-                    // the new root layer
-                    auto entries = _sessionState->allStages();
-                    for (const auto& entry : entries) {
-                        if (entry._proxyShapePath
-                            == std::string(newProxyShapePath.fullPathName().asUTF8())) {
-                            _sessionState->setStageEntry(entry);
-                            break;
-                        }
-                    }
-
-                    // Transfer over the session layer contents.
-                    auto newSessionLayer = _sessionState->stage()->GetSessionLayer();
-                    newSessionLayer->TransferContent(oldSessionLayer);
-
-                    // Lock that layer
-                    MayaUsd::lockLayer(
-                        newProxyShapePath.fullPathName().asChar(),
-                        newRootLayer,
-                        MayaUsd::LayerLockType::LayerLock_Locked,
-                        true);
-                }
-            }
-        }
-        // User clicked "Cancel" - do nothing and return
-    } else if (showConfirmDgl) {
+            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)
+        || showConfirmDgl) {
         bool             isExporting = false;
         SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
         if (QDialog::Accepted == dlg.exec()) {

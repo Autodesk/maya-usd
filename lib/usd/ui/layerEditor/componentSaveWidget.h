@@ -14,19 +14,18 @@
 // limitations under the License.
 //
 
-#ifndef COMPONENTSAVEDIALOG_H
-#define COMPONENTSAVEDIALOG_H
+#ifndef COMPONENTSAVEWIDGET_H
+#define COMPONENTSAVEWIDGET_H
 
 #include <QtCore/QString>
-#include <QtWidgets/QDialog>
-#include <QtWidgets/QtWidgets>
+#include <QtWidgets/QWidget>
 
 #include <string>
 
+class QJsonObject;
 class QKeyEvent;
 class QLabel;
 class QLineEdit;
-class QPushButton;
 class QScrollArea;
 class QStackedWidget;
 class QTreeWidget;
@@ -37,18 +36,19 @@ namespace UsdLayerEditor {
 class GeneratedIconButton;
 
 /**
- * @brief Dialog for saving a component with name and location fields.
+ * @brief Widget for component save form with name, location, and preview tree view.
+ * This widget can be reused in multiple dialogs or contexts.
  *
  */
-class ComponentSaveDialog : public QDialog
+class ComponentSaveWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    ComponentSaveDialog(
+    ComponentSaveWidget(
         QWidget*           in_parent = nullptr,
         const std::string& proxyShapePath = std::string());
-    ~ComponentSaveDialog() override;
+    ~ComponentSaveWidget() override;
 
     // Set the component name programmatically
     void setComponentName(const QString& name);
@@ -62,14 +62,34 @@ public:
     // Get the folder location
     QString folderLocation() const;
 
-private Q_SLOTS:
-    void onBrowseFolder();
-    void onSaveStage();
-    void onCancel();
-    void onShowMore();
+    // Get the current expanded state
+    bool isExpanded() const { return _isExpanded; }
+
+    // Get the original height (before expansion)
+    int originalHeight() const { return _originalHeight; }
+
+    // Set the original height (used by parent dialog for sizing)
+    void setOriginalHeight(int height) { _originalHeight = height; }
+
+    // Set compact representation mode (hides Name/Location labels)
+    void setCompactMode(bool compact);
+
+    // Get compact representation mode
+    bool isCompactMode() const { return _isCompact; }
+
+    // Get the proxy shape path
+    const std::string& proxyShapePath() const { return _proxyShapePath; }
+
+Q_SIGNALS:
+    // Emitted when the widget expands or collapses
+    void expandedStateChanged(bool isExpanded);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
+
+private Q_SLOTS:
+    void onBrowseFolder();
+    void onShowMore();
 
 private:
     void setupUI();
@@ -81,12 +101,13 @@ private:
     QLineEdit*           _locationEdit;
     GeneratedIconButton* _browseButton;
     QLabel*              _showMoreLabel;
-    QPushButton*         _saveStageButton;
-    QPushButton*         _cancelButton;
+    QLabel*              _nameLabel;
+    QLabel*              _locationLabel;
     QScrollArea*         _treeScrollArea;
     QTreeWidget*         _treeWidget;
     QWidget*             _treeContainer;
     bool                 _isExpanded;
+    bool                 _isCompact;
     int                  _originalHeight;
     std::string          _proxyShapePath;
     QString              _lastComponentName;
@@ -94,4 +115,4 @@ private:
 
 } // namespace UsdLayerEditor
 
-#endif // COMPONENTSAVEDIALOG_H
+#endif // COMPONENTSAVEWIDGET_H
