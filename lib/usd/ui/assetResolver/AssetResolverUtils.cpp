@@ -53,7 +53,7 @@ void AssetResolverUtils::IncludeMayaProjectTokensInAdskAssetResolver()
         }
     }
 #if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-    Adsk::SendContextDataChanged(Adsk::ContextDataType::ALL);
+    Adsk::SendContextDataChanged(Adsk::ContextDataType::TOKEN);
 #endif
 }
 
@@ -66,7 +66,7 @@ void AssetResolverUtils::ExcludeMayaProjectTokensFromAdskAssetResolver()
         Adsk::AssetResolverContextDataRegistry::RemoveContextData("MayaUSDExtension");
     }
 #if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-    Adsk::SendContextDataChanged(Adsk::ContextDataType::ALL);
+    Adsk::SendContextDataChanged(Adsk::ContextDataType::TOKEN);
 #endif
 }
 
