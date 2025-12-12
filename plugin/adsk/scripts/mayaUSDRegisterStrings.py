@@ -90,7 +90,7 @@ __mayaUSDStringResources = {
     "kMenuClear": "Clear",
     "kMenuReload": "Reload",
     "kMenuLayerEditor": "USD Layer Editor",
-    "kContextMenuLayerEditor": "USD Layer Editor...",
+    "kContextMenuLayerEditor": "USD Layer Editor",
     "kMenuLayerEditorAnn": "Organize and edit USD data in layers",
     "kMenuLoadSublayers": "Load Sublayers...",
     "kMenuLock": "Lock",
