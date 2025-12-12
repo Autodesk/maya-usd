@@ -772,6 +772,15 @@ global proc mayaUsdMenu_duplicateAsUsdDataOptions(string $obj)
     python("import mayaUsdDuplicateAsUsdDataOptions; mayaUsdDuplicateAsUsdDataOptions.showDuplicateAsUsdDataOptions()");
 }
 
+proc notifyUsdContextMenuLoaded(string $mayaUsdMenu, string $nodeName)
+{
+    // Trigger usdUfe UI callback so other plugins can add their own menus.
+    python("import usdUfe; " +
+        "context = {}; " +
+        "data = {'usdContextMenu': '" + $mayaUsdMenu + "', 'nodeName': '" + $nodeName + "'}; " +
+        "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
+}
+
 // Helper function to add USD common USD menu items for the outliner and the marking menu.
 proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 {
@@ -824,11 +833,7 @@ proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 		}
     }
 
-    // Trigger usdUfe UI callback so other plugins can add their own menus.
-    python("import usdUfe; " +
-        "context = {}; " +
-        "data = {'usdContextMenu': '" + $usdContextMenu + "', 'nodeName': '" + $obj + "'}; " +
-        "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
+    notifyUsdContextMenuLoaded($usdContextMenu, $obj);
 
     // If the USD submenu was created (not empty) trigger any post-creation logic here.
     if ($usdContextMenu != $currentMenu) {
@@ -928,14 +933,10 @@ global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
             mayaUsdMenu_addCommonUsdContextMenuItems($nodeName, $assetMenuItem);
             return;
         }
+    }
 
-        string $currentMenu = `setParent -q -menu`;
-        // Trigger usdUfe UI callback so other plugins can add their own menus.
-        python("import usdUfe; " +
-            "context = {}; " +
-            "data = {'usdContextMenu': '" + $currentMenu + "', 'nodeName': '" + $nodeName + "'}; " +
-            "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
-        }
+    string $currentMenu = `setParent -q -menu`;
+    notifyUsdContextMenuLoaded($currentMenu, $nodeName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
