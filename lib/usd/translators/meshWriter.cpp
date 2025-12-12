@@ -15,6 +15,7 @@
 //
 #include "meshWriter.h"
 
+#include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
@@ -320,6 +321,7 @@ bool PxrUsdTranslators_MeshWriter::writeAnimatedMeshExtents(
     VtVec3fArray   vtMeshPts(pVtMeshPts, pVtMeshPts + numVertices);
     VtVec3fArray   meshBBox(2);
     UsdGeomPointBased::ComputeExtent(vtMeshPts, &meshBBox);
+    meshBBox = meshBBox * _metersPerUnitScalingFactor;
     bool bStat = true;
     if (meshBBox != this->_prevMeshExtentsSample) {
         bStat = this->_writeJobCtx.UpdateSkelBindingsWithExtent(
@@ -345,9 +347,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     MStatus status { MS::kSuccess };
 
     const UsdMayaJobExportArgs& exportArgs = _GetExportArgs();
-
-    double distanceConversionScalar
-        = UsdMayaUtil::GetExportDistanceConversionScalar(exportArgs.metersPerUnit);
 
     // Exporting reference object only once
     if (usdTime.IsDefault() && exportArgs.referenceObjectMode != UsdMayaJobExportArgsTokens->none) {
@@ -382,6 +381,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                 GetDagPath(),
                 skelPath,
                 exportArgs.stripNamespaces,
+                _metersPerUnitScalingFactor,
                 _GetSparseValueWriter());
 
             if (!_skelInputMesh.isNull()) {
@@ -560,7 +560,11 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             TF_WARN("Blendshapes were requested to be exported, but no upstream blendshapes could "
                     "be found.");
             UsdMayaMeshWriteUtils::writePointsData(
-                geomMesh, primSchema, usdTime, distanceConversionScalar, _GetSparseValueWriter());
+                geomMesh,
+                primSchema,
+                usdTime,
+                _metersPerUnitScalingFactor,
+                _GetSparseValueWriter());
         } else {
             MFnDependencyNode fnNode(upstreamBlendShape, &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -586,14 +590,14 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             MFnMesh fnMesh(inputGeo, &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
             UsdMayaMeshWriteUtils::writePointsData(
-                fnMesh, primSchema, usdTime, distanceConversionScalar, _GetSparseValueWriter());
+                fnMesh, primSchema, usdTime, _metersPerUnitScalingFactor, _GetSparseValueWriter());
         }
     } else {
         // TODO: (yliangsiew) Any other deformers that get implemented in the future will have to
         // make sure that they don't just enter this scope; otherwise, their deformed point
         // positions will get "baked" into the pref pose as well.
         UsdMayaMeshWriteUtils::writePointsData(
-            geomMesh, primSchema, usdTime, distanceConversionScalar, _GetSparseValueWriter());
+            geomMesh, primSchema, usdTime, _metersPerUnitScalingFactor, _GetSparseValueWriter());
     }
 
     // Write faceVertexIndices

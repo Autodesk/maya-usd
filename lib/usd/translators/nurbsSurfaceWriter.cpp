@@ -241,9 +241,9 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
 
     MPointArray cvArray;
     nurbs.getCVs(cvArray, MSpace::kObject);
-    unsigned int numCVs = cvArray.length();
-    int          numCVsInU = nurbs.numCVsInU();
-    int          numCVsInV = nurbs.numCVsInV();
+    const unsigned int numCVs = cvArray.length();
+    const int          numCVsInU = nurbs.numCVsInU();
+    const int          numCVsInV = nurbs.numCVsInV();
 
     VtArray<GfVec3f> sampPos(numCVs);
     VtArray<double>  sampPosWeights(numCVs);
@@ -287,10 +287,16 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     // Compute the extent using the CVs.
     VtArray<GfVec3f> extent(2);
     UsdGeomPointBased::ComputeExtent(sampPos, &extent);
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.CreateExtentAttr(), extent, usdTimeCode, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.CreateExtentAttr(),
+        &extent,
+        _metersPerUnitScalingFactor,
+        usdTimeCode,
+        _GetSparseValueWriter());
 
     // Set NurbsPatch attributes
+    // Note: don't pass some of the followin by address because it would let
+    //       SetAttribute() steal the data but the values are used again below.
     UsdMayaWriteUtil::SetAttribute(
         primSchema.GetUVertexCountAttr(),
         numCVsInU,
@@ -312,19 +318,23 @@ bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         UsdTimeCode::Default(),
         _GetSparseValueWriter());
     UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetUKnotsAttr(), sampKnotsInU, UsdTimeCode::Default(), _GetSparseValueWriter());
+        primSchema.GetUKnotsAttr(), &sampKnotsInU, UsdTimeCode::Default(), _GetSparseValueWriter());
     UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetVKnotsAttr(), sampKnotsInV, UsdTimeCode::Default(), _GetSparseValueWriter());
+        primSchema.GetVKnotsAttr(), &sampKnotsInV, UsdTimeCode::Default(), _GetSparseValueWriter());
     UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetURangeAttr(), uRange, UsdTimeCode::Default(), _GetSparseValueWriter());
+        primSchema.GetURangeAttr(), &uRange, UsdTimeCode::Default(), _GetSparseValueWriter());
     UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetVRangeAttr(), vRange, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetPointsAttr(), sampPos, usdTimeCode, _GetSparseValueWriter());
+        primSchema.GetVRangeAttr(), &vRange, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.GetPointsAttr(),
+        &sampPos,
+        _metersPerUnitScalingFactor,
+        usdTimeCode,
+        _GetSparseValueWriter());
     if (setWeights) {
         UsdMayaWriteUtil::SetAttribute(
             primSchema.GetPointWeightsAttr(),
-            sampPosWeights,
+            &sampPosWeights,
             UsdTimeCode::Default(),
             _GetSparseValueWriter());
     }

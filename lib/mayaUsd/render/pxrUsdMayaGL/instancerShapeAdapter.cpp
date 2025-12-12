@@ -195,8 +195,9 @@ void UsdMayaGL_InstancerShapeAdapter::_SyncInstancer(
     }
 
     // Write PointInstancer attrs using export code path.
+    const double scaleFactor = 1.0;
     UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
-        data, usdInstancer, numPrototypes, UsdTimeCode::Default());
+        data, usdInstancer, numPrototypes, scaleFactor, UsdTimeCode::Default());
 }
 
 /* virtual */

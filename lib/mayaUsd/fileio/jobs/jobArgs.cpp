@@ -16,6 +16,7 @@
 #include "jobArgs.h"
 
 #include <mayaUsd/fileio/jobContextRegistry.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
@@ -129,9 +130,13 @@ double _ExtractMetersPerUnit(const VtDictionary& userArgs)
         return UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaUIUnit);
     }
 
-    // Zero is treated as the default and returns the default internal unit
+    // Zero is treated as the default, so we check the unit argument.
     if (value <= 0.0) {
-        return metersPerUnit;
+        const TfToken unitArg(extractString(userArgs, UsdMayaJobExportArgsTokens->unit));
+        if (unitArg == UsdMayaJobExportArgsTokens->none) {
+            return metersPerUnit;
+        }
+        return ConvertExportArgUnitToMetersPerUnit(unitArg);
     }
 
     // Otherwise take the final value as is
