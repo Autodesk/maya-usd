@@ -20,8 +20,6 @@
 #include <mayaUsd/mayaUsd.h>
 #include <mayaUsdUI/ui/api.h>
 
-#include <maya/MStatus.h>
-
 namespace MAYAUSD_NS_DEF {
 
 /** \class AssetResolverUtils
@@ -31,9 +29,9 @@ class MAYAUSD_UI_PUBLIC AssetResolverUtils
 {
 public:
     // Include Maya project tokens in the Autodesk USD Asset Resolver
-    static void IncludeMayaProjectTokensInAdskAssetResolver();
+    static void includeMayaProjectTokensInAdskAssetResolver();
     // Exclude Maya project tokens from the Autodesk USD Asset Resolver
-    static void ExcludeMayaProjectTokensFromAdskAssetResolver();
+    static void excludeMayaProjectTokensFromAdskAssetResolver();
 };
 
 } // namespace MAYAUSD_NS_DEF

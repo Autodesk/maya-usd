@@ -28,7 +28,7 @@
 
 namespace MAYAUSD_NS_DEF {
 
-void AssetResolverUtils::IncludeMayaProjectTokensInAdskAssetResolver()
+void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
 {
     {
 #if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
@@ -57,7 +57,7 @@ void AssetResolverUtils::IncludeMayaProjectTokensInAdskAssetResolver()
 #endif
 }
 
-void AssetResolverUtils::ExcludeMayaProjectTokensFromAdskAssetResolver()
+void AssetResolverUtils::excludeMayaProjectTokensFromAdskAssetResolver()
 {
     {
 #if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY

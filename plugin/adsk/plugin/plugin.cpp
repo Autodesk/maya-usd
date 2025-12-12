@@ -431,7 +431,7 @@ MStatus initializePlugin(MObject obj)
         static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
         if (MGlobal::optionVarExists(IncludeMayaTokenInAR)
             && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
-            MayaUsd::AssetResolverUtils::IncludeMayaProjectTokensInAdskAssetResolver();
+            MayaUsd::AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
         }
 
         static const MString AdskAssetResolverMappingFile = "mayaUsd_AdskAssetResolverMappingFile";

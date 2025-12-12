@@ -54,7 +54,7 @@ target_compile_definitions(${TARGET_NAME}
         MAYAUSD_PLUGIN_EXPORT
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${AR_FOUND}>:WANT_AR_BUILD>
-        BOOST_NS=PXR_NS::pxr_boost
+        $<$<BOOL:${AR_FOUND}>:BOOST_NS=PXR_NS::pxr_boost>
 )
 
 if(DEFINED MAYAUSD_VERSION)

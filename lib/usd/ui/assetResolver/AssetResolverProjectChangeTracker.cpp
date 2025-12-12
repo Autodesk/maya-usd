@@ -16,7 +16,6 @@
 #include "AssetResolverProjectChangeTracker.h"
 
 // This is added to prevent multiple definitions of the MApiVersion string.
-// This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
 #include "AssetResolverUtils.h"
 
@@ -34,7 +33,7 @@ void AssetResolverProjectChangeTracker::onProjectChanged(void* clientData)
     const bool includeMayaProjectTokens
         = MGlobal::optionVarIntValue("mayaUsd_AdskAssetResolverIncludeMayaToken");
     if (includeMayaProjectTokens)
-        AssetResolverUtils::IncludeMayaProjectTokensInAdskAssetResolver();
+        AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
 }
 
 MStatus AssetResolverProjectChangeTracker::startTracking()

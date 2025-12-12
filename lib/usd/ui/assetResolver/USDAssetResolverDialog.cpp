@@ -208,9 +208,9 @@ void USDAssetResolverDialog::OnSaveRequested()
 
         // apply include project tokens changes if needed
         if (includeMayaProjectTokens) {
-            AssetResolverUtils::IncludeMayaProjectTokensInAdskAssetResolver();
+            AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
         } else {
-            AssetResolverUtils::ExcludeMayaProjectTokensFromAdskAssetResolver();
+            AssetResolverUtils::excludeMayaProjectTokensFromAdskAssetResolver();
         }
         MGlobal::setOptionVarValue(
             "mayaUsd_AdskAssetResolverIncludeMayaToken", includeMayaProjectTokens);
