@@ -17,6 +17,7 @@
 // globals
 // variable used to keep track of created menus
 global string $gMayaUsdCreateSubMenu = "";
+global string $gMayaUsdWindowsUsdToolsSubMenu = "";
 global string $gMayaUsdOpenUsdLayerEditorMenuItem = "";
 global string $gMayaUsdSelectMenuDivider = "";
 global string $gMayaUsdSelectModeSubMenu = "";
@@ -301,8 +302,8 @@ global proc mayaUsdMenu_createMenuCallback() {
             $gMayaUsdCreateSubMenu = `menuItem -subMenu true -insertAfter $sceneManagementDivider -tearOff true
                 -label $subMenuLabel
                 -annotation $subMenuAnn
-                -image "USD_generic.png"
-                -version $mayaVersion`;
+                -image "USD_generic.png"`;
+                
             menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;
             menuItem -runTimeCommand mayaUsdCreateStageFromFile;
             menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;
@@ -459,22 +460,42 @@ global proc mayaUsdMenu_selectMenuCallback() {
 global proc mayaUsdMenu_windowMenuCallback() {
     if (`exists mayaUsdLayerEditorWindow` && !(`menuItem -query -exists wmUsdLayerEditorMenuitem`))
     {
-        // Add Layer Editor menu item.
-        // Insert it after Playblast if it exists, otherwise after Content Browser 
+        global string $gMayaUsdWindowsUsdToolsSubMenu;
+
+        // Create USD Tools submenu. Insert it after Playblast if it exists, 
+        // otherwise after Content Browser
         string $insertAfterItem = "playblastItem";
         if (!(`menuItem -query -exists playblastItem`))
         {
             $insertAfterItem = "wmContentBrowser";
         }
-
         string $mayaVersion = getMayaMajorVersion();
+        $gMayaUsdWindowsUsdToolsSubMenu = `menuItem
+            -insertAfter $insertAfterItem
+            -subMenu true
+            -tearOff true
+            -label "USD Tools"
+            -version $mayaVersion
+            -image "USD_generic.png"
+            wmUsdToolsSubMenu`;
+        
+        // Set parent to the USD Tools submenu and add Layer Editor menu item
+        setParent -menu $gMayaUsdWindowsUsdToolsSubMenu;
+
         global string $gMayaUsdOpenUsdLayerEditorMenuItem;
         $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
-            -insertAfter $insertAfterItem 
             -enableCommandRepeat false
-            -version $mayaVersion
             -runTimeCommand mayaUsdOpenUsdLayerEditor
             wmUsdLayerEditorMenuitem`;
+
+        // Reset parent back to the main Windows menu
+        setParent -menu ..;
+
+		// Trigger usdUfe UI callback to allow other plugins to inject their own menus.
+		python("import usdUfe; " +
+		   "context = {}; " +
+		   "data = {'usdToolsMenu': '" + $gMayaUsdWindowsUsdToolsSubMenu + "'}; " +
+		   "usdUfe.triggerUICallback('mayaUsdWindowsMenuLoaded', context, data);");
     }
     removeMenuCallback(`setParent -q -menu`, "mayaUsdMenu_windowMenuCallback");
 }
@@ -535,6 +556,12 @@ proc termCreateMenu() {
     global string $gMayaUsdOpenUsdLayerEditorMenuItem;
     if ($gMayaUsdOpenUsdLayerEditorMenuItem != "") {
         deleteUI -mi $gMayaUsdOpenUsdLayerEditorMenuItem;
+        $gMayaUsdOpenUsdLayerEditorMenuItem = "";
+    }
+    global string $gMayaUsdWindowsUsdToolsSubMenu;
+    if ($gMayaUsdWindowsUsdToolsSubMenu != "") {
+        deleteUI -mi $gMayaUsdWindowsUsdToolsSubMenu;
+        $gMayaUsdWindowsUsdToolsSubMenu = "";
     }
     removeMenuCallback($gMainCreateMenu, "mayaUsdMenu_windowMenuCallback");
 }
@@ -745,11 +772,24 @@ global proc mayaUsdMenu_duplicateAsUsdDataOptions(string $obj)
     python("import mayaUsdDuplicateAsUsdDataOptions; mayaUsdDuplicateAsUsdDataOptions.showDuplicateAsUsdDataOptions()");
 }
 
-global proc mayaUsdMenu_markingMenuCallback( string $obj )
+proc notifyUsdContextMenuLoaded(string $mayaUsdMenu, string $nodeName)
+{
+    // Trigger usdUfe UI callback so other plugins can add their own menus.
+    python("import usdUfe; " +
+        "context = {}; " +
+        "data = {'usdContextMenu': '" + $mayaUsdMenu + "', 'nodeName': '" + $nodeName + "'}; " +
+        "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
+}
+
+// Helper function to add USD common USD menu items for the outliner and the marking menu.
+proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 {
     if (!hasPrimUpdater())
         return;
-    
+
+    string $currentMenu = `setParent -q -menu`;
+    string $usdContextMenu = $currentMenu;
+
     string $pulledObject = getPulledUsdObject($obj);
     if ($pulledObject != "") {
         string $label = getMayaUsdString("kContextMenuLayerEditor");
@@ -773,21 +813,51 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
     }
     else {
         string $proxyShapes[] = `ls -type mayaUsdProxyShape`;
-        if (size($proxyShapes) > 0) {
-            menuItem -divider true -insertAfter "";
-            menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdData")` -subMenu true -insertAfter "";
-            menuItem -divider true -dividerLabel `getMayaUsdString("kMayaRefDuplicateAsUsdDataDiv")`;
-            for ($proxy in $proxyShapes) {
-                menuItem -label $proxy -command ("mayaUsdMenu_duplicateToUSD " + $proxy + " " + $obj);
-            }
-            menuItem -divider true;
-            menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdDataOptions")` -command ("mayaUsdMenu_duplicateAsUsdDataOptions " + $obj);
+		string $mayaVersion = getMayaMajorVersion();
+		$usdContextMenu = `menuItem -label "USD" -subMenu true -insertAfter $insertAfter -version $mayaVersion -image "USD_generic.png"`;
+        menuItem -divider true;
 
-            // Important: don't forget to reset the menu parent back to the context menu otherwise
+		// Conditionally add "Duplicate as USD Data" submenu if there are proxy shapes
+		if (size($proxyShapes) > 0) {
+			menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdData")` -subMenu true;
+			menuItem -divider true -dividerLabel `getMayaUsdString("kMayaRefDuplicateAsUsdDataDiv")`;
+			for ($proxy in $proxyShapes) {
+				menuItem -label $proxy -command ("mayaUsdMenu_duplicateToUSD " + $proxy + " " + $obj);
+			}
+			menuItem -divider true;
+			menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdDataOptions")` -command ("mayaUsdMenu_duplicateAsUsdDataOptions " + $obj);
+
+			// Important: don't forget to reset the menu parent back to the context menu otherwise
             //            another menu hook would add items to our menu.
+			setParent -menu ..;
+		}
+        
+        notifyUsdContextMenuLoaded($usdContextMenu, $obj);
+        // If the USD submenu was created but is empty, remove it. 
+        // This can happen depending on selection we may have the "duplicate to USD" option or not, 
+        // and the component-creator can also add items from the callback in later maya-usd versions.
+        // In some scenarios, no items are added at all, so cleanup the unused sub-menu.
+        if ($usdContextMenu != $currentMenu) {
+            int $deleteUsdSubmenu = 0;
+            if (`menu -q -numberOfItems $usdContextMenu` == 0) {
+                $deleteUsdSubmenu = 1;
+            }
+            // Reset parent back to the main context menu
             setParent -menu ..;
+            // Perform deletion of the USD submenu from its parent context
+            if ($deleteUsdSubmenu) {
+                deleteUI -mi $usdContextMenu;
+            }
         }
     }
+}
+
+global proc mayaUsdMenu_markingMenuCallback( string $obj )
+{
+    string $parentMenu = `setParent -q -menu`;
+    // In the marking menu we want to inject our menus after "Scene Assembly".
+    string $sceneAssemblyMenu = findMenuByName($parentMenu, "Scene Assembly");
+    mayaUsdMenu_addCommonUsdContextMenuItems($obj, $sceneAssemblyMenu);
 }
 
 proc initPullMenu()
@@ -834,33 +904,39 @@ proc int isMayaUsdProxyShape(string $nodeName)
 
 global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
 {
-    if ((size($nodeName) == 0) || !`objExists $nodeName`) {
-        return;
-    }
+    string $currentMenu = `setParent -q -menu`;
+    string $usdSubmenu = $currentMenu;
 
-    int $isProxyNode = 0;
-    if (`nodeType $nodeName` == "transform") {
-        string $shapes[] = `listRelatives -shapes -fullPath $nodeName`;
-        if (`size($shapes)` > 0) {
-            string $shapeNode = $shapes[0];
-            if (isMayaUsdProxyShape($shapeNode)) {
-                $isProxyNode = 1;
-                if (`exists mayaUsdLayerEditorWindow`) {
-                    string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapeNode + "\" mayaUsdLayerEditor";
-                    menuItem -divider true -insertAfter "";
-                    menuItem -enableCommandRepeat false
-                        -label `getMayaUsdString("kContextMenuLayerEditor")`
-                        -insertAfter ""
-                        -command $command openUsdLayerEditor;
+    if ((size($nodeName) != 0) && `objExists $nodeName`) {
+        int $isProxyNode = 0;
+        if (`nodeType $nodeName` == "transform") {
+            string $shapes[] = `listRelatives -shapes -fullPath $nodeName`;
+            if (`size($shapes)` > 0) {
+                string $shapeNode = $shapes[0];
+                if (isMayaUsdProxyShape($shapeNode)) {
+                    $isProxyNode = 1;
+                    if (`exists mayaUsdLayerEditorWindow`) {
+                        string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapeNode + "\" mayaUsdLayerEditor";
+                        menuItem -divider true -insertAfter "";
+                        menuItem -enableCommandRepeat false
+                            -label `getMayaUsdString("kContextMenuLayerEditor")`
+                            -insertAfter ""
+                            -command $command openUsdLayerEditor;
+                    }
                 }
             }
         }
+
+        // Don't add the "Push..." menu items for the proxy node or the shape.
+        if (!$isProxyNode && !isMayaUsdProxyShape($nodeName)) {
+            // Outliner context menu - insert USD menu after "Asset"
+            string $assetMenuItem = findMenuByName($currentMenu, "Asset");
+            mayaUsdMenu_addCommonUsdContextMenuItems($nodeName, $assetMenuItem);
+            return;
+        }
     }
 
-    // Don't add the "Push..." menu items for the proxy node or the shape.
-    if (!$isProxyNode && !isMayaUsdProxyShape($nodeName)) {
-        mayaUsdMenu_markingMenuCallback($nodeName);
-    }
+    notifyUsdContextMenuLoaded($currentMenu, $nodeName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
