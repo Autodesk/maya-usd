@@ -173,6 +173,7 @@ MObject writeSkinningData(
     const MDagPath&            dagPath,
     SdfPath&                   skelPath,
     const bool                 stripNamespaces,
+    double                     metersPerUnitScale,
     FlexibleSparseValueWriter* valueWriter);
 } // namespace UsdMayaJointUtil
 

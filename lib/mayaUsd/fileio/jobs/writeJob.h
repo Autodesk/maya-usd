@@ -167,6 +167,16 @@ private:
     std::vector<std::unique_ptr<UsdMaya_WriteJob>> m_jobs;
 };
 
+/// Return the scaling conversion factor to apply to distances when writing
+/// from Maya to USD according to the given export args and the current Maya
+/// internal units preference.
+MAYAUSD_CORE_PUBLIC
+double GetJobScalingConversionFactor(const UsdMayaJobExportArgs& exportArgs);
+
+/// Convert the unit token from the export arguments to a metersPerUnit value.
+MAYAUSD_CORE_PUBLIC
+double ConvertExportArgUnitToMetersPerUnit(const TfToken& unitOption);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

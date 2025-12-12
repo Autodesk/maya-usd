@@ -169,7 +169,6 @@ private:
 
     std::vector<_AnimChannel> _animChannels;
     _TokenRotationMap         _previousRotates;
-    double                    _distanceConversionScalar = 1.0;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

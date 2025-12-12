@@ -424,6 +424,7 @@ MObject UsdMayaJointUtil::writeSkinningData(
     const MDagPath&            dagPath,
     SdfPath&                   skelPath,
     const bool                 stripNamespaces,
+    double                     metersPerUnitScale,
     FlexibleSparseValueWriter* valueWriter)
 {
     // Figure out if we even have a skin cluster in the first place.
@@ -476,9 +477,10 @@ MObject UsdMayaJointUtil::writeSkinningData(
 
     GfMatrix4d geomBindTransform;
     if (UsdMayaJointUtil::getGeomBindTransform(skinCluster, &geomBindTransform)) {
-        UsdMayaWriteUtil::SetAttribute(
+        UsdMayaWriteUtil::SetScaledAttribute(
             bindingAPI.CreateGeomBindTransformAttr(),
-            &geomBindTransform,
+            geomBindTransform,
+            metersPerUnitScale,
             UsdTimeCode::Default(),
             valueWriter);
     }

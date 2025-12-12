@@ -107,9 +107,7 @@ class testUsdExportUnits(unittest.TestCase):
         self.assertTrue(spherePrim)
 
         transformUtils.assertPrimXforms(self, spherePrim, [
-            ('xformOp:translate', (0., 0., 3.)),
-            ('xformOp:translate:pivot', (0., 0., 27.)),
-            ('!invert!xformOp:translate:pivot', None),
+            ('xformOp:translate', (0., 0., 30.)),
         ])
 
     def testExportUnitsNanometers(self):
@@ -173,9 +171,7 @@ class testUsdExportUnits(unittest.TestCase):
 
         expectedScale = 0.01 / expectedMetersPerUnit
         transformUtils.assertPrimXforms(self, spherePrim, [
-            ('xformOp:translate', (0., 0., 3.)),
-            ('xformOp:translate:pivot', (0., 0., 3 * expectedScale - 3.)),
-            ('!invert!xformOp:translate:pivot', None),
+            ('xformOp:translate', (0., 0., 3. * expectedScale)),
         ])
 
 

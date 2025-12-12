@@ -38,7 +38,7 @@ bool isLocked(PXR_NS::UsdProperty property);
 /*! \brief Verify is an attribute is locked, optionally setting error message.
  */
 USDUFE_PUBLIC
-bool isAttributeLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
+bool isAttributeLocked(const PXR_NS::UsdProperty& prop, std::string* errMsg);
 
 } // namespace Editability
 
