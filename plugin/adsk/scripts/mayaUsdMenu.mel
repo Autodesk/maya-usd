@@ -462,29 +462,26 @@ global proc mayaUsdMenu_windowMenuCallback() {
     {
         global string $gMayaUsdWindowsUsdToolsSubMenu;
 
-        // Create USD Tools submenu if it doesn't exist
-        if ($gMayaUsdWindowsUsdToolsSubMenu == "" || !(`menuItem -query -exists $gMayaUsdWindowsUsdToolsSubMenu`)) {
-            // Insert it after Playblast if it exists, otherwise after Content Browser
-            string $insertAfterItem = "playblastItem";
-            if (!(`menuItem -query -exists playblastItem`))
-            {
-                $insertAfterItem = "wmContentBrowser";
-            }
-
-            $gMayaUsdWindowsUsdToolsSubMenu = `menuItem
-                -insertAfter $insertAfterItem
-                -subMenu true
-                -tearOff true
-                -label "USD Tools"
-				-version 2027
-                -image "USD_generic.png"
-                wmUsdToolsSubMenu`;
+        // Create USD Tools submenu. Insert it after Playblast if it exists, 
+        // otherwise after Content Browser
+        string $insertAfterItem = "playblastItem";
+        if (!(`menuItem -query -exists playblastItem`))
+        {
+            $insertAfterItem = "wmContentBrowser";
         }
 
-        // Set parent to USD Tools submenu and add Layer Editor menu item
+        $gMayaUsdWindowsUsdToolsSubMenu = `menuItem
+            -insertAfter $insertAfterItem
+            -subMenu true
+            -tearOff true
+            -label "USD Tools"
+            -version 2027
+            -image "USD_generic.png"
+            wmUsdToolsSubMenu`;
+        
+        // Set parent to the USD Tools submenu and add Layer Editor menu item
         setParent -menu $gMayaUsdWindowsUsdToolsSubMenu;
 
-        string $mayaVersion = getMayaMajorVersion();
         global string $gMayaUsdOpenUsdLayerEditorMenuItem;
         $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
             -enableCommandRepeat false
@@ -775,10 +772,8 @@ global proc mayaUsdMenu_duplicateAsUsdDataOptions(string $obj)
     python("import mayaUsdDuplicateAsUsdDataOptions; mayaUsdDuplicateAsUsdDataOptions.showDuplicateAsUsdDataOptions()");
 }
 
-// Helper function to add USD menu items for a given object and insertion point
-// context: "viewport" or "outliner" - used for callback naming
-// insertAfter: menu item to insert USD submenu after
-proc string mayaUsdMenu_addUsdContextMenuItems(string $obj, string $insertAfter)
+// Helper function to add USD common USD menu items for the outliner and the marking menu.
+proc string mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 {
     if (!hasPrimUpdater())
         return "";
@@ -834,15 +829,14 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
 {
     string $parentMenu = `setParent -q -menu`;
     string $sceneAssemblyMenu = findMenuByName($parentMenu, "Scene Assembly");
-    $usdSubmenu = mayaUsdMenu_addUsdContextMenuItems($obj, $sceneAssemblyMenu);
+    $usdSubmenu = mayaUsdMenu_addCommonUsdContextMenuItems($obj, $sceneAssemblyMenu);
 
     // Trigger usdUfe UI callback for this context (always)
-    string $callbackName = "mayaUsdViewportContextMenuLoaded";
+    string $callbackName = "mayaUsdContextMenuLoaded";
     python("import usdUfe; " +
         "context = {}; " +
         "data = {'usdContextMenu': '" + $usdSubmenu + "', 'nodeName': '" + $obj + "'}; " +
-        "print('[mayaUsdMenu] Trigger usdUfe UI callback: " + "viewport" + " with menu: " + $usdSubmenu + "');" +
-        "usdUfe.triggerUICallback('mayaUsdViewportContextMenuLoaded', context, data);");
+        "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
 
     // After callbacks, remove the USD submenu if it ended up empty
     int $deleteUsdSubmenu = 0;
@@ -929,7 +923,7 @@ global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
         if (!$isProxyNode && !isMayaUsdProxyShape($nodeName)) {
             // Outliner context menu - insert USD menu after "Asset"
             string $assetMenuItem = findMenuByName($parentMenu, "Asset");
-            $usdSubmenu = mayaUsdMenu_addUsdContextMenuItems($nodeName, $assetMenuItem);
+            $usdSubmenu = mayaUsdMenu_addCommonUsdContextMenuItems($nodeName, $assetMenuItem);
         }
     }
 
@@ -938,7 +932,7 @@ global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
         "context = {}; " +
         "data = {'usdContextMenu': '" + $usdSubmenu + "', 'nodeName': '" + $nodeName + "'}; " +
         "print('[mayaUsdMenu] Trigger usdUfe UI callback: " + "outliner" + " with menu: " + $usdSubmenu + " and node: " + $nodeName + "');" +
-        "usdUfe.triggerUICallback('mayaUsdOutlinerContextMenuLoaded', context, data);");
+        "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
 
     // If the USD submenu was created (not empty) trigger any post-creation logic here.
     if ($usdSubmenu != $parentMenu) {
