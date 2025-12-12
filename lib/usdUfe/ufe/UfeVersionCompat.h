@@ -38,4 +38,8 @@
 #define UFE_V6(...)
 #endif
 
+#if !defined(UFE_V7_FEATURES_AVAILABLE) && !defined(UFE_V7)
+#define UFE_V7(...)
+#endif
+
 #endif // USDUFE_UFEVERSIONCOMPAT_H
