@@ -46,13 +46,13 @@ bool isLocked(PXR_NS::UsdProperty property)
     }
 }
 
-bool isAttributeLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
+bool isAttributeLocked(const PXR_NS::UsdProperty& prop, std::string* errMsg)
 {
-    if (isLocked(attr)) {
+    if (isLocked(prop)) {
         if (errMsg) {
             *errMsg = TfStringPrintf(
                 "Cannot edit [%s] attribute because its lock metadata is [on].",
-                attr.GetBaseName().GetText());
+                prop.GetBaseName().GetText());
         }
         return true;
     }
