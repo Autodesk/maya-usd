@@ -469,13 +469,13 @@ global proc mayaUsdMenu_windowMenuCallback() {
         {
             $insertAfterItem = "wmContentBrowser";
         }
-
+        string $mayaVersion = getMayaMajorVersion();
         $gMayaUsdWindowsUsdToolsSubMenu = `menuItem
             -insertAfter $insertAfterItem
             -subMenu true
             -tearOff true
             -label "USD Tools"
-            -version 2027
+            -version $mayaVersion
             -image "USD_generic.png"
             wmUsdToolsSubMenu`;
         
@@ -813,10 +813,9 @@ proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
     }
     else {
         string $proxyShapes[] = `ls -type mayaUsdProxyShape`;
-		// Always create USD submenu and trigger callback, regardless of proxy shapes
-		
-		$usdContextMenu = `menuItem -label "USD" -subMenu true -insertAfter $insertAfter -version 2027 -image "USD_generic.png"`;
-        menuItem -divider true -insertAfter $usdContextMenu;
+		string $mayaVersion = getMayaMajorVersion();
+		$usdContextMenu = `menuItem -label "USD" -subMenu true -insertAfter $insertAfter -version $mayaVersion -image "USD_generic.png"`;
+        menuItem -divider true;
 
 		// Conditionally add "Duplicate as USD Data" submenu if there are proxy shapes
 		if (size($proxyShapes) > 0) {
@@ -828,16 +827,19 @@ proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 			menuItem -divider true;
 			menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdDataOptions")` -command ("mayaUsdMenu_duplicateAsUsdDataOptions " + $obj);
 
-			// Go back to USD submenu parent
+			// Important: don't forget to reset the menu parent back to the context menu otherwise
+            //            another menu hook would add items to our menu.
 			setParent -menu ..;
 		}
     }
 
     notifyUsdContextMenuLoaded($usdContextMenu, $obj);
 
-    // If the USD submenu was created (not empty) trigger any post-creation logic here.
+    // If the USD submenu was created but is empty, remove it. 
+    // This can happen depending on selection we may have the "duplicate to USD" option or not, 
+    // and the component-creator can also add items from the callback in later maya-usd versions.
+    // In some scenarios, no items are added at all, so cleanup the unused sub-menu.
     if ($usdContextMenu != $currentMenu) {
-        // After callbacks, remove the USD submenu if it ended up empty
         int $deleteUsdSubmenu = 0;
         if (`menu -q -numberOfItems $usdContextMenu` == 0) {
             $deleteUsdSubmenu = 1;
@@ -854,6 +856,7 @@ proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 global proc mayaUsdMenu_markingMenuCallback( string $obj )
 {
     string $parentMenu = `setParent -q -menu`;
+    // In the marking menu we want to inject our menus after "Scene Assembly".
     string $sceneAssemblyMenu = findMenuByName($parentMenu, "Scene Assembly");
     mayaUsdMenu_addCommonUsdContextMenuItems($obj, $sceneAssemblyMenu);
 }
@@ -902,9 +905,8 @@ proc int isMayaUsdProxyShape(string $nodeName)
 
 global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
 {
-
-    string $parentMenu = `setParent -q -menu`;
-    string $usdSubmenu = $parentMenu;
+    string $currentMenu = `setParent -q -menu`;
+    string $usdSubmenu = $currentMenu;
 
     if ((size($nodeName) != 0) && `objExists $nodeName`) {
         int $isProxyNode = 0;
@@ -929,13 +931,12 @@ global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
         // Don't add the "Push..." menu items for the proxy node or the shape.
         if (!$isProxyNode && !isMayaUsdProxyShape($nodeName)) {
             // Outliner context menu - insert USD menu after "Asset"
-            string $assetMenuItem = findMenuByName($parentMenu, "Asset");
+            string $assetMenuItem = findMenuByName($currentMenu, "Asset");
             mayaUsdMenu_addCommonUsdContextMenuItems($nodeName, $assetMenuItem);
             return;
         }
     }
 
-    string $currentMenu = `setParent -q -menu`;
     notifyUsdContextMenuLoaded($currentMenu, $nodeName);
 }
 
