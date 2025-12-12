@@ -33,10 +33,12 @@ public:
     SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent, bool isExporting);
 
     // Create dialog for bulk save using all provided proxy shapes and their owned stages.
+    // If componentsOnly is true, only component stages are shown (no anonymous/file-backed layers).
     SaveLayersDialog(
         QWidget*                                     in_parent,
         const std::vector<MayaUsd::StageSavingInfo>& infos,
-        bool                                         isExporting);
+        bool                                         isExporting,
+        bool                                         componentsOnly = false);
 
     ~SaveLayersDialog();
 

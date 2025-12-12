@@ -21,6 +21,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <maya/MGlobal.h>
@@ -71,6 +72,28 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
                 //
                 return (QDialog::Rejected == dlg.exec()) ? MayaUsd::kAbort
                                                          : MayaUsd::kPartiallyCompleted;
+            }
+        }
+        else if (MayaUsd::utils::kSaveToMayaSceneFile == opt) {
+            // When saving to Maya scene file, only show dialog for component stages
+            // that need initial save location selection.
+            bool hasComponentStages = false;
+            for (const auto& info : infos) {
+                if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+                        info.dagPath.fullPathName().asChar())) {
+                    hasComponentStages = true;
+                    break;
+                }
+            }
+
+            if (hasComponentStages) {
+                const bool componentsOnly = true;
+                UsdLayerEditor::SaveLayersDialog dlg(nullptr, infos, isExporting, componentsOnly);
+
+                // Execute the dialog and return partially completed even if the dialog is closed.
+                dlg.exec();
+
+                return MayaUsd::kPartiallyCompleted;
             }
         }
     }
