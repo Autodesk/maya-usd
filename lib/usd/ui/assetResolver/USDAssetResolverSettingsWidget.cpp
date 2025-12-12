@@ -74,6 +74,16 @@ public:
         QRect r = visualRect(indexAt(event->pos()));
         viewport()->update(r);
     }
+
+    void paintEvent(QPaintEvent* e)
+    {
+        QListView::paintEvent(e);
+        if (model() && model()->rowCount(rootIndex()) > 0)
+            return;
+        // The view is empty.
+        QPainter p(this->viewport());
+        p.drawText(rect(), Qt::AlignCenter, tr("No paths"));
+    }
 };
 
 class StringListModel : public QStringListModel
@@ -460,7 +470,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
             d->extAndEnvPathsWidget);
         layout->addWidget(d->extAndEnvPathsHeader, 0);
 
-        auto listview = new QListView(d->extAndEnvPathsWidget);
+        auto listview = new ListView(d->extAndEnvPathsWidget);
         layout->addWidget(listview, 1);
         listview->setUniformItemSizes(true);
         listview->setItemDelegate(new ListPanelItemDelegate(listview));
