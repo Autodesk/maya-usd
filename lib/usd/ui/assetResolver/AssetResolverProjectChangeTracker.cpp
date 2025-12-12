@@ -16,35 +16,14 @@
 #include "AssetResolverProjectChangeTracker.h"
 
 // This is added to prevent multiple definitions of the MApiVersion string.
+// This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
 #include "AssetResolverUtils.h"
 
-#include <mayaUsd/fileio/importData.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsdUI/ui/USDAssetResolverDialog.h>
-#include <mayaUsdUI/ui/USDQtUtil.h>
-
-#include <pxr/usd/ar/resolver.h>
-#include <pxr/usd/usd/variantSets.h>
-
-#include <maya/MArgParser.h>
 #include <maya/MCallbackIdArray.h>
-#include <maya/MDagPath.h>
-#include <maya/MFileObject.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MFnPlugin.h>
-#include <maya/MFnStringData.h>
 #include <maya/MGlobal.h>
-#include <maya/MQtUtil.h>
-#include <maya/MSelectionList.h>
 #include <maya/MString.h>
-#include <maya/MStringArray.h>
-#include <maya/MSyntax.h>
 #include <maya/MUserEventMessage.h>
-
-#include <AdskAssetResolver/AdskAssetResolver.h>
-#include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 
 namespace MAYAUSD_NS_DEF {
 
