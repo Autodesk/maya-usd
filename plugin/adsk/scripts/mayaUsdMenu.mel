@@ -833,7 +833,8 @@ proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 		}
         
         notifyUsdContextMenuLoaded($usdContextMenu, $obj);
-        // Remove the USD submenu if it does not contain at least one item with a non-empty label.
+        // Remove the USD submenu if it does not contain at least one item with a non-empty label,
+        // to exclude seperators.
         if ($usdContextMenu != $currentMenu) {
             int $deleteUsdSubmenu = 1;
             int $numItems = `menu -q -numberOfItems $usdContextMenu`;
