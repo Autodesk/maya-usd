@@ -773,12 +773,14 @@ global proc mayaUsdMenu_duplicateAsUsdDataOptions(string $obj)
 }
 
 // Helper function to add USD common USD menu items for the outliner and the marking menu.
-proc string mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
+proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
 {
     if (!hasPrimUpdater())
-        return "";
+        return;
 
-    string $usdSubmenu = "";
+    string $currentMenu = `setParent -q -menu`;
+    string $usdContextMenu = $currentMenu;
+
     string $pulledObject = getPulledUsdObject($obj);
     if ($pulledObject != "") {
         string $label = getMayaUsdString("kContextMenuLayerEditor");
@@ -804,8 +806,8 @@ proc string mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insert
         string $proxyShapes[] = `ls -type mayaUsdProxyShape`;
 		// Always create USD submenu and trigger callback, regardless of proxy shapes
 		
-		$usdSubmenu = `menuItem -label "USD" -subMenu true -insertAfter $insertAfter -version 2027 -image "USD_generic.png"`;
-        menuItem -divider true -insertAfter $usdSubmenu;
+		$usdContextMenu = `menuItem -label "USD" -subMenu true -insertAfter $insertAfter -version 2027 -image "USD_generic.png"`;
+        menuItem -divider true -insertAfter $usdContextMenu;
 
 		// Conditionally add "Duplicate as USD Data" submenu if there are proxy shapes
 		if (size($proxyShapes) > 0) {
@@ -822,33 +824,33 @@ proc string mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insert
 		}
     }
 
-    return $usdSubmenu;
+    // Trigger usdUfe UI callback so other plugins can add their own menus.
+    python("import usdUfe; " +
+        "context = {}; " +
+        "data = {'usdContextMenu': '" + $usdContextMenu + "', 'nodeName': '" + $obj + "'}; " +
+        "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
+
+    // If the USD submenu was created (not empty) trigger any post-creation logic here.
+    if ($usdContextMenu != $currentMenu) {
+        // After callbacks, remove the USD submenu if it ended up empty
+        int $deleteUsdSubmenu = 0;
+        if (`menu -q -numberOfItems $usdContextMenu` == 0) {
+            $deleteUsdSubmenu = 1;
+        }
+        // Reset parent back to the main context menu
+        setParent -menu ..;
+        // Perform deletion of the USD submenu from its parent context
+        if ($deleteUsdSubmenu) {
+            deleteUI -mi $usdContextMenu;
+        }
+    }
 }
 
 global proc mayaUsdMenu_markingMenuCallback( string $obj )
 {
     string $parentMenu = `setParent -q -menu`;
     string $sceneAssemblyMenu = findMenuByName($parentMenu, "Scene Assembly");
-    $usdSubmenu = mayaUsdMenu_addCommonUsdContextMenuItems($obj, $sceneAssemblyMenu);
-
-    // Trigger usdUfe UI callback for this context (always)
-    string $callbackName = "mayaUsdContextMenuLoaded";
-    python("import usdUfe; " +
-        "context = {}; " +
-        "data = {'usdContextMenu': '" + $usdSubmenu + "', 'nodeName': '" + $obj + "'}; " +
-        "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
-
-    // After callbacks, remove the USD submenu if it ended up empty
-    int $deleteUsdSubmenu = 0;
-    if (`menu -q -numberOfItems $usdSubmenu` == 0) {
-        $deleteUsdSubmenu = 1;
-    }
-    // Reset parent back to the main context menu
-    setParent -menu ..;
-    // Perform deletion of the USD submenu from its parent context
-    if ($deleteUsdSubmenu) {
-        deleteUI -mi $usdSubmenu;
-    }
+    mayaUsdMenu_addCommonUsdContextMenuItems($obj, $sceneAssemblyMenu);
 }
 
 proc initPullMenu()
@@ -923,31 +925,17 @@ global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
         if (!$isProxyNode && !isMayaUsdProxyShape($nodeName)) {
             // Outliner context menu - insert USD menu after "Asset"
             string $assetMenuItem = findMenuByName($parentMenu, "Asset");
-            $usdSubmenu = mayaUsdMenu_addCommonUsdContextMenuItems($nodeName, $assetMenuItem);
+            mayaUsdMenu_addCommonUsdContextMenuItems($nodeName, $assetMenuItem);
+            return;
         }
-    }
 
-    // Trigger usdUfe UI callback for this context (always)
-    python("import usdUfe; " +
-        "context = {}; " +
-        "data = {'usdContextMenu': '" + $usdSubmenu + "', 'nodeName': '" + $nodeName + "'}; " +
-        "print('[mayaUsdMenu] Trigger usdUfe UI callback: " + "outliner" + " with menu: " + $usdSubmenu + " and node: " + $nodeName + "');" +
-        "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
-
-    // If the USD submenu was created (not empty) trigger any post-creation logic here.
-    if ($usdSubmenu != $parentMenu) {
-        // After callbacks, remove the USD submenu if it ended up empty
-        int $deleteUsdSubmenu = 0;
-        if (`menu -q -numberOfItems $usdSubmenu` == 0) {
-            $deleteUsdSubmenu = 1;
+        string $currentMenu = `setParent -q -menu`;
+        // Trigger usdUfe UI callback so other plugins can add their own menus.
+        python("import usdUfe; " +
+            "context = {}; " +
+            "data = {'usdContextMenu': '" + $currentMenu + "', 'nodeName': '" + $nodeName + "'}; " +
+            "usdUfe.triggerUICallback('mayaUsdContextMenuLoaded', context, data);");
         }
-        // Reset parent back to the main context menu
-        setParent -menu ..;
-        // Perform deletion of the USD submenu from its parent context
-        if ($deleteUsdSubmenu) {
-            deleteUI -mi $usdSubmenu;
-        }
-    }    
 }
 
 ///////////////////////////////////////////////////////////////////////////////
