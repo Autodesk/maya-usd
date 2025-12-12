@@ -233,6 +233,7 @@ struct UsdMayaWriteUtil
         MFnArrayAttrsData&           inputPointsData,
         const UsdGeomPointInstancer& instancer,
         const size_t                 numPrototypes,
+        double                       unitsPerMeterScaleFactor,
         const UsdTimeCode&           usdTime,
         FlexibleSparseValueWriter*   valueWriter = nullptr);
 
@@ -327,6 +328,40 @@ struct UsdMayaWriteUtil
                            : attr.Set(value, time);
     }
 
+    template <typename T>
+    static bool SetScaledAttribute(
+        const UsdAttribute&        attr,
+        const T&                   value,
+        const double               scale,
+        const UsdTimeCode          time = UsdTimeCode::Default(),
+        FlexibleSparseValueWriter* valueWriter = nullptr)
+    {
+        return valueWriter ? valueWriter->SetAttribute(attr, VtValue(T(value * scale)), time)
+                           : attr.Set(value, time);
+    }
+
+    MAYAUSD_CORE_PUBLIC
+    static GfMatrix4d ScaleMatrix(const GfMatrix4d& matrix, double scale);
+
+    MAYAUSD_CORE_PUBLIC
+    static VtMatrix4dArray ScaleMatrices(const VtMatrix4dArray& matrices, double scale);
+
+    MAYAUSD_CORE_PUBLIC
+    static bool SetScaledAttribute(
+        const UsdAttribute&        attr,
+        const GfMatrix4d&          value,
+        const double               scale,
+        const UsdTimeCode          time = UsdTimeCode::Default(),
+        FlexibleSparseValueWriter* valueWriter = nullptr);
+
+    MAYAUSD_CORE_PUBLIC
+    static bool SetScaledAttribute(
+        const UsdAttribute&        attr,
+        const VtMatrix4dArray&     value,
+        const double               scale,
+        const UsdTimeCode          time = UsdTimeCode::Default(),
+        FlexibleSparseValueWriter* valueWriter = nullptr);
+
     /// \overload
     /// This overload takes the value by pointer and hence avoids a copy
     /// of the value.
@@ -339,6 +374,22 @@ struct UsdMayaWriteUtil
         const UsdTimeCode          time = UsdTimeCode::Default(),
         FlexibleSparseValueWriter* valueWriter = nullptr)
     {
+        return valueWriter ? valueWriter->SetAttribute(attr, VtValue::Take(*value), time)
+                           : attr.Set(*value, time);
+    }
+
+    template <typename T>
+    static bool SetScaledAttribute(
+        const UsdAttribute&        attr,
+        T*                         value,
+        const double               scale,
+        const UsdTimeCode          time = UsdTimeCode::Default(),
+        FlexibleSparseValueWriter* valueWriter = nullptr)
+    {
+        if (scale == 1.0) {
+            return SetAttribute(attr, value, time, valueWriter);
+        }
+        *value = T((*value) * scale);
         return valueWriter ? valueWriter->SetAttribute(attr, VtValue::Take(*value), time)
                            : attr.Set(*value, time);
     }

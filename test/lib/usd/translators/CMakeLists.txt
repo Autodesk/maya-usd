@@ -31,6 +31,11 @@ set(TEST_SCRIPT_FILES
     testUsdExportRootPrim.py
     testUsdExportTypes.py
     testUsdExportUnits.py
+    testUsdExportUnitsBlendshape.py
+    testUsdExportUnitsCamera.py
+    testUsdExportUnitsInstances.py
+    testUsdExportUnitsNurbsCurve.py
+    testUsdExportUnitsSkeleton.py
     testUsdExportUpAxis.py
     testUsdExportUVSetsSwitch.py
 
