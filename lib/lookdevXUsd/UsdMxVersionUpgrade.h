@@ -15,26 +15,26 @@
 
 #include "Export.h"
 
-#include <ufe/undoableCommand.h>
-
 #include <mayaUsdAPI/undo.h>
 
 #include <ufe/path.h>
+#include <ufe/undoableCommand.h>
 
-namespace LookdevXUsd::Version
-{
+namespace LookdevXUsd::Version {
 using namespace PXR_NS;
 
-//! \brief Checks if the given material element path belongs to a legacy MaterialX shader graph requiring upgrade.
-//! \param materialElementPath The Ufe::Path of the material element to check.
-//! \return An optional string containing the legacy MaterialX version if an upgrade is needed; std::nullopt otherwise.
-std::optional<std::string> LOOKDEVX_USD_EXPORT isLegacyShaderGraph(const Ufe::Path& materialElementPath);
+//! \brief Checks if the given UsdShadeMaterial path belongs to a legacy MaterialX shader graph
+//! requiring upgrade. \param materialPath The Ufe::Path of the UsdShadeMaterial to check.
+//! \return An optional string containing the legacy MaterialX version if an upgrade is needed;
+//! std::nullopt otherwise.
+std::optional<std::string>
+    LOOKDEVX_USD_EXPORT isLegacyShaderGraph(const Ufe::Path& materialPath);
 
-//! \brief Upgrades all UsdShade elements in the stage that use legacy MaterialX versions to the current version.
-//! \param stagePath The path to UsdStage to upgrade.
+//! \brief Upgrades all UsdShade nodes in the stage that use legacy MaterialX versions to the
+//! current version. \param stagePath The path to UsdStage to upgrade.
 void LOOKDEVX_USD_EXPORT UpgradeStage(const Ufe::Path& stagePath);
 
-//! \brief Upgrades all UsdShade elements that use legacy MaterialX versions to the current version.
+//! \brief Upgrades all UsdShade nodes that use legacy MaterialX versions to the current version.
 //! \param materialPath The path to UsdShadeMaterial to upgrade.
 void LOOKDEVX_USD_EXPORT UpgradeMaterial(const Ufe::Path& materialPath);
 
@@ -61,11 +61,9 @@ public:
     void redo() override;
     UFE_V4(std::string commandString() const override { return "MaterialXUpgradeMaterial"; })
 
-    private:
-
-    Ufe::Path _materialPath;
-    MayaUsdAPI::UsdUndoableItem   _undoableItem;
-
+private:
+    Ufe::Path                   _materialPath;
+    MayaUsdAPI::UsdUndoableItem _undoableItem;
 };
 
 class LOOKDEVX_USD_EXPORT UsdMxUpgradeStageCmd : public Ufe::CompositeUndoableCommand
@@ -89,8 +87,7 @@ public:
     UFE_V4(std::string commandString() const override { return "MaterialXUpgradeStage"; })
 };
 
-
-} // namespace LookdevXUsd
+} // namespace LookdevXUsd::Version
 
 #endif // LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 #endif // USD_MX_VERSION_UPGRADE_H

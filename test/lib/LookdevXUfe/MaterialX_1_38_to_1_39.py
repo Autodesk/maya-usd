@@ -16,8 +16,8 @@ CHANNEL_COUNT_MAP = {
         "vector2": 2, "vector3": 3, "vector4": 4
     }
 CHANNEL_CONVERT_PATTERNS = (
-        ( "rgb", 3 ), ( "rgb", 4 ), ( "rgba", 4 ),
-        ( "xyz", 3 ), ( "xyz", 4 ), ( "xyzw", 4 ),
+        ( "rgb", 3 ), ( "rgb1", 4 ), ( "rgba", 4 ),
+        ( "xyz", 3 ), ( "xyz1", 4 ), ( "xyzw", 4 ),
         ( "rr", 1 ), ( "rrr", 1 ),
         ( "xx", 1 ), ( "xxx", 1 )
     )
@@ -208,6 +208,13 @@ def MoveInput(sourceNode, sourceInputName, destNode, destInputName):
     editor.ReparentProperty(sourceNode.GetInput(sourceInputName).GetAttr(), destNode.GetPrim(), "inputs:" + destInputName)
     if editor.CanApplyEdits():
         editor.ApplyEdits()
+    else:
+        print("WARNING: Failed to move input '{}' from node '{}' to input '{}' on node '{}'. Please make sure "
+            "the material layer is writable.".format(
+            sourceInputName,
+            sourceNode.GetPrim().GetPath(),
+            destInputName,
+            destNode.GetPrim().GetPath()))
 
 def ConvertMaterialTo139(usdMaterial):
     # If this material is already 1.39, then nothing to do:
@@ -358,6 +365,10 @@ def ConvertMaterialTo139(usdMaterial):
                     editor.DeleteProperty(inInput.GetAttr())
                     if editor.CanApplyEdits():
                         editor.ApplyEdits()
+                    else:
+                        print("WARNING: Failed to remove 'in' input from node '{}'. Please make sure "
+                            "the material layer is writable.".format(
+                            node.GetPrim().GetPath()))
                 hasUpgrade = True
 
             elif destChannelCount == 1:
@@ -385,6 +396,10 @@ def ConvertMaterialTo139(usdMaterial):
                 editor.DeleteProperty(inInput.GetAttr())
                 if editor.CanApplyEdits():
                     editor.ApplyEdits()
+                else:
+                    print("WARNING: Failed to remove 'in' input from node '{}'. Please make sure "
+                        "the material layer is writable.".format(
+                        node.GetPrim().GetPath()))
                 hasUpgrade = True
 
             else:
@@ -413,6 +428,10 @@ def ConvertMaterialTo139(usdMaterial):
                 editor.DeleteProperty(channelsInput.GetAttr())
                 if editor.CanApplyEdits():
                     editor.ApplyEdits()
+                else:
+                    print("WARNING: Failed to remove 'channels' input from node '{}'. Please make sure "
+                        "the material layer is writable.".format(
+                        node.GetPrim().GetPath()))
 
         elif shaderID in ("ND_atan2_float", "ND_atan2_vector2",
                           "ND_atan2_vector3", "ND_atan2_vector4"):
@@ -423,6 +442,10 @@ def ConvertMaterialTo139(usdMaterial):
                 editor.DeleteProperty(input1.GetAttr())
                 if editor.CanApplyEdits():
                     editor.ApplyEdits()
+                else: 
+                    print("WARNING: Failed to remove 'in1' input from node '{}'. Please make sure "
+                        "the material layer is writable.".format(
+                        node.GetPrim().GetPath()))
                 hasUpgrade = True
             input2 = node.GetInput("in2")
             if input2:
@@ -430,6 +453,10 @@ def ConvertMaterialTo139(usdMaterial):
                 editor.DeleteProperty(input2.GetAttr())
                 if editor.CanApplyEdits():
                     editor.ApplyEdits()
+                else: 
+                    print("WARNING: Failed to remove 'in2' input from node '{}'. Please make sure "
+                        "the material layer is writable.".format(
+                        node.GetPrim().GetPath()))
                 hasUpgrade = True
 
         elif shaderID in ("ND_normalmap", "ND_normalmap_vector2"):
@@ -448,6 +475,11 @@ def ConvertMaterialTo139(usdMaterial):
                     editor.DeleteProperty(input.GetAttr())
                     if editor.CanApplyEdits():
                         editor.ApplyEdits()
+                    else:
+                        print("WARNING: Failed to remove '{}' input from node '{}'. Please make sure "
+                            "the material layer is writable.".format(
+                            input.GetBaseName(),
+                            node.GetPrim().GetPath()))
                 node.CreateInput("in", MX_TO_USD_TYPE["vector3"]).ConnectToSource(subtract.CreateOutput("out", MX_TO_USD_TYPE["vector3"]))
                 hasUpgrade = True
 
@@ -457,6 +489,10 @@ def ConvertMaterialTo139(usdMaterial):
                 editor.DeleteProperty(space.GetAttr())
                 if editor.CanApplyEdits():
                     editor.ApplyEdits()
+                else:
+                    print("WARNING: Failed to remove 'space' input from node '{}'. Please make sure "
+                        "the material layer is writable.".format(
+                        node.GetPrim().GetPath()))
 
                 # If the normal or tangent inputs are set and the bitangent input is not, 
                 # the bitangent should be set to normalize(cross(N, T))
@@ -482,6 +518,10 @@ def ConvertMaterialTo139(usdMaterial):
         editor.DeletePrim(node.GetPrim())
         if editor.CanApplyEdits():
             editor.ApplyEdits()
+        else:
+            print("WARNING: Failed to remove unused node '{}'. Please make sure "
+                "the material layer is writable.".format(
+                node.GetPrim().GetPath()))
 
     if hasUpgrade:
         usdMaterial.ApplyAPI(UsdMtlx.MaterialXConfigAPI)

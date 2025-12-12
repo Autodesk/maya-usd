@@ -147,6 +147,7 @@ target_link_libraries(${PROJECT_NAME}
         usdUI
         ${UFE_LIBRARY}
         ${LookdevXUfe_LIBRARY}
+        usdUfe
 )
 
 # -----------------------------------------------------------------------------

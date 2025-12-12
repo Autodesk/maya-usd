@@ -13,6 +13,8 @@
 
 #include "UsdMxVersionUpgrade.h"
 
+#include <mayaUsdAPI/utils.h>
+
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -21,6 +23,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usd/primFlags.h>
+#include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdMtlx/materialXConfigAPI.h>
 #include <pxr/usd/usdShade/connectableAPI.h>
@@ -29,6 +32,8 @@
 #include <pxr/usd/usdShade/shader.h>
 
 #include <ufe/hierarchy.h>
+
+#include <usdUfe/ufe/Utils.h>
 
 #include <mayaUsdAPI/utils.h>
 
@@ -47,6 +52,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (mtlx)
     ((legacyVersionPrefix, "MaterialX v"))
     ((currentMxVersion, MaterialX_VERSION_STRING))
+    (MaterialXConfigAPI)
+    ((configMtlxVersion, "config:mtlx:version"))
+    ((knownValueOfDefaultMxVersion, "1.38"))
 
     // All affected node ids:
     (ND_switch_float)
@@ -311,13 +319,13 @@ const auto kMaterialXToUsdType = std::unordered_map<TfToken, SdfValueTypeName, T
 
 namespace {
 
-Ufe::Path _getMaterialPath(const Ufe::Path& materialElementPath)
+Ufe::Path _getMaterialPath(const Ufe::Path& materialPath)
 {
-    if (materialElementPath.empty()) {
+    if (materialPath.empty()) {
         return {};
     }
 
-    auto sceneItem = Ufe::Hierarchy::createItem(materialElementPath);
+    auto sceneItem = Ufe::Hierarchy::createItem(materialPath);
 
     while (sceneItem && sceneItem->nodeType() != _tokens->Material) {
         auto hierarchy = Ufe::Hierarchy::hierarchy(sceneItem);
@@ -329,6 +337,24 @@ Ufe::Path _getMaterialPath(const Ufe::Path& materialElementPath)
     return sceneItem->path();
 }
 
+std::string _getDefaultVersionFromMxConfigAPI()
+{
+    static const auto defaultVersion = []() -> std::string {
+        const UsdSchemaRegistry& schemaReg = UsdSchemaRegistry::GetInstance();
+        const UsdPrimDefinition* primDef = schemaReg.FindAppliedAPIPrimDefinition(_tokens->MaterialXConfigAPI);
+        if (primDef) {
+            std::string value;
+            if (primDef->GetAttributeFallbackValue(_tokens->configMtlxVersion, &value))
+            {
+                return value;
+            }
+        }
+        // Well... we tried. Fallback to hardcoded known default:
+        return _tokens->knownValueOfDefaultMxVersion.GetString();
+    }();
+    return defaultVersion;
+}
+
 std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
 {
     auto mxSurfaceOutput = material.GetSurfaceOutput(_tokens->mtlx);
@@ -338,7 +364,7 @@ std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
         return std::nullopt;
     }
     // Fetch the version from the MaterialXConfigAPI schema:
-    auto materialXVersion = std::string{"1.38"}; // Default to 1.38 if not authored.
+    auto materialXVersion = _getDefaultVersionFromMxConfigAPI();
 
     const auto configAPI = UsdMtlxMaterialXConfigAPI(material);
     if (configAPI)
@@ -359,79 +385,11 @@ std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
     return std::nullopt;
 }
 
-std::pair<std::string, std::string> _splitNumericalSuffix(const std::string& srcName)
-{
-    // Compiled regular expression to find a numerical suffix to a path component.
-    // It searches for any number of characters followed by a single non-numeric,
-    // then one or more digits at end of string.
-    static const auto reSuffix = std::regex("(.*[^0-9])([0-9]+)$");
-    std::smatch base_match;
- 
-    if (std::regex_match(srcName, base_match, reSuffix)) {
-        return std::make_pair(base_match[1].str(), base_match[2].str());
-    }
-    return std::make_pair(srcName, "");
-}
-
-TfToken _uniqueName(const std::set<std::string>& existingNames, const std::string& srcName)
-{
-    auto [base, suffixStr] = _splitNumericalSuffix(srcName);
-    size_t suffix = 1;
-    size_t suffixLen = 1;
-    if (!suffixStr.empty()) {
-        suffix = std::stoi(suffixStr) + 1;
-        suffixLen = suffixStr.size();
-    }
-
-    // Create a suffix string from the number keeping the same number of digits as
-    // numerical suffix from input srcName (padding with 0's if needed).
-    const auto buildName = [](auto suffix, auto suffixLen, auto& suffixStr, const auto& base) -> std::string {
-        suffixStr = std::to_string(suffix);
-        suffixStr = std::string(suffixLen - std::min(suffixLen, suffixStr.size()), '0') + suffixStr;
-        return base + suffixStr;
-    };
-
-    auto dstName = buildName(suffix, suffixLen, suffixStr, base);
-    while (existingNames.count(dstName) > 0) {
-        suffix += 1;
-        dstName = buildName(suffix, suffixLen, suffixStr, base);
-    }
-    return TfToken(dstName);
-}
-
-TfToken _uniqueChildName(UsdPrim usdParent, const std::string& name)
-{
-    if (!usdParent.IsValid()) {
-        return {};
-    }
-    // The prim GetChildren method used the UsdPrimDefaultPredicate which includes
-    // active prims. We also need the inactive ones.
-    //
-    // const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate =
-    //			UsdPrimIsActive && UsdPrimIsDefined &&
-    //			UsdPrimIsLoaded && !UsdPrimIsAbstract;
-    // Note: removed 'UsdPrimIsLoaded' from the predicate. When it is present the
-    //		 filter doesn't properly return the inactive prims. UsdView doesn't
-    //		 use loaded either in _computeDisplayPredicate().
-    // Note: removed 'UsdPrimIsAbstract' from the predicate since when naming
-    //       we want to consider all the prims (even if hidden) to generate a real
-    //       unique sibling.
-    //
-    // Note: our UsdHierarchy uses instance proxies, so we also use them here.
-    std::set<std::string> childrenNames;
-    static const auto predicate = UsdPrimIsActive && UsdPrimIsDefined;
-    for (const auto& i : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(predicate)))
-    {
-        childrenNames.insert(i.GetName());
-    }
-    return _uniqueName(childrenNames, name);
-}
-
 UsdShadeShader _createSiblingNode(UsdShadeShader node, TfToken shaderId, const std::string& name)
 {
     auto ngPrim = node.GetPrim().GetParent();
     // childOrder = ngPrim.GetAllChildrenNames()
-    auto newNode = UsdShadeShader::Define(ngPrim.GetStage(), ngPrim.GetPath().AppendChild(_uniqueChildName(ngPrim, name)));
+    auto newNode = UsdShadeShader::Define(ngPrim.GetStage(), ngPrim.GetPath().AppendChild(TfToken(UsdUfe::uniqueChildName(ngPrim, name))));
     newNode.SetShaderId(shaderId);
     // TODO: Find a way to make sure the sibling appears in the right order in the outliner.
     //       There is a Usd.Prim.SetChildrenReorder(), but it is only metadata applied
@@ -554,18 +512,6 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
     // This is the upgrade from 1.38 to 1.39. Feel free to split into multiple
     // functions if the upgrade process gets more complex.
 
-    // If this material is already 1.39, then nothing to do:
-    if (usdMaterial.GetPrim().HasAPI<UsdMtlxMaterialXConfigAPI>()) {
-        auto configAPI = UsdMtlxMaterialXConfigAPI(usdMaterial.GetPrim());
-        auto versionAttr = configAPI.GetConfigMtlxVersionAttr();
-        std::string versionStr;
-        if (versionAttr && versionAttr.Get(&versionStr)) {
-            if (versionStr == _tokens->currentMxVersion.GetString()) {
-                return;
-            }
-        }
-    }
-       
     // Build list of nodes upfront since we will be adding
     // nodes mid-flight which might throw off iterators:
     // Using basic map since we want the same processing order as the Python script we used to develop this code in order to make sure tests match.
@@ -972,14 +918,14 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
 namespace LookdevXUsd::Version
 {
 
-std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialElementPath)
+std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
 {
-    const auto materialPath = _getMaterialPath(materialElementPath);
-    if (materialPath.empty()) {
+    const auto adjustedMaterialPath = _getMaterialPath(materialPath);
+    if (adjustedMaterialPath.empty()) {
         return std::nullopt;
     }
 
-    const auto materialItem = Ufe::Hierarchy::createItem(materialPath);
+    const auto materialItem = Ufe::Hierarchy::createItem(adjustedMaterialPath);
     auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
     if (!materialPrim)
     {
