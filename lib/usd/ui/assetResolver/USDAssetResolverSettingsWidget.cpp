@@ -1,4 +1,4 @@
-﻿//
+﻿﻿//
 // Copyright 2025 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -384,7 +384,8 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
 
         auto addBrowseButton = new QToolButton(d->userPathsHeader);
         addBrowseButton->setIcon(host.icon(ApplicationHost::IconName::OpenFile));
-        addBrowseButton->setToolTip(tr("Opens a file browser to select a directory and add it to the list."));
+        addBrowseButton->setToolTip(
+            tr("Opens a file browser to select a directory and add it to the list."));
         connect(addBrowseButton, &QToolButton::clicked, this, [this]() {
             Q_D(USDAssetResolverSettingsWidget);
             QString filePath
