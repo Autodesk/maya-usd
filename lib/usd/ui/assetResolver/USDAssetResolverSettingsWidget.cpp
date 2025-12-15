@@ -75,7 +75,7 @@ public:
         viewport()->update(r);
     }
 
-    void paintEvent(QPaintEvent* e)
+    void paintEvent(QPaintEvent* e) override
     {
         QListView::paintEvent(e);
         if (model() && model()->rowCount(rootIndex()) > 0)
