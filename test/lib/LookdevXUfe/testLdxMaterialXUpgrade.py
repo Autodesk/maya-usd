@@ -22,6 +22,7 @@ import testUtils
 import ufeUtils
 
 from maya import standalone
+from maya import cmds
 
 import ufe
 
@@ -67,6 +68,8 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
         '''Test MaterialX upgrade using Python script. This script can be used
           at command line level to quickly process files.'''
 
+        cmds.file(new=True, force=True)
+
         # Fetch the test file.
         testFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39.usda")
         resultsFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39_final.usda")
@@ -87,6 +90,8 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
         opening a stage in MayaUSD and having the upgrade applied using a
         contextual operation. Please note that Python bindings for the
         MaterialHandler itself are not provided by LookdevXUfe.'''
+
+        cmds.file(new=True, force=True)
 
         # Fetch the test file.
         testFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39.usda")
@@ -137,6 +142,45 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
 
         # Compare with expected results:
         self.assertTrue(diff(outputFile, resultsFile))
+
+    def testMayaFullStageUpgrade(self):
+        '''Test MaterialX upgrade using MayaUSD code. This simulates a user
+        opening a stage in MayaUSD and having the upgrade applied using a
+        contextual operation. Please note that Python bindings for the
+        MaterialHandler itself are not provided by LookdevXUfe.'''
+
+        cmds.file(new=True, force=True)
+
+        # Fetch the test file.
+        testFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39.usda")
+        resultsFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39_final.usda")
+        outputFile = os.path.join(os.getcwd(),
+                                  "mx_updates_to_1_39_upgraded_maya_via_stage.usda")
+
+        # Open the test file in Maya.
+        shapeNode, stage = mayaUtils.createProxyFromFile(testFile)
+        self.assertIsNotNone(shapeNode)
+        self.assertIsNotNone(stage)
+
+        # Get scene item for stage:
+        stageUfePath = ufe.PathString.path(shapeNode)
+        stageUfeSceneItem = ufe.Hierarchy.createItem(stageUfePath)
+        self.assertIsNotNone(stageUfeSceneItem)
+
+        contextOps = ufe.ContextOps.contextOps(stageUfeSceneItem)
+        self.assertIsNotNone(contextOps)
+        items = contextOps.getItems([])
+        self.assertIn('Upgrade all legacy materials', [item.label for item in items])
+
+        cmd = contextOps.doOpCmd(["UpgradeStageLegacyMaterials",])
+        self.assertIsNotNone(cmd)
+        cmd.execute()
+
+        stage.GetRootLayer().Export(outputFile)
+
+        # Compare with expected results:
+        self.assertTrue(diff(outputFile, resultsFile))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

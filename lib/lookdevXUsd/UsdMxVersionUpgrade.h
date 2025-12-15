@@ -30,10 +30,6 @@ using namespace PXR_NS;
 std::optional<std::string>
     LOOKDEVX_USD_EXPORT isLegacyShaderGraph(const Ufe::Path& materialPath);
 
-//! \brief Upgrades all UsdShade nodes in the stage that use legacy MaterialX versions to the
-//! current version. \param stagePath The path to UsdStage to upgrade.
-void LOOKDEVX_USD_EXPORT UpgradeStage(const Ufe::Path& stagePath);
-
 //! \brief Upgrades all UsdShade nodes that use legacy MaterialX versions to the current version.
 //! \param materialPath The path to UsdShadeMaterial to upgrade.
 void LOOKDEVX_USD_EXPORT UpgradeMaterial(const Ufe::Path& materialPath);
@@ -64,27 +60,6 @@ public:
 private:
     Ufe::Path                   _materialPath;
     MayaUsdAPI::UsdUndoableItem _undoableItem;
-};
-
-class LOOKDEVX_USD_EXPORT UsdMxUpgradeStageCmd : public Ufe::CompositeUndoableCommand
-{
-public:
-    using Ptr = std::shared_ptr<UsdMxUpgradeStageCmd>;
-
-    static Ptr create(const Ufe::Path& stagePath);
-
-    UsdMxUpgradeStageCmd(const Ufe::Path& stagePath);
-    ~UsdMxUpgradeStageCmd() override;
-
-    //@{
-    //! Delete the copy/move constructors assignment operators.
-    UsdMxUpgradeStageCmd(const UsdMxUpgradeStageCmd&) = delete;
-    UsdMxUpgradeStageCmd& operator=(const UsdMxUpgradeStageCmd&) = delete;
-    UsdMxUpgradeStageCmd(UsdMxUpgradeStageCmd&&) = delete;
-    UsdMxUpgradeStageCmd& operator=(UsdMxUpgradeStageCmd&&) = delete;
-    //@}
-
-    UFE_V4(std::string commandString() const override { return "MaterialXUpgradeStage"; })
 };
 
 } // namespace LookdevXUsd::Version

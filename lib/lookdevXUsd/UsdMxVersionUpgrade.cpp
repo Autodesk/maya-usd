@@ -389,7 +389,7 @@ UsdShadeShader _createSiblingNode(UsdShadeShader node, TfToken shaderId, const s
 {
     auto ngPrim = node.GetPrim().GetParent();
     // childOrder = ngPrim.GetAllChildrenNames()
-    auto newNode = UsdShadeShader::Define(ngPrim.GetStage(), ngPrim.GetPath().AppendChild(TfToken(UsdUfe::uniqueChildName(ngPrim, name))));
+    auto newNode = UsdShadeShader::Define(ngPrim.GetStage(), ngPrim.GetPath().AppendChild(TfToken(UsdUfe::uniqueChildName(ngPrim, name + "1"))));
     newNode.SetShaderId(shaderId);
     // TODO: Find a way to make sure the sibling appears in the right order in the outliner.
     //       There is a Usd.Prim.SetChildrenReorder(), but it is only metadata applied
@@ -934,23 +934,6 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
     return _isLegacyMaterial(materialPrim);
 }
 
-void UpgradeStage(const Ufe::Path& stagePath)
-{
-    auto stage = MayaUsdAPI::getStage(stagePath);
-    if (!stage)
-    {
-        return;
-    }
-
-    for (const auto& prim : stage->Traverse()) {
-        if (UsdShadeMaterial materialPrim = UsdShadeMaterial(prim); materialPrim) {
-            if (_isLegacyMaterial(materialPrim)) {
-                _upgradeMaterial(materialPrim);
-            }
-        }
-    }
-}
-
 void UpgradeMaterial(const Ufe::Path& materialPath)
 {
     const auto adjustedMaterialPath = _getMaterialPath(materialPath);
@@ -997,46 +980,6 @@ void UsdMxUpgradeMaterialCmd::redo()
 {
     _undoableItem.redo();
 }
-
-UsdMxUpgradeStageCmd::Ptr UsdMxUpgradeStageCmd::create(const Ufe::Path& stagePath)
-{
-    auto retVal = std::make_shared<UsdMxUpgradeStageCmd>(stagePath);
-    if (retVal->cmdsList().empty()) {
-        return nullptr;
-    }
-    return retVal;
-}
-
-UsdMxUpgradeStageCmd::UsdMxUpgradeStageCmd(const Ufe::Path& stagePath)
-{
-    // Could traverse the stage using only Ufe::Hierarchy, but I think going full USD is going to be faster.
-    auto stage = MayaUsdAPI::getStage(stagePath);
-    TF_AXIOM(stage);
-
-    for (const auto& prim : stage->Traverse()) {
-        if (const UsdShadeMaterial materialPrim = UsdShadeMaterial(prim); materialPrim) {
-            if (_isLegacyMaterial(materialPrim)) {
-                // Recreate Ufe path:
-                const PXR_NS::SdfPath& materialSdfPath = materialPrim.GetPath();
-                const Ufe::Path materialUfePath = MayaUsdAPI::usdPathToUfePathSegment(materialSdfPath);
-
-                // Construct a UFE path consisting of two segments:
-                // 1. The path to the USD stage
-                // 2. The path to our material
-                const auto stagePathSegments = stagePath.getSegments();
-                const auto& materialPathSegments = materialUfePath.getSegments();
-                if (stagePathSegments.empty() || materialPathSegments.empty())
-                {
-                    continue;
-                }
-
-                append(UsdMxUpgradeMaterialCmd::create({{stagePathSegments[0], materialPathSegments[0]}}));
-            }
-        }
-    }
-}
-
-UsdMxUpgradeStageCmd::~UsdMxUpgradeStageCmd() = default;
 
 } // namespace LookdevXUsd::Version
 
