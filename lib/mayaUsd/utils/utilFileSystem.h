@@ -308,6 +308,11 @@ void pathRemoveExtension(std::string& filePath);
 MAYAUSD_CORE_PUBLIC
 std::string pathFindExtension(std::string& filePath);
 
+/*! \brief returns true if the given child path is inside the given parent directory.
+ */
+MAYAUSD_CORE_PUBLIC
+bool isPathInside(const std::string& parentDir, const std::string& childPath);
+
 // Backup a file and restore it if not committed.
 class FileBackup
 {

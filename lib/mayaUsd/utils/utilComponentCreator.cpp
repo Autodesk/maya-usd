@@ -15,6 +15,7 @@
 //
 
 #include "util.h"
+#include "utilFileSystem.h"
 
 #include <mayaUsd/utils/utilComponentCreator.h>
 
@@ -208,23 +209,6 @@ std::string moveAdskUsdComponent(
     return {};
 }
 
-bool isPathInside(const std::string& parentDir, const std::string& childPath)
-{
-    ghc::filesystem::path parent = ghc::filesystem::weakly_canonical(parentDir);
-    ghc::filesystem::path child = ghc::filesystem::weakly_canonical(childPath);
-
-    // Iterate up from child to root
-    for (ghc::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
-        if (p == parent)
-            return true;
-
-        ghc::filesystem::path next = p.parent_path();
-        if (next == p) // reached root (ex "C:\")
-            break;
-    }
-    return false;
-}
-
 bool shouldDisplayComponentInitialSaveDialog(
     const pxr::UsdStageRefPtr stage,
     const std::string&        proxyShapePath)
@@ -235,7 +219,8 @@ bool shouldDisplayComponentInitialSaveDialog(
 
     MString tempDir;
     MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
-    return isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
+    return UsdMayaUtilFileSystem::isPathInside(
+        UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
 }
 
 } // namespace ComponentUtils
