@@ -14,13 +14,18 @@
 // limitations under the License.
 //
 
+#include "util.h"
+
 #include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
+
+#include <ghc/filesystem.hpp>
 
 #include <vector>
 
@@ -201,6 +206,36 @@ std::string moveAdskUsdComponent(
         saveLocation.c_str(),
         componentName.c_str());
     return {};
+}
+
+bool isPathInside(const std::string& parentDir, const std::string& childPath)
+{
+    ghc::filesystem::path parent = ghc::filesystem::weakly_canonical(parentDir);
+    ghc::filesystem::path child = ghc::filesystem::weakly_canonical(childPath);
+
+    // Iterate up from child to root
+    for (ghc::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
+        if (p == parent)
+            return true;
+
+        ghc::filesystem::path next = p.parent_path();
+        if (next == p) // reached root (ex "C:\")
+            break;
+    }
+    return false;
+}
+
+bool shouldDisplayComponentInitialSaveDialog(
+    const pxr::UsdStageRefPtr stage,
+    const std::string&        proxyShapePath)
+{
+    if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
+        return false;
+    }
+
+    MString tempDir;
+    MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
+    return isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
 }
 
 } // namespace ComponentUtils
