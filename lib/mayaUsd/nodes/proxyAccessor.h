@@ -140,14 +140,11 @@ public:
        Once completed, all output accessor plugs will be provided with data. \note   Call from
        MPxNode::compute()
      */
-    static MStatus compute(
-        const Owner&   accessor,
-        const MPlug&   plug,
-        MDataBlock&    dataBlock,
-        const MString& targetLayer)
+    static MStatus
+    compute(const Owner& accessor, const MPlug& plug, MDataBlock& dataBlock, bool useTargetLayer)
     {
         if (accessor)
-            return accessor->compute(plug, dataBlock, targetLayer);
+            return accessor->compute(plug, dataBlock, useTargetLayer);
         else
             return MStatus::kFailure;
     }
@@ -183,10 +180,10 @@ public:
         const Owner&   accessor,
         const MObject& node,
         MDataBlock&    dataBlock,
-        const MString& targetLayer)
+        bool           useTargetLayer)
     {
         if (accessor && !accessor->inCompute())
-            return accessor->syncCache(node, dataBlock, targetLayer);
+            return accessor->syncCache(node, dataBlock, useTargetLayer);
         else
             return MStatus::kFailure;
     }
@@ -235,7 +232,7 @@ private:
     //! \brief  Notification from MPxNode to insert accessor plugs dependencies
     MStatus addDependentsDirty(const MPlug& plug, MPlugArray& plugArray);
     //! \brief  Notification from MPxNode to compute accessor plugs.
-    MStatus compute(const MPlug& plug, MDataBlock& dataBlock, const MString& targetLayer);
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock, bool useTargetLayer);
     //! \brief  Using acceleration structure, do computation of a given accessor input plug.
     MStatus computeInput(
         Item&                outputItemToCompute,
@@ -256,7 +253,7 @@ private:
        invalidate the cache. In order to keep USD state in sync with what was stored in
        evaluation cache, we leverage postEvaluation notification.
     */
-    MStatus syncCache(const MObject& node, MDataBlock& dataBlock, const MString& targetLayer);
+    MStatus syncCache(const MObject& node, MDataBlock& dataBlock, bool useTargetLayer);
 
     //! \brief  Something in USD changed and we may have to set it on plugs.
     MStatus stageChanged(const MObject& node, const UsdNotice::ObjectsChanged& notice);

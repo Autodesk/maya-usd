@@ -383,7 +383,10 @@ protected:
     void copyInternalData(MPxNode* srcNode) override;
 
     MAYAUSD_CORE_PUBLIC
-    void setProxyAccessorLayer(const MString& layer) { _proxyAccessorLayer = layer; }
+    void useTargetedLayerInProxyAccessor(bool useTargetedLayer)
+    {
+        _proxyAccessorUseTargetedLayer = useTargetedLayer;
+    }
 
 private:
     // The possible the shared mode of the stage.
@@ -470,12 +473,9 @@ private:
     // target is changed, this gets updated via a notification listener.
     SdfLayerRefPtr _targetLayer;
 
-    // The layer to be used by the proxy accessor. Can be one of:
-    //     empty: use the session layer (default)
-    //     "session": use the session layer
-    //     "target": use the current edit target
-    //     A layer ID: use that layer if it exists, otherwise use the session layer
-    MString _proxyAccessorLayer;
+    // The layer to be used by the proxy accessor.
+    // If set to true, then use the current edit target layer, otherwise use the session layer.
+    bool _proxyAccessorUseTargetedLayer { false };
 
     // We need to keep track of unshared sublayers (otherwise they get removed)
     std::vector<SdfLayerRefPtr> _unsharedStageRootSublayers;
