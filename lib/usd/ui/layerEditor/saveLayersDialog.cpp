@@ -502,8 +502,9 @@ SaveLayersDialog::SaveLayersDialog(
         msg.format(StringResources::getAsMString(StringResources::kSaveName), stageName.c_str());
         dialogTitle = MQtUtil::toQString(msg);
 
-        // Check if this stage is a component stage
-        if (MayaUsd::ComponentUtils::isAdskUsdComponent(stageEntry._proxyShapePath)) {
+        // Check if this stage is an unsaved component stage.
+        if (MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(
+                _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
             MayaUsd::StageSavingInfo info;
             MObject                  proxyObj;
             UsdMayaUtil::GetMObjectByName(stageEntry._proxyShapePath, proxyObj);

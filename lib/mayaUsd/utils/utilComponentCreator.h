@@ -65,6 +65,14 @@ std::string moveAdskUsdComponent(
     const std::string& componentName,
     const std::string& proxyPath);
 
+/*! \brief Checks if the initial save dialog for components should be opened.
+ * \return Returns true if the initial save dialog for components should be opened.
+ */
+MAYAUSD_CORE_PUBLIC
+bool shouldDisplayComponentInitialSaveDialog(
+    const pxr::UsdStageRefPtr stage,
+    const std::string&        proxyShapePath);
+
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
 

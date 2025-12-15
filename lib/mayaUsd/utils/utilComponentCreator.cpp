@@ -14,13 +14,19 @@
 // limitations under the License.
 //
 
+#include "util.h"
+#include "utilFileSystem.h"
+
 #include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
+
+#include <ghc/filesystem.hpp>
 
 #include <vector>
 
@@ -201,6 +207,20 @@ std::string moveAdskUsdComponent(
         saveLocation.c_str(),
         componentName.c_str());
     return {};
+}
+
+bool shouldDisplayComponentInitialSaveDialog(
+    const pxr::UsdStageRefPtr stage,
+    const std::string&        proxyShapePath)
+{
+    if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
+        return false;
+    }
+
+    MString tempDir;
+    MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
+    return UsdMayaUtilFileSystem::isPathInside(
+        UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
 }
 
 } // namespace ComponentUtils

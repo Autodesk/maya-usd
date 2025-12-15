@@ -50,37 +50,6 @@ namespace {
 const QString LAYER_EDITOR_MIME_TYPE = QStringLiteral("text/plain");
 const QString LAYED_EDITOR_MIME_SEP = QStringLiteral(";");
 
-bool isPathInside(const std::string& parentDir, const std::string& childPath)
-{
-    ghc::filesystem::path parent = ghc::filesystem::weakly_canonical(parentDir);
-    ghc::filesystem::path child = ghc::filesystem::weakly_canonical(childPath);
-
-    // Iterate up from child to root
-    for (ghc::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
-        if (p == parent)
-            return true;
-
-        ghc::filesystem::path next = p.parent_path();
-        if (next == p) // reached root (ex "C:\")
-            break;
-    }
-    return false;
-}
-
-bool shouldDisplayComponentInitialSaveDialog(
-    const UsdStageRefPtr stage,
-    const std::string&   proxyShapePath)
-{
-    if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
-        return false;
-    }
-
-    MString tempDir;
-    MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
-
-    return isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
-}
-
 } // namespace
 
 namespace UsdLayerEditor {
@@ -575,7 +544,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
     }
 
     // Show the save dialog for component stages (initial save) or if confirmation is needed
-    if (shouldDisplayComponentInitialSaveDialog(
+    if (MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(
             _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)
         || showConfirmDgl) {
         bool             isExporting = false;
