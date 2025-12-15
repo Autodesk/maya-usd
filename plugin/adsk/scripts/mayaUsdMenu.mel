@@ -470,11 +470,12 @@ global proc mayaUsdMenu_windowMenuCallback() {
             $insertAfterItem = "wmContentBrowser";
         }
         string $mayaVersion = getMayaMajorVersion();
+        string $toolsMenuString = getMayaUsdString("kMenuUSDTools");
         $gMayaUsdWindowsUsdToolsSubMenu = `menuItem
             -insertAfter $insertAfterItem
             -subMenu true
             -tearOff true
-            -label "USD Tools"
+            -label $toolsMenuString
             -version $mayaVersion
             -image "USD_generic.png"
             wmUsdToolsSubMenu`;
