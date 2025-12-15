@@ -19,6 +19,9 @@
    </item>
    <item row="1" column="0">
     <widget class="QLabel" name="label">
+     <property name="toolTip">
+      <string>Specifies a mapping file that contains data used by the resolver, such as search paths and tokens.</string>
+     </property>
      <property name="text">
       <string>Mapping File: </string>
      </property>
@@ -29,6 +32,9 @@
    </item>
    <item row="0" column="1">
     <widget class="QCheckBox" name="includeProjectTokens">
+     <property name="toolTip">
+      <string>Enable this option to let the USD Asset Resolver use the directories defined in Maya’s project window as search tokens. When on, your current Maya project folders automatically become tokenized search locations.</string>
+     </property>
      <property name="text">
       <string>Include Project Tokens</string>
      </property>
