@@ -167,6 +167,7 @@ __mayaUSDStringResources = {
     "kUniversalSceneDescription": "Universal Scene Description",
     "kUsdOptionsFrameLabel": "Universal Scene Description (USD) Options",
     "kSaveOption2GBWarning": "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.",
+    "kSaveOption2GBWarningComponents": "<b>Important</b>: Components and data over 2GB per layer won't get saved to the scene.\nYou'll be prompted to save components externally.",
 
     # All strings for export dialog:
     "kExportAnimDataAnn": "Exports Maya animation data as USD time samples.",
