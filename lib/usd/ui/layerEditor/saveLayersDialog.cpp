@@ -444,7 +444,8 @@ namespace UsdLayerEditor {
 SaveLayersDialog::SaveLayersDialog(
     QWidget*                                     in_parent,
     const std::vector<MayaUsd::StageSavingInfo>& infos,
-    bool                                         isExporting)
+    bool                                         isExporting,
+    bool                                         componentsOnly)
     : QDialog(in_parent)
     , _sessionState(nullptr)
     , _isExporting(isExporting)
@@ -463,6 +464,11 @@ SaveLayersDialog::SaveLayersDialog(
         if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
             _componentStageInfos.push_back(info);
             // Component stages are saved via the component system, skip layer collection
+            continue;
+        }
+
+        // If componentsOnly mode, skip non-component stages entirely
+        if (componentsOnly) {
             continue;
         }
 

@@ -38,7 +38,7 @@ public:
     static const MString typeName;
 
     MAYAUSD_PLUGIN_PUBLIC
-    static MObject proxyAccessorLayerAttr;
+    static MObject useTargetedLayerInProxyAccessorAttr;
 
     MAYAUSD_PLUGIN_PUBLIC
     static void* creator();

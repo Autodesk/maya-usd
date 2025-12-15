@@ -56,8 +56,8 @@ proc string usdFileSaveOptions_AddRadioButtons(int $standaloneDialog)
 
     if ($standaloneDialog)
     {
-        $wCol1 = 380;
-        $wCol2 = 118;
+        $wCol1 = `mayaUsd_IsComponentCreatorLoaded` ? 700 : 380;
+        $wCol2 = 20;
     }
 
     string $rowLayout = `rowLayout -nc 2 -cat 2 "left" 0 -cw2 $wCol1 $wCol2`;
@@ -90,7 +90,8 @@ proc string usdFileSaveOptions_AddRadioButtons(int $standaloneDialog)
 
     text -label "" USDSaveOptions2GBWarning;
     if ($saveOption == 2) {
-        text -edit -label `getMayaUsdString("kSaveOption2GBWarning")` USDSaveOptions2GBWarning;
+        string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
+        text -edit -label `getMayaUsdString($warningKey)` USDSaveOptions2GBWarning;
     }
 
     if ($standaloneDialog)
@@ -141,7 +142,7 @@ global proc showUSDSaveOptionsDialogUI()
         -attachControl         $options  "top"    $spacer $tUnsaved
         -attachForm            $options  "left"   $edge
         -attachNone            $options  "bottom"
-        -attachNone            $options  "right"
+        -attachForm            $options  "right"  $edge
 
         -attachNone            $prompt   "top"
         -attachForm            $prompt   "left"   $edge
@@ -169,7 +170,8 @@ global proc USDSaveOptionsRadioButtonCB(int $standaloneDialog, int $opt)
 
     // Add or remove the warning text.
     if ($opt == 2) {
-        text -edit -label `getMayaUsdString("kSaveOption2GBWarning")` USDSaveOptions2GBWarning;
+        string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
+        text -edit -label `getMayaUsdString($warningKey)` USDSaveOptions2GBWarning;
     } else {
         text -edit -label "" USDSaveOptions2GBWarning;
     }

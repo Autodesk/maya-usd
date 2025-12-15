@@ -192,7 +192,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         v1 = cmds.getAttr('{}.{}'.format(nodeDagPath,worldMatrixPlugSphere))
         self.assertVectorAlmostEqual(v1, [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 5.0, 5.0, 1.0])
 
-    def validateInput(self, cachingScope, targetLayer):
+    def validateInput(self, cachingScope, useTargetLayer):
         """
         Validate that accessor can write data to the stage and it's propagated correctly to:
         - output plugs
@@ -210,16 +210,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
 
         verifySessionLayer(expectEmpty=True)
 
-        if targetLayer:
-            if targetLayer == 'root':
-                layerName = stage.GetRootLayer().identifier
-            elif targetLayer == 'target':
-                layerName = 'target'
-            elif targetLayer == 'session':
-                layerName = 'session'
-            else:
-                layerName = targetLayer
-            cmds.setAttr("{}.proxyAccessorLayer".format(nodeDagPath), layerName, type="string")
+        cmds.setAttr("{}.useTargetedLayerInProxyAccessor".format(nodeDagPath), useTargetLayer)
 
         # Get UFE items
         ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
@@ -260,7 +251,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.assertVectorAlmostEqual(v1, [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 10.0, 10.0, 15.0, 1.0])
         self.assertMatrixAlmostEqual(v2.matrix, [[0.0, 0.0, -1.0, 0.0], [0.0, 1.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [5.0, 10.0, 10.0, 1.0]])
 
-        verifySessionLayer(expectEmpty=bool(targetLayer and targetLayer != 'session'))
+        verifySessionLayer(expectEmpty=useTargetLayer)
 
     def validateParentingDagObjectUnderUsdPrim(self, cachingScope):
         """
@@ -1023,7 +1014,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
         with NonCachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
-            self.validateInput(thisScope, "")
+            self.validateInput(thisScope, False)
   
     def testInput_NoCaching_TargetLayer(self):
         """
@@ -1035,7 +1026,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
         with NonCachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
-            self.validateInput(thisScope, "target")
+            self.validateInput(thisScope, True)
   
     def testInput_Caching_SessionLayer(self):
         """
@@ -1047,9 +1038,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
         with CachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
-            self.validateInput(thisScope, 'session')
+            self.validateInput(thisScope, False)
         
-    def testInput_Caching_RootLayer(self):
+    def testInput_Caching_TargetLayer(self):
         """
         The that accessor can write data to the stage and it's propagated correctly to:
         - output plugs
@@ -1059,7 +1050,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
         with CachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
-            self.validateInput(thisScope, 'root')
+            self.validateInput(thisScope, True)
         
     def testParentingDagObjectUnderUsdPrim_NoCaching(self):
         """
