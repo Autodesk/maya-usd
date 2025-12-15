@@ -96,15 +96,15 @@ THIN_FILM_BSDF = {
         "ND_generalized_schlick_bsdf"
     }
 
+SUFFIX_SPLIT_RE = re.compile("(.*[^0-9])([0-9]+)$")
 
 def splitNumericalSuffix(srcName):
     # Compiled regular expression to find a numerical suffix to a path component.
     # It searches for any number of characters followed by a single non-numeric,
     # then one or more digits at end of string.
-    reSuffix = re.compile("(.*[^0-9])([0-9]+)$")
-    m = reSuffix.match(srcName)
-    if m:
-        return m.groups()
+    suffixMatch = SUFFIX_SPLIT_RE.match(srcName)
+    if suffixMatch:
+        return suffixMatch.groups()
     return (srcName, "")
 
 def uniqueName(existingNames, srcName):

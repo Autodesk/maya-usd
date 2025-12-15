@@ -752,7 +752,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                 }
             }
 
-            else if (sourceType != destType and _isChannelCountPattern(channelString, sourceChannelCount)) {
+            else if (sourceType != destType && _isChannelCountPattern(channelString, sourceChannelCount)) {
                 // Replace swizzle with convert.
                 node.SetShaderId(TfToken(_tokens->ND_convert_.GetString() + sourceType.GetString() + "_" + destType.GetString()));
             }
