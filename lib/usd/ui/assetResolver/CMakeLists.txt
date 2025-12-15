@@ -20,6 +20,8 @@ target_sources(${PROJECT_NAME}
         HeaderWidget.cpp
         USDAssetResolverSettingsWidget.cpp
         AssetResolverDialogCmd.cpp
+        AssetResolverProjectChangeTracker.cpp
+        AssetResolverUtils.cpp
         USDAssetResolverDialog.cpp
         USDAssetResolverSettingsWidget.ui
         images/ui.qrc
@@ -45,6 +47,8 @@ set(HEADERS
     HeaderWidget.h
     USDAssetResolverSettingsWidget.h
     AssetResolverDialogCmd.h
+    AssetResolverProjectChangeTracker.h
+    AssetResolverUtils.h
     USDAssetResolverDialog.h
 )
 
