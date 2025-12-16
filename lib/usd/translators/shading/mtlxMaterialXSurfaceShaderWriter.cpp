@@ -21,8 +21,10 @@
 
 #include <usdUfe/base/tokens.h>
 
+#include <pxr/base/gf/colorSpace.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdMtlx/utils.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
@@ -35,15 +37,54 @@
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+#include <pxr/usd/usd/colorSpaceAPI.h>
+#include <pxr/usd/usd/colorSpaceDefinitionAPI.h>
+#endif
+
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/runTimeMgr.h>
 
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+#include <mayaUsd/ufe/Global.h>
+
+#include <ufe/colorManagementHandler.h>
+
+#include <unordered_map>
+#endif
+
 #include <MaterialXFormat/XmlIo.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _mxColorSpaceTokens,
+
+    (srgb_texture)
+    (lin_rec709)
+    (acescg)
+    (lin_ap1)
+    (lin_displayp3)
+    (lin_adobergb)
+    (g22_rec709)
+    (gamma22)
+    (rec709_display)
+    (gamma24)
+    (g18_rec709)
+    (gamma18)
+    (g22_ap1)
+    (srgb_displayp3)
+    (adobergb)
+    (none)
+);
+// clang-format on
+
+#endif
 
 class MtlxMaterialXSurfaceShaderWriter : public UsdMayaShaderWriter
 {
@@ -181,6 +222,17 @@ private:
         const UsdStagePtr&                        stage,
         const SdfPath&                            parentPath,
         const Ufe::Path&                          ufePath);
+
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+    // Finds a valid USD color space for a given MaterialX color space.
+    TfToken _GetValidUsdColorSpace(const std::string& mxColorSpace, UsdPrim prim);
+
+    // Copies over the color space affecting a prim using the ColorSpace API.
+    void _SetColorSpaceAPISchemaOnPrim(const UsdPrim& prim, const std::string& colorSpace);
+
+    // Copies over the color space affecting an attribute using the ColorSpace API.
+    void _SetColorSpaceOnAttr(UsdAttribute attr, const std::string& colorSpace);
+#endif
 };
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(MaterialXSurfaceShader, MtlxMaterialXSurfaceShaderWriter);
@@ -253,6 +305,15 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
             ufePath.back().string().c_str());
         return;
     }
+
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+    // Copy over the color space affecting the surface shader node to the material prim:
+    const auto materialColorSpace = MaterialNode->getActiveColorSpace();
+    if (!materialColorSpace.empty()) {
+        _SetColorSpaceAPISchemaOnPrim(GetUsdPrim().GetParent(), materialColorSpace);
+    }
+#endif
+
     // Collection of the MaterialX nodes already processed, to avoid processing them again.
     std::set<MaterialX::InterfaceElementPtr> collectedNodes;
 
@@ -553,12 +614,19 @@ void MtlxMaterialXSurfaceShaderWriter::_SetInputValue(
     }
 
     usdInput.Set(val);
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+    if (_TypeSupportsColorSpace(input, ufePath) && input->hasColorSpace()) {
+        _SetColorSpaceOnAttr(usdInput.GetAttr(), input->getColorSpace());
+    }
+#else
+    // Older USD versions: copy over the MaterialX active color space without converting to USD.
     if (_TypeSupportsColorSpace(input, ufePath)) {
         auto colorSpace = input->getActiveColorSpace();
         if (!colorSpace.empty()) {
             usdInput.GetAttr().SetColorSpace(TfToken(colorSpace));
         }
     }
+#endif
 }
 
 void MtlxMaterialXSurfaceShaderWriter::_AddInput(
@@ -814,6 +882,13 @@ void MtlxMaterialXSurfaceShaderWriter::_AddNode(
     if (geompropValueNodes.find(node->getCategory()) != geompropValueNodes.end()) {
         _AddGeompropValueNode(node, stage, parentPath, shader);
     }
+
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+    // Copy over the color space affecting the node to the material prim:
+    if (node->hasColorSpace()) {
+        _SetColorSpaceAPISchemaOnPrim(shaderPrim, node->getColorSpace());
+    }
+#endif
 }
 
 // Adds a node and all its dependent nodes to the USD stage.
@@ -837,12 +912,12 @@ void MtlxMaterialXSurfaceShaderWriter::_AddDependentNodes(
         // Define the NodeGraph
         targetPath = parentPath.AppendPath(SdfPath(node->getName()));
         targetUfePath = ufePath + node->getName();
-        auto nodeGraphPrim = stage->DefinePrim(targetPath, TfToken("NodeGraph"));
+        usdNodeGraph = UsdShadeNodeGraph::Define(stage, targetPath);
         if (!TF_VERIFY(
-                nodeGraphPrim, "Could not define NodeGraph at path '%s'\n", targetPath.GetText())) {
+                usdNodeGraph, "Could not define NodeGraph at path '%s'\n", targetPath.GetText())) {
             return;
         }
-        usdNodeGraph = UsdShadeNodeGraph(nodeGraphPrim);
+        auto nodeGraphPrim = usdNodeGraph.GetPrim();
         _SetShaderUIAttribute(node, nodeGraphPrim);
 
         auto nodeGraph = node->asA<MaterialX::NodeGraph>();
@@ -872,6 +947,13 @@ void MtlxMaterialXSurfaceShaderWriter::_AddDependentNodes(
                 usdOutput.ConnectToSource(_GetPrimOutput(targetPrim, TfToken(targetOutputName)));
             }
         }
+
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+        // Copy over the color space affecting the node graph to the material prim:
+        if (nodeGraph->hasColorSpace()) {
+            _SetColorSpaceAPISchemaOnPrim(nodeGraphPrim, nodeGraph->getColorSpace());
+        }
+#endif
     }
 
     for (auto input : node->getInputs()) {
@@ -896,5 +978,124 @@ void MtlxMaterialXSurfaceShaderWriter::_AddDependentNodes(
         }
     }
 }
+
+#ifdef USD_HAS_COLORSPACE_API_SUPPORT
+TfToken MtlxMaterialXSurfaceShaderWriter::_GetValidUsdColorSpace(
+    const std::string& mxColorSpace,
+    UsdPrim            prim)
+{
+    // Usd wants standard names from the ASWF color interchange WG.
+    auto usdColorSpace = TfToken { mxColorSpace };
+
+    if (!GfColorSpace::IsValid(usdColorSpace)) {
+        const auto cmHandler
+            = Ufe::ColorManagementHandler::colorManagementHandler(MayaUsd::ufe::getMayaRunTimeId());
+        if (cmHandler) {
+            const auto mayaCompactName = cmHandler->getCompactName(mxColorSpace);
+            if (!mayaCompactName.empty()) {
+                usdColorSpace = TfToken { mayaCompactName };
+            }
+        }
+    }
+
+    if (!GfColorSpace::IsValid(usdColorSpace)) {
+        // We know how to map some common MaterialX color spaces to USD recognized ones:
+        static const auto mtlxToUSDColorSpaceMap
+            = std::unordered_map<TfToken, TfToken, TfToken::HashFunctor> {
+                  { _mxColorSpaceTokens->srgb_texture, GfColorSpaceNames->SRGBRec709 },
+                  { _mxColorSpaceTokens->lin_rec709, GfColorSpaceNames->LinearRec709 },
+                  { _mxColorSpaceTokens->acescg, GfColorSpaceNames->LinearAP1 },
+                  { _mxColorSpaceTokens->lin_ap1, GfColorSpaceNames->LinearAP1 },
+                  { _mxColorSpaceTokens->lin_displayp3, GfColorSpaceNames->LinearP3D65 },
+                  { _mxColorSpaceTokens->lin_adobergb, GfColorSpaceNames->LinearAdobeRGB },
+                  { _mxColorSpaceTokens->g22_rec709, GfColorSpaceNames->G22Rec709 },
+                  { _mxColorSpaceTokens->gamma22, GfColorSpaceNames->G22Rec709 },
+                  { _mxColorSpaceTokens->g18_rec709, GfColorSpaceNames->G18Rec709 },
+                  { _mxColorSpaceTokens->gamma18, GfColorSpaceNames->G18Rec709 },
+                  { _mxColorSpaceTokens->g22_ap1, GfColorSpaceNames->G22AP1 },
+                  { _mxColorSpaceTokens->srgb_displayp3, GfColorSpaceNames->SRGBP3D65 },
+                  { _mxColorSpaceTokens->adobergb, GfColorSpaceNames->G22AdobeRGB },
+                  { _mxColorSpaceTokens->none, GfColorSpaceNames->Data },
+              };
+
+        const auto it = mtlxToUSDColorSpaceMap.find(usdColorSpace);
+        if (it != mtlxToUSDColorSpaceMap.end()) {
+            usdColorSpace = it->second;
+        }
+    }
+
+    if (usdColorSpace == _mxColorSpaceTokens->rec709_display
+        || usdColorSpace == _mxColorSpaceTokens->gamma24) {
+        // We will make an exception for rec709_display and gamma24, as we can define the color
+        // space using the API...
+        auto colorSpaceDefAPI
+            = UsdColorSpaceDefinitionAPI::Apply(prim, _mxColorSpaceTokens->rec709_display);
+
+        auto redChroma = colorSpaceDefAPI.CreateRedChromaAttr();
+        redChroma.Set(GfVec2f(0.640f, 0.330f));
+        auto greenChroma = colorSpaceDefAPI.CreateGreenChromaAttr();
+        greenChroma.Set(GfVec2f(0.300f, 0.600f));
+        auto blueChroma = colorSpaceDefAPI.CreateBlueChromaAttr();
+        blueChroma.Set(GfVec2f(0.150f, 0.060f));
+        auto whitePoint = colorSpaceDefAPI.CreateWhitePointAttr();
+        whitePoint.Set(GfVec2f(0.3127f, 0.3290f));
+        auto gamma = colorSpaceDefAPI.CreateGammaAttr();
+        gamma.Set(2.4f);
+        // No linear bias/offset
+
+        return _mxColorSpaceTokens->rec709_display;
+    }
+
+    if (!TF_VERIFY(
+            GfColorSpace::IsValid(usdColorSpace),
+            "Could not map MaterialX color space '%s' to a USD recognized color space for prim at "
+            "path '%s'.",
+            mxColorSpace.c_str(),
+            prim.GetPath().GetText())) {
+        // Currently not adding color space for which we have no definition.
+        // Going further would require OCIO integration, and USD will definitely not support LUTs,
+        // so a workaround creating a placeholder color space definition will have to be considered.
+        return {};
+    }
+
+    return usdColorSpace;
+}
+
+// Copy hierarchical color space information to USD prim using the Colorspace API schema.
+void MtlxMaterialXSurfaceShaderWriter::_SetColorSpaceAPISchemaOnPrim(
+    const UsdPrim&     prim,
+    const std::string& colorSpace)
+{
+    if (prim.HasAPI<UsdColorSpaceAPI>()) {
+        return;
+    }
+
+    auto usdColorSpace = _GetValidUsdColorSpace(colorSpace, prim);
+
+    if (usdColorSpace.IsEmpty()) {
+        return;
+    }
+
+    auto colorSpaceAPI = UsdColorSpaceAPI::Apply(prim);
+
+    auto colorSpaceAttr = colorSpaceAPI.CreateColorSpaceNameAttr();
+    if (colorSpaceAttr) {
+        colorSpaceAttr.Set(usdColorSpace);
+    }
+}
+
+void MtlxMaterialXSurfaceShaderWriter::_SetColorSpaceOnAttr(
+    UsdAttribute       attr,
+    const std::string& colorSpace)
+{
+    auto usdColorSpace = _GetValidUsdColorSpace(colorSpace, attr.GetPrim());
+
+    if (usdColorSpace.IsEmpty()) {
+        return;
+    }
+
+    attr.SetColorSpace(usdColorSpace);
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

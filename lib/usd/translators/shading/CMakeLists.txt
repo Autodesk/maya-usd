@@ -86,3 +86,10 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
     endif()
 
 endif()
+
+if (USD_HAS_COLORSPACE_API_SUPPORT)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+        USD_HAS_COLORSPACE_API_SUPPORT=1
+    )
+endif()
