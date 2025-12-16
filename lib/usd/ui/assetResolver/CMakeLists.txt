@@ -20,11 +20,24 @@ target_sources(${PROJECT_NAME}
         HeaderWidget.cpp
         USDAssetResolverSettingsWidget.cpp
         AssetResolverDialogCmd.cpp
+        AssetResolverProjectChangeTracker.cpp
+        AssetResolverUtils.cpp
         USDAssetResolverDialog.cpp
         USDAssetResolverSettingsWidget.ui
         images/ui.qrc
 )
 
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        BOOST_NS=PXR_NS::pxr_boost
+)
+
+if (AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY=1
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers
@@ -34,6 +47,8 @@ set(HEADERS
     HeaderWidget.h
     USDAssetResolverSettingsWidget.h
     AssetResolverDialogCmd.h
+    AssetResolverProjectChangeTracker.h
+    AssetResolverUtils.h
     USDAssetResolverDialog.h
 )
 

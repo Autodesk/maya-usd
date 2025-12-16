@@ -15,6 +15,12 @@
 
 // USD Preferences section in Maya preferences
 
+global proc int mayaUsd_IsComponentCreatorLoaded()
+{
+	int $result = `python("1 if __import__('importlib').util.find_spec('AdskUsdComponentCreator') else 0")`;
+	return $result;
+}
+
 global proc mayaUsd_PrefSaveMayaSceneFilesChanged()
 {
 	int $saveOption = 1;
@@ -23,7 +29,8 @@ global proc mayaUsd_PrefSaveMayaSceneFilesChanged()
 		optionVar -iv mayaUsd_SerializedUsdEditsLocation $saveOption;
 	}
 	if (`text -exists usdPrefSaveOptions2GBWarning`) {
-		string $t = ($saveOption == 2) ? `getMayaUsdString("kSaveOption2GBWarning")` : "";
+		string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
+		string $t = ($saveOption == 2) ? `getMayaUsdString($warningKey)` : "";
 		text -e -label $t usdPrefSaveOptions2GBWarning;
 	}
 	if (`checkBoxGrp -exists usdPrefSaveAskMe`) {
@@ -351,7 +358,8 @@ global proc mayaUsd_PrefUpdate()
 		int $saveOption = `optionVar -q mayaUsd_SerializedUsdEditsLocation`;
 		radioButtonGrp -e -select $saveOption usdPrefSaveMayaSceneFiles;
 
-		string $t = ($saveOption == 2) ? `getMayaUsdString("kSaveOption2GBWarning")` : "";
+		string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
+		string $t = ($saveOption == 2) ? `getMayaUsdString($warningKey)` : "";
 		text -e -label $t usdPrefSaveOptions2GBWarning;
 	}
 

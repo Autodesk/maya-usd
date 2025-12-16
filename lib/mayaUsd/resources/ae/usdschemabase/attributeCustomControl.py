@@ -84,11 +84,12 @@ class AttributeCustomControl(object):
     Base class for attribute custom controls.
     Takes care of managing the attribute label.
     '''
-    def __init__(self, ufeAttr, attrName, useNiceName):
+    def __init__(self, ufeAttr, attrName, useNiceName, label=None):
         super(AttributeCustomControl, self).__init__()
         self.ufeAttr = ufeAttr
         self.attrName = attrName
         self.useNiceName = useNiceName
+        self.label = label
 
     def getAttributeUILabel(self, ufeAttr, attrName):
         '''
@@ -100,4 +101,6 @@ class AttributeCustomControl(object):
         '''
         Return the label to be used in the UI for the attribute set on this object.
         '''
+        if self.label:
+            return self.label
         return self.getAttributeUILabel(self.ufeAttr, self.attrName)

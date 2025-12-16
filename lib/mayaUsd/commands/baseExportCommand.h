@@ -105,6 +105,8 @@ public:
     static constexpr auto kExcludeExportTypesFlag = "eet";
     static constexpr auto kDefaultPrimFlag = "dp";
     static constexpr auto kIncludeEmptyTransformsFlag = "iet";
+    static constexpr auto kAccessibilityLabelFlag = "al";
+    static constexpr auto kAccessibilityDescriptionFlag = "ad";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";

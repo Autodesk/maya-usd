@@ -38,7 +38,7 @@ void getAllSublayers(
         processing.pop_front();
         SdfSubLayerProxy sublayerPaths = layerToProcess->GetSubLayerPaths();
         for (auto path : sublayerPaths) {
-            SdfLayerRefPtr sublayer = SdfLayer::FindRelativeToLayer(layer, path);
+            SdfLayerRefPtr sublayer = SdfLayer::FindRelativeToLayer(layerToProcess, path);
             if (sublayer) {
                 if (layerIds)
                     layerIds->insert(path);

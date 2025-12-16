@@ -30,7 +30,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PXRUSDMAYA_UPDATER_ARGS_TOKENS  \
     /* Dictionary keys */               \
     (copyOperation)                     \
-    (ignoreVariants)
+    (ignoreVariants)                    \
+    (pushNodeList)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -42,8 +43,9 @@ TF_DECLARE_PUBLIC_TOKENS(
 /// \brief Arguments that configure the updater.
 struct UsdMayaPrimUpdaterArgs
 {
-    const bool _copyOperation { false };
-    const bool _ignoreVariants { false };
+    const bool                     _copyOperation { false };
+    const bool                     _ignoreVariants { false };
+    const std::vector<std::string> _pushNodeList;
 
     MAYAUSD_CORE_PUBLIC
     static UsdMayaPrimUpdaterArgs createFromDictionary(const VtDictionary& userArgs);

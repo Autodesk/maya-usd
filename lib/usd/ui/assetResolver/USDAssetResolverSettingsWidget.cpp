@@ -74,6 +74,16 @@ public:
         QRect r = visualRect(indexAt(event->pos()));
         viewport()->update(r);
     }
+
+    void paintEvent(QPaintEvent* e) override
+    {
+        QListView::paintEvent(e);
+        if (model() && model()->rowCount(rootIndex()) > 0)
+            return;
+        // The view is empty.
+        QPainter p(this->viewport());
+        p.drawText(rect(), Qt::AlignCenter, tr("No paths"));
+    }
 };
 
 class StringListModel : public QStringListModel
@@ -276,7 +286,8 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
             ApplicationHost::instance().icon(ApplicationHost::IconName::OpenFile));
     });
 
-    browseAction->setToolTip(tr("Browse for a mapping file"));
+    browseAction->setToolTip(tr("Browse to select a mapping file that contains data to be used by "
+                                "the resolver, such as search paths and tokens."));
     connect(browseAction, &QAction::triggered, this, [this, d]() {
         QString filePath = QFileDialog::getOpenFileName(
             this, tr("Select Mapping File"), QString(), tr("USD Files (*.usda);;All Files (*.*)"));
@@ -320,6 +331,8 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         auto headerLayout = new QHBoxLayout(d->userPathsHeader);
         d->userPathsHeaderLabel
             = new QLabel(tr("%1 User Paths").arg(userPathsFirst() ? tr("1.") : tr("2.")));
+        d->userPathsHeaderLabel->setToolTip(
+            tr("Define your own custom search paths for the Asset Resolver."));
         headerLayout->addWidget(d->userPathsHeaderLabel, 1);
         headerLayout->addSpacing(tiny_padding);
         headerLayout->setContentsMargins(tiny_padding, 0, tiny_padding, 0);
@@ -341,7 +354,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
 
         auto addButton = new QToolButton(d->userPathsHeader);
         addButton->setIcon(ApplicationHost::instance().icon(ApplicationHost::IconName::Add));
-        addButton->setToolTip(tr("Add User Path"));
+        addButton->setToolTip(tr("Adds a new blank row where you can enter a custom search path."));
         connect(addButton, &QToolButton::clicked, this, [this, listview]() {
             Q_D(USDAssetResolverSettingsWidget);
             d->aboutToAddUserPath = true;
@@ -381,7 +394,8 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
 
         auto addBrowseButton = new QToolButton(d->userPathsHeader);
         addBrowseButton->setIcon(host.icon(ApplicationHost::IconName::OpenFile));
-        addBrowseButton->setToolTip(tr("Add User Path with the browser"));
+        addBrowseButton->setToolTip(
+            tr("Opens a file browser to select a directory and add it to the list."));
         connect(addBrowseButton, &QToolButton::clicked, this, [this]() {
             Q_D(USDAssetResolverSettingsWidget);
             QString filePath
@@ -398,6 +412,9 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         headerLayout->addWidget(addBrowseButton);
 
         d->userPathsFirstButton = new QToolButton(d->userPathsHeader);
+        d->userPathsFirstButton->setToolTip(
+            tr("Reorder user-defined paths to control their search priority relative to extension "
+               "and environment variable paths."));
         d->userPathsFirstButton->setIcon(ApplicationHost::instance().icon(
             userPathsFirst() ? ApplicationHost::IconName::MoveDown
                              : ApplicationHost::IconName::MoveUp));
@@ -411,6 +428,9 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         headerLayout->addWidget(line);
 
         d->userPathsOnlyCheckBox = new QCheckBox(tr("User Paths Only"), d->userPathsHeader);
+        d->userPathsOnlyCheckBox->setToolTip(tr(
+            "Enable this option to restrict the Asset Resolver to search only within user-defined "
+            "paths. When on, paths from extensions and environment variables are ignored."));
         connect(d->userPathsOnlyCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
             setUserPathsOnly(checked);
         });
@@ -458,9 +478,12 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         d->extAndEnvPathsHeader = new HeaderWidget(
             tr("%1 Extension & Environment Paths").arg(userPathsFirst() ? tr("2.") : tr("1.")),
             d->extAndEnvPathsWidget);
+        d->extAndEnvPathsHeader->setToolTip(tr(
+            "Lists paths added automatically through mapping file or environment variables. These "
+            "entries are read-only and cannot be reordered, but you can copy them for reference."));
         layout->addWidget(d->extAndEnvPathsHeader, 0);
 
-        auto listview = new QListView(d->extAndEnvPathsWidget);
+        auto listview = new ListView(d->extAndEnvPathsWidget);
         layout->addWidget(listview, 1);
         listview->setUniformItemSizes(true);
         listview->setItemDelegate(new ListPanelItemDelegate(listview));

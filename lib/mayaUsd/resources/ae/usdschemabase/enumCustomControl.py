@@ -25,20 +25,20 @@ import maya.internal.ufeSupport.attributes as attributes
 class EnumCustomControl(AttributeCustomControl):
 
     @staticmethod
-    def creator(aeTemplate, attrName):
-        ufeAttrType = aeTemplate.attrS.attributeType(attrName)
-        ufeAttr = aeTemplate.attrS.attribute(attrName)
+    def creator(aeTemplate, attrName, label=None):
+        ufeAttrType = aeTemplate.attrs.attributeType(attrName)
+        ufeAttr = aeTemplate.attrs.attribute(attrName)
         ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())
         enums = ufeAttrs.getEnums(ufeAttr.name)
         # For now only integer enums are supported.
         if ufeAttrType == ufe.Attribute.kInt and len(enums) > 0:
-            return EnumCustomControl(ufeAttr, ufeAttrType, aeTemplate.prim, attrName, aeTemplate.useNiceName)
+            return EnumCustomControl(ufeAttr, ufeAttrType, aeTemplate.prim, attrName, aeTemplate.useNiceName, label=label)
         else:
             return None
 
 
-    def __init__(self, ufeAttr, ufeAttrType, prim, attrName, useNiceName):
-        super(EnumCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
+    def __init__(self, ufeAttr, ufeAttrType, prim, attrName, useNiceName, label=None):
+        super(EnumCustomControl, self).__init__(ufeAttr, attrName, useNiceName, label=label)
         self.prim = prim
         self.ufeAttrType = ufeAttrType
         ufeAttrs = ufe.Attributes.attributes(ufeAttr.sceneItem())

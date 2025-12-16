@@ -69,6 +69,10 @@
 #include <pxr/usd/usdUtils/dependencies.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#if PXR_VERSION >= 2505
+#include <pxr/usd/usdUI/accessibilityAPI.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_WriteJob::UsdMaya_WriteJob(
@@ -118,7 +122,7 @@ static TfToken _GetFallbackExtension(const TfToken& compatibilityMode)
 }
 
 /// Converts export option tokens to metersPerUnit values used in USD metadata.
-static double _WantedUSDMetersPerUnit(const TfToken& unitOption)
+double ConvertExportArgUnitToMetersPerUnit(const TfToken& unitOption)
 {
     if (unitOption == UsdMayaJobExportArgsTokens->mayaPrefs) {
         return UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::uiUnit());
@@ -191,6 +195,11 @@ MStatus _ActivateRenderLayer(const MObject& renderLayerNode)
     return MS::kSuccess;
 }
 
+double GetJobScalingConversionFactor(const UsdMayaJobExportArgs& exportArgs)
+{
+    return UsdMayaUtil::GetExportDistanceConversionScalar(exportArgs.metersPerUnit);
+}
+
 /// RAII class to backup and restore the current render layer.
 class CurrentRenderLayerGuard
 {
@@ -206,33 +215,16 @@ private:
 };
 
 /// Class to automatically change and restore the up-axis and units of the Maya scene.
-class AutoUpAxisAndUnitsChanger : public MayaUsd::AutoUndoCommands
+class AutoUpAxisChanger : public MayaUsd::AutoUndoCommands
 {
 public:
-    /// Constructs AutoUndoCommands that changes optionally maya upAxis or metersPerUnit
-    AutoUpAxisAndUnitsChanger(const TfToken* upAxis, const double* metersPerUnit)
+    /// Constructs AutoUndoCommands that changes optionally maya upAxis
+    AutoUpAxisChanger(const TfToken* upAxis, const double* metersPerUnit)
         : AutoUndoCommands("change up-axis and units", _prepareCommands(upAxis, metersPerUnit))
     {
     }
 
 private:
-    static std::string _prepareUnitsCommands(double metersPerUnit)
-    {
-        const double mayaMetersPerUnit
-            = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
-
-        // If the Maya data unit is already the right one, we dont have to modify the Maya scene.
-        if (mayaMetersPerUnit == metersPerUnit)
-            return {};
-
-        static const char scalingCommandsFormat[]
-            = "scale -relative -pivot 0 0 0 -scaleXYZ %f %f %f $groupName;\n";
-
-        const double requiredScale = mayaMetersPerUnit / metersPerUnit;
-
-        return TfStringPrintf(scalingCommandsFormat, requiredScale, requiredScale, requiredScale);
-    }
-
     static std::string _prepareUpAxisCommands(const TfToken& upAxis)
     {
         // If the Maya up-axis is already the right one, we dont have to modify the Maya scene.
@@ -264,7 +256,6 @@ private:
         //
         //     - the list of root names as the variable $rootNodeNames
         //     - a group containing all those nodes named $groupName
-        //     -
         //
         // The scene-changing commands should mofify the group, so that ungrouping
         // these node while preserving transform changes were done on the group will
@@ -283,7 +274,11 @@ private:
             //    - Capture the new group name in a MEL variable called $groupName
             "string $groupName = `group -absolute -world $rootNodeNames`;\n";
 
-        static const char scriptSuffix[] = // Ungroup while preserving the rotation.
+        static const char scriptSuffix[] =
+            // Apply the transformations to avoid accumulating transforms on ungroup.
+            "makeIdentity -apply true -rotate true -scale true -normal 0 -preserveNormals true "
+            "$groupName;\n"
+            // Ungroup while preserving the rotation.
             "ungroup -absolute $groupName;\n"
             // Restore the selection.
             "select -replace $selection;\n";
@@ -294,11 +289,7 @@ private:
         if (upAxis != nullptr)
             commands += _prepareUpAxisCommands(*upAxis);
 
-        // If the user don't want to author the unit, we won't need to change the Maya unit.
-        if (metersPerUnit != nullptr)
-            commands += _prepareUnitsCommands(*metersPerUnit);
-
-        // If both are empty, we don't need to do anything.
+        // If the command is empty, we don't need to do anything.
         if (commands.empty())
             return {};
 
@@ -389,14 +380,14 @@ bool UsdMaya_WriteJobImpl::WriteJobs(const std::vector<UsdMaya_WriteJob*>& jobs)
     const auto& firstArgs = firstJob->mJobCtx.GetArgs();
 
     const auto usdUpAxis = _WantedUSDUpAxis(firstArgs.upAxis);
-    const auto usdMetersPerUnit = _WantedUSDMetersPerUnit(firstArgs.unit);
+    const auto usdMetersPerUnit = ConvertExportArgUnitToMetersPerUnit(firstArgs.unit);
     const auto renderLayer = _WantedRenderLayerNode(firstArgs.renderLayerMode);
 
     // Validate that multiple jobs can be exported all together.
     if (jobs.size() > 1) {
         auto argsAreCompatible = [&](const UsdMayaJobExportArgs& args) -> bool {
             return (_WantedUSDUpAxis(args.upAxis) == usdUpAxis)
-                && (_WantedUSDMetersPerUnit(args.unit) == usdMetersPerUnit)
+                && (ConvertExportArgUnitToMetersPerUnit(args.unit) == usdMetersPerUnit)
                 && (_WantedRenderLayerNode(args.renderLayerMode) == renderLayer);
         };
 
@@ -434,11 +425,11 @@ bool UsdMaya_WriteJobImpl::WriteJobs(const std::vector<UsdMaya_WriteJob*>& jobs)
     const bool showProgress = !timeSamples.empty();
 
     // Animated export shows frame-by-frame progress.
-    int                       nbSteps = (jobs.size() * 3) + timeSamples.size() + 1;
+    int                       nbSteps = (jobs.size() * 3) + timeSamples.size() + 2;
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
     // Temporarily tweak the Maya scene for export if needed.
-    const AutoUpAxisAndUnitsChanger unitsChanger(
+    const AutoUpAxisChanger unitsChanger(
         firstArgs.upAxis == UsdMayaJobExportArgsTokens->none ? nullptr : &usdUpAxis,
         firstArgs.unit == UsdMayaJobExportArgsTokens->none ? nullptr : &usdMetersPerUnit);
 
@@ -677,7 +668,8 @@ bool UsdMaya_WriteJob::_BeginWriting()
 
     // Author USD units and up axis if requested.
     if (mJobCtx.mArgs.unit != UsdMayaJobExportArgsTokens->none) {
-        UsdGeomSetStageMetersPerUnit(mJobCtx.mStage, _WantedUSDMetersPerUnit(mJobCtx.mArgs.unit));
+        UsdGeomSetStageMetersPerUnit(
+            mJobCtx.mStage, ConvertExportArgUnitToMetersPerUnit(mJobCtx.mArgs.unit));
     }
     if (mJobCtx.mArgs.upAxis != UsdMayaJobExportArgsTokens->none) {
         UsdGeomSetStageUpAxis(mJobCtx.mStage, _WantedUSDUpAxis(mJobCtx.mArgs.upAxis));
@@ -909,22 +901,6 @@ bool UsdMaya_WriteJob::_PostExport()
     }
     progressBar.advance();
 
-    // XXX Currently all distance values are written directly to USD, and will
-    // be in centimeters (Maya's internal unit) despite what the users UIUnit
-    // preference is.
-    // Some conversion does take place but this is experimental
-    MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
-    auto            mayaInternalUnitLinear
-        = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit);
-    if (mJobCtx.mArgs.metersPerUnit != mayaInternalUnitLinear) {
-        TF_WARN(
-            "Support for Distance unit conversion is evolving. "
-            "All distance units will be written in %s except where conversion is supported "
-            "and if enabled.",
-            MDistance::Unit_EnumDef::raw_name(mayaInternalUnit)
-                + sizeof(char)); // skip the k character
-    }
-
     if (mJobCtx.mArgs.exportDistanceUnit) {
         UsdGeomSetStageMetersPerUnit(mJobCtx.mStage, mJobCtx.mArgs.metersPerUnit);
     }
@@ -950,6 +926,9 @@ bool UsdMaya_WriteJob::_PostExport()
     }
 
     _extrasPrimsPaths.clear();
+
+    _AddDefaultPrimAccessibility();
+    progressBar.advance();
 
     // Run post export function on the chasers.
     MayaUsd::ProgressBarLoopScope chasersLoop(mChasers.size());
@@ -1373,6 +1352,53 @@ bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath& path, const MDagPath& da
     // mDagPathToUsdPathMap!)
     mUsdPathToDagPathMap[path] = dagPath;
     return true;
+}
+
+void UsdMaya_WriteJob::_AddDefaultPrimAccessibility()
+{
+    auto defaultPrim = mJobCtx.mStage->GetDefaultPrim();
+    if (!defaultPrim) {
+        return;
+    }
+
+    auto accessibilityLabel = mJobCtx.mArgs.accessibilityLabel;
+    auto accessibilityDescription = mJobCtx.mArgs.accessibilityDescription;
+    if (accessibilityLabel.empty() && accessibilityDescription.empty()) {
+        return;
+    }
+
+    /* The USD AccessibilityAPI is only available from OpenUSD 25.5 onwards.
+     * We support writing the data with ad-hoc attributes on pre-25.5 versions,
+     * and use the actual API for 25.5 and beyond.
+     */
+#if PXR_VERSION >= 2505
+    auto defaultAPI = UsdUIAccessibilityAPI::ApplyDefaultAPI(defaultPrim);
+    if (!accessibilityLabel.empty()) {
+        defaultAPI.CreateLabelAttr(VtValue(accessibilityLabel));
+    }
+    if (!accessibilityDescription.empty()) {
+        defaultAPI.CreateDescriptionAttr(VtValue(accessibilityDescription));
+    }
+#else
+    defaultPrim.AddAppliedSchema(TfToken("AccessibilityAPI:default"));
+    if (!accessibilityLabel.empty()) {
+        auto labelAttr = defaultPrim.CreateAttribute(
+            TfToken("accessibility:default:label"),
+            SdfValueTypeNames->String,
+            false,
+            SdfVariabilityVarying);
+        labelAttr.Set(accessibilityLabel);
+    }
+
+    if (!accessibilityDescription.empty()) {
+        auto descriptionAttr = defaultPrim.CreateAttribute(
+            TfToken("accessibility:default:description"),
+            SdfValueTypeNames->String,
+            false,
+            SdfVariabilityVarying);
+        descriptionAttr.Set(accessibilityDescription);
+    }
+#endif
 }
 
 const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_WriteJob::GetDagPathToUsdPathMap() const

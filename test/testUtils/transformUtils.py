@@ -53,12 +53,14 @@ def assertPrimXforms(test, prim, xforms):
     '''
     EPSILON = 1e-5
     xformOpOrder = prim.GetAttribute('xformOpOrder').Get()
-    test.assertEqual(len(xformOpOrder), len(xforms))
+    test.assertEqual(len(xformOpOrder), len(xforms), "%s != %s" % (xformOpOrder, xforms))
     for name, value in xforms:
         test.assertEqual(xformOpOrder[0], name)
-        attr = prim.GetAttribute(name)
-        test.assertIsNotNone(attr)
-        test.assertTrue(Gf.IsClose(attr.Get(), value, EPSILON))
+        if value is not None:
+            attr = prim.GetAttribute(name)
+            test.assertIsNotNone(attr, "Attribute %s not found on prim %s" % (name, prim.GetPath()))
+            attrValue = attr.Get()
+            test.assertTrue(Gf.IsClose(attrValue, value, EPSILON), "%s does not match: %s != %s" % (name, attrValue, value))
         # Chop off the first xofrm op for the next loop.
         xformOpOrder = xformOpOrder[1:]
 

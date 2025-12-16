@@ -46,15 +46,15 @@ class ConnectionsCustomControl(AttributeCustomControl):
         return attr.HasAuthoredConnections() if attr else False
 
     @staticmethod
-    def creator(aeTemplate, attrName):
+    def creator(aeTemplate, attrName, label=None):
         if ConnectionsCustomControl.isAttributeConnected(aeTemplate, attrName):
-            ufeAttr = aeTemplate.attrS.attribute(attrName)
-            return ConnectionsCustomControl(aeTemplate.item, ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName)
+            ufeAttr = aeTemplate.attrs.attribute(attrName)
+            return ConnectionsCustomControl(aeTemplate.item, ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName, label=label)
         else:
             return None
 
-    def __init__(self, ufeItem, ufeAttr, prim, attrName, useNiceName):
-        super(ConnectionsCustomControl, self).__init__(ufeAttr, attrName, useNiceName)
+    def __init__(self, ufeItem, ufeAttr, prim, attrName, useNiceName, label=None):
+        super(ConnectionsCustomControl, self).__init__(ufeAttr, attrName, useNiceName, label=label)
         self.path = ufeItem.path()
         self.prim = prim
 

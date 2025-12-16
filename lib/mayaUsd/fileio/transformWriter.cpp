@@ -15,6 +15,7 @@
 //
 #include "transformWriter.h"
 
+#include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/splineUtils.h>
@@ -760,9 +761,6 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
             GetDagPath(), transFn, primSchema, !_GetExportArgs().timeSamples.empty(), worldspace);
         _WriteChannelsXformOps(primSchema);
     }
-
-    _distanceConversionScalar
-        = UsdMayaUtil::GetExportDistanceConversionScalar(jobCtx.GetArgs().metersPerUnit);
 }
 
 /* virtual */
@@ -783,7 +781,7 @@ void UsdMayaTransformWriter::Write(const UsdTimeCode& usdTime)
                 _GetExportArgs().eulerFilter,
                 &_previousRotates,
                 _GetSparseValueWriter(),
-                _distanceConversionScalar);
+                _metersPerUnitScalingFactor);
         }
     }
 }

@@ -267,8 +267,12 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     // Gprim
     VtVec3fArray extent(2);
     UsdGeomCurves::ComputeExtent(points, curveWidths, &extent);
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.CreateExtentAttr(), &extent, usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.CreateExtentAttr(),
+        &extent,
+        _metersPerUnitScalingFactor,
+        usdTime,
+        _GetSparseValueWriter());
 
     // find the number of segments: (vertexCount - order + 1) per curve
     // varying interpolation is number of segments + number of curves
@@ -346,10 +350,18 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
         &curveVertexCounts,
         UsdTimeCode::Default(),
         _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetWidthsAttr(), &curveWidths, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetPointsAttr(), &points, usdTime, _GetSparseValueWriter()); // CVs
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.GetWidthsAttr(),
+        &curveWidths,
+        _metersPerUnitScalingFactor,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.GetPointsAttr(),
+        &points,
+        _metersPerUnitScalingFactor,
+        usdTime,
+        _GetSparseValueWriter()); // CVs
 
     // TODO: Handle periodic and non-periodic cases
 

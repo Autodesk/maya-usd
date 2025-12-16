@@ -308,7 +308,8 @@ static bool _ReadDirectionalLight(
 
 bool UsdMayaTranslatorLight::WritePointLightSplineAttrs(
     const UsdLuxLightAPI& usdLight,
-    MFnLight&             mayaLight)
+    MFnLight&             mayaLight,
+    double                metersPerUnitScale)
 {
 #if PXR_VERSION >= 2411
     MStatus status;
@@ -319,7 +320,11 @@ bool UsdMayaTranslatorLight::WritePointLightSplineAttrs(
     MFnDependencyNode depNode(lightObject, &status);
 
     UsdMayaSplineUtils::WriteSplineAttribute<float>(
-        depNode, usdPrim, _tokens->LightRadiusPlugName.GetString(), UsdLuxTokens->inputsRadius);
+        depNode,
+        usdPrim,
+        _tokens->LightRadiusPlugName.GetString(),
+        UsdLuxTokens->inputsRadius,
+        metersPerUnitScale);
 
     if (auto treatAsPointAttr = usdPrim.GetAttribute(UsdLuxTokens->treatAsPoint)) {
         if (auto radAttr = usdPrim.GetAttribute(UsdLuxTokens->inputsRadius)) {
@@ -337,6 +342,7 @@ bool UsdMayaTranslatorLight::WritePointLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxSphereLight&   usdLight,
     MFnPointLight&             mayaLight,
+    double                     metersPerUnitScale,
     FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status;
@@ -348,7 +354,8 @@ bool UsdMayaTranslatorLight::WritePointLightAttrs(
     CHECK_MSTATUS_AND_RETURN(status, false);
     float lightRadius = lightRadiusPlug.asFloat();
 
-    UsdMayaWriteUtil::SetAttribute(usdLight.GetRadiusAttr(), lightRadius, usdTime, valueWriter);
+    UsdMayaWriteUtil::SetScaledAttribute(
+        usdLight.GetRadiusAttr(), lightRadius, metersPerUnitScale, usdTime, valueWriter);
     UsdMayaWriteUtil::SetAttribute(
         usdLight.GetTreatAsPointAttr(), (lightRadius == 0.f), usdTime, valueWriter);
     return true;
@@ -375,7 +382,8 @@ static bool _ReadPointLight(
 
 bool UsdMayaTranslatorLight::WriteSpotLightSplineAttrs(
     const UsdLuxLightAPI& usdLight,
-    MFnLight&             mayaLight)
+    MFnLight&             mayaLight,
+    double                metersPerUnitScale)
 {
 #if PXR_VERSION >= 2411
     MStatus status;
@@ -386,7 +394,11 @@ bool UsdMayaTranslatorLight::WriteSpotLightSplineAttrs(
     MFnDependencyNode depNode(lightObject, &status);
 
     UsdMayaSplineUtils::WriteSplineAttribute<float>(
-        depNode, usdPrim, _tokens->LightRadiusPlugName.GetString(), UsdLuxTokens->inputsRadius);
+        depNode,
+        usdPrim,
+        _tokens->LightRadiusPlugName.GetString(),
+        UsdLuxTokens->inputsRadius,
+        metersPerUnitScale);
 
     if (auto treatAsPointAttr = usdPrim.GetAttribute(UsdLuxTokens->treatAsPoint)) {
         if (auto radAttr = usdPrim.GetAttribute(UsdLuxTokens->inputsRadius)) {
@@ -455,6 +467,7 @@ bool UsdMayaTranslatorLight::WriteSpotLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxSphereLight&   usdLight,
     MFnSpotLight&              mayaLight,
+    double                     metersPerUnitScale,
     FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status;
@@ -464,7 +477,8 @@ bool UsdMayaTranslatorLight::WriteSpotLightAttrs(
     CHECK_MSTATUS_AND_RETURN(status, false);
     float lightRadius = lightRadiusPlug.asFloat();
 
-    UsdMayaWriteUtil::SetAttribute(usdLight.GetRadiusAttr(), lightRadius, usdTime, valueWriter);
+    UsdMayaWriteUtil::SetScaledAttribute(
+        usdLight.GetRadiusAttr(), lightRadius, metersPerUnitScale, usdTime, valueWriter);
     UsdMayaWriteUtil::SetAttribute(
         usdLight.GetTreatAsPointAttr(), (lightRadius == 0.f), usdTime, valueWriter);
 

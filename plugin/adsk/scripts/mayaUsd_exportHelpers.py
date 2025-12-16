@@ -19,34 +19,38 @@ def removeHiddenInOutliner(allItems):
 def updateDefaultPrimCandidates(excludeMesh, excludeLight, excludeCamera, excludeStage):
     allItems = cmds.ls(assemblies=True)
     excludeList = []
+
+    def add_excluded(items):
+        for m in items:
+            rel = cmds.listRelatives(m, parent=True, fullPath=True)[0]
+            excludeList.append(m)
+            excludeList.append(rel)
+            if rel.startswith("|"):
+                excludeList.append((rel.removeprefix("|")))
+
     if excludeMesh == "1":
-        meshes = cmds.ls(type=('mesh'), l=True)
-        for m in meshes:
-            excludeList.append(cmds.listRelatives(m, parent=True)[0])
+        add_excluded(cmds.ls(type=('mesh'), l=True))
 
     if excludeLight == "1":
-        lights = cmds.ls(type=('light'), l=True)
-        for l in lights:
-            excludeList.append(cmds.listRelatives(l, parent=True)[0])
+        add_excluded(cmds.ls(type=('light'), l=True))
     
     if excludeCamera == "1":
-        cameras = cmds.ls(type=('camera'), l=True)
-        for c in cameras:
-            excludeList.append(cmds.listRelatives(c, parent=True)[0])
+        add_excluded(cmds.ls(type=('camera'), l=True))
     else:
+        # Note: we still want to exclude the startup cameras even if
+        # excludeCamera is not set, to avoid exporting them by mistake.
         cameras = cmds.ls(type=('camera'), l=True)
         startup_cameras = []
         for c in cameras:
-            if cmds.camera(cmds.listRelatives(c, parent=True)[0], startupCamera=True, q=True):
-                startup_cameras.append(cmds.listRelatives(c, parent=True)[0])
+            camRelatives = cmds.listRelatives(c, parent=True, fullPath=True)
+            if cmds.camera(camRelatives[0], startupCamera=True, q=True):
+                startup_cameras.append(camRelatives[0])
 
+        startup_cameras.extend([c.removeprefix("|") for c in startup_cameras])
         allItems = list(set(allItems) - set(startup_cameras))
     
     if excludeStage == "1":
-        stages = cmds.ls(type=('mayaUsdProxyShape'), l=True)
-        for st in stages:
-            excludeList.append(st)
-            excludeList.append(cmds.listRelatives(st, parent=True)[0])
+        add_excluded(cmds.ls(type=('mayaUsdProxyShape'), l=True))
     
     allItems = removeHiddenInOutliner(list(set(allItems) - set(excludeList)))
     allItems.sort(key=natural_key)
@@ -74,7 +78,7 @@ def updateDefaultPrimCandidatesFromSelection(excludeMesh, excludeLight, excludeC
         nodes = cmds.ls(type=(nodeType), l=True)
         for n in nodes:
             if excludeParent:
-                excludeSet.add(cmds.listRelatives(n, parent=True)[0])
+                excludeSet.add(cmds.listRelatives(n, parent=True, fullPath=True)[0])
             path = _getRelatives(n)
             if not path:
                 continue

@@ -247,6 +247,49 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
         pass
     return False
 
+# Looks at wether a given stage is a Adsk USD Component, and if so, reloads it.
+# Returns true if the function handled the refresh request, false otherwise.
+def TryHandleComponentRefresh(proxyStage, stageName, filePathAttr):
+    try:
+        from AdskUsdComponentCreator import ComponentDescription
+        from usd_component_creator_plugin import MayaComponentManager
+        from pxr import Sdf
+    except Exception:
+        return False
+
+    comp_desc = ComponentDescription.CreateFromStageMetadata(proxyStage)
+    if not comp_desc:
+        # Not a component.
+        return False
+
+    # If the component is still only really in memory, there is nothing to refresh.
+    # Detect this case by check if the root layer is empty on disk.
+    root_layer = proxyStage.GetRootLayer()
+    # If the root layer is not dirty, then we know for sure the on disk version is non-empty.
+    if root_layer.dirty:
+        disk_version = Sdf.Layer.OpenAsAnonymous(root_layer.realPath)
+        if disk_version.empty:
+            return True
+
+    manager = MayaComponentManager.GetInstance()
+    to_save_ids = manager.GetSaveInfo(proxyStage) or []
+    if to_save_ids:
+        kTitleFormat = getMayaUsdString("kDiscardStageEditsTitle")
+        kMsgFormat = getMayaUsdString("kDiscardComponentEditsReloadMsg")
+        kYes = getMayaUsdString("kButtonReload")
+        kNo = getMayaUsdString("kButtonCancel")
+        kTitle = cmds.format(kTitleFormat, stringArg=stageName)
+        filepath = cmds.getAttr(filePathAttr)
+        if filepath:
+            kMsg = cmds.format(kMsgFormat, stringArg=(stageName))
+            res = cmds.confirmDialog(title=kTitle,
+                                    message=kMsg, messageAlign='left',
+                                    button=[kYes, kNo], defaultButton=kYes, cancelButton=kNo, dismissString=kNo,
+                                    icon='warning')
+            if res == kYes:
+                manager.ReloadComponent(proxyStage)
+    return True
+
 def ProxyShapeFilePathRefresh(filePathAttr):
     # Function called from the MayaUsd Proxy Shape template when the refresh
     # button of the file path attribute custom control is clicked.
@@ -261,34 +304,36 @@ def ProxyShapeFilePathRefresh(filePathAttr):
     try:
         stageName, proxyStage = GetStageFromProxyShapeAttr(filePathAttr)
 
-        # Is any layer in the layerstack dirty?
-        # - If nothing is dirty, we simply reload.
-        # - If any layer is dirty pop a confirmation dialog to reload.
-        # Note: since we are file-backed, this will reload based on the file
-        #       which could have changed on disk.
-        if not IsProxyShapeLayerStackDirty(proxyStage):
-            debugMessage('  No dirty layers, calling UsdStage.Reload()')
-            proxyStage.Reload()
-        else:
-            kTitleFormat = getMayaUsdString("kDiscardStageEditsTitle")
-            kMsgFormat = getMayaUsdString("kDiscardStageEditsReloadMsg")
-            kYes = getMayaUsdString("kButtonYes")
-            kNo = getMayaUsdString("kButtonNo")
-            kTitle = cmds.format(kTitleFormat, stringArg=stageName)
-            # Our title is a little long, and the confirmDialog command is not making the
-            # dialog wide enough to show it all. So by telling the message string to not
-            # word-wrap, the dialog is forced wider.
-            filepath = cmds.getAttr(filePathAttr)
-            if filepath:
-                filename = os.path.basename(filepath)
-                kMsg = "<p style='white-space:pre'>" + cmds.format(kMsgFormat, stringArg=(filename, stageName))
-                res = cmds.confirmDialog(title=kTitle,
-                                         message=kMsg, messageAlign='left', 
-                                         button=[kYes, kNo], defaultButton=kYes, cancelButton=kNo, dismissString=kNo,
-                                         icon='warning')
-                if res == kYes:
-                    debugMessage('  User confirmed reload action, calling UsdStage.Reload()')
-                    proxyStage.Reload()
+        handled = TryHandleComponentRefresh(proxyStage, stageName, filePathAttr)
+        if not handled:
+            # Is any layer in the layerstack dirty?
+            # - If nothing is dirty, we simply reload.
+            # - If any layer is dirty pop a confirmation dialog to reload.
+            # Note: since we are file-backed, this will reload based on the file
+            #       which could have changed on disk.
+            if not IsProxyShapeLayerStackDirty(proxyStage):
+                debugMessage('  No dirty layers, calling UsdStage.Reload()')
+                proxyStage.Reload()
+            else:
+                kTitleFormat = getMayaUsdString("kDiscardStageEditsTitle")
+                kMsgFormat = getMayaUsdString("kDiscardStageEditsReloadMsg")
+                kYes = getMayaUsdString("kButtonYes")
+                kNo = getMayaUsdString("kButtonNo")
+                kTitle = cmds.format(kTitleFormat, stringArg=stageName)
+                # Our title is a little long, and the confirmDialog command is not making the
+                # dialog wide enough to show it all. So by telling the message string to not
+                # word-wrap, the dialog is forced wider.
+                filepath = cmds.getAttr(filePathAttr)
+                if filepath:
+                    filename = os.path.basename(filepath)
+                    kMsg = "<p style='white-space:pre'>" + cmds.format(kMsgFormat, stringArg=(filename, stageName))
+                    res = cmds.confirmDialog(title=kTitle,
+                                                message=kMsg, messageAlign='left', 
+                                                button=[kYes, kNo], defaultButton=kYes, cancelButton=kNo, dismissString=kNo,
+                                                icon='warning')
+                    if res == kYes:
+                        debugMessage('  User confirmed reload action, calling UsdStage.Reload()')
+                        proxyStage.Reload()
         
         # Refresh the system lock status of the stage and its sublayers
         stageFilePath = cmds.getAttr(filePathAttr)

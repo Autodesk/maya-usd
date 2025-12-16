@@ -66,39 +66,37 @@ template <typename T> inline void _convertVector(T& t, const MVector& v)
     t[2] = static_cast<_t>(v.z);
 }
 
-template <typename T> using _sharedVtArray = std::shared_ptr<VtArray<T>>;
-
-template <typename T> _sharedVtArray<T> _convertVectorArray(const MVectorArray& a)
+template <typename T> VtArray<T> _convertVectorArray(const MVectorArray& a)
 {
     const auto count = a.length();
-    auto*      ret = new VtArray<T>(count);
+    auto       ret = VtArray<T>(count);
     for (auto i = decltype(count) { 0 }; i < count; ++i) {
-        _convertVector<T>(ret->operator[](i), a[i]);
+        _convertVector<T>(ret[i], a[i]);
     }
-    return _sharedVtArray<T>(ret);
+    return ret;
 }
 
-template <typename T> _sharedVtArray<T> _convertArray(const MDoubleArray& a)
+template <typename T> VtArray<T> _convertArray(const MDoubleArray& a)
 {
     const auto count = a.length();
-    auto*      ret = new VtArray<T>(count);
+    auto       ret = VtArray<T>(count);
     for (auto i = decltype(count) { 0 }; i < count; ++i) {
-        ret->operator[](i) = static_cast<T>(a[i]);
+        ret[i] = static_cast<T>(a[i]);
     }
-    return _sharedVtArray<T>(ret);
+    return ret;
 }
 
-template <typename T> _sharedVtArray<T> _convertArray(const MIntArray& a)
+template <typename T> VtArray<T> _convertArray(const MIntArray& a)
 {
     const auto count = a.length();
-    auto*      ret = new VtArray<T>(count);
+    auto       ret = VtArray<T>(count);
     for (auto i = decltype(count) { 0 }; i < count; ++i) {
-        ret->operator[](i) = static_cast<T>(a[i]);
+        ret[i] = static_cast<T>(a[i]);
     }
-    return _sharedVtArray<T>(ret);
+    return ret;
 }
 
-template <typename T> using _strVecPair = std::pair<TfToken, _sharedVtArray<T>>;
+template <typename T> using _strVecPair = std::pair<TfToken, VtArray<T>>;
 
 template <typename T> using _strVecPairVec = std::vector<_strVecPair<T>>;
 
@@ -106,7 +104,7 @@ template <typename T> size_t _minCount(const _strVecPairVec<T>& a)
 {
     auto mn = std::numeric_limits<size_t>::max();
     for (const auto& v : a) {
-        mn = std::min(mn, v.second->size());
+        mn = std::min(mn, v.second.size());
     }
 
     return mn;
@@ -114,8 +112,8 @@ template <typename T> size_t _minCount(const _strVecPairVec<T>& a)
 
 template <typename T> void _resizeVectors(_strVecPairVec<T>& a, size_t size)
 {
-    for (const auto& v : a) {
-        v.second->resize(size);
+    for (auto& v : a) {
+        v.second.resize(size);
     }
 }
 
@@ -124,13 +122,27 @@ inline void _addAttr(
     UsdGeomPoints&             points,
     const TfToken&             name,
     const SdfValueTypeName&    typeName,
-    const VtArray<T>&          a,
+    const VtArray<T>&          val,
     const UsdTimeCode&         usdTime,
     FlexibleSparseValueWriter* valueWriter)
 {
-    auto    attr = points.GetPrim().CreateAttribute(name, typeName, false, SdfVariabilityVarying);
-    VtValue val(a);
-    valueWriter->SetAttribute(attr, &val, usdTime);
+    auto attr = points.GetPrim().CreateAttribute(name, typeName, false, SdfVariabilityVarying);
+    UsdMayaWriteUtil::SetAttribute(attr, val, usdTime, valueWriter);
+}
+
+template <typename T>
+inline void _addScaledAttr(
+    UsdGeomPoints&             points,
+    const TfToken&             name,
+    const SdfValueTypeName&    typeName,
+    const VtArray<T>&          val,
+    double                     metersPerUnitScalingFactor,
+    const UsdTimeCode&         usdTime,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    auto attr = points.GetPrim().CreateAttribute(name, typeName, false, SdfVariabilityVarying);
+    UsdMayaWriteUtil::SetScaledAttribute(
+        attr, val, metersPerUnitScalingFactor, usdTime, valueWriter);
 }
 
 const TfToken kRgbName("rgb");
@@ -148,7 +160,21 @@ void _addAttrVec(
     FlexibleSparseValueWriter* valueWriter)
 {
     for (const auto& v : a) {
-        _addAttr(points, v.first, typeName, *v.second, usdTime, valueWriter);
+        _addAttr(points, v.first, typeName, v.second, usdTime, valueWriter);
+    }
+}
+
+template <typename T>
+void _addScaledAttrVec(
+    UsdGeomPoints&             points,
+    const SdfValueTypeName&    typeName,
+    const _strVecPairVec<T>&   a,
+    double                     metersPerUnitScalingFactor,
+    const UsdTimeCode&         usdTime,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    for (const auto& v : a) {
+        _addScaledAttr(points, v.first, typeName, v.second, usdTime, valueWriter);
     }
 }
 
@@ -358,11 +384,11 @@ void PxrUsdTranslators_ParticleWriter::writeParams(
     const auto minSize = std::min({ _minCount(vectors),
                                     _minCount(floats),
                                     _minCount(ints),
-                                    positions->size(),
-                                    velocities->size(),
-                                    ids->size(),
-                                    radii->size(),
-                                    masses->size() });
+                                    positions.size(),
+                                    velocities.size(),
+                                    ids.size(),
+                                    radii.size(),
+                                    masses.size() });
 
     if (minSize == 0) {
         return;
@@ -371,35 +397,41 @@ void PxrUsdTranslators_ParticleWriter::writeParams(
     _resizeVectors(vectors, minSize);
     _resizeVectors(floats, minSize);
     _resizeVectors(ints, minSize);
-    positions->resize(minSize);
-    velocities->resize(minSize);
-    ids->resize(minSize);
-    radii->resize(minSize);
-    masses->resize(minSize);
+    positions.resize(minSize);
+    velocities.resize(minSize);
+    ids.resize(minSize);
+    radii.resize(minSize);
+    masses.resize(minSize);
 
-    UsdMayaWriteUtil::SetAttribute(
-        points.GetPointsAttr(), positions.get(), usdTime, _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(
-        points.GetVelocitiesAttr(), velocities.get(), usdTime, _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(
-        points.GetIdsAttr(), ids.get(), usdTime, _GetSparseValueWriter());
-
+    UsdMayaWriteUtil::SetScaledAttribute(
+        points.GetPointsAttr(),
+        positions,
+        _metersPerUnitScalingFactor,
+        usdTime,
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetScaledAttribute(
+        points.GetVelocitiesAttr(),
+        velocities,
+        _metersPerUnitScalingFactor,
+        usdTime,
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(points.GetIdsAttr(), ids, usdTime, _GetSparseValueWriter());
     // radius -> width conversion
-    for (auto& r : *radii) {
+    for (auto& r : radii) {
         r = r * 2.0f;
     }
 
-    UsdMayaWriteUtil::SetAttribute(
-        points.GetWidthsAttr(), radii.get(), usdTime, _GetSparseValueWriter());
-
-    _addAttr(
-        points,
-        kMassName,
-        SdfValueTypeNames->FloatArray,
-        *masses,
+    UsdMayaWriteUtil::SetScaledAttribute(
+        points.GetWidthsAttr(),
+        radii,
+        _metersPerUnitScalingFactor,
         usdTime,
         _GetSparseValueWriter());
+
+    _addAttr(
+        points, kMassName, SdfValueTypeNames->FloatArray, masses, usdTime, _GetSparseValueWriter());
     // TODO: check if we need the array suffix!!
+    // Note: for user-defined attributes, we cannot know if weshould scale them for the scene units.
     _addAttrVec(
         points, SdfValueTypeNames->Vector3fArray, vectors, usdTime, _GetSparseValueWriter());
     _addAttrVec(points, SdfValueTypeNames->FloatArray, floats, usdTime, _GetSparseValueWriter());

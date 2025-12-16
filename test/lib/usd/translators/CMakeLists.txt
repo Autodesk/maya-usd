@@ -7,6 +7,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportBlendshapes.py
     testUsdExportCamera.py
     testUsdExportCameraAttrSpline.py
+    testUsdExportCameraSameName.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
     testUsdExportDefaultPrim.py
@@ -30,6 +31,11 @@ set(TEST_SCRIPT_FILES
     testUsdExportRootPrim.py
     testUsdExportTypes.py
     testUsdExportUnits.py
+    testUsdExportUnitsBlendshape.py
+    testUsdExportUnitsCamera.py
+    testUsdExportUnitsInstances.py
+    testUsdExportUnitsNurbsCurve.py
+    testUsdExportUnitsSkeleton.py
     testUsdExportUpAxis.py
     testUsdExportUVSetsSwitch.py
 

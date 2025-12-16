@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
@@ -66,6 +67,7 @@
 #include <ufe/observableSelection.h>
 #include <ufe/selectionNotification.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <set>
@@ -219,6 +221,44 @@ bool isCopyingSceneNodes()
     // variable during the export to let exporters know it is cutting or
     // copying nodes in a temporary Maya scene file.
     return PXR_NS::ArchHasEnv("MAYA_CUT_COPY_EXPORT");
+}
+
+bool stageHasDirtyMutedLayer(const UsdStage& stage)
+{
+    for (const auto& stageMutedLayerId : stage.GetMutedLayers()) {
+        for (const auto& mutedLayer : MayaUsd::getMutedLayers(stageMutedLayerId)) {
+            if (mutedLayer->IsDirty()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool stageHasDirtyLayer(const UsdStage& stage)
+{
+    if (stageHasDirtyMutedLayer(stage)) {
+        return true;
+    }
+
+    const auto usedLayers = stage.GetUsedLayers(true);
+    return std::any_of(usedLayers.begin(), usedLayers.end(), [](const auto& l) {
+        return TF_VERIFY(l) && l->IsDirty();
+    });
+}
+
+SdfLayerHandleSet getSaveCandidateLayers(const UsdStage& stage)
+{
+    SdfLayerHandleVector usedLayers = stage.GetUsedLayers(true);
+    SdfLayerHandleSet    candidateLayers(
+        std::make_move_iterator(usedLayers.begin()), std::make_move_iterator(usedLayers.end()));
+
+    // We also consider diry muted layers, held by maya-usd.
+    for (const auto& stageMutedLayerId : stage.GetMutedLayers()) {
+        const auto& mutedLayers = MayaUsd::getMutedLayers(stageMutedLayerId);
+        candidateLayers.insert(mutedLayers.begin(), mutedLayers.end());
+    }
+    return candidateLayers;
 }
 
 constexpr auto kSaveOptionUICmd = "usdFileSaveOptions(true);";
@@ -434,32 +474,41 @@ void handleDirtyStageDuringExport(const StageSavingInfo& info)
         return;
 
     const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
-    if (dirty == UsdUfe::StageDirtyState::kClean)
-        return;
+    if (dirty != UsdUfe::StageDirtyState::kClean) {
 
-    if (info.stage->GetRootLayer()->IsAnonymous()) {
-        MGlobal::displayWarning(formatProxyShapeWarning(
-            "A reference to ^1s could not be exported because the root layer is anonymous."
-            " To include this stage, you will need to save the anonymous root layer to disk"
-            " and re-export the scene.",
-            info));
-        return;
+        if (info.stage->GetRootLayer()->IsAnonymous()) {
+            MGlobal::displayWarning(formatProxyShapeWarning(
+                "A reference to ^1s could not be exported because the root layer is anonymous."
+                " To include this stage, you will need to save the anonymous root layer to disk"
+                " and re-export the scene.",
+                info));
+            return;
+        }
+
+        if (dirty == UsdUfe::StageDirtyState::kDirtyRootLayers) {
+            MGlobal::displayWarning(formatProxyShapeWarning(
+                "^1s may not appear in the exported scene exactly as it appears in the scene"
+                " because there are layers that have not been saved to disk. Saving those"
+                " layers in the layer editor may be needed.",
+                info));
+            return;
+        }
+
+        if (dirty == UsdUfe::StageDirtyState::kDirtySessionLayers) {
+            MGlobal::displayWarning(formatProxyShapeWarning(
+                "^1s may not appear in the exported scene exactly as it appears in the scene"
+                " because there are opinions in the session layer which are not propagated"
+                " into the USD files.",
+                info));
+            return;
+        }
     }
 
-    if (dirty == UsdUfe::StageDirtyState::kDirtyRootLayers) {
+    if (stageHasDirtyMutedLayer(*info.stage)) {
         MGlobal::displayWarning(formatProxyShapeWarning(
             "^1s may not appear in the exported scene exactly as it appears in the scene"
-            " because there are layers that have not been saved to disk. Saving those"
+            " because there are muted layers that have not been saved to disk. Saving those"
             " layers in the layer editor may be needed.",
-            info));
-        return;
-    }
-
-    if (dirty == UsdUfe::StageDirtyState::kDirtySessionLayers) {
-        MGlobal::displayWarning(formatProxyShapeWarning(
-            "^1s may not appear in the exported scene exactly as it appears in the scene"
-            " because there are opinions in the session layer which are not propagated"
-            " into the USD files.",
             info));
         return;
     }
@@ -557,14 +606,12 @@ void LayerDatabase::updateLayerManagers()
 bool LayerDatabase::hasDirtyLayer() const
 {
     for (const auto& info : _proxiesToSave) {
-        const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
-        if (dirty != UsdUfe::StageDirtyState::kClean) {
+        if (info.stage && stageHasDirtyLayer(*info.stage)) {
             return true;
         }
     }
     for (const auto& info : _internalProxiesToSave) {
-        const UsdUfe::StageDirtyState dirty = UsdUfe::isStageDirty(*info.stage);
-        if (dirty != UsdUfe::StageDirtyState::kClean) {
+        if (info.stage && stageHasDirtyLayer(*info.stage)) {
             return true;
         }
     }
@@ -611,8 +658,7 @@ bool LayerDatabase::getProxiesToSave(bool isExport, bool* hasAnyProxy)
                 // so we can put them back in the same spot). So doesn't matter if its incoming or
                 // not, we need to save.
                 if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
-                    SdfLayerHandleVector allLayers = stage->GetUsedLayers(true);
-                    for (auto layer : allLayers) {
+                    for (const auto& layer : getSaveCandidateLayers(*stage)) {
                         if (TF_VERIFY(layer) && layer->IsDirty()) {
                             StageSavingInfo info;
                             MDagPath::getAPathTo(mobj, info.dagPath);
@@ -826,7 +872,7 @@ struct SaveStageToMayaResult
 
 template <typename T, typename IgnoreLayerFn>
 void saveLayersToMayaFile(
-    const T&&              allLayers,
+    const T&               allLayers,
     const IgnoreLayerFn&&  ignoreLayerFn,
     MayaUsd::LayerManager* lm,
     MArrayDataBuilder&     builder,
@@ -894,6 +940,20 @@ SaveStageToMayaResult saveStageToMayaFile(
         builder,
         *pShape,
         result);
+
+    // Save dirty muted layers held by maya-usd
+    // skip those have been saved previously.
+    for (const auto& mutedLayerId : stage->GetMutedLayers()) {
+        saveLayersToMayaFile(
+            MayaUsd::getMutedLayers(mutedLayerId),
+            [&localLayerIds](const auto& layer) {
+                return !localLayerIds.emplace(layer->GetIdentifier()).second;
+            },
+            lm,
+            builder,
+            *pShape,
+            result);
+    }
 
     // Save non local layers (reference layers and sub layers in reference layers),
     // skip those have been saved previously from local stack
@@ -1026,8 +1086,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
                 }
                 convertAnonymousLayers(pShape, mobj, info.stage);
                 const auto& sessionLayer = info.stage->GetSessionLayer();
-                const auto& allLayers = info.stage->GetUsedLayers(true);
-                for (auto layer : allLayers) {
+                for (const auto& layer : getSaveCandidateLayers(*info.stage)) {
                     if (TF_VERIFY(layer)) {
                         if (layer != sessionLayer && layer->PermissionToSave()
                             && layer->IsDirty()) {

@@ -803,3 +803,20 @@ void UsdMayaUtilFileSystem::FileBackup::restore()
     const std::string backupFileName = getBackupFilename();
     rename(backupFileName.c_str(), _filename.c_str());
 }
+
+bool UsdMayaUtilFileSystem::isPathInside(const std::string& parentDir, const std::string& childPath)
+{
+    ghc::filesystem::path parent = ghc::filesystem::weakly_canonical(parentDir);
+    ghc::filesystem::path child = ghc::filesystem::weakly_canonical(childPath);
+
+    // Iterate up from child to root
+    for (ghc::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
+        if (p == parent)
+            return true;
+
+        ghc::filesystem::path next = p.parent_path();
+        if (next == p) // reached root (ex "C:\")
+            break;
+    }
+    return false;
+}

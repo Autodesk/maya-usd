@@ -102,6 +102,16 @@ pxr_test_scripts(
 # variable must be defined.  Otherwise, mayapy unconditionally exits with 0
 # (success), which completely masks test failures.
 
+# In Maya 2024 mayapy was changed to an executable script file which adds
+# the lib path the LD_LIBRARY_PATH. For Maya 2023 (and below) we need to
+# mimic that here so that tests can find Maya libs. Normally this is
+# handled by maya.standalone.initialize() but these tests are not run
+# using the mayaUsd_add_test() which adds that.
+if (IS_LINUX AND MAYA_APP_VERSION VERSION_LESS_EQUAL 2023)
+    get_filename_component(MAYAPY_EXE_PATH ${MAYA_PY_EXECUTABLE} DIRECTORY)
+    set(MAYA_LIB_PATH "${MAYAPY_EXE_PATH}/../lib")
+endif()
+
 set(TEST_INSTALL_PREFIX "${PXR_INSTALL_PREFIX}")
 set(TEST_ENV 
     MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
@@ -112,6 +122,11 @@ set(TEST_ENV
     MAYA_NO_STANDALONE_ATEXIT=1
     MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
+if (IS_LINUX AND MAYA_LIB_PATH)
+    list(APPEND TEST_ENV
+        LD_LIBRARY_PATH=${MAYA_LIB_PATH}
+    )
+endif()
 
 pxr_install_test_dir(
     SRC testenv/UsdExportAssemblyTest

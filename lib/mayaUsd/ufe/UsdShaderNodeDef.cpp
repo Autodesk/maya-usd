@@ -31,6 +31,7 @@
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/utils/Utils.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 
 #if PXR_VERSION >= 2505
@@ -435,6 +436,12 @@ Ufe::NodeDefs UsdShaderNodeDef::definitions(const std::string& category)
 
         result.reserve(shaderNodeDefs.size());
         for (const SdrShaderNodeConstPtr& shaderNodeDef : shaderNodeDefs) {
+            // Skip deprecated USD native shaders that have "empty.glslfx" as their resolved URI.
+            if (!shaderNodeDef->GetResolvedImplementationURI().empty()
+                && TfStringEndsWith(
+                    shaderNodeDef->GetResolvedImplementationURI(), "empty.glslfx")) {
+                continue;
+            }
             result.emplace_back(UsdShaderNodeDef::create(shaderNodeDef));
         }
     }

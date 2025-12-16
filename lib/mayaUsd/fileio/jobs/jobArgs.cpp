@@ -16,6 +16,7 @@
 #include "jobArgs.h"
 
 #include <mayaUsd/fileio/jobContextRegistry.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
@@ -129,9 +130,13 @@ double _ExtractMetersPerUnit(const VtDictionary& userArgs)
         return UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaUIUnit);
     }
 
-    // Zero is treated as the default and returns the default internal unit
+    // Zero is treated as the default, so we check the unit argument.
     if (value <= 0.0) {
-        return metersPerUnit;
+        const TfToken unitArg(extractString(userArgs, UsdMayaJobExportArgsTokens->unit));
+        if (unitArg == UsdMayaJobExportArgsTokens->none) {
+            return metersPerUnit;
+        }
+        return ConvertExportArgUnitToMetersPerUnit(unitArg);
     }
 
     // Otherwise take the final value as is
@@ -833,6 +838,9 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , jobContextNames(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->jobContext))
     , excludeExportTypes(extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->excludeExportTypes))
     , defaultPrim(extractString(userArgs, UsdMayaJobExportArgsTokens->defaultPrim))
+    , accessibilityLabel(extractString(userArgs, UsdMayaJobExportArgsTokens->accessibilityLabel))
+    , accessibilityDescription(
+          extractString(userArgs, UsdMayaJobExportArgsTokens->accessibilityDescription))
     , chaserNames(extractVector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
     , customLayerData(_CustomLayerData(userArgs, UsdMayaJobExportArgsTokens->customLayerData))
@@ -913,6 +921,9 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "parentScope: " << exportArgs.parentScope << std::endl // Deprecated
         << "rootPrim: " << exportArgs.parentScope << std::endl
         << "defaultPrim: " << TfStringify(exportArgs.defaultPrim) << std::endl
+        << "accessibilityLabel: " << TfStringify(exportArgs.accessibilityLabel) << std::endl
+        << "accessibilityDescription: " << TfStringify(exportArgs.accessibilityDescription)
+        << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "animationType: " << exportArgs.animationType << std::endl
@@ -1227,6 +1238,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->metersPerUnit] = 0.0;
         d[UsdMayaJobExportArgsTokens->excludeExportTypes] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->defaultPrim] = std::string();
+        d[UsdMayaJobExportArgsTokens->accessibilityLabel] = std::string();
+        d[UsdMayaJobExportArgsTokens->accessibilityDescription] = std::string();
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -1330,6 +1343,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->geomSidedness] = _string;
         d[UsdMayaJobExportArgsTokens->excludeExportTypes] = _stringVector;
         d[UsdMayaJobExportArgsTokens->defaultPrim] = _string;
+        d[UsdMayaJobExportArgsTokens->accessibilityLabel] = _string;
+        d[UsdMayaJobExportArgsTokens->accessibilityDescription] = _string;
     });
 
     return d;

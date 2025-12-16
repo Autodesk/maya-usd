@@ -221,19 +221,22 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     }
     progressBar.advance();
 
-    TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
-
-    SdfVariantSelectionMap varSelsMap = mImportData.rootVariantSelections();
-    std::vector<std::pair<std::string, std::string>> varSelsVec;
-    TF_FOR_ALL(iter, varSelsMap)
+    // Construct the variant opinion for the session layer.
+    SdfLayerRefPtr sessionLayer = SdfLayer::CreateAnonymous();
     {
-        const std::string& variantSetName = iter->first;
-        const std::string& variantSelectionName = iter->second;
-        varSelsVec.push_back(std::make_pair(variantSetName, variantSelectionName));
+        TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
+        if (modelName != TfToken()) {
+            SdfVariantSelectionMap varSelsMap = mImportData.rootVariantSelections();
+            if (!modelName.IsEmpty()) {
+                SdfPrimSpecHandle over
+                    = SdfPrimSpec::New(sessionLayer, modelName, SdfSpecifierOver);
+                for (auto varSel : varSelsMap) {
+                    over->GetVariantSelections()[varSel.first] = varSel.second;
+                }
+            }
+        }
     }
 
-    SdfLayerRefPtr sessionLayer
-        = UsdUtilsStageCache::GetSessionLayerForVariantSelections(modelName, varSelsVec);
     progressBar.advance();
 
     // Layer and Stage used to Read in the USD file
@@ -796,7 +799,8 @@ void UsdMaya_ReadJob::_ConvertUpAxisAndUnitsByChangingMayaPrefs(
             changeUnitsCmd.format("currentUnit -linear ^1s;", mayaUnitText);
 
             // Note: we *must* execute the units change on-idle because the import process
-            //       saves and restores all units! If we change it now, the change would be lost.
+            //       saves and restores all units! If we change it now, the change would be
+            //       lost.
             if (!MGlobal::executeCommandOnIdle(changeUnitsCmd)) {
                 MGlobal::displayWarning(
                     "Failed to change the Maya units preferences to match USD data "

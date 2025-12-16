@@ -18,6 +18,8 @@
 target_sources(${PROJECT_NAME}
     PRIVATE
         batchSaveLayersUIDelegate.cpp
+        componentSaveWidget.cpp
+        componentSaveWidget.h
         dirtyLayersCountBadge.cpp
         generatedIconButton.cpp
         layerContentsWidget.cpp
@@ -68,6 +70,17 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
         ghc_filesystem
 )
+
+# -----------------------------------------------------------------------------
+# MSVC fix: avoid ambiguous qfloat16 arithmetic operators pulled by Qt headers
+# Only needed for <= VS2017 
+# -----------------------------------------------------------------------------
+if (MSVC AND MSVC_VERSION LESS 1920)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            QT_NO_FLOAT16_OPERATORS
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers

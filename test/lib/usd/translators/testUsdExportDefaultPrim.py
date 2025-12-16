@@ -141,6 +141,49 @@ class testUsdExportMesh(unittest.TestCase):
         self.assertEqual(defaultPrim.GetName(), 'mtl')
         self.assertFalse(stage.GetPrimAtPath('/mtl/mtl'))
 
+    def testAccessibilityInfoDefaultPrim(self):
+        '''Export a prim with accessibility information'''
+        usdFile = os.path.abspath("UsdExportAccessibilityInfoDefaultPrim.usda")
+
+        label = "A Sphere"
+        description = "A polygonal sphere without any smoothing"
+
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+                       shadingMode='none', defaultPrim='pSphere1',
+                       accessibilityLabel=label,
+                       accessibilityDescription=description)
+
+        stage = Usd.Stage.Open(usdFile)
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertTrue(defaultPrim)
+
+        usdVersion = Usd.GetVersion()
+        if usdVersion >= (0, 25, 5):
+            from pxr import UsdUI
+            accessibilityAPIs = UsdUI.AccessibilityAPI.GetAll(defaultPrim)
+            self.assertTrue(accessibilityAPIs)
+
+            accessibilityAPI = accessibilityAPIs[0]
+            labelAttr = accessibilityAPI.GetLabelAttr()
+            descriptionAttr = accessibilityAPI.GetDescriptionAttr()
+
+            self.assertTrue(labelAttr)
+            self.assertTrue(descriptionAttr)
+            self.assertEqual(labelAttr.Get(), label)
+            self.assertEqual(descriptionAttr.Get(), description)
+
+        # Also check with ad-hoc properties so that we can make sure that
+        # both the ad-hoc version and API version are creating the right results.
+        appliedSchemas = defaultPrim.GetMetadata("apiSchemas")
+        self.assertTrue(appliedSchemas.HasItem('AccessibilityAPI:default'))
+
+        labelAttr = defaultPrim.GetAttribute("accessibility:default:label")
+        descriptionAttr = defaultPrim.GetAttribute("accessibility:default:description")
+
+        self.assertTrue(labelAttr)
+        self.assertTrue(descriptionAttr)
+        self.assertEqual(labelAttr.Get(), label)
+        self.assertEqual(descriptionAttr.Get(), description)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

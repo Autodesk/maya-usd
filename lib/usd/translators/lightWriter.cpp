@@ -113,7 +113,8 @@ void PxrUsdTranslators_PointLightWriter::Write(const UsdTimeCode& usdTime)
     auto animType = _writeJobCtx.GetArgs().animationType;
     if (usdTime.IsDefault() && animType != UsdMayaJobExportArgsTokens->timesamples) {
         UsdMayaTranslatorLight::WriteLightSplinesAttrs(primSchema.LightAPI(), lightFn);
-        UsdMayaTranslatorLight::WritePointLightSplineAttrs(primSchema.LightAPI(), lightFn);
+        UsdMayaTranslatorLight::WritePointLightSplineAttrs(
+            primSchema.LightAPI(), lightFn, _metersPerUnitScalingFactor);
     }
     if (animType != UsdMayaJobExportArgsTokens->curves) {
         // First write the base light attributes
@@ -121,7 +122,7 @@ void PxrUsdTranslators_PointLightWriter::Write(const UsdTimeCode& usdTime)
             usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
         // Then write the specialized attributes for Point lights
         UsdMayaTranslatorLight::WritePointLightAttrs(
-            usdTime, primSchema, lightFn, _GetSparseValueWriter());
+            usdTime, primSchema, lightFn, _metersPerUnitScalingFactor, _GetSparseValueWriter());
     }
 }
 
@@ -162,7 +163,8 @@ void PxrUsdTranslators_SpotLightWriter::Write(const UsdTimeCode& usdTime)
     auto animType = _writeJobCtx.GetArgs().animationType;
     if (usdTime.IsDefault() && animType != UsdMayaJobExportArgsTokens->timesamples) {
         UsdMayaTranslatorLight::WriteLightSplinesAttrs(primSchema.LightAPI(), lightFn);
-        UsdMayaTranslatorLight::WriteSpotLightSplineAttrs(primSchema.LightAPI(), lightFn);
+        UsdMayaTranslatorLight::WriteSpotLightSplineAttrs(
+            primSchema.LightAPI(), lightFn, _metersPerUnitScalingFactor);
     }
     if (animType != UsdMayaJobExportArgsTokens->curves) {
         // First write the base light attributes
@@ -170,7 +172,7 @@ void PxrUsdTranslators_SpotLightWriter::Write(const UsdTimeCode& usdTime)
             usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
         // Then write the specialized attributes for spot lights
         UsdMayaTranslatorLight::WriteSpotLightAttrs(
-            usdTime, primSchema, lightFn, _GetSparseValueWriter());
+            usdTime, primSchema, lightFn, _metersPerUnitScalingFactor, _GetSparseValueWriter());
     }
 }
 

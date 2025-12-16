@@ -23,6 +23,7 @@
 #include <pxr/usd/sdr/shaderNode.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/primFlags.h>
+#include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
@@ -52,6 +53,7 @@ UFE_NS_DEF
 namespace USDUFE_NS_DEF {
 
 class UsdAttribute;
+class UsdProperty;
 class UsdUndoableItem;
 
 // DCC specific accessor functions.
@@ -59,7 +61,7 @@ typedef PXR_NS::UsdStageWeakPtr (*StageAccessorFn)(const Ufe::Path&);
 typedef Ufe::Path (*StagePathAccessorFn)(PXR_NS::UsdStageWeakPtr);
 typedef PXR_NS::UsdPrim (*UfePathToPrimFn)(const Ufe::Path&);
 typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
-typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdAttribute& attr, std::string* errMsg);
+typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdProperty& attr, std::string* errMsg);
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
 typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name);
@@ -138,11 +140,12 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 USDUFE_PUBLIC
 void setIsAttributeLockedFn(IsAttributeLockedFn fn);
 
-//! Return whether the input USD attribute is locked and therefore cannot
+//! Return whether the input USD property (attribute or relationship) is locked and therefore cannot
 //! be edited.
-//! \return True if the USD attributed is locked, otherwise false (default).
+//! \return True if the USD property is locked, otherwise false
+//! (default).
 USDUFE_PUBLIC
-bool isAttributedLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
+bool isAttributedLocked(const PXR_NS::UsdProperty& attr, std::string* errMsg = nullptr);
 
 //! Set the DCC specific USD save load rules function.
 //! Use of this function is optional, if one is supplied then it
@@ -246,6 +249,9 @@ USDUFE_PUBLIC
 void displayMessage(MessageType type, const std::string& msg);
 
 USDUFE_PUBLIC
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdProperty& usdProp);
+
+USDUFE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr);
 
 USDUFE_PUBLIC
@@ -323,10 +329,10 @@ PXR_NS::SdrShaderNodeConstPtr usdShaderNodeFromSceneItem(const Ufe::SceneItem::P
 // Verify edit restrictions.
 //------------------------------------------------------------------------------
 
-//! Check if an attribute value is allowed to be changed.
-//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
+//! Check if an property (attribute or relationship) value is allowed to be changed.
+//! \return True, if the property value is allowed to be edited in the stage's local Layer Stack.
 USDUFE_PUBLIC
-bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
+bool isAttributeEditAllowed(const PXR_NS::UsdProperty& attr, std::string* errMsg = nullptr);
 
 USDUFE_PUBLIC
 bool isAttributeEditAllowed(
@@ -337,9 +343,10 @@ bool isAttributeEditAllowed(
 USDUFE_PUBLIC
 bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
 
-//! Enforce if an attribute value is allowed to be changed. Throw an exception if not allowed.
+//! Enforce if an property (attribute or relationship) value is allowed to be changed. Throw an
+//! exception if not allowed.
 USDUFE_PUBLIC
-void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr);
+void enforceAttributeEditAllowed(const PXR_NS::UsdProperty& attr);
 
 USDUFE_PUBLIC
 void enforceAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);

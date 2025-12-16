@@ -19,20 +19,25 @@
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 #include "saveLayersDialog.h"
+#include "sessionState.h"
 #include "stringResources.h"
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/layers.h>
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
 
+#include <maya/MDagModifier.h>
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 
 #include <QtCore/QTimer>
+#include <ghc/filesystem.hpp>
 
 #include <algorithm>
 #include <string>
@@ -504,6 +509,15 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
     auto saveAllLayers = [this]() {
+        // Special case for components created by the component creator. Only the component creator
+        // knows how to save a component properly.
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+                _sessionState->stageEntry()._proxyShapePath)) {
+            MayaUsd::ComponentUtils::saveAdskUsdComponent(
+                _sessionState->stageEntry()._proxyShapePath);
+            return;
+        }
+
         const auto layers = getAllNeedsSavingLayers();
         for (auto layer : layers) {
             if (!layer->isSystemLocked()) {
@@ -529,7 +543,10 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
-    if (showConfirmDgl) {
+    // Show the save dialog for component stages (initial save) or if confirmation is needed
+    if (MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(
+            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)
+        || showConfirmDgl) {
         bool             isExporting = false;
         SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
         if (QDialog::Accepted == dlg.exec()) {

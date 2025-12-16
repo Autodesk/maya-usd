@@ -6,6 +6,7 @@ set(TEST_SCRIPT_FILES
     testExportChaser.py
     testExportChaserJobContext.py
     testImportChaser.py
+    testImportChaserMultiImports.py
     testImportWithNamespace.py
     testJobContextRegistry.py
     testDisplayLayerSaveRestore.py

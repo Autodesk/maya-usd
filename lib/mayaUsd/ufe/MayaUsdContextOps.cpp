@@ -68,7 +68,7 @@ namespace {
 //   it would convert that param to a bool and choose the wrong constructor.
 #ifdef WANT_QT_BUILD
 static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
-static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor...";
+static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor";
 #endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE

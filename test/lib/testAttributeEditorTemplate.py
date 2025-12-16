@@ -657,5 +657,37 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
             mayaUsd.lib.unregisterUICallback('onBuildAETemplate', onBuildAETemplateCallback)
 
         
+    def testAERelationshipAttribute(self):
+        '''Test that the relationship attribute is displayed in the AE.'''
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+
+        # Create a capsule prim.
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+        fullPrimPath = proxyShape + ",/Capsule1"
+
+        # check for a proxyPrim relationship property in the AE,
+        # for now these will appear in the Extra attributes section
+
+        # Make sure the AE is visible.
+        import maya.mel
+        maya.mel.eval('openAEWindow')
+
+        # Make sure we can find formLayout for the PhysicsScene.
+        capsuleFormLayout = self.attrEdFormLayoutName('Capsule')
+        self.assertTrue(cmds.formLayout(capsuleFormLayout, exists=True))
+        startLayout = cmds.formLayout(capsuleFormLayout, query=True, fullPathName=True)
+        self.assertIsNotNone(startLayout, 'Could not get full path for Capsule formLayout')
+
+        sectionName = maya.mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
+        frameLayout = self.findExpandedFrameLayout(startLayout, sectionName, fullPrimPath)
+        self.assertIsNotNone(frameLayout, 'Could not find Extra Attributes frameLayout')
+
+        # check for the proxyPrim relationship property in the Extra attributes section
+        proxyPrimControl = self.searchForMayaControl(frameLayout, cmds.text, 'Proxy Prim')
+        self.assertIsNotNone(proxyPrimControl, 'Could not find Proxy Prim relationship property in Extra attributes section')
+
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

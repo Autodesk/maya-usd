@@ -100,8 +100,10 @@ class testUsdExportUpAxis(unittest.TestCase):
         self.assertTrue(spherePrim)
 
         transformUtils.assertPrimXforms(self, spherePrim, [
-            ('xformOp:translate', (0., 3., 0.)),
-            ('xformOp:rotateXYZ', (-90., 0., 0.))])
+            ('xformOp:translate', (0., 0., 3.)),
+            ('xformOp:translate:pivot', (0., 3., -3.)),
+            ('!invert!xformOp:translate:pivot', None),
+        ])
 
 
 if __name__ == '__main__':

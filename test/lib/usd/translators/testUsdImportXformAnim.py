@@ -437,5 +437,127 @@ class testUsdImportXformAnim(unittest.TestCase):
         self._validateMayaTransformAnimation('singleAxisSphere', 'scale', expectedScaleValues)
         
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 25, 5), 'Splines transforms are only supported in USD 0.25.05 and later')
+    def testUsdImportXformSplineAnimWithDifferentFramerates(self):
+        """
+        Tests that xform spline animation is correctly converted when importing
+        into Maya with a different frame rate than the USD stage.
+        """
+        # Create a Maya scene with animated cube at 24 fps
+        cmds.file(new=True, force=True)
+        cmds.currentUnit(time='film')  # 24 fps
+        
+        cubeResult = cmds.polyCube(name='framerateCube', width=1)
+        cube = cubeResult[0]
+        
+        # Create simple animation at specific frames
+        cmds.setKeyframe('%s.translateX' % cube, time=24, value=0)   # frame 24 in 24fps = 1 second
+        cmds.setKeyframe('%s.translateX' % cube, time=48, value=10)  # frame 48 in 24fps = 2 seconds
+        cmds.setKeyframe('%s.translateX' % cube, time=72, value=0)   # frame 72 in 24fps = 3 seconds
+        
+        # Export to USD with spline curves at 24 fps
+        usdFilePath = os.path.abspath('testUsdImportXformSplineAnimFramerate.usda')
+        cmds.usdExport(
+            mergeTransformAndShape=True,
+            file=usdFilePath,
+            shadingMode='none',
+            animationType='curves',
+            frameRange=(24, 72))
+        
+        # Validate the USD file was created with 24 fps
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+        self.assertEqual(stage.GetTimeCodesPerSecond(), 24.0)
+        
+        cubePrim = stage.GetPrimAtPath('/framerateCube')
+        self.assertTrue(cubePrim)
+        
+        cubeXformable = UsdGeom.Xformable(cubePrim)
+        xformOps = cubeXformable.GetOrderedXformOps()
+        
+        # Find translateX operation and verify it has spline
+        translateXOp = None
+        for op in xformOps:
+            if op.GetOpName() == "xformOp:translateX":
+                translateXOp = op
+                break
+        
+        self.assertTrue(translateXOp)
+        translateXAttr = translateXOp.GetAttr()
+        self.assertTrue(translateXAttr.HasSpline())
+        
+        # Now import into Maya at 30 fps (NTSC)
+        cmds.file(new=True, force=True)
+        cmds.currentUnit(time='ntsc')  # 30 fps
+        
+        cmds.usdImport(file=usdFilePath, readAnimData=True, primPath='/')
+        
+        # Verify the cube was imported
+        self.assertTrue(cmds.objExists('framerateCube'))
+        
+        # The keyframe times should be converted from 24fps to 30fps
+        # 24fps frame 24 (1 second) -> 30fps frame 30
+        # 24fps frame 48 (2 seconds) -> 30fps frame 60
+        # 24fps frame 72 (3 seconds) -> 30fps frame 90
+        
+        # Get the keyframes on the translateX attribute
+        keyframes = cmds.keyframe('framerateCube.translateX', query=True, timeChange=True)
+        self.assertIsNotNone(keyframes)
+        self.assertEqual(len(keyframes), 3)
+        
+        # Verify the keyframe times are correctly scaled (24->30 = 1.25x multiplier)
+        self.assertAlmostEqual(keyframes[0], 30.0, delta=0.1)  # 24 * (30/24) = 30
+        self.assertAlmostEqual(keyframes[1], 60.0, delta=0.1)  # 48 * (30/24) = 60
+        self.assertAlmostEqual(keyframes[2], 90.0, delta=0.1)  # 72 * (30/24) = 90
+        
+        # Verify the values at the keyframes are preserved
+        cmds.currentTime(30.0)
+        value1 = cmds.getAttr('framerateCube.translateX')
+        self.assertAlmostEqual(value1, 0.0, delta=self.EPSILON)
+        
+        cmds.currentTime(60.0)
+        value2 = cmds.getAttr('framerateCube.translateX')
+        self.assertAlmostEqual(value2, 10.0, delta=self.EPSILON)
+        
+        cmds.currentTime(90.0)
+        value3 = cmds.getAttr('framerateCube.translateX')
+        self.assertAlmostEqual(value3, 0.0, delta=self.EPSILON)
+        
+        # Test import at a different frame rate - 48 fps
+        cmds.file(new=True, force=True)
+        cmds.currentUnit(time='48fps')  # 48 fps
+        
+        cmds.usdImport(file=usdFilePath, readAnimData=True, primPath='/')
+        
+        # Verify the cube was imported
+        self.assertTrue(cmds.objExists('framerateCube'))
+        
+        # The keyframe times should be converted from 24fps to 48fps
+        # 24fps frame 24 (1 second) -> 48fps frame 48
+        # 24fps frame 48 (2 seconds) -> 48fps frame 96
+        # 24fps frame 72 (3 seconds) -> 48fps frame 144
+        
+        keyframes = cmds.keyframe('framerateCube.translateX', query=True, timeChange=True)
+        self.assertIsNotNone(keyframes)
+        self.assertEqual(len(keyframes), 3)
+        
+        # Verify the keyframe times are correctly scaled (24->48 = 2.0x multiplier)
+        self.assertAlmostEqual(keyframes[0], 48.0, delta=0.1)   # 24 * (48/24) = 48
+        self.assertAlmostEqual(keyframes[1], 96.0, delta=0.1)   # 48 * (48/24) = 96
+        self.assertAlmostEqual(keyframes[2], 144.0, delta=0.1)  # 72 * (48/24) = 144
+        
+        # Verify the values at the keyframes are preserved
+        cmds.currentTime(48.0)
+        value1 = cmds.getAttr('framerateCube.translateX')
+        self.assertAlmostEqual(value1, 0.0, delta=self.EPSILON)
+        
+        cmds.currentTime(96.0)
+        value2 = cmds.getAttr('framerateCube.translateX')
+        self.assertAlmostEqual(value2, 10.0, delta=self.EPSILON)
+        
+        cmds.currentTime(144.0)
+        value3 = cmds.getAttr('framerateCube.translateX')
+        self.assertAlmostEqual(value3, 0.0, delta=self.EPSILON)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

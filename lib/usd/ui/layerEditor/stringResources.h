@@ -91,6 +91,8 @@ const auto kToSaveTheStageSaveAnonym     { create("kToSaveTheStageSaveAnonym", "
 const auto kToSaveTheStageSaveFiles      { create("kToSaveTheStageSaveFiles", "To save the ^1s stage(s), the following existing file(s) will be overwritten.") };
 const auto kToExportTheStageSaveAnonym   { create("kToExportTheStageSaveAnonym", "To export the ^1s stage(s), save the following ^2s anonymous layer(s).") };
 const auto kToExportTheStageSaveFiles    { create("kToExportTheStageSaveFiles", "To export the ^1s stage(s), the following existing file(s) will be overwritten.") };
+const auto kToSaveTheStageSaveComponents { create("kToSaveTheStageSaveComponents", "To save the ^1s stage(s), save the following component(s).") };
+const auto kToExportTheStageSaveComponents { create("kToExportTheStageSaveComponents", "To export the ^1s stage(s), save the following component(s).") };
 const auto kUsedInStagesTooltip          { create("kUsedInStagesTooltip", "<b>Used in Stages</b>: ") };
 
 const auto kSetLayerAsTargetLayerTooltip { create("kSetLayerAsTargetLayerTooltip", "Set layer as target layer. Edits are added to the target layer.") };

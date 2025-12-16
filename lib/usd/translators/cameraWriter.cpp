@@ -99,10 +99,14 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
     auto primName = primSchema.GetPrim().GetPath().GetAsString();
 
     UsdMayaSplineUtils::WriteSplineAttribute<float>(
-        camFn, cameraPrim, "focalLength", HdCameraTokens->focalLength);
+        camFn, cameraPrim, "focalLength", HdCameraTokens->focalLength, _metersPerUnitScalingFactor);
 
     UsdMayaSplineUtils::WriteSplineAttribute<float>(
-        camFn, cameraPrim, "focusDistance", HdCameraTokens->focusDistance);
+        camFn,
+        cameraPrim,
+        "focusDistance",
+        HdCameraTokens->focusDistance,
+        _metersPerUnitScalingFactor);
 
     if (camFn.isDepthOfField()) {
         UsdMayaSplineUtils::WriteSplineAttribute<float>(
@@ -112,7 +116,12 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
     // TODO: Clipping range is not yet supported in USD Spline (GfVec2f).
     // Set the clipping planes.
     GfVec2f clippingRange(camFn.nearClippingPlane(), camFn.farClippingPlane());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetClippingRangeAttr(), clippingRange);
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.GetClippingRangeAttr(),
+        clippingRange,
+        _metersPerUnitScalingFactor,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
 
     if (camFn.isOrtho(&status)) {
         UsdMayaWriteUtil::SetAttribute(
@@ -126,7 +135,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
             cameraPrim,
             "orthographicWidth",
             HdCameraTokens->horizontalAperture,
-            UsdMayaUtil::kMillimetersPerCentimeter);
+            UsdMayaUtil::kMillimetersPerCentimeter * _metersPerUnitScalingFactor);
 
         auto vertAttr = primSchema.GetVerticalApertureAttr();
         auto horzApertureSpline = primSchema.GetHorizontalApertureAttr().GetSpline();
@@ -157,7 +166,12 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
         if (horzApertureSpline.IsEmpty()) {
             double horizontalAperture = UsdMayaUtil::ConvertInchesToMM(
                 camFn.horizontalFilmAperture() * camFn.lensSqueezeRatio());
-            UsdMayaWriteUtil::SetAttribute(horzAttr, static_cast<float>(horizontalAperture));
+            UsdMayaWriteUtil::SetScaledAttribute(
+                horzAttr,
+                static_cast<float>(horizontalAperture),
+                _metersPerUnitScalingFactor,
+                UsdTimeCode::Default(),
+                _GetSparseValueWriter());
         } else {
             horzAttr.SetSpline(horzApertureSpline);
         }
@@ -167,7 +181,7 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
             cameraPrim,
             "verticalFilmAperture",
             HdCameraTokens->verticalAperture,
-            UsdMayaUtil::ConvertInchesToMM(1));
+            UsdMayaUtil::ConvertInchesToMM(1) * _metersPerUnitScalingFactor);
 
         if (camFn.shakeEnabled()) {
             std::function shakeLambda = [](float apertureOffset, float shakeOffset) {
@@ -182,9 +196,10 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
                 const double horizontalApertureOffset = UsdMayaUtil::ConvertInchesToMM(
                     (camFn.shakeEnabled() ? camFn.horizontalFilmOffset() + camFn.horizontalShake()
                                           : camFn.horizontalFilmOffset()));
-                UsdMayaWriteUtil::SetAttribute(
+                UsdMayaWriteUtil::SetScaledAttribute(
                     horzOffsetAttr,
                     static_cast<float>(horizontalApertureOffset),
+                    _metersPerUnitScalingFactor,
                     UsdTimeCode::Default(),
                     _GetSparseValueWriter());
             } else {
@@ -197,9 +212,10 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
                 const double verticalApertureOffset = UsdMayaUtil::ConvertInchesToMM(
                     camFn.shakeEnabled() ? camFn.verticalFilmOffset() + camFn.verticalShake()
                                          : camFn.verticalFilmOffset());
-                UsdMayaWriteUtil::SetAttribute(
+                UsdMayaWriteUtil::SetScaledAttribute(
                     vertOffsetAtt,
                     static_cast<float>(verticalApertureOffset),
+                    _metersPerUnitScalingFactor,
                     UsdTimeCode::Default(),
                     _GetSparseValueWriter());
             } else {
@@ -211,13 +227,13 @@ bool PxrUsdTranslators_CameraWriter::writeCameraSplinesAttrs(UsdGeomCamera& prim
                 cameraPrim,
                 "horizontalFilmOffset",
                 HdCameraTokens->horizontalApertureOffset,
-                UsdMayaUtil::kMillimetersPerInch);
+                UsdMayaUtil::kMillimetersPerInch * _metersPerUnitScalingFactor);
             UsdMayaSplineUtils::WriteSplineAttribute<float>(
                 camFn,
                 cameraPrim,
                 "verticalFilmOffset",
                 HdCameraTokens->verticalApertureOffset,
-                UsdMayaUtil::kMillimetersPerInch);
+                UsdMayaUtil::kMillimetersPerInch * _metersPerUnitScalingFactor);
         }
     }
 #endif
@@ -260,15 +276,17 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(
         // It doesn't seem to be possible to specify a non-square orthographic
         // camera in Maya, and aspect ratio, lens squeeze ratio, and film
         // offset have no effect.
-        UsdMayaWriteUtil::SetAttribute(
+        UsdMayaWriteUtil::SetScaledAttribute(
             primSchema.GetHorizontalApertureAttr(),
             static_cast<float>(orthoWidth),
+            _metersPerUnitScalingFactor,
             usdTime,
             _GetSparseValueWriter());
 
-        UsdMayaWriteUtil::SetAttribute(
+        UsdMayaWriteUtil::SetScaledAttribute(
             primSchema.GetVerticalApertureAttr(),
             static_cast<float>(orthoWidth),
+            _metersPerUnitScalingFactor,
             usdTime,
             _GetSparseValueWriter());
     } else {
@@ -292,44 +310,50 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(
             (camFn.shakeEnabled() ? camFn.verticalFilmOffset() + camFn.verticalShake()
                                   : camFn.verticalFilmOffset()));
 
-        UsdMayaWriteUtil::SetAttribute(
+        UsdMayaWriteUtil::SetScaledAttribute(
             primSchema.GetHorizontalApertureAttr(),
             static_cast<float>(horizontalAperture),
+            _metersPerUnitScalingFactor,
             usdTime,
             _GetSparseValueWriter());
 
-        UsdMayaWriteUtil::SetAttribute(
+        UsdMayaWriteUtil::SetScaledAttribute(
             primSchema.GetVerticalApertureAttr(),
             static_cast<float>(verticalAperture),
+            _metersPerUnitScalingFactor,
             usdTime,
             _GetSparseValueWriter());
 
-        UsdMayaWriteUtil::SetAttribute(
+        UsdMayaWriteUtil::SetScaledAttribute(
             primSchema.GetHorizontalApertureOffsetAttr(),
             static_cast<float>(horizontalApertureOffset),
+            _metersPerUnitScalingFactor,
             usdTime,
             _GetSparseValueWriter());
 
-        UsdMayaWriteUtil::SetAttribute(
+        UsdMayaWriteUtil::SetScaledAttribute(
             primSchema.GetVerticalApertureOffsetAttr(),
             static_cast<float>(verticalApertureOffset),
+            _metersPerUnitScalingFactor,
             usdTime,
             _GetSparseValueWriter());
     }
 
     // Set the lens parameters.
-    UsdMayaWriteUtil::SetAttribute(
+    UsdMayaWriteUtil::SetScaledAttribute(
         primSchema.GetFocalLengthAttr(),
         static_cast<float>(camFn.focalLength()),
+        _metersPerUnitScalingFactor,
         usdTime,
         _GetSparseValueWriter());
 
     // Always export focus distance regardless of what
     // camFn.isDepthOfField() says. Downstream tools can choose to ignore or
     // override it.
-    UsdMayaWriteUtil::SetAttribute(
+    UsdMayaWriteUtil::SetScaledAttribute(
         primSchema.GetFocusDistanceAttr(),
         static_cast<float>(camFn.focusDistance()),
+        _metersPerUnitScalingFactor,
         usdTime,
         _GetSparseValueWriter());
 
@@ -346,8 +370,12 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(
 
     // Set the clipping planes.
     GfVec2f clippingRange(camFn.nearClippingPlane(), camFn.farClippingPlane());
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetClippingRangeAttr(), clippingRange, usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.GetClippingRangeAttr(),
+        clippingRange,
+        _metersPerUnitScalingFactor,
+        usdTime,
+        _GetSparseValueWriter());
 
     return true;
 }

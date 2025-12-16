@@ -842,17 +842,14 @@ void UsdMayaMeshWriteUtils::writePointsData(
     const GfVec3f* vecData = reinterpret_cast<const GfVec3f*>(pointsData);
     VtVec3fArray   points(vecData, vecData + numVertices);
 
-    // Multiply all mesh points by distanceUnitsScalar
-    if (distanceUnitsScalar != 1.0) {
-        points = points * distanceUnitsScalar;
-    }
-
     VtVec3fArray extent(2);
     // Compute the extent using the raw points
     UsdGeomPointBased::ComputeExtent(points, &extent);
 
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, usdTime, valueWriter);
-    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime, valueWriter);
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.GetPointsAttr(), &points, distanceUnitsScalar, usdTime, valueWriter);
+    UsdMayaWriteUtil::SetScaledAttribute(
+        primSchema.CreateExtentAttr(), &extent, distanceUnitsScalar, usdTime, valueWriter);
 }
 
 void UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(

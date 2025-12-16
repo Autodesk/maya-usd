@@ -16,6 +16,7 @@
 #include "primWriter.h"
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/translators/translatorGprim.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
@@ -73,6 +74,7 @@ UsdMayaPrimWriter::UsdMayaPrimWriter(
     const SdfPath&           usdPath,
     UsdMayaWriteJobContext&  jobCtx)
     : _writeJobCtx(jobCtx)
+    , _metersPerUnitScalingFactor(GetJobScalingConversionFactor(jobCtx.GetArgs()))
     , _dagPath(UsdMayaUtil::getDagPath(depNodeFn))
     , _mayaObject(depNodeFn.object())
     , _usdPath(usdPath)

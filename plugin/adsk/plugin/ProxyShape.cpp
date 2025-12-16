@@ -19,6 +19,10 @@
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/utils/util.h>
 
+#include <maya/MDataBlock.h>
+#include <maya/MEvaluationNode.h>
+#include <maya/MFnTypedAttribute.h>
+
 namespace MAYAUSD_NS_DEF {
 
 // ========================================================
@@ -28,6 +32,9 @@ const MTypeId MAYAUSD_PROXYSHAPE_ID(0x58000095);
 const MTypeId ProxyShape::typeId(MayaUsd::MAYAUSD_PROXYSHAPE_ID);
 const MString ProxyShape::typeName("mayaUsdProxyShape");
 
+MObject            ProxyShape::useTargetedLayerInProxyAccessorAttr;
+static const char* kuseTargetedLayerInProxyAccessorAttrName = "useTargetedLayerInProxyAccessor";
+
 /* static */
 void* ProxyShape::creator() { return new ProxyShape(); }
 
@@ -35,6 +42,21 @@ void* ProxyShape::creator() { return new ProxyShape(); }
 MStatus ProxyShape::initialize()
 {
     MStatus retValue = inheritAttributesFrom(MayaUsdProxyShapeBase::typeName);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    MFnNumericAttribute numericAttrFn;
+
+    useTargetedLayerInProxyAccessorAttr = numericAttrFn.create(
+        kuseTargetedLayerInProxyAccessorAttrName,
+        "utlpa",
+        MFnNumericData::kBoolean,
+        0.0,
+        &retValue);
+    numericAttrFn.setStorable(true);
+    numericAttrFn.setWritable(true);
+    numericAttrFn.setReadable(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(useTargetedLayerInProxyAccessorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     return retValue;
@@ -66,6 +88,25 @@ void ProxyShape::postConstructor()
 
     // Enable proxy accessor features for this proxy
     enableProxyAccessor();
+}
+
+MStatus ProxyShape::preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode)
+{
+    _verifyProxyAccessorLayer = true;
+    return MayaUsdProxyShapeBase::preEvaluation(context, evaluationNode);
+}
+
+MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
+{
+    if (_verifyProxyAccessorLayer) {
+        if (plug == outTimeAttr || plug.isDynamic()) {
+            const bool useTargetLayer
+                = dataBlock.inputValue(useTargetedLayerInProxyAccessorAttr).asBool();
+            useTargetedLayerInProxyAccessor(useTargetLayer);
+            _verifyProxyAccessorLayer = false;
+        }
+    }
+    return MayaUsdProxyShapeBase::compute(plug, dataBlock);
 }
 
 } // namespace MAYAUSD_NS_DEF

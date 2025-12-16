@@ -259,7 +259,7 @@ void setIsAttributeLockedFn(IsAttributeLockedFn fn)
     gIsAttributeLockedFn = fn;
 }
 
-bool isAttributedLocked(const PXR_NS::UsdAttribute& attr, std::string* errMsg /*= nullptr*/)
+bool isAttributedLocked(const PXR_NS::UsdProperty& attr, std::string* errMsg /*= nullptr*/)
 {
     // If we have (optional) attribute is locked function, use it.
     // Otherwise use the default one supplied by UsdUfe.
@@ -658,6 +658,16 @@ Ufe::Attribute::Type usdTypeToUfe(const SdrShaderPropertyConstPtr& shaderPropert
     }
 
     return retVal;
+}
+
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdProperty& usdProp)
+{
+    if (usdProp.Is<PXR_NS::UsdAttribute>()) {
+        return usdTypeToUfe(usdProp.As<PXR_NS::UsdAttribute>());
+    } else if (usdProp.Is<PXR_NS::UsdRelationship>()) {
+        return Ufe::Attribute::kGeneric;
+    }
+    return Ufe::Attribute::kInvalid;
 }
 
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdAttribute& usdAttr)
@@ -1117,7 +1127,7 @@ bool isPropertyMetadataEditAllowed(
     return allowed;
 }
 
-bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
+bool isAttributeEditAllowed(const PXR_NS::UsdProperty& attr, std::string* errMsg)
 {
     if (isAttributedLocked(attr, errMsg))
         return false;
@@ -1182,7 +1192,7 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName, std::s
         }
     }
     // check the attribute itself
-    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), errMsg)) {
+    if (!isAttributeEditAllowed(prim.GetProperty(attrName), errMsg)) {
         return false;
     }
 
@@ -1200,7 +1210,7 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     return true;
 }
 
-void enforceAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+void enforceAttributeEditAllowed(const PXR_NS::UsdProperty& attr)
 {
     std::string errMsg;
     if (!isAttributeEditAllowed(attr, &errMsg)) {

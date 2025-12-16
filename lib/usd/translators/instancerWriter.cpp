@@ -359,8 +359,12 @@ bool PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
             GfVec3d origin;
             if (_GetTransformedOriginInLocalSpace(opData.mayaPath, &origin)) {
                 UsdGeomXformOp translateOp = opData.op;
-                UsdMayaWriteUtil::SetAttribute(
-                    translateOp.GetAttr(), -origin, usdTime, _GetSparseValueWriter());
+                UsdMayaWriteUtil::SetScaledAttribute(
+                    translateOp.GetAttr(),
+                    -origin,
+                    _metersPerUnitScalingFactor,
+                    usdTime,
+                    _GetSparseValueWriter());
             }
         }
     }
@@ -391,7 +395,12 @@ bool PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     if (!UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
-            inputPointsData, instancer, _numPrototypes, usdTime, _GetSparseValueWriter())) {
+            inputPointsData,
+            instancer,
+            _numPrototypes,
+            _metersPerUnitScalingFactor,
+            usdTime,
+            _GetSparseValueWriter())) {
         return false;
     }
 
@@ -399,8 +408,12 @@ bool PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
     instancer.GetPrim().GetStage()->Load(instancer.GetPath());
     VtArray<GfVec3f> extent(2);
     if (instancer.ComputeExtentAtTime(&extent, usdTime, usdTime)) {
-        UsdMayaWriteUtil::SetAttribute(
-            instancer.CreateExtentAttr(), &extent, usdTime, _GetSparseValueWriter());
+        UsdMayaWriteUtil::SetScaledAttribute(
+            instancer.CreateExtentAttr(),
+            &extent,
+            _metersPerUnitScalingFactor,
+            usdTime,
+            _GetSparseValueWriter());
     }
 
     return true;

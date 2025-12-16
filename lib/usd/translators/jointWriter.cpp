@@ -403,28 +403,37 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
     _writeJobCtx.MarkSkelBindings(skelPath, skelPath, _GetExportArgs().exportSkels);
 
     VtMatrix4dArray bindXforms = _GetJointWorldBindTransforms(_topology, _joints);
-    UsdMayaWriteUtil::SetAttribute(
-        _skel.GetBindTransformsAttr(), bindXforms, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetScaledAttribute(
+        _skel.GetBindTransformsAttr(),
+        &bindXforms,
+        _metersPerUnitScalingFactor,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
 
     // Create something reasonable for rest transforms
     VtMatrix4dArray restXforms;
     GfMatrix4d      rootXf = _GetJointWorldTransform(_jointHierarchyRootPath);
+
+    // Note: Retrieve the joint now before setting the transform attribute because
+    //       we pass them by address to allow SetScaledAttribute to steal the data,
+    //       but _GetAnimatedJoints needs them, sp call it now.
+    VtTokenArray animJointNames;
+    _GetAnimatedJoints(skelJointNames, _joints, restXforms, &animJointNames, &_animatedJoints);
+
     // Setting the skel rest transform as the inverse of the current joint transform.
     // The inverse of the bind pose would be the ideal scenario here, however joints without a bind
     // pose or not linked to a skin cluster would have the identity and wouldn't be represented
     // correctly.
     if (_GetJointLocalTransforms(_topology, _joints, rootXf, &restXforms)) {
-        UsdMayaWriteUtil::SetAttribute(
+        UsdMayaWriteUtil::SetScaledAttribute(
             _skel.GetRestTransformsAttr(),
-            restXforms,
+            &restXforms,
+            _metersPerUnitScalingFactor,
             UsdTimeCode::Default(),
             _GetSparseValueWriter());
     } else {
         TF_WARN("Unable to set rest transforms");
     }
-
-    VtTokenArray animJointNames;
-    _GetAnimatedJoints(skelJointNames, _joints, restXforms, &animJointNames, &_animatedJoints);
 
     if (haveUsdSkelXform) {
         _skelXformAttr = _skel.MakeMatrixXform();
@@ -474,7 +483,8 @@ void PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
         // We have a joint which provides the transform of the Skeleton,
         // instead of the transform of a joint in the hierarchy.
         GfMatrix4d localXf = _GetJointLocalTransform(_skelXformPath);
-        UsdMayaWriteUtil::SetAttribute(_skelXformAttr, localXf, usdTime, _GetSparseValueWriter());
+        UsdMayaWriteUtil::SetScaledAttribute(
+            _skelXformAttr, localXf, _metersPerUnitScalingFactor, usdTime, _GetSparseValueWriter());
     }
 
     // Time-varying step: write the packed joint animation transforms once per
@@ -514,9 +524,10 @@ void PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
                     // separate anim components.
                     // In the future, we may want to RLE-compress the data in
                     // PostExport to remove redundant time samples.
-                    UsdMayaWriteUtil::SetAttribute(
+                    UsdMayaWriteUtil::SetScaledAttribute(
                         _skelAnim.GetTranslationsAttr(),
-                        &translations,
+                        translations,
+                        _metersPerUnitScalingFactor,
                         usdTime,
                         _GetSparseValueWriter());
                     UsdMayaWriteUtil::SetAttribute(

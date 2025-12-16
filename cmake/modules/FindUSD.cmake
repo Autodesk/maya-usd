@@ -137,6 +137,18 @@ if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/usd/sdr/shaderProperty.h"
     endif()
 endif()
 
+# Locate the MaterialX standard library dir.
+set(USD_MX_STDLIB_DIR "" CACHE INTERNAL "USD.MaterialX.StdLibDir")
+if (MATERIALX_STDLIB_DIR)
+    # Provided by MaterialX, exposed by pxrConfig since USD 22.11.
+    set(USD_MX_STDLIB_DIR "${MATERIALX_STDLIB_DIR}" CACHE INTERNAL "USD.MaterialX.StdLibDir")
+    message(STATUS "Found MaterialX standard library: ${USD_MX_STDLIB_DIR}")
+elseif (PXR_USD_LOCATION AND EXISTS "${PXR_USD_LOCATION}/libraries")
+    # Fallback to a stdlib installed next to USD.
+    set(USD_MX_STDLIB_DIR "${PXR_USD_LOCATION}/libraries" CACHE INTERNAL "USD.MaterialX.StdLibDir")
+    message(STATUS "Found MaterialX standard library: ${USD_MX_STDLIB_DIR}")
+endif()
+
 # See if MaterialX shaders have full Metadata imported:
 # Not yet in a tagged USD version: https://github.com/PixarAnimationStudios/USD/pull/1895
 set(USD_HAS_MX_METADATA_SUPPORT FALSE CACHE INTERNAL "USD.MaterialX.Metadata")
@@ -150,16 +162,16 @@ endif()
 
 # See if we are getting OpenPBR Surface shader from USD:
 set(USD_HAS_MX_OPENPBR_SURFACE FALSE CACHE INTERNAL "USD.MaterialX.OpenPBRSurface")
-if (PXR_USD_LOCATION AND 
-        (EXISTS "${PXR_USD_LOCATION}/libraries/bxdf/mx39_open_pbr_surface.mtlx" OR 
-         EXISTS "${PXR_USD_LOCATION}/libraries/bxdf/open_pbr_surface.mtlx"))
+if (USD_MX_STDLIB_DIR AND 
+        (EXISTS "${USD_MX_STDLIB_DIR}/bxdf/mx39_open_pbr_surface.mtlx" OR 
+         EXISTS "${USD_MX_STDLIB_DIR}/bxdf/open_pbr_surface.mtlx"))
     set(USD_HAS_MX_OPENPBR_SURFACE TRUE CACHE INTERNAL "USD.MaterialX.OpenPBRSurface")
     message(STATUS "USD has OpenPBR Surface")
 endif()
 
 # See if we are using the backported OpenPBR Surface shader, which needs special handling of Mx39FresnelData:
 set(USD_HAS_BACKPORTED_MX39_OPENPBR FALSE CACHE INTERNAL "USD.MaterialX.Mx39OpenPBRSurface")
-if (PXR_USD_LOCATION AND EXISTS "${PXR_USD_LOCATION}/libraries/pbrlib/genglsl/lib/mx39_microfacet_specular.glsl")
+if (USD_MX_STDLIB_DIR AND EXISTS "${USD_MX_STDLIB_DIR}/pbrlib/genglsl/lib/mx39_microfacet_specular.glsl")
     set(USD_HAS_BACKPORTED_MX39_OPENPBR TRUE CACHE INTERNAL "USD.MaterialX.Mx39OpenPBRSurface")
     message(STATUS "USD has backported MaterialX 1.39 OpenPBR Surface code")
 endif()

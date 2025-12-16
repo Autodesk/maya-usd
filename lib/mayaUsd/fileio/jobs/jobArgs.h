@@ -176,8 +176,11 @@ TF_DECLARE_PUBLIC_TOKENS(
     (single)                              \
     ((double_, "double"))                 \
     /* root prim type values */ \
-    (scope)							   \
-	(xform)
+    (scope) \
+    (xform) \
+    /* accessibility tokens */ \
+    (accessibilityLabel) \
+    (accessibilityDescription)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -313,6 +316,10 @@ struct UsdMayaJobExportArgs
     const TfToken::Set jobContextNames;
     const TfToken::Set excludeExportTypes;
     std::string        defaultPrim;
+
+    // Accessibility Info
+    std::string accessibilityLabel;
+    std::string accessibilityDescription;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;

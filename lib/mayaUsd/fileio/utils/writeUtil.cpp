@@ -935,6 +935,7 @@ bool UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
     MFnArrayAttrsData&           inputPointsData,
     const UsdGeomPointInstancer& instancer,
     const size_t                 numPrototypes,
+    double                       metersPerUnitScaleFactor,
     const UsdTimeCode&           usdTime,
     FlexibleSparseValueWriter*   valueWriter)
 {
@@ -1024,7 +1025,12 @@ bool UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
 
         VtVec3fArray vtArray = _MapMayaToVtArray<MVectorArray, const MVector&, GfVec3f>(
             position, [](const MVector& v) { return GfVec3f(v.x, v.y, v.z); });
-        SetAttribute(instancer.CreatePositionsAttr(), vtArray, usdTime, valueWriter);
+        SetScaledAttribute(
+            instancer.CreatePositionsAttr(),
+            vtArray,
+            metersPerUnitScaleFactor,
+            usdTime,
+            valueWriter);
     } else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(0.0f));
@@ -1300,6 +1306,59 @@ bool UsdMayaWriteUtil::UpdateTimeSamples(
     std::swap(timesSamples, *storage);
 
     return updated;
+}
+
+// static
+GfMatrix4d UsdMayaWriteUtil::ScaleMatrix(const GfMatrix4d& matrix, double scale)
+{
+    GfMatrix4d scaledValue = matrix;
+    GfVec3d    translation = scaledValue.ExtractTranslation();
+    scaledValue.SetTranslateOnly(translation * scale);
+    return scaledValue;
+}
+
+// static
+VtMatrix4dArray UsdMayaWriteUtil::ScaleMatrices(const VtMatrix4dArray& matrices, double scale)
+{
+    VtMatrix4dArray scaledValues;
+    scaledValues.reserve(matrices.size());
+    for (const GfMatrix4d& matrix : matrices) {
+        GfMatrix4d scaledValue = matrix;
+        GfVec3d    translation = scaledValue.ExtractTranslation();
+        scaledValue.SetTranslateOnly(translation * scale);
+        scaledValues.push_back(scaledValue);
+    }
+    return scaledValues;
+}
+
+// static
+bool UsdMayaWriteUtil::SetScaledAttribute(
+    const UsdAttribute&        attr,
+    const GfMatrix4d&          value,
+    const double               scale,
+    const UsdTimeCode          time,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    if (scale == 1.0) {
+        return SetAttribute(attr, value, time, valueWriter);
+    }
+
+    return SetAttribute(attr, ScaleMatrix(value, scale), time, valueWriter);
+}
+
+// static
+bool UsdMayaWriteUtil::SetScaledAttribute(
+    const UsdAttribute&        attr,
+    const VtMatrix4dArray&     value,
+    const double               scale,
+    const UsdTimeCode          time,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    if (scale == 1.0) {
+        return SetAttribute(attr, value, time, valueWriter);
+    }
+
+    return SetAttribute(attr, ScaleMatrices(value, scale), time, valueWriter);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
