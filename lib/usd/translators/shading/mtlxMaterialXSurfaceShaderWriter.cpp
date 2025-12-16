@@ -21,7 +21,6 @@
 
 #include <usdUfe/base/tokens.h>
 
-#include <pxr/base/gf/colorSpace.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
@@ -38,6 +37,7 @@
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #ifdef USD_HAS_COLORSPACE_API_SUPPORT
+#include <pxr/base/gf/colorSpace.h>
 #include <pxr/usd/usd/colorSpaceAPI.h>
 #include <pxr/usd/usd/colorSpaceDefinitionAPI.h>
 #endif
@@ -1024,6 +1024,8 @@ TfToken MtlxMaterialXSurfaceShaderWriter::_GetValidUsdColorSpace(
         }
     }
 
+    // Please note that rec709_display and gamma24 refer to the same color space. We will use
+    // rec709_display as the name to be saved in the USD document.
     if (usdColorSpace == _mxColorSpaceTokens->rec709_display
         || usdColorSpace == _mxColorSpaceTokens->gamma24) {
         // We will make an exception for rec709_display and gamma24, as we can define the color
