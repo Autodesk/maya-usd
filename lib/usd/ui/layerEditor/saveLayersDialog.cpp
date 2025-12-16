@@ -851,6 +851,12 @@ void SaveLayersDialog::onSaveAll()
 
             auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
             if (newRootLayer) {
+
+                // Save the old session layer content before swapping the root, which will
+                // create a new stage.
+                auto oldSessionLayer
+                    = UsdMayaUtil::GetStageByProxyName(proxyPath)->GetSessionLayer();
+
                 // Rename Proxy Shape node
                 MObject proxyNode;
                 UsdMayaUtil::GetMObjectByName(proxyPath, proxyNode);
@@ -885,6 +891,12 @@ void SaveLayersDialog::onSaveAll()
                         }
                     }
                 }
+
+                // Transfer over the session layer contents.
+                auto newSessionLayer
+                    = UsdMayaUtil::GetStageByProxyName(newProxyShapePath.fullPathName().asUTF8())
+                          ->GetSessionLayer();
+                newSessionLayer->TransferContent(oldSessionLayer);
 
                 // Lock that layer
                 MayaUsd::lockLayer(
