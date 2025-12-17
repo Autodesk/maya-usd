@@ -816,7 +816,6 @@ proc mayaUsdMenu_addCommonUsdContextMenuItems(string $obj, string $insertAfter)
         string $proxyShapes[] = `ls -type mayaUsdProxyShape`;
 		string $mayaVersion = getMayaMajorVersion();
 		$usdContextMenu = `menuItem -label "USD" -subMenu true -insertAfter $insertAfter -version $mayaVersion -image "USD_generic.png"`;
-        menuItem -divider true;
 
 		// Conditionally add "Duplicate as USD Data" submenu if there are proxy shapes
 		if (size($proxyShapes) > 0) {
