@@ -19,9 +19,9 @@
 
 #include <maya/MQtUtil.h>
 
-#include <qapplication.h>
-#include <qboxlayout.h>
-#include <qgroupbox.h>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QBoxLayout>
+#include <QtWidgets/QGroupBox>
 
 namespace Adsk {
 
@@ -57,18 +57,21 @@ void ApplicationHost::injectInstance(ApplicationHost* host)
 
 float ApplicationHost::uiScale() const
 {
-    return MQtUtil::dpiScale(1.0f);
-    // return 1.0f;
+    return dpiScale(1.0f); // Default implementation
 }
+
+int   ApplicationHost::dpiScale(int size) const { return MQtUtil::dpiScale(size); }
+float ApplicationHost::dpiScale(float size) const { return MQtUtil::dpiScale(size); }
 
 QIcon ApplicationHost::icon(const IconName& name) const
 {
     switch (name) {
     case IconName::Add: return getIcon(":/UsdLayerEditor/addCreateGeneric");
-    case IconName::OpenFile: return getIcon(":/fileOpen");
-    case IconName::Delete: return getIcon(":/trash");
-    case IconName::MoveUp: return QIcon(":/assetResolver/move_up.png");
-    case IconName::MoveDown: return QIcon(":/assetResolver/move_down.png");
+    case IconName::AddFolder: return getIcon(":/assetResolver/add_folder.png");
+    case IconName::OpenFile: return getIcon("fileOpen.png");
+    case IconName::Delete: return getIcon("trash.png");
+    case IconName::MoveUp: return getIcon(":/assetResolver/move_up.png");
+    case IconName::MoveDown: return getIcon(":/assetResolver/move_down.png");
     default: return QIcon();
     }
 }
@@ -77,7 +80,7 @@ QIcon ApplicationHost::getIcon(const char* iconName)
 {
     QIcon* icon = MQtUtil::createIcon(iconName);
     QIcon  copy;
-    if (icon) {
+    if (nullptr != icon) {
         copy = QIcon(*icon);
     }
     delete icon;
@@ -94,14 +97,12 @@ QColor ApplicationHost::themeColor(const ThemeColors& color) const
 
 int ApplicationHost::pm(const PixelMetric& metric) const
 {
-    // in a real implementation, these would be scaled by uiScale()
     switch (metric) {
-    case PixelMetric::TinyPadding: return 2 * MQtUtil::dpiScale(1); // Default implementation
-    case PixelMetric::ResizableActiveAreaSize:
-        return 8 * MQtUtil::dpiScale(1); // Default implementation
-    case PixelMetric::ResizableContentMargin:
-        return 4 * MQtUtil::dpiScale(1);                            // Default implementation
-    case PixelMetric::ItemHeight: return 24 * MQtUtil::dpiScale(1); // Default implementation
+    case PixelMetric::TinyPadding: return dpiScale(2);
+    case PixelMetric::ResizableActiveAreaSize: return dpiScale(8);
+    case PixelMetric::ResizableContentMargin: return dpiScale(4);
+    case PixelMetric::ItemHeight: return dpiScale(24);
+    case PixelMetric::HeaderHeight: return dpiScale(28);
     default: return 0;
     }
 };
