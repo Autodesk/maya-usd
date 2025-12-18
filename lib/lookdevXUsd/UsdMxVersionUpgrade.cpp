@@ -748,7 +748,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                 node.SetShaderId(TfToken(_tokens->ND_extract_.GetString() + sourceType.GetString()));
                 auto index = _channelIndexMap(channelString[0]);
                 if (index != kInvalidChannelIndex) {
-                    node.CreateInput(_tokens->index, kMaterialXToUsdType.at(_tokens->integer)).Set(index);
+                    node.CreateInput(_tokens->index, kMaterialXToUsdType.at(_tokens->integer)).Set(static_cast<int>(index));
                 }
             }
 
