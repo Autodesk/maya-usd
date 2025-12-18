@@ -28,6 +28,7 @@ namespace UsdLayerEditor {
 
 // create a confirmation dialog, with an optional bullet list of stuff like layer names
 bool confirmDialog(
+    QWidget*           parent,
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,
@@ -36,6 +37,7 @@ bool confirmDialog(
 
 // create a dialog with a single OK button, with an optional bullet list
 void warningDialog(
+    QWidget*           parent,
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,

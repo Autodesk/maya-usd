@@ -78,7 +78,9 @@ bool checkPathRecursive(
                 pathToCheck.c_str());
             message = MQtUtil::toQString(tmp);
         }
-        warningDialog(in_errorTitle, message);
+        // TODO: fix to have a valid parent widget.
+        QWidget* parent = nullptr;
+        warningDialog(parent, in_errorTitle, message);
         return false;
     }
 
@@ -161,7 +163,9 @@ bool checkIfPathIsSafeToAdd(
     msg.format(
         StringResources::getAsMString(StringResources::kErrorCannotAddPathTwice),
         in_pathToAdd.c_str());
-    warningDialog(in_errorTitle, MQtUtil::toQString(msg));
+    // TODO: fix to have a valid parent widget.
+    QWidget* parent = nullptr;
+    warningDialog(parent, in_errorTitle, MQtUtil::toQString(msg));
     return false;
 }
 
