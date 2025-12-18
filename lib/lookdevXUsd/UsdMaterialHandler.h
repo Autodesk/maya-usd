@@ -58,6 +58,12 @@ protected:
     [[nodiscard]] bool isNodeGraphImpl(const Ufe::SceneItem::Ptr& item) const override;
     [[nodiscard]] bool isMaterialImpl(const Ufe::SceneItem::Ptr& item) const override;
     [[nodiscard]] bool isShaderImpl(const Ufe::SceneItem::Ptr& item) const override;
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+    [[nodiscard]] std::optional<std::string> isLegacyShaderGraph(
+        const Ufe::SceneItem::Ptr& graphElement) const override;
+    [[nodiscard]] Ufe::UndoableCommand::Ptr upgradeLegacyShaderGraphCmd(
+        const Ufe::SceneItem::Ptr& graphElement) const override;
+#endif
 };
 
 } // namespace LookdevXUsd

@@ -188,6 +188,21 @@ if(UFE_CAMERAHANDLER_HAS_FINDALL)
     )
 endif()
 
+if (LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION=1
+    )
+    target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+            ${LookdevXUfe_LIBRARY}
+    )
+    target_include_directories(${PROJECT_NAME} 
+        PRIVATE
+            ${LookdevXUfe_INCLUDE_DIR}
+    )
+endif()
+
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
