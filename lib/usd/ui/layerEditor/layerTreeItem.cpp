@@ -346,7 +346,7 @@ bool LayerTreeItem::isAnonymous() const
     if (SessionState* sessionState = parentModel()->sessionState()) {
         if (MayaUsd::ComponentUtils::isAdskUsdComponent(
                 sessionState->stageEntry()._proxyShapePath)) {
-            return MayaUsd::ComponentUtils::isAnonymousAdskUsdComponent(sessionState->stage());
+            return MayaUsd::ComponentUtils::isUnsavedAdskUsdComponent(sessionState->stage());
         }
     }
 

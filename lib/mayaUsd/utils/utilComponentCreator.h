@@ -49,7 +49,7 @@ void saveAdskUsdComponent(const std::string& proxyPath);
 /*! \brief Returns whether the stage is an new unsaved Autodesk USD Component.
  */
 MAYAUSD_CORE_PUBLIC
-bool isAnonymousAdskUsdComponent(const pxr::UsdStageRefPtr stage);
+bool isUnsavedAdskUsdComponent(const pxr::UsdStageRefPtr stage);
 
 /*! \brief Reloads the Autodesk USD Component identified by \p proxyPath.
  *

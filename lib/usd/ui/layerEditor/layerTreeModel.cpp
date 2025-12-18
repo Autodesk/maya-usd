@@ -580,7 +580,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
 void LayerTreeModel::reloadComponent(QWidget* in_parent)
 {
-    if (MayaUsd::ComponentUtils::isAnonymousAdskUsdComponent(_sessionState->stage())) {
+    if (MayaUsd::ComponentUtils::isUnsavedAdskUsdComponent(_sessionState->stage())) {
         return;
     }
     MayaUsd::ComponentUtils::reloadAdskUsdComponent(_sessionState->stageEntry()._proxyShapePath);

@@ -126,7 +126,7 @@ void saveAdskUsdComponent(const std::string& proxyPath)
     }
 }
 
-bool isAnonymousAdskUsdComponent(const pxr::UsdStageRefPtr stage)
+bool isUnsavedAdskUsdComponent(const pxr::UsdStageRefPtr stage)
 {
     // If the component is still only really in memory, there is nothing to refresh.
     // Detect this case by check if the root layer is empty on disk.
