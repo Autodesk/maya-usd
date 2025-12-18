@@ -2127,29 +2127,25 @@ std::vector<MDagPath> UsdMayaUtil::getDescendantsStartingWithChildren(const MDag
 
 MDagPath UsdMayaUtil::getDagPath(const MFnDependencyNode& depNodeFn, const bool reportError)
 {
-    try {
-        const MFnDagNode& dagNodeFn = dynamic_cast<const MFnDagNode&>(depNodeFn);
-
-        MStatus        status;
-        const MDagPath dagPath = dagNodeFn.dagPath(&status);
-        if (status == MS::kSuccess) {
-            const bool dagPathIsValid = dagPath.isValid(&status);
-            if (status == MS::kSuccess && dagPathIsValid) {
-                return dagPath;
-            }
-        }
-
-        if (reportError) {
-            TF_CODING_ERROR(
-                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
-                "constructed using an MDagPath.",
-                dagNodeFn.fullPathName().asChar());
-        }
-    } catch (const std::bad_cast& /* e */) {
-        // This is not a DAG node, so it can't have a DAG path.
+    MDagPath dagPath;
+    MStatus  status = MDagPath::getAPathTo(depNodeFn.object(), dagPath);
+    if (status != MS::kSuccess) {
+        // Node not part of the DAG.
+        return MDagPath();
     }
 
-    return MDagPath();
+    const bool dagPathIsValid = dagPath.isValid(&status);
+    if (status != MS::kSuccess || !dagPathIsValid) {
+        if (reportError) {
+            TF_WARN(
+                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
+                "constructed using an MDagPath.",
+                depNodeFn.uniqueName().asChar());
+        }
+        return MDagPath();
+    }
+
+    return dagPath;
 }
 
 UsdMayaUtil::MDagPathMap<SdfPath>
