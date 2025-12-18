@@ -84,3 +84,10 @@ if(LookdevXUfe_VERSION VERSION_GREATER_EQUAL "1.0.1" OR
     set(LOOKDEVXUFE_HAS_PYTHON_BINDINGS TRUE CACHE INTERNAL "PyLookdevXUfe")
     message(STATUS "Maya has LookdevXUfe Python bindings")
 endif()
+
+set(LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION FALSE CACHE INTERNAL "LegacyMxLookdevXUfe")
+if(LookdevXUfe_VERSION VERSION_GREATER_EQUAL "2.0.0" OR
+    (LookdevXUfe_VERSION VERSION_LESS "1.0.0" AND LookdevXUfe_VERSION VERSION_GREATER_EQUAL "0.2.12"))
+    set(LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION TRUE CACHE INTERNAL "LegacyMxLookdevXUfe")
+    message(STATUS "Maya has LookdevXUfe Legacy MaterialX handling")
+endif()

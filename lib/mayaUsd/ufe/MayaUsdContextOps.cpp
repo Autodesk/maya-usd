@@ -19,6 +19,7 @@
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/layers.h>
@@ -50,6 +51,11 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/selectionUndoableCommands.h>
+#include <ufe/undoableCommand.h>
+
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+#include <LookdevXUfe/MaterialHandler.h>
+#endif
 
 #include <cassert>
 #include <map>
@@ -84,6 +90,10 @@ static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+static constexpr char kUpgradeMaterialItem[] = "Upgrade Material";
+static constexpr char kUpgradeMaterialLabel[] = "Upgrade Material";
+#endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAssignNewMaterialLabel[] = "Assign New Material";
@@ -133,6 +143,81 @@ public:
     std::string commandString() const override { return cmdsList().front()->commandString(); }
 #endif
 };
+#endif
+
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+class UsdMxUpgradeStageCmd : public Ufe::CompositeUndoableCommand
+{
+public:
+    using Ptr = std::shared_ptr<UsdMxUpgradeStageCmd>;
+
+    static Ptr create(const Ufe::Path& stagePath);
+
+    UsdMxUpgradeStageCmd(const Ufe::Path& stagePath);
+    ~UsdMxUpgradeStageCmd() override = default;
+
+    //@{
+    //! Delete the copy/move constructors assignment operators.
+    UsdMxUpgradeStageCmd(const UsdMxUpgradeStageCmd&) = delete;
+    UsdMxUpgradeStageCmd& operator=(const UsdMxUpgradeStageCmd&) = delete;
+    UsdMxUpgradeStageCmd(UsdMxUpgradeStageCmd&&) = delete;
+    UsdMxUpgradeStageCmd& operator=(UsdMxUpgradeStageCmd&&) = delete;
+    //@}
+
+    constexpr static const char* kCommandString = "UpgradeStageLegacyMaterials";
+    constexpr static const char* kCommandLabel = "Upgrade all legacy materials";
+
+    UFE_V4(std::string commandString() const override { return kCommandString; })
+};
+
+UsdMxUpgradeStageCmd::Ptr UsdMxUpgradeStageCmd::create(const Ufe::Path& stagePath)
+{
+    auto materialHandler = LookdevXUfe::MaterialHandler::get(MayaUsd::ufe::getUsdRunTimeId());
+    if (!materialHandler) {
+        return {};
+    }
+
+    auto retVal = std::make_shared<UsdMxUpgradeStageCmd>(stagePath);
+
+    // Could traverse the stage using only Ufe::Hierarchy, but I think going full USD is going to be
+    // faster.
+    auto stage = UsdUfe::getStage(stagePath);
+    TF_AXIOM(stage);
+
+    for (const auto& prim : stage->Traverse()) {
+        if (const UsdShadeMaterial materialPrim = UsdShadeMaterial(prim); materialPrim) {
+            // Recreate Ufe path:
+            const PXR_NS::SdfPath& materialSdfPath = materialPrim.GetPath();
+            const Ufe::Path materialUfePath = UsdUfe::usdPathToUfePathSegment(materialSdfPath);
+
+            // Construct a UFE path consisting of two segments:
+            // 1. The path to the USD stage
+            // 2. The path to our material
+            const auto  stagePathSegments = stagePath.getSegments();
+            const auto& materialPathSegments = materialUfePath.getSegments();
+            if (stagePathSegments.empty() || materialPathSegments.empty()) {
+                continue;
+            }
+
+            const auto ufePath = Ufe::Path({ stagePathSegments[0], materialPathSegments[0] });
+
+            // Now we have the full path to the material's SceneItem.
+            auto cmd = materialHandler->upgradeLegacyShaderGraphCmd(
+                UsdUfe::UsdSceneItem::create(ufePath, prim));
+            if (cmd) {
+                retVal->append(cmd);
+            }
+        }
+    }
+
+    if (retVal->cmdsList().empty()) {
+        return nullptr;
+    }
+    return retVal;
+}
+
+UsdMxUpgradeStageCmd::UsdMxUpgradeStageCmd(const Ufe::Path& stagePath) { }
+
 #endif
 
 bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
@@ -396,8 +481,28 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
+        bool needsSeparator = false;
         if (_item->prim().IsA<UsdShadeMaterial>() && selectionSupportsShading()) {
             items.emplace_back(kBindMaterialToSelectionItem, kBindMaterialToSelectionLabel);
+            needsSeparator = true;
+        }
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+        if (_item->prim().IsA<UsdShadeMaterial>()) {
+            auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
+            if (materialHandler && materialHandler->isLegacyShaderGraph(sceneItem())) {
+                items.emplace_back(kUpgradeMaterialItem, kUpgradeMaterialLabel);
+                needsSeparator = true;
+            }
+        }
+        if (_isAGatewayType) {
+            if (UsdMxUpgradeStageCmd::create(path())) {
+                items.emplace_back(
+                    UsdMxUpgradeStageCmd::kCommandString, UsdMxUpgradeStageCmd::kCommandLabel);
+                needsSeparator = true;
+            }
+        }
+#endif
+        if (needsSeparator) {
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
 #ifdef WANT_QT_BUILD
@@ -572,6 +677,19 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
                 kAssignExistingMaterialItem,
                 kAssignExistingMaterialLabel,
                 Ufe::ContextItem::kHasChildren);
+        }
+#endif
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+        if (_item->prim().IsA<UsdShadeMaterial>()) {
+            auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
+            if (materialHandler) {
+                for (const auto& bulkItem : _bulkItems) {
+                    if (materialHandler && materialHandler->isLegacyShaderGraph(bulkItem)) {
+                        items.emplace_back(kUpgradeMaterialItem, kUpgradeMaterialLabel);
+                        break;
+                    }
+                }
+            }
         }
 #endif
         items.emplace_back(
@@ -757,6 +875,15 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             }
         }
         return compositeCmd;
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+    } else if (itemPath[0] == kUpgradeMaterialItem) {
+        auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
+        if (materialHandler) {
+            return materialHandler->upgradeLegacyShaderGraphCmd(sceneItem());
+        }
+    } else if (itemPath[0] == UsdMxUpgradeStageCmd::kCommandString) {
+        return UsdMxUpgradeStageCmd::create(path());
+#endif
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(_item->path());
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -841,6 +968,20 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
             }
         }
         return compositeCmdReturn(_bulkItems);
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+    } else if (itemPath[0] == kUpgradeMaterialItem) {
+        auto bulkCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+        auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
+        if (bulkCmd && materialHandler) {
+            for (const auto& bulkItem : _bulkItems) {
+                auto cmd = materialHandler->upgradeLegacyShaderGraphCmd(bulkItem);
+                if (cmd) {
+                    bulkCmd->append(cmd);
+                }
+            }
+            return bulkCmd;
+        }
+#endif
     }
 
     return nullptr;

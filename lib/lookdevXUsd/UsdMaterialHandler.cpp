@@ -12,13 +12,30 @@
 
 #include "UsdMaterial.h"
 #include "UsdMaterialValidator.h"
+#include "UsdMxVersionUpgrade.h"
 
 #include <mayaUsdAPI/utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/subset.h>
-#include <pxr/usd/usdShade/material.h>
+
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+PXR_NAMESPACE_OPEN_SCOPE
+
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (mtlx)
+    ((legacyVersionPrefix, "MaterialX v"))
+    ((currentMxVersion, MaterialX_VERSION_STRING))
+);
+// clang-format on
+
+PXR_NAMESPACE_CLOSE_SCOPE
+#endif
 
 namespace LookdevXUsd
 {
@@ -47,7 +64,7 @@ LookdevXUfe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Pt
     // Test if this item is imageable or a geom subset. If not, then we cannot create a material
     // interface for it, which is a valid case (such as for a material node type).
     const auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
-    if (!PXR_NS::UsdGeomImageable(prim) && !prim.IsA<PXR_NS::UsdGeomSubset>())
+    if (!UsdGeomImageable(prim) && !prim.IsA<UsdGeomSubset>())
     {
         return nullptr;
     }
@@ -112,5 +129,17 @@ bool UsdMaterialHandler::allowedInNodeGraph(const std::string& /*nodeDefType*/) 
 {
     return true;
 }
+
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+std::optional<std::string> UsdMaterialHandler::isLegacyShaderGraph(const Ufe::SceneItem::Ptr& graphElement) const
+{
+    return LookdevXUsd::Version::isLegacyShaderGraph(graphElement->path());
+}
+
+Ufe::UndoableCommand::Ptr UsdMaterialHandler::upgradeLegacyShaderGraphCmd(const Ufe::SceneItem::Ptr& graphElement) const
+{
+    return LookdevXUsd::Version::UsdMxUpgradeMaterialCmd::create(graphElement->path());
+}
+#endif
 
 } // namespace LookdevXUsd
