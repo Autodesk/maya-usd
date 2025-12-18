@@ -16,7 +16,6 @@
 
 #include "layerTreeModel.h"
 
-#include "componentSaveDialog.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 #include "saveLayersDialog.h"
@@ -50,37 +49,6 @@ namespace {
 // For now just use the plain text type to store the layer identifiers.
 const QString LAYER_EDITOR_MIME_TYPE = QStringLiteral("text/plain");
 const QString LAYED_EDITOR_MIME_SEP = QStringLiteral(";");
-
-bool isPathInside(const std::string& parentDir, const std::string& childPath)
-{
-    ghc::filesystem::path parent = ghc::filesystem::weakly_canonical(parentDir);
-    ghc::filesystem::path child = ghc::filesystem::weakly_canonical(childPath);
-
-    // Iterate up from child to root
-    for (ghc::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
-        if (p == parent)
-            return true;
-
-        ghc::filesystem::path next = p.parent_path();
-        if (next == p) // reached root (ex "C:\")
-            break;
-    }
-    return false;
-}
-
-bool shouldDisplayComponentInitialSaveDialog(
-    const UsdStageRefPtr stage,
-    const std::string&   proxyShapePath)
-{
-    if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
-        return false;
-    }
-
-    MString tempDir;
-    MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
-
-    return isPathInside(UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
-}
 
 } // namespace
 
@@ -540,7 +508,7 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
-    auto saveAllLayers = [this]() {
+    auto saveAllLayers = [this, in_parent]() {
         // Special case for components created by the component creator. Only the component creator
         // knows how to save a component properly.
         if (MayaUsd::ComponentUtils::isAdskUsdComponent(
@@ -554,7 +522,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         for (auto layer : layers) {
             if (!layer->isSystemLocked()) {
                 if (!layer->isAnonymous()) {
-                    layer->saveEditsNoPrompt();
+                    layer->saveEditsNoPrompt(in_parent);
                 }
             }
         }
@@ -575,102 +543,10 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
-    if (shouldDisplayComponentInitialSaveDialog(
-            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
-        ComponentSaveDialog dlg(in_parent, _sessionState->stageEntry()._proxyShapePath);
-        dlg.setWindowTitle(QString(("Save " + _sessionState->stageEntry()._displayName).c_str()));
-        dlg.setComponentName(QString(_sessionState->stageEntry()._displayName.c_str()));
-        dlg.setFolderLocation(QString(MayaUsd::utils::getSceneFolder().c_str()));
-
-        if (QDialog::Accepted == dlg.exec()) {
-            std::string saveLocation(dlg.folderLocation().toStdString());
-            std::string componentName(dlg.componentName().toStdString());
-
-            MString defMoveComponentCmd;
-            defMoveComponentCmd.format(
-                "from pxr import Sdf, Usd, UsdUtils\n"
-                "import mayaUsd\n"
-                "import mayaUsd.ufe\n"
-                "from AdskUsdComponentCreator import ComponentDescription, MoveComponent, TheHost\n"
-                "from usd_component_creator_plugin import update_variant_editor_window, "
-                "MayaComponentManager\n"
-                "from AdskVariantEditor import ComponentData\n"
-                "def usd_component_creator_move_component():\n"
-                "    proxyStage = mayaUsd.ufe.getStage(\"^1s\")\n"
-                "    MayaComponentManager.GetInstance().SaveComponent(proxyStage)\n"
-                "    component_description = "
-                "    ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
-                "    moved_comp = MoveComponent(component_description, \"^2s\", \"^3s\", True, "
-                "False)\n"
-                "    update_variant_editor_window(ComponentData(moved_comp[0]))\n"
-                "    return moved_comp[0].root_layer_filename",
-                _sessionState->stageEntry()._proxyShapePath.c_str(),
-                saveLocation.c_str(),
-                componentName.c_str());
-
-            if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentCmd)) {
-                MString movedStageRootFilepath;
-                MString moveComponentCmd = "usd_component_creator_move_component()";
-                MGlobal::executePythonCommand(moveComponentCmd, movedStageRootFilepath);
-
-                auto newRootLayer
-                    = SdfLayer::FindOrOpen(UsdMayaUtil::convert(movedStageRootFilepath));
-
-                if (newRootLayer) {
-
-                    // Rename Proxy Shape node
-                    MObject proxyNode;
-                    UsdMayaUtil::GetMObjectByName(
-                        _sessionState->stageEntry()._proxyShapePath, proxyNode);
-                    MDagModifier dagMod;
-                    MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
-                    if (status == MStatus::kSuccess) {
-                        dagMod.doIt();
-                    }
-
-                    // Get the new proxyPath
-                    MDagPath newProxyShapePath;
-                    MDagPath::getAPathTo(proxyNode, newProxyShapePath);
-
-                    // Save the old session layer content before swapping the root, which will
-                    // create a new stage.
-                    auto oldSessionLayer = _sessionState->stage()->GetSessionLayer();
-
-                    // Set the updated root file path
-                    MayaUsd::utils::setNewProxyPath(
-                        newProxyShapePath.fullPathName(),
-                        movedStageRootFilepath,
-                        MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
-                        newRootLayer,
-                        false);
-
-                    // Update the StageEntry to a new StageEntry which
-                    // contains the proper stage object pointing to
-                    // the new root layer
-                    auto entries = _sessionState->allStages();
-                    for (const auto& entry : entries) {
-                        if (entry._proxyShapePath
-                            == std::string(newProxyShapePath.fullPathName().asUTF8())) {
-                            _sessionState->setStageEntry(entry);
-                            break;
-                        }
-                    }
-
-                    // Transfer over the session layer contents.
-                    auto newSessionLayer = _sessionState->stage()->GetSessionLayer();
-                    newSessionLayer->TransferContent(oldSessionLayer);
-
-                    // Lock that layer
-                    MayaUsd::lockLayer(
-                        newProxyShapePath.fullPathName().asChar(),
-                        newRootLayer,
-                        MayaUsd::LayerLockType::LayerLock_Locked,
-                        true);
-                }
-            }
-        }
-        // User clicked "Cancel" - do nothing and return
-    } else if (showConfirmDgl) {
+    // Show the save dialog for component stages (initial save) or if confirmation is needed
+    if (MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(
+            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)
+        || showConfirmDgl) {
         bool             isExporting = false;
         SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
         if (QDialog::Accepted == dlg.exec()) {
@@ -690,6 +566,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 MGlobal::displayError(resultMsg);
 
                 warningDialog(
+                    in_parent,
                     StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
                     StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
             } else {

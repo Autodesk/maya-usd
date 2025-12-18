@@ -14,13 +14,14 @@
 // limitations under the License.
 //
 
-#include "componentSaveDialog.h"
+#include "componentSaveWidget.h"
 
 #include "generatedIconButton.h"
 #include "qtUtils.h"
 
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -31,82 +32,54 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QJsonValue>
 #include <QtCore/QString>
-#include <QtCore/QTimer>
 #include <QtGui/QIcon>
 #include <QtGui/QKeyEvent>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QFileIconProvider>
 #include <QtWidgets/QGridLayout>
-#include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
-#include <QtWidgets/QPushButton>
 #include <QtWidgets/QScrollArea>
 #include <QtWidgets/QStackedWidget>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QTreeWidget>
-#include <ghc/filesystem.hpp>
+#include <QtWidgets/QVBoxLayout>
 
+#include <algorithm>
 #include <string>
 
 namespace {
 const char* SHOW_MORE_TEXT = "<a href=\"#\">Show More</a>";
 const char* SHOW_LESS_TEXT = "<a href=\"#\">Show Less</a>";
 
-const char* getScenesFolderScript = R"(
-    global proc string UsdMayaUtilFileSystem_GetScenesFolder()
-    {
-        string $workspaceLocation = `workspace -q -fn`;
-        string $scenesFolder = `workspace -q -fileRuleEntry "scene"`;
-        $sceneFolder = $workspaceLocation + "/" + $scenesFolder;
-
-        return $sceneFolder;
-    }
-    UsdMayaUtilFileSystem_GetScenesFolder;
-    )";
-
-// This function was copied from utilFileSystem.cpp.
-// Including the headers in this class that include USD headers
-// was causing transitive compilation issues between QT headers
-// and USD headers in MayaUsd 2023.
-std::string getMayaWorkspaceScenesDir()
-{
-    MString scenesFolder;
-    ::MGlobal::executeCommand(
-        getScenesFolderScript,
-        scenesFolder,
-        /*display*/ false,
-        /*undo*/ false);
-
-    return std::string(scenesFolder.asChar(), scenesFolder.length());
-}
-
 } // namespace
 
 namespace UsdLayerEditor {
 
-ComponentSaveDialog::ComponentSaveDialog(QWidget* in_parent, const std::string& proxyShapePath)
-    : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
+ComponentSaveWidget::ComponentSaveWidget(QWidget* in_parent, const std::string& proxyShapePath)
+    : QWidget(in_parent)
     , _nameEdit(nullptr)
     , _locationEdit(nullptr)
     , _browseButton(nullptr)
     , _showMoreLabel(nullptr)
-    , _saveStageButton(nullptr)
-    , _cancelButton(nullptr)
+    , _nameLabel(nullptr)
+    , _locationLabel(nullptr)
     , _treeScrollArea(nullptr)
     , _treeWidget(nullptr)
     , _treeContainer(nullptr)
     , _isExpanded(false)
+    , _isCompact(false)
     , _originalHeight(0)
     , _proxyShapePath(proxyShapePath)
     , _lastComponentName()
 {
     setupUI();
+    setFolderLocation(QString::fromStdString(MayaUsd::utils::getSceneFolder()));
 }
 
-ComponentSaveDialog::~ComponentSaveDialog() { }
+ComponentSaveWidget::~ComponentSaveWidget() { }
 
-void ComponentSaveDialog::setupUI()
+void ComponentSaveWidget::setupUI()
 {
     // Main vertical layout
     auto mainLayout = new QVBoxLayout();
@@ -114,11 +87,11 @@ void ComponentSaveDialog::setupUI()
     mainLayout->setSpacing(0);
 
     // Content widget with padding
-    auto contentWidget = new QWidget();
+    auto contentWidget = new QWidget(this);
     auto contentLayout = new QGridLayout();
 
     // Set padding: left, top, right, bottom
-    contentLayout->setContentsMargins(DPIScale(20), DPIScale(15), DPIScale(20), DPIScale(15));
+    contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(DPIScale(10));
 
     // Column stretch factors: 1/6, 4/6, 1/24, 3/24
@@ -130,12 +103,12 @@ void ComponentSaveDialog::setupUI()
     contentLayout->setColumnStretch(3, 3);  // 3/24
 
     // First row, first column: "Name" label
-    auto nameLabel = new QLabel("Name", this);
-    contentLayout->addWidget(nameLabel, 0, 0);
+    _nameLabel = new QLabel("Name", this);
+    contentLayout->addWidget(_nameLabel, 0, 0);
 
     // First row, second column: "Location" label
-    auto locationLabel = new QLabel("Location", this);
-    contentLayout->addWidget(locationLabel, 0, 1);
+    _locationLabel = new QLabel("Location", this);
+    contentLayout->addWidget(_locationLabel, 0, 1);
 
     // Second row, first column: Name textbox
     _nameEdit = new QLineEdit(this);
@@ -153,14 +126,15 @@ void ComponentSaveDialog::setupUI()
     QIcon folderIcon = utils->createIcon(":/fileOpen.png");
     _browseButton = new GeneratedIconButton(this, folderIcon);
     _browseButton->setToolTip("Browse for folder");
-    connect(_browseButton, &QAbstractButton::clicked, this, &ComponentSaveDialog::onBrowseFolder);
+    _browseButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    connect(_browseButton, &QAbstractButton::clicked, this, &ComponentSaveWidget::onBrowseFolder);
     contentLayout->addWidget(_browseButton, 1, 2);
 
     // Second row, fourth column: "Show More" clickable label
     _showMoreLabel = new QLabel(SHOW_MORE_TEXT, this);
     _showMoreLabel->setOpenExternalLinks(false);
     _showMoreLabel->setTextFormat(Qt::RichText);
-    connect(_showMoreLabel, &QLabel::linkActivated, this, &ComponentSaveDialog::onShowMore);
+    connect(_showMoreLabel, &QLabel::linkActivated, this, &ComponentSaveWidget::onShowMore);
     contentLayout->addWidget(_showMoreLabel, 1, 3, Qt::AlignLeft | Qt::AlignVCenter);
 
     contentWidget->setLayout(contentLayout);
@@ -169,7 +143,7 @@ void ComponentSaveDialog::setupUI()
     // Tree view container (initially hidden)
     _treeContainer = new QWidget(this);
     auto treeLayout = new QVBoxLayout();
-    treeLayout->setContentsMargins(DPIScale(20), 0, DPIScale(20), DPIScale(15));
+    treeLayout->setContentsMargins(DPIScale(20), DPIScale(10), DPIScale(20), DPIScale(15));
     treeLayout->setSpacing(DPIScale(10));
 
     auto treeLabel = new QLabel("The following file structure is created on save.", this);
@@ -218,63 +192,44 @@ void ComponentSaveDialog::setupUI()
     _treeContainer->setVisible(false);
     mainLayout->addWidget(_treeContainer);
 
-    // Button layout (bottom right)
-    auto buttonLayout = new QHBoxLayout();
-    QtUtils::initLayoutMargins(buttonLayout, DPIScale(10));
-    buttonLayout->setSpacing(DPIScale(10));
-    buttonLayout->addStretch();
-
-    _saveStageButton = new QPushButton("Save Stage", this);
-    _saveStageButton->setDefault(true);
-    connect(_saveStageButton, &QPushButton::clicked, this, &ComponentSaveDialog::onSaveStage);
-    buttonLayout->addWidget(_saveStageButton);
-
-    _cancelButton = new QPushButton("Cancel", this);
-    connect(_cancelButton, &QPushButton::clicked, this, &ComponentSaveDialog::onCancel);
-    buttonLayout->addWidget(_cancelButton);
-
-    auto buttonWidget = new QWidget(this);
-    buttonWidget->setLayout(buttonLayout);
-    buttonWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    mainLayout->addWidget(buttonWidget);
-
     setLayout(mainLayout);
-    setWindowTitle("Save Component");
-    setFixedWidth(600);
-    // Don't set fixed height initially - let it size naturally, then we'll fix it after first show
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    setMinimumWidth(DPIScale(600));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 }
 
-void ComponentSaveDialog::setComponentName(const QString& name)
+void ComponentSaveWidget::setComponentName(const QString& name)
 {
     if (_nameEdit) {
         _nameEdit->setText(name);
     }
 }
 
-void ComponentSaveDialog::setFolderLocation(const QString& location)
+void ComponentSaveWidget::setFolderLocation(const QString& location)
 {
     if (_locationEdit) {
-        _locationEdit->setText(location);
+        QString normalized = location;
+        normalized.replace('\\', '/');
+        _locationEdit->setText(normalized);
     }
 }
 
-QString ComponentSaveDialog::componentName() const
+QString ComponentSaveWidget::componentName() const
 {
     return _nameEdit ? _nameEdit->text() : QString();
 }
 
-QString ComponentSaveDialog::folderLocation() const
+QString ComponentSaveWidget::folderLocation() const
 {
     return _locationEdit ? _locationEdit->text() : QString();
 }
 
-void ComponentSaveDialog::onBrowseFolder()
+void ComponentSaveWidget::onBrowseFolder()
 {
     QString currentPath = _locationEdit->text();
-    // default to maya-usd scene folder
+    // Default to the directory of the current Maya scene if it's saved,
+    // otherwise default to maya-usd scene folder
     if (currentPath.isEmpty()) {
-        currentPath = getMayaWorkspaceScenesDir().c_str();
+        currentPath = QString::fromStdString(MayaUsd::utils::getSceneFolder());
     }
 
     QString selectedFolder = QFileDialog::getExistingDirectory(
@@ -288,66 +243,31 @@ void ComponentSaveDialog::onBrowseFolder()
     }
 }
 
-void ComponentSaveDialog::keyPressEvent(QKeyEvent* event)
+void ComponentSaveWidget::keyPressEvent(QKeyEvent* event)
 {
     // Intercept Enter/Return key when focus is on _nameEdit
     if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && _nameEdit
         && _nameEdit->hasFocus()) {
-        // If tree view is minimized (not expanded), always accept the dialog
+        // If tree view is minimized (not expanded), let parent handle it
         if (!_isExpanded) {
-            QDialog::keyPressEvent(event);
+            QWidget::keyPressEvent(event);
             return;
         }
 
         // If tree view is expanded, check if name has changed
         QString currentName = _nameEdit->text();
         if (currentName != _lastComponentName) {
-            // Name has changed - update tree view and prevent dialog acceptance
+            // Name has changed - update tree view and prevent event propagation
             updateTreeView();
             event->accept();
             return;
         }
-        // Name hasn't changed - let default behavior proceed (accept dialog)
+        // Name hasn't changed - let parent handle it
     }
-    QDialog::keyPressEvent(event);
+    QWidget::keyPressEvent(event);
 }
 
-void ComponentSaveDialog::onSaveStage()
-{
-    // Block overwriting of components. The target folder must be empty.
-    // Otherwise, log an error and abort. In the future we will want to
-    // support overwriting components. This is not trivial as we need
-    // to be able to preflight all the file write operations, and only if
-    // we are certain everything will succeed, overwrite everything. We also
-    // need to handle about-to-be-overwritten, but already in memory layers,
-    // locked layers, and a possibly polluted folder if the old component had
-    // assets that would no longer be used by the new version.
-
-    ghc::filesystem::path location = { _locationEdit->text().toStdString() };
-    location.append(_nameEdit->text().toStdString());
-
-    if (ghc::filesystem::exists(location) && !ghc::filesystem::is_empty(location)) {
-
-        MObject obj;
-        UsdMayaUtil::GetMObjectByName(_proxyShapePath, obj);
-        const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
-
-        PXR_NAMESPACE_USING_DIRECTIVE
-        TF_RUNTIME_ERROR(
-            "Cannot save %s with the given name since a non-empty folder with the same "
-            "name is already in that location. Use a unique name or save to a different location "
-            "and try the save again. Folder path:%s",
-            stageName.asChar(),
-            location.generic_string().c_str());
-        return;
-    }
-
-    accept();
-}
-
-void ComponentSaveDialog::onCancel() { reject(); }
-
-void ComponentSaveDialog::populateTreeView(const QJsonObject& jsonObj, QTreeWidgetItem* parentItem)
+void ComponentSaveWidget::populateTreeView(const QJsonObject& jsonObj, QTreeWidgetItem* parentItem)
 {
     // Get standard icons for folders and files
     QFileIconProvider iconProvider;
@@ -386,35 +306,30 @@ void ComponentSaveDialog::populateTreeView(const QJsonObject& jsonObj, QTreeWidg
     }
 }
 
-void ComponentSaveDialog::toggleExpandedState()
+void ComponentSaveWidget::toggleExpandedState()
 {
     if (_isExpanded) {
-        // Collapsing: hide tree and restore original size
+        // Collapsing: hide tree
         _isExpanded = false;
         _showMoreLabel->setText(SHOW_MORE_TEXT);
         _treeContainer->setVisible(false);
-
-        // Restore original height
-        setFixedHeight(_originalHeight);
     } else {
-        // Expanding: capture current height and show tree
+        // Expanding: show tree
         _isExpanded = true;
         // Capture current height before expanding (compact state)
-        // For whatever reason, capturing this value at the end
-        // of the SetupUI functions isn't getting the right value
-        // from height().
         if (_originalHeight == 0) {
             _originalHeight = height();
         }
 
         _showMoreLabel->setText(SHOW_LESS_TEXT);
         _treeContainer->setVisible(true);
-        // Expand dialog by ~300px
-        setFixedHeight(_originalHeight + DPIScale(300));
     }
+
+    // Emit signal to notify parent of state change
+    Q_EMIT expandedStateChanged(_isExpanded);
 }
 
-void ComponentSaveDialog::updateTreeView()
+void ComponentSaveWidget::updateTreeView()
 {
     std::string saveLocation(_locationEdit->text().toStdString());
     std::string componentName(_nameEdit->text().toStdString());
@@ -456,7 +371,7 @@ void ComponentSaveDialog::updateTreeView()
     _lastComponentName = _nameEdit->text();
 }
 
-void ComponentSaveDialog::onShowMore()
+void ComponentSaveWidget::onShowMore()
 {
     // If collapsing, just toggle
     if (_isExpanded) {
@@ -469,6 +384,23 @@ void ComponentSaveDialog::onShowMore()
 
     // Always expand the dialog
     toggleExpandedState();
+}
+
+void ComponentSaveWidget::setCompactMode(bool compact)
+{
+    if (_isCompact == compact) {
+        return;
+    }
+
+    _isCompact = compact;
+
+    // Show/hide Name and Location labels based on compact mode
+    if (_nameLabel) {
+        _nameLabel->setVisible(!_isCompact);
+    }
+    if (_locationLabel) {
+        _locationLabel->setVisible(!_isCompact);
+    }
 }
 
 } // namespace UsdLayerEditor

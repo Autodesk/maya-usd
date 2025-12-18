@@ -1,5 +1,6 @@
 #include "saveLayersDialog.h"
 
+#include "componentSaveWidget.h"
 #include "generatedIconButton.h"
 #include "layerTreeItem.h"
 #include "layerTreeModel.h"
@@ -14,11 +15,14 @@
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/layerLocking.h>
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/sdf/layer.h>
 
+#include <maya/MDagModifier.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
@@ -57,6 +61,7 @@ void getDialogMessages(
     const int nbAnonLayers,
     QString&  msg1,
     QString&  msg2,
+    QString&  msg3,
     bool      isExporting)
 {
     MString msg, strNbStages, strNbAnonLayers;
@@ -72,6 +77,11 @@ void getDialogMessages(
                            : StringResources::kToSaveTheStageSaveFiles;
     msg.format(StringResources::getAsMString(msgResId), strNbStages);
     msg2 = MQtUtil::toQString(msg);
+
+    msgResId = isExporting ? StringResources::kToExportTheStageSaveComponents
+                           : StringResources::kToSaveTheStageSaveComponents;
+    msg.format(StringResources::getAsMString(msgResId), strNbStages);
+    msg3 = MQtUtil::toQString(msg);
 }
 
 class AnonLayerPathEdit : public QLineEdit
@@ -434,7 +444,8 @@ namespace UsdLayerEditor {
 SaveLayersDialog::SaveLayersDialog(
     QWidget*                                     in_parent,
     const std::vector<MayaUsd::StageSavingInfo>& infos,
-    bool                                         isExporting)
+    bool                                         isExporting,
+    bool                                         componentsOnly)
     : QDialog(in_parent)
     , _sessionState(nullptr)
     , _isExporting(isExporting)
@@ -445,23 +456,34 @@ SaveLayersDialog::SaveLayersDialog(
     msg.format(StringResources::getAsMString(StringResources::kSaveXStages), nbStages);
     setWindowTitle(MQtUtil::toQString(msg));
 
-    // For each stage collect the layers to save.
+    // For each stage collect the layers to save and identify component stages.
     for (const auto& info : infos) {
+        std::string proxyPath = info.dagPath.fullPathName().asChar();
 
-        getLayersToSave(
-            info.stage,
-            info.dagPath.fullPathName().asChar(),
-            info.dagPath.partialPathName().asChar());
+        // Check if this stage is a component stage
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+            _componentStageInfos.push_back(info);
+            // Component stages are saved via the component system, skip layer collection
+            continue;
+        }
+
+        // If componentsOnly mode, skip non-component stages entirely
+        if (componentsOnly) {
+            continue;
+        }
+
+        getLayersToSave(info.stage, proxyPath, info.dagPath.partialPathName().asChar());
     }
 
-    QString msg1, msg2;
+    QString msg1, msg2, msg3;
     getDialogMessages(
         static_cast<int>(infos.size()),
         static_cast<int>(_anonLayerInfos.size()),
         msg1,
         msg2,
+        msg3,
         isExporting);
-    buildDialog(msg1, msg2);
+    buildDialog(msg1, msg2, msg3);
 }
 
 SaveLayersDialog::SaveLayersDialog(
@@ -479,13 +501,25 @@ SaveLayersDialog::SaveLayersDialog(
         std::string stageName = stageEntry._displayName;
         msg.format(StringResources::getAsMString(StringResources::kSaveName), stageName.c_str());
         dialogTitle = MQtUtil::toQString(msg);
-        getLayersToSave(stageEntry._stage, stageEntry._proxyShapePath, stageName);
+
+        // Check if this stage is an unsaved component stage.
+        if (MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(
+                _sessionState->stageEntry()._stage, _sessionState->stageEntry()._proxyShapePath)) {
+            MayaUsd::StageSavingInfo info;
+            MObject                  proxyObj;
+            UsdMayaUtil::GetMObjectByName(stageEntry._proxyShapePath, proxyObj);
+            MDagPath::getAPathTo(proxyObj, info.dagPath);
+            info.stage = stageEntry._stage;
+            _componentStageInfos.push_back(info);
+        } else {
+            getLayersToSave(stageEntry._stage, stageEntry._proxyShapePath, stageName);
+        }
     }
     setWindowTitle(dialogTitle);
 
-    QString msg1, msg2;
-    getDialogMessages(1, static_cast<int>(_anonLayerInfos.size()), msg1, msg2, isExporting);
-    buildDialog(msg1, msg2);
+    QString msg1, msg2, msg3;
+    getDialogMessages(1, static_cast<int>(_anonLayerInfos.size()), msg1, msg2, msg3, isExporting);
+    buildDialog(msg1, msg2, msg3);
 }
 
 SaveLayersDialog ::~SaveLayersDialog() { QApplication::restoreOverrideCursor(); }
@@ -540,7 +574,7 @@ void SaveLayersDialog::getLayersToSave(
         std::begin(dirtyFileBackedLayersToDisplay), std::end(dirtyFileBackedLayersToDisplay));
 }
 
-void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
+void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, const QString& msg3)
 {
     const int mainMargin = DPIScale(20);
 
@@ -561,8 +595,10 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
 
     const bool            haveAnonLayers { !_anonLayerInfos.empty() };
     const bool            haveFileBackedLayers { !_dirtyFileBackedLayers.empty() };
+    const bool            haveComponentStages { !_componentStageInfos.empty() };
     SaveLayerPathRowArea* anonScrollArea { nullptr };
     SaveLayerPathRowArea* fileScrollArea { nullptr };
+    SaveLayerPathRowArea* componentScrollArea { nullptr };
     const int             margin { DPIScale(10) };
 
     // Anonymous layers.
@@ -629,6 +665,63 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
     QtUtils::initLayoutMargins(topLayout, mainMargin);
     topLayout->setSpacing(DPIScale(8));
 
+    // Component stages section - create ComponentSaveWidget for each component stage
+    if (haveComponentStages) {
+        auto componentLayout = new QVBoxLayout();
+        componentLayout->setContentsMargins(margin, margin, margin, 0);
+        componentLayout->setSpacing(DPIScale(8));
+        componentLayout->setAlignment(Qt::AlignTop);
+
+        for (size_t i = 0; i < _componentStageInfos.size(); ++i) {
+            const auto& componentInfo = _componentStageInfos[i];
+            std::string proxyPath = componentInfo.dagPath.fullPathName().asChar();
+            auto        componentWidget = new ComponentSaveWidget(this, proxyPath);
+            componentWidget->setComponentName(
+                QString(componentInfo.dagPath.partialPathName().asChar()));
+            // Make compact if not the first component widget
+            if (i > 0) {
+                componentWidget->setCompactMode(true);
+            }
+            componentLayout->addWidget(componentWidget);
+            _componentSaveWidgets.push_back(componentWidget);
+        }
+
+        _componentStagesWidget = new QWidget();
+        _componentStagesWidget->setLayout(componentLayout);
+
+        // Setup the scroll area for component stages.
+        componentScrollArea = new SaveLayerPathRowArea();
+        componentScrollArea->setFrameShape(QFrame::NoFrame);
+        componentScrollArea->setBackgroundRole(QPalette::Midlight);
+        componentScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        componentScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        componentScrollArea->setWidget(_componentStagesWidget);
+        componentScrollArea->setWidgetResizable(true);
+    }
+
+    if (nullptr != componentScrollArea) {
+        // Add message above component save section
+        if (!msg3.isEmpty()) {
+            auto componentMessage = new QLabel(msg3, this);
+            topLayout->addWidget(componentMessage);
+        }
+
+        // Add the component scroll area
+        topLayout->addWidget(componentScrollArea);
+
+        // Add a separator if we also have anonymous layers or file backed layers
+        if (haveAnonLayers || haveFileBackedLayers) {
+            auto lineSep = new QFrame();
+            lineSep->setFrameShape(QFrame::HLine);
+            lineSep->setLineWidth(DPIScale(1));
+            QPalette pal(lineSep->palette());
+            pal.setColor(QPalette::Base, QColor("#575757"));
+            lineSep->setPalette(pal);
+            lineSep->setBackgroundRole(QPalette::Base);
+            topLayout->addWidget(lineSep);
+        }
+    }
+
     if (nullptr != anonScrollArea) {
         // Add the first message.
         if (!msg1.isEmpty()) {
@@ -689,7 +782,10 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
     setLayout(topLayout);
     setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
+    // Set initial width to 700 DPI-scaled pixels, height from sizeHint
+    resize(DPIScale(700), sizeHint().height());
     setSizeGripEnabled(true);
+
     QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
 
@@ -741,6 +837,81 @@ void SaveLayersDialog::onSaveAll()
     _problemLayers.clear();
     _emptyLayers.clear();
 
+    // Save component stages first
+    for (auto* componentWidget : _componentSaveWidgets) {
+        std::string saveLocation = componentWidget->folderLocation().toStdString();
+        std::string componentName = componentWidget->componentName().toStdString();
+        std::string proxyPath = componentWidget->proxyShapePath();
+
+        std::string newRootPath
+            = MayaUsd::ComponentUtils::moveAdskUsdComponent(saveLocation, componentName, proxyPath);
+        if (!newRootPath.empty()) {
+            _newPaths.append(QString::fromStdString(componentName));
+            _newPaths.append(QString::fromStdString(newRootPath));
+
+            auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
+            if (newRootLayer) {
+
+                // Save the old session layer content before swapping the root, which will
+                // create a new stage.
+                auto oldSessionLayer
+                    = UsdMayaUtil::GetStageByProxyName(proxyPath)->GetSessionLayer();
+
+                // Rename Proxy Shape node
+                MObject proxyNode;
+                UsdMayaUtil::GetMObjectByName(proxyPath, proxyNode);
+                MDagModifier dagMod;
+                MStatus      status = dagMod.renameNode(proxyNode, componentName.c_str());
+                if (status == MStatus::kSuccess) {
+                    dagMod.doIt();
+                }
+
+                // Get the new proxyPath
+                MDagPath newProxyShapePath;
+                MDagPath::getAPathTo(proxyNode, newProxyShapePath);
+
+                // Set the updated root file path
+                MayaUsd::utils::setNewProxyPath(
+                    newProxyShapePath.fullPathName(),
+                    MString(newRootPath.c_str()),
+                    MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+                    newRootLayer,
+                    false);
+
+                // Update the StageEntry to a new StageEntry which
+                // contains the proper stage object pointing to
+                // the new root layer (only when sessionState is available)
+                if (_sessionState) {
+                    auto entries = _sessionState->allStages();
+                    for (const auto& entry : entries) {
+                        if (entry._proxyShapePath
+                            == std::string(newProxyShapePath.fullPathName().asUTF8())) {
+                            _sessionState->setStageEntry(entry);
+                            break;
+                        }
+                    }
+                }
+
+                // Transfer over the session layer contents.
+                auto newSessionLayer
+                    = UsdMayaUtil::GetStageByProxyName(newProxyShapePath.fullPathName().asUTF8())
+                          ->GetSessionLayer();
+                newSessionLayer->TransferContent(oldSessionLayer);
+
+                // Lock that layer
+                MayaUsd::lockLayer(
+                    newProxyShapePath.fullPathName().asChar(),
+                    newRootLayer,
+                    MayaUsd::LayerLockType::LayerLock_Locked,
+                    true);
+            }
+
+        } else {
+            _problemLayers.append(QString::fromStdString(componentName));
+            _problemLayers.append(QString::fromStdString(saveLocation + "/" + componentName));
+        }
+    }
+
     // Note: must start from the end so that sub-layers are saved before their parent.
     for (int count = _saveLayerPathRows.size(), i = count - 1; i >= 0; --i) {
         auto row = dynamic_cast<SaveLayerPathRow*>(_saveLayerPathRows[i]);
@@ -781,6 +952,27 @@ void SaveLayersDialog::onCancel() { reject(); }
 
 bool SaveLayersDialog::okToSave()
 {
+    // Block overwriting of components. The target folder must be empty.
+    // Otherwise, log an error and abort.
+    for (auto* componentWidget : _componentSaveWidgets) {
+        ghc::filesystem::path location = { componentWidget->folderLocation().toStdString() };
+        location.append(componentWidget->componentName().toStdString());
+
+        if (ghc::filesystem::exists(location) && !ghc::filesystem::is_empty(location)) {
+            MObject obj;
+            UsdMayaUtil::GetMObjectByName(componentWidget->proxyShapePath(), obj);
+            const auto stageName = UsdMayaUtil::GetUniqueNameOfDagNode(obj);
+
+            TF_RUNTIME_ERROR(
+                "Cannot save %s with the given name since a non-empty folder with the same "
+                "name is already in that location. Use a unique name or save to a different "
+                "location and try the save again. Folder path: %s",
+                stageName.asChar(),
+                location.generic_string().c_str());
+            return false;
+        }
+    }
+
     // Files can have the same file names in complicated ways, with one file having two copies,
     // another three, so we keep the exact number of copies per file path.
     QMap<QString, int> alreadySeenPaths;
@@ -824,6 +1016,7 @@ bool SaveLayersDialog::okToSave()
             StringResources::getAsMString(StringResources::kSaveAnonymousIdenticalFiles), count);
 
         warningDialog(
+            this,
             StringResources::getAsQString(StringResources::kSaveAnonymousIdenticalFilesTitle),
             MQtUtil::toQString(errorMsg),
             &identicalFiles,
@@ -840,6 +1033,7 @@ bool SaveLayersDialog::okToSave()
             StringResources::getAsMString(StringResources::kSaveAnonymousConfirmOverwrite), count);
 
         return (confirmDialog(
+            this,
             StringResources::getAsQString(StringResources::kSaveAnonymousConfirmOverwriteTitle),
             MQtUtil::toQString(confirmMsg),
             &existingFiles,

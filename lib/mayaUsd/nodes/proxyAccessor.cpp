@@ -19,6 +19,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/converter.h>
 
+#include <pxr/base/tf/getenv.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/resolverScopedCache.h>
 #include <pxr/usd/sdf/layer.h>
@@ -53,6 +54,11 @@
 
 namespace MAYAUSD_NS_DEF {
 
+static bool useTargetedLayerInProxyAccessor()
+{
+    return PXR_NS::TfGetenvBool("MAYAUSD_USE_TARGETED_LAYER_IN_PROXY_ACCESSOR", false);
+}
+
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProxyAccessor);
 
 /*! /brief  Scoped object setting up compute context for accessor
@@ -70,11 +76,11 @@ class ComputeContext
 {
 public:
     //! \brief  Construct compute context for both inputs and outputs
-    ComputeContext(ProxyAccessor& accessor, const MObject& ownerNode, const MString& targetLayer)
+    ComputeContext(ProxyAccessor& accessor, const MObject& ownerNode, bool useTargetLayer)
         : _restoreState(accessor._inCompute)
         , _accessor(accessor)
         , _stage(accessor.getUsdStage())
-        , _editContext(_stage, getLayer(targetLayer))
+        , _editContext(_stage, getLayer(useTargetLayer))
     {
         // Start with setting this context on the accessor. This is important in case
         // anything below causes compute.
@@ -95,11 +101,11 @@ public:
     }
 
     //! \brief  Construct compute context for inputs only.
-    ComputeContext(ProxyAccessor& accessor, const MString& targetLayer)
+    ComputeContext(ProxyAccessor& accessor, bool useTargetLayer)
         : _restoreState(accessor._inCompute)
         , _accessor(accessor)
         , _stage(accessor.getUsdStage())
-        , _editContext(_stage, getLayer(targetLayer))
+        , _editContext(_stage, getLayer(useTargetLayer))
     {
         // Start with setting this context on the accessor. This is important in case
         // anything below causes compute.
@@ -121,20 +127,13 @@ public:
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ComputeContext);
 
 private:
-    pxr::SdfLayerHandle getLayer(const MString& layerName)
+    pxr::SdfLayerHandle getLayer(bool useTargetLayer)
     {
-        if (layerName.length() == 0 || layerName == "session") {
-            return _stage->GetSessionLayer();
-        } else if (layerName == "target") {
+        if (useTargetLayer || useTargetedLayerInProxyAccessor()) {
             return _stage->GetEditTarget().GetLayer();
-        } else {
-            SdfLayerHandle layer = SdfLayer::Find(layerName.asChar());
-            if (layer) {
-                return layer;
-            } else {
-                return _stage->GetSessionLayer();
-            }
         }
+
+        return _stage->GetSessionLayer();
     }
 
     //! Remember context pointer at the creation of this object
@@ -441,7 +440,7 @@ MStatus ProxyAccessor::addDependentsDirty(const MPlug& plug, MPlugArray& plugArr
     return MS::kSuccess;
 }
 
-MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock, const MString& targetLayer)
+MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock, bool useTargetLayer)
 {
     // Special handling for nested compute
     if (inCompute()) {
@@ -503,7 +502,7 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock, const M
     if (_accessorInputItems.size() == 0 && _accessorOutputItems.size() == 0)
         return MS::kSuccess;
 
-    ComputeContext evalState(*this, plug.node(), targetLayer);
+    ComputeContext evalState(*this, plug.node(), useTargetLayer);
 
     // Read and set inputs on the stage. If recursive computation was performed,
     // some of the inputs may have been already evaluated (see evaluationId check)
@@ -658,8 +657,7 @@ MStatus ProxyAccessor::computeOutput(
     return MS::kSuccess;
 }
 
-MStatus
-ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock, const MString& targetLayer)
+MStatus ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock, bool useTargetLayer)
 {
     if (inCompute())
         return MS::kSuccess;
@@ -675,7 +673,7 @@ ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock, const MStri
     if (_accessorInputItems.size() == 0)
         return MS::kSuccess;
 
-    ComputeContext evalState(*this, targetLayer);
+    ComputeContext evalState(*this, node, useTargetLayer);
     for (auto& item : _accessorInputItems) {
         computeInput(item, evalState._stage, dataBlock, evalState._args);
     }

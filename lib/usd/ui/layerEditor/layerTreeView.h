@@ -40,7 +40,7 @@ class LayerTreeView;
 class SessionState;
 
 typedef std::vector<LayerTreeItem*> LayerItemVector;
-typedef void (LayerTreeItem::*simpleLayerMethod)();
+typedef void (LayerTreeItem::*simpleLayerMethod)(QWidget* in_parent);
 
 /**
  * @brief State of the layer tree view and layer model.

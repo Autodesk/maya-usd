@@ -14,13 +14,19 @@
 // limitations under the License.
 //
 
+#include "util.h"
+#include "utilFileSystem.h"
+
 #include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
+
+#include <ghc/filesystem.hpp>
 
 #include <vector>
 
@@ -158,6 +164,63 @@ std::string previewSaveAdskUsdComponent(
         }
     }
     return {};
+}
+
+std::string moveAdskUsdComponent(
+    const std::string& saveLocation,
+    const std::string& componentName,
+    const std::string& proxyPath)
+{
+    MString defMoveComponentCmd;
+    defMoveComponentCmd.format(
+        "def usd_component_creator_move_component():\n"
+        "    from pxr import Sdf, Usd, UsdUtils\n"
+        "    import mayaUsd\n"
+        "    import mayaUsd.ufe\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentDescription, MoveComponent\n"
+        "        from usd_component_creator_plugin import MayaComponentManager\n"
+        "    except ImportError:\n"
+        "        return ''\n"
+        "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
+        "    MayaComponentManager.GetInstance().SaveComponent(proxyStage)\n"
+        "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+        "    if not component_description:\n"
+        "        return ''\n"
+        "    moved_comp = MoveComponent(component_description, '^2s', '^3s', True, False)\n"
+        "    return moved_comp[0].root_layer_filename\n",
+        proxyPath.c_str(),
+        saveLocation.c_str(),
+        componentName.c_str());
+
+    if (MS::kSuccess == MGlobal::executePythonCommand(defMoveComponentCmd)) {
+        MString result;
+        MString runMoveComponentCmd = "usd_component_creator_move_component()";
+        if (MS::kSuccess == MGlobal::executePythonCommand(runMoveComponentCmd, result)) {
+            return result.asChar();
+        }
+    }
+
+    TF_RUNTIME_ERROR(
+        "Error while moving USD component '%s' to '%s/%s'",
+        proxyPath.c_str(),
+        saveLocation.c_str(),
+        componentName.c_str());
+    return {};
+}
+
+bool shouldDisplayComponentInitialSaveDialog(
+    const pxr::UsdStageRefPtr stage,
+    const std::string&        proxyShapePath)
+{
+    if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
+        return false;
+    }
+
+    MString tempDir;
+    MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
+    return UsdMayaUtilFileSystem::isPathInside(
+        UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
 }
 
 } // namespace ComponentUtils

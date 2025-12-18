@@ -15,6 +15,7 @@
 //
 #include "USDAssetResolverDialog.h"
 
+#include "AssetResolverUtils.h"
 #include "USDAssetResolverSettingsWidget.h"
 
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
@@ -207,19 +208,9 @@ void USDAssetResolverDialog::OnSaveRequested()
 
         // apply include project tokens changes if needed
         if (includeMayaProjectTokens) {
-            MGlobal::executePythonCommand(
-                "try:\n"
-                "    import mayaUsd_AdskAssetResolver\n"
-                "    mayaUsd_AdskAssetResolver.include_maya_project_tokens()\n"
-                "except Exception as e:\n"
-                "    print('Error including Maya project tokens:', e)\n");
+            AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
         } else {
-            MGlobal::executePythonCommand(
-                "try:\n"
-                "    import mayaUsd_AdskAssetResolver\n"
-                "    mayaUsd_AdskAssetResolver.unload_maya_project_tokens()\n"
-                "except Exception as e:\n"
-                "    print('Error unloading Maya project tokens:', e)\n");
+            AssetResolverUtils::excludeMayaProjectTokensFromAdskAssetResolver();
         }
         MGlobal::setOptionVarValue(
             "mayaUsd_AdskAssetResolverIncludeMayaToken", includeMayaProjectTokens);

@@ -41,15 +41,18 @@ struct CallMethodParams
 namespace {
 QColor BLACK_BACKGROUND(55, 55, 55);
 
-typedef void (LayerTreeItem::*simpleLayerMethod)();
+typedef void (LayerTreeItem::*simpleLayerMethod)(QWidget* parent);
 
-void doCallMethodOnSelection(const CallMethodParams& params, simpleLayerMethod method)
+void doCallMethodOnSelection(
+    const CallMethodParams& params,
+    simpleLayerMethod       method,
+    QWidget*                in_parent)
 {
     if (params.selection->size() > 0) {
         UndoContext context(params.commandHook, params.name);
 
         for (auto item : *params.selection) {
-            (item->*method)();
+            (item->*method)(in_parent);
         }
     }
 }
@@ -201,7 +204,7 @@ void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
     if (layerTreeItem->isSystemLocked() || layerTreeItem->appearsSystemLocked())
         return;
 
-    layerTreeItem->saveEdits();
+    layerTreeItem->saveEdits(this);
 }
 
 bool LayerTreeView::shouldExpandOrCollapseAll() const
@@ -506,7 +509,7 @@ void LayerTreeView::callMethodOnSelectionNoDelay(const QString& undoName, simple
     params.selection = &selection;
     params.commandHook = _model->sessionState()->commandHook();
     params.name = undoName;
-    doCallMethodOnSelection(params, method);
+    doCallMethodOnSelection(params, method, this);
 }
 
 void LayerTreeView::paintEvent(QPaintEvent* event)
@@ -614,7 +617,7 @@ void LayerTreeView::keyPressEvent(QKeyEvent* event)
             params.selection = &selection;
             params.commandHook = _model->sessionState()->commandHook();
             params.name = "Remove";
-            doCallMethodOnSelection(params, &LayerTreeItem::removeSubLayer);
+            doCallMethodOnSelection(params, &LayerTreeItem::removeSubLayer, this);
             return;
         } else if (event->key() == Qt::Key_R) {
             _model->forceRefresh();

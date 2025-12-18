@@ -733,7 +733,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     }
 
                     usdBlendShape.CreatePointIndicesAttr(VtValue(targetDatum.indices));
-                    usdBlendShape.CreateOffsetsAttr(VtValue(targetDatum.ptOffsets));
+                    usdBlendShape.CreateOffsetsAttr(
+                        VtValue(targetDatum.ptOffsets * _metersPerUnitScalingFactor));
                     usdBlendShape.CreateNormalOffsetsAttr(VtValue(targetDatum.normalOffsets));
 
                     usdBlendShapePaths.push_back(usdBlendShapePath);
@@ -924,7 +925,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     if (targetWeightIndex == 6000) { // NOTE: (yliangsiew) For default fullweight,
                                                      // we don't append the weight name.
                         usdBlendShape.CreatePointIndicesAttr(VtValue(unionIndices));
-                        usdBlendShape.CreateOffsetsAttr(VtValue(processedOffsetsArrays[k]));
+                        usdBlendShape.CreateOffsetsAttr(
+                            VtValue(processedOffsetsArrays[k] * _metersPerUnitScalingFactor));
                         usdBlendShape.CreateNormalOffsetsAttr(
                             VtValue(processedNormalsOffsetsArrays[k]));
 
@@ -962,7 +964,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             return MObject::kNullObj;
                         }
                         usdInbetween.SetWeight(weightValue);
-                        usdInbetween.SetOffsets(processedOffsetsArrays[k]);
+                        usdInbetween.SetOffsets(
+                            processedOffsetsArrays[k] * _metersPerUnitScalingFactor);
                         usdInbetween.SetNormalOffsets(processedNormalsOffsetsArrays[k]);
                     }
                 }

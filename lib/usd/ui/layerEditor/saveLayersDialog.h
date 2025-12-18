@@ -21,6 +21,7 @@ class QWidget;
 
 namespace UsdLayerEditor {
 
+class ComponentSaveWidget;
 class SessionState;
 
 class SaveLayersDialog : public QDialog
@@ -32,10 +33,12 @@ public:
     SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent, bool isExporting);
 
     // Create dialog for bulk save using all provided proxy shapes and their owned stages.
+    // If componentsOnly is true, only component stages are shown (no anonymous/file-backed layers).
     SaveLayersDialog(
         QWidget*                                     in_parent,
         const std::vector<MayaUsd::StageSavingInfo>& infos,
-        bool                                         isExporting);
+        bool                                         isExporting,
+        bool                                         componentsOnly = false);
 
     ~SaveLayersDialog();
 
@@ -70,7 +73,7 @@ public:
     QString              buildTooltipForLayer(SdfLayerRefPtr layer);
 
 private:
-    void buildDialog(const QString& msg1, const QString& msg2);
+    void buildDialog(const QString& msg1, const QString& msg2, const QString& msg3);
     void getLayersToSave(
         const UsdStageRefPtr& stage,
         const std::string&    proxyPath,
@@ -80,18 +83,21 @@ private:
     typedef std::unordered_set<SdfLayerRefPtr, TfHash> layerSet;
     using LayerInfos = MayaUsd::utils::LayerInfos;
 
-    QStringList           _newPaths;
-    QStringList           _problemLayers;
-    QStringList           _emptyLayers;
-    QWidget*              _anonLayersWidget { nullptr };
-    QWidget*              _fileLayersWidget { nullptr };
-    QCheckBox*            _allAsRelative { nullptr };
-    LayerInfos            _anonLayerInfos;
-    layerSet              _dirtyFileBackedLayers;
-    stageLayerMap         _stageLayerMap;
-    SessionState*         _sessionState;
-    std::vector<QWidget*> _saveLayerPathRows;
-    bool                  _isExporting { false };
+    QStringList                           _newPaths;
+    QStringList                           _problemLayers;
+    QStringList                           _emptyLayers;
+    QWidget*                              _anonLayersWidget { nullptr };
+    QWidget*                              _fileLayersWidget { nullptr };
+    QWidget*                              _componentStagesWidget { nullptr };
+    QCheckBox*                            _allAsRelative { nullptr };
+    LayerInfos                            _anonLayerInfos;
+    layerSet                              _dirtyFileBackedLayers;
+    stageLayerMap                         _stageLayerMap;
+    SessionState*                         _sessionState;
+    std::vector<QWidget*>                 _saveLayerPathRows;
+    std::vector<MayaUsd::StageSavingInfo> _componentStageInfos;
+    std::vector<ComponentSaveWidget*>     _componentSaveWidgets;
+    bool                                  _isExporting { false };
 };
 
 }; // namespace UsdLayerEditor

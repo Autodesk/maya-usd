@@ -2562,14 +2562,12 @@ void UsdMayaUtil::AddMayaExtents(GfBBox3d& bbox, const UsdPrim& root, const UsdT
 SdrShaderNodePtrVec UsdMayaUtil::GetSurfaceShaderNodeDefs()
 {
     // TODO: Replace hard-coded materials with dynamically generated list.
-    // We can add new nodes directly since the registry check will filter
-    // them out if they are not there in the current MaterialX version.
+    // Note: Since we recheck against SDR, we can add all known future ones.
     static const std::set<TfToken> vettedSurfaces
         = { TfToken("ND_standard_surface_surfaceshader"),
             TfToken("ND_gltf_pbr_surfaceshader"),
             TfToken("ND_UsdPreviewSurface_surfaceshader"),
             TfToken("UsdPreviewSurface"),
-            // One new node in MaterialX 1.39:
             TfToken("ND_disney_principled"),
             TfToken("ND_open_pbr_surface_surfaceshader") };
 

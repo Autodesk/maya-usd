@@ -209,6 +209,7 @@ protected:
 
     UsdPrim                 _usdPrim;
     UsdMayaWriteJobContext& _writeJobCtx;
+    double                  _metersPerUnitScalingFactor;
 
 private:
     /// Whether this prim writer represents the transform portion of a merged

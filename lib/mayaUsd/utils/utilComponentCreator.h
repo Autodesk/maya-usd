@@ -56,6 +56,23 @@ std::string previewSaveAdskUsdComponent(
     const std::string& componentName,
     const std::string& proxyPath);
 
+/*! \brief Moves the Autodesk USD Component to a new location with a new name.
+ * \return Returns the new root layer file path on success, empty string on failure.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string moveAdskUsdComponent(
+    const std::string& saveLocation,
+    const std::string& componentName,
+    const std::string& proxyPath);
+
+/*! \brief Checks if the initial save dialog for components should be opened.
+ * \return Returns true if the initial save dialog for components should be opened.
+ */
+MAYAUSD_CORE_PUBLIC
+bool shouldDisplayComponentInitialSaveDialog(
+    const pxr::UsdStageRefPtr stage,
+    const std::string&        proxyShapePath);
+
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
 
