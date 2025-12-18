@@ -21,22 +21,6 @@
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/subset.h>
 
-#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
-PXR_NAMESPACE_OPEN_SCOPE
-
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (mtlx)
-    ((legacyVersionPrefix, "MaterialX v"))
-    ((currentMxVersion, MaterialX_VERSION_STRING))
-);
-// clang-format on
-
-PXR_NAMESPACE_CLOSE_SCOPE
-#endif
-
 namespace LookdevXUsd
 {
 

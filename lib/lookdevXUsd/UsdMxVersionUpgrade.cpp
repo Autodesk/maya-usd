@@ -173,8 +173,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 PXR_NAMESPACE_CLOSE_SCOPE
 using namespace PXR_NS;
 
-constexpr auto kInvalidChannelIndex = -1;
-int _channelIndexMap(const char c)
+constexpr size_t kInvalidChannelIndex = -1;
+size_t _channelIndexMap(const char c)
 {
     switch (c)
     {
@@ -201,13 +201,13 @@ float _channelConstantMap(const char c)
     return kInvalidChannelConstant;
 }
 
-const auto kChannelCountMap = std::unordered_map<TfToken, int, TfToken::HashFunctor>{
+const auto kChannelCountMap = std::unordered_map<TfToken, size_t, TfToken::HashFunctor>{
         {_tokens->float_, 1},
         {_tokens->color3, 3}, {_tokens->color4, 4},
         {_tokens->vector2, 2}, {_tokens->vector3, 3}, {_tokens->vector4, 4}
     };
 
-bool _isChannelCountPattern(const std::string& pattern, int channelCount)
+bool _isChannelCountPattern(const std::string& pattern, size_t channelCount)
 {
     static const auto kSingleChannelPatterns = std::unordered_set<std::string>{
         "rr", "rrr", "xx", "xxx"
@@ -700,7 +700,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                     currentValue.insert(currentValue.begin(), kChannelCountMap.at(sourceType), 0.0F);
                 }
                 std::vector<float> newValue;
-                for (int i = 0; i < destChannelCount; ++i) {
+                for (size_t i = 0; i < destChannelCount; ++i) {
                     if (i < channelString.size()) {
                         auto index = _channelIndexMap(channelString[i]);
                         if (index != kInvalidChannelIndex) {
@@ -759,7 +759,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
             else if (sourceChannelCount == 1) {
                 // Replace swizzle with combine.
                 node.SetShaderId(TfToken(_tokens->ND_combine.GetString() + std::to_string(destChannelCount) + "_" + destType.GetString()));
-                for (int i = 0; i < destChannelCount; ++i) {
+                for (size_t i = 0; i < destChannelCount; ++i) {
                     if (i < channelString.size() && _channelConstantMap(channelString[i]) != kInvalidChannelConstant) {
                         auto constant = _channelConstantMap(channelString[i]);
                         auto combineInInput = node.CreateInput(TfToken(_tokens->in.GetString() + std::to_string(i+1)), kMaterialXToUsdType.at(_tokens->float_));
@@ -783,7 +783,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                 auto separateNode = _createSiblingNode(node, TfToken(_tokens->ND_separate.GetString() + std::to_string(sourceChannelCount) + "_" + sourceType.GetString()), "separate");
 
                 node.SetShaderId(TfToken(_tokens->ND_combine.GetString() + std::to_string(destChannelCount) + "_" + destType.GetString()));
-                for (int i = 0; i < destChannelCount; ++i) {
+                for (size_t i = 0; i < destChannelCount; ++i) {
                     auto combineInInput = node.CreateInput(TfToken(_tokens->in.GetString() + std::to_string(i+1)), kMaterialXToUsdType.at(_tokens->float_));
                     if (i < channelString.size()) {
                         auto index = _channelIndexMap(channelString[i]);
