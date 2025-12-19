@@ -42,6 +42,10 @@
 #include <pxr/usd/usd/colorSpaceDefinitionAPI.h>
 #endif
 
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+#include <pxr/usd/usdMtlx/materialXConfigAPI.h>
+#endif
+
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
 #include <ufe/path.h>
@@ -312,6 +316,13 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
     if (!materialColorSpace.empty()) {
         _SetColorSpaceAPISchemaOnPrim(GetUsdPrim().GetParent(), materialColorSpace);
     }
+#endif
+
+#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
+    // If we know how to deal with Legacy MaterialX versions, we need to properly copy the version.
+    auto       mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(GetUsdPrim().GetParent());
+    const auto mtlxVersionStr = mtlxDoc->getVersionString();
+    mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
 #endif
 
     // Collection of the MaterialX nodes already processed, to avoid processing them again.
@@ -1028,10 +1039,29 @@ TfToken MtlxMaterialXSurfaceShaderWriter::_GetValidUsdColorSpace(
     // rec709_display as the name to be saved in the USD document.
     if (usdColorSpace == _mxColorSpaceTokens->rec709_display
         || usdColorSpace == _mxColorSpaceTokens->gamma24) {
-        // We will make an exception for rec709_display and gamma24, as we can define the color
-        // space using the API...
+        // We will make an exception for rec709_display, as we can define the color space using the
+        // API...
+
+        // Let's try to define only once at the top UsdShadeMaterial level.
+        UsdPrim materialPrim = prim;
+        while (materialPrim && !UsdShadeMaterial(materialPrim)) {
+            materialPrim = materialPrim.GetParent();
+        }
+        if (!materialPrim) {
+            TF_WARN(
+                "Could not find UsdShadeMaterial parent for prim at path '%s' to define "
+                "rec709_display color space.",
+                prim.GetPath().GetText());
+            return {};
+        }
+
+        if (materialPrim.HasAPI<UsdColorSpaceDefinitionAPI>(_mxColorSpaceTokens->rec709_display)) {
+            // rec709_display color space already defined.
+            return _mxColorSpaceTokens->rec709_display;
+        }
+
         auto colorSpaceDefAPI
-            = UsdColorSpaceDefinitionAPI::Apply(prim, _mxColorSpaceTokens->rec709_display);
+            = UsdColorSpaceDefinitionAPI::Apply(materialPrim, _mxColorSpaceTokens->rec709_display);
 
         auto redChroma = colorSpaceDefAPI.CreateRedChromaAttr();
         redChroma.Set(GfVec2f(0.640f, 0.330f));
