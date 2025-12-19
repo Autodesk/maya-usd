@@ -61,6 +61,13 @@ public:
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx);
 
+
+    MAYAUSD_CORE_PUBLIC
+    static void skipThisOne(const MDagPath& dagPath);
+
+    MAYAUSD_CORE_PUBLIC
+    static bool isThisOneSkipped(const MDagPath& dagPath);
+
     /// The level of support a writer can offer for a given context
     ///
     /// A basic writer that gives correct results across most contexts should
@@ -211,6 +218,8 @@ protected:
     UsdMayaWriteJobContext& _writeJobCtx;
     double                  _metersPerUnitScalingFactor;
 
+    UsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
+
 private:
     /// Whether this prim writer represents the transform portion of a merged
     /// shape and transform.
@@ -229,7 +238,6 @@ private:
     const MObject _mayaObject;
 
     const SdfPath                           _usdPath;
-    const UsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
 
     FlexibleSparseValueWriter _valueWriter;
 

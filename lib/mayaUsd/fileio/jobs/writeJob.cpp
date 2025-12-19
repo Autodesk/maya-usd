@@ -550,9 +550,29 @@ static MStringArray GetExportDefaultPrimCandidates(const UsdMayaJobExportArgs& e
     return roots;
 }
 
+static UsdMayaUtil::MDagPathSet& getSkipThese()
+{
+    static UsdMayaUtil::MDagPathSet skipThese;
+    return skipThese;
+}
+
+/* static */
+void UsdMayaPrimWriter::skipThisOne(const MDagPath& dagPath)
+{
+    getSkipThese().insert(dagPath);
+}
+
+/* static */
+bool UsdMayaPrimWriter::isThisOneSkipped(const MDagPath& dagPath)
+{
+    return getSkipThese().count(dagPath) > 0;
+}
+
 bool UsdMaya_WriteJob::_BeginWriting()
 {
     MayaUsd::ProgressBarScope progressBar(7);
+
+    getSkipThese().clear();
 
     // If no default prim for the exported root layer was given, select one from
     // the available root nodes of the Maya scene in order for materials to be
@@ -748,6 +768,9 @@ bool UsdMaya_WriteJob::_BeginWriting()
         MDagPath curDagPath;
         itDag.getPath(curDagPath);
         std::string curDagPathStr(curDagPath.partialPathName().asChar());
+
+        if (UsdMayaPrimWriter::isThisOneSkipped(curDagPath))
+            continue;
 
         if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
             // This dagPath is a parent of one of the arg dagPaths. It should

@@ -74,6 +74,11 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
     : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
     , _valid(false)
 {
+    if (isThisOneSkipped(GetDagPath())) {
+        // This joint has already been exported as part of another skeleton.
+        return;
+    }
+        
     if (!TF_VERIFY(GetDagPath().isValid())) {
         return;
     }
@@ -388,6 +393,11 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
         return false;
     }
 
+    for (size_t i = 0; i < _joints.size(); ++i) {
+        const MDagPath& jointDagPath = _joints[i];
+        _baseDagToUsdPaths[ jointDagPath ] = _skel.GetPrim().GetPath().AppendChild(skelJointNames[i]);
+    }
+
     // Setup binding relationships on the instance prim,
     // so that the root xform establishes a skeleton instance
     // with the right transform.
@@ -470,6 +480,13 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
 /* virtual */
 void PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
 {
+    if (isThisOneSkipped(GetDagPath())) {
+        // This joint has already been exported as part of another skeleton.
+        return;
+    }
+
+    skipThisOne(GetDagPath());
+
     if (usdTime.IsDefault()) {
         _valid = _WriteRestState();
     }
@@ -538,6 +555,16 @@ void PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
             }
         }
     }
+
+    for (const MDagPath& jointDagPath : _joints) {
+        skipThisOne(jointDagPath);
+    }
+
+    for (const MDagPath& jointDagPath : _animatedJoints) {
+        skipThisOne(jointDagPath);
+    }
+
+    skipThisOne(_skelXformPath);
 }
 
 /* virtual */
@@ -548,6 +575,7 @@ bool PxrUsdTranslators_JointWriter::ExportsGprims() const
 }
 
 /* virtual */
-bool PxrUsdTranslators_JointWriter::ShouldPruneChildren() const { return true; }
+// TODO DEBUG PUT BACK bool PxrUsdTranslators_JointWriter::ShouldPruneChildren() const { return true; }
+bool PxrUsdTranslators_JointWriter::ShouldPruneChildren() const { return false; }
 
 PXR_NAMESPACE_CLOSE_SCOPE
