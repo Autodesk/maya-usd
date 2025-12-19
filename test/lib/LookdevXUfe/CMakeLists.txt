@@ -6,6 +6,10 @@ set(TEST_SCRIPT_FILES
     testLdxFileHandler.py
 )
 
+if (LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION)
+    list(APPEND TEST_SCRIPT_FILES testLdxMaterialXUpgrade.py)
+endif()
+
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}

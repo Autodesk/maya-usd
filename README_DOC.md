@@ -14,7 +14,7 @@
 + [Undo/Redo Support](lib/mayaUsd/undo/README.md)
 + [MaterialX](doc/MaterialX.md)
 + [MaterialX Code Gen](lib/mayaUsd/render/MaterialXGenOgsXml/README.md)
-+ [Hydra For Maya](https://github.com/Autodesk/maya-usd/blob/release/maya-hydra/lib/mayaHydra/README.md)
++ [Hydra for Maya](https://github.com/Autodesk/maya-hydra/blob/dev/README.md)
 + [Layer Saving](lib/mayaUsd/nodes/Layer_Saving_Docs.md)
 + [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md)
 + [Layer Locking](doc/LayerLocking.md)

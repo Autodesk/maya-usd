@@ -1016,6 +1016,7 @@ bool SaveLayersDialog::okToSave()
             StringResources::getAsMString(StringResources::kSaveAnonymousIdenticalFiles), count);
 
         warningDialog(
+            this,
             StringResources::getAsQString(StringResources::kSaveAnonymousIdenticalFilesTitle),
             MQtUtil::toQString(errorMsg),
             &identicalFiles,
@@ -1032,6 +1033,7 @@ bool SaveLayersDialog::okToSave()
             StringResources::getAsMString(StringResources::kSaveAnonymousConfirmOverwrite), count);
 
         return (confirmDialog(
+            this,
             StringResources::getAsQString(StringResources::kSaveAnonymousConfirmOverwriteTitle),
             MQtUtil::toQString(confirmMsg),
             &existingFiles,

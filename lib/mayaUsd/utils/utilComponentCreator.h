@@ -46,6 +46,18 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
 MAYAUSD_CORE_PUBLIC
 void saveAdskUsdComponent(const std::string& proxyPath);
 
+/*! \brief Returns whether the stage is an new unsaved Autodesk USD Component.
+ */
+MAYAUSD_CORE_PUBLIC
+bool isUnsavedAdskUsdComponent(const pxr::UsdStageRefPtr stage);
+
+/*! \brief Reloads the Autodesk USD Component identified by \p proxyPath.
+ *
+ *  \note Expects \p proxyPath to be a valid component path.
+ */
+MAYAUSD_CORE_PUBLIC
+void reloadAdskUsdComponent(const std::string& proxyPath);
+
 /*! \brief Previews the structure of the Autodesk USD Component identified by \p proxyPath,
  * when saved at the given location with the given name.
  * \return Returns the expected component hierarchy, formatted in json.

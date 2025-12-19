@@ -53,6 +53,7 @@ UsdLayerVector getAllParentHandles(LayerTreeItem* parentItem)
 // logic: we've loaded the layer, now check if it's also somewhere else in the hierachy
 // the path parameter are just for UI display. it's testLayer that's important
 bool checkPathRecursive(
+    QWidget*           parent,
     const QString&     in_errorTitle,
     UsdLayer           parentLayer,
     UsdLayerVector     parentHandles,
@@ -78,7 +79,7 @@ bool checkPathRecursive(
                 pathToCheck.c_str());
             message = MQtUtil::toQString(tmp);
         }
-        warningDialog(in_errorTitle, message);
+        warningDialog(parent, in_errorTitle, message);
         return false;
     }
 
@@ -92,6 +93,7 @@ bool checkPathRecursive(
         auto childLayer = PXR_NS::SdfLayer::FindOrOpen(actualpath);
         if (childLayer != nullptr) {
             if (!checkPathRecursive(
+                    parent,
                     in_errorTitle,
                     testLayer,
                     parentHandles,
@@ -112,6 +114,7 @@ bool checkPathRecursive(
 namespace UsdLayerEditor {
 
 bool checkIfPathIsSafeToAdd(
+    QWidget*           parent,
     const QString&     in_errorTitle,
     LayerTreeItem*     in_parentItem,
     const std::string& in_pathToAdd)
@@ -153,7 +156,7 @@ bool checkIfPathIsSafeToAdd(
         if (!foundLayerInStack) {
             UsdLayerVector parentHandles = getAllParentHandles(in_parentItem);
             return checkPathRecursive(
-                in_errorTitle, parentLayer, parentHandles, subLayer, pathToAdd, pathToAdd);
+                parent, in_errorTitle, parentLayer, parentHandles, subLayer, pathToAdd, pathToAdd);
         }
     }
 
@@ -161,7 +164,7 @@ bool checkIfPathIsSafeToAdd(
     msg.format(
         StringResources::getAsMString(StringResources::kErrorCannotAddPathTwice),
         in_pathToAdd.c_str());
-    warningDialog(in_errorTitle, MQtUtil::toQString(msg));
+    warningDialog(parent, in_errorTitle, MQtUtil::toQString(msg));
     return false;
 }
 
