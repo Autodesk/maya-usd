@@ -71,8 +71,8 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Fetch the test file.
-        testFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39.usda")
-        resultsFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39_final.usda")
+        testFile = testUtils.getTestScene("lookdevXUsd", "mx_updates_to_1_39.usda")
+        resultsFile = testUtils.getTestScene("lookdevXUsd", "mx_updates_to_1_39_final.usda")
         outputFile = os.path.join(os.getcwd(),
                                   "mx_updates_to_1_39_upgraded_python.usda")
 
@@ -94,8 +94,8 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Fetch the test file.
-        testFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39.usda")
-        resultsFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39_final.usda")
+        testFile = testUtils.getTestScene("lookdevXUsd", "mx_updates_to_1_39.usda")
+        resultsFile = testUtils.getTestScene("lookdevXUsd", "mx_updates_to_1_39_final.usda")
         outputFile = os.path.join(os.getcwd(),
                                   "mx_updates_to_1_39_upgraded_maya.usda")
 
@@ -152,8 +152,8 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Fetch the test file.
-        testFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39.usda")
-        resultsFile = testUtils.getTestScene("LookdevXUsd", "mx_updates_to_1_39_final.usda")
+        testFile = testUtils.getTestScene("lookdevXUsd", "mx_updates_to_1_39.usda")
+        resultsFile = testUtils.getTestScene("lookdevXUsd", "mx_updates_to_1_39_final.usda")
         outputFile = os.path.join(os.getcwd(),
                                   "mx_updates_to_1_39_upgraded_maya_via_stage.usda")
 

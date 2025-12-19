@@ -170,7 +170,7 @@ public:
     bool                   isSessionLayer() const { return _layerType == LayerType::SessionLayer; }
     bool                   isSublayer() const { return _layerType == LayerType::SubLayer; }
     bool                   isTargetLayer() const { return _isTargetLayer; }
-    bool                   isAnonymous() const { return _layer ? _layer->IsAnonymous() : false; }
+    bool                   isAnonymous() const;
     bool                   isRootLayer() const { return _layerType == LayerType::RootLayer; }
     PXR_NS::SdfLayerRefPtr layer() const { return _layer; }
     PXR_NS::SdfLayerRefPtr parentLayer() const
