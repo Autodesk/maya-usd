@@ -23,6 +23,8 @@
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoManager.h>
 
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/getenv.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -43,6 +45,11 @@
 #include <vector>
 
 namespace {
+
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_IGNORE_ROOT_PROTOTYPES_ON_STAGE_CHANGED,
+    true,
+    "Ignores handling prototype prims at root on stage changed callback.");
 
 bool isTransformChange(const TfToken& nameToken)
 {
@@ -433,9 +440,9 @@ void StagesSubject::stageChanged(
             // Special case to detect when an xformop is added or removed from a prim.
             // We need to send some notifications so DCC can update (such as on undo
             // to move the transform manipulator back to original position).
-            const TfToken nameToken = changedPath.GetNameToken();
-            auto          usdPrimPathStr = changedPath.GetPrimPath().GetString();
-            auto          ufePath
+            const TfToken& nameToken = changedPath.GetNameToken();
+            auto           usdPrimPathStr = changedPath.GetPrimPath().GetString();
+            auto           ufePath
                 = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
             if (isTransformChange(nameToken)) {
                 if (!UsdUfe::InTransform3dChange::inTransform3dChange()) {
@@ -468,6 +475,13 @@ void StagesSubject::stageChanged(
             ufePath = stagePath(sender)
                 + Ufe::PathSegment(usdPrimPathStr, UsdUfe::getUsdRunTimeId(), '/');
             prim = stage->GetPrimAtPath(changedPath);
+        }
+
+        // Check the path string to see if we are dealing with a prototype,
+        // this should work for both valid and invalid prims.
+        if (TfGetEnvSetting(MAYAUSD_IGNORE_ROOT_PROTOTYPES_ON_STAGE_CHANGED)
+            && changedPath.GetString().compare(0, 13, "/__Prototype_") == 0) {
+            continue;
         }
 
         if (prim.IsValid() && !InPathChange::inPathChange()) {
@@ -657,7 +671,7 @@ void StagesSubject::stageChanged(
     }
 
     // Special case when we are notified, but no paths given.
-    if (notice.GetResyncedPaths().empty() && notice.GetChangedInfoOnlyPaths().empty()) {
+    if (resyncPaths.empty() && changedInfoOnlyPaths.empty()) {
         auto                       ufePath = stagePath(sender);
         Ufe::AttributeValueChanged vc(ufePath, "/");
         notifyWithoutExceptions<Ufe::Attributes>(vc);
