@@ -77,6 +77,9 @@ public:
     // save stage UI
     void saveStage(QWidget* in_parent);
 
+    // Reload a USD component.
+    void reloadComponent(QWidget* in_parent);
+
     // return the index of the root layer
     QModelIndex rootLayerIndex();
 

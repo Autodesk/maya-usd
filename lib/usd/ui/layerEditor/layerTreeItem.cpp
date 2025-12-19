@@ -341,6 +341,18 @@ bool LayerTreeItem::appearsSystemLocked() const
     return false;
 }
 
+bool LayerTreeItem::isAnonymous() const
+{
+    if (SessionState* sessionState = parentModel()->sessionState()) {
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+                sessionState->stageEntry()._proxyShapePath)) {
+            return MayaUsd::ComponentUtils::isUnsavedAdskUsdComponent(sessionState->stage());
+        }
+    }
+
+    return _layer ? _layer->IsAnonymous() : false;
+}
+
 bool LayerTreeItem::hasSubLayers() const
 {
     if (!_layer)
@@ -463,6 +475,16 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
 
 void LayerTreeItem::saveEditsNoPrompt(QWidget* in_parent)
 {
+    // Special case for components created by the component creator. Only the component creator
+    // knows how to save a component properly.
+    if (SessionState* sessionState = parentModel()->sessionState()) {
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+                sessionState->stageEntry()._proxyShapePath)) {
+            parentModel()->saveStage(in_parent);
+            return;
+        }
+    }
+
     if (isAnonymous()) {
         if (!isSessionLayer())
             saveAnonymousLayer(in_parent);
@@ -479,6 +501,16 @@ void LayerTreeItem::saveEditsNoPrompt(QWidget* in_parent)
 // helper to save anon layers called by saveEdits()
 void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 {
+    // Special case for components created by the component creator. Only the component creator
+    // knows how to save a component properly.
+    if (SessionState* sessionState = parentModel()->sessionState()) {
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+                sessionState->stageEntry()._proxyShapePath)) {
+            parentModel()->saveStage(in_parent);
+            return;
+        }
+    }
+
     SessionState* sessionState = parentModel()->sessionState();
 
     // the path we have is an absolute path
@@ -490,7 +522,7 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 
     const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
 
-    if (!checkIfPathIsSafeToAdd(dialogTitle, parentLayerItem(), fileName))
+    if (!checkIfPathIsSafeToAdd(in_parent, dialogTitle, parentLayerItem(), fileName))
         return;
 
     MayaUsd::utils::PathInfo pathInfo;
@@ -525,10 +557,12 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 
 void LayerTreeItem::discardEdits(QWidget* in_parent)
 {
+    bool confirmed = false;
+
     if (isAnonymous() || !isDirty()) {
         // according to MAYA-104336, we don't prompt for confirmation for anonymous layers
         // according to EMSUSD-964, we don't prompt for confirmation if the layer is not dirty
-        commandHook()->discardEdits(layer());
+        confirmed = true;
     } else {
         MString title;
         title.format(
@@ -540,10 +574,23 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
             StringResources::getAsMString(StringResources::kRevertToFileMsg),
             MQtUtil::toMString(text()));
 
-        if (confirmDialog(in_parent, MQtUtil::toQString(title), MQtUtil::toQString(desc))) {
-            commandHook()->discardEdits(layer());
+        confirmed = confirmDialog(in_parent, MQtUtil::toQString(title), MQtUtil::toQString(desc));
+    }
+
+    if (!confirmed)
+        return;
+
+    // Special case for components created by the component creator. Only the component creator
+    // knows how to save a component properly.
+    if (SessionState* sessionState = parentModel()->sessionState()) {
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(
+                sessionState->stageEntry()._proxyShapePath)) {
+            parentModel()->reloadComponent(in_parent);
+            return;
         }
     }
+
+    commandHook()->discardEdits(layer());
 }
 
 void LayerTreeItem::addAnonymousSublayer(QWidget* in_parent)
