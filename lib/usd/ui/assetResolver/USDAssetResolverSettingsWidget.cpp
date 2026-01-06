@@ -363,6 +363,10 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         addButton->setIcon(ApplicationHost::instance().icon(ApplicationHost::IconName::Add));
         addButton->setToolTip(tr("Adds a new blank row where you can enter a custom search path."));
         addButton->setIconSize(QSize(scaledIconSize, scaledIconSize));
+        // It looks like the Maya style isn't handling all the button states for QToolButton,
+        // so after mouse press/release the button is not being repainted correctly. So we
+        // set the background to transparent to avoid visual artifacts.
+        addButton->setStyleSheet("QToolButton { background: transparent; }");
         connect(addButton, &QToolButton::clicked, this, [this, listview]() {
             Q_D(USDAssetResolverSettingsWidget);
             d->aboutToAddUserPath = true;
@@ -406,6 +410,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         addBrowseButton->setToolTip(
             tr("Opens a file browser to select a directory and add it to the list."));
         addBrowseButton->setIconSize(QSize(scaledIconSize, scaledIconSize));
+        addBrowseButton->setStyleSheet("QToolButton { background: transparent; }");
         connect(addBrowseButton, &QToolButton::clicked, this, [this]() {
             Q_D(USDAssetResolverSettingsWidget);
             QString filePath
@@ -429,6 +434,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
             userPathsFirst() ? ApplicationHost::IconName::MoveDown
                              : ApplicationHost::IconName::MoveUp));
         d->userPathsFirstButton->setIconSize(QSize(scaledIconSize, scaledIconSize));
+        d->userPathsFirstButton->setStyleSheet("QToolButton { background: transparent; }");
         connect(d->userPathsFirstButton, &QToolButton::clicked, this, [this]() {
             setUserPathsFirst(!userPathsFirst());
         });
