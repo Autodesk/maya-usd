@@ -289,8 +289,13 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
     browseAction->setToolTip(tr("Browse to select a mapping file that contains data to be used by "
                                 "the resolver, such as search paths and tokens."));
     connect(browseAction, &QAction::triggered, this, [this, d]() {
+        QString startDir;
+        if (!d->mappingFilePath.isEmpty()) {
+            QFileInfo fileInfo(d->mappingFilePath);
+            startDir = fileInfo.absolutePath();
+        }
         QString filePath = QFileDialog::getOpenFileName(
-            this, tr("Select Mapping File"), QString(), tr("USD Files (*.usda);;All Files (*.*)"));
+            this, tr("Select Mapping File"), startDir, tr("USD Files (*.usda);;All Files (*.*)"));
         if (!filePath.isEmpty()) {
             if (filePath != d->mappingFilePath) {
                 d->ui->mappingFilePath->setText(filePath);
