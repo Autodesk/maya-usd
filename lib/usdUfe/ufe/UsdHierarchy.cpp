@@ -139,6 +139,12 @@ const Ufe::Path& UsdHierarchy::path() const { return _item->path(); }
 
 UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const { return _item; }
 
+/*static*/
+Usd_PrimFlagsConjunction UsdHierarchy::usdUfePrimDefaultPredicate()
+{
+    return kUsdUfePrimDefaultPredicate;
+}
+
 //------------------------------------------------------------------------------
 // Ufe::Hierarchy overrides
 //------------------------------------------------------------------------------

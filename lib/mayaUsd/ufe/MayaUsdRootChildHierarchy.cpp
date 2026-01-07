@@ -15,6 +15,8 @@
 //
 #include "MayaUsdRootChildHierarchy.h"
 
+#include "Utils.h"
+
 #include <mayaUsd/ufe/MayaUsdHierarchy.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -45,7 +47,8 @@ bool MayaUsdRootChildHierarchy::childrenHook(
     Ufe::SceneItemList&    children,
     bool                   filterInactive) const
 {
-    return mayaUsdHierarchyChildrenHook(sceneItem(), child, children, filterInactive);
+    return mayaUsdHierarchyChildrenHook(
+        getProxyShapePrimPath(sceneItem()->path()), child, children, filterInactive);
 }
 
 } // namespace ufe

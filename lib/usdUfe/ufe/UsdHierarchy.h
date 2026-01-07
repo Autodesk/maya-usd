@@ -20,6 +20,8 @@
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
+#include <pxr/usd/usd/primFlags.h>
+
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/selection.h>
@@ -55,6 +57,8 @@ public:
     }
 
     UsdSceneItem::Ptr usdSceneItem() const;
+
+    static PXR_NS::Usd_PrimFlagsConjunction usdUfePrimDefaultPredicate();
 
     // Ufe::Hierarchy overrides
     Ufe::SceneItem::Ptr sceneItem() const override;

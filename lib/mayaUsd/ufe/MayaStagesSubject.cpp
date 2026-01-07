@@ -15,6 +15,8 @@
 //
 #include "MayaStagesSubject.h"
 
+#include "MayaUsdHierarchy.h"
+
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
@@ -82,6 +84,17 @@ MayaStagesSubject::~MayaStagesSubject()
 MayaStagesSubject::RefPtr MayaStagesSubject::create()
 {
     return TfCreateRefPtr(new MayaStagesSubject);
+}
+
+void MayaStagesSubject::stageChanged(
+    UsdNotice::ObjectsChanged const& notice,
+    UsdStageWeakPtr const&           sender)
+{
+    // Override to bracket the stageChanged notification with
+    // mayaUsdHierarchyStageChangedBegin/End calls.
+    mayaUsdHierarchyStageChangedBegin();
+    StagesSubject::stageChanged(notice, sender);
+    mayaUsdHierarchyStageChangedEnd();
 }
 
 bool MayaStagesSubject::isInNewScene() const { return _isInNewScene; }
@@ -190,12 +203,14 @@ void MayaStagesSubject::setupListeners()
         }
 
         // Now we can send the notifications about stage change.
+        mayaUsdHierarchyStageChangedBegin();
         for (auto& path : _invalidStages) {
             Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(path);
             if (sceneItem) {
                 sendSubtreeInvalidate(sceneItem);
             }
         }
+        mayaUsdHierarchyStageChangedEnd();
 
         _invalidStages.clear();
 

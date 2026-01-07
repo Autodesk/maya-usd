@@ -38,6 +38,8 @@ public:
     //! Create a MayaUsdHierarchy.
     static MayaUsdHierarchy::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
+    Ufe::SceneItemList children() const override;
+
 protected:
     // UsdHierarchy overrides
     bool childrenHook(
@@ -52,10 +54,15 @@ protected:
 //! UsdRootChildHierarchy). These two classes don't share a common base class
 //! but they both override UsdHierarchy::childrenHook() with the same code.
 bool mayaUsdHierarchyChildrenHook(
-    const Ufe::SceneItem::Ptr& item,
-    const PXR_NS::UsdPrim&     child,
-    Ufe::SceneItemList&        children,
-    bool                       filterInactive);
+    const PXR_NS::SdfPath& proxyShapePrimPath,
+    const PXR_NS::UsdPrim& child,
+    Ufe::SceneItemList&    children,
+    bool                   filterInactive,
+    bool*                  itemCreated = nullptr);
+
+//! Notify start/end of stage changes for hierarchy cache management.
+void mayaUsdHierarchyStageChangedBegin();
+void mayaUsdHierarchyStageChangedEnd();
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

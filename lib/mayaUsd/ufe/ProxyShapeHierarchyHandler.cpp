@@ -46,7 +46,8 @@ ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarc
 
 Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
-    if (isAGatewayType(item->nodeType())) {
+    // Check gateway type only if it is a Maya scene item
+    if (!downcast(item) && isAGatewayType(item->nodeType())) {
         return ProxyShapeHierarchy::create(_mayaHierarchyHandler, item);
     } else {
         return _mayaHierarchyHandler->hierarchy(item);

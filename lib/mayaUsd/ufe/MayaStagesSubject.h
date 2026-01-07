@@ -52,6 +52,10 @@ public:
     static MayaStagesSubject::RefPtr create();
 
 protected:
+    void stageChanged(
+        PXR_NS::UsdNotice::ObjectsChanged const& notice,
+        PXR_NS::UsdStageWeakPtr const&           sender) override;
+
     bool isInNewScene() const;
     void setInNewScene(bool b);
 
