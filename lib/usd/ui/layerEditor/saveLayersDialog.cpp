@@ -544,12 +544,13 @@ void SaveLayersDialog::getLayersToSave(
 
     // We do not allow saving layers in any of the following conditions:
     // 1- Layer is system locked
-    // 2- Layer is anonymous and its parent is system locked
+    // 2- Layer is anonymous and its parent is locked or system locked
 
     LayerInfos anonymousLayersUnlocked;
     for (const auto& layerInfo : StageLayersToSave._anonLayers) {
         auto parentLayer = layerInfo.parent._layerParent;
-        if (parentLayer != nullptr && MayaUsd::isLayerSystemLocked(parentLayer)) {
+        if (parentLayer != nullptr
+            && (MayaUsd::isLayerLocked(parentLayer) || MayaUsd::isLayerSystemLocked(parentLayer))) {
             continue;
         }
         if (MayaUsd::isLayerSystemLocked(layerInfo.layer)) {
