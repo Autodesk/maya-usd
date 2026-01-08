@@ -292,7 +292,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         QString startDir;
         if (!d->mappingFilePath.isEmpty()) {
             QFileInfo fileInfo(d->mappingFilePath);
-            startDir = fileInfo.absolutePath();
+            startDir = fileInfo.absoluteDir().path();
         }
         QString filePath = QFileDialog::getOpenFileName(
             this, tr("Select Mapping File"), startDir, tr("USD Files (*.usda);;All Files (*.*)"));
