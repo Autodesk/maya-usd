@@ -151,6 +151,7 @@ public:
     static MObject serialized;
     static MObject anonymous;
     static MObject selectedStage;
+    static MObject layerManagerReady;
 
 protected:
     LayerManager();
