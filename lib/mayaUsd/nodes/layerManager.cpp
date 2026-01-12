@@ -73,8 +73,33 @@
 #include <set>
 
 namespace {
-static std::recursive_mutex findNodeMutex;
-static MObjectHandle        layerManagerHandle;
+static std::recursive_mutex             findNodeMutex;
+static MObjectHandle                    layerManagerHandle;
+static std::set<MayaUsd::LayerManager*> processedLayerManagers;
+
+void addProcessedLayerManager(MayaUsd::LayerManager* lm)
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+    processedLayerManagers.insert(lm);
+}
+
+void removeProcessedLayerManager(MayaUsd::LayerManager* lm)
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+    processedLayerManagers.erase(lm);
+}
+
+bool isProcessedLayerManager(MayaUsd::LayerManager* lm)
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+    return processedLayerManagers.find(lm) != processedLayerManagers.end();
+}
+
+void clearProcessedLayerManagers()
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+    processedLayerManagers.clear();
+}
 
 // Utility func to disconnect an array plug, and all it's element plugs, and all
 // their child plugs.
@@ -913,6 +938,19 @@ SaveStageToMayaResult saveStageToMayaFile(
     if (!pShape)
         return result;
 
+    // Connect the layer manager ready to the proxy shape so that when
+    // loading the layers from the Maya file, the proxy shape gets
+    // notified when the layer manager is ready.
+    {
+        MDGModifier& dgmod = MayaUsd::MDGModifierUndoItem::create("Layer Manager ready connection");
+        dgmod.connect(
+            lm->thisMObject(),
+            MayaUsd::LayerManager::layerManagerReady,
+            proxyNode,
+            MayaUsdProxyShapeBase::layerManagerReadyAttr);
+        dgmod.doIt();
+    }
+
     pShape->setLayerManager(nullptr);
 
     std::unordered_set<std::string> localLayerIds;
@@ -1185,11 +1223,27 @@ void LayerDatabase::saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymou
     dataBlock.setClean(lm->layers);
 }
 
+static void removeManagerNodeTask(void* arg)
+{
+    MayaUsd::LayerManager* lm = static_cast<MayaUsd::LayerManager*>(arg);
+    removeProcessedLayerManager(lm);
+    LayerDatabase::instance().removeManagerNode(lm, nullptr);
+}
+
 void LayerDatabase::loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape)
 {
+    if (_isSavingMayaFile)
+        return;
+
     MayaUsd::LayerManager* lm = findNode(forProxyShape);
     if (!lm)
         return;
+
+    // Avoid processing the same layer manager multiple times.
+    if (isProcessedLayerManager(lm))
+        return;
+
+    addProcessedLayerManager(lm);
 
     const char*                 identifierTempSuffix = "_tmp";
     MStatus                     status;
@@ -1302,8 +1356,16 @@ void LayerDatabase::loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape)
 
     LayerDatabase::instance().loadLayerManagerSelectedStage(*lm);
 
-    if (!_isSavingMayaFile)
-        removeManagerNode(lm, forProxyShape);
+    // Notify all connected proxy shapes that the layer manager is ready.
+    {
+        MPlug readyPlug(lm->thisMObject(), MayaUsd::LayerManager::layerManagerReady);
+        readyPlug.setValue(true);
+    }
+
+    // Note: this function is mostly being called during DG compute, and connections
+    //       cannot be removed during that time. So we schedule the removal of the
+    //       layer manager node for idle time.
+    MGlobal::executeTaskOnIdle(removeManagerNodeTask, lm);
 
     for (auto it = createdLayers.begin(); it != createdLayers.end(); ++it) {
         SdfLayerHandle lh = (*it);
@@ -1315,6 +1377,7 @@ void LayerDatabase::cleanUpNewScene(void*)
 {
     LayerDatabase::instance().removeAllLayers();
     LayerDatabase::removeManagerNode();
+    clearProcessedLayerManagers();
 }
 
 LayerManager::LayerNameMap LayerDatabase::getLayerNameMap() const
@@ -1455,6 +1518,7 @@ MObject LayerManager::fileFormatId = MObject::kNullObj;
 MObject LayerManager::serialized = MObject::kNullObj;
 MObject LayerManager::anonymous = MObject::kNullObj;
 MObject LayerManager::selectedStage = MObject::kNullObj;
+MObject LayerManager::layerManagerReady = MObject::kNullObj;
 
 struct _OnSceneResetListener : public TfWeakBase
 {
@@ -1533,6 +1597,16 @@ MStatus LayerManager::initialize()
         fn_bool.setStorable(true);
         fn_bool.setHidden(true);
         stat = addAttribute(anonymous);
+        CHECK_MSTATUS_AND_RETURN_IT(stat);
+
+        layerManagerReady
+            = fn_bool.create("layerManagerReady", "lmr", MFnNumericData::kBoolean, false, &stat);
+        CHECK_MSTATUS_AND_RETURN_IT(stat);
+        fn_bool.setCached(true);
+        fn_bool.setReadable(true);
+        fn_bool.setStorable(true);
+        fn_bool.setHidden(true);
+        stat = addAttribute(layerManagerReady);
         CHECK_MSTATUS_AND_RETURN_IT(stat);
 
         MFnCompoundAttribute fn_cmp;

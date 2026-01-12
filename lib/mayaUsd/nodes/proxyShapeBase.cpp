@@ -171,6 +171,7 @@ MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
 MObject MayaUsdProxyShapeBase::variantFallbacksAttr;
 MObject MayaUsdProxyShapeBase::layerManagerAttr;
+MObject MayaUsdProxyShapeBase::layerManagerReadyAttr;
 
 namespace {
 // utility function to extract the tag name from an anonymous layer.
@@ -494,6 +495,16 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(layerManagerAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    layerManagerReadyAttr = numericAttrFn.create(
+        "layerManagerReady", "lmr", MFnNumericData::kBoolean, false, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setCached(true);
+    numericAttrFn.setReadable(true);
+    numericAttrFn.setStorable(true);
+    numericAttrFn.setHidden(true);
+    retValue = addAttribute(layerManagerReadyAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     //
     // add attribute dependencies
     //
@@ -555,6 +566,11 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(layerManagerAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    retValue = attributeAffects(layerManagerReadyAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(layerManagerReadyAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     return retValue;

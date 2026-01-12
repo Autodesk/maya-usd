@@ -12,6 +12,7 @@ set(TEST_SCRIPT_FILES
     testDisplayLayerSaveRestore.py
     testSaveMutedAnonLayer.py
     testSaveLockedAnonLayer.py
+    testSaveMixedLocations.py
     testSaveUpAxisAndUnits.py
     testNonLocalEditTargetLayer.py
 
