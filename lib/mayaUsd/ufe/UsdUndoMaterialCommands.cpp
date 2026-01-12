@@ -28,9 +28,12 @@
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+
+#if PXR_VERSION >= 2502
 #include <pxr/usd/usdMtlx/materialXConfigAPI.h>
 #include <pxr/usd/usdMtlx/utils.h>
-#include <pxr/usd/usdUtils/pipeline.h>
+#endif
 
 #include <ufe/pathString.h>
 #include <ufe/sceneItemOps.h>
