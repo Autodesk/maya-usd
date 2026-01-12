@@ -413,6 +413,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
             return;
         }
 
+#if PXR_VERSION >= 2502
         // Store the MaterialX current version on the created prim.
         if (shaderNodeDef->GetSourceType() == "mtlx") {
             if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
@@ -421,6 +422,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
                 mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
             }
         }
+#endif
 
         //
         // 3. Create the Shader:
@@ -590,6 +592,17 @@ void UsdUndoAddNewMaterialCommand::execute()
         markAsFailed();
         return;
     }
+
+#if PXR_VERSION >= 2502
+    // Store the MaterialX current version on the created prim.
+    if (shaderNodeDef->GetSourceType() == "mtlx") {
+        if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
+            auto mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(_createMaterialCmd->newPrim());
+            auto mtlxVersionStr = mtlxLibrary->getVersionString();
+            mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+        }
+    }
+#endif
 
     //
     // Create the Shader:
