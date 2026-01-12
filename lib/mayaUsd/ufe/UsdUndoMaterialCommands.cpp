@@ -28,6 +28,8 @@
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdMtlx/materialXConfigAPI.h>
+#include <pxr/usd/usdMtlx/utils.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <ufe/pathString.h>
@@ -409,6 +411,15 @@ void UsdUndoAssignNewMaterialCommand::execute()
             // The _createMaterialCmd will have emitted errors.
             markAsFailed();
             return;
+        }
+
+        // Store the MaterialX current version on the created prim.
+        if (shaderNodeDef->GetSourceType() == "mtlx") {
+            if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
+                auto mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(createMaterialCmd->newPrim());
+                auto mtlxVersionStr = mtlxLibrary->getVersionString();
+                mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+            }
         }
 
         //
