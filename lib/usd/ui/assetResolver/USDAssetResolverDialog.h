@@ -35,12 +35,11 @@
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #include <AdskAssetResolver/AssetResolverContextExtension.h>
 #include <QtCore/QSortFilterProxyModel>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QBoxLayout>
 #include <QtWidgets/QDialog>
 
 #include <memory>
-
-#include <qapplication.h>
-#include <qboxlayout.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
