@@ -146,8 +146,9 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     static MObject layerManagerAttr;
+
     MAYAUSD_CORE_PUBLIC
-    static MObject layerManagerReadyAttr;
+    static MObject recomputeLayersAttr;
 
     /// Delegate function for computing the closest point and surface normal
     /// on the proxy shape to a given ray.
