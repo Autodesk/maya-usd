@@ -1033,12 +1033,13 @@ void UsdMayaShadingModeExportContext::BindStandardMaterialPrim(
         // Determine whether we need to create UsdGeomSubsets to handle per-face
         // material assignments. This is only necessary if an assignment is
         // bound to some, but not all, of the faces on the mesh.
-        const bool perFaceMaterialAssignment = std::invoke([&]() -> bool {
+        const bool perFaceMaterialAssignment = [&]() -> bool {
             if (faceIndices.empty()) {
                 return false;
             }
 
-            if (UsdGeomMesh mesh = UsdGeomMesh(stage->GetPrimAtPath(boundPrimPath))) {
+            UsdGeomMesh mesh = UsdGeomMesh(stage->GetPrimAtPath(boundPrimPath));
+            if (mesh) {
                 VtIntArray faceVertexCounts;
                 if (mesh.GetFaceVertexCountsAttr().Get(&faceVertexCounts)) {
                     return (faceIndices.size() < faceVertexCounts.size());
@@ -1046,7 +1047,7 @@ void UsdMayaShadingModeExportContext::BindStandardMaterialPrim(
             }
 
             return false;
-        });
+        }();
 
         // In the standard material binding case, skip if we're authoring
         // direct (non-collection-based) bindings and we're an instance
