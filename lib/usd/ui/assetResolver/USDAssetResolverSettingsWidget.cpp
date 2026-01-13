@@ -20,16 +20,17 @@
 #include "HeaderWidget.h"
 #include "ui_USDAssetResolverSettingsWidget.h"
 
-#include <qaction.h>
-#include <qevent.h>
-#include <qfiledialog.h>
-#include <qlistview.h>
-#include <qlistwidget.h>
-#include <qpainter.h>
-#include <qsplitter.h>
-#include <qstringlistmodel.h>
-#include <qstyleditemdelegate.h>
-#include <qtoolbutton.h>
+#include <QtCore/QEvent>
+#include <QtCore/QStringListModel>
+#include <QtGui/QAction>
+#include <QtGui/QMouseEvent>
+#include <QtGui/QPainter>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QListView>
+#include <QtWidgets/QListWidget>
+#include <QtWidgets/QSplitter>
+#include <QtWidgets/QStyledItemDelegate>
+#include <QtWidgets/QToolButton>
 
 namespace Adsk {
 
@@ -357,9 +358,11 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         listview->setDropIndicatorShown(true);
         listview->setDragDropOverwriteMode(false);
 
+        int  scaledIconSize = ApplicationHost::instance().dpiScale(20); // 20x20 at 100%
         auto addButton = new QToolButton(d->userPathsHeader);
         addButton->setIcon(ApplicationHost::instance().icon(ApplicationHost::IconName::Add));
         addButton->setToolTip(tr("Adds a new blank row where you can enter a custom search path."));
+        addButton->setIconSize(QSize(scaledIconSize, scaledIconSize));
         connect(addButton, &QToolButton::clicked, this, [this, listview]() {
             Q_D(USDAssetResolverSettingsWidget);
             d->aboutToAddUserPath = true;
@@ -367,6 +370,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
                 d->currentlyAddingNewUserPath
                     = d->userPathsModel->index(d->userPathsModel->rowCount() - 1);
                 d->userPathsModel->setData(d->currentlyAddingNewUserPath, tr(""));
+                listview->setCurrentIndex(d->currentlyAddingNewUserPath);
                 listview->scrollTo(d->currentlyAddingNewUserPath);
                 listview->setFocus();
                 listview->edit(d->currentlyAddingNewUserPath);
@@ -398,9 +402,10 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         headerLayout->addWidget(addButton);
 
         auto addBrowseButton = new QToolButton(d->userPathsHeader);
-        addBrowseButton->setIcon(host.icon(ApplicationHost::IconName::OpenFile));
+        addBrowseButton->setIcon(host.icon(ApplicationHost::IconName::AddFolder));
         addBrowseButton->setToolTip(
             tr("Opens a file browser to select a directory and add it to the list."));
+        addBrowseButton->setIconSize(QSize(scaledIconSize, scaledIconSize));
         connect(addBrowseButton, &QToolButton::clicked, this, [this]() {
             Q_D(USDAssetResolverSettingsWidget);
             QString filePath
@@ -423,6 +428,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         d->userPathsFirstButton->setIcon(ApplicationHost::instance().icon(
             userPathsFirst() ? ApplicationHost::IconName::MoveDown
                              : ApplicationHost::IconName::MoveUp));
+        d->userPathsFirstButton->setIconSize(QSize(scaledIconSize, scaledIconSize));
         connect(d->userPathsFirstButton, &QToolButton::clicked, this, [this]() {
             setUserPathsFirst(!userPathsFirst());
         });

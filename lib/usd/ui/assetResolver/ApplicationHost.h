@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <qicon.h>
-#include <qobject.h>
+#include <QtCore/QObject>
+#include <QtGui/QIcon>
 
 namespace Adsk {
 
@@ -31,14 +31,17 @@ public:
 
     virtual float uiScale() const;
 
+    virtual int   dpiScale(int size) const;
+    virtual float dpiScale(float size) const;
+
     enum class IconName
     {
         Add,
+        AddFolder,
         OpenFile,
         Delete,
         MoveUp,
         MoveDown,
-
     };
     virtual QIcon icon(const IconName& name) const;
 
@@ -49,6 +52,7 @@ public:
         ResizableActiveAreaSize, // 8 px at 1.0 scale
         ResizableContentMargin,  // 4 px at 1.0 scale
         ItemHeight,              // 24 px at 1.0 scale
+        HeaderHeight,            // 32 px at 1.0 scale
     };
     /** Gets a requested pixel metric value. These are already scaled by the
      * uiScale factor. */

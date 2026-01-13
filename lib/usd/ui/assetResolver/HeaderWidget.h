@@ -15,7 +15,7 @@
 //
 
 #pragma once
-#include <qwidget.h>
+#include <QtWidgets/QWidget>
 
 namespace Adsk {
 class HeaderWidget : public QWidget
