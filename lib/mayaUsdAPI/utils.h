@@ -30,6 +30,8 @@
 #include <ufe/sceneItem.h>
 #include <ufe/undoableCommand.h>
 
+#include <maya/MApiNamespace.h>
+
 namespace MAYAUSDAPI_NS_DEF {
 
 //! Returns the currently registered Ufe runtime id for Maya.
@@ -193,6 +195,9 @@ std::string handleAssetPathThatMaybeRelativeToLayer(
     const std::string&            attrName,
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            optionVarName);
+
+MAYAUSD_API_PUBLIC
+MString getProxyShapeDisplayFilter();
 
 } // namespace MAYAUSDAPI_NS_DEF
 
