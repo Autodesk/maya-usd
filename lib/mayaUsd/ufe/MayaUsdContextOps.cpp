@@ -91,8 +91,9 @@ static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
 static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
-static constexpr char kUpgradeMaterialItem[] = "Upgrade Material";
-static constexpr char kUpgradeMaterialLabel[] = "Upgrade Material";
+static constexpr char    kUpgradeMaterialItem[] = "Upgrade Material";
+static constexpr char    kUpgradeMaterialLabel[] = "Convert to current version of MaterialX";
+static const std::string kUpgradeMaterialImage { "caution.png" };
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
@@ -490,7 +491,8 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         if (_item->prim().IsA<UsdShadeMaterial>()) {
             auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
             if (materialHandler && materialHandler->isLegacyShaderGraph(sceneItem())) {
-                items.emplace_back(kUpgradeMaterialItem, kUpgradeMaterialLabel);
+                items.emplace_back(
+                    kUpgradeMaterialItem, kUpgradeMaterialLabel, kUpgradeMaterialImage);
                 needsSeparator = true;
             }
         }
@@ -685,7 +687,8 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
             if (materialHandler) {
                 for (const auto& bulkItem : _bulkItems) {
                     if (materialHandler && materialHandler->isLegacyShaderGraph(bulkItem)) {
-                        items.emplace_back(kUpgradeMaterialItem, kUpgradeMaterialLabel);
+                        items.emplace_back(
+                            kUpgradeMaterialItem, kUpgradeMaterialLabel, kUpgradeMaterialImage);
                         break;
                     }
                 }

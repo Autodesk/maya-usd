@@ -111,7 +111,7 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
         contextOps = ufe.ContextOps.contextOps(layerMaterial)
         self.assertIsNotNone(contextOps)
         items = contextOps.getItems([])
-        self.assertIn("Upgrade Material", [item.label for item in items])
+        self.assertIn("Upgrade Material", [item.item for item in items])
 
         cmd = contextOps.doOpCmd(["Upgrade Material",])
         self.assertIsNotNone(cmd)
@@ -119,7 +119,7 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
 
         # Should not require anymore upgrade:
         items = contextOps.getItems([])
-        self.assertNotIn("Upgrade Material", [item.label for item in items])
+        self.assertNotIn("Upgrade Material", [item.item for item in items])
 
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
@@ -128,7 +128,7 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
             globalSelection.append(matItem)
         contextOps = ufe.ContextOps.contextOps(matItem)
         items = contextOps.getItems([])
-        self.assertIn("Upgrade Material", [item.label for item in items])
+        self.assertIn("Upgrade Material", [item.item for item in items])
 
         cmd = contextOps.doOpCmd(["Upgrade Material",])
         self.assertIsNotNone(cmd)
@@ -136,7 +136,7 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
 
         # Should not require anymore upgrade:
         items = contextOps.getItems([])
-        self.assertNotIn("Upgrade Material", [item.label for item in items])
+        self.assertNotIn("Upgrade Material", [item.item for item in items])
 
         stage.GetRootLayer().Export(outputFile)
 
@@ -170,7 +170,7 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
         contextOps = ufe.ContextOps.contextOps(stageUfeSceneItem)
         self.assertIsNotNone(contextOps)
         items = contextOps.getItems([])
-        self.assertIn('Upgrade all legacy materials', [item.label for item in items])
+        self.assertIn('UpgradeStageLegacyMaterials', [item.item for item in items])
 
         cmd = contextOps.doOpCmd(["UpgradeStageLegacyMaterials",])
         self.assertIsNotNone(cmd)

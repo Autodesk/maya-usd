@@ -30,6 +30,11 @@
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#if PXR_VERSION >= 2502
+#include <pxr/usd/usdMtlx/materialXConfigAPI.h>
+#include <pxr/usd/usdMtlx/utils.h>
+#endif
+
 #include <ufe/pathString.h>
 #include <ufe/sceneItemOps.h>
 #include <ufe/selection.h>
@@ -411,6 +416,17 @@ void UsdUndoAssignNewMaterialCommand::execute()
             return;
         }
 
+#if PXR_VERSION >= 2502
+        // Store the MaterialX current version on the created prim.
+        if (shaderNodeDef->GetSourceType() == "mtlx") {
+            if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
+                auto mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(createMaterialCmd->newPrim());
+                auto mtlxVersionStr = mtlxLibrary->getVersionString();
+                mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+            }
+        }
+#endif
+
         //
         // 3. Create the Shader:
         //
@@ -579,6 +595,17 @@ void UsdUndoAddNewMaterialCommand::execute()
         markAsFailed();
         return;
     }
+
+#if PXR_VERSION >= 2502
+    // Store the MaterialX current version on the created prim.
+    if (shaderNodeDef->GetSourceType() == "mtlx") {
+        if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
+            auto mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(_createMaterialCmd->newPrim());
+            auto mtlxVersionStr = mtlxLibrary->getVersionString();
+            mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+        }
+    }
+#endif
 
     //
     // Create the Shader:

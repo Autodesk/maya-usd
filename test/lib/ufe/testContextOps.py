@@ -42,6 +42,12 @@ import usdUfe
 import os
 import unittest
 
+try:
+    from pxr import UsdMtlx
+    USD_HAS_MATERIALX_PLUGIN=True
+except ImportError:
+    USD_HAS_MATERIALX_PLUGIN=False
+
 
 class TestAddPrimObserver(ufe.Observer):
     def __init__(self):
@@ -1034,6 +1040,10 @@ class ContextOpsTestCase(unittest.TestCase):
             materialItem = scopeHier.children()[idx]
             checkItem(self, materialItem, "Material", "{0}/{1}1".format(scope, matType))
 
+            if USD_HAS_MATERIALX_PLUGIN and Usd.GetVersion() >= (0, 25,2) and matType == "standard_surface":
+                # Verify we have a MaterialX version schema:
+                self.assertTrue(UsdMtlx.MaterialXConfigAPI(usdUtils.getPrimFromSceneItem(materialItem)))
+
             # Binding and selection are always on the last item:
             if (numMat - 1 == idx):
                 self.assertTrue(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
@@ -1507,6 +1517,10 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(len(scopeHier.children()), 2)
 
         newMatItem = scopeHier.children()[-1]
+
+        if USD_HAS_MATERIALX_PLUGIN and Usd.GetVersion() >= (0, 25,2):
+            # Verify we have a MaterialX version schema:
+            self.assertTrue(UsdMtlx.MaterialXConfigAPI(usdUtils.getPrimFromSceneItem(newMatItem)))
 
         connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(newMatItem.runTimeId())
         self.assertIsNotNone(connectionHandler)
