@@ -22,10 +22,14 @@
 
 #include <QtCore/QEvent>
 #include <QtCore/QStringListModel>
+#include <QtCore/QTimer>
 #include <QtGui/QAction>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
+#include <QtWidgets/QBoxLayout>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QListView>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QSplitter>
@@ -120,6 +124,17 @@ public:
     {
     }
 
+    // Close the currently active editor (if any), committing its data first.
+    void closeCurrentEditor()
+    {
+        if (!activeEditor)
+            return;
+        // Commit via the composite editor widget so the view can map it correctly.
+        commitData(activeEditor);
+        closeEditor(activeEditor, QAbstractItemDelegate::SubmitModelCache);
+        activeEditor = nullptr;
+    }
+
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
     {
         QSize size = QStyledItemDelegate::sizeHint(option, index);
@@ -138,6 +153,102 @@ public:
         QRect itemRect = listview->visualRect(index);
         itemRect.setWidth(listview->viewport()->width());
         editor->setGeometry(itemRect);
+    }
+
+    QWidget*
+    createEditor(QWidget* parent, const QStyleOptionViewItem&, const QModelIndex&) const override
+    {
+        const auto& host = ApplicationHost::instance();
+        const int   itemHeight = host.pm(ApplicationHost::PixelMetric::ItemHeight);
+        const int   tinyPadding = host.pm(ApplicationHost::PixelMetric::TinyPadding);
+        const int   s = itemHeight - tinyPadding * 2;
+
+        QWidget* editor = new QWidget(parent);
+        auto*    layout = new QHBoxLayout(editor);
+        layout->setSpacing(tinyPadding);
+        layout->setContentsMargins(tinyPadding, 0, tinyPadding, 0);
+        layout->setAlignment(Qt::AlignVCenter);
+        QLineEdit* edit = new QLineEdit(editor);
+        edit->setObjectName("lineEdit");
+        edit->setFixedHeight(s);
+        edit->setFocusPolicy(Qt::StrongFocus);
+        QToolButton* deleteButton = new QToolButton(editor);
+        deleteButton->setObjectName("deleteButton");
+        deleteButton->setIcon(host.icon(ApplicationHost::IconName::Delete));
+        deleteButton->setFixedSize(s, s);
+        deleteButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        QToolButton* browseButton = new QToolButton(editor);
+        browseButton->setObjectName("browseButton");
+        browseButton->setIcon(host.icon(ApplicationHost::IconName::OpenFile));
+        browseButton->setFixedSize(s, s);
+        browseButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+
+        layout->addWidget(edit, 1);
+        layout->addWidget(browseButton);
+        layout->addWidget(deleteButton);
+        // Forward focus to the internal QLineEdit so the composite editor behaves
+        // like a regular editor (entering edit mode immediately).
+        editor->setFocusProxy(edit);
+        editor->setAutoFillBackground(true);
+        editor->setBackgroundRole(QPalette::NoRole);
+        editor->updateGeometry();
+
+        // Delete handler: remove the row and close the editor
+        QObject::connect(deleteButton, &QToolButton::clicked, this, [this, editor]() {
+            int                 row = editor->property("editingRow").toInt();
+            QAbstractItemModel* model = listview ? listview->model() : nullptr;
+            if (model && row >= 0) {
+                deleteRow(model, model->index(row, 0));
+            }
+            const_cast<ListPanelItemDelegate*>(this)->closeEditor(
+                editor, QAbstractItemDelegate::NoHint);
+        });
+
+        // Browse handler: open folder dialog and set model data via editor
+        QObject::connect(browseButton, &QToolButton::clicked, this, [this, editor]() {
+            QAbstractItemModel* model = listview ? listview->model() : nullptr;
+            int                 row = editor->property("editingRow").toInt();
+            if (!model || row < 0)
+                return;
+            QModelIndex idx = model->index(row, 0);
+            browseAndSetPath(model, idx, editor);
+        });
+
+        // Track the active composite editor so we can close/commit it from elsewhere.
+        const_cast<ListPanelItemDelegate*>(this)->activeEditor = editor;
+        QObject::connect(
+            editor, &QObject::destroyed, const_cast<ListPanelItemDelegate*>(this), [this]() {
+                const_cast<ListPanelItemDelegate*>(this)->activeEditor = nullptr;
+            });
+
+        return editor;
+    }
+
+    void setEditorData(QWidget* editor, const QModelIndex& index) const override
+    {
+        QLineEdit* edit = editor->findChild<QLineEdit*>("lineEdit");
+        // store editing row for the editor's buttons
+        editor->setProperty("editingRow", index.row());
+        if (!edit)
+            return;
+        QVariant vText = index.model()->data(index, Qt::EditRole);
+        edit->setText(vText.toString());
+        edit->setFocus();
+        edit->selectAll();
+    }
+
+    void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index)
+        const override
+    {
+        QLineEdit* edit = editor->findChild<QLineEdit*>("lineEdit");
+        if (!edit)
+            return;
+        if (edit->text().isEmpty()) {
+            // do not leave an empty row in the list
+            deleteRow(model, index);
+            return;
+        }
+        model->setData(index, edit->text(), Qt::EditRole);
     }
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index)
@@ -216,23 +327,14 @@ public:
                 // first the delete button
                 QRect buttonRect(itemRect.right() - itemHeight, itemRect.top() + tinyPadding, s, s);
                 if (buttonRect.contains(me->pos())) {
-                    // Remove this item
-                    model->removeRow(index.row(), index.parent());
+                    deleteRow(model, index);
                     return true;
                 }
 
                 // second the browse button
                 buttonRect.moveLeft(buttonRect.left() - (itemHeight - tinyPadding));
                 if (buttonRect.contains(me->pos())) {
-                    // Browse for a new path
-                    QString dir = QFileDialog::getExistingDirectory(
-                        listview,
-                        tr("Select Directory"),
-                        model->data(index, Qt::DisplayRole).toString(),
-                        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-                    if (!dir.isEmpty()) {
-                        model->setData(index, dir, Qt::EditRole);
-                    }
+                    browseAndSetPath(model, index);
                     return true;
                 }
             }
@@ -240,9 +342,53 @@ public:
         return QStyledItemDelegate::editorEvent(event, model, option, index);
     }
 
+    // Helper: remove a row from the model.
+    void deleteRow(QAbstractItemModel* model, const QModelIndex& index) const
+    {
+        if (model && index.isValid())
+            model->removeRow(index.row(), index.parent());
+    }
+
+    // Helper: open a directory dialog and set the path in the model.
+    // Optionally update a QLineEdit widget with the selected path.
+    void browseAndSetPath(
+        QAbstractItemModel* model,
+        const QModelIndex&  index,
+        QWidget*            editor = nullptr) const
+    {
+        if (!model)
+            return;
+        QString start = model->data(index, Qt::DisplayRole).toString();
+        QString dir = QFileDialog::getExistingDirectory(
+            listview,
+            tr("Select Directory"),
+            start,
+            QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+        if (dir.isEmpty())
+            return;
+
+        if (editor) {
+            // We're inside an active editor: update only the editor widget's
+            // QLineEdit to avoid triggering model/view updates that can cause
+            // the view to re-layout or recreate widgets (which hid the icons).
+            QLineEdit* edit = editor->findChild<QLineEdit*>("lineEdit");
+            if (edit) {
+                edit->setText(dir);
+                edit->setCursorPosition(edit->text().length());
+                // leave setModelData for when the editor is closed to persist
+                // the value into the model (prevents view re-layouts).
+            }
+            return;
+        }
+
+        // Not editing: update the model directly.
+        model->setData(index, dir, Qt::EditRole);
+    }
+
 private:
     bool       editable = false;
     QListView* listview = nullptr;
+    QWidget*   activeEditor = nullptr; // Added to track the active editor
 };
 
 class USDAssetResolverSettingsWidgetPrivate
@@ -354,7 +500,12 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
 
         auto listview = new ListView(user_paths);
         listview->setUniformItemSizes(true);
-        listview->setItemDelegate(new ListPanelItemDelegate(listview, true));
+        auto* delegate = new ListPanelItemDelegate(listview, true);
+        listview->setItemDelegate(delegate);
+        // Ensure any existing editor is closed when the user presses another item.
+        connect(listview, &QListView::pressed, delegate, [delegate](const QModelIndex&) {
+            delegate->closeCurrentEditor();
+        });
         listview->setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
         listview->setVerticalScrollMode(QListView::ScrollMode::ScrollPerPixel);
         listview->setTextElideMode(Qt::TextElideMode::ElideMiddle);
@@ -376,18 +527,26 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         // so after mouse press/release the button is not being repainted correctly. So we
         // set the background to transparent to avoid visual artifacts.
         addButton->setStyleSheet("QToolButton { background: transparent; }");
-        connect(addButton, &QToolButton::clicked, this, [this, listview]() {
+        connect(addButton, &QToolButton::clicked, this, [this, listview, delegate]() {
             Q_D(USDAssetResolverSettingsWidget);
+            // Close any active editor before inserting a new editable row.
+            if (delegate) {
+                delegate->closeCurrentEditor();
+            }
+
             d->aboutToAddUserPath = true;
             if (d->userPathsModel->insertRow(d->userPathsModel->rowCount())) {
                 d->currentlyAddingNewUserPath
                     = d->userPathsModel->index(d->userPathsModel->rowCount() - 1);
                 d->userPathsModel->setData(d->currentlyAddingNewUserPath, tr(""));
-                listview->setCurrentIndex(d->currentlyAddingNewUserPath);
-                listview->scrollTo(d->currentlyAddingNewUserPath);
+                QModelIndex newIndex = d->currentlyAddingNewUserPath;
+                listview->scrollTo(newIndex);
                 listview->setFocus();
-                listview->edit(d->currentlyAddingNewUserPath);
-                listview->update();
+                // Defer the edit call so any active editor can finish closing first.
+                QTimer::singleShot(0, listview, [listview, newIndex]() {
+                    listview->edit(newIndex);
+                    listview->update();
+                });
             } else {
                 // TODO: show error?
                 d->aboutToAddUserPath = false;
