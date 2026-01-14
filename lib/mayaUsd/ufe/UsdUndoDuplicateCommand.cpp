@@ -138,9 +138,9 @@ void UsdUndoDuplicateCommand::execute()
             SdfJustCreatePrimInLayer(targetLayer, _usdDstPath);
 
         // If it's the first layer processed, or if a session layer, we want a basic copy of the
-        // specs on this layer. For session layer we want to keep changes on session layers.
+        // specs on this layer. For session layers we want to keep changes in the same layers.
         // However, if the target itself is the session layer, then we need a merge, otherwise we
-        // will overwrite previously written specs to that layer.
+        // would overwrite previously written specs to that layer.
         bool simpleCopy = isFirst || isInSession && _dstLayer != layer;
 
         const bool result = simpleCopy
