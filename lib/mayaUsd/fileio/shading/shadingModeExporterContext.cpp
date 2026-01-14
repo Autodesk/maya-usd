@@ -38,6 +38,7 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdGeom/subset.h>
 #include <pxr/usd/usdShade/material.h>
@@ -1028,13 +1029,33 @@ void UsdMayaShadingModeExportContext::BindStandardMaterialPrim(
         const TfToken&    shapeName = iter.shapeName;
 
         const UsdShadeMaterial& materialToBind = uvMappingManager.getMaterial(shapeName);
+
+        // Determine whether we need to create UsdGeomSubsets to handle per-face
+        // material assignments. This is only necessary if an assignment is
+        // bound to some, but not all, of the faces on the mesh.
+        const bool perFaceMaterialAssignment = [&]() -> bool {
+            if (faceIndices.empty()) {
+                return false;
+            }
+
+            UsdGeomMesh mesh = UsdGeomMesh(stage->GetPrimAtPath(boundPrimPath));
+            if (mesh) {
+                VtIntArray faceVertexCounts;
+                if (mesh.GetFaceVertexCountsAttr().Get(&faceVertexCounts)) {
+                    return (faceIndices.size() < faceVertexCounts.size());
+                }
+            }
+
+            return false;
+        }();
+
         // In the standard material binding case, skip if we're authoring
         // direct (non-collection-based) bindings and we're an instance
         // proxy.
         // In the case of per-face bindings, un-instance the prim in order
         // to author the append face sets or create a geom subset, since
         // collection-based bindings won't help us here.
-        if (faceIndices.empty()) {
+        if (!perFaceMaterialAssignment) {
             if (!GetExportArgs().exportCollectionBasedBindings) {
                 if (_IsInstanceProxyPath(stage, boundPrimPath)) {
                     // XXX: If we wanted to, we could try to author the
