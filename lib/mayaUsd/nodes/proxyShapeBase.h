@@ -420,6 +420,8 @@ private:
         const UsdStageRefPtr&    unsharedUsdStage,
         UsdStage::InitialLoadSet loadSet);
 
+    bool hasStageCacheIdConnections() const;
+
     UsdStageRefPtr getUnsharedStage(UsdStage::InitialLoadSet loadSet);
 
     SdfPath       _GetPrimPath(MDataBlock dataBlock) const;
