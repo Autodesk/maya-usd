@@ -132,9 +132,12 @@ public:
         const QStyleOptionViewItem& option,
         const QModelIndex&          index) const override
     {
-        QStyleOptionViewItem opt = option;
-        initStyleOption(&opt, index);
-        editor->setGeometry(opt.rect);
+        // The option.rect may not be accurate as it reports the string width and
+        // not the width of the displayed string. We need to get the visual rect
+        // from the listview and adjust the width to match the view's viewport width.
+        QRect itemRect = listview->visualRect(index);
+        itemRect.setWidth(listview->viewport()->width());
+        editor->setGeometry(itemRect);
     }
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index)
@@ -202,19 +205,25 @@ public:
                 const int    itemHeight = host.pm(ApplicationHost::PixelMetric::ItemHeight);
                 const int    tinyPadding = host.pm(ApplicationHost::PixelMetric::TinyPadding);
                 const int    s = itemHeight - tinyPadding * 2;
-                QRect        delButtonRect(
-                    option.rect.right() - itemHeight, option.rect.top() + tinyPadding, s, s);
-                if (delButtonRect.contains(me->pos())) {
+
+                // The option.rect may not be accurate as it reports the string width and
+                // not the width of the displayed string. We need to get the visual rect
+                // from the listview and adjust the width to match the view's viewport width.
+                QRect itemRect = listview->visualRect(index);
+                itemRect.setWidth(listview->viewport()->width());
+
+                // Same button rects as in paint().
+                // first the delete button
+                QRect buttonRect(itemRect.right() - itemHeight, itemRect.top() + tinyPadding, s, s);
+                if (buttonRect.contains(me->pos())) {
                     // Remove this item
                     model->removeRow(index.row(), index.parent());
                     return true;
                 }
-                QRect browseButtonRect(
-                    option.rect.right() - itemHeight * 2 + tinyPadding,
-                    option.rect.top() + tinyPadding,
-                    s,
-                    s);
-                if (browseButtonRect.contains(me->pos())) {
+
+                // second the browse button
+                buttonRect.moveLeft(buttonRect.left() - (itemHeight - tinyPadding));
+                if (buttonRect.contains(me->pos())) {
                     // Browse for a new path
                     QString dir = QFileDialog::getExistingDirectory(
                         listview,
