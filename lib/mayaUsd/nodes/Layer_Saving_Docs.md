@@ -9,6 +9,9 @@ This page documents how the USD stage and its layers are saved within a Maya
 scene. We also document some of the subtle complexity that code maintainers
 should be aware of.
 
+To re-iterate, this is only for USD stages where their layers are saved to the
+Maya scene instead of on-disk.
+
 
 ## Necessary Preliminary Knowledge
 
@@ -21,9 +24,11 @@ Here are the topics that affects layer saving:
     in the rest of this document)
   * How and when layers and other data get saved within the Maya scene
     save mechanism
+  * How and when layers are loaded from the Maya scene into the USD
+    stage a proxy shapes
 
 
-### Stage
+### How USD Find Stages
 
 USD finds stages in USD stage caches, which are represented by the USD class
 `UsdStageCache`. The caches are set globally (per-thread) by declaring an
@@ -52,7 +57,7 @@ compared. If a layer change ID, then it won't match anymore. This is
 relevant when saving.
 
 
-### Proxy Shape
+### How MayaUSD Proxy Shapes Work
 
 The Proxy Shape provides access to the USD stage. It does *_not_*
 initially keep:
@@ -68,6 +73,7 @@ and session layers:
   * The ID of the session layer.
   * A flag to know if the stage is shared.
   * A flag to know if the stage is actually provided as an input attribute.
+  * The UUID of the layer manager that contains the stage layers.
 
 The main difference between shared and unshared stages is that unshared
 stages have their own unique session layer.
@@ -81,13 +87,19 @@ these layer returns a null pointer. For the root layer, a null layer
 triggers the creation of a new anonymous layer in the Proxy Shape. That
 is how a newly-created stage is initialized with a root layer.
 
+The proxy shape caches the resulting layer pointers. This is necessary because
+the layer manager node exists only for the brief moment when the Maya scene is
+being saved or when it is loading. The layer manager nodes do not exist outside
+of the duration of saving or loading. More detail on this in the next section.
 
-### Layer Manager
+
+### How the Layer Manager Works
 
 The layer manager is both a class with many static functions and a Maya node.
-It is where the known layers are kept in Maya USD. It is used both by the
-Proxy Shape to find the layers and by the Layer Manager UI to show the known
-layers to the user.
+It is where the layers that are saved within a Maya scene instead of on-disk
+are kept. It is used by the MayaUSD Proxy Shape to find its layers during
+loading and to store its layers during saving to the Mayascene. The Layer
+Manager UI also store some data in it.
 
 It is important to note that the Layer Manager's Maya node is only briefly kept
 alive. When a Maya scene is loaded, the Maya node contains the list of known
@@ -119,13 +131,13 @@ post-load-scene callback could access the Proxy Shape and would thus need
 the Layer Manager to be ready to provide layers.
 
 The reason we need this Layer Manager is that there is no such thing as a
-layer cache in USD. Sdf layers only exist if they are referenced. The
-Layer Manager meets this requirement by holding a reference to each layer.
-This preserves the layer lifescope between the time the Layer Manager Maya
-node is deserialized and the time the layers are requested by the Proxy
-Shapes.
+layer cache in USD, unlike for USD stages. Sdf layers only exist if they are
+referenced. The Layer Manager meets this requirement by holding a reference
+to each layer. This preserves the layer lifetime between the time the Layer
+Manager node is deserialized and the time the layers are requested by the
+Proxy Shapes.
 
-### Layer and Load Rules Saving
+### How Saving Works
 
 The USD Stage is a pure run-time object. The objects that are saved are
 only the layers. Stages get re-created based on layers, as explained above.
@@ -159,6 +171,49 @@ An important addition is that the load-state of USD payload are pure stage-
 level information. That means they do not get saved in the layer data. In
 Maya USD, we do save load state of all payload for each stage as an attribute
 on the Proxy Shape. This is also done in another Maya pre-saved callback.
+
+When a Proxy Shape is saved within the Layer Manager, information critical to
+be able to reload the proxy shape are added to it. The unique ID (UUID) of the
+Layer Manager is set in its "layerManager" attribute.
+
+### How Loading Works
+
+The Proxy Shape and Layer Manager node are normal Maya nodes. Maya reads them
+from disk and recreates the nodes in memory. This poses a problem: the Proxy
+Shape needs the Layer Manager to get its layers, but we do not know in which
+order each node will be created.
+
+One problem is that the proxy shape really does not know that a load occured.
+The nodes are created when loading, but they are similarly created when a new
+proxy shape is added to a Maya scene. Furthermore, loading works by creating
+node and then setting its attributes incrementally. Again, the same things
+happen when a new stage is created in Maya and the user modifies the stage.
+
+In all cases, at some undefined point, the `compute` method of the node gets
+called. For the Proxy Shape, that is when the USD stage gets created. The stage
+needs to be provided with its root layer and session layer. When loading a stage
+that was saved to the Maya scene, these layers need to be restored from the data
+that was put in the Layer Manager.
+
+So, in the Proxy Manager `compute` function, the information about the layer
+IDS and the Layer Manager UUID is used to find a Layer Manager that contains
+the desired layers. The exact logic is more complicated than that because
+layers can come from different sources and thus be derived from different data.
+For example, maybe the user provided an explicit on-disk USD file name. In the
+case where the stage was saved to the Maya scene, as explained in the section
+about saving, information about how to find layers in the Layer Manager is used.
+
+The problem is that maybe when `compute` is called, the Layer Manager has not
+been loaded yet. This is where the `recomputeLayers` attribute of the Proxy
+Shape comes into play. At the end of the load, a callback increases the value
+of the `recomputeLayers` attribute of each Proxy Shape. This ensures they will
+be able to read any required layer from the Layer Manager and contain correct
+data.
+
+In order to avoid loading data from the Layer Manager multiple times, which
+Proxy Shapes have already read their layers from the Layer Manager is kept.
+We also protect against trying to read-back layers from the Layer Manager
+while saving.
 
 
 ## Save Architecture Challenges
