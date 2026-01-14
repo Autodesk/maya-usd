@@ -24,13 +24,12 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <maya/MApiNamespace.h>
 #include <ufe/attribute.h>
 #include <ufe/path.h>
 #include <ufe/rtid.h>
 #include <ufe/sceneItem.h>
 #include <ufe/undoableCommand.h>
-
-#include <maya/MApiNamespace.h>
 
 namespace MAYAUSDAPI_NS_DEF {
 

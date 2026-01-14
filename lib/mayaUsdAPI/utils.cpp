@@ -184,9 +184,6 @@ std::string handleAssetPathThatMaybeRelativeToLayer(
         fileName, attrName, layer, optionVarName);
 }
 
-MString getProxyShapeDisplayFilter()
-{
-    return MayaUsdProxyShapeBase::displayFilterName;
-}
+MString getProxyShapeDisplayFilter() { return MayaUsdProxyShapeBase::displayFilterName; }
 
 } // End of namespace MAYAUSDAPI_NS_DEF
