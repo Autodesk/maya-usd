@@ -24,6 +24,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <maya/MApiNamespace.h>
 #include <ufe/attribute.h>
 #include <ufe/path.h>
 #include <ufe/rtid.h>
@@ -193,6 +194,9 @@ std::string handleAssetPathThatMaybeRelativeToLayer(
     const std::string&            attrName,
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            optionVarName);
+
+MAYAUSD_API_PUBLIC
+MString getProxyShapeDisplayFilter();
 
 } // namespace MAYAUSDAPI_NS_DEF
 
