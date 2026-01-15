@@ -141,7 +141,7 @@ void UsdUndoDuplicateCommand::execute()
         // specs on this layer. For session layers we want to keep changes in the same layers.
         // However, if the target itself is the session layer, then we need a merge, otherwise we
         // would overwrite previously written specs to that layer.
-        bool simpleCopy = isFirst || isInSession && _dstLayer != layer;
+        bool simpleCopy = isFirst || (isInSession && _dstLayer != layer);
 
         const bool result = simpleCopy
             ? SdfCopySpec(layer, path, targetLayer, _usdDstPath)
