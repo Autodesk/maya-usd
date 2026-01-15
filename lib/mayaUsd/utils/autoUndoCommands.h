@@ -47,6 +47,9 @@ public:
     /// Can be used if undo is no longer deemed necessary.
     void disableUndo();
 
+    /// Verify ifthe command executed successfully.
+    bool commandExecutedSuccessfully() const { return _success; }
+
 private:
     /// Execute the given commands in an undo block.
     ///
@@ -60,6 +63,7 @@ private:
 
     std::string _scriptName;
     bool        _needUndo { false };
+    bool        _success { false };
 };
 
 } // namespace MAYAUSD_NS_DEF

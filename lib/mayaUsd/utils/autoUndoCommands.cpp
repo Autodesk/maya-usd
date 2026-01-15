@@ -43,8 +43,10 @@ void AutoUndoCommands::_executeCommands(const std::string& commands)
     // If no commands were provided, we do nothing.
     // This allow sub-classes to cancel the execution if needed by providing
     // no commands.
-    if (commands.empty())
+    if (commands.empty()) {
+        _success = true;
         return;
+    }
 
     // Put all the requested commands inside a function to isolate any
     // variable they migh declare.
@@ -53,7 +55,7 @@ void AutoUndoCommands::_executeCommands(const std::string& commands)
     // Wrap all commands in a undo block (undo chunk in Maya parlance).
     static const char scriptSuffix[]
         = "}\n"
-          "proc _executeCommandsWithUndo() {\n"
+          "proc int _executeCommandsWithUndo() {\n"
           // We need to re-enable undo for this because we may be executed
           // in a context that disbaled undo.
           "    int $undoWereActive = `undoInfo -query -state`;\n"
@@ -61,11 +63,14 @@ void AutoUndoCommands::_executeCommands(const std::string& commands)
           // Open the undo block. to make all commands undoable as a unit.
           "    undoInfo -openChunk;\n"
           // Execute the commands.
-          "    _executeCommandsToBeUndone();\n"
+          "    if (catchQuiet(_executeCommandsToBeUndone())) {;\n"
+          "        return 0;\n"
+          "    }\n"
           // Close the undo bloack to make the whole process undoable as a unit.
           "    undoInfo -closeChunk;\n"
           // Restore the undo active flag.
           "    undoInfo -stateWithoutFlush $undoWereActive;\n"
+          "    return 1;\n"
           "}\n"
           "_executeCommandsWithUndo();\n";
 
@@ -74,13 +79,18 @@ void AutoUndoCommands::_executeCommands(const std::string& commands)
     const bool displayEnabled = false;
     const bool undoEnabled = true;
 
-    if (!MGlobal::executeCommand(fullScript.c_str(), displayEnabled, undoEnabled)) {
+    int result = 0;
+    if (!MGlobal::executeCommand(fullScript.c_str(), result, displayEnabled, undoEnabled)
+        || result != 1) {
+        _success = false;
+        _needUndo = true;
         MString errMsg;
         errMsg.format("Failed to ^1s.", _scriptName.c_str());
         MGlobal::displayWarning(errMsg);
         return;
     }
 
+    _success = true;
     _needUndo = true;
 }
 
