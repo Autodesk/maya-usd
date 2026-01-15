@@ -16,6 +16,7 @@
 
 #include "utils.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateStageWithNewLayerCommand.h>
@@ -182,5 +183,7 @@ std::string handleAssetPathThatMaybeRelativeToLayer(
     return PXR_NS::UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer(
         fileName, attrName, layer, optionVarName);
 }
+
+MString getProxyShapeDisplayFilter() { return MayaUsdProxyShapeBase::displayFilterName; }
 
 } // End of namespace MAYAUSDAPI_NS_DEF
