@@ -934,13 +934,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         if (stageCached) {
             sharedUsdStage = UsdUtilsStageCache::Get().Find(cacheId);
 
-            // Check what is the cache connected to
-            MStringArray result;
-            MGlobal::executeCommand(
-                ("listConnections -t shape -shapes on " + this->name()), result);
-
             // The stage is only incoming if the cache is connected to a shape
-            if (stageCached && result.length()) {
+            if (stageCached && hasStageCacheIdConnections()) {
                 isIncomingStage = true;
             }
 
@@ -1744,17 +1739,23 @@ bool MayaUsdProxyShapeBase::isStageIncoming() const
         const auto cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
         const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
 
-        // Check what is the cache connected to
-        MStringArray result;
-        MGlobal::executeCommand(("listConnections -t shape -shapes on " + this->name()), result);
-
         // The stage is only incoming if the cache is connected to a shape
-        if (stageCached && result.length()) {
+        if (stageCached && hasStageCacheIdConnections()) {
             isIncomingStage = true;
         }
     }
 
     return isIncomingStage;
+}
+
+bool MayaUsdProxyShapeBase::hasStageCacheIdConnections() const
+{
+    MStringArray result;
+    MGlobal::executeCommand(
+        MString("listConnections -t shape -shapes on -source on -destination off ") + this->name()
+            + MString(".StageCacheId"),
+        result);
+    return result.length() > 0;
 }
 
 bool MayaUsdProxyShapeBase::isIncomingLayer(const std::string& layerIdentifier) const
