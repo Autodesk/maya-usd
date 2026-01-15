@@ -358,8 +358,10 @@ public:
     {
         if (!model)
             return;
+        const auto& host = ApplicationHost::instance();
+
         QString start = model->data(index, Qt::DisplayRole).toString();
-        QString dir = QFileDialog::getExistingDirectory(
+        QString dir = host.getExistingDirectory(
             listview,
             tr("Select Directory"),
             start,
@@ -444,14 +446,14 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
 
     browseAction->setToolTip(tr("Browse to select a mapping file that contains data to be used by "
                                 "the resolver, such as search paths and tokens."));
-    connect(browseAction, &QAction::triggered, this, [this, d]() {
+    connect(browseAction, &QAction::triggered, this, [this, d, &host]() {
         QString startDir;
         if (!d->mappingFilePath.isEmpty()) {
             QFileInfo fileInfo(d->mappingFilePath);
             startDir = fileInfo.absoluteDir().path();
         }
-        QString filePath = QFileDialog::getOpenFileName(
-            this, tr("Select Mapping File"), startDir, tr("USD Files (*.usda);;All Files (*.*)"));
+        QString filePath = host.getOpenFileName(
+            this, tr("Select Mapping File"), startDir, host.getUSDDialogFileFilters());
         if (!filePath.isEmpty()) {
             if (filePath != d->mappingFilePath) {
                 d->ui->mappingFilePath->setText(filePath);
@@ -582,7 +584,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         connect(addBrowseButton, &QToolButton::clicked, this, [this]() {
             Q_D(USDAssetResolverSettingsWidget);
             QString filePath
-                = QFileDialog::getExistingDirectory(this, tr("Select User Path to Add"));
+                = ApplicationHost::instance().getExistingDirectory(this, tr("Select User Path to Add"));
             if (!filePath.isEmpty()) {
                 if (d->userPathsModel->insertRow(d->userPathsModel->rowCount())) {
                     QModelIndex index = d->userPathsModel->index(d->userPathsModel->rowCount() - 1);

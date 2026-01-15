@@ -17,7 +17,9 @@
 #pragma once
 
 #include <QtCore/QObject>
+#include <QtCore/QString>
 #include <QtGui/QIcon>
+#include <QtWidgets/QFileDialog>
 
 namespace Adsk {
 
@@ -70,6 +72,19 @@ public:
     virtual QVariant loadPersistentData(const QString& group, const QString& key) const;
     virtual void
     savePersistentData(const QString& group, const QString& key, const QVariant& value) const;
+
+    virtual QString getUSDDialogFileFilters() const;
+    virtual QString getOpenFileName(
+        QWidget*       parent = nullptr,
+        const QString& caption = QString(),
+        const QString& dir = QString(),
+        const QString& filter = QString()) const;
+
+    virtual QString getExistingDirectory(
+        QWidget*             parent = nullptr,
+        const QString&       caption = QString(),
+        const QString&       dir = QString(),
+        QFileDialog::Options options = QFileDialog::ShowDirsOnly) const;
 
     static ApplicationHost& instance();
 
