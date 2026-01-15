@@ -137,7 +137,13 @@ void UsdUndoDuplicateCommand::execute()
         if (isInSession)
             SdfJustCreatePrimInLayer(targetLayer, _usdDstPath);
 
-        const bool result = (isFirst || isInSession)
+        // If it's the first layer processed, or if a session layer, we want a basic copy of the
+        // specs on this layer. For session layers we want to keep changes in the same layers.
+        // However, if the target itself is the session layer, then we need a merge, otherwise we
+        // would overwrite previously written specs to that layer.
+        bool simpleCopy = isFirst || (isInSession && _dstLayer != layer);
+
+        const bool result = simpleCopy
             ? SdfCopySpec(layer, path, targetLayer, _usdDstPath)
             : UsdUfe::mergePrims(stage, layer, path, stage, targetLayer, _usdDstPath, options);
 
