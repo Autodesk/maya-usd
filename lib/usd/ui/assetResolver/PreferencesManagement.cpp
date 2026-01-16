@@ -43,6 +43,9 @@ void InitializeUsdPreferences()
 
 const UsdPreferenceOptions GetUsdPreferences()
 {
+    // Reload from Maya option vars to ensure we have the latest values
+    UsdPreferenceOptions::GetInstance().Load();
+
     UsdPreferenceOptions options = UsdPreferenceOptions::GetInstance();
 
     // Fill in the environment search paths from the context data manager
