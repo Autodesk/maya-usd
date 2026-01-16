@@ -41,20 +41,3 @@ def include_maya_project_tokens():
         for token in tokenList:
             tokenValue = cmds.workspace(fileRuleEntry=token)
             mayaUsdResolver.AddStaticToken(token, tokenValue)
-
-def unload_maya_project_tokens():
-    ''' Unload Maya project tokens from the USD Asset Resolver. '''
-    ar.AssetResolverContextDataRegistry.RemoveContextData("MayaUSDExtension")
-
-def load_mappingfile(mappingFilePath=None):
-    try:
-        adskResolver = pxrAr.GetUnderlyingResolver()
-        ctx = adskResolver.GetCurrentContext()
-        ctx = ar.AdskResolverContext()
-        ar.AssetResolverContextDataRegistry.RemoveContextData("Maya Preference Mapping File")
-        ar.AssetResolverContextDataRegistry.RegisterContextData("Maya Preference Mapping File").LoadMappingFile(mappingFilePath)
-        adskResolver.RefreshContext(ctx)
-
-    except Exception as e:
-        MGlobal.displayError(f"Error loading mapping file: {e}")
-        return
