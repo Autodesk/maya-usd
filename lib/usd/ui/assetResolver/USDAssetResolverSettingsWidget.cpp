@@ -583,8 +583,8 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         addBrowseButton->setStyleSheet("QToolButton { background: transparent; }");
         connect(addBrowseButton, &QToolButton::clicked, this, [this]() {
             Q_D(USDAssetResolverSettingsWidget);
-            QString filePath
-                = ApplicationHost::instance().getExistingDirectory(this, tr("Select User Path to Add"));
+            QString filePath = ApplicationHost::instance().getExistingDirectory(
+                this, tr("Select User Path to Add"));
             if (!filePath.isEmpty()) {
                 if (d->userPathsModel->insertRow(d->userPathsModel->rowCount())) {
                     QModelIndex index = d->userPathsModel->index(d->userPathsModel->rowCount() - 1);

@@ -142,7 +142,7 @@ void ApplicationHost::savePersistentData(
 QString ApplicationHost::getUSDDialogFileFilters() const
 {
     // A hard-coded default implementation could be:
-    //return tr("All USD Files (*.usd *.usda *.usdc);;All Files (*.*)");
+    // return tr("All USD Files (*.usd *.usda *.usdc);;All Files (*.*)");
 
     MString filters = MGlobal::executePythonCommandStringResult(
         "from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
@@ -168,8 +168,8 @@ QString ApplicationHost::getOpenFileName(
     const QString& filter) const
 {
     // A default implementation using QFileDialog
-    //QString filePath = QFileDialog::getOpenFileName(parent, caption, dir, filter);
-    //return filePath;
+    // QString filePath = QFileDialog::getOpenFileName(parent, caption, dir, filter);
+    // return filePath;
 
     // Maya specific implementation.
     const char* script = R"mel(
@@ -204,8 +204,8 @@ QString ApplicationHost::getExistingDirectory(
     QFileDialog::Options options) const
 {
     // A default implementation using QFileDialog
-    //QString pickedDir = QFileDialog::getExistingDirectory(parent, caption, dir, options);
-    //return pickedDir;
+    // QString pickedDir = QFileDialog::getExistingDirectory(parent, caption, dir, options);
+    // return pickedDir;
 
     // Maya specific implementation.
     const int   fileMode = (options | QFileDialog::ShowDirsOnly) ? 3 : 2;
