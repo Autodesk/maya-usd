@@ -80,6 +80,8 @@
 #include <mayaUsdUI/ui/AssetResolverDialogCmd.h>
 #include <mayaUsdUI/ui/AssetResolverProjectChangeTracker.h>
 #include <mayaUsdUI/ui/AssetResolverUtils.h>
+#include <mayaUsdUI/ui/PreferencesManagement.h>
+#include <mayaUsdUI/ui/PreferencesOptions.h>
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #endif
@@ -424,67 +426,19 @@ MStatus initializePlugin(MObject obj)
 #endif
 
 #ifdef WANT_AR_BUILD
-    // Load Maya tokens to AdskAssetResolver if option variable is set.
+    // Initialize USD preferences and apply them to the Asset Resolver
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
     if (resolverPlugin) {
+        // Apply all USD preferences from option vars to the Asset Resolver
+        MayaUsd::PreferencesManagement::InitializeUsdPreferences();
+
+        // Load Maya project tokens to AdskAssetResolver if the preference is enabled
+        // This needs to be done after InitializeUsdPreferences()
         static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
         if (MGlobal::optionVarExists(IncludeMayaTokenInAR)
             && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
             MayaUsd::AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
-        }
-
-        static const MString AdskAssetResolverMappingFile = "mayaUsd_AdskAssetResolverMappingFile";
-        MGlobal::displayInfo("mayaUsdPlugin: AdskAssetResolver plugin found.");
-        if (MGlobal::optionVarExists(AdskAssetResolverMappingFile)) {
-            MString file = MGlobal::optionVarStringValue(AdskAssetResolverMappingFile);
-            MGlobal::displayInfo(
-                MString("mayaUsdPlugin: Loading AdskAssetResolver mapping file ") + file);
-            MGlobal::executePythonCommand(
-                "try:\n"
-                "    import mayaUsd_AdskAssetResolver\n"
-                "    mayaUsd_AdskAssetResolver.load_mappingfile(r\""
-                + file
-                + "\" )\n"
-                  "except:\n"
-                  "    from maya.OpenMaya import MGlobal\n"
-                  "    MGlobal.displayError('Error loading mapping File at start')\n"
-                  "    pass\n");
-        }
-
-        // Change the User Paths First setting if the option variable is set.
-        if (MGlobal::optionVarExists("mayaUsd_AdskAssetResolverUserPathsFirst")) {
-            std::vector<std::string> activeContextDataList
-                = Adsk::AssetResolverContextDataRegistry::GetActiveContextData();
-            auto userPathContextIt = std::find(
-                activeContextDataList.begin(), activeContextDataList.end(), "MayaUsd_UserData");
-            if (MGlobal::optionVarIntValue("mayaUsd_AdskAssetResolverUserPathsFirst")) {
-                if (userPathContextIt != activeContextDataList.end()) {
-                    // move the user path context to the front of the list
-                    std::rotate(
-                        activeContextDataList.begin(), userPathContextIt, userPathContextIt + 1);
-                }
-            } else {
-                if (userPathContextIt != activeContextDataList.end()) {
-                    // move the user path context to the end of the list
-                    std::rotate(
-                        userPathContextIt, userPathContextIt + 1, activeContextDataList.end());
-                }
-            }
-        }
-
-        // Change the User Paths Only setting if the option variable is set.
-        if (MGlobal::optionVarExists("mayaUsd_AdskAssetResolverUserPathsOnly")) {
-            bool userPathsOnly
-                = MGlobal::optionVarIntValue("mayaUsd_AdskAssetResolverUserPathsOnly");
-            auto allContextData = Adsk::AssetResolverContextDataRegistry::GetAvailableContextData();
-            for (auto& context : allContextData) {
-                if (context.first
-                    == Adsk::AssetResolverContextDataRegistry::
-                        GetEnvironmentMappingContextDataName()) {
-                    context.second = !userPathsOnly;
-                }
-            }
         }
     }
 

@@ -16,6 +16,8 @@
 #include "USDAssetResolverDialog.h"
 
 #include "AssetResolverUtils.h"
+#include "PreferencesManagement.h"
+#include "PreferencesOptions.h"
 #include "USDAssetResolverSettingsWidget.h"
 
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
@@ -73,13 +75,12 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
 #endif
     }
 
-    Adsk::AdskResolverContext adskCtx = Adsk::AdskResolverContext();
-    auto                      allSearchPaths = adskCtx.GetSearchPaths();
     QStringList               extAndEnvPathList;
-    for (const auto& path : allSearchPaths) {
-        // if its not already in userDataExt, add it
-        if (std::find(userSearchPaths.begin(), userSearchPaths.end(), path)
-            == userSearchPaths.end()) {
+    const auto envContextData = Adsk::AssetResolverContextDataRegistry::GetContextData(
+        Adsk::AssetResolverContextDataRegistry::GetEnvironmentMappingContextDataName());
+    const std::vector<std::string>& envContextSearchPaths = envContextData.value().get().searchPaths;
+    if (envContextData.has_value()) {
+        for (const auto& path : envContextSearchPaths) {
             extAndEnvPathList << QString::fromStdString(path);
         }
     }
@@ -173,126 +174,22 @@ void USDAssetResolverDialog::OnIncludeProjectTokensChanged(bool include)
 
 void USDAssetResolverDialog::OnSaveRequested()
 {
-    {
-        // prevent multiple notifications while we update context data
-        // the notification will be sent at the end of this block
-        // and will trigger the resolver to refresh
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-        Adsk::PreventContextDataChangedNotification preventNotifications;
-#endif
+    // Get the current preferences
+    UsdPreferenceOptions oldOptions = PreferencesManagement::GetUsdPreferences();
+    UsdPreferenceOptions newOptions;
 
-        auto allContextData = AssetResolverContextDataRegistry::GetAvailableContextData();
-        // helper to set the state of a context data, adding it if it does not exist
-        auto setContextDataState = [&allContextData](const std::string& name, bool active) {
-            for (auto& contextData : allContextData) {
-                if (contextData.first == name) {
-                    contextData.second = active;
-                    return;
-                }
-            }
-            // introducing a new context data and its state
-            allContextData.insert(allContextData.begin(), { name, active });
-        };
+    // Set the new options from dialog values
+    newOptions.SetUserSearchPaths(userSearchPaths);
+    newOptions.SetMappingFile(mappingFilePath);
+    newOptions.SetUsingProjectTokens(includeMayaProjectTokens);
+    newOptions.SetUsingUserSearchPathsFirst(userPathsFirst);
+    newOptions.SetIncludingEnvironmentSearchPaths(!userPathsOnly);
 
-        // Update user search paths
-        {
-            auto userSearchPathsContextData
-                = Adsk::AssetResolverContextDataRegistry::GetContextData(
-                    "MayaUsd_UserData", true);
-            if (userSearchPathsContextData.has_value()) {
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-                userSearchPathsContextData.value().get().searchPaths.Clear();
-                userSearchPathsContextData.value().get().searchPaths.AddPaths(userSearchPaths);
-#else
-                userSearchPathsContextData.value().get().searchPaths. = userSearchPaths;
-#endif
-                setContextDataState("MayaUsd_UserData", true);
-            } else {
-                setContextDataState("MayaUsd_UserData", false);
-            }
+    // Apply the changes to the asset resolver
+    PreferencesManagement::ApplyUsdPreferences(oldOptions, newOptions);
 
-            // save the search paths to option var
-            std::string optionVarUserSearchPathsStr = TfStringJoin(userSearchPaths, ";");
-            MString     optionVarUserSearchPaths(optionVarUserSearchPathsStr.c_str());
-            MGlobal::setOptionVarValue(
-                "mayaUsd_AdskAssetResolverUserSearchPaths", optionVarUserSearchPaths);
-        }
-
-        // Update mapping file
-        {
-            auto mappingFileContent = Adsk::GetContextDataFromFile(mappingFilePath);
-            if (mappingFileContent.has_value()) {
-                auto mappingFileContextData
-                    = Adsk::AssetResolverContextDataRegistry::GetContextData(
-                        "MayaUsd_MappingFile", true);
-                if (mappingFileContextData.has_value()) {
-                    mappingFileContextData.value().get() = mappingFileContent.value();
-                    setContextDataState("MayaUsd_MappingFile", true);
-                }
-            } else {
-                Adsk::AssetResolverContextDataRegistry::RemoveContextData("MayaUsd_MappingFile");
-                setContextDataState("MayaUsd_MappingFile", false);
-            }
-
-            // save mapping file path to option var
-            MGlobal::setOptionVarValue(
-                "mayaUsd_AdskAssetResolverMappingFile", MString(mappingFilePath.c_str()));
-        }
-
-        // Update project tokens
-        {
-            //// apply include project tokens changes if needed
-            //if (includeMayaProjectTokens) {
-            //    AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
-            //} else {
-            //    AssetResolverUtils::excludeMayaProjectTokensFromAdskAssetResolver();
-            //}
-            setContextDataState("MayaUsd_IncludeToken", includeMayaProjectTokens);
-            MGlobal::setOptionVarValue(
-                "mayaUsd_AdskAssetResolverIncludeMayaToken", includeMayaProjectTokens);
-        }
-
-        setContextDataState(
-            AssetResolverContextDataRegistry::GetEnvironmentMappingContextDataName(),
-            !userPathsOnly);
-
-        // save option vars for user paths settings
-        MGlobal::setOptionVarValue("mayaUsd_AdskAssetResolverUserPathsFirst", userPathsFirst);
-        MGlobal::setOptionVarValue("mayaUsd_AdskAssetResolverUserPathsOnly", userPathsOnly);
-
-        // now that we have processed options, we can make a list of the selected context data
-        std::vector<std::string> selectedContextData;
-        if (!userPathsFirst) {
-            selectedContextData.push_back(
-                AssetResolverContextDataRegistry::GetEnvironmentMappingContextDataName());
-        }
-        for (const auto& contextData : allContextData) {
-            if (contextData.second) {
-                selectedContextData.push_back(contextData.first);
-            }
-        }
-        // ordering user search paths first if the option is set
-        if (!userPathsOnly) {
-            auto userIt = std::find(
-                selectedContextData.begin(),
-                selectedContextData.end(),
-                "MayaUsd_UserData");
-            auto envIt = std::find(
-                selectedContextData.begin(),
-                selectedContextData.end(),
-                AssetResolverContextDataRegistry::GetEnvironmentMappingContextDataName());
-            if (userPathsFirst && userIt != selectedContextData.end()
-                && envIt != selectedContextData.end() && envIt > userIt) {
-                // move user paths before environment paths
-                std::swap(*envIt, *userIt);
-            }
-        }
-        AssetResolverContextDataRegistry::SetActiveContextData(selectedContextData);
-    }
-
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
-    Adsk::SendContextDataChanged(Adsk::ContextDataType::ALL);
-#endif
+    // Save the preferences to Maya option vars
+    PreferencesManagement::SaveUsdPreferences(newOptions);
 
     // Also close the window
     accept();
