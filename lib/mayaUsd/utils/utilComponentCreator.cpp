@@ -126,7 +126,7 @@ void saveAdskUsdComponent(const std::string& proxyPath)
     }
 }
 
-bool isUnsavedAdskUsdComponent(const pxr::UsdStageRefPtr stage)
+bool isUnsavedAdskUsdComponent(const PXR_NS::UsdStageRefPtr stage)
 {
     // If the component is still only really in memory, there is nothing to refresh.
     // Detect this case by check if the root layer is empty on disk.
@@ -252,7 +252,7 @@ std::string moveAdskUsdComponent(
 }
 
 bool shouldDisplayComponentInitialSaveDialog(
-    const pxr::UsdStageRefPtr stage,
+    const PXR_NS::UsdStageRefPtr stage,
     const std::string&        proxyShapePath)
 {
     if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
