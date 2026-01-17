@@ -26,8 +26,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
-#include <ghc/filesystem.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE

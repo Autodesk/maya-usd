@@ -37,7 +37,6 @@
 #include <maya/MQtUtil.h>
 
 #include <QtCore/QTimer>
-#include <ghc/filesystem.hpp>
 
 #include <algorithm>
 #include <string>
