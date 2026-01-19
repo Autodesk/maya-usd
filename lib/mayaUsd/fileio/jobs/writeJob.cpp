@@ -433,6 +433,11 @@ bool UsdMaya_WriteJobImpl::WriteJobs(const std::vector<UsdMaya_WriteJob*>& jobs)
         firstArgs.upAxis == UsdMayaJobExportArgsTokens->none ? nullptr : &usdUpAxis,
         firstArgs.unit == UsdMayaJobExportArgsTokens->none ? nullptr : &usdMetersPerUnit);
 
+    if (!unitsChanger.commandExecutedSuccessfully()) {
+        MGlobal::displayError("Failed to adjust Maya scene up-axis for USD export. Aborting.");
+        return false;
+    }
+
     const CurrentRenderLayerGuard currentLayerGuard;
     if (!_ActivateRenderLayer(renderLayer)) {
         return false;
