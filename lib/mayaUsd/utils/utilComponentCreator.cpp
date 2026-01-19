@@ -253,7 +253,7 @@ std::string moveAdskUsdComponent(
 
 bool shouldDisplayComponentInitialSaveDialog(
     const PXR_NS::UsdStageRefPtr stage,
-    const std::string&        proxyShapePath)
+    const std::string&           proxyShapePath)
 {
     if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
         return false;
