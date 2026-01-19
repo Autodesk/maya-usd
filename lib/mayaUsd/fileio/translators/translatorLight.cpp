@@ -92,17 +92,17 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxLightAPI&      usdLight,
     MFnLight&                  mayaLight,
+    bool                       exportTimeSamples,
     FlexibleSparseValueWriter* valueWriter)
 {
     MStatus status;
-    float   intensity = mayaLight.intensity(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    UsdMayaWriteUtil::SetAttribute(usdLight.GetIntensityAttr(), intensity, usdTime, valueWriter);
 
-    UsdPrim prim = usdLight.GetPrim();
+    // Usd Splines can only animate attributes that are single floating point values.
+    // So color cannot be spline animates, thus we always export them as time samples.
+    // For the other "common" light attributes, we only export them if requested.
 
     MColor color = mayaLight.color(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    CHECK_MSTATUS_AND_RETURN(status, false)
     UsdMayaWriteUtil::SetAttribute(
         usdLight.GetColorAttr(), GfVec3f(color.r, color.g, color.b), usdTime, valueWriter);
 
@@ -110,16 +110,19 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(
     // in renderers. We won't be authoring it here, so that it follows USD default (false)
 
     bool rayTraceShadows = mayaLight.useRayTraceShadows(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    CHECK_MSTATUS_AND_RETURN(status, false)
     // Here we're just considering "useRayTracedShadows" to enable UsdLux shadows,
     // and we're ignoring maya's "depthMapShadows" attribute
     if (rayTraceShadows) {
+        UsdPrim         prim = usdLight.GetPrim();
         UsdLuxShadowAPI shadowAPI = UsdLuxShadowAPI::Apply(prim);
-        UsdMayaWriteUtil::SetAttribute(
-            shadowAPI.CreateShadowEnableAttr(), true, usdTime, valueWriter);
+        if (exportTimeSamples) {
+            UsdMayaWriteUtil::SetAttribute(
+                shadowAPI.CreateShadowEnableAttr(), true, usdTime, valueWriter);
+        }
 
         const MColor shadowColor = mayaLight.shadowColor(&status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
+        CHECK_MSTATUS_AND_RETURN(status, false)
         UsdMayaWriteUtil::SetAttribute(
             shadowAPI.CreateShadowColorAttr(),
             GfVec3f(shadowColor.r, shadowColor.g, shadowColor.b),
@@ -127,18 +130,26 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(
             valueWriter);
     }
 
-    // Some renderers have a float value for diffuse and specular just like UsdLuxLightAPI does (it
-    // defaults to 1) But Maya lights also have a checkbox to enable/disable diffuse and specular.
-    // We can just set it to 0 or 1 depending on this boolean
-    bool lightDiffuse = mayaLight.lightDiffuse(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    UsdMayaWriteUtil::SetAttribute(
-        usdLight.GetDiffuseAttr(), lightDiffuse ? 1.f : 0.f, usdTime, valueWriter);
+    if (exportTimeSamples) {
 
-    bool lightSpecular = mayaLight.lightSpecular(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-    UsdMayaWriteUtil::SetAttribute(
-        usdLight.GetSpecularAttr(), lightSpecular ? 1.f : 0.f, usdTime, valueWriter);
+        float intensity = mayaLight.intensity(&status);
+        CHECK_MSTATUS_AND_RETURN(status, false)
+        UsdMayaWriteUtil::SetAttribute(
+            usdLight.GetIntensityAttr(), intensity, usdTime, valueWriter);
+
+        // Some renderers have a float value for diffuse and specular just like UsdLuxLightAPI does
+        // (it defaults to 1) But Maya lights also have a checkbox to enable/disable diffuse and
+        // specular. We can just set it to 0 or 1 depending on this boolean
+        bool lightDiffuse = mayaLight.lightDiffuse(&status);
+        CHECK_MSTATUS_AND_RETURN(status, false)
+        UsdMayaWriteUtil::SetAttribute(
+            usdLight.GetDiffuseAttr(), lightDiffuse ? 1.f : 0.f, usdTime, valueWriter);
+
+        bool lightSpecular = mayaLight.lightSpecular(&status);
+        CHECK_MSTATUS_AND_RETURN(status, false)
+        UsdMayaWriteUtil::SetAttribute(
+            usdLight.GetSpecularAttr(), lightSpecular ? 1.f : 0.f, usdTime, valueWriter);
+    }
 
     return true;
 }

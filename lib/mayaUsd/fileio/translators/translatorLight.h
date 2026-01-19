@@ -47,6 +47,7 @@ struct UsdMayaTranslatorLight
         const UsdTimeCode&         usdTime,
         const UsdLuxLightAPI&      usdLight,
         MFnLight&                  mayaLight,
+        bool                       exportTimeSamples,
         FlexibleSparseValueWriter* valueWriter = nullptr);
 
     MAYAUSD_CORE_PUBLIC
