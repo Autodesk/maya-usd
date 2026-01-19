@@ -49,7 +49,7 @@ void saveAdskUsdComponent(const std::string& proxyPath);
 /*! \brief Returns whether the stage is an new unsaved Autodesk USD Component.
  */
 MAYAUSD_CORE_PUBLIC
-bool isUnsavedAdskUsdComponent(const pxr::UsdStageRefPtr stage);
+bool isUnsavedAdskUsdComponent(const PXR_NS::UsdStageRefPtr stage);
 
 /*! \brief Reloads the Autodesk USD Component identified by \p proxyPath.
  *
@@ -82,8 +82,8 @@ std::string moveAdskUsdComponent(
  */
 MAYAUSD_CORE_PUBLIC
 bool shouldDisplayComponentInitialSaveDialog(
-    const pxr::UsdStageRefPtr stage,
-    const std::string&        proxyShapePath);
+    const PXR_NS::UsdStageRefPtr stage,
+    const std::string&           proxyShapePath);
 
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF

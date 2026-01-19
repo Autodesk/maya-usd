@@ -457,6 +457,21 @@ global proc mayaUsdMenu_selectMenuCallback() {
 ///////////////////////////////////////////////////////////////////////////////
 // mayaUsdMenu_windowMenuCallback
 // setup the items in Maya's "Window" menu
+//
+// Maya is using a post callback to build it's menu which, for MayaUSD,
+// is this function.
+//
+// Note: this callback is only called once when the menu is created.
+//       This means that the `usdUfe.triggerUICallback` called below
+//       will only be called once. If another plugin is loaded later
+//       on and would depend on the `usdUfe.triggerUICallback` to add
+//       their own menu item, they would miss the opportunity.
+//
+//       That is why there is the function `mayaUsdMenu_windowUsdToolsSubMenuId`
+//       which allow other plugins to retrieve the USD Tools submenu ID
+//       and add their items to it. If the submenu ID is valid, it means
+//       that the menu has already been created and the other plugin
+//       can add their own menu item to it.
 global proc mayaUsdMenu_windowMenuCallback() {
     if (`exists mayaUsdLayerEditorWindow` && !(`menuItem -query -exists wmUsdLayerEditorMenuitem`))
     {
@@ -499,6 +514,27 @@ global proc mayaUsdMenu_windowMenuCallback() {
 		   "usdUfe.triggerUICallback('mayaUsdWindowsMenuLoaded', context, data);");
     }
     removeMenuCallback(`setParent -q -menu`, "mayaUsdMenu_windowMenuCallback");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Retrieve the menu ID of the USD Tools submenu in the Window menu
+//
+// Note: The Maya Windows menu callback is only called once when the menu
+//       is created.
+//
+//       This means that the `usdUfe.triggerUICallback` called above
+//       will only be called once. If another plugin is loaded later
+//       on and would depend on the `usdUfe.triggerUICallback` to add
+//       their own menu item, they would miss the opportunity.
+//
+//       That is why there is this function (`mayaUsdMenu_windowUsdToolsSubMenuId`)
+//       which allow other plugins to retrieve the USD Tools submenu ID
+//       and add their items to it. If the submenu ID is valid, it means
+//       that the menu has already been created and the other plugin
+//       can add their own menu item to it.
+global proc string mayaUsdMenu_windowUsdToolsSubMenuId() {
+    global string $gMayaUsdWindowsUsdToolsSubMenu;
+    return $gMayaUsdWindowsUsdToolsSubMenu;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
