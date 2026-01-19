@@ -127,7 +127,7 @@ public:
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ComputeContext);
 
 private:
-    pxr::SdfLayerHandle getLayer(bool useTargetLayer)
+    PXR_NS::SdfLayerHandle getLayer(bool useTargetLayer)
     {
         if (useTargetLayer || useTargetedLayerInProxyAccessor()) {
             return _stage->GetEditTarget().GetLayer();

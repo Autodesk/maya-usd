@@ -629,7 +629,7 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
     if (ComponentUtils::isAdskUsdComponent(proxyPath)) {
         const auto layerIds = ComponentUtils::getAdskUsdComponentLayersToSave(proxyPath);
         for (const auto& ccLayerId : layerIds) {
-            auto ccLayer = pxr::SdfLayer::FindOrOpen(ccLayerId);
+            auto ccLayer = PXR_NS::SdfLayer::FindOrOpen(ccLayerId);
             if (!ccLayer || ccLayer->IsAnonymous()) {
                 continue;
             }
