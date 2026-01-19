@@ -95,8 +95,10 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     // the command does nothing and the destination item is the same
     // as the source item.
     const std::string validNewName = TfMakeValidIdentifier(newNameStr);
-    if (validNewName != prim.GetName())
-        _newName = UsdUfe::uniqueChildName(prim.GetParent(), validNewName);
+    if (validNewName != prim.GetName()) {
+        const std::string oldName = srcItem->prim().GetName();
+        _newName = UsdUfe::uniqueChildName(prim.GetParent(), validNewName, oldName);
+    }
     else
         _ufeDstItem = srcItem;
 }
