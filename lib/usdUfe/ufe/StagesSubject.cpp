@@ -433,9 +433,9 @@ void StagesSubject::stageChanged(
             // Special case to detect when an xformop is added or removed from a prim.
             // We need to send some notifications so DCC can update (such as on undo
             // to move the transform manipulator back to original position).
-            const TfToken nameToken = changedPath.GetNameToken();
-            auto          usdPrimPathStr = changedPath.GetPrimPath().GetString();
-            auto          ufePath
+            const TfToken& nameToken = changedPath.GetNameToken();
+            auto           usdPrimPathStr = changedPath.GetPrimPath().GetString();
+            auto           ufePath
                 = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, getUsdRunTimeId(), '/');
             if (isTransformChange(nameToken)) {
                 if (!UsdUfe::InTransform3dChange::inTransform3dChange()) {
@@ -468,6 +468,15 @@ void StagesSubject::stageChanged(
             ufePath = stagePath(sender)
                 + Ufe::PathSegment(usdPrimPathStr, UsdUfe::getUsdRunTimeId(), '/');
             prim = stage->GetPrimAtPath(changedPath);
+        }
+
+        // Check the path string to see if we are dealing with a prototype,
+        // this should work for both valid and invalid prims.
+        // Prototypes are generated on the fly to support instancing, they are
+        // not meant to be authored directly, they are considered an implementation
+        // detail of USD, and we do not want to expose them to UFE.
+        if (UsdPrim::IsPrototypePath(changedPath) || UsdPrim::IsPathInPrototype(changedPath)) {
+            continue;
         }
 
         if (prim.IsValid() && !InPathChange::inPathChange()) {
@@ -657,7 +666,7 @@ void StagesSubject::stageChanged(
     }
 
     // Special case when we are notified, but no paths given.
-    if (notice.GetResyncedPaths().empty() && notice.GetChangedInfoOnlyPaths().empty()) {
+    if (resyncPaths.empty() && changedInfoOnlyPaths.empty()) {
         auto                       ufePath = stagePath(sender);
         Ufe::AttributeValueChanged vc(ufePath, "/");
         notifyWithoutExceptions<Ufe::Attributes>(vc);
