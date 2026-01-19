@@ -104,16 +104,14 @@ void ApplyUsdPreferences(
                     = newOptions.GetUserSearchPaths();
 #endif
                 setContextDataState(SESSION_USER_PATHS_DATA_SET_NAME, true);
-            }
-            else {
+            } else {
                 setContextDataState(SESSION_USER_PATHS_DATA_SET_NAME, false);
             }
         }
 
         // Update mapping file
         if (options.GetMappingFile() != newOptions.GetMappingFile()) {
-            auto mappingFileContent
-                = Adsk::GetContextDataFromFile(newOptions.GetMappingFile());
+            auto mappingFileContent = Adsk::GetContextDataFromFile(newOptions.GetMappingFile());
             if (mappingFileContent.has_value()) {
                 auto preferenceMappingFileContextData
                     = Adsk::AssetResolverContextDataRegistry::GetContextData(

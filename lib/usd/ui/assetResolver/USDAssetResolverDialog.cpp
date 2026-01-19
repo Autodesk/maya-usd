@@ -63,8 +63,7 @@ void USDAssetResolverDialog::loadOptions(const UsdPreferenceOptions& options)
 {
     if (settingsWidget) {
         settingsWidget->setIncludeProjectTokens(options.IsUsingProjectTokens());
-        settingsWidget->setMappingFilePath(
-            QString::fromStdString(options.GetMappingFile()));
+        settingsWidget->setMappingFilePath(QString::fromStdString(options.GetMappingFile()));
 
         settingsWidget->setUserPathsFirst(options.IsUsingUserSearchPathsFirst());
         settingsWidget->setUserPathsOnly(!options.IsIncludingEnvironmentSearchPaths());

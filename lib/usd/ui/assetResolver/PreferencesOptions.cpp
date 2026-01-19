@@ -16,10 +16,10 @@
 #include "PreferencesOptions.h"
 
 #define MNoVersionString
+#include <pxr/base/tf/stringUtils.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
-
-#include <pxr/base/tf/stringUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -79,7 +79,7 @@ void UsdPreferenceOptions::Load()
     }
 
     if (MGlobal::optionVarExists(OPT_VAR_USER_SEARCH_PATHS)) {
-        MString userSearchPathsStr = MGlobal::optionVarStringValue(OPT_VAR_USER_SEARCH_PATHS);
+        MString     userSearchPathsStr = MGlobal::optionVarStringValue(OPT_VAR_USER_SEARCH_PATHS);
         std::string userSearchPathsStdStr(userSearchPathsStr.asChar());
         _userSearchPaths = TfStringSplit(userSearchPathsStdStr, ";");
     } else {
