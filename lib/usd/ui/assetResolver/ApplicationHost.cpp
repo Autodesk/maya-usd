@@ -17,7 +17,9 @@
 
 #include "ApplicationHost.h"
 
+#include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
+#include <maya/MString.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QBoxLayout>
@@ -135,6 +137,102 @@ void ApplicationHost::savePersistentData(
     Q_UNUSED(key);
     Q_UNUSED(value);
     // Default implementation does nothing
+}
+
+QString ApplicationHost::getUSDDialogFileFilters() const
+{
+    // A hard-coded default implementation could be:
+    // return tr("All USD Files (*.usd *.usda *.usdc);;All Files (*.*)");
+
+    MString filters = MGlobal::executePythonCommandStringResult(
+        "from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
+    return MQtUtil::toQString(filters);
+}
+
+MString createMStringFormatArg(const MString& arg, const QString& str)
+{
+    MString mstr(" "); // Default with just space so MString format works correctly
+    if (!str.isEmpty()) {
+        mstr += arg;   // The argument name
+        mstr += " \""; // Surround the argument with quotes
+        mstr += MQtUtil::toMString(str);
+        mstr += "\"";
+    }
+    return mstr;
+}
+
+QString ApplicationHost::getOpenFileName(
+    QWidget*       parent,
+    const QString& caption,
+    const QString& dir,
+    const QString& filter) const
+{
+    // A default implementation using QFileDialog
+    // QString filePath = QFileDialog::getOpenFileName(parent, caption, dir, filter);
+    // return filePath;
+
+    // Maya specific implementation.
+    const char* script = R"mel(
+    global proc string assetResolver_GetOpenFileName()
+    {
+        string $result[] = `fileDialog2
+            -fileMode 1
+            ^1s ^2s ^3s`;
+        if (0 == size($result))
+            return "";
+        else
+            return $result[0];
+    }
+    assetResolver_GetOpenFileName();
+    )mel";
+
+    // Note: the three args are optional, so we only add them if they are not empty.
+    MString commandString;
+    MString strCaption = createMStringFormatArg("-caption", caption);
+    MString strDir = createMStringFormatArg("-dir", dir);
+    MString strFilter = createMStringFormatArg("-fileFilter", filter);
+    commandString.format(script, strCaption, strDir, strFilter);
+
+    MString filePath = MGlobal::executeCommandStringResult(commandString);
+    return MQtUtil::toQString(filePath);
+}
+
+QString ApplicationHost::getExistingDirectory(
+    QWidget*             parent,
+    const QString&       caption,
+    const QString&       dir,
+    QFileDialog::Options options) const
+{
+    // A default implementation using QFileDialog
+    // QString pickedDir = QFileDialog::getExistingDirectory(parent, caption, dir, options);
+    // return pickedDir;
+
+    // Maya specific implementation.
+    const int   fileMode = (options | QFileDialog::ShowDirsOnly) ? 3 : 2;
+    const char* script = R"mel(
+    global proc string assetResolver_GetExistingDirectory()
+    {
+        string $result[] = `fileDialog2
+            -fileMode ^1s
+            ^2s ^3s
+            -okCaption "Select Folder"`;
+        if (0 == size($result))
+            return "";
+        else
+            return $result[0];
+    }
+    assetResolver_GetExistingDirectory();
+    )mel";
+
+    MString commandString;
+    MString strFileMode;
+    strFileMode += fileMode;
+    MString strCaption = createMStringFormatArg("-caption", caption);
+    MString strDir = createMStringFormatArg("-dir", dir);
+    commandString.format(script, strFileMode, strCaption, strDir);
+
+    MString filePath = MGlobal::executeCommandStringResult(commandString);
+    return MQtUtil::toQString(filePath);
 }
 
 } // namespace Adsk
