@@ -304,6 +304,7 @@ public:
     static void           prepareForSaveCheck(bool*, void*);
     static void           cleanupForSave(void*);
     static void           prepareForExportCheck(bool*, void*);
+    static void           cleanupForExport(void*);
     static void           prepareForWriteCheck(bool*, bool);
     static void           cleanupForWrite();
     static void           loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape);
@@ -408,6 +409,8 @@ void LayerDatabase::registerCallbacks()
             MSceneMessage::addCallback(MSceneMessage::kAfterSave, LayerDatabase::cleanupForSave));
         _callbackIds.emplace_back(MSceneMessage::addCallback(
             MSceneMessage::kBeforeExportCheck, LayerDatabase::prepareForExportCheck));
+        _callbackIds.emplace_back(MSceneMessage::addCallback(
+            MSceneMessage::kAfterExport, LayerDatabase::cleanupForExport));
         _callbackIds.emplace_back(
             MSceneMessage::addCallback(MSceneMessage::kAfterNew, LayerDatabase::cleanUpNewScene));
         _callbackIds.emplace_back(
@@ -447,8 +450,15 @@ void LayerDatabase::onStageSet(const MayaUsdProxyStageSetNotice& notice)
     const MayaUsdProxyShapeBase& psb = notice.GetProxyShape();
     UsdStageRefPtr               stage = psb.getUsdStage();
     if (stage) {
+        // Note: for the root layer, the proxy shape always cached root layer pointer,
+        //       so we won't keep it in the database. Proxy shape compute will use its
+        //       own cached value if needed.
         removeLayer(stage->GetRootLayer());
-        removeLayer(stage->GetSessionLayer());
+
+        auto sessionLayer = stage->GetSessionLayer();
+        if (!sessionLayer->IsAnonymous()) {
+            removeLayer(sessionLayer);
+        }
     }
 }
 
@@ -557,8 +567,7 @@ void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
 
     bool       hasAnyProxy = false;
     const bool isExport = true;
-    if (!layerDB.getProxiesToSave(isExport, &hasAnyProxy))
-        return;
+    layerDB.getProxiesToSave(isExport, &hasAnyProxy);
 
     for (const StageSavingInfo& info : layerDB._proxiesToSave)
         handleDirtyStageDuringExport(info);
@@ -566,7 +575,13 @@ void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
     for (const auto& info : layerDB._internalProxiesToSave)
         handleDirtyStageDuringExport(info);
 
-    layerDB.clearProxies();
+    prepareForWriteCheck(retCode, true);
+}
+
+void LayerDatabase::cleanupForExport(void*)
+{
+    // This is call by Maya when the Maya export has finished.
+    cleanupForWrite();
 }
 
 void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
@@ -1220,13 +1235,6 @@ void LayerDatabase::saveUsdLayerToMayaFile(
     pShape->setLayerManager(lm);
 }
 
-static void removeManagerNodeTask(void* arg)
-{
-    MayaUsd::LayerManager* lm = static_cast<MayaUsd::LayerManager*>(arg);
-    removeProcessedLayerManager(lm);
-    LayerDatabase::instance().removeManagerNode(lm, nullptr);
-}
-
 void LayerDatabase::loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape)
 {
     if (_isSavingMayaFile)
@@ -1353,10 +1361,7 @@ void LayerDatabase::loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape)
 
     LayerDatabase::instance().loadLayerManagerSelectedStage(*lm);
 
-    // Note: this function is mostly being called during DG compute, and connections
-    //       cannot be removed during that time. So we schedule the removal of the
-    //       layer manager node for idle time.
-    MGlobal::executeTaskOnIdle(removeManagerNodeTask, lm);
+    removeManagerNode(lm, forProxyShape);
 
     for (auto it = createdLayers.begin(); it != createdLayers.end(); ++it) {
         SdfLayerHandle lh = (*it);
@@ -1496,6 +1501,8 @@ void LayerDatabase::removeManagerNode(
     MDGModifier& modifier = MDGModifierUndoItem::create("Manager node removal");
     modifier.deleteNode(lm->thisMObject());
     modifier.doIt();
+
+    removeProcessedLayerManager(lm);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

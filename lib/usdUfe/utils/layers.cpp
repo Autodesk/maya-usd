@@ -32,10 +32,14 @@ void getAllSublayers(
     std::set<SdfLayerRefPtr>* layerRefs)
 {
     std::deque<SdfLayerRefPtr> processing;
+    std::set<SdfLayerRefPtr>   processed;
     processing.push_back(layer);
     while (!processing.empty()) {
         auto layerToProcess = processing.front();
         processing.pop_front();
+        if (processed.find(layerToProcess) != processed.end())
+            continue;
+        processed.insert(layerToProcess);
         SdfSubLayerProxy sublayerPaths = layerToProcess->GetSubLayerPaths();
         for (auto path : sublayerPaths) {
             SdfLayerRefPtr sublayer = SdfLayer::FindRelativeToLayer(layerToProcess, path);
