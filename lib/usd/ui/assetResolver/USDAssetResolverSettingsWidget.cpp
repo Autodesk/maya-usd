@@ -535,7 +535,17 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         = ApplicationHost::instance().wrapWithCollapseable("Search Paths", d->searchPathsSplitter);
 
     d->ui->mainLayout->addWidget(collapseable, 2, 0, 1, 2);
-    connect(d->ui->saveButton, &QPushButton::clicked, this, [this]() { Q_EMIT saveRequested(); });
+    connect(d->ui->saveButton, &QPushButton::clicked, this, [this, d]() {
+        // Ensure pending text field changes are committed before saving
+        // (in case the user never changes focus)
+        // TODO: maybe address this issue in a more hollistic way
+        QString text = d->ui->mappingFilePath->text();
+        if (text != d->mappingFilePath) {
+            d->mappingFilePath = text;
+            Q_EMIT mappingFilePathChanged(text);
+        }
+        Q_EMIT saveRequested();
+    });
     connect(d->ui->closeButton, &QPushButton::clicked, this, [this]() { Q_EMIT closeRequested(); });
 }
 
