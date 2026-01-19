@@ -83,7 +83,7 @@ std::string moveAdskUsdComponent(
 MAYAUSD_CORE_PUBLIC
 bool shouldDisplayComponentInitialSaveDialog(
     const PXR_NS::UsdStageRefPtr stage,
-    const std::string&        proxyShapePath);
+    const std::string&           proxyShapePath);
 
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
