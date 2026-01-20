@@ -58,18 +58,20 @@ mayaUsd_add_test(${target}
 )
 set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 
-# Install a test to check that the USD component creator plugin loads (if available).
-mayaUsd_get_unittest_target(target testLoadComponentCreatorPlugin.py)
-mayaUsd_add_test(${target}
-    INTERACTIVE
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    PYTHON_SCRIPT testLoadComponentCreatorPlugin.py
-    ENV
-        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-        "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}/../AdskUsdComponentCreator"
-        "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
-)
-set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+if (AdskUsdComponentCreator_FOUND)
+    # Install a test to check that the USD component creator plugin loads (if available).
+    mayaUsd_get_unittest_target(target testLoadComponentCreatorPlugin.py)
+    mayaUsd_add_test(${target}
+        INTERACTIVE
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        PYTHON_SCRIPT testLoadComponentCreatorPlugin.py
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}/../AdskUsdComponentCreator"
+            "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
+    )
+    set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+endif()
 
 foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
