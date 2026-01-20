@@ -111,18 +111,16 @@ void UsdMayaTransformWriter::_ComputeXformOps(
         bool               hasAnimated = false;
         bool               hasStatic = false;
         const unsigned int plugCount = animChannel.valueType == _ValueType::Matrix ? 1u : 3u;
-        if (animChannel.valueType != _ValueType::Value) {
-            for (unsigned int i = 0u; i < plugCount; ++i) {
-                if (animChannel.sampleType[i] == _SampleType::Animated) {
-                    if (animChannel.valueType == _ValueType::Matrix) {
-                        matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
-                    } else {
-                        value[i] = animChannel.GetSourceData(i).Get<double>();
-                    }
-                    hasAnimated = true;
-                } else if (animChannel.sampleType[i] == _SampleType::Static) {
-                    hasStatic = true;
+        for (unsigned int i = 0u; i < plugCount; ++i) {
+            if (animChannel.sampleType[i] == _SampleType::Animated) {
+                if (animChannel.valueType == _ValueType::Matrix) {
+                    matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
+                } else {
+                    value[i] = animChannel.GetSourceData(i).Get<double>();
                 }
+                hasAnimated = true;
+            } else if (animChannel.sampleType[i] == _SampleType::Static) {
+                hasStatic = true;
             }
         }
 
