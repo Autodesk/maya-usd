@@ -713,7 +713,7 @@ The purpose of this command is to control the layer editor window.
 | `-isSessionLayer`       | `-sl`      | Query  | Query if the layer is a session layer         |
 | `-selectPrimsWithSpec`  | `-sp`      |  Edit  | Select the prims with spec in a layer         |
 | `-saveEdits`            | `-sv`      |  Edit  | Save the modifications                        |
-| `-getSelectedLayers`    | `-gsl`     | Query | Query the selected layers in the layer editor (note this is different from the edit target). Returns      yer i     ds |of the selected layers.    |
+| `-getSelectedLayers`    | `-gsl`     | Query | Query the selected layers in the layer editor (note this is different from the edit target). Returns layer ids of the selected layers.    |
 | `-setSelectedLayers`    | `-ssl`     |  Edit  | Set the selected layers in the layer editor with a semicolon delimited string of layer ids. Eg: `-e -ssl "layer_id_1;layer_id_2"`   |
 
 In order to get notifications on layer selection changes, you can use `mayaUsd.lib.registerUICallback` with the `onLayerEditorSelectionChanged` notification:
