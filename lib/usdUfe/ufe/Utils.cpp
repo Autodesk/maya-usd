@@ -1111,7 +1111,15 @@ bool isPropertyMetadataEditAllowed(
     // Verify that the intended target layer is stronger than existing authored opinions.
     const auto strongestLayer
         = UsdUfe::getStrongerLayer(stage, targetLayer, topAuthoredLayer, true);
-    bool allowed = (strongestLayer == targetLayer);
+    /*
+     * Here there are two cases in which we want to allow the metadata edit:
+     *     1. the target layer of the edit is stronger than the strongest layer having an opinion on the matter
+     *     2. the strongest layer having an opinion on the matter is not stronger than the target layer
+     *
+     * The 2nd case appears mostly if the getStrongerLayer function fails to find which layer is stronger,
+     * returning an empty layer reference.
+    */
+    bool allowed = (strongestLayer != topAuthoredLayer);
     if (!allowed && errMsg) {
         std::string strongName;
         if (strongestLayer)
