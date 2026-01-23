@@ -75,6 +75,7 @@ public:
     void muteLayer() override;
     void printLayer() override;
     void clearLayer() override;
+    void mergeWithSublayers() override;
     void selectPrimsWithSpec() override;
     void updateLayerModel() override;
     void lockLayer() override;

@@ -101,6 +101,7 @@ public:
     virtual void muteLayer() = 0;
     virtual void printLayer() = 0;
     virtual void clearLayer() = 0;
+    virtual void mergeWithSublayers() = 0;
     virtual void selectPrimsWithSpec() = 0;
     virtual void updateLayerModel() = 0;
     virtual void lockLayer() = 0;

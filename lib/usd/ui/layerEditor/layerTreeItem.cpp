@@ -639,6 +639,14 @@ void LayerTreeItem::printLayer(QWidget* /*in_parent*/)
 
 void LayerTreeItem::clearLayer(QWidget* /*in_parent*/) { commandHook()->clearLayer(layer()); }
 
+void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
+{
+    if (!_layer || isInvalidLayer())
+        return;
+
+    // TODO
+}
+
 UsdLayerEditor::LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer)
 {
     LayerMasks mask = LayerMasks::LayerMasks_None;
