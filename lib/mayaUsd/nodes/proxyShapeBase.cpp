@@ -1753,7 +1753,7 @@ bool MayaUsdProxyShapeBase::hasStageCacheIdConnections() const
     MStringArray result;
     MGlobal::executeCommand(
         MString("listConnections -t shape -shapes on -source on -destination off ") + this->name()
-            + MString(".StageCacheId"),
+            + MString(".stageCacheId"),
         result);
     return result.length() > 0;
 }
