@@ -206,8 +206,7 @@ void setUniqueChildNameFn(UniqueChildNameFn fn);
 USDUFE_PUBLIC
 std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
 
-//! Return a unique child name.
-//! \param excludeName Optional name to exclude from uniqueness check (e.g., when renaming, to not check against its old value). If nullptr, no name is excluded.
+//! Return a unique child name, excluding specified excludeName.
 USDUFE_PUBLIC
 std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name, const std::string* excludeName);
 

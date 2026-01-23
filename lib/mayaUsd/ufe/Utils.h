@@ -82,9 +82,7 @@ PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name);
 
-//! Returns a unique child name following the Maya standard naming rules.
-//! \param excludeName Optional name to exclude from uniqueness check (e.g., when renaming, to not
-//! check against its old value). If nullptr, no name is excluded.
+//! Returns a unique child name following the Maya standard naming rules, excluding specified name.
 MAYAUSD_CORE_PUBLIC
 std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name, const std::string* excludeName);
 
