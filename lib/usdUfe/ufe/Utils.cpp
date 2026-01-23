@@ -407,13 +407,23 @@ void setUniqueChildNameFn(UniqueChildNameFn fn)
     gUniqueChildNameFn = fn;
 }
 
-std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name, std::optional<std::string_view> excludeName)
+std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
+{
+    return uniqueChildName(usdParent, name, nullptr);
+}
+
+std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name, const std::string* excludeName)
 {
     return gUniqueChildNameFn ? gUniqueChildNameFn(usdParent, name, excludeName)
                               : uniqueChildNameDefault(usdParent, name, excludeName);
 }
 
-std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& name, std::optional<std::string_view> excludeName)
+std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& name)
+{
+    return uniqueChildNameDefault(usdParent, name, nullptr);
+}
+
+std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& name, const std::string* excludeName)
 {
     if (!usdParent.IsValid())
         return std::string();
@@ -435,7 +445,7 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
     //
     // Note: our UsdHierarchy uses instance proxies, so we also use them here.
     for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
-        if (excludeName.has_value() && child.GetName().GetString() == *excludeName)
+        if (excludeName != nullptr && child.GetName().GetString() == *excludeName)
             continue;
         childrenNames.insert(child.GetName());
     }

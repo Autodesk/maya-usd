@@ -40,9 +40,7 @@
 #include <ufe/value.h>
 #endif // UFE_V3_FEATURES_AVAILABLE
 
-#include <optional>
 #include <string>
-#include <string_view>
 
 UFE_NS_DEF
 {
@@ -66,7 +64,7 @@ typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
 typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdProperty& attr, std::string* errMsg);
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
-typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name, std::optional<std::string_view> excludeName);
+typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name, const std::string* excludeName);
 typedef void (*DisplayMessageFn)(const std::string& msg);
 typedef void (*WaitCursorFn)();
 typedef std::string (*DefaultMaterialScopeNameFn)();
@@ -205,9 +203,13 @@ USDUFE_PUBLIC
 void setUniqueChildNameFn(UniqueChildNameFn fn);
 
 //! Return a unique child name.
-//! \param excludeName Optional name to exclude from uniqueness check (e.g., when renaming, to not check against its old value). If not provided, no name is excluded.
 USDUFE_PUBLIC
-std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name, std::optional<std::string_view> excludeName = std::nullopt);
+std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+
+//! Return a unique child name.
+//! \param excludeName Optional name to exclude from uniqueness check (e.g., when renaming, to not check against its old value). If nullptr, no name is excluded.
+USDUFE_PUBLIC
+std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name, const std::string* excludeName);
 
 //! Return a relatively unique prim name.
 //! That is, make some effort so that the name is unique relative to other prims
@@ -217,10 +219,14 @@ std::string relativelyUniqueName(const PXR_NS::UsdPrim& usdParent, const std::st
 
 //! Default uniqueChildName() implementation. Uses all the prim's children.
 USDUFE_PUBLIC
+std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::string& name);
+
+//! Default uniqueChildName() implementation. Uses all the prim's children.
+USDUFE_PUBLIC
 std::string uniqueChildNameDefault(
-    const PXR_NS::UsdPrim&          parent,
-    const std::string&              name,
-    std::optional<std::string_view> excludeName = std::nullopt);
+    const PXR_NS::UsdPrim& parent,
+    const std::string&     name,
+    const std::string*     excludeName);
 
 //! Return a unique SdfPath by looking at existing siblings under the path's parent.
 USDUFE_PUBLIC

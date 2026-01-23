@@ -136,9 +136,16 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
 }
 
 std::string uniqueChildNameMayaStandard(
-    const PXR_NS::UsdPrim&          usdParent,
-    const std::string&              name,
-    std::optional<std::string_view> excludeName)
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name)
+{
+    return uniqueChildNameMayaStandard(usdParent, name, nullptr);
+}
+
+std::string uniqueChildNameMayaStandard(
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name,
+    const std::string*     excludeName)
 {
     if (!usdParent.IsValid())
         return std::string();
@@ -148,7 +155,7 @@ std::string uniqueChildNameMayaStandard(
     //       Outliner can show class prims now.
     TfToken::HashSet allChildrenNames;
     for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
-        if (excludeName.has_value() && child.GetName().GetString() == *excludeName)
+        if (excludeName != nullptr && child.GetName().GetString() == *excludeName)
             continue;
         allChildrenNames.insert(child.GetName());
     }
