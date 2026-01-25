@@ -31,6 +31,8 @@
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MGlobal.h>
@@ -304,13 +306,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     _lastAskedAnonLayerNameSinceRebuild = 0;
 
     beginResetModel();
-
-    //  Note: do *not* call clear() here! Unfortunately, clear() itself calls,
-    //        beginResetModel() and endResetModel(). Qt does not detect the nested
-    //        begin/end/ So calling clear() would make the layer manager flicker
-    //        to be empty for a brief time.
-    if (rowCount() > 0)
-        removeRows(0, rowCount());
+    clear();
 
     if (_sessionState->isValid()) {
         auto rootLayer = _sessionState->stage()->GetRootLayer();
@@ -354,6 +350,11 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
                 sharedStage,
                 &sharedLayers));
         }
+        /*
+         * Here we need to create a resolver context to be able to update the target layer
+         */
+        auto ctx = ArGetResolver().CreateDefaultContextForAsset(rootLayer->GetIdentifier());
+        const ArResolverContextBinder binder(ctx);
 
         appendRow(new LayerTreeItem(
             rootLayer,
@@ -423,8 +424,36 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
 void LayerTreeModel::usd_layerChanged(SdfNotice::LayersDidChangeSentPerLayer const& notice)
 {
     // experienced crashes in python prototype  For now, rebuild everything
-    if (!_blockUsdNotices)
-        rebuildModelOnIdle();
+    if (!_blockUsdNotices) {
+        /*
+         * Here we filter the cases where we need a refresh as it takes time.
+         * We only refresh in the case the identifier, the resolved path,
+         * the content or a sublayer has been changed.
+         */
+        bool rebuildModelRequired { false };
+        for (auto changePair : notice.GetChangeListVec()) {
+            const auto &entryList = changePair.second.GetEntryList();
+            for (const auto &entryPair : entryList) {
+
+                if (entryPair.second.flags.didChangeIdentifier ||
+                    entryPair.second.flags.didChangeResolvedPath ||
+                    entryPair.second.flags.didReplaceContent ||
+                    entryPair.second.flags.didReloadContent ||
+                    entryPair.second.subLayerChanges.size() > 0
+                ) {
+                    rebuildModelRequired = true;
+                    break;
+                }
+            }
+            if (rebuildModelRequired) {
+                break;
+            }
+        }
+
+        if (rebuildModelRequired) {
+            rebuildModelOnIdle();
+        }
+    }
 }
 
 // notification from USD
