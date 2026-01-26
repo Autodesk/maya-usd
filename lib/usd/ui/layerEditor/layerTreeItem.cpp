@@ -14,6 +14,7 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
+#include <mayaUsd/undo/MayaUsdUndoBlock.h>
 
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
@@ -645,6 +646,9 @@ void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
 {
     if (!_layer || isInvalidLayer())
         return;
+
+    // Tracks edits and turns it into a single undo command once we leave this scope.
+    MAYAUSD_NS_DEF::MayaUsdUndoBlock undoBlock;
 
     // Get the PcpLayerStack from the temporary stage.
     PXR_NS::PcpLayerStackRefPtr layerStack;
