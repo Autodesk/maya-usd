@@ -18,6 +18,8 @@
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/layerUtils.h>
+#include <pxr/usd/usd/flattenUtils.h>
+#include <pxr/usd/pcp/layerStack.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
@@ -644,7 +646,33 @@ void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
     if (!_layer || isInvalidLayer())
         return;
 
-    // TODO
+    // Get the PcpLayerStack from the temporary stage.
+    PXR_NS::PcpLayerStackRefPtr layerStack;
+    PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(_layer);
+    PXR_NS::UsdPrim rootPrim = tempStage->GetPseudoRoot();
+    if (rootPrim) {
+        PXR_NS::PcpPrimIndex primIndex = rootPrim.ComputeExpandedPrimIndex();
+        if (primIndex.IsValid()) {
+            PXR_NS::PcpNodeRef rootNode = primIndex.GetRootNode();
+            if (rootNode) {
+                layerStack = rootNode.GetLayerStack();
+            }
+        }
+    }
+
+    if (!layerStack) {
+        MGlobal::displayError("Cannot merge sublayers: could not determine layer stack");
+        return;
+    }
+
+    PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
+    
+    if (!flattenedLayer) {
+        MGlobal::displayError("Failed to flatten layer stack");
+        return;
+    }
+
+    _layer->TransferContent(flattenedLayer);
 }
 
 UsdLayerEditor::LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer)
