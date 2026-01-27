@@ -220,14 +220,10 @@ std::string relativelyUniqueName(const PXR_NS::UsdPrim& usdParent, const std::st
 
 //! Default uniqueChildName() implementation. Uses all the prim's children.
 USDUFE_PUBLIC
-std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::string& name);
-
-//! Default uniqueChildName() implementation. Uses all the prim's children.
-USDUFE_PUBLIC
 std::string uniqueChildNameDefault(
     const PXR_NS::UsdPrim& parent,
     const std::string&     name,
-    const std::string*     excludeName);
+    const std::string*     excludeName = nullptr);
 
 //! Return a unique SdfPath by looking at existing siblings under the path's parent.
 USDUFE_PUBLIC
