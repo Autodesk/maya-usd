@@ -10,17 +10,17 @@
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
-#include <mayaUsd/undo/MayaUsdUndoBlock.h>
 
+#include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/usd/flattenUtils.h>
-#include <pxr/usd/pcp/layerStack.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
@@ -652,8 +652,8 @@ void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
 
     // Get the PcpLayerStack from the temporary stage.
     PXR_NS::PcpLayerStackRefPtr layerStack;
-    PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(_layer);
-    PXR_NS::UsdPrim rootPrim = tempStage->GetPseudoRoot();
+    PXR_NS::UsdStageRefPtr      tempStage = PXR_NS::UsdStage::Open(_layer);
+    PXR_NS::UsdPrim             rootPrim = tempStage->GetPseudoRoot();
     if (rootPrim) {
         PXR_NS::PcpPrimIndex primIndex = rootPrim.ComputeExpandedPrimIndex();
         if (primIndex.IsValid()) {
@@ -670,7 +670,7 @@ void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
     }
 
     PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
-    
+
     if (!flattenedLayer) {
         MGlobal::displayError("Failed to flatten layer stack");
         return;
