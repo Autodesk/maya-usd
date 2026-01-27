@@ -210,7 +210,7 @@ USDUFE_PUBLIC
 std::string uniqueChildName(
     const PXR_NS::UsdPrim& usdParent,
     const std::string&     name,
-    const std::string*     excludeName);
+    const std::string*     excludeName = nullptr);
 
 //! Return a relatively unique prim name.
 //! That is, make some effort so that the name is unique relative to other prims

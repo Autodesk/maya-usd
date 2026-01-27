@@ -408,11 +408,6 @@ void setUniqueChildNameFn(UniqueChildNameFn fn)
     gUniqueChildNameFn = fn;
 }
 
-std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
-{
-    return uniqueChildName(usdParent, name, nullptr);
-}
-
 std::string
 uniqueChildName(const UsdPrim& usdParent, const std::string& name, const std::string* excludeName)
 {
