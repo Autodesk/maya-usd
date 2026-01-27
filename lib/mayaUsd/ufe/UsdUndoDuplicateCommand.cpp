@@ -64,7 +64,7 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdUfe::UsdSceneItem::Ptr
     auto srcPrim = srcItem->prim();
     auto parentPrim = srcPrim.GetParent();
 
-    auto newName = UsdUfe::uniqueChildName(parentPrim, srcPrim.GetName());
+    auto newName = UsdUfe::uniqueChildName(parentPrim, srcPrim.GetName(), nullptr);
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 
     auto primSpec = UsdUfe::getDefiningPrimSpec(srcPrim);

@@ -78,13 +78,12 @@ bool isInStagesCache(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 
-//! Returns a unique child name following the Maya standard naming rules.
-MAYAUSD_CORE_PUBLIC
-std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name);
-
 //! Returns a unique child name following the Maya standard naming rules, excluding specified name.
 MAYAUSD_CORE_PUBLIC
-std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name, const std::string* excludeName);
+std::string uniqueChildNameMayaStandard(
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name,
+    const std::string*     excludeName);
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC

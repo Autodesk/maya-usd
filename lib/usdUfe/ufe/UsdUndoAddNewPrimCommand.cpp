@@ -59,7 +59,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
 
         // Ensure the requested name is unique.
         auto newPrimName
-            = UsdUfe::uniqueChildName(usdSceneItem->prim(), _newUfePath.back().string());
+            = UsdUfe::uniqueChildName(usdSceneItem->prim(), _newUfePath.back().string(), nullptr);
 
         // If the name had to change then we need to update the full ufe path.
         if (name != newPrimName) {

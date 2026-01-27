@@ -137,13 +137,6 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
 
 std::string uniqueChildNameMayaStandard(
     const PXR_NS::UsdPrim& usdParent,
-    const std::string&     name)
-{
-    return uniqueChildNameMayaStandard(usdParent, name, nullptr);
-}
-
-std::string uniqueChildNameMayaStandard(
-    const PXR_NS::UsdPrim& usdParent,
     const std::string&     name,
     const std::string*     excludeName)
 {

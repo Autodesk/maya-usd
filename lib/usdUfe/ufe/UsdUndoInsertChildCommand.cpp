@@ -326,7 +326,7 @@ void UsdUndoInsertChildCommand::execute()
         const auto& parentPrim = ufePathToPrim(_ufeParentPath);
 
         // First, check if we need to rename the child.
-        const auto childName = uniqueChildName(parentPrim, _ufeSrcPath.back().string());
+        const auto childName = uniqueChildName(parentPrim, _ufeSrcPath.back().string(), nullptr);
 
         // Create a new segment if parent and child are in different run-times.
         // parenting a USD node to the proxy shape node implies two different run-times

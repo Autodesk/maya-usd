@@ -98,8 +98,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     if (validNewName != prim.GetName()) {
         const std::string oldName = srcItem->prim().GetName();
         _newName = UsdUfe::uniqueChildName(prim.GetParent(), validNewName, &oldName);
-    }
-    else
+    } else
         _ufeDstItem = srcItem;
 }
 

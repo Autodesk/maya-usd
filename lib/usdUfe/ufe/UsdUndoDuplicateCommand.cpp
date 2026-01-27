@@ -77,7 +77,7 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(
     , _srcStage(srcItem->prim().GetStage())
 {
     auto srcPrim = srcItem->prim();
-    auto newName = uniqueChildName(dstParentItem->prim(), srcPrim.GetName());
+    auto newName = uniqueChildName(dstParentItem->prim(), srcPrim.GetName(), nullptr);
     _usdDstPath = dstParentItem->prim().GetPath().AppendChild(TfToken(newName));
 }
 

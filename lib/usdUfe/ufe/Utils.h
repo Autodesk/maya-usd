@@ -64,7 +64,10 @@ typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
 typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdProperty& attr, std::string* errMsg);
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
-typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name, const std::string* excludeName);
+typedef std::string (*UniqueChildNameFn)(
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name,
+    const std::string*     excludeName);
 typedef void (*DisplayMessageFn)(const std::string& msg);
 typedef void (*WaitCursorFn)();
 typedef std::string (*DefaultMaterialScopeNameFn)();
@@ -202,13 +205,12 @@ std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::strin
 USDUFE_PUBLIC
 void setUniqueChildNameFn(UniqueChildNameFn fn);
 
-//! Return a unique child name.
-USDUFE_PUBLIC
-std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
-
 //! Return a unique child name, excluding specified excludeName.
 USDUFE_PUBLIC
-std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name, const std::string* excludeName);
+std::string uniqueChildName(
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name,
+    const std::string*     excludeName);
 
 //! Return a relatively unique prim name.
 //! That is, make some effort so that the name is unique relative to other prims
