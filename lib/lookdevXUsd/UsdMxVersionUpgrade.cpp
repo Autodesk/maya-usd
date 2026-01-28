@@ -9,6 +9,7 @@
 // the prior written consent of Autodesk, Inc.
 //*****************************************************************************
 
+#include <pxr/usd/usdShade/input.h>
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 
 #include "UsdMxVersionUpgrade.h"
@@ -319,6 +320,13 @@ const auto kMaterialXToUsdType = std::unordered_map<TfToken, SdfValueTypeName, T
 
 namespace {
 
+void _copyInput(const UsdShadeInput& input, const UsdPrim& targetPrim, const TfToken& targetInputName) {
+    if (!input || !targetPrim || targetInputName.IsEmpty()) {
+        return;
+    }
+    input.GetAttr().FlattenTo(targetPrim, targetInputName);
+}
+
 Ufe::Path _getMaterialPath(const Ufe::Path& materialPath)
 {
     if (materialPath.empty()) {
@@ -582,8 +590,8 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                             continue;
                         }
                     }
-                    topSource.GetInput(_tokens->thickness).GetAttr().FlattenTo(upstream.GetPrim(), UsdShadeUtils::GetFullName(_tokens->thinfilm_thickness, UsdShadeAttributeType::Input));
-                    topSource.GetInput(_tokens->ior).GetAttr().FlattenTo(upstream.GetPrim(), UsdShadeUtils::GetFullName(_tokens->thinfilm_ior, UsdShadeAttributeType::Input));
+                    _copyInput(topSource.GetInput(_tokens->thickness), upstream.GetPrim(), UsdShadeUtils::GetFullName(_tokens->thinfilm_thickness, UsdShadeAttributeType::Input));
+                    _copyInput(topSource.GetInput(_tokens->ior), upstream.GetPrim(), UsdShadeUtils::GetFullName(_tokens->thinfilm_ior, UsdShadeAttributeType::Input));
                 }
 
                 // Bypass the thin-film layer operator.
@@ -767,7 +775,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                         continue;
                     }
                     else {
-                        inInput.GetAttr().FlattenTo(node.GetPrim(), UsdShadeUtils::GetFullName(TfToken(_tokens->in.GetString() + std::to_string(i+1)), UsdShadeAttributeType::Input));
+                        _copyInput(inInput, node.GetPrim(), UsdShadeUtils::GetFullName(TfToken(_tokens->in.GetString() + std::to_string(i+1)), UsdShadeAttributeType::Input));
                     }
                 }
                 auto editor = UsdNamespaceEditor(usdMaterial.GetPrim().GetStage());
@@ -819,7 +827,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
             auto editor = UsdNamespaceEditor(usdMaterial.GetPrim().GetStage());
             auto input1 = node.GetInput(_tokens->in1);
             if (input1) {
-                input1.GetAttr().FlattenTo(node.GetPrim(), UsdShadeUtils::GetFullName(_tokens->iny, UsdShadeAttributeType::Input));
+                _copyInput(input1, node.GetPrim(), UsdShadeUtils::GetFullName(_tokens->iny, UsdShadeAttributeType::Input));
                 editor.DeleteProperty(input1.GetAttr());
                 if (editor.CanApplyEdits()) {
                     editor.ApplyEdits();
@@ -829,7 +837,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
             }
             auto input2 = node.GetInput(_tokens->in2);
             if (input2) {
-                input2.GetAttr().FlattenTo(node.GetPrim(), UsdShadeUtils::GetFullName(_tokens->inx, UsdShadeAttributeType::Input));
+                _copyInput(input2, node.GetPrim(), UsdShadeUtils::GetFullName(_tokens->inx, UsdShadeAttributeType::Input));
                 editor.DeleteProperty(input2.GetAttr());
                 if (editor.CanApplyEdits()) {
                     editor.ApplyEdits();
@@ -883,12 +891,8 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                 if ((normalInput || tangentInput) && !bitangentInput) {
                     auto ngPrim = node.GetPrim().GetParent();
                     auto crossNode = _createSiblingNode(node, _tokens->ND_crossproduct_vector3, "normalmap_cross");
-                    if (normalInput) {
-                        normalInput.GetAttr().FlattenTo(crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in1, UsdShadeAttributeType::Input));
-                    }
-                    if (tangentInput) {
-                        tangentInput.GetAttr().FlattenTo(crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in2, UsdShadeAttributeType::Input));
-                    }
+                    _copyInput(normalInput, crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in1, UsdShadeAttributeType::Input));
+                    _copyInput(tangentInput, crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in2, UsdShadeAttributeType::Input));
                     auto normalizeNode = _createSiblingNode(node, _tokens->ND_normalize_vector3, "normalmap_cross_norm");
                     normalizeNode.CreateInput(_tokens->in, kMaterialXToUsdType.at(_tokens->vector3)).ConnectToSource(crossNode.CreateOutput(_tokens->out, kMaterialXToUsdType.at(_tokens->vector3)));
                     node.CreateInput(_tokens->bitangent, kMaterialXToUsdType.at(_tokens->vector3)).ConnectToSource(normalizeNode.CreateOutput(_tokens->out, kMaterialXToUsdType.at(_tokens->vector3)));
