@@ -320,7 +320,7 @@ const auto kMaterialXToUsdType = std::unordered_map<TfToken, SdfValueTypeName, T
 
 namespace {
 
-void _copyInput(UsdShadeInput input, UsdPrim targetPrim, TfToken targetInputName) {
+void _copyInput(const UsdShadeInput& input, const UsdPrim& targetPrim, const TfToken& targetInputName) {
     if (!input || !targetPrim || targetInputName.IsEmpty()) {
         return;
     }
