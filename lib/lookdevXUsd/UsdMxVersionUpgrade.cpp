@@ -883,9 +883,12 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                 if ((normalInput || tangentInput) && !bitangentInput) {
                     auto ngPrim = node.GetPrim().GetParent();
                     auto crossNode = _createSiblingNode(node, _tokens->ND_crossproduct_vector3, "normalmap_cross");
-                    normalInput.GetAttr().FlattenTo(crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in1, UsdShadeAttributeType::Input));
-                    tangentInput.GetAttr().FlattenTo(crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in2, UsdShadeAttributeType::Input));
-
+                    if (normalInput) {
+                        normalInput.GetAttr().FlattenTo(crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in1, UsdShadeAttributeType::Input));
+                    }
+                    if (tangentInput) {
+                        tangentInput.GetAttr().FlattenTo(crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in2, UsdShadeAttributeType::Input));
+                    }
                     auto normalizeNode = _createSiblingNode(node, _tokens->ND_normalize_vector3, "normalmap_cross_norm");
                     normalizeNode.CreateInput(_tokens->in, kMaterialXToUsdType.at(_tokens->vector3)).ConnectToSource(crossNode.CreateOutput(_tokens->out, kMaterialXToUsdType.at(_tokens->vector3)));
                     node.CreateInput(_tokens->bitangent, kMaterialXToUsdType.at(_tokens->vector3)).ConnectToSource(normalizeNode.CreateOutput(_tokens->out, kMaterialXToUsdType.at(_tokens->vector3)));
