@@ -158,8 +158,9 @@ void ApplyUsdPreferences(
                      && envIt < userIt /* 'env' appears before 'user' */)
                     || (!newOptions.IsUsingUserSearchPathsFirst()
                         && envIt > userIt /* 'env' appears after 'user' */)) {
-                // Reorder user paths and environment paths context data
-                std::swap(*envIt, *userIt);
+                    // Reorder user paths and environment paths context data
+                    std::swap(*envIt, *userIt);
+                }
             }
         }
 
