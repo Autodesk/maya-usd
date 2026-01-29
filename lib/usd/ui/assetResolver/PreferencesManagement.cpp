@@ -137,10 +137,6 @@ void ApplyUsdPreferences(
 
         // Now that we have processed options, we can make a list of the selected context data
         std::vector<std::string> selectedContextData;
-        if (!newOptions.IsUsingUserSearchPathsFirst()) {
-            selectedContextData.push_back(
-                Adsk::AssetResolverContextDataRegistry::GetEnvironmentMappingContextDataName());
-        }
         for (const auto& contextData : allContextData) {
             if (contextData.second) {
                 selectedContextData.push_back(contextData.first);
@@ -157,9 +153,12 @@ void ApplyUsdPreferences(
                 selectedContextData.begin(),
                 selectedContextData.end(),
                 Adsk::AssetResolverContextDataRegistry::GetEnvironmentMappingContextDataName());
-            if (newOptions.IsUsingUserSearchPathsFirst() && userIt != selectedContextData.end()
-                && envIt != selectedContextData.end() && envIt < userIt) {
-                // Move user paths before environment paths
+            if (userIt != selectedContextData.end() && envIt != selectedContextData.end()) {
+                if ((newOptions.IsUsingUserSearchPathsFirst()
+                     && envIt < userIt /* 'env' appears before 'user' */)
+                    || (!newOptions.IsUsingUserSearchPathsFirst()
+                        && envIt > userIt /* 'env' appears after 'user' */)) {
+                    // Reorder user paths and environment paths context data
                 std::swap(*envIt, *userIt);
             }
         }
