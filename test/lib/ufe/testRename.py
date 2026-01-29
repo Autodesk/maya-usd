@@ -107,6 +107,215 @@ class RenameTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
+    def _setupGroupBallsScene(self):
+        '''Helper method to set up the group balls scene and return common items.'''
+        # Open ballset.ma scene in testSamples
+        mayaUtils.openGroupBallsScene()
+
+        # Clear selection to start off
+        cmds.select(clear=True)
+
+        mayaPathSegment = mayaUtils.createUfePathSegment(
+            "|transform1|proxyShape1")
+
+        usdSegmentBall1 = usdUtils.createUfePathSegment("/Ball_set/Props/Ball_1")
+        ball1Path = ufe.Path([mayaPathSegment, usdSegmentBall1])
+        ball1Item = ufe.Hierarchy.createItem(ball1Path)
+        
+        usdSegmentBall2 = usdUtils.createUfePathSegment("/Ball_set/Props/Ball_2")
+        ball2Path = ufe.Path([mayaPathSegment, usdSegmentBall2])
+        ball2Item = ufe.Hierarchy.createItem(ball2Path)
+        
+        usdSegmentBall3 = usdUtils.createUfePathSegment("/Ball_set/Props/Ball_3")
+        ball3Path = ufe.Path([mayaPathSegment, usdSegmentBall3])
+        ball3Item = ufe.Hierarchy.createItem(ball3Path)
+
+        usdSegmentBall4 = usdUtils.createUfePathSegment("/Ball_set/Props/Ball_4")
+        ball4Path = ufe.Path([mayaPathSegment, usdSegmentBall4])
+        ball4Item = ufe.Hierarchy.createItem(ball4Path)
+
+        usdSegmentProps = usdUtils.createUfePathSegment("/Ball_set/Props")
+        parentPath = ufe.Path([mayaPathSegment, usdSegmentProps])
+        parentItem = ufe.Hierarchy.createItem(parentPath)
+        parentHierarchy = ufe.Hierarchy.hierarchy(parentItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
+
+        # set the edit target to balls.usda
+        layer = stage.GetLayerStack()[1]
+        self.assertEqual("ballset.usda", layer.GetDisplayName())
+        stage.SetEditTarget(layer)
+
+        return {
+            'mayaPathSegment': mayaPathSegment,
+            'ball1Item': ball1Item, 'ball1Path': ball1Path,
+            'ball2Item': ball2Item, 'ball2Path': ball2Path,
+            'ball3Item': ball3Item, 'ball3Path': ball3Path,
+            'ball4Item': ball4Item, 'ball4Path': ball4Path,
+            'parentItem': parentItem, 'parentHierarchy': parentHierarchy,
+            'usdSegmentProps': usdSegmentProps
+        }
+
+    def _createBasicGroups(self, setup):
+        '''Helper method to create group1, group2, and group3 in the following structure
+        group 3
+            Props
+                group1
+                    ball3
+                group2
+                    ball1
+                    ball2 
+        '''
+        
+        mayaPathSegment = setup['mayaPathSegment']
+        ball1Item = setup['ball1Item']
+        ball2Item = setup['ball2Item']
+        ball3Item = setup['ball3Item']
+        ball1Path = setup['ball1Path']
+        ball2Path = setup['ball2Path']
+        ball3Path = setup['ball3Path']
+        parentHierarchy = setup['parentHierarchy']
+        usdSegmentProps = setup['usdSegmentProps']
+
+        # Create group1
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
+            globalSn = ufe.GlobalSelection.get()
+            globalSn.append(ball3Item)
+            cmds.group(ufe.PathString.string(ball3Path))
+            # Get group1 from selection after grouping
+            group1Item = ufe.GlobalSelection.get().front()
+            group1Path = group1Item.path()
+        else:
+            ufeSelectionList = ufe.Selection()
+            ufeSelectionList.append(ball3Item)
+            groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList)
+            groupCmd.execute()
+            # Get group1 from the command
+            group1Item = groupCmd.insertedChild()
+            group1Path = group1Item.path()
+
+        cmds.select(clear=True)
+        
+        # Create group2
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
+            globalSn = ufe.GlobalSelection.get()
+            globalSn.append(ball1Item)
+            globalSn.append(ball2Item)
+            cmds.group(ufe.PathString.string(ball1Path), ufe.PathString.string(ball2Path))
+            # Get group2 from selection after grouping
+            group2Item = ufe.GlobalSelection.get().front()
+            group2Path = group2Item.path()
+        else:
+            ufeSelectionList = ufe.Selection()
+            ufeSelectionList.append(ball1Item)
+            ufeSelectionList.append(ball2Item)
+            groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList)
+            groupCmd.execute()
+            # Get group2 from the command
+            group2Item = groupCmd.insertedChild()
+            group2Path = group2Item.path()
+
+        # Group Props to create group3
+        propsPath = ufe.Path([mayaPathSegment, usdSegmentProps])
+        propsItem = ufe.Hierarchy.createItem(propsPath)
+
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
+            globalSn = ufe.GlobalSelection.get()
+            globalSn.append(propsItem)
+            cmds.group(ufe.PathString.string(propsPath))
+            # Get group3 from selection after grouping
+            group3Item = ufe.GlobalSelection.get().front()
+            group3Path = group3Item.path()
+        else:
+            ufeSelectionList = ufe.Selection()
+            ufeSelectionList.append(propsItem)
+            groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList)
+            groupCmd.execute()
+            # Get group3 from the command
+            group3Item = groupCmd.insertedChild()
+            group3Path = group3Item.path()
+
+        # After grouping Props to create group3, group1 and group2 are now under group3
+        # Extract the group names from the original paths and reconstruct paths based on group3's path
+        group3UsdPath = str(group3Path.segments[1])
+        # Get the group names from the original paths (before Props was grouped)
+        # Use path().back() to get the last component name
+        group1Name = str(group1Path.back())
+        group2Name = str(group2Path.back())
+        group1Path = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment(group3UsdPath + "/Props/" + group1Name)])
+        group1Item = ufe.Hierarchy.createItem(group1Path)
+        group2Path = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment(group3UsdPath + "/Props/" + group2Name)])
+        group2Item = ufe.Hierarchy.createItem(group2Path)
+
+        return {
+            'group1Item': group1Item, 'group1Path': group1Path,
+            'group2Item': group2Item, 'group2Path': group2Path,
+            'group3Item': group3Item, 'group3Path': group3Path
+        }
+
+    def _createExtendedGroups(self, setup):
+        '''Helper method to create group1, group2, group3, rename group1 to group5, and create group6
+        group 3
+            Props
+                group5
+                    ball3
+                group2
+                    ball1
+                    ball2 
+                group6
+                    ball4
+        '''
+        mayaPathSegment = setup['mayaPathSegment']
+
+        # create basic groups
+        groups = self._createBasicGroups(setup)
+        group1Item = groups['group1Item']
+        group3Path = groups['group3Path']
+        
+        # Use group1Item from groups dict, verify it exists
+        self.assertIsNotNone(group1Item, "group1 should exist after creating basic groups")
+        
+        # rename group1 to group5
+        cmds.select(clear=True)
+        ufe.GlobalSelection.get().append(group1Item)
+        cmds.rename("group5")
+
+        # get the parent hierarchy after grouping Props
+        # Construct Props path based on group3's actual path
+        group3UsdPath = str(group3Path.segments[1])
+        propsPathAfterGrouping = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment(group3UsdPath + "/Props")])
+        propsItemAfterGrouping = ufe.Hierarchy.createItem(propsPathAfterGrouping)
+        propsHierarchyAfterGrouping = ufe.Hierarchy.hierarchy(propsItemAfterGrouping)
+        
+        # recreate ball4Item with the new path after Props was grouped
+        ball4PathAfterGrouping = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment(group3UsdPath + "/Props/Ball_4")])
+        ball4ItemAfterGrouping = ufe.Hierarchy.createItem(ball4PathAfterGrouping)
+        
+        # group ball4 to create group6
+        cmds.select(clear=True)
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
+            globalSn = ufe.GlobalSelection.get()
+            globalSn.append(ball4ItemAfterGrouping)
+            cmds.group(ufe.PathString.string(ball4PathAfterGrouping))
+        else:
+            ufeSelectionList = ufe.Selection()
+            ufeSelectionList.append(ball4ItemAfterGrouping)
+            groupCmd = propsHierarchyAfterGrouping.createGroupCmd(ufeSelectionList)
+            groupCmd.execute()
+        
+        globalSelection = ufe.GlobalSelection.get()
+        group6Item = globalSelection.front()
+        group6Path = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment(group3UsdPath + "/Props/group6")])
+
+        # Update groups dict with new items
+        groups['group6Item'] = group6Item
+        groups['group6Path'] = group6Path
+        groups['propsHierarchyAfterGrouping'] = propsHierarchyAfterGrouping
+        groups['group2PathAfterGrouping'] = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment(group3UsdPath + "/Props/group2")])
+
+        return groups
+
     def testRenameProxyShape(self):
         '''Rename proxy shape, UFE lookup should succeed.'''
 
@@ -1050,222 +1259,221 @@ class RenameTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/A/ball'))
         self.assertFalse(stage.GetPrimAtPath('/A/group1/ball'))
         
-    def testGroupRenamingMaxSuffix(self):
-        # '''
-        # Test that when creating a new group, it checks ALL CHILDREN to find the max index,
-        # then increments by one. This matches Maya's behavior where renaming a group to
-        # "group10" and then grouping again should create "group11", not "group1".
-        # '''
+    def testGroupCreationMaxSuffix(self):
+        '''
+        Test that when creating new groups, it checks all neighbors and children to find the max index,
+        then increments by one.
+        '''
+        setup = self._setupGroupBallsScene()
+        mayaPathSegment = setup['mayaPathSegment']
+        ball1Item = setup['ball1Item']
+        ball2Item = setup['ball2Item']
+        ball3Item = setup['ball3Item']
+        ball4Item = setup['ball4Item']
+        ball1Path = setup['ball1Path']
+        ball2Path = setup['ball2Path']
+        ball3Path = setup['ball3Path']
+        ball4Path = setup['ball4Path']
+        parentHierarchy = setup['parentHierarchy']
+        usdSegmentProps = setup['usdSegmentProps']
 
-        # Open ballset.ma scene in testSamples
-        mayaUtils.openGroupBallsScene()
-
-        # Clear selection to start off
-        cmds.select(clear=True)
-
-        mayaPathSegment = mayaUtils.createUfePathSegment(
-            "|transform1|proxyShape1")
-
-        usdSegmentBall1 = usdUtils.createUfePathSegment(
-            "/Ball_set/Props/Ball_1")
-        ball1Path = ufe.Path([mayaPathSegment, usdSegmentBall1])
-        ball1Item = ufe.Hierarchy.createItem(ball1Path)
-        
-        usdSegmentBall2 = usdUtils.createUfePathSegment(
-            "/Ball_set/Props/Ball_2")
-        ball2Path = ufe.Path([mayaPathSegment, usdSegmentBall2])
-        ball2Item = ufe.Hierarchy.createItem(ball2Path)
-        
-        usdSegmentBall3 = usdUtils.createUfePathSegment(
-            "/Ball_set/Props/Ball_3")
-        ball3Path = ufe.Path([mayaPathSegment, usdSegmentBall3])
-        ball3Item = ufe.Hierarchy.createItem(ball3Path)
-
-        usdSegmentBall4 = usdUtils.createUfePathSegment(
-            "/Ball_set/group3/Props/Ball_4")
-        ball4Path = ufe.Path([mayaPathSegment, usdSegmentBall4])
-        ball4Item = ufe.Hierarchy.createItem(ball4Path)
-        
-        usdSegmentBall5 = usdUtils.createUfePathSegment(
-            "/Ball_set/Props/Ball_5")
-        ball5Path = ufe.Path([mayaPathSegment, usdSegmentBall5])
-        ball5Item = ufe.Hierarchy.createItem(ball5Path)
-
-        usdSegmentProps = usdUtils.createUfePathSegment("/Ball_set/Props")
-        parentPath = ufe.Path([mayaPathSegment, usdSegmentProps])
-        parentItem = ufe.Hierarchy.createItem(parentPath)
-
-        parentHierarchy = ufe.Hierarchy.hierarchy(parentItem)
-        parentChildrenPre = parentHierarchy.children()
+        parentItem = setup['parentItem']
+        parentChildrenPre = ufe.Hierarchy.hierarchy(parentItem).children()
         self.assertEqual(len(parentChildrenPre), 6)
 
-        # get the USD stage
-        stage = mayaUsd.ufe.getStage(ufe.PathString.string(ufe.Path(mayaPathSegment)))
-
-        # set the edit target to balls.usda
-        layer = stage.GetLayerStack()[1]
-        self.assertEqual("ballset.usda", layer.GetDisplayName())
-        stage.SetEditTarget(layer)
-
-        # group ball3 and ball5 together
+        # group ball3 and ball4 together, should create group1
         if ufeUtils.ufeFeatureSetVersion() >= 3:
             globalSn = ufe.GlobalSelection.get()
-            globalSn.append(ball5Item)
+            globalSn.append(ball4Item)
             globalSn.append(ball3Item)
-
-            cmds.group(ufe.PathString.string(ball5Path), 
-                                   ufe.PathString.string(ball3Path))
+            cmds.group(ufe.PathString.string(ball4Path), ufe.PathString.string(ball3Path))
         else:
             ufeSelectionList = ufe.Selection()
-            ufeSelectionList.append(ball5Item)
+            ufeSelectionList.append(ball4Item)
             ufeSelectionList.append(ball3Item)
-
             groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList)
             groupCmd.execute()
 
         cmds.select(clear=True)
         
-        # Group ball1 and ball2 together
+        # group ball1 and ball2 together,  should create group2
         if ufeUtils.ufeFeatureSetVersion() >= 3:
             globalSn = ufe.GlobalSelection.get()
             globalSn.append(ball1Item)
             globalSn.append(ball2Item)
-
-            cmds.group(ufe.PathString.string(ball1Path), 
-                       ufe.PathString.string(ball2Path))
+            cmds.group(ufe.PathString.string(ball1Path), ufe.PathString.string(ball2Path))
         else:
             ufeSelectionList = ufe.Selection()
             ufeSelectionList.append(ball1Item)
             ufeSelectionList.append(ball2Item)
-
             groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList)
             groupCmd.execute()
 
-        # Group object (a.k.a parent) will be added to selection list. This behavior matches the native Maya group command.
         globalSelection = ufe.GlobalSelection.get()
 
-        # Verify group1 exists and has the correct name
+        # verify group1 exists and has the correct name
         group1Path = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/Props/group1")])
         group1Item = ufe.Hierarchy.createItem(group1Path)
         self.assertEqual(str(group1Item.path().back()), "group1")
         
-        # Verify group2 exists, is in the selection (last created group), and has the correct name
+        # verify group2 exists, and has the correct name
         group2Path = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/Props/group2")])
         group2Item = ufe.Hierarchy.createItem(group2Path)
         self.assertEqual(globalSelection.front(), group2Item)
         self.assertEqual(str(group2Item.path().back()), "group2")
 
-        usdSegmentProps= usdUtils.createUfePathSegment(
-            "/Ball_set/Props")
+        # group Props together, should create group3 (max suffix is 2, so 2++ = 3)
         propsPath = ufe.Path([mayaPathSegment, usdSegmentProps])
         propsItem = ufe.Hierarchy.createItem(propsPath)
 
-        # Group Props together
         if ufeUtils.ufeFeatureSetVersion() >= 3:
             globalSn = ufe.GlobalSelection.get()
             globalSn.append(propsItem)
-
             cmds.group(ufe.PathString.string(propsPath))
         else:
             ufeSelectionList = ufe.Selection()
             ufeSelectionList.append(propsItem)
-
             groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList)
             groupCmd.execute()
 
-        # Verify the new group taskes the largest suffix found amongst other groups of the  same name and increments it by 1.
-        group3Path = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/group3")])
-        group3Item = ufe.Hierarchy.createItem(group3Path)
+        # verify the new group takes the largest suffix found amongst other groups and increments it by 1
+        # Get group3 from selection after grouping
+        globalSelection = ufe.GlobalSelection.get()
+        group3Item = globalSelection.front()
+        self.assertIsNotNone(group3Item, "group3 should exist after grouping Props")
         self.assertEqual(str(group3Item.path().back()), "group3")
 
-        # Rename group1 to group2, which should result in group3 since group2 already exists within this layer.
-        group1PathAfterGrouping = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/group3/Props/group1")])
-        group1ItemAfterGrouping = ufe.Hierarchy.createItem(group1PathAfterGrouping)
-        self.assertIsNotNone(group1ItemAfterGrouping, "group1 should exist after grouping Props")
+    def testGroupRenameToConflictingName(self):
+        '''
+        Test that when renaming a group to a name that conflicts with an existing group,
+        it uses max suffix logic to find the next available name.
+        '''
+        setup = self._setupGroupBallsScene()
+        mayaPathSegment = setup['mayaPathSegment']
+        groups = self._createBasicGroups(setup)
+
+        # rename group1 to group2, which should result in group3 since group2 already exists within this layer
+        group1Item = groups['group1Item']
+        self.assertIsNotNone(group1Item, "group1 should exist after grouping Props")
         cmds.select(clear=True)
-        ufe.GlobalSelection.get().append(group1ItemAfterGrouping)
+        ufe.GlobalSelection.get().append(group1Item)
         cmds.rename("group2")
         
-        # Verify it was renamed to group3 (max suffix at this layer+children is 2, so 2+1=3)
+        # verify it was renamed to group3
         snIter = iter(ufe.GlobalSelection.get())
         renamedGroupItem = next(snIter)
         renamedGroupName = str(renamedGroupItem.path().back())
         self.assertEqual(renamedGroupName, "group3")
 
-        # Renaming the highest group3 to group3 should keep the 3 suffix as it is
+    def testGroupRenameToSameName(self):
+        '''
+        Test that renaming a group to its own name keeps it unchanged.
+        '''
+        setup = self._setupGroupBallsScene()
+        mayaPathSegment = setup['mayaPathSegment']
+        groups = self._createBasicGroups(setup)
+        group3Item = groups['group3Item']
+        self.assertIsNotNone(group3Item, "group3 should exist after creating basic groups")
+
+        # renaming group3 to group3 should keep the 3 suffix as it is
         cmds.select(clear=True)
         ufe.GlobalSelection.get().append(group3Item)
         cmds.rename("group3")
         
-        # Verify it remains group3 (no change when renaming to the same name)
+        # verify it remains group3 (no change when renaming to the same name)
         snIter = iter(ufe.GlobalSelection.get())
         unchangedGroupItem = next(snIter)
         unchangedGroupName = str(unchangedGroupItem.path().back())
         self.assertEqual(unchangedGroupName, "group3")
         self.assertEqual(unchangedGroupItem, group3Item)
 
-        # Rename props group3 to group5
+    def testGroupRenameToNonConflictingName(self):
+        '''
+        Test that renaming a group to a name that doesn't conflict works correctly.
+        '''
+        setup = self._setupGroupBallsScene()
+        mayaPathSegment = setup['mayaPathSegment']
+        groups = self._createBasicGroups(setup)
+
+        # rename group1 to group2 (which will become group3 due to conflict)
+        group1Item = groups['group1Item']
+        self.assertIsNotNone(group1Item, "group1 should exist after creating basic groups")
+        cmds.select(clear=True)
+        ufe.GlobalSelection.get().append(group1Item)
+        cmds.rename("group2")
+        
+        snIter = iter(ufe.GlobalSelection.get())
+        renamedGroupItem = next(snIter)
+
+        # rename the renamed group3 to group5 (non-conflicting name)
         cmds.select(clear=True)
         ufe.GlobalSelection.get().append(renamedGroupItem)
         cmds.rename("group5")
         
-        # Verify it was renamed to group5
+        # verify it was renamed to group5 (non-conflicting name should work)
         snIter = iter(ufe.GlobalSelection.get())
         renamedToGroup5Item = next(snIter)
         renamedToGroup5Name = str(renamedToGroup5Item.path().back())
         self.assertEqual(renamedToGroup5Name, "group5")
 
-        # Get the parent hierarchy after grouping Props
-        propsPathAfterGrouping = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/group3/Props")])
-        propsItemAfterGrouping = ufe.Hierarchy.createItem(propsPathAfterGrouping)
-        propsHierarchyAfterGrouping = ufe.Hierarchy.hierarchy(propsItemAfterGrouping)
+    def testGroupCreationAfterRename(self):
+        '''
+        Test that creating new groups after renaming uses max suffix correctly.
+        '''
+        setup = self._setupGroupBallsScene()
+        mayaPathSegment = setup['mayaPathSegment']
+
+        # create extended groups (group1, group2, group3, rename group1 to group5, create group6)
+        groups = self._createExtendedGroups(setup)
+        group6Item = groups['group6Item']
+        group6Path = groups['group6Path']
         
-        # Group ball4, should get name group6
-        cmds.select(clear=True)
-        if ufeUtils.ufeFeatureSetVersion() >= 3:
-            globalSn = ufe.GlobalSelection.get()
-            globalSn.append(ball4Item)
-            cmds.group(ufe.PathString.string(ball4Path))
-        else:
-            ufeSelectionList = ufe.Selection()
-            ufeSelectionList.append(ball4Item)
-            groupCmd = propsHierarchyAfterGrouping.createGroupCmd(ufeSelectionList)
-            groupCmd.execute()
-        
-        # Verify group6 was created (max suffix is 5, so 5+1=6)
-        # The group command adds the created group to the selection
-        globalSelection = ufe.GlobalSelection.get()
-        group6Item = globalSelection.front()
+        # verify group6 was created (max suffix is 5, so 5+1=6)
         self.assertIsNotNone(group6Item, "Group should be created and added to selection")
         group6Name = str(group6Item.path().back())
         self.assertEqual(group6Name, "group6")
         
-        # Also verify we can access it by path
-        group6Path = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/group3/Props/group6")])
+        # verify we can access it by path
         group6ItemByPath = ufe.Hierarchy.createItem(group6Path)
         self.assertIsNotNone(group6ItemByPath, "Group6 should be accessible by path")
         self.assertEqual(str(group6ItemByPath.path().back()), "group6")
 
-        # Rename group2 to group5, should get group7 (since group5 and group6 already exist)
-        group2PathAfterGrouping = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/group3/Props/group2")])
-        group2ItemAfterGrouping = ufe.Hierarchy.createItem(group2PathAfterGrouping)
+    def testGroupRenameToConflictingNameWithMaxSuffix(self):
+        '''
+        Test that renaming to a conflicting name uses max suffix when other groups
+        with the same base name exist.
+        '''
+        setup = self._setupGroupBallsScene()
+        mayaPathSegment = setup['mayaPathSegment']
+        groups = self._createExtendedGroups(setup)
+        group2Item = groups['group2Item']
+        self.assertIsNotNone(group2Item, "group2 should exist after creating extended groups")
+
+        # rename group2 to group5, should get group7 (since group5 and group6 already exist)
         cmds.select(clear=True)
-        ufe.GlobalSelection.get().append(group2ItemAfterGrouping)
+        ufe.GlobalSelection.get().append(group2Item)
         cmds.rename("group5")
         
-        # Verify it was renamed to group7 (max suffix at this layer+children is 6, so 6+1=7)
+        # verify it was renamed to group7
         snIter = iter(ufe.GlobalSelection.get())
         renamedToGroup7Item = next(snIter)
         renamedToGroup7Name = str(renamedToGroup7Item.path().back())
         self.assertEqual(renamedToGroup7Name, "group7")
 
-        # Rename group6 to group6 again, should keep the single increment (case for excluding self)
-        # This tests that when renaming to the same name, it excludes itself from the max calculation
+    def testGroupRenameToSameNameExcludingSelf(self):
+        '''
+        Test that when renaming to the same name, it excludes itself from the max calculation.
+        '''
+        setup = self._setupGroupBallsScene()
+        groups = self._createExtendedGroups(setup)
+        group6Item = groups['group6Item']
+
+        # rename group6 to group6 again, its suffix should not change
         cmds.select(clear=True)
         ufe.GlobalSelection.get().append(group6Item)
         cmds.rename("group6")
         
-        # Verify it remains group6 (when renaming to same name, excludes self from max calculation)
+        # verify it remains group6 (when renaming to same name, excludes self from max calculation)
         snIter = iter(ufe.GlobalSelection.get())
         unchangedGroup6Item = next(snIter)
         unchangedGroup6Name = str(unchangedGroup6Item.path().back())
