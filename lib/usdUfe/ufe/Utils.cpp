@@ -502,9 +502,19 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     }
 
     std::string childName { name };
-    if (relativesNames.find(TfToken(childName)) != relativesNames.end()) {
-        childName = uniqueNameMaxSuffix(relativesNames, childName);
+    std::string baseNameOnly, suffix;
+    splitNumericalSuffix(childName, baseNameOnly, suffix);
+
+    for (const auto& relative : relativesNames) {
+        std::string relativeBaseName, relativeSuffix;
+        splitNumericalSuffix(relative.GetString(), relativeBaseName, relativeSuffix);
+
+        if (baseNameOnly == relativeBaseName) {
+            childName = uniqueNameMaxSuffix(relativesNames, childName);
+            break;
+        }
     }
+
     return childName;
 }
 

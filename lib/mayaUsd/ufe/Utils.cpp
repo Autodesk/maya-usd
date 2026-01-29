@@ -158,33 +158,33 @@ std::string uniqueChildNameMayaStandard(
     // Example: with siblings Capsule001 & Capsule006, duplicating Capsule001
     //          will set new unique name to Capsule007.
     std::string childName { name };
-    if (allChildrenNames.find(TfToken(childName)) != allChildrenNames.end()) {
-        // Get the base name (removing the numerical suffix) so that we can compare
-        // that to all the sibling names.
-        std::string baseName, suffix;
-        UsdUfe::splitNumericalSuffix(childName, baseName, suffix);
-        int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
+    const bool  nameConflicts = allChildrenNames.find(TfToken(childName)) != allChildrenNames.end();
+    if (nameConflicts) {
+        childName = UsdUfe::uniqueNameMaxSuffix(allChildrenNames, childName);
+    } else {
+        if (excludeName == nullptr) {
+            // Not renaming, check for identical bases
+            std::string baseName, suffix;
+            UsdUfe::splitNumericalSuffix(childName, baseName, suffix);
 
-        std::string                 childBaseName;
-        std::pair<std::string, int> largestMatching(childName, suffixValue);
-        for (const auto& child : allChildrenNames) {
-            // While iterating thru all the children look for ones that match
-            // the base name of the input. When we find one check its numerical
-            // suffix and store the greatest one.
-            UsdUfe::splitNumericalSuffix(child.GetString(), childBaseName, suffix);
-            if (baseName == childBaseName) {
-                int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
-                if (suffixValue > largestMatching.second) {
-                    largestMatching = std::make_pair(child.GetString(), suffixValue);
+            bool hasMatchingBase = false;
+            for (const auto& child : allChildrenNames) {
+                std::string childBaseName, childSuffix;
+                if (UsdUfe::splitNumericalSuffix(child.GetString(), childBaseName, childSuffix)
+                    && baseName == childBaseName) {
+                    hasMatchingBase = true;
+                    break;
                 }
             }
-        }
 
-        // By sending in the largest matching name (instead of the input name)
-        // the unique name function will increment its numerical suffix by 1
-        // and thus it will be unique and follow Maya naming standard.
-        childName = UsdUfe::uniqueName(allChildrenNames, largestMatching.first);
+            // If we found matching base names, use max suffix logic to ensure
+            // we create the next available name (e.g., "group7" if "group6" exists).
+            if (hasMatchingBase) {
+                childName = UsdUfe::uniqueNameMaxSuffix(allChildrenNames, childName);
+            }
+        }
     }
+
     return childName;
 }
 

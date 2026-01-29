@@ -195,9 +195,15 @@ USDUFE_PUBLIC
 bool splitNumericalSuffix(const std::string srcName, std::string& base, std::string& suffix);
 
 //! Split the source name into a base name and a numerical suffix (set to
-//! 1 if absent).  Increment the numerical suffix until name is unique.
+//! 1 if absent). Increment the numerical suffix until name is unique.
 USDUFE_PUBLIC
 std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName);
+
+//! Find the maximum numerical suffix for names with the same base, then
+//! increment it by 1 to create a unique name. This ensures names like "group7"
+//! are created immediately if "group6" exists, rather than creating "group1" first.
+USDUFE_PUBLIC
+std::string uniqueNameMaxSuffix(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName);
 
 //! Set the DCC specific "uniqueChildName" function.
 //! Use of this function is optional, if one is not supplied then
