@@ -461,7 +461,7 @@ SaveLayersDialog::SaveLayersDialog(
         std::string proxyPath = info.dagPath.fullPathName().asChar();
 
         // Check if this stage is a component stage
-        if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+        if (MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(info.stage, proxyPath)) {
             _componentStageInfos.push_back(info);
             // Component stages are saved via the component system, skip layer collection
             continue;
