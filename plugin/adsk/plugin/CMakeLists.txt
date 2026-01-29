@@ -55,6 +55,7 @@ target_compile_definitions(${TARGET_NAME}
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${AR_FOUND}>:WANT_AR_BUILD>
         $<$<BOOL:${AR_FOUND}>:BOOST_NS=PXR_NS::pxr_boost>
+        $<$<BOOL:${UsdEditForward_FOUND}>:WANT_USDEDITFORWARD_BUILD>
 )
 
 if(DEFINED MAYAUSD_VERSION)
@@ -87,6 +88,7 @@ target_include_directories(${TARGET_NAME}
     PRIVATE
         ${UFE_INCLUDE_DIR}
         $<$<BOOL:${AR_FOUND}>:${AR_INCLUDE_DIR}>
+        $<$<BOOL:${UsdEditForward_FOUND}>:${USDEDITFORWARD_INCLUDE_DIR}>
 )
 
 # -----------------------------------------------------------------------------
@@ -97,6 +99,7 @@ target_link_libraries(${TARGET_NAME}
         ${UFE_LIBRARY}
         basePxrUsdPreviewSurface
         $<$<BOOL:${AR_FOUND}>:${AR_LIBRARY}>
+        $<$<BOOL:${UsdEditForward_FOUND}>:${USDEDITFORWARD_LIBRARY}>
 )
 
 if (Qt_FOUND)
