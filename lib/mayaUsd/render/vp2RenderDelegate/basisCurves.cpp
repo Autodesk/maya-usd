@@ -902,7 +902,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         // Retrieve instance transforms from the instancer.
         HdInstancer*    instancer = renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms
-            = static_cast<HdVP2Instancer*>(instancer)->ComputeInstanceTransforms(id);
+            = static_cast<HdVP2Instancer*>(instancer)->GetInstanceTransforms(id);
 
         MMatrix            instanceMatrix;
         const unsigned int instanceCount = transforms.size();
