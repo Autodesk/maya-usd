@@ -158,8 +158,7 @@ std::string uniqueChildNameMayaStandard(
     // Example: with siblings Capsule001 & Capsule006, duplicating Capsule001
     //          will set new unique name to Capsule007.
     std::string childName { name };
-    const bool  nameConflicts = allChildrenNames.find(TfToken(childName)) != allChildrenNames.end();
-    if (nameConflicts) {
+    if (allChildrenNames.find(TfToken(childName)) != allChildrenNames.end()) {
         childName = UsdUfe::uniqueNameMaxSuffix(allChildrenNames, childName);
     } else {
         if (excludeName == nullptr) {
@@ -177,8 +176,6 @@ std::string uniqueChildNameMayaStandard(
                 }
             }
 
-            // If we found matching base names, use max suffix logic to ensure
-            // we create the next available name (e.g., "group7" if "group6" exists).
             if (hasMatchingBase) {
                 childName = UsdUfe::uniqueNameMaxSuffix(allChildrenNames, childName);
             }
