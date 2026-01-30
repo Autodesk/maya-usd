@@ -63,9 +63,12 @@ private:
     */
     TfHashMap<TfToken, HdVtBufferSource*, TfToken::HashFunctor> _primvarMap;
 
+    // Cache the instance indices to avoid having the scene delegate recompute
+    // them every time
     int _maxInstanceIndex = -1;
     TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> _instanceIndicesByPrototype;
 
+    // Instance transforms cache
     VtMatrix4dArray _instanceTransforms;
 };
 

@@ -116,6 +116,8 @@ void HdVP2Instancer::Sync(
                                     || HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)
                                     || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex);
     if (updateInstanceTransforms) {
+        // Initialize all transforms to the instancer's transform, on which we later
+        // apply the individual instances' transformations.
         GfMatrix4d instancerTransform = GetDelegate()->GetInstancerTransform(id);
         _instanceTransforms = VtMatrix4dArray(_maxInstanceIndex + 1, instancerTransform);
 
@@ -207,11 +209,13 @@ VtMatrix4dArray HdVP2Instancer::GetInstanceTransforms(SdfPath const& prototypeId
     
     HdInstancer::_SyncInstancerAndParents(GetDelegate()->GetRenderIndex(), GetId());
 
+    // Get the instance indices from our cache instead of querying the scene delegate.
     auto itInstanceIndices = _instanceIndicesByPrototype.find(prototypeId);
     if (itInstanceIndices == _instanceIndicesByPrototype.end()) {
         return {};
     }
     
+    // Retrieve only the instance transforms relevant to this prototype
     auto instanceIndices = itInstanceIndices->second;
     VtMatrix4dArray transforms(instanceIndices.size());
     for (size_t i = 0; i < instanceIndices.size(); i++) {
