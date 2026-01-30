@@ -303,9 +303,44 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}> 
+    install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
     )
+endif()
+
+# Install UsdEditForward library alongside mayaUsd
+if(UsdEditForward_FOUND)
+    get_filename_component(USDEDITFORWARD_LIB_DIR "${USDEDITFORWARD_LIBRARY}" DIRECTORY)
+    get_filename_component(USDEDITFORWARD_ROOT "${USDEDITFORWARD_LIB_DIR}" DIRECTORY)
+
+    if(IS_WINDOWS)
+        install(FILES
+            "${USDEDITFORWARD_ROOT}/bin/AdskUsdEditForward.dll"
+            "${USDEDITFORWARD_ROOT}/bin/sdf_tools.dll"
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            OPTIONAL
+        )
+        install(FILES
+            "${USDEDITFORWARD_ROOT}/bin/AdskUsdEditForward.pdb"
+            "${USDEDITFORWARD_ROOT}/bin/sdf_tools.pdb"
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            OPTIONAL
+        )
+    elseif(IS_LINUX)
+        install(FILES
+            "${USDEDITFORWARD_ROOT}/lib/libAdskUsdEditForward.so"
+            "${USDEDITFORWARD_ROOT}/lib/libsdf_tools.so"
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            OPTIONAL
+        )
+    elseif(IS_MACOSX)
+        install(FILES
+            "${USDEDITFORWARD_ROOT}/lib/libAdskUsdEditForward.dylib"
+            "${USDEDITFORWARD_ROOT}/lib/libsdf_tools.dylib"
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            OPTIONAL
+        )
+    endif()
 endif()
 
 #install top level plugInfo.json that includes the configured plugInfo.json
