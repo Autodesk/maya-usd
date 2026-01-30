@@ -100,6 +100,7 @@ struct MayaUsdCommitState
     //! Instancing doesn't have dirty bits, every time we do update, we must update instance
     //! transforms
     std::shared_ptr<MMatrixArray> _instanceTransforms;
+    std::shared_ptr<MMatrixArray> _oldInstanceTransforms;
 
     //! Color parameter that _instanceColors should be bound to
     MString _instanceColorParam;
@@ -150,7 +151,10 @@ public:
         DirtySelectionMode = (DirtySelectionHighlight << 1),
         // Maya's display mode has changed, for example for shaded to wireframe
         DirtyDisplayMode = (DirtySelectionMode << 1),
-        DirtyBitLast = DirtyDisplayMode
+        // 1 or more of Maya's display layers have changed, so the compound effect
+        // of display layers on this prim will need to be recomputed
+        DirtyDisplayLayers = (DirtyDisplayMode << 1),
+        DirtyBitLast = DirtyDisplayLayers
     };
 
     static const MColor       kOpaqueBlue;           //!< Opaque blue

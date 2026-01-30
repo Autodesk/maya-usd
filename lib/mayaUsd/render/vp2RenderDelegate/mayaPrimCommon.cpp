@@ -345,7 +345,7 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     auto&       drawScene = param->GetDrawScene();
 
     // See if the primitive is instanced
-    auto delegate = drawScene.GetUsdImagingDelegate();
+    auto delegate = drawScene.GetUsdSceneDelegate();
     auto instancerId = delegate->GetInstancerId(id);
     bool instanced = !instancerId.IsEmpty();
     // The additional condition below is to prevent a crash in USD function GetScenePrimPath
@@ -356,7 +356,9 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
         // Sync display layer modes for instanced prims.
         // This also sets the value of '_useInstancedDisplayLayerModes' that identifies whether
         // display layer modes will be handled on per-primitive or per-instance basis
-        _SyncDisplayLayerModes(id, true);
+        if (*dirtyBits & MayaUsdRPrim::DirtyDisplayLayers) {
+            _SyncDisplayLayerModes(id, true);
+        }
 
         // Instanced primitives with instances in display layers use 'forced' representations to
         // draw those specific instances, so the 'forced' representations should be inited alongside
@@ -364,15 +366,17 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
             && reprToken != HdVP2ReprTokens->forcedWire
             && reprToken != HdVP2ReprTokens->forcedUntextured) {
             refThis.InitRepr(
-                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedBbox, dirtyBits);
+                delegate, HdVP2ReprTokens->forcedBbox, dirtyBits);
             refThis.InitRepr(
-                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedWire, dirtyBits);
+                delegate, HdVP2ReprTokens->forcedWire, dirtyBits);
             refThis.InitRepr(
-                drawScene.GetUsdImagingDelegate(), HdVP2ReprTokens->forcedUntextured, dirtyBits);
+                delegate, HdVP2ReprTokens->forcedUntextured, dirtyBits);
         }
     } else {
         // Sync display layer modes for non-instanced prims.
-        _SyncDisplayLayerModes(id, false);
+        if (*dirtyBits & MayaUsdRPrim::DirtyDisplayLayers) {
+            _SyncDisplayLayerModes(id, false);
+        }
     }
 
     _UpdateReprOverrides(reprs);
@@ -384,7 +388,7 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     if (_reprOverride != kNone) {
         TfToken overrideToken = _GetOverrideToken(reprToken);
         if (!overrideToken.IsEmpty() && (overrideToken != reprToken)) {
-            refThis.InitRepr(drawScene.GetUsdImagingDelegate(), overrideToken, dirtyBits);
+            refThis.InitRepr(delegate, overrideToken, dirtyBits);
             if (curRepr) {
                 return nullptr; // if the overriden repr is already created, we can safely exit here
             }

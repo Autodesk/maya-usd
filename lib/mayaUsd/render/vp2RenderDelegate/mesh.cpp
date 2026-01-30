@@ -1385,13 +1385,12 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
     const HdMeshTopology& topology = _meshSharedData->_topology;
     const HdGeomSubsets&  geomSubsets = topology.GetGeomSubsets();
 
-    // If the geom subsets do not cover all the faces in the mesh we need
-    // to add an additional render item for those faces.
-    int numFacesWithoutRenderItem = topology.GetNumFaces();
+    // Track unique faces that were assigned to at least one geomSubset
+    std::set<int> assignedFaceIds;
 
     // Initialize the face to subset item mapping with an invalid item.
-    _meshSharedData->_faceIdToGeomSubsetId.clear();
-    _meshSharedData->_faceIdToGeomSubsetId.resize(topology.GetNumFaces(), SdfPath::EmptyPath());
+    _meshSharedData->_faceIdToGeomSubsetIds.clear();
+    _meshSharedData->_faceIdToGeomSubsetIds.resize(topology.GetNumFaces(), SdfPathSet());
 
     // Create the geom subset render items, and fill in the face to subset item mapping for later
     // use.
@@ -1421,7 +1420,7 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
         }
 #endif
 
-        // now fill in _faceIdToGeomSubsetId at geomSubset.indices with the subset item pointer
+        // now fill in _faceIdToGeomSubsetIds at geomSubset.indices with the subset item pointer
         for (auto faceId : geomSubset.indices) {
             if (faceId >= topology.GetNumFaces()) {
                 MString warning("Skipping faceID(");
@@ -1432,13 +1431,14 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
                 MGlobal::displayWarning(warning);
                 continue;
             }
-            // we expect that material binding geom subsets will not overlap
-            TF_VERIFY(SdfPath::EmptyPath() == _meshSharedData->_faceIdToGeomSubsetId[faceId]);
-            _meshSharedData->_faceIdToGeomSubsetId[faceId] = geomSubset.id;
+            _meshSharedData->_faceIdToGeomSubsetIds[faceId].emplace(geomSubset.id);
+            assignedFaceIds.emplace(faceId);
         }
-        numFacesWithoutRenderItem -= geomSubset.indices.size();
     }
 
+    // If the geom subsets do not cover all the faces in the mesh we need
+    // to add an additional render item for those faces.
+    int numFacesWithoutRenderItem = topology.GetNumFaces() - assignedFaceIds.size();
     TF_VERIFY(numFacesWithoutRenderItem >= 0);
 
     if (numFacesWithoutRenderItem > 0) {
@@ -1455,9 +1455,9 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
 
         if (numFacesWithoutRenderItem == topology.GetNumFaces()) {
             // If there are no geom subsets that are material bind geom subsets, then we don't need
-            // the _faceIdToGeomSubsetId mapping, we'll just create one item and use the full
+            // the _faceIdToGeomSubsetIds mapping, we'll just create one item and use the full
             // topology for it.
-            _meshSharedData->_faceIdToGeomSubsetId.clear();
+            _meshSharedData->_faceIdToGeomSubsetIds.clear();
             numFacesWithoutRenderItem = 0;
         }
     }
@@ -1682,7 +1682,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             VtVec3iArray     trianglesFaceVertexIndices; // for this item only!
             std::vector<int> faceIds;
-            if (_meshSharedData->_faceIdToGeomSubsetId.size() == 0
+            if (_meshSharedData->_faceIdToGeomSubsetIds.size() == 0
                 || reprToken == HdVP2ReprTokens->defaultMaterial) {
                 // If there is no mapping from face to render item or if this is the default
                 // material item then all the faces are on this render item. VtArray has
@@ -1693,8 +1693,11 @@ void HdVP2Mesh::_UpdateDrawItem(
                      triangleId++) {
                     size_t faceId = HdMeshUtil::DecodeFaceIndexFromCoarseFaceParam(
                         _meshSharedData->_primitiveParam[triangleId]);
-                    if (_meshSharedData->_faceIdToGeomSubsetId[faceId]
-                        == renderItemData._geomSubset.id) {
+                    const auto& targetId = renderItemData._geomSubset.id;
+                    const auto& assignedIds = _meshSharedData->_faceIdToGeomSubsetIds[faceId];
+                    bool isEmptySubset = targetId.IsEmpty() && assignedIds.empty();
+                    bool isSameSubset = !targetId.IsEmpty() && assignedIds.find(targetId) != assignedIds.cend();
+                    if (isEmptySubset || isSameSubset) {
                         faceIds.push_back(faceId);
                         trianglesFaceVertexIndices.push_back(
                             _meshSharedData->_trianglesFaceVertexIndices[triangleId]);
@@ -1879,7 +1882,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         // Retrieve instance transforms from the instancer.
         HdInstancer*    instancer = renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms
-            = static_cast<HdVP2Instancer*>(instancer)->ComputeInstanceTransforms(id);
+            = static_cast<HdVP2Instancer*>(instancer)->GetInstanceTransforms(id);
 
         MMatrix            instanceMatrix;
         const unsigned int instanceCount = transforms.size();
@@ -2027,7 +2030,9 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
 #endif
 
-            _SyncDisplayLayerModesInstanced(id, instanceCount);
+            if (itemDirtyBits & MayaUsdRPrim::DirtyDisplayLayers) {
+                _SyncDisplayLayerModesInstanced(id, instanceCount);
+            }
             const int             modFlags = drawItem->GetModFlags();
             InstanceColorOverride colorOverride(useWireframeColors);
 
@@ -2123,8 +2128,10 @@ void HdVP2Mesh::_UpdateDrawItem(
         // if the values are the same then there is nothing to do. Don't update
         // the instance transforms and keep on drawing with the current transforms
         if (!instanceTransformsChanged) {
+            stateToCommit._oldInstanceTransforms.reset();
             stateToCommit._instanceTransforms.reset();
         } else {
+            stateToCommit._oldInstanceTransforms = drawItemData._instanceTransforms;
             drawItemData._instanceTransforms = stateToCommit._instanceTransforms;
         }
 
@@ -2356,13 +2363,15 @@ void HdVP2Mesh::_UpdateDrawItem(
                 if (stateToCommit._instanceTransforms) {
                     if (oldInstanceCount == newInstanceCount) {
                         for (unsigned int i = 0; i < newInstanceCount; i++) {
-                            // VP2 defines instance ID of the first instance to be 1.
-                            result = drawScene.updateInstanceTransform(
-                                *renderItem, i + 1, (*stateToCommit._instanceTransforms)[i]);
-                            if (result != MStatus::kSuccess) {
-                                TF_WARN(
-                                    "Could not update the instance transform for [%s].",
-                                    renderItem->name().asChar());
+                            if ((*stateToCommit._instanceTransforms)[i] != (*stateToCommit._oldInstanceTransforms)[i]) {
+                                // VP2 defines instance ID of the first instance to be 1.
+                                result = drawScene.updateInstanceTransform(
+                                    *renderItem, i + 1, (*stateToCommit._instanceTransforms)[i]);
+                                if (result != MStatus::kSuccess) {
+                                    TF_WARN(
+                                        "Could not update the instance transform for [%s].",
+                                        renderItem->name().asChar());
+                                }
                             }
                         }
                     } else {

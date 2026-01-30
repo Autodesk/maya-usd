@@ -3969,8 +3969,10 @@ void HdVP2Material::_UpdateLoadedTexture(
     }
 
     // Mark sprim dirty
-    sceneDelegate->GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-        GetId(), HdMaterial::DirtyResource);
+    auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+    if (param) {
+        param->GetDrawScene().GetUsdDirtyingSceneIndex()->MarkSprimDirty(GetId(), HdMaterial::DirtyResource);
+    }
 
     _ScheduleRefresh();
 }
@@ -4057,9 +4059,11 @@ void HdVP2Material::MaterialChanged(HdSceneDelegate* sceneDelegate)
 {
     std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
 
-    HdChangeTracker& changeTracker = sceneDelegate->GetRenderIndex().GetChangeTracker();
-    for (const SdfPath& rprimId : _materialSubscriptions) {
-        changeTracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
+    auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+    if (param) {
+        for (const SdfPath& rprimId : _materialSubscriptions) {
+            param->GetDrawScene().GetUsdDirtyingSceneIndex()->MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
+        }
     }
 }
 

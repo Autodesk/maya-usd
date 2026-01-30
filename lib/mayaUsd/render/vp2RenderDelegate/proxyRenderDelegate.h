@@ -16,16 +16,24 @@
 #ifndef PROXY_RENDER_DELEGATE
 #define PROXY_RENDER_DELEGATE
 
+#include "dirtyingSceneIndex.h"
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/imaging/hd/engine.h>
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/selection.h>
 #include <pxr/imaging/hd/task.h>
+#include <pxr/imaging/hdx/selectionSceneIndexObserver.h>
+#include <pxr/imaging/hdsi/prefixPathPruningSceneIndex.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usdImaging/usdImaging/sceneIndices.h>
+#include <pxr/usdImaging/usdImaging/stageSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/version.h>
+#include <pxr/usdImaging/usdImagingGL/engine.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -52,6 +60,7 @@ class HdRenderDelegate;
 class HdRenderIndex;
 class HdRprimCollection;
 class UsdImagingDelegate;
+class UsdImagingStageSceneIndex;
 class MayaUsdProxyShapeBase;
 class HdxTaskController;
 
@@ -236,7 +245,13 @@ public:
     bool DrawRenderTag(const TfToken& renderTag) const;
 
     MAYAUSD_CORE_PUBLIC
-    UsdImagingDelegate* GetUsdImagingDelegate() const;
+    UsdImagingSceneIndices* GetUsdSceneIndices() const;
+
+    MAYAUSD_CORE_PUBLIC
+    DirtyingSceneIndexRefPtr GetUsdDirtyingSceneIndex() const;
+
+    MAYAUSD_CORE_PUBLIC
+    HdSceneDelegate* GetUsdSceneDelegate() const;
 
     MAYAUSD_CORE_PUBLIC
     MDagPath GetProxyShapeDagPath() const;
@@ -272,6 +287,7 @@ private:
     void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);
     void _PopulateCleanup();
+    HdSceneIndexBaseRefPtr _AppendUsdSceneIndices(const HdSceneIndexBaseRefPtr& inputScene);
 
     typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
     typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
@@ -354,7 +370,14 @@ private:
         _taskController; //!< Task controller necessary for execution with hydra engine (we don't
                          //!< really need it, but there doesn't seem to be a way to get
                          //!< synchronization running without it)
-    std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
+    SdfPath _delegateId;
+    HdSceneDelegate* _usdSceneDelegate;
+    std::unique_ptr<UsdImagingSceneIndices> _usdSceneIndices;
+    HdxSelectionSceneIndexObserver _usdSelectionSceneIndexObserver;
+    HdsiPrefixPathPruningSceneIndexRefPtr _usdPathPruningSceneIndex;
+    UsdImagingRootOverridesSceneIndexRefPtr _usdRootOverridesSceneIndex;
+    HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _usdDisplayStyleSceneIndex;
+    DirtyingSceneIndexRefPtr _usdDirtyingSceneIndex;
     const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
     std::map<TfToken, uint64_t>         _combinedDisplayStyles;
     bool                                _needTexturedMaterials = false;
@@ -496,7 +519,7 @@ private:
 /*! \brief  Is this object properly initialized and can start receiving updates. Once this is done,
  * render index needs to be populated and then we rely on change tracker.
  */
-inline bool ProxyRenderDelegate::_isInitialized() { return (_sceneDelegate != nullptr); }
+inline bool ProxyRenderDelegate::_isInitialized() { return (_usdSceneIndices != nullptr); }
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

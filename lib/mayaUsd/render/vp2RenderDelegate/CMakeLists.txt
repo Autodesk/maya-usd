@@ -21,6 +21,7 @@ target_sources(${PROJECT_NAME}
         sampler.cpp
         shader.cpp
         tokens.cpp
+        dirtyingSceneIndex.cpp
 )
 
 set(HEADERS
