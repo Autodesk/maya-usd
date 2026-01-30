@@ -647,36 +647,7 @@ void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
     if (!_layer || isInvalidLayer())
         return;
 
-    // Tracks edits and turns it into a single undo command once we leave this scope.
-    MAYAUSD_NS_DEF::MayaUsdUndoBlock undoBlock;
-
-    // Get the PcpLayerStack from the temporary stage.
-    PXR_NS::PcpLayerStackRefPtr layerStack;
-    PXR_NS::UsdStageRefPtr      tempStage = PXR_NS::UsdStage::Open(_layer);
-    PXR_NS::UsdPrim             rootPrim = tempStage->GetPseudoRoot();
-    if (rootPrim) {
-        PXR_NS::PcpPrimIndex primIndex = rootPrim.ComputeExpandedPrimIndex();
-        if (primIndex.IsValid()) {
-            PXR_NS::PcpNodeRef rootNode = primIndex.GetRootNode();
-            if (rootNode) {
-                layerStack = rootNode.GetLayerStack();
-            }
-        }
-    }
-
-    if (!layerStack) {
-        MGlobal::displayError("Cannot merge sublayers: could not determine layer stack");
-        return;
-    }
-
-    PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
-
-    if (!flattenedLayer) {
-        MGlobal::displayError("Failed to flatten layer stack");
-        return;
-    }
-
-    _layer->TransferContent(flattenedLayer);
+    commandHook()->flattenLayer(_layer);
 }
 
 UsdLayerEditor::LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer)

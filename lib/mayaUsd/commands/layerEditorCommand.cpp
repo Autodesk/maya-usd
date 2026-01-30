@@ -30,6 +30,10 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/usd/flattenUtils.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
@@ -60,6 +64,8 @@ const char kDiscardEditsFlag[] = "de";
 const char kDiscardEditsFlagL[] = "discardEdits";
 const char kClearLayerFlag[] = "cl";
 const char kClearLayerFlagL[] = "clear";
+const char kFlattenLayerFlag[] = "fl";
+const char kFlattenLayerFlagL[] = "flatten";
 const char kAddAnonSublayerFlag[] = "aa";
 const char kAddAnonSublayerFlagL[] = "addAnonymous";
 const char kMuteLayerFlag[] = "mt";
@@ -94,6 +100,7 @@ enum class CmdId
     kReplace,
     kDiscardEdit,
     kClearLayer,
+    kFlattenLayer,
     kAddAnonLayer,
     kMuteLayer,
     kLockLayer,
@@ -609,6 +616,38 @@ public:
             layer->Reload();
         } else if (_cmdId == CmdId::kClearLayer) {
             layer->Clear();
+        } else if (_cmdId == CmdId::kFlattenLayer) {
+            // Flatten the layer with its sublayers
+            PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
+            if (!tempStage) {
+                MPxCommand::displayError("Failed to open stage for layer");
+                return false;
+            }
+
+            PXR_NS::PcpLayerStackRefPtr layerStack;
+            PXR_NS::UsdPrim             rootPrim = tempStage->GetPseudoRoot();
+            if (rootPrim) {
+                PXR_NS::PcpPrimIndex primIndex = rootPrim.ComputeExpandedPrimIndex();
+                if (primIndex.IsValid()) {
+                    PXR_NS::PcpNodeRef rootNode = primIndex.GetRootNode();
+                    if (rootNode) {
+                        layerStack = rootNode.GetLayerStack();
+                    }
+                }
+            }
+
+            if (!layerStack) {
+                MPxCommand::displayError("Cannot flatten layer: could not determine layer stack");
+                return false;
+            }
+
+            PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
+            if (!flattenedLayer) {
+                MPxCommand::displayError("Failed to flatten layer stack");
+                return false;
+            }
+
+            layer->TransferContent(flattenedLayer);
         }
 
         // Note: backup the edit targets after the layer is cleared because we use
@@ -728,6 +767,15 @@ class ClearLayer : public BackupLayerBase
 public:
     ClearLayer()
         : BackupLayerBase(CmdId::kClearLayer)
+    {
+    }
+};
+
+class FlattenLayer : public BackupLayerBase
+{
+public:
+    FlattenLayer()
+        : BackupLayerBase(CmdId::kFlattenLayer)
     {
     }
 };
@@ -1208,6 +1256,7 @@ MSyntax LayerEditorCommand::createSyntax()
         MSyntax::kUnsigned); // layer index inside the new parent
     syntax.addFlag(kDiscardEditsFlag, kDiscardEditsFlagL);
     syntax.addFlag(kClearLayerFlag, kClearLayerFlagL);
+    syntax.addFlag(kFlattenLayerFlag, kFlattenLayerFlagL);
     // parameter: new layer name
     syntax.addFlag(kAddAnonSublayerFlag, kAddAnonSublayerFlagL, MSyntax::kString);
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
@@ -1329,6 +1378,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
         if (argParser.isFlagSet(kClearLayerFlag)) {
             auto cmd = std::make_shared<Impl::ClearLayer>();
+            _subCommands.push_back(std::move(cmd));
+        }
+
+        if (argParser.isFlagSet(kFlattenLayerFlag)) {
+            auto cmd = std::make_shared<Impl::FlattenLayer>();
             _subCommands.push_back(std::move(cmd));
         }
 
