@@ -63,13 +63,13 @@ HdVP2Instancer::~HdVP2Instancer()
 
     This method is executed when we call HdInstancer::_SyncInstancerAndParents
     in GetInstanceTransforms. Even if multiple instances try to sync their
-    instancer in parallel, this method will only be called once; 
+    instancer in parallel, this method will only be called once;
     _SyncInstancerAndParents takes care of the multithreading aspect.
 */
 void HdVP2Instancer::Sync(
-    HdSceneDelegate *sceneDelegate, 
-    HdRenderParam   *renderParam, 
-    HdDirtyBits     *dirtyBits)
+    HdSceneDelegate* sceneDelegate,
+    HdRenderParam*   renderParam,
+    HdDirtyBits*     dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -106,15 +106,17 @@ void HdVP2Instancer::Sync(
         for (const auto& prototypeId : prototypeIds) {
             auto instanceIndices = sceneDelegate->GetInstanceIndices(id, prototypeId);
             if (!instanceIndices.empty()) {
-                _maxInstanceIndex = std::max(_maxInstanceIndex, *std::max_element(instanceIndices.begin(), instanceIndices.end()));
+                _maxInstanceIndex = std::max(
+                    _maxInstanceIndex,
+                    *std::max_element(instanceIndices.begin(), instanceIndices.end()));
                 _instanceIndicesByPrototype[prototypeId] = instanceIndices;
             }
         }
     }
 
     bool updateInstanceTransforms = (*dirtyBits & HdChangeTracker::DirtyTransform)
-                                    || HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)
-                                    || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex);
+        || HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)
+        || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex);
     if (updateInstanceTransforms) {
         // Initialize all transforms to the instancer's transform, on which we later
         // apply the individual instances' transformations.
@@ -141,7 +143,8 @@ void HdVP2Instancer::Sync(
                 if (sampler.Sample(instanceIndex, &translate)) {
                     GfMatrix4d translateMat(1);
                     translateMat.SetTranslate(GfVec3d(translate));
-                    _instanceTransforms[instanceIndex] = translateMat * _instanceTransforms[instanceIndex];
+                    _instanceTransforms[instanceIndex]
+                        = translateMat * _instanceTransforms[instanceIndex];
                 }
             }
         }
@@ -154,13 +157,15 @@ void HdVP2Instancer::Sync(
                 if (sampler.Sample(instanceIndex, &quath)) {
                     GfMatrix4d rotateMat(1);
                     rotateMat.SetRotate(quath);
-                    _instanceTransforms[instanceIndex] = rotateMat * _instanceTransforms[instanceIndex];
+                    _instanceTransforms[instanceIndex]
+                        = rotateMat * _instanceTransforms[instanceIndex];
                 } else {
                     GfVec4f quat;
                     if (sampler.Sample(instanceIndex, &quat)) {
                         GfMatrix4d rotateMat(1);
                         rotateMat.SetRotate(GfQuatd(quat[0], quat[1], quat[2], quat[3]));
-                        _instanceTransforms[instanceIndex] = rotateMat * _instanceTransforms[instanceIndex];
+                        _instanceTransforms[instanceIndex]
+                            = rotateMat * _instanceTransforms[instanceIndex];
                     }
                 }
             }
@@ -174,7 +179,8 @@ void HdVP2Instancer::Sync(
                 if (sampler.Sample(instanceIndex, &scale)) {
                     GfMatrix4d scaleMat(1);
                     scaleMat.SetScale(GfVec3d(scale));
-                    _instanceTransforms[instanceIndex] = scaleMat * _instanceTransforms[instanceIndex];
+                    _instanceTransforms[instanceIndex]
+                        = scaleMat * _instanceTransforms[instanceIndex];
                 }
             }
         }
@@ -185,7 +191,8 @@ void HdVP2Instancer::Sync(
             for (size_t instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
                 GfMatrix4d transformMat;
                 if (sampler.Sample(instanceIndex, &transformMat)) {
-                    _instanceTransforms[instanceIndex] = transformMat * _instanceTransforms[instanceIndex];
+                    _instanceTransforms[instanceIndex]
+                        = transformMat * _instanceTransforms[instanceIndex];
                 }
             }
         }
@@ -206,7 +213,7 @@ VtMatrix4dArray HdVP2Instancer::GetInstanceTransforms(SdfPath const& prototypeId
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    
+
     HdInstancer::_SyncInstancerAndParents(GetDelegate()->GetRenderIndex(), GetId());
 
     // Get the instance indices from our cache instead of querying the scene delegate.
@@ -214,9 +221,9 @@ VtMatrix4dArray HdVP2Instancer::GetInstanceTransforms(SdfPath const& prototypeId
     if (itInstanceIndices == _instanceIndicesByPrototype.end()) {
         return {};
     }
-    
+
     // Retrieve only the instance transforms relevant to this prototype
-    auto instanceIndices = itInstanceIndices->second;
+    auto            instanceIndices = itInstanceIndices->second;
     VtMatrix4dArray transforms(instanceIndices.size());
     for (size_t i = 0; i < instanceIndices.size(); i++) {
         transforms[i] = _instanceTransforms[instanceIndices[i]];

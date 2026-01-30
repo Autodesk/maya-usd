@@ -49,10 +49,8 @@ public:
 
     ~HdVP2Instancer();
 
-    void Sync(
-        HdSceneDelegate *sceneDelegate, 
-        HdRenderParam   *renderParam, 
-        HdDirtyBits     *dirtyBits) override;
+    void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+        override;
 
     VtMatrix4dArray GetInstanceTransforms(SdfPath const& prototypeId);
 
@@ -65,7 +63,7 @@ private:
 
     // Cache the instance indices to avoid having the scene delegate recompute
     // them every time
-    int _maxInstanceIndex = -1;
+    int                                           _maxInstanceIndex = -1;
     TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> _instanceIndicesByPrototype;
 
     // Instance transforms cache
