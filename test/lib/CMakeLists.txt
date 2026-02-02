@@ -58,7 +58,7 @@ mayaUsd_add_test(${target}
 )
 set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 
-#if (AdskUsdComponentCreator_FOUND)
+if (AdskUsdComponentCreator_FOUND)
     # Install a test to check that the USD component creator plugin loads (if available).
     mayaUsd_get_unittest_target(target testLoadComponentCreatorPlugin.py)
     mayaUsd_add_test(${target}
@@ -71,7 +71,12 @@ set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
             "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
     )
     set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
-#endif()
+else()
+    # If MAYAUSD_FORCE_CC_TEST is set to 1, fail the build when component creator is not found
+    if (DEFINED ENV{MAYAUSD_FORCE_CC_TEST} AND "$ENV{MAYAUSD_FORCE_CC_TEST}" STREQUAL "1")
+        message(FATAL_ERROR "MAYAUSD_FORCE_CC_TEST is set to 1 but AdskUsdComponentCreator was not found. ")
+    endif()
+endif()
 
 foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})

@@ -63,6 +63,7 @@ class LoadComponentCreatorPluginTestCase(unittest.TestCase):
 
         self.assertTrue(mayaUtils.loadPlugin('mayaUsdPlugin'))
         self.assertTrue(mayaUtils.loadPlugin('usd_component_creator'))
+        self.fail('THE TEST WAS ACTUALLY RUN! ')
 
 
 if __name__ == '__main__':
