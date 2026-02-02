@@ -1032,3 +1032,86 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         cmds.file(mayaSceneFilePath, force=True, open=True)
         filePathRel = mayaUsd.lib.Util.getPathRelativeToMayaSceneFile(ballFilePath)
         self.assertEqual(filePathRel, 'top_layer.usda')
+        
+    def testMergeWithSublayers(self):
+        """ test 'mayaUsdLayerEditor' command 'flatten' parameter to merge a layer with its sublayers """
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+
+        # Create two separate layer hierarchies under root
+        # Root
+        #   Layer1
+        #     Layer1Sub
+        #   Layer2
+        #     Layer2Sub
+        layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+        layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
+        layer1SubId = cmds.mayaUsdLayerEditor(layer1Id, edit=True, addAnonymous="Layer1Sub")[0]
+        layer2SubId = cmds.mayaUsdLayerEditor(layer2Id, edit=True, addAnonymous="Layer2Sub")[0]
+
+        layer1 = Sdf.Layer.Find(layer1Id)
+        layer2 = Sdf.Layer.Find(layer2Id)
+        layer1Sub = Sdf.Layer.Find(layer1SubId)
+        layer2Sub = Sdf.Layer.Find(layer2SubId)
+
+        # Ball1 defined in Layer1Sub, transformed in Layer1
+        ball1Spec = Sdf.PrimSpec(layer1Sub, "Ball1", Sdf.SpecifierDef, "Sphere")
+        ball1OverSpec = Sdf.PrimSpec(layer1, "Ball1", Sdf.SpecifierOver)
+        ball1Attr = Sdf.AttributeSpec(ball1OverSpec, "radius", Sdf.ValueTypeNames.Double)
+        ball1Attr.default = 5.0
+
+        # Ball2 defined in Layer2Sub, transformed in Layer2
+        ball2Spec = Sdf.PrimSpec(layer2Sub, "Ball2", Sdf.SpecifierDef, "Sphere")
+        ball2OverSpec = Sdf.PrimSpec(layer2, "Ball2", Sdf.SpecifierOver)
+        ball2Attr = Sdf.AttributeSpec(ball2OverSpec, "radius", Sdf.ValueTypeNames.Double)
+        ball2Attr.default = 10.0
+
+        # Verify initial structure
+        self.assertEqual(len(layer1.subLayerPaths), 1)
+        self.assertEqual(len(layer2.subLayerPaths), 1)
+        self.assertEqual(len(rootLayer.subLayerPaths), 2)
+
+        # Flatten Layer1 (merge Layer1Sub into Layer1)
+        cmds.mayaUsdLayerEditor(layer1Id, edit=True, flatten=True)
+        self.assertEqual(len(layer1.subLayerPaths), 0)
+        self.assertIsNotNone(layer1.GetPrimAtPath("/Ball1"))
+
+        # Flatten Layer2 (merge Layer2Sub into Layer2)
+        cmds.mayaUsdLayerEditor(layer2Id, edit=True, flatten=True)
+        self.assertEqual(len(layer2.subLayerPaths), 0)
+        self.assertIsNotNone(layer2.GetPrimAtPath("/Ball2"))
+
+        # Flatten Root (merge flattened Layer1 and Layer2 into Root)
+        self.assertEqual(len(rootLayer.subLayerPaths), 2)
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, flatten=True)
+        self.assertEqual(len(rootLayer.subLayerPaths), 0)
+
+        # Verify all content is now in root layer
+        self.assertIsNotNone(rootLayer.GetPrimAtPath("/Ball1"))
+        self.assertIsNotNone(rootLayer.GetPrimAtPath("/Ball2"))
+
+        # Undo root flatten
+        cmds.undo()
+        self.assertEqual(len(rootLayer.subLayerPaths), 2)
+
+        # Undo Layer2 flatten
+        cmds.undo()
+        self.assertEqual(len(layer2.subLayerPaths), 1)
+
+        # Undo Layer1 flatten
+        cmds.undo()
+        self.assertEqual(len(layer1.subLayerPaths), 1)
+
+        # Redo Layer1 flatten
+        cmds.redo()
+        self.assertEqual(len(layer1.subLayerPaths), 0)
+
+        # Redo Layer2 flatten
+        cmds.redo()
+        self.assertEqual(len(layer2.subLayerPaths), 0)
+
+        # Redo Root flatten
+        cmds.redo()
+        self.assertEqual(len(rootLayer.subLayerPaths), 0)
+
+
