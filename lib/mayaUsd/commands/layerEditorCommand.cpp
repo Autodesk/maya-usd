@@ -30,6 +30,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/usd/usdUtils/stitch.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
@@ -70,6 +71,8 @@ const char kSkipSystemLockedFlag[] = "ssl";
 const char kSkipSystemLockedFlagL[] = "skipSystemLocked";
 const char kRefreshSystemLockFlag[] = "rl";
 const char kRefreshSystemLockFlagL[] = "refreshSystemLock";
+const char kStitchLayersFlag[] = "sl";
+const char kStitchLayersFlagL[] = "stitchLayers";
 
 // Disables updateEditTarget's functionality is set.
 // Areas that will be affected are:
@@ -97,7 +100,8 @@ enum class CmdId
     kAddAnonLayer,
     kMuteLayer,
     kLockLayer,
-    kRefreshSystemLock
+    kRefreshSystemLock,
+    kStitchLayers
 };
 
 class BaseCmd
@@ -732,6 +736,33 @@ public:
     }
 };
 
+class StitchLayers : public BackupLayerBase
+{
+public:
+    StitchLayers()
+        : BackupLayerBase(CmdId::kStitchLayers)
+    {
+    }
+
+    bool doIt(SdfLayerHandle targetLayer) override
+    {
+        // KYLE TODO
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle targetLayer) override
+    {
+        // KYLE TODO
+        return true;
+    }
+
+    //std::vector<std::string>    _weakLayerIdentifiers; // Layers to merge (from weakest to strongest)
+    //std::vector<SdfLayerHandle> _weakLayerParents;     // Parent layer for each weak layer
+    //std::vector<std::string>    _weakLayerPaths;       // Paths in each parent's sublayer array
+    //std::vector<int>            _weakLayerIndices;     // Original indices for undo
+    //std::string                 _proxyShapePath;       // For edit target management
+};
+
 class MuteLayer : public BaseCmd
 {
 public:
@@ -1220,6 +1251,8 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.addFlag(
         kRefreshSystemLockFlag, kRefreshSystemLockFlagL, MSyntax::kString, MSyntax::kBoolean);
     syntax.addFlag(kSkipSystemLockedFlag, kSkipSystemLockedFlagL);
+    syntax.addFlag(kStitchLayersFlag, kStitchLayersFlagL, MSyntax::kString);
+    syntax.makeFlagMultiUse(kStitchLayersFlag);
 
     return syntax;
 }
@@ -1419,6 +1452,9 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             cmd->_proxyShapePath = proxyShapeName.asChar();
             cmd->_refreshSubLayers = refreshSubLayers;
             _subCommands.push_back(std::move(cmd));
+        }
+        if (argParser.isFlagSet(kStitchLayersFlag)) {
+            // KYLE TODO
         }
     }
 

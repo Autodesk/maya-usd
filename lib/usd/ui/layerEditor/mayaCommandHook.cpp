@@ -238,6 +238,13 @@ void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubL
     executeMel(cmd);
 }
 
+void MayaCommandHook::stitchLayers(
+    const std::vector<PXR_NS::SdfLayerRefPtr>& layers,
+    const std::vector<PXR_NS::SdfLayerRefPtr>& parents)
+{
+    // KYLE TODO
+}
+
 // Help menu callback
 void MayaCommandHook::showLayerEditorHelp()
 {

@@ -225,6 +225,11 @@ void MayaLayerEditorWindow::lockLayerAndSubLayers()
     }
 }
 
+void MayaLayerEditorWindow::stitchLayers()
+{
+    // KYLE TODO
+}
+
 void MayaLayerEditorWindow::addParentLayer()
 {
     QString name = "Add Parent Layer";

@@ -66,6 +66,7 @@ DEF_FLAG(cl, clearLayer)
 DEF_FLAG(sp, selectPrimsWithSpec)
 DEF_FLAG(lk, lockLayer)
 DEF_FLAG(la, lockLayerAndSubLayers)
+DEF_FLAG(st, stitchLayers)
 
 const MString WORKSPACE_CONTROL_NAME = "mayaUsdLayerEditor";
 } // namespace
@@ -156,6 +157,7 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(selectPrimsWithSpec);
     ADD_FLAG(lockLayer);
     ADD_FLAG(lockLayerAndSubLayers);
+    ADD_FLAG(stitchLayers);
 
     // editor name
     syntax.addArg(MSyntax::kString);
@@ -394,6 +396,7 @@ MStatus LayerEditorWindowCommand::handleEdits(
     HANDLE_E_FLAG(selectPrimsWithSpec, true)
     HANDLE_E_FLAG(lockLayer, true)
     HANDLE_E_FLAG(lockLayerAndSubLayers, true)
+    HANDLE_E_FLAG(stitchLayers, false)
 
     if (argParser.isFlagSet(FLAG(setSelectedLayers))) {
         if (notEdit) {
