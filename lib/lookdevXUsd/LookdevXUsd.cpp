@@ -10,6 +10,7 @@
 //*****************************************************************************
 #include "LookdevXUsd.h"
 
+#include "ProxyShapeLookdevHandler.h"
 #include "UsdCapabilityHandler.h"
 #include "UsdClipboardHandler.h"
 #include "UsdDebugHandler.h"
@@ -35,7 +36,10 @@ namespace
 
 // Runtime ids (default 0 is invalid).
 Ufe::Rtid mayaUsdRuntimeId = 0;
+Ufe::Rtid mayaRuntimeId = 0;
+
 Ufe::SceneItemOpsHandler::Ptr mayaUsdSceneItemOpsHandler;
+LookdevXUfe::LookdevHandler::Ptr mayaLookdevHandler;
 
 } // namespace
 
@@ -43,6 +47,7 @@ namespace LookdevXUsd
 {
 
 constexpr auto kMayaUsdRuntimeName = "USD";
+constexpr auto kMayaRuntimeName = "Maya-DG";
 
 void initialize()
 {
@@ -50,6 +55,7 @@ void initialize()
     try
     {
         mayaUsdRuntimeId = Ufe::RunTimeMgr::instance().getId(kMayaUsdRuntimeName);
+        mayaRuntimeId = Ufe::RunTimeMgr::instance().getId(kMayaRuntimeName);
     }
     catch (const std::exception&)
     {
@@ -78,6 +84,10 @@ void initialize()
     mayaUsdSceneItemOpsHandler = Ufe::RunTimeMgr::instance().sceneItemOpsHandler(mayaUsdRuntimeId);
     Ufe::RunTimeMgr::instance().setSceneItemOpsHandler(
         mayaUsdRuntimeId, LookdevXUsd::UsdSceneItemOpsHandler::create(mayaUsdSceneItemOpsHandler));
+
+    mayaLookdevHandler = LookdevXUfe::LookdevHandler::get(mayaRuntimeId);
+    Ufe::RunTimeMgr::instance().registerHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id,
+        ProxyShapeLookdevHandler::create(mayaLookdevHandler));
 
     // Force loading the Sdr library to preload the source of the NodeLibrary on the USD side. This will load the Arnold
     // DLL if it is in the USD paths and initialize it for its nodes, which should result in a slight delay.
@@ -117,6 +127,13 @@ void uninitialize()
         runTimeMgr.setSceneItemOpsHandler(mayaUsdRuntimeId, mayaUsdSceneItemOpsHandler);
     }
     mayaUsdSceneItemOpsHandler.reset();
+
+    // Unregister the decorated Maya handlers and restore the original ones.
+    Ufe::RunTimeMgr::instance().unregisterHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id);
+    if (runTimeMgr.hasId(mayaRuntimeId) && mayaLookdevHandler) {
+      Ufe::RunTimeMgr::instance().registerHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id, mayaLookdevHandler);
+    }
+    mayaLookdevHandler.reset();
 }
 
 } // namespace LookdevXUsd

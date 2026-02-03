@@ -256,7 +256,7 @@ QLayout* VariantsEditorWidget::createVariantSet(
     QComboBox* cb = new QComboBox;
 
     ItemDelegate* id = const_cast<ItemDelegate*>(itemDelegate);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_DISABLE_DEPRECATED_BEFORE || QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     connect(
         cb,
         static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::textActivated),

@@ -14,6 +14,7 @@
 # UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
 # UFE_CLIPBOARD_SUPPORT     Presence of UFE clipboard support
 # UFE_DEFAULT_VALUE_SUPPORT Presence of UFE default value support
+# UFE_HAS_UNSIGNED_INT      Presence of UFE unsigned int support
 # UFE_PREVIEW_FEATURES      List of all features introduced gradually in the UFE preview version
 #
 
@@ -154,6 +155,15 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attribute.h")
     if(UFE_HAS_API)
         set(UFE_DEFAULT_VALUE_SUPPORT TRUE CACHE INTERNAL "ufeHasDefaultValue")
         message(STATUS "Maya has UFE Attribute default value support")
+    endif()
+endif()
+
+set(UFE_HAS_UNSIGNED_INT FALSE CACHE INTERNAL "ufeHasUnsignedInt")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/attribute.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/attribute.h UFE_HAS_API REGEX "AttributeUInt")
+    if(UFE_HAS_API)
+        set(UFE_HAS_UNSIGNED_INT TRUE CACHE INTERNAL "ufeHasUnsignedInt")
+        message(STATUS "Maya has UFE Attribute type Unsigned Int")
     endif()
 endif()
 

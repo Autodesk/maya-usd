@@ -32,7 +32,13 @@
 #include <pxr/usd/usd/payloads.h>
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/stage.h>
+
+#if PXR_VERSION < 2508
 #include <pxr/usd/usd/usdFileFormat.h>
+#else
+#include <pxr/usd/sdf/usdFileFormat.h>
+#endif
+
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/gprim.h>
 
@@ -197,7 +203,12 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
     PXR_NS::SdfFileFormatConstPtr         fileFormat;
 
     if (fileFormatExtension.size() > 0) {
+
+#if PXR_VERSION < 2508
         fileFormatArgs[PXR_NS::UsdUsdFileFormatTokens->FormatArg] = fileFormatExtension;
+#else
+        fileFormatArgs[PXR_NS::SdfUsdFileFormatTokens->FormatArg] = fileFormatExtension;
+#endif
         auto dummyFilename = std::string("a.") + fileFormatExtension;
         fileFormat = PXR_NS::SdfFileFormat::FindByExtension(dummyFilename, fileFormatArgs);
     }

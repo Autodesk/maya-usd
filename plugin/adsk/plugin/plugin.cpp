@@ -243,13 +243,83 @@ MStatus initializePlugin(MObject obj)
         MayaUsd::MayaUsdGeomNode::initialize);
     CHECK_MSTATUS(status);
 
+    // Maya USD Lights: Gizmos + Maya's internal light Shading
+
+    // Using dbClassificationDefault for the time being for RectLight shading.
     status = plugin.registerShape(
-        MayaUsd::GizmoShape::typeName,
-        MayaUsd::GizmoShape::id,
+        MayaUsd::GizmoShape::typeNamePrefix + "Area",
+        MayaUsd::GizmoShape::idRect,
         MayaUsd::GizmoShape::creator,
         MayaUsd::GizmoShape::initialize,
         nullptr,
-        &MayaUsd::GizmoGeometryOverride::dbClassification);
+        &MayaUsd::GizmoShape::dbClassificationDefault);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerShape(
+        MayaUsd::GizmoShape::typeNamePrefix + "Directional",
+        MayaUsd::GizmoShape::idDistant,
+        MayaUsd::GizmoShape::creator,
+        MayaUsd::GizmoShape::initialize,
+        nullptr,
+        &MayaUsd::GizmoShape::dbClassificationDistant);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerShape(
+        MayaUsd::GizmoShape::typeNamePrefix + "Default",
+        MayaUsd::GizmoShape::idDefault,
+        MayaUsd::GizmoShape::creator,
+        MayaUsd::GizmoShape::initialize,
+        nullptr,
+        &MayaUsd::GizmoShape::dbClassificationDefault);
+    CHECK_MSTATUS(status);
+
+    // Using dbClassificationDefault for DomeLight shading.
+    status = plugin.registerShape(
+        MayaUsd::GizmoShape::typeNamePrefix + "Dome",
+        MayaUsd::GizmoShape::idDomeLight,
+        MayaUsd::GizmoShape::creator,
+        MayaUsd::GizmoShape::initialize,
+        nullptr,
+        &MayaUsd::GizmoShape::dbClassificationDefault);
+    CHECK_MSTATUS(status);
+
+    // Using dbClassificationDefault for SphereLight shading.
+    status = plugin.registerShape(
+        MayaUsd::GizmoShape::typeNamePrefix + "Sphere",
+        MayaUsd::GizmoShape::idSphere,
+        MayaUsd::GizmoShape::creator,
+        MayaUsd::GizmoShape::initialize,
+        nullptr,
+        &MayaUsd::GizmoShape::dbClassificationDefault);
+    CHECK_MSTATUS(status);
+
+    // Using dbClassificationDefault for DiskLight shading.
+    status = plugin.registerShape(
+        MayaUsd::GizmoShape::typeNamePrefix + "Disk",
+        MayaUsd::GizmoShape::idDisk,
+        MayaUsd::GizmoShape::creator,
+        MayaUsd::GizmoShape::initialize,
+        nullptr,
+        &MayaUsd::GizmoShape::dbClassificationDefault);
+    CHECK_MSTATUS(status);
+
+    status = plugin.registerShape(
+        MayaUsd::GizmoShape::typeNamePrefix + "Spot",
+        MayaUsd::GizmoShape::idCone,
+        MayaUsd::GizmoShape::creator,
+        MayaUsd::GizmoShape::initialize,
+        nullptr,
+        &MayaUsd::GizmoShape::dbClassificationShapingAPICone);
+    CHECK_MSTATUS(status);
+
+    // Using dbClassificationDefault for CylinderLight shading.
+    status = plugin.registerShape(
+        MayaUsd::GizmoShape::typeNamePrefix + "Cylinder",
+        MayaUsd::GizmoShape::idCylinder,
+        MayaUsd::GizmoShape::creator,
+        MayaUsd::GizmoShape::initialize,
+        nullptr,
+        &MayaUsd::GizmoShape::dbClassificationDefault);
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::registerGeometryOverrideCreator(
@@ -408,7 +478,21 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterNode(MayaUsd::MayaUsdGeomNode::typeId);
     CHECK_MSTATUS(status);
 
-    plugin.deregisterNode(MayaUsd::GizmoShape::id);
+    plugin.deregisterNode(MayaUsd::GizmoShape::idDefault);
+    CHECK_MSTATUS(status);
+    plugin.deregisterNode(MayaUsd::GizmoShape::idRect);
+    CHECK_MSTATUS(status);
+    plugin.deregisterNode(MayaUsd::GizmoShape::idDistant);
+    CHECK_MSTATUS(status);
+    plugin.deregisterNode(MayaUsd::GizmoShape::idDomeLight);
+    CHECK_MSTATUS(status);
+    plugin.deregisterNode(MayaUsd::GizmoShape::idSphere);
+    CHECK_MSTATUS(status);
+    plugin.deregisterNode(MayaUsd::GizmoShape::idDisk);
+    CHECK_MSTATUS(status);
+    plugin.deregisterNode(MayaUsd::GizmoShape::idCone);
+    CHECK_MSTATUS(status);
+    plugin.deregisterNode(MayaUsd::GizmoShape::idCylinder);
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterGeometryOverrideCreator(

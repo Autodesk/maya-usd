@@ -35,9 +35,14 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdGeom/xform.h>
+
+#if PXR_VERSION < 2508
+#include <pxr/usd/usd/usdFileFormat.h>
+#else
+#include <pxr/usd/sdf/usdFileFormat.h>
+#endif
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -466,7 +471,11 @@ bool UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
             layer = existingLayer;
         } else {
             SdfLayer::FileFormatArguments args;
+#if PXR_VERSION < 2508
             args[UsdUsdFileFormatTokens->FormatArg] = mArgs.defaultUSDFormat.GetString();
+#else
+            args[SdfUsdFileFormatTokens->FormatArg] = mArgs.defaultUSDFormat.GetString();
+#endif
             layer = SdfLayer::CreateNew(filename, args);
         }
         if (!layer) {

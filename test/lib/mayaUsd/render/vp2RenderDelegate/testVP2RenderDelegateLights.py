@@ -79,7 +79,12 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         selection.append(self._GetSceneItem('|stage|stageShape', '/lights/spotLight'))
         selection.append(self._GetSceneItem('|stage|stageShape', '/lights/pointLight'))
         selection.append(self._GetSceneItem('|stage|stageShape', '/lights/directionalLight'))
-        selection.append(self._GetSceneItem('|stage|stageShape', '/lights/areaLight'))        
+        selection.append(self._GetSceneItem('|stage|stageShape', '/lights/areaLight'))
+        if mayaUtils.ufeSupportFixLevel() >= 11:
+            selection.append(self._GetSceneItem('|stage|stageShape', '/lights/diskLight'))
+            selection.append(self._GetSceneItem('|stage|stageShape', '/lights/cylinderLight'))
+            selection.append(self._GetSceneItem('|stage|stageShape', '/lights/domeLight'))
+            selection.append(self._GetSceneItem('|stage|stageShape', '/lights/domeLight_1'))
         globalSelection.replaceWith(selection)
         self.assertSnapshotClose('%s_selected%s.png' % (self._testName, self._suffix))
 
@@ -141,7 +146,7 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         
         self._RunTest()
 
-    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 10, 'Requires parent command fix in Maya for UFE Light\'s areaInterface.')
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() == 10, 'Requires parent command fix in Maya for UFE Light\'s areaInterface.')
     def testCustomRectLightGizmo(self):
         self._StartTest('RenderLightsCustomRectLightGizmo')
 
@@ -152,6 +157,16 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
         
         self._RunTest()
 
+    @unittest.skipUnless(mayaUtils.ufeSupportFixLevel() >= 11, 'Requires parent command fix in Maya for UFE Light\'s VP2 shading.')
+    def testCustomRectLightGizmo(self):
+        self._StartTest('RenderLightsCustomGizmoVP2Shading')
+
+        cmds.move(-10, 15, 20, 'persp')
+        cmds.rotate(-30, -30, 0, 'persp')
+        cmds.modelEditor('modelPanel4', edit=True, grid=False, displayLights = 'all')
+        cmds.displayColor('light', 21, active=True)
+        
+        self._RunTest()
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

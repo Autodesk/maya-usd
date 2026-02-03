@@ -157,7 +157,7 @@ protected:
         const override
     {
         if (hint == QStyle::SH_Slider_AbsoluteSetButtons) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_DISABLE_DEPRECATED_BEFORE || QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             return Qt::LeftButton | Qt::MiddleButton | Qt::RightButton;
 #else
             return Qt::LeftButton | Qt::MidButton | Qt::RightButton;

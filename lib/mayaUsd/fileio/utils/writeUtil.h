@@ -331,22 +331,6 @@ struct UsdMayaWriteUtil
         return valueWriter ? valueWriter->SetAttribute(attr, VtValue::Take(*value), time)
                            : attr.Set(*value, time);
     }
-
-#if PXR_VERSION >= 2411
-    /// Get the UsdKnots from a Maya curve.
-    ///
-    /// Returns an empty TsKnotMap if the curve doesn't exist or has no keys.
-    MAYAUSD_CORE_PUBLIC static TsKnotMap GetKnotsFromMayaCurve(
-        const MFnDependencyNode& depNode,
-        const MString&           name,
-        float                    scaling = 1.f);
-
-    /// Get the UsdSpline from a Maya curve.
-    ///
-    /// The spline will have different configuration based on the wanted curve.
-    MAYAUSD_CORE_PUBLIC static TsSpline
-    GetSplineFromMayaCurve(const MFnDependencyNode& depNode, const MString& name);
-#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

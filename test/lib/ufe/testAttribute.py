@@ -42,7 +42,7 @@ import unittest
 
 def UsdHasDefaultForMatrix33():
     r = Sdr.Registry()
-    n = r.GetNodeByIdentifier("ND_add_matrix33")
+    n = r.GetShaderNodeByIdentifier("ND_add_matrix33")
     i = n.GetShaderInput("in1")
     return i.GetDefaultValue() is not None
 
@@ -531,6 +531,40 @@ class AttributeTestCase(unittest.TestCase):
         self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
 
         # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1)
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
+    @unittest.skipIf(os.getenv('UFE_HAS_UNSIGNED_INT', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE has unsigned int support')
+    def testAttributeUInt(self):
+        '''Test the UInt attribute type.'''
+
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use an unsigned integer typed attribute.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/Room_set/Props/Ball_35',
+            attrName='testVal',
+            ufeAttrClass=ufe.AttributeUInt,
+            ufeAttrType=ufe.Attribute.kUInt)
+
+        # Now we test the UInt specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Set the attribute in UFE with a different value.
+        ufeAttr.set(ufeAttr.get() + random.randint(1,5))
+
+        # Then make sure that new UFE value matches what it is in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
+
+        # # Run test using Maya's setAttr command.
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1)
 
         # Run test using Maya's getAttr command.
@@ -1573,16 +1607,20 @@ class AttributeTestCase(unittest.TestCase):
         # Test for non-existing metdata.
         self.assertFalse(attr.hasMetadata('NotAMetadata'))
 
-        # Verify that this attribute has documentation metadata.
-        self.assertTrue(attr.hasMetadata('documentation'))
-        md = attr.getMetadata('documentation')
-        self.assertIsNotNone(md)
-        self.assertIsNotNone(str(md))
-
         # Store this original documentation metadata value for testing of the clear.
         # Note: USD doc has some fallback values, so clearing doc might not actually
         #       set it to empty.
+        md = attr.getMetadata('documentation')
         origDocMD = str(md)
+
+        # Verify that this attribute has documentation metadata.
+        # The use of the documentation field in schema prim/property definitions
+        # to store API doc has been deprecated, so only verify on older versions
+        # of USD
+        if Usd.GetVersion() <= (0, 25, 5):
+            self.assertTrue(attr.hasMetadata('documentation'))
+            self.assertIsNotNone(md)
+            self.assertIsNotNone(origDocMD)
 
         # Change the metadata and make sure it changed
         self.assertTrue(attr.setMetadata('documentation', 'New doc'))

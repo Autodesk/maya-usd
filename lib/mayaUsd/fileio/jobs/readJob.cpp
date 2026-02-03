@@ -41,7 +41,11 @@
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usd/variantSets.h>
+#if PXR_VERSION < 2508
 #include <pxr/usd/usd/zipFile.h>
+#else
+#include <pxr/usd/sdf/zipFile.h>
+#endif
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>

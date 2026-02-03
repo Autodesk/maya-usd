@@ -422,6 +422,9 @@ class AETemplate(object):
                     if self.attrS.attribute(item):
                         self.addControls([item])
     def isRamp(self):
+        if not hasattr(ufe, "NodeDefHandler"):
+            return False
+
         runTimeMgr = ufe.RunTimeMgr.instance()
         nodeDefHandler = runTimeMgr.nodeDefHandler(self.item.runTimeId())
         nodeDef = nodeDefHandler.definition(self.item)
