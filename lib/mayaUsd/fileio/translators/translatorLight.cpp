@@ -15,6 +15,9 @@
 //
 #include "translatorLight.h"
 
+#include "pxr/imaging/hdSt/light.h"
+#include "pxr/imaging/hdSt/tokens.h"
+
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
@@ -24,6 +27,7 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/splineUtils.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -31,6 +35,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/imaging/hd/light.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -41,6 +46,9 @@
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
 #include <pxr/usd/usdLux/sphereLight.h>
+#if PXR_VERSION >= 2411
+#include <pxr/base/ts/spline.h>
+#endif
 
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
@@ -135,6 +143,49 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(
     return true;
 }
 
+bool UsdMayaTranslatorLight::WriteLightSplinesAttrs(
+    const UsdLuxLightAPI& usdLight,
+    MFnLight&             mayaLight)
+{
+#if PXR_VERSION >= 2411
+    MStatus status;
+    auto    usdPrim = usdLight.GetPrim();
+    // Get the MObject from the MFnLight
+    MObject lightObject = mayaLight.object();
+    // Initialize an MFnDependencyNode with the MObject
+    MFnDependencyNode depNode(lightObject, &status);
+
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->IntensityPlugName.GetString(), UsdLuxTokens->inputsIntensity);
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->EmitDiffusePlugName.GetString(), UsdLuxTokens->inputsDiffuse);
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->EmitSpecularPlugName.GetString(), UsdLuxTokens->inputsSpecular);
+
+    MColor color = mayaLight.color(&status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    UsdMayaWriteUtil::SetAttribute(
+        usdLight.GetColorAttr(), GfVec3f(color.r, color.g, color.b), UsdTimeCode::Default());
+
+    bool rayTraceShadows = mayaLight.useRayTraceShadows(&status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    if (rayTraceShadows) {
+        UsdLuxShadowAPI shadowAPI = UsdLuxShadowAPI::Apply(usdPrim);
+        UsdMayaWriteUtil::SetAttribute(shadowAPI.CreateShadowEnableAttr(), true);
+
+        const MColor shadowColor = mayaLight.shadowColor(&status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        UsdMayaWriteUtil::SetAttribute(
+            shadowAPI.CreateShadowColorAttr(),
+            GfVec3f(shadowColor.r, shadowColor.g, shadowColor.b),
+            UsdTimeCode::Default());
+    }
+
+#endif
+    return true;
+}
+
 // Import the common light attributes from UsdLuxLightAPI.
 // As opposed to the writer, we can't rely on the MFnLight attribute
 // accessors, as we need to support animations. Instead we're getting
@@ -199,6 +250,27 @@ static bool _ReadLightAttrs(
 }
 
 // Export the specialized MFnDirectionalLight attributes
+bool UsdMayaTranslatorLight::WriteDirectionalLightSplineAttrs(
+    const UsdLuxLightAPI& usdLight,
+    MFnDirectionalLight&  mayaLight)
+{
+#if PXR_VERSION >= 2411
+
+    MStatus status;
+    auto    usdPrim = usdLight.GetPrim();
+    // Get the MObject from the MFnLight
+    MObject lightObject = mayaLight.object();
+    // Initialize an MFnDependencyNode with the MObject
+    MFnDependencyNode depNode(lightObject, &status);
+
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->LightAnglePlugName.GetString(), UsdLuxTokens->inputsAngle);
+
+#endif
+    return true;
+}
+
+// Export the specialized MFnDirectionalLight attributes
 bool UsdMayaTranslatorLight::WriteDirectionalLightAttrs(
     const UsdTimeCode&         usdTime,
     const UsdLuxDistantLight&  usdLight,
@@ -232,6 +304,32 @@ static bool _ReadDirectionalLight(
     success &= UsdMayaReadUtil::ReadUsdAttribute(
         distantLight.GetAngleAttr(), depFn, _tokens->LightAnglePlugName, args, &context);
     return success;
+}
+
+bool UsdMayaTranslatorLight::WritePointLightSplineAttrs(
+    const UsdLuxLightAPI& usdLight,
+    MFnLight&             mayaLight)
+{
+#if PXR_VERSION >= 2411
+    MStatus status;
+    auto    usdPrim = usdLight.GetPrim();
+    // Get the MObject from the MFnLight
+    MObject lightObject = mayaLight.object();
+    // Initialize an MFnDependencyNode with the MObject
+    MFnDependencyNode depNode(lightObject, &status);
+
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->LightRadiusPlugName.GetString(), UsdLuxTokens->inputsRadius);
+
+    if (auto treatAsPointAttr = usdPrim.GetAttribute(UsdLuxTokens->treatAsPoint)) {
+        if (auto radAttr = usdPrim.GetAttribute(UsdLuxTokens->inputsRadius)) {
+            float radius = 0.0f;
+            radAttr.Get(&radius);
+            treatAsPointAttr.Set(radius == 0.0f);
+        }
+    }
+#endif
+    return true;
 }
 
 // Export the specialized MFnPointLight attributes
@@ -273,6 +371,83 @@ static bool _ReadPointLight(
     success &= UsdMayaReadUtil::ReadUsdAttribute(
         sphereLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, &context);
     return success;
+}
+
+bool UsdMayaTranslatorLight::WriteSpotLightSplineAttrs(
+    const UsdLuxLightAPI& usdLight,
+    MFnLight&             mayaLight)
+{
+#if PXR_VERSION >= 2411
+    MStatus status;
+    auto    usdPrim = usdLight.GetPrim();
+    // Get the MObject from the MFnLight
+    MObject lightObject = mayaLight.object();
+    // Initialize an MFnDependencyNode with the MObject
+    MFnDependencyNode depNode(lightObject, &status);
+
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->LightRadiusPlugName.GetString(), UsdLuxTokens->inputsRadius);
+
+    if (auto treatAsPointAttr = usdPrim.GetAttribute(UsdLuxTokens->treatAsPoint)) {
+        if (auto radAttr = usdPrim.GetAttribute(UsdLuxTokens->inputsRadius)) {
+            float radius = 0.0f;
+            radAttr.Get(&radius);
+            treatAsPointAttr.Set(radius == 0.0f);
+        }
+    }
+
+    UsdLuxShapingAPI shapingAPI = UsdLuxShapingAPI::Apply(usdPrim);
+
+    UsdMayaSplineUtils::WriteSplineAttribute<float>(
+        depNode, usdPrim, _tokens->DropoffPlugName, UsdLuxTokens->inputsShapingFocus);
+
+    std::function cutOffLambda = [](float coneAngle, float penumbraAngle) {
+        return static_cast<float>(
+            GfRadiansToDegrees(coneAngle) * 0.5 + GfRadiansToDegrees(penumbraAngle));
+    };
+
+    auto     shapingConeAttr = usdPrim.GetAttribute(UsdLuxTokens->inputsShapingConeAngle);
+    TsSpline cutOffSpline = UsdMayaSplineUtils::CombineMayaCurveToUsdSpline<float>(
+        depNode,
+        _tokens->ConeAnglePlugName.data(),
+        _tokens->PenumbraAnglePlugName.data(),
+        cutOffLambda);
+    if (cutOffSpline.IsEmpty()) {
+        double coneAngle;
+        UsdMayaUtil::getPlugValue(depNode, _tokens->ConeAnglePlugName.data(), &coneAngle);
+        coneAngle = GfRadiansToDegrees(coneAngle) * 0.5;
+        double penumbraAngle;
+        UsdMayaUtil::getPlugValue(depNode, _tokens->PenumbraAnglePlugName.data(), &penumbraAngle);
+
+        float cutoff = static_cast<float>(coneAngle + penumbraAngle);
+        UsdMayaWriteUtil::SetAttribute(shapingConeAttr, cutoff, UsdTimeCode::Default());
+
+        float softness = static_cast<float>(cutoff > 0 ? penumbraAngle / cutoff : 0.f);
+        if (softness > 0) {
+            UsdMayaWriteUtil::SetAttribute(
+                usdPrim.GetAttribute(UsdLuxTokens->inputsShapingConeSoftness),
+                softness,
+                UsdTimeCode::Default());
+        }
+    } else {
+        shapingConeAttr.SetSpline(cutOffSpline);
+        std::function softnessLambda = [](float coneAngle, float penumbraAngle) {
+            if (coneAngle <= 0.0f && penumbraAngle <= 0.0f) {
+                return 0.0f;
+            }
+            coneAngle = GfRadiansToDegrees(coneAngle) * 0.5;
+            penumbraAngle = GfRadiansToDegrees(penumbraAngle);
+            return static_cast<float>(penumbraAngle / (coneAngle + penumbraAngle));
+        };
+        TsSpline softnessSpline = UsdMayaSplineUtils::CombineMayaCurveToUsdSpline<float>(
+            depNode,
+            _tokens->ConeAnglePlugName.data(),
+            _tokens->PenumbraAnglePlugName.data(),
+            softnessLambda);
+        usdPrim.GetAttribute(UsdLuxTokens->inputsShapingConeSoftness).SetSpline(softnessSpline);
+    }
+#endif
+    return true;
 }
 
 // Export the specialized MFnSpotLight attributes
@@ -354,32 +529,85 @@ static bool _ReadSpotLight(
     // and Usd shapingFocus, shapingConeAngle, shapingConeSoftness
     success &= UsdMayaReadUtil::ReadUsdAttribute(
         shapingAPI.GetShapingFocusAttr(), depFn, _tokens->DropoffPlugName, args, &context);
+#if PXR_VERSION >= 2411
+    if (args.GetTimeInterval().IsEmpty()) {
+#endif
+        float UsdConeAngle = 1.f;
+        shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
+        float coneSoftness = 0.f;
+        shapingAPI.GetShapingConeSoftnessAttr().Get(&coneSoftness, timeCode);
 
-    float UsdConeAngle = 1.f;
-    shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
-    float coneSoftness = 0.f;
-    shapingAPI.GetShapingConeSoftnessAttr().Get(&coneSoftness, timeCode);
+        float penumbraAngle = UsdConeAngle * coneSoftness;
+        float mayaConeAngle = 2.f * (UsdConeAngle - penumbraAngle);
 
-    float penumbraAngle = UsdConeAngle * coneSoftness;
-    float mayaConeAngle = 2.f * (UsdConeAngle - penumbraAngle);
-
-    // Note that the roundtrip might not return the exact same result as originally,
-    // e.g. a negative penumbra angle would become positive. It would result in the same
-    // illumination, though with different values
-    MPlug penumbraAnglePlug = depFn.findPlug(_tokens->PenumbraAnglePlugName.GetText(), &status);
-    success &= (status == MS::kSuccess);
-    if (status == MS::kSuccess) {
-        penumbraAnglePlug.setFloat(GfDegreesToRadians(penumbraAngle));
+        // Note that the roundtrip might not return the exact same result as originally,
+        // e.g. a negative penumbra angle would become positive. It would result in the same
+        // illumination, though with different values
+        MPlug penumbraAnglePlug = depFn.findPlug(_tokens->PenumbraAnglePlugName.GetText(), &status);
+        success &= (status == MS::kSuccess);
+        if (status == MS::kSuccess) {
+            penumbraAnglePlug.setFloat(GfDegreesToRadians(penumbraAngle));
+        } else {
+            success = false;
+        }
+        MPlug coneAnglePlug = depFn.findPlug(_tokens->ConeAnglePlugName.GetText(), &status);
+        success &= (status == MS::kSuccess);
+        if (status == MS::kSuccess) {
+            coneAnglePlug.setFloat(GfDegreesToRadians(mayaConeAngle));
+        } else {
+            success = false;
+        }
+#if PXR_VERSION >= 2411
     } else {
-        success = false;
+
+        MPlug penumbraAnglePlug = depFn.findPlug(_tokens->PenumbraAnglePlugName.GetText(), &status);
+        success &= (status == MS::kSuccess);
+
+        if (status == MS::kSuccess) {
+            std::function penumbraAngleLambda = [](float coneAngle, float coneSoftness) {
+                return static_cast<float>(GfDegreesToRadians(coneAngle * coneSoftness));
+            };
+            TsSpline penumbraAngleSpline = UsdMayaSplineUtils::CombineUsdAttrsSplines<float>(
+                shapingAPI.GetShapingConeAngleAttr(),
+                shapingAPI.GetShapingConeSoftnessAttr(),
+                penumbraAngleLambda,
+                timeCode);
+
+            if (!UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
+                    penumbraAnglePlug, penumbraAngleSpline, &context)) {
+                float UsdConeAngle = 1.f;
+                shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
+                float coneSoftness = 0.f;
+                shapingAPI.GetShapingConeSoftnessAttr().Get(&coneSoftness, timeCode);
+                penumbraAnglePlug.setFloat(penumbraAngleLambda(UsdConeAngle, coneSoftness));
+            }
+        }
+
+        MPlug coneAnglePlug = depFn.findPlug(_tokens->ConeAnglePlugName.GetText(), &status);
+        success &= (status == MS::kSuccess);
+        if (status == MS::kSuccess) {
+            std::function coneAngleLambda = [](float coneAngle, float coneSoftness) {
+                float penumbraAngle = coneAngle * coneSoftness;
+                float mayaConeAngle = 2.f * (coneAngle - penumbraAngle);
+                return static_cast<float>(GfDegreesToRadians(mayaConeAngle));
+            };
+            TsSpline coneAngleSpline = UsdMayaSplineUtils::CombineUsdAttrsSplines<float>(
+                shapingAPI.GetShapingConeAngleAttr(),
+                shapingAPI.GetShapingConeSoftnessAttr(),
+                coneAngleLambda,
+                timeCode);
+
+            if (!UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
+                    coneAnglePlug, coneAngleSpline, &context)) {
+                float UsdConeAngle = 1.f;
+                shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
+                float coneSoftness = 0.f;
+                shapingAPI.GetShapingConeSoftnessAttr().Get(&coneSoftness, timeCode);
+                coneAnglePlug.setFloat(coneAngleLambda(UsdConeAngle, coneSoftness));
+            }
+        }
     }
-    MPlug coneAnglePlug = depFn.findPlug(_tokens->ConeAnglePlugName.GetText(), &status);
-    success &= (status == MS::kSuccess);
-    if (status == MS::kSuccess) {
-        coneAnglePlug.setFloat(GfDegreesToRadians(mayaConeAngle));
-    } else {
-        success = false;
-    }
+#endif
     return success;
 }
 

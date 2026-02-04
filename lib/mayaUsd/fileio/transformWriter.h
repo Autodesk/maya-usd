@@ -76,6 +76,12 @@ private:
         Static,
         Animated
     };
+    enum class _ValueType
+    {
+        Vector,
+        Matrix,
+        Value
+    };
 
     // Describe a data channel (source, destination) for transform operation:
     // a Maya source attribute and USD destination attribute. This is used to
@@ -85,6 +91,12 @@ private:
     {
         MPlug       plug[3];
         _SampleType sampleType[3] = { _SampleType::None, _SampleType::None, _SampleType::None };
+
+        // With the addition of spline, there's a possibility that we need to track broken down
+        // animation channels. Those channels will only have one value.
+        unsigned int valueIndex = 0;
+        std::string  valueAttrName = "";
+
         // defValue should always be in "maya" space.  that is, if it's a
         // rotation it should be radians, not degrees. (This is done so we only
         // need to do conversion in one place, and so that, if we need to do
@@ -97,7 +109,7 @@ private:
         UsdGeomXformOp::Precision precision = UsdGeomXformOp::PrecisionFloat;
         TfToken                   suffix;
         bool                      isInverse = false;
-        bool                      isMatrix = false;
+        _ValueType                valueType = _ValueType::Vector;
         UsdGeomXformOp            op;
 
         // Retrieve the value from the Maya attribute based on if it is a matrix.
@@ -113,7 +125,7 @@ private:
 
     // For a given array of _AnimChannels and time, compute the xformOp data if
     // needed and set the xformOps' values.
-    static void _ComputeXformOps(
+    void _ComputeXformOps(
         const std::vector<_AnimChannel>&           animChanList,
         const UsdTimeCode&                         usdTime,
         const bool                                 eulerFilter,
@@ -135,6 +147,7 @@ private:
         std::vector<_AnimChannel>* oAnimChanList,
         const bool                 isWritingAnimation,
         const bool                 useSuffix,
+        const TfToken&             animType,
         const bool                 isMatrix = false);
 
     // Change the channel suffix so that the USD XformOp becomes unique.

@@ -19,9 +19,14 @@
 
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xform.h>
+
+#if PXR_VERSION < 2508
+#include <pxr/usd/usd/usdaFileFormat.h>
+#else
+#include <pxr/usd/sdf/usdaFileFormat.h>
+#endif
 
 #include <maya/MDGModifier.h>
 #include <maya/MFileIO.h>
@@ -200,8 +205,12 @@ TEST(LayerManager, addRemoveLayer)
     ASSERT_TRUE(manager);
 
     auto anonLayer = SdfLayer::CreateAnonymous("myAnonLayer");
-    auto realLayer = SdfLayer::New(
-        SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id), "/my/silly/layer.usda");
+#if PXR_VERSION < 2508
+    auto fileFormat = SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
+#else
+    auto fileFormat = SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id);
+#endif
+    auto         realLayer = SdfLayer::New(fileFormat, "/my/silly/layer.usda");
     MStringArray layerIds;
 
     ASSERT_FALSE(manager->findLayer(anonLayer->GetIdentifier()));
@@ -292,8 +301,12 @@ def Scope "blabla"
     ASSERT_EQ(0u, manager->layersPlug().numConnectedElements());
     ASSERT_EQ(0u, manager->layersPlug().evaluateNumElements());
 
-    auto realLayer = SdfLayer::New(
-        SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id), "/my/silly/layer.usda");
+#if PXR_VERSION < 2508
+    auto fileFormat = SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
+#else
+    auto fileFormat = SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id);
+#endif
+    auto realLayer = SdfLayer::New(fileFormat, "/my/silly/layer.usda");
     realLayer->ImportFromString(LAYER_CONTENTS);
 
     ASSERT_TRUE(manager->addLayer(realLayer));

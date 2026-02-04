@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/splineUtils.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/converter.h>
@@ -34,7 +35,6 @@
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdGeom/xformable.h>
-#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
@@ -61,8 +61,13 @@ void UsdMayaTransformWriter::_AnimChannel::setXformOp(
     }
 
     VtValue vtValue;
-    if (isMatrix) {
+    if (valueType == _ValueType::Matrix) {
         vtValue = matrix;
+    } else if (valueType == _ValueType::Value) {
+        bool isDouble = UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName())
+            == UsdGeomXformOp::PrecisionDouble;
+        vtValue = isDouble ? VtValue(value[valueIndex])
+                           : VtValue(static_cast<float>(value[valueIndex]));
     } else if (opType == _XformType::Shear) {
         GfMatrix4d shearXForm(1.0);
         shearXForm[1][0] = value[0]; // xyVal
@@ -73,13 +78,13 @@ void UsdMayaTransformWriter::_AnimChannel::setXformOp(
         UsdGeomXformOp::GetPrecisionFromValueTypeName(op.GetAttr().GetTypeName())
         == UsdGeomXformOp::PrecisionDouble) {
         vtValue = VtValue(value);
-    } else { // float precision
+    } else {
+        // float precision
         vtValue = VtValue(GfVec3f(value));
     }
     valueWriter->SetAttribute(op.GetAttr(), vtValue, usdTime);
 }
 
-/* static */
 void UsdMayaTransformWriter::_ComputeXformOps(
     const std::vector<_AnimChannel>&           animChanList,
     const UsdTimeCode&                         usdTime,
@@ -104,17 +109,19 @@ void UsdMayaTransformWriter::_ComputeXformOps(
         GfMatrix4d         matrix = animChannel.defMatrix;
         bool               hasAnimated = false;
         bool               hasStatic = false;
-        const unsigned int plugCount = animChannel.isMatrix ? 1u : 3u;
-        for (unsigned int i = 0u; i < plugCount; ++i) {
-            if (animChannel.sampleType[i] == _SampleType::Animated) {
-                if (animChannel.isMatrix) {
-                    matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
-                } else {
-                    value[i] = animChannel.GetSourceData(i).Get<double>();
+        const unsigned int plugCount = animChannel.valueType == _ValueType::Matrix ? 1u : 3u;
+        if (animChannel.valueType != _ValueType::Value) {
+            for (unsigned int i = 0u; i < plugCount; ++i) {
+                if (animChannel.sampleType[i] == _SampleType::Animated) {
+                    if (animChannel.valueType == _ValueType::Matrix) {
+                        matrix = animChannel.GetSourceData(i).Get<GfMatrix4d>();
+                    } else {
+                        value[i] = animChannel.GetSourceData(i).Get<double>();
+                    }
+                    hasAnimated = true;
+                } else if (animChannel.sampleType[i] == _SampleType::Static) {
+                    hasStatic = true;
                 }
-                hasAnimated = true;
-            } else if (animChannel.sampleType[i] == _SampleType::Static) {
-                hasStatic = true;
             }
         }
 
@@ -163,19 +170,48 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                     value = value * distanceConversionScalar;
                 }
             }
-
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
+            if (_GetExportArgs().animationType != UsdMayaJobExportArgsTokens->curves) {
+                animChannel.setXformOp(value, matrix, usdTime, valueWriter);
+            }
+#else
             animChannel.setXformOp(value, matrix, usdTime, valueWriter);
+#endif
         }
+
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
+        if (animChannel.valueType == _ValueType::Value && usdTime == UsdTimeCode::Default()) {
+            if (UsdGeomXformOp::GetPrecisionFromValueTypeName(
+                    animChannel.op.GetAttr().GetTypeName())
+                == UsdGeomXformOp::PrecisionDouble) {
+                UsdMayaSplineUtils::WriteSplineAttribute<double>(
+                    MFnDependencyNode(GetMayaObject()),
+                    GetUsdPrim(),
+                    animChannel.valueAttrName,
+                    animChannel.op.GetAttr().GetName(),
+                    // For translation, we need to apply the distanceConversionScalar
+                    animChannel.opType == _XformType::Translate ? distanceConversionScalar : 1.f);
+            } else {
+                UsdMayaSplineUtils::WriteSplineAttribute<float>(
+                    MFnDependencyNode(GetMayaObject()),
+                    GetUsdPrim(),
+                    animChannel.valueAttrName,
+                    animChannel.op.GetAttr().GetName(),
+                    // For rotations, we need to convert radians to degrees
+                    animChannel.opType == _XformType::Rotate ? 180.0 / M_PI : 1.f);
+            }
+        }
+#endif
     }
 }
 
 VtValue UsdMayaTransformWriter::_AnimChannel::GetSourceData(unsigned int i) const
 {
-    if (isMatrix) {
-        const MPlug&  attrPlug = plug[i];
-        MFnMatrixData matrixDataFn(attrPlug.asMObject());
-        MMatrix       mayaMatrix = matrixDataFn.matrix();
-        GfMatrix4d    matrix;
+    if (valueType == _ValueType::Matrix) {
+        const MPlug&   attrPlug = plug[i];
+        MFnMatrixData  matrixDataFn(attrPlug.asMObject());
+        const MMatrix& mayaMatrix = matrixDataFn.matrix();
+        GfMatrix4d     matrix;
         MayaUsd::TypedConverter<MMatrix, GfMatrix4d>::convert(mayaMatrix, matrix);
         return VtValue(matrix);
     } else {
@@ -194,12 +230,13 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
     std::vector<_AnimChannel>* oAnimChanList,
     const bool                 isWritingAnimation,
     const bool                 useSuffix,
+    const TfToken&             animType,
     const bool                 isMatrix)
 {
     _AnimChannel chan;
     chan.opType = opType;
     chan.isInverse = false;
-    chan.isMatrix = isMatrix;
+    chan.valueType = isMatrix ? _ValueType::Matrix : _ValueType::Vector;
     if (useSuffix) {
         chan.suffix = mayaAttrName;
     }
@@ -295,7 +332,78 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
         } else {
             return false;
         }
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
+        // when using usd spline animation, we need to break down the transform elements as it's
+        // smallest components. USD spline only supports floating point numbers and vec2.
+        if (animType != UsdMayaJobExportArgsTokens->timesamples) {
+            chan.valueType = _ValueType::Value;
+            auto chanX = chan, chanY = chan, chanZ = chan;
+            chanX.valueAttrName = mayaAttrName.GetString() + xName.asChar();
+            chanY.valueIndex = 1;
+            chanY.valueAttrName = mayaAttrName.GetString() + yName.asChar();
+            chanZ.valueIndex = 2;
+            chanZ.valueAttrName = mayaAttrName.GetString() + zName.asChar();
+
+            // add channels for each component of the transform
+            if (opType == _XformType::Rotate) {
+                chanX.usdOpType = UsdGeomXformOp::TypeRotateX;
+                chanY.usdOpType = UsdGeomXformOp::TypeRotateY;
+                chanZ.usdOpType = UsdGeomXformOp::TypeRotateZ;
+
+                switch (iTrans.rotationOrder()) {
+                case MTransformationMatrix::kYZX:
+                    oAnimChanList->push_back(chanX);
+                    oAnimChanList->push_back(chanZ);
+                    oAnimChanList->push_back(chanY);
+                    break;
+                case MTransformationMatrix::kZXY:
+                    oAnimChanList->push_back(chanY);
+                    oAnimChanList->push_back(chanX);
+                    oAnimChanList->push_back(chanZ);
+                    break;
+                case MTransformationMatrix::kXZY:
+                    oAnimChanList->push_back(chanY);
+                    oAnimChanList->push_back(chanZ);
+                    oAnimChanList->push_back(chanX);
+                    break;
+                case MTransformationMatrix::kXYZ:
+                    oAnimChanList->push_back(chanZ);
+                    oAnimChanList->push_back(chanY);
+                    oAnimChanList->push_back(chanX);
+                    break;
+                case MTransformationMatrix::kYXZ:
+                    oAnimChanList->push_back(chanZ);
+                    oAnimChanList->push_back(chanX);
+                    oAnimChanList->push_back(chanY);
+                    break;
+                case MTransformationMatrix::kZYX:
+                    oAnimChanList->push_back(chanX);
+                    oAnimChanList->push_back(chanY);
+                    oAnimChanList->push_back(chanZ);
+                    break;
+                default: break;
+                }
+            } else if (opType == _XformType::Translate) {
+                chanX.usdOpType = UsdGeomXformOp::TypeTranslateX;
+                chanY.usdOpType = UsdGeomXformOp::TypeTranslateY;
+                chanZ.usdOpType = UsdGeomXformOp::TypeTranslateZ;
+                oAnimChanList->push_back(chanX);
+                oAnimChanList->push_back(chanY);
+                oAnimChanList->push_back(chanZ);
+            } else if (opType == _XformType::Scale) {
+                chanX.usdOpType = UsdGeomXformOp::TypeScaleX;
+                chanY.usdOpType = UsdGeomXformOp::TypeScaleY;
+                chanZ.usdOpType = UsdGeomXformOp::TypeScaleZ;
+                oAnimChanList->push_back(chanX);
+                oAnimChanList->push_back(chanY);
+                oAnimChanList->push_back(chanZ);
+            }
+        } else {
+            oAnimChanList->push_back(chan);
+        }
+#else
         oAnimChanList->push_back(chan);
+#endif
         return true;
     }
     return false;
@@ -364,6 +472,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
         }
     }
 
+    const auto animType = _GetExportArgs().animationType;
     if (_GatherAnimChannel(
             _XformType::Transform,
             iTrans,
@@ -374,6 +483,7 @@ void UsdMayaTransformWriter::_PushTransformStack(
             &_animChannels,
             writeAnim,
             true,
+            animType,
             true)) {
         conformsToCommonAPI = false;
     }
@@ -388,7 +498,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
         "Z",
         &_animChannels,
         writeAnim,
-        false);
+        false,
+        animType);
 
     // inspect the rotate pivot translate
     if (_GatherAnimChannel(
@@ -400,7 +511,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
             "Z",
             &_animChannels,
             writeAnim,
-            true)) {
+            true,
+            animType)) {
         conformsToCommonAPI = false;
     }
 
@@ -414,7 +526,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
         "Z",
         &_animChannels,
         writeAnim,
-        true);
+        true,
+        animType);
     if (hasRotatePivot) {
         rotPivotIdx = _animChannels.size() - 1;
     }
@@ -429,7 +542,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
         "Z",
         &_animChannels,
         writeAnim,
-        false);
+        false,
+        animType);
 
     // inspect the rotateAxis/orientation
     if (_GatherAnimChannel(
@@ -441,7 +555,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
             "Z",
             &_animChannels,
             writeAnim,
-            true)) {
+            true,
+            animType)) {
         conformsToCommonAPI = false;
     }
 
@@ -466,7 +581,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
             "Z",
             &_animChannels,
             writeAnim,
-            true)) {
+            true,
+            animType)) {
         conformsToCommonAPI = false;
     }
 
@@ -480,7 +596,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
         "Z",
         &_animChannels,
         writeAnim,
-        true);
+        true,
+        animType);
     if (hasScalePivot) {
         scalePivotIdx = _animChannels.size() - 1;
     }
@@ -496,7 +613,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
             "YZ",
             &_animChannels,
             writeAnim,
-            true)) {
+            true,
+            animType)) {
         conformsToCommonAPI = false;
     }
 
@@ -510,7 +628,8 @@ void UsdMayaTransformWriter::_PushTransformStack(
         "Z",
         &_animChannels,
         writeAnim,
-        false);
+        false,
+        animType);
 
     // inverse the scale pivot point
     if (hasScalePivot) {

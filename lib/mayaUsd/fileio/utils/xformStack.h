@@ -37,6 +37,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
 /// \hideinitializer
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
+#define PXRUSDMAYA_XFORM_STACK_TOKENS \
+    (translate) \
+    (translateX) \
+    (translateY) \
+    (translateZ) \
+    (rotatePivotTranslate) \
+    (rotatePivot) \
+    (rotate) \
+    (rotateX) \
+    (rotateY) \
+    (rotateZ) \
+    (rotateAxis) \
+    (scalePivotTranslate) \
+    (scalePivot) \
+    (shear) \
+    (scale) \
+    (scaleX) \
+    (scaleY) \
+    (scaleZ) \
+    (pivot) \
+    (pivotTranslate) \
+    (transform) \
+    (offsetParentMatrix)
+#else
 #define PXRUSDMAYA_XFORM_STACK_TOKENS \
     (translate) \
     (rotatePivotTranslate) \
@@ -51,6 +76,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pivotTranslate) \
     (transform) \
     (offsetParentMatrix)
+#endif
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -248,6 +274,23 @@ public:
     ///    scalePivot^-1 (inverted twin)
     MAYAUSD_CORE_PUBLIC
     static const UsdMayaXformStack& MayaStack();
+
+    /// \brief The Maya stack to accomodate for USD broken down transforms.
+    ///
+    /// Consists of the maya stack + these xform operators:
+    ///    translateX
+    ///    translateY
+    ///    translateZ
+    ///    rotateX
+    ///    rotateY
+    ///    rotateZ
+    ///    scaleX
+    ///    scaleY
+    ///    scaleZ
+#if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
+    MAYAUSD_CORE_PUBLIC
+    static const UsdMayaXformStack& MayaIndividualTransformsStack();
+#endif
 
     /// \brief The Common API xform stack
     ///

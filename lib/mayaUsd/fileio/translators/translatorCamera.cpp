@@ -20,6 +20,7 @@
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/splineUtils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
 
@@ -214,6 +215,25 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
     if (args.GetTimeInterval().IsEmpty()) {
         return false;
     }
+
+#if PXR_VERSION >= 2411
+
+    double scale = 1.0;
+    switch (convertToUnit) {
+    case MDistance::kInches: scale = UsdMayaUtil::ConvertMMToInches(scale); break;
+    case MDistance::kCentimeters: scale = UsdMayaUtil::ConvertMMToCM(scale); break;
+    default:
+        // The input is expected to be in millimeters.
+        break;
+    }
+    // If the attribute has a spline, we ignore time samples.
+    if (usdAttr.HasSpline()) {
+        if (UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(
+                plug, usdAttr.GetSpline(), context, static_cast<float>(scale))) {
+            return true;
+        }
+    }
+#endif
 
     MTimeArray   timeArray;
     MDoubleArray valueArray;

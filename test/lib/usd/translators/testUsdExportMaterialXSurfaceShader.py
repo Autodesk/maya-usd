@@ -20,16 +20,10 @@ from pxr import Sdf
 from pxr import Sdr
 from pxr import UsdShade
 
-from maya import cmds
 from maya import standalone
-
 import maya.cmds as cmds
 import maya.mel as mel
 import ufe
-
-import mayaUsd.lib as mayaUsdLib
-
-import maya.api.OpenMaya as om
 
 import os
 import unittest
@@ -40,6 +34,8 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # The materialxStack node is available in the LookdevX plugin.
+        cmds.loadPlugin("LookdevXMaya", quiet=True)
         cls._inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod
@@ -70,12 +66,11 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
         usdFilePath = os.path.abspath('MaterialXStackExport.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
-            materialsScopeName='Materials', defaultPrim='None')
+            defaultPrim='None')
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
-
-        prim = stage.GetPrimAtPath("/Materials/Standard_Surface1SG")
+        prim = stage.GetPrimAtPath("/Looks/Standard_Surface1SG")
         self.assertTrue(prim)
         material = UsdShade.Material(prim)
         self.assertTrue(material)
@@ -113,15 +108,15 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
         nodeGraph = UsdShade.NodeGraph(nodeGraphPrim)
         # Validate the Checkerboard Shader
         checkboardPrim = nodeGraph.GetOutput('out').GetConnectedSources()[0][0].source.GetPrim()
-        self.assertEqual(checkboardPrim.GetName(), 'checkboard1')
+        self.assertEqual(checkboardPrim.GetName(), 'checkerboard1')
         self.assertEqual(checkboardPrim.GetAttribute('info:id').Get(), 'ND_checkerboard_color3')
 
     def testExportMultiOutput(self):
 
         cmds.file(f=True, new=True)
 
-        mtlxFile = os.path.join(self._inputPath, 'Multioutput.mtlx',
-            'MaterialXStackExport.mtlx')
+        mtlxFile = os.path.join(self._inputPath, 'UsdExportMaterialXSurfaceShader',
+            'MultiOutput.mtlx')
 
         stackName = mel.eval("createNode materialxStack")
         stackPathString = mel.eval("ls -l " + stackName)[0]
@@ -140,12 +135,12 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
         usdFilePath = os.path.abspath('Multioutput.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
-            materialsScopeName='Materials', defaultPrim='None')
+            defaultPrim='None')
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
 
-        prim = stage.GetPrimAtPath("/Materials/test_multi_out_matSG")
+        prim = stage.GetPrimAtPath("/Looks/test_multi_out_matSG")
         self.assertTrue(prim)
         material = UsdShade.Material(prim)
         self.assertTrue(material)
@@ -171,7 +166,7 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
         iorExtractShader = UsdShade.Shader(iorExtractPrim)
         artisticiorPrim = iorExtractShader.GetInput('in').GetConnectedSources()[0][0].source.GetPrim()
         self.assertEqual(artisticiorPrim.GetName(), 'artistic_ior')
-        self.assertEqual(iorExtractPrim.GetAttribute('info:id').Get(), 'ND_artistic_ior')
+        self.assertEqual(artisticiorPrim.GetAttribute('info:id').Get(), 'ND_artistic_ior')
 
         # Validate the extinction output
         specularExtractPrim = nodeGraph.GetOutput('specular_output').GetConnectedSources()[0][0].source.GetPrim()
@@ -186,6 +181,116 @@ class testUsdExportMaterialXSurfaceShader(unittest.TestCase):
         self.assertEqual(outs[0].GetBaseName(), 'extinction')
         self.assertEqual(outs[1].GetBaseName(), 'ior')
         
+    def testExportImageWithoutGeomProp(self):
+        cmds.file(f=True, new=True)
+
+        mtlxFile = os.path.join(self._inputPath, 'UsdExportMaterialXSurfaceShader',
+            'ImageWithoutGeomProp.mtlx')
+
+        stackName = mel.eval("createNode materialxStack")
+        stackPathString = mel.eval("ls -l " + stackName)[0]
+        stackItem = ufe.Hierarchy.createItem(ufe.PathString.path(stackPathString))
+        stackHierarchy = ufe.Hierarchy.hierarchy(stackItem)
+        stackContextOps = ufe.ContextOps.contextOps(stackItem)
+        stackContextOps.doOp(['MxImportDocument', mtlxFile])
+        documentItem = stackHierarchy.children()[-1]
+        sphere = cmds.polySphere()
+        newUVSetName = "newUVSetName"
+        cmds.polyUVSet(sphere, rename=True, uvSet="map1", newUVSet=newUVSetName)
+        surfPathString = ufe.PathString.string(documentItem.path()) + "%ImageWithoutGeomProp"
+        cmds.select(sphere)
+        materialContextOps = ufe.ContextOps.contextOps(ufe.Hierarchy.createItem(ufe.PathString.path(surfPathString)))
+        materialContextOps.doOp(['Assign Material to Selection']) 
+
+        # Export to USD.
+        # preserveUVSetNames=True to validate that the UV set name are properly assigned by the _UVMappingManager
+        usdFilePath = os.path.abspath('ImageWithoutGeomProp.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            defaultPrim='None', preserveUVSetNames=True)
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+
+        prim = stage.GetPrimAtPath("/Looks/ImageWithoutGeomPropSG")
+        self.assertTrue(prim)
+        material = UsdShade.Material(prim)
+        self.assertTrue(material)
+
+        # Validate the inputs for image_color and image_roughness
+        image_color_input = material.GetInput("image_color:varname")
+        image_roughness_input = material.GetInput("image_roughness:varname")
+        self.assertEqual(image_color_input.GetAttr().Get(), newUVSetName)
+        self.assertEqual(image_roughness_input.GetAttr().Get(), newUVSetName)
+
+        #Get the NodeGraph and validate the inputs for image_color and image_roughness
+        nodeGraphPrim = stage.GetPrimAtPath("/Looks/ImageWithoutGeomPropSG/NG_ImageWithoutGeomProp")
+        self.assertTrue(nodeGraphPrim)
+        nodeGraph = UsdShade.NodeGraph(nodeGraphPrim)
+        NG_image_color_input = nodeGraph.GetInput("image_color:varname")
+        NG_image_roughness_input = nodeGraph.GetInput("image_roughness:varname")
+        self.assertEqual(NG_image_color_input.GetConnectedSources()[0][0].source.GetPrim().GetName(), "ImageWithoutGeomPropSG")
+        self.assertEqual(NG_image_color_input.GetConnectedSources()[0][0].sourceName, "image_color:varname")
+
+        self.assertEqual(NG_image_roughness_input.GetConnectedSources()[0][0].source.GetPrim().GetName(), "ImageWithoutGeomPropSG")
+        self.assertEqual(NG_image_roughness_input.GetConnectedSources()[0][0].sourceName, "image_roughness:varname")
+
+        # Validate the geompropvalue shader that were created by the export
+        geomPropColorPrim = stage.GetPrimAtPath("/Looks/ImageWithoutGeomPropSG/NG_ImageWithoutGeomProp/geompropvalue_image_color")
+        self.assertTrue(geomPropColorPrim)
+        geomPropColorShader = UsdShade.Shader(geomPropColorPrim)
+        geomColorInput = geomPropColorShader.GetInput("geomprop")
+        self.assertEqual(geomColorInput.GetConnectedSources()[0][0].source.GetPrim().GetName(), "NG_ImageWithoutGeomProp")
+        self.assertEqual(geomColorInput.GetConnectedSources()[0][0].sourceName, "image_color:varname")
+
+        geomPropRoughnesPrim = stage.GetPrimAtPath("/Looks/ImageWithoutGeomPropSG/NG_ImageWithoutGeomProp/geompropvalue_image_roughness")
+        self.assertTrue(geomPropColorPrim)
+        geomPropRoughnesShader = UsdShade.Shader(geomPropRoughnesPrim)
+        geomRoughnessInput = geomPropRoughnesShader.GetInput("geomprop")
+        self.assertEqual(geomRoughnessInput.GetConnectedSources()[0][0].source.GetPrim().GetName(), "NG_ImageWithoutGeomProp")
+        self.assertEqual(geomRoughnessInput.GetConnectedSources()[0][0].sourceName, "image_roughness:varname")
+
+
+    def testExportWithRelativePath(self):
+        cmds.file(f=True, new=True)
+        mtlxFile = os.path.join(self._inputPath, 'UsdExportMaterialXSurfaceShader',
+            'RelativePath.mtlx')
+        
+        stackName = mel.eval("createNode materialxStack")
+        stackPathString = mel.eval("ls -l " + stackName)[0]
+        stackItem = ufe.Hierarchy.createItem(ufe.PathString.path(stackPathString))
+        stackHierarchy = ufe.Hierarchy.hierarchy(stackItem)
+        stackContextOps = ufe.ContextOps.contextOps(stackItem)
+        stackContextOps.doOp(['MxImportDocument', mtlxFile])
+        documentItem = stackHierarchy.children()[-1]
+        sphere = cmds.polySphere()
+        surfPathString = ufe.PathString.string(documentItem.path()) + "%RelPath"
+        cmds.select(sphere)
+        materialContextOps = ufe.ContextOps.contextOps(ufe.Hierarchy.createItem(ufe.PathString.path(surfPathString)))
+        materialContextOps.doOp(['Assign Material to Selection']) 
+
+        # Export to USD.
+        usdFilePath = os.path.abspath('RelPath.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            defaultPrim='None', exportRelativeTextures='relative')
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+
+        prim = stage.GetPrimAtPath("/Looks/RelPathSG")
+        self.assertTrue(prim)
+        material = UsdShade.Material(prim)
+        self.assertTrue(material)
+
+        # Validate the texture path
+        fileAttrName = 'inputs:file'
+        prim = stage.GetPrimAtPath("/Looks/RelPathSG/NG_RelPath/image_color")
+        fileAttr = prim.GetAttribute(fileAttrName)
+        self.assertTrue(fileAttr, fileAttrName)
+        exportedTexturePath = fileAttr.Get()
+        self.assertTrue(os.path.exists(exportedTexturePath.resolvedPath),
+                        'The exported texture %s is not resolved by USD' % exportedTexturePath)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

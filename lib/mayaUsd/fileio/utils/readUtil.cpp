@@ -15,6 +15,8 @@
 //
 #include "readUtil.h"
 
+#include "splineUtils.h"
+
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/colorSpace.h>
@@ -1025,9 +1027,24 @@ static bool _ReadAnimatedUsdAttribute(
     UsdMayaPrimReaderContext*    context)
 {
     const GfInterval& timeInterval = args.GetTimeInterval();
+    if (timeInterval.IsEmpty()) {
+        return false;
+    }
+
+#if PXR_VERSION >= 2411
+    // If the attribute has a spline, we ignore time samples.
+    if (usdAttr.HasSpline()) {
+        // For now only float splines are supported.
+        // USD 25.05 will allow support for other types.
+        if (UsdMayaSplineUtils::WriteUsdSplineToPlug<float>(plug, usdAttr.GetSpline(), context)) {
+            return true;
+        }
+    }
+#endif
+
     // If this attribute isn't varying in the time interval,
     // we can early out and just let it be imported as a single value
-    if (timeInterval.IsEmpty() || !usdAttr.ValueMightBeTimeVarying()) {
+    if (!usdAttr.ValueMightBeTimeVarying()) {
         return false;
     }
     // Get the list of time samples for the given time interval

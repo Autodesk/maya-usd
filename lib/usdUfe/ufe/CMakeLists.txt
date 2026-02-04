@@ -121,6 +121,13 @@ if (UFE_CAMERAHANDLER_HAS_FINDALL)
     )
 endif()
 
+if (UFE_HAS_UNSIGNED_INT)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HAS_UNSIGNED_INT=1
+    )
+endif()
+
 set(HEADERS
     Global.h
     SetVariantSelectionCommand.h

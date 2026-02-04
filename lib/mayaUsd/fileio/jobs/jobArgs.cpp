@@ -34,8 +34,13 @@
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/schema.h>
+#if PXR_VERSION < 2508
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
+#else
+#include <pxr/usd/sdf/usdaFileFormat.h>
+#include <pxr/usd/sdf/usdcFileFormat.h>
+#endif
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
@@ -687,8 +692,13 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , defaultUSDFormat(extractToken(
           userArgs,
           UsdMayaJobExportArgsTokens->defaultUSDFormat,
+#if PXR_VERSION < 2508
           UsdUsdcFileFormatTokens->Id,
           { UsdUsdaFileFormatTokens->Id }))
+#else
+          SdfUsdcFileFormatTokens->Id,
+          { SdfUsdaFileFormatTokens->Id }))
+#endif
     , eulerFilter(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->eulerFilter))
     , excludeInvisible(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->renderableOnly))
     , exportCollectionBasedBindings(
@@ -1142,7 +1152,11 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->compatibility] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->defaultCameras] = false;
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = UsdGeomTokens->catmullClark.GetString();
+#if PXR_VERSION < 2508
         d[UsdMayaJobExportArgsTokens->defaultUSDFormat] = UsdUsdcFileFormatTokens->Id.GetString();
+#else
+        d[UsdMayaJobExportArgsTokens->defaultUSDFormat] = SdfUsdcFileFormatTokens->Id.GetString();
+#endif
         d[UsdMayaJobExportArgsTokens->eulerFilter] = false;
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = false;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;

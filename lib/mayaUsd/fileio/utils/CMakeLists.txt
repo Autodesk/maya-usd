@@ -31,6 +31,7 @@ set(HEADERS
     readUtil.h
     roundTripUtil.h
     shadingUtil.h
+    splineUtils.h
     userTaggedAttribute.h
     writeUtil.h
     xformStack.h

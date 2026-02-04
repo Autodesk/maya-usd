@@ -38,6 +38,7 @@ static MString colorParameterName_ = "solidColor";
 
 namespace MAYAUSD_NS_DEF {
 
+// Classification for drawing the gizmo
 const MString
         GizmoGeometryOverride::dbClassification("drawdb/geometry/mayaUsdGizmoGeometryOverride");
 MString GizmoGeometryOverride::s_wireframeItemName = "Gizmo";
@@ -147,7 +148,7 @@ void GizmoGeometryOverride::updateRenderItems(
                 }
                 // UsdLuxPortalLight:: GetWidthAttr and GetHeightAttr were only added after USD
                 // v23.11
-#if PXR_VERSION > 2311
+#if PXR_VERSION >= 2311
                 else if (prim && prim.IsA<PXR_NS::UsdLuxPortalLight>()) {
                     const PXR_NS::UsdLuxPortalLight portalLight(prim);
                     const PXR_NS::UsdAttribute      widthAttribute = portalLight.GetWidthAttr();

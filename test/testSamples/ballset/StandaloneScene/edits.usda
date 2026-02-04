@@ -399,6 +399,7 @@ def Xform "Room_set" (
         {
             double3 xformOp:translate = (6.43, 20.0025, 0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
+            uint testVal = 42
         }
     }
 }

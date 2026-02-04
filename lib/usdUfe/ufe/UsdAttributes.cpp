@@ -170,6 +170,9 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         ctorMap = {
             ADD_UFE_USD_CTOR(Bool),
             ADD_UFE_USD_CTOR(Int),
+#ifdef UFE_HAS_UNSIGNED_INT
+            ADD_UFE_USD_CTOR(UInt),
+#endif
             ADD_UFE_USD_CTOR(Float),
             ADD_UFE_USD_CTOR(Double),
             ADD_UFE_USD_CTOR(ColorFloat3),
