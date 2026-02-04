@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.34.5] - 2025-11-12
+
+**Shared Components:**
+* Asset Resolver
+    * Asset Resolver preferences UI Improvement [#4350](https://github.com/Autodesk/maya-usd/pull/4350)
+    * Enable Asset Resolver Mac builds  [#4358](https://github.com/Autodesk/maya-usd/pull/4358)
+
 ## [v0.34.0] - 2025-11-12
 
 **Build:**
