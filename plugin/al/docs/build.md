@@ -36,7 +36,6 @@ Fill out the paths below then run the following commands to build and install
 cmake \
       -DCMAKE_INSTALL_PREFIX='/path/to/install' \
       -DCMAKE_MODULE_PATH='/paths/to/folders/which/have/cmake/files' \
-      -DBOOST_ROOT='/path/to/boost' \
       -DMAYA_LOCATION='/path/to/maya' \
       -DUSD_CONFIG_FILE='/path/to/pxrConfig.cmake'\
       -DGTEST_ROOT='/path/to/googletest'\

@@ -16,6 +16,7 @@
 #ifndef PXRUSDMAYA_SHADER_READER_H
 #define PXRUSDMAYA_SHADER_READER_H
 
+#include <cxx17_legacy_support.h>
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primReader.h>
 
@@ -24,8 +25,6 @@
 
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
-
-#include <boost/optional.hpp>
 
 #include <memory>
 
@@ -105,7 +104,7 @@ public:
     /// returned in \p downstreamSchema and the requested output will be in \p downstreamOutputName
     ///
     MAYAUSD_CORE_PUBLIC
-    virtual boost::optional<IsConverterResult> IsConverter();
+    virtual MayaUsdCxxLegacySupport::optional<IsConverterResult> IsConverter();
 
     /// Sets a downstream converter to use for caching calls to GetCreatedObject and
     /// GetMayaPlugForUsdAttrName

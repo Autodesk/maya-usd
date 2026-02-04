@@ -52,6 +52,9 @@ public:
 
     UsdUfe::UsdContextOps::SchemaNameMap getSchemaPluginNiceNames() const override;
 
+private:
+    void enableOutlinerClassPrims() const;
+
 }; // MayaUsdContextOps
 
 } // namespace ufe

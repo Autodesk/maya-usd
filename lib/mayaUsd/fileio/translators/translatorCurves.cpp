@@ -400,7 +400,11 @@ bool UsdMayaTranslatorCurves::Create(
                     valueArray[ti]
                         = 1.0; // Set the time value where this curve's weight should be 1.0
                     MObject animObj = animFn.create(plg, nullptr, &status);
-                    animFn.addKeys(&timeArray, &valueArray);
+                    animFn.addKeys(
+                        &timeArray,
+                        &valueArray,
+                        MFnAnimCurve::kTangentLinear,
+                        MFnAnimCurve::kTangentLinear);
                     if (context) {
                         context->RegisterNewMayaNode(
                             animFn.name().asChar(), animObj); // used for undo/redo

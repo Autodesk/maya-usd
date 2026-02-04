@@ -24,7 +24,9 @@ add_library(${PROJECT_NAME} SHARED)
 
 add_subdirectory(layerEditor)
 add_subdirectory(importDialog)
-
+if (AR_FOUND)
+    add_subdirectory(assetResolver)
+endif()
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -46,14 +48,23 @@ target_compile_definitions(${PROJECT_NAME}
 )
 
 # QT_NO_KEYWORDS prevents Qt from defining the foreach, signals, slots and emit macros.
-# this avoids overlap between Qt macros and boost, and enforces using Q_ macros.
-set_target_properties(Qt::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+# this avoids overlap between Qt macros, and enforces using Q_ macros.
+get_target_property(qt_core_aliased Qt::Core ALIASED_TARGET)
+if (qt_core_aliased)
+    set_target_properties(${qt_core_aliased} PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+else()
+    set_target_properties(Qt::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+endif()
 
 mayaUsd_compile_config(${PROJECT_NAME})
 
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
+if(AR_FOUND)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${AR_INCLUDE_DIR})
+endif()
+
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         mayaUsd
@@ -61,6 +72,7 @@ target_link_libraries(${PROJECT_NAME}
 		Qt::Core
 		Qt::Gui
 		Qt::Widgets
+        $<$<BOOL:${AR_FOUND}>:${AR_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------

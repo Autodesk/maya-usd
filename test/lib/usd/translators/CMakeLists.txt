@@ -1,5 +1,6 @@
 set(TEST_SCRIPT_FILES
     testUsdExport8BitNormalMap.py
+    testUsdExportAndHide.py
     testUsdExportAnimation.py
     testUsdExportAsClip.py
     testUsdExportBindTransform.py
@@ -36,11 +37,6 @@ set(TEST_SCRIPT_FILES
     # PPT, 17-Jun-20.
     testUsdExportParticles.py
     testUsdExportPref.py
-
-    # Following test runs only in legacy render layer mode, otherwise skipped.
-    # Legacy render layers are deprecated, and should not be used.
-    # To avoid skipping and run in legacy render layer mode,
-    # export MAYA_ENABLE_LEGACY_RENDER_LAYERS=1
     testUsdExportRenderLayerMode.py
 
     # # XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.

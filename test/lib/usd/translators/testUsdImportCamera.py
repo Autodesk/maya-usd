@@ -156,13 +156,14 @@ class testUsdImportCamera(unittest.TestCase):
         }
         self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
 
-        #animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'fStop')
-        #self.assertEqual(animCurveFn.numKeys(), 2)
-        #expectedTimesToValues = {
-        #    0.0: 1.7974684,
-        #    5.0: 7.7784810,
-        #}
-        #self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
+        animCurveFn = self._GetAnimCurveFnForPlugName(cameraFn, 'fStop')
+        if animCurveFn is not None:
+            self.assertEqual(animCurveFn.numKeys(), 2)
+            expectedTimesToValues = {
+                0.0: 1.7974684,
+                5.0: 7.7784810,
+            }
+            self._ValidateAnimValuesAtTimes(animCurveFn, expectedTimesToValues)
 
     def testStageOpens(self):
         self.assertTrue(self._stage)
@@ -260,6 +261,8 @@ class testUsdImportCamera(unittest.TestCase):
         plug = depNodeFn.findPlug(plugName)
         animObjs = OpenMaya.MObjectArray()
         OpenMayaAnim.MAnimUtil.findAnimation(plug, animObjs)
+        if animObjs.length() == 0:
+            return None
         self.assertEqual(animObjs.length(), 1)
         animCurveFn = OpenMayaAnim.MFnAnimCurve(animObjs[0])
         return animCurveFn

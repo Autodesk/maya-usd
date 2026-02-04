@@ -72,7 +72,7 @@ private:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the PluginTranslator
+/// \brief Python binding for the PluginTranslator
 //----------------------------------------------------------------------------------------------------------------------
 class TranslatorBaseWrapper
     : public TranslatorBase
@@ -104,16 +104,26 @@ public:
     std::size_t generateUniqueKey(const UsdPrim& prim) const override
     {
         if (Override o = GetOverride("generateUniqueKey")) {
+            // Acquire Python lock before making any Python calls
+            TfPyLock pyLock;
+
+            // Call the Python function with proper exception handling
             auto res = std::function<PXR_BOOST_PYTHON_NAMESPACE::object(const UsdPrim&)>(
                 TfPyCall<PXR_BOOST_PYTHON_NAMESPACE::object>(o))(prim);
-            if (!res) {
+
+            // Check if the result is valid (not None or null)
+            if (!res || res.is_none()) {
                 return 0;
             }
-            TfPyLock                                         pyLock;
+
             PXR_BOOST_PYTHON_NAMESPACE::str                  strObj(res);
             PXR_BOOST_PYTHON_NAMESPACE::extract<std::string> strValue(strObj);
             if (strValue.check()) {
-                return std::hash<std::string> {}(strValue);
+                std::string keyStr = strValue();
+                // Ensure we don't hash empty strings
+                if (!keyStr.empty()) {
+                    return std::hash<std::string> {}(keyStr);
+                }
             }
         }
         return 0;
@@ -155,6 +165,7 @@ public:
         // "import" is a python keyword so python's override will be called
         // "importObject" instead
         if (Override o = GetOverride("importObject")) {
+            TfPyLock pyLock;
             MDagPath path;
             MDagPath::getAPathTo(parent, path);
 
@@ -170,7 +181,8 @@ public:
     MStatus postImport(const UsdPrim& prim) override
     {
         if (Override o = GetOverride("postImport")) {
-            auto res = std::function<bool(const UsdPrim&)>(TfPyCall<bool>(o))(prim);
+            TfPyLock pyLock;
+            auto     res = std::function<bool(const UsdPrim&)>(TfPyCall<bool>(o))(prim);
             return res ? MS::kSuccess : MS::kFailure;
         }
         return MS::kSuccess;
@@ -233,6 +245,7 @@ public:
         std::string name(dagPath.fullPathName().asChar());
         // pass a dagPath name and dictionary of params to the python method
         if (Override o = GetOverride("exportObject")) {
+            TfPyLock pyLock;
             return std::function<UsdPrim(
                 UsdStageRefPtr, const char*, SdfPath, PXR_BOOST_PYTHON_NAMESPACE::dict)>(
                 TfPyCall<UsdPrim>(o))(stage, name.c_str(), usdPath, pyParams);

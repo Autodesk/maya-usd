@@ -21,11 +21,11 @@
 #include <mayaUsd/ufe/MayaStagesSubject.h>
 #include <mayaUsd/ufe/MayaUsdContextOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
+#include <mayaUsd/ufe/MayaUsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdUIInfoHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
-#include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/trf/UsdTransform3dFallbackMayaXformStack.h>
@@ -47,6 +47,10 @@
 
 #if UFE_LIGHTS_SUPPORT
 #include <mayaUsd/ufe/UsdLightHandler.h>
+#endif
+
+#if UFE_LIGHTS2_SUPPORT
+#include <mayaUsd/ufe/UsdLight2Handler.h>
 #endif
 
 #if UFE_MATERIALS_SUPPORT
@@ -244,7 +248,7 @@ MStatus initialize()
 #ifdef UFE_V3_FEATURES_AVAILABLE
     usdUfeHandlers.hierarchyHandler = MayaUsdHierarchyHandler::create();
 #endif
-    handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
+    usdUfeHandlers.sceneItemOpsHandler = MayaUsdSceneItemOpsHandler::create();
     usdUfeHandlers.object3dHandler = MayaUsdObject3dHandler::create();
     usdUfeHandlers.contextOpsHandler = MayaUsdContextOpsHandler::create();
     usdUfeHandlers.uiInfoHandler = MayaUsdUIInfoHandler::create();
@@ -327,6 +331,11 @@ MStatus initialize()
 #ifdef UFE_V4_FEATURES_AVAILABLE
     if (handlers.lightHandler)
         runTimeMgr.setLightHandler(usdRtid, handlers.lightHandler);
+#if UFE_LIGHTS2_SUPPORT
+    auto light2Handler = UsdLight2Handler::create();
+    if (light2Handler)
+        runTimeMgr.setLight2Handler(usdRtid, light2Handler);
+#endif
     if (handlers.materialHandler)
         runTimeMgr.setMaterialHandler(usdRtid, handlers.materialHandler);
     if (handlers.nodeDefHandler)

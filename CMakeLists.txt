@@ -257,17 +257,7 @@ if(BUILD_LOOKDEVXUSD_LIBRARY)
     endif()
 endif()
 
-if(BUILD_MAYAUSD_LIBRARY AND (USD_VERSION VERSION_GREATER_EQUAL "0.24.11"))
-    # In USD v24.11 Pixar USD has completely removed Boost.
-    # However MayaUsd is still using a few of the Boost components, so
-    # when using USD v24.11 (or greater) we need to find Boost ourselves
-    # (from the USD build, since Boost is still required for OpenImageIO).
-    if(NOT DEFINED ENV{BOOST_ROOT})
-        set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
-    endif()
-
-    find_package(Boost REQUIRED COMPONENTS headers)
-endif()
+find_package(AR)
 
 #------------------------------------------------------------------------------
 # compiler configuration
@@ -404,7 +394,15 @@ endif()
 #------------------------------------------------------------------------------
 # Special file for handling boost vs pxr::boost
 #------------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS pxr_python.h BASEDIR "NONE")
+set(TOP_HEADERS
+    cxx17_legacy_support.h
+    pxr_python.h
+)
+
+mayaUsd_promoteHeaderList(HEADERS ${TOP_HEADERS} BASEDIR "NONE")
 install(FILES ${CMAKE_BINARY_DIR}/include/pxr_python.h
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)
+install(FILES ${CMAKE_BINARY_DIR}/include/cxx17_legacy_support.h
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )

@@ -1,0 +1,109 @@
+#usda 1.0
+
+def Xform "lights"
+{
+    double3 xformOp:translate.timeSamples = {
+        1: (0, 0, 0),
+        2: (1, 1, 1),
+        3: (2, 2, 2),
+        4: (3, 3, 3),
+        5: (4, 4, 4),
+    }
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def SphereLight "spotLight"
+    {
+        color3f inputs:color = (1, 1, 1)
+        float inputs:shaping:cone:angle = 50
+        float inputs:shaping:cone:softness = 0.1
+        float inputs:shaping:focus = 0.5
+        double3 xformOp:translate = (3, 3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def SphereLight "pointLight"
+    {
+        color3f inputs:color = (1, 0, 0)
+        float inputs:radius = 0
+        bool treatAsPoint = 1
+        double3 xformOp:translate = (0, 3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def DistantLight "directionalLight"
+    {
+        color3f inputs:color = (0, 0, 1)
+        float inputs:intensity = 1
+    }
+
+    def RectLight "areaLight" (
+        prepend apiSchemas = ["ShadowAPI"]
+    )
+    {
+        color3f inputs:color = (0, 1, 0)
+        float inputs:height = 5
+        float inputs:width = 5
+        token visibility = "inherited"
+        float3 xformOp:rotateXYZ = (-45, 0, 0)
+        double3 xformOp:translate = (-2.5, -2, -5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def DiskLight "diskLight"
+    {
+        color3f inputs:color = (0.07950008, 1, 0.03789997)
+        float inputs:radius = 1
+        token visibility = "inherited"
+        float3 xformOp:rotateXYZ = (-90, 0, 0)
+        double3 xformOp:translate = (3, 2, 5.5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def CylinderLight "cylinderLight"
+    {
+        color3f inputs:color = (1, 0, 0.06739998)
+        token visibility = "inherited"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (-1.5, 0.5, 4)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def DomeLight "domeLight"
+    {
+        float guideRadius = 8
+        color3f inputs:color = (0, 1, 1)
+        float inputs:intensity = 0.1
+        token visibility = "inherited"
+        double3 xformOp:translate = (1.8846862607790644, 2.8008199375209295, -7.701754664974189)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def DomeLight_1 "domeLight_1"
+    {
+        float guideRadius = 8
+        color3f inputs:color = (0, 1, 0)
+        float inputs:intensity = 0.1
+        double3 xformOp:translate = (-4.743307407621989, 2.8008199375209295, -7.701754664974189)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "lights2"
+{
+}
+
+def Sphere "sphere1"
+{
+    float3 xformOp:translate = (2.78, 0, -2.56)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Plane "Plane1"
+{
+    float3[] extent = [(-10, -10, -0), (10, 10, 0)]
+    double length = 20
+    double width = 20
+    float3 xformOp:rotateXYZ = (-90, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+}
+

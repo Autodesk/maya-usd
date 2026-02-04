@@ -21,7 +21,7 @@ class MayaShaderGraph : public ShaderGraph
 {
 public:
     /// Constructor
-#if MX_COMBINED_VERSION >= 13810
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
     MayaShaderGraph(
         const ShaderGraph* parent,
         const string&      name,
@@ -34,7 +34,7 @@ public:
     /// Desctructor.
     virtual ~MayaShaderGraph();
 
-#if MX_COMBINED_VERSION >= 13810
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
     /// Create a new shader graph from an element.
     /// Supported elements are outputs and shader nodes.
     static ShaderGraphPtr
@@ -50,7 +50,7 @@ public:
     StringVec const& getPropagatedInputs() const;
 
 protected:
-#if MX_COMBINED_VERSION >= 13810
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
     /// Create node connections corresponding to the connection between a pair of elements.
     /// @param downstreamElement Element representing the node to connect to.
     /// @param upstreamElement Element representing the node to connect from
@@ -70,7 +70,9 @@ protected:
 #endif
 
     StringVec _propagatedInputs;
-    bool      _shouldPropagateInputs;
+#if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
+    bool _shouldPropagateInputs;
+#endif
 };
 
 MATERIALX_NAMESPACE_END

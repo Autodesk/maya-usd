@@ -108,11 +108,11 @@ MStatus UsdMayaExportTranslator::writer(
 
     auto jobArgs
         = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, objSelList, timeSamples);
-    bool append = false;
+
     progressBar.advance();
 
-    UsdMaya_WriteJob writeJob(jobArgs);
-    if (!writeJob.Write(fileName, append)) {
+    UsdMaya_WriteJob writeJob(jobArgs, fileName);
+    if (!writeJob.Write()) {
         return MS::kFailure;
     }
     progressBar.advance();
@@ -155,6 +155,13 @@ const std::string& UsdMayaExportTranslator::GetDefaultOptions()
         std::ostringstream optionsStream;
         for (const std::pair<std::string, VtValue> keyValue :
              PXR_NS::UsdMayaJobExportArgs::GetDefaultDictionary()) {
+
+            // Skip the options that we always set ourselves (set below).
+            if ((keyValue.first == "animation") || (keyValue.first == "startTime")
+                || (keyValue.first == "endTime") || (keyValue.first == "frameStride")
+                || (keyValue.first == "frameSample")) {
+                continue;
+            }
 
             bool        canConvert;
             std::string valueStr;

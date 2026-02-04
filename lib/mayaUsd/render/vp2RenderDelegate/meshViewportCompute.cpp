@@ -48,11 +48,7 @@ std::string _GetResourcePath(const std::string& resource)
     return path;
 }
 
-template <typename F>
-class LambdaTask
-#ifndef ONETBB_SPEC_VERSION
-    : public tbb::task
-#endif
+template <typename F> class LambdaTask
 {
 public:
     LambdaTask(const F& func)
@@ -60,28 +56,15 @@ public:
     {
     }
 
-#ifdef ONETBB_SPEC_VERSION
     void operator()() const { _func(); }
-#else
-private:
-    tbb::task* execute()
-    {
-        _func();
-        return nullptr;
-    }
-#endif
 
     F _func;
 };
 
 template <typename F> void EnqueueLambdaTask(const F& f)
 {
-#ifdef ONETBB_SPEC_VERSION
     tbb::task_arena ta;
     ta.enqueue(LambdaTask<F>(f));
-#else
-    tbb::task::enqueue(*new (tbb::task::allocate_root()) LambdaTask<F>(f));
-#endif
 }
 } // namespace
 

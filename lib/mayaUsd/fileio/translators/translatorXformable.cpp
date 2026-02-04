@@ -186,7 +186,8 @@ static MObject _setAnimPlugData(
     MObject animObj = animFn.create(plg, nullptr, &status);
     if (status == MS::kSuccess) {
         MDoubleArray valueArray(&value[0], value.size());
-        animFn.addKeys(&timeArray, &valueArray);
+        animFn.addKeys(
+            &timeArray, &valueArray, MFnAnimCurve::kTangentLinear, MFnAnimCurve::kTangentLinear);
         if (context) {
             context->RegisterNewMayaNode(animFn.name().asChar(), animObj);
         }

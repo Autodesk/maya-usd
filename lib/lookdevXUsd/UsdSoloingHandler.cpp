@@ -172,31 +172,40 @@ public:
         // It is assumed that as long as a standard surface node exits, the rest of the nodes as well as the
         // expected attributes also exist, and no further fine-grained error checking will happen during node creation.
 
+        // MaterialX and Arnold do not have the same soloing requirements. In the MaterialX case we need to add an explicit
+        // node to do the conversion, while Arnold can take any output type and convert it internally. This means we need to
+        // differentiate Arnold nodes from MaterialX nodes, and this is done by comparing the top level classification of
+        // the NodeDef. As you have noticed, it is currently impossible to Solo a native USD shader.
         const auto* mtlxShaderNodeDef =
             SdrRegistry::GetInstance().GetShaderNodeByIdentifier(TfToken(kMtlxStandardSurface));
+        const auto nodeDefHandler = Ufe::RunTimeMgr::instance().nodeDefHandler(MayaUsdAPI::getUsdRunTimeId());
         if (mtlxShaderNodeDef)
         {
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kColorFloat4, mtlxColorFloat4);
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kFloat4, mtlxFloat4);
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kColorFloat3, mtlxColorFloat3);
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kFloat3, mtlxFloat3);
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kFloat2, mtlxFloat2);
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kFloat, mtlxFloat);
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kInt, mtlxInt);
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kBool, mtlxBool);
-            registerNodeGraph(TfToken(kMtlx), Ufe::Attribute::kGeneric, surfaceShaderDirect);
+            const auto nodeDef = nodeDefHandler ? nodeDefHandler->definition(kMtlxStandardSurface) : nullptr;
+            m_materialX = nodeDef ? TfToken(nodeDef->classification(nodeDef->nbClassifications() - 1)) : TfToken();
+            registerNodeGraph(m_materialX, Ufe::Attribute::kColorFloat4, mtlxColorFloat4);
+            registerNodeGraph(m_materialX, Ufe::Attribute::kFloat4, mtlxFloat4);
+            registerNodeGraph(m_materialX, Ufe::Attribute::kColorFloat3, mtlxColorFloat3);
+            registerNodeGraph(m_materialX, Ufe::Attribute::kFloat3, mtlxFloat3);
+            registerNodeGraph(m_materialX, Ufe::Attribute::kFloat2, mtlxFloat2);
+            registerNodeGraph(m_materialX, Ufe::Attribute::kFloat, mtlxFloat);
+            registerNodeGraph(m_materialX, Ufe::Attribute::kInt, mtlxInt);
+            registerNodeGraph(m_materialX, Ufe::Attribute::kBool, mtlxBool);
+            registerNodeGraph(m_materialX, Ufe::Attribute::kGeneric, surfaceShaderDirect);
         }
         const auto* arnoldShaderNodeDef =
             SdrRegistry::GetInstance().GetShaderNodeByIdentifier(TfToken(kArnoldStandardSurface));
         if (arnoldShaderNodeDef)
         {
-            registerNodeGraph(TfToken(kArnold), Ufe::Attribute::kColorFloat4, arnoldTypeless);
-            registerNodeGraph(TfToken(kArnold), Ufe::Attribute::kColorFloat3, arnoldTypeless);
-            registerNodeGraph(TfToken(kArnold), Ufe::Attribute::kFloat3, arnoldTypeless);
-            registerNodeGraph(TfToken(kArnold), Ufe::Attribute::kFloat, arnoldTypeless);
-            registerNodeGraph(TfToken(kArnold), Ufe::Attribute::kInt, arnoldTypeless);
-            registerNodeGraph(TfToken(kArnold), Ufe::Attribute::kBool, arnoldTypeless);
-            registerNodeGraph(TfToken(kArnold), Ufe::Attribute::kGeneric, surfaceShaderDirect);
+            const auto nodeDef = nodeDefHandler ? nodeDefHandler->definition(kArnoldStandardSurface) : nullptr;
+            m_arnold = TfToken(nodeDef ? nodeDef->classification(nodeDef->nbClassifications() - 1) : TfToken());
+            registerNodeGraph(m_arnold, Ufe::Attribute::kColorFloat4, arnoldTypeless);
+            registerNodeGraph(m_arnold, Ufe::Attribute::kColorFloat3, arnoldTypeless);
+            registerNodeGraph(m_arnold, Ufe::Attribute::kFloat3, arnoldTypeless);
+            registerNodeGraph(m_arnold, Ufe::Attribute::kFloat, arnoldTypeless);
+            registerNodeGraph(m_arnold, Ufe::Attribute::kInt, arnoldTypeless);
+            registerNodeGraph(m_arnold, Ufe::Attribute::kBool, arnoldTypeless);
+            registerNodeGraph(m_arnold, Ufe::Attribute::kGeneric, surfaceShaderDirect);
         }
     }
 
@@ -215,7 +224,7 @@ public:
             {
                 return false;
             }
-            if (shaderSourceType == TfToken(kMtlx))
+            if (shaderSourceType == m_materialX)
             {
                 const auto genericAttr = std::dynamic_pointer_cast<Ufe::AttributeGeneric>(deepAttr);
                 // A MaterialX "surfaceshader" output is a USD "terminal" one:
@@ -225,7 +234,7 @@ public:
                 }
             }
             const auto nodeDef = UfeUtils::getNodeDef(deepAttr->sceneItem());
-            if (shaderSourceType == TfToken(kArnold))
+            if (shaderSourceType == m_arnold)
             {
                 // Since multiple things map to generic, have a hardcoded list of node categories.
                 static const std::set<std::string> allowed = {"Surface", "Pbr"};
@@ -483,8 +492,8 @@ private:
 
     static constexpr auto kMtlxStandardSurface = "ND_standard_surface_surfaceshader";
     static constexpr auto kArnoldStandardSurface = "arnold:standard_surface";
-    static constexpr auto kMtlx = "mtlx";
-    static constexpr auto kArnold = "arnold";
+    TfToken m_materialX;
+    TfToken m_arnold;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

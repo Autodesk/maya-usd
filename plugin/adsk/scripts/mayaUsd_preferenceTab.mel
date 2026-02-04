@@ -110,6 +110,11 @@ global proc mayaUsd_PrefUntexturedModeChanged()
 	}
 }
 
+// Add this proc at the end of the file or with the other global procs
+global proc mayaUsd_AssetResolverButtonPressed(string $parent)
+{
+	string $result = `assetResolverDialog -parentWindow $parent`;
+}
 
 global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 {
@@ -154,7 +159,6 @@ global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
 		if ($forceFactoryDefault || !`optionVar -exists mayaUsd_ShowDisplayColorTextureOff`) {
 			optionVar -intValue mayaUsd_ShowDisplayColorTextureOff false;
 		}
-
 	} else {
 		optionVar -init $forceFactoryDefault -category "MayaUsd"
 			-intValue mayaUsd_SerializedUsdEditsLocation 1
@@ -310,6 +314,16 @@ global proc mayaUsd_PrefCreateTab()
 			-onCommand mayaUsd_PrefUntexturedModeChanged
 			usdPrefUntexturedMode;
 
+	int $buildAR = `mayaUsdInfo -ar`;
+	if ($buildAR) {
+		setParent $parent;
+		frameLayout -label `getMayaUsdString("KAssetResolver")`;
+			columnLayout -adj true;
+			button
+				-label `getMayaUsdString("KAssetResolverButton")`
+				-ann `getMayaUsdString("KAssetResolverButtonAnn")`
+				-command ("mayaUsd_AssetResolverButtonPressed "+$parent);
+	}
 	setUITemplate -popTemplate;
 
 	mayaUsd_PrefUpdate();
@@ -326,7 +340,7 @@ global proc mayaUsd_PrefUpdate()
 	global string $gPreferenceWindow;
 	setParent $gPreferenceWindow;
 	string $parent = "mayaUsd_PrefLayout";
-	
+
 	if (`columnLayout -q -numberOfChildren $parent` == 0) {
 		return;
 	}
@@ -419,6 +433,7 @@ global proc mayaUsd_PrefHoldState(string $mode)
 	if ($mode == "save") {
 		// Preferences dialog was opened, make sure we don't have this transient optionVar.
 		optionVar -remove mayaUsd_PrefUntexturedModeChanged;
+		optionVar -remove mayaUsd_PrefArMappingFileChanged;
 	}
 
 	if ($mode == "restore") {

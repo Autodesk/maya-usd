@@ -276,7 +276,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             usd_path = os.path.abspath('%sRoundtripTest.usda' % init_surf)
 
             cmds.file(usd_path, force=True,
-                    options="shadingMode=useRegistry;mergeTransformAndShape=1",
+                    options="shadingMode=useRegistry;convertMaterialsTo=[UsdPreviewSurface];mergeTransformAndShape=1",
                     typ="USD Export", pr=True, ea=True)
 
             cmds.file(defaultExtensions=default_ext_setting)
@@ -409,6 +409,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True,
             file=usd_path,
             shadingMode='useRegistry',
+            convertMaterialsTo=['UsdPreviewSurface'],
             exportDisplayColor=True,
             legacyMaterialScope=False,
             defaultPrim="None")
@@ -470,6 +471,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             cmds.usdExport(mergeTransformAndShape=True,
                 file=usd_path,
                 shadingMode='useRegistry',
+                convertMaterialsTo=['UsdPreviewSurface'],
                 exportDisplayColor=False,
                 exportCollectionBasedBindings=True,
                 exportComponentTags=True,
@@ -480,6 +482,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             cmds.usdExport(mergeTransformAndShape=True,
                 file=usd_path,
                 shadingMode='useRegistry',
+                convertMaterialsTo=['UsdPreviewSurface'],
                 exportDisplayColor=False,
                 exportComponentTags=True,
                 legacyMaterialScope=False,
@@ -689,6 +692,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True,
                        file=usd_path,
                        shadingMode='useRegistry',
+                       convertMaterialsTo=['UsdPreviewSurface'],
                        legacyMaterialScope=False,
                        defaultPrim='None')
 

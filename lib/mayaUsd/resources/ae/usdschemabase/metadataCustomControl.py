@@ -87,7 +87,7 @@ class MetadataCustomControl(object):
         # Get all the other Metadata and remove the ones above, as well as a few
         # we don't ever want to show.
         allMetadata = self.prim.GetAllMetadata()
-        keysToDelete = ['kind', 'active', 'instanceable', 'typeName', 'documentation']
+        keysToDelete = ['kind', 'active', 'instanceable', 'typeName', 'documentation', 'assetInfo']
         for key in keysToDelete:
             allMetadata.pop(key, None)
         if allMetadata:

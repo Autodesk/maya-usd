@@ -194,7 +194,8 @@ bool _SetAnimPlugData(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // XXX: Why do the input arrays need to be mutable here?
-    status = animFn.addKeys(&times, &values);
+    status = animFn.addKeys(
+        &times, &values, MFnAnimCurve::kTangentLinear, MFnAnimCurve::kTangentLinear);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     if (context) {

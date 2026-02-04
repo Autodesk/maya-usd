@@ -343,6 +343,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         if (showSessionLayer) {
             appendRow(new LayerTreeItem(
                 sessionLayer,
+                _sessionState->stage(),
                 LayerType::SessionLayer,
                 "",
                 &incomingLayers,
@@ -351,7 +352,13 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         }
 
         appendRow(new LayerTreeItem(
-            rootLayer, LayerType::RootLayer, "", &incomingLayers, sharedStage, &sharedLayers));
+            rootLayer,
+            _sessionState->stage(),
+            LayerType::RootLayer,
+            "",
+            &incomingLayers,
+            sharedStage,
+            &sharedLayers));
 
         updateTargetLayer(InRebuildModel::Yes);
 
@@ -453,7 +460,7 @@ LayerTreeItem* LayerTreeModel::layerItemFromIndex(const QModelIndex& index) cons
     return dynamic_cast<LayerTreeItem*>(itemFromIndex(index));
 }
 
-void layerItemVectorRecurs(
+void layerItemVectorRecursive(
     LayerTreeItem*                parent,
     LayerTreeModel::ConditionFunc filter,
     std::vector<LayerTreeItem*>&  result)
@@ -464,19 +471,18 @@ void layerItemVectorRecurs(
     if (parent->rowCount() > 0) {
         const auto& children = parent->childrenVector();
         for (auto const& child : children)
-            layerItemVectorRecurs(child, filter, result);
+            layerItemVectorRecursive(child, filter, result);
     }
 }
 
 LayerItemVector
 LayerTreeModel::getAllItems(ConditionFunc filter, const LayerTreeItem* item /* = nullptr*/) const
 {
-
     LayerItemVector result;
     auto            root = item ? item : invisibleRootItem();
     for (int i = 0, count = root->rowCount(); i < count; i++) {
         auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
-        layerItemVectorRecurs(child, filter, result);
+        layerItemVectorRecursive(child, filter, result);
     }
     return result;
 }

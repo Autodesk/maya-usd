@@ -986,7 +986,8 @@ static bool _CreateAnimCurveForPlug(
     MObject      animObj = animFn.create(plug, nullptr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    status = animFn.addKeys(&timeArray, &valueArray);
+    status = animFn.addKeys(
+        &timeArray, &valueArray, MFnAnimCurve::kTangentLinear, MFnAnimCurve::kTangentLinear);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     if (context) {

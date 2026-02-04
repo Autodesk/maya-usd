@@ -26,6 +26,7 @@ set(HEADERS
 target_compile_definitions(${TARGET_NAME}
     PUBLIC
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
@@ -135,7 +136,7 @@ execute_process(COMMAND
                 RESULT_VARIABLE
                     usdgen_res
 )
-if(usdgen_res)
+if(usdgen_res EQUAL 1)
     message(FATAL_ERROR "Schemas generation failed")
 endif()
 
@@ -144,7 +145,7 @@ endif()
 #------------------------------------------------------------------------------
 set(SCHEMAS_LIBRARY_NAME schemas)
 
-if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+if(IS_WINDOWS AND MAYAUSD_DEFINE_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(TARGET_PYTHON_NAME "_${SCHEMAS_LIBRARY_NAME}_d")
 else()

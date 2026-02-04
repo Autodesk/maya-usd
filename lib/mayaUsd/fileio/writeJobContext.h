@@ -139,7 +139,7 @@ public:
     void AddMaterialPath(const SdfPath& matPath) { _materialPaths.emplace_back(matPath); }
 
     // Retrieve all exported material paths.
-    const std::vector<SdfPath>& GetMaterialPaths() { return _materialPaths; }
+    const std::vector<SdfPath>& GetMaterialPaths() const { return _materialPaths; }
 
     // Retrieve all instance master paths
     std::vector<SdfPath> GetAlInstanceMasterPaths() const;

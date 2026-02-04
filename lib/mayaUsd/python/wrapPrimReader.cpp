@@ -16,6 +16,7 @@
 
 #include "pythonObjectRegistry.h"
 
+#include <cxx17_legacy_support.h>
 #include <mayaUsd/fileio/primReader.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
@@ -33,7 +34,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaPrimReader
+/// \brief Python binding for the UsdMayaPrimReader
 //----------------------------------------------------------------------------------------------------------------------
 template <typename T = UsdMayaPrimReader>
 class PrimReaderWrapper
@@ -176,7 +177,7 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaShaderReader
+/// \brief Python binding for the UsdMayaShaderReader
 //----------------------------------------------------------------------------------------------------------------------
 class ShaderReaderWrapper : public PrimReaderWrapper<UsdMayaShaderReader>
 {
@@ -229,8 +230,11 @@ public:
         this->CallVirtual<>("PostConnectSubtree", &This::default_PostConnectSubtree)(context);
     }
 
-    boost::optional<IsConverterResult> default_IsConverter() { return base_t::IsConverter(); }
-    boost::optional<IsConverterResult> IsConverter() override
+    MayaUsdCxxLegacySupport::optional<IsConverterResult> default_IsConverter()
+    {
+        return base_t::IsConverter();
+    }
+    MayaUsdCxxLegacySupport::optional<IsConverterResult> IsConverter() override
     {
         if (Override o = GetOverride("IsConverter")) {
             auto res = std::function<PXR_BOOST_PYTHON_NAMESPACE::object()>(

@@ -26,7 +26,9 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/types.h>
+#include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usd/schemaRegistry.h>
+#include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/utils.h>
 
 #include <sstream>
@@ -40,6 +42,10 @@
 #include <usdUfe/base/tokens.h>
 #endif
 
+#ifdef UFE_HAS_COLOR_MANAGEMENT_HANDLER
+#include <ufe/colorManagementHandler.h>
+#include <ufe/runTimeMgr.h>
+#endif
 // Note: normally we would use this using directive, but here we cannot because
 //       our class is called UsdAttribute which is exactly the same as the one
 //       in USD.
@@ -270,6 +276,88 @@ private:
     const typename A::Ptr _attr;
     const T               _newValue;
 };
+
+#ifdef UFE_HAS_COLOR_MANAGEMENT_HANDLER
+void _ApplyColorManagementFileRules(
+    const UsdUfe::UsdAttributeFilename& attr,
+    const std::string&                  newValue)
+{
+    // If this is for a UsdShadeShader node, see if we need to set color space:
+    const auto shader = UsdShadeShader(attr.usdPrim());
+    if (!shader) {
+        return;
+    }
+    bool ignoreFileRulesValue
+        = attr.sceneItem()
+              ->getGroupMetadata(
+                  "Autodesk", Ufe::ColorManagementHandler::kIgnoreColorManagementFileRules)
+              .get<std::string>()
+        == "true";
+    if (ignoreFileRulesValue) {
+        return;
+    }
+    TfToken shaderId;
+    if (!shader.GetShaderId(&shaderId)) {
+        return;
+    }
+    SdrShaderNodeConstPtr shaderNode
+        = PXR_NS::SdrRegistry::GetInstance().GetShaderNodeByIdentifier(shaderId);
+    if (!shaderNode || shaderNode->GetSourceType().GetString() == "glslfx") {
+        return;
+    }
+    // Color management handler is at the DCC level, so we need to get Maya runtime id from segment
+    // zero of the UFE path.
+    const auto colorManagementHandler = Ufe::ColorManagementHandler::colorManagementHandler(
+        attr.sceneItem()->path().getSegments()[0].runTimeId());
+    if (!colorManagementHandler || !colorManagementHandler->isColorManagementEnabled()) {
+        return;
+    }
+    const auto colorSpace = colorManagementHandler->getColorSpaceFromFileRule(newValue);
+    if (!colorSpace.empty()) {
+        attr.usdAttribute().SetColorSpace(
+            TfToken(colorManagementHandler->getCompactName(colorSpace)));
+    }
+}
+
+// Partial specialization for filename attributes that require setting
+// the color space metadata using file rules.
+template <>
+class SetUndoableCommand<std::string, UsdUfe::UsdAttributeFilename>
+    : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
+{
+public:
+    SetUndoableCommand(
+        const typename UsdUfe::UsdAttributeFilename::Ptr& attr,
+        const std::string&                                newValue)
+        : _attr(attr)
+        , _newValue(newValue)
+    {
+    }
+
+    void undo() override
+    {
+        UsdUfe::InSetAttribute inSetAttr;
+        UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>::undo();
+    }
+
+    void redo() override
+    {
+        UsdUfe::InSetAttribute inSetAttr;
+        UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>::redo();
+    }
+
+protected:
+    void executeImplementation() override
+    {
+        _attr->set(_newValue);
+        _ApplyColorManagementFileRules(*_attr, _newValue);
+    }
+
+private:
+    const typename UsdUfe::UsdAttributeFilename::Ptr _attr;
+    const std::string                                _newValue;
+};
+#endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 class SetUndoableMetadataCommand : public UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>
@@ -540,6 +628,9 @@ void UsdAttributeFilename::set(const std::string& value)
         SdfAssetPath path(value);
         setUsdAttr<PXR_NS::SdfAssetPath>(*this, path);
     }
+#ifdef UFE_HAS_COLOR_MANAGEMENT_HANDLER
+    _ApplyColorManagementFileRules(*this, value);
+#endif
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)

@@ -30,4 +30,12 @@
 #define UFE_V4(...)
 #endif
 
+#if !defined(UFE_V5_FEATURES_AVAILABLE) && !defined(UFE_V5)
+#define UFE_V5(...)
+#endif
+
+#if !defined(UFE_V6_FEATURES_AVAILABLE) && !defined(UFE_V6)
+#define UFE_V6(...)
+#endif
+
 #endif // USDUFE_UFEVERSIONCOMPAT_H

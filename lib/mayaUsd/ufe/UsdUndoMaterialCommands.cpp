@@ -16,7 +16,7 @@
 #include "UsdUndoMaterialCommands.h"
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/ufe/UsdUndoRenameCommand.h>
+#include <mayaUsd/ufe/MayaUsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
@@ -704,7 +704,7 @@ bool UsdUndoCreateMaterialsScopeCommand::doExecute()
     }
 
     auto materialsScopeName = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
-    auto renameCmd = UsdUndoRenameCommand::create(scopeItem, materialsScopeName);
+    auto renameCmd = MayaUsdUndoRenameCommand::create(scopeItem, materialsScopeName);
     if (!renameCmd) {
         return false;
     }

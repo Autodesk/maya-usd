@@ -101,6 +101,10 @@ const constexpr char  kReloadReferenceItem[] = "Reload";
 static constexpr char kUSDReferenceItem[] = "Reference";
 static constexpr char kUSDReferenceLabel[] = "Reference";
 
+// Copied from UsdUfe::UsdContextOps
+static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
+static constexpr char kUSDClassPrimItem[] = "Class";
+
 #ifdef UFE_V3_FEATURES_AVAILABLE
 //! \brief Create a working Material and select it:
 class InsertChildAndSelectCommand : public Ufe::CompositeUndoableCommand
@@ -599,8 +603,20 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 
     // First check if our base class handles this item.
     auto cmd = Parent::doOpCmd(itemPath);
-    if (cmd)
+    if (cmd) {
+        // EMSUSD-2499: Create Class Prim
+        // Special case when adding a class prim via context menu make sure the Outliner
+        // is displaying class prims.
+        if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
+            // At this point we know the last item in the itemPath is the prim type to create
+            auto primType = itemPath[itemPath.size() - 1];
+            if (primType == kUSDClassPrimItem) {
+                enableOutlinerClassPrims();
+            }
+        }
+
         return cmd;
+    }
 
 #ifdef WANT_QT_BUILD
     // When building without Qt there is no LayerEditor
@@ -844,6 +860,14 @@ UsdUfe::UsdContextOps::SchemaNameMap MayaUsdContextOps::getSchemaPluginNiceNames
 
     pluginNiceNames.insert(mayaSchemaNiceNames.begin(), mayaSchemaNiceNames.end());
     return pluginNiceNames;
+}
+
+void MayaUsdContextOps::enableOutlinerClassPrims() const
+{
+    // Enable the outliner to display class prims. The OutlinerHelper uses a static variable
+    // to keep track of Outliner display. So we can set it on any OutlinerPanel.
+    MString script("outlinerEditor -e -uf USD ClassPrims -ufv true outlinerPanel1");
+    MGlobal::executeCommand(script, false /*display*/, true /*undoable*/);
 }
 
 } // namespace ufe

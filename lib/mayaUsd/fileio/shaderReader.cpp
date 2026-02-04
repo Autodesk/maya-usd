@@ -67,7 +67,8 @@ bool UsdMayaShaderReader::TraverseUnconnectableInput(const TfToken& usdAttrName)
 
 void UsdMayaShaderReader::PostConnectSubtree(UsdMayaPrimReaderContext* context) { }
 
-boost::optional<UsdMayaShaderReader::IsConverterResult> UsdMayaShaderReader::IsConverter()
+MayaUsdCxxLegacySupport::optional<UsdMayaShaderReader::IsConverterResult>
+UsdMayaShaderReader::IsConverter()
 {
     return {};
 }

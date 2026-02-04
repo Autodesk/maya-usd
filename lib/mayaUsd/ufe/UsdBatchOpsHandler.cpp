@@ -16,6 +16,13 @@
 #include "UsdBatchOpsHandler.h"
 
 #include <mayaUsd/ufe/UsdUndoDuplicateSelectionCommand.h>
+#include <mayaUsd/ufe/Utils.h>
+
+#include <ufe/pathString.h>
+
+#ifdef UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET
+#include <usdUfe/ufe/UsdUndoDuplicateSelectionCommand.h>
+#endif
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -41,6 +48,24 @@ Ufe::SelectionUndoableCommand::Ptr UsdBatchOpsHandler::duplicateSelectionCmd_(
     const Ufe::Selection&       selection,
     const Ufe::ValueDictionary& duplicateOptions)
 {
+#ifdef UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET
+    // Duplicating to a specific parent item.
+    const auto itParent = duplicateOptions.find(kDstParentPath);
+    if (itParent != duplicateOptions.end()) {
+        if (!itParent->second.isType<std::string>()) {
+            return nullptr;
+        }
+        const auto parentPath = Ufe::PathString::path(itParent->second.get<std::string>());
+        const auto parentItem = downcast(Ufe::Hierarchy::createItem(parentPath));
+        if (!parentItem) {
+            return nullptr;
+        }
+
+        return UsdUfe::UsdUndoDuplicateSelectionCommand::create(selection, parentItem);
+    }
+#endif
+
+    // Duplicating in place.
     return UsdUndoDuplicateSelectionCommand::create(selection, duplicateOptions);
 }
 

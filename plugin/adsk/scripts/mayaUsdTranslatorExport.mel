@@ -236,7 +236,10 @@ global proc mayaUsdTranslatorExport_updateDefaultPrimList() {
         return;
     }
 
-    string $currentDefaultPrim = `optionMenuGrp -q -value exportDefaultPrim`;
+    string $currentDefaultPrim = "";
+    if (`optionMenuGrp -q -numberOfItems exportDefaultPrim` > 0) {
+        $currentDefaultPrim = `optionMenuGrp -q -value exportDefaultPrim`;
+    }
 
     optionMenuGrp -edit -deleteAllItems exportDefaultPrim;
     string $menuName = `optionMenuGrp -q -fullPathName exportDefaultPrim`;
@@ -926,10 +929,18 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "staticSingleSample") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "staticSingleSampleCheckBox");
             } else if ($optionBreakDown[0] == "startTime") {
-                int $startTime = (int)$optionBreakDown[1];
+                // Start time might contain a float, but we only want the integer part.
+                string $startTimeStr = $optionBreakDown[1];
+                string $startTimeTok[];
+                tokenize $startTimeStr "." $startTimeTok;
+                int $startTime = (int)$startTimeTok[0];
                 intFieldGrp -e -v1 $startTime -en1 $enable frameRangeFields;
             } else if ($optionBreakDown[0] == "endTime") {
-                int $endTime = (int)$optionBreakDown[1];
+                // End time might contain a float, but we only want the integer part.
+                string $endTimeStr = $optionBreakDown[1];
+                string $endTimeTok[];
+                tokenize $endTimeStr "." $endTimeTok;
+                int $endTime = (int)$endTimeTok[0];
                 intFieldGrp -e -v2 $endTime -en2 $enable frameRangeFields;
             } else if ($optionBreakDown[0] == "frameStride") {
                 float $frameStride = (float)$optionBreakDown[1];
@@ -966,6 +977,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetOppositeCheckbox($optionBreakDown[1], $enable, "includeNamespacesCheckBox");
             } else if ($optionBreakDown[0] == "worldspace") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "worldspaceCheckBox");
+            } else if ($optionBreakDown[0] == "hideSourceData") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "hideSourceDataCheckBox");
             }
         }
 
@@ -1143,10 +1156,16 @@ global proc int mayaUsdTranslatorExport (string $parent,
         // export, duplicate-to-USD or merge=to-USD.
         int $canExportStagesAsRefs = 1;
         int $canControlUpAxisAndUnit = 1;
+        int $canHideSourceData = 0;
         
         if (stringArrayContains("duplicate", $sectionNames)) {
             $canExportStagesAsRefs = 0;
             $canControlUpAxisAndUnit = 0;
+            $canHideSourceData = 1;
+        }
+
+        if (stringArrayContains("createComponent", $sectionNames)) {
+            $canHideSourceData = 1;
         }
 
         if (stringArrayContains("mergeToUSD", $sectionNames)) {
@@ -1341,6 +1360,10 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kExportWorldspaceLbl")` -annotation `getMayaUsdString("kExportWorldspaceAnn")` worldspaceCheckBox;
 
+                if ($canHideSourceData) {
+                    checkBoxGrp -label "" -label1 `getMayaUsdString("kHideSourceDataLbl")` -annotation `getMayaUsdString("kHideSourceDataAnn")` hideSourceDataCheckBox;
+                }
+
                 if ($canExportStagesAsRefs) {
                     checkBoxGrp -label "" -label1 `getMayaUsdString("kExportStagesAsRefsLbl")`
                         -annotation `getMayaUsdString("kExportStagesAsRefsAnn")`
@@ -1349,7 +1372,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 }
 
                 if ($canControlUpAxisAndUnit) {
-                    columnLayout -columnOffset "left" 2;
+                    columnLayout -columnOffset "both" 4 -adj true;
                     frameLayout -label `getMayaUsdString("kExportAxisAndUnitLbl")` -collapsable true -collapse false axisAndUnitFrameLayout;
                         separator -style "none";
 
@@ -1449,6 +1472,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "includeEmptyTransforms", "includeEmptyTransformsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "worldspace", "worldspaceCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "hideSourceData", "hideSourceDataCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportStagesAsRefs", "exportStagesAsRefsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "upAxis", "upAxisPopup");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "unit", "unitPopup");

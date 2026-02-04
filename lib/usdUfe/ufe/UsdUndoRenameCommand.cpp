@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2025 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
 // limitations under the License.
 //
 #include "UsdUndoRenameCommand.h"
-
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/ProxyShapeHandler.h>
-#include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
@@ -36,8 +32,6 @@
 
 #include <ufe/log.h>
 #include <ufe/path.h>
-#include <ufe/pathSegment.h>
-#include <ufe/pathString.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
@@ -46,16 +40,13 @@
 
 #include <cctype>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 // Ensure that UsdUndoRenameCommand is properly setup.
 #ifdef UFE_V4_FEATURES_AVAILABLE
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemResultUndoableCommand, UsdUndoRenameCommand);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::SceneItemResultUndoableCommand, UsdUndoRenameCommand);
 #else
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoRenameCommand);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoRenameCommand);
 #endif
 
 /*
@@ -121,34 +112,6 @@ UsdUfe::UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _uf
 
 namespace {
 
-void sendNotificationToAllStageProxies(
-    const UsdStagePtr& stage,
-    const UsdPrim&     prim,
-    const Ufe::Path&   srcPath,
-    const Ufe::Path&   dstPath)
-{
-    for (const std::string& proxyName : ProxyShapeHandler::getAllNames()) {
-        UsdStagePtr proxyStage = ProxyShapeHandler::dagPathToStage(proxyName);
-        if (proxyStage != stage)
-            continue;
-
-        // For all the proxy shapes that are mapping the same stage, we need to fixup the
-        // Ufe path since they have different Ufe Paths because it contains proxy shape name.
-        auto proxyNamePath = Ufe::PathString::path(proxyName);
-        auto proxySegment = proxyNamePath.getSegments()[0];
-
-        const Ufe::PathSegment& srcUsdSegment = srcPath.getSegments()[1];
-        const Ufe::Path adjustedSrcPath(Ufe::Path::Segments({ proxySegment, srcUsdSegment }));
-
-        const Ufe::PathSegment& dstUsdSegment = dstPath.getSegments()[1];
-        const Ufe::Path adjustedDstPath(Ufe::Path::Segments({ proxySegment, dstUsdSegment }));
-
-        auto newItem = UsdUfe::UsdSceneItem::create(adjustedDstPath, prim);
-
-        UsdUfe::sendNotification<Ufe::ObjectRename>(newItem, adjustedSrcPath);
-    }
-}
-
 void doUsdRename(
     const UsdStagePtr& stage,
     const UsdPrim&     prim,
@@ -198,36 +161,6 @@ void doUsdRename(
     UsdUfe::applyToAllPrimSpecs(prim, renameFunc);
 }
 
-void renameHelper(
-    const UsdStagePtr&               stage,
-    const UsdUfe::UsdSceneItem::Ptr& ufeSrcItem,
-    const Ufe::Path&                 srcPath,
-    UsdUfe::UsdSceneItem::Ptr&       ufeDstItem,
-    const Ufe::Path&                 dstPath,
-    const std::string&               newName)
-{
-    // get the stage's default prim path
-    auto defaultPrimPath = stage->GetDefaultPrim().GetPath();
-
-    // Note: must fetch prim again from its path because undo/redo of composite commands
-    //       (or doing multiple undo and then multiple redo) can make the cached prim
-    //       stale.
-    const UsdPrim srcPrim = stage->GetPrimAtPath(ufeSrcItem->prim().GetPath());
-
-    doUsdRename(stage, srcPrim, newName, srcPath, dstPath);
-
-    // the renamed scene item is a "sibling" of its original name.
-    ufeDstItem = createSiblingSceneItem(srcPath, newName);
-
-    // update stage's default prim
-    if (ufeSrcItem->prim().GetPath() == defaultPrimPath) {
-        stage->SetDefaultPrim(ufeDstItem->prim());
-    }
-
-    // send notification to update UFE data model
-    sendNotificationToAllStageProxies(stage, ufeDstItem->prim(), srcPath, dstPath);
-}
-
 } // namespace
 
 void UsdUndoRenameCommand::renameRedo()
@@ -257,6 +190,35 @@ void UsdUndoRenameCommand::renameUndo()
     renameHelper(_stage, _ufeDstItem, srcPath, _ufeSrcItem, dstPath, newName);
 }
 
+void UsdUndoRenameCommand::renameHelper(
+    const PXR_NS::UsdStagePtr&       stage,
+    const UsdUfe::UsdSceneItem::Ptr& ufeSrcItem,
+    const Ufe::Path&                 srcPath,
+    UsdUfe::UsdSceneItem::Ptr&       ufeDstItem,
+    const Ufe::Path&                 dstPath,
+    const std::string&               newName)
+{
+    // get the stage's default prim path
+    auto defaultPrimPath = stage->GetDefaultPrim().GetPath();
+
+    // Note: must fetch prim again from its path because undo/redo of composite commands
+    //       (or doing multiple undo and then multiple redo) can make the cached prim
+    //       stale.
+    const UsdPrim srcPrim = stage->GetPrimAtPath(ufeSrcItem->prim().GetPath());
+
+    doUsdRename(stage, srcPrim, newName, srcPath, dstPath);
+
+    // the renamed scene item is a "sibling" of its original name.
+    ufeDstItem = createSiblingSceneItem(srcPath, newName);
+
+    // update stage's default prim
+    if (ufeSrcItem->prim().GetPath() == defaultPrimPath) {
+        stage->SetDefaultPrim(ufeDstItem->prim());
+    }
+
+    // send notification to update UFE data model
+    sendRenameNotification(stage, ufeDstItem->prim(), srcPath, dstPath);
+}
 void UsdUndoRenameCommand::undo()
 {
     UsdUfe::InPathChange pc;
@@ -269,5 +231,14 @@ void UsdUndoRenameCommand::redo()
     renameRedo();
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+void UsdUndoRenameCommand::sendRenameNotification(
+    const PXR_NS::UsdStagePtr& stage,
+    const PXR_NS::UsdPrim&     prim,
+    const Ufe::Path&           srcPath,
+    const Ufe::Path&           dstPath)
+{
+    auto newItem = UsdUfe::UsdSceneItem::create(dstPath, prim);
+    UsdUfe::sendNotification<Ufe::ObjectRename>(newItem, srcPath);
+}
+
+} // namespace USDUFE_NS_DEF

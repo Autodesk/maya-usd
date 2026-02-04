@@ -54,7 +54,7 @@ IncludeCategories:
   #    Priority 0
 
   # 3. All public headers from this repository (maya-usd)
-  - Regex:           '^<(mayaUsd.*|hdMaya|AL|usdMaya)/'
+  - Regex:           '(cxx17_legacy_support\.h|^<(mayaUsd.*|hdMaya|AL|usdMaya)/)'
     Priority:        3
 
   # 4. UsdUfe library headers

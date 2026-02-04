@@ -23,5 +23,13 @@ const char* MayaUsdBuildInfo::gitCommit() { return MAYAUSD_GIT_COMMIT; }
 const char* MayaUsdBuildInfo::gitBranch() { return MAYAUSD_GIT_BRANCH; }
 const char* MayaUsdBuildInfo::cutId() { return MAYAUSD_CUT_ID; }
 const char* MayaUsdBuildInfo::buildDate() { return MAYAUSD_BUILD_DATE; }
+bool        MayaUsdBuildInfo::buildAR()
+{
+#ifdef WANT_AR_BUILD
+    return true;
+#else
+    return false;
+#endif
+}
 
 } // namespace MAYAUSD_NS_DEF

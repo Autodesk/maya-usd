@@ -22,6 +22,7 @@
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys
 #include <pxr/usd/usd/variantSets.h>
 
+#include <cctype>
 #include <map>
 #include <vector>
 
@@ -168,20 +169,37 @@ UsdUIInfoHandler::SupportedTypesMap UsdUIInfoHandler::getSupportedIconTypes() co
     // We support these node types directly.
     static const SupportedTypesMap supportedTypes {
         { "", "out_USD_Def.png" }, // No node type
+        { "Backdrop", "out_USD_UI.png" },
         { "BlendShape", "out_USD_BlendShape.png" },
         { "Camera", "out_USD_Camera.png" },
-        { "Capsule", "out_USD_Capsule.png" },
+        { "Capsule", "out_USD_Capsule.png" }, // Includes Capsule_1
+        // { "Class", "out_USD_Class.png" },    // Special case handled in treeViewIcon()
         { "Cone", "out_USD_Cone.png" },
         { "Cube", "out_USD_Cube.png" },
-        { "Cylinder", "out_USD_Cylinder.png" },
+        { "Cylinder", "out_USD_Cylinder.png" }, // Includes Cylinder_1
         { "GeomSubset", "out_USD_GeomSubset.png" },
+        { "GenerativeProcedural", "out_USD_Procedural.png" },
+        // CylinderLight/DiskLight/PortalLight/RectLight/SphereLight
+        // Are all covered by the ancestorNodeType (out_USD_UsdLuxNonboundableLightBase.png)
+        // DistantLight/DomeLight/DomeLight_1/GeometryLight
+        // Are all covered by the ancestorNodeType (out_USD_UsdLuxBoundableLightBase.png)
         { "LightFilter", "out_USD_LightFilter.png" },
         { "LightPortal", "out_USD_LightPortal.png" },
         { "Mesh", "out_USD_Mesh.png" },
         { "NurbsPatch", "out_USD_NurbsPatch.png" },
+        // PhysicsDistanceJoint/PhysicsFixedJoint/PhysicsJoint/PhysicsPrismaticJoint/PhysicsRevoluteJoint/PhysicsSphericalJoint
+        // Are all covered by the ancestorNodeType (out_USD_PhysicsJoint.png).
+        { "PhysicsCollisionGroup", "out_USD_PhysicsJoint.png" },
+        { "PhysicsScene", "out_USD_PhysicsJoint.png" },
+        { "Plane", "out_USD_Plane.png" },
         { "PluginLight", "out_USD_PluginLight.png" },
         { "PointInstancer", "out_USD_PointInstancer.png" },
         { "Points", "out_USD_Points.png" },
+        { "Procedural", "out_USD_Procedural.png" },
+        { "RenderPass", "out_USD_Render.png" },
+        { "RenderProduct", "out_USD_Render.png" },
+        { "RenderSettings", "out_USD_Render.png" },
+        { "RenderVar", "out_USD_Render.png" },
         { "Scope", "out_USD_Scope.png" },
         { "SkelAnimation", "out_USD_SkelAnimation.png" },
         { "Skeleton", "out_USD_Skeleton.png" },
@@ -202,18 +220,33 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
         return Ufe::UIInfoHandler::Icon("out_USD_UsdTyped.png"); // Default USD icon
     }
 
+    // If the node type ends with _ followed by a number, we strip the number.
+    // This is to handle the case where we have a node type like "Capsule_1".
+    auto nodeType = item->nodeType();
+    if (nodeType.size() > 2 && nodeType[nodeType.size() - 2] == '_'
+        && std::isdigit(nodeType[nodeType.size() - 1])) {
+        nodeType = nodeType.substr(0, nodeType.size() - 2);
+    }
+
     auto                     supportedTypes = getSupportedIconTypes();
     Ufe::UIInfoHandler::Icon icon; // Default is empty (no icon and no badge).
-    const auto               search = supportedTypes.find(item->nodeType());
+    const auto               search = supportedTypes.find(nodeType);
     if (search != supportedTypes.cend()) {
         icon.baseIcon = search->second;
     }
 
-    // Check if we have any composition meta data - if yes we display a special badge.
     auto usdItem = downcast(item);
-    if (usdItem && usdItem->prim()) {
+    auto usdPrim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
+
+    // Special case for Class prims.
+    if (usdPrim && usdPrim.GetSpecifier() == PXR_NS::SdfSpecifierClass) {
+        icon.baseIcon = "out_USD_Class.png";
+    }
+
+    // Check if we have any composition meta data - if yes we display a special badge.
+    if (usdPrim) {
         // Variants
-        if (!usdItem->prim().GetVariantSets().GetNames().empty()) {
+        if (!usdPrim.GetVariantSets().GetNames().empty()) {
             icon.badgeIcon = "out_USD_CompArcBadgeV.png";
             icon.pos = Ufe::UIInfoHandler::LowerRight;
         } else {
@@ -224,7 +257,7 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
                     PXR_NS::SdfFieldKeys->InheritPaths,
                     PXR_NS::SdfFieldKeys->Specializes };
             for (const auto& k : compKeys) {
-                if (usdItem->prim().HasMetadata(k)) {
+                if (usdPrim.HasMetadata(k)) {
                     icon.badgeIcon = "out_USD_CompArcBadge.png";
                     icon.pos = Ufe::UIInfoHandler::LowerRight;
                     break;

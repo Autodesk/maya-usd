@@ -161,7 +161,8 @@ MIntArray getMayaFaceVertexAssignmentIds(
     const MFnMesh&    meshFn,
     const TfToken&    interpolation,
     const VtIntArray& assignmentIndices,
-    const int         unauthoredValuesIndex)
+    const int         unauthoredValuesIndex,
+    const bool        isLeftHanded)
 {
     MIntArray valueIds(meshFn.numFaceVertices(), -1);
 
@@ -176,7 +177,26 @@ MIntArray getMayaFaceVertexAssignmentIds(
         } else if (interpolation == UsdGeomTokens->vertex) {
             valueId = itFV.vertId();
         } else if (interpolation == UsdGeomTokens->faceVarying) {
-            valueId = fvi;
+            if (isLeftHanded) {
+                // When the mesh is left-handed, face winding order was reversed.
+                // We need to adjust the face-vertex index to match the corrected order.
+                // Find the position of this vertex within its face and reverse it.
+                const int faceId = itFV.faceId();
+                int       vertexCount = meshFn.polygonVertexCount(faceId);
+
+                // Find which vertex we are within this face
+                unsigned int baseFvi = 0;
+                for (int f = 0; f < faceId; ++f) {
+                    int faceVertCount = meshFn.polygonVertexCount(f);
+                    baseFvi += faceVertCount;
+                }
+
+                const int vertexPosInFace = fvi - baseFvi;
+                const int reversedVertexPosInFace = vertexCount - 1 - vertexPosInFace;
+                valueId = baseFvi + reversedVertexPosInFace;
+            } else {
+                valueId = fvi;
+            }
         }
 
         if (static_cast<size_t>(valueId) < assignmentIndices.size()) {
@@ -196,7 +216,18 @@ MIntArray getMayaFaceVertexAssignmentIds(
     return valueIds;
 }
 
+bool isPrimitiveLeftHanded(const UsdGeomMesh& mesh)
+{
+    TfToken orientation;
+    if (!mesh.GetOrientationAttr().Get(&orientation)) {
+        return false;
+    }
+
+    return orientation == UsdGeomTokens->leftHanded;
+}
+
 bool assignUVSetPrimvarToMesh(
+    const UsdGeomMesh&                        mesh,
     const UsdGeomPrimvar&                     primvar,
     MFnMesh&                                  meshFn,
     bool&                                     firstUVPrimvar,
@@ -299,7 +330,9 @@ bool assignUVSetPrimvarToMesh(
 
     // Build an array of value assignments for each face vertex in the mesh.
     // Any assignments left as -1 will not be assigned a value.
-    MIntArray uvIds = getMayaFaceVertexAssignmentIds(meshFn, interpolation, assignmentIndices, -1);
+    const bool isLeftHanded = isPrimitiveLeftHanded(mesh);
+    MIntArray  uvIds = getMayaFaceVertexAssignmentIds(
+        meshFn, interpolation, assignmentIndices, -1, isLeftHanded);
 
     MIntArray vertexCounts;
     MIntArray vertexList;
@@ -504,8 +537,9 @@ bool assignColorSetPrimvarToMesh(
 
     // Build an array of value assignments for each face vertex in the mesh.
     // Any assignments left as -1 will not be assigned a value.
-    MIntArray colorIds = getMayaFaceVertexAssignmentIds(
-        meshFn, interpolation, assignmentIndices, unauthoredValuesIndex);
+    const bool isLeftHanded = isPrimitiveLeftHanded(mesh);
+    MIntArray  colorIds = getMayaFaceVertexAssignmentIds(
+        meshFn, interpolation, assignmentIndices, unauthoredValuesIndex, isLeftHanded);
 
     status = meshFn.assignColors(colorIds, &colorSetName);
     if (status != MS::kSuccess) {
@@ -673,7 +707,8 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             // Otherwise, if env variable for reading Float2
             // as uv sets is turned on, we assume that Float2Array primvars
             // are UV sets.
-            if (!assignUVSetPrimvarToMesh(primvar, meshFn, firstUVPrimvar, uvSetNameRemappings)) {
+            if (!assignUVSetPrimvarToMesh(
+                    mesh, primvar, meshFn, firstUVPrimvar, uvSetNameRemappings)) {
                 TF_WARN(
                     "Unable to retrieve and assign data for UV set <%s> on "
                     "mesh <%s>",

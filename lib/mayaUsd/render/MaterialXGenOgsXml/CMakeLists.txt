@@ -35,6 +35,16 @@ target_sources(${PROJECT_NAME}
         Nodes/MayaHwImageNode.cpp
         Nodes/MayaCompoundNode.cpp
         Nodes/MayaShaderGraph.cpp
+    )
+endif()
+
+if(MaterialX_VERSION VERSION_GREATER_EQUAL "1.38.8" AND MaterialX_VERSION VERSION_LESS "1.39.0")
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    FIX_DUPLICATE_INCLUDED_SHADER_CODE
+    )
+target_sources(${PROJECT_NAME} 
+    PRIVATE
         Nodes/MayaSourceCodeNode.cpp
     )
 endif()

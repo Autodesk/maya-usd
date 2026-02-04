@@ -626,11 +626,7 @@ px_vp20Utils::GetLightingContextFromDrawContext(const MHWRender::MDrawContext& c
         light.SetSpotCutoff(lightCutoff);
         light.SetSpotFalloff(lightFalloff);
         light.SetAttenuation(lightAttenuation);
-#if HDX_API_VERSION >= 6
         light.SetShadowMatrices(std::vector<GfMatrix4d>(1, lightShadowMatrix));
-#else
-        light.SetShadowMatrix(lightShadowMatrix);
-#endif
         light.SetShadowResolution(lightShadowResolution);
         light.SetShadowBias(lightShadowBias);
         light.SetHasShadow(lightShadowOn && globalShadowOn);

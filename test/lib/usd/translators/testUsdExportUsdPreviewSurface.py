@@ -288,6 +288,7 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         cmds.mayaUSDExport(
             mergeTransformAndShape=True, file=usd_file_path, 
             legacyMaterialScope=False, shadingMode="useRegistry",
+            convertMaterialsTo=['UsdPreviewSurface'],
             defaultPrim='None'
         )
 
@@ -338,6 +339,7 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         cmds.mayaUSDExport(
             mergeTransformAndShape=True, file=usd_file_path, 
             legacyMaterialScope=False, shadingMode="useRegistry",
+            convertMaterialsTo=['UsdPreviewSurface'],
             defaultPrim='None'
         )
 

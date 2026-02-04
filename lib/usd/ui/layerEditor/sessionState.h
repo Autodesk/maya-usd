@@ -78,6 +78,8 @@ public:
     // properties
     virtual bool                    autoHideSessionLayer() const { return _autoHideSessionLayer; }
     virtual void                    setAutoHideSessionLayer(bool hide);
+    virtual bool                    displayLayerContents() const { return _displayLayerContents; }
+    virtual void                    setDisplayLayerContents(bool show);
     PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
     StageEntry const&               stageEntry() const { return _currentStageEntry; }
     PXR_NS::SdfLayerRefPtr          targetLayer() const;
@@ -112,11 +114,13 @@ Q_SIGNALS:
     void stageListChangedSignal(StageEntry const& toSelect = StageEntry());
     void stageRenamedSignal(StageEntry const& renamedEntry);
     void autoHideSessionLayerSignal(bool hideIt);
+    void showDisplayLayerContents(bool showIt);
     void stageResetSignal(StageEntry const& entry);
 
 protected:
     StageEntry _currentStageEntry;
     bool       _autoHideSessionLayer = true;
+    bool       _displayLayerContents = true;
 };
 
 } // namespace UsdLayerEditor

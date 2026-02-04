@@ -33,7 +33,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaPrimWriter
+/// \brief Python binding for the UsdMayaPrimWriter
 //----------------------------------------------------------------------------------------------------------------------
 template <typename T = UsdMayaPrimWriter>
 class PrimWriterWrapper
@@ -283,7 +283,7 @@ private:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaShaderWriter
+/// \brief Python binding for the UsdMayaShaderWriter
 //----------------------------------------------------------------------------------------------------------------------
 class ShaderWriterWrapper : public PrimWriterWrapper<UsdMayaShaderWriter>
 {

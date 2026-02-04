@@ -600,10 +600,10 @@ private:
                 if (converter) {
                     // Recurse downstream:
                     sourcePlug = _GetSourcePlug(
-                        converter.get().downstreamSchema, converter.get().downstreamOutputName);
+                        converter.value().downstreamSchema, converter.value().downstreamOutputName);
                     if (!sourcePlug.isNull()) {
                         shaderReader->SetDownstreamReader(
-                            _shaderReaderMap[converter.get().downstreamSchema.GetPath()]);
+                            _shaderReaderMap[converter.value().downstreamSchema.GetPath()]);
                         sourceObj = sourcePlug.node();
                     } else {
                         // Read failed. Invalidate the reader.

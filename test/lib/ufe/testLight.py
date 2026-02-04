@@ -130,17 +130,22 @@ class LightTestCase(unittest.TestCase):
     def _TestAreaLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
-        self.assertEqual(ufeLight.type(), ufe.Light.Area)
+        if (os.getenv('UFE_LIGHTS2_SUPPORT', 'FALSE') == 'TRUE'):
+            self.assertEqual(ufeLight.type(), ufe.Light2.Area)
+        else:
+            self.assertEqual(ufeLight.type(), ufe.Light.Area)
         self._TestIntensity(ufeLight, usdLight)
         self._TestDiffuse(ufeLight, usdLight)
         self._TestSpecular(ufeLight, usdLight)
         self._TestShadowEnable(ufeLight, usdLight)
         self._TestColor(ufeLight, usdLight)
         self._TestShadowColor(ufeLight, usdLight)
-        self._TestAreaProps(ufeLight, usdLight)
-        self.assertEqual(None, ufeLight.coneInterface())
-        self.assertEqual(None, ufeLight.sphereInterface())
-        self.assertEqual(None, ufeLight.directionalInterface())
+        # There's no embedded light interface directly on ufe.Light2
+        if (os.getenv('UFE_LIGHTS2_SUPPORT', 'FALSE') == 'FALSE'):
+            self._TestAreaProps(ufeLight, usdLight)
+            self.assertEqual(None, ufeLight.coneInterface())
+            self.assertEqual(None, ufeLight.sphereInterface())
+            self.assertEqual(None, ufeLight.directionalInterface())
 
     # Test VolumeLight support
     def _TestCylinderLight(self, ufeLight, usdLight):
@@ -274,9 +279,14 @@ class LightTestCase(unittest.TestCase):
         arealightPath = ufe.Path([mayaPathSegment, arealightUsdPathSegment])
         arealightItem = ufe.Hierarchy.createItem(arealightPath)
 
-        ufeAreaLight = ufe.Light.light(arealightItem)
-        usdAreaLight = usdUtils.getPrimFromSceneItem(arealightItem)
-        self._TestAreaLight(ufeAreaLight, usdAreaLight)
+        if (os.getenv('UFE_LIGHTS2_SUPPORT', 'FALSE') == 'TRUE'):
+            ufeAreaLight = ufe.Light2.light(arealightItem)
+            usdAreaLight = usdUtils.getPrimFromSceneItem(arealightItem)
+            self._TestAreaLight(ufeAreaLight, usdAreaLight)
+        else:
+            ufeAreaLight = ufe.Light.light(arealightItem)
+            usdAreaLight = usdUtils.getPrimFromSceneItem(arealightItem)
+            self._TestAreaLight(ufeAreaLight, usdAreaLight)
 
     @unittest.skipUnless(os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'TRUE', 'UFE has volume light support.')
     def testUsdVolumeLights(self):

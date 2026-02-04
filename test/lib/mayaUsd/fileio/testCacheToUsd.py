@@ -46,6 +46,7 @@ import unittest
 from testUtils import assertVectorAlmostEqual, getTestScene
 
 import os
+import shutil
 
 def createMayaRefPrimSiblingCache(testCase, cacheParent, cacheParentPathStr):
     '''Create a Maya reference prim for the sibling cache test case.'''
@@ -116,15 +117,18 @@ class CacheToUsdTestCase(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def getCacheFileName(self):
-        return os.path.abspath('testCacheToUsd.usda')
+    def getCacheDir(self):
+        return os.path.abspath('testCacheToUsd')
 
-    def removeCacheFile(self):
+    def getCacheFileName(self, basename="cache.usda"):
+        return os.path.join(self.getCacheDir(), basename)
+
+    def removeCacheFiles(self):
         '''
         Remove the cache file if it exists. Ignore error if it does not exists.
         '''
         try:
-            os.remove(self.getCacheFileName())
+            shutil.rmtree(self.getCacheDir())
         except Exception:
             pass
 
@@ -145,7 +149,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # Make sure the cache file is removed in case a previous test failed mid-way.
-        self.removeCacheFile()
+        self.removeCacheFiles()
         self.removeRootLayerFile()
 
         import mayaUsd_createStageWithNewLayer
@@ -153,7 +157,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
 
     def tearDown(self):
-        self.removeCacheFile()
+        self.removeCacheFiles()
 
     def makeRootLayerNotAnonymous(self):
         self.stage.GetRootLayer().identifier = self.getRootLayerFileName()
@@ -312,12 +316,12 @@ class CacheToUsdTestCase(unittest.TestCase):
         #         the layer identifier returns the absolute path.
         if relativePath:
             if self.stage.GetRootLayer().anonymous:
-                self.assertNotIn('payload = @testCacheToUsd.usda', self.stage.GetRootLayer().ExportToString())
-                self.assertRegexpMatches(self.stage.GetRootLayer().ExportToString(), 'payload = @.*testCacheToUsd.usda')
+                self.assertNotIn('payload = @testCacheToUsd/cache.usda', self.stage.GetRootLayer().ExportToString())
+                self.assertIn('payload = @' + cacheFile, self.stage.GetRootLayer().ExportToString())
                 self.makeRootLayerNotAnonymous()
                 mayaUsd.lib.Util.updatePostponedRelativePaths(self.stage.GetRootLayer())
                 
-            self.assertIn('payload = @testCacheToUsd.usda', self.stage.GetRootLayer().ExportToString())
+            self.assertIn('payload = @testCacheToUsd/cache.usda', self.stage.GetRootLayer().ExportToString())
 
         self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
 
@@ -402,6 +406,42 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         self.verifyCacheFileDefaultPrim(cacheFile, cachePrimName)
 
+    def verifyMergedRhinoRig(self, cachePrimName, primPathStr, mayaNamespace):
+        # Verify a prim deep in the rig got multiple xform ops of the same type
+        # and they got proper suffixes.
+        foot_node_path_names = [
+            'rhino_rig_030_rig_grp',
+            'rhino_rig_030_world_cnt_001_grp',
+            'rhino_rig_030_world_cnt_001_Shift',
+            'rhino_rig_030_world_cnt_001',
+            'rhino_rig_030_world_cnt_002_grp',
+            'rhino_rig_030_world_cnt_002_Shift',
+            'rhino_rig_030_world_cnt_002_cnt',
+            'rhino_rig_030_rig_setup_grp',
+            'rhino_rig_030_cn_legs_grp',
+            'rhino_rig_030_rt_ft_leg_grp',
+            'rhino_rig_030_control_grp',
+            'rhino_rig_030_rt_ft_foot_001_cnt_grp',
+            'rhino_rig_030_rt_ft_foot_001_cnt_Shift',
+            'rhino_rig_030_rt_ft_foot_001_cnt'
+        ]
+
+        foot_prim_with_multiple_translate = '/'.join(
+            [cachePrimName] + [mayaNamespace + "_" + node for node in foot_node_path_names]
+        )
+
+        cacheUfePathStr = primPathStr + "/" + foot_prim_with_multiple_translate
+        cacheUfeItem = ufeUtils.createItem(cacheUfePathStr)
+        self.assertIsNotNone(cacheUfeItem)
+        cacheUfeHier = ufe.Hierarchy.hierarchy(cacheUfeItem)
+        cacheUsdPrim = usdUtils.getPrimFromSceneItem(cacheUfeItem)
+        self.assertTrue(cacheUsdPrim.IsValid())
+        xformOp = cacheUsdPrim.GetAttribute('xformOpOrder')
+        self.assertTrue(xformOp.IsValid())
+        value = xformOp.Get()
+        self.assertIn("xformOp:translate", value)
+        self.assertIn("xformOp:rotateXYZ", value)
+
     def testEditAndMergeRigMayaRef(self):
         '''
         Test editing then merge a Maya Reference to a complex animated rig.
@@ -416,12 +456,13 @@ class CacheToUsdTestCase(unittest.TestCase):
         primPathStr = self.proxyShapePathStr + ',/Test_Default'
         self.assertFalse(primTestDefault.HasVariantSets())
 
-        rigScene =  getTestScene("rhino_rig", "anim_001.ma" )
+        rigScene = getTestScene("rhino_rig", "anim_001.ma")
+        mayaRefNamespace = "anim_001"
 
         mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
             primPathStr,
             rigScene,
-            "",
+            mayaRefNamespace,
             mayaAutoEdit=False)
 
         mayaRefPrimUfePathStr = primPathStr + "/" + mayaRefPrim.GetName()
@@ -457,38 +498,66 @@ class CacheToUsdTestCase(unittest.TestCase):
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, userArgs))
 
-        # Verify a prim deep in the rig got multiple xform ops of the same type
-        # and they got proper suffixes.
-        foot_prim_with_multiple_translate = '/'.join([
-            cachePrimName,
-            'anim_001_rhino_rig_030_rig_grp',
-            'anim_001_rhino_rig_030_world_cnt_001_grp',
-            'anim_001_rhino_rig_030_world_cnt_001_Shift',
-            'anim_001_rhino_rig_030_world_cnt_001',
-            'anim_001_rhino_rig_030_world_cnt_002_grp',
-            'anim_001_rhino_rig_030_world_cnt_002_Shift',
-            'anim_001_rhino_rig_030_world_cnt_002_cnt',
-            'anim_001_rhino_rig_030_rig_setup_grp',
-            'anim_001_rhino_rig_030_cn_legs_grp',
-            'anim_001_rhino_rig_030_rt_ft_leg_grp',
-            'anim_001_rhino_rig_030_control_grp',
-            'anim_001_rhino_rig_030_rt_ft_foot_001_cnt_grp',
-            'anim_001_rhino_rig_030_rt_ft_foot_001_cnt_Shift',
-            'anim_001_rhino_rig_030_rt_ft_foot_001_cnt'
-        ])
+        self.verifyMergedRhinoRig(cachePrimName, primPathStr, mayaRefNamespace)
 
-        cacheUfePathStr = primPathStr + "/" + foot_prim_with_multiple_translate
-        cacheUfeItem = ufeUtils.createItem(cacheUfePathStr)
-        self.assertIsNotNone(cacheUfeItem)
-        cacheUfeHier = ufe.Hierarchy.hierarchy(cacheUfeItem)
-        cacheUsdPrim = usdUtils.getPrimFromSceneItem(cacheUfeItem)
-        self.assertTrue(cacheUsdPrim.IsValid())
-        xformOp = cacheUsdPrim.GetAttribute('xformOpOrder')
-        self.assertTrue(xformOp.IsValid())
-        value = xformOp.Get()
-        self.assertIn("xformOp:translate", value)
-        self.assertIn("xformOp:rotateXYZ", value)
-        
+    def testEditAndBatchMergeRigMayaRefs(self):
+        '''
+        Test editing then merge a Maya Reference to a complex animated rig.
+        In particular, the rig generates multiple translation xform on some
+        prim, verify that we do get these multiple translations.
+        '''
+        self.makeRootLayerNotAnonymous()
+
+        defaultPrim = self.stage.DefinePrim('/Test_Default', 'Xform')
+        primPathStr = self.proxyShapePathStr + ',' + str(defaultPrim.GetPath())
+
+        rigScene = getTestScene("rhino_rig", "anim_001.ma")
+        defaultExportOptions = cacheToUsd.getDefaultExportOptions()
+        payloadOrReference = 'Payload'
+        listEditType = 'Prepend'
+        variantSetName = None
+        variantName = None
+
+        # Create and edit multiple (3) mayaReferences to anim_001.ma.
+        # Also prepare options for Cache to USD, using a payload composition arc.
+        rigMayaPathAndOptions = []
+        rigCacheNames = []
+        for idx in range(3):
+            # Create the mayaReference prim, autoEdited.
+            refPrimName = "MayaReference_" + str(idx)
+            mayaRefNamespace = refPrimName + "_NS"
+
+            mayaUsdAddMayaReference.createMayaReferencePrim(
+                primPathStr,
+                rigScene,
+                mayaRefNamespace,
+                mayaReferencePrimName=refPrimName,
+                mayaAutoEdit=True)
+
+            # Add option for later merge in a signel call to mergeToUsd.
+            cachePrimName = refPrimName + "_Cached"
+            cacheFile = self.getCacheFileName(refPrimName + ".usda")
+
+            # Before caching, the cache file does not exist.
+            self.assertFalse(os.path.exists(cacheFile))
+
+            userArgs = cacheToUsd.createCacheCreationOptions(
+                defaultExportOptions, cacheFile, cachePrimName, payloadOrReference,
+                listEditType, variantSetName, variantName)
+
+            mayaPathStr = ufe.PathString.string(ufe.GlobalSelection.get().front().path())
+
+            rigMayaPathAndOptions.append((mayaPathStr, userArgs))
+            rigCacheNames.append((cachePrimName, mayaRefNamespace))
+
+        # Merge Maya edits in a single batch.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(rigMayaPathAndOptions))
+
+        # Verify the merged items.
+        for cachePrimName, mayaRefNamespace in rigCacheNames:
+            self.verifyMergedRhinoRig(cachePrimName, primPathStr, mayaRefNamespace)
+
     def runTestMayaRefPrimTransform(self, createMayaRefPrimFn, checkCacheParentFn):
         '''
         Run a test transforming the Maya Reference prim, editing it in Maya,

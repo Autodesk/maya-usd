@@ -21,6 +21,10 @@
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 
+#if PXR_VERSION >= 2308
+#include <pxr/usd/sdf/variableExpression.h>
+#endif
+
 #include <algorithm>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -47,13 +51,11 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         muteActionInfo._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
 
         createPixmapPair(
-            ":/UsdLayerEditor/LE_mute_off",
+            ":/UsdLayerEditor/mute_off",
             muteActionInfo._pixmap_off,
             muteActionInfo._pixmap_off_hover);
         createPixmapPair(
-            ":/UsdLayerEditor/LE_mute_on",
-            muteActionInfo._pixmap_on,
-            muteActionInfo._pixmap_on_hover);
+            ":/UsdLayerEditor/mute_on", muteActionInfo._pixmap_on, muteActionInfo._pixmap_on_hover);
 
         _actionButtons.insert(std::make_pair(muteActionInfo._actionType, muteActionInfo));
 
@@ -66,13 +68,11 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         lockActionInfo._tooltip = StringResources::getAsQString(StringResources::kLockUnlockLayer);
 
         createPixmapPair(
-            ":/UsdLayerEditor/LE_lock_off",
+            ":/UsdLayerEditor/lock_off",
             lockActionInfo._pixmap_off,
             lockActionInfo._pixmap_off_hover);
         createPixmapPair(
-            ":/UsdLayerEditor/LE_lock_on",
-            lockActionInfo._pixmap_on,
-            lockActionInfo._pixmap_on_hover);
+            ":/UsdLayerEditor/lock_on", lockActionInfo._pixmap_on, lockActionInfo._pixmap_on_hover);
 
         _actionButtons.insert(std::make_pair(lockActionInfo._actionType, lockActionInfo));
     }
@@ -81,6 +81,7 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
 
 LayerTreeItem::LayerTreeItem(
     SdfLayerRefPtr         in_usdLayer,
+    UsdStageRefPtr         in_stage,
     LayerType              in_layerType,
     std::string            in_subLayerPath,
     std::set<std::string>* in_incomingLayers,
@@ -88,6 +89,7 @@ LayerTreeItem::LayerTreeItem(
     std::set<std::string>* in_sharedLayers,
     RecursionDetector*     in_recursionDetector)
     : _layer(std::move(in_usdLayer))
+    , _stage(std::move(in_stage))
     , _isTargetLayer(false)
     , _layerType(in_layerType)
     , _subLayerPath(in_subLayerPath)
@@ -138,11 +140,44 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
     recursionDetector->push(_layer->GetRealPath());
 
     for (auto const path : subPaths) {
+#if PXR_VERSION >= 2308
+        // Resolve any variable expressions in the path using the stage's expression variables
+        std::string resolvedPath = path;
+        if (_stage && SdfVariableExpression::IsExpression(path)) {
+            auto resolveExprVarsFromLayer =
+                [](SdfVariableExpression& varExpr, SdfLayerRefPtr fromLayer, std::string& outPath) {
+                    if (fromLayer && fromLayer->HasExpressionVariables()) {
+                        auto expressionVars = fromLayer->GetExpressionVariables();
+                        auto result = varExpr.Evaluate(expressionVars);
+                        if (result.errors.empty() && !result.value.IsEmpty()) {
+                            outPath = result.value.UncheckedGet<std::string>();
+                        }
+                    }
+                };
+
+            SdfVariableExpression varExpr(path);
+            // Get the root layer's expression variables for resolution context
+            auto rootLayer = _stage->GetRootLayer();
+            resolveExprVarsFromLayer(varExpr, rootLayer, resolvedPath);
+
+            // Expression variables are composed across session layer and root
+            // layer of a stage. So we do another pass with the session layer
+            // to override/set the resolvedPath in case it is present in the
+            // session layer
+            auto sessionLayer = _stage->GetSessionLayer();
+            resolveExprVarsFromLayer(varExpr, sessionLayer, resolvedPath);
+        }
+
+        std::string actualPath = SdfComputeAssetPathRelativeToLayer(_layer, resolvedPath);
+        auto        subLayer = SdfLayer::FindOrOpen(actualPath);
+#else
         std::string actualPath = SdfComputeAssetPathRelativeToLayer(_layer, path);
         auto        subLayer = SdfLayer::FindOrOpen(actualPath);
+#endif
         if (!subLayer || !recursionDetector->contains(subLayer->GetRealPath())) {
             auto item = new LayerTreeItem(
                 subLayer,
+                _stage,
                 LayerType::SubLayer,
                 path,
                 &_incomingLayers,
@@ -230,14 +265,9 @@ AbstractCommandHook* LayerTreeItem::commandHook() const
     return parentModel()->sessionState()->commandHook();
 }
 
-PXR_NS::UsdStageRefPtr const& LayerTreeItem::stage() const
-{
-    return parentModel()->sessionState()->stage();
-}
-
 bool LayerTreeItem::isMuted() const
 {
-    return isInvalidLayer() || !stage() ? false : stage()->IsLayerMuted(_layer->GetIdentifier());
+    return isInvalidLayer() || !_stage ? false : _stage->IsLayerMuted(_layer->GetIdentifier());
 }
 
 bool LayerTreeItem::appearsMuted() const

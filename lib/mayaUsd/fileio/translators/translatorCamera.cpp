@@ -194,7 +194,8 @@ static bool _CreateAnimCurveForPlug(
     MObject      animObj = animFn.create(plug, nullptr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    status = animFn.addKeys(&timeArray, &valueArray);
+    status = animFn.addKeys(
+        &timeArray, &valueArray, MFnAnimCurve::kTangentLinear, MFnAnimCurve::kTangentLinear);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     if (context) {
@@ -212,10 +213,6 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
     UsdMayaPrimReaderContext*    context,
     const MDistance::Unit        convertToUnit = MDistance::kMillimeters)
 {
-    if (args.GetTimeInterval().IsEmpty()) {
-        return false;
-    }
-
 #if PXR_VERSION >= 2411
 
     double scale = 1.0;
@@ -234,6 +231,10 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
         }
     }
 #endif
+
+    if (args.GetTimeInterval().IsEmpty()) {
+        return false;
+    }
 
     MTimeArray   timeArray;
     MDoubleArray valueArray;

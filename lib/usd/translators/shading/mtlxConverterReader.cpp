@@ -15,6 +15,7 @@
 //
 #include "shadingTokens.h"
 
+#include <cxx17_legacy_support.h>
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -57,7 +58,7 @@ public:
     MtlxUsd_ConverterReader(const UsdMayaPrimReaderArgs& readArgs)
         : UsdMayaShaderReader(readArgs) {};
 
-    boost::optional<IsConverterResult> IsConverter() override
+    MayaUsdCxxLegacySupport::optional<IsConverterResult> IsConverter() override
     {
         const UsdPrim& prim = _GetArgs().GetUsdPrim();
         UsdShadeShader shaderSchema = UsdShadeShader(prim);

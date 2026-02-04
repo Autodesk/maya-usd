@@ -132,6 +132,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->stripNamespaces.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kHideSourceDataFlag,
+        UsdMayaJobExportArgsTokens->hideSourceData.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kEulerFilterFlag, UsdMayaJobExportArgsTokens->eulerFilter.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
         kDefaultMeshSchemeFlag,
@@ -286,13 +290,6 @@ MSyntax MayaUSDExportCommand::createSyntax()
 
 void* MayaUSDExportCommand::creator() { return new MayaUSDExportCommand(); }
 
-/* virtual */
-std::unique_ptr<UsdMaya_WriteJob>
-MayaUSDExportCommand::initializeWriteJob(const PXR_NS::UsdMayaJobExportArgs& args)
-{
-    return std::unique_ptr<UsdMaya_WriteJob>(new UsdMaya_WriteJob(args));
-}
-
 MStatus MayaUSDExportCommand::doIt(const MArgList& args)
 {
     try {
@@ -446,8 +443,8 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
             userArgs, dagPaths, objSelList, timeSamples);
 
-        std::unique_ptr<UsdMaya_WriteJob> writeJob = initializeWriteJob(jobArgs);
-        if (!writeJob || !writeJob->Write(fileName, append)) {
+        UsdMaya_WriteJob writeJob(jobArgs, fileName, append);
+        if (!writeJob.Write()) {
             return MS::kFailure;
         }
 

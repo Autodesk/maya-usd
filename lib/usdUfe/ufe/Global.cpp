@@ -20,6 +20,7 @@
 #include <usdUfe/ufe/UsdContextOpsHandler.h>
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
 #include <usdUfe/ufe/UsdObject3dHandler.h>
+#include <usdUfe/ufe/UsdSceneItemOpsHandler.h>
 #include <usdUfe/ufe/UsdUIInfoHandler.h>
 #include <usdUfe/ufe/trf/UsdTransform3dCommonAPI.h>
 #include <usdUfe/ufe/trf/UsdTransform3dMatrixOp.h>
@@ -112,6 +113,9 @@ Ufe::Rtid initialize(
         = handlers.attributesHandler ? handlers.attributesHandler : UsdAttributesHandler::create();
     rtHandlers.hierarchyHandler
         = handlers.hierarchyHandler ? handlers.hierarchyHandler : UsdHierarchyHandler::create();
+    rtHandlers.sceneItemOpsHandler = handlers.sceneItemOpsHandler
+        ? handlers.sceneItemOpsHandler
+        : UsdSceneItemOpsHandler::create();
     rtHandlers.object3dHandler
         = handlers.object3dHandler ? handlers.object3dHandler : UsdObject3dHandler::create();
     rtHandlers.contextOpsHandler
