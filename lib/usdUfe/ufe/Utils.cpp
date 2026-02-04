@@ -319,7 +319,7 @@ int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
     // Once more as above in usdPathToUfePathSegment() and
     // stripInstanceIndexFromUfePath(), a path component at the tail of the
     // path that begins with a digit is assumed to represent an instance index.
-    const std::string& tailComponentString = path.back().string();
+    const std::string tailComponentString = path.back().string();
     if (stringBeginsWithDigit(path.back().string())) {
         instanceIndex = std::stoi(tailComponentString);
     }
