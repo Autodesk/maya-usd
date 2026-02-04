@@ -17,11 +17,13 @@
 
 #include "ApplicationHost.h"
 
+#include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
+#include <maya/MString.h>
 
-#include <qapplication.h>
-#include <qboxlayout.h>
-#include <qgroupbox.h>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QBoxLayout>
+#include <QtWidgets/QGroupBox>
 
 namespace Adsk {
 
@@ -57,18 +59,21 @@ void ApplicationHost::injectInstance(ApplicationHost* host)
 
 float ApplicationHost::uiScale() const
 {
-    return MQtUtil::dpiScale(1.0f);
-    // return 1.0f;
+    return dpiScale(1.0f); // Default implementation
 }
+
+int   ApplicationHost::dpiScale(int size) const { return MQtUtil::dpiScale(size); }
+float ApplicationHost::dpiScale(float size) const { return MQtUtil::dpiScale(size); }
 
 QIcon ApplicationHost::icon(const IconName& name) const
 {
     switch (name) {
     case IconName::Add: return getIcon(":/UsdLayerEditor/addCreateGeneric");
-    case IconName::OpenFile: return getIcon(":/fileOpen");
-    case IconName::Delete: return getIcon(":/trash");
-    case IconName::MoveUp: return QIcon(":/assetResolver/move_up.png");
-    case IconName::MoveDown: return QIcon(":/assetResolver/move_down.png");
+    case IconName::AddFolder: return getIcon(":/assetResolver/add_folder.png");
+    case IconName::OpenFile: return getIcon("fileOpen.png");
+    case IconName::Delete: return getIcon("trash.png");
+    case IconName::MoveUp: return getIcon(":/assetResolver/move_up.png");
+    case IconName::MoveDown: return getIcon(":/assetResolver/move_down.png");
     default: return QIcon();
     }
 }
@@ -77,7 +82,7 @@ QIcon ApplicationHost::getIcon(const char* iconName)
 {
     QIcon* icon = MQtUtil::createIcon(iconName);
     QIcon  copy;
-    if (icon) {
+    if (nullptr != icon) {
         copy = QIcon(*icon);
     }
     delete icon;
@@ -94,14 +99,12 @@ QColor ApplicationHost::themeColor(const ThemeColors& color) const
 
 int ApplicationHost::pm(const PixelMetric& metric) const
 {
-    // in a real implementation, these would be scaled by uiScale()
     switch (metric) {
-    case PixelMetric::TinyPadding: return 2 * MQtUtil::dpiScale(1); // Default implementation
-    case PixelMetric::ResizableActiveAreaSize:
-        return 8 * MQtUtil::dpiScale(1); // Default implementation
-    case PixelMetric::ResizableContentMargin:
-        return 4 * MQtUtil::dpiScale(1);                            // Default implementation
-    case PixelMetric::ItemHeight: return 24 * MQtUtil::dpiScale(1); // Default implementation
+    case PixelMetric::TinyPadding: return dpiScale(2);
+    case PixelMetric::ResizableActiveAreaSize: return dpiScale(8);
+    case PixelMetric::ResizableContentMargin: return dpiScale(4);
+    case PixelMetric::ItemHeight: return dpiScale(24);
+    case PixelMetric::HeaderHeight: return dpiScale(28);
     default: return 0;
     }
 };
@@ -134,6 +137,102 @@ void ApplicationHost::savePersistentData(
     Q_UNUSED(key);
     Q_UNUSED(value);
     // Default implementation does nothing
+}
+
+QString ApplicationHost::getUSDDialogFileFilters() const
+{
+    // A hard-coded default implementation could be:
+    // return tr("All USD Files (*.usd *.usda *.usdc);;All Files (*.*)");
+
+    MString filters = MGlobal::executePythonCommandStringResult(
+        "from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
+    return MQtUtil::toQString(filters);
+}
+
+MString createMStringFormatArg(const MString& arg, const QString& str)
+{
+    MString mstr(" "); // Default with just space so MString format works correctly
+    if (!str.isEmpty()) {
+        mstr += arg;   // The argument name
+        mstr += " \""; // Surround the argument with quotes
+        mstr += MQtUtil::toMString(str);
+        mstr += "\"";
+    }
+    return mstr;
+}
+
+QString ApplicationHost::getOpenFileName(
+    QWidget*       parent,
+    const QString& caption,
+    const QString& dir,
+    const QString& filter) const
+{
+    // A default implementation using QFileDialog
+    // QString filePath = QFileDialog::getOpenFileName(parent, caption, dir, filter);
+    // return filePath;
+
+    // Maya specific implementation.
+    const char* script = R"mel(
+    global proc string assetResolver_GetOpenFileName()
+    {
+        string $result[] = `fileDialog2
+            -fileMode 1
+            ^1s ^2s ^3s`;
+        if (0 == size($result))
+            return "";
+        else
+            return $result[0];
+    }
+    assetResolver_GetOpenFileName();
+    )mel";
+
+    // Note: the three args are optional, so we only add them if they are not empty.
+    MString commandString;
+    MString strCaption = createMStringFormatArg("-caption", caption);
+    MString strDir = createMStringFormatArg("-dir", dir);
+    MString strFilter = createMStringFormatArg("-fileFilter", filter);
+    commandString.format(script, strCaption, strDir, strFilter);
+
+    MString filePath = MGlobal::executeCommandStringResult(commandString);
+    return MQtUtil::toQString(filePath);
+}
+
+QString ApplicationHost::getExistingDirectory(
+    QWidget*             parent,
+    const QString&       caption,
+    const QString&       dir,
+    QFileDialog::Options options) const
+{
+    // A default implementation using QFileDialog
+    // QString pickedDir = QFileDialog::getExistingDirectory(parent, caption, dir, options);
+    // return pickedDir;
+
+    // Maya specific implementation.
+    const int   fileMode = (options | QFileDialog::ShowDirsOnly) ? 3 : 2;
+    const char* script = R"mel(
+    global proc string assetResolver_GetExistingDirectory()
+    {
+        string $result[] = `fileDialog2
+            -fileMode ^1s
+            ^2s ^3s
+            -okCaption "Select Folder"`;
+        if (0 == size($result))
+            return "";
+        else
+            return $result[0];
+    }
+    assetResolver_GetExistingDirectory();
+    )mel";
+
+    MString commandString;
+    MString strFileMode;
+    strFileMode += fileMode;
+    MString strCaption = createMStringFormatArg("-caption", caption);
+    MString strDir = createMStringFormatArg("-dir", dir);
+    commandString.format(script, strFileMode, strCaption, strDir);
+
+    MString filePath = MGlobal::executeCommandStringResult(commandString);
+    return MQtUtil::toQString(filePath);
 }
 
 } // namespace Adsk

@@ -66,7 +66,7 @@ We take security serious at Autodesk and the same goes for our open source contr
 + [Maya Reference Edit Router](lib/usd/translators/mayaReferenceEditRouter.md)
 + [Layer Locking](doc/LayerLocking.md)
 + [Attribute Editor (AE) Template](lib/mayaUsd/resources/ae/usdschemabase/Attribute-Editor-Template-Doc.md)
-+ [Hydra For Maya](https://github.com/Autodesk/maya-usd/blob/release/maya-hydra/lib/mayaHydra/README.md)
++ [Hydra for Maya](https://github.com/Autodesk/maya-hydra/blob/dev/README.md)
 
 ## Additional Information
 

@@ -197,6 +197,7 @@ void LoadLayersDialog::onOk()
         auto row = dynamic_cast<LayerPathRow*>(_rowsLayout->itemAt(i)->widget());
         if (!row->pathToUse().empty()) {
             if (!checkIfPathIsSafeToAdd(
+                    this,
                     StringResources::getAsQString(StringResources::kLoadSublayersError),
                     _treeItem,
                     row->pathToUse())) {

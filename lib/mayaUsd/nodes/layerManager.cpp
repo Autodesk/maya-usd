@@ -19,6 +19,7 @@
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
@@ -73,8 +74,33 @@
 #include <set>
 
 namespace {
-static std::recursive_mutex findNodeMutex;
-static MObjectHandle        layerManagerHandle;
+static std::recursive_mutex             findNodeMutex;
+static MObjectHandle                    layerManagerHandle;
+static std::set<MayaUsd::LayerManager*> processedLayerManagers;
+
+void addProcessedLayerManager(MayaUsd::LayerManager* lm)
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+    processedLayerManagers.insert(lm);
+}
+
+void removeProcessedLayerManager(MayaUsd::LayerManager* lm)
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+    processedLayerManagers.erase(lm);
+}
+
+bool isProcessedLayerManager(MayaUsd::LayerManager* lm)
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+    return processedLayerManagers.find(lm) != processedLayerManagers.end();
+}
+
+void clearProcessedLayerManagers()
+{
+    std::lock_guard<std::recursive_mutex> lock(findNodeMutex);
+    processedLayerManagers.clear();
+}
 
 // Utility func to disconnect an array plug, and all it's element plugs, and all
 // their child plugs.
@@ -278,9 +304,11 @@ public:
     static void           prepareForSaveCheck(bool*, void*);
     static void           cleanupForSave(void*);
     static void           prepareForExportCheck(bool*, void*);
+    static void           cleanupForExport(void*);
     static void           prepareForWriteCheck(bool*, bool);
     static void           cleanupForWrite();
     static void           loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape);
+    static void           afterReadCallback(void*);
     static void           cleanUpNewScene(void*);
     static void           clearManagerNode(MayaUsd::LayerManager* lm);
     static void           removeManagerNode(
@@ -323,7 +351,8 @@ private:
                    MayaUsdProxyShapeBase* pShape,
                    const MObject&         proxyNode,
                    UsdStageRefPtr         stage);
-    void saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous);
+    void
+         saveUsdLayerToMayaFile(MayaUsdProxyShapeBase* pShape, SdfLayerRefPtr layer, bool asAnonymous);
     void clearProxies();
     bool hasDirtyLayer() const;
     void refreshProxiesToSave();
@@ -335,24 +364,14 @@ private:
     std::vector<StageSavingInfo>          _proxiesToSave;
     std::vector<StageSavingInfo>          _internalProxiesToSave;
     std::string                           _selectedStage;
-    static MCallbackId                    preSaveCallbackId;
-    static MCallbackId                    postSaveCallbackId;
-    static MCallbackId                    preExportCallbackId;
-    static MCallbackId                    postExportCallbackId;
-    static MCallbackId                    postNewCallbackId;
-    static MCallbackId                    preOpenCallbackId;
+    static std::vector<MCallbackId>       _callbackIds;
 
     static MayaUsd::BatchSaveDelegate _batchSaveDelegate;
 
     static bool _isSavingMayaFile;
 };
 
-MCallbackId LayerDatabase::preSaveCallbackId = 0;
-MCallbackId LayerDatabase::postSaveCallbackId = 0;
-MCallbackId LayerDatabase::preExportCallbackId = 0;
-MCallbackId LayerDatabase::postExportCallbackId = 0;
-MCallbackId LayerDatabase::postNewCallbackId = 0;
-MCallbackId LayerDatabase::preOpenCallbackId = 0;
+std::vector<MCallbackId> LayerDatabase::_callbackIds;
 
 MayaUsd::BatchSaveDelegate LayerDatabase::_batchSaveDelegate = nullptr;
 
@@ -383,37 +402,33 @@ LayerDatabase::~LayerDatabase()
 
 void LayerDatabase::registerCallbacks()
 {
-    if (0 == preSaveCallbackId) {
-        preSaveCallbackId = MSceneMessage::addCallback(
-            MSceneMessage::kBeforeSaveCheck, LayerDatabase::prepareForSaveCheck);
-        postSaveCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kAfterSave, LayerDatabase::cleanupForSave);
-        preExportCallbackId = MSceneMessage::addCallback(
-            MSceneMessage::kBeforeExportCheck, LayerDatabase::prepareForExportCheck);
-        postNewCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kAfterNew, LayerDatabase::cleanUpNewScene);
-        preOpenCallbackId = MSceneMessage::addCallback(
-            MSceneMessage::kBeforeOpen, LayerDatabase::cleanUpNewScene);
+    if (_callbackIds.size() <= 0) {
+        _callbackIds.emplace_back(MSceneMessage::addCallback(
+            MSceneMessage::kBeforeSaveCheck, LayerDatabase::prepareForSaveCheck));
+        _callbackIds.emplace_back(
+            MSceneMessage::addCallback(MSceneMessage::kAfterSave, LayerDatabase::cleanupForSave));
+        _callbackIds.emplace_back(MSceneMessage::addCallback(
+            MSceneMessage::kBeforeExportCheck, LayerDatabase::prepareForExportCheck));
+        _callbackIds.emplace_back(MSceneMessage::addCallback(
+            MSceneMessage::kAfterExport, LayerDatabase::cleanupForExport));
+        _callbackIds.emplace_back(
+            MSceneMessage::addCallback(MSceneMessage::kAfterNew, LayerDatabase::cleanUpNewScene));
+        _callbackIds.emplace_back(
+            MSceneMessage::addCallback(MSceneMessage::kBeforeNew, LayerDatabase::cleanUpNewScene));
+        _callbackIds.emplace_back(
+            MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, LayerDatabase::cleanUpNewScene));
+        _callbackIds.emplace_back(MSceneMessage::addCallback(
+            MSceneMessage::kAfterSceneReadAndRecordEdits, LayerDatabase::afterReadCallback));
     }
 }
 
 void LayerDatabase::unregisterCallbacks()
 {
-    if (0 != preSaveCallbackId) {
-        MSceneMessage::removeCallback(preSaveCallbackId);
-        MSceneMessage::removeCallback(postSaveCallbackId);
-        MSceneMessage::removeCallback(preExportCallbackId);
-        MSceneMessage::removeCallback(postExportCallbackId);
-        MSceneMessage::removeCallback(postNewCallbackId);
-        MSceneMessage::removeCallback(preOpenCallbackId);
-
-        preSaveCallbackId = 0;
-        postSaveCallbackId = 0;
-        preExportCallbackId = 0;
-        postExportCallbackId = 0;
-        postNewCallbackId = 0;
-        preOpenCallbackId = 0;
+    for (const auto& cbId : _callbackIds) {
+        if (cbId != 0)
+            MSceneMessage::removeCallback(cbId);
     }
+    _callbackIds.clear();
 }
 
 void LayerDatabase::addSupportForNodeType(MTypeId type)
@@ -435,8 +450,15 @@ void LayerDatabase::onStageSet(const MayaUsdProxyStageSetNotice& notice)
     const MayaUsdProxyShapeBase& psb = notice.GetProxyShape();
     UsdStageRefPtr               stage = psb.getUsdStage();
     if (stage) {
+        // Note: for the root layer, the proxy shape always cached root layer pointer,
+        //       so we won't keep it in the database. Proxy shape compute will use its
+        //       own cached value if needed.
         removeLayer(stage->GetRootLayer());
-        removeLayer(stage->GetSessionLayer());
+
+        auto sessionLayer = stage->GetSessionLayer();
+        if (!sessionLayer->IsAnonymous()) {
+            removeLayer(sessionLayer);
+        }
     }
 }
 
@@ -450,6 +472,24 @@ void LayerDatabase::prepareForSaveCheck(bool* retCode, void*)
     // This is called during a Maya notification callback, so no undo supported.
     OpUndoItemMuting muting;
     prepareForWriteCheck(retCode, false);
+}
+
+void LayerDatabase::afterReadCallback(void*)
+{
+    // Make sure the layers saved in the layer manager are loaded at the end of the load,
+    // when we know both the proxy shapes and the layer manager have been loaded.
+    const std::vector<std::string> shapeNames = ufe::ProxyShapeHandler::getAllNames();
+    for (const std::string& shapeName : shapeNames) {
+        MObject shapeObj;
+        MStatus status = UsdMayaUtil::GetMObjectByName(shapeName, shapeObj);
+        if (status != MStatus::kSuccess) {
+            continue;
+        }
+
+        // Increase the recompute-layers plug to make sure the proxy shape will be recomputed.
+        MPlug recomputePlug(shapeObj, MayaUsdProxyShapeBase::recomputeLayersAttr);
+        recomputePlug.setInt64(recomputePlug.asInt64() + 1);
+    }
 }
 
 void LayerDatabase::cleanupForSave(void*)
@@ -527,8 +567,7 @@ void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
 
     bool       hasAnyProxy = false;
     const bool isExport = true;
-    if (!layerDB.getProxiesToSave(isExport, &hasAnyProxy))
-        return;
+    layerDB.getProxiesToSave(isExport, &hasAnyProxy);
 
     for (const StageSavingInfo& info : layerDB._proxiesToSave)
         handleDirtyStageDuringExport(info);
@@ -536,7 +575,13 @@ void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
     for (const auto& info : layerDB._internalProxiesToSave)
         handleDirtyStageDuringExport(info);
 
-    layerDB.clearProxies();
+    prepareForWriteCheck(retCode, true);
+}
+
+void LayerDatabase::cleanupForExport(void*)
+{
+    // This is call by Maya when the Maya export has finished.
+    cleanupForWrite();
 }
 
 void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
@@ -1153,7 +1198,7 @@ void LayerDatabase::convertAnonymousLayers(
     if (!session->IsEmpty()) {
         convertAnonymousLayersRecursive(session, proxyName, stage);
 
-        saveUsdLayerToMayaFile(session, true);
+        saveUsdLayerToMayaFile(pShape, session, true);
 
         // TODO: should update the target layer of the proxy shape if the session was the target.
         setValueForAttr(
@@ -1163,7 +1208,10 @@ void LayerDatabase::convertAnonymousLayers(
     }
 }
 
-void LayerDatabase::saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous)
+void LayerDatabase::saveUsdLayerToMayaFile(
+    MayaUsdProxyShapeBase* pShape,
+    SdfLayerRefPtr         layer,
+    bool                   asAnonymous)
 {
     // Note: for now we only save USD change made in stage in the main
     //       Maya scene. We don't save changes made to stages in Maya
@@ -1183,13 +1231,24 @@ void LayerDatabase::saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymou
 
     layersHandle.setAllClean();
     dataBlock.setClean(lm->layers);
+
+    pShape->setLayerManager(lm);
 }
 
 void LayerDatabase::loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape)
 {
+    if (_isSavingMayaFile)
+        return;
+
     MayaUsd::LayerManager* lm = findNode(forProxyShape);
     if (!lm)
         return;
+
+    // Avoid processing the same layer manager multiple times.
+    if (isProcessedLayerManager(lm))
+        return;
+
+    addProcessedLayerManager(lm);
 
     const char*                 identifierTempSuffix = "_tmp";
     MStatus                     status;
@@ -1302,8 +1361,7 @@ void LayerDatabase::loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape)
 
     LayerDatabase::instance().loadLayerManagerSelectedStage(*lm);
 
-    if (!_isSavingMayaFile)
-        removeManagerNode(lm, forProxyShape);
+    removeManagerNode(lm, forProxyShape);
 
     for (auto it = createdLayers.begin(); it != createdLayers.end(); ++it) {
         SdfLayerHandle lh = (*it);
@@ -1315,6 +1373,7 @@ void LayerDatabase::cleanUpNewScene(void*)
 {
     LayerDatabase::instance().removeAllLayers();
     LayerDatabase::removeManagerNode();
+    clearProcessedLayerManagers();
 }
 
 LayerManager::LayerNameMap LayerDatabase::getLayerNameMap() const
@@ -1442,6 +1501,8 @@ void LayerDatabase::removeManagerNode(
     MDGModifier& modifier = MDGModifierUndoItem::create("Manager node removal");
     modifier.deleteNode(lm->thisMObject());
     modifier.doIt();
+
+    removeProcessedLayerManager(lm);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

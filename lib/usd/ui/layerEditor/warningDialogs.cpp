@@ -40,13 +40,14 @@ namespace UsdLayerEditor {
 
 bool confirmDialog_internal(
     bool               okCancel,
+    QWidget*           parent,
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList,
     const QString*     okButtonText,
     QMessageBox::Icon  icon)
 {
-    QMessageBox msgBox;
+    QMessageBox msgBox(parent);
     // there is no title bar text on mac, instead it's bold text
     if (IS_MAC_OS)
         msgBox.setText(title);
@@ -88,23 +89,25 @@ bool confirmDialog_internal(
 }
 
 bool confirmDialog(
+    QWidget*           parent,
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList,
     const QString*     okButtonText,
     QMessageBox::Icon  icon)
 {
-    return confirmDialog_internal(true, title, message, bulletList, okButtonText, icon);
+    return confirmDialog_internal(true, parent, title, message, bulletList, okButtonText, icon);
 }
 
 // create a warning dialog, with an optional bullet list
 void warningDialog(
+    QWidget*           parent,
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList,
     QMessageBox::Icon  icon)
 {
-    confirmDialog_internal(false, title, message, bulletList, nullptr, icon);
+    confirmDialog_internal(false, parent, title, message, bulletList, nullptr, icon);
 }
 
 } // namespace UsdLayerEditor

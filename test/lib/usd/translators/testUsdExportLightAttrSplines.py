@@ -125,6 +125,7 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True,
             file=cls._usdFilePath,
             shadingMode='none',
+            frameRange=(cls.START_TIMECODE, cls.END_TIMECODE),
             animationType='curves')
 
         cls._stage = Usd.Stage.Open(cls._usdFilePath)
@@ -213,11 +214,18 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(sphereLight)
 
         # Validate static attributes
-        self.assertTrue(Gf.IsClose(sphereLight.GetColorAttr().Get(), Gf.Vec3f(0.3, 1, 0.2), self.EPSILON))
         self.assertTrue(Gf.IsClose(sphereLight.GetDiffuseAttr().Get(), 0, self.EPSILON))
         self.assertTrue(Gf.IsClose(sphereLight.GetSpecularAttr().Get(), 1, self.EPSILON))
         self.assertTrue(Gf.IsClose(sphereLight.GetIntensityAttr().Get(), 0.8, self.EPSILON))
         self.assertFalse(sphereLight.GetTreatAsPointAttr().Get())
+
+        # Validate animated color (exported as time samples since splines only support single floats)
+        colorAttr = sphereLight.GetColorAttr()
+        self.assertTrue(colorAttr.GetNumTimeSamples() > 1)
+        self.assertTrue(Gf.IsClose(colorAttr.Get(self.START_TIMECODE), Gf.Vec3f(0.3, 1, 0.2), self.EPSILON))
+        self.assertTrue(Gf.IsClose(colorAttr.Get(self.START_TIMECODE + 1), Gf.Vec3f(0.6, 0.7, 0.5), self.EPSILON))
+        self.assertTrue(Gf.IsClose(colorAttr.Get(self.START_TIMECODE + 2), Gf.Vec3f(0.1, 0.4, 0.3), self.EPSILON))
+        self.assertTrue(Gf.IsClose(colorAttr.Get(self.END_TIMECODE), Gf.Vec3f(0, 0.2, 0.1), self.EPSILON))
 
         # Validate shaping API with animated attributes
         self.assertTrue(lightPrim.HasAPI(UsdLux.ShapingAPI))
@@ -362,12 +370,7 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self.assertTrue(cmds.getAttr('%s.emitDiffuse' % nodePath) == 0)
         self.assertTrue(cmds.getAttr('%s.emitSpecular' % nodePath) == 1)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.intensity' % nodePath), 0.8, self.EPSILON))
-        
-        # Validate static color (not animated in USD export)
-        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorR' % nodePath), 0.3, self.EPSILON))
-        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorG' % nodePath), 1, self.EPSILON))
-        self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath), 0.2, self.EPSILON))
-        
+
         # Validate animated coneAngle at different time codes
         cmds.currentTime(1)
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.coneAngle' % nodePath), 50, self.EPSILON))
@@ -422,7 +425,7 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         # Validate normalize attribute
         self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 1)
 
-    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')    
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
     def testExportLightsAttrSplines(self):
         """
         Tests that Maya lights export as UsdLux schema USD prims
@@ -433,7 +436,7 @@ class testUsdExportLightAttrSplines(unittest.TestCase):
         self._ValidateUsdSpotLight()
         self._ValidateUsdAreaLight()
 
-    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')    
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 24, 11), 'Splines are only supported in USD 0.24.11 and later')
     def testImportLightsAttrSplines(self):
         """
         Tests that USD lights with spline animation import back to Maya

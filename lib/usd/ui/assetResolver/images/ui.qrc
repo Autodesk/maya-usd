@@ -2,11 +2,14 @@
 	<qresource prefix="/assetResolver">
     <file alias="move_up.png">move_up_100.png</file>
     <file alias="move_down.png">move_down_100.png</file>
+    <file alias="add_folder.png">add_folder_100.png</file>
 
     <file>move_up_150.png</file>
     <file>move_up_200.png</file>
     <file>move_down_150.png</file>
     <file>move_down_200.png</file>
+    <file>add_folder_150.png</file>
+    <file>add_folder_200.png</file>
   </qresource>
 </RCC>
 

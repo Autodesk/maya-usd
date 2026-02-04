@@ -461,7 +461,8 @@ SaveLayersDialog::SaveLayersDialog(
         std::string proxyPath = info.dagPath.fullPathName().asChar();
 
         // Check if this stage is a component stage
-        if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+        if (MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(
+                info.stage, proxyPath)) {
             _componentStageInfos.push_back(info);
             // Component stages are saved via the component system, skip layer collection
             continue;
@@ -544,12 +545,13 @@ void SaveLayersDialog::getLayersToSave(
 
     // We do not allow saving layers in any of the following conditions:
     // 1- Layer is system locked
-    // 2- Layer is anonymous and its parent is system locked
+    // 2- Layer is anonymous and its parent is locked or system locked
 
     LayerInfos anonymousLayersUnlocked;
     for (const auto& layerInfo : StageLayersToSave._anonLayers) {
         auto parentLayer = layerInfo.parent._layerParent;
-        if (parentLayer != nullptr && MayaUsd::isLayerSystemLocked(parentLayer)) {
+        if (parentLayer != nullptr
+            && (MayaUsd::isLayerLocked(parentLayer) || MayaUsd::isLayerSystemLocked(parentLayer))) {
             continue;
         }
         if (MayaUsd::isLayerSystemLocked(layerInfo.layer)) {
@@ -851,6 +853,12 @@ void SaveLayersDialog::onSaveAll()
 
             auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
             if (newRootLayer) {
+
+                // Save the old session layer content before swapping the root, which will
+                // create a new stage.
+                auto oldSessionLayer
+                    = UsdMayaUtil::GetStageByProxyName(proxyPath)->GetSessionLayer();
+
                 // Rename Proxy Shape node
                 MObject proxyNode;
                 UsdMayaUtil::GetMObjectByName(proxyPath, proxyNode);
@@ -885,6 +893,12 @@ void SaveLayersDialog::onSaveAll()
                         }
                     }
                 }
+
+                // Transfer over the session layer contents.
+                auto newSessionLayer
+                    = UsdMayaUtil::GetStageByProxyName(newProxyShapePath.fullPathName().asUTF8())
+                          ->GetSessionLayer();
+                newSessionLayer->TransferContent(oldSessionLayer);
 
                 // Lock that layer
                 MayaUsd::lockLayer(
@@ -1004,6 +1018,7 @@ bool SaveLayersDialog::okToSave()
             StringResources::getAsMString(StringResources::kSaveAnonymousIdenticalFiles), count);
 
         warningDialog(
+            this,
             StringResources::getAsQString(StringResources::kSaveAnonymousIdenticalFilesTitle),
             MQtUtil::toQString(errorMsg),
             &identicalFiles,
@@ -1020,6 +1035,7 @@ bool SaveLayersDialog::okToSave()
             StringResources::getAsMString(StringResources::kSaveAnonymousConfirmOverwrite), count);
 
         return (confirmDialog(
+            this,
             StringResources::getAsQString(StringResources::kSaveAnonymousConfirmOverwriteTitle),
             MQtUtil::toQString(confirmMsg),
             &existingFiles,

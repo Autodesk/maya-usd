@@ -38,7 +38,7 @@ HeaderWidget::HeaderWidget(const QString& title, QWidget* parent)
     : QWidget(parent)
     , d_ptr(new HeaderWidgetPrivate(title))
 {
-    setMinimumHeight(ApplicationHost::instance().pm(ApplicationHost::PixelMetric::ItemHeight));
+    setMinimumHeight(ApplicationHost::instance().pm(ApplicationHost::PixelMetric::HeaderHeight));
     setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
 }
 
@@ -82,6 +82,7 @@ void HeaderWidget::paintEvent(QPaintEvent* event)
         }
     }
     opt.text = d->m_Title;
+    opt.textAlignment = Qt::AlignLeft | Qt::AlignVCenter;
     painter.drawControl(QStyle::CE_Header, opt);
 }
 

@@ -137,6 +137,13 @@ if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/usd/sdr/shaderProperty.h"
     endif()
 endif()
 
+# See if USD has ColorSpaceAPI:
+set(USD_HAS_COLORSPACE_API_SUPPORT FALSE CACHE INTERNAL "USD.ColorSpaceAPI")
+if (USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/usd/usd/colorSpaceAPI.h")
+    set(USD_HAS_COLORSPACE_API_SUPPORT TRUE CACHE INTERNAL "USD.ColorSpaceAPI")
+    message(STATUS "USD has ColorSpaceAPI support")
+endif()
+
 # Locate the MaterialX standard library dir.
 set(USD_MX_STDLIB_DIR "" CACHE INTERNAL "USD.MaterialX.StdLibDir")
 if (MATERIALX_STDLIB_DIR)

@@ -176,10 +176,6 @@ void MayaStagesSubject::setupListeners()
     // Handle re-entrant onStageSet
     bool expectedState = false;
     if (stageSetGuardCount.compare_exchange_strong(expectedState, true)) {
-        // We should have no listeners and stage map is dirty.
-        TF_VERIFY(UsdStageMap::getInstance().isDirty());
-        TF_VERIFY(_stageListeners.empty());
-
         auto me = PXR_NS::TfCreateWeakPtr(this);
         for (auto stage : ProxyShapeHandler::getAllStages()) {
             NoticeKeys noticeKeys;

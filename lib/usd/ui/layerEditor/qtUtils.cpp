@@ -155,7 +155,7 @@ ValidTfIdentifierValidator::ValidTfIdentifierValidator(QObject* parent)
 QValidator::State ValidTfIdentifierValidator::validate(QString& input, int& pos) const
 {
     std::string orig = input.toStdString();
-    std::string valid = pxr::TfMakeValidIdentifier(orig);
+    std::string valid = PXR_NS::TfMakeValidIdentifier(orig);
     if (input.isEmpty()) {
         return Intermediate; // Allow user to type
     }

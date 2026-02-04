@@ -147,6 +147,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject layerManagerAttr;
 
+    MAYAUSD_CORE_PUBLIC
+    static MObject recomputeLayersAttr;
+
     /// Delegate function for computing the closest point and surface normal
     /// on the proxy shape to a given ray.
     /// The input ray, output point, and output normal should be in the
@@ -416,6 +419,8 @@ private:
         const UsdStageRefPtr&    sharedUsdStage,
         const UsdStageRefPtr&    unsharedUsdStage,
         UsdStage::InitialLoadSet loadSet);
+
+    bool hasStageCacheIdConnections() const;
 
     UsdStageRefPtr getUnsharedStage(UsdStage::InitialLoadSet loadSet);
 

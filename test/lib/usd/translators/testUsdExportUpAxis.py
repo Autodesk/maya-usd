@@ -21,7 +21,7 @@ import unittest
 from maya import cmds
 from maya import standalone
 
-from pxr import Usd, UsdGeom
+from pxr import Usd, UsdGeom, Tf
 
 import fixturesUtils
 import transformUtils
@@ -105,6 +105,30 @@ class testUsdExportUpAxis(unittest.TestCase):
             ('!invert!xformOp:translate:pivot', None),
         ])
 
+    def testExportUpAxisConnectedAttribute(self):
+        """Test exporting and forcing a up-axis Y different from Maya prefs
+        while the Maya scene cannot be fully modified due to connected attributes.
+        The export should abort."""
+        mayaFile = os.path.join(self._path, "UsdExportConnectedAttr", "anim_connected.ma")
+        cmds.file(mayaFile, force=True, open=True)
 
+        def verifyCube():
+            self.assertAlmostEqual(cmds.getAttr('pCube1.translateY'), 0)
+            self.assertAlmostEqual(cmds.getAttr('pCube1.translateZ'), 0.4415128551864784)
+
+        verifyCube()
+
+        usdFile = os.path.abspath('UsdExportUpAxis_Connected.usda')
+        with self.assertRaises(RuntimeError):
+            cmds.mayaUSDExport(file=usdFile,
+                            shadingMode='none',
+                            upAxis='y')
+        
+        self.assertFalse(os.path.exists(usdFile))
+
+        verifyCube()
+
+        self.assertFalse(len(cmds.ls('group1')), 0)
+        
 if __name__ == '__main__':
     unittest.main(verbosity=2)

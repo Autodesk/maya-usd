@@ -399,13 +399,13 @@ void LayerEditorWidget::onNewLayerButtonClicked()
     }
 
     if (addToRoot) {
-        layerTreeItem->addAnonymousSublayer();
+        layerTreeItem->addAnonymousSublayer(_treeView);
     } else {
         // add a sibling to the selection
         UndoContext context(_sessionState.commandHook(), "Add Anonymous Layer");
         auto        parentItem = layerTreeItem->parentLayerItem();
         int         rowToInsert = layerTreeItem->row();
-        auto        newLayer = parentItem->addAnonymousSublayerAndReturn();
+        auto        newLayer = parentItem->addAnonymousSublayerAndReturn(_treeView);
         // move it to the right place, if it's not top
         if (rowToInsert > 0) {
             context.hook()->removeSubLayerPath(parentItem->layer(), newLayer->GetIdentifier());

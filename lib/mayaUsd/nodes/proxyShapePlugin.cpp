@@ -127,6 +127,12 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         status = MHWRender::MDrawRegistry::registerSubSceneOverrideCreator(
             ProxyRenderDelegate::drawDbClassification, kRegistrantId, ProxyRenderDelegate::Creator);
         CHECK_MSTATUS(status);
+
+        status = plugin.registerDisplayFilter(
+            MayaUsdProxyShapeBase::displayFilterName,
+            MayaUsdProxyShapeBase::displayFilterLabel,
+            ProxyRenderDelegate::drawDbClassification);
+        CHECK_MSTATUS(status);
     } else {
         status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
             UsdMayaProxyDrawOverride::drawDbClassification,
@@ -200,6 +206,9 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     CHECK_MSTATUS(status);
 
     if (_useVP2RenderDelegate) {
+        status = plugin.deregisterDisplayFilter(MayaUsdProxyShapeBase::displayFilterName);
+        CHECK_MSTATUS(status);
+
         status = MHWRender::MDrawRegistry::deregisterSubSceneOverrideCreator(
             ProxyRenderDelegate::drawDbClassification, kRegistrantId);
         CHECK_MSTATUS(status);

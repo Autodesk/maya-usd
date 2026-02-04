@@ -16,8 +16,10 @@
 
 #pragma once
 
-#include <qicon.h>
-#include <qobject.h>
+#include <QtCore/QObject>
+#include <QtCore/QString>
+#include <QtGui/QIcon>
+#include <QtWidgets/QFileDialog>
 
 namespace Adsk {
 
@@ -31,14 +33,17 @@ public:
 
     virtual float uiScale() const;
 
+    virtual int   dpiScale(int size) const;
+    virtual float dpiScale(float size) const;
+
     enum class IconName
     {
         Add,
+        AddFolder,
         OpenFile,
         Delete,
         MoveUp,
         MoveDown,
-
     };
     virtual QIcon icon(const IconName& name) const;
 
@@ -49,6 +54,7 @@ public:
         ResizableActiveAreaSize, // 8 px at 1.0 scale
         ResizableContentMargin,  // 4 px at 1.0 scale
         ItemHeight,              // 24 px at 1.0 scale
+        HeaderHeight,            // 32 px at 1.0 scale
     };
     /** Gets a requested pixel metric value. These are already scaled by the
      * uiScale factor. */
@@ -66,6 +72,19 @@ public:
     virtual QVariant loadPersistentData(const QString& group, const QString& key) const;
     virtual void
     savePersistentData(const QString& group, const QString& key, const QVariant& value) const;
+
+    virtual QString getUSDDialogFileFilters() const;
+    virtual QString getOpenFileName(
+        QWidget*       parent = nullptr,
+        const QString& caption = QString(),
+        const QString& dir = QString(),
+        const QString& filter = QString()) const;
+
+    virtual QString getExistingDirectory(
+        QWidget*             parent = nullptr,
+        const QString&       caption = QString(),
+        const QString&       dir = QString(),
+        QFileDialog::Options options = QFileDialog::ShowDirsOnly) const;
 
     static ApplicationHost& instance();
 

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <qwidget.h>
+#include <QtWidgets/QWidget>
 
 namespace Adsk {
 

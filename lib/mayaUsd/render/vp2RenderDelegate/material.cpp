@@ -359,6 +359,10 @@ struct _MaterialXData
             mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
 #endif
 
+#if MX_COMBINED_VERSION >= 13900
+            _RemovePreviewSurfaceEmbeddedNormalmap(_mtlxLibrary);
+#endif
+
             _FixLibraryTangentInputs(_mtlxLibrary);
 
             mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
@@ -396,6 +400,9 @@ struct _MaterialXData
 
 private:
     void _FixLibraryTangentInputs(MaterialX::DocumentPtr& mtlxLibrary);
+#if MX_COMBINED_VERSION >= 13900
+    void _RemovePreviewSurfaceEmbeddedNormalmap(MaterialX::DocumentPtr& mtlxLibrary);
+#endif
 };
 
 _MaterialXData& _GetMaterialXData()
@@ -681,6 +688,73 @@ mx::NodePtr _RecursiveFindNode(const mx::NodePtr& node, const TfToken& target)
     }
     return retVal;
 }
+
+#if MX_COMBINED_VERSION >= 13900
+void _MaterialXData::_RemovePreviewSurfaceEmbeddedNormalmap(mx::DocumentPtr& mtlxDoc)
+{
+    // The embedded "normalmap" node inside ND_UsdPreviewSurface_surfaceshader started causing
+    // issues in 1.39.4. We will temporarily remove it from the surface shader and patch the
+    // NodeGraph to use the "normal" input as a true normal input.
+
+    // Fetch everything as seen in 1.39.4 and bail out if any change is detected:
+    auto psNodeDef = mtlxDoc->getNodeDef("ND_UsdPreviewSurface_surfaceshader");
+    if (!psNodeDef) {
+        return;
+    }
+
+    auto normalInput = psNodeDef->getInput("normal");
+    if (!normalInput) {
+        return;
+    }
+
+    auto psNodeGraph = mtlxDoc->getNodeGraph("IMP_UsdPreviewSurface_surfaceshader");
+    if (!psNodeGraph) {
+        return;
+    }
+
+    auto normalmap = psNodeGraph->getNode("surface_normal");
+    if (!normalmap || normalmap->getInputs().size() != 1) {
+        // Fully unconnected normalmap requires DCC help to provide data for the normal, tangent,
+        // and bitangent inputs of the normalmap node.
+        return;
+    }
+
+    const auto normalClientNamess
+        = mx::StringVec { "diffuse_bsdf",   "transmission_bsdf",    "specular_bsdf1",
+                          "specular_bsdf2", "metalness_metal_bsdf", "coat_dielectric_bsdf" };
+    std::vector<mx::NodePtr> normalClients;
+    for (const auto& clientName : normalClientNamess) {
+        auto client = psNodeGraph->getNode(clientName);
+        if (!client) {
+            return;
+        }
+        auto clientNormalInput = client->getInput("normal");
+        if (!clientNormalInput || clientNormalInput->getNodeName() != "surface_normal") {
+            return;
+        }
+        normalClients.push_back(client);
+    }
+
+    // If we reached here, we have gathered all the items that needed fixes in 1.39.4 without
+    // noticing any difference. Proceed:
+
+    // Expose a regular normal input:
+    normalInput->removeAttribute("value");
+    normalInput->removeAttribute("uimin");
+    normalInput->removeAttribute("uimax");
+    normalInput->removeAttribute("uistep");
+    normalInput->setAttribute("defaultgeomprop", "Nworld");
+
+    // Each client gets that regular normal instead of a normalmap computation:
+    for (auto& client : normalClients) {
+        auto clientNormalInput = client->getInput("normal");
+        if (clientNormalInput) {
+            clientNormalInput->removeAttribute("nodename");
+            clientNormalInput->setAttribute("interfacename", "normal");
+        }
+    }
+}
+#endif
 
 // We have a few library surface nodes that require tangent inputs, but since the tangent input is
 // not expressed in the interface, we will miss it in the _AddMissingTangents function. This

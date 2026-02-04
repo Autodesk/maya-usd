@@ -26,8 +26,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
-#include <ghc/filesystem.hpp>
-
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -126,6 +124,48 @@ void saveAdskUsdComponent(const std::string& proxyPath)
     }
 }
 
+bool isUnsavedAdskUsdComponent(const PXR_NS::UsdStageRefPtr stage)
+{
+    // If the component is still only really in memory, there is nothing to refresh.
+    // Detect this case by check if the root layer is empty on disk.
+    if (!stage) {
+        return false;
+    }
+
+    auto rootLayer = stage->GetRootLayer();
+    if (!rootLayer) {
+        return false;
+    }
+
+    // If the root layer is not dirty, then we know for sure the on disk version is non-empty.
+    if (!rootLayer->IsDirty()) {
+        return false;
+    }
+
+    auto diskVersion = SdfLayer::OpenAsAnonymous(rootLayer->GetRealPath());
+    if (!diskVersion) {
+        return true;
+    }
+    return diskVersion->IsEmpty();
+}
+
+void reloadAdskUsdComponent(const std::string& proxyPath)
+{
+    MString saveComponent;
+    saveComponent.format(
+        "from pxr import Sdf, Usd, UsdUtils\n"
+        "import mayaUsd\n"
+        "import mayaUsd.ufe\n"
+        "from usd_component_creator_plugin import MayaComponentManager\n"
+        "proxyStage = mayaUsd.ufe.getStage('^1s')\n"
+        "MayaComponentManager.GetInstance().ReloadComponent(proxyStage)",
+        proxyPath.c_str());
+
+    if (!MGlobal::executePythonCommand(saveComponent)) {
+        TF_RUNTIME_ERROR("Error while reloading USD component '%s'", proxyPath.c_str());
+    }
+}
+
 std::string previewSaveAdskUsdComponent(
     const std::string& saveLocation,
     const std::string& componentName,
@@ -210,8 +250,8 @@ std::string moveAdskUsdComponent(
 }
 
 bool shouldDisplayComponentInitialSaveDialog(
-    const pxr::UsdStageRefPtr stage,
-    const std::string&        proxyShapePath)
+    const PXR_NS::UsdStageRefPtr stage,
+    const std::string&           proxyShapePath)
 {
     if (!MayaUsd::ComponentUtils::isAdskUsdComponent(proxyShapePath)) {
         return false;
