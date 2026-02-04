@@ -18,14 +18,15 @@
 
 #include "ApplicationHost.h"
 #include "HeaderWidget.h"
-#include "Resizable.h"
 #include "ui_USDAssetResolverSettingsWidget.h"
 
+#include <qaction.h>
 #include <qevent.h>
 #include <qfiledialog.h>
 #include <qlistview.h>
 #include <qlistwidget.h>
 #include <qpainter.h>
+#include <qsplitter.h>
 #include <qstringlistmodel.h>
 #include <qstyleditemdelegate.h>
 #include <qtoolbutton.h>
@@ -113,6 +114,16 @@ public:
         QSize size = QStyledItemDelegate::sizeHint(option, index);
         size.setHeight(ApplicationHost::instance().pm(ApplicationHost::PixelMetric::ItemHeight));
         return size;
+    }
+
+    void updateEditorGeometry(
+        QWidget*                    editor,
+        const QStyleOptionViewItem& option,
+        const QModelIndex&          index) const override
+    {
+        QStyleOptionViewItem opt = option;
+        initStyleOption(&opt, index);
+        editor->setGeometry(opt.rect);
     }
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index)
@@ -224,8 +235,8 @@ public:
 
     std::unique_ptr<Ui::USDAssetResolverSettingsWidget> ui = nullptr;
 
-    QString      mappingFilePath;
-    QVBoxLayout* searchPathsLayout = nullptr;
+    QString    mappingFilePath;
+    QSplitter* searchPathsSplitter = nullptr;
 
     QToolButton* userPathsFirstButton = nullptr;
     bool         userPathsFirst = true;
@@ -234,27 +245,17 @@ public:
     bool       userPathsOnly = false;
 
     HeaderWidget*    userPathsHeader = nullptr;
+    QLabel*          userPathsHeaderLabel = nullptr;
     QStringList      userPaths;
     StringListModel* userPathsModel = nullptr;
-    Resizable*       userPathsResizeable = nullptr;
 
     HeaderWidget*     extAndEnvPathsHeader = nullptr;
     QWidget*          extAndEnvPathsWidget = nullptr;
     QStringList       extAndEnvPaths;
     QStringListModel* extAndEnvPathsModel = nullptr;
-    Resizable*        extAndEnvPathsResizable = nullptr;
 
     QModelIndex currentlyAddingNewUserPath;
     bool        aboutToAddUserPath = false;
-
-    void adjustUserPathsMaxSize()
-    {
-        // Make room for the header and one extra item (for adding new items)
-        const auto& host = ApplicationHost::instance();
-        userPathsResizeable->setMaxContentSize(
-            (host.pm(ApplicationHost::PixelMetric::ItemHeight) * (userPaths.size() + 2))
-            + (host.pm(ApplicationHost::PixelMetric::TinyPadding) + 1) * 2);
-    }
 };
 
 USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
@@ -265,11 +266,12 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
 
     d->ui->setupUi(this);
     const auto& host = ApplicationHost::instance();
+    d->ui->mainLayout->setColumnMinimumWidth(0, qRound(host.uiScale() * 100.0f));
 
     // Add a browse action to the mapping file path line edit
     QAction* browseAction
         = new QAction(host.icon(ApplicationHost::IconName::OpenFile), tr("Browse..."), this);
-    connect(&host, &ApplicationHost::iconsChanged, this, [this, browseAction]() {
+    connect(&host, &ApplicationHost::iconsChanged, this, [browseAction]() {
         browseAction->setIcon(
             ApplicationHost::instance().icon(ApplicationHost::IconName::OpenFile));
     });
@@ -277,7 +279,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
     browseAction->setToolTip(tr("Browse for a mapping file"));
     connect(browseAction, &QAction::triggered, this, [this, d]() {
         QString filePath = QFileDialog::getOpenFileName(
-            this, tr("Select Mapping File"), QString(), tr("USD Files (*.usd *.usda)"));
+            this, tr("Select Mapping File"), QString(), tr("USD Files (*.usda);;All Files (*.*)"));
         if (!filePath.isEmpty()) {
             if (filePath != d->mappingFilePath) {
                 d->ui->mappingFilePath->setText(filePath);
@@ -311,14 +313,16 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         auto layout = new QVBoxLayout(user_paths);
         layout->setContentsMargins(tiny_padding + 1, 0, tiny_padding + 1, 0);
         layout->setSpacing(0);
-        d->userPathsHeader = new HeaderWidget(
-            tr("%1 User Paths").arg(userPathsFirst() ? tr("1.") : tr("2.")), user_paths);
+        // we're not using the title of the header widget here - as the buttons
+        // may overlap it - instead we use a simple label for the title.
+        d->userPathsHeader = new HeaderWidget("", user_paths);
         layout->addWidget(d->userPathsHeader, 0);
-
         auto headerLayout = new QHBoxLayout(d->userPathsHeader);
-        headerLayout->addStretch(1);
-        headerLayout->setContentsMargins(
-            0, 0, ApplicationHost::instance().pm(ApplicationHost::PixelMetric::TinyPadding), 0);
+        d->userPathsHeaderLabel
+            = new QLabel(tr("%1 User Paths").arg(userPathsFirst() ? tr("1.") : tr("2.")));
+        headerLayout->addWidget(d->userPathsHeaderLabel, 1);
+        headerLayout->addSpacing(tiny_padding);
+        headerLayout->setContentsMargins(tiny_padding, 0, tiny_padding, 0);
 
         auto listview = new ListView(user_paths);
         listview->setUniformItemSizes(true);
@@ -359,7 +363,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
             listview->itemDelegate(),
             &QAbstractItemDelegate::closeEditor,
             this,
-            [this, d](QWidget* editor, QAbstractItemDelegate::EndEditHint hint) {
+            [this](QWidget* editor, QAbstractItemDelegate::EndEditHint hint) {
                 Q_D(USDAssetResolverSettingsWidget);
                 if (d->currentlyAddingNewUserPath.isValid()) {
                     QModelIndex index = d->currentlyAddingNewUserPath;
@@ -378,7 +382,7 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         auto addBrowseButton = new QToolButton(d->userPathsHeader);
         addBrowseButton->setIcon(host.icon(ApplicationHost::IconName::OpenFile));
         addBrowseButton->setToolTip(tr("Add User Path with the browser"));
-        connect(addBrowseButton, &QToolButton::clicked, this, [this, listview]() {
+        connect(addBrowseButton, &QToolButton::clicked, this, [this]() {
             Q_D(USDAssetResolverSettingsWidget);
             QString filePath
                 = QFileDialog::getExistingDirectory(this, tr("Select User Path to Add"));
@@ -386,7 +390,6 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
                 if (d->userPathsModel->insertRow(d->userPathsModel->rowCount())) {
                     QModelIndex index = d->userPathsModel->index(d->userPathsModel->rowCount() - 1);
                     d->userPathsModel->setData(index, filePath);
-                    d->adjustUserPathsMaxSize();
                     Q_EMIT d->userPathsModel->dataChanged(index, index);
                 }
             }
@@ -395,7 +398,9 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         headerLayout->addWidget(addBrowseButton);
 
         d->userPathsFirstButton = new QToolButton(d->userPathsHeader);
-        d->userPathsFirstButton->setText(userPathsFirst() ? tr("↓") : tr("↑"));
+        d->userPathsFirstButton->setIcon(ApplicationHost::instance().icon(
+            userPathsFirst() ? ApplicationHost::IconName::MoveDown
+                             : ApplicationHost::IconName::MoveUp));
         connect(d->userPathsFirstButton, &QToolButton::clicked, this, [this]() {
             setUserPathsFirst(!userPathsFirst());
         });
@@ -420,7 +425,6 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
             }
             if (d->userPaths != d->userPathsModel->stringList()) {
                 d->userPaths = d->userPathsModel->stringList();
-                d->adjustUserPathsMaxSize();
                 Q_EMIT userPathsChanged(d->userPaths);
             }
         });
@@ -431,7 +435,16 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
             }
             if (d->userPaths != d->userPathsModel->stringList()) {
                 d->userPaths = d->userPathsModel->stringList();
-                d->adjustUserPathsMaxSize();
+                Q_EMIT userPathsChanged(d->userPaths);
+            }
+        });
+        connect(d->userPathsModel, &QStringListModel::rowsRemoved, this, [this]() {
+            Q_D(USDAssetResolverSettingsWidget);
+            if (d->aboutToAddUserPath) {
+                return; // ignore the first change, which is from the initial empty string
+            }
+            if (d->userPaths != d->userPathsModel->stringList()) {
+                d->userPaths = d->userPathsModel->stringList();
                 Q_EMIT userPathsChanged(d->userPaths);
             }
         });
@@ -462,43 +475,19 @@ USDAssetResolverSettingsWidget::USDAssetResolverSettingsWidget(QWidget* parent)
         listview->setModel(d->extAndEnvPathsModel);
     }
 
-    QWidget* searchPathsWidget = new QWidget(this);
-    searchPathsWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    d->searchPathsLayout = new QVBoxLayout(searchPathsWidget);
+    d->searchPathsSplitter = new QSplitter(Qt::Orientation::Vertical);
+    d->searchPathsSplitter->setChildrenCollapsible(false);
+    d->searchPathsSplitter->setHandleWidth(tiny_padding * 8);
 
-    d->userPathsResizeable = new Resizable(user_paths, searchPathsWidget, "", "", 200);
-    d->userPathsResizeable->setMinContentSize(
-        (host.pm(ApplicationHost::PixelMetric::ItemHeight) * 2) + (tiny_padding + 1) * 2);
-
-    d->extAndEnvPathsResizable
-        = new Resizable(d->extAndEnvPathsWidget, searchPathsWidget, "", "", 200);
-    d->extAndEnvPathsResizable->setMinContentSize(
-        (host.pm(ApplicationHost::PixelMetric::ItemHeight) * 2) + (tiny_padding + 1) * 2);
-
-    d->searchPathsLayout->addWidget(d->userPathsResizeable);
-    d->searchPathsLayout->addWidget(d->extAndEnvPathsResizable);
+    d->searchPathsSplitter->addWidget(user_paths);
+    d->searchPathsSplitter->addWidget(d->extAndEnvPathsWidget);
 
     auto collapseable
-        = ApplicationHost::instance().wrapWithCollapseable("Search Paths", searchPathsWidget);
-    collapseable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        = ApplicationHost::instance().wrapWithCollapseable("Search Paths", d->searchPathsSplitter);
 
     d->ui->mainLayout->addWidget(collapseable, 2, 0, 1, 2);
-
     connect(d->ui->saveButton, &QPushButton::clicked, this, [this]() { Q_EMIT saveRequested(); });
     connect(d->ui->closeButton, &QPushButton::clicked, this, [this]() { Q_EMIT closeRequested(); });
-    connect(d->userPathsModel, &QStringListModel::rowsRemoved, this, [this]() {
-        Q_D(USDAssetResolverSettingsWidget);
-        if (d->aboutToAddUserPath) {
-            return; // ignore the first change, which is from the initial empty string
-        }
-        if (d->userPaths != d->userPathsModel->stringList()) {
-            d->userPaths = d->userPathsModel->stringList();
-            d->adjustUserPathsMaxSize();
-            Q_EMIT userPathsChanged(d->userPaths);
-        }
-    });
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    adjustSize();
 }
 
 USDAssetResolverSettingsWidget::~USDAssetResolverSettingsWidget() = default;
@@ -544,14 +533,16 @@ void USDAssetResolverSettingsWidget::setUserPathsFirst(bool userPathsFirst)
     Q_D(USDAssetResolverSettingsWidget);
     if (userPathsFirst != d->userPathsFirst) {
         d->userPathsFirst = userPathsFirst;
-        d->userPathsHeader->setTitle(tr("%1 User Paths").arg(userPathsFirst ? tr("1.") : tr("2.")));
+        d->userPathsHeaderLabel->setText(
+            tr("%1 User Paths").arg(userPathsFirst ? tr("1.") : tr("2.")));
         d->extAndEnvPathsHeader->setTitle(
             tr("%1 Extension & Environment Paths").arg(userPathsFirst ? tr("2.") : tr("1.")));
-        d->userPathsFirstButton->setText(userPathsFirst ? tr("↓") : tr("↑"));
+        d->userPathsFirstButton->setIcon(ApplicationHost::instance().icon(
+            userPathsFirst ? ApplicationHost::IconName::MoveDown
+                           : ApplicationHost::IconName::MoveUp));
         // swap items in the layout
-        auto topItem = d->searchPathsLayout->takeAt(0);
-        d->searchPathsLayout->addItem(topItem);
-
+        d->searchPathsSplitter->insertWidget(
+            userPathsFirst ? 0 : 1, d->userPathsHeader->parentWidget());
         Q_EMIT userPathsFirstChanged(userPathsFirst);
     }
 }
@@ -585,11 +576,6 @@ void USDAssetResolverSettingsWidget::setExtAndEnvPaths(const QStringList& paths)
     if (paths != d->extAndEnvPaths) {
         d->extAndEnvPaths = paths;
         d->extAndEnvPathsModel->setStringList(paths);
-        const auto& host = ApplicationHost::instance();
-        d->extAndEnvPathsResizable->setMaxContentSize(
-            (host.pm(ApplicationHost::PixelMetric::ItemHeight) * (paths.size() + 1))
-            + (host.pm(ApplicationHost::PixelMetric::TinyPadding) + 1) * 2);
-
         Q_EMIT extAndEnvPathsChanged(paths);
     }
 }
@@ -606,7 +592,6 @@ void USDAssetResolverSettingsWidget::setUserPaths(const QStringList& paths)
     if (paths != d->userPaths) {
         d->userPaths = paths;
         d->userPathsModel->setStringList(paths);
-        d->adjustUserPathsMaxSize();
         Q_EMIT userPathsChanged(paths);
     }
 }
