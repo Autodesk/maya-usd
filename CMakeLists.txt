@@ -259,6 +259,7 @@ endif()
 
 find_package(AdskUsdComponentCreator)
 find_package(AR)
+find_package(UsdEditForward)
 
 #------------------------------------------------------------------------------
 # compiler configuration
