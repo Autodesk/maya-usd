@@ -7,6 +7,13 @@ add_executable(${TARGET_NAME})
 # compiler configuration
 mayaUsd_compile_config(${TARGET_NAME})
 
+target_compile_definitions(${TARGET_NAME}
+    PRIVATE
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+)
+
 target_sources(${TARGET_NAME}
     PRIVATE
         main.cpp
@@ -29,7 +36,6 @@ target_link_libraries(${TARGET_NAME}
     tf
     vt
     plug
-    $<$<BOOL:${IS_LINUX}>:${Boost_PYTHON_LIBRARY}>
 )
 
 # install

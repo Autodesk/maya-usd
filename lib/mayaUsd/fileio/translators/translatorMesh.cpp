@@ -358,7 +358,11 @@ TranslatorMeshRead::TranslatorMeshRead(
             MDoubleArray valueArray(m_pointsNumTimeSamples, 0.0);
             valueArray[ti] = 1.0; // Set the time value where this mesh's weight should be 1.0
             MObject animObj = animFn.create(plg, nullptr, &stat);
-            animFn.addKeys(&timeArray, &valueArray);
+            animFn.addKeys(
+                &timeArray,
+                &valueArray,
+                MFnAnimCurve::kTangentLinear,
+                MFnAnimCurve::kTangentLinear);
             // We do *not* register the anim curve object for undo/redo,
             // since it will be handled automatically by deleting the blend
             // shape deformer object.

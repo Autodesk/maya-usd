@@ -879,13 +879,16 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
             if expectedLayerModifiable:
                 # The initial target should be preserved in this case.
                 expectedTargetLayer = rootLayer
+                self.assertEqual(stage.GetEditTarget().GetLayer(), expectedTargetLayer)
             else:
-                # Edit target should have been forced to session layer.
-                expectedTargetLayer = stage.GetSessionLayer()
-
-            self.assertEqual(stage.GetEditTarget().GetLayer(),
-                             expectedTargetLayer)
-
+                # Edit target should have been forced to session layer 
+                # or unchanged if the current targeted layer is modifiable.
+                if mayaUsd.lib.isLayerLocked(stage.GetEditTarget().GetLayer()):
+                    expectedTargetLayer = stage.GetSessionLayer()
+                    self.assertEqual(stage.GetEditTarget().GetLayer(), expectedTargetLayer)
+                else:
+                    self.assertEqual(mayaUsd.lib.isLayerLocked(stage.GetEditTarget().GetLayer()), False)
+                
     def testRefreshSystemLockWithoutCallback(self):
         """
         Test refreshSystemLocks without any callback.

@@ -124,6 +124,9 @@ foreach(script ${TEST_SCRIPT_FILES_LAMBERT})
 
             # Legacy lambert tests will force the use of the lamber fallback shaders
             "MAYAUSD_VP2_USE_LAMBERT_FALLBACK=true"
+
+            # Used in detecting whether there is support for UFE lights 2 API
+            "UFE_LIGHTS2_SUPPORT=${UFE_LIGHTS2_SUPPORT}"
     )
 
     # Assign a CTest label to these tests for easy filtering.
@@ -155,6 +158,9 @@ foreach(script ${TEST_SCRIPT_FILES_STANDARDSURFACE})
 
             # Used in detecting whether there is support for volume light gizmos
             "UFE_VOLUME_LIGHTS_SUPPORT=${UFE_VOLUME_LIGHTS_SUPPORT}"
+
+            # Used in detecting whether there is support for UFE lights 2 API
+            "UFE_LIGHTS2_SUPPORT=${UFE_LIGHTS2_SUPPORT}"
     )
 
     # Assign a CTest label to these tests for easy filtering.

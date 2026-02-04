@@ -367,6 +367,7 @@ global proc mayaUsdTranslatorImport_EnableAllControls() {
     checkBoxGrp -e -en 1 mayaUsdTranslator_ImportInstancesCheckBox;
     checkBoxGrp -e -en 1 mayaUsdTranslator_AnimDataCheckBox;
     checkBoxGrp -e -en 1 mayaUsdTranslator_CustomFrameRangeCheckBox;
+    checkBoxGrp -e -en 1 mayaUsdTranslator_ApplyEulerFilterCheckBox;
 
     optionMenuGrp -e -en 1 mayaUsdTranslator_MaterialsConversionMenu;
     optionMenuGrp -e -en 1 mayaUsdTranslator_RelativeTexturesMenu;
@@ -408,6 +409,8 @@ global proc mayaUsdTranslatorImport_SetFromOptions(string $currentOptions, int $
             } else if ($optionBreakDown[0] == "endTime") {
                 int $endTime = $optionBreakDown[1];
                 intFieldGrp -e -value2 $endTime -en2 $enable mayaUsdTranslator_CustomFrameRange;
+            } else if ($optionBreakDown[0] == "applyEulerFilter") {
+                mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_ApplyEulerFilterCheckBox");
             } else if ($optionBreakDown[0] == "upAxis") {
                 mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportUpAxisCheckBox");
                 mayaUsdTranslatorImport_upAxisUnitCB();
@@ -578,6 +581,8 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
             intFieldGrp -label `getMayaUsdString("kImportFrameRangeLbl")` -nf 2 -cw 1 $cw1 mayaUsdTranslator_CustomFrameRange;
 
+            checkBoxGrp -label "" -label1 `getMayaUsdString("kImportApplyEulerFilterLbl")` -ann `getMayaUsdString("kImportApplyEulerFilterAnn")` -cw 1 $cw1 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_ApplyEulerFilterCheckBox;
+
             if ($forEditAsMaya) {
                 checkBoxGrp -edit -visible 0 mayaUsdTranslator_CustomFrameRangeCheckBox;
                 intFieldGrp -edit -visible 0 mayaUsdTranslator_CustomFrameRange;
@@ -590,7 +595,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
             checkBoxGrp -label "" -label1 `getMayaUsdString("kImportToInstanceOpt")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportToInstanceAnn")` mayaUsdTranslator_ImportInstancesCheckBox;
             separator -style "none";
 
-            columnLayout -columnOffset "left" 2;
+            columnLayout -columnOffset "both" 4 -adj true;
             frameLayout -label `getMayaUsdString("kImportAxisAndUnit")` -collapsable true -collapse false axisAndUnitFrameLayout;
                 separator -style "none";
                 checkBoxGrp -label "" -label1 `getMayaUsdString("kImportUpAxis")` -ann `getMayaUsdString("kImportUpAxisAnn")`
@@ -634,6 +639,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
             $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "startTime", 1, "mayaUsdTranslator_CustomFrameRange");
             $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "endTime", 2, "mayaUsdTranslator_CustomFrameRange");
         }
+        $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "applyEulerFilter", "mayaUsdTranslator_ApplyEulerFilterCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importUSDZTextures", "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
         $currentOptions = mayaUsdTranslatorImport_queryContextOptionsUI($currentOptions, "jobContext");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importInstances", "mayaUsdTranslator_ImportInstancesCheckBox");
@@ -723,13 +729,17 @@ global proc mayaUsdTranslatorImport_SetMaterialsCheckBox(string $arg, int $enabl
 global proc mayaUsdTranslatorImport_AnimationCB()
 {
     int $forEditAsMaya = (`columnLayout -q -ann mayaUsdTranslator_OptsCol` == "EditAsMayaOptions") ? 1 : 0;
-    if ((`checkBoxGrp -q -value1 mayaUsdTranslator_AnimDataCheckBox` == 1) && !$forEditAsMaya) {
-        checkBoxGrp -e -en true mayaUsdTranslator_CustomFrameRangeCheckBox;
-        int $vis = (`checkBoxGrp -q -value1 mayaUsdTranslator_CustomFrameRangeCheckBox` == 1);
-        intFieldGrp -e -en $vis mayaUsdTranslator_CustomFrameRange;
+    if (`checkBoxGrp -q -value1 mayaUsdTranslator_AnimDataCheckBox` == 1) {
+        if (!$forEditAsMaya) {
+            checkBoxGrp -e -en true mayaUsdTranslator_CustomFrameRangeCheckBox;
+            int $vis = (`checkBoxGrp -q -value1 mayaUsdTranslator_CustomFrameRangeCheckBox` == 1);
+            intFieldGrp -e -en $vis mayaUsdTranslator_CustomFrameRange;
+        }
+        checkBoxGrp -e -en true mayaUsdTranslator_ApplyEulerFilterCheckBox;
     } else {
         checkBoxGrp -e -en false mayaUsdTranslator_CustomFrameRangeCheckBox;
         intFieldGrp -e -en false mayaUsdTranslator_CustomFrameRange;
+        checkBoxGrp -e -en false mayaUsdTranslator_ApplyEulerFilterCheckBox;
     }
 }
 

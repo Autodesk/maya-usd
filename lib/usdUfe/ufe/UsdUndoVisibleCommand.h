@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOVISIBLECOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
@@ -43,6 +44,7 @@ private:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "ToggleVisibility"; })
 
     PXR_NS::UsdPrim _prim;
 

@@ -47,6 +47,7 @@ target_compile_definitions(${USDMAYA_UTILS_LIBRARY_NAME}
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         AL_USDMAYA_UTILS_EXPORT
@@ -65,7 +66,6 @@ target_link_libraries(${USDMAYA_UTILS_LIBRARY_NAME}
   usdGeom
   usdUtils
   vt
-  ${Boost_PYTHON_LIBRARY}
   ${PYTHON_LIBRARIES}
   ${MAYA_Foundation_LIBRARY}
   ${MAYA_OpenMaya_LIBRARY}

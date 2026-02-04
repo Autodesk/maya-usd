@@ -9,19 +9,18 @@ target_sources(${PROJECT_NAME}
         MayaUsdContextOpsHandler.cpp
         MayaUsdObject3d.cpp
         MayaUsdObject3dHandler.cpp
+        MayaUsdSceneItemOps.cpp
+        MayaUsdSceneItemOpsHandler.cpp
         MayaUsdUIInfoHandler.cpp
+        MayaUsdUndoRenameCommand.cpp
         ProxyShapeContextOpsHandler.cpp
         ProxyShapeHandler.cpp
         ProxyShapeHierarchy.cpp
         ProxyShapeHierarchyHandler.cpp
-        UsdSceneItemOps.cpp
-        UsdSceneItemOpsHandler.cpp
         UsdStageMap.cpp
         UsdUIUfeObserver.cpp
-        UsdUndoDeleteCommand.cpp
         UsdUndoDuplicateCommand.cpp
         UsdUndoMaterialCommands.cpp
-        UsdUndoRenameCommand.cpp
         Utils.cpp
         moduleDeps.cpp
 )
@@ -58,6 +57,19 @@ if (UFE_LIGHTS_SUPPORT)
                 UFE_VOLUME_LIGHTS_SUPPORT=1
         )
     endif()
+endif()
+
+if (UFE_LIGHTS2_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdLight2.cpp
+            UsdLight2Handler.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_LIGHTS2_SUPPORT=1
+    )
 endif()
 
 if (UFE_MATERIALS_SUPPORT)
@@ -162,6 +174,13 @@ if (UFE_CAMERAHANDLER_HAS_FINDALL)
     )
 endif()
 
+if (UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET=1
+    )
+endif()
+
 if(UFE_CAMERAHANDLER_HAS_FINDALL)
     target_sources(${PROJECT_NAME}
         PRIVATE
@@ -191,19 +210,18 @@ set(HEADERS
     MayaUsdContextOpsHandler.h
     MayaUsdObject3d.h
     MayaUsdObject3dHandler.h
+    MayaUsdSceneItemOps.h
+    MayaUsdSceneItemOpsHandler.h
     MayaUsdUIInfoHandler.h
+    MayaUsdUndoRenameCommand.h
     ProxyShapeContextOpsHandler.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
     ProxyShapeHierarchyHandler.h
-    UsdSceneItemOps.h
-    UsdSceneItemOpsHandler.h
     UsdStageMap.h
     UsdUIUfeObserver.h
-    UsdUndoDeleteCommand.h
     UsdUndoDuplicateCommand.h
     UsdUndoMaterialCommands.h
-    UsdUndoRenameCommand.h
     Utils.h
 )
 
@@ -226,6 +244,13 @@ if (UFE_LIGHTS_SUPPORT)
     list(APPEND HEADERS
         UsdLight.h
         UsdLightHandler.h
+    )
+endif()
+
+if (UFE_LIGHTS2_SUPPORT)
+    list(APPEND HEADERS
+        UsdLight2.h
+        UsdLight2Handler.h
     )
 endif()
 
@@ -302,7 +327,7 @@ set(UFE_PYTHON_MODULE_NAME ufe)
 # target (UFE Python Bindings)
 # -----------------------------------------------------------------------------
 # UFE Python Bindings
-if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+if(IS_WINDOWS AND MAYAUSD_DEFINE_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(UFE_PYTHON_TARGET_NAME "_${UFE_PYTHON_MODULE_NAME}_d")
 else()

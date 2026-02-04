@@ -6,13 +6,20 @@
 #ifndef MATERIALX_TEXCOORDNODEGLSLMAYA_H
 #define MATERIALX_TEXCOORDNODEGLSLMAYA_H
 
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
+
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
 
 MATERIALX_NAMESPACE_BEGIN
 
 /// Re-implementation of an index-based texcood node into a geompropvalue using standard USD primvar
 /// names
-class TexcoordNodeGlslMaya : public GlslImplementation
+class TexcoordNodeGlslMaya
+#if MX_COMBINED_VERSION >= 13904
+    : public HwImplementation
+#else
+    : public GlslImplementation
+#endif
 {
 public:
     static ShaderNodeImplPtr create();

@@ -22,6 +22,8 @@ target_sources(${PROJECT_NAME}
         UsdObject3dHandler.cpp
         UsdRootChildHierarchy.cpp
         UsdSceneItem.cpp
+        UsdSceneItemOps.cpp
+        UsdSceneItemOpsHandler.cpp
         UsdUIInfoHandler.cpp
         UsdUndoAddNewPrimCommand.cpp
         UsdUndoAddPayloadCommand.cpp
@@ -30,10 +32,14 @@ target_sources(${PROJECT_NAME}
         UsdUndoClearPayloadsCommand.cpp
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
+        UsdUndoDeleteCommand.cpp
+        UsdUndoDuplicateCommand.cpp
+        UsdUndoDuplicateSelectionCommand.cpp
         UsdUndoInsertChildCommand.cpp
         UsdUndoLongDurationCommand.cpp
         UsdUndoPayloadCommand.cpp
         UsdUndoReloadRefCommand.cpp
+        UsdUndoRenameCommand.cpp
         UsdUndoReorderCommand.cpp
         UsdUndoSelectAfterCommand.cpp
         UsdUndoSetKindCommand.cpp
@@ -90,8 +96,6 @@ if (UFE_CLIPBOARD_SUPPORT)
             UsdClipboard.cpp
             UsdClipboardCommands.cpp
             UsdClipboardHandler.cpp
-            UsdUndoDuplicateCommand.cpp
-            UsdUndoDuplicateSelectionCommand.cpp
     )
 
     target_compile_definitions(${PROJECT_NAME}
@@ -128,6 +132,13 @@ if (UFE_HAS_UNSIGNED_INT)
     )
 endif()
 
+if (UFE_HAS_COLOR_MANAGEMENT_HANDLER)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HAS_COLOR_MANAGEMENT_HANDLER=1
+    )
+endif()
+
 set(HEADERS
     Global.h
     SetVariantSelectionCommand.h
@@ -148,6 +159,8 @@ set(HEADERS
     UsdObject3dHandler.h
     UsdRootChildHierarchy.h
     UsdSceneItem.h
+    UsdSceneItemOps.h
+    UsdSceneItemOpsHandler.h
     UsdUIInfoHandler.h
     UsdUndoAddNewPrimCommand.h
     UsdUndoAddPayloadCommand.h
@@ -156,10 +169,14 @@ set(HEADERS
     UsdUndoClearPayloadsCommand.h
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h
+    UsdUndoDeleteCommand.h
+    UsdUndoDuplicateCommand.h
+    UsdUndoDuplicateSelectionCommand.h
     UsdUndoInsertChildCommand.h
     UsdUndoLongDurationCommand.h
     UsdUndoPayloadCommand.h
     UsdUndoReloadRefCommand.h
+    UsdUndoRenameCommand.h
     UsdUndoReorderCommand.h
     UsdUndoSelectAfterCommand.h
     UsdUndoSetKindCommand.h
@@ -190,8 +207,6 @@ if (UFE_CLIPBOARD_SUPPORT)
         UsdClipboard.h
         UsdClipboardCommands.h
         UsdClipboardHandler.h
-        UsdUndoDuplicateCommand.h
-        UsdUndoDuplicateSelectionCommand.h
     )
 endif()
 

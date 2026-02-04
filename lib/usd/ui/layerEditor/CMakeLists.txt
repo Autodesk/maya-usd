@@ -20,6 +20,8 @@ target_sources(${PROJECT_NAME}
         batchSaveLayersUIDelegate.cpp
         dirtyLayersCountBadge.cpp
         generatedIconButton.cpp
+        layerContentsWidget.cpp
+        layerContentsWidget.h
         layerEditorWidget.cpp
         layerEditorWidget.h
         layerTreeItem.cpp
@@ -53,6 +55,8 @@ target_sources(${PROJECT_NAME}
         stageSelectorWidget.h
         stringResources.cpp
         stringResources.h
+        usdSyntaxHighlighter.cpp
+        usdSyntaxHighlighter.h
         warningDialogs.cpp
         warningDialogs.h
 )
@@ -85,3 +89,9 @@ mayaUsd_promoteHeaderList(
 install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui
 )
+
+# Install the USD syntax highlighting configuration file.
+install(FILES "usdSyntaxConfig.json"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/syntaxHighlight"
+)
+

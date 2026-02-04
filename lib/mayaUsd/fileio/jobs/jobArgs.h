@@ -42,7 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((UsdFileExtensionCrate, "usdc")) \
     ((UsdFileExtensionPackage, "usdz")) \
     ((UsdReadableFileFilter, "*.usd *.usda *.usdc *.usdz")) \
-    ((UsdWritableFileFilter, "*.usd *.usda *.usdc *.usdz"))
+    ((UsdWritableFileFilter, "*.usd *.usda *.usdc *.usdz")) \
+    ((materialX, "MaterialX"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -122,6 +123,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (convertMaterialsTo) \
     (remapUVSetsTo) \
     (stripNamespaces) \
+    (hideSourceData) \
     (verbose) \
     (staticSingleSample) \
     (geomSidedness)   \
@@ -284,6 +286,7 @@ struct UsdMayaJobExportArgs
     const bool normalizeNurbs;
     const bool preserveUVSetNames;
     const bool stripNamespaces;
+    const bool hideSourceData;
     // Export root prims using their worldspace transform instead of local transform.
     const bool worldspace;
     // Write default values at default time.

@@ -69,6 +69,7 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
     target_compile_definitions(${TARGET_NAME}
         PRIVATE
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
     )

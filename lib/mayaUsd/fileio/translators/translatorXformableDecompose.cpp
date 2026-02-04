@@ -20,8 +20,6 @@
 #include <pxr/base/gf/transform.h>
 #include <pxr/pxr.h>
 
-#include <maya/MVector.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX:

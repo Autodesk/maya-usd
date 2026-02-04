@@ -59,6 +59,7 @@ public:
     static constexpr auto kWriteDefaults = "wd";
     static constexpr auto kMergeTransformAndShapeFlag = "mt";
     static constexpr auto kStripNamespacesFlag = "sn";
+    static constexpr auto kHideSourceDataFlag = "hsd";
     static constexpr auto kExportRefsAsInstanceableFlag = "eri";
     static constexpr auto kExportDisplayColorFlag = "dsp";
     static constexpr auto kExportDistanceUnitFlag = "edu";
@@ -127,10 +128,6 @@ public:
 
     static MSyntax createSyntax();
     static void*   creator();
-
-protected:
-    virtual std::unique_ptr<PXR_NS::UsdMaya_WriteJob>
-    initializeWriteJob(const PXR_NS::UsdMayaJobExportArgs&);
 };
 
 } // namespace MAYAUSD_NS_DEF

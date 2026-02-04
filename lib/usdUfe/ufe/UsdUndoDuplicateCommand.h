@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDODUPLICATECOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
@@ -28,7 +29,11 @@
 namespace USDUFE_NS_DEF {
 
 //! \brief UsdUndoDuplicateCommand
+#ifdef UFE_V4_FEATURES_AVAILABLE
 class USDUFE_PUBLIC UsdUndoDuplicateCommand : public Ufe::SceneItemResultUndoableCommand
+#else
+class USDUFE_PUBLIC UsdUndoDuplicateCommand : public Ufe::UndoableCommand
+#endif
 {
 public:
     using Ptr = std::shared_ptr<UsdUndoDuplicateCommand>;
@@ -46,12 +51,13 @@ public:
     //! Create a UsdUndoDuplicateCommand from a SceneItem and its parent destination.
     static Ptr create(const UsdSceneItem::Ptr& srcItem, const UsdSceneItem::Ptr& dstParentItem);
 
-    UsdSceneItem::Ptr   duplicatedItem() const;
-    Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); };
+    UsdSceneItem::Ptr duplicatedItem() const;
+    UFE_V4(Ufe::SceneItem::Ptr sceneItem() const override { return duplicatedItem(); })
 
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "Duplicate"; })
 
 private:
     UsdUndoableItem _undoableItem;

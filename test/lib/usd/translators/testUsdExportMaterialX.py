@@ -182,7 +182,12 @@ class testUsdExportMaterialX(unittest.TestCase):
                          "ND_standard_surface_surfaceshader")
         mxNode = Sdr.Registry().GetShaderNodeByIdentifier("ND_standard_surface_surfaceshader")
         if mxNode:
-            self.assertEqual(outputName, mxNode.GetOutputNames()[0])
+            if hasattr(mxNode, "GetShaderOutputNames"):
+                # Use modern SdrShader interface introduced in 25.05
+                self.assertEqual(outputName, mxNode.GetShaderOutputNames()[0])
+            else:
+                # Use deprecated NdrShader interface removed in 25.08
+                self.assertEqual(outputName, mxNode.GetOutputNames()[0])
 
         # With a connected file texture on base_color going to baseColor on the
         # nodegraph:

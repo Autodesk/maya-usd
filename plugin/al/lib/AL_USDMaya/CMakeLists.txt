@@ -162,6 +162,9 @@ target_compile_definitions(${LIBRARY_NAME}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 target_include_directories(
@@ -171,15 +174,6 @@ target_include_directories(
     ${MAYA_INCLUDE_DIRS}
     ${UFE_INCLUDE_DIR}
 )
-
-# There were bugs in both cmake and findboost with the boost version string. So in
-# order to support all boost and cmake versions, we check how the boost version is
-# defined and create our version comparison string.
-if(${Boost_VERSION} MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
-    set(boost_1_70_0_ver_string "1.70.0")
-else()
-    set(boost_1_70_0_ver_string "107000")
-endif()
 
 target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
@@ -198,7 +192,6 @@ target_link_libraries(${LIBRARY_NAME}
     usdImaging
     usdImagingGL
     vt
-    ${Boost_PYTHON_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
@@ -223,7 +216,7 @@ endif()
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 # python bindings
-if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+if(IS_WINDOWS AND MAYAUSD_DEFINE_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME}_d)
 else()
@@ -296,7 +289,7 @@ install(FILES
 )
 install(CODE
     "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/python/AL/__init__.py\"
-    \"try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\")"
+    \"from pkgutil import extend_path\n__path__ = extend_path(__path__, __name__)\n\")"
 )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/python/AL/__init__.py
     DESTINATION ${AL_INSTALL_PREFIX}/lib/python/AL

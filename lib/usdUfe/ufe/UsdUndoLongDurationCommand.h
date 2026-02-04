@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOLONGDURATIONCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 
 #include <ufe/undoableCommand.h>
 
@@ -52,6 +53,8 @@ public:
 
     //! Calls redo() on each command in the list, in forward order.
     void redo() override;
+
+    UFE_V4(std::string commandString() const override { return "LongDuration"; })
 };
 
 } // namespace USDUFE_NS_DEF

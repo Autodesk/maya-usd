@@ -10,6 +10,7 @@
 # UFE_INCLUDE_DIR           Path to the UFE include directory
 # UFE_VERSION               UFE version (major.minor.patch) from ufe.h
 # UFE_LIGHTS_SUPPORT        Presence of UFE lights support
+# UFE_LIGHTS2_SUPPORT        Presence of UFE lights2 support
 # UFE_MATERIALS_SUPPORT     Presence of UFE materials support
 # UFE_SCENE_SEGMENT_SUPPORT Presence of UFE scene segment support
 # UFE_CLIPBOARD_SUPPORT     Presence of UFE clipboard support
@@ -119,6 +120,12 @@ if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/lightHandler.h")
         set(UFE_VOLUME_LIGHTS_SUPPORT TRUE CACHE INTERNAL "ufeVolumeLights")
         message(STATUS "Maya has UFE VolumeLights API")
     endif()
+endif()
+
+set(UFE_LIGHTS2_SUPPORT FALSE CACHE INTERNAL "ufeLights2")
+if (UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/light2Handler.h")
+    set(UFE_LIGHTS2_SUPPORT TRUE CACHE INTERNAL "ufeLights2")
+    message(STATUS "Maya has UFE lights 2 API")
 endif()
 
 set(UFE_MATERIALS_SUPPORT FALSE CACHE INTERNAL "ufeMaterials")
@@ -269,5 +276,20 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/camera.h")
     if(UFE_HAS_API)
         set(UFE_CAMERA_HAS_COMPUTEDVISIBILITY TRUE CACHE INTERNAL "ufeCameraHasComputedVisiblity")
         message(STATUS "Maya has UFE Camera's computed visibility interface")
+    endif()
+endif()
+
+set(UFE_HAS_COLOR_MANAGEMENT_HANDLER FALSE CACHE INTERNAL "cmHandler")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/colorManagementHandler.h")
+    set(UFE_HAS_COLOR_MANAGEMENT_HANDLER TRUE CACHE INTERNAL "cmHandler")
+    message(STATUS "Maya has UFE Color Management handler")
+endif()
+
+set(UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET FALSE CACHE INTERNAL "ufeBatchOpsHasDuplicateToTarget")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h UFE_HAS_API REGEX "kDstParentPath")
+    if(UFE_HAS_API)
+        set(UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET TRUE CACHE INTERNAL "ufeBatchOpsHasDuplicateToTarget")
+        message(STATUS "Maya has UFE BatchOpsHandler's duplicateSelectionCmd_ interface with dstParentPath option")
     endif()
 endif()

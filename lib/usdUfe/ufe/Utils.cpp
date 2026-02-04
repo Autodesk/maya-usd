@@ -230,6 +230,13 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     return gUfePathToPrimFn(path);
 }
 
+UsdSceneItem::Ptr
+createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
+{
+    auto ufeSiblingPath = ufeSrcPath.sibling(Ufe::PathComponent(siblingName));
+    return UsdSceneItem::create(ufeSiblingPath, ufePathToPrim(ufeSiblingPath));
+}
+
 void setTimeAccessorFn(TimeAccessorFn fn)
 {
     if (nullptr == fn) {
@@ -389,10 +396,12 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
     // Note: removed 'UsdPrimIsLoaded' from the predicate. When it is present the
     //		 filter doesn't properly return the inactive prims. UsdView doesn't
     //		 use loaded either in _computeDisplayPredicate().
+    // Note: removed 'UsdPrimIsAbstract' from the predicate since when naming
+    //       we want to consider all the prims (even if hidden) to generate a real
+    //       unique sibling.
     //
     // Note: our UsdHierarchy uses instance proxies, so we also use them here.
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+    for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         childrenNames.insert(child.GetName());
     }
     std::string childName { name };
@@ -421,8 +430,7 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     // have different names, too.
 
     TfToken::HashSet relativesNames;
-    for (auto child : usdParent.GetFilteredChildren(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+    for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         relativesNames.insert(child.GetName());
     }
 
@@ -434,8 +442,8 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     // Add the closest 1000 descendants to the names to be avoided.
     static const int maxDescendantCount = 1000;
     int              descendantCount = 0;
-    for (auto child : usdParent.GetFilteredDescendants(
-             UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+    for (auto child :
+         usdParent.GetFilteredDescendants(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
         relativesNames.insert(child.GetName());
         if (++descendantCount >= maxDescendantCount)
             break;
@@ -445,8 +453,8 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     UsdPrim rootPrim = usdParent.GetPrimAtPath(SdfPath::AbsoluteRootPath());
     if (rootPrim != usdParent) {
         descendantCount = 0;
-        for (auto child : rootPrim.GetFilteredDescendants(
-                 UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract))) {
+        for (auto child :
+             rootPrim.GetFilteredDescendants(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
             relativesNames.insert(child.GetName());
             if (++descendantCount >= maxDescendantCount)
                 break;
@@ -1440,7 +1448,10 @@ PXR_NS::GfVec3d toUsd(const Ufe::Vector3d& src)
     return PXR_NS::GfVec3d(src.x(), src.y(), src.z());
 }
 
-Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+Ufe::Selection removeDescendants(
+    const Ufe::Selection& src,
+    const Ufe::Path&      filterPath,
+    bool*                 itemRemoved /*= nullptr*/)
 {
     // Filter the src selection, removing items below the filterPath
     Ufe::Selection dst;
@@ -1449,6 +1460,8 @@ Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& fil
         // The filterPath itself is still valid.
         if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
             dst.append(item);
+        } else if (nullptr != itemRemoved) {
+            *itemRemoved = true;
         }
     }
     return dst;

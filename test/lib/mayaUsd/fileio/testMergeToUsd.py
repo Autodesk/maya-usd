@@ -19,7 +19,7 @@
 import fixturesUtils
 
 from mayaUtils import setMayaTranslation, setMayaRotation
-from usdUtils import createSimpleXformScene, mayaUsd_createStageWithNewLayer, createLayeredStage, createSimpleXformSceneInCurrentLayer
+from usdUtils import createSimpleXformScene, createDuoXformScene, mayaUsd_createStageWithNewLayer, createLayeredStage, createSimpleXformSceneInCurrentLayer
 from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
@@ -223,6 +223,140 @@ class MergeToUsdTestCase(unittest.TestCase):
         cmds.redo()
 
         verifyMergeToUsd()
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testBatchedMergeToUsdUndoRedo(self):
+        '''Merge multiple dags back to USD in a single mayaUsdMergeToUsd call, and use undo redo.'''
+        (ps,
+         aXlateOp, _, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, _, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createDuoXformScene()
+
+        # To merge back to USD, we must edit as Maya first.
+        cmds.mayaUsdEditAsMaya(aUsdUfePathStr)
+        aMayaItem = ufe.GlobalSelection.get().front()
+
+        (aMayaPath, aMayaPathStr, _, aMayaMatrix) = \
+            setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
+
+        cmds.mayaUsdEditAsMaya(bUsdUfePathStr)
+        bMayaItem = ufe.GlobalSelection.get().front()
+
+        (bMayaPath, bMayaPathStr, _, bMayaMatrix) = \
+            setMayaTranslation(bMayaItem, om.MVector(10, 11, 12))
+
+        psHier = ufe.Hierarchy.hierarchy(ps)
+        mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(aMayaItem)
+
+        # Make a selection before merge edits back to USD.
+        cmds.select('persp')
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
+
+        def verifyMergeToUsd():
+            # Check that edits have been preserved in USD.
+            for (usdUfePathStr, mayaMatrix, xlateOp) in \
+                zip([aUsdUfePathStr, bUsdUfePathStr], [aMayaMatrix, bMayaMatrix],
+                    [aXlateOp, bXlateOp]):
+                usdMatrix = xlateOp.GetOpTransform(
+                    mayaUsd.ufe.getTime(usdUfePathStr))
+                mayaValues = [v for v in mayaMatrix]
+                usdValues = [v for row in usdMatrix for v in row]
+                assertVectorAlmostEqual(self, mayaValues, usdValues)
+
+            # There no longer are any Maya to USD path mappings.
+            for mayaPath in [aMayaPath, bMayaPath]:
+                self.assertEqual(len(mayaToUsd.fromHost(mayaPath)), 0)
+
+            # Hierarchy is restored: USD item is child of proxy shape, Maya item is
+            # not.  Be careful to use the Maya path rather than the Maya item, which
+            # should no longer exist.
+            psChildren = psHier.children()
+            for usdItem in [aUsdItem, bUsdItem]:
+                self.assertIn(usdItem, psChildren)
+
+            psChildrenPaths = [child.path() for child in psChildren]
+            for mayaPath in [aMayaPath, bMayaPath]:
+                self.assertNotIn(aMayaPath, psChildrenPaths)
+
+            # Maya nodes are removed.
+            for mayaPathStr in [aMayaPathStr, bMayaPathStr]:
+                with self.assertRaises(RuntimeError):
+                    om.MSelectionList().add(mayaPathStr)
+
+            # Selection is on the restored USD objects.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertSequenceEqual(sn, [aUsdUfePathStr, bUsdUfePathStr])
+
+        def verifyMergeIsUndone():
+            # There should be a path mapping for the edit as Maya hierarchy.
+            for mayaPath, usdUfePath in zip([aMayaPath, bMayaPath], [aUsdUfePath, bUsdUfePath]):
+                self.assertEqual(
+                    ufe.PathString.string(mayaToUsd.fromHost(mayaPath)),
+                    ufe.PathString.string(usdUfePath))
+
+            # Maya nodes are back.
+            for mayaPathStr in [aMayaPathStr, bMayaPathStr]:
+                try:
+                    om.MSelectionList().add(mayaPathStr)
+                except Exception:
+                    self.assertTrue(False, "Selecting node should not have raise an exception")
+            # Selection is restored.
+            self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
+
+        verifyMergeIsUndone()
+
+        # Merge edits back to USD in a single call.
+        cmds.mayaUsdMergeToUsd(aMayaPathStr, bMayaPathStr)
+        verifyMergeToUsd()
+
+        cmds.undo()
+        verifyMergeIsUndone()
+
+        cmds.redo()
+        verifyMergeToUsd()
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testBatchedMergeToUsdWithExportOptions(self):
+        '''Merge multiple dags back to USD in a single mayaUsdMergeToUsd call without or with single or multiple export options'''
+        (_,
+         _, _, aUsdUfePathStr, _, _,
+         _, _, bUsdUfePathStr, _, _) = createDuoXformScene()
+        allUsdUfePaths = [aUsdUfePathStr, bUsdUfePathStr]
+
+        def editAsMaya(usdPaths):
+            mayaPaths = []
+            for usdPath in usdPaths:
+                cmds.mayaUsdEditAsMaya(usdPath)
+                mayaPaths.append(ufe.PathString.string(ufe.GlobalSelection.get().front().path()))
+            return mayaPaths
+
+        def verifyMergedToUsd(mayaPaths, usdPaths):
+            self.assertListEqual(
+                usdPaths,
+                [ufe.PathString.string(item.path()) for item in ufe.GlobalSelection.get()])
+
+            for mayaPath in mayaPaths:
+                with self.assertRaises(RuntimeError):
+                    om.MSelectionList().add(mayaPath)
+
+        # Verify that we can mergeToUsd without options.
+        mayaPaths = editAsMaya(allUsdUfePaths)
+        cmds.mayaUsdMergeToUsd(*mayaPaths)
+        verifyMergedToUsd(mayaPaths, allUsdUfePaths)
+
+        # Verify that mayaUsdMergeToUsd can merge with single option string applying to all objects.
+        mayaPaths = editAsMaya(allUsdUfePaths)
+        cmds.mayaUsdMergeToUsd(*mayaPaths, exportOptions='shadingMode=none')
+        verifyMergedToUsd(mayaPaths, allUsdUfePaths)
+
+        # Verify that mayaUsdMergeToUsd can merge with option strings per dag object.
+        mayaPaths = editAsMaya(allUsdUfePaths)
+        cmds.mayaUsdMergeToUsd(*mayaPaths, exportOptions=['shadingMode=none'] * len(mayaPaths))
+        verifyMergedToUsd(mayaPaths, allUsdUfePaths)
+
+        # Verify that mayaUsdMergeToUsd does not accept multiple options that do not match number of dags.
+        mayaPaths = editAsMaya(allUsdUfePaths)
+        with self.assertRaises(RuntimeError):
+            cmds.mayaUsdMergeToUsd(*mayaPaths, exportOptions=['shadingMode=none'] * 10)
 
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testMergeToUsdToNonRootTargetInSessionLayer(self):
@@ -869,6 +1003,190 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         switchRootVisVariant()
         verifySwitch()
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 25, 5), 'Splines transforms are only supported in USD 0.25.05 and later')
+    def testSplineTransformMergeToUsd(self):
+        '''Test merge of animated spline transforms back to USD.'''
+        from pxr import Ts
+
+        # Create a stage in memory
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        aPrim = stage.DefinePrim('/A', 'Xform')
+        self.assertTrue(aPrim)
+        aXformable = UsdGeom.Xformable(aPrim)
+        
+        # Add individual translate component operations
+        aTranslateXOp = aXformable.AddTranslateXOp()
+        aTranslateYOp = aXformable.AddTranslateYOp()
+        aTranslateZOp = aXformable.AddTranslateZOp()
+        
+        timeFrames = [1.0, 5.0, 10.0]
+        xValues = [0.0, 5.0, 10.0]
+        yValues = [0.0, 3.0, 0.0]
+        zValues = [0.0, 2.0, 5.0]
+        
+        # Create splines for each translation component
+        for op, values in [(aTranslateXOp, xValues), (aTranslateYOp, yValues), (aTranslateZOp, zValues)]:
+            spline = Ts.Spline()
+            
+            # Add knots to the spline
+            knots = Ts.KnotMap()
+            for time, value in zip(timeFrames, values):
+                knot = Ts.Knot()
+                knot.SetTime(time)
+                knot.SetValue(value)
+                knots[time] = knot
+            
+            spline.SetKnots(knots)
+            
+            # Set the spline on each component attribute
+            attr = op.GetAttr()
+            attr.SetSpline(spline)
+        
+        aUsdUfePathStr = psPathStr + ',/A'
+        
+        xformOps = aXformable.GetOrderedXformOps()
+        self.assertEqual(len(xformOps), 3)  # translateX, translateY, translateZ
+        
+        # Verify splines exist on each component
+        for op in [aTranslateXOp, aTranslateYOp, aTranslateZOp]:
+            attr = op.GetAttr()
+            splineData = attr.GetSpline()
+            self.assertIsNotNone(splineData)
+            
+            knots = splineData.GetKnots()
+            self.assertEqual(len(knots), 3)
+        
+        # Verify spline values at keyframes for X component
+        xAttr = aTranslateXOp.GetAttr()
+        xSplineData = xAttr.GetSpline()
+        xKnots = xSplineData.GetKnots()
+        for i, expectedValue in enumerate(xValues):
+            knotValue = xKnots[timeFrames[i]].GetValue()
+            self.assertAlmostEqual(knotValue, expectedValue, places=5)
+        
+        # Test edit as Maya and merge back to USD
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        
+        mayaNodeName = aMayaPathStr.split('|')[-1]
+        
+        # Modify the translateX animation in Maya by setting new keyframes
+        newXValues = [0.0, 20.0, 15.0]
+        for time, xValue in zip(timeFrames, newXValues):
+            cmds.setKeyframe('%s.translateX' % mayaNodeName, time=time, value=xValue)
+        
+        # Merge edits back to USD
+        with mayaUsd.lib.OpUndoItemList():
+            options = { "animationType": "curves" }
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, options))
+        
+        # Verify the updated translateX values are correctly in USD after merge
+        aPrim = stage.GetPrimAtPath('/A')
+        aXformable = UsdGeom.Xformable(aPrim)
+        xformOps = aXformable.GetOrderedXformOps()
+        self.assertEqual(len(xformOps), 3)
+        
+        translateXOp = xformOps[0]
+        xAttrAfterMerge = translateXOp.GetAttr()
+        self.assertIsNotNone(xAttrAfterMerge, "TranslateX operation should be preserved after merge")
+        
+        splineDataAfterMerge = xAttrAfterMerge.GetSpline()
+        knotsAfterMerge = splineDataAfterMerge.GetKnots()
+        for i, expectedValue in enumerate(newXValues):
+            knotValue = knotsAfterMerge[timeFrames[i]].GetValue()
+            self.assertAlmostEqual(knotValue, expectedValue, places=5)
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testBatchMergeToUsd(self):
+        '''Merge edits on two transforms back to USD in one call.'''
+
+        # To merge back to USD, we must edit as Maya first.
+        (ps,
+         aXlateOp, _, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, _, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createDuoXformScene()
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+            aMayaItem = ufe.GlobalSelection.get().front()
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+            bMayaItem = ufe.GlobalSelection.get().front()
+
+        (aMayaPath, aMayaPathStr, _, aMayaMatrix) = \
+            setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
+
+        (bMayaPath, bMayaPathStr, _, bMayaMatrix) = \
+            setMayaTranslation(bMayaItem, om.MVector(10, 11, 12))
+
+        # There should be a path mapping for the edit as Maya hierarchy.
+        for (mayaItem, mayaPath, usdUfePath) in \
+            zip([aMayaItem, bMayaItem], [aMayaPath, bMayaPath],
+                [aUsdUfePath, bUsdUfePath]):
+            mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(mayaItem)
+            self.assertEqual(mayaToUsd.fromHost(mayaPath), usdUfePath)
+
+        # It is not allowed to merge twice times the same pulled dag.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertSequenceEqual(
+                mayaUsd.lib.PrimUpdaterManager.mergeToUsd([(aMayaPathStr, {}), (aMayaPathStr, {})]),
+                [])
+
+        # It is not allowed to merge dags with varying USD upAxis.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertSequenceEqual(
+                mayaUsd.lib.PrimUpdaterManager.mergeToUsd([
+                    (aMayaPathStr, {'upAxis': 'y'}),
+                    (bMayaPathStr, {'upAxis': 'z'})
+                ]),
+                [])
+
+        # It is not allowed to merge dags with varying USD units.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertSequenceEqual(
+                mayaUsd.lib.PrimUpdaterManager.mergeToUsd([
+                    (aMayaPathStr, {'unit': 'cm'}),
+                    (bMayaPathStr, {'unit': 'm'})
+                ]),
+                [])
+
+        # We can merge multiple pulled dags back to USD in a single batch.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertSequenceEqual(
+                mayaUsd.lib.PrimUpdaterManager.mergeToUsd([(aMayaPathStr, {}), (bMayaPathStr, {})]),
+                [aUsdUfePathStr, bUsdUfePathStr])
+
+        # Check that edits have been preserved in USD.
+        for (usdUfePathStr, mayaMatrix, xlateOp) in \
+            zip([aUsdUfePathStr, bUsdUfePathStr], [aMayaMatrix, bMayaMatrix],
+                [aXlateOp, bXlateOp]):
+            usdMatrix = xlateOp.GetOpTransform(
+                mayaUsd.ufe.getTime(usdUfePathStr))
+            mayaValues = [v for v in mayaMatrix]
+            usdValues = [v for row in usdMatrix for v in row]
+            assertVectorAlmostEqual(self, mayaValues, usdValues)
+
+        # There no longer are any Maya to USD path mappings.
+        for mayaPath in [aMayaPath, bMayaPath]:
+            self.assertEqual(len(mayaToUsd.fromHost(mayaPath)), 0)
+
+        # Hierarchy is restored: USD item is child of proxy shape, Maya item is
+        # not.  Be careful to use the Maya path rather than the Maya item, which
+        # should no longer exist.
+        psHier = ufe.Hierarchy.hierarchy(ps)
+        for (usdItem, mayaPath) in zip([aUsdItem, bUsdItem], [aMayaPath, bMayaPath]):
+            self.assertIn(usdItem, psHier.children())
+            self.assertNotIn(mayaPath, [child.path() for child in psHier.children()])
+
+        # Maya nodes are removed.
+        for mayaPathStr in [aMayaPathStr, bMayaPathStr]:
+            with self.assertRaises(RuntimeError):
+                om.MSelectionList().add(mayaPathStr)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

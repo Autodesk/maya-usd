@@ -19,6 +19,10 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
 
+#include <maya/MGlobal.h>
+
+#include <cassert>
+
 // For TF_WARN macro
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -85,7 +89,8 @@ ProgressBarScope::~ProgressBarScope()
         // The "did not advance" warning below is not necessarily relevant -- we
         // may have advanced the correct number of steps, but the `progBar`
         // failed for other reasons, for example, running without the UI.
-        if (progress != -1 && progress != totalStepsAdded) {
+        if (progress != -1 && progress != totalStepsAdded
+            && MGlobal::mayaState() == MGlobal::kInteractive) {
             TF_WARN("ProgressBarScope: did not advance progress bar correct number of steps.");
         }
         totalStepsAdded = 0;
@@ -135,37 +140,30 @@ bool ProgressBarScope::isInterruptRequested() const
 
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(ProgressBarLoopScope);
 
+const int ProgressBarLoopScope::maxStepsForLoops;
+
 ProgressBarLoopScope::ProgressBarLoopScope(int nbLoopSteps)
     : ProgressBarScope(0) // Start with adding 0 steps
+    , _nbLoopSteps(std::max(0, nbLoopSteps))
+    , _nbProgressSteps(std::min(std::max(0, nbLoopSteps), maxStepsForLoops))
 {
     // We add the real number of steps for the loop here.
-    addLoopSteps(nbLoopSteps);
-}
-
-void ProgressBarLoopScope::addLoopSteps(int loopSize)
-{
-    if (loopSize <= maxStepsForLoops) {
-        // Number of loop steps to add is less than the max we want
-        // to allow we add them and set our loop counter value to 1 (so each
-        // iteration thru the loop advances progress bar).
-        addSteps(loopSize);
-        _minProgressStep = 1;
-    } else {
-        // Number of loop steps requested is larger than the max we allow
-        // so only add the max and then save a loop counter value to know
-        // how many loop iterations to perform before advancing progress.
-        addSteps(maxStepsForLoops);
-        _minProgressStep = (loopSize / maxStepsForLoops);
-    }
+    // The number of steps is capped at a known value (maxStepsForLoops)
+    // so we don't overwhelm the action with progress bar updates.
+    addSteps(_nbProgressSteps);
 }
 
 void ProgressBarLoopScope::loopAdvance()
 {
+    assert(_nbLoopSteps > 0);
+
+    // _nbProgressSteps might have been capped at a known value (maxStepsForLoops).
     // If we have run thru the loop the required number of steps we
     // will advance the progress bar.
-    if (++_currLoopCounter == _minProgressStep) {
+    _remainder += _nbProgressSteps;
+    if (_remainder >= _nbLoopSteps) {
         advance(1);
-        _currLoopCounter = 0;
+        _remainder -= _nbLoopSteps;
     }
 }
 

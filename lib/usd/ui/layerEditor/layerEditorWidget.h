@@ -20,6 +20,7 @@
 #include "layerTreeItem.h"
 #include "layerTreeView.h"
 
+#include <QtCore/QBasicTimer>
 #include <QtCore/QPointer>
 #include <QtWidgets/QWidget>
 
@@ -31,6 +32,7 @@ namespace UsdLayerEditor {
 class DirtyLayersCountBadge;
 class LayerTreeView;
 class SessionState;
+class LayerContentsWidget;
 
 /**
  * @brief Widget that manages a menu, a combo box to select a USD stage, and  USD Layer Tree view
@@ -51,6 +53,9 @@ public Q_SLOTS:
     void onLoadLayersButtonClicked();
     void onSaveStageButtonClicked();
     void updateButtonsOnIdle();
+    void showDisplayLayerContents(bool show);
+    void onSplitterMoved(int pos, int index);
+    void onLazyUpdateLayerContents();
 
 public:
     LayerTreeView*           layerTree() { return _treeView.data(); }
@@ -63,17 +68,30 @@ protected:
     SessionState& _sessionState;
     struct
     {
-        QPushButton*           _newLayer;
-        QPushButton*           _loadLayer;
-        QPushButton*           _saveStageButton;
-        DirtyLayersCountBadge* _dirtyCountBadge;
+        QPushButton*           _newLayer { nullptr };
+        QPushButton*           _loadLayer { nullptr };
+        QPushButton*           _saveStageButton { nullptr };
+        DirtyLayersCountBadge* _dirtyCountBadge { nullptr };
     } _buttons;
+
+    void setupDefaultMenu(QMainWindow* in_parent);
+    struct
+    {
+        QAction* _autoHide { nullptr };
+        QAction* _displayLayerContents { nullptr };
+    } _actions;
     void updateNewLayerButton();
     void updateButtons();
 
     void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
-    QPointer<LayerTreeView> _treeView;
+    void timerEvent(QTimerEvent* event) override;
+    void updateLayerContentsWidget();
+
+private:
+    QPointer<LayerTreeView>       _treeView;
+    QPointer<LayerContentsWidget> _layerContents;
+    QBasicTimer                   _layerContentsTimer;
 
     bool _updateButtonsOnIdle = false; // true if request to update on idle is pending
 };

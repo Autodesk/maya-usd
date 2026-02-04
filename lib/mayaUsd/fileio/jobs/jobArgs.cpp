@@ -759,6 +759,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , normalizeNurbs(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->normalizeNurbs))
     , preserveUVSetNames(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->preserveUVSetNames))
     , stripNamespaces(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->stripNamespaces))
+    , hideSourceData(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->hideSourceData))
     , worldspace(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->worldspace))
     , writeDefaults(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->writeDefaults))
     , parentScope(extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->parentScope))
@@ -924,6 +925,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
 
     out << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
         << "worldspace: " << TfStringify(exportArgs.worldspace) << std::endl
+        << "hideSourceData: " << TfStringify(exportArgs.hideSourceData) << std::endl
         << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
         << "staticSingleSample: " << TfStringify(exportArgs.staticSingleSample) << std::endl
         << "geomSidedness: " << TfStringify(exportArgs.geomSidedness) << std::endl
@@ -1208,11 +1210,14 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
             = UsdMayaJobExportArgsTokens->defaultLayer.GetString();
         d[UsdMayaJobExportArgsTokens->shadingMode]
             = UsdMayaShadingModeTokens->useRegistry.GetString();
+        // The default convertMaterialsTo string matches shadingTokens.h:
+        // TrMtlxTokens->conversionName
         d[UsdMayaJobExportArgsTokens->convertMaterialsTo]
-            = std::vector<VtValue> { VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) };
+            = std::vector<VtValue> { VtValue(UsdMayaTranslatorTokens->materialX.GetText()) };
         d[UsdMayaJobExportArgsTokens->apiSchema] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->jobContext] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
+        d[UsdMayaJobExportArgsTokens->hideSourceData] = false;
         d[UsdMayaJobExportArgsTokens->worldspace] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
@@ -1318,6 +1323,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->apiSchema] = _stringVector;
         d[UsdMayaJobExportArgsTokens->jobContext] = _stringVector;
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = _boolean;
+        d[UsdMayaJobExportArgsTokens->hideSourceData] = _boolean;
         d[UsdMayaJobExportArgsTokens->worldspace] = _boolean;
         d[UsdMayaJobExportArgsTokens->verbose] = _boolean;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = _boolean;
@@ -1697,7 +1703,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
         << "preserveTimeline: " << TfStringify(importArgs.preserveTimeline) << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl
-        << "applyEulerFilter: " << importArgs.applyEulerFilter << std::endl;
+        << "applyEulerFilter: " << TfStringify(importArgs.applyEulerFilter) << std::endl;
 
     out << "jobContextNames (" << importArgs.jobContextNames.size() << ")" << std::endl;
     for (const std::string& jobContextName : importArgs.jobContextNames) {

@@ -17,6 +17,7 @@
 #define USDUFE_USDUNDOUNGROUPCOMMAND_H
 
 #include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
@@ -41,6 +42,7 @@ private:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "Ungroup"; })
 
 private:
     UsdSceneItem::Ptr _groupItem;

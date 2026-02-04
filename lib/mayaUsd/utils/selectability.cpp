@@ -21,8 +21,6 @@
 
 #include <pxr/base/tf/hashmap.h>
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /*! \brief  The tokens used in the selectability metadata.
@@ -31,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 // Very simple selectability cache for prims to avoid rechecking the metadata.
 using Data = bool;
-using SelectabilityCache = TfHashMap<UsdPrim, Data, boost::hash<UsdPrim>>;
+using SelectabilityCache = TfHashMap<UsdPrim, Data, TfHash>;
 
 // Use a function to retrieve the cache, as this exploits the C++ guaranteed
 // initialization of static in funtions.

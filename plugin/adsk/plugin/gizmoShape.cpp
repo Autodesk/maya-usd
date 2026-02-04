@@ -66,6 +66,10 @@ MObject GizmoShape::aEmitDiffuse;
 MObject GizmoShape::aEmitSpecular;
 MObject GizmoShape::aDecayRate;
 MObject GizmoShape::aLocatorScale;
+#if UFE_LIGHTS2_SUPPORT
+MObject GizmoShape::aNormalize;
+MObject GizmoShape::aUseRayTraceShadows;
+#endif
 
 // Output attributes
 MObject GizmoShape::aOutColor;
@@ -157,6 +161,16 @@ MStatus GizmoShape::initialize()
     MAKE_INPUT(nAttr);
     CHECK_MSTATUS(nAttr.setDefault(0));
 
+#if UFE_LIGHTS2_SUPPORT
+    aNormalize = nAttr.create("normalize", "nrm", MFnNumericData::kBoolean);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(true));
+
+    aUseRayTraceShadows = nAttr.create("useRayTraceShadows", "urs", MFnNumericData::kBoolean);
+    MAKE_INPUT(nAttr);
+    CHECK_MSTATUS(nAttr.setDefault(true));
+#endif
+
     CHECK_MSTATUS(addAttribute(aColor));
     CHECK_MSTATUS(addAttribute(aIntensity));
     CHECK_MSTATUS(addAttribute(aExposure));
@@ -164,6 +178,10 @@ MStatus GizmoShape::initialize()
     CHECK_MSTATUS(addAttribute(aEmitSpecular));
     CHECK_MSTATUS(addAttribute(aLocatorScale));
     CHECK_MSTATUS(addAttribute(aDecayRate));
+#if UFE_LIGHTS2_SUPPORT
+    CHECK_MSTATUS(addAttribute(aNormalize));
+    CHECK_MSTATUS(addAttribute(aUseRayTraceShadows));
+#endif
 
     // Note that "oc" conflicts with objectColor so we use something else.
     aOutColor = nAttr.createColor("outColor", "ocl");

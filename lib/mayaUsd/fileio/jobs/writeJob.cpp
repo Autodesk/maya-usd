@@ -37,8 +37,12 @@
 #include <maya/MStatus.h>
 #include <maya/MUuid.h>
 
+#include <functional>
+#include <iterator>
 #include <limits>
 #include <map>
+#include <set>
+
 // Needed for directly removing a UsdVariant via Sdf
 //   Remove when UsdVariantSet::RemoveVariant() is exposed
 //   XXX [bug 75864]
@@ -50,6 +54,7 @@
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/autoUndoCommands.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/util.h>
@@ -66,8 +71,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMaya_WriteJob::UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs)
-    : mJobCtx(iArgs)
+UsdMaya_WriteJob::UsdMaya_WriteJob(
+    const UsdMayaJobExportArgs& iArgs,
+    const std::string&          fileName,
+    bool                        append)
+    : _fileName(fileName)
+    , _appendToFile(append)
+    , mJobCtx(iArgs)
     , _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
 {
 }
@@ -107,106 +117,126 @@ static TfToken _GetFallbackExtension(const TfToken& compatibilityMode)
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
+/// Converts export option tokens to metersPerUnit values used in USD metadata.
+static double _WantedUSDMetersPerUnit(const TfToken& unitOption)
+{
+    if (unitOption == UsdMayaJobExportArgsTokens->mayaPrefs) {
+        return UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::uiUnit());
+    }
+
+    static const std::map<TfToken, double> unitsConversionMap
+        = { { UsdMayaJobExportArgsTokens->nm, UsdGeomLinearUnits::nanometers },
+            { UsdMayaJobExportArgsTokens->um, UsdGeomLinearUnits::micrometers },
+            { UsdMayaJobExportArgsTokens->mm, UsdGeomLinearUnits::millimeters },
+            { UsdMayaJobExportArgsTokens->cm, UsdGeomLinearUnits::centimeters },
+            // Note: there is no official USD decimeter units, we have to roll our own.
+            { UsdMayaJobExportArgsTokens->dm, 0.1 },
+            { UsdMayaJobExportArgsTokens->m, UsdGeomLinearUnits::meters },
+            { UsdMayaJobExportArgsTokens->km, UsdGeomLinearUnits::kilometers },
+            { UsdMayaJobExportArgsTokens->lightyear, UsdGeomLinearUnits::lightYears },
+            { UsdMayaJobExportArgsTokens->inch, UsdGeomLinearUnits::inches },
+            { UsdMayaJobExportArgsTokens->foot, UsdGeomLinearUnits::feet },
+            { UsdMayaJobExportArgsTokens->yard, UsdGeomLinearUnits::yards },
+            { UsdMayaJobExportArgsTokens->mile, UsdGeomLinearUnits::miles } };
+
+    const auto iter = unitsConversionMap.find(unitOption);
+    return (iter == unitsConversionMap.end()) ? UsdGeomLinearUnits::centimeters : iter->second;
+}
+
+/// Converts upAxis export option tokens to USD upAxis tokens.
+static TfToken _WantedUSDUpAxis(const TfToken& upAxisOption)
+{
+    if (upAxisOption == UsdMayaJobExportArgsTokens->mayaPrefs)
+        return MGlobal::isZAxisUp() ? UsdGeomTokens->z : UsdGeomTokens->y;
+
+    if (upAxisOption == UsdMayaJobExportArgsTokens->z)
+        return UsdGeomTokens->z;
+
+    return UsdGeomTokens->y;
+}
+
+static MObject _WantedRenderLayerNode(const TfToken& renderLayerMode)
+{
+    // Return the wanted render layer node based on the requested render layer mode:
+    //     defaultLayer    - Switch to the default render layer before exporting,
+    //                       then switch back afterwards (no layer switching if
+    //                       the current layer IS the default layer).
+    //     currentLayer    - No layer switching before or after exporting. Just
+    //                       use whatever is the current render layer for export.
+    //     modelingVariant - Switch to the default render layer before exporting,
+    //                       and export each render layer in the scene as a
+    //                       modeling variant, then switch back afterwards (no
+    //                       layer switching if the current layer IS the default
+    //                       layer). The default layer will be made the default
+    //                       modeling variant.
+    if (renderLayerMode == UsdMayaJobExportArgsTokens->currentLayer) {
+        return MFnRenderLayer::currentLayer();
+    }
+    return MFnRenderLayer::defaultRenderLayer();
+}
+
+MStatus _ActivateRenderLayer(const MObject& renderLayerNode)
+{
+    static const MString cmdFmt("editRenderLayerGlobals -currentRenderLayer ^1s");
+    if (renderLayerNode != MFnRenderLayer::currentLayer()) {
+        MStatus        status;
+        MFnRenderLayer renderLayerFn(renderLayerNode, &status);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+
+        MString cmd;
+        cmd.format(cmdFmt, renderLayerFn.name());
+        status = MGlobal::executeCommand(cmd, /*displayEnabled=*/false, /*undoEnabled=*/false);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+    }
+    return MS::kSuccess;
+}
+
+/// RAII class to backup and restore the current render layer.
+class CurrentRenderLayerGuard
+{
+public:
+    CurrentRenderLayerGuard()
+        : _prevLayer(MFnRenderLayer::currentLayer())
+    {
+    }
+    ~CurrentRenderLayerGuard() { _ActivateRenderLayer(_prevLayer); }
+
+private:
+    const MObject _prevLayer;
+};
+
 /// Class to automatically change and restore the up-axis and units of the Maya scene.
 class AutoUpAxisAndUnitsChanger : public MayaUsd::AutoUndoCommands
 {
 public:
-    AutoUpAxisAndUnitsChanger(
-        const PXR_NS::UsdStageRefPtr& stage,
-        const PXR_NS::TfToken&        upAxisOption,
-        const PXR_NS::TfToken&        unitsOption)
-        : AutoUndoCommands(
-            "change up-axis and units",
-            _prepareCommands(stage, upAxisOption, unitsOption))
+    /// Constructs AutoUndoCommands that changes optionally maya upAxis or metersPerUnit
+    AutoUpAxisAndUnitsChanger(const TfToken* upAxis, const double* metersPerUnit)
+        : AutoUndoCommands("change up-axis and units", _prepareCommands(upAxis, metersPerUnit))
     {
     }
 
 private:
-    static double _convertOptionUnitsToUSDUnits(const TfToken& unitsOption)
+    static std::string _prepareUnitsCommands(double metersPerUnit)
     {
-        static std::map<TfToken, double> unitsConversionMap
-            = { { UsdMayaJobExportArgsTokens->nm, UsdGeomLinearUnits::nanometers },
-                { UsdMayaJobExportArgsTokens->um, UsdGeomLinearUnits::micrometers },
-                { UsdMayaJobExportArgsTokens->mm, UsdGeomLinearUnits::millimeters },
-                { UsdMayaJobExportArgsTokens->cm, UsdGeomLinearUnits::centimeters },
-                // Note: there is no official USD decimeter units, we have to roll our own.
-                { UsdMayaJobExportArgsTokens->dm, 0.1 },
-                { UsdMayaJobExportArgsTokens->m, UsdGeomLinearUnits::meters },
-                { UsdMayaJobExportArgsTokens->km, UsdGeomLinearUnits::kilometers },
-                { UsdMayaJobExportArgsTokens->lightyear, UsdGeomLinearUnits::lightYears },
-                { UsdMayaJobExportArgsTokens->inch, UsdGeomLinearUnits::inches },
-                { UsdMayaJobExportArgsTokens->foot, UsdGeomLinearUnits::feet },
-                { UsdMayaJobExportArgsTokens->yard, UsdGeomLinearUnits::yards },
-                { UsdMayaJobExportArgsTokens->mile, UsdGeomLinearUnits::miles } };
-
-        const auto iter = unitsConversionMap.find(unitsOption);
-        if (iter == unitsConversionMap.end())
-            return UsdGeomLinearUnits::centimeters;
-        return iter->second;
-    }
-
-    static TfToken _convertMayaUnitsToOptionUnits(MDistance::Unit mayaUnits)
-    {
-        static std::map<MDistance::Unit, TfToken> unitsConversionMap
-            = { { MDistance::kMillimeters, UsdMayaJobExportArgsTokens->mm },
-                { MDistance::kCentimeters, UsdMayaJobExportArgsTokens->cm },
-                { MDistance::kMeters, UsdMayaJobExportArgsTokens->m },
-                { MDistance::kKilometers, UsdMayaJobExportArgsTokens->km },
-                { MDistance::kInches, UsdMayaJobExportArgsTokens->inch },
-                { MDistance::kFeet, UsdMayaJobExportArgsTokens->foot },
-                { MDistance::kYards, UsdMayaJobExportArgsTokens->yard },
-                { MDistance::kMiles, UsdMayaJobExportArgsTokens->mile } };
-
-        const auto iter = unitsConversionMap.find(mayaUnits);
-        if (iter == unitsConversionMap.end())
-            return UsdMayaJobExportArgsTokens->cm;
-        return iter->second;
-    }
-
-    static std::string
-    _prepareUnitsCommands(const UsdStageRefPtr& stage, const TfToken& unitsOption)
-    {
-        // If the user don't want to author the unit, we won't need to change the Maya unit.
-        if (unitsOption == UsdMayaJobExportArgsTokens->none)
-            return {};
-
-        // If the user want the unit authored in USD, well, author it.
-        const bool    wantMayaPrefs = (unitsOption == UsdMayaJobExportArgsTokens->mayaPrefs);
-        const TfToken mayaUIUnits = _convertMayaUnitsToOptionUnits(MDistance::uiUnit());
-        const TfToken mayaDataUnits = _convertMayaUnitsToOptionUnits(MDistance::internalUnit());
-        const TfToken wantedUnits = wantMayaPrefs ? mayaUIUnits : unitsOption;
-        const double  usdMetersPerUnit = _convertOptionUnitsToUSDUnits(wantedUnits);
-        UsdGeomSetStageMetersPerUnit(stage, usdMetersPerUnit);
+        const double mayaMetersPerUnit
+            = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
 
         // If the Maya data unit is already the right one, we dont have to modify the Maya scene.
-        if (wantedUnits == mayaDataUnits)
+        if (mayaMetersPerUnit == metersPerUnit)
             return {};
 
         static const char scalingCommandsFormat[]
             = "scale -relative -pivot 0 0 0 -scaleXYZ %f %f %f $groupName;\n";
 
-        const double mayaMetersPerUnit = _convertOptionUnitsToUSDUnits(mayaDataUnits);
-        const double requiredScale = mayaMetersPerUnit / usdMetersPerUnit;
+        const double requiredScale = mayaMetersPerUnit / metersPerUnit;
 
         return TfStringPrintf(scalingCommandsFormat, requiredScale, requiredScale, requiredScale);
     }
 
-    static std::string
-    _prepareUpAxisCommands(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::TfToken& upAxisOption)
+    static std::string _prepareUpAxisCommands(const TfToken& upAxis)
     {
-        // If the user don't want to author the up-axis, we won't need to change the Maya up-axis.
-        if (upAxisOption == UsdMayaJobExportArgsTokens->none)
-            return {};
-
-        // If the user want the up-axis authored in USD, well, author it.
-        const bool wantMayaPrefs = (upAxisOption == UsdMayaJobExportArgsTokens->mayaPrefs);
-        const bool isMayaUpAxisZ = MGlobal::isZAxisUp();
-        const bool wantUpAxisZ
-            = (wantMayaPrefs && isMayaUpAxisZ) || (upAxisOption == UsdMayaJobExportArgsTokens->z);
-        UsdGeomSetStageUpAxis(stage, wantUpAxisZ ? UsdGeomTokens->z : UsdGeomTokens->y);
-
         // If the Maya up-axis is already the right one, we dont have to modify the Maya scene.
-        if (wantUpAxisZ == isMayaUpAxisZ)
+        if (upAxis == _WantedUSDUpAxis(UsdMayaJobExportArgsTokens->mayaPrefs))
             return {};
 
         static const char rotationCommandsFormat[] =
@@ -223,15 +253,12 @@ private:
 
         const int angleYtoZ = 90;
         const int angleZtoY = -90;
-        const int rotationAngle = wantUpAxisZ ? angleYtoZ : angleZtoY;
+        const int rotationAngle = upAxis == UsdGeomTokens->z ? angleYtoZ : angleZtoY;
 
         return TfStringPrintf(rotationCommandsFormat, rotationAngle);
     }
 
-    static std::string _prepareCommands(
-        const PXR_NS::UsdStageRefPtr& stage,
-        const PXR_NS::TfToken&        upAxisOption,
-        const PXR_NS::TfToken&        unitsOption)
+    static std::string _prepareCommands(const TfToken* upAxis, const double* metersPerUnit)
     {
         // These commands wrap the scene-changing commands by providing:
         //
@@ -261,49 +288,189 @@ private:
             // Restore the selection.
             "select -replace $selection;\n";
 
-        const std::string upAxisCommands = _prepareUpAxisCommands(stage, upAxisOption);
-        const std::string unitsCommands = _prepareUnitsCommands(stage, unitsOption);
+        std::string commands;
+
+        // If the user don't want to author the up-axis, we won't need to change the Maya up-axis.
+        if (upAxis != nullptr)
+            commands += _prepareUpAxisCommands(*upAxis);
+
+        // If the user don't want to author the unit, we won't need to change the Maya unit.
+        if (metersPerUnit != nullptr)
+            commands += _prepareUnitsCommands(*metersPerUnit);
 
         // If both are empty, we don't need to do anything.
-        if (upAxisCommands.empty() && unitsCommands.empty())
+        if (commands.empty())
             return {};
 
-        const std::string fullScript = scriptPrefix + upAxisCommands + unitsCommands + scriptSuffix;
+        const std::string fullScript = scriptPrefix + commands + scriptSuffix;
         return fullScript;
     }
 };
 
-bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
+class UsdMaya_WriteJobImpl
 {
-    const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
+public:
+    /// Helper for Write methods.
+    static bool WriteJobs(const std::vector<UsdMaya_WriteJob*>&);
+
+private:
+    using TimeSamples = std::vector<double>;
+
+    /// Helper class to write a job sequence of frames,
+    /// WriteFrameIfNeeded must be called for all timeSamples of the job in non-decreasing order.
+    class JobFramesWriter
+    {
+    public:
+        JobFramesWriter() = delete;
+        explicit JobFramesWriter(UsdMaya_WriteJob* job);
+
+        bool Finished() const { return _next == _end; }
+        auto AllSamples() const -> const TimeSamples&;
+        bool WriteFrameIfNeeded(double frame);
+
+    private:
+        UsdMaya_WriteJob*           _job;
+        TimeSamples::const_iterator _next;
+        TimeSamples::const_iterator _end;
+    };
+    using JobFramesWriters = std::vector<JobFramesWriter>;
+
+    /// Computes the ordered union of all \p writers time-samples.
+    static TimeSamples _UnionTimeSamples(const JobFramesWriters& writers);
+};
+
+UsdMaya_WriteJobImpl::JobFramesWriter::JobFramesWriter(UsdMaya_WriteJob* job)
+    : _job(job)
+    , _next(job->mJobCtx.GetArgs().timeSamples.cbegin())
+    , _end(job->mJobCtx.GetArgs().timeSamples.cend())
+{
+}
+
+bool UsdMaya_WriteJobImpl::JobFramesWriter::WriteFrameIfNeeded(double frame)
+{
+    if (Finished())
+        return false;
+
+    if (frame != *_next)
+        return true;
+
+    ++_next;
+    return _job->_WriteFrame(frame);
+}
+
+auto UsdMaya_WriteJobImpl::JobFramesWriter::AllSamples() const -> const TimeSamples&
+{
+    return _job->mJobCtx.GetArgs().timeSamples;
+}
+
+// static
+auto UsdMaya_WriteJobImpl::_UnionTimeSamples(const JobFramesWriters& writers) -> TimeSamples
+{
+    if (writers.empty())
+        return {};
+
+    TimeSamples unioned = writers.front().AllSamples();
+
+    TimeSamples storage;
+    for (auto itr = writers.cbegin() + 1; itr != writers.cend(); ++itr)
+        UsdMayaWriteUtil::UpdateTimeSamples(unioned, itr->AllSamples(), &storage);
+
+    return unioned;
+}
+
+// static
+bool UsdMaya_WriteJobImpl::WriteJobs(const std::vector<UsdMaya_WriteJob*>& jobs)
+{
+    if (jobs.empty())
+        return true;
+
+    // Get the wanted upAxis, unit and renderLayer node.
+    const auto* firstJob = jobs.front();
+    const auto& firstArgs = firstJob->mJobCtx.GetArgs();
+
+    const auto usdUpAxis = _WantedUSDUpAxis(firstArgs.upAxis);
+    const auto usdMetersPerUnit = _WantedUSDMetersPerUnit(firstArgs.unit);
+    const auto renderLayer = _WantedRenderLayerNode(firstArgs.renderLayerMode);
+
+    // Validate that multiple jobs can be exported all together.
+    if (jobs.size() > 1) {
+        auto argsAreCompatible = [&](const UsdMayaJobExportArgs& args) -> bool {
+            return (_WantedUSDUpAxis(args.upAxis) == usdUpAxis)
+                && (_WantedUSDMetersPerUnit(args.unit) == usdMetersPerUnit)
+                && (_WantedRenderLayerNode(args.renderLayerMode) == renderLayer);
+        };
+
+        std::set<std::string> seenFileNames;
+        for (auto& job : jobs) {
+            // Verify that we are not writing twice to the same filename.
+            if (!seenFileNames.insert(job->_fileName).second) {
+                MGlobal::displayError("Cannot write twice to the same whole USD file.");
+                return false;
+            }
+            // Verify that all job upAxis and unit are compatible.
+            if (job != firstJob && !argsAreCompatible(job->mJobCtx.GetArgs())) {
+                MGlobal::displayError("Cannot write two USD files with different upAxes or units.");
+                return false;
+            }
+        }
+    }
+
+    // Collect timeSampled jobs for animation export, and determine which timeSamples to evaluate.
+    JobFramesWriters jobFramesWriters;
+    jobFramesWriters.reserve(jobs.size());
+
+    for (auto& job : jobs) {
+        JobFramesWriter framesWriter(job);
+        if (!framesWriter.Finished())
+            jobFramesWriters.push_back(std::move(framesWriter));
+    }
+
+    auto unionedSamples
+        = (jobFramesWriters.size() > 1) ? _UnionTimeSamples(jobFramesWriters) : TimeSamples();
+    const auto& timeSamples
+        = (jobFramesWriters.size() == 1) ? jobFramesWriters.front().AllSamples() : unionedSamples;
 
     // Non-animated export doesn't show progress.
     const bool showProgress = !timeSamples.empty();
 
     // Animated export shows frame-by-frame progress.
-    int                       nbSteps = 1 + timeSamples.size();
+    int                       nbSteps = (jobs.size() * 3) + timeSamples.size() + 1;
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
-    // Default-time export.
-    if (!_BeginWriting(fileName, append)) {
+    // Temporarily tweak the Maya scene for export if needed.
+    const AutoUpAxisAndUnitsChanger unitsChanger(
+        firstArgs.upAxis == UsdMayaJobExportArgsTokens->none ? nullptr : &usdUpAxis,
+        firstArgs.unit == UsdMayaJobExportArgsTokens->none ? nullptr : &usdMetersPerUnit);
+
+    const CurrentRenderLayerGuard currentLayerGuard;
+    if (!_ActivateRenderLayer(renderLayer)) {
         return false;
     }
 
-    // Time-sampled export.
+    progressBar.advance();
+
+    // Default-time exports.
+    for (auto& job : jobs) {
+        if (!job->_BeginWriting())
+            return false;
+        progressBar.advance();
+    }
+
+    // Time-sampled exports.
     if (!timeSamples.empty()) {
         const MTime oldCurTime = MAnimControl::currentTime();
 
         for (double t : timeSamples) {
-            if (mJobCtx.mArgs.verbose) {
-                TF_STATUS("%f", t);
-            }
             MGlobal::viewFrame(t);
             progressBar.advance();
 
             // Process per frame data.
-            if (!_WriteFrame(t)) {
-                MGlobal::viewFrame(oldCurTime);
-                return false;
+            for (auto itr = jobFramesWriters.begin(); itr != jobFramesWriters.end(); /**/) {
+                if (!itr->WriteFrameIfNeeded(t)) {
+                    MGlobal::viewFrame(oldCurTime);
+                    return false;
+                }
+                itr = itr->Finished() ? jobFramesWriters.erase(itr) : std::next(itr);
             }
 
             // Allow user cancellation.
@@ -316,14 +483,26 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
         MGlobal::viewFrame(oldCurTime);
     }
 
-    // Finalize the export, close the stage.
-    if (!_FinishWriting()) {
-        return false;
+    // Finalize the exports.
+    for (auto& job : jobs) {
+        if (!job->_PostExport())
+            return false;
+        progressBar.advance();
     }
 
-    progressBar.advance();
+    for (auto& job : jobs) {
+        job->_FinishWriting();
+        progressBar.advance();
+    }
 
     return true;
+}
+
+// static
+bool UsdMaya_WriteJob::Write()
+{
+    std::vector<UsdMaya_WriteJob*> oneJob { this };
+    return UsdMaya_WriteJobImpl::WriteJobs(oneJob);
 }
 
 static MStringArray GetExportDefaultPrimCandidates(const UsdMayaJobExportArgs& exportArgs)
@@ -380,9 +559,9 @@ static MStringArray GetExportDefaultPrimCandidates(const UsdMayaJobExportArgs& e
     return roots;
 }
 
-bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
+bool UsdMaya_WriteJob::_BeginWriting()
 {
-    MayaUsd::ProgressBarScope progressBar(8);
+    MayaUsd::ProgressBarScope progressBar(7);
 
     // If no default prim for the exported root layer was given, select one from
     // the available root nodes of the Maya scene in order for materials to be
@@ -426,49 +605,49 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     progressBar.advance();
 
     // Make sure the file name is a valid one with a proper USD extension.
-    TfToken     fileExt(TfGetExtension(fileName));
+    TfToken     fileExt(TfGetExtension(_fileName));
     std::string fileNameWithExt;
-    if (!(SdfLayer::IsAnonymousLayerIdentifier(fileName)
+    if (!(SdfLayer::IsAnonymousLayerIdentifier(_fileName)
           || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionDefault
           || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionASCII
           || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionCrate
           || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage)) {
         // No extension; get fallback extension based on compatibility profile.
         fileExt = _GetFallbackExtension(mJobCtx.mArgs.compatibility);
-        fileNameWithExt = TfStringPrintf("%s.%s", fileName.c_str(), fileExt.GetText());
+        fileNameWithExt = TfStringPrintf("%s.%s", _fileName.c_str(), fileExt.GetText());
     } else {
         // Has correct extension; use as-is.
-        fileNameWithExt = fileName;
+        fileNameWithExt = _fileName;
     }
     progressBar.advance();
 
     // Setup file structure for export based on whether we are doing a
     // "standard" flat file export or a "packaged" export to usdz.
     if (fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-        if (append) {
+        if (_appendToFile) {
             TF_RUNTIME_ERROR("Cannot append to USDZ packages");
             return false;
         }
 
         // We don't write to fileNameWithExt directly; instead, we write to
         // a temp stage file.
-        _fileName = _MakeTmpStageName(TfGetPathName(fileNameWithExt));
-        if (TfPathExists(_fileName)) {
+        _realFilename = _MakeTmpStageName(TfGetPathName(fileNameWithExt));
+        if (TfPathExists(_realFilename)) {
             // This shouldn't happen (since we made the temp stage name from
             // a UUID). Don't try to recover.
-            TF_RUNTIME_ERROR("Temporary stage '%s' already exists", _fileName.c_str());
+            TF_RUNTIME_ERROR("Temporary stage '%s' already exists", _realFilename.c_str());
             return false;
         }
 
         // The packaged file gets written to fileNameWithExt.
         _packageName = fileNameWithExt;
     } else {
-        _fileName = fileNameWithExt;
+        _realFilename = fileNameWithExt;
         _packageName = std::string();
     }
     progressBar.advance();
 
-    TF_STATUS("Opening layer '%s' for writing", _fileName.c_str());
+    TF_STATUS("Opening layer '%s' for writing", _realFilename.c_str());
     if (mJobCtx.mArgs.renderLayerMode == UsdMayaJobExportArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
         MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
@@ -483,7 +662,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-    if (!mJobCtx._OpenFile(_fileName, append)) {
+    if (!mJobCtx._OpenFile(_realFilename, _appendToFile)) {
         return false;
     }
     progressBar.advance();
@@ -496,42 +675,17 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         mJobCtx.mStage->SetFramesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsDouble());
     }
 
-    // Temporarily change Maya's up-axis if needed.
-    _autoAxisAndUnitsChanger = std::make_unique<AutoUpAxisAndUnitsChanger>(
-        mJobCtx.mStage, mJobCtx.mArgs.upAxis, mJobCtx.mArgs.unit);
-
+    // Author USD units and up axis if requested.
+    if (mJobCtx.mArgs.unit != UsdMayaJobExportArgsTokens->none) {
+        UsdGeomSetStageMetersPerUnit(mJobCtx.mStage, _WantedUSDMetersPerUnit(mJobCtx.mArgs.unit));
+    }
+    if (mJobCtx.mArgs.upAxis != UsdMayaJobExportArgsTokens->none) {
+        UsdGeomSetStageUpAxis(mJobCtx.mStage, _WantedUSDUpAxis(mJobCtx.mArgs.upAxis));
+    }
     // Set the customLayerData on the layer
     if (!mJobCtx.mArgs.customLayerData.empty()) {
         mJobCtx.mStage->GetRootLayer()->SetCustomLayerData(mJobCtx.mArgs.customLayerData);
     }
-
-    // Setup the requested render layer mode:
-    //     defaultLayer    - Switch to the default render layer before exporting,
-    //                       then switch back afterwards (no layer switching if
-    //                       the current layer IS the default layer).
-    //     currentLayer    - No layer switching before or after exporting. Just
-    //                       use whatever is the current render layer for export.
-    //     modelingVariant - Switch to the default render layer before exporting,
-    //                       and export each render layer in the scene as a
-    //                       modeling variant, then switch back afterwards (no
-    //                       layer switching if the current layer IS the default
-    //                       layer). The default layer will be made the default
-    //                       modeling variant.
-    MFnRenderLayer currentLayer(MFnRenderLayer::currentLayer());
-    mCurrentRenderLayerName = currentLayer.name();
-
-    // Switch to the default render layer unless the renderLayerMode is
-    // 'currentLayer', or the default layer is already the current layer.
-    if ((mJobCtx.mArgs.renderLayerMode != UsdMayaJobExportArgsTokens->currentLayer)
-        && (MFnRenderLayer::currentLayer() != MFnRenderLayer::defaultRenderLayer())) {
-        // Set the RenderLayer to the default render layer
-        MFnRenderLayer defaultLayer(MFnRenderLayer::defaultRenderLayer());
-        MGlobal::executeCommand(
-            MString("editRenderLayerGlobals -currentRenderLayer ") + defaultLayer.name(),
-            false,
-            false);
-    }
-    progressBar.advance();
 
     // Pre-process the argument dagPath path names into two sets. One set
     // contains just the arg dagPaths, and the other contains all parents of
@@ -726,9 +880,9 @@ bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
     return true;
 }
 
-bool UsdMaya_WriteJob::_FinishWriting()
+bool UsdMaya_WriteJob::_PostExport()
 {
-    MayaUsd::ProgressBarScope progressBar(7);
+    MayaUsd::ProgressBarScope progressBar(5);
 
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -752,16 +906,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
         //     than "variant" values, but "referencing" will cause the variant values
         //     to take precedence.
         defaultPrim = _WriteVariants(usdRootPrim);
-    }
-    progressBar.advance();
-
-    // Restoring the currentRenderLayer
-    MFnRenderLayer currentLayer(MFnRenderLayer::currentLayer());
-    if (currentLayer.name() != mCurrentRenderLayerName) {
-        MGlobal::executeCommand(
-            MString("editRenderLayerGlobals -currentRenderLayer ") + mCurrentRenderLayerName,
-            false,
-            false);
     }
     progressBar.advance();
 
@@ -835,8 +979,15 @@ bool UsdMaya_WriteJob::_FinishWriting()
     _PruneEmpties();
     progressBar.advance();
 
-    // Restore Maya's up-axis if needed.
-    _autoAxisAndUnitsChanger.reset();
+    _HideSourceData();
+    progressBar.advance();
+
+    return true;
+}
+
+void UsdMaya_WriteJob::_FinishWriting()
+{
+    MayaUsd::ProgressBarScope progressBar(2);
 
     TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
@@ -854,16 +1005,14 @@ bool UsdMaya_WriteJob::_FinishWriting()
     mJobCtx.mStage = UsdStageRefPtr();
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
 
-    // In the usdz case, the layer at _fileName was just a temp file, so
+    // In the usdz case, the layer at _realFilename was just a temp file, so
     // clean it up now. Do this after mJobCtx.mStage is reset to ensure
     // there are no outstanding handles to the file, which will cause file
     // access issues on Windows.
     if (!_packageName.empty()) {
-        TfDeleteFile(_fileName);
+        TfDeleteFile(_realFilename);
     }
     progressBar.advance();
-
-    return true;
 }
 
 TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
@@ -939,23 +1088,21 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
     usdRootPrim.SetActive(false);
 
     // Loop over all the renderLayers
-    for (unsigned int ir = 0; ir < mRenderLayerObjs.length(); ++ir) {
+    for (const auto& renderLayerNode : mRenderLayerObjs) {
         SdfPathTable<bool> tableOfActivePaths;
-        MFnRenderLayer     renderLayerFn(mRenderLayerObjs[ir]);
-        MString            renderLayerName = renderLayerFn.name();
-        std::string        variantName(renderLayerName.asChar());
+        MFnRenderLayer     renderLayerFn(renderLayerNode);
+        std::string        variantName(renderLayerFn.name().asChar());
         // Determine default variant. Currently unsupported
         // MPlug renderLayerDisplayOrderPlug = renderLayerFn.findPlug("displayOrder", true);
         // int renderLayerDisplayOrder = renderLayerDisplayOrderPlug.asShort();
 
         // The Maya default RenderLayer is also the default modeling variant
-        if (mRenderLayerObjs[ir] == MFnRenderLayer::defaultRenderLayer()) {
+        if (renderLayerNode == MFnRenderLayer::defaultRenderLayer()) {
             defaultModelingVariant = variantName;
         }
 
         // Make the renderlayer being looped the current one
-        MGlobal::executeCommand(
-            MString("editRenderLayerGlobals -currentRenderLayer ") + renderLayerName, false, false);
+        _ActivateRenderLayer(renderLayerNode);
 
         // == ModelingVariants ==
         // Identify prims to activate
@@ -1107,6 +1254,32 @@ void UsdMaya_WriteJob::_PruneEmpties()
     }
 }
 
+void UsdMaya_WriteJob::_HideSourceData()
+{
+    if (!mJobCtx.mArgs.hideSourceData)
+        return;
+
+    MString hideCommand("hide");
+
+    const auto end = mJobCtx.mArgs.dagPaths.end();
+    for (auto iter = mJobCtx.mArgs.dagPaths.begin(); iter != end; ++iter) {
+        MDagPath curDagPath = *iter;
+        if (!curDagPath.isValid())
+            continue;
+
+        MString curDagPathStr(curDagPath.partialPathName());
+        if (curDagPathStr.length() <= 0)
+            continue;
+
+        hideCommand += " ";
+        hideCommand += curDagPathStr;
+    }
+
+    bool displayEnabled = false;
+    bool undoEnabled = true;
+    MGlobal::executeCommand(hideCommand, displayEnabled, undoEnabled);
+}
+
 void UsdMaya_WriteJob::_CreatePackage() const
 {
     // Since we're packaging a temporary stage file that has an
@@ -1114,8 +1287,8 @@ void UsdMaya_WriteJob::_CreatePackage() const
     // the package layer name specified by the user.
     // (Otherwise, the name inside the package will be a random string!)
     const std::string firstLayerBaseName = TfStringGetBeforeSuffix(TfGetBaseName(_packageName));
-    const std::string firstLayerName
-        = TfStringPrintf("%s.%s", firstLayerBaseName.c_str(), TfGetExtension(_fileName).c_str());
+    const std::string firstLayerName = TfStringPrintf(
+        "%s.%s", firstLayerBaseName.c_str(), TfGetExtension(_realFilename).c_str());
 
     if (mJobCtx.mArgs.compatibility == UsdMayaJobExportArgsTokens->appleArKit) {
         // If exporting with compatibility=appleArKit, there are additional
@@ -1124,19 +1297,20 @@ void UsdMaya_WriteJob::_CreatePackage() const
         // UsdUtilsCreateNewARKitUsdzPackage will automatically flatten and
         // enforce that the first layer has a .usdc extension.
         if (!UsdUtilsCreateNewARKitUsdzPackage(
-                SdfAssetPath(_fileName), _packageName, firstLayerName)) {
+                SdfAssetPath(_realFilename), _packageName, firstLayerName)) {
             TF_RUNTIME_ERROR(
                 "Could not create package '%s' from temporary stage '%s'",
                 _packageName.c_str(),
-                _fileName.c_str());
+                _realFilename.c_str());
         }
     } else {
         // No compatibility options (standard).
-        if (!UsdUtilsCreateNewUsdzPackage(SdfAssetPath(_fileName), _packageName, firstLayerName)) {
+        if (!UsdUtilsCreateNewUsdzPackage(
+                SdfAssetPath(_realFilename), _packageName, firstLayerName)) {
             TF_RUNTIME_ERROR(
                 "Could not create package '%s' from temporary stage '%s'",
                 _packageName.c_str(),
-                _fileName.c_str());
+                _realFilename.c_str());
         }
     }
 }
@@ -1204,6 +1378,26 @@ bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath& path, const MDagPath& da
 const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_WriteJob::GetDagPathToUsdPathMap() const
 {
     return mDagPathToUsdPathMap;
+}
+
+void UsdMaya_WriteJobBatch::AddJob(
+    const UsdMayaJobExportArgs& args,
+    const std::string&          fileName,
+    bool                        appendToFile)
+{
+    m_jobs.emplace_back(std::make_unique<UsdMaya_WriteJob>(args, fileName, appendToFile));
+}
+
+const UsdMaya_WriteJob& UsdMaya_WriteJobBatch::JobAt(std::size_t index) const
+{
+    return *m_jobs.at(index);
+}
+
+bool UsdMaya_WriteJobBatch::Write()
+{
+    std::vector<UsdMaya_WriteJob*> jobs(m_jobs.size());
+    std::transform(m_jobs.begin(), m_jobs.end(), jobs.begin(), [](auto& p) { return p.get(); });
+    return UsdMaya_WriteJobImpl::WriteJobs(jobs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

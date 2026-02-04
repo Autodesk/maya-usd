@@ -70,7 +70,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* option var to remember if the stage in the layer editor is pinned. */ \
     ((PinLayerEditorStage, "mayaUsd_PinLayerEditorStage")) \
     /* option var to remember if use display color when texture mode off */ \
-    ((ShowDisplayColorTextureOff, "mayaUsd_ShowDisplayColorTextureOff"))
+    ((ShowDisplayColorTextureOff, "mayaUsd_ShowDisplayColorTextureOff")) \
+    /* option var to remember if include Maya tokens in AdskAssetResolver */ \
+    ((IncludeMayaTokenInAR, "mayaUsd_AdskAssetResolverIncludeMayaToken")) \
+    /* option var to remember AdskAssetResolver mapping file */ \
+    ((AdskAssetResolverMappingFile, "mayaUsd_AdskAssetResolverMappingFile")) \
+    ((AdskAssetResolverUserSearchPaths, "mayaUsd_AdskAssetResolverUserSearchPaths")) \
+    /* option var to remember if user paths are prioritized in AdskAssetResolver */ \
+    ((AdskAssetResolverUserPathsFirst, "mayaUsd_AdskAssetResolverUserPathsFirst")) \
+    /* option var to remember if only user paths are used in AdskAssetResolver */ \
+    ((AdskAssetResolverUserPathsOnly, "mayaUsd_AdskAssetResolverUserPathsOnly")) \
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);

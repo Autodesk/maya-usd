@@ -29,6 +29,7 @@
 #include <ufe/hierarchyHandler.h>
 #include <ufe/object3dHandler.h>
 #include <ufe/rtid.h>
+#include <ufe/sceneItemOpsHandler.h>
 #include <ufe/transform3dHandler.h>
 #include <ufe/uiInfoHandler.h>
 
@@ -78,9 +79,9 @@ struct USDUFE_PUBLIC DCCFunctions
 struct USDUFE_PUBLIC Handlers
 {
     // Ufe v1 handlers
-    Ufe::HierarchyHandler::Ptr   hierarchyHandler;
-    Ufe::Transform3dHandler::Ptr transform3dHandler;
-    //     Ufe::SceneItemOpsHandler::Ptr sceneItemOpsHandler;
+    Ufe::HierarchyHandler::Ptr    hierarchyHandler;
+    Ufe::Transform3dHandler::Ptr  transform3dHandler;
+    Ufe::SceneItemOpsHandler::Ptr sceneItemOpsHandler;
 
     // Ufe v2 handlers
     Ufe::AttributesHandler::Ptr attributesHandler;

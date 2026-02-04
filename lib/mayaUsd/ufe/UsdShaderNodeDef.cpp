@@ -226,7 +226,7 @@ std::string UsdShaderNodeDef::classification(std::size_t level) const
         if (_shaderNodeDef->GetSourceType() == _tokens->glslfx) {
             return "USD";
         }
-        return _shaderNodeDef->GetSourceType().GetString();
+        return UsdUfe::prettifyName(_shaderNodeDef->GetSourceType().GetString());
     }
 
     return {};

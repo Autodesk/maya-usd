@@ -10,7 +10,7 @@ target_sources(${PROJECT_NAME}
 # macro expects the library name to be prefixed with _, but adds an underscore
 # to the package name when creating the Python extension module initialization
 # function (see Pixar's pyModule.h).
-if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+if(IS_WINDOWS AND MAYAUSD_DEFINE_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(PYTHON_TARGET_NAME _${PROJECT_NAME}_d)
 else()

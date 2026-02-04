@@ -29,6 +29,7 @@
 #include <usdUfe/utils/uiCallback.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/envSetting.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
@@ -70,6 +71,15 @@ const char kSkipSystemLockedFlagL[] = "skipSystemLocked";
 const char kRefreshSystemLockFlag[] = "rl";
 const char kRefreshSystemLockFlagL[] = "refreshSystemLock";
 
+// Disables updateEditTarget's functionality is set.
+// Areas that will be affected are:
+// - Mute layer
+// - Lock layer
+// - System lock layer
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_LAYEREDITOR_DISABLE_AUTOTARGET,
+    false,
+    "When set, disables auto retargeting of layers based on the file and permission status.");
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -133,13 +143,23 @@ void BaseCmd::holdOntoSubLayers(SdfLayerHandle layer)
     }
 }
 
-// Set the edit target to Session layer if no other layers are modifiable
+// Set the edit target to Session layer if no other layers are modifiable,
+// unless the user has disabled this feature with an env var.
 void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
 {
+    //// User-controlled environment variable to disable automatic target change.
+    if (TfGetEnvSetting(MAYAUSD_LAYEREDITOR_DISABLE_AUTOTARGET)) {
+        return;
+    }
+
     if (!stage)
         return;
 
     if (stage->GetEditTarget().GetLayer() == stage->GetSessionLayer())
+        return;
+
+    // If the currently targeted layer isn't locked, we don't need to change it.
+    if (!MayaUsd::isLayerLocked(stage->GetEditTarget().GetLayer()))
         return;
 
     // If there are no target-able layers, we set the target to session layer.

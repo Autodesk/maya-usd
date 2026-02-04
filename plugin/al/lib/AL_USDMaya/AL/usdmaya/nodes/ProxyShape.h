@@ -42,8 +42,6 @@
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionList.h>
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -186,8 +184,8 @@ private:
 
 typedef std::unordered_map<SdfPath, MString, SdfPath::Hash> PrimPathToDagPath;
 
-using UnselectablePrimCache = TfHashMap<UsdPrim, bool, boost::hash<UsdPrim>>;
-using LockPrimCache = TfHashMap<UsdPrim, bool, boost::hash<UsdPrim>>;
+using UnselectablePrimCache = TfHashMap<UsdPrim, bool, TfHash>;
+using LockPrimCache = TfHashMap<UsdPrim, bool, TfHash>;
 
 extern AL::event::EventId kPreClearStageCache;
 extern AL::event::EventId kPostClearStageCache;

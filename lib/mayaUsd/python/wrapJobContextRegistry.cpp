@@ -23,7 +23,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaJobContextRegistry
+/// \brief Python binding for the UsdMayaJobContextRegistry
 //----------------------------------------------------------------------------------------------------------------------
 class JobContextRegistry
 {

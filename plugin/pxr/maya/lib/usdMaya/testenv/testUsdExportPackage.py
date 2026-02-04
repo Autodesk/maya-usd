@@ -23,11 +23,13 @@ from maya import cmds
 from maya import standalone
 
 from pxr import Usd, UsdGeom, Sdf
+from pxr import Ar
 
 class testUsdExportPackage(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        Ar.SetPreferredResolver("ArDefaultResolver")
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 

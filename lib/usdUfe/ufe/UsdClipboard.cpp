@@ -65,10 +65,7 @@ private:
 };
 
 // Ensure that UsdClipboard is properly setup.
-static_assert(!std::is_copy_constructible<UsdClipboard>::value);
-static_assert(!std::is_copy_assignable<UsdClipboard>::value);
-static_assert(!std::is_move_constructible<UsdClipboard>::value);
-static_assert(!std::is_move_assignable<UsdClipboard>::value);
+USDUFE_VERIFY_CLASS_NOT_MOVE_OR_COPY(UsdClipboard)
 
 UsdClipboard::UsdClipboard()
 {

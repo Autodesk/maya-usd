@@ -86,7 +86,9 @@
 #include <pxr/imaging/hdSt/udimTextureObject.h>
 #include <pxr/imaging/hio/image.h>
 
+#if (__cplusplus < 201703L)
 #include <boost/functional/hash.hpp>
+#endif
 #include <ghc/filesystem.hpp>
 #include <tbb/parallel_for.h>
 
@@ -2131,9 +2133,11 @@ struct MStringHash
 {
     std::size_t operator()(const MString& s) const
     {
-        // To get rid of boost here, switch to C++17 compatible implementation:
-        //     return std::hash(std::string_view(s.asChar(), s.length()))();
+#if (__cplusplus >= 201703L)
+        return std::hash<std::string_view> {}(std::string_view(s.asChar(), s.length()));
+#else
         return boost::hash_range(s.asChar(), s.asChar() + s.length());
+#endif
     }
 };
 

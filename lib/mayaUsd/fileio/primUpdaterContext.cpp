@@ -23,14 +23,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdMayaPrimUpdaterContext::UsdMayaPrimUpdaterContext(
     const UsdTimeCode&            timeCode,
     const UsdStageRefPtr&         stage,
+    const UsdMayaPrimUpdaterArgs& args,
     const VtDictionary&           userArgs,
     const UsdPathToDagPathMapPtr& pathMap)
     : _timeCode(timeCode)
     , _stage(stage)
     , _pathMap(pathMap)
     , _userArgs(userArgs)
-    , _args(UsdMayaPrimUpdaterArgs::createFromDictionary(userArgs))
+    , _args(args)
     , _additionalCommands(std::make_shared<Ufe::CompositeUndoableCommand>())
+{
+}
+
+UsdMayaPrimUpdaterContext::UsdMayaPrimUpdaterContext(
+    const UsdTimeCode&    timeCode,
+    const UsdStageRefPtr& stage)
+    : UsdMayaPrimUpdaterContext(
+        timeCode,
+        stage,
+        UsdMayaPrimUpdaterArgs::createFromDictionary({}),
+        UsdMayaPrimUpdaterArgs::getDefaultDictionary())
 {
 }
 

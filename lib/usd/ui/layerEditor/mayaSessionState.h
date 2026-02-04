@@ -53,6 +53,7 @@ public:
     // API implementation
     void                    setStageEntry(StageEntry const& in_entry) override;
     void                    setAutoHideSessionLayer(bool hide) override;
+    void                    setDisplayLayerContents(bool show) override;
     AbstractCommandHook*    commandHook() override;
     std::vector<StageEntry> allStages() const override;
     // path to default load layer dialogs to

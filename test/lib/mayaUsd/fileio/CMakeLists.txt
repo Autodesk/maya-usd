@@ -89,7 +89,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
                         usdgen_res
     )
 
-    if(usdgen_res)
+    if(usdgen_res EQUAL 1)
         message(FATAL_ERROR "Schemas generation failed")
     endif()
 

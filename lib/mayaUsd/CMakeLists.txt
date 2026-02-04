@@ -24,6 +24,7 @@ target_compile_definitions(${PROJECT_NAME}
     PUBLIC
         PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         $<$<BOOL:${CMAKE_WANT_VALIDATE_UNDO_ITEM}>:WANT_VALIDATE_UNDO_ITEM>
@@ -41,6 +42,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
+        $<$<BOOL:${AR_FOUND}>:WANT_AR_BUILD>
 
         # this flag is needed when building maya-usd in Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
@@ -256,7 +258,6 @@ target_link_libraries(${PROJECT_NAME}
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
         usdUfe
-        $<$<BOOL:$<VERSION_GREATER_EQUAL:${USD_VERSION},0.24.11>>:Boost::headers>
     PRIVATE
         ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>

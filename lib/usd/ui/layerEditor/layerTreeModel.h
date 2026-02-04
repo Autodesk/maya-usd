@@ -59,9 +59,9 @@ public:
     // API to suspend reacting to USD notifications
     static void suspendUsdNotices(bool suspend);
 
-    // get propertly typed item
+    // get properly typed item
     LayerTreeItem* layerItemFromIndex(const QModelIndex& index) const;
-    // gets everything recursivly as an array : used to simplify iteration
+    // gets everything recursively as an array : used to simplify iteration
     typedef bool (*ConditionFunc)(const LayerTreeItem*);
     LayerItemVector getAllItems(
         ConditionFunc        filter = [](const LayerTreeItem*) { return true; },

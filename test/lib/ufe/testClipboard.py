@@ -488,5 +488,101 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         pasteCmd = ufe.ClipboardHandler.pasteCmd(ufe.GlobalSelection.get())
         self.assertRaisesRegex(RuntimeError, 'Failed to load Clipboard stage.', pasteCmd.execute)
 
+    def testClipboardCopyNodeGraphOutputConnection(self):
+        '''
+        Regression test for EMSUSD-2681. There was a bug where connections to compound outputs
+        didn't get copied correctly. Repro steps are simple:
+        - Create a NodeGraph and add an output port
+        - Create an add node inside the NodeGraph
+        - Connect the add node to the NodeGraph output
+        - Copy/Paste the NodeGraph
+        - The connection was missing in the copied NodeGraph
+        '''
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Create a NodeGraph and add an output attribute.
+        stage.DefinePrim('/Material1', 'Material')
+        stage.DefinePrim('/Material1/NodeGraph1', 'NodeGraph')
+        nodeGraphItem = ufeUtils.createItem(psPathStr + ',/Material1/NodeGraph1')
+        nodeGraphOutput = ufe.Attributes.attributes(nodeGraphItem).addAttribute("outputs:out", ufe.Attribute.kColorFloat3)
+
+        # Create a shader within the NodeGraph.
+        nodeDef = ufe.NodeDef.definition(nodeGraphItem.runTimeId(), 'ND_add_color3')
+        childItem = nodeDef.createNode(nodeGraphItem, ufe.PathComponent('add1'))
+        childOutput = ufe.Attributes.attributes(childItem).attribute('outputs:out')
+
+        # Connect the shader to the compound output
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(nodeGraphItem.runTimeId())
+        connection = connectionHandler.connect(childOutput, nodeGraphOutput)
+        self.assertIsNotNone(connection)
+
+        # Copy the NodeGraph
+        ch = ufe.ClipboardHandler.clipboardHandler(nodeGraphItem.runTimeId())
+        ufe.ClipboardHandler.preCopy()
+        copyCmd = ch.copyCmd_(nodeGraphItem)
+        copyCmd.execute()
+
+        # Clear the selection before pasting.
+        ufe.GlobalSelection.get().clear()
+
+        # Paste the node graph.
+        pasteCmd = ch.pasteCmd_(ufe.Hierarchy.createItem(nodeGraphItem.path().pop()))
+        pasteCmd.execute()
+        self.assertIsNotNone(pasteCmd.targetItems())
+        self.assertEqual(1, len(pasteCmd.targetItems()))
+        pastedNodeGraph = pasteCmd.targetItems()[0]
+
+        # Verify that the connection was copied.
+        self.assertEqual(1, len(connectionHandler.sourceConnections(pastedNodeGraph).allConnections()))
+
+
+    def testClipboardCopyConnections(self):
+        '''Regression test to ensure connections between duplicated items get copied.'''
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Create a NodeGraph and add an output attribute.
+        stage.DefinePrim('/Material1', 'Material')
+        stage.DefinePrim('/Material2', 'Material')
+        materialItem1 = ufeUtils.createItem(psPathStr + ',/Material1')
+        materialItem2 = ufeUtils.createItem(psPathStr + ',/Material2')
+
+        # Create two shaders within the NodeGraph.
+        nodeDef = ufe.NodeDef.definition(materialItem1.runTimeId(), 'ND_add_color3')
+        srcItem = nodeDef.createNode(materialItem1, ufe.PathComponent('src1'))
+        dstItem = nodeDef.createNode(materialItem1, ufe.PathComponent('dst1'))
+
+        # Connect the shaders.
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem1.runTimeId())
+        srcOutput = ufe.Attributes.attributes(srcItem).attribute('outputs:out')
+        dstInput = ufe.Attributes.attributes(dstItem).attribute('inputs:in1')
+        connection = connectionHandler.connect(srcOutput, dstInput)
+        self.assertIsNotNone(connection)
+
+        # Copy both shaders.
+        ch = ufe.ClipboardHandler.clipboardHandler(materialItem1.runTimeId())
+        ufe.ClipboardHandler.preCopy()
+        copyCmd = ch.copyCmd_(ufe.Selection([srcItem, dstItem]))
+        copyCmd.execute()
+
+        # Clear the selection before pasting.
+        ufe.GlobalSelection.get().clear()
+
+        # Paste both shaders.
+        pasteCmd = ch.pasteCmd_(materialItem2)
+        pasteCmd.execute()
+        self.assertIsNotNone(pasteCmd.targetItems())
+        self.assertEqual(2, len(pasteCmd.targetItems()))
+        pastedSrcItem = ufe.Hierarchy.createItem(materialItem2.path() + srcItem.nodeName())
+        pastedDstItem = ufe.Hierarchy.createItem(materialItem2.path() + dstItem.nodeName())
+
+        # Verify that the connection was copied.
+        self.assertEqual(1, len(connectionHandler.sourceConnections(pastedDstItem).allConnections()))
+        pastedConnection = connectionHandler.sourceConnections(pastedDstItem).allConnections()[0]
+        self.assertEqual(pastedConnection.src.path, pastedSrcItem.path())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

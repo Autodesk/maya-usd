@@ -21,6 +21,7 @@
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UfeNotifGuard.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
@@ -79,7 +80,7 @@ UsdUndoDuplicateCommand::create(const UsdUfe::UsdSceneItem::Ptr& srcItem)
 
 UsdUfe::UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 {
-    return createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
+    return UsdUfe::createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
 }
 
 void UsdUndoDuplicateCommand::execute()
@@ -114,17 +115,31 @@ void UsdUndoDuplicateCommand::execute()
     SdfPrimSpecHandleVector authLayerAndPaths = UsdUfe::getDefiningPrimStack(prim);
     std::reverse(authLayerAndPaths.begin(), authLayerAndPaths.end());
 
+    const bool includeTopLayer = true;
+    const auto sessionLayers
+        = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+
     UsdUfe::MergePrimsOptions options;
     options.verbosity = UsdUfe::MergeVerbosity::None;
     options.mergeChildren = true;
+
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
         const auto layer = layerAndPath->GetLayer();
         const auto path = layerAndPath->GetPath();
-        const bool result = isFirst
-            ? SdfCopySpec(layer, path, _dstLayer, _usdDstPath)
-            : UsdUfe::mergePrims(stage, layer, path, stage, _dstLayer, _usdDstPath, options);
+
+        // We want to leave session data in the session layers.
+        // If a layer is a session layer then we set the target to be that same layer.
+        const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
+        const auto targetLayer = isInSession ? layer : _dstLayer;
+
+        if (isInSession)
+            SdfJustCreatePrimInLayer(targetLayer, _usdDstPath);
+
+        const bool result = (isFirst || isInSession)
+            ? SdfCopySpec(layer, path, targetLayer, _usdDstPath)
+            : UsdUfe::mergePrims(stage, layer, path, stage, targetLayer, _usdDstPath, options);
 
         TF_VERIFY(
             result,
@@ -133,7 +148,9 @@ void UsdUndoDuplicateCommand::execute()
             layer->GetDisplayName().c_str(),
             _usdDstPath.GetText());
 
-        isFirst = false;
+        // We only set the first-layer flag to false once we have processed a non-session layer.
+        if (!isInSession)
+            isFirst = false;
     }
 
     MayaUsd::ufe::ReplicateExtrasToUSD::RenamedPaths renamed;

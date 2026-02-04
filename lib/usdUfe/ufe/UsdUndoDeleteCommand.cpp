@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2015 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,10 +30,9 @@
 #include <usdUfe/ufe/UsdAttributes.h>
 #endif
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDeleteCommand);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDeleteCommand);
 
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim)
     : Ufe::UndoableCommand()
@@ -131,5 +130,4 @@ void UsdUndoDeleteCommand::redo()
     _undoableItem.redo();
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

@@ -17,7 +17,9 @@
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/vt/dictionary.h>
 #include <pxr/pxr.h>
 #include <pxr_python.h>
 
@@ -28,6 +30,8 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
+
+using NodeWithUserArgs = std::pair<std::string, VtDictionary>;
 
 bool isAnimated(const std::string& nodeName)
 {
@@ -44,27 +48,37 @@ bool isAnimated(const std::string& nodeName)
     return UsdMayaPrimUpdater::isAnimated(dagPath);
 }
 
-bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDictionary())
+std::vector<std::string> mergeNodesToUsd(const std::vector<NodeWithUserArgs>& nodeNameAndUserArgs)
 {
-    MObject obj;
-    MStatus status = UsdMayaUtil::GetMObjectByName(nodeName, obj);
-    if (status != MStatus::kSuccess)
-        return false;
+    std::vector<PushToUsdArgs> meshArgsVect;
+    meshArgsVect.reserve(nodeNameAndUserArgs.size());
 
-    MDagPath dagPath;
-    status = MDagPath::getAPathTo(obj, dagPath);
-    if (status != MStatus::kSuccess)
-        return false;
+    for (const auto& nameArgs : nodeNameAndUserArgs) {
+        const MDagPath dagPath = UsdMayaUtil::nameToDagPath(nameArgs.first);
+        if (!dagPath.isValid())
+            return {};
 
-    MFnDagNode dagNode(dagPath, &status);
-    if (status != MStatus::kSuccess)
-        return false;
+        auto mergeArgs = PushToUsdArgs::forMerge(dagPath, nameArgs.second);
+        if (!mergeArgs)
+            return {};
 
-    Ufe::Path path;
-    if (!MayaUsd::readPullInformation(dagPath, path))
-        return false;
+        meshArgsVect.push_back(std::move(mergeArgs));
+    }
 
-    return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path, userArgs);
+    const auto merged = PrimUpdaterManager::getInstance().mergeToUsd(meshArgsVect);
+
+    std::vector<std::string> results(merged.size());
+    std::transform(merged.begin(), merged.end(), results.begin(), [](const Ufe::Path& p) {
+        return Ufe::PathString::string(p);
+    });
+
+    return results;
+}
+
+// Convenient overload to merge a single object with optional userArgs.
+bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = {})
+{
+    return !mergeNodesToUsd({ { nodeName, userArgs } }).empty();
 }
 
 PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(mergeToUsd_overloads, mergeToUsd, 1, 2)
@@ -127,10 +141,17 @@ bool isEditedPrimOrphaned(const PXR_NS::UsdPrim& prim)
 
 void wrapPrimUpdaterManager()
 {
+    TfPyContainerConversions::tuple_mapping_pair<NodeWithUserArgs>();
+
+    TfPyContainerConversions::from_python_sequence<
+        std::vector<NodeWithUserArgs>,
+        TfPyContainerConversions::variable_capacity_policy>();
+
     PXR_BOOST_PYTHON_NAMESPACE::class_<PrimUpdaterManager, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
         "PrimUpdaterManager", PXR_BOOST_PYTHON_NAMESPACE::no_init)
         .def("isAnimated", isAnimated)
         .def("mergeToUsd", mergeToUsd, mergeToUsd_overloads())
+        .def("mergeToUsd", mergeNodesToUsd)
         .def("editAsMaya", editAsMaya)
         .def("canEditAsMaya", canEditAsMaya)
         .def("discardEdits", discardEdits)

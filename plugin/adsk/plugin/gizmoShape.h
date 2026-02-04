@@ -91,7 +91,7 @@ private:
     static MObject dropOff;
     static MObject lightAngle;
 
-    // Input attributes to mimic an Maya internal light
+    // Input attributes to mimic a Maya internal light
     static MObject aColor;
     static MObject aIntensity;
     static MObject aExposure;
@@ -99,6 +99,10 @@ private:
     static MObject aEmitSpecular;
     static MObject aLocatorScale;
     static MObject aDecayRate;
+#if UFE_LIGHTS2_SUPPORT
+    static MObject aNormalize;
+    static MObject aUseRayTraceShadows;
+#endif
 
     // General output color attribute
     static MObject aOutColor;

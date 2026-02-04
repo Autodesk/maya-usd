@@ -64,6 +64,7 @@ endif()
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME} 
     PUBLIC
+        # Needed by Pixar's wrap_python.hpp
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
     PRIVATE

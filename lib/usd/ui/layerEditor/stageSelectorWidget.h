@@ -54,13 +54,16 @@ protected:
     void sessionStageChanged();
     void selectedIndexChanged(int index);
     void stagePinClicked();
+    void collapseContentClicked();
+    void updateContentButton();
 
 private:
-    SessionState* _sessionState = nullptr;
-    QComboBox*    _dropDown = nullptr;
-    QPushButton*  _pinStage = nullptr;
-    bool          _internalChange = false; // for notifications
-    bool          _pinStageSelection = true;
+    SessionState* _sessionState { nullptr };
+    QComboBox*    _dropDown { nullptr };
+    QPushButton*  _pinStage { nullptr };
+    QPushButton*  _collapseContent { nullptr };
+    bool          _internalChange { false }; // for notifications
+    bool          _pinStageSelection { true };
 };
 
 } // namespace UsdLayerEditor

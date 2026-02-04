@@ -182,6 +182,7 @@ StageSelectorWidget::StageSelectorWidget(SessionState* in_sessionState, QWidget*
 
     _pinStageSelection = loadStagePinnedOption();
     updatePinnedStage();
+    updateContentButton();
 }
 
 StageSelectorWidget::~StageSelectorWidget()
@@ -218,6 +219,19 @@ void StageSelectorWidget::createUI()
     mainHLayout->addWidget(_pinStage, 0, Qt::AlignLeft | Qt::AlignRight);
     connect(_pinStage, &QAbstractButton::clicked, this, &StageSelectorWidget::stagePinClicked);
 
+    _collapseContent = new QPushButton();
+    _collapseContent->move(0, higButtonYOffset);
+    QtUtils::setupButtonWithHIGBitmaps(_collapseContent, ":/UsdLayerEditor/contents_on");
+    _collapseContent->setFixedSize(buttonSize, buttonSize);
+    _collapseContent->setToolTip(
+        StringResources::getAsQString(StringResources::kDisplayLayerContents));
+    mainHLayout->addWidget(_collapseContent, 0, Qt::AlignLeft | Qt::AlignRight);
+    connect(
+        _collapseContent,
+        &QAbstractButton::clicked,
+        this,
+        &StageSelectorWidget::collapseContentClicked);
+
     setLayout(mainHLayout);
 }
 
@@ -237,6 +251,12 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
     connect(
         _sessionState, &SessionState::stageRenamedSignal, this, &StageSelectorWidget::stageRenamed);
     connect(_sessionState, &SessionState::stageResetSignal, this, &StageSelectorWidget::stageReset);
+
+    connect(
+        in_sessionState,
+        &SessionState::showDisplayLayerContents,
+        this,
+        &StageSelectorWidget::updateContentButton);
 
     updateFromSessionState(_sessionState->stageEntry());
 }
@@ -366,6 +386,22 @@ void StageSelectorWidget::updatePinnedStage()
     } else {
         selectionChanged();
     }
+}
+
+void StageSelectorWidget::collapseContentClicked()
+{
+    if (_sessionState) {
+        _sessionState->setDisplayLayerContents(!_sessionState->displayLayerContents());
+    }
+}
+
+void StageSelectorWidget::updateContentButton()
+{
+    const bool showIt = _sessionState && _sessionState->displayLayerContents();
+    QtUtils::setupButtonWithHIGBitmaps(
+        _collapseContent,
+        showIt ? ":/UsdLayerEditor/contents_on" : ":/UsdLayerEditor/contents_off");
+    // Since we use a different set of bitmaps for on/off we don't call setDown() on button
 }
 
 // handles when someone else changes the current stage

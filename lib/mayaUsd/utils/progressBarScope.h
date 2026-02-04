@@ -91,7 +91,7 @@ private:
 class MAYAUSD_CORE_PUBLIC ProgressBarLoopScope : public ProgressBarScope
 {
 public:
-    ProgressBarLoopScope(const int nbLoopSteps);
+    ProgressBarLoopScope(int nbLoopSteps);
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProgressBarLoopScope);
 
@@ -100,18 +100,16 @@ public:
     void loopAdvance();
 
 private:
-    // Add a variable number of steps for a new for-loop.
-    // The number of steps will be capped at a known value (maxStepsForLoops)
-    // so we don't overwhelm the action with progress bar updates.
-    void addLoopSteps(int loopSize);
+    // Number of loop steps.
+    const unsigned int _nbLoopSteps { 0 };
 
-    // The current loop iteration counter.
-    int _currLoopCounter { 0 };
+    // Number of progress steps, i.e. _nbLoopSteps capped to maxStepsForLoops.
+    const int _nbProgressSteps { 0 };
 
-    // Number of loop iterations to perform before advancing progress bar.
-    int _minProgressStep { 0 };
+    // Accumulated error used when _nbLoopSteps was capped to maxStepsForLoops.
+    unsigned int _remainder { 0 };
 
-    // Just like Maya don't add to many steps as the progress bar update
+    // Just like Maya don't add too many steps as the progress bar update
     // will overwhelm the process. So for a loop we'll limit the number of
     // steps added to this value.
     static const int maxStepsForLoops { 20 };

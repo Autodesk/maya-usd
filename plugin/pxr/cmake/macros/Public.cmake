@@ -171,7 +171,7 @@ function(pxr_setup_python)
     # see UsdMaya module inside pxr subdirectory
     _get_install_dir(lib/python/pxr installPrefix)
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/__init__.py"
-    "try:\n  __import__('pkg_resources').declare_namespace(__name__)\nexcept:\n  from pkgutil import extend_path\n  __path__ = extend_path(__path__, __name__)\n")
+    "from pkgutil import extend_path\n__path__ = extend_path(__path__, __name__)\n")
 	execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
     install(
         FILES

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2015 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_USDUNDODELETECOMMAND_H
-#define MAYAUSD_USDUNDODELETECOMMAND_H
+#ifndef USDUFE_USDUNDODELETECOMMAND_H
+#define USDUFE_USDUNDODELETECOMMAND_H
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
@@ -26,18 +25,17 @@
 
 #include <ufe/undoableCommand.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief UsdUndoDeleteCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoDeleteCommand : public Ufe::UndoableCommand
+class USDUFE_PUBLIC UsdUndoDeleteCommand : public Ufe::UndoableCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoDeleteCommand> Ptr;
 
     UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDeleteCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDeleteCommand);
 
     //! Create a UsdUndoDeleteCommand from a USD prim.
     static UsdUndoDeleteCommand::Ptr create(const PXR_NS::UsdPrim& prim);
@@ -45,6 +43,7 @@ public:
     void execute() override;
     void undo() override;
     void redo() override;
+    UFE_V4(std::string commandString() const override { return "Delete"; })
 
 private:
     PXR_NS::UsdPrim         _prim;
@@ -52,7 +51,6 @@ private:
 
 }; // UsdUndoDeleteCommand
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDUNDODELETECOMMAND_H
+#endif // USDUFE_USDUNDODELETECOMMAND_H

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2025 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,31 +15,28 @@
 //
 #include "UsdSceneItemOps.h"
 
-#include <mayaUsd/ufe/UsdUndoDeleteCommand.h>
-#include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
-#include <mayaUsd/ufe/UsdUndoRenameCommand.h>
-#include <mayaUsd/ufe/Utils.h>
+#include <usdUfe/ufe/UsdUndoDeleteCommand.h>
+#include <usdUfe/ufe/UsdUndoDuplicateCommand.h>
+#include <usdUfe/ufe/UsdUndoRenameCommand.h>
+#include <usdUfe/ufe/Utils.h>
 
-#include <maya/MGlobal.h>
+namespace USDUFE_NS_DEF {
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+USDUFE_VERIFY_CLASS_SETUP(Ufe::SceneItemOps, UsdSceneItemOps);
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SceneItemOps, UsdSceneItemOps);
-
-UsdSceneItemOps::UsdSceneItemOps(const UsdUfe::UsdSceneItem::Ptr& item)
+UsdSceneItemOps::UsdSceneItemOps(const UsdSceneItem::Ptr& item)
     : Ufe::SceneItemOps()
     , _item(item)
 {
 }
 
 /*static*/
-UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdUfe::UsdSceneItem::Ptr& item)
+UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdSceneItemOps>(item);
 }
 
-void UsdSceneItemOps::setItem(const UsdUfe::UsdSceneItem::Ptr& item) { _item = item; }
+void UsdSceneItemOps::setItem(const UsdSceneItem::Ptr& item) { _item = item; }
 
 const Ufe::Path& UsdSceneItemOps::path() const { return _item->path(); }
 
@@ -77,13 +74,17 @@ bool UsdSceneItemOps::deleteItem()
 #ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::SceneItemResultUndoableCommand::Ptr UsdSceneItemOps::duplicateItemCmdNoExecute()
 {
-    return UsdUndoDuplicateCommand::create(_item);
+    auto hier = Ufe::Hierarchy::hierarchy(_item);
+    auto parentItem = hier->parent();
+    return UsdUndoDuplicateCommand::create(_item, downcast(parentItem));
 }
 #endif
 
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()
 {
-    auto duplicateCmd = UsdUndoDuplicateCommand::create(_item);
+    auto hier = Ufe::Hierarchy::hierarchy(_item);
+    auto parentItem = hier->parent();
+    auto duplicateCmd = UsdUndoDuplicateCommand::create(_item, downcast(parentItem));
     duplicateCmd->execute();
     return Ufe::Duplicate(duplicateCmd->duplicatedItem(), duplicateCmd);
 }
@@ -111,10 +112,8 @@ Ufe::Rename UsdSceneItemOps::renameItemCmd(const Ufe::PathComponent& newName)
 
 Ufe::SceneItem::Ptr UsdSceneItemOps::renameItem(const Ufe::PathComponent& newName)
 {
-    auto renameCmd = UsdUndoRenameCommand::create(_item, newName);
-    renameCmd->execute();
-    return renameCmd->renamedItem();
+    auto rename = renameItemCmd(newName);
+    return rename.item;
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

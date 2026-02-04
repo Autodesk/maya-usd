@@ -26,9 +26,6 @@ namespace MAYAUSD_NS_DEF {
 // hash combiner taken from:
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0814r0.pdf
 
-// boost::hash implementation also relies on the same algorithm:
-// https://www.boost.org/doc/libs/1_64_0/boost/functional/hash/hash.hpp
-
 template <typename T> inline void hash_combine(std::size_t& seed, const T& value)
 {
     ::std::hash<T> hasher;

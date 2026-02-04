@@ -45,7 +45,7 @@ execute_process(
     RESULT_VARIABLE
         usdgen_res
 )
-if(usdgen_res)
+if(usdgen_res EQUAL 1)
     message(FATAL_ERROR "Schemas generation failed")
 endif()
 
@@ -67,6 +67,7 @@ target_compile_definitions(AL_USDMayaSchemasTest
     PRIVATE
         AL_USDMAYASCHEMASTEST_EXPORTS
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
@@ -92,7 +93,7 @@ endif()
 ####################################################################################################
 # Python bindings
 ####################################################################################################
-if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+if(IS_WINDOWS AND MAYAUSD_DEFINE_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(PYTHON_LIBRARY_NAME _AL_USDMayaSchemasTest_d)
 else()
@@ -112,6 +113,7 @@ mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         MFB_PACKAGE_NAME=AL_USDMayaSchemasTest
@@ -157,7 +159,7 @@ if(${listCount} STRGREATER 1)
       string(REPLACE ";" "/" currentPath "${currentPath}")
       file(WRITE
         ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py
-        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\n"
+        "from pkgutil import extend_path\n__path__ = extend_path(__path__, __name__)\n"
       )
     endforeach(i)
 endif()

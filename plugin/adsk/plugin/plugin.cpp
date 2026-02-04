@@ -50,6 +50,7 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/usd/ar/resolver.h>
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnDagNode.h>
@@ -75,6 +76,11 @@
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
 #include <mayaUsdUI/ui/initStringResources.h>
+#if defined(WANT_AR_BUILD)
+#include <mayaUsdUI/ui/AssetResolverDialogCmd.h>
+
+#include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
+#endif
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -252,7 +258,11 @@ MStatus initializePlugin(MObject obj)
         MayaUsd::GizmoShape::creator,
         MayaUsd::GizmoShape::initialize,
         nullptr,
+#if UFE_LIGHTS2_SUPPORT
+        &MayaUsd::GizmoShape::dbClassificationRect);
+#else
         &MayaUsd::GizmoShape::dbClassificationDefault);
+#endif
     CHECK_MSTATUS(status);
 
     status = plugin.registerShape(
@@ -344,6 +354,14 @@ MStatus initializePlugin(MObject obj)
         err += MayaUsd::USDImportDialogCmd::name;
         status.perror(err);
     }
+#if defined(WANT_AR_BUILD)
+    status = MayaUsd::AssetResolverDialogCmd::initialize(plugin);
+    if (!status) {
+        MString err("registerCommand");
+        err += MayaUsd::AssetResolverDialogCmd::name;
+        status.perror(err);
+    }
+#endif
 #endif
 
     status = PxrMayaUsdPreviewSurfacePlugin::initialize(
@@ -401,6 +419,77 @@ MStatus initializePlugin(MObject obj)
 #ifdef UFE_V3_FEATURES_AVAILABLE
     // Install notifications
     PrimUpdaterManager::getInstance();
+#endif
+
+#ifdef WANT_AR_BUILD
+    // Load Maya tokens to AdskAssetResolver if option variable is set.
+    PlugRegistry& plugReg = PlugRegistry::GetInstance();
+    PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
+    if (resolverPlugin) {
+        static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
+        if (MGlobal::optionVarExists(IncludeMayaTokenInAR)
+            && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
+            MGlobal::executePythonCommand(
+                "try:\n"
+                "    import mayaUsd_AdskAssetResolver\n"
+                "    mayaUsd_AdskAssetResolver.include_maya_project_tokens()\n"
+                "except:\n"
+                "    pass\n");
+        }
+
+        static const MString AdskAssetResolverMappingFile = "mayaUsd_AdskAssetResolverMappingFile";
+        MGlobal::displayInfo("mayaUsdPlugin: AdskAssetResolver plugin found.");
+        if (MGlobal::optionVarExists(AdskAssetResolverMappingFile)) {
+            MString file = MGlobal::optionVarStringValue(AdskAssetResolverMappingFile);
+            MGlobal::displayInfo(
+                MString("mayaUsdPlugin: Loading AdskAssetResolver mapping file ") + file);
+            MGlobal::executePythonCommand(
+                "try:\n"
+                "    import mayaUsd_AdskAssetResolver\n"
+                "    mayaUsd_AdskAssetResolver.load_mappingfile(r\""
+                + file
+                + "\" )\n"
+                  "except:\n"
+                  "    from maya.OpenMaya import MGlobal\n"
+                  "    MGlobal.displayError('Error loading mapping File at start')\n"
+                  "    pass\n");
+        }
+
+        // Change the User Paths First setting if the option variable is set.
+        if (MGlobal::optionVarExists("mayaUsd_AdskAssetResolverUserPathsFirst")) {
+            std::vector<std::string> activeContextDataList
+                = Adsk::AssetResolverContextDataRegistry::GetActiveContextData();
+            auto userPathContextIt = std::find(
+                activeContextDataList.begin(), activeContextDataList.end(), "MayaUsd_UserData");
+            if (MGlobal::optionVarIntValue("mayaUsd_AdskAssetResolverUserPathsFirst")) {
+                if (userPathContextIt != activeContextDataList.end()) {
+                    // move the user path context to the front of the list
+                    std::rotate(
+                        activeContextDataList.begin(), userPathContextIt, userPathContextIt + 1);
+                }
+            } else {
+                if (userPathContextIt != activeContextDataList.end()) {
+                    // move the user path context to the end of the list
+                    std::rotate(
+                        userPathContextIt, userPathContextIt + 1, activeContextDataList.end());
+                }
+            }
+        }
+
+        // Change the User Paths Only setting if the option variable is set.
+        if (MGlobal::optionVarExists("mayaUsd_AdskAssetResolverUserPathsOnly")) {
+            bool userPathsOnly
+                = MGlobal::optionVarIntValue("mayaUsd_AdskAssetResolverUserPathsOnly");
+            auto allContextData = Adsk::AssetResolverContextDataRegistry::GetAvailableContextData();
+            for (auto& context : allContextData) {
+                if (context.first
+                    == Adsk::AssetResolverContextDataRegistry::
+                        GetEnvironmentMappingContextDataName()) {
+                    context.second = !userPathsOnly;
+                }
+            }
+        }
+    }
 #endif
 
     return status;

@@ -136,7 +136,7 @@ MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::doIt(const MArgList& argList
         auto sourceType = ufeNodeDef->classification(ufeNodeDef->nbClassifications() - 1);
         appendToResult(MString(TfStringPrintf(
                                    "%s/%s|%s",
-                                   UsdUfe::prettifyName(sourceType).c_str(),
+                                   sourceType.c_str(),
                                    UsdUfe::prettifyName(familyName).c_str(),
                                    nodeDef->GetIdentifier().GetText())
                                    .c_str()));
