@@ -138,7 +138,7 @@ void HdVP2Instancer::Sync(
         // Translations
         if (_primvarMap.count(translationsToken) > 0) {
             HdVP2BufferSampler sampler(*_primvarMap[translationsToken]);
-            for (size_t instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
+            for (int instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
                 GfVec3f translate;
                 if (sampler.Sample(instanceIndex, &translate)) {
                     GfMatrix4d translateMat(1);
@@ -152,7 +152,7 @@ void HdVP2Instancer::Sync(
         // Rotations
         if (_primvarMap.count(rotationsToken) > 0) {
             HdVP2BufferSampler sampler(*_primvarMap[rotationsToken]);
-            for (size_t instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
+            for (int instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
                 GfQuath quath;
                 if (sampler.Sample(instanceIndex, &quath)) {
                     GfMatrix4d rotateMat(1);
@@ -174,7 +174,7 @@ void HdVP2Instancer::Sync(
         // Scales
         if (_primvarMap.count(scalesToken) > 0) {
             HdVP2BufferSampler sampler(*_primvarMap[scalesToken]);
-            for (size_t instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
+            for (int instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
                 GfVec3f scale;
                 if (sampler.Sample(instanceIndex, &scale)) {
                     GfMatrix4d scaleMat(1);
@@ -188,7 +188,7 @@ void HdVP2Instancer::Sync(
         // Transforms
         if (_primvarMap.count(transformsToken) > 0) {
             HdVP2BufferSampler sampler(*_primvarMap[transformsToken]);
-            for (size_t instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
+            for (int instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
                 GfMatrix4d transformMat;
                 if (sampler.Sample(instanceIndex, &transformMat)) {
                     _instanceTransforms[instanceIndex]
