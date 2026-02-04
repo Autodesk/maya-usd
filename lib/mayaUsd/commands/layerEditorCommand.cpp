@@ -617,17 +617,18 @@ public:
         } else if (_cmdId == CmdId::kClearLayer) {
             layer->Clear();
         } else if (_cmdId == CmdId::kFlattenLayer) {
-            // Flatten the layer with its sublayers
+            // Create a tempStage to get a PcpLayerStack with this layer as the root.
             PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
             if (!tempStage) {
                 MPxCommand::displayError("Failed to open stage for layer");
                 return false;
             }
 
+            // Get the PcpLayerStackRefPtr to be used in the flatten method.
             PXR_NS::PcpLayerStackRefPtr layerStack;
             PXR_NS::UsdPrim             rootPrim = tempStage->GetPseudoRoot();
             if (rootPrim) {
-                PXR_NS::PcpPrimIndex primIndex = rootPrim.ComputeExpandedPrimIndex();
+                PXR_NS::PcpPrimIndex primIndex = rootPrim.GetPrimIndex();
                 if (primIndex.IsValid()) {
                     PXR_NS::PcpNodeRef rootNode = primIndex.GetRootNode();
                     if (rootNode) {
