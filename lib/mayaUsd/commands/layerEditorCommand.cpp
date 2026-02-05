@@ -30,6 +30,10 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/usd/flattenUtils.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
@@ -60,6 +64,8 @@ const char kDiscardEditsFlag[] = "de";
 const char kDiscardEditsFlagL[] = "discardEdits";
 const char kClearLayerFlag[] = "cl";
 const char kClearLayerFlagL[] = "clear";
+const char kFlattenLayerFlag[] = "fl";
+const char kFlattenLayerFlagL[] = "flatten";
 const char kAddAnonSublayerFlag[] = "aa";
 const char kAddAnonSublayerFlagL[] = "addAnonymous";
 const char kMuteLayerFlag[] = "mt";
@@ -94,6 +100,7 @@ enum class CmdId
     kReplace,
     kDiscardEdit,
     kClearLayer,
+    kFlattenLayer,
     kAddAnonLayer,
     kMuteLayer,
     kLockLayer,
@@ -601,6 +608,7 @@ public:
     bool doIt(SdfLayerHandle layer) override
     {
         backupLayer(layer);
+        backupDirtySubLayers(layer);
 
         // using reload will correctly reset the dirty bit
         holdOntoSubLayers(layer);
@@ -609,6 +617,39 @@ public:
             layer->Reload();
         } else if (_cmdId == CmdId::kClearLayer) {
             layer->Clear();
+        } else if (_cmdId == CmdId::kFlattenLayer) {
+            // Create a tempStage to get a PcpLayerStack with this layer as the root.
+            PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
+            if (!tempStage) {
+                MPxCommand::displayError("Failed to open stage for layer");
+                return false;
+            }
+
+            // Get the PcpLayerStackRefPtr to be used in the flatten method.
+            PXR_NS::PcpLayerStackRefPtr layerStack;
+            PXR_NS::UsdPrim             rootPrim = tempStage->GetPseudoRoot();
+            if (rootPrim) {
+                PXR_NS::PcpPrimIndex primIndex = rootPrim.GetPrimIndex();
+                if (primIndex.IsValid()) {
+                    PXR_NS::PcpNodeRef rootNode = primIndex.GetRootNode();
+                    if (rootNode) {
+                        layerStack = rootNode.GetLayerStack();
+                    }
+                }
+            }
+
+            if (!layerStack) {
+                MPxCommand::displayError("Cannot flatten layer: could not determine layer stack");
+                return false;
+            }
+
+            PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
+            if (!flattenedLayer) {
+                MPxCommand::displayError("Failed to flatten layer stack");
+                return false;
+            }
+
+            layer->TransferContent(flattenedLayer);
         }
 
         // Note: backup the edit targets after the layer is cleared because we use
@@ -622,6 +663,7 @@ public:
     bool undoIt(SdfLayerHandle layer) override
     {
         restoreLayer(layer);
+        restoreDirtySubLayers(layer);
 
         // Note: restore edit targets after the layers are restored so that the backup
         //       edit targets are now valid.
@@ -633,7 +675,7 @@ public:
     }
 
 private:
-    // Backup and restore dirty layers to support undo and redo.
+    // Backup dirty layer to support undo and redo.
     void backupLayer(SdfLayerHandle layer)
     {
         if (!layer)
@@ -642,6 +684,31 @@ private:
         if (layer->IsDirty() || _cmdId == CmdId::kClearLayer) {
             _backupLayer = SdfLayer::CreateAnonymous();
             _backupLayer->TransferContent(layer);
+        }
+    }
+
+    // Backup copies of dirty subLayers, ensuring that unsaved changes are restored by undo and
+    // redo.
+    void backupDirtySubLayers(SdfLayerHandle layer)
+    {
+        if (!layer)
+            return;
+
+        const std::vector<std::string> subLayerPaths = layer->GetSubLayerPaths();
+
+        for (auto path : subLayerPaths) {
+            const SdfLayerRefPtr subLayer = SdfLayer::FindOrOpen(path);
+
+            if (subLayer) {
+                // Make a copy of the dirty layer (in-memory changes)
+                if (subLayer->IsDirty() && !subLayer->IsAnonymous()) {
+                    const SdfLayerRefPtr backup = SdfLayer::CreateAnonymous();
+                    backup->TransferContent(subLayer);
+                    _backupDirtySubLayers[subLayer->GetIdentifier()] = backup;
+                }
+
+                backupDirtySubLayers(subLayer);
+            }
         }
     }
 
@@ -655,6 +722,29 @@ private:
             _backupLayer = nullptr;
         } else {
             layer->Reload();
+        }
+    }
+
+    void restoreDirtySubLayers(SdfLayerHandle layer)
+    {
+        if (!layer)
+            return;
+
+        const std::vector<std::string> subLayerPaths = layer->GetSubLayerPaths();
+        for (const auto& path : subLayerPaths) {
+            const auto subLayer = SdfLayer::FindRelativeToLayer(layer, path);
+            if (!subLayer)
+                continue;
+
+            const std::string& identifier = subLayer->GetIdentifier();
+
+            // Restore all backed up dirty subLayers.
+            auto it = _backupDirtySubLayers.find(identifier);
+            if (it != _backupDirtySubLayers.end()) {
+                subLayer->TransferContent(it->second);
+            }
+
+            restoreDirtySubLayers(subLayer);
         }
     }
 
@@ -710,8 +800,9 @@ private:
     using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
     EditTargetBackups _editTargetBackups;
 
-    // we need to hold onto the layer if we dirty it
     PXR_NS::SdfLayerRefPtr _backupLayer;
+    // Map between path and Layer to make copies of layers which are dirty and non-anonymous.
+    std::map<std::string, PXR_NS::SdfLayerRefPtr> _backupDirtySubLayers;
 };
 
 class DiscardEdit : public BackupLayerBase
@@ -728,6 +819,15 @@ class ClearLayer : public BackupLayerBase
 public:
     ClearLayer()
         : BackupLayerBase(CmdId::kClearLayer)
+    {
+    }
+};
+
+class FlattenLayer : public BackupLayerBase
+{
+public:
+    FlattenLayer()
+        : BackupLayerBase(CmdId::kFlattenLayer)
     {
     }
 };
@@ -1208,6 +1308,7 @@ MSyntax LayerEditorCommand::createSyntax()
         MSyntax::kUnsigned); // layer index inside the new parent
     syntax.addFlag(kDiscardEditsFlag, kDiscardEditsFlagL);
     syntax.addFlag(kClearLayerFlag, kClearLayerFlagL);
+    syntax.addFlag(kFlattenLayerFlag, kFlattenLayerFlagL);
     // parameter: new layer name
     syntax.addFlag(kAddAnonSublayerFlag, kAddAnonSublayerFlagL, MSyntax::kString);
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
@@ -1329,6 +1430,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
         if (argParser.isFlagSet(kClearLayerFlag)) {
             auto cmd = std::make_shared<Impl::ClearLayer>();
+            _subCommands.push_back(std::move(cmd));
+        }
+
+        if (argParser.isFlagSet(kFlattenLayerFlag)) {
+            auto cmd = std::make_shared<Impl::FlattenLayer>();
             _subCommands.push_back(std::move(cmd));
         }
 

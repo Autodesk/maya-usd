@@ -57,6 +57,9 @@ public:
     // erases everything on a layer
     void clearLayer(UsdLayer usdLayer) override;
 
+    // flattens a layer with its sublayers
+    void flattenLayer(UsdLayer usdLayer) override;
+
     // add an anon layer at the top of the stack, returns it
     UsdLayer addAnonymousSubLayer(UsdLayer usdLayer, std::string newName) override;
 

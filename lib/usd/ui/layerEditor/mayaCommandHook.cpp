@@ -182,6 +182,15 @@ void MayaCommandHook::clearLayer(UsdLayer usdLayer)
     executeMel(cmd);
 }
 
+// flattens a layer with its sublayers
+void MayaCommandHook::flattenLayer(UsdLayer usdLayer)
+{
+    std::string cmd;
+    cmd = "mayaUsdLayerEditor -edit -flatten ";
+    cmd += quote(usdLayer->GetIdentifier());
+    executeMel(cmd);
+}
+
 // add an anon layer at the top of the stack, returns it
 UsdLayer MayaCommandHook::addAnonymousSubLayer(UsdLayer usdLayer, std::string newName)
 {
