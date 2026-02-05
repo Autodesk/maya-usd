@@ -43,6 +43,7 @@ target_compile_definitions(${PROJECT_NAME}
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
         $<$<BOOL:${AR_FOUND}>:WANT_AR_BUILD>
+        $<$<BOOL:${UsdEditForward_FOUND}>:WANT_USDEDITFORWARD_BUILD>
 
         # this flag is needed when building maya-usd in Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
@@ -222,6 +223,7 @@ target_include_directories(${PROJECT_NAME}
         ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
+        $<$<BOOL:${UsdEditForward_FOUND}>:${USDEDITFORWARD_INCLUDE_DIR}>
 )
 target_include_directories(${PROJECT_NAME} 
     PUBLIC
@@ -266,6 +268,7 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXRender>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenShader>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
+        $<$<BOOL:${UsdEditForward_FOUND}>:${USDEDITFORWARD_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------
