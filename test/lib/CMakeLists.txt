@@ -71,6 +71,11 @@ if (AdskUsdComponentCreator_FOUND)
             "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
     )
     set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+else()
+    # If MAYAUSD_FORCE_CC_TEST is set to 1, fail the build when component creator is not found
+    if (DEFINED ENV{MAYAUSD_FORCE_CC_TEST} AND "$ENV{MAYAUSD_FORCE_CC_TEST}" STREQUAL "1")
+        message(FATAL_ERROR "MAYAUSD_FORCE_CC_TEST is set to 1 but AdskUsdComponentCreator was not found. ")
+    endif()
 endif()
 
 foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})

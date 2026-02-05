@@ -47,8 +47,13 @@ class LoadComponentCreatorPluginTestCase(unittest.TestCase):
                 break
 
         if not testPlugin:
-            print('testPluginLoadable: skipping test as the USD component creator plugin was not found.')
-            self.skipTest('Could not find the USD component creator plugin')
+            forceTest = os.environ.get('MAYAUSD_FORCE_CC_TEST', '0') == '1'
+            if forceTest:
+                self.fail('USD component creator plugin was not found but MAYAUSD_FORCE_CC_TEST is set. '
+                          'MAYA_MODULE_PATH={}'.format(modulePath))
+            else:
+                print('testPluginLoadable: skipping test as the USD component creator plugin was not found.')
+                self.skipTest('Could not find the USD component creator plugin')
 
         self.assertTrue(mayaUtils.loadPlugin('mayaUsdPlugin'))
         self.assertTrue(mayaUtils.loadPlugin('usd_component_creator'))
