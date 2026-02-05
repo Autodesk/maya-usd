@@ -947,7 +947,8 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
     auto markRprimDirty = [this, &changeTracker](const UsdPrim& prim) {
         constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
             | HdChangeTracker::DirtyRepr | HdChangeTracker::DirtyDisplayStyle
-            | MayaUsdRPrim::DirtySelectionHighlight | HdChangeTracker::DirtyMaterialId;
+            | MayaUsdRPrim::DirtySelectionHighlight | MayaUsdRPrim::DirtyDisplayLayers
+            | HdChangeTracker::DirtyMaterialId;
 
         if (prim.IsA<UsdGeomGprim>()) {
             auto range = _instancingMap.equal_range(

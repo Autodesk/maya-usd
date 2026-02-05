@@ -356,7 +356,9 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
         // Sync display layer modes for instanced prims.
         // This also sets the value of '_useInstancedDisplayLayerModes' that identifies whether
         // display layer modes will be handled on per-primitive or per-instance basis
-        _SyncDisplayLayerModes(id, true);
+        if (*dirtyBits & MayaUsdRPrim::DirtyDisplayLayers) {
+            _SyncDisplayLayerModes(id, true);
+        }
 
         // Instanced primitives with instances in display layers use 'forced' representations to
         // draw those specific instances, so the 'forced' representations should be inited alongside
@@ -372,7 +374,9 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
         }
     } else {
         // Sync display layer modes for non-instanced prims.
-        _SyncDisplayLayerModes(id, false);
+        if (*dirtyBits & MayaUsdRPrim::DirtyDisplayLayers) {
+            _SyncDisplayLayerModes(id, false);
+        }
     }
 
     _UpdateReprOverrides(reprs);

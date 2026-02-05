@@ -1879,7 +1879,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         // Retrieve instance transforms from the instancer.
         HdInstancer*    instancer = renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms
-            = static_cast<HdVP2Instancer*>(instancer)->ComputeInstanceTransforms(id);
+            = static_cast<HdVP2Instancer*>(instancer)->GetInstanceTransforms(id);
 
         MMatrix            instanceMatrix;
         const unsigned int instanceCount = transforms.size();
@@ -2027,7 +2027,9 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
 #endif
 
-            _SyncDisplayLayerModesInstanced(id, instanceCount);
+            if (itemDirtyBits & MayaUsdRPrim::DirtyDisplayLayers) {
+                _SyncDisplayLayerModesInstanced(id, instanceCount);
+            }
             const int             modFlags = drawItem->GetModFlags();
             InstanceColorOverride colorOverride(useWireframeColors);
 

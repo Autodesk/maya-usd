@@ -18,8 +18,11 @@
 #ifndef HD_VP2_INSTANCER
 #define HD_VP2_INSTANCER
 
+#include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/hashmap.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/vt/types.h>
 #include <pxr/imaging/hd/instancer.h>
 #include <pxr/imaging/hd/vtBufferSource.h>
 #include <pxr/pxr.h>
@@ -46,19 +49,25 @@ public:
 
     ~HdVP2Instancer();
 
-    VtMatrix4dArray ComputeInstanceTransforms(SdfPath const& prototypeId);
+    void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits)
+        override;
+
+    VtMatrix4dArray GetInstanceTransforms(SdfPath const& prototypeId);
 
 private:
-    void _SyncPrimvars();
-
-    //! Mutex guard for _SyncPrimvars().
-    std::mutex _instanceLock;
-
     /*! Map of the latest primvar data for this instancer, keyed by
         primvar name. Primvar values are VtValue, an any-type; they are
         interpreted at consumption time (here, in ComputeInstanceTransforms).
     */
     TfHashMap<TfToken, HdVtBufferSource*, TfToken::HashFunctor> _primvarMap;
+
+    // Cache the instance indices to avoid having the scene delegate recompute
+    // them every time
+    int                                           _maxInstanceIndex = -1;
+    TfHashMap<SdfPath, VtIntArray, SdfPath::Hash> _instanceIndicesByPrototype;
+
+    // Instance transforms cache
+    VtMatrix4dArray _instanceTransforms;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

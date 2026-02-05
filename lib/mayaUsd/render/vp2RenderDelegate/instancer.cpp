@@ -27,6 +27,8 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /*! \brief  Constructor.
@@ -57,175 +59,174 @@ HdVP2Instancer::~HdVP2Instancer()
     _primvarMap.clear();
 }
 
-/*! \brief  Checks the change tracker to determine whether instance primvars are
-            dirty, and if so pulls them.
+/*! \brief  Sync the instancer and update the cached transforms, if need be.
 
-    Since primvars can only be pulled once, and are cached, this function is not
-    re-entrant. However, this function is called by ComputeInstanceTransforms,
-    which is called by HdVP2Mesh::Sync(), which is dispatched in parallel, so it needs
-    to be guarded by _instanceLock.
+    This method is executed when we call HdInstancer::_SyncInstancerAndParents
+    in GetInstanceTransforms. Even if multiple instances try to sync their
+    instancer in parallel, this method will only be called once;
+    _SyncInstancerAndParents takes care of the multithreading aspect.
 */
-void HdVP2Instancer::_SyncPrimvars()
+void HdVP2Instancer::Sync(
+    HdSceneDelegate* sceneDelegate,
+    HdRenderParam*   renderParam,
+    HdDirtyBits*     dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdChangeTracker& changeTracker = GetDelegate()->GetRenderIndex().GetChangeTracker();
-    SdfPath const&   id = GetId();
+    _UpdateInstancer(sceneDelegate, dirtyBits);
 
-    // Use the double-checked locking pattern to check if this instancer's
-    // primvars are dirty.
-    HdDirtyBits dirtyBits = changeTracker.GetInstancerDirtyBits(id);
-    if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, id)
-        || HdChangeTracker::IsInstancerDirty(dirtyBits, id)
-        || HdChangeTracker::IsInstanceIndexDirty(dirtyBits, id)) {
-        std::lock_guard<std::mutex> lock(_instanceLock);
+    SdfPath const& id = GetId();
 
-        // If not dirty, then another thread did the job
-        dirtyBits = changeTracker.GetInstancerDirtyBits(id);
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+        // If this instancer has dirty primvars, get the list of
+        // primvar names and then cache each one.
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-        _UpdateInstancer(GetDelegate(), &dirtyBits);
+        HdPrimvarDescriptorVector primvars
+            = GetDelegate()->GetPrimvarDescriptors(id, HdInterpolationInstance);
+
+        for (HdPrimvarDescriptor const& pv : primvars) {
+            if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) {
+                VtValue value = GetDelegate()->Get(id, pv.name);
+                if (!value.IsEmpty()) {
+                    if (_primvarMap.count(pv.name) > 0) {
+                        delete _primvarMap[pv.name];
+                    }
+                    _primvarMap[pv.name] = new HdVtBufferSource(pv.name, value);
+                }
+            }
+        }
+    }
+
+    // Update our instance indices cache if required
+    if (*dirtyBits & HdChangeTracker::DirtyInstanceIndex) {
+        _maxInstanceIndex = -1;
+        _instanceIndicesByPrototype.clear();
+        auto prototypeIds = sceneDelegate->GetInstancerPrototypes(id);
+        for (const auto& prototypeId : prototypeIds) {
+            auto instanceIndices = sceneDelegate->GetInstanceIndices(id, prototypeId);
+            if (!instanceIndices.empty()) {
+                _maxInstanceIndex = std::max(
+                    _maxInstanceIndex,
+                    *std::max_element(instanceIndices.begin(), instanceIndices.end()));
+                _instanceIndicesByPrototype[prototypeId] = instanceIndices;
+            }
+        }
+    }
+
+    bool updateInstanceTransforms = (*dirtyBits & HdChangeTracker::DirtyTransform)
+        || HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)
+        || (*dirtyBits & HdChangeTracker::DirtyInstanceIndex);
+    if (updateInstanceTransforms) {
+        // Initialize all transforms to the instancer's transform, on which we later
+        // apply the individual instances' transformations.
+        GfMatrix4d instancerTransform = GetDelegate()->GetInstancerTransform(id);
+        _instanceTransforms = VtMatrix4dArray(_maxInstanceIndex + 1, instancerTransform);
+
+#if HD_API_VERSION < 56
+        TfToken translationsToken = HdInstancerTokens->translate;
+        TfToken rotationsToken = HdInstancerTokens->rotate;
+        TfToken scalesToken = HdInstancerTokens->scale;
+        TfToken transformsToken = HdInstancerTokens->instanceTransform;
+#else
+        TfToken translationsToken = HdInstancerTokens->instanceTranslations;
+        TfToken rotationsToken = HdInstancerTokens->instanceRotations;
+        TfToken scalesToken = HdInstancerTokens->instanceScales;
+        TfToken transformsToken = HdInstancerTokens->instanceTransforms;
 #endif
 
-        if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, id)) {
+        // Translations
+        if (_primvarMap.count(translationsToken) > 0) {
+            HdVP2BufferSampler sampler(*_primvarMap[translationsToken]);
+            for (int instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
+                GfVec3f translate;
+                if (sampler.Sample(instanceIndex, &translate)) {
+                    GfMatrix4d translateMat(1);
+                    translateMat.SetTranslate(GfVec3d(translate));
+                    _instanceTransforms[instanceIndex]
+                        = translateMat * _instanceTransforms[instanceIndex];
+                }
+            }
+        }
 
-            // If this instancer has dirty primvars, get the list of
-            // primvar names and then cache each one.
-
-            TfTokenVector             primvarNames;
-            HdPrimvarDescriptorVector primvars
-                = GetDelegate()->GetPrimvarDescriptors(id, HdInterpolationInstance);
-
-            for (HdPrimvarDescriptor const& pv : primvars) {
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
-                    VtValue value = GetDelegate()->Get(id, pv.name);
-                    if (!value.IsEmpty()) {
-                        if (_primvarMap.count(pv.name) > 0) {
-                            delete _primvarMap[pv.name];
-                        }
-                        _primvarMap[pv.name] = new HdVtBufferSource(pv.name, value);
+        // Rotations
+        if (_primvarMap.count(rotationsToken) > 0) {
+            HdVP2BufferSampler sampler(*_primvarMap[rotationsToken]);
+            for (int instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
+                GfQuath quath;
+                if (sampler.Sample(instanceIndex, &quath)) {
+                    GfMatrix4d rotateMat(1);
+                    rotateMat.SetRotate(quath);
+                    _instanceTransforms[instanceIndex]
+                        = rotateMat * _instanceTransforms[instanceIndex];
+                } else {
+                    GfVec4f quat;
+                    if (sampler.Sample(instanceIndex, &quat)) {
+                        GfMatrix4d rotateMat(1);
+                        rotateMat.SetRotate(GfQuatd(quat[0], quat[1], quat[2], quat[3]));
+                        _instanceTransforms[instanceIndex]
+                            = rotateMat * _instanceTransforms[instanceIndex];
                     }
                 }
             }
         }
 
-        // Mark the instancer as clean
-        changeTracker.MarkInstancerClean(id);
+        // Scales
+        if (_primvarMap.count(scalesToken) > 0) {
+            HdVP2BufferSampler sampler(*_primvarMap[scalesToken]);
+            for (int instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
+                GfVec3f scale;
+                if (sampler.Sample(instanceIndex, &scale)) {
+                    GfMatrix4d scaleMat(1);
+                    scaleMat.SetScale(GfVec3d(scale));
+                    _instanceTransforms[instanceIndex]
+                        = scaleMat * _instanceTransforms[instanceIndex];
+                }
+            }
+        }
+
+        // Transforms
+        if (_primvarMap.count(transformsToken) > 0) {
+            HdVP2BufferSampler sampler(*_primvarMap[transformsToken]);
+            for (int instanceIndex = 0; instanceIndex <= _maxInstanceIndex; instanceIndex++) {
+                GfMatrix4d transformMat;
+                if (sampler.Sample(instanceIndex, &transformMat)) {
+                    _instanceTransforms[instanceIndex]
+                        = transformMat * _instanceTransforms[instanceIndex];
+                }
+            }
+        }
     }
 }
 
-/*! \brief  Computes all instance transforms for the provided prototype id.
+/*! \brief  Retrieves or computes all instance transforms for the provided prototype id.
 
     Taking into account the scene delegate's instancerTransform and the
     instance primvars "instanceTransform", "translate", "rotate", "scale".
     Computes and flattens nested transforms, if necessary.
 
-    \param prototypeId The prototype to compute transforms for.
+    \param prototypeId The prototype to get transforms for.
 
     \return One transform per instance, to apply when drawing.
 */
-VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototypeId)
+VtMatrix4dArray HdVP2Instancer::GetInstanceTransforms(SdfPath const& prototypeId)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    _SyncPrimvars();
+    HdInstancer::_SyncInstancerAndParents(GetDelegate()->GetRenderIndex(), GetId());
 
-    // The transforms for this level of instancer are computed by:
-    // foreach(index : indices) {
-    //     instancerTransform
-    //     * hydra:translate(index)
-    //     * hydra:rotate(index)
-    //     * hydra:scale(index)
-    //     * hydra:instanceTransform(index)
-    // }
-    // If any transform isn't provided, it's assumed to be the identity.
+    // Get the instance indices from our cache instead of querying the scene delegate.
+    auto itInstanceIndices = _instanceIndicesByPrototype.find(prototypeId);
+    if (itInstanceIndices == _instanceIndicesByPrototype.end()) {
+        return {};
+    }
 
-    GfMatrix4d instancerTransform = GetDelegate()->GetInstancerTransform(GetId());
-    VtIntArray instanceIndices = GetDelegate()->GetInstanceIndices(GetId(), prototypeId);
-
+    // Retrieve only the instance transforms relevant to this prototype
+    auto            instanceIndices = itInstanceIndices->second;
     VtMatrix4dArray transforms(instanceIndices.size());
-    for (size_t i = 0; i < instanceIndices.size(); ++i) {
-        transforms[i] = instancerTransform;
-    }
-
-    // "hydra:instanceTranslations" holds a translation vector for each index.
-#if HD_API_VERSION < 56
-    if (_primvarMap.count(HdInstancerTokens->translate) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->translate]);
-#else
-    if (_primvarMap.count(HdInstancerTokens->instanceTranslations) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceTranslations]);
-#endif
-        for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            GfVec3f translate;
-            if (sampler.Sample(instanceIndices[i], &translate)) {
-                GfMatrix4d translateMat(1);
-                translateMat.SetTranslate(GfVec3d(translate));
-                transforms[i] = translateMat * transforms[i];
-            }
-        }
-    }
-
-    // "hydra:instanceRotations" holds a quaternion in <real, i, j, k> format
-    // for each index.
-#if HD_API_VERSION < 56
-    if (_primvarMap.count(HdInstancerTokens->rotate) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->rotate]);
-#else
-    if (_primvarMap.count(HdInstancerTokens->instanceRotations) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceRotations]);
-#endif
-        for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            GfQuath quath;
-            if (sampler.Sample(instanceIndices[i], &quath)) {
-                GfMatrix4d rotateMat(1);
-                rotateMat.SetRotate(quath);
-                transforms[i] = rotateMat * transforms[i];
-            } else {
-                GfVec4f quat;
-                if (sampler.Sample(instanceIndices[i], &quat)) {
-                    GfMatrix4d rotateMat(1);
-                    rotateMat.SetRotate(GfQuatd(quat[0], quat[1], quat[2], quat[3]));
-                    transforms[i] = rotateMat * transforms[i];
-                }
-            }
-        }
-    }
-
-    // "hydra:instanceScales" holds an axis-aligned scale vector for each index.
-#if HD_API_VERSION < 56
-    if (_primvarMap.count(HdInstancerTokens->scale) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->scale]);
-#else
-    if (_primvarMap.count(HdInstancerTokens->instanceScales) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceScales]);
-#endif
-        for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            GfVec3f scale;
-            if (sampler.Sample(instanceIndices[i], &scale)) {
-                GfMatrix4d scaleMat(1);
-                scaleMat.SetScale(GfVec3d(scale));
-                transforms[i] = scaleMat * transforms[i];
-            }
-        }
-    }
-
-    // "hydra:instanceTransforms" holds a 4x4 transform matrix for each index.
-#if HD_API_VERSION < 56
-    if (_primvarMap.count(HdInstancerTokens->instanceTransform) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceTransform]);
-#else
-    if (_primvarMap.count(HdInstancerTokens->instanceTransforms) > 0) {
-        HdVP2BufferSampler sampler(*_primvarMap[HdInstancerTokens->instanceTransforms]);
-#endif
-        for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            GfMatrix4d instanceTransform;
-            if (sampler.Sample(instanceIndices[i], &instanceTransform)) {
-                transforms[i] = instanceTransform * transforms[i];
-            }
-        }
+    for (size_t i = 0; i < instanceIndices.size(); i++) {
+        transforms[i] = _instanceTransforms[instanceIndices[i]];
     }
 
     if (GetParentId().IsEmpty()) {
@@ -238,12 +239,12 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
     }
 
     // The transforms taking nesting into account are computed by:
-    // parentTransforms = parentInstancer->ComputeInstanceTransforms(GetId())
+    // parentTransforms = parentInstancer->GetInstanceTransforms(GetId())
     // foreach (parentXf : parentTransforms, xf : transforms) {
     //     parentXf * xf
     // }
     VtMatrix4dArray parentTransforms
-        = static_cast<HdVP2Instancer*>(parentInstancer)->ComputeInstanceTransforms(GetId());
+        = static_cast<HdVP2Instancer*>(parentInstancer)->GetInstanceTransforms(GetId());
 
     VtMatrix4dArray final(parentTransforms.size() * transforms.size());
     for (size_t i = 0; i < parentTransforms.size(); ++i) {
