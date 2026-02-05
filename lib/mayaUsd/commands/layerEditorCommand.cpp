@@ -682,6 +682,7 @@ private:
             return;
 
         if (layer->IsDirty() || _cmdId == CmdId::kClearLayer) {
+            _isBackupLayerDirty = true;
             _backupLayer = SdfLayer::CreateAnonymous();
             _backupLayer->TransferContent(layer);
         }
@@ -720,6 +721,8 @@ private:
         if (_backupLayer) {
             layer->TransferContent(_backupLayer);
             _backupLayer = nullptr;
+            if (!_isBackupLayerDirty)
+                layer->Reload(); // Clears dirty bit
         } else {
             layer->Reload();
         }
@@ -800,8 +803,10 @@ private:
     using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
     EditTargetBackups _editTargetBackups;
 
-    // we need to copy the layer if we dirty it
+    // We need to copy the layer if we dirty it.
     PXR_NS::SdfLayerRefPtr _backupLayer;
+    bool _isBackupLayerDirty = false;
+
     // Map between path and Layer to make copies of layers which are dirty and non-anonymous.
     std::map<std::string, PXR_NS::SdfLayerRefPtr> _backupDirtySubLayers;
 };
