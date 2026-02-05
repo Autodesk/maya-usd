@@ -39,7 +39,7 @@ HeaderWidget::HeaderWidget(const QString& title, QWidget* parent)
     , d_ptr(new HeaderWidgetPrivate(title))
 {
     setMinimumHeight(ApplicationHost::instance().pm(ApplicationHost::PixelMetric::ItemHeight));
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
 }
 
 HeaderWidget::~HeaderWidget() = default;
