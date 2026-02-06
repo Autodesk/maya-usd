@@ -130,13 +130,13 @@ Ufe::SceneItem::Ptr getMaterialsScope(const Ufe::Path& parentPath)
     std::string scopeName = scopeNamePrefix;
     auto        hasName
         = [&scopeName](const Ufe::SceneItem::Ptr& item) { return item->nodeName() == scopeName; };
-    Ufe::SceneItemList children = parentHierarchy->children();
+    Ufe::SceneItemList children = UsdUfe::getHierarchyChildren(parentHierarchy);
     for (size_t i = 1;; ++i) {
         auto childrenIterator = std::find_if(children.begin(), children.end(), hasName);
         if (childrenIterator == children.end()) {
             return nullptr;
         }
-        if ((*childrenIterator)->nodeType() == "Scope") {
+        if (UsdUfe::getSceneItemNodeType(*childrenIterator) == "Scope") {
             return *childrenIterator;
         }
 
@@ -173,8 +173,8 @@ bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
 #ifdef UFE_V4_FEATURES_AVAILABLE
 bool isDefPrim(const Ufe::SceneItem::Ptr& sceneItem)
 {
-    const auto canonicalName
-        = TfType::Find<UsdSchemaBase>().FindDerivedByName(sceneItem->nodeType().c_str());
+    const auto canonicalName = TfType::Find<UsdSchemaBase>().FindDerivedByName(
+        UsdUfe::getSceneItemNodeType(sceneItem).c_str());
     if (canonicalName.IsUnknown()) {
         return true;
     }
