@@ -117,6 +117,7 @@ UsdUfe::StageAccessorFn            gStageAccessorFn = nullptr;
 UsdUfe::StagePathAccessorFn        gStagePathAccessorFn = nullptr;
 UsdUfe::UfePathToPrimFn            gUfePathToPrimFn = nullptr;
 UsdUfe::TimeAccessorFn             gTimeAccessorFn = nullptr;
+UsdUfe::IsLoadingSceneFn           gIsLoadingSceneFn = nullptr;
 UsdUfe::IsAttributeLockedFn        gIsAttributeLockedFn = nullptr;
 UsdUfe::SaveStageLoadRulesFn       gSaveStageLoadRulesFn = nullptr;
 UsdUfe::IsRootChildFn              gIsRootChildFn = nullptr;
@@ -251,6 +252,21 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path)
     assert(gTimeAccessorFn != nullptr);
 #endif
     return gTimeAccessorFn(path);
+}
+
+void setIsLoadingSceneFn(IsLoadingSceneFn fn)
+{
+    // This function is allowed to be null in which case return default (false).
+    gIsLoadingSceneFn = fn;
+}
+
+bool isSceneLoading()
+{
+    // If we have (optional) scene loading function, use it.
+    // Otherwise return false.
+    if (gIsLoadingSceneFn)
+        return gIsLoadingSceneFn();
+    return false;
 }
 
 void setIsAttributeLockedFn(IsAttributeLockedFn fn)
@@ -468,6 +484,38 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     return childName;
 }
 
+std::string getSceneItemNodeType(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item) {
+        return {};
+    }
+
+    if (isSceneLoading()) {
+        // During Maya scene load, querying the node type of a USD scene item
+        // may cause Maya to crash (EMSUSD-1397). So we return an empty string
+        // in that case.
+        return {};
+    }
+
+    return item->nodeType();
+}
+
+Ufe::SceneItemList getHierarchyChildren(const Ufe::Hierarchy::Ptr& hierarchy)
+{
+    if (!hierarchy) {
+        return {};
+    }
+
+    if (isSceneLoading()) {
+        // During Maya scene load, querying the children of a USD hierarchy may
+        // cause Maya to crash (EMSUSD-1397). So we return an empty list in that
+        // case.
+        return {};
+    }
+
+    return hierarchy->children();
+}
+
 bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
 {
     if (!item) {
@@ -475,7 +523,7 @@ bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
     }
 
     // Must be a scope.
-    if (item->nodeType() != "Scope") {
+    if (UsdUfe::getSceneItemNodeType(item) != "Scope") {
         return false;
     }
 
@@ -487,8 +535,8 @@ bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
     // Or with only materials inside
     auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
     if (scopeHierarchy) {
-        for (auto&& child : scopeHierarchy->children()) {
-            if (child->nodeType() != "Material") {
+        for (auto&& child : UsdUfe::getHierarchyChildren(scopeHierarchy)) {
+            if (UsdUfe::getSceneItemNodeType(child) != "Material") {
                 // At least one non material
                 return false;
             }
