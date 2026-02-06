@@ -373,8 +373,6 @@ std::string uniqueNameMaxSuffix(const TfToken::HashSet& existingNames, std::stri
     size_t      lenSuffix { 1 };
     if (splitNumericalSuffix(srcName, base, suffixStr)) {
         lenSuffix = suffixStr.length();
-    } else {
-        base = srcName;
     }
 
     int maxSuffix = 0;
