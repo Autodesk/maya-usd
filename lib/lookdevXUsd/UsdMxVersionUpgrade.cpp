@@ -335,7 +335,7 @@ Ufe::Path _getMaterialPath(const Ufe::Path& materialPath)
 
     auto sceneItem = Ufe::Hierarchy::createItem(materialPath);
 
-    while (sceneItem && sceneItem->nodeType() != _tokens->Material) {
+    while (sceneItem && UsdUfe::getSceneItemNodeType(sceneItem) != _tokens->Material) {
         auto hierarchy = Ufe::Hierarchy::hierarchy(sceneItem);
         sceneItem = hierarchy->parent();
     }

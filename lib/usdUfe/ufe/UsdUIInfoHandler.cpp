@@ -222,7 +222,7 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
 
     // If the node type ends with _ followed by a number, we strip the number.
     // This is to handle the case where we have a node type like "Capsule_1".
-    auto nodeType = item->nodeType();
+    std::string nodeType = UsdUfe::getSceneItemNodeType(item);
     if (nodeType.size() > 2 && nodeType[nodeType.size() - 2] == '_'
         && std::isdigit(nodeType[nodeType.size() - 1])) {
         nodeType = nodeType.substr(0, nodeType.size() - 2);

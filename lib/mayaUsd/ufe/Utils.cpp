@@ -353,7 +353,7 @@ void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
     auto hier = Ufe::Hierarchy::hierarchy(ufeItem);
     if (hier) {
         // Go through the entire hierarchy
-        for (auto child : hier->children()) {
+        for (auto child : UsdUfe::getHierarchyChildren(hier)) {
             initRecursive(child);
         }
     }
@@ -415,7 +415,7 @@ void ReplicateExtrasToUSD::initRecursive(const Ufe::SceneItem::Ptr& item) const
     auto hier = Ufe::Hierarchy::hierarchy(item);
     if (hier) {
         // Go through the entire hierarchy.
-        for (auto child : hier->children()) {
+        for (auto child : UsdUfe::getHierarchyChildren(hier)) {
             initRecursive(child);
         }
     }

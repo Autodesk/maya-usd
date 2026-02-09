@@ -93,6 +93,7 @@
 #include <usdUfe/ufe/UsdClipboardHandler.h>
 #endif
 
+#include <maya/MFileIO.h>
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
@@ -134,6 +135,12 @@ void mayaStartWaitCursor()
 }
 
 void mayaStopWaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
+
+bool mayaIsSceneLoading()
+{
+    return MFileIO::isReadingFile() || MFileIO::isOpeningFile() || MFileIO::isNewingFile()
+        || MFileIO::isImportingFile() || MFileIO::isReferencingFile();
+}
 
 // Note: MayaUsd::ufe::getStage takes two parameters, so wrap it in a function taking only one.
 PXR_NS::UsdStageWeakPtr mayaGetStage(const Ufe::Path& path) { return MayaUsd::ufe::getStage(path); }
@@ -218,6 +225,7 @@ MStatus initialize()
     dccFunctions.defaultMaterialScopeNameFn = defaultMaterialsScopeName;
     dccFunctions.extractTRSFn = MayaUsd::ufe::extractTRS;
     dccFunctions.transform3dMatrixOpNameFn = getTransform3dMatrixOpName;
+    dccFunctions.isLoadingSceneFn = mayaIsSceneLoading;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();

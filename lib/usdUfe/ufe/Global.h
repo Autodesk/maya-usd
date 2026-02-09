@@ -55,6 +55,7 @@ struct USDUFE_PUBLIC DCCFunctions
     TimeAccessorFn      timeAccessorFn = nullptr;
 
     // Optional: default values will be used if no function is supplied.
+    IsLoadingSceneFn           isLoadingSceneFn = nullptr;
     IsAttributeLockedFn        isAttributeLockedFn = nullptr;
     SaveStageLoadRulesFn       saveStageLoadRulesFn = nullptr;
     IsRootChildFn              isRootChildFn = nullptr;

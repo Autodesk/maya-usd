@@ -15,6 +15,8 @@
 //
 #include "PulledObjectHierarchy.h"
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 
 // Needed because of TF_CODING_ERROR
@@ -63,7 +65,10 @@ bool PulledObjectHierarchy::hasFilteredChildren(const ChildFilter& childFilter) 
 
 bool PulledObjectHierarchy::hasChildren() const { return _mayaHierarchy->hasChildren(); }
 
-Ufe::SceneItemList PulledObjectHierarchy::children() const { return _mayaHierarchy->children(); }
+Ufe::SceneItemList PulledObjectHierarchy::children() const
+{
+    return UsdUfe::getHierarchyChildren(_mayaHierarchy);
+}
 
 Ufe::SceneItemList PulledObjectHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {

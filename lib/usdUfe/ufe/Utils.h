@@ -71,6 +71,7 @@ typedef std::string (*DefaultMaterialScopeNameFn)();
 typedef void (
     *ExtractTRSFn)(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s);
 typedef const char* (*Transform3dMatrixOpNameFn)();
+typedef bool (*IsLoadingSceneFn)();
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -133,6 +134,17 @@ void setTimeAccessorFn(TimeAccessorFn fn);
 //! Get the time along the argument path.
 USDUFE_PUBLIC
 PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
+
+//! Set the DCC specific is-scene-loading test function.
+//! Use of this function is optional, if one is not supplied then
+//! a default test function will be used.
+USDUFE_PUBLIC
+void setIsLoadingSceneFn(IsLoadingSceneFn fn);
+
+//! Return whether the DCC is loading a scene.
+//! \return True if the DCC is currently loading a scene, otherwise false
+USDUFE_PUBLIC
+bool isSceneLoading();
 
 //! Set the DCC specific USD attribute is locked test function.
 //! Use of this function is optional, if one is not supplied then
@@ -222,6 +234,14 @@ PXR_NS::SdfPath uniqueChildPath(const PXR_NS::UsdStage& stage, const PXR_NS::Sdf
 
 USDUFE_PUBLIC
 Ufe::Path appendToUsdPath(const Ufe::Path& path, const std::string& name);
+
+//! Returns the node type of the \p item safely, avoiding problem during scene loads.
+USDUFE_PUBLIC
+std::string getSceneItemNodeType(const Ufe::SceneItem::Ptr& item);
+
+//! Returns the children of the \p hierarchy safely, avoiding problem during scene loads.
+USDUFE_PUBLIC
+Ufe::SceneItemList getHierarchyChildren(const Ufe::Hierarchy::Ptr& hierarchy);
 
 //! Returns true if \p item is a materials scope.
 USDUFE_PUBLIC

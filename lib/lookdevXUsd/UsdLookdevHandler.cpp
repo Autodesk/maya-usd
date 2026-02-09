@@ -14,6 +14,8 @@
 
 #include <mayaUsdAPI/utils.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 namespace
 {
 
@@ -131,7 +133,7 @@ Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevEnviron
 
 bool UsdLookdevHandler::isLookdevContainerImpl(const Ufe::SceneItem::Ptr& item) const
 {
-    return item->nodeType() == "Material";
+    return UsdUfe::getSceneItemNodeType(item) == "Material";
 }
 
 } // namespace LookdevXUsd

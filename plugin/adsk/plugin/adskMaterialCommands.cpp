@@ -231,8 +231,8 @@ static bool isNodeTypeInList(
     const std::vector<std::string>& nodeTypeList,
     bool                            checkAllAncestors)
 {
-    const auto canonicalName
-        = TfType::Find<UsdSchemaBase>().FindDerivedByName(sceneItem->nodeType().c_str());
+    const auto canonicalName = TfType::Find<UsdSchemaBase>().FindDerivedByName(
+        UsdUfe::getSceneItemNodeType(sceneItem).c_str());
 
     if (canonicalName.IsUnknown()) {
         return false;
