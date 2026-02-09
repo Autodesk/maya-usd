@@ -227,8 +227,32 @@ void MayaLayerEditorWindow::lockLayerAndSubLayers()
 
 void MayaLayerEditorWindow::stitchLayers()
 {
-    // KYLE TODO
-}
+    auto selectedItems = treeView()->getSelectedLayerItems();
+
+     // Need at least 2 layers to stitch.
+    if (selectedItems.size() < 2)
+        return;
+
+    std::vector<PXR_NS::SdfLayerRefPtr> layers;
+    layers.reserve(selectedItems.size());
+
+    for (auto item : selectedItems) {
+        if (!item)
+            continue;
+
+        auto layer = item->layer();
+        if (!layer)
+            continue;
+
+        layers.push_back(layer);
+    }
+
+    // Need at least 2 valid sublayers to stitch
+    if (layers.size() < 2)
+        return;
+
+    _sessionState.commandHook()->stitchLayers(layers);
+    }
 
 void MayaLayerEditorWindow::addParentLayer()
 {

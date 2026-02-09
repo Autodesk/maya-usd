@@ -72,9 +72,7 @@ public:
     void refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers = false) override;
 
     // merge multiple layers into the strongest layer, removing them from their parents
-    void stitchLayers(
-        const std::vector<PXR_NS::SdfLayerRefPtr>& layers,
-        const std::vector<PXR_NS::SdfLayerRefPtr>& parents) override;
+    void stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers) override;
 
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close

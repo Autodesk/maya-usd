@@ -43,8 +43,11 @@
 
 #include <ghc/filesystem.hpp>
 
+#include <algorithm>
 #include <cstddef>
+#include <map>
 #include <string>
+#include <unordered_map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -747,20 +750,31 @@ public:
     bool doIt(SdfLayerHandle targetLayer) override
     {
         // KYLE TODO
+        // -Merge the selected weak layers into the strongest layer
+        // - Use USD's UsdUtilsStitchLayers() function (imported at the top)
+        // - Remove the weak layers from their parent sublayer lists
+        // - Store undo information (the commented fields suggest tracking : layer identifiers,
+        // parent layers, paths, and original indices)
         return true;
     }
 
     bool undoIt(SdfLayerHandle targetLayer) override
     {
         // KYLE TODO
+        // - Restoring the weak layers back to their original parent sublayers
+        // - Restoring them at their original indices in the sublayer arrays
+        // - Removing the stitched content from the target layer(if possible)
+        // - Using the backup data stored during doIt()
         return true;
     }
 
-    //std::vector<std::string>    _weakLayerIdentifiers; // Layers to merge (from weakest to strongest)
-    //std::vector<SdfLayerHandle> _weakLayerParents;     // Parent layer for each weak layer
-    //std::vector<std::string>    _weakLayerPaths;       // Paths in each parent's sublayer array
-    //std::vector<int>            _weakLayerIndices;     // Original indices for undo
-    //std::string                 _proxyShapePath;       // For edit target management
+    // std::vector<std::string>    _weakLayerIdentifiers; // Layers to merge (from weakest to
+    // strongest) std::vector<SdfLayerHandle> _weakLayerParents;     // Parent layer for each weak
+    // layer std::vector<std::string>    _weakLayerPaths;       // Paths in each parent's sublayer
+    // array std::vector<int>            _weakLayerIndices;     // Original indices for undo
+    std::vector<std::string>
+                _layerIdentifiersByStrength; // Layers ordered by strength (strongest first)
+    std::string _proxyShapePath;             // For edit target management and getting stage
 };
 
 class MuteLayer : public BaseCmd
@@ -1251,7 +1265,9 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.addFlag(
         kRefreshSystemLockFlag, kRefreshSystemLockFlagL, MSyntax::kString, MSyntax::kBoolean);
     syntax.addFlag(kSkipSystemLockedFlag, kSkipSystemLockedFlagL);
-    syntax.addFlag(kStitchLayersFlag, kStitchLayersFlagL, MSyntax::kString);
+    // parameter 1: proxy shape name
+    // parameter 2: layer identifier
+    syntax.addFlag(kStitchLayersFlag, kStitchLayersFlagL, MSyntax::kString, MSyntax::kString);
     syntax.makeFlagMultiUse(kStitchLayersFlag);
 
     return syntax;
@@ -1454,7 +1470,73 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             _subCommands.push_back(std::move(cmd));
         }
         if (argParser.isFlagSet(kStitchLayersFlag)) {
-            // KYLE TODO
+            std::vector<std::string> layerIdentifiers;
+            auto                     layerCount = argParser.numberOfFlagUses(kStitchLayersFlag);
+            MString                  proxyShapeName;
+
+            // Get proxy shape and all selected layers.
+            for (unsigned i = 0; i < layerCount; i++) {
+                MArgList listOfArgs;
+                argParser.getFlagArgumentList(kStitchLayersFlag, i, listOfArgs);
+
+                if (i == 0)
+                    proxyShapeName = listOfArgs.asString(0);
+
+                MString layerIdentifier = listOfArgs.asString(1);
+                layerIdentifiers.push_back(layerIdentifier.asChar());
+            }
+
+            UsdPrim prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
+            if (prim == UsdPrim()) {
+                displayError(
+                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                return MS::kInvalidParameter;
+            }
+
+            UsdStageWeakPtr stage = prim.GetStage();
+            if (!stage) {
+                displayError(
+                    MString("Cannot get stage for proxy shape: ")
+                    + MString(proxyShapeName.asChar()));
+                return MS::kInvalidParameter;
+            }
+
+            // Get the flattened layer stack (strong to weak)
+            SdfLayerHandleVector layerStack = stage->GetLayerStack();
+
+            // Create a map of layer identifier to its strength position.
+            std::unordered_map<std::string, size_t> layerStrengthMap;
+            layerStrengthMap.reserve(layerStack.size());
+            for (size_t i = 0; i < layerStack.size(); i++) {
+                layerStrengthMap[layerStack[i]->GetIdentifier()] = i;
+            }
+
+            // Sort the selected layers by their strength (strongest first).
+            std::sort(
+                layerIdentifiers.begin(),
+                layerIdentifiers.end(),
+                [&layerStrengthMap](const std::string& a, const std::string& b) {
+                    auto itA = layerStrengthMap.find(a);
+                    auto itB = layerStrengthMap.find(b);
+
+                    // Catch for if layers are not found within the layer stack.
+                    if (itA == layerStrengthMap.end()) {
+                        TF_WARN("Layer '%s' not found in stage layer stack", a.c_str());
+                        return false; // Push to end
+                    }
+                    if (itB == layerStrengthMap.end()) {
+                        TF_WARN("Layer '%s' not found in stage layer stack", b.c_str());
+                        return true; // Push to end
+                    }
+
+                    return itA->second < itB->second;
+                });
+
+            auto cmd = std::make_shared<Impl::StitchLayers>();
+            cmd->_layerIdentifiersByStrength = layerIdentifiers;
+            cmd->_proxyShapePath = proxyShapeName.asChar();
+
+            _subCommands.push_back(std::move(cmd));
         }
     }
 

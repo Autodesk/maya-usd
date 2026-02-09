@@ -238,11 +238,28 @@ void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubL
     executeMel(cmd);
 }
 
-void MayaCommandHook::stitchLayers(
-    const std::vector<PXR_NS::SdfLayerRefPtr>& layers,
-    const std::vector<PXR_NS::SdfLayerRefPtr>& parents)
+void MayaCommandHook::stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers)
 {
-    // KYLE TODO
+    if (layers.empty())
+        return;
+
+    std::string cmd = "mayaUsdLayerEditor -edit ";
+    std::string proxyShape = proxyShapePath();
+
+    for (const auto& layer : layers) {
+        if (!layer)
+            continue;
+
+        cmd += "-stitchLayers ";
+        cmd += quote(proxyShape);
+        cmd += " ";
+        cmd += quote(layer->GetIdentifier());
+        cmd += " ";
+    }
+
+    // Target layer isn't actually used, but needed for the command syntax.
+    cmd += quote(layers[0]->GetIdentifier());
+    executeMel(cmd);
 }
 
 // Help menu callback
