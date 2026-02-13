@@ -855,8 +855,8 @@ public:
             layersByStrength[i]->SetSubLayerPaths({});
         }
 
-        // Merge the layers by weakness into the strongest layer.
-        for (size_t i = layersByStrength.size() - 1; i > 0; --i) {
+        // Merge the layers by strength into the strongest layer.
+        for (size_t i = 1; i < layersByStrength.size(); ++i) {
             UsdUtilsStitchLayers(strongestLayer, layersByStrength[i]);
         }
 
