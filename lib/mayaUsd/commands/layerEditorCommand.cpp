@@ -842,6 +842,9 @@ public:
             }
         }
 
+        // Store the original subLayers of the strongest layer for undo.
+        _originalStrongestSubLayers = strongestLayer->GetSubLayerPaths();
+
         // Collect subLayers from selected weak layers before stitching to preserve hierarchy.
         for (size_t i = 1; i < layersByStrength.size(); ++i) {
             const SdfLayerHandle&    weakLayer = layersByStrength[i];
@@ -860,15 +863,34 @@ public:
             UsdUtilsStitchLayers(strongestLayer, layersByStrength[i]);
         }
 
-        // Add all collected subLayers to the strongest layer.
+        // Add all collected subLayers to the strongest layer, while preventing duplicates.
         // They are added at the end (weakest position) to preserve relative strength.
         if (!_movedSubLayers.empty()) {
             auto strongLayerSubLayers = strongestLayer->GetSubLayerPaths();
 
-            for (const auto& subLayerList : _movedSubLayers) {
-                strongLayerSubLayers.insert(
-                    strongLayerSubLayers.end(), subLayerList.begin(), subLayerList.end());
+            // Track subLayers that were already added.
+            std::set<std::string> addedSublayerIds;
+            for (const auto& path : strongLayerSubLayers) {
+                auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
+                if (existingLayer) {
+                    addedSublayerIds.insert(existingLayer->GetIdentifier());
+                }
             }
+
+            // Insert the _movedSubLayers to the strongestLayer, while preventing duplicates.
+            for (const auto& subLayerList : _movedSubLayers) {
+                for (const auto& subLayerPath : subLayerList) {
+                    auto subLayer = SdfLayer::FindRelativeToLayer(strongestLayer, subLayerPath);
+                    if (subLayer) {
+                        if (addedSublayerIds.find(subLayer->GetIdentifier())
+                            == addedSublayerIds.end()) {
+                            strongLayerSubLayers.push_back(subLayerPath);
+                            addedSublayerIds.insert(subLayer->GetIdentifier());
+                        }
+                    }
+                }
+            }
+
             strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
         }
 
@@ -939,34 +961,9 @@ public:
 
         restoreLayer(strongestLayer);
 
-        // Remove the moved subLayers, skip the selected weak layers.
-        if (!_movedSubLayers.empty()) {
-            auto strongLayerSublayers = strongestLayer->GetSubLayerPaths();
-
-            // Collect all selected weak layer identifiers.
-            std::set<std::string> weakSelectedLayerIds;
-            for (size_t i = 1; i < _layerIdentifiersByStrength.size(); ++i) {
-                weakSelectedLayerIds.insert(_layerIdentifiersByStrength[i]);
-            }
-
-            // Remove moved subLayers.
-            for (auto& subLayerList : _movedSubLayers) {
-                for (auto it = subLayerList.rbegin(); it != subLayerList.rend(); ++it) {
-                    const std::string& subLayerId = *it;
-
-                    // Only remove if it's not a weak layer.
-                    if (weakSelectedLayerIds.find(subLayerId) == weakSelectedLayerIds.end()) {
-                        // Find and remove this subLayer from the strongest layer
-                        auto removeIt = std::find(
-                            strongLayerSublayers.begin(), strongLayerSublayers.end(), subLayerId);
-                        if (removeIt != strongLayerSublayers.end()) {
-                            strongLayerSublayers.erase(removeIt);
-                        }
-                    }
-                }
-            }
-
-            strongestLayer->SetSubLayerPaths(strongLayerSublayers);
+        // Restore the strongest layer's sublayers to their original state.
+        if (!_originalStrongestSubLayers.empty() || !_movedSubLayers.empty()) {
+            strongestLayer->SetSubLayerPaths(_originalStrongestSubLayers);
         }
 
         // Restore the selected weak layers back to their original parent subLayers
@@ -1033,6 +1030,9 @@ public:
 
     // SubLayers moved from each weak layer for undo. Size N-1.
     std::vector<std::vector<std::string>> _movedSubLayers;
+
+    // Original subLayers of the strongest layer before stitch (for proper undo).
+    std::vector<std::string> _originalStrongestSubLayers;
 
     // For edit target management and getting stage.
     std::string _proxyShapePath;
