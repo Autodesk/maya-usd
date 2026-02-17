@@ -189,6 +189,21 @@ class PythonWrappersTestCase(unittest.TestCase):
 
         self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
 
+    def testGetAllStagesAfterRename(self):
+        '''
+        Verify that after renaming an ancestor node, we can still find
+        the stage via getAllStages().
+        '''
+        cmds.file(new=True, force=True)
+
+        mayaUsdStage = cmds.createNode("mayaUsdProxyShape", name="myStage")
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+
+        usdProxyNode = cmds.listRelatives(mayaUsdStage, parent=True, fullPath=True)
+        cmds.rename(usdProxyNode, 'foo')
+
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test for UFE v4 or later')
     def testCreateStageWithNewLayerBinding(self):
         cmds.file(new=True, force=True)

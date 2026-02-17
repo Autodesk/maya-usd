@@ -68,6 +68,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     void stopObserving();
 
+    //! Update callbacks for the observed node.
+    MAYAUSD_CORE_PUBLIC
+    void updateObserving();
+
     //! Add a listener to be called when the node changes.
     //
     //  The caller is responsible to ensure the listener is valid
@@ -88,8 +92,8 @@ public:
     static void removeCallbackId(MCallbackId& callbackId);
 
 private:
-    void updateRenameCallback();
-    void removeRenameCallback();
+    void updateRenameCallbacks();
+    void removeRenameCallbacks();
 
     void updateAncestorCallbacks();
     void removeAncestorCallbacks();
@@ -105,7 +109,7 @@ private:
 
     MObject _observedNode;
 
-    MCallbackId              _renameCallbackId = 0;
+    std::vector<MCallbackId> _renameCallbackIds;
     std::vector<MCallbackId> _parentAddedCallbackIds;
     std::vector<MCallbackId> _ancestorCallbackIds;
 
