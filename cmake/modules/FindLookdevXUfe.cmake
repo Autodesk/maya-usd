@@ -91,3 +91,10 @@ if(LookdevXUfe_VERSION VERSION_GREATER_EQUAL "2.0.0" OR
     set(LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION TRUE CACHE INTERNAL "LegacyMxLookdevXUfe")
     message(STATUS "Maya has LookdevXUfe Legacy MaterialX handling")
 endif()
+
+# The ExtendedConnectionHandler and associated classes get removed from LookdevXUfe in UFE v8 / LookdevXUfe v3.
+set(LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER FALSE CACHE INTERNAL "LookdevXUfeHasExtendedConnectionHandler")
+if (LookdevXUfe_INCLUDE_DIR AND EXISTS "${LookdevXUfe_INCLUDE_DIR}/LookdevXUfe/ExtendedConnectionHandler.h")
+    set(LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER TRUE CACHE INTERNAL "LookdevXUfeHasExtendedConnectionHandler")
+    message(STATUS "Maya has LookdevXUfe ExtendedConnectionHandler")
+endif()
