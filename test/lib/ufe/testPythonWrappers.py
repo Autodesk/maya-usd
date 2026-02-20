@@ -164,7 +164,7 @@ class PythonWrappersTestCase(unittest.TestCase):
 
     # In Maya 2022, undo does not restore the stage.  To be
     # investigated as needed.
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() == 2023, 'Only supported in Maya 2023 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Only supported in Maya 2023 or greater.')
     def testGetAllStages(self):
         cmds.file(new=True, force=True)
 
