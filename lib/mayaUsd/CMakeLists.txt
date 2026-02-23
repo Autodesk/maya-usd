@@ -29,6 +29,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         $<$<BOOL:${CMAKE_WANT_VALIDATE_UNDO_ITEM}>:WANT_VALIDATE_UNDO_ITEM>
         $<$<BOOL:${MAYA_ENABLE_NEW_PRIM_DELETE}>:MAYA_ENABLE_NEW_PRIM_DELETE>
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:WANT_ADSKUSDEDITFORWARD_BUILD>
     PRIVATE
         MAYAUSD_MACROS_EXPORT
         MAYAUSD_CORE_EXPORT
@@ -43,7 +44,6 @@ target_compile_definitions(${PROJECT_NAME}
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
         $<$<BOOL:${AR_FOUND}>:WANT_AR_BUILD>
-        $<$<BOOL:${AdskUsdEditForward_FOUND}>:WANT_ADSKUSDEDITFORWARD_BUILD>
 
         # this flag is needed when building maya-usd in Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
