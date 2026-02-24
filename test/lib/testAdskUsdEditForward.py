@@ -31,6 +31,9 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
+        # Ensure the idle queue is running so that MGlobal::executeTaskOnIdle
+        # callbacks fire when cmds.flushIdleQueue() is called (needed on Linux).
+        cmds.flushIdleQueue(resume=True)
                         
     def setUp(self):
         cmds.file(new=True, force=True)

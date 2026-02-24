@@ -185,6 +185,8 @@ void MayaStagesSubject::setupListeners()
             _stageListeners[stage] = noticeKeys;
         }
 
+        UsdStageMap::getInstance().setDirty();
+
         // Now we can send the notifications about stage change.
         for (auto& path : _invalidStages) {
             Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(path);

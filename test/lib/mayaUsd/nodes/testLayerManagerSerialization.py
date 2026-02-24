@@ -50,6 +50,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         standalone.uninitialize()
 
     def setupEmptyScene(self):
+        cmds.file(new=True, force=True)
         self._currentTestDir = tempfile.mkdtemp(prefix='LayerManagerTest')
         self._tempMayaFile = os.path.join(
             self._currentTestDir, 'SerializationTest.ma')
@@ -331,6 +332,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         shutil.rmtree(self._currentTestDir)
 
     def testAnonymousRootToUsd(self):
+        '''Test saving USD to separate files (the session layer is still in the Maya scene)'''
         self.setupEmptyScene()
 
         import mayaUsd_createStageWithNewLayer
@@ -338,6 +340,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         proxyShapePath = ufe.PathString.path(proxyShape)
 
         stage = mayaUsd.ufe.getStage(ufe.PathString.string(proxyShapePath))
+        self.assertTrue(stage)
 
         newPrimPath = "/ChangeInRoot"
         stage.DefinePrim(newPrimPath, "xform")
@@ -358,13 +361,12 @@ class testLayerManagerSerialization(unittest.TestCase):
         cmds.file(self._tempMayaFile, open=True)
 
         stage = mayaUsdLib.GetPrim('|stage1|stageShape1').GetStage()
+        self.assertTrue(stage)
         msg += ("    Session Layer after: " +
                 stage.GetSessionLayer().identifier)
         self.assertTrue(stage.GetPrimAtPath(newPrimPath).IsValid())
 
-        # Temporarily disabling this check while investigating why it can fail on certain build combinations
-        # self.assertFalse(stage.GetPrimAtPath(
-        #     newSessionsPrimPath).IsValid(), msg)
+        self.assertTrue(stage.GetPrimAtPath(newSessionsPrimPath).IsValid(), msg)
 
         cmds.file(new=True, force=True)
         shutil.rmtree(self._currentTestDir)

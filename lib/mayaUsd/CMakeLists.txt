@@ -260,6 +260,7 @@ target_link_libraries(${PROJECT_NAME}
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
         usdUfe
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSKUSDEDITFORWARD_LIBRARY}>
     PRIVATE
         ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
@@ -268,7 +269,6 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXRender>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenShader>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
-        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSKUSDEDITFORWARD_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------
