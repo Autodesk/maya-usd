@@ -136,13 +136,10 @@ void doUsdRename(
     }
 
     // Make sure the load state of the renamed prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
     {
         auto fromPath = SdfPath(srcPath.getSegments()[1].string());
         auto destPath = SdfPath(dstPath.getSegments()[1].string());
-        UsdUfe::duplicateLoadRules(*stage, fromPath, destPath);
-        UsdUfe::removeRulesForPath(*stage, fromPath);
+        UsdUfe::moveLoadRules(*stage, fromPath, destPath);
     }
 
     // Do the renaming in the target layer and all other applicable layers,

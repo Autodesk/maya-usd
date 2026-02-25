@@ -238,6 +238,7 @@ private:
         Item&                outputItemToCompute,
         const UsdStageRefPtr stage,
         MDataBlock&          dataBlock,
+        const UsdEditTarget& targetLayer,
         const ConverterArgs& args);
     //! \brief  Using acceleration structure, do computation of a given accessor output plug.
     MStatus computeOutput(

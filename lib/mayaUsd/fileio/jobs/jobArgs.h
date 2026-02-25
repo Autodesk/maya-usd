@@ -59,7 +59,6 @@ TF_DECLARE_PUBLIC_TOKENS(
     /* animationType values */ \
     (timesamples) \
     (curves) \
-    (both) \
     (startTime) \
     (endTime) \
     (frameStride) \

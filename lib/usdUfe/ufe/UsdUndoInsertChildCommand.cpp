@@ -301,10 +301,7 @@ preserveLoadRules(const Ufe::Path& srcUfePath, const SdfPath& srcUsdPath, const 
     const UsdStagePtr stage = srcPrim.GetStage();
 
     // Make sure the load state of the reparented prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
-    duplicateLoadRules(*stage, srcUsdPath, dstUsdPath);
-    removeRulesForPath(*stage, srcUsdPath);
+    moveLoadRules(*stage, srcUsdPath, dstUsdPath);
 }
 
 static const UsdSceneItem::Ptr

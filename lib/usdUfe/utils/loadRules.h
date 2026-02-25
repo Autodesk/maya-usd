@@ -40,6 +40,17 @@ void duplicateLoadRules(
 USDUFE_PUBLIC
 void removeRulesForPath(PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path);
 
+/*! \brief move load rules from fromPath to destPath in a single stage update.
+ *
+ *  Equivalent to calling duplicateLoadRules followed by removeRulesForPath, but
+ *  only calls stage.SetLoadRules once to avoid redundant payload reconciliation.
+ */
+USDUFE_PUBLIC
+void moveLoadRules(
+    PXR_NS::UsdStage&      stage,
+    const PXR_NS::SdfPath& fromPath,
+    const PXR_NS::SdfPath& destPath);
+
 /*! \brief convert the stage load rules to a text format.
  */
 USDUFE_PUBLIC

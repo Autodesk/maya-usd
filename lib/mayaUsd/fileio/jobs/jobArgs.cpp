@@ -812,7 +812,6 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           {
               UsdMayaJobExportArgsTokens->timesamples,
               UsdMayaJobExportArgsTokens->curves,
-              UsdMayaJobExportArgsTokens->both,
           }))
     , disableModelKindProcessor(
           extractBoolean(userArgs, UsdMayaJobExportArgsTokens->disableModelKindProcessor))
