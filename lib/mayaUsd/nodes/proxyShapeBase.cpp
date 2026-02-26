@@ -119,7 +119,7 @@ using MayaUsd::LayerManager;
 using MayaUsd::ProxyAccessor;
 
 #ifdef WANT_ADSKUSDEDITFORWARD_BUILD
-#include <mayaUsd/base/MayaUsdEditForwardHost.h>
+#include <mayaUsd/nodes/MayaUsdEditForwardHost.h>
 
 #include <AdskUsdEditForward/Forwarder.h>
 #include <AdskUsdEditForward/Host.h>
