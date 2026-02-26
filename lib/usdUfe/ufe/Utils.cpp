@@ -383,6 +383,44 @@ std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcNam
     return dstName;
 }
 
+std::string uniqueNameMaxSuffix(const TfToken::HashSet& existingNames, std::string srcName)
+{
+    std::string base, suffixStr;
+    size_t      lenSuffix { 1 };
+    if (splitNumericalSuffix(srcName, base, suffixStr)) {
+        lenSuffix = suffixStr.length();
+    }
+
+    int maxSuffix = 0;
+
+    // Scan existing names to find the maxSuffix for this base.
+    // Padding width is from the sibling with the max value, or on a tie, choose the less padded
+    // width.
+    for (const TfToken& token : existingNames) {
+        const std::string& existingName = token.GetString();
+
+        std::string existingNameBase, existingNameSuffix;
+        if (!splitNumericalSuffix(existingName, existingNameBase, existingNameSuffix)
+            || existingNameBase != base) {
+            continue;
+        }
+
+        int value = std::stoi(existingNameSuffix);
+        if (value > maxSuffix) {
+            maxSuffix = value;
+            lenSuffix = existingNameSuffix.length();
+        } else if (value == maxSuffix) {
+            lenSuffix = std::min(lenSuffix, existingNameSuffix.length());
+        }
+    }
+
+    // Format suffix with zero-padding.
+    suffixStr = std::to_string(++maxSuffix);
+    suffixStr = std::string(lenSuffix - std::min(lenSuffix, suffixStr.length()), '0') + suffixStr;
+
+    return base + suffixStr;
+}
+
 void setUniqueChildNameFn(UniqueChildNameFn fn)
 {
     // This function is allowed to be null in which case, the default implementation
@@ -390,13 +428,17 @@ void setUniqueChildNameFn(UniqueChildNameFn fn)
     gUniqueChildNameFn = fn;
 }
 
-std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
+std::string
+uniqueChildName(const UsdPrim& usdParent, const std::string& name, const std::string* excludeName)
 {
-    return gUniqueChildNameFn ? gUniqueChildNameFn(usdParent, name)
-                              : uniqueChildNameDefault(usdParent, name);
+    return gUniqueChildNameFn ? gUniqueChildNameFn(usdParent, name, excludeName)
+                              : uniqueChildNameDefault(usdParent, name, excludeName);
 }
 
-std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& name)
+std::string uniqueChildNameDefault(
+    const UsdPrim&     usdParent,
+    const std::string& name,
+    const std::string* excludeName)
 {
     if (!usdParent.IsValid())
         return std::string();
@@ -418,6 +460,8 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
     //
     // Note: our UsdHierarchy uses instance proxies, so we also use them here.
     for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+        if (excludeName != nullptr && child.GetName().GetString() == *excludeName)
+            continue;
         childrenNames.insert(child.GetName());
     }
     std::string childName { name };
@@ -478,9 +522,19 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     }
 
     std::string childName { name };
-    if (relativesNames.find(TfToken(childName)) != relativesNames.end()) {
-        childName = uniqueName(relativesNames, childName);
+    std::string baseNameOnly, suffix;
+    splitNumericalSuffix(childName, baseNameOnly, suffix);
+
+    for (const auto& relative : relativesNames) {
+        std::string relativeBaseName, relativeSuffix;
+        splitNumericalSuffix(relative.GetString(), relativeBaseName, relativeSuffix);
+
+        if (baseNameOnly == relativeBaseName) {
+            childName = uniqueNameMaxSuffix(relativesNames, childName);
+            break;
+        }
     }
+
     return childName;
 }
 

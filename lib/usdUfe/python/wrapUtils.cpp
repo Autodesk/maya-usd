@@ -205,6 +205,11 @@ std::set<PXR_NS::TfToken> _getPrimsAppliedSchemas(const std::vector<PXR_NS::UsdP
     return UsdUfe::getPrimsAppliedSchemas(prims);
 }
 
+static std::string _uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name)
+{
+    return UsdUfe::uniqueChildName(usdParent, name);
+}
+
 void wrapUtils()
 {
     // Because UsdUfe and UFE have incompatible Python bindings that do not
@@ -219,7 +224,7 @@ void wrapUtils()
         _usdPathToUfePathSegment,
         (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
     def("uniqueName", _uniqueName);
-    def("uniqueChildName", UsdUfe::uniqueChildName);
+    def("uniqueChildName", _uniqueChildName);
     def("stripInstanceIndexFromUfePath", _stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", _ufePathToPrim);
     def("ufePathToInstanceIndex", _ufePathToInstanceIndex);
