@@ -19,14 +19,14 @@
 
 namespace MAYAUSD_NS_DEF {
 
-MayaUsdEditForwardCommand::MayaUsdEditForwardCommand(Callbacks callbacks)
-    : _callbacks(std::move(callbacks))
+MayaUsdEditForwardCommand::MayaUsdEditForwardCommand(const Callbacks& callbacks)
+    : _callbacks(callbacks)
 {
 }
 
-MayaUsdEditForwardCommand::Ptr MayaUsdEditForwardCommand::create(Callbacks callbacks)
+MayaUsdEditForwardCommand::Ptr MayaUsdEditForwardCommand::create(const Callbacks& callbacks)
 {
-    return std::make_shared<MayaUsdEditForwardCommand>(std::move(callbacks));
+    return std::make_shared<MayaUsdEditForwardCommand>(callbacks);
 }
 
 MayaUsdEditForwardCommand::Ptr

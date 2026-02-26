@@ -34,15 +34,15 @@ public:
     using Callbacks = std::vector<std::function<void()>>;
 
     // Public for std::make_shared() access, use create() instead.
-    MayaUsdEditForwardCommand(Callbacks callbacks);
+    MayaUsdEditForwardCommand(const Callbacks& callbacks);
     ~MayaUsdEditForwardCommand() = default;
 
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(MayaUsdEditForwardCommand);
 
-    //! Create a MayaUsdEditForwardCommand wrapping multiple callbacks.
-    static Ptr create(Callbacks callbacks);
+    //! Create a MayaUsdEditForwardCommand wrapping multiple edit forwarding callbacks.
+    static Ptr create(const Callbacks& callbacks);
 
-    //! Create a MayaUsdEditForwardCommand wrapping a single callback.
+    //! Create a MayaUsdEditForwardCommand wrapping a single edit forwarding callback.
     static Ptr create(const std::function<void()>& callback);
 
     std::string commandString() const override { return "Forward USD Edits"; }

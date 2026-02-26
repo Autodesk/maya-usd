@@ -26,9 +26,7 @@
 
 namespace {
 bool idleTaskQueued = false;
-
 bool IsInUsdUndoBlock() { return UsdUfe::UsdUndoBlock::depth() > 0; }
-
 } // namespace
 
 void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool immediate)
@@ -47,8 +45,8 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         // The chunk is opened here, while the current command is still executing
         // before it gets added to the stack.
         MGlobal::executeCommand("undoInfo -openChunk");
+        
         idleTaskQueued = true;
-
         MGlobal::executeTaskOnIdle([](void* data) {
             // Get a local copy before we execute, in case callbacks themselves
             // append new callbacks.
