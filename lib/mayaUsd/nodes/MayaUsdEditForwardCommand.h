@@ -51,7 +51,6 @@ private:
     void execute() override;
     void undo() override;
     void redo() override;
-    
 
     UsdUfe::UsdUndoableItem _undoableItem;
     Callbacks               _callbacks;

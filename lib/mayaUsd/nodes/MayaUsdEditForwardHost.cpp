@@ -45,12 +45,12 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         // The chunk is opened here, while the current command is still executing
         // before it gets added to the stack.
         MGlobal::executeCommand("undoInfo -openChunk");
-        
+
         idleTaskQueued = true;
         MGlobal::executeTaskOnIdle([](void* data) {
             // Get a local copy before we execute, in case callbacks themselves
             // append new callbacks.
-            std::vector<std::function<void()>> callbacksCopy;            
+            std::vector<std::function<void()>> callbacksCopy;
             callbacksCopy.swap(callbacks);
             idleTaskQueued = false;
 
