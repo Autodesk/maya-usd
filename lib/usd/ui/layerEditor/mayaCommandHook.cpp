@@ -119,7 +119,10 @@ void MayaCommandHook::insertSubLayerPath(UsdLayer usdLayer, Path path, int index
     cmd = "mayaUsdLayerEditor -edit -insertSubPath ";
     cmd += std::to_string(index);
     cmd += quote(path);
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     executeMel(cmd);
 }
 
@@ -132,7 +135,10 @@ void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
     cmd = "mayaUsdLayerEditor -edit -removeSubPath ";
     cmd += std::to_string(index);
     cmd += quote(proxyShapePath());
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     executeMel(cmd);
 }
 
@@ -145,9 +151,15 @@ void MayaCommandHook::moveSubLayerPath(
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -moveSubPath ";
     cmd += quote(path);
-    cmd += quote(newParentUsdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string newParentUsdLayerPath{newParentUsdLayer->IsAnonymous() ? newParentUsdLayer->GetIdentifier() :
+                                                                         newParentUsdLayer->GetRealPath()};
+    cmd += quote(newParentUsdLayerPath);    
     cmd += std::to_string(index);
-    cmd += quote(oldParentUsdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string oldParentUsdLayerPath{oldParentUsdLayer->IsAnonymous() ? oldParentUsdLayer->GetIdentifier() :
+                                                                         oldParentUsdLayer->GetRealPath()};
+    cmd += quote(oldParentUsdLayerPath);
     executeMel(cmd);
 }
 
@@ -158,7 +170,10 @@ void MayaCommandHook::replaceSubLayerPath(UsdLayer usdLayer, Path oldPath, Path 
     cmd = "mayaUsdLayerEditor -edit -replaceSubPath ";
     cmd += quote(oldPath);
     cmd += quote(newPath);
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     executeMel(cmd);
 }
 
@@ -167,7 +182,10 @@ void MayaCommandHook::discardEdits(UsdLayer usdLayer)
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -discardEdits ";
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     executeMel(cmd);
 
     refreshLayerSystemLock(usdLayer);
@@ -178,7 +196,10 @@ void MayaCommandHook::clearLayer(UsdLayer usdLayer)
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -clear ";
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     executeMel(cmd);
 }
 
@@ -188,8 +209,12 @@ UsdLayer MayaCommandHook::addAnonymousSubLayer(UsdLayer usdLayer, std::string ne
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -addAnonymous ";
     cmd += quote(newName);
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     std::string result = executeMel(cmd);
+
     if (result.size() > 0)
         return PXR_NS::SdfLayer::FindOrOpen(result);
     else
@@ -203,7 +228,10 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
     cmd = "mayaUsdLayerEditor -edit -muteLayer ";
     cmd += muteIt ? "1" : "0";
     cmd += quote(proxyShapePath());
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     executeMel(cmd);
 }
 
@@ -223,7 +251,10 @@ void MayaCommandHook::lockLayer(
     cmd += std::to_string(lockState);
     cmd += includeSubLayers ? " 1" : " 0";
     cmd += quote(proxyShapePath());
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     executeMel(cmd);
 }
 
@@ -234,7 +265,10 @@ void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubL
     cmd += quote(proxyShapePath());
     cmd += " ";
     cmd += std::to_string(refreshSubLayers);
-    cmd += quote(usdLayer->GetIdentifier());
+    // Here we choose the identifier only if the layer is anonymous
+    std::string layerPath{usdLayer->IsAnonymous() ? usdLayer->GetIdentifier() :
+                                                    usdLayer->GetRealPath()};
+    cmd += quote(layerPath);
     executeMel(cmd);
 }
 
