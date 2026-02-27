@@ -22,6 +22,9 @@
 
 #include <ufe/undoableCommand.h>
 
+#include <functional>
+#include <vector>
+
 namespace MAYAUSD_NS_DEF {
 
 //! \brief MayaUsdEditForwardCommand wraps a forwarded USD edit callback in an
