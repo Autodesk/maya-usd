@@ -617,7 +617,6 @@ public:
         } else if (_cmdId == CmdId::kClearLayer) {
             layer->Clear();
         } else if (_cmdId == CmdId::kFlattenLayer) {
-
             // Create a tempStage to get a PcpLayerStack with this layer as the root.
             PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
             if (!tempStage) {
