@@ -16,14 +16,6 @@ target_sources(${PROJECT_NAME}
         usdPrimProvider.cpp
 )
 
-if(AdskUsdEditForward_FOUND)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            MayaUsdEditForwardCommand.cpp
-            MayaUsdEditForwardHost.cpp
-    )
-endif()
-
 set(HEADERS
     hdImagingShape.h
     layerManager.h
@@ -38,13 +30,6 @@ set(HEADERS
     stageNode.h
     usdPrimProvider.h
 )
-
-if(AdskUsdEditForward_FOUND)
-    list(APPEND HEADERS
-        MayaUsdEditForwardCommand.h
-        MayaUsdEditForwardHost.h
-    )
-endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers

@@ -34,7 +34,7 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
     // If we are not inside a USD undoable command, do not forward. We would not know how to.
     // This could be a script editing USD data, or an interactive edit (slider drag from
     // attribute editor).
-    static std::vector<std::function<void()>> callbacks;
+    static MayaUsd::MayaUsdEditForwardCommand::Callbacks callbacks;
     if (!IsInUsdUndoBlock()) {
         return;
     }
@@ -50,7 +50,7 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         MGlobal::executeTaskOnIdle([](void* data) {
             // Get a local copy before we execute, in case callbacks themselves
             // append new callbacks.
-            std::vector<std::function<void()>> callbacksCopy;
+            MayaUsd::MayaUsdEditForwardCommand::Callbacks callbacksCopy;
             callbacksCopy.swap(callbacks);
             idleTaskQueued = false;
 
