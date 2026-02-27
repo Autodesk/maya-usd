@@ -35,9 +35,20 @@ MayaUsdEditForwardCommand::create(const std::function<void()>& callback)
     return create(Callbacks { callback });
 }
 
+std::string MayaUsdEditForwardCommand::commandString() const
+{
+    return "Forward USD Edits";
+}
+
+void MayaUsdEditForwardCommand::undo() { _undoableItem.undo(); }
+void MayaUsdEditForwardCommand::redo() { _undoableItem.redo(); }
+
 void MayaUsdEditForwardCommand::execute()
 {
     UsdUfe::UsdUndoBlock undoBlock { &_undoableItem };
+
+    pxr::SdfChangeBlock changeBlock;
+
     for (const auto& cb : _callbacks) {
         if (cb) {
             cb();

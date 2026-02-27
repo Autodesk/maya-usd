@@ -45,12 +45,13 @@ public:
     //! Create a MayaUsdEditForwardCommand wrapping a single edit forwarding callback.
     static Ptr create(const std::function<void()>& callback);
 
-    std::string commandString() const override { return "Forward USD Edits"; }
+    std::string commandString() const override;
 
 private:
     void execute() override;
-    void undo() override { _undoableItem.undo(); }
-    void redo() override { _undoableItem.redo(); }
+    void undo() override;
+    void redo() override;
+    
 
     UsdUfe::UsdUndoableItem _undoableItem;
     Callbacks               _callbacks;

@@ -31,7 +31,7 @@ bool IsInUsdUndoBlock() { return UsdUfe::UsdUndoBlock::depth() > 0; }
 
 void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool immediate)
 {
-    // If we are not inside a USD undoable command, do not forward. We woudln't know how to.
+    // If we are not inside a USD undoable command, do not forward. We would not know how to.
     // This could be a script editing USD data, or an interactive edit (slider drag from
     // attribute editor).
     static std::vector<std::function<void()>> callbacks;
@@ -50,8 +50,8 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         MGlobal::executeTaskOnIdle([](void* data) {
             // Get a local copy before we execute, in case callbacks themselves
             // append new callbacks.
-            auto callbacksCopy = callbacks;
-            callbacks.clear();
+            std::vector<std::function<void()>> callbacksCopy;            
+            callbacksCopy.swap(callbacks);
             idleTaskQueued = false;
 
             auto cmd = MAYAUSD_NS_DEF::MayaUsdEditForwardCommand::create(std::move(callbacksCopy));
