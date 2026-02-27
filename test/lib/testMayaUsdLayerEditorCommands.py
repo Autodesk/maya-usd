@@ -1206,4 +1206,104 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
             self.assertEqual(dirtyLayer.GetPrimAtPath("/Ball3").attributes["radius"].default, 15.0,
                            "Disk should still have the original saved value")
 
+    def testFlattenLayerUndoRestoresDeeplyNestedDirtyLayer(self):
+        """
+        Test that FlattenLayer undo restores in-memory (dirty) changes to a saved sublayer
+        that is 2 or more levels deep from the flattened root layer.
 
+        All three layers are saved to disk. Layer hierarchy:
+            layer1 (file-backed)
+                layer2 (file-backed, clean)
+                    layer3* (file-backed, dirty unsaved in-memory changes)
+
+        After flatten:
+            layer1  (contains all changes, including layer3's in-memory value 20.0)
+
+        After undo:
+            layer1
+                layer2
+                    layer3*  (dirty, in-memory value 20.0 restored, not disk value 15.0)
+        """
+        with testUtils.TemporaryDirectory(prefix='FlattenDirtyDeep') as testDir:
+            layer1Path = path.join(testDir, "layer1.usda")
+            layer2Path = path.join(testDir, "layer2.usda")
+            layer3Path = path.join(testDir, "layer3.usda")
+
+            layer3 = Sdf.Layer.CreateNew(layer3Path)
+            ballSpec = Sdf.PrimSpec(layer3, "Ball", Sdf.SpecifierDef, "Sphere")
+            ballAttr = Sdf.AttributeSpec(ballSpec, "radius", Sdf.ValueTypeNames.Double)
+            ballAttr.default = 15.0
+            layer3.Save()
+            del ballAttr, ballSpec
+
+            layer2 = Sdf.Layer.CreateNew(layer2Path)
+            layer2.Save()
+
+            layer1 = Sdf.Layer.CreateNew(layer1Path)
+            layer1.Save()
+
+            proxyShape, stage = mayaUtils.createProxyFromFile(layer1Path)
+            layer1 = stage.GetRootLayer()
+
+            cmds.mayaUsdLayerEditor(layer1.identifier, edit=True, insertSubPath=[0, layer2Path])
+            layer2 = Sdf.Layer.FindOrOpen(layer2Path)
+            self.assertIsNotNone(layer2)
+
+            cmds.mayaUsdLayerEditor(layer2.identifier, edit=True, insertSubPath=[0, layer3Path])
+            layer3 = Sdf.Layer.FindOrOpen(layer3Path)
+            self.assertIsNotNone(layer3)
+
+            layer1.Save()
+            layer2.Save()
+            self.assertFalse(layer1.dirty, "layer1 should be clean after save")
+            self.assertFalse(layer2.dirty, "layer2 should be clean after save")
+            self.assertFalse(layer3.dirty, "layer3 should be clean before in-memory change")
+
+            layer3.GetPrimAtPath("/Ball").attributes["radius"].default = 20.0
+            self.assertTrue(layer3.dirty, "layer3 should be dirty after in-memory change")
+            self.assertEqual(
+                layer3.GetPrimAtPath("/Ball").attributes["radius"].default, 20.0,
+                "In-memory value should be 20.0 before flatten")
+
+            self.assertEqual(len(layer1.subLayerPaths), 1)
+            self.assertEqual(len(layer2.subLayerPaths), 1)
+
+            # Need to release these references to ensure the test itself doesn't cause the backup to occur 
+            # (Backup is done by the references still being held by holdOntoSubLayers(), removing these 
+            # two lines makes the test always pass.)
+            layer2 = None
+            layer3 = None
+
+            cmds.mayaUsdLayerEditor(layer1.identifier, edit=True, flatten=True)
+
+            self.assertEqual(len(layer1.subLayerPaths), 0)
+            self.assertIsNotNone(layer1.GetPrimAtPath("/Ball"),
+                                 "layer1 should contain /Ball after flatten")
+            self.assertEqual(
+                layer1.GetPrimAtPath("/Ball").attributes["radius"].default, 20.0,
+                "Flattened layer1 should contain the in-memory value 20.0")
+
+            cmds.undo()
+
+            self.assertEqual(len(layer1.subLayerPaths), 1,
+                             "layer1 should have one sublayer after undo")
+
+            layer2 = Sdf.Layer.FindOrOpen(layer2Path)
+            layer3 = Sdf.Layer.FindOrOpen(layer3Path)
+
+            self.assertIsNotNone(layer2, "layer2 should exist after undo")
+            self.assertIsNotNone(layer3, "layer3 should exist after undo")
+
+            self.assertEqual(len(layer2.subLayerPaths), 1,
+                             "layer2 should have one sublayer after undo")
+
+            self.assertEqual(
+                layer3.GetPrimAtPath("/Ball").attributes["radius"].default, 20.0,
+                "Undo must restore in-memory value 20.0, not disk value 15.0")
+
+            self.assertTrue(layer3.dirty, "layer3 should still be dirty after undo")
+
+            layer3.Reload()
+            self.assertEqual(
+                layer3.GetPrimAtPath("/Ball").attributes["radius"].default, 15.0,
+                "Disk should still have the original saved value 15.0")

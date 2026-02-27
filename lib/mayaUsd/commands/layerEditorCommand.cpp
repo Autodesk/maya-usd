@@ -136,8 +136,8 @@ void BaseCmd::holdOnPathIfDirty(SdfLayerHandle layer, std::string path)
     if (subLayerHandle != nullptr) {
         if (subLayerHandle->IsDirty() || subLayerHandle->IsAnonymous()) {
             _subLayersRefs.push_back(subLayerHandle);
-            holdOntoSubLayers(subLayerHandle); // we'll need to hold onto children as well
         }
+        holdOntoSubLayers(subLayerHandle); // we'll need to hold onto children as well
     }
 }
 
@@ -608,7 +608,6 @@ public:
     bool doIt(SdfLayerHandle layer) override
     {
         backupLayer(layer);
-        backupDirtySubLayers(layer);
 
         // using reload will correctly reset the dirty bit
         holdOntoSubLayers(layer);
@@ -618,6 +617,7 @@ public:
         } else if (_cmdId == CmdId::kClearLayer) {
             layer->Clear();
         } else if (_cmdId == CmdId::kFlattenLayer) {
+
             // Create a tempStage to get a PcpLayerStack with this layer as the root.
             PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
             if (!tempStage) {
@@ -663,7 +663,6 @@ public:
     bool undoIt(SdfLayerHandle layer) override
     {
         restoreLayer(layer);
-        restoreDirtySubLayers(layer);
 
         // Note: restore edit targets after the layers are restored so that the backup
         //       edit targets are now valid.
@@ -687,31 +686,6 @@ private:
         }
     }
 
-    // Backup copies of dirty subLayers, ensuring that unsaved changes are restored by undo and
-    // redo.
-    void backupDirtySubLayers(SdfLayerHandle layer)
-    {
-        if (!layer)
-            return;
-
-        const std::vector<std::string> subLayerPaths = layer->GetSubLayerPaths();
-
-        for (auto path : subLayerPaths) {
-            const SdfLayerRefPtr subLayer = SdfLayer::FindOrOpen(path);
-
-            if (subLayer) {
-                // Make a copy of the dirty layer (in-memory changes)
-                if (subLayer->IsDirty() && !subLayer->IsAnonymous()) {
-                    const SdfLayerRefPtr backup = SdfLayer::CreateAnonymous();
-                    backup->TransferContent(subLayer);
-                    _backupDirtySubLayers[subLayer->GetIdentifier()] = backup;
-                }
-
-                backupDirtySubLayers(subLayer);
-            }
-        }
-    }
-
     void restoreLayer(SdfLayerHandle layer)
     {
         if (!layer)
@@ -722,29 +696,6 @@ private:
             _backupLayer = nullptr;
         } else {
             layer->Reload();
-        }
-    }
-
-    void restoreDirtySubLayers(SdfLayerHandle layer)
-    {
-        if (!layer)
-            return;
-
-        const std::vector<std::string> subLayerPaths = layer->GetSubLayerPaths();
-        for (const auto& path : subLayerPaths) {
-            const auto subLayer = SdfLayer::FindRelativeToLayer(layer, path);
-            if (!subLayer)
-                continue;
-
-            const std::string& identifier = subLayer->GetIdentifier();
-
-            // Restore all backed up dirty subLayers.
-            auto it = _backupDirtySubLayers.find(identifier);
-            if (it != _backupDirtySubLayers.end()) {
-                subLayer->TransferContent(it->second);
-            }
-
-            restoreDirtySubLayers(subLayer);
         }
     }
 
@@ -801,8 +752,6 @@ private:
     EditTargetBackups _editTargetBackups;
 
     PXR_NS::SdfLayerRefPtr _backupLayer;
-    // Map between path and Layer to make copies of layers which are dirty and non-anonymous.
-    std::map<std::string, PXR_NS::SdfLayerRefPtr> _backupDirtySubLayers;
 };
 
 class DiscardEdit : public BackupLayerBase
