@@ -54,7 +54,7 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
             callbacksCopy.swap(callbacks);
             idleTaskQueued = false;
 
-            auto cmd = MAYAUSD_NS_DEF::MayaUsdEditForwardCommand::create(std::move(callbacksCopy));
+            auto cmd = MayaUsd::MayaUsdEditForwardCommand::create(std::move(callbacksCopy));
             Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
 
             MGlobal::executeCommand("undoInfo -closeChunk");
@@ -63,7 +63,7 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
 
     if (immediate) {
         if (callback) {
-            auto cmd = MAYAUSD_NS_DEF::MayaUsdEditForwardCommand::create(callback);
+            auto cmd = MayaUsd::MayaUsdEditForwardCommand::create(callback);
             Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
         }
     } else {

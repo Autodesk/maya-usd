@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "mayaUsdEditForwardCommand.h"
+#include "MayaUsdEditForwardCommand.h"
 
 #include <usdUfe/undo/UsdUndoBlock.h>
 
@@ -43,8 +43,6 @@ void MayaUsdEditForwardCommand::redo() { _undoableItem.redo(); }
 void MayaUsdEditForwardCommand::execute()
 {
     UsdUfe::UsdUndoBlock undoBlock { &_undoableItem };
-
-    pxr::SdfChangeBlock changeBlock;
 
     for (const auto& cb : _callbacks) {
         if (cb) {
