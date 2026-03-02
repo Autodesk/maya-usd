@@ -781,6 +781,15 @@ public:
     }
 };
 
+class FlattenLayer : public BackupLayerBase
+{
+public:
+    FlattenLayer()
+        : BackupLayerBase(CmdId::kFlattenLayer)
+    {
+    }
+};
+
 class StitchLayers : public BackupLayerBase
 {
 public:
