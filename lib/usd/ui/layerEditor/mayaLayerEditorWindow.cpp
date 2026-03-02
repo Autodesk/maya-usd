@@ -229,7 +229,6 @@ void MayaLayerEditorWindow::stitchLayers()
 {
     auto selectedItems = treeView()->getSelectedLayerItems();
 
-     // Need at least 2 layers to stitch.
     if (selectedItems.size() < 2)
         return;
 
@@ -247,12 +246,11 @@ void MayaLayerEditorWindow::stitchLayers()
         layers.push_back(layer);
     }
 
-    // Need at least 2 valid sublayers to stitch
     if (layers.size() < 2)
         return;
 
     _sessionState.commandHook()->stitchLayers(layers);
-    }
+}
 
 void MayaLayerEditorWindow::addParentLayer()
 {
