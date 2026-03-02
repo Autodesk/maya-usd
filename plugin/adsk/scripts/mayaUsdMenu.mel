@@ -1096,6 +1096,13 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     $enabled = $singleSelect && !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
     menuItem -label $label -enable $enabled -c $cmd;
 
+    if ($hasSublayers) {
+        $label = getMayaUsdString("kMenuMergeWithSublayers");
+        $cmd = makeCommand($panelName, "mergeWithSublayers");
+        $enabled = !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
+        menuItem -label $label -enable $enabled -c $cmd;
+    }
+
     menuItem -divider 1;
 
     if ($isSubLayer) {
