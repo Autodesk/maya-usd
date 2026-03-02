@@ -118,7 +118,7 @@
 using MayaUsd::LayerManager;
 using MayaUsd::ProxyAccessor;
 
-#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 
 #include <AdskUsdEditForward/Forwarder.h>
@@ -1382,13 +1382,13 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
         outDataHandle.copy(inDataCachedHandle);
 
-#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
         _forwarder.reset();
 #endif
         return MS::kSuccess;
     }
 
-#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
     // Setup edit forwarding.
     // When edits are made, the edit forwarding will be run to possibly forward edits to different
     // layers, based on configurable rules authored on the stage's root layer.

@@ -31,7 +31,7 @@ namespace MAYAUSD_NS_DEF {
 void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
 {
     {
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
         Adsk::PreventContextDataChangedNotification preventNotifications;
 #endif
 
@@ -52,7 +52,7 @@ void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
             }
         }
     }
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
     Adsk::SendContextDataChanged(Adsk::ContextDataType::TOKEN);
 #endif
 }
@@ -60,12 +60,12 @@ void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
 void AssetResolverUtils::excludeMayaProjectTokensFromAdskAssetResolver()
 {
     {
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
         Adsk::PreventContextDataChangedNotification preventNotifications;
 #endif
         Adsk::AssetResolverContextDataRegistry::RemoveContextData("MayaUSDExtension");
     }
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
     Adsk::SendContextDataChanged(Adsk::ContextDataType::TOKEN);
 #endif
 }
