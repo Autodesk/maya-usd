@@ -76,6 +76,9 @@ public:
     // erases everything on a layer
     virtual void clearLayer(UsdLayer usdLayer) = 0;
 
+    // flattens a layer with its sublayers
+    virtual void flattenLayer(UsdLayer usdLayer) = 0;
+
     // add an anon layer at the top of the stack, returns it
     virtual UsdLayer addAnonymousSubLayer(UsdLayer usdLayer, std::string newName) = 0;
 

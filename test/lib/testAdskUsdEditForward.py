@@ -25,6 +25,8 @@ from maya import cmds
 import maya.utils
 import mayaUsd
 import fixturesUtils
+import ufe
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
 class AdskUsdEditForwardTestCase(unittest.TestCase):
 
@@ -70,11 +72,19 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
         }
         rootLayer.customLayerData = customData
 
-        # Create a prim on the session layer, should be forwarded to the TEST layer.
-        primPath = Sdf.Path('/TestPrim')
-        with Usd.EditContext(stage, sessionLayer):
-            prim = stage.DefinePrim(primPath, 'Xform')
-            self.assertTrue(prim.IsValid(), "Could not create prim")
+        # Create a prim on the session layer via a UFE undoable command, so that
+        # cmds.undo() can revert it along with the forward command as one unit.
+        stage.SetEditTarget(sessionLayer)
+        shapeNodePath = cmds.ls(shapeNode, long=True)[0]
+        shapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(shapeNodePath))
+        
+        # Use the context op as the add prim command is not exposed in python.
+        contextOps = ufe.ContextOps.contextOps(shapeItem)
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'Xform']))
+
+        primPath = Sdf.Path('/Xform1')
+        prim = stage.GetPrimAtPath(primPath)
+        self.assertTrue(prim.IsValid(), "Could not create prim")
 
         # Continuous forwarding happens on the next idle.
         cmds.flushIdleQueue()
@@ -89,6 +99,43 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
                 self.skipTest('Edit forwarding functionality not available (set MAYAUSD_FORCE_EF_TEST=1 to fail)')
 
         self.assertTrue(testLayerHasPrim, "Expected prim to be forwarded to TEST layer")
+        
+        # Undo should revert both the forward command and the original session-layer
+        # edit as a single operation (they are grouped in one Maya undo chunk).
+        cmds.undo()
+        
+        self.assertIsNone(
+            testLayer.GetPrimAtPath(primPath),
+            "Expected prim to be removed from TEST layer after undo")
+        self.assertIsNone(
+            sessionLayer.GetPrimAtPath(primPath),
+            "Expected original session-layer edit to also be undone")
+
+        # Redo should restore the forwarded state.
+        cmds.redo()
+        
+        self.assertIsNotNone(
+            testLayer.GetPrimAtPath(primPath),
+            "Expected prim to be forwarded back to TEST layer after redo")
+        self.assertIsNone(
+            sessionLayer.GetPrimAtPath(primPath),
+            "Expected prim to have been moved out of session layer after redo")
+        
+        # Create a prim on the session layer outside of a command, nothing should happen.
+        primPath = Sdf.Path('/TestPrim')
+        with Usd.EditContext(stage, sessionLayer):
+            prim = stage.DefinePrim(primPath, 'Xform')
+            self.assertTrue(prim.IsValid(), "Could not create prim")
+        
+        cmds.flushIdleQueue()
+        
+        self.assertIsNotNone(
+            sessionLayer.GetPrimAtPath(primPath),
+            "Expected prim to stay on the session layer if outside a command.")
+        self.assertIsNone(
+            testLayer.GetPrimAtPath(primPath),
+            "Expected prim to stay on the session layer if outside a command.")
+        
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

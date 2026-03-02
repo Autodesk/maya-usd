@@ -53,9 +53,12 @@
 #include <ufe/runTimeMgr.h>
 
 #ifdef USD_HAS_COLORSPACE_API_SUPPORT
+
+#ifdef UFE_HAS_COLOR_MANAGEMENT_HANDLER
 #include <mayaUsd/ufe/Global.h>
 
 #include <ufe/colorManagementHandler.h>
+#endif
 
 #include <unordered_map>
 #endif
@@ -998,6 +1001,7 @@ TfToken MtlxMaterialXSurfaceShaderWriter::_GetValidUsdColorSpace(
     // Usd wants standard names from the ASWF color interchange WG.
     auto usdColorSpace = TfToken { mxColorSpace };
 
+#ifdef UFE_HAS_COLOR_MANAGEMENT_HANDLER
     if (!GfColorSpace::IsValid(usdColorSpace)) {
         const auto cmHandler
             = Ufe::ColorManagementHandler::colorManagementHandler(MayaUsd::ufe::getMayaRunTimeId());
@@ -1008,6 +1012,7 @@ TfToken MtlxMaterialXSurfaceShaderWriter::_GetValidUsdColorSpace(
             }
         }
     }
+#endif
 
     if (!GfColorSpace::IsValid(usdColorSpace)) {
         // We know how to map some common MaterialX color spaces to USD recognized ones:

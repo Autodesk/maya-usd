@@ -94,6 +94,13 @@ if (USD_HAS_COLORSPACE_API_SUPPORT)
     )
 endif()
 
+if (UFE_HAS_COLOR_MANAGEMENT_HANDLER)
+    target_compile_definitions(${TARGET_NAME}
+    PRIVATE
+        UFE_HAS_COLOR_MANAGEMENT_HANDLER=1
+    )
+endif()
+
 if (LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION)
     target_compile_definitions(${TARGET_NAME}
     PRIVATE

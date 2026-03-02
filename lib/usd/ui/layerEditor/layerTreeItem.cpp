@@ -10,14 +10,17 @@
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/layerUtils.h>
+#include <pxr/usd/usd/flattenUtils.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
@@ -638,6 +641,14 @@ void LayerTreeItem::printLayer(QWidget* /*in_parent*/)
 }
 
 void LayerTreeItem::clearLayer(QWidget* /*in_parent*/) { commandHook()->clearLayer(layer()); }
+
+void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
+{
+    if (!_layer || isInvalidLayer())
+        return;
+
+    commandHook()->flattenLayer(_layer);
+}
 
 UsdLayerEditor::LayerMasks CreateLayerMask(bool isRootLayer, bool isSubLayer, bool isSessionLayer)
 {

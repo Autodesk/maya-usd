@@ -8,13 +8,6 @@ target_sources(${PROJECT_NAME}
         tokens.cpp
 )
 
-if(AdskUsdEditForward_FOUND)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            MayaUsdEditForwardHost.cpp
-    )
-endif()
-
 set(HEADERS
     api.h
     debugCodes.h
@@ -22,10 +15,6 @@ set(HEADERS
     syncId.h
     tokens.h
 )
-
-if(AdskUsdEditForward_FOUND)
-    list(APPEND HEADERS MayaUsdEditForwardHost.h)
-endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers
