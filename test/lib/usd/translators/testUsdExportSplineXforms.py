@@ -327,5 +327,31 @@ class testUsdExportSplineXforms(unittest.TestCase):
                 self.assertTrue(Gf.IsClose(knots[time].GetValue(), expectedValue, self.EPSILON),
                     f"At time {time}, expected {expectedValue}, got {knots[time].GetValue()}")
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 25, 5), 'Splines transforms are only supported in USD 0.25.05 and later')
+    def testExportCurvesWithAnimationOff(self):
+        cmds.file(new=True, force=True)
+        cmds.polyCube(name='cube')
+        cmds.setAttr('cube.translateX', 2)
+        cmds.setAttr('cube.translateY', 3)
+        cmds.setAttr('cube.translateZ', 4)
+        cmds.setKeyframe('cube.translateX', time=1, value=2)
+        cmds.setKeyframe('cube.translateX', time=10, value=5)
+        path = os.path.abspath('testCurvesAnimOff.usda')
+        cmds.usdExport(
+            file=path,
+            shadingMode='none',
+            animationType='curves')
+        stage = Usd.Stage.Open(path)
+        prim = stage.GetPrimAtPath('/cube')
+        self.assertTrue(prim)
+        xform = UsdGeom.Xformable(prim)
+        transform = xform.ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        expected = Gf.Vec3d(2, 3, 4)
+        actual = transform.ExtractTranslation()
+        self.assertTrue(Gf.IsClose(actual, expected, self.EPSILON),
+            f"Expected translate {expected}, got {actual}")
+        for op in xform.GetOrderedXformOps():
+            self.assertEqual(len(op.GetAttr().GetTimeSamples()), 0)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
