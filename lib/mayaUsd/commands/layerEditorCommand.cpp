@@ -30,11 +30,11 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
-#include <pxr/usd/usdUtils/stitch.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/usd/flattenUtils.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdUtils/stitch.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
