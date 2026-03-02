@@ -792,10 +792,12 @@ public:
         // Clear and reserve space for undo data (excluding the strongest layer).
         size_t weakLayerCount = layersByStrength.size() - 1;
         _parentLayerIdentifiers.clear();
+        _parentWasDirty.clear();
         _weakLayerPaths.clear();
         _weakLayerIndices.clear();
         _movedSubLayers.clear();
         _parentLayerIdentifiers.reserve(weakLayerCount);
+        _parentWasDirty.reserve(weakLayerCount);
         _weakLayerPaths.reserve(weakLayerCount);
         _weakLayerIndices.reserve(weakLayerCount);
         _movedSubLayers.reserve(weakLayerCount);
@@ -826,7 +828,9 @@ public:
             auto it = parentInfoByLayer.find(weakLayerId);
             if (it != parentInfoByLayer.end()) {
                 // Unpack the parent tuple into its parts.
-                const auto& [parentLayer, subLayerPath, subLayerIndex] = it->second;
+                const SdfLayerHandle& parentLayer = std::get<0>(it->second);
+                const std::string&    subLayerPath = std::get<1>(it->second);
+                const int             subLayerIndex = std::get<2>(it->second);
 
                 _parentLayerIdentifiers.push_back(parentLayer->GetIdentifier());
                 _weakLayerPaths.push_back(subLayerPath);
@@ -870,7 +874,7 @@ public:
 
             // Track subLayers that were already added.
             std::set<std::string> addedSublayerIds;
-            for (const auto& path : strongLayerSubLayers) {
+            for (const auto path : strongLayerSubLayers) {
                 auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
                 if (existingLayer) {
                     addedSublayerIds.insert(existingLayer->GetIdentifier());
@@ -932,6 +936,7 @@ public:
             auto parentLayer = SdfLayer::Find(parentId);
             if (parentLayer) {
                 auto subLayerPaths = parentLayer->GetSubLayerPaths();
+                _parentWasDirty.push_back(parentLayer->IsDirty());
 
                 for (const auto& pathToRemove : pathsToRemove) {
                     auto it = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
@@ -977,6 +982,7 @@ public:
         }
 
         // Insert subLayers into each parent.
+        int i = 0;
         for (auto& entry : insertionsByParent) {
             const std::string&                        parentId = entry.first;
             std::vector<std::pair<int, std::string>>& insertions = entry.second;
@@ -995,9 +1001,12 @@ public:
                 }
 
                 parentLayer->SetSubLayerPaths(subLayerPaths);
+                if (!_parentWasDirty[i])
+                    parentLayer->Reload();
             } else {
                 TF_WARN("Cannot find parent layer for undo: %s", parentId.c_str());
             }
+            i++;
         }
 
         // Restore subLayers back to the selected weak layers.
@@ -1025,6 +1034,7 @@ public:
     // Holds info relating to the original structure of the layers for undo. Size: N-1. Excludes the
     // strongest layer since it doesn't need parent info.
     std::vector<std::string> _parentLayerIdentifiers;
+    std::vector<bool>        _parentWasDirty;
     std::vector<std::string> _weakLayerPaths;
     std::vector<int>         _weakLayerIndices;
 
@@ -1034,7 +1044,6 @@ public:
     // Original subLayers of the strongest layer before stitch (for proper undo).
     std::vector<std::string> _originalStrongestSubLayers;
 
-    // For edit target management and getting stage.
     std::string _proxyShapePath;
 };
 
@@ -1735,8 +1744,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             auto                     layerCount = argParser.numberOfFlagUses(kStitchLayersFlag);
             MString                  proxyShapeName;
 
-            // Get proxy shape and all selected layers.
-            for (unsigned i = 0; i < layerCount; i++) {
+            for (unsigned i = 0; i < layerCount; ++i) {
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kStitchLayersFlag, i, listOfArgs);
 
@@ -1762,14 +1770,12 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 return MS::kInvalidParameter;
             }
 
-            // Get the flattened layer stack (strong to weak)
-            SdfLayerHandleVector layerStack = stage->GetLayerStack();
+            SdfLayerHandleVector layerStackStrongToWeak = stage->GetLayerStack();
 
-            // Create a map of layer identifier to its strength position.
             std::unordered_map<std::string, size_t> layerStrengthMap;
-            layerStrengthMap.reserve(layerStack.size());
-            for (size_t i = 0; i < layerStack.size(); i++) {
-                layerStrengthMap[layerStack[i]->GetIdentifier()] = i;
+            layerStrengthMap.reserve(layerStackStrongToWeak.size());
+            for (size_t i = 0; i < layerStackStrongToWeak.size(); ++i) {
+                layerStrengthMap[layerStackStrongToWeak[i]->GetIdentifier()] = i;
             }
 
             // Sort the selected layers by their strength (strongest first).
