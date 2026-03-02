@@ -80,7 +80,8 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
         
         # Use the context op as the add prim command is not exposed in python.
         contextOps = ufe.ContextOps.contextOps(shapeItem)
-        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'Xform']))
+        addPrimCmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        ufeCmd.execute(addPrimCmd)
 
         primPath = Sdf.Path('/Xform1')
         prim = stage.GetPrimAtPath(primPath)
