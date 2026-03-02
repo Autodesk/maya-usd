@@ -277,12 +277,12 @@ void UsdContextOps::setItem(const UsdSceneItem::Ptr& item)
         if (auto globalSn = Ufe::GlobalSelection::get()) {
             if (globalSn->contains(item->path())) {
                 // Only keep the selected items that match the runtime of the context item.
-                _bulkType = _item->nodeType();
+                _bulkType = UsdUfe::getSceneItemNodeType(_item);
                 const auto usdId = _item->runTimeId();
                 for (auto&& selItem : *globalSn) {
                     if (selItem->runTimeId() == usdId) {
                         _bulkItems.append(selItem);
-                        if (selItem->nodeType() != _bulkType)
+                        if (UsdUfe::getSceneItemNodeType(selItem) != _bulkType)
                             _bulkType.clear();
                     }
                 }

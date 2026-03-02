@@ -1314,7 +1314,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         optionMenuGrp -l `getMayaUsdString("kExportAnimationTypeLbl")` -annotation `getMayaUsdString("kExportAnimationTypeAnn")` exportAnimationTypePopup;
                             menuItem -l `getMayaUsdString("kExportAnimationTypeTimeSamplesLbl")` -ann "timesamples";
                             menuItem -l `getMayaUsdString("kExportAnimationTypeCurvesLbl")` -ann "curves";
-                            menuItem -l `getMayaUsdString("kExportAnimationTypeBothLbl")` -ann "both";
                     }
 
                     rowLayout -numberOfColumns 2 -columnAttach 2 "left" 20;

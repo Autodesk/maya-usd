@@ -14,6 +14,8 @@
 
 #include <ufe/hierarchy.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 namespace LookdevXUsd
 {
 
@@ -36,7 +38,7 @@ Ufe::SceneItemResultUndoableCommand::Ptr ProxyShapeLookdevHandler::createLookdev
     const Ufe::SceneItem::Ptr& parent, const Ufe::PathComponent& name) const
 {
     // Check if parent is a proxy shape.
-    if (!parent || !MayaUsdAPI::isAGatewayType(parent->nodeType()))
+    if (!parent || !MayaUsdAPI::isAGatewayType(UsdUfe::getSceneItemNodeType(parent)))
     {
         return m_previousHandler ? m_previousHandler->createLookdevContainerCmdImpl(parent, name) : nullptr;
     }
@@ -76,12 +78,12 @@ Ufe::SceneItemResultUndoableCommand::Ptr ProxyShapeLookdevHandler::createLookdev
 bool ProxyShapeLookdevHandler::isLookdevContainerImpl(const Ufe::SceneItem::Ptr& item) const
 {
     // If item is not a proxy shape, pass to the previous handler.
-    if (!item || !MayaUsdAPI::isAGatewayType(item->nodeType()))
+    if (!item || !MayaUsdAPI::isAGatewayType(UsdUfe::getSceneItemNodeType(item)))
     {
         return m_previousHandler ? m_previousHandler->isLookdevContainerImpl(item) : false;
     }
 
-    return item->nodeType() == "Material";
+    return UsdUfe::getSceneItemNodeType(item) == "Material";
 }
 
 MayaUsdCreateLookdevEnvironmentCommand::MayaUsdCreateLookdevEnvironmentCommand(Ufe::Path ancestor)
@@ -121,17 +123,17 @@ bool MayaUsdCreateLookdevEnvironmentCommand::executeCommand()
 
     // Check if m_ancestor is a proxy shape or the transform of a proxy shape.
     Ufe::SceneItem::Ptr proxyShape = nullptr;
-    if (MayaUsdAPI::isAGatewayType(ancestor->nodeType()))
+    if (MayaUsdAPI::isAGatewayType(UsdUfe::getSceneItemNodeType(ancestor)))
     {
         proxyShape = ancestor;
     }
     else
     {
         Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(ancestor);
-        if (hierarchy && hierarchy->children().size() == 1)
+        if (hierarchy && UsdUfe::getHierarchyChildren(hierarchy).size() == 1)
         {
-            auto child = hierarchy->children().back();
-            if (child && MayaUsdAPI::isAGatewayType(child->nodeType()))
+            auto child = UsdUfe::getHierarchyChildren(hierarchy).back();
+            if (child && MayaUsdAPI::isAGatewayType(UsdUfe::getSceneItemNodeType(child)))
             {
                 proxyShape = child;
             }

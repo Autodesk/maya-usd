@@ -164,7 +164,7 @@ class PythonWrappersTestCase(unittest.TestCase):
 
     # In Maya 2022, undo does not restore the stage.  To be
     # investigated as needed.
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() == 2023, 'Only supported in Maya 2023 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Only supported in Maya 2023 or greater.')
     def testGetAllStages(self):
         cmds.file(new=True, force=True)
 
@@ -186,6 +186,21 @@ class PythonWrappersTestCase(unittest.TestCase):
         self.assertEqual(len(mayaUsd.ufe.getAllStages()), 2)
 
         cmds.redo()
+
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+
+    def testGetAllStagesAfterRename(self):
+        '''
+        Verify that after renaming an ancestor node, we can still find
+        the stage via getAllStages().
+        '''
+        cmds.file(new=True, force=True)
+
+        mayaUsdStage = cmds.createNode("mayaUsdProxyShape", name="myStage")
+        self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
+
+        usdProxyNode = cmds.listRelatives(mayaUsdStage, parent=True, fullPath=True)
+        cmds.rename(usdProxyNode, 'foo')
 
         self.assertEqual(len(mayaUsd.ufe.getAllStages()), 1)
 

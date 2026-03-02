@@ -301,10 +301,7 @@ preserveLoadRules(const Ufe::Path& srcUfePath, const SdfPath& srcUsdPath, const 
     const UsdStagePtr stage = srcPrim.GetStage();
 
     // Make sure the load state of the reparented prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
-    duplicateLoadRules(*stage, srcUsdPath, dstUsdPath);
-    removeRulesForPath(*stage, srcUsdPath);
+    moveLoadRules(*stage, srcUsdPath, dstUsdPath);
 }
 
 static const UsdSceneItem::Ptr
@@ -326,7 +323,8 @@ void UsdUndoInsertChildCommand::execute()
         const auto& parentPrim = ufePathToPrim(_ufeParentPath);
 
         // First, check if we need to rename the child.
-        const auto childName = uniqueChildName(parentPrim, _ufeSrcPath.back().string());
+        const std::string srcName = _ufeSrcPath.back().string();
+        const auto        childName = uniqueChildNameDefault(parentPrim, srcName);
 
         // Create a new segment if parent and child are in different run-times.
         // parenting a USD node to the proxy shape node implies two different run-times

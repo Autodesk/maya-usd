@@ -300,6 +300,12 @@ void MayaLayerEditorWindow::clearLayer()
     model->forceRefresh();
 }
 
+void MayaLayerEditorWindow::mergeWithSublayers()
+{
+    QString name = "Merge with Sublayers";
+    treeView()->callMethodOnSelection(name, &LayerTreeItem::mergeWithSublayers);
+}
+
 void MayaLayerEditorWindow::selectPrimsWithSpec()
 {
     auto item = treeView()->currentLayerItem();

@@ -31,6 +31,10 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/usd/usdUtils/stitch.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/usd/flattenUtils.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
@@ -66,6 +70,8 @@ const char kDiscardEditsFlag[] = "de";
 const char kDiscardEditsFlagL[] = "discardEdits";
 const char kClearLayerFlag[] = "cl";
 const char kClearLayerFlagL[] = "clear";
+const char kFlattenLayerFlag[] = "fl";
+const char kFlattenLayerFlagL[] = "flatten";
 const char kAddAnonSublayerFlag[] = "aa";
 const char kAddAnonSublayerFlagL[] = "addAnonymous";
 const char kMuteLayerFlag[] = "mt";
@@ -102,6 +108,7 @@ enum class CmdId
     kReplace,
     kDiscardEdit,
     kClearLayer,
+    kFlattenLayer,
     kAddAnonLayer,
     kMuteLayer,
     kLockLayer,
@@ -138,8 +145,8 @@ void BaseCmd::holdOnPathIfDirty(SdfLayerHandle layer, std::string path)
     if (subLayerHandle != nullptr) {
         if (subLayerHandle->IsDirty() || subLayerHandle->IsAnonymous()) {
             _subLayersRefs.push_back(subLayerHandle);
-            holdOntoSubLayers(subLayerHandle); // we'll need to hold onto children as well
         }
+        holdOntoSubLayers(subLayerHandle); // we'll need to hold onto children as well
     }
 }
 
@@ -618,6 +625,39 @@ public:
             layer->Reload();
         } else if (_cmdId == CmdId::kClearLayer) {
             layer->Clear();
+        } else if (_cmdId == CmdId::kFlattenLayer) {
+            // Create a tempStage to get a PcpLayerStack with this layer as the root.
+            PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
+            if (!tempStage) {
+                MPxCommand::displayError("Failed to open stage for layer");
+                return false;
+            }
+
+            // Get the PcpLayerStackRefPtr to be used in the flatten method.
+            PXR_NS::PcpLayerStackRefPtr layerStack;
+            PXR_NS::UsdPrim             rootPrim = tempStage->GetPseudoRoot();
+            if (rootPrim) {
+                PXR_NS::PcpPrimIndex primIndex = rootPrim.GetPrimIndex();
+                if (primIndex.IsValid()) {
+                    PXR_NS::PcpNodeRef rootNode = primIndex.GetRootNode();
+                    if (rootNode) {
+                        layerStack = rootNode.GetLayerStack();
+                    }
+                }
+            }
+
+            if (!layerStack) {
+                MPxCommand::displayError("Cannot flatten layer: could not determine layer stack");
+                return false;
+            }
+
+            PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
+            if (!flattenedLayer) {
+                MPxCommand::displayError("Failed to flatten layer stack");
+                return false;
+            }
+
+            layer->TransferContent(flattenedLayer);
         }
 
         // Note: backup the edit targets after the layer is cleared because we use
@@ -642,7 +682,7 @@ public:
     }
 
 protected:
-    // Backup and restore dirty layers to support undo and redo.
+    // Backup dirty layer to support undo and redo.
     void backupLayer(SdfLayerHandle layer)
     {
         if (!layer)
@@ -720,7 +760,6 @@ private:
     using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
     EditTargetBackups _editTargetBackups;
 
-    // we need to hold onto the layer if we dirty it
     PXR_NS::SdfLayerRefPtr _backupLayer;
 };
 
@@ -1523,6 +1562,7 @@ MSyntax LayerEditorCommand::createSyntax()
         MSyntax::kUnsigned); // layer index inside the new parent
     syntax.addFlag(kDiscardEditsFlag, kDiscardEditsFlagL);
     syntax.addFlag(kClearLayerFlag, kClearLayerFlagL);
+    syntax.addFlag(kFlattenLayerFlag, kFlattenLayerFlagL);
     // parameter: new layer name
     syntax.addFlag(kAddAnonSublayerFlag, kAddAnonSublayerFlagL, MSyntax::kString);
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
@@ -1648,6 +1688,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
         if (argParser.isFlagSet(kClearLayerFlag)) {
             auto cmd = std::make_shared<Impl::ClearLayer>();
+            _subCommands.push_back(std::move(cmd));
+        }
+
+        if (argParser.isFlagSet(kFlattenLayerFlag)) {
+            auto cmd = std::make_shared<Impl::FlattenLayer>();
             _subCommands.push_back(std::move(cmd));
         }
 

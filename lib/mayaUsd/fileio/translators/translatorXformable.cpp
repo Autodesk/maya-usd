@@ -340,11 +340,11 @@ static bool _pushUSDXformOpToMayaXform(
         singleTransformOp.resize(timeSamples.size());
         for (unsigned int ti = 0; ti < timeSamples.size(); ++ti) {
             UsdTimeCode time(timeSamples[ti]);
+            timeArray.set(MTime(timeSamples[ti] * timeSampleMultiplier, timeUnit), ti);
             if (_getXformOpAsVec3d(xformop, opName, value, time)) {
                 xValue[ti] = value[0];
                 yValue[ti] = value[1];
                 zValue[ti] = value[2];
-                timeArray.set(MTime(timeSamples[ti] * timeSampleMultiplier, timeUnit), ti);
             }
 #if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
             else if (_getSingleXformOp(xformop, singleVal, time)) {

@@ -29,6 +29,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         $<$<BOOL:${CMAKE_WANT_VALIDATE_UNDO_ITEM}>:WANT_VALIDATE_UNDO_ITEM>
         $<$<BOOL:${MAYA_ENABLE_NEW_PRIM_DELETE}>:MAYA_ENABLE_NEW_PRIM_DELETE>
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:WANT_ADSKUSDEDITFORWARD_BUILD>
     PRIVATE
         MAYAUSD_MACROS_EXPORT
         MAYAUSD_CORE_EXPORT
@@ -222,6 +223,7 @@ target_include_directories(${PROJECT_NAME}
         ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSKUSDEDITFORWARD_INCLUDE_DIR}>
 )
 target_include_directories(${PROJECT_NAME} 
     PUBLIC
@@ -258,6 +260,7 @@ target_link_libraries(${PROJECT_NAME}
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
         usdUfe
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSKUSDEDITFORWARD_LIBRARY}>
     PRIVATE
         ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
@@ -318,6 +321,9 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
 # -----------------------------------------------------------------------------
 add_subdirectory(base)
 add_subdirectory(commands)
+if(AdskUsdEditForward_FOUND)
+    add_subdirectory(editForward)
+endif()
 add_subdirectory(fileio)
 add_subdirectory(listeners)
 add_subdirectory(nodes)

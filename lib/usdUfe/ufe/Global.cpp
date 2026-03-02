@@ -85,6 +85,8 @@ Ufe::Rtid initialize(
     UsdUfe::setWaitCursorFns(dccFunctions.startWaitCursorFn, dccFunctions.stopWaitCursorFn);
 
     // Optional DCC specific functions.
+    if (dccFunctions.isLoadingSceneFn)
+        UsdUfe::setIsLoadingSceneFn(dccFunctions.isLoadingSceneFn);
     if (dccFunctions.isAttributeLockedFn)
         UsdUfe::setIsAttributeLockedFn(dccFunctions.isAttributeLockedFn);
     if (dccFunctions.saveStageLoadRulesFn)
