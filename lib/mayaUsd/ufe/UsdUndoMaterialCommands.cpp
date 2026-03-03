@@ -386,12 +386,11 @@ void UsdUndoAssignNewMaterialCommand::execute()
         // 1. Create the Scope "materials" if it does not exist:
         //
 
+        // If a default prim exists, have the mtl scope under it, otherwise, fallback to the root.
         auto defaultPrim = stage->GetDefaultPrim();
         auto root = defaultPrim ? defaultPrim : stage->GetPseudoRoot();
-
         Ufe::Path ufePath
             = UsdUfe::stagePath(root.GetStage()) + UsdUfe::usdPathToUfePathSegment(root.GetPath());
-
         auto stageItem = UsdUfe::UsdSceneItem::create(ufePath, root);
 
         auto createMaterialsScopeCmd = UsdUndoCreateMaterialsScopeCommand::create(stageItem);
