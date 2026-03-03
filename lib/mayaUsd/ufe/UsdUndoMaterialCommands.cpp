@@ -19,6 +19,7 @@
 #include <mayaUsd/ufe/MayaUsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
@@ -363,8 +364,15 @@ void UsdUndoAssignNewMaterialCommand::execute()
         //
         // 1. Create the Scope "materials" if it does not exist:
         //
-        auto stageItem
-            = UsdUfe::UsdSceneItem::create(MayaUsd::ufe::stagePath(stage), stage->GetPseudoRoot());
+
+        auto defaultPrim = stage->GetDefaultPrim();
+        auto root = defaultPrim ? defaultPrim : stage->GetPseudoRoot();
+
+        Ufe::Path ufePath
+            = UsdUfe::stagePath(root.GetStage()) + UsdUfe::usdPathToUfePathSegment(root.GetPath());
+
+        auto stageItem = UsdUfe::UsdSceneItem::create(ufePath, root);
+
         auto createMaterialsScopeCmd = UsdUndoCreateMaterialsScopeCommand::create(stageItem);
         if (!createMaterialsScopeCmd) {
             markAsFailed();
@@ -416,17 +424,6 @@ void UsdUndoAssignNewMaterialCommand::execute()
             return;
         }
 
-#if PXR_VERSION >= 2502
-        // Store the MaterialX current version on the created prim.
-        if (shaderNodeDef->GetSourceType() == "mtlx") {
-            if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
-                auto mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(createMaterialCmd->newPrim());
-                auto mtlxVersionStr = mtlxLibrary->getVersionString();
-                mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
-            }
-        }
-#endif
-
         //
         // 3. Create the Shader:
         //
@@ -445,13 +442,34 @@ void UsdUndoAssignNewMaterialCommand::execute()
             return;
         }
 
-        //
-        // 4. Connect the Shader to the material:
-        //
-        if (!connectShaderToMaterial(
-                createShaderCmd->insertedChild(), createMaterialCmd->newPrim(), _nodeId)) {
-            markAsFailed();
-            return;
+
+        {
+            UsdUfe::UsdUndoableItem item;
+            UsdUfe::UsdUndoBlock connectUndo { &item };
+
+            //
+            // 4. Connect the Shader to the material:
+            //
+            
+            if (!connectShaderToMaterial(
+                    createShaderCmd->insertedChild(), createMaterialCmd->newPrim(), _nodeId)) {
+                markAsFailed();
+                return;
+            }
+            
+#if PXR_VERSION >= 2502
+            // Store the MaterialX current version on the created prim.
+            if (shaderNodeDef->GetSourceType() == "mtlx") {
+                if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
+                    auto mtlxConfigAPI
+                        = UsdMtlxMaterialXConfigAPI::Apply(createMaterialCmd->newPrim());
+                    auto mtlxVersionStr = mtlxLibrary->getVersionString();
+                    mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+                }
+            }
+#endif
+
+            _undoItems.push_back(item);
         }
 
         //
@@ -488,6 +506,9 @@ void UsdUndoAssignNewMaterialCommand::undo()
 {
     if (_cmds) {
         _cmds->undo();
+        for (int i = _undoItems.size() - 1; i >= 0; i--) {
+            _undoItems[i].undo();
+        }
     }
 }
 
@@ -495,23 +516,8 @@ void UsdUndoAssignNewMaterialCommand::redo()
 {
     if (_cmds) {
         _cmds->redo();
-
-        auto cmdsIt = _cmds->cmdsList().begin();
-        while (cmdsIt != _cmds->cmdsList().end()) {
-            // Find out all Material creation followed by a shader creation and reconnect the
-            // shader to the material. Don't assume any ordering.
-            auto addMaterialCmd
-                = std::dynamic_pointer_cast<UsdUfe::UsdUndoAddNewPrimCommand>(*cmdsIt++);
-            if (addMaterialCmd && addMaterialCmd->newPrim()
-                && UsdShadeMaterial(addMaterialCmd->newPrim())
-                && cmdsIt != _cmds->cmdsList().end()) {
-                auto addShaderCmd
-                    = std::dynamic_pointer_cast<UsdUndoCreateFromNodeDefCommand>(*cmdsIt++);
-                if (addShaderCmd) {
-                    connectShaderToMaterial(
-                        addShaderCmd->insertedChild(), addMaterialCmd->newPrim(), _nodeId);
-                }
-            }
+        for (int i = 0; i < _undoItems.size(); i++) {
+            _undoItems[i].redo();
         }
     }
 }
@@ -596,17 +602,6 @@ void UsdUndoAddNewMaterialCommand::execute()
         return;
     }
 
-#if PXR_VERSION >= 2502
-    // Store the MaterialX current version on the created prim.
-    if (shaderNodeDef->GetSourceType() == "mtlx") {
-        if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
-            auto mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(_createMaterialCmd->newPrim());
-            auto mtlxVersionStr = mtlxLibrary->getVersionString();
-            mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
-        }
-    }
-#endif
-
     //
     // Create the Shader:
     //
@@ -624,16 +619,33 @@ void UsdUndoAddNewMaterialCommand::execute()
         return;
     }
 
-    //
-    // Connect the Shader to the material, only for surfaces:
-    //
-    auto surfaces = UsdMayaUtil::GetSurfaceShaderNodeDefs();
-    if (std::find(surfaces.begin(), surfaces.end(), shaderNodeDef) != surfaces.end()) {
-        if (!connectShaderToMaterial(
-                _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId)) {
-            markAsFailed();
-            return;
+    {
+        UsdUfe::UsdUndoBlock usdUndo { &_undoItem};
+
+        //
+        // Connect the Shader to the material, only for surfaces:
+        //
+        
+        auto                 surfaces = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+        if (std::find(surfaces.begin(), surfaces.end(), shaderNodeDef) != surfaces.end()) {
+            if (!connectShaderToMaterial(
+                    _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId)) {
+                markAsFailed();
+                return;
+            }
         }
+
+#if PXR_VERSION >= 2502
+        // Store the MaterialX current version on the created prim.
+        if (shaderNodeDef->GetSourceType() == "mtlx") {
+            if (auto mtlxLibrary = UsdMtlxGetDocument("")) {
+                auto mtlxConfigAPI
+                    = UsdMtlxMaterialXConfigAPI::Apply(_createMaterialCmd->newPrim());
+                auto mtlxVersionStr = mtlxLibrary->getVersionString();
+                mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+            }
+        }
+#endif
     }
 }
 
@@ -642,6 +654,7 @@ void UsdUndoAddNewMaterialCommand::undo()
     if (_createMaterialCmd) {
         _createShaderCmd->undo();
         _createMaterialCmd->undo();
+        _undoItem.undo();
     }
 }
 
@@ -650,9 +663,7 @@ void UsdUndoAddNewMaterialCommand::redo()
     if (_createMaterialCmd) {
         _createMaterialCmd->redo();
         _createShaderCmd->redo();
-
-        connectShaderToMaterial(
-            _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId);
+        _undoItem.redo();
     }
 }
 
@@ -730,7 +741,18 @@ bool UsdUndoCreateMaterialsScopeCommand::doExecute()
         return false;
     }
 
-    auto materialsScopeName = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
+    auto proxyShapePath
+        = MayaUsd::ufe::ufeToDagPath(MayaUsd::ufe::stagePath(_parentItem->prim().GetStage()));
+    std::string materialsScopeName;
+    if (proxyShapePath.isValid()) {
+        const std::string proxyPath = proxyShapePath.fullPathName().asChar();
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+            materialsScopeName = MayaUsd::ComponentUtils::getMaterialScopeName(proxyPath);
+        }
+    }
+    if (materialsScopeName.empty()) {
+        materialsScopeName = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
+    }
     auto renameCmd = MayaUsdUndoRenameCommand::create(scopeItem, materialsScopeName);
     if (!renameCmd) {
         return false;

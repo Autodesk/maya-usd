@@ -117,6 +117,18 @@ void UsdUndoStateDelegate::invertCreateSpec(const SdfPath& path, bool inert)
 
     TF_DEBUG(USDUFE_UNDOSTATEDELEGATE).Msg("Inverting creating spec at '%s'\n", path.GetText());
 
+    // In principle this should never happen if everything every edit is properly undoable.
+    // There is a Maya issue with attributes edited using the slider from the attribute editor.
+    // The attribute value is set continuously as the slider moves, but the command is only
+    // created on drop. The problem is that the specs get created immediately, not within the
+    // command. And so the undo block only records the value changing, and misses the spec
+    // creations (the attribute and its hierarchy). Depending on what happens before and after,
+    // we can get into a situation where the forwarding operation tries to delete or edit things
+    // on the session layer that do not exist, raising errors.
+    if (!_layer->GetObjectAtPath(path)) {
+        _setMessageAlreadyShowed = false;
+        return;
+    }
     DeleteSpec(path, inert);
 
     _setMessageAlreadyShowed = false;

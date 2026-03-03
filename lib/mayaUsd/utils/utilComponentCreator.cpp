@@ -263,5 +263,49 @@ bool shouldDisplayComponentInitialSaveDialog(
         UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
 }
 
+namespace {
+
+std::string getComponentOptionString(
+    const std::string& proxyPath,
+    const char*        optionsAttribute)
+{
+    MString defCmd;
+    defCmd.format(
+        "def _usd_cc_get_scope_name():\n"
+        "    import mayaUsd.ufe\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentDescription\n"
+        "    except ImportError:\n"
+        "        return ''\n"
+        "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
+        "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+        "    if not component_description:\n"
+        "        return ''\n"
+        "    return component_description.GetOptions().^2s\n",
+        proxyPath.c_str(),
+        optionsAttribute);
+
+    if (MS::kSuccess == MGlobal::executePythonCommand(defCmd)) {
+        MString result;
+        if (MS::kSuccess
+            == MGlobal::executePythonCommand("_usd_cc_get_scope_name()", result)) {
+            return result.asUTF8();
+        }
+    }
+    return {};
+}
+
+} // namespace
+
+std::string getMaterialScopeName(const std::string& proxyPath)
+{
+    return getComponentOptionString(proxyPath, "materials_scope_name");
+}
+
+std::string getMeshScopeName(const std::string& proxyPath)
+{
+    return getComponentOptionString(proxyPath, "meshes_scope_name");
+}
+
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
