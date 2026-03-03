@@ -18,32 +18,36 @@
 
 import unittest
 import os
-import time
 
 from pxr import Sdf, Usd
-from maya import cmds
-import maya.utils
+from maya import cmds, standalone
 import mayaUsd
+import mayaUtils
 import fixturesUtils
 import ufe
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
 class AdskUsdEditForwardTestCase(unittest.TestCase):
 
+    pluginsLoaded = False
+
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
         # Ensure the idle queue is running so that MGlobal::executeTaskOnIdle
         # callbacks fire when cmds.flushIdleQueue() is called (needed on Linux).
         cmds.flushIdleQueue(resume=True)
-                        
+        if not cls.pluginsLoaded:
+            cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def setUp(self):
         cmds.file(new=True, force=True)
 
     def testEditForwarding(self):
-        if not cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True):
-            cmds.loadPlugin('mayaUsdPlugin')
-
         shapeNode = cmds.createNode('mayaUsdProxyShape')
         stage = mayaUsd.lib.GetPrim(shapeNode).GetStage()
         

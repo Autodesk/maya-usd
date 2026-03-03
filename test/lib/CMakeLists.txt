@@ -62,9 +62,8 @@ if (AdskUsdEditForward_FOUND)
     # Install a test to verify edit forwarding integration works correctly.
     mayaUsd_get_unittest_target(target testAdskUsdEditForward.py)
     mayaUsd_add_test(${target}
-        INTERACTIVE
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        PYTHON_SCRIPT testAdskUsdEditForward.py
+        PYTHON_MODULE ${target}
         ENV
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
