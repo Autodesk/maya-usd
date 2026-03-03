@@ -109,6 +109,27 @@ bool connectShaderToMaterial(
     return true;
 }
 
+//! Returns the materials scope name to use for the stage containing \p parentPath.
+//! Uses the component-defined scope name when the stage is an Autodesk USD Component,
+//! otherwise falls back to the default export job args name.
+std::string resolveMaterialScopeName(const Ufe::Path& parentPath)
+{
+    const UsdStageWeakPtr stage = getStage(parentPath);
+    if (stage) {
+        auto proxyShapePath = MayaUsd::ufe::ufeToDagPath(MayaUsd::ufe::stagePath(stage));
+        if (proxyShapePath.isValid()) {
+            const std::string proxyPath = proxyShapePath.fullPathName().asChar();
+            if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+                auto name = MayaUsd::ComponentUtils::getMaterialScopeName(proxyPath);
+                if (!name.empty()) {
+                    return name;
+                }
+            }
+        }
+    }
+    return UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
+}
+
 //! Searches the children of \p parentPath for a materials scope. Returns a null pointer if no
 //! materials scope is found.
 Ufe::SceneItem::Ptr getMaterialsScope(const Ufe::Path& parentPath)
@@ -127,7 +148,7 @@ Ufe::SceneItem::Ptr getMaterialsScope(const Ufe::Path& parentPath)
     // Usually the materials scope will simply have the default name (e.g. "mtl"). However, if
     // that name is used by a non-scope object, a number should be appended (e.g. "mtl1"). If
     // this name is not available either, increment the number until an available name is found.
-    std::string scopeNamePrefix = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
+    std::string scopeNamePrefix = resolveMaterialScopeName(parentPath);
     std::string scopeName = scopeNamePrefix;
     auto        hasName
         = [&scopeName](const Ufe::SceneItem::Ptr& item) { return item->nodeName() == scopeName; };
@@ -740,19 +761,8 @@ bool UsdUndoCreateMaterialsScopeCommand::doExecute()
         return false;
     }
 
-    auto proxyShapePath
-        = MayaUsd::ufe::ufeToDagPath(MayaUsd::ufe::stagePath(_parentItem->prim().GetStage()));
-    std::string materialsScopeName;
-    if (proxyShapePath.isValid()) {
-        const std::string proxyPath = proxyShapePath.fullPathName().asChar();
-        if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
-            materialsScopeName = MayaUsd::ComponentUtils::getMaterialScopeName(proxyPath);
-        }
-    }
-    if (materialsScopeName.empty()) {
-        materialsScopeName = UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
-    }
-    auto renameCmd = MayaUsdUndoRenameCommand::create(scopeItem, materialsScopeName);
+    std::string materialsScopeName = resolveMaterialScopeName(_parentItem->path());
+    auto        renameCmd = MayaUsdUndoRenameCommand::create(scopeItem, materialsScopeName);
     if (!renameCmd) {
         return false;
     }

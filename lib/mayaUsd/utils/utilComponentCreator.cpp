@@ -269,7 +269,7 @@ std::string getComponentOptionString(const std::string& proxyPath, const char* o
 {
     MString defCmd;
     defCmd.format(
-        "def _usd_cc_get_scope_name():\n"
+        "def _cc_get_option_str():\n"
         "    import mayaUsd.ufe\n"
         "    try:\n"
         "        from AdskUsdComponentCreator import ComponentDescription\n"
@@ -285,7 +285,7 @@ std::string getComponentOptionString(const std::string& proxyPath, const char* o
 
     if (MS::kSuccess == MGlobal::executePythonCommand(defCmd)) {
         MString result;
-        if (MS::kSuccess == MGlobal::executePythonCommand("_usd_cc_get_scope_name()", result)) {
+        if (MS::kSuccess == MGlobal::executePythonCommand("_cc_get_option_str()", result)) {
             return result.asUTF8();
         }
     }
