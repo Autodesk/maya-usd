@@ -170,7 +170,8 @@ void UsdMayaTransformWriter::_ComputeXformOps(
                 }
             }
 #if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
-            if (_GetExportArgs().animationType != UsdMayaJobExportArgsTokens->curves) {
+            if (_GetExportArgs().animationType != UsdMayaJobExportArgsTokens->curves
+                || animChannel.valueType != _ValueType::Value) {
                 animChannel.setXformOp(value, matrix, usdTime, valueWriter);
             }
 #else
@@ -334,7 +335,7 @@ bool UsdMayaTransformWriter::_GatherAnimChannel(
 #if USD_SUPPORT_INDIVIDUAL_TRANSFORMS
         // when using usd spline animation, we need to break down the transform elements as it's
         // smallest components. USD spline only supports floating point numbers and vec2.
-        if (animType != UsdMayaJobExportArgsTokens->timesamples) {
+        if (animType != UsdMayaJobExportArgsTokens->timesamples && isWritingAnimation) {
             chan.valueType = _ValueType::Value;
             auto chanX = chan, chanY = chan, chanZ = chan;
             chanX.valueAttrName = mayaAttrName.GetString() + xName.asChar();

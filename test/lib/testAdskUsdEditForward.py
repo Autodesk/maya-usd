@@ -25,10 +25,13 @@ from maya import cmds
 import maya.utils
 import mayaUsd
 import fixturesUtils
+import mayaUtils
 import ufe
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
 class AdskUsdEditForwardTestCase(unittest.TestCase):
+
+    pluginsLoaded = False
 
     @classmethod
     def setUpClass(cls):
@@ -36,14 +39,16 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
         # Ensure the idle queue is running so that MGlobal::executeTaskOnIdle
         # callbacks fire when cmds.flushIdleQueue() is called (needed on Linux).
         cmds.flushIdleQueue(resume=True)
+        # Ensure the queue is clear before starting the test so that undo stack is predictable,
+        # some idle jobs can append commands on the stack.
+        cmds.flushIdleQueue()
+        if not cls.pluginsLoaded:
+            cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
                         
     def setUp(self):
         cmds.file(new=True, force=True)
 
     def testEditForwarding(self):
-        if not cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True):
-            cmds.loadPlugin('mayaUsdPlugin')
-
         shapeNode = cmds.createNode('mayaUsdProxyShape')
         stage = mayaUsd.lib.GetPrim(shapeNode).GetStage()
         
