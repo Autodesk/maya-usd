@@ -67,6 +67,7 @@ if (AdskUsdEditForward_FOUND)
         PYTHON_SCRIPT testAdskUsdEditForward.py
         ENV
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
     )
     set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 else()

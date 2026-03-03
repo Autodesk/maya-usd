@@ -33,9 +33,7 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
-        # Ensure the idle queue is running so that MGlobal::executeTaskOnIdle
-        # callbacks fire when cmds.flushIdleQueue() is called (needed on Linux).
-        cmds.flushIdleQueue(resume=True)
+        #cmds.flushIdleQueue(resume=True)
                         
     def setUp(self):
         cmds.file(new=True, force=True)
@@ -81,7 +79,7 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
         # Use the context op as the add prim command is not exposed in python.
         contextOps = ufe.ContextOps.contextOps(shapeItem)
         addPrimCmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
-        ufeCmd.execute(addPrimCmd)
+        ufe.UndoableCommandMgr().executeCmd(addPrimCmd)
 
         primPath = Sdf.Path('/Xform1')
         prim = stage.GetPrimAtPath(primPath)
