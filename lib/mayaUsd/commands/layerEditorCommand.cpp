@@ -803,7 +803,6 @@ public:
         if (_layerIdentifiersByStrength.empty())
             return true;
 
-        // Get all the selected layer handles (already sorted).
         SdfLayerHandleVector layersByStrength;
         layersByStrength.reserve(_layerIdentifiersByStrength.size());
         for (const auto& layerIdentifier : _layerIdentifiersByStrength) {
@@ -815,13 +814,11 @@ public:
             layersByStrength.push_back(layer);
         }
 
-        // The strongest layer (first in the list) is the target for stitching.
         SdfLayerHandle strongestLayer = layersByStrength[0];
 
         backupLayer(strongestLayer);
         holdOntoSubLayers(strongestLayer);
 
-        // Get the stage to search for parent layers.
         auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
         if (!prim.IsValid()) {
             TF_RUNTIME_ERROR("Invalid proxy shape path: %s", _proxyShapePath.c_str());
@@ -834,10 +831,8 @@ public:
             return false;
         }
 
-        // Get all layers in the stage for searching.
         SdfLayerHandleVector stageLayers = stage->GetLayerStack();
 
-        // Clear and reserve space for undo data (excluding the strongest layer).
         size_t weakLayerCount = layersByStrength.size() - 1;
         _parentLayerIdentifiers.clear();
         _parentWasDirty.clear();
@@ -859,7 +854,6 @@ public:
             const std::vector<std::string>& subLayerPaths = potentialParent->GetSubLayerPaths();
             for (size_t i = 0; i < subLayerPaths.size(); ++i) {
                 auto subLayer = SdfLayer::FindRelativeToLayer(potentialParent, subLayerPaths[i]);
-                // Store layer to parent info if it resolves.
                 if (subLayer) {
                     parentInfoByLayer[subLayer->GetIdentifier()]
                         = std::make_tuple(potentialParent, subLayerPaths[i], static_cast<int>(i));
@@ -886,7 +880,6 @@ public:
 
                 holdOnPathIfDirty(parentLayer, subLayerPath);
             } else {
-                // Store empty entries if a parent cannot be found to maintain index alignment.
                 TF_WARN("Could not find parent for layer: %s", weakLayerId.c_str());
                 _parentLayerIdentifiers.push_back("");
                 _weakLayerPaths.push_back("");
@@ -894,24 +887,15 @@ public:
             }
         }
 
-        // Store the original subLayers of the strongest layer for undo.
         _originalStrongestSubLayers = strongestLayer->GetSubLayerPaths();
 
-        // Collect subLayers from selected weak layers before stitching to preserve hierarchy.
         for (size_t i = 1; i < layersByStrength.size(); ++i) {
             const SdfLayerHandle&    weakLayer = layersByStrength[i];
             std::vector<std::string> subLayers = weakLayer->GetSubLayerPaths();
             _movedSubLayers.push_back(subLayers);
-        }
 
-        // Clear subLayers from selected weak layers before stitching
-        // This prevents UsdUtilsStitchLayers from copying subLayers references, causing duplicates.
-        for (size_t i = 1; i < layersByStrength.size(); ++i) {
             layersByStrength[i]->SetSubLayerPaths({});
-        }
 
-        // Merge the layers by strength into the strongest layer.
-        for (size_t i = 1; i < layersByStrength.size(); ++i) {
             UsdUtilsStitchLayers(strongestLayer, layersByStrength[i]);
         }
 
@@ -966,9 +950,8 @@ public:
             strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
         }
 
-        // Remove the selected weak layers from their parent subLayer lists since they've been
-        // merged into the strongest layer and no longer exist as separate references.
-        // Group the layers to be removed by parent.
+        // Multiple selected weak layers may share the same parent, so we batch removals by parent
+        // to avoid calling SetSubLayerPaths more than once per parent layer.
         std::map<std::string, std::vector<std::string>> removalsByParent;
         for (size_t i = 0; i < _parentLayerIdentifiers.size(); ++i) {
             if (!_parentLayerIdentifiers[i].empty() && !_weakLayerPaths[i].empty()) {
@@ -1004,7 +987,6 @@ public:
 
     bool undoIt(SdfLayerHandle targetLayer) override
     {
-        // Restore the strongest layer from backup.
         SdfLayerHandle strongestLayer = SdfLayer::Find(_layerIdentifiersByStrength[0]);
         if (!strongestLayer) {
             TF_RUNTIME_ERROR(
@@ -1014,7 +996,6 @@ public:
 
         restoreLayer(strongestLayer);
 
-        // Restore the strongest layer's sublayers to their original state.
         if (!_originalStrongestSubLayers.empty() || !_movedSubLayers.empty()) {
             strongestLayer->SetSubLayerPaths(_originalStrongestSubLayers);
         }
@@ -1057,7 +1038,6 @@ public:
             i++;
         }
 
-        // Restore subLayers back to the selected weak layers.
         for (size_t i = 0; i < _layerIdentifiersByStrength.size() - 1 && i < _movedSubLayers.size();
              ++i) {
             if (_movedSubLayers[i].empty())
