@@ -442,21 +442,20 @@ void UsdUndoAssignNewMaterialCommand::execute()
             return;
         }
 
-
         {
             UsdUfe::UsdUndoableItem item;
-            UsdUfe::UsdUndoBlock connectUndo { &item };
+            UsdUfe::UsdUndoBlock    connectUndo { &item };
 
             //
             // 4. Connect the Shader to the material:
             //
-            
+
             if (!connectShaderToMaterial(
                     createShaderCmd->insertedChild(), createMaterialCmd->newPrim(), _nodeId)) {
                 markAsFailed();
                 return;
             }
-            
+
 #if PXR_VERSION >= 2502
             // Store the MaterialX current version on the created prim.
             if (shaderNodeDef->GetSourceType() == "mtlx") {
@@ -620,13 +619,13 @@ void UsdUndoAddNewMaterialCommand::execute()
     }
 
     {
-        UsdUfe::UsdUndoBlock usdUndo { &_undoItem};
+        UsdUfe::UsdUndoBlock usdUndo { &_undoItem };
 
         //
         // Connect the Shader to the material, only for surfaces:
         //
-        
-        auto                 surfaces = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+
+        auto surfaces = UsdMayaUtil::GetSurfaceShaderNodeDefs();
         if (std::find(surfaces.begin(), surfaces.end(), shaderNodeDef) != surfaces.end()) {
             if (!connectShaderToMaterial(
                     _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId)) {

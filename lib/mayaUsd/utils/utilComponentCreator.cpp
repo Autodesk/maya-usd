@@ -265,9 +265,7 @@ bool shouldDisplayComponentInitialSaveDialog(
 
 namespace {
 
-std::string getComponentOptionString(
-    const std::string& proxyPath,
-    const char*        optionsAttribute)
+std::string getComponentOptionString(const std::string& proxyPath, const char* optionsAttribute)
 {
     MString defCmd;
     defCmd.format(
@@ -287,8 +285,7 @@ std::string getComponentOptionString(
 
     if (MS::kSuccess == MGlobal::executePythonCommand(defCmd)) {
         MString result;
-        if (MS::kSuccess
-            == MGlobal::executePythonCommand("_usd_cc_get_scope_name()", result)) {
+        if (MS::kSuccess == MGlobal::executePythonCommand("_usd_cc_get_scope_name()", result)) {
             return result.asUTF8();
         }
     }
