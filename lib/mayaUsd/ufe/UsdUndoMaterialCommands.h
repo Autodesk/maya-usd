@@ -168,7 +168,7 @@ private:
     UsdUfe::UsdUndoAddNewPrimCommand::Ptr _createMaterialCmd;
     UsdUndoCreateFromNodeDefCommand::Ptr  _createShaderCmd;
     // An extra undo item for operation that dont themselves run a full fledged command.
-    UsdUfe::UsdUndoableItem               _undoItem;
+    UsdUfe::UsdUndoableItem _undoItem;
 
 }; // UsdUndoAddNewMaterialCommand
 
