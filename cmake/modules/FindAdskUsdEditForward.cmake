@@ -1,44 +1,71 @@
 #
-# Simple module to find AdskUsdEditForward.
+# Module to find AdskUsdEditForward.
 #
-# This module searches for a valid AdskUsdEditForward installation.
-# It searches for AdskUsdEditForward's libraries and include header files.
+# This module searches for a valid USD Edit Forward installation.
+# See the find_package at the bottom for the list of variables that will be set.
 #
 
+message(STATUS "Finding Autodesk USD Edit Forward")
 
-find_path(ADSKUSDEDITFORWARD_INCLUDE_DIR
+############################################################################
+#
+# C++ headers
+
+if(DEFINED ADSKUSDEDITFORWARD_ROOT_DIR)
+    message(DEPRECATION "ADSKUSDEDITFORWARD_ROOT_DIR is deprecated, please use ADSK_USD_EDIT_FORWARD_ROOT_DIR instead.")
+    set(ADSK_USD_EDIT_FORWARD_ROOT_DIR ${ADSKUSDEDITFORWARD_ROOT_DIR})
+endif()
+if(DEFINED ENV{ADSKUSDEDITFORWARD_ROOT_DIR})
+    message(DEPRECATION "Environment variable ADSKUSDEDITFORWARD_ROOT_DIR is deprecated, please use ADSK_USD_EDIT_FORWARD_ROOT_DIR instead.")
+    set(ADSK_USD_EDIT_FORWARD_ROOT_DIR $ENV{ADSKUSDEDITFORWARD_ROOT_DIR})
+endif()
+
+find_path(ADSK_USD_EDIT_FORWARD_INCLUDE_DIR
     NAMES
         AdskUsdEditForward/UsdEditForwardApi.h
     HINTS
-        ${ADSKUSDEDITFORWARD_ROOT_DIR}
+        $ENV{ADSK_USD_EDIT_FORWARD_ROOT_DIR}
+        ${ADSK_USD_EDIT_FORWARD_ROOT_DIR}
     PATH_SUFFIXES
-        include/
+        include
     DOC
-        "UsdEditForward header path"
+        "Edit Forward header path"
 )
 
-find_library(ADSKUSDEDITFORWARD_LIBRARY
+############################################################################
+#
+# Link libraries
+
+find_library(ADSK_USD_EDIT_FORWARD_LIBRARY
     NAMES
         AdskUsdEditForward
     HINTS
-        ${ADSKUSDEDITFORWARD_ROOT_DIR}
+        $ENV{ADSK_USD_EDIT_FORWARD_ROOT_DIR}
+        ${ADSK_USD_EDIT_FORWARD_ROOT_DIR}
     PATH_SUFFIXES
-        lib/
+        lib
     DOC
-        "UsdEditForward library path"
+        "Edit Forward library path"
 )
 
-# Handle the QUIETLY and REQUIRED arguments and set AdskUsdEditForward_FOUND to TRUE if
-# all listed variables are TRUE.
+############################################################################
+#
+# Edit Forward package
+#
+# Handle the QUIETLY and REQUIRED arguments and set AdskUsdEditForward_FOUND
+# to TRUE if all listed variables are TRUE.
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(AdskUsdEditForward
     REQUIRED_VARS
-        ADSKUSDEDITFORWARD_INCLUDE_DIR
-        ADSKUSDEDITFORWARD_LIBRARY
+        ADSK_USD_EDIT_FORWARD_INCLUDE_DIR
+        ADSK_USD_EDIT_FORWARD_LIBRARY
 )
+
+# Report to the user where the package was found.
+
 if (AdskUsdEditForward_FOUND)
-    # This will follow a message "-- Found USD: <path> ..."
-    message(STATUS "   UsdEditForward include dir is ${ADSKUSDEDITFORWARD_INCLUDE_DIR}")
-    message(STATUS "   UsdEditForward library is ${ADSKUSDEDITFORWARD_LIBRARY}")
+    # This will follow a message "-- Found AdskUsdEditForward: <path> ..."
+    message(STATUS "   Include dir: ${ADSK_USD_EDIT_FORWARD_INCLUDE_DIR}")
+    message(STATUS "   Library: ${ADSK_USD_EDIT_FORWARD_LIBRARY}")
 endif()

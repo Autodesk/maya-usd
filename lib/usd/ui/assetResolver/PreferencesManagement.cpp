@@ -20,7 +20,7 @@
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 
-#ifdef AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#ifdef ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
 #include <AdskAssetResolver/Notice.h>
 #endif
 
@@ -65,7 +65,7 @@ void ApplyUsdPreferences(
         // Prevent multiple notifications while we update context data
         // The notification will be sent at the end of this block
         // and will trigger the resolver to refresh
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
         Adsk::PreventContextDataChangedNotification preventNotifications;
 #endif
 
@@ -95,7 +95,7 @@ void ApplyUsdPreferences(
                 = Adsk::AssetResolverContextDataRegistry::GetContextData(
                     SESSION_USER_PATHS_DATA_SET_NAME, true);
             if (userSearchPathsContextData.has_value()) {
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
                 userSearchPathsContextData.value().get().searchPaths.Clear();
                 userSearchPathsContextData.value().get().searchPaths.AddPaths(
                     newOptions.GetUserSearchPaths());
@@ -172,7 +172,7 @@ void ApplyUsdPreferences(
 
     if (somethingChanged) {
         // Notify that context data has changed
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
         Adsk::SendContextDataChanged(Adsk::ContextDataType::ALL);
 #endif
     }

@@ -199,10 +199,11 @@ find_package_handle_standard_args(USD
 
 if (USD_FOUND)
     # This will follow a message "-- Found USD: <path> ..."
-    message(STATUS "   USD include dirs: ${PXR_INCLUDE_DIRS}")
+    message(STATUS "  Include dirs: ${PXR_INCLUDE_DIRS}")
     if (USD_GENSCHEMA)
-        message(STATUS "   usdGenSchema: ${USD_GENSCHEMA}")
+        message(STATUS "  usdGenSchema: ${USD_GENSCHEMA}")
     endif()
-    message(STATUS "   USD version: ${USD_VERSION}")
-    message(STATUS "   Autodesk USD version: ${ADSK_USD_VERSION}")
+    message(STATUS "  PXR version: ${PXR_VERSION}")
+    message(STATUS "  USD version: ${USD_VERSION}")
+    message(STATUS "  Autodesk USD version: ${ADSK_USD_VERSION}")
 endif()

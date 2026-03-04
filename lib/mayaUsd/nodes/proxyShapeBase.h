@@ -56,7 +56,7 @@ namespace MAYAUSD_NS_DEF {
 class LayerManager;
 }
 
-#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 namespace AdskUsdEditForward {
 class Forwarder;
 }
@@ -496,7 +496,7 @@ private:
 
     MCallbackId _preSaveCallbackId = 0;
 
-#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
     std::shared_ptr<AdskUsdEditForward::Forwarder> _forwarder;
 #endif
 

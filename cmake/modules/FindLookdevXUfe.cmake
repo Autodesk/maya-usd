@@ -78,6 +78,13 @@ find_package_handle_standard_args(LookdevXUfe
         LookdevXUfe_VERSION
 )
 
+if (LookdevXUfe_FOUND)
+    # This will follow a message "-- Found LookdevXUfe: <path> ..."
+    message(STATUS "  Version: ${LookdevXUfe_VERSION}")
+    message(STATUS "  Include dir: ${LookdevXUfe_INCLUDE_DIR}")
+    message(STATUS "  Library : ${LookdevXUfe_LIBRARY}")
+endif()
+
 set(LOOKDEVXUFE_HAS_PYTHON_BINDINGS FALSE CACHE INTERNAL "PyLookdevXUfe")
 if(LookdevXUfe_VERSION VERSION_GREATER_EQUAL "1.0.1" OR
     (LookdevXUfe_VERSION VERSION_LESS "1.0.0" AND LookdevXUfe_VERSION VERSION_GREATER_EQUAL "0.2.0"))

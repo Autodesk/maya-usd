@@ -53,8 +53,8 @@ target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYAUSD_PLUGIN_EXPORT
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
-        $<$<BOOL:${AR_FOUND}>:WANT_AR_BUILD>
-        $<$<BOOL:${AR_FOUND}>:BOOST_NS=PXR_NS::pxr_boost>
+        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:WANT_ADSK_USD_ASSET_RESOLVER_BUILD>
+        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:BOOST_NS=PXR_NS::pxr_boost>
 )
 
 if(DEFINED MAYAUSD_VERSION)
@@ -86,7 +86,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 target_include_directories(${TARGET_NAME}
     PRIVATE
         ${UFE_INCLUDE_DIR}
-        $<$<BOOL:${AR_FOUND}>:${AR_INCLUDE_DIR}>
+        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR}>
 )
 
 # -----------------------------------------------------------------------------
@@ -96,7 +96,7 @@ target_link_libraries(${TARGET_NAME}
     PRIVATE
         ${UFE_LIBRARY}
         basePxrUsdPreviewSurface
-        $<$<BOOL:${AR_FOUND}>:${AR_LIBRARY}>
+        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_LIBRARY}>
 )
 
 if (Qt_FOUND)
