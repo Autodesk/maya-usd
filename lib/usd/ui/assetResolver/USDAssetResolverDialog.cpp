@@ -21,6 +21,8 @@
 #include <AssetResolverPreferences/USDAssetResolverSettingsWidget.h>
 
 #include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QPushButton>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -40,11 +42,11 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
     layout->addWidget(settingsWidget);
 
     QVBoxLayout* saveAndCloselayout = new QVBoxLayout(this);
-    QPushButton* saveButtonBox = new QPushButton(tr("Save & Refresh", this);
+    QPushButton* saveButtonBox = new QPushButton(tr("Save & Refresh"), this);
     saveButtonBox->setDefault(true);
     saveButtonBox->setAutoDefault(true);
     saveButtonBox->setToolTip(tr("Save the settings and refresh the Asset Resolver"));
-    QPushButton* closeButtonBox = new QPushButton(tr("Close", this);
+    QPushButton* closeButtonBox = new QPushButton(tr("Close"), this);
     closeButtonBox->setToolTip(tr("Close the dialog without saving"));
     saveAndCloselayout->addWidget(saveButtonBox);
     saveAndCloselayout->addWidget(closeButtonBox);

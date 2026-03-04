@@ -47,6 +47,7 @@ set(HEADERS
     AssetResolverUtils.h
     PreferencesOptions.h
     PreferencesManagement.h
+    USDAssetResolverDialog.h
 )
 
 mayaUsd_promoteHeaderList( 

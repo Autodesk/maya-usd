@@ -16,6 +16,7 @@
 #include "PreferencesManagement.h"
 
 #include "AssetResolverUtils.h"
+#include "PreferencesApplicationHost.h"
 #include "PreferencesOptions.h"
 
 #include <AssetResolverPreferences/AssetResolverSettings.h>
@@ -31,7 +32,7 @@ namespace PreferencesManagement {
 void InitializeUsdPreferences()
 {
     // Add ApplicationHost for the USD Preferences dialog
-    PreferenceApplicationHost::CreateInstance(MQtUtil::mainWindow());
+    PreferencesApplicationHost::CreateInstance(MQtUtil::mainWindow());
 
     // Load USD Preference options to ensure the Adsk Asset Resolver works as configured
     Adsk::AssetResolverSettings::GetInstance().SetSettings(LoadUsdPreferences());

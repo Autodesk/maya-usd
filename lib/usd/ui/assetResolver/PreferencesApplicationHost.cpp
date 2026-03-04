@@ -15,49 +15,43 @@
 //
 //
 
-#include <PreferencesApplicationHost.h>
+#include "PreferencesApplicationHost.h"
 
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
-PreferencesApplicationHost* s_instance = nullptr;
+PreferencesApplicationHost* PreferencesApplicationHost::s_instance = nullptr;
 
-PreferencesApplicationHost::PreferenceApplicationHost(QObject* parent)
+PreferencesApplicationHost::PreferencesApplicationHost(QObject* parent)
     : Adsk::ApplicationHost(parent)
 {
     Adsk::ApplicationHost::injectInstance(this);
 }
 
-void PreferenceApplicationHost::CreateInstance(QObject* parent)
+void PreferencesApplicationHost::CreateInstance(QObject* parent)
 {
     if (!s_instance) {
-        s_instance = new PreferenceApplicationHost(parent);
+        s_instance = new PreferencesApplicationHost(parent);
     }
 }
 
-float PreferencesApplicationHost::uiScale() const
-{
-    if (gElfUtils != nullptr) {
-        return gElfUtils->getRealScale();
-    }
-    return 1.0f;
-}
+float PreferencesApplicationHost::uiScale() const { return MQtUtil::dpiScale(1.0f); }
 
 QIcon PreferencesApplicationHost::icon(const IconName& name) const
 {
     switch (name) {
     case IconName::Add: return getIcon(":/UsdLayerEditor/addCreateGeneric");
-    case IconName::AddFolder: return ::icon(name);
+    case IconName::AddFolder: return ApplicationHost::icon(name);
     case IconName::OpenFile: return getIcon("fileOpen.png");
     case IconName::Delete: return getIcon("trash.png");
-    case IconName::MoveUp: return ::icon(name);
-    case IconName::MoveDown: return ::icon(name);
+    case IconName::MoveUp: return ApplicationHost::icon(name);
+    case IconName::MoveDown: return ApplicationHost::icon(name);
     default: return QIcon();
     }
 }
 
-QIcon PreferencesApplicationHost::getIcon(const char* iconName)
+QIcon PreferencesApplicationHost::getIcon(const char* iconName) const
 {
     QIcon* icon = MQtUtil::createIcon(iconName);
     QIcon  copy;
