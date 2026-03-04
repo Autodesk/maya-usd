@@ -388,10 +388,19 @@ void UsdUndoAssignNewMaterialCommand::execute()
 
         // If a default prim exists, have the mtl scope under it, otherwise, fallback to the root.
         auto defaultPrim = stage->GetDefaultPrim();
-        auto root = defaultPrim ? defaultPrim : stage->GetPseudoRoot();
-        Ufe::Path ufePath
-            = UsdUfe::stagePath(root.GetStage()) + UsdUfe::usdPathToUfePathSegment(root.GetPath());
-        auto stageItem = UsdUfe::UsdSceneItem::create(ufePath, root);
+        UsdPrim   rootPrim;
+        Ufe::Path ufePath; 
+        if (defaultPrim) {
+            ufePath = UsdUfe::stagePath(stage)
+                + UsdUfe::usdPathToUfePathSegment(defaultPrim.GetPath());        
+            rootPrim = defaultPrim;
+        }
+        else {
+            ufePath = UsdUfe::stagePath(stage);
+            rootPrim = stage->GetPseudoRoot();
+        }
+
+        auto stageItem = UsdUfe::UsdSceneItem::create(ufePath, rootPrim);
 
         auto createMaterialsScopeCmd = UsdUndoCreateMaterialsScopeCommand::create(stageItem);
         if (!createMaterialsScopeCmd) {
@@ -524,10 +533,10 @@ void UsdUndoAssignNewMaterialCommand::execute()
 void UsdUndoAssignNewMaterialCommand::undo()
 {
     if (_cmds) {
-        _cmds->undo();
         for (int i = _undoItems.size() - 1; i >= 0; i--) {
             _undoItems[i].undo();
         }
+        _cmds->undo();
     }
 }
 
@@ -671,9 +680,9 @@ void UsdUndoAddNewMaterialCommand::execute()
 void UsdUndoAddNewMaterialCommand::undo()
 {
     if (_createMaterialCmd) {
+        _undoItem.undo();
         _createShaderCmd->undo();
         _createMaterialCmd->undo();
-        _undoItem.undo();
     }
 }
 
