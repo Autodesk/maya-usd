@@ -20,8 +20,6 @@
 
 namespace MAYAUSD_NS_DEF {
 
-class UsdPreferenceOptions;
-
 /**
  * \namespace PreferencesManagement
  * \brief Functions for managing USD preferences and applying them to the Autodesk Asset Resolver.
@@ -30,18 +28,6 @@ namespace PreferencesManagement {
 
 /// Initialize the USD Preferences system (called once at plugin startup)
 MAYAUSD_UI_PUBLIC void InitializeUsdPreferences();
-
-/// Get the current USD Preferences
-MAYAUSD_UI_PUBLIC const UsdPreferenceOptions GetUsdPreferences();
-
-/// Apply newOptions to asset resolver context, only changing values that differ from options
-MAYAUSD_UI_PUBLIC
-void ApplyUsdPreferences(
-    const UsdPreferenceOptions& options,
-    const UsdPreferenceOptions& newOptions);
-
-/// Save the USD Preferences to Maya option variables
-MAYAUSD_UI_PUBLIC void SaveUsdPreferences(const UsdPreferenceOptions& options);
 
 } // namespace PreferencesManagement
 } // namespace MAYAUSD_NS_DEF

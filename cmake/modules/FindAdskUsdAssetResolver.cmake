@@ -47,6 +47,17 @@ find_library(ADSK_USD_ASSET_RESOLVER_LIBRARY
     DOC
         "Asset Resolver library path"
 )
+find_library(ADSK_USD_ASSET_RESOLVER_PREFERENCES_LIBRARY
+    NAMES
+        AssetResolverPreferences
+    HINTS
+        $ENV{ADSK_USD_ASSET_RESOLVER_PREFERENCES_ROOT_DIR}
+        ${ADSK_USD_ASSET_RESOLVER_PREFERENCES_ROOT_DIR}
+    PATH_SUFFIXES
+        lib
+    DOC
+        "Asset Resolver Preferences library path"
+)
 
 ###########################################################################
 #
@@ -75,6 +86,7 @@ find_package_handle_standard_args(AdskUsdAssetResolver
     REQUIRED_VARS
         ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR
         ADSK_USD_ASSET_RESOLVER_LIBRARY
+        ADSK_USD_ASSET_RESOLVER_PREFERENCES_LIBRARY
 )
 
 # Report to the user where the package was found.
@@ -83,7 +95,7 @@ if (AdskUsdAssetResolver_FOUND)
     # This will follow a message "-- Found AdskUsdAssetResolver: <path> ..."
     message(STATUS "  Version: ${ADSK_USD_ASSET_RESOLVER_VERSION}")
     message(STATUS "  Include dir: ${ADSK_USD_ASSE_RESOLVER_INCLUDE_DIR}")
-    message(STATUS "  Library: ${ADSK_USD_ASSET_RESOLVER_LIBRARY}")
+    message(STATUS "  Libraries: ${ADSK_USD_ASSET_RESOLVER_LIBRARY} ${ADSK_USD_ASSET_RESOLVER_PREFERENCES_LIBRARY}")
 endif()
 
 set(ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY FALSE CACHE INTERNAL "arPathArray")

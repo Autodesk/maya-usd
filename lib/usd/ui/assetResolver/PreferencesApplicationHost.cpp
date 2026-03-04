@@ -1,5 +1,5 @@
 //
-// Copyright 2025 Autodesk
+// Copyright 2026 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,70 +15,49 @@
 //
 //
 
-#include "ApplicationHost.h"
+#include <PreferencesApplicationHost.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QBoxLayout>
-#include <QtWidgets/QGroupBox>
+PreferencesApplicationHost* s_instance = nullptr;
 
-namespace Adsk {
-
-ApplicationHost* instancePtr = nullptr;
-
-ApplicationHost::ApplicationHost(QObject* parent)
-    : QObject(parent)
+PreferencesApplicationHost::PreferenceApplicationHost(QObject* parent)
+    : Adsk::ApplicationHost(parent)
 {
+    Adsk::ApplicationHost::injectInstance(this);
 }
 
-ApplicationHost::~ApplicationHost()
+void PreferenceApplicationHost::CreateInstance(QObject* parent)
 {
-    if (instancePtr == this) {
-        instancePtr = nullptr;
+    if (!s_instance) {
+        s_instance = new PreferenceApplicationHost(parent);
     }
 }
 
-ApplicationHost& ApplicationHost::instance()
+float PreferencesApplicationHost::uiScale() const
 {
-    if (!instancePtr) {
-        instancePtr = new ApplicationHost(qApp);
+    if (gElfUtils != nullptr) {
+        return gElfUtils->getRealScale();
     }
-    return *instancePtr;
+    return 1.0f;
 }
 
-void ApplicationHost::injectInstance(ApplicationHost* host)
-{
-    if (instancePtr) {
-        delete instancePtr;
-    }
-    instancePtr = host;
-}
-
-float ApplicationHost::uiScale() const
-{
-    return dpiScale(1.0f); // Default implementation
-}
-
-int   ApplicationHost::dpiScale(int size) const { return MQtUtil::dpiScale(size); }
-float ApplicationHost::dpiScale(float size) const { return MQtUtil::dpiScale(size); }
-
-QIcon ApplicationHost::icon(const IconName& name) const
+QIcon PreferencesApplicationHost::icon(const IconName& name) const
 {
     switch (name) {
     case IconName::Add: return getIcon(":/UsdLayerEditor/addCreateGeneric");
-    case IconName::AddFolder: return getIcon(":/assetResolver/add_folder.png");
+    case IconName::AddFolder: return ::icon(name);
     case IconName::OpenFile: return getIcon("fileOpen.png");
     case IconName::Delete: return getIcon("trash.png");
-    case IconName::MoveUp: return getIcon(":/assetResolver/move_up.png");
-    case IconName::MoveDown: return getIcon(":/assetResolver/move_down.png");
+    case IconName::MoveUp: return ::icon(name);
+    case IconName::MoveDown: return ::icon(name);
     default: return QIcon();
     }
 }
 
-QIcon ApplicationHost::getIcon(const char* iconName)
+QIcon PreferencesApplicationHost::getIcon(const char* iconName)
 {
     QIcon* icon = MQtUtil::createIcon(iconName);
     QIcon  copy;
@@ -89,61 +68,22 @@ QIcon ApplicationHost::getIcon(const char* iconName)
     return copy;
 }
 
-QColor ApplicationHost::themeColor(const ThemeColors& color) const
+int PreferencesApplicationHost::pm(const PixelMetric& metric) const
 {
-    switch (color) {
-    case ThemeColors::ListBorder: return QColor(Qt::GlobalColor::black); // Default implementation
-    default: return QColor();
-    }
-}
-
-int ApplicationHost::pm(const PixelMetric& metric) const
-{
+    const float scale = uiScale();
     switch (metric) {
-    case PixelMetric::TinyPadding: return dpiScale(2);
-    case PixelMetric::ResizableActiveAreaSize: return dpiScale(8);
-    case PixelMetric::ResizableContentMargin: return dpiScale(4);
-    case PixelMetric::ItemHeight: return dpiScale(24);
-    case PixelMetric::HeaderHeight: return dpiScale(28);
+    case PixelMetric::TinyPadding: return static_cast<int>(2 * scale);
+    case PixelMetric::ResizableActiveAreaSize: return static_cast<int>(8 * scale);
+    case PixelMetric::ResizableContentMargin: return static_cast<int>(4 * scale);
+    case PixelMetric::IconSize: return static_cast<int>(20 * scale);
+    case PixelMetric::ItemHeight: return static_cast<int>(24 * scale);
+    case PixelMetric::HeaderHeight: return static_cast<int>(28 * scale);
     default: return 0;
     }
 };
 
-QWidget*
-ApplicationHost::wrapWithCollapseable(const QString& title, QWidget* content, bool open) const
+QString PreferencesApplicationHost::getUSDDialogFileFilters() const
 {
-    Q_UNUSED(open);
-
-    QGroupBox*   groupBox = new QGroupBox(title);
-    QVBoxLayout* layout = new QVBoxLayout(groupBox);
-    layout->addWidget(content);
-    groupBox->setLayout(layout);
-    return groupBox;
-}
-
-QVariant ApplicationHost::loadPersistentData(const QString& group, const QString& key) const
-{
-    Q_UNUSED(group);
-    Q_UNUSED(key);
-    return QVariant();
-}
-
-void ApplicationHost::savePersistentData(
-    const QString&  group,
-    const QString&  key,
-    const QVariant& value) const
-{
-    Q_UNUSED(group);
-    Q_UNUSED(key);
-    Q_UNUSED(value);
-    // Default implementation does nothing
-}
-
-QString ApplicationHost::getUSDDialogFileFilters() const
-{
-    // A hard-coded default implementation could be:
-    // return tr("All USD Files (*.usd *.usda *.usdc);;All Files (*.*)");
-
     MString filters = MGlobal::executePythonCommandStringResult(
         "from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
     return MQtUtil::toQString(filters);
@@ -161,17 +101,12 @@ MString createMStringFormatArg(const MString& arg, const QString& str)
     return mstr;
 }
 
-QString ApplicationHost::getOpenFileName(
+QString PreferencesApplicationHost::getOpenFileName(
     QWidget*       parent,
     const QString& caption,
     const QString& dir,
     const QString& filter) const
 {
-    // A default implementation using QFileDialog
-    // QString filePath = QFileDialog::getOpenFileName(parent, caption, dir, filter);
-    // return filePath;
-
-    // Maya specific implementation.
     const char* script = R"mel(
     global proc string assetResolver_GetOpenFileName()
     {
@@ -197,17 +132,12 @@ QString ApplicationHost::getOpenFileName(
     return MQtUtil::toQString(filePath);
 }
 
-QString ApplicationHost::getExistingDirectory(
+QString PreferencesApplicationHost::getExistingDirectory(
     QWidget*             parent,
     const QString&       caption,
     const QString&       dir,
     QFileDialog::Options options) const
 {
-    // A default implementation using QFileDialog
-    // QString pickedDir = QFileDialog::getExistingDirectory(parent, caption, dir, options);
-    // return pickedDir;
-
-    // Maya specific implementation.
     const int   fileMode = (options | QFileDialog::ShowDirsOnly) ? 3 : 2;
     const char* script = R"mel(
     global proc string assetResolver_GetExistingDirectory()
@@ -234,5 +164,3 @@ QString ApplicationHost::getExistingDirectory(
     MString filePath = MGlobal::executeCommandStringResult(commandString);
     return MQtUtil::toQString(filePath);
 }
-
-} // namespace Adsk
