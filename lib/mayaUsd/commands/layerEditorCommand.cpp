@@ -801,10 +801,47 @@ public:
     {
     }
 
-    bool doIt(SdfLayerHandle targetLayer) override
+    bool doIt(SdfLayerHandle /*targetLayer*/) override
     {
         if (_layerIdentifiersByStrength.empty())
             return true;
+
+        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        if (!prim.IsValid()) {
+            TF_RUNTIME_ERROR("Invalid proxy shape path: %s", _proxyShapePath.c_str());
+            return false;
+        }
+
+        UsdStageWeakPtr stage = prim.GetStage();
+        if (!stage) {
+            TF_RUNTIME_ERROR("Cannot get stage for proxy shape: %s", _proxyShapePath.c_str());
+            return false;
+        }
+
+        SdfLayerHandleVector stageLayers = stage->GetLayerStack();
+
+        // Sort the selected layers by their strength (strongest first).
+        std::unordered_map<std::string, size_t> layerStrengthMap;
+        layerStrengthMap.reserve(stageLayers.size());
+        for (size_t i = 0; i < stageLayers.size(); ++i)
+            layerStrengthMap[stageLayers[i]->GetIdentifier()] = i;
+
+        std::sort(
+            _layerIdentifiersByStrength.begin(),
+            _layerIdentifiersByStrength.end(),
+            [&layerStrengthMap](const std::string& a, const std::string& b) {
+                auto itA = layerStrengthMap.find(a);
+                auto itB = layerStrengthMap.find(b);
+                if (itA == layerStrengthMap.end()) {
+                    TF_WARN("Layer '%s' not found in stage layer stack", a.c_str());
+                    return false;
+                }
+                if (itB == layerStrengthMap.end()) {
+                    TF_WARN("Layer '%s' not found in stage layer stack", b.c_str());
+                    return true;
+                }
+                return itA->second < itB->second;
+            });
 
         SdfLayerHandleVector layersByStrength;
         layersByStrength.reserve(_layerIdentifiersByStrength.size());
@@ -824,20 +861,6 @@ public:
         // Keep a hold of references for all selected layers, needed for undo().
         for (size_t i = 1; i < layersByStrength.size(); ++i)
             _subLayersRefs.push_back(layersByStrength[i]);
-
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        if (!prim.IsValid()) {
-            TF_RUNTIME_ERROR("Invalid proxy shape path: %s", _proxyShapePath.c_str());
-            return false;
-        }
-
-        UsdStageWeakPtr stage = prim.GetStage();
-        if (!stage) {
-            TF_RUNTIME_ERROR("Cannot get stage for proxy shape: %s", _proxyShapePath.c_str());
-            return false;
-        }
-
-        SdfLayerHandleVector stageLayers = stage->GetLayerStack();
 
         std::map<std::string, std::pair<SdfLayerHandle, std::string>> parentInfoByLayer;
         for (const auto& potentialParent : stageLayers) {
@@ -967,7 +990,7 @@ public:
         return true;
     }
 
-    bool undoIt(SdfLayerHandle targetLayer) override
+    bool undoIt(SdfLayerHandle /*targetLayer*/) override
     {
         _undoItem.undo();
 
@@ -987,7 +1010,6 @@ public:
         return true;
     }
 
-    // Selected layers ordered by strength (strongest first).
     std::vector<std::string> _layerIdentifiersByStrength;
     std::string              _proxyShapePath;
 
@@ -1717,43 +1739,6 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                     MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
                 return MS::kInvalidParameter;
             }
-
-            UsdStageWeakPtr stage = prim.GetStage();
-            if (!stage) {
-                displayError(
-                    MString("Cannot get stage for proxy shape: ")
-                    + MString(proxyShapeName.asChar()));
-                return MS::kInvalidParameter;
-            }
-
-            SdfLayerHandleVector layerStackStrongToWeak = stage->GetLayerStack();
-
-            std::unordered_map<std::string, size_t> layerStrengthMap;
-            layerStrengthMap.reserve(layerStackStrongToWeak.size());
-            for (size_t i = 0; i < layerStackStrongToWeak.size(); ++i) {
-                layerStrengthMap[layerStackStrongToWeak[i]->GetIdentifier()] = i;
-            }
-
-            // Sort the selected layers by their strength (strongest first).
-            std::sort(
-                layerIdentifiers.begin(),
-                layerIdentifiers.end(),
-                [&layerStrengthMap](const std::string& a, const std::string& b) {
-                    auto itA = layerStrengthMap.find(a);
-                    auto itB = layerStrengthMap.find(b);
-
-                    // Catch for if layers are not found within the layer stack.
-                    if (itA == layerStrengthMap.end()) {
-                        TF_WARN("Layer '%s' not found in stage layer stack", a.c_str());
-                        return false; // Push to end
-                    }
-                    if (itB == layerStrengthMap.end()) {
-                        TF_WARN("Layer '%s' not found in stage layer stack", b.c_str());
-                        return true; // Push to end
-                    }
-
-                    return itA->second < itB->second;
-                });
 
             auto cmd = std::make_shared<Impl::StitchLayers>();
             cmd->_layerIdentifiersByStrength = layerIdentifiers;
