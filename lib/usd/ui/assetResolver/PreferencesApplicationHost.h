@@ -42,10 +42,10 @@ public:
         QFileDialog::Options options = QFileDialog::ShowDirsOnly) const override;
 
 protected:
-    PreferenceSApplicationHost(QObject* parent = nullptr);
-    ~PreferenceSApplicationHost() override = default;
+    PreferencesApplicationHost(QObject* parent = nullptr);
+    ~PreferencesApplicationHost() override = default;
 
-    QIcon getIcon(const char* iconName);
+    QIcon getIcon(const char* iconName) const;
 
-    static PreferenceSApplicationHost* s_instance;
+    static PreferencesApplicationHost* s_instance;
 };
