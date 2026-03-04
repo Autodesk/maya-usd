@@ -387,15 +387,14 @@ void UsdUndoAssignNewMaterialCommand::execute()
         //
 
         // If a default prim exists, have the mtl scope under it, otherwise, fallback to the root.
-        auto defaultPrim = stage->GetDefaultPrim();
+        auto      defaultPrim = stage->GetDefaultPrim();
         UsdPrim   rootPrim;
-        Ufe::Path ufePath; 
+        Ufe::Path ufePath;
         if (defaultPrim) {
-            ufePath = UsdUfe::stagePath(stage)
-                + UsdUfe::usdPathToUfePathSegment(defaultPrim.GetPath());        
+            ufePath
+                = UsdUfe::stagePath(stage) + UsdUfe::usdPathToUfePathSegment(defaultPrim.GetPath());
             rootPrim = defaultPrim;
-        }
-        else {
+        } else {
             ufePath = UsdUfe::stagePath(stage);
             rootPrim = stage->GetPseudoRoot();
         }
