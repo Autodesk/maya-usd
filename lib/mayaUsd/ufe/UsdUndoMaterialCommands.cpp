@@ -532,7 +532,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
 void UsdUndoAssignNewMaterialCommand::undo()
 {
     if (_cmds) {
-        for (int i = _undoItems.size() - 1; i >= 0; i--) {
+        for (int i = static_cast<int>(_undoItems.size()) - 1; i >= 0; i--) {
             _undoItems[i].undo();
         }
         _cmds->undo();
@@ -543,7 +543,7 @@ void UsdUndoAssignNewMaterialCommand::redo()
 {
     if (_cmds) {
         _cmds->redo();
-        for (int i = 0; i < _undoItems.size(); i++) {
+        for (size_t i = 0; i < _undoItems.size(); i++) {
             _undoItems[i].redo();
         }
     }
