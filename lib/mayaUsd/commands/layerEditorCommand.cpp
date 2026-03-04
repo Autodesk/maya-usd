@@ -877,6 +877,13 @@ public:
                     _cleanParentIds.push_back(entry.first);
         }
 
+        const std::string strongestLayerId = strongestLayer->GetIdentifier();
+        if (!strongestLayer->IsDirty()) {
+            auto it = std::find(_cleanParentIds.begin(), _cleanParentIds.end(), strongestLayerId);
+            if (it == _cleanParentIds.end())
+                _cleanParentIds.push_back(strongestLayerId);
+        }
+
         UsdUfe::UsdUndoManager::instance().trackLayerStates(strongestLayer);
         for (size_t i = 1; i < layersByStrength.size(); ++i)
             UsdUfe::UsdUndoManager::instance().trackLayerStates(layersByStrength[i]);
