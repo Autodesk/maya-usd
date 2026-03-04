@@ -20,6 +20,8 @@
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 
+#include <mayaUsdUI/ui/USDQtUtil.h>
+
 #ifdef AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
 #include <AdskAssetResolver/Notice.h>
 #endif
@@ -36,6 +38,9 @@ static const std::string PROJECT_TOKENS_DATA_SET_NAME = "MayaUSDExtension";
 
 void InitializeUsdPreferences()
 {
+    // Add ApplicationHost for the USD Preferences dialog
+    PreferenceApplicationHost::CreateInstance(MQtUtil::mainWindow());
+
     // Load USD Preference options to ensure the Adsk Asset Resolver works as configured
     // (The UsdPreferenceOptions::GetInstance() will take care of the loading)
     ApplyUsdPreferences(UsdPreferenceOptions(), UsdPreferenceOptions::GetInstance());

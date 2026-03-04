@@ -17,7 +17,8 @@
 
 #include "PreferencesManagement.h"
 #include "PreferencesOptions.h"
-#include "USDAssetResolverSettingsWidget.h"
+
+#include <AssetResolverPreferences/USDAssetResolverSettingsWidget.h>
 
 #include <QtWidgets/QVBoxLayout>
 
@@ -35,19 +36,29 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
     // Create the settings widget
     settingsWidget = new Adsk::USDAssetResolverSettingsWidget(this);
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    QHBoxLayout* layout = new QHBoxLayout(this);
+    layout->addWidget(settingsWidget);
+
+    QVBoxLayout* saveAndCloselayout = new QVBoxLayout(this);
+    QPushButton* saveButtonBox = new QPushButton(tr("Save & Refresh", this);
+    saveButtonBox->setDefault(true);
+    saveButtonBox->setAutoDefault(true);
+    saveButtonBox->setToolTip(tr("Save the settings and refresh the Asset Resolver"));
+    QPushButton* closeButtonBox = new QPushButton(tr("Close", this);
+    closeButtonBox->setToolTip(tr("Close the dialog without saving"));
+    saveAndCloselayout->addWidget(saveButtonBox);
+    saveAndCloselayout->addWidget(closeButtonBox);
     layout->addWidget(settingsWidget);
 
     // Connect only the action signals (save and close)
     QObject::connect(
-        settingsWidget,
-        &Adsk::USDAssetResolverSettingsWidget::saveRequested,
+        saveButtonBox,
+        &QPushButton::clicked,
         this,
         &USDAssetResolverDialog::OnSaveRequested);
-
     QObject::connect(
-        settingsWidget,
-        &Adsk::USDAssetResolverSettingsWidget::closeRequested,
+        closeButtonBox, 
+        &QPushButton::clicked,
         this,
         &USDAssetResolverDialog::OnCloseRequested);
 

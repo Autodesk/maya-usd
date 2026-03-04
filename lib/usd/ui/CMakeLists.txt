@@ -72,7 +72,8 @@ target_link_libraries(${PROJECT_NAME}
 		Qt::Core
 		Qt::Gui
 		Qt::Widgets
-        $<$<BOOL:${AR_FOUND}>:${AR_LIBRARY}>
+        $<$<BOOL:${AR_FOUND}>:${AR_LIBRARY}
+        $<$<BOOL:${AR_FOUND}>:${AR_PREF_UI_LIBRARY}
 )
 
 # -----------------------------------------------------------------------------
