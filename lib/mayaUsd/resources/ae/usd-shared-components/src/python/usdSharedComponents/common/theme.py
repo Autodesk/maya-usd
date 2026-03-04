@@ -82,7 +82,7 @@ class Theme(object):
             theme = Theme.instance()
             for icon in icons:
                 svg_renderer = QtSvg.QSvgRenderer(os.path.join(iconFolder, icon))
-                image = QImage(theme.uiScaled(64), theme.uiScaled(64), QImage.Format_ARGB32)
+                image = QImage(theme.uiScaled(64), theme.uiScaled(64), QImage.Format.Format_ARGB32)
                 image.fill(0x00000000)
                 svg_renderer.render(QPainter(image))
                 pixmap = QPixmap.fromImage(image)
@@ -94,7 +94,7 @@ class Theme(object):
             icons = fnmatch.filter(os.listdir(iconFolder), f"{name}*.png")
             for icon in icons:
                 svg_renderer = QtSvg.QSvgRenderer(os.path.join(iconFolder, icon))
-                image = QImage(theme.uiScaled(64), theme.uiScaled(64), QImage.Format_ARGB32)
+                image = QImage(theme.uiScaled(64), theme.uiScaled(64), QImage.Format.Format_ARGB32)
                 image.fill(0x00000000)
                 svg_renderer.render(QPainter(image))
                 pixmap = QPixmap.fromImage(image)
@@ -108,7 +108,7 @@ class Theme(object):
     
     def themeTab(self, tab: QTabWidget):
         tab.setDocumentMode(True)
-        tab.tabBar().setCursor(Qt.ArrowCursor)
+        tab.tabBar().setCursor(Qt.CursorShape.ArrowCursor)
 
     def themeMenuButton(self, menuButton: QToolButton, showMenuIndicator: bool):
         if showMenuIndicator:
@@ -148,7 +148,7 @@ class Theme(object):
         """
 
         painter = QPainter(widget)
-        painter.setRenderHint(QPainter.Antialiasing, False)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         rect = widget.rect()
         rect.adjust(0, 0, 0, - self.resizableContentMargin())
         lineWidth: int = self.uiScaled(2)
@@ -158,8 +158,8 @@ class Theme(object):
             halfLineWidth = round(lineWidth / 2.0)
             rect.adjust(halfLineWidth, halfLineWidth, -halfLineWidth, -halfLineWidth)
 
-        painter.setPen(QPen(self.palette.colorResizeBorderActive, lineWidth, Qt.SolidLine, Qt.SquareCap, Qt.MiterJoin))
-        painter.setBrush(Qt.NoBrush)
+        painter.setPen(QPen(self.palette.colorResizeBorderActive, lineWidth, Qt.PenStyle.SolidLine, Qt.PenCapStyle.SquareCap, Qt.PenJoinStyle.MiterJoin))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRect(rect)
 
     def resizableActiveAreaSize(self) -> int:

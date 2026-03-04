@@ -60,19 +60,19 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
     @staticmethod
     def _ClickInView(viewWidget, clickPosition,
-            keyboardModifier=QtCore.Qt.NoModifier):
+            keyboardModifier=QtCore.Qt.KeyboardModifier.NoModifier):
         clickPoint = QtCore.QPoint(clickPosition[0], clickPosition[1])
-        QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton, keyboardModifier,
+        QTest.mouseClick(viewWidget, QtCore.Qt.MouseButton.LeftButton, keyboardModifier,
             clickPoint)
 
     @staticmethod
     def _SelectAreaInView(viewWidget, selectAreaRange,
-            keyboardModifier=QtCore.Qt.NoModifier):
+            keyboardModifier=QtCore.Qt.KeyboardModifier.NoModifier):
         pressPoint = QtCore.QPoint(selectAreaRange.min[0], selectAreaRange.min[1])
         releasePoint = QtCore.QPoint(selectAreaRange.max[0], selectAreaRange.max[1])
-        QTest.mousePress(viewWidget, QtCore.Qt.LeftButton, keyboardModifier,
+        QTest.mousePress(viewWidget, QtCore.Qt.MouseButton.LeftButton, keyboardModifier,
             pressPoint)
-        QTest.mouseRelease(viewWidget, QtCore.Qt.LeftButton, keyboardModifier,
+        QTest.mouseRelease(viewWidget, QtCore.Qt.MouseButton.LeftButton, keyboardModifier,
             releasePoint)
 
     @classmethod
@@ -302,7 +302,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         with self._ProfileScope(profileScopeName):
             self._ClickInView(self._viewWidget, clickPosition,
-                keyboardModifier=QtCore.Qt.ShiftModifier)
+                keyboardModifier=QtCore.Qt.KeyboardModifier.ShiftModifier)
 
         self._WriteViewportImage(self._testName, 'selection_append_1')
 
@@ -313,7 +313,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         with self._ProfileScope(profileScopeName):
             self._ClickInView(self._viewWidget, clickPosition,
-                keyboardModifier=QtCore.Qt.ShiftModifier)
+                keyboardModifier=QtCore.Qt.KeyboardModifier.ShiftModifier)
 
         self._WriteViewportImage(self._testName, 'selection_append_2')
 
@@ -324,7 +324,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         with self._ProfileScope(profileScopeName):
             self._ClickInView(self._viewWidget, clickPosition,
-                keyboardModifier=QtCore.Qt.ShiftModifier)
+                keyboardModifier=QtCore.Qt.KeyboardModifier.ShiftModifier)
 
         self._WriteViewportImage(self._testName, 'selection_append_3')
 
@@ -335,7 +335,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         with self._ProfileScope(profileScopeName):
             self._ClickInView(self._viewWidget, clickPosition,
-                keyboardModifier=QtCore.Qt.ShiftModifier)
+                keyboardModifier=QtCore.Qt.KeyboardModifier.ShiftModifier)
 
         self._WriteViewportImage(self._testName, 'selection_append_4')
 

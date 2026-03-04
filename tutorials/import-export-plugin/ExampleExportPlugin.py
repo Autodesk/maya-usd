@@ -142,7 +142,7 @@ def showUi(jobContext, parentUIName, settings):
         container = QtW.QWidget()
         rowLayout.addWidget(container)
 
-        buttonBox = QtW.QDialogButtonBox(QtW.QDialogButtonBox.Ok | QtW.QDialogButtonBox.Cancel)
+        buttonBox = QtW.QDialogButtonBox(QtW.QDialogButtonBox.StandardButton.Ok | QtW.QDialogButtonBox.StandardButton.Cancel)
         rowLayout.addWidget(buttonBox)
 
         def accept():

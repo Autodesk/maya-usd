@@ -103,8 +103,8 @@ class testVP2RenderDelegatePointInstancesPickMode(imageUtils.ImageDiffingTestCas
         view = OMUI.M3dView.active3dView()
         viewWidget = wrapInstance(int(view.widget()), QWidget)
 
-        QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton,
-            QtCore.Qt.NoModifier, viewWidget.rect().center())
+        QTest.mouseClick(viewWidget, QtCore.Qt.MouseButton.LeftButton,
+            QtCore.Qt.KeyboardModifier.NoModifier, viewWidget.rect().center())
 
     def assertSnapshotClose(self, imageName):
         baselineImage = os.path.join(self._baselineDir, imageName)

@@ -458,17 +458,17 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
                 'value in USD if the Maya node attribute stores it in double precision'
         ]
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             return COLUMN_HEADERS[section]
-        elif role == QtCore.Qt.ToolTipRole:
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
             return COLUMN_TOOLTIPS[section]
 
         return None
 
-    def data(self, index, role=QtCore.Qt.DisplayRole):
+    def data(self, index, role=QtCore.Qt.ItemDataRole.DisplayRole):
         value = None
 
-        if not self._exportedAttrs or not index.isValid() or role != QtCore.Qt.DisplayRole:
+        if not self._exportedAttrs or not index.isValid() or role != QtCore.Qt.ItemDataRole.DisplayRole:
             return value
 
         row = index.row()
@@ -488,7 +488,7 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
 
         return value
 
-    def setData(self, index, value, role=QtCore.Qt.EditRole):
+    def setData(self, index, value, role=QtCore.Qt.ItemDataRole.EditRole):
         if not self._exportedAttrs:
             return False
 
@@ -522,27 +522,27 @@ class ExportedAttributesModel(QtCore.QAbstractTableModel):
 
     def flags(self, index):
         if not index.isValid():
-            return QtCore.Qt.ItemIsDropEnabled
+            return QtCore.Qt.ItemFlag.ItemIsDropEnabled
 
-        itemFlags = (QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+        itemFlags = (QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable)
 
         column = index.column()
         if column == ExportedAttributesModel.MAYA_ATTR_NAME_COLUMN:
-            itemFlags |= QtCore.Qt.ItemIsDragEnabled
+            itemFlags |= QtCore.Qt.ItemFlag.ItemIsDragEnabled
         elif (column == ExportedAttributesModel.USD_ATTR_TYPE_COLUMN or
                 column == ExportedAttributesModel.USD_ATTR_NAME_COLUMN):
-            itemFlags |= QtCore.Qt.ItemIsEditable
+            itemFlags |= QtCore.Qt.ItemFlag.ItemIsEditable
         elif column == ExportedAttributesModel.PRIMVAR_INTERPOLATION_COLUMN:
             # The primvar column is only editable if this is a primvar.
             exportedAttr = self._exportedAttrs[index.row()]
             if exportedAttr.usdAttrType == USD_ATTR_TYPE_PRIMVAR:
-                itemFlags |= QtCore.Qt.ItemIsEditable
+                itemFlags |= QtCore.Qt.ItemFlag.ItemIsEditable
         elif column == ExportedAttributesModel.DOUBLE_PRECISION_COLUMN:
             # The double-to-single precision column is only editable if the
             # Maya attribute stores double precision data.
             exportedAttr = self._exportedAttrs[index.row()]
             if _ShouldEnableDoublePrecisionEditor(exportedAttr.mayaAttrName):
-                itemFlags |= QtCore.Qt.ItemIsEditable
+                itemFlags |= QtCore.Qt.ItemFlag.ItemIsEditable
 
         return itemFlags
 
@@ -638,9 +638,9 @@ class AddAttributesModel(QStringListModel):
 
     def flags(self, index):
         if not index.isValid():
-            return QtCore.Qt.ItemIsDropEnabled
+            return QtCore.Qt.ItemFlag.ItemIsDropEnabled
 
-        return (QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled)
+        return (QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsDragEnabled)
 
     def mimeTypes(self):
         return [ITEM_MIME_TYPE]
@@ -680,7 +680,7 @@ class AddAttributesView(QListView):
         super(AddAttributesView, self).__init__(parent=parent)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
 
     def dragEnterEvent(self, event):
         if event.source() == self:
