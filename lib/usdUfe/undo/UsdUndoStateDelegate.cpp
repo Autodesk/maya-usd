@@ -117,7 +117,7 @@ void UsdUndoStateDelegate::invertCreateSpec(const SdfPath& path, bool inert)
 
     TF_DEBUG(USDUFE_UNDOSTATEDELEGATE).Msg("Inverting creating spec at '%s'\n", path.GetText());
 
-    // In principle this should never happen if everything every edit is properly undoable.
+    // In principle this should never happen if every edit is properly undoable.
     // There is a Maya issue with attributes edited using the slider from the attribute editor.
     // The attribute value is set continuously as the slider moves, but the command is only
     // created on drop. The problem is that the specs get created immediately, not within the

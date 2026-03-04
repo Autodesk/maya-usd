@@ -399,9 +399,9 @@ void UsdUndoAssignNewMaterialCommand::execute()
             rootPrim = stage->GetPseudoRoot();
         }
 
-        auto stageItem = UsdUfe::UsdSceneItem::create(ufePath, rootPrim);
+        auto rootItem = UsdUfe::UsdSceneItem::create(ufePath, rootPrim);
 
-        auto createMaterialsScopeCmd = UsdUndoCreateMaterialsScopeCommand::create(stageItem);
+        auto createMaterialsScopeCmd = UsdUndoCreateMaterialsScopeCommand::create(rootItem);
         if (!createMaterialsScopeCmd) {
             markAsFailed();
             return;
