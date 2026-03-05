@@ -26,6 +26,9 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoManager.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/uiCallback.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -616,39 +619,6 @@ public:
             layer->Reload();
         } else if (_cmdId == CmdId::kClearLayer) {
             layer->Clear();
-        } else if (_cmdId == CmdId::kFlattenLayer) {
-            // Create a tempStage to get a PcpLayerStack with this layer as the root.
-            PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
-            if (!tempStage) {
-                MPxCommand::displayError("Failed to open stage for layer");
-                return false;
-            }
-
-            // Get the PcpLayerStackRefPtr to be used in the flatten method.
-            PXR_NS::PcpLayerStackRefPtr layerStack;
-            PXR_NS::UsdPrim             rootPrim = tempStage->GetPseudoRoot();
-            if (rootPrim) {
-                PXR_NS::PcpPrimIndex primIndex = rootPrim.GetPrimIndex();
-                if (primIndex.IsValid()) {
-                    PXR_NS::PcpNodeRef rootNode = primIndex.GetRootNode();
-                    if (rootNode) {
-                        layerStack = rootNode.GetLayerStack();
-                    }
-                }
-            }
-
-            if (!layerStack) {
-                MPxCommand::displayError("Cannot flatten layer: could not determine layer stack");
-                return false;
-            }
-
-            PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
-            if (!flattenedLayer) {
-                MPxCommand::displayError("Failed to flatten layer stack");
-                return false;
-            }
-
-            layer->TransferContent(flattenedLayer);
         }
 
         // Note: backup the edit targets after the layer is cleared because we use
@@ -672,7 +642,7 @@ public:
         return true;
     }
 
-private:
+protected:
     // Backup dirty layer to support undo and redo.
     void backupLayer(SdfLayerHandle layer)
     {
@@ -745,6 +715,7 @@ private:
         }
     }
 
+private:
     // Edit targets that were made invalid after the layer was cleared.
     // The stages are kept with weak pointer to avoid forcing to stay valid.
     using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
@@ -778,6 +749,69 @@ public:
         : BackupLayerBase(CmdId::kFlattenLayer)
     {
     }
+
+    bool doIt(SdfLayerHandle layer) override
+    {
+        holdOntoSubLayers(layer);
+
+        PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
+        if (!tempStage) {
+            MPxCommand::displayError("Failed to open stage for layer");
+            return false;
+        }
+
+        PXR_NS::PcpLayerStackRefPtr layerStack;
+        PXR_NS::UsdPrim             rootPrim = tempStage->GetPseudoRoot();
+        if (rootPrim) {
+            PXR_NS::PcpPrimIndex primIndex = rootPrim.GetPrimIndex();
+            if (primIndex.IsValid()) {
+                PXR_NS::PcpNodeRef rootNode = primIndex.GetRootNode();
+                if (rootNode) {
+                    layerStack = rootNode.GetLayerStack();
+                }
+            }
+        }
+
+        if (!layerStack) {
+            MPxCommand::displayError("Cannot flatten layer: could not determine layer stack");
+            return false;
+        }
+
+        PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
+        if (!flattenedLayer) {
+            MPxCommand::displayError("Failed to flatten layer stack");
+            return false;
+        }
+
+        _layerWasClean = !layer->IsDirty();
+
+        for (const auto& stackLayer : layerStack->GetLayers())
+            UsdUfe::UsdUndoManager::instance().trackLayerStates(stackLayer);
+
+        {
+            UsdUfe::UsdUndoBlock undoBlock(&_undoItem);
+            layer->TransferContent(flattenedLayer);
+        }
+
+        backupEditTargets(layer);
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle layer) override
+    {
+        _undoItem.undo();
+
+        if (_layerWasClean)
+            layer->Reload();
+
+        restoreEditTargets();
+        releaseSubLayers();
+        return true;
+    }
+
+private:
+    UsdUfe::UsdUndoableItem _undoItem;
+    bool                    _layerWasClean = false;
 };
 
 class MuteLayer : public BaseCmd
