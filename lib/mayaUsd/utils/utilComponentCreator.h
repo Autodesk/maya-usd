@@ -85,6 +85,16 @@ bool shouldDisplayComponentInitialSaveDialog(
     const PXR_NS::UsdStageRefPtr stage,
     const std::string&           proxyShapePath);
 
+/*! \brief Returns the name of the materials scope used in the component at the given path
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getMaterialScopeName(const std::string& proxyPath);
+
+/*! \brief Returns the name of the mesh scope used in the component at the given path.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getMeshScopeName(const std::string& proxyPath);
+
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
 
