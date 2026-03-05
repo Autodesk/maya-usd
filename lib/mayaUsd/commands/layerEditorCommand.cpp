@@ -643,31 +643,6 @@ public:
     }
 
 protected:
-    // Backup dirty layer to support undo and redo.
-    void backupLayer(SdfLayerHandle layer)
-    {
-        if (!layer)
-            return;
-
-        if (layer->IsDirty() || _cmdId == CmdId::kClearLayer) {
-            _backupLayer = SdfLayer::CreateAnonymous();
-            _backupLayer->TransferContent(layer);
-        }
-    }
-
-    void restoreLayer(SdfLayerHandle layer)
-    {
-        if (!layer)
-            return;
-
-        if (_backupLayer) {
-            layer->TransferContent(_backupLayer);
-            _backupLayer = nullptr;
-        } else {
-            layer->Reload();
-        }
-    }
-
     // Backup and restore edit targets of stages that were targeting the sub-layers
     // of the cleared layer to support undo and redo.
     void backupEditTargets(SdfLayerHandle layer)
@@ -716,6 +691,31 @@ protected:
     }
 
 private:
+    // Backup dirty layer to support undo and redo.
+    void backupLayer(SdfLayerHandle layer)
+    {
+        if (!layer)
+            return;
+
+        if (layer->IsDirty() || _cmdId == CmdId::kClearLayer) {
+            _backupLayer = SdfLayer::CreateAnonymous();
+            _backupLayer->TransferContent(layer);
+        }
+    }
+
+    void restoreLayer(SdfLayerHandle layer)
+    {
+        if (!layer)
+            return;
+
+        if (_backupLayer) {
+            layer->TransferContent(_backupLayer);
+            _backupLayer = nullptr;
+        } else {
+            layer->Reload();
+        }
+    }
+
     // Edit targets that were made invalid after the layer was cleared.
     // The stages are kept with weak pointer to avoid forcing to stay valid.
     using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
