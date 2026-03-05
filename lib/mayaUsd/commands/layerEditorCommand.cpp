@@ -964,7 +964,7 @@ public:
             auto strongLayerSubLayers = strongestLayer->GetSubLayerPaths();
 
             std::set<std::string> addedSublayerIds;
-            for (const auto& path : strongLayerSubLayers) {
+            for (const auto path : strongLayerSubLayers) {
                 auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
                 if (existingLayer) {
                     addedSublayerIds.insert(existingLayer->GetIdentifier());
