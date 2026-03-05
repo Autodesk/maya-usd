@@ -394,9 +394,7 @@ set(TOP_HEADERS
 )
 
 mayaUsd_promoteHeaderList(HEADERS ${TOP_HEADERS} BASEDIR "NONE")
-install(FILES ${CMAKE_BINARY_DIR}/include/pxr_python.h
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
-)
-install(FILES ${CMAKE_BINARY_DIR}/include/cxx17_legacy_support.h
+
+install(FILES ${TOP_HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )

@@ -159,15 +159,33 @@ bool MayaUsdCreateLookdevEnvironmentCommand::executeCommand()
         m_cmds->append(createProxyCommand);
     }
 
-    // Create a materials scope under the proxy shape.
+    // Create a materials scope, preferring the default prim as parent if one exists.
     auto proxyShapeItem =
         MayaUsdAPI::createUsdSceneItem(proxyShape->path(), MayaUsdAPI::ufePathToPrim(proxyShape->path()));
     if (!proxyShapeItem || !MayaUsdAPI::getPrimForUsdSceneItem(proxyShapeItem).IsValid())
     {
         return false;
     }
+
+    Ufe::SceneItem::Ptr scopeParentItem = proxyShapeItem;
+    auto stage = MayaUsdAPI::getStage(proxyShape->path());
+    if (stage && stage->HasDefaultPrim())
+    {
+        auto defaultPrim = stage->GetDefaultPrim();
+        if (defaultPrim.IsValid())
+        {
+            auto defaultPrimUfePath = MayaUsdAPI::stagePath(stage)
+                + MayaUsdAPI::usdPathToUfePathSegment(defaultPrim.GetPath());
+            auto defaultPrimItem = MayaUsdAPI::createUsdSceneItem(defaultPrimUfePath, defaultPrim);
+            if (defaultPrimItem)
+            {
+                scopeParentItem = defaultPrimItem;
+            }
+        }
+    }
+
     auto createMaterialsScopeCmd = std::dynamic_pointer_cast<Ufe::SceneItemResultUndoableCommand>(
-        MayaUsdAPI::createMaterialsScopeCommand(proxyShapeItem));
+        MayaUsdAPI::createMaterialsScopeCommand(scopeParentItem));
     if (!createMaterialsScopeCmd)
     {
         return false;
