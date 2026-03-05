@@ -4087,21 +4087,15 @@ void HdVP2Material::TexturedDisplayModeEnabled(HdSceneDelegate* sceneDelegate)
     if (_texturedConfig == kUntextured) {
         return;
     }
-
-    HdChangeTracker& changeTracker = sceneDelegate->GetRenderIndex().GetChangeTracker();
-
     // Full network may be stale when coming from untextured display.
     if (_pendingFullNetworkDirtyBits != HdChangeTracker::Clean) {
+        HdChangeTracker& changeTracker = sceneDelegate->GetRenderIndex().GetChangeTracker();
         changeTracker.MarkSprimDirty(GetId(), _pendingFullNetworkDirtyBits);
         _pendingFullNetworkDirtyBits = HdChangeTracker::Clean;
     }
-
     // Tell all the Rprims associated with this material to recompute primvars
     // if the network changes.
-    std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
-    for (const SdfPath& rprimId : _materialSubscriptions) {
-        changeTracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
-    }
+    MaterialChanged(sceneDelegate);
 }
 
 void HdVP2Material::MaterialChanged(HdSceneDelegate* sceneDelegate)
