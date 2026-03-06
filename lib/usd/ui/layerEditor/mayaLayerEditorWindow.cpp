@@ -171,6 +171,16 @@ bool MayaLayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appea
 bool MayaLayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
 bool MayaLayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers); }
 
+bool MayaLayerEditorWindow::selectionHasSublayers()
+{
+    auto selection = treeView()->getSelectedLayerItems();
+    for (auto item : selection) {
+        if (item->hasSubLayers())
+            return true;
+    }
+    return false;
+}
+
 std::string MayaLayerEditorWindow::proxyShapeName(const bool fullPath) const
 {
     auto stageEntry = _sessionState.stageEntry();
@@ -223,6 +233,33 @@ void MayaLayerEditorWindow::lockLayerAndSubLayers()
         bool    includeSubLayers = true;
         treeView()->onLockLayerAndSublayers(name, includeSubLayers);
     }
+}
+
+void MayaLayerEditorWindow::stitchLayers()
+{
+    auto selectedItems = treeView()->getSelectedLayerItems();
+
+    if (selectedItems.size() < 2)
+        return;
+
+    std::vector<PXR_NS::SdfLayerRefPtr> layers;
+    layers.reserve(selectedItems.size());
+
+    for (auto item : selectedItems) {
+        if (!item)
+            continue;
+
+        auto layer = item->layer();
+        if (!layer)
+            continue;
+
+        layers.push_back(layer);
+    }
+
+    if (layers.size() < 2)
+        return;
+
+    _sessionState.commandHook()->stitchLayers(layers);
 }
 
 void MayaLayerEditorWindow::addParentLayer()

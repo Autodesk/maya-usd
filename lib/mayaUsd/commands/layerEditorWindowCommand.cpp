@@ -52,6 +52,7 @@ DEF_FLAG(lo, layerIsLocked)
 DEF_FLAG(as, layerAppearsSystemLocked)
 DEF_FLAG(ls, layerIsSystemLocked)
 DEF_FLAG(ll, layerHasSubLayers)
+DEF_FLAG(sh, selectionHasSublayers)
 
 // edit flags
 DEF_FLAG(rs, removeSubLayer)
@@ -67,6 +68,7 @@ DEF_FLAG(ms, mergeWithSublayers)
 DEF_FLAG(sp, selectPrimsWithSpec)
 DEF_FLAG(lk, lockLayer)
 DEF_FLAG(la, lockLayerAndSubLayers)
+DEF_FLAG(st, stitchLayers)
 
 const MString WORKSPACE_CONTROL_NAME = "mayaUsdLayerEditor";
 } // namespace
@@ -144,6 +146,7 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(layerAppearsSystemLocked);
     ADD_FLAG(layerIsSystemLocked);
     ADD_FLAG(layerHasSubLayers);
+    ADD_FLAG(selectionHasSublayers);
 
     ADD_FLAG(removeSubLayer);
     ADD_FLAG(saveEdits);
@@ -158,6 +161,7 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(selectPrimsWithSpec);
     ADD_FLAG(lockLayer);
     ADD_FLAG(lockLayerAndSubLayers);
+    ADD_FLAG(stitchLayers);
 
     // editor name
     syntax.addArg(MSyntax::kString);
@@ -336,6 +340,7 @@ MStatus LayerEditorWindowCommand::handleQueries(
     HANDLE_Q_FLAG(layerAppearsSystemLocked)
     HANDLE_Q_FLAG(layerIsSystemLocked)
     HANDLE_Q_FLAG(layerHasSubLayers)
+    HANDLE_Q_FLAG(selectionHasSublayers)
 
     // proxyShape flag is both create/query.
     if (argParser.isFlagSet(FLAG(proxyShape)) && argParser.isQuery()) {
@@ -397,6 +402,7 @@ MStatus LayerEditorWindowCommand::handleEdits(
     HANDLE_E_FLAG(selectPrimsWithSpec, true)
     HANDLE_E_FLAG(lockLayer, true)
     HANDLE_E_FLAG(lockLayerAndSubLayers, true)
+    HANDLE_E_FLAG(stitchLayers, false)
 
     if (argParser.isFlagSet(FLAG(setSelectedLayers))) {
         if (notEdit) {

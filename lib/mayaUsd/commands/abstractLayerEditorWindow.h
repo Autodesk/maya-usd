@@ -90,6 +90,7 @@ public:
     virtual bool        layerIsSystemLocked() = 0;
     virtual bool        layerIsReadOnly() = 0;
     virtual bool        layerHasSubLayers() = 0;
+    virtual bool        selectionHasSublayers() = 0;
     virtual std::string proxyShapeName(const bool fullPath = false) const = 0;
 
     virtual void removeSubLayer() = 0;
@@ -106,6 +107,7 @@ public:
     virtual void updateLayerModel() = 0;
     virtual void lockLayer() = 0;
     virtual void lockLayerAndSubLayers() = 0;
+    virtual void stitchLayers() = 0;
 
     virtual void                     selectProxyShape(const char* shapePath) = 0;
     virtual std::vector<std::string> getSelectedLayers() = 0;

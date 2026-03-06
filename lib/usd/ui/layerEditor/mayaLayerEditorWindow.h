@@ -65,6 +65,7 @@ public:
     bool        layerAppearsSystemLocked() override;
     bool        layerIsSystemLocked() override;
     bool        layerHasSubLayers() override;
+    bool        selectionHasSublayers() override;
 
     void removeSubLayer() override;
     void saveEdits() override;
@@ -80,6 +81,7 @@ public:
     void updateLayerModel() override;
     void lockLayer() override;
     void lockLayerAndSubLayers() override;
+    void stitchLayers() override;
 
     void selectProxyShape(const char* shapePath) override;
 

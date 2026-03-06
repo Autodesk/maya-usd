@@ -26,6 +26,9 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoManager.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/uiCallback.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -34,6 +37,7 @@
 #include <pxr/usd/usd/flattenUtils.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdUtils/stitch.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
@@ -46,8 +50,13 @@
 
 #include <ghc/filesystem.hpp>
 
+#include <algorithm>
 #include <cstddef>
+#include <map>
+#include <set>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -76,6 +85,8 @@ const char kSkipSystemLockedFlag[] = "ssl";
 const char kSkipSystemLockedFlagL[] = "skipSystemLocked";
 const char kRefreshSystemLockFlag[] = "rl";
 const char kRefreshSystemLockFlagL[] = "refreshSystemLock";
+const char kStitchLayersFlag[] = "sl";
+const char kStitchLayersFlagL[] = "stitchLayers";
 
 // Disables updateEditTarget's functionality is set.
 // Areas that will be affected are:
@@ -104,7 +115,8 @@ enum class CmdId
     kAddAnonLayer,
     kMuteLayer,
     kLockLayer,
-    kRefreshSystemLock
+    kRefreshSystemLock,
+    kStitchLayers
 };
 
 class BaseCmd
@@ -122,7 +134,7 @@ public:
 
 protected:
     CmdId _cmdId;
-    // we need to hold on to dirty sublayers if we remove them
+    // we need to hold on to dirty subLayers if we remove them
     std::vector<PXR_NS::SdfLayerRefPtr> _subLayersRefs;
     void                                holdOntoSubLayers(SdfLayerHandle layer);
     void                                releaseSubLayers() { _subLayersRefs.clear(); }
@@ -672,32 +684,7 @@ public:
         return true;
     }
 
-private:
-    // Backup dirty layer to support undo and redo.
-    void backupLayer(SdfLayerHandle layer)
-    {
-        if (!layer)
-            return;
-
-        if (layer->IsDirty() || _cmdId == CmdId::kClearLayer) {
-            _backupLayer = SdfLayer::CreateAnonymous();
-            _backupLayer->TransferContent(layer);
-        }
-    }
-
-    void restoreLayer(SdfLayerHandle layer)
-    {
-        if (!layer)
-            return;
-
-        if (_backupLayer) {
-            layer->TransferContent(_backupLayer);
-            _backupLayer = nullptr;
-        } else {
-            layer->Reload();
-        }
-    }
-
+protected:
     // Backup and restore edit targets of stages that were targeting the sub-layers
     // of the cleared layer to support undo and redo.
     void backupEditTargets(SdfLayerHandle layer)
@@ -745,6 +732,32 @@ private:
         }
     }
 
+private:
+    // Backup dirty layer to support undo and redo.
+    void backupLayer(SdfLayerHandle layer)
+    {
+        if (!layer)
+            return;
+
+        if (layer->IsDirty() || _cmdId != CmdId::kDiscardEdit) {
+            _backupLayer = SdfLayer::CreateAnonymous();
+            _backupLayer->TransferContent(layer);
+        }
+    }
+
+    void restoreLayer(SdfLayerHandle layer)
+    {
+        if (!layer)
+            return;
+
+        if (_backupLayer) {
+            layer->TransferContent(_backupLayer);
+            _backupLayer = nullptr;
+        } else {
+            layer->Reload();
+        }
+    }
+
     // Edit targets that were made invalid after the layer was cleared.
     // The stages are kept with weak pointer to avoid forcing to stay valid.
     using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
@@ -778,6 +791,232 @@ public:
         : BackupLayerBase(CmdId::kFlattenLayer)
     {
     }
+};
+
+class StitchLayers : public BackupLayerBase
+{
+public:
+    StitchLayers()
+        : BackupLayerBase(CmdId::kStitchLayers)
+    {
+    }
+
+    bool doIt(SdfLayerHandle /*targetLayer*/) override
+    {
+        if (_layerIdentifiersByStrength.empty())
+            return true;
+
+        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        if (!prim.IsValid()) {
+            TF_RUNTIME_ERROR("Invalid proxy shape path: %s", _proxyShapePath.c_str());
+            return false;
+        }
+
+        UsdStageWeakPtr stage = prim.GetStage();
+        if (!stage) {
+            TF_RUNTIME_ERROR("Cannot get stage for proxy shape: %s", _proxyShapePath.c_str());
+            return false;
+        }
+
+        SdfLayerHandleVector stageLayers = stage->GetLayerStack();
+
+        // Sort the selected layers by their strength (strongest first).
+        std::unordered_map<std::string, size_t> layerStrengthMap;
+        layerStrengthMap.reserve(stageLayers.size());
+        for (size_t i = 0; i < stageLayers.size(); ++i)
+            layerStrengthMap[stageLayers[i]->GetIdentifier()] = i;
+
+        std::sort(
+            _layerIdentifiersByStrength.begin(),
+            _layerIdentifiersByStrength.end(),
+            [&layerStrengthMap](const std::string& a, const std::string& b) {
+                auto itA = layerStrengthMap.find(a);
+                auto itB = layerStrengthMap.find(b);
+                if (itA == layerStrengthMap.end()) {
+                    TF_WARN("Layer '%s' not found in stage layer stack", a.c_str());
+                    return false;
+                }
+                if (itB == layerStrengthMap.end()) {
+                    TF_WARN("Layer '%s' not found in stage layer stack", b.c_str());
+                    return true;
+                }
+                return itA->second < itB->second;
+            });
+
+        SdfLayerHandleVector layersByStrength;
+        layersByStrength.reserve(_layerIdentifiersByStrength.size());
+        for (const auto& layerIdentifier : _layerIdentifiersByStrength) {
+            auto layer = SdfLayer::FindOrOpen(layerIdentifier);
+            if (!layer) {
+                TF_RUNTIME_ERROR("Cannot find layer: %s", layerIdentifier.c_str());
+                return false;
+            }
+            layersByStrength.push_back(layer);
+        }
+
+        SdfLayerHandle strongestLayer = layersByStrength[0];
+
+        holdOntoSubLayers(strongestLayer);
+
+        // Keep a hold of references for all selected layers, needed for undo().
+        for (size_t i = 1; i < layersByStrength.size(); ++i)
+            _subLayersRefs.push_back(layersByStrength[i]);
+
+        std::map<std::string, std::pair<SdfLayerHandle, std::string>> parentInfoByLayer;
+        for (const auto& potentialParent : stageLayers) {
+            const std::vector<std::string>& subLayerPaths = potentialParent->GetSubLayerPaths();
+            for (size_t i = 0; i < subLayerPaths.size(); ++i) {
+                auto subLayer = SdfLayer::FindRelativeToLayer(potentialParent, subLayerPaths[i]);
+                if (subLayer) {
+                    parentInfoByLayer[subLayer->GetIdentifier()]
+                        = std::make_pair(potentialParent, subLayerPaths[i]);
+                }
+            }
+        }
+
+        // Multiple selected weak layers may share the same parent, so batch removals by parent
+        // to avoid calling SetSubLayerPaths more than once per parent layer.
+        std::map<std::string, std::vector<std::string>> removalsByParent;
+        _cleanWeakLayerIds.clear();
+        for (size_t i = 1; i < layersByStrength.size(); ++i) {
+            const SdfLayerHandle& weakLayer = layersByStrength[i];
+            const std::string     weakLayerId = weakLayer->GetIdentifier();
+
+            auto it = parentInfoByLayer.find(weakLayerId);
+            if (it != parentInfoByLayer.end()) {
+                removalsByParent[it->second.first->GetIdentifier()].push_back(it->second.second);
+            } else {
+                TF_WARN("Could not find parent for layer: %s", weakLayerId.c_str());
+            }
+
+            if (!weakLayer->IsDirty())
+                _cleanWeakLayerIds.push_back(weakLayerId);
+        }
+
+        _cleanParentIds.clear();
+        for (const auto& entry : removalsByParent) {
+            if (auto parentLayer = SdfLayer::Find(entry.first))
+                if (!parentLayer->IsDirty())
+                    _cleanParentIds.push_back(entry.first);
+        }
+
+        const std::string strongestLayerId = strongestLayer->GetIdentifier();
+        if (!strongestLayer->IsDirty()) {
+            auto it = std::find(_cleanParentIds.begin(), _cleanParentIds.end(), strongestLayerId);
+            if (it == _cleanParentIds.end())
+                _cleanParentIds.push_back(strongestLayerId);
+        }
+
+        UsdUfe::UsdUndoManager::instance().trackLayerStates(strongestLayer);
+        for (size_t i = 1; i < layersByStrength.size(); ++i)
+            UsdUfe::UsdUndoManager::instance().trackLayerStates(layersByStrength[i]);
+        for (const auto& entry : removalsByParent) {
+            auto parentLayer = SdfLayer::Find(entry.first);
+            if (parentLayer) {
+                UsdUfe::UsdUndoManager::instance().trackLayerStates(parentLayer);
+            }
+        }
+
+        {
+            UsdUfe::UsdUndoBlock undoBlock(&_undoItem);
+
+            std::vector<std::vector<std::string>> movedSubLayers;
+            movedSubLayers.reserve(layersByStrength.size() - 1);
+            for (size_t i = 1; i < layersByStrength.size(); ++i) {
+                const SdfLayerHandle& weakLayer = layersByStrength[i];
+                movedSubLayers.push_back(weakLayer->GetSubLayerPaths());
+                weakLayer->SetSubLayerPaths({});
+                UsdUtilsStitchLayers(strongestLayer, weakLayer);
+            }
+
+            // Add all collected subLayers to the strongest layer, preventing duplicates.
+            // They are added at the end (weakest position) to preserve relative strength.
+            auto strongLayerSubLayers = strongestLayer->GetSubLayerPaths();
+
+            std::set<std::string> addedSublayerIds;
+            for (const auto path : strongLayerSubLayers) {
+                auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
+                if (existingLayer) {
+                    addedSublayerIds.insert(existingLayer->GetIdentifier());
+                }
+            }
+
+            for (const auto& subLayerList : movedSubLayers) {
+                for (const auto& subLayerPath : subLayerList) {
+                    auto subLayer = SdfLayer::FindRelativeToLayer(strongestLayer, subLayerPath);
+                    if (subLayer
+                        && addedSublayerIds.find(subLayer->GetIdentifier())
+                            == addedSublayerIds.end()) {
+                        strongLayerSubLayers.push_back(subLayerPath);
+                        addedSublayerIds.insert(subLayer->GetIdentifier());
+                    }
+                }
+            }
+
+            strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
+
+            // Remove any selected weak layers from the strongest layer's sublayer list to prevent
+            // them from being both stitched (merged) and referenced as subLayers.
+            auto dedupedSubLayers = strongestLayer->GetSubLayerPaths();
+            bool anyRemoved = false;
+            for (size_t i = 1; i < layersByStrength.size(); ++i) {
+                const std::string weakLayerId = layersByStrength[i]->GetIdentifier();
+                auto it = std::find(dedupedSubLayers.begin(), dedupedSubLayers.end(), weakLayerId);
+                if (it != dedupedSubLayers.end()) {
+                    dedupedSubLayers.erase(it);
+                    anyRemoved = true;
+                }
+            }
+            if (anyRemoved)
+                strongestLayer->SetSubLayerPaths(dedupedSubLayers);
+
+            for (auto& entry : removalsByParent) {
+                auto parentLayer = SdfLayer::Find(entry.first);
+                if (parentLayer) {
+                    auto subLayerPaths = parentLayer->GetSubLayerPaths();
+                    for (const auto& pathToRemove : entry.second) {
+                        auto it
+                            = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
+                        if (it != subLayerPaths.end())
+                            subLayerPaths.erase(it);
+                    }
+                    parentLayer->SetSubLayerPaths(subLayerPaths);
+                }
+            }
+        }
+
+        backupEditTargets(strongestLayer);
+
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle /*targetLayer*/) override
+    {
+        _undoItem.undo();
+
+        for (const auto& id : _cleanParentIds) {
+            if (auto layer = SdfLayer::Find(id))
+                layer->Reload();
+        }
+
+        for (const auto& id : _cleanWeakLayerIds) {
+            if (auto layer = SdfLayer::Find(id))
+                layer->Reload();
+        }
+
+        restoreEditTargets();
+        releaseSubLayers();
+
+        return true;
+    }
+
+    std::vector<std::string> _layerIdentifiersByStrength;
+    std::string              _proxyShapePath;
+
+private:
+    UsdUfe::UsdUndoableItem  _undoItem;
+    std::vector<std::string> _cleanParentIds;
+    std::vector<std::string> _cleanWeakLayerIds;
 };
 
 class MuteLayer : public BaseCmd
@@ -1088,7 +1327,7 @@ private:
         return std::string(" \"") + string + std::string("\"");
     }
 
-    // Checks if the file layer or its sublayers are accessible on disk, and adds the layer
+    // Checks if the file layer or its subLayer are accessible on disk, and adds the layer
     // to _layers along with the _lockCommands to updates the system-lock status.
     void _refreshLayerSystemLock(SdfLayerHandle usdLayer)
     {
@@ -1269,6 +1508,10 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.addFlag(
         kRefreshSystemLockFlag, kRefreshSystemLockFlagL, MSyntax::kString, MSyntax::kBoolean);
     syntax.addFlag(kSkipSystemLockedFlag, kSkipSystemLockedFlagL);
+    // parameter 1: proxy shape name
+    // parameter 2: layer identifier
+    syntax.addFlag(kStitchLayersFlag, kStitchLayersFlagL, MSyntax::kString, MSyntax::kString);
+    syntax.makeFlagMultiUse(kStitchLayersFlag);
 
     return syntax;
 }
@@ -1472,6 +1715,35 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             auto cmd = std::make_shared<Impl::RefreshSystemLockLayer>();
             cmd->_proxyShapePath = proxyShapeName.asChar();
             cmd->_refreshSubLayers = refreshSubLayers;
+            _subCommands.push_back(std::move(cmd));
+        }
+        if (argParser.isFlagSet(kStitchLayersFlag)) {
+            std::vector<std::string> layerIdentifiers;
+            auto                     layerCount = argParser.numberOfFlagUses(kStitchLayersFlag);
+            MString                  proxyShapeName;
+
+            for (unsigned i = 0; i < layerCount; ++i) {
+                MArgList listOfArgs;
+                argParser.getFlagArgumentList(kStitchLayersFlag, i, listOfArgs);
+
+                if (i == 0)
+                    proxyShapeName = listOfArgs.asString(0);
+
+                MString layerIdentifier = listOfArgs.asString(1);
+                layerIdentifiers.push_back(layerIdentifier.asChar());
+            }
+
+            UsdPrim prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
+            if (prim == UsdPrim()) {
+                displayError(
+                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                return MS::kInvalidParameter;
+            }
+
+            auto cmd = std::make_shared<Impl::StitchLayers>();
+            cmd->_layerIdentifiersByStrength = layerIdentifiers;
+            cmd->_proxyShapePath = proxyShapeName.asChar();
+
             _subCommands.push_back(std::move(cmd));
         }
     }
