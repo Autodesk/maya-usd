@@ -74,6 +74,7 @@ const auto kOption                       { create("kOption", "Option") };
 const auto kPathNotFound                 { create("kPathNotFound", "Path not found: ") };
 const auto kRealPath                     { create("kRealPath", "Real Path: ^1s") };
 const auto kRemoveSublayer               { create("kRemoveSublayer", "Remove sublayer") };
+const auto kMenuStitchLayers             { create("kMenuStitchLayers", "Merge Layers") };
 const auto kSave                         { create("kSave", "Save") };
 const auto kSaveAll                      { create("kSaveAll", "Save All") };
 const auto kSaveAllEditsInLayerStack     { create("kSaveAllEditsInLayerStack", "Save all edits in the Layer Stack")};
