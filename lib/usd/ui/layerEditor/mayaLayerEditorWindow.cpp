@@ -171,16 +171,6 @@ bool MayaLayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appea
 bool MayaLayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
 bool MayaLayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers); }
 
-bool MayaLayerEditorWindow::selectionHasSublayers()
-{
-    auto selection = treeView()->getSelectedLayerItems();
-    for (auto item : selection) {
-        if (item->hasSubLayers())
-            return true;
-    }
-    return false;
-}
-
 std::string MayaLayerEditorWindow::proxyShapeName(const bool fullPath) const
 {
     auto stageEntry = _sessionState.stageEntry();
