@@ -63,7 +63,7 @@ class FilteredStringListModel(QStringListModel):
         return True
     
     def setData(self, index, value, role):
-        if role == Qt.DisplayRole or role ==  Qt.ItemDataRole:
+        if role == Qt.ItemDataRole.DisplayRole or role ==  Qt.ItemDataRole:
             oldValue = self.data(index, role)
             value = value.strip()
             if value:
