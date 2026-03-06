@@ -1097,6 +1097,14 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     $enabled = $singleSelect && !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
     menuItem -label $label -enable $enabled -c $cmd;
 
+    int $multiSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` > 1;
+    if ($multiSelect && ($isSubLayer || $isSessionLayer)) {
+        $label = getMayaUsdString("kMenuStitchLayers");
+        $cmd = makeCommand($panelName, "stitchLayers");
+        $enabled = !$isReadOnly && !$appearsLocked && !$appearsSystemLocked && !$appearsMuted;
+        menuItem -label $label -enable $enabled -c $cmd;
+    }
+    
     if ($anySelectionHasSublayers) {
         $label = getMayaUsdString("kMenuMergeWithSublayers");
         $cmd = makeCommand($panelName, "mergeWithSublayers");
