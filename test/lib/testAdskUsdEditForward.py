@@ -65,15 +65,16 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
         # Update the test when these are available.
         customData = rootLayer.customLayerData
         customData['adsk_forward_continuously'] = True
-        customData['adsk_forward_rules'] = {
-            'paths': {
+        customData['adsk_forward_ruleset'] = {
+            'rules': {
                 'rule_0': {
                     'description': 'test rule',
                     'id': 'rule_0',
                     'input_path_regex': '.*',
                     'target_layer_regex': '.*TEST.*'
                 }
-            }
+            },
+            'version': 1
         }
         rootLayer.customLayerData = customData
 
