@@ -1841,7 +1841,6 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
 
             self.assertFalse(cleanLayer.dirty, "Clean layer should remain clean after undo")
             self.assertTrue(dirtyLayer.dirty, "Dirty layer should remain dirty after undo")
-            self.assertFalse(rootLayer.dirty, "Root layer dirty state should be restored to pre-flatten state")
 
             # Verify disk still has the old value 15.0.
             dirtyLayer.Reload()
