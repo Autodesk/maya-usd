@@ -2343,8 +2343,11 @@ HdVP2Material::~HdVP2Material()
     }
 }
 
-void ConvertNetworkMapToUntextured(HdMaterialNetworkMap& networkMap)
+// Returns true when untextured conversion changes the network.
+// This means textured and untextured compiled networks must remain distinct.
+bool ConvertNetworkMapToUntextured(HdMaterialNetworkMap& networkMap)
 {
+    bool changed = false;
     for (auto& item : networkMap.map) {
         auto& network = item.second;
         auto  isInputNode = [&networkMap](const HdMaterialNode& node) {
@@ -2353,8 +2356,14 @@ void ConvertNetworkMapToUntextured(HdMaterialNetworkMap& networkMap)
         };
 
         auto eraseBegin = std::remove_if(network.nodes.begin(), network.nodes.end(), isInputNode);
-        network.nodes.erase(eraseBegin, network.nodes.end());
-        network.relationships.clear();
+        if (eraseBegin != network.nodes.end()) {
+            network.nodes.erase(eraseBegin, network.nodes.end());
+            changed = true;
+        }
+        if (!network.relationships.empty()) {
+            network.relationships.clear();
+            changed = true;
+        }
 #ifdef WANT_MATERIALX_BUILD
         // Raw MaterialX surface constructor node does not render. Replace with default
         // standard_surface:
@@ -2362,10 +2371,12 @@ void ConvertNetworkMapToUntextured(HdMaterialNetworkMap& networkMap)
             if (node.identifier == _mtlxTokens->ND_surface) {
                 node.identifier = _mtlxTokens->ND_standard_surface_surfaceshader;
                 node.parameters.clear();
+                changed = true;
             }
         }
 #endif
     }
+    return changed;
 }
 
 /*! \brief  Synchronize VP2 state with scene delegate state based on dirty bits
@@ -2375,7 +2386,10 @@ void HdVP2Material::Sync(
     HdRenderParam* /*renderParam*/,
     HdDirtyBits* dirtyBits)
 {
-    if (*dirtyBits & (HdMaterial::DirtyResource | HdMaterial::DirtyParams)) {
+    const HdDirtyBits materialDirtyBits
+        = *dirtyBits & (HdMaterial::DirtyResource | HdMaterial::DirtyParams);
+
+    if (materialDirtyBits != HdMaterial::Clean) {
         const SdfPath& id = GetId();
 
         MProfilingScope profilingScope(
@@ -2390,15 +2404,29 @@ void HdVP2Material::Sync(
             const HdMaterialNetworkMap& fullNetworkMap
                 = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
 
-            // untextured network is always synced
             HdMaterialNetworkMap untexturedNetworkMap = fullNetworkMap;
-            ConvertNetworkMapToUntextured(untexturedNetworkMap);
+            const bool didChangeUntextured = ConvertNetworkMapToUntextured(untexturedNetworkMap);
+
+            // If conversion changed the network, smoothHull must use kFull in textured mode;
+            // otherwise smoothHull can reuse kUntextured.
+            _texturedConfig = didChangeUntextured ? kFull : kUntextured;
+
+            // untextured network is always synced
             _compiledNetworks[kUntextured].Sync(sceneDelegate, untexturedNetworkMap);
 
-            // full network is synced only if required by display style
-            auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
-            if (param->GetDrawScene().NeedTexturedMaterials()) {
-                _compiledNetworks[kFull].Sync(sceneDelegate, fullNetworkMap);
+            // full network is synced only if it is distinct and required by display style
+            if (_texturedConfig == kFull) {
+                auto* const param
+                    = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+
+                if (param->GetDrawScene().NeedTexturedMaterials()) {
+                    _compiledNetworks[kFull].Sync(sceneDelegate, fullNetworkMap);
+                    _pendingFullNetworkDirtyBits = HdChangeTracker::Clean;
+                } else {
+                    // Textured display is currently off: do not sync kFull now.
+                    // Retain full network sprim dirtiness, replay it when textured is re-enabled.
+                    _pendingFullNetworkDirtyBits |= materialDirtyBits;
+                }
             }
         } else {
             TF_WARN(
@@ -4019,7 +4047,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetPointShader() con
 
 HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(const TfToken& reprToken) const
 {
-    return (reprToken == HdReprTokens->smoothHull) ? kFull : kUntextured;
+    return (reprToken == HdReprTokens->smoothHull) ? _texturedConfig : kUntextured;
 }
 
 MHWRender::MShaderInstance*
@@ -4051,6 +4079,23 @@ void HdVP2Material::UnsubscribeFromMaterialUpdates(const SdfPath& rprimId)
     std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
 
     _materialSubscriptions.erase(rprimId);
+}
+
+void HdVP2Material::TexturedDisplayModeEnabled(HdSceneDelegate* sceneDelegate)
+{
+    // If there is no distinct kFull network, deferred full-network replay is not needed.
+    if (_texturedConfig == kUntextured) {
+        return;
+    }
+    // Full network may be stale when coming from untextured display.
+    if (_pendingFullNetworkDirtyBits != HdChangeTracker::Clean) {
+        HdChangeTracker& changeTracker = sceneDelegate->GetRenderIndex().GetChangeTracker();
+        changeTracker.MarkSprimDirty(GetId(), _pendingFullNetworkDirtyBits);
+        _pendingFullNetworkDirtyBits = HdChangeTracker::Clean;
+    }
+    // Tell all the Rprims associated with this material to recompute primvars
+    // if the network changes.
+    MaterialChanged(sceneDelegate);
 }
 
 void HdVP2Material::MaterialChanged(HdSceneDelegate* sceneDelegate)

@@ -1188,11 +1188,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             auto materials = _renderIndex->GetSprimSubtree(
                 HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
             for (auto material : materials) {
-                changeTracker.MarkSprimDirty(material, HdMaterial::DirtyParams);
-                // Tell all the Rprims associated with this material to recompute primvars
                 HdVP2Material* vp2material = static_cast<HdVP2Material*>(
                     _renderIndex->GetSprim(HdPrimTypeTokens->material, material));
-                vp2material->MaterialChanged(_sceneDelegate.get());
+
+                vp2material->TexturedDisplayModeEnabled(_sceneDelegate.get());
             }
         }
 
