@@ -227,7 +227,7 @@ void MayaLayerEditorWindow::lockLayerAndSubLayers()
 
 void MayaLayerEditorWindow::stitchLayers()
 {
-    auto selectedItems = treeView()->getSelectedLayerItems();
+    const auto selectedItems = treeView()->getSelectedLayerItems();
 
     if (selectedItems.size() < 2)
         return;
@@ -235,11 +235,11 @@ void MayaLayerEditorWindow::stitchLayers()
     std::vector<PXR_NS::SdfLayerRefPtr> layers;
     layers.reserve(selectedItems.size());
 
-    for (auto item : selectedItems) {
+    for (const auto& item : selectedItems) {
         if (!item)
             continue;
 
-        auto layer = item->layer();
+        const auto layer = item->layer();
         if (!layer)
             continue;
 

@@ -796,8 +796,12 @@ public:
 class StitchLayers : public BackupLayerBase
 {
 public:
-    StitchLayers()
+    StitchLayers(
+        const std::vector<std::string>& layerIdentifiers,
+        const std::string&              newParentLayer)
         : BackupLayerBase(CmdId::kStitchLayers)
+        , _layerIdentifiersByStrength(layerIdentifiers)
+        , _proxyShapePath(newParentLayer)
     {
     }
 
@@ -806,19 +810,19 @@ public:
         if (_layerIdentifiersByStrength.empty())
             return true;
 
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        const auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
         if (!prim.IsValid()) {
             TF_RUNTIME_ERROR("Invalid proxy shape path: %s", _proxyShapePath.c_str());
             return false;
         }
 
-        UsdStageWeakPtr stage = prim.GetStage();
+        const UsdStageWeakPtr stage = prim.GetStage();
         if (!stage) {
             TF_RUNTIME_ERROR("Cannot get stage for proxy shape: %s", _proxyShapePath.c_str());
             return false;
         }
 
-        SdfLayerHandleVector stageLayers = stage->GetLayerStack();
+        const SdfLayerHandleVector stageLayers = stage->GetLayerStack();
 
         // Sort the selected layers by their strength (strongest first).
         std::unordered_map<std::string, size_t> layerStrengthMap;
@@ -830,8 +834,8 @@ public:
             _layerIdentifiersByStrength.begin(),
             _layerIdentifiersByStrength.end(),
             [&layerStrengthMap](const std::string& a, const std::string& b) {
-                auto itA = layerStrengthMap.find(a);
-                auto itB = layerStrengthMap.find(b);
+                const auto itA = layerStrengthMap.find(a);
+                const auto itB = layerStrengthMap.find(b);
                 if (itA == layerStrengthMap.end()) {
                     TF_WARN("Layer '%s' not found in stage layer stack", a.c_str());
                     return false;
@@ -854,7 +858,7 @@ public:
             layersByStrength.push_back(layer);
         }
 
-        SdfLayerHandle strongestLayer = layersByStrength[0];
+        const SdfLayerHandle strongestLayer = layersByStrength[0];
 
         holdOntoSubLayers(strongestLayer);
 
@@ -882,7 +886,7 @@ public:
             const SdfLayerHandle& weakLayer = layersByStrength[i];
             const std::string     weakLayerId = weakLayer->GetIdentifier();
 
-            auto it = parentInfoByLayer.find(weakLayerId);
+            const auto& it = parentInfoByLayer.find(weakLayerId);
             if (it != parentInfoByLayer.end()) {
                 removalsByParent[it->second.first->GetIdentifier()].push_back(it->second.second);
             } else {
@@ -935,7 +939,7 @@ public:
 
             std::set<std::string> addedSublayerIds;
             for (const auto path : strongLayerSubLayers) {
-                auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
+                const auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
                 if (existingLayer) {
                     addedSublayerIds.insert(existingLayer->GetIdentifier());
                 }
@@ -943,7 +947,8 @@ public:
 
             for (const auto& subLayerList : movedSubLayers) {
                 for (const auto& subLayerPath : subLayerList) {
-                    auto subLayer = SdfLayer::FindRelativeToLayer(strongestLayer, subLayerPath);
+                    const auto subLayer
+                        = SdfLayer::FindRelativeToLayer(strongestLayer, subLayerPath);
                     if (subLayer
                         && addedSublayerIds.find(subLayer->GetIdentifier())
                             == addedSublayerIds.end()) {
@@ -961,7 +966,8 @@ public:
             bool anyRemoved = false;
             for (size_t i = 1; i < layersByStrength.size(); ++i) {
                 const std::string weakLayerId = layersByStrength[i]->GetIdentifier();
-                auto it = std::find(dedupedSubLayers.begin(), dedupedSubLayers.end(), weakLayerId);
+                const auto        it
+                    = std::find(dedupedSubLayers.begin(), dedupedSubLayers.end(), weakLayerId);
                 if (it != dedupedSubLayers.end()) {
                     dedupedSubLayers.erase(it);
                     anyRemoved = true;
@@ -971,7 +977,7 @@ public:
                 strongestLayer->SetSubLayerPaths(dedupedSubLayers);
 
             for (auto& entry : removalsByParent) {
-                auto parentLayer = SdfLayer::Find(entry.first);
+                const auto parentLayer = SdfLayer::Find(entry.first);
                 if (parentLayer) {
                     auto subLayerPaths = parentLayer->GetSubLayerPaths();
                     for (const auto& pathToRemove : entry.second) {
@@ -1010,13 +1016,13 @@ public:
         return true;
     }
 
-    std::vector<std::string> _layerIdentifiersByStrength;
-    std::string              _proxyShapePath;
 
 private:
     UsdUfe::UsdUndoableItem  _undoItem;
     std::vector<std::string> _cleanParentIds;
     std::vector<std::string> _cleanWeakLayerIds;
+    std::vector<std::string> _layerIdentifiersByStrength;
+    std::string              _proxyShapePath;
 };
 
 class MuteLayer : public BaseCmd
@@ -1719,7 +1725,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
         }
         if (argParser.isFlagSet(kStitchLayersFlag)) {
             std::vector<std::string> layerIdentifiers;
-            auto                     layerCount = argParser.numberOfFlagUses(kStitchLayersFlag);
+            const auto               layerCount = argParser.numberOfFlagUses(kStitchLayersFlag);
             MString                  proxyShapeName;
 
             for (unsigned i = 0; i < layerCount; ++i) {
@@ -1729,20 +1735,19 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 if (i == 0)
                     proxyShapeName = listOfArgs.asString(0);
 
-                MString layerIdentifier = listOfArgs.asString(1);
+                const MString layerIdentifier = listOfArgs.asString(1);
                 layerIdentifiers.push_back(layerIdentifier.asChar());
             }
 
-            UsdPrim prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
+            const UsdPrim prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
                 displayError(
                     MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
                 return MS::kInvalidParameter;
             }
 
-            auto cmd = std::make_shared<Impl::StitchLayers>();
-            cmd->_layerIdentifiersByStrength = layerIdentifiers;
-            cmd->_proxyShapePath = proxyShapeName.asChar();
+            const auto cmd
+                = std::make_shared<Impl::StitchLayers>(layerIdentifiers, proxyShapeName.asChar());
 
             _subCommands.push_back(std::move(cmd));
         }
