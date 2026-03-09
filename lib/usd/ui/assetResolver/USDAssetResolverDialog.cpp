@@ -38,19 +38,21 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
     // Create the settings widget
     settingsWidget = new Adsk::USDAssetResolverSettingsWidget(this);
 
-    QHBoxLayout* layout = new QHBoxLayout(this);
+    QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(settingsWidget);
 
-    QVBoxLayout* saveAndCloselayout = new QVBoxLayout(this);
-    QPushButton* saveButtonBox = new QPushButton(tr("Save & Refresh"), this);
+    QWidget* saveAndCloseWidget = new QWidget(this);
+    QHBoxLayout* saveAndCloselayout = new QHBoxLayout(saveAndCloseWidget);
+    QPushButton* saveButtonBox = new QPushButton(tr("Save && Refresh"), this);
     saveButtonBox->setDefault(true);
     saveButtonBox->setAutoDefault(true);
-    saveButtonBox->setToolTip(tr("Save the settings and refresh the Asset Resolver"));
-    QPushButton* closeButtonBox = new QPushButton(tr("Close"), this);
-    closeButtonBox->setToolTip(tr("Close the dialog without saving"));
+    saveButtonBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    saveButtonBox->setToolTip(tr("Save settings"));
     saveAndCloselayout->addWidget(saveButtonBox);
+    QPushButton* closeButtonBox = new QPushButton(tr("Close"), this);
+    closeButtonBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     saveAndCloselayout->addWidget(closeButtonBox);
-    layout->addWidget(settingsWidget);
+    layout->addWidget(saveAndCloseWidget);
 
     // Connect only the action signals (save and close)
     QObject::connect(

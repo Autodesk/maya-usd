@@ -42,11 +42,11 @@ QIcon PreferencesApplicationHost::icon(const IconName& name) const
 {
     switch (name) {
     case IconName::Add: return getIcon(":/UsdLayerEditor/addCreateGeneric");
-    case IconName::AddFolder: return ApplicationHost::icon(name);
+    case IconName::AddFolder: return getIcon(":/AdskAssetResolver/add_folder");
     case IconName::OpenFile: return getIcon("fileOpen.png");
     case IconName::Delete: return getIcon("trash.png");
-    case IconName::MoveUp: return ApplicationHost::icon(name);
-    case IconName::MoveDown: return ApplicationHost::icon(name);
+    case IconName::MoveUp: return getIcon(":/AdskAssetResolver/move_up");
+    case IconName::MoveDown: return getIcon(":/AdskAssetResolver/move_down");
     default: return QIcon();
     }
 }
