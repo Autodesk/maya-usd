@@ -27,12 +27,8 @@ target_sources(${PROJECT_NAME}
         ProxyShapeLookdevHandler.cpp
         UsdCapabilityHandler.cpp
         UsdClipboardHandler.cpp
-        UsdComponentConnections.cpp
-        UsdConnectionCommands.cpp
         UsdDebugHandler.cpp
-        UsdDeleteCommand.cpp
         UsdExtendedAttributeHandler.cpp
-        UsdExtendedConnectionHandler.cpp
         UsdFileHandler.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
@@ -41,8 +37,6 @@ target_sources(${PROJECT_NAME}
         UsdMaterialCommands.cpp
         UsdMaterialHandler.cpp
         UsdMaterialValidator.cpp
-        UsdSceneItemOps.cpp
-        UsdSceneItemOpsHandler.cpp
         UsdSceneItemUI.cpp
         UsdSceneItemUIHandler.cpp
         UsdSoloingHandler.cpp
@@ -58,12 +52,8 @@ set(HEADERS
     ProxyShapeLookdevHandler.h
     UsdCapabilityHandler.h
     UsdClipboardHandler.h
-    UsdComponentConnections.h
-    UsdConnectionCommands.h
     UsdDebugHandler.h
-    UsdDeleteCommand.h
     UsdExtendedAttributeHandler.h
-    UsdExtendedConnectionHandler.h
     UsdFileHandler.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
@@ -72,8 +62,6 @@ set(HEADERS
     UsdMaterialCommands.h
     UsdMaterialHandler.h
     UsdMaterialValidator.h
-    UsdSceneItemOps.h
-    UsdSceneItemOpsHandler.h
     UsdSceneItemUI.h
     UsdSceneItemUIHandler.h
     UsdSoloingHandler.h
@@ -128,6 +116,33 @@ if (LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION)
     PRIVATE
         LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION=1
         MaterialX_VERSION_STRING="${MaterialX_VERSION_MAJOR}.${MaterialX_VERSION_MINOR}"
+    )
+endif()
+
+# The ExtendedConnectionHandler and associated classes get removed from LookdevXUfe in UFE v8 / LookdevXUfe v3.
+if (LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER)
+    target_sources(${PROJECT_NAME}
+    PRIVATE
+        UsdComponentConnections.cpp
+        UsdConnectionCommands.cpp
+        UsdDeleteCommand.cpp
+        UsdExtendedConnectionHandler.cpp
+        UsdSceneItemOps.cpp
+        UsdSceneItemOpsHandler.cpp
+    )
+
+    list(APPEND HEADERS
+        UsdComponentConnections.h
+        UsdConnectionCommands.h
+        UsdDeleteCommand.h
+        UsdExtendedConnectionHandler.h
+        UsdSceneItemOps.h
+        UsdSceneItemOpsHandler.h
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER=1
     )
 endif()
 
