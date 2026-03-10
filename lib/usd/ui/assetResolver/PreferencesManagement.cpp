@@ -17,19 +17,75 @@
 
 #include "AssetResolverUtils.h"
 #include "PreferencesApplicationHost.h"
-#include "PreferencesOptions.h"
+
+#include <pxr/base/tf/stringUtils.h>
+
+#include <maya/MGlobal.h>
+#include <maya/MQtUtil.h>
+#include <maya/MString.h>
 
 #include <AssetResolverPreferences/AssetResolverSettings.h>
 #include <AssetResolverPreferences/AssetResolverSettingsManagement.h>
-
-#include <mayaUsdUI/ui/USDQtUtil.h>
-
-#include <maya/MQtUtil.h>
 
 #include <algorithm>
 
 namespace MAYAUSD_NS_DEF {
 namespace PreferencesManagement {
+
+// Option variable names
+static const MString OPT_VAR_USE_PROJECT_TOKENS = "mayaUsd_AdskAssetResolverIncludeMayaToken";
+static const MString OPT_VAR_MAPPING_FILE = "mayaUsd_AdskAssetResolverMappingFile";
+static const MString OPT_VAR_USER_SEARCH_PATHS = "mayaUsd_AdskAssetResolverUserSearchPaths";
+static const MString OPT_VAR_USER_PATHS_FIRST = "mayaUsd_AdskAssetResolverUserPathsFirst";
+static const MString OPT_VAR_USER_PATHS_ONLY = "mayaUsd_AdskAssetResolverUserPathsOnly";
+
+pxr::VtDictionary LoadUsdPreferences()
+{
+    Adsk::AssetResolverSettings settings;
+
+    if (MGlobal::optionVarExists(OPT_VAR_USE_PROJECT_TOKENS)) {
+        settings.SetUsingProjectTokens(MGlobal::optionVarIntValue(OPT_VAR_USE_PROJECT_TOKENS) != 0);
+    }
+
+    if (MGlobal::optionVarExists(OPT_VAR_MAPPING_FILE)) {
+        settings.SetMappingFile(MGlobal::optionVarStringValue(OPT_VAR_MAPPING_FILE).asChar());
+    }
+
+    if (MGlobal::optionVarExists(OPT_VAR_USER_SEARCH_PATHS)) {
+        MString     userSearchPathsStr = MGlobal::optionVarStringValue(OPT_VAR_USER_SEARCH_PATHS);
+        std::string userSearchPathsStdStr(userSearchPathsStr.asChar());
+        settings.SetUserSearchPaths(pxr::TfStringSplit(userSearchPathsStdStr, ";"));
+    }
+
+    if (MGlobal::optionVarExists(OPT_VAR_USER_PATHS_FIRST)) {
+        settings.SetUsingUserSearchPathsFirst(
+            MGlobal::optionVarIntValue(OPT_VAR_USER_PATHS_FIRST) != 0);
+    }
+
+    if (MGlobal::optionVarExists(OPT_VAR_USER_PATHS_ONLY)) {
+        settings.SetUsingUserSearchPathsOnly(
+            MGlobal::optionVarIntValue(OPT_VAR_USER_PATHS_ONLY) != 0);
+    }
+
+    return settings.GetSettings();
+}
+
+void SaveUsdPreferences(const Adsk::AssetResolverSettings& options)
+{
+    // update the options instance
+    // the copy clears env search paths as they are not saved
+    // those are only used to display the paths in the dialog
+    Adsk::AssetResolverSettings::GetInstance() = options;
+
+    MGlobal::setOptionVarValue(OPT_VAR_USE_PROJECT_TOKENS, options.IsUsingProjectTokens() ? 1 : 0);
+    MGlobal::setOptionVarValue(OPT_VAR_MAPPING_FILE, MString(options.GetMappingFile().c_str()));
+    std::string userSearchPathsStr = pxr::TfStringJoin(options.GetUserSearchPaths(), ";");
+    MGlobal::setOptionVarValue(OPT_VAR_USER_SEARCH_PATHS, MString(userSearchPathsStr.c_str()));
+    MGlobal::setOptionVarValue(
+        OPT_VAR_USER_PATHS_FIRST, options.IsUsingUserSearchPathsFirst() ? 1 : 0);
+    MGlobal::setOptionVarValue(
+        OPT_VAR_USER_PATHS_ONLY, options.IsUsingUserSearchPathsOnly() ? 1 : 0);
+}
 
 void InitializeUsdPreferences()
 {
@@ -40,16 +96,6 @@ void InitializeUsdPreferences()
     Adsk::AssetResolverSettings::GetInstance().SetSettings(LoadUsdPreferences());
     Adsk::AssetResolverSettingsManagement::ApplySettings(
         Adsk::AssetResolverSettings(), Adsk::AssetResolverSettings::GetInstance());
-}
-
-void SaveUsdPreferences(const UsdPreferenceOptions& options)
-{
-    // Update the options instance
-    // The copy clears env search paths as they are not saved
-    // Those are only used to display the paths in the dialog
-    UsdPreferenceOptions::GetInstance() = options;
-    // Save options to disk (Maya option vars)
-    UsdPreferenceOptions::GetInstance().Save();
 }
 
 } // namespace PreferencesManagement

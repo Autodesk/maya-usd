@@ -20,7 +20,6 @@ target_sources(${PROJECT_NAME}
         AssetResolverDialogCmd.cpp
         AssetResolverProjectChangeTracker.cpp
         AssetResolverUtils.cpp
-        PreferencesOptions.cpp
         PreferencesManagement.cpp
         USDAssetResolverDialog.cpp
 )
@@ -45,7 +44,6 @@ set(HEADERS
     AssetResolverDialogCmd.h
     AssetResolverProjectChangeTracker.h
     AssetResolverUtils.h
-    PreferencesOptions.h
     PreferencesManagement.h
     USDAssetResolverDialog.h
 )

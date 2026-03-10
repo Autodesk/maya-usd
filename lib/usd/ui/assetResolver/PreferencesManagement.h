@@ -18,6 +18,10 @@
 #include <mayaUsd/mayaUsd.h>
 #include <mayaUsdUI/ui/api.h>
 
+namespace Adsk {
+class AssetResolverSettings;
+}
+
 namespace MAYAUSD_NS_DEF {
 
 /**
@@ -28,6 +32,9 @@ namespace PreferencesManagement {
 
 /// Initialize the USD Preferences system (called once at plugin startup)
 MAYAUSD_UI_PUBLIC void InitializeUsdPreferences();
+
+MAYAUSD_UI_PUBLIC void SaveUsdPreferences(const Adsk::AssetResolverSettings& options);
+
 
 } // namespace PreferencesManagement
 } // namespace MAYAUSD_NS_DEF
