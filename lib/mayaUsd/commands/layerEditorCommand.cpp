@@ -934,8 +934,9 @@ public:
             }
 
             // Add all collected subLayers to the strongest layer, preventing duplicates.
-            // Non-selected weak subLayers are added to the end of the subPathList of the strongestLayer.
-            // Note: This means there are cases where relative strength is not fully preserved.
+            // Non-selected weak subLayers are added to the end of the subPathList of the
+            // strongestLayer. Note: This means there are cases where relative strength is not fully
+            // preserved.
             auto strongLayerSubLayers = strongestLayer->GetSubLayerPaths();
 
             std::set<std::string> addedSublayerIds;
@@ -1016,7 +1017,6 @@ public:
 
         return true;
     }
-
 
 private:
     UsdUfe::UsdUndoableItem  _undoItem;
@@ -1747,7 +1747,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 return MS::kInvalidParameter;
             }
 
-            const auto cmd
+            auto cmd
                 = std::make_shared<Impl::StitchLayers>(layerIdentifiers, proxyShapeName.asChar());
 
             _subCommands.push_back(std::move(cmd));
