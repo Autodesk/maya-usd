@@ -24,6 +24,8 @@
 
 #include <mayaUsdUI/ui/USDQtUtil.h>
 
+#include <maya/MQtUtil.h>
+
 #include <algorithm>
 
 namespace MAYAUSD_NS_DEF {
