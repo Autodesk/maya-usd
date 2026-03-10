@@ -934,7 +934,8 @@ public:
             }
 
             // Add all collected subLayers to the strongest layer, preventing duplicates.
-            // They are added at the end (weakest position) to preserve relative strength.
+            // Non-selected weak subLayers are added to the end of the subPathList of the strongestLayer.
+            // Note: This means there are cases where relative strength is not fully preserved.
             auto strongLayerSubLayers = strongestLayer->GetSubLayerPaths();
 
             std::set<std::string> addedSublayerIds;
