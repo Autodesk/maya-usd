@@ -117,6 +117,7 @@ UsdUfe::StageAccessorFn            gStageAccessorFn = nullptr;
 UsdUfe::StagePathAccessorFn        gStagePathAccessorFn = nullptr;
 UsdUfe::UfePathToPrimFn            gUfePathToPrimFn = nullptr;
 UsdUfe::TimeAccessorFn             gTimeAccessorFn = nullptr;
+UsdUfe::IsLoadingSceneFn           gIsLoadingSceneFn = nullptr;
 UsdUfe::IsAttributeLockedFn        gIsAttributeLockedFn = nullptr;
 UsdUfe::SaveStageLoadRulesFn       gSaveStageLoadRulesFn = nullptr;
 UsdUfe::IsRootChildFn              gIsRootChildFn = nullptr;
@@ -253,6 +254,21 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path)
     return gTimeAccessorFn(path);
 }
 
+void setIsLoadingSceneFn(IsLoadingSceneFn fn)
+{
+    // This function is allowed to be null in which case return default (false).
+    gIsLoadingSceneFn = fn;
+}
+
+bool isSceneLoading()
+{
+    // If we have (optional) scene loading function, use it.
+    // Otherwise return false.
+    if (gIsLoadingSceneFn)
+        return gIsLoadingSceneFn();
+    return false;
+}
+
 void setIsAttributeLockedFn(IsAttributeLockedFn fn)
 {
     // This function is allowed to be null in which case return default (false).
@@ -319,7 +335,7 @@ int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
     // Once more as above in usdPathToUfePathSegment() and
     // stripInstanceIndexFromUfePath(), a path component at the tail of the
     // path that begins with a digit is assumed to represent an instance index.
-    const std::string& tailComponentString = path.back().string();
+    const std::string tailComponentString = path.back().string();
     if (stringBeginsWithDigit(path.back().string())) {
         instanceIndex = std::stoi(tailComponentString);
     }
@@ -367,6 +383,44 @@ std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcNam
     return dstName;
 }
 
+std::string uniqueNameMaxSuffix(const TfToken::HashSet& existingNames, std::string srcName)
+{
+    std::string base, suffixStr;
+    size_t      lenSuffix { 1 };
+    if (splitNumericalSuffix(srcName, base, suffixStr)) {
+        lenSuffix = suffixStr.length();
+    }
+
+    int maxSuffix = 0;
+
+    // Scan existing names to find the maxSuffix for this base.
+    // Padding width is from the sibling with the max value, or on a tie, choose the less padded
+    // width.
+    for (const TfToken& token : existingNames) {
+        const std::string& existingName = token.GetString();
+
+        std::string existingNameBase, existingNameSuffix;
+        if (!splitNumericalSuffix(existingName, existingNameBase, existingNameSuffix)
+            || existingNameBase != base) {
+            continue;
+        }
+
+        int value = std::stoi(existingNameSuffix);
+        if (value > maxSuffix) {
+            maxSuffix = value;
+            lenSuffix = existingNameSuffix.length();
+        } else if (value == maxSuffix) {
+            lenSuffix = std::min(lenSuffix, existingNameSuffix.length());
+        }
+    }
+
+    // Format suffix with zero-padding.
+    suffixStr = std::to_string(++maxSuffix);
+    suffixStr = std::string(lenSuffix - std::min(lenSuffix, suffixStr.length()), '0') + suffixStr;
+
+    return base + suffixStr;
+}
+
 void setUniqueChildNameFn(UniqueChildNameFn fn)
 {
     // This function is allowed to be null in which case, the default implementation
@@ -374,13 +428,17 @@ void setUniqueChildNameFn(UniqueChildNameFn fn)
     gUniqueChildNameFn = fn;
 }
 
-std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
+std::string
+uniqueChildName(const UsdPrim& usdParent, const std::string& name, const std::string* excludeName)
 {
-    return gUniqueChildNameFn ? gUniqueChildNameFn(usdParent, name)
-                              : uniqueChildNameDefault(usdParent, name);
+    return gUniqueChildNameFn ? gUniqueChildNameFn(usdParent, name, excludeName)
+                              : uniqueChildNameDefault(usdParent, name, excludeName);
 }
 
-std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& name)
+std::string uniqueChildNameDefault(
+    const UsdPrim&     usdParent,
+    const std::string& name,
+    const std::string* excludeName)
 {
     if (!usdParent.IsValid())
         return std::string();
@@ -402,6 +460,8 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
     //
     // Note: our UsdHierarchy uses instance proxies, so we also use them here.
     for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+        if (excludeName != nullptr && child.GetName().GetString() == *excludeName)
+            continue;
         childrenNames.insert(child.GetName());
     }
     std::string childName { name };
@@ -462,10 +522,55 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     }
 
     std::string childName { name };
-    if (relativesNames.find(TfToken(childName)) != relativesNames.end()) {
-        childName = uniqueName(relativesNames, childName);
+    std::string baseNameOnly, suffix;
+    splitNumericalSuffix(childName, baseNameOnly, suffix);
+
+    for (const auto& relative : relativesNames) {
+        std::string relativeBaseName, relativeSuffix;
+        splitNumericalSuffix(relative.GetString(), relativeBaseName, relativeSuffix);
+
+        if (baseNameOnly == relativeBaseName) {
+            childName = uniqueNameMaxSuffix(relativesNames, childName);
+            break;
+        }
     }
+
     return childName;
+}
+
+std::string getSceneItemNodeType(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item) {
+        return {};
+    }
+
+    if (isSceneLoading()) {
+        // During Maya scene load, querying the node type of a USD scene item
+        // may cause Maya to crash (EMSUSD-1397). These crashes are due to missing
+        // null pointer checks in UFE code, where they access Maya node that are
+        // invalid. So we return an empty string in that case.
+        return {};
+    }
+
+    return item->nodeType();
+}
+
+Ufe::SceneItemList getHierarchyChildren(const Ufe::Hierarchy::Ptr& hierarchy)
+{
+    if (!hierarchy) {
+        return {};
+    }
+
+    if (isSceneLoading()) {
+        // During Maya scene load, querying the children of a USD hierarchy may
+        // cause Maya to crash (EMSUSD-1397). These crashes are due to missing
+        // null pointer checks in UFE code, where they access Maya node that are
+        // invalid. So we return an empty list in that
+        // case.
+        return {};
+    }
+
+    return hierarchy->children();
 }
 
 bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
@@ -475,7 +580,7 @@ bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
     }
 
     // Must be a scope.
-    if (item->nodeType() != "Scope") {
+    if (UsdUfe::getSceneItemNodeType(item) != "Scope") {
         return false;
     }
 
@@ -487,8 +592,8 @@ bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
     // Or with only materials inside
     auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
     if (scopeHierarchy) {
-        for (auto&& child : scopeHierarchy->children()) {
-            if (child->nodeType() != "Material") {
+        for (auto&& child : UsdUfe::getHierarchyChildren(scopeHierarchy)) {
+            if (UsdUfe::getSceneItemNodeType(child) != "Material") {
                 // At least one non material
                 return false;
             }

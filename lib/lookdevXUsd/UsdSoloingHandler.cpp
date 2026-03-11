@@ -33,6 +33,8 @@
 #include <mayaUsdAPI/undo.h>
 #include <mayaUsdAPI/utils.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <memory>
 
 using namespace LookdevXUfe;
@@ -96,7 +98,7 @@ void processSoloingPrimChildren(const Ufe::SceneItem::Ptr& parent,
         return;
     }
 
-    for (const auto& child : Ufe::Hierarchy::hierarchy(parent)->children())
+    for (const auto& child : UsdUfe::getHierarchyChildren(Ufe::Hierarchy::hierarchy(parent)))
     {
         if (getMetadata(child, kSoloingItem) == "true")
         {

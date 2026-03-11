@@ -16,6 +16,8 @@
 
 #include <mayaUsdAPI/utils.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/usd/usdGeom/imageable.h>
@@ -59,9 +61,17 @@ LookdevXUfe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Pt
 Ufe::SceneItemResultUndoableCommand::Ptr UsdMaterialHandler::createBackdropCmdImpl(const Ufe::SceneItem::Ptr& parent,
                                                                                    const Ufe::PathComponent& name) const
 {
-    if (!MayaUsdAPI::isUsdSceneItem(parent) || (parent->nodeType() != "NodeGraph" && parent->nodeType() != "Material"))
+    if (!MayaUsdAPI::isUsdSceneItem(parent))
     {
         return nullptr;
+    }
+
+    {
+        const std::string nodeType = UsdUfe::getSceneItemNodeType(parent);
+        if (nodeType != "NodeGraph" && nodeType != "Material")
+        {
+            return nullptr;
+        }
     }
 
     return MayaUsdAPI::createAddNewPrimCommand(parent, name.string(), "Backdrop");
@@ -91,22 +101,22 @@ LookdevXUfe::ValidationLog::Ptr UsdMaterialHandler::validateMaterial(const Ufe::
 
 bool UsdMaterialHandler::isBackdropImpl(const Ufe::SceneItem::Ptr& item) const
 {
-    return item->nodeType() == "Backdrop";
+    return UsdUfe::getSceneItemNodeType(item) == "Backdrop";
 }
 
 bool UsdMaterialHandler::isNodeGraphImpl(const Ufe::SceneItem::Ptr& item) const
 {
-    return item->nodeType() == "NodeGraph";
+    return UsdUfe::getSceneItemNodeType(item) == "NodeGraph";
 }
 
 bool UsdMaterialHandler::isMaterialImpl(const Ufe::SceneItem::Ptr& item) const
 {
-    return item->nodeType() == "Material";
+    return UsdUfe::getSceneItemNodeType(item) == "Material";
 }
 
 bool UsdMaterialHandler::isShaderImpl(const Ufe::SceneItem::Ptr& item) const
 {
-    return item->nodeType() == "Shader";
+    return UsdUfe::getSceneItemNodeType(item) == "Shader";
 }
 
 bool UsdMaterialHandler::allowedInNodeGraph(const std::string& /*nodeDefType*/) const

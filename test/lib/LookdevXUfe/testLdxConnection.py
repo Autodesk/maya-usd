@@ -101,6 +101,7 @@ class LookdevXUfeConnectionTestCase(unittest.TestCase):
         for addSrcConnection in addSrcConnections.allConnections():
             self.assertFalse(lxufe.UfeUtils.isConnectionHidden(addSrcConnection))
 
+    @unittest.skipIf(os.getenv('LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if LookdevXUfe has ExtendedConnectionHandler')
     def test_GetAllExtendedConnections(self):
         self.loadUsdFile("extendedConnections.usda")
 
@@ -190,6 +191,7 @@ class LookdevXUfeConnectionTestCase(unittest.TestCase):
         add2SrcExtendedConnections = lxufe.UfeUtils.getSourceExtendedConnections(add2Item)
         verifyConnections(self, add2SrcExtendedConnections, 0, 0, 2)
 
+    @unittest.skipIf(os.getenv('LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if LookdevXUfe has ExtendedConnectionHandler')
     def test_IsInternalConnection(self):
         self.loadUsdFile("isInternalConnection.usda")
 

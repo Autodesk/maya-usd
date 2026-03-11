@@ -126,6 +126,9 @@ private:
     size_t                                         _createMaterialCmdIdx = -1;
     std::shared_ptr<Ufe::CompositeUndoableCommand> _cmds;
 
+    // Extra undo items for operations not running within full fledged commands.
+    std::vector<UsdUfe::UsdUndoableItem> _undoItems;
+
 }; // UsdUndoAssignNewMaterialCommand
 
 //! \brief UsdUndoAddNewMaterialCommand
@@ -164,6 +167,8 @@ private:
 
     UsdUfe::UsdUndoAddNewPrimCommand::Ptr _createMaterialCmd;
     UsdUndoCreateFromNodeDefCommand::Ptr  _createShaderCmd;
+    // An extra undo item for operation that dont themselves run a full fledged command.
+    UsdUfe::UsdUndoableItem _undoItem;
 
 }; // UsdUndoAddNewMaterialCommand
 

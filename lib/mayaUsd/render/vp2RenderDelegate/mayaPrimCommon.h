@@ -150,7 +150,10 @@ public:
         DirtySelectionMode = (DirtySelectionHighlight << 1),
         // Maya's display mode has changed, for example for shaded to wireframe
         DirtyDisplayMode = (DirtySelectionMode << 1),
-        DirtyBitLast = DirtyDisplayMode
+        // 1 or more of Maya's display layers have changed, so the compound effect
+        // of display layers on this prim will need to be recomputed
+        DirtyDisplayLayers = (DirtyDisplayMode << 1),
+        DirtyBitLast = DirtyDisplayLayers
     };
 
     static const MColor       kOpaqueBlue;           //!< Opaque blue

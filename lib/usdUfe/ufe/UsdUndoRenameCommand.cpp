@@ -95,9 +95,10 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     // the command does nothing and the destination item is the same
     // as the source item.
     const std::string validNewName = TfMakeValidIdentifier(newNameStr);
-    if (validNewName != prim.GetName())
-        _newName = UsdUfe::uniqueChildName(prim.GetParent(), validNewName);
-    else
+    if (validNewName != prim.GetName()) {
+        const std::string oldName = srcItem->prim().GetName();
+        _newName = UsdUfe::uniqueChildName(prim.GetParent(), validNewName, &oldName);
+    } else
         _ufeDstItem = srcItem;
 }
 
@@ -136,13 +137,10 @@ void doUsdRename(
     }
 
     // Make sure the load state of the renamed prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
     {
         auto fromPath = SdfPath(srcPath.getSegments()[1].string());
         auto destPath = SdfPath(dstPath.getSegments()[1].string());
-        UsdUfe::duplicateLoadRules(*stage, fromPath, destPath);
-        UsdUfe::removeRulesForPath(*stage, fromPath);
+        UsdUfe::moveLoadRules(*stage, fromPath, destPath);
     }
 
     // Do the renaming in the target layer and all other applicable layers,

@@ -1,7 +1,7 @@
 #
 # Module to find AdskUsdComponentCreator.
 #
-# This module searches for a valid USD component creator installation.
+# This module searches for a valid USD Component Creator installation.
 # See the find_package at the bottom for the list of variables that will be set.
 #
 
@@ -20,7 +20,7 @@ find_path(ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR
     PATH_SUFFIXES
         include
     DOC
-        "USD Component Creator C++ include headers folder"
+        "Component Creator header path"
 )
 
 ############################################################################
@@ -30,7 +30,6 @@ find_path(ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR
 set(ADSK_USD_COMPONENT_CREATOR_LIBS_TO_FIND
     AdskUsdComponentCreator
     AdskVariantEditor
-    sdf_tools
 )
 
 set(ADSK_USD_COMPONENT_CREATOR_LIBRARIES)
@@ -53,52 +52,9 @@ foreach(ADSK_USD_COMPONENT_CREATOR_LIB ${ADSK_USD_COMPONENT_CREATOR_LIBS_TO_FIND
     endif()
 endforeach()
 
-############################################################################
+###########################################################################
 #
-# Binaries, dynamic-libraries (DLL) and commands folder
-
-if(IS_MACOSX)
-    set(ADSK_USD_COMPONENT_CREATOR_PLUGIN_DSO_SUFFIX "dylib")
-    set(ADSK_USD_COMPONENT_CREATOR_PLUGIN_DSO_PREFIX "lib")
-elseif(IS_WINDOWS)
-    set(ADSK_USD_COMPONENT_CREATOR_PLUGIN_DSO_SUFFIX "dll")
-    set(ADSK_USD_COMPONENT_CREATOR_PLUGIN_DSO_PREFIX "")
-else(IS_LINUX)
-    set(ADSK_USD_COMPONENT_CREATOR_PLUGIN_DSO_SUFFIX "so")
-    set(ADSK_USD_COMPONENT_CREATOR_PLUGIN_DSO_PREFIX "lib")
-endif()
-
-find_path(ADSK_USD_COMPONENT_CREATOR_BIN_DIR
-    NAMES
-        ${ADSK_USD_COMPONENT_CREATOR_PLUGIN_DSO_PREFIX}AdskUsdComponentCreator.${ADSK_USD_COMPONENT_CREATOR_PLUGIN_DSO_SUFFIX}
-    HINTS
-        $ENV{ADSK_USD_COMPONENT_CREATOR_ROOT_DIR}
-        ${ADSK_USD_COMPONENT_CREATOR_ROOT_DIR}
-    PATH_SUFFIXES
-        bin
-    DOC
-        "USD Component Creator binaries (DLL and commands) folder"
-)
-
-############################################################################
-#
-# Maya plugin folder
-
-find_path(ADSK_USD_COMPONENT_CREATOR_MAYA_PLUGIN_DIR
-    NAMES
-        usd_component_creator.py
-    HINTS
-        $ENV{ADSK_USD_COMPONENT_CREATOR_ROOT_DIR}
-        ${ADSK_USD_COMPONENT_CREATOR_ROOT_DIR}
-    PATH_SUFFIXES
-        plugin
-    DOC
-        "USD Component Creator Maya plugin folder"
-)
-
-############################################################################
-#
-# Component creator version
+# Component Creator version
 
 if(ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR)
     file(
@@ -111,30 +67,27 @@ if(ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR)
     endif()
 endif()
 
-# Handle the QUIETLY and REQUIRED arguments and set ADSK_USD_COMPONENT_CREATOR_FOUND to TRUE if
-# all listed variables are TRUE.
-
 ############################################################################
 #
 # Component creator package
+#
+# Handle the QUIETLY and REQUIRED arguments and set AdskUsdComponentCreator_FOUND
+# to TRUE if all listed variables are TRUE.
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(AdskUsdComponentCreator
     REQUIRED_VARS
         ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR
-        ADSK_USD_COMPONENT_CREATOR_MAYA_PLUGIN_DIR
-        ADSK_USD_COMPONENT_CREATOR_BIN_DIR        
         ADSK_USD_COMPONENT_CREATOR_LIBRARIES
     VERSION_VAR
         ADSK_USD_COMPONENT_CREATOR_VERSION
 )
 
-# Report to the user where the component creator package was found.
+# Report to the user where the package was found.
 
 if (AdskUsdComponentCreator_FOUND)
-    message(STATUS "   Autodesk USD Component Creator version is            ${ADSK_USD_COMPONENT_CREATOR_VERSION}")
-    message(STATUS "   Autodesk USD Component Creator include folder is     ${ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR}")
-    message(STATUS "   Autodesk USD Component Creator Maya plugin folder is ${ADSK_USD_COMPONENT_CREATOR_MAYA_PLUGIN_DIR}")
-    message(STATUS "   Autodesk USD Component Creator binaries folder is    ${ADSK_USD_COMPONENT_CREATOR_BIN_DIR}")
-    message(STATUS "   Autodesk USD Component Creator libraries are         ${ADSK_USD_COMPONENT_CREATOR_LIBRARIES}")
+    # This will follow a message "-- Found AdskUsdComponentCreator: <path> ..."
+    message(STATUS "  Version: ${ADSK_USD_COMPONENT_CREATOR_VERSION}")
+    message(STATUS "  Include dir: ${ADSK_USD_COMPONENT_CREATOR_INCLUDE_DIR}")
+    message(STATUS "  Libraries: ${ADSK_USD_COMPONENT_CREATOR_LIBRARIES}")
 endif()

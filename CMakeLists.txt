@@ -176,10 +176,6 @@ endif()
 include(cmake/usd.cmake)
 
 find_package(UFE 0.2.0 REQUIRED)
-message(STATUS "Build MayaUsd with UFE version ${UFE_VERSION}")
-message(STATUS "   UFE include dir: ${UFE_INCLUDE_DIR}")
-message(STATUS "   UFE library: ${UFE_LIBRARY}")
-message(STATUS "   UFE preview features: ${UFE_PREVIEW_FEATURES}")
 
 if(CMAKE_WANT_MATERIALX_BUILD AND MAYA_LIGHTAPI_VERSION LESS 2)
     set(CMAKE_WANT_MATERIALX_BUILD OFF)
@@ -247,18 +243,15 @@ if(BUILD_LOOKDEVXUSD_LIBRARY)
         set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
         message(WARNING "Disabling LookdevXUsd: it is not supported by Maya ${MAYA_APP_VERSION}.")
     endif()
-    if (LookdevXUfe_FOUND)
-        message(STATUS "Build LookdevXUsd with LookdevXUfe version: ${LookdevXUfe_VERSION}")
-        message(STATUS "   LookdevXUfe include dir: ${LookdevXUfe_INCLUDE_DIR}")
-        message(STATUS "   LookdevXUfe library    : ${LookdevXUfe_LIBRARY}")
-    else()
+    if (NOT LookdevXUfe_FOUND)
         set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
         message(WARNING "Disabling LookdevXUsd as LookdevXUfe was not found (in Maya devkit).")
     endif()
 endif()
 
 find_package(AdskUsdComponentCreator)
-find_package(AR)
+find_package(AdskUsdAssetResolver)
+find_package(AdskUsdEditForward)
 
 #------------------------------------------------------------------------------
 # compiler configuration
@@ -401,9 +394,7 @@ set(TOP_HEADERS
 )
 
 mayaUsd_promoteHeaderList(HEADERS ${TOP_HEADERS} BASEDIR "NONE")
-install(FILES ${CMAKE_BINARY_DIR}/include/pxr_python.h
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
-)
-install(FILES ${CMAKE_BINARY_DIR}/include/cxx17_legacy_support.h
+
+install(FILES ${TOP_HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )

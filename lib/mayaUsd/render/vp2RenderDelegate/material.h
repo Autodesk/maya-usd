@@ -115,6 +115,9 @@ public:
     //! Trigger sync on all Rprims which are listening to changes on this material.
     void MaterialChanged(HdSceneDelegate* sceneDelegate);
 
+    //! Trigger sync on this material and subscribed Rprims when textured display is enabled.
+    void TexturedDisplayModeEnabled(HdSceneDelegate* sceneDelegate);
+
     class TextureLoadingTask;
     friend class TextureLoadingTask;
 
@@ -228,7 +231,14 @@ private:
     HdVP2RenderDelegate* const
         _renderDelegate; //!< VP2 render delegate for which this material was created
 
-    CompiledNetwork              _compiledNetworks[kNumNetworkConfigs];
+    CompiledNetwork _compiledNetworks[kNumNetworkConfigs];
+
+    //! smoothHull network selection: kFull when untextured networks differ, otherwise kUntextured.
+    NetworkConfig _texturedConfig = kFull;
+
+    //! Deferred dirtiness for kFull network, when textured display is off.
+    HdDirtyBits _pendingFullNetworkDirtyBits = 0;
+
     static HdVP2GlobalTextureMap _globalTextureMap; //!< Texture in use by all materials in MayaUSD
     HdVP2LocalTextureMap         _localTextureMap;  //!< Textures used by this material
 
