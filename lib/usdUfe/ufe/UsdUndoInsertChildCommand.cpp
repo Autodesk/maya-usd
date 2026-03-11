@@ -28,21 +28,27 @@
 #include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/pcp/arc.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #ifdef USD_HAS_NAMESPACE_EDIT
 #include <pxr/usd/sdf/namespaceEdit.h>
 #endif
 #include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
 #include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <ufe/log.h>
 #include <ufe/pathString.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
+
+#include <functional>
+#include <vector>
 
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
@@ -59,6 +65,60 @@ template <class T> struct MakeSharedEnabler : public T
     {
     }
 };
+
+// Validate that a prim can be reparented in a component stage.
+// Components only allow reparenting prims whose path is contained within
+// one of the scope paths defined in the template variant payloads
+void validateComponentReparent(const UsdPrim& prim)
+{
+    const UsdStagePtr stage = prim.GetStage();
+    if (!stage) {
+        return;
+    }
+
+    // Get the prim path
+    const SdfPath primPath = prim.GetPath();
+
+    // Get template variant payloads from component metadata
+    auto templateVariantPayloads = UsdUfe::getTemplateVariantPayloads(stage);
+
+    // Collect all scope paths from template variant payloads
+    std::vector<SdfPath> templateScopePaths;
+    for (const auto& payloadEntry : templateVariantPayloads) {
+        const std::string& scopePathStr = payloadEntry.second.scopePath;
+        if (!scopePathStr.empty()) {
+            SdfPath scopePath(scopePathStr);
+            if (!scopePath.IsEmpty()) {
+                templateScopePaths.push_back(scopePath);
+            }
+        }
+    }
+
+    // Check if the prim path is contained within any of the template scope paths
+    bool isInTemplateScope = false;
+    for (const SdfPath& scopePath : templateScopePaths) {
+        // Check if prim path is not equal to the scope_path and a descendant of the scope path
+        if (primPath != scopePath && primPath.HasPrefix(scopePath)) {
+            isInTemplateScope = true;
+            break;
+        }
+    }
+
+    // Allow if prim is within a template variant payload scope
+    if (isInTemplateScope) {
+        return;
+    }
+
+    // Disallow - prim is not in template variant payload scopes
+    const std::string error = TfStringPrintf(
+        "Cannot reparent prim \"%s\" in a component stage. "
+        "Only prims within template variant payload scopes can be reparented. "
+        "This prim is in a local component structure.",
+        prim.GetPath().GetText());
+    TF_WARN("%s", error.c_str());
+    throw std::runtime_error(error);
+}
+
 } // namespace
 
 namespace USDUFE_NS_DEF {
@@ -133,12 +193,18 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
         throw std::runtime_error(err);
     }
 
-    // Apply restriction rules
-    UsdUfe::applyCommandRestriction(childPrim, "reparent");
-    // Note: the parent is only receiving the prim, so it can be declared
-    //       in a weaker layer.
-    const bool allowStronger = true;
-    UsdUfe::applyCommandRestriction(parentPrim, "reparent", allowStronger);
+    // Check component-specific restrictions
+    if (isComponentStage(child->path())) {
+        // Components only allow reparenting prims from payloads
+        validateComponentReparent(childPrim);
+    } else {
+        // Apply restriction rules for non-component stages
+        UsdUfe::applyCommandRestriction(childPrim, "reparent");
+        // Note: the parent is only receiving the prim, so it can be declared
+        //       in a weaker layer.
+        const bool allowStronger = true;
+        UsdUfe::applyCommandRestriction(parentPrim, "reparent", allowStronger);
+    }
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -167,65 +233,62 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
     return std::make_shared<MakeSharedEnabler<UsdUndoInsertChildCommand>>(parent, child, pos);
 }
 
+// Type alias for the removal function
+using PrimSpecRemovalFn = std::function<void(const SdfPrimSpecHandle&, const UsdStageRefPtr&)>;
+
 static void doInsertion(
-    const SdfPath&   srcUsdPath,
-    const Ufe::Path& srcUfePath,
-    const SdfPath&   dstUsdPath,
-    const Ufe::Path& dstUfePath)
+    const SdfPath&       srcUsdPath,
+    const Ufe::Path&     srcUfePath,
+    const SdfPath&       dstUsdPath,
+    const Ufe::Path&     dstUfePath,
+    bool                 isComponent,
+    PrimSpecRemovalFn    removalFn)
 {
     UsdUfe::InAddOrDeleteOperation ad;
 
     UsdPrim        srcPrim = ufePathToPrim(srcUfePath);
     UsdStageRefPtr stage = srcPrim.GetStage();
 
-    // Enforce the edit routing for the insert-child command in order to find
-    // the target layer. The edit router context sets the edit target of the
-    // stage of the given prim, if it gets routed.
+    // Enforce the edit routing for the insert-child command
     OperationEditRouterContext ctx(UsdUfe::EditRoutingTokens->RouteParent, srcPrim);
     const SdfLayerHandle&      dstLayer = stage->GetEditTarget().GetLayer();
 
     enforceMutedLayer(srcPrim, "reparent");
 
-    // TODO: the replication of extra information is missing in UsdUfe.
-    //       In MayaUsd, MayaUsd::ufe::ReplicateExtrasToUSD duplicates
-    //       the Maya display layer information. This is not supported
-    //       in UsdUfe at the moment. See the UsdUndoDuplicateCommand,
-    //       which is still in MayaUsd for an example of how it is done.
+    if (!isComponent) {
+        // TODO: the replication of extra information is missing in UsdUfe.
+        //       In MayaUsd, MayaUsd::ufe::ReplicateExtrasToUSD duplicates
+        //       the Maya display layer information. This is not supported
+        //       in UsdUfe at the moment. See the UsdUndoDuplicateCommand,
+        //       which is still in MayaUsd for an example of how it is done.
 
-    // Note: the USD duplication code below is similar to the one in
-    //       UsdUndoDuplicateCommand, except it targets an arbitrary
-    //       destination location. This is why the duplicate command
-    //       could not be used directly as a sub-command.
+        // Note: the USD duplication code below is similar to the one in
+        //       UsdUndoDuplicateCommand, except it targets an arbitrary
+        //       destination location. This is why the duplicate command
+        //       could not be used directly as a sub-command.
+    }
 
-    // Make sure all necessary parents exist in the target layer, at least as over,
-    // otherwise SdfCopySepc will fail.
+    // Make sure all necessary parents exist in the target layer
     SdfJustCreatePrimInLayer(dstLayer, dstUsdPath.GetParentPath());
 
-    // Retrieve the local layers around where the prim is defined and order them
-    // from weak to strong. That weak-to-strong order allows us to copy the weakest
-    // opinions first, so that they will get over-written by the stronger opinions.
-    SdfPrimSpecHandleVector authLayerAndPaths = UsdUfe::getDefiningPrimStack(srcPrim);
-    std::reverse(authLayerAndPaths.begin(), authLayerAndPaths.end());
+    // Retrieve the defining prim stack and order from weak to strong
+    SdfPrimSpecHandleVector primSpecs = UsdUfe::getDefiningPrimStack(srcPrim);
+    std::reverse(primSpecs.begin(), primSpecs.end());
 
-    // If no local layers were affected, then it means the prim is not local.
-    // It probably is inside a reference and we do not support reparent from within
-    // reference at this point. Report the error and abort the command.
-    if (0 == authLayerAndPaths.size()) {
+    if (primSpecs.empty()) {
         const std::string error = TfStringPrintf(
-            "Cannot reparent prim \"%s\" because we found no local layer containing it.",
-            srcPrim.GetPath().GetText());
+            "Cannot reparent %s\"%s\" because we found no %s.",
+            isComponent ? "component prim " : "prim ",
+            srcPrim.GetPath().GetText(),
+            isComponent ? "defining layers" : "local layer containing it");
         TF_WARN("%s", error.c_str());
         throw std::runtime_error(error);
     }
 
 #ifdef USD_HAS_NAMESPACE_EDIT
-    // Try to use a single-layer renaming namespace edit.
-    // This only works correctly if there is a single layer and the destination layer
-    // is the same as the source layer. If it fails we will fall through to the other
-    // algorithm below.
-    if (1 == authLayerAndPaths.size()) {
+    // Try to use a single-layer renaming namespace edit (non-component optimization)
+    if (!isComponent && primSpecs.size() == 1) {
         SdfBatchNamespaceEdit edits;
-
         const auto parentPath = dstUsdPath.GetParentPath();
         edits.Add(SdfNamespaceEdit::Reparent(srcUsdPath, parentPath, SdfNamespaceEdit::Same));
 
@@ -235,22 +298,20 @@ static void doInsertion(
     }
 #endif
 
+    // Copy phase: Copy all prim specs to destination
     UsdUfe::MergePrimsOptions options;
     options.verbosity = UsdUfe::MergeVerbosity::None;
     options.mergeChildren = true;
 
     const bool includeTopLayer = true;
-    const auto sessionLayers
-        = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+    const auto sessionLayers = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
 
     bool isFirst = true;
 
-    for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
-        const auto layer = layerAndPath->GetLayer();
-        const auto path = layerAndPath->GetPath();
+    for (const SdfPrimSpecHandle& primSpec : primSpecs) {
+        const auto layer = primSpec->GetLayer();
+        const auto path = primSpec->GetPath();
 
-        // We want to leave session data in the session layers.
-        // If a layer is a session layer then we set the target to be that same layer.
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : dstLayer;
 
@@ -263,35 +324,24 @@ static void doInsertion(
 
         if (!result) {
             const std::string error = TfStringPrintf(
-                "Insert child command: moving prim \"%s\" to \"%s\" failed in layer \"%s\".",
-                srcUsdPath.GetString().c_str(),
+                "%s: %s prim from \"%s\" to \"%s\" failed in layer \"%s\".",
+                isComponent ? "Component reparent" : "Insert child command",
+                isComponent ? "copying" : "moving",
+                path.GetString().c_str(),
                 dstUsdPath.GetString().c_str(),
                 layer->GetDisplayName().c_str());
             TF_WARN("%s", error.c_str());
             throw std::runtime_error(error);
         }
 
-        // We only set the first-layer flag to false once we have processed a non-session layer.
         if (!isInSession)
             isFirst = false;
     }
 
-    // Remove all scene descriptions for the source path and its subtree in the source layer.
-    // Note: is the layer targeting really needed? We are removing the prim entirely.
-    PrimLayerFunc removeFunc
-        = [stage, srcUsdPath](const UsdPrim& prim, const PXR_NS::SdfLayerRefPtr& layer) {
-              UsdEditContext ctx(stage, layer);
-              if (!stage->RemovePrim(srcUsdPath)) {
-                  const std::string error = TfStringPrintf(
-                      "Insert child command: removing prim \"%s\" in layer \"%s\" failed.",
-                      srcUsdPath.GetString().c_str(),
-                      layer->GetDisplayName().c_str());
-                  TF_WARN("%s", error.c_str());
-                  throw std::runtime_error(error);
-              }
-          };
-
-    applyToAllLayersWithOpinions(srcPrim, removeFunc);
+    // Removal phase: Use provided removal function
+    for (const SdfPrimSpecHandle& primSpec : primSpecs) {
+        removalFn(primSpec, stage);
+    }
 }
 
 static void
@@ -346,12 +396,65 @@ void UsdUndoInsertChildCommand::execute()
     // to access the existing rules.
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
+    // Pause edit forwarding during the insert operation
+    pauseEditForwarding(true);
+
     // We need to keep the generated item to be able to return it to the caller
     // via the insertedChild() member function.
     {
         UsdUndoBlock undoBlock(&_undoableItem);
-        doInsertion(_usdSrcPath, _ufeSrcPath, _usdDstPath, _ufeDstPath);
+
+        // Check if we're reparenting a component and use appropriate removal function
+        const bool isComponent = isComponentStage(_ufeSrcPath);
+
+        // Define the removal function based on whether it's a component
+        PrimSpecRemovalFn removalFn = isComponent
+            ? [](const SdfPrimSpecHandle& primSpec, const UsdStageRefPtr& stage) {
+                  // Component: Use direct SDF removal
+                  const auto layer = primSpec->GetLayer();
+                  const auto path = primSpec->GetPath();
+
+                  UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
+                  SdfPrimSpecHandle parent = primSpec->GetRealNameParent();
+                  if (!parent) {
+                      const std::string error = TfStringPrintf(
+                          "Failed to get parent for component prim \"%s\" in layer \"%s\".",
+                          path.GetText(),
+                          layer->GetDisplayName().c_str());
+                      TF_WARN("%s", error.c_str());
+                      throw std::runtime_error(error);
+                  }
+
+                  if (!parent->RemoveNameChild(primSpec)) {
+                      const std::string error = TfStringPrintf(
+                          "Failed to remove component prim \"%s\" from layer \"%s\".",
+                          path.GetText(),
+                          layer->GetDisplayName().c_str());
+                      TF_WARN("%s", error.c_str());
+                      throw std::runtime_error(error);
+                  }
+              }
+            : [](const SdfPrimSpecHandle& primSpec, const UsdStageRefPtr& stage) {
+                  // Non-component: Use stage-level removal
+                  const auto layer = primSpec->GetLayer();
+                  const auto path = primSpec->GetPath();
+
+                  UsdEditContext ctx(stage, layer);
+                  if (!stage->RemovePrim(path)) {
+                      const std::string error = TfStringPrintf(
+                          "Insert child command: removing prim \"%s\" in layer \"%s\" failed.",
+                          path.GetString().c_str(),
+                          layer->GetDisplayName().c_str());
+                      TF_WARN("%s", error.c_str());
+                      throw std::runtime_error(error);
+                  }
+              };
+
+        doInsertion(_usdSrcPath, _ufeSrcPath, _usdDstPath, _ufeDstPath, isComponent, removalFn);
     }
+
+    // Resume edit forwarding after the insert operation
+    pauseEditForwarding(false);
 
     _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }
@@ -365,7 +468,13 @@ void UsdUndoInsertChildCommand::undo()
     // Note: the arguments passed are the opposite of those in execute and redo().
     preserveLoadRules(_ufeDstPath, _usdDstPath, _usdSrcPath);
 
+    // Pause edit forwarding during the undo operation
+    pauseEditForwarding(true);
+
     _undoableItem.undo();
+
+    // Resume edit forwarding after the undo operation
+    pauseEditForwarding(false);
 
     // Note: the arguments passed are the opposite of those in execute and redo().
     sendReparentNotification(_ufeDstPath, _ufeSrcPath);
@@ -379,7 +488,13 @@ void UsdUndoInsertChildCommand::redo()
     // to access the existing rules.
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
+    // Pause edit forwarding during the redo operation
+    pauseEditForwarding(true);
+
     _undoableItem.redo();
+
+    // Resume edit forwarding after the redo operation
+    pauseEditForwarding(false);
 
     _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }

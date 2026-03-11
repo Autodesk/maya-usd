@@ -102,6 +102,12 @@ Ufe::Rtid initialize(
         UsdUfe::setExtractTRSFn(dccFunctions.extractTRSFn);
     if (dccFunctions.transform3dMatrixOpNameFn)
         UsdUfe::setTransform3dMatrixOpNameFn(dccFunctions.transform3dMatrixOpNameFn);
+    if (dccFunctions.pauseEditForwardingFn)
+        UsdUfe::setPauseEditForwardingFn(dccFunctions.pauseEditForwardingFn);
+    if (dccFunctions.isComponentStageFn)
+        UsdUfe::setIsComponentStageFn(dccFunctions.isComponentStageFn);
+    if (dccFunctions.getTemplateVariantPayloadsFn)
+        UsdUfe::setGetTemplateVariantPayloadsFn(dccFunctions.getTemplateVariantPayloadsFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {

@@ -123,9 +123,12 @@ UsdUfe::SaveStageLoadRulesFn       gSaveStageLoadRulesFn = nullptr;
 UsdUfe::IsRootChildFn              gIsRootChildFn = nullptr;
 UsdUfe::UniqueChildNameFn          gUniqueChildNameFn = nullptr;
 UsdUfe::WaitCursorFn               gStartWaitCursorFn = nullptr;
-UsdUfe::WaitCursorFn               gStopWaitCursorFn = nullptr;
-UsdUfe::DefaultMaterialScopeNameFn gGetDefaultMaterialScopeNameFn = nullptr;
-UsdUfe::ExtractTRSFn               gExtractTRSFn = nullptr;
+UsdUfe::WaitCursorFn                   gStopWaitCursorFn = nullptr;
+UsdUfe::PauseEditForwardingFn          gPauseEditForwardingFn = nullptr;
+UsdUfe::IsComponentStageFn             gIsComponentStageFn = nullptr;
+UsdUfe::GetTemplateVariantPayloadsFn   gGetTemplateVariantPayloadsFn = nullptr;
+UsdUfe::DefaultMaterialScopeNameFn     gGetDefaultMaterialScopeNameFn = nullptr;
+UsdUfe::ExtractTRSFn                   gExtractTRSFn = nullptr;
 UsdUfe::Transform3dMatrixOpNameFn  gTransform3dMatrixOpNameFn = nullptr;
 
 UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
@@ -1764,6 +1767,44 @@ void stopWaitCursor()
 
     if (gWaitCursorCount == 0)
         gStopWaitCursorFn();
+}
+
+void setPauseEditForwardingFn(PauseEditForwardingFn fn)
+{
+    gPauseEditForwardingFn = fn;
+}
+
+void pauseEditForwarding(bool pause)
+{
+    if (gPauseEditForwardingFn) {
+        gPauseEditForwardingFn(pause);
+    }
+}
+
+void setIsComponentStageFn(IsComponentStageFn fn)
+{
+    gIsComponentStageFn = fn;
+}
+
+bool isComponentStage(const Ufe::Path& path)
+{
+    if (gIsComponentStageFn) {
+        return gIsComponentStageFn(path);
+    }
+    return false;
+}
+
+void setGetTemplateVariantPayloadsFn(GetTemplateVariantPayloadsFn fn)
+{
+    gGetTemplateVariantPayloadsFn = fn;
+}
+
+TemplateVariantPayloadsMap getTemplateVariantPayloads(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (gGetTemplateVariantPayloadsFn) {
+        return gGetTemplateVariantPayloadsFn(stage);
+    }
+    return {};
 }
 
 void setDefaultMaterialScopeNameFn(DefaultMaterialScopeNameFn fn)

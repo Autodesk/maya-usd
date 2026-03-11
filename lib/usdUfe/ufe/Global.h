@@ -68,6 +68,9 @@ struct USDUFE_PUBLIC DCCFunctions
     // Optional: nothing will be done if no function is supplied.
     WaitCursorFn startWaitCursorFn = nullptr;
     WaitCursorFn stopWaitCursorFn = nullptr;
+    PauseEditForwardingFn pauseEditForwardingFn = nullptr;
+    IsComponentStageFn isComponentStageFn = nullptr;
+    GetTemplateVariantPayloadsFn getTemplateVariantPayloadsFn = nullptr;
 };
 
 /*! Ufe runtime handlers used to initialize the plugin.

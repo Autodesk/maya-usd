@@ -41,6 +41,7 @@
 #endif // UFE_V3_FEATURES_AVAILABLE
 
 #include <string>
+#include <unordered_map>
 
 UFE_NS_DEF
 {
@@ -55,6 +56,15 @@ namespace USDUFE_NS_DEF {
 class UsdAttribute;
 class UsdProperty;
 class UsdUndoableItem;
+
+struct USDUFE_PUBLIC TemplateVariantPayloadInfo
+{
+    std::string layerFilename;
+    bool        isPayload;
+    std::string scopePath;
+};
+
+using TemplateVariantPayloadsMap = std::unordered_map<std::string, TemplateVariantPayloadInfo>;
 
 // DCC specific accessor functions.
 typedef PXR_NS::UsdStageWeakPtr (*StageAccessorFn)(const Ufe::Path&);
@@ -75,6 +85,9 @@ typedef void (
     *ExtractTRSFn)(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s);
 typedef const char* (*Transform3dMatrixOpNameFn)();
 typedef bool (*IsLoadingSceneFn)();
+typedef void (*PauseEditForwardingFn)(bool pause);
+typedef bool (*IsComponentStageFn)(const Ufe::Path&);
+typedef TemplateVariantPayloadsMap (*GetTemplateVariantPayloadsFn)(const PXR_NS::UsdStageRefPtr&);
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -477,6 +490,36 @@ void startWaitCursor();
 //! Stop the wait cursor. Can be called recursively.
 USDUFE_PUBLIC
 void stopWaitCursor();
+
+//! Set the DCC specific pause edit forwarding function.
+//! Use of this function is optional, if not supplied then no action is taken.
+USDUFE_PUBLIC
+void setPauseEditForwardingFn(PauseEditForwardingFn fn);
+
+//! Pause or resume edit forwarding (if function was provided).
+USDUFE_PUBLIC
+void pauseEditForwarding(bool pause);
+
+//! Set the DCC specific is-component-stage test function.
+//! Use of this function is optional, if not supplied then false is returned.
+USDUFE_PUBLIC
+void setIsComponentStageFn(IsComponentStageFn fn);
+
+//! Return whether the stage at the given path is a component stage.
+//! \return True if the stage is a component stage, otherwise false (default).
+USDUFE_PUBLIC
+bool isComponentStage(const Ufe::Path& path);
+
+//! Set the DCC specific get-template-variant-payloads function.
+//! Use of this function is optional, if not supplied then an empty map is returned.
+USDUFE_PUBLIC
+void setGetTemplateVariantPayloadsFn(GetTemplateVariantPayloadsFn fn);
+
+//! Get all template variant payloads from a stage's variant sets metadata.
+//! \return A map where the key is the layer filename and the value contains
+//!         the payload information (layer_filename, is_payload, scope_path).
+USDUFE_PUBLIC
+TemplateVariantPayloadsMap getTemplateVariantPayloads(const PXR_NS::UsdStageRefPtr& stage);
 
 //! Start and stop the wait cursor in the constructor and destructor.
 struct USDUFE_PUBLIC WaitCursor

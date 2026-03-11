@@ -22,10 +22,35 @@
 #include <mayaUsd/base/api.h>
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace MAYAUSD_NS_DEF {
 namespace ComponentUtils {
+
+/*! \brief Information about a template variant payload in a USD Component.
+ */
+struct TemplateVariantPayloadInfo
+{
+    std::string layerFilename; //!< Path to the payload layer file
+    bool        isPayload;     //!< True if it's a payload, false if it's a reference
+    std::string scopePath;     //!< The scope prim path
+
+    TemplateVariantPayloadInfo()
+        : isPayload(false)
+    {
+    }
+
+    TemplateVariantPayloadInfo(
+        const std::string& layer,
+        bool               payload,
+        const std::string& scope)
+        : layerFilename(layer)
+        , isPayload(payload)
+        , scopePath(scope)
+    {
+    }
+};
 
 /*! \brief Returns whether the proxy shape at the given path identifies an Autodesk USD Component.
  */
@@ -94,6 +119,15 @@ std::string getMaterialScopeName(const std::string& proxyPath);
  */
 MAYAUSD_CORE_PUBLIC
 std::string getMeshScopeName(const std::string& proxyPath);
+
+/*! \brief Get all template variant payloads from a component stage.
+ *
+ * \param proxyPath The proxy shape path of the component stage
+ * \return A map payload_layer_filename -> (layer_filename, is_payload, scope_path)
+ */
+MAYAUSD_CORE_PUBLIC
+std::unordered_map<std::string, TemplateVariantPayloadInfo>
+getTemplateVariantPayloadsFromComponentStage(const std::string& proxyPath);
 
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
