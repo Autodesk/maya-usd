@@ -174,33 +174,36 @@ bool mayaIsComponentStage(const Ufe::Path& path)
     return MayaUsd::ComponentUtils::isAdskUsdComponent(Ufe::PathString::string(path));
 }
 
-UsdUfe::TemplateVariantPayloadsMap
-mayaGetTemplateVariantPayloads(const PXR_NS::UsdStageRefPtr& stage)
+std::string mayaGetComponentMaterialScopeName(const PXR_NS::UsdStageRefPtr& stage)
 {
-    UsdUfe::TemplateVariantPayloadsMap result;
-
     if (!stage) {
-        return result;
+        return {};
     }
 
     // Convert stage to proxy path
     Ufe::Path ufePath = MayaUsd::ufe::stagePath(stage);
     if (ufePath.empty()) {
-        return result;
+        return {};
     }
 
     std::string proxyPath = Ufe::PathString::string(ufePath);
+    return MayaUsd::ComponentUtils::getMaterialScopeName(proxyPath);
+}
 
-    // Call the MayaUsd utility function and convert to UsdUfe format
-    auto mayaPayloads = MayaUsd::ComponentUtils::getTemplateVariantPayloadsFromComponentStage(proxyPath);
-
-    for (const auto& entry : mayaPayloads) {
-        result[entry.first] = {
-            entry.second.layerFilename, entry.second.isPayload, entry.second.scopePath
-        };
+std::string mayaGetComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage) {
+        return {};
     }
 
-    return result;
+    // Convert stage to proxy path
+    Ufe::Path ufePath = MayaUsd::ufe::stagePath(stage);
+    if (ufePath.empty()) {
+        return {};
+    }
+
+    std::string proxyPath = Ufe::PathString::string(ufePath);
+    return MayaUsd::ComponentUtils::getMeshScopeName(proxyPath);
 }
 
 } // namespace
@@ -276,7 +279,8 @@ MStatus initialize()
     dccFunctions.pauseEditForwardingFn = mayaPauseEditForwarding;
 #endif
     dccFunctions.isComponentStageFn = mayaIsComponentStage;
-    dccFunctions.getTemplateVariantPayloadsFn = mayaGetTemplateVariantPayloads;
+    dccFunctions.getComponentMaterialScopeNameFn = mayaGetComponentMaterialScopeName;
+    dccFunctions.getComponentMeshScopeNameFn = mayaGetComponentMeshScopeName;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();

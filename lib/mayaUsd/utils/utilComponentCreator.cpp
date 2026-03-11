@@ -78,7 +78,7 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
 
 bool isAdskUsdComponent(const std::string& proxyShapePath)
 {
-    if (proxyPath.empty()) {
+    if (proxyShapePath.empty()) {
         return false;
     }
 
@@ -331,130 +331,6 @@ std::string getMaterialScopeName(const std::string& proxyPath)
 std::string getMeshScopeName(const std::string& proxyPath)
 {
     return getComponentOptionString(proxyPath, "meshes_scope_name");
-}
-
-std::unordered_map<std::string, TemplateVariantPayloadInfo>
-getTemplateVariantPayloadsFromComponentStage(const std::string& proxyPath)
-{
-    std::unordered_map<std::string, TemplateVariantPayloadInfo> result;
-
-    if (proxyPath.empty()) {
-        return result;
-    }
-
-    if (!isAdskUsdComponent(proxyPath)) {
-        return result;
-    }
-
-    // Define Python function to get template variant payloads
-    MString defineGetPayloadsCmd;
-    defineGetPayloadsCmd.format(
-        "def usd_component_creator_get_template_variant_payloads():\n"
-        "    import json\n"
-        "    from pxr import Sdf, Usd\n"
-        "    import mayaUsd\n"
-        "    import mayaUsd.ufe\n"
-        "    try:\n"
-        "        from AdskUsdComponentCreator import GetTemplateVariantPayloadsFromStage\n"
-        "    except ImportError:\n"
-        "        return '{}'\n"
-        "    # Get stage from proxy path\n"
-        "    stage = mayaUsd.ufe.getStage('^1s')\n"
-        "    if not stage:\n"
-        "        return '{}'\n"
-        "    # Call the component creator API\n"
-        "    payloads_dict = GetTemplateVariantPayloadsFromStage(stage)\n"
-        "    # Convert to JSON for transfer back to C++\n"
-        "    result = {}\n"
-        "    for layer_filename, payload_info in payloads_dict.items():\n"
-        "        result[layer_filename] = {\n"
-        "            'layer_filename': payload_info.layer_filename,\n"
-        "            'is_payload': payload_info.is_payload,\n"
-        "            'scope_path': payload_info.scope_path\n"
-        "        }\n"
-        "    return json.dumps(result)\n",
-        proxyPath.c_str());
-
-    MStatus status = MGlobal::executePythonCommand(defineGetPayloadsCmd, false, false);
-    if (status != MS::kSuccess) {
-        TF_RUNTIME_ERROR("Failed to define Python function for getting template variant payloads");
-        return result;
-    }
-
-    // Call the Python function
-    MString runGetPayloadsCmd = "usd_component_creator_get_template_variant_payloads()";
-
-    MString jsonResult;
-    status = MGlobal::executePythonCommand(runGetPayloadsCmd, jsonResult);
-    if (status != MS::kSuccess) {
-        TF_RUNTIME_ERROR(
-            "Failed to execute Python function for getting template variant payloads");
-        return result;
-    }
-
-    // Parse the JSON result using USD's JSON parser
-    std::string jsonString = jsonResult.asChar();
-    if (jsonString.empty() || jsonString == "{}") {
-        return result;
-    }
-
-    // Parse JSON using USD's JsParseString
-    // Format: {"layer_filename": {"layer_filename": "...", "is_payload": true/false,
-    // "scope_path": "..."}, ...}
-    PXR_NS::JsParseError parseError;
-    PXR_NS::JsValue      parsed = PXR_NS::JsParseString(jsonString, &parseError);
-
-    if (parsed.IsNull() || !parsed.IsObject()) {
-        TF_RUNTIME_ERROR(
-            "Failed to parse template variant payloads JSON at line %d, column %d: %s",
-            parseError.line,
-            parseError.column,
-            parseError.reason.c_str());
-        return result;
-    }
-
-    const PXR_NS::JsObject& rootObject = parsed.GetJsObject();
-
-    // Iterate through each layer filename entry
-    for (const auto& entry : rootObject) {
-        const std::string& layerKey = entry.first;
-
-        if (!entry.second.IsObject()) {
-            TF_WARN("Skipping non-object entry for layer '%s'", layerKey.c_str());
-            continue;
-        }
-
-        const PXR_NS::JsObject& payloadInfo = entry.second.GetJsObject();
-
-        // Extract layer_filename
-        auto layerFilenameIt = payloadInfo.find("layer_filename");
-        if (layerFilenameIt == payloadInfo.end() || !layerFilenameIt->second.IsString()) {
-            TF_WARN("Missing or invalid 'layer_filename' for layer '%s'", layerKey.c_str());
-            continue;
-        }
-        std::string layerFilename = layerFilenameIt->second.GetString();
-
-        // Extract is_payload
-        auto isPayloadIt = payloadInfo.find("is_payload");
-        if (isPayloadIt == payloadInfo.end() || !isPayloadIt->second.IsBool()) {
-            TF_WARN("Missing or invalid 'is_payload' for layer '%s'", layerKey.c_str());
-            continue;
-        }
-        bool isPayload = isPayloadIt->second.GetBool();
-
-        // Extract scope_path
-        auto scopePathIt = payloadInfo.find("scope_path");
-        if (scopePathIt == payloadInfo.end() || !scopePathIt->second.IsString()) {
-            TF_WARN("Missing or invalid 'scope_path' for layer '%s'", layerKey.c_str());
-            continue;
-        }
-        std::string scopePath = scopePathIt->second.GetString();
-
-        // Add to result
-        result[layerKey] = TemplateVariantPayloadInfo(layerFilename, isPayload, scopePath);
-    }
-
-    return result;
 }
 
 } // namespace ComponentUtils

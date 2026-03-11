@@ -122,12 +122,13 @@ UsdUfe::IsAttributeLockedFn        gIsAttributeLockedFn = nullptr;
 UsdUfe::SaveStageLoadRulesFn       gSaveStageLoadRulesFn = nullptr;
 UsdUfe::IsRootChildFn              gIsRootChildFn = nullptr;
 UsdUfe::UniqueChildNameFn          gUniqueChildNameFn = nullptr;
-UsdUfe::WaitCursorFn               gStartWaitCursorFn = nullptr;
-UsdUfe::WaitCursorFn                   gStopWaitCursorFn = nullptr;
-UsdUfe::PauseEditForwardingFn          gPauseEditForwardingFn = nullptr;
-UsdUfe::IsComponentStageFn             gIsComponentStageFn = nullptr;
-UsdUfe::GetTemplateVariantPayloadsFn   gGetTemplateVariantPayloadsFn = nullptr;
-UsdUfe::DefaultMaterialScopeNameFn     gGetDefaultMaterialScopeNameFn = nullptr;
+UsdUfe::WaitCursorFn                    gStartWaitCursorFn = nullptr;
+UsdUfe::WaitCursorFn                    gStopWaitCursorFn = nullptr;
+UsdUfe::PauseEditForwardingFn           gPauseEditForwardingFn = nullptr;
+UsdUfe::IsComponentStageFn              gIsComponentStageFn = nullptr;
+UsdUfe::GetComponentMaterialScopeNameFn gGetComponentMaterialScopeNameFn = nullptr;
+UsdUfe::GetComponentMeshScopeNameFn     gGetComponentMeshScopeNameFn = nullptr;
+UsdUfe::DefaultMaterialScopeNameFn      gGetDefaultMaterialScopeNameFn = nullptr;
 UsdUfe::ExtractTRSFn                   gExtractTRSFn = nullptr;
 UsdUfe::Transform3dMatrixOpNameFn  gTransform3dMatrixOpNameFn = nullptr;
 
@@ -1794,15 +1795,28 @@ bool isComponentStage(const Ufe::Path& path)
     return false;
 }
 
-void setGetTemplateVariantPayloadsFn(GetTemplateVariantPayloadsFn fn)
+void setGetComponentMaterialScopeNameFn(GetComponentMaterialScopeNameFn fn)
 {
-    gGetTemplateVariantPayloadsFn = fn;
+    gGetComponentMaterialScopeNameFn = fn;
 }
 
-TemplateVariantPayloadsMap getTemplateVariantPayloads(const PXR_NS::UsdStageRefPtr& stage)
+std::string getComponentMaterialScopeName(const PXR_NS::UsdStageRefPtr& stage)
 {
-    if (gGetTemplateVariantPayloadsFn) {
-        return gGetTemplateVariantPayloadsFn(stage);
+    if (gGetComponentMaterialScopeNameFn) {
+        return gGetComponentMaterialScopeNameFn(stage);
+    }
+    return {};
+}
+
+void setGetComponentMeshScopeNameFn(GetComponentMeshScopeNameFn fn)
+{
+    gGetComponentMeshScopeNameFn = fn;
+}
+
+std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (gGetComponentMeshScopeNameFn) {
+        return gGetComponentMeshScopeNameFn(stage);
     }
     return {};
 }

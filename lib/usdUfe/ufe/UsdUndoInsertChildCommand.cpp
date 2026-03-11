@@ -79,40 +79,45 @@ void validateComponentReparent(const UsdPrim& prim)
     // Get the prim path
     const SdfPath primPath = prim.GetPath();
 
-    // Get template variant payloads from component metadata
-    auto templateVariantPayloads = UsdUfe::getTemplateVariantPayloads(stage);
+    // Get the default prim to construct full scope paths
+    auto defaultPrim = stage->GetDefaultPrim();
+    if (!defaultPrim) {
+        return;
+    }
+    const SdfPath defaultPrimPath = defaultPrim.GetPath();
 
-    // Collect all scope paths from template variant payloads
-    std::vector<SdfPath> templateScopePaths;
-    for (const auto& payloadEntry : templateVariantPayloads) {
-        const std::string& scopePathStr = payloadEntry.second.scopePath;
-        if (!scopePathStr.empty()) {
-            SdfPath scopePath(scopePathStr);
-            if (!scopePath.IsEmpty()) {
-                templateScopePaths.push_back(scopePath);
-            }
-        }
+    // Get material and mesh scope names from component
+    std::string materialScopeName = UsdUfe::getComponentMaterialScopeName(stage);
+    std::string meshScopeName = UsdUfe::getComponentMeshScopeName(stage);
+
+    // Build full scope paths
+    std::vector<SdfPath> scopePaths;
+    if (!materialScopeName.empty()) {
+        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(materialScopeName)));
+    }
+    if (!meshScopeName.empty()) {
+        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(meshScopeName)));
     }
 
-    // Check if the prim path is contained within any of the template scope paths
-    bool isInTemplateScope = false;
-    for (const SdfPath& scopePath : templateScopePaths) {
+    // Check if the prim path is contained within any of the scope paths
+    bool isInScope = false;
+    for (const SdfPath& scopePath : scopePaths) {
         // Check if prim path is not equal to the scope_path and a descendant of the scope path
         if (primPath != scopePath && primPath.HasPrefix(scopePath)) {
-            isInTemplateScope = true;
+            isInScope = true;
             break;
         }
     }
 
-    // Allow if prim is within a template variant payload scope
-    if (isInTemplateScope) {
+    // Allow if prim is within a component scope
+    if (isInScope) {
         return;
     }
 
-    // Disallow - prim is not in template variant payload scopes
+    // Disallow - prim is not in component scopes
     const std::string error = TfStringPrintf(
         "Cannot reparent prim \"%s\" in a component stage. "
-        "Only prims within template variant payload scopes can be reparented. "
+        "Only prims within component material or mesh scopes can be reparented. "
         "This prim is in a local component structure.",
         prim.GetPath().GetText());
     TF_WARN("%s", error.c_str());

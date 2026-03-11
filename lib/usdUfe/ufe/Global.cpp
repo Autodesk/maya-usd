@@ -106,8 +106,10 @@ Ufe::Rtid initialize(
         UsdUfe::setPauseEditForwardingFn(dccFunctions.pauseEditForwardingFn);
     if (dccFunctions.isComponentStageFn)
         UsdUfe::setIsComponentStageFn(dccFunctions.isComponentStageFn);
-    if (dccFunctions.getTemplateVariantPayloadsFn)
-        UsdUfe::setGetTemplateVariantPayloadsFn(dccFunctions.getTemplateVariantPayloadsFn);
+    if (dccFunctions.getComponentMaterialScopeNameFn)
+        UsdUfe::setGetComponentMaterialScopeNameFn(dccFunctions.getComponentMaterialScopeNameFn);
+    if (dccFunctions.getComponentMeshScopeNameFn)
+        UsdUfe::setGetComponentMeshScopeNameFn(dccFunctions.getComponentMeshScopeNameFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {

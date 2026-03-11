@@ -57,15 +57,6 @@ class UsdAttribute;
 class UsdProperty;
 class UsdUndoableItem;
 
-struct USDUFE_PUBLIC TemplateVariantPayloadInfo
-{
-    std::string layerFilename;
-    bool        isPayload;
-    std::string scopePath;
-};
-
-using TemplateVariantPayloadsMap = std::unordered_map<std::string, TemplateVariantPayloadInfo>;
-
 // DCC specific accessor functions.
 typedef PXR_NS::UsdStageWeakPtr (*StageAccessorFn)(const Ufe::Path&);
 typedef Ufe::Path (*StagePathAccessorFn)(PXR_NS::UsdStageWeakPtr);
@@ -87,7 +78,8 @@ typedef const char* (*Transform3dMatrixOpNameFn)();
 typedef bool (*IsLoadingSceneFn)();
 typedef void (*PauseEditForwardingFn)(bool pause);
 typedef bool (*IsComponentStageFn)(const Ufe::Path&);
-typedef TemplateVariantPayloadsMap (*GetTemplateVariantPayloadsFn)(const PXR_NS::UsdStageRefPtr&);
+typedef std::string (*GetComponentMaterialScopeNameFn)(const PXR_NS::UsdStageRefPtr&);
+typedef std::string (*GetComponentMeshScopeNameFn)(const PXR_NS::UsdStageRefPtr&);
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -510,16 +502,25 @@ void setIsComponentStageFn(IsComponentStageFn fn);
 USDUFE_PUBLIC
 bool isComponentStage(const Ufe::Path& path);
 
-//! Set the DCC specific get-template-variant-payloads function.
-//! Use of this function is optional, if not supplied then an empty map is returned.
+//! Set the DCC specific get-component-material-scope-name function.
+//! Use of this function is optional, if not supplied then an empty string is returned.
 USDUFE_PUBLIC
-void setGetTemplateVariantPayloadsFn(GetTemplateVariantPayloadsFn fn);
+void setGetComponentMaterialScopeNameFn(GetComponentMaterialScopeNameFn fn);
 
-//! Get all template variant payloads from a stage's variant sets metadata.
-//! \return A map where the key is the layer filename and the value contains
-//!         the payload information (layer_filename, is_payload, scope_path).
+//! Get the material scope name from a component stage.
+//! \return The material scope name, or empty string if not a component or not set.
 USDUFE_PUBLIC
-TemplateVariantPayloadsMap getTemplateVariantPayloads(const PXR_NS::UsdStageRefPtr& stage);
+std::string getComponentMaterialScopeName(const PXR_NS::UsdStageRefPtr& stage);
+
+//! Set the DCC specific get-component-mesh-scope-name function.
+//! Use of this function is optional, if not supplied then an empty string is returned.
+USDUFE_PUBLIC
+void setGetComponentMeshScopeNameFn(GetComponentMeshScopeNameFn fn);
+
+//! Get the mesh scope name from a component stage.
+//! \return The mesh scope name, or empty string if not a component or not set.
+USDUFE_PUBLIC
+std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage);
 
 //! Start and stop the wait cursor in the constructor and destructor.
 struct USDUFE_PUBLIC WaitCursor
