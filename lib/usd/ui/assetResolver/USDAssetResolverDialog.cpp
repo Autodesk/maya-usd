@@ -16,7 +16,6 @@
 #include "USDAssetResolverDialog.h"
 
 #include "PreferencesManagement.h"
-#include "PreferencesOptions.h"
 
 #include <AssetResolverPreferences/USDAssetResolverSettingsWidget.h>
 #include <AssetResolverPreferences/AssetResolverSettingsManagement.h>
