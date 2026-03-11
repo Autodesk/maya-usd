@@ -270,8 +270,10 @@ namespace {
 std::string _encodeExportArgs(const VtDictionary& dict)
 {
     std::string result;
+    bool        success;
+    std::string valueStr;
     for (const auto& kv : dict) {
-        auto [success, valueStr] = UsdMayaUtil::ValueToArgument(kv.second);
+        std::tie(success, valueStr) = UsdMayaUtil::ValueToArgument(kv.second);
         if (!success) {
             continue;
         }
