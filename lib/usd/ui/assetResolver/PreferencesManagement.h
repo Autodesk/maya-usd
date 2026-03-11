@@ -35,6 +35,5 @@ MAYAUSD_UI_PUBLIC void InitializeUsdPreferences();
 
 MAYAUSD_UI_PUBLIC void SaveUsdPreferences(const Adsk::AssetResolverSettings& options);
 
-
 } // namespace PreferencesManagement
 } // namespace MAYAUSD_NS_DEF

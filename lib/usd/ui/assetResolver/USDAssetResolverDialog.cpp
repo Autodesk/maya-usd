@@ -17,12 +17,11 @@
 
 #include "PreferencesManagement.h"
 
-#include <AssetResolverPreferences/USDAssetResolverSettingsWidget.h>
 #include <AssetResolverPreferences/AssetResolverSettingsManagement.h>
-
-#include <QtWidgets/QVBoxLayout>
+#include <AssetResolverPreferences/USDAssetResolverSettingsWidget.h>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QVBoxLayout>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -42,7 +41,7 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(settingsWidget);
 
-    QWidget* saveAndCloseWidget = new QWidget(this);
+    QWidget*     saveAndCloseWidget = new QWidget(this);
     QHBoxLayout* saveAndCloselayout = new QHBoxLayout(saveAndCloseWidget);
     QPushButton* saveButtonBox = new QPushButton(tr("Save && Refresh"), this);
     saveButtonBox->setDefault(true);
@@ -57,15 +56,9 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
 
     // Connect only the action signals (save and close)
     QObject::connect(
-        saveButtonBox,
-        &QPushButton::clicked,
-        this,
-        &USDAssetResolverDialog::OnSaveRequested);
+        saveButtonBox, &QPushButton::clicked, this, &USDAssetResolverDialog::OnSaveRequested);
     QObject::connect(
-        closeButtonBox, 
-        &QPushButton::clicked,
-        this,
-        &USDAssetResolverDialog::OnCloseRequested);
+        closeButtonBox, &QPushButton::clicked, this, &USDAssetResolverDialog::OnCloseRequested);
 }
 
 USDAssetResolverDialog::~USDAssetResolverDialog() { }

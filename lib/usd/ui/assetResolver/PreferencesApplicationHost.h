@@ -26,7 +26,7 @@ public:
     float uiScale() const override;
 
     QIcon icon(const IconName& name) const override;
-    int pm(const PixelMetric& metric) const override;
+    int   pm(const PixelMetric& metric) const override;
 
     QString getUSDDialogFileFilters() const;
     QString getOpenFileName(
@@ -35,7 +35,7 @@ public:
         const QString& dir = QString(),
         const QString& filter = QString()) const override;
 
-     QString getExistingDirectory(
+    QString getExistingDirectory(
         QWidget*             parent = nullptr,
         const QString&       caption = QString(),
         const QString&       dir = QString(),
