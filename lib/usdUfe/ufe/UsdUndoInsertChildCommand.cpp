@@ -254,44 +254,52 @@ static void doInsertion(
     UsdPrim        srcPrim = ufePathToPrim(srcUfePath);
     UsdStageRefPtr stage = srcPrim.GetStage();
 
-    // Enforce the edit routing for the insert-child command
+    // Enforce the edit routing for the insert-child command in order to find
+    // the target layer. The edit router context sets the edit target of the
+    // stage of the given prim, if it gets routed.
     OperationEditRouterContext ctx(UsdUfe::EditRoutingTokens->RouteParent, srcPrim);
     const SdfLayerHandle&      dstLayer = stage->GetEditTarget().GetLayer();
 
     enforceMutedLayer(srcPrim, "reparent");
 
-    if (!isComponent) {
-        // TODO: the replication of extra information is missing in UsdUfe.
-        //       In MayaUsd, MayaUsd::ufe::ReplicateExtrasToUSD duplicates
-        //       the Maya display layer information. This is not supported
-        //       in UsdUfe at the moment. See the UsdUndoDuplicateCommand,
-        //       which is still in MayaUsd for an example of how it is done.
+    // TODO: the replication of extra information is missing in UsdUfe.
+    //       In MayaUsd, MayaUsd::ufe::ReplicateExtrasToUSD duplicates
+    //       the Maya display layer information. This is not supported
+    //       in UsdUfe at the moment. See the UsdUndoDuplicateCommand,
+    //       which is still in MayaUsd for an example of how it is done.
 
-        // Note: the USD duplication code below is similar to the one in
-        //       UsdUndoDuplicateCommand, except it targets an arbitrary
-        //       destination location. This is why the duplicate command
-        //       could not be used directly as a sub-command.
-    }
+    // Note: the USD duplication code below is similar to the one in
+    //       UsdUndoDuplicateCommand, except it targets an arbitrary
+    //       destination location. This is why the duplicate command
+    //       could not be used directly as a sub-command.
 
-    // Make sure all necessary parents exist in the target layer
+    // Make sure all necessary parents exist in the target layer, at least as over,
+    // otherwise SdfCopySepc will fail.
     SdfJustCreatePrimInLayer(dstLayer, dstUsdPath.GetParentPath());
 
-    // Retrieve the defining prim stack and order from weak to strong
+    // Retrieve the local layers around where the prim is defined and order them
+    // from weak to strong. That weak-to-strong order allows us to copy the weakest
+    // opinions first, so that they will get over-written by the stronger opinions.
     SdfPrimSpecHandleVector primSpecs = UsdUfe::getDefiningPrimStack(srcPrim);
     std::reverse(primSpecs.begin(), primSpecs.end());
 
+    // If no local layers were affected, then it means the prim is not local.
+    // It probably is inside a reference and we do not support reparent from within
+    // reference at this point. Report the error and abort the command.
     if (primSpecs.empty()) {
         const std::string error = TfStringPrintf(
-            "Cannot reparent %s\"%s\" because we found no %s.",
+            "Cannot reparent %s\"%s\" because we found no local layer containing it.",
             isComponent ? "component prim " : "prim ",
-            srcPrim.GetPath().GetText(),
-            isComponent ? "defining layers" : "local layer containing it");
+            srcPrim.GetPath().GetText());
         TF_WARN("%s", error.c_str());
         throw std::runtime_error(error);
     }
 
 #ifdef USD_HAS_NAMESPACE_EDIT
     // Try to use a single-layer renaming namespace edit (non-component optimization)
+    // This only works correctly if there is a single layer and the destination layer
+    // is the same as the source layer. If it fails we will fall through to the other
+    // algorithm below.
     if (!isComponent && primSpecs.size() == 1) {
         SdfBatchNamespaceEdit edits;
         const auto parentPath = dstUsdPath.GetParentPath();
@@ -317,6 +325,8 @@ static void doInsertion(
         const auto layer = primSpec->GetLayer();
         const auto path = primSpec->GetPath();
 
+        // We want to leave session data in the session layers.
+        // If a layer is a session layer then we set the target to be that same layer.
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : dstLayer;
 
@@ -329,16 +339,14 @@ static void doInsertion(
 
         if (!result) {
             const std::string error = TfStringPrintf(
-                "%s: %s prim from \"%s\" to \"%s\" failed in layer \"%s\".",
-                isComponent ? "Component reparent" : "Insert child command",
-                isComponent ? "copying" : "moving",
-                path.GetString().c_str(),
+                "Insert child command: moving prim \"%s\" to \"%s\" failed in layer \"%s\".",
+                srcUsdPath.GetString().c_str(),
                 dstUsdPath.GetString().c_str(),
                 layer->GetDisplayName().c_str());
             TF_WARN("%s", error.c_str());
             throw std::runtime_error(error);
         }
-
+        // We only set the first-layer flag to false once we have processed a non-session layer.
         if (!isInSession)
             isFirst = false;
     }
