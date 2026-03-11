@@ -36,6 +36,7 @@
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/traverseLayer.h>
 #include <mayaUsd/utils/trieVisitor.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
@@ -1828,6 +1829,29 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicateToUsd(
     MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dupArgs.dstUfePath);
     if (!dstProxyShape)
         return {};
+
+    // When duplicating to an Autodesk USD Component, delegate entirely to the component creator.
+    {
+        if (const auto destStage = dstProxyShape->getUsdStage()) {
+            const auto psUfePath = MayaUsd::ufe::stagePath(destStage);
+            const auto proxyDagPath = MayaUsd::ufe::ufeToDagPath(psUfePath);
+            if (proxyDagPath.isValid()) {
+                const std::string proxyPath = proxyDagPath.fullPathName().asChar();
+                if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+                    MFnDagNode dagFn(mayaObject);
+                    MDagPath   dagPath;
+                    dagFn.getPath(dagPath);
+                    if (MayaUsd::ComponentUtils::addMayaNodesToComponent(
+                            proxyPath, { dagPath.fullPathName().asChar() }, userArgs)) {
+                        // TODO : For now return the proxy shape's path. Ideally we would know what
+                        // prims where created.
+                        return { psUfePath };
+                    }
+                    return {};
+                }
+            }
+        }
+    }
 
     PushPullScope scopeIt(_inPushPull);
 
