@@ -252,7 +252,7 @@ void MayaCommandHook::stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& la
     if (layers.empty())
         return;
 
-    std::string cmd = "mayaUsdLayerEditor -edit ";
+    std::string       cmd = "mayaUsdLayerEditor -edit ";
     const std::string proxyShape = proxyShapePath();
 
     for (const auto& layer : layers) {
