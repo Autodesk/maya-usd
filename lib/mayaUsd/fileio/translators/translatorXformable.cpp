@@ -18,6 +18,7 @@
 #include <mayaUsd/fileio/translators/translatorPrim.h>
 #include <mayaUsd/fileio/utils/splineUtils.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/undo/OpUndoItems.h>
 
 #include <pxr/base/gf/math.h>
 #include <pxr/base/gf/matrix4d.h>
@@ -28,14 +29,14 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
-#include <maya/MDagModifier.h>
+#include <maya/MDGModifier.h>
 #include <maya/MEulerRotation.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnTransform.h>
-#include <maya/MGlobal.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -554,6 +555,142 @@ static bool _isIdentityMatrix(const GfMatrix4d& m)
     return GfIsClose(m, identityMatrix, tolerance);
 }
 
+// Returns true if the given xform op is the offsetParentMatrix (TypeTransform with
+// offsetParentMatrix suffix as written by the transform writer).
+static bool _isOffsetParentMatrixOp(const UsdGeomXformOp& op)
+{
+    if (op.GetOpType() != UsdGeomXformOp::TypeTransform) {
+        return false;
+    }
+
+    const TfToken opName = UsdGeomXformOp::GetOpName(
+        UsdGeomXformOp::TypeTransform, UsdMayaXformStackTokens->offsetParentMatrix);
+    return op.GetName() == opName;
+}
+
+// Decomposes each matrix to translate/rotate/scale
+static bool _DecomposeMatricesToTrsVectors(
+    const std::vector<GfMatrix4d>& matrices,
+    std::vector<double>&           tx,
+    std::vector<double>&           ty,
+    std::vector<double>&           tz,
+    std::vector<double>&           rxDegrees,
+    std::vector<double>&           ryDegrees,
+    std::vector<double>&           rzDegrees,
+    std::vector<double>&           sx,
+    std::vector<double>&           sy,
+    std::vector<double>&           sz)
+{
+    const size_t n = matrices.size();
+    if (n == 0)
+        return false;
+    tx.assign(n, 0);
+    ty.assign(n, 0);
+    tz.assign(n, 0);
+    rxDegrees.assign(n, 0);
+    ryDegrees.assign(n, 0);
+    rzDegrees.assign(n, 0);
+    sx.assign(n, 1.0);
+    sy.assign(n, 1.0);
+    sz.assign(n, 1.0);
+
+    for (size_t i = 0; i < matrices.size(); ++i) {
+        GfVec3d trans, rot, scale;
+        if (!UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
+                matrices[i], &trans, &rot, &scale))
+            return false;
+        tx[i] = trans[0];
+        ty[i] = trans[1];
+        tz[i] = trans[2];
+        rxDegrees[i] = GfRadiansToDegrees(rot[0]) / 100.0;
+        ryDegrees[i] = GfRadiansToDegrees(rot[1]) / 100.0;
+        rzDegrees[i] = GfRadiansToDegrees(rot[2]) / 100.0;
+        sx[i] = scale[0];
+        sy[i] = scale[1];
+        sz[i] = scale[2];
+    }
+    return true;
+}
+
+// Creates a composeMatrix node from decomposed TRS (rotation in degrees), connects
+// outputMatrix to mainMdagNode.offsetParentMatrix.
+static bool _PushTransformsToComposeNode(
+    MFnDagNode&                     mainMdagNode,
+    std::vector<double>&            txVal,
+    std::vector<double>&            tyVal,
+    std::vector<double>&            tzVal,
+    std::vector<double>&            rxValDegrees,
+    std::vector<double>&            ryValDegrees,
+    std::vector<double>&            rzValDegrees,
+    std::vector<double>&            sxVal,
+    std::vector<double>&            syVal,
+    std::vector<double>&            szVal,
+    MTimeArray&                     timeArray,
+    const UsdMayaPrimReaderContext* context)
+{
+    if (txVal.empty() || tyVal.empty() || tzVal.empty())
+        return false;
+    MDGModifier& dgMod = MayaUsd::MDGModifierUndoItem::create("Offset parent matrix composeMatrix");
+    MStatus      status;
+    MObject      composeObj = dgMod.createNode("composeMatrix", &status);
+    if (status != MStatus::kSuccess || !dgMod.doIt()) {
+        TF_RUNTIME_ERROR("Failed to create composeMatrix node for offset parent matrix");
+        return false;
+    }
+
+    MFnDependencyNode composeFn(composeObj);
+    auto              setComposeAttr = [&](const char*          baseName,
+                              std::vector<double>& xV,
+                              std::vector<double>& yV,
+                              std::vector<double>& zV) {
+        if (xV.empty() || yV.empty() || zV.empty())
+            return;
+        MPlug basePlug = composeFn.findPlug(baseName, false);
+        MPlug plgX = basePlug.child(0);
+        MPlug plgY = basePlug.child(1);
+        MPlug plgZ = basePlug.child(2);
+        if (plgX.isNull() || plgY.isNull() || plgZ.isNull())
+            return;
+        plgX.setDouble(xV[0]);
+        plgY.setDouble(yV[0]);
+        plgZ.setDouble(zV[0]);
+        if (xV.size() > 1 && (_isArrayVarying(xV) || _isArrayVarying(yV) || _isArrayVarying(zV))) {
+            _setAnimPlugData(plgX, xV, timeArray, context);
+            _setAnimPlugData(plgY, yV, timeArray, context);
+            _setAnimPlugData(plgZ, zV, timeArray, context);
+        }
+    };
+
+    setComposeAttr("inputTranslate", txVal, tyVal, tzVal);
+    setComposeAttr("inputRotate", rxValDegrees, ryValDegrees, rzValDegrees);
+    setComposeAttr("inputScale", sxVal, syVal, szVal);
+
+    MPlug rotOrderPlug = composeFn.findPlug("inputRotateOrder", false);
+    if (!rotOrderPlug.isNull()) {
+        // From the compose node documentation:
+        // Valid values for this attribute are 0=xyz, 1=yzx, 2=zxy, 3=xzy, 4=yxz, 5=zyx.
+        rotOrderPlug.setInt(0);
+    }
+
+    MPlug outMatrixPlug = composeFn.findPlug("outputMatrix", false);
+    MPlug opmPlug = mainMdagNode.findPlug("offsetParentMatrix", false);
+    if (outMatrixPlug.isNull() || opmPlug.isNull()) {
+        TF_RUNTIME_ERROR(
+            "Missing outputMatrix on composeMatrix or offsetParentMatrix on transform");
+        return false;
+    }
+    status = dgMod.connect(outMatrixPlug, opmPlug);
+    if (status != MStatus::kSuccess || !dgMod.doIt()) {
+        TF_RUNTIME_ERROR("Failed to connect composeMatrix.outputMatrix to offsetParentMatrix");
+        return false;
+    }
+
+    if (context) {
+        context->RegisterNewMayaNode(composeFn.name().asChar(), composeObj);
+    }
+    return true;
+}
+
 // For each xformop, we gather it's data either time sampled or not and we push it to the
 // corresponding Maya xform
 static bool _pushUSDXformToMayaXform(
@@ -564,6 +701,18 @@ static bool _pushUSDXformToMayaXform(
 {
     MTime::Unit timeUnit = MTime::uiUnit();
     double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+
+    bool                        resetsXformStack = false;
+    std::vector<UsdGeomXformOp> xformops = xformSchema.GetOrderedXformOps(&resetsXformStack);
+
+    // Detect offset parent matrix op; we push it to a composeMatrix, rest to main node.
+    int offsetParentMatrixOpIndex = -1;
+    for (size_t i = 0; i < xformops.size(); ++i) {
+        if (_isOffsetParentMatrixOp(xformops[i])) {
+            offsetParentMatrixOpIndex = static_cast<int>(i);
+            break;
+        }
+    }
 
     std::vector<double> timeSamples;
     if (!args.GetTimeInterval().IsEmpty()) {
@@ -588,9 +737,8 @@ static bool _pushUSDXformToMayaXform(
         timeCodes.push_back(UsdTimeCode::EarliestTime());
     }
 
-    // Storage for all of the components of the Maya transform attributes. Maya
-    // only allows double-valued animation curves, so we store each channel
-    // independently.
+    std::vector<GfMatrix4d> offsetMatrices(offsetParentMatrixOpIndex >= 0 ? timeCodes.size() : 0);
+
     std::vector<double> TxVal(timeCodes.size());
     std::vector<double> TyVal(timeCodes.size());
     std::vector<double> TzVal(timeCodes.size());
@@ -608,8 +756,9 @@ static bool _pushUSDXformToMayaXform(
         const UsdTimeCode& timeCode = timeCodes[ti];
 
         GfMatrix4d usdLocalTransform(1.0);
-        bool       resetsXformStack;
-        if (!xformSchema.GetLocalTransformation(&usdLocalTransform, &resetsXformStack, timeCode)
+        bool       resetsXformStackLocal;
+        if (!xformSchema.GetLocalTransformation(
+                &usdLocalTransform, &resetsXformStackLocal, timeCode)
             && !xformSchema.GetPrim().IsInstance()) {
             if (timeCode.IsDefault()) {
                 TF_RUNTIME_ERROR(
@@ -625,15 +774,28 @@ static bool _pushUSDXformToMayaXform(
             continue;
         }
 
+        // With offset parent matrix, decompose rest only (non-offset ops) to avoid drift.
+        GfMatrix4d transformToDecompose = usdLocalTransform;
+        if (offsetParentMatrixOpIndex >= 0) {
+            GfMatrix4d offsetMat = xformops[offsetParentMatrixOpIndex].GetOpTransform(timeCode);
+            offsetMatrices[ti] = offsetMat;
+            transformToDecompose = GfMatrix4d(1.0);
+            for (size_t i = 0; i < xformops.size(); ++i) {
+                if (static_cast<int>(i) != offsetParentMatrixOpIndex) {
+                    transformToDecompose *= xformops[i].GetOpTransform(timeCode);
+                }
+            }
+        }
+
         MVector translation(0, 0, 0);
         MVector rotation(0, 0, 0);
         MVector scale(1, 1, 1);
         MVector shear(0, 0, 0);
 
-        if (!_isIdentityMatrix(usdLocalTransform)) {
-            double usdLocalTransformData[4u][4u];
-            usdLocalTransform.Get(usdLocalTransformData);
-            const MMatrix               localMatrix(usdLocalTransformData);
+        if (!_isIdentityMatrix(transformToDecompose)) {
+            double matData[4u][4u];
+            transformToDecompose.Get(matData);
+            const MMatrix               localMatrix(matData);
             const MTransformationMatrix localTransformationMatrix(localMatrix);
 
             double  tempVec[3u];
@@ -697,6 +859,29 @@ static bool _pushUSDXformToMayaXform(
             "YZ",
             context);
 
+        if (!offsetMatrices.empty()) {
+            std::vector<double> opTx, opTy, opTz, opRx, opRy, opRz, opSx, opSy, opSz;
+            if (!_DecomposeMatricesToTrsVectors(
+                    offsetMatrices, opTx, opTy, opTz, opRx, opRy, opRz, opSx, opSy, opSz)) {
+                TF_RUNTIME_ERROR("Failed to decompose offset parent matrix for composeMatrix");
+                return false;
+            }
+            if (!_PushTransformsToComposeNode(
+                    MdagNode,
+                    opTx,
+                    opTy,
+                    opTz,
+                    opRx,
+                    opRy,
+                    opRz,
+                    opSx,
+                    opSy,
+                    opSz,
+                    timeArray,
+                    context))
+                return false;
+        }
+
         return true;
     }
 
@@ -723,6 +908,19 @@ void UsdMayaTranslatorXformable::Read(
     bool                        resetsXformStack = false;
     std::vector<UsdGeomXformOp> xformops = xformSchema.GetOrderedXformOps(&resetsXformStack);
 
+    // Exclude offset parent matrix from stack match; we push it to a composeMatrix.
+    std::vector<UsdGeomXformOp> xformopsForStack;
+    bool                        hasOffsetParentMatrix = false;
+    for (const UsdGeomXformOp& op : xformops) {
+        if (_isOffsetParentMatrixOp(op)) {
+            hasOffsetParentMatrix = true;
+        } else {
+            xformopsForStack.push_back(op);
+        }
+    }
+    const std::vector<UsdGeomXformOp>& matchOps
+        = xformopsForStack.empty() ? xformops : xformopsForStack;
+
     // When we find ops, we match the ops by suffix ("" will define the basic
     // translate, rotate, scale) and by order. If we find an op with a
     // different name or out of order that will miss the match, we will rely on
@@ -739,11 +937,17 @@ void UsdMayaTranslatorXformable::Read(
         xformops);
 
     MFnDagNode MdagNode(mayaNode);
-    if (!stackOps.empty()) {
-        // make sure stackIndices.size() == xformops.size()
+
+    if (hasOffsetParentMatrix) {
+        if (!_pushUSDXformToMayaXform(xformSchema, MdagNode, args, context)) {
+            TF_RUNTIME_ERROR(
+                "Unable to decompose matrix with offset parent matrix at USD prim <%s>",
+                xformSchema.GetPath().GetText());
+        }
+    } else if (!stackOps.empty()) {
         std::string rotOrderStr = "";
         for (unsigned int i = 0; i < stackOps.size(); i++) {
-            const UsdGeomXformOp&               xformop(xformops[i]);
+            const UsdGeomXformOp&               xformop(matchOps[i]);
             const UsdMayaXformOpClassification& opDef(stackOps[i]);
             // If we got a valid stack, we have both the members of the inverted twins..
             // ...so we can go ahead and skip the inverted twin
