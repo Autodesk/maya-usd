@@ -881,7 +881,6 @@ public:
         // Multiple selected weak layers may share the same parent, so batch removals by parent
         // to avoid calling SetSubLayerPaths more than once per parent layer.
         std::map<std::string, std::vector<std::string>> removalsByParent;
-        _cleanWeakLayerIds.clear();
         for (size_t i = 1; i < layersByStrength.size(); ++i) {
             const SdfLayerHandle& weakLayer = layersByStrength[i];
             const std::string     weakLayerId = weakLayer->GetIdentifier();
@@ -892,23 +891,6 @@ public:
             } else {
                 TF_WARN("Could not find parent for layer: %s", weakLayerId.c_str());
             }
-
-            if (!weakLayer->IsDirty())
-                _cleanWeakLayerIds.push_back(weakLayerId);
-        }
-
-        _cleanParentIds.clear();
-        for (const auto& entry : removalsByParent) {
-            if (auto parentLayer = SdfLayer::Find(entry.first))
-                if (!parentLayer->IsDirty())
-                    _cleanParentIds.push_back(entry.first);
-        }
-
-        const std::string strongestLayerId = strongestLayer->GetIdentifier();
-        if (!strongestLayer->IsDirty()) {
-            auto it = std::find(_cleanParentIds.begin(), _cleanParentIds.end(), strongestLayerId);
-            if (it == _cleanParentIds.end())
-                _cleanParentIds.push_back(strongestLayerId);
         }
 
         UsdUfe::UsdUndoManager::instance().trackLayerStates(strongestLayer);
@@ -1002,16 +984,6 @@ public:
     {
         _undoItem.undo();
 
-        for (const auto& id : _cleanParentIds) {
-            if (auto layer = SdfLayer::Find(id))
-                layer->Reload();
-        }
-
-        for (const auto& id : _cleanWeakLayerIds) {
-            if (auto layer = SdfLayer::Find(id))
-                layer->Reload();
-        }
-
         restoreEditTargets();
         releaseSubLayers();
 
@@ -1020,8 +992,6 @@ public:
 
 private:
     UsdUfe::UsdUndoableItem  _undoItem;
-    std::vector<std::string> _cleanParentIds;
-    std::vector<std::string> _cleanWeakLayerIds;
     std::vector<std::string> _layerIdentifiersByStrength;
     std::string              _proxyShapePath;
 };
