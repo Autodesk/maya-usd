@@ -113,15 +113,15 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
 
 int gWaitCursorCount = 0;
 
-UsdUfe::StageAccessorFn            gStageAccessorFn = nullptr;
-UsdUfe::StagePathAccessorFn        gStagePathAccessorFn = nullptr;
-UsdUfe::UfePathToPrimFn            gUfePathToPrimFn = nullptr;
-UsdUfe::TimeAccessorFn             gTimeAccessorFn = nullptr;
-UsdUfe::IsLoadingSceneFn           gIsLoadingSceneFn = nullptr;
-UsdUfe::IsAttributeLockedFn        gIsAttributeLockedFn = nullptr;
-UsdUfe::SaveStageLoadRulesFn       gSaveStageLoadRulesFn = nullptr;
-UsdUfe::IsRootChildFn              gIsRootChildFn = nullptr;
-UsdUfe::UniqueChildNameFn          gUniqueChildNameFn = nullptr;
+UsdUfe::StageAccessorFn                 gStageAccessorFn = nullptr;
+UsdUfe::StagePathAccessorFn             gStagePathAccessorFn = nullptr;
+UsdUfe::UfePathToPrimFn                 gUfePathToPrimFn = nullptr;
+UsdUfe::TimeAccessorFn                  gTimeAccessorFn = nullptr;
+UsdUfe::IsLoadingSceneFn                gIsLoadingSceneFn = nullptr;
+UsdUfe::IsAttributeLockedFn             gIsAttributeLockedFn = nullptr;
+UsdUfe::SaveStageLoadRulesFn            gSaveStageLoadRulesFn = nullptr;
+UsdUfe::IsRootChildFn                   gIsRootChildFn = nullptr;
+UsdUfe::UniqueChildNameFn               gUniqueChildNameFn = nullptr;
 UsdUfe::WaitCursorFn                    gStartWaitCursorFn = nullptr;
 UsdUfe::WaitCursorFn                    gStopWaitCursorFn = nullptr;
 UsdUfe::PauseEditForwardingFn           gPauseEditForwardingFn = nullptr;
@@ -129,8 +129,8 @@ UsdUfe::IsComponentStageFn              gIsComponentStageFn = nullptr;
 UsdUfe::GetComponentMaterialScopeNameFn gGetComponentMaterialScopeNameFn = nullptr;
 UsdUfe::GetComponentMeshScopeNameFn     gGetComponentMeshScopeNameFn = nullptr;
 UsdUfe::DefaultMaterialScopeNameFn      gGetDefaultMaterialScopeNameFn = nullptr;
-UsdUfe::ExtractTRSFn                   gExtractTRSFn = nullptr;
-UsdUfe::Transform3dMatrixOpNameFn  gTransform3dMatrixOpNameFn = nullptr;
+UsdUfe::ExtractTRSFn                    gExtractTRSFn = nullptr;
+UsdUfe::Transform3dMatrixOpNameFn       gTransform3dMatrixOpNameFn = nullptr;
 
 UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
     = { nullptr };
@@ -1770,10 +1770,7 @@ void stopWaitCursor()
         gStopWaitCursorFn();
 }
 
-void setPauseEditForwardingFn(PauseEditForwardingFn fn)
-{
-    gPauseEditForwardingFn = fn;
-}
+void setPauseEditForwardingFn(PauseEditForwardingFn fn) { gPauseEditForwardingFn = fn; }
 
 void pauseEditForwarding(bool pause)
 {
@@ -1782,10 +1779,7 @@ void pauseEditForwarding(bool pause)
     }
 }
 
-void setIsComponentStageFn(IsComponentStageFn fn)
-{
-    gIsComponentStageFn = fn;
-}
+void setIsComponentStageFn(IsComponentStageFn fn) { gIsComponentStageFn = fn; }
 
 bool isComponentStage(const Ufe::Path& path)
 {

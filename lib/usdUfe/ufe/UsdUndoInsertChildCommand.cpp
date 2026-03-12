@@ -38,7 +38,6 @@
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
 #include <pxr/usd/usdShade/shader.h>
-#include <pxr/usd/usd/stage.h>
 
 #include <ufe/log.h>
 #include <ufe/pathString.h>
@@ -117,7 +116,6 @@ void validateComponentReparent(const UsdPrim& prim)
 } // namespace
 
 namespace USDUFE_NS_DEF {
-
 
 class EditForwardingGuard
 {
@@ -249,12 +247,12 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
 using PrimSpecRemovalFn = std::function<void(const SdfPrimSpecHandle&, const UsdStageRefPtr&)>;
 
 static void doInsertion(
-    const SdfPath&       srcUsdPath,
-    const Ufe::Path&     srcUfePath,
-    const SdfPath&       dstUsdPath,
-    const Ufe::Path&     dstUfePath,
-    bool                 isComponent,
-    PrimSpecRemovalFn    removalFn)
+    const SdfPath&    srcUsdPath,
+    const Ufe::Path&  srcUfePath,
+    const SdfPath&    dstUsdPath,
+    const Ufe::Path&  dstUfePath,
+    bool              isComponent,
+    PrimSpecRemovalFn removalFn)
 {
     UsdUfe::InAddOrDeleteOperation ad;
 
@@ -287,8 +285,7 @@ static void doInsertion(
     SdfPrimSpecHandleVector primSpecs;
     if (isComponentStage(srcUfePath)) {
         primSpecs = srcPrim.GetPrimStack();
-    }
-    else {
+    } else {
         // Retrieve the local layers around where the prim is defined and order them
         // from weak to strong. That weak-to-strong order allows us to copy the weakest
         // opinions first, so that they will get over-written by the stronger opinions.
@@ -301,9 +298,8 @@ static void doInsertion(
     // reference at this point. Report the error and abort the command.
     if (primSpecs.empty()) {
         const std::string error = TfStringPrintf(
-            isComponent 
-            ? "Cannot reparent component prim \"%s\", prim's prim stack was empty." 
-            : "Cannot reparent \"%s\" because we found no local layer containing it.",
+            isComponent ? "Cannot reparent component prim \"%s\", prim's prim stack was empty."
+                        : "Cannot reparent \"%s\" because we found no local layer containing it.",
             srcPrim.GetPath().GetText());
         TF_WARN("%s", error.c_str());
         throw std::runtime_error(error);
@@ -316,7 +312,7 @@ static void doInsertion(
     // algorithm below.
     if (!isComponent && primSpecs.size() == 1) {
         SdfBatchNamespaceEdit edits;
-        const auto parentPath = dstUsdPath.GetParentPath();
+        const auto            parentPath = dstUsdPath.GetParentPath();
         edits.Add(SdfNamespaceEdit::Reparent(srcUsdPath, parentPath, SdfNamespaceEdit::Same));
 
         if (dstLayer->Apply(edits)) {
@@ -331,7 +327,8 @@ static void doInsertion(
     options.mergeChildren = true;
 
     const bool includeTopLayer = true;
-    const auto sessionLayers = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
+    const auto sessionLayers
+        = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
 
     bool isFirst = true;
 

@@ -162,7 +162,7 @@ bool isUnsavedAdskUsdComponent(const PXR_NS::UsdStageRefPtr stage)
 }
 
 void reloadAdskUsdComponent(const std::string& proxyPath)
-{   
+{
     if (proxyPath.empty()) {
         return;
     }
