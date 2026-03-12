@@ -19,7 +19,6 @@
 
 #include <mayaUsd/utils/utilComponentCreator.h>
 
-#include <pxr/base/js/json.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>

@@ -28,13 +28,11 @@
 #include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/token.h>
-#include <pxr/usd/pcp/arc.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #ifdef USD_HAS_NAMESPACE_EDIT
 #include <pxr/usd/sdf/namespaceEdit.h>
 #endif
 #include <pxr/usd/usd/editContext.h>
-#include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdShade/material.h>
@@ -68,7 +66,7 @@ template <class T> struct MakeSharedEnabler : public T
 
 // Validate that a prim can be reparented in a component stage.
 // Components only allow reparenting prims whose path is contained within
-// one of the scope paths defined in the template variant payloads
+// either the material or geometry scope
 void validateComponentReparent(const UsdPrim& prim)
 {
     const UsdStagePtr stage = prim.GetStage();
@@ -100,25 +98,17 @@ void validateComponentReparent(const UsdPrim& prim)
     }
 
     // Check if the prim path is contained within any of the scope paths
-    bool isInScope = false;
     for (const SdfPath& scopePath : scopePaths) {
         // Check if prim path is not equal to the scope_path and a descendant of the scope path
         if (primPath != scopePath && primPath.HasPrefix(scopePath)) {
-            isInScope = true;
-            break;
+            return;
         }
-    }
-
-    // Allow if prim is within a component scope
-    if (isInScope) {
-        return;
     }
 
     // Disallow - prim is not in component scopes
     const std::string error = TfStringPrintf(
         "Cannot reparent prim \"%s\" in a component stage. "
-        "Only prims within component material or mesh scopes can be reparented. "
-        "This prim is in a local component structure.",
+        "Only prims within component material or mesh scopes can be reparented. ",
         prim.GetPath().GetText());
     TF_WARN("%s", error.c_str());
     throw std::runtime_error(error);
@@ -129,16 +119,16 @@ void validateComponentReparent(const UsdPrim& prim)
 namespace USDUFE_NS_DEF {
 
 
-class EditForwardingPauser
+class EditForwardingGuard
 {
 public:
-    EditForwardingPauser()
+    EditForwardingGuard()
     {
         // Pause edit forwarding
         pauseEditForwarding(true);
     }
 
-    ~EditForwardingPauser()
+    ~EditForwardingGuard()
     {
         // Unpause edit forwarding
         pauseEditForwarding(false);
@@ -311,8 +301,9 @@ static void doInsertion(
     // reference at this point. Report the error and abort the command.
     if (primSpecs.empty()) {
         const std::string error = TfStringPrintf(
-            "Cannot reparent %s\"%s\" because we found no local layer containing it.",
-            isComponent ? "component prim " : "prim ",
+            isComponent 
+            ? "Cannot reparent component prim \"%s\", prim's prim stack was empty." 
+            : "Cannot reparent \"%s\" because we found no local layer containing it.",
             srcPrim.GetPath().GetText());
         TF_WARN("%s", error.c_str());
         throw std::runtime_error(error);
@@ -433,7 +424,7 @@ void UsdUndoInsertChildCommand::execute()
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
     // Pause edit forwarding during the undo operation with RAII
-    const EditForwardingPauser efPauser {};
+    const EditForwardingGuard efPauser {};
 
     // We need to keep the generated item to be able to return it to the caller
     // via the insertedChild() member function.
@@ -504,7 +495,7 @@ void UsdUndoInsertChildCommand::undo()
     preserveLoadRules(_ufeDstPath, _usdDstPath, _usdSrcPath);
 
     // Pause edit forwarding during the undo operation with RAII
-    const EditForwardingPauser efPauser {};
+    const EditForwardingGuard efPauser {};
 
     _undoableItem.undo();
 
@@ -521,7 +512,7 @@ void UsdUndoInsertChildCommand::redo()
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
     // Pause edit forwarding during the undo operation with RAII
-    const EditForwardingPauser efPauser {};
+    const EditForwardingGuard efPauser {};
 
     _undoableItem.redo();
 

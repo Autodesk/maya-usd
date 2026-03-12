@@ -24,7 +24,6 @@
 #include <pxr/base/vt/dictionary.h>
 
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace MAYAUSD_NS_DEF {
