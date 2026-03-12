@@ -78,11 +78,11 @@ endif()
 
 if (AdskUsdComponentCreator_FOUND)
     # Install a test to check that the USD component creator plugin loads (if available).
-    mayaUsd_get_unittest_target(target testLoadComponentCreatorPlugin.py)
+    mayaUsd_get_unittest_target(target testAdskUsdComponentCreator.py)
     mayaUsd_add_test(${target}
         INTERACTIVE
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        PYTHON_SCRIPT testLoadComponentCreatorPlugin.py
+        PYTHON_SCRIPT testAdskUsdComponentCreator.py
         ENV
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}/../AdskUsdComponentCreator"
