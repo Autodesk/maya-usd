@@ -81,7 +81,6 @@
 #include <mayaUsdUI/ui/AssetResolverProjectChangeTracker.h>
 #include <mayaUsdUI/ui/AssetResolverUtils.h>
 #include <mayaUsdUI/ui/PreferencesManagement.h>
-#include <mayaUsdUI/ui/PreferencesOptions.h>
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #endif
