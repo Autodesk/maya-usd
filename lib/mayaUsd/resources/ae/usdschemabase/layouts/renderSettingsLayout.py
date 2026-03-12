@@ -109,7 +109,7 @@ class AERenderSettingsLayout(object):
     # A string splitter for the most commonly used separators:
     _groupSplitter = re.compile(r"[/|\;:]")
     # Valid uiorder:
-    _isDecimal = re.compile("^[0-9]+$")
+    _isDecimal = re.compile(r"^[0-9]+$")
 
     class Group(object):
         """Base class to return layout information. The list of items can contain subgroups."""
@@ -126,6 +126,18 @@ class AERenderSettingsLayout(object):
         @property
         def items(self):
             return self._items
+        
+        def get(self, name):
+            if name in [item.name for item in self._items]:
+                for item in self._items:
+                    if item.name == name:
+                        return item
+            else:
+                return None
+
+        def addItem(self, item):
+            self._items.append(item)
+
 
     def __init__(self, ufeSceneItem, template):
         self.item = ufeSceneItem
@@ -162,18 +174,15 @@ class AERenderSettingsLayout(object):
     def createRendererTabsLayout(self):
         """Create the tab layout for the render settings section"""
 
-
         def _createGroup(groupName, items):
             
             with ufeAeTemplate.Layout(self, groupName, collapse=False):
-                print("createGroup", groupName, items)
                 if isinstance(items, dict):
                     for name in items.keys():
                         _createGroup(name, items[name])
                 else:
                     for attr in items:
-                        print("createGroupItem", attr)
-                        if self.template.attrS.hasAttribute(attr):
+                        if self.template.attrs.hasAttribute(attr):
                             self.template.addControls([attr])
 
         # Create the callback context/data (empty).
@@ -183,19 +192,19 @@ class AERenderSettingsLayout(object):
         cbContextDict = Vt._ReturnDictionary(cbContext)
         cbDataDict = Vt._ReturnDictionary({})
 
-        
-        print("cbDataDict", cbDataDict)
-        cmds.setUITemplate('attributeEditorTemplate', pst=True)        
+        cmds.setUITemplate('attributeEditorTemplate', pst=True)    
         with ufeAeTemplate.Layout(self, "", collapse=False):
             # cmds.editorTemplate(beginNoOptimize=True)
 
-            cmds.editorTemplate(beginTabLayout=True)
-
-            # loop over the cbDataDict and create a tab for each
-            # for tab in cbDataDict.keys():
-            #     print("createGroupRoot", tab, cbDataDict[tab])
-            #     _createGroup(tab, cbDataDict[tab])
-
+            if cmds.about(apiVersion=True) >= 20270100:
+                cmds.editorTemplate(beginTabLayout=True)
+            
+            for item in self._attributeLayout.items:
+                if isinstance(item, AERenderSettingsLayout.Group):
+                    _createGroup(item.name, item.items)
+                else:
+                    if self.template.attrs.attribute(item):
+                        self.template.addControls([item])
             # Trigger the callback which will give other plugins the opportunity
             # to add controls to our AE template.
             try:
@@ -203,110 +212,9 @@ class AERenderSettingsLayout(object):
             except Exception as ex:
                 # Do not let any of the callback failures affect our template.
                 print('Failed triggerUICallback: %s' % ex)
-            # cmds.tabLayout(tabbar, edit=True, tabLabel=tabs)
 
-            # # create a tab for each renderer
-            # cmds.editorTemplate(beginChildTab='Arnold')
-            # # ...do work here...
-            # # cmds.button(label='Tab 1')     
-            # with ufeAeTemplate.Layout(self, "Default", collapse=False):
-
-            #     dummybutton = DummyButtonControl(self.item, self.prim, self.template)
-            #     self.template.defineCustom(dummybutton)
-
-            # with ufeAeTemplate.Layout(self, "System Settings", collapse=False):
-
-            #     dummybutton = DummyButtonControl(self.item, self.prim, self.template)
-            #     self.template.defineCustom(dummybutton)
-
-            # cmds.editorTemplate(endChildTab=True)
-
-            # cmds.editorTemplate(beginChildTab='Foo')
-            # # ...do work here...
-            # # cmds.button(label='Tab 1')
-
-            # dummybutton = DummyButtonControl(self.item, self.prim, self.template)
-            # self.template.defineCustom(dummybutton)
-
-
-            # cmds.editorTemplate(endChildTab=True)
-            # # cmds.editorTemplate(endTab=True)
-            # # cmds.editorTemplate(endTabLayout=True)
-            # # tab1 = cmds.rowColumnLayout(numberOfColumns=2)
-            # # with LayoutManager(tab1):
-
-            cmds.editorTemplate(endTabLayout=True)
-
-
-            # self.template.runRenderSettingsCallback()
-            # with ufeAeTemplate.Layout(self, "BAA", collapse=False):
-            #     cmds.button(label='Button')
-
-            # # frame layout
-            # frame = cmds.frameLayout(collapsable=False, label='FOO', collapse=False, backgroundShade=True)
-            # with LayoutManager(frame):
-            #     column = cmds.columnLayout(adjustableColumn=True)
-            #     with LayoutManager(column):
-            #         cmds.button(label='Tab 1')
-            #         # create the tabs
-            #         # cmds.setParent(column)
-            #         # tabbar = cmds.tabLayout(innerMarginHeight=5, parent=column)
-
-            #         tab1 = cmds.columnLayout(adjustableColumn=True)
-            #         with LayoutManager(tab1):
-            #             cmds.button(label='Tab 1')
-
-                    # tab2 = cmds.rowColumnLayout(numberOfColumns=2)
-                    # with LayoutManager(tab2):
-                    #     cmds.button(label='Tab 2')
-
-
-                    # cmds.tabLayout(tabbar, edit=True, tabLabel=((tab1, 'Tab 1'), (tab2, 'Tab 2')))
-
-                    # form = cmds.formLayout()
-                    # with LayoutManager(form):
-                    #     tabbar = cmds.tabLayout(innerMarginHeight=5)
-                    #     cmds.formLayout( form, edit=True, attachForm=((tabbar , 'top', 0), (tabbar , 'left', 0), (tabbar , 'bottom', 0), (tabbar , 'right', 0)) )
-
-
-                    #     cbDataDict = self.template.runRenderSettingsCallback()
-                    #     cbDataDict['FOO'] = None
-
-                    #     # loop over the rendererSettingsTabs and create a tab for each
-                    #     tabs = []
-                    #     for tab, controlLayout in cbDataDict.items():
-                    #         print("createTabLayout", tab)
-                    #         if controlLayout:
-                    #             if isinstance(controlLayout, list):
-                    #                 controlLayout = controlLayout[0]
-                    #             tabs.append((controlLayout, tab))
-                    #         else:
-                    #             # create a blank tab
-                    #             blankControlLayout = cmds.rowColumnLayout(numberOfColumns=2)
-                    #             with LayoutManager(blankControlLayout):
-                    #                 cmds.button(label='Apply Schema')
-                    #                 # with ufeAeTemplate.Layout(self, "Apply Schema", collapse=False):
-                    #                 #     dummybutton = DummyButtonControl(self.item, self.prim, self.template)
-                    #                 #     self.template.defineCustom(dummybutton)
-                            
-                    #             tabs.append((blankControlLayout, tab))
-                    #     cmds.setParent('..')
-                        
-                    #     cmds.tabLayout(tabbar, edit=True, tabLabel=tabs)
-                        
-            # columLayout
-
-            # form = cmds.rowColumnLayout(numberOfColumns=2)
-            # with LayoutManager(form):
-            #     cmds.button(label='Apply Arnold Schema')
-
-            # tabsLayoutControl = RenderSettingsTabLayout(self.item, self.prim, self.template)
-            # create = lambda *args : tabsLayoutControl.onCreate(args)
-            # replace = lambda *args : tabsLayoutControl.onReplace(args)
-            # cmds.editorTemplate([], callCustom=[create, replace], debugMode=True)
-
-            # self.template.defineCustom(tabsLayoutControl)
-            # cmds.editorTemplate(endNoOptimize=True)
+            if cmds.about(apiVersion=True) >= 20270100:
+                cmds.editorTemplate(endTabLayout=True)
 
         with ufeAeTemplate.Layout(self, "After tabs", collapse=False):
 
@@ -320,24 +228,16 @@ class AERenderSettingsLayout(object):
         """Parse render settings attributes using the UsdRenderSettings node and property APIs."""
 
         self._properties = self.prim.GetProperties()
-        rootDefLabel = mayaUsdUfe.prettifyName(self.prim.GetTypeName().replace('Render', ''))
-        groups = {rootDefLabel: None, 'Base': None, 'Extra Attributes': None}
+        rootDefGroup = AERenderSettingsLayout.Group(mayaUsdUfe.prettifyName(self.prim.GetTypeName().replace('Render', '')))
+        groups = {rootDefGroup: None, 'Base': None, 'Extra Attributes': None}
         # get the main sections for the render settings
         for property in self._properties:
-            print("parseRenderSettingsAttributes", property.GetName())
-            found = False
             for group, properties in self.propertyGroups.items():
                 if property.GetName() in properties:
                     if groups.get(group) is None:
                         groups[group] = AERenderSettingsLayout.Group(group)
                     groups[group].items.append(property.GetName())
-                    found = True
-                    break
-            
-            # if not found:
-            #     if groups['Extra Attributes'] is None:
-            #         groups['Extra Attributes'] = AERenderSettingsLayout.Group('Extra Attributes')
-            #     groups['Extra Attributes'].items.append(property.GetName())
+                    break            
         
         for group in groups.keys():
             if groups[group]:
@@ -356,10 +256,4 @@ class AERenderSettingsLayout(object):
             return None
 
         self._attributeInfoList.sort()
-        # folderIndex = {(): self._attributeLayout}
-
-        # for attributeInfo in self._attributeInfoList:
-        #     groups = tuple()
-        #     # Add the attribute to the group
-        #     folderIndex[groups].items.append(attributeInfo.name)
         return self._attributeLayout

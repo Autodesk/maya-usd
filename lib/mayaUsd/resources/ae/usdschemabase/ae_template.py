@@ -22,6 +22,7 @@ from .displayCustomControl import DisplayCustomControl
 from .materialCustomControl import MaterialCustomControl
 from .metadataCustomControl import MetadataCustomControl
 from .assetInfoCustomControl import AssetInfoCustomControl
+from .relationshipCustomControl import RelationshipCustomControl
 from .observers import UfeAttributesObserver, UfeConnectionChangedObserver, UsdNoticeListener
 from .layouts.shaderLayout import AEShaderLayout
 from .layouts.renderSettingsLayout import AERenderSettingsLayout, RenderSettingsTabLayout
@@ -122,7 +123,7 @@ class AETemplate(object):
             except:
                 pass
 
-    _controlCreators = [ConnectionsCustomControl.creator, ArrayCustomControl.creator, ImageCustomControl.creator, defaultControlCreator]
+    _controlCreators = [ConnectionsCustomControl.creator, ArrayCustomControl.creator, ImageCustomControl.creator, RelationshipCustomControl.creator, defaultControlCreator]
     if collectionsSupported:
         _controlCreators.insert(0, CollectionCustomControl.creator)
 
@@ -310,13 +311,12 @@ class AETemplate(object):
     def addRenderSettingsLayout(self, group, renderSettingsLayout):
         """recursively create the full attribute layout section"""
         with ufeAeTemplate.Layout(self, group.name, collapse=False):
-            for item in group.items:
-                print("addRenderSettingsLayout", item)
-                if isinstance(item, AERenderSettingsLayout.Group):
-                    self.addRenderSettingsLayout(item, renderSettingsLayout)
-                else:
-                    if self.attrS.attribute(item):
-                        self.addControls([item])
+            # for item in group.items:
+            #     if isinstance(item, AERenderSettingsLayout.Group):
+            #         self.addRenderSettingsLayout(item, renderSettingsLayout)
+            #     else:
+            #         if self.attrs.attribute(item):
+            #             self.addControls([item])
             # create the tab layout
             if group.root:                
                 global _aeTemplate
@@ -324,7 +324,7 @@ class AETemplate(object):
                 renderSettingsLayout.createRendererTabsLayout()
                 _aeTemplate = None
     
-    def createRenderSettingsSection(self, sectionName, attrs, collapse):
+    def createRenderSettingsSection(self, sectionName, attrs, schemasAttributes, collapse):
         """Use AEREnderSettingsLayout class to populate the render settings section"""
         print(f"Creating render settings section: {sectionName}")
         # TODO make a new class for render settings layout with tabs for 3rd-party renderers based on available schemas
