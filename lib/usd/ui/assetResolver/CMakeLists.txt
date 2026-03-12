@@ -16,17 +16,12 @@
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        ApplicationHost.cpp
-        HeaderWidget.cpp
-        USDAssetResolverSettingsWidget.cpp
+        PreferencesApplicationHost.cpp
         AssetResolverDialogCmd.cpp
         AssetResolverProjectChangeTracker.cpp
         AssetResolverUtils.cpp
-        PreferencesOptions.cpp
         PreferencesManagement.cpp
         USDAssetResolverDialog.cpp
-        USDAssetResolverSettingsWidget.ui
-        images/ui.qrc
 )
 
 target_compile_definitions(${PROJECT_NAME}
@@ -45,13 +40,10 @@ endif()
 # promoted headers
 # -----------------------------------------------------------------------------
 set(HEADERS
-    ApplicationHost.h
-    HeaderWidget.h
-    USDAssetResolverSettingsWidget.h
+    PreferencesApplicationHost.h
     AssetResolverDialogCmd.h
     AssetResolverProjectChangeTracker.h
     AssetResolverUtils.h
-    PreferencesOptions.h
     PreferencesManagement.h
     USDAssetResolverDialog.h
 )

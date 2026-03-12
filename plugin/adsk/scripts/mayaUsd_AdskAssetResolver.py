@@ -2,6 +2,7 @@ import maya.cmds as cmds
 from mayaUSDRegisterStrings import getMayaUsdString
 from maya.OpenMaya import MGlobal
 import AdskAssetResolver as ar
+import AssetResolverPreferences
 from pxr import Ar as pxrAr
 from pathlib import Path
 
@@ -35,7 +36,7 @@ def include_maya_project_tokens():
     ''' Include Maya project tokens in the USD Asset Resolver. '''
     directory = cmds.workspace(q=True, fullName=True)
     tokenList = cmds.workspace(fileRuleList=True)
-    mayaUsdResolver = ar.AssetResolverContextDataRegistry.RegisterContextData("MayaUSDExtension")
+    mayaUsdResolver = ar.AssetResolverContextDataRegistry.RegisterContextData(AssetResolverPreferences.PROJECT_TOKENS_DATA_SET_NAME)
     if mayaUsdResolver is not None:
         mayaUsdResolver.AddStaticToken("Project", directory)
         for token in tokenList:

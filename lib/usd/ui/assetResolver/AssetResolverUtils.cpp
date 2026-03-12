@@ -25,6 +25,7 @@
 #include <AdskAssetResolver/AdskAssetResolver.h>
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #include <AdskAssetResolver/AssetResolverContextExtension.h>
+#include <AssetResolverPreferences/AssetResolverSettingsManagement.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -41,7 +42,8 @@ void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
 
         if (status == MS::kSuccess) {
             Adsk::AssetResolverContextExtension contextData
-                = Adsk::AssetResolverContextDataRegistry::RegisterContextData("MayaUSDExtension");
+                = Adsk::AssetResolverContextDataRegistry::RegisterContextData(
+                    Adsk::AssetResolverSettingsManagement::PROJECT_TOKENS_DATA_SET_NAME);
 
             contextData.AddStaticToken("Project", workspaceDirectory.asChar());
 
