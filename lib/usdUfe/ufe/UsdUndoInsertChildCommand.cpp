@@ -294,11 +294,17 @@ static void doInsertion(
     // otherwise SdfCopySepc will fail.
     SdfJustCreatePrimInLayer(dstLayer, dstUsdPath.GetParentPath());
 
-    // Retrieve the local layers around where the prim is defined and order them
-    // from weak to strong. That weak-to-strong order allows us to copy the weakest
-    // opinions first, so that they will get over-written by the stronger opinions.
-    SdfPrimSpecHandleVector primSpecs = UsdUfe::getDefiningPrimStack(srcPrim);
-    std::reverse(primSpecs.begin(), primSpecs.end());
+    SdfPrimSpecHandleVector primSpecs;
+    if (isComponentStage(srcUfePath)) {
+        primSpecs = srcPrim.GetPrimStack();
+    }
+    else {
+        // Retrieve the local layers around where the prim is defined and order them
+        // from weak to strong. That weak-to-strong order allows us to copy the weakest
+        // opinions first, so that they will get over-written by the stronger opinions.
+        primSpecs = UsdUfe::getDefiningPrimStack(srcPrim);
+        std::reverse(primSpecs.begin(), primSpecs.end());
+    }
 
     // If no local layers were affected, then it means the prim is not local.
     // It probably is inside a reference and we do not support reparent from within
@@ -463,6 +469,8 @@ void UsdUndoInsertChildCommand::execute()
                       TF_WARN("%s", error.c_str());
                       throw std::runtime_error(error);
                   }
+
+                  layer->RemovePrimIfInert(parent);
               }
             : [](const SdfPrimSpecHandle& primSpec, const UsdStageRefPtr& stage) {
                   // Non-component: Use stage-level removal
