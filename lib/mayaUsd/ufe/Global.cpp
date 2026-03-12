@@ -82,6 +82,7 @@
 #include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
 #endif
 #include <mayaUsd/utils/mayaEditRouter.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
@@ -91,6 +92,10 @@
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <usdUfe/ufe/UsdClipboardHandler.h>
+#endif
+
+#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+#include <AdskUsdEditForward/Host.h>
 #endif
 
 #include <maya/MFileIO.h>
@@ -156,6 +161,50 @@ const char* getTransform3dMatrixOpName() { return std::getenv("MAYA_USD_MATRIX_X
 void displayInfoMessage(const std::string& msg) { MGlobal::displayInfo(msg.c_str()); }
 void displayWarningMessage(const std::string& msg) { MGlobal::displayWarning(msg.c_str()); }
 void displayErrorMessage(const std::string& msg) { MGlobal::displayError(msg.c_str()); }
+
+#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+void mayaPauseEditForwarding(bool pause)
+{
+    AdskUsdEditForward::Host::GetInstance()->PauseEditForwarding(pause);
+}
+#endif
+
+bool mayaIsComponentStage(const Ufe::Path& path)
+{
+    return MayaUsd::ComponentUtils::isAdskUsdComponent(Ufe::PathString::string(path));
+}
+
+std::string mayaGetComponentMaterialScopeName(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage) {
+        return {};
+    }
+
+    // Convert stage to proxy path
+    Ufe::Path ufePath = MayaUsd::ufe::stagePath(stage);
+    if (ufePath.empty()) {
+        return {};
+    }
+
+    std::string proxyPath = Ufe::PathString::string(ufePath);
+    return MayaUsd::ComponentUtils::getMaterialScopeName(proxyPath);
+}
+
+std::string mayaGetComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage) {
+        return {};
+    }
+
+    // Convert stage to proxy path
+    Ufe::Path ufePath = MayaUsd::ufe::stagePath(stage);
+    if (ufePath.empty()) {
+        return {};
+    }
+
+    std::string proxyPath = Ufe::PathString::string(ufePath);
+    return MayaUsd::ComponentUtils::getMeshScopeName(proxyPath);
+}
 
 } // namespace
 
@@ -226,6 +275,12 @@ MStatus initialize()
     dccFunctions.extractTRSFn = MayaUsd::ufe::extractTRS;
     dccFunctions.transform3dMatrixOpNameFn = getTransform3dMatrixOpName;
     dccFunctions.isLoadingSceneFn = mayaIsSceneLoading;
+#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+    dccFunctions.pauseEditForwardingFn = mayaPauseEditForwarding;
+#endif
+    dccFunctions.isComponentStageFn = mayaIsComponentStage;
+    dccFunctions.getComponentMaterialScopeNameFn = mayaGetComponentMaterialScopeName;
+    dccFunctions.getComponentMeshScopeNameFn = mayaGetComponentMeshScopeName;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
