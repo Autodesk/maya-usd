@@ -128,6 +128,23 @@ void validateComponentReparent(const UsdPrim& prim)
 
 namespace USDUFE_NS_DEF {
 
+
+class EditForwardingPauser
+{
+public:
+    EditForwardingPauser()
+    {
+        // Pause edit forwarding
+        pauseEditForwarding(true);
+    }
+
+    ~EditForwardingPauser()
+    {
+        // Unpause edit forwarding
+        pauseEditForwarding(false);
+    }
+};
+
 USDUFE_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoInsertChildCommand);
 
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
@@ -409,8 +426,8 @@ void UsdUndoInsertChildCommand::execute()
     // to access the existing rules.
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
-    // Pause edit forwarding during the insert operation
-    pauseEditForwarding(true);
+    // Pause edit forwarding during the undo operation with RAII
+    const EditForwardingPauser efPauser {};
 
     // We need to keep the generated item to be able to return it to the caller
     // via the insertedChild() member function.
@@ -466,9 +483,6 @@ void UsdUndoInsertChildCommand::execute()
         doInsertion(_usdSrcPath, _ufeSrcPath, _usdDstPath, _ufeDstPath, isComponent, removalFn);
     }
 
-    // Resume edit forwarding after the insert operation
-    pauseEditForwarding(false);
-
     _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }
 
@@ -481,13 +495,10 @@ void UsdUndoInsertChildCommand::undo()
     // Note: the arguments passed are the opposite of those in execute and redo().
     preserveLoadRules(_ufeDstPath, _usdDstPath, _usdSrcPath);
 
-    // Pause edit forwarding during the undo operation
-    pauseEditForwarding(true);
+    // Pause edit forwarding during the undo operation with RAII
+    const EditForwardingPauser efPauser {};
 
     _undoableItem.undo();
-
-    // Resume edit forwarding after the undo operation
-    pauseEditForwarding(false);
 
     // Note: the arguments passed are the opposite of those in execute and redo().
     sendReparentNotification(_ufeDstPath, _ufeSrcPath);
@@ -501,13 +512,10 @@ void UsdUndoInsertChildCommand::redo()
     // to access the existing rules.
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
-    // Pause edit forwarding during the redo operation
-    pauseEditForwarding(true);
+    // Pause edit forwarding during the undo operation with RAII
+    const EditForwardingPauser efPauser {};
 
     _undoableItem.redo();
-
-    // Resume edit forwarding after the redo operation
-    pauseEditForwarding(false);
 
     _ufeDstItem = sendReparentNotification(_ufeSrcPath, _ufeDstPath);
 }
