@@ -21,6 +21,8 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/base/vt/dictionary.h>
+
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -95,6 +97,15 @@ std::string getMaterialScopeName(const std::string& proxyPath);
  */
 MAYAUSD_CORE_PUBLIC
 std::string getMeshScopeName(const std::string& proxyPath);
+
+/*! \brief Adds the given Maya nodes to the Autodesk USD Component at \p proxyShapePath.
+ *  \return True on success.
+ */
+MAYAUSD_CORE_PUBLIC
+bool addMayaNodesToComponent(
+    const std::string&              proxyShapePath,
+    const std::vector<std::string>& nodeNames,
+    const PXR_NS::VtDictionary&     exportArgs = PXR_NS::VtDictionary {});
 
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF

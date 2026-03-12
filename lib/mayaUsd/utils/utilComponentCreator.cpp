@@ -290,6 +290,25 @@ bool shouldDisplayComponentInitialSaveDialog(
 
 namespace {
 
+// Serialises a VtDictionary to the "key=value;key=value" encoded format understood by
+// UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions()
+std::string _encodeExportArgs(const VtDictionary& dict)
+{
+    std::string result;
+    bool        success;
+    std::string valueStr;
+    for (const auto& kv : dict) {
+        std::tie(success, valueStr) = UsdMayaUtil::ValueToArgument(kv.second);
+        if (!success) {
+            continue;
+        }
+        if (!result.empty())
+            result += ';';
+        result += kv.first + '=' + valueStr;
+    }
+    return result;
+}
+
 std::string getComponentOptionString(const std::string& proxyPath, const char* optionsAttribute)
 {
     if (proxyPath.empty()) {
@@ -331,6 +350,67 @@ std::string getMaterialScopeName(const std::string& proxyPath)
 std::string getMeshScopeName(const std::string& proxyPath)
 {
     return getComponentOptionString(proxyPath, "meshes_scope_name");
+}
+
+bool addMayaNodesToComponent(
+    const std::string&              proxyShapePath,
+    const std::vector<std::string>& fullNodeNames,
+    const VtDictionary&             exportArgs)
+{
+    // Build a Python list literal from fullNodeNames: ['name1', 'name2', ...]
+    std::string pythonList = "[";
+    for (size_t i = 0; i < fullNodeNames.size(); ++i) {
+        if (i > 0)
+            pythonList += ", ";
+        pythonList += "'" + fullNodeNames[i] + "'";
+    }
+    pythonList += "]";
+
+    const std::string encodedOptions = _encodeExportArgs(exportArgs);
+
+    MString defineCmd;
+    defineCmd.format(
+        "def _usd_cc_add_nodes_to_component():\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentAPI, ComponentDescription, "
+        "GetVariantSelectionsFromNesting\n"
+        "        from usd_component_creator_plugin.create_component import"
+        " add_to_component_from_nodes\n"
+        "        import mayaUsd.ufe, mayaUsd.lib\n"
+        "        import maya.OpenMaya as om\n"
+        "    except ImportError as e:\n"
+        "        return 0\n"
+        "    export_options = mayaUsd.lib.Util.getDictionaryFromEncodedOptions('^3s')\n"
+        "    stage = mayaUsd.ufe.getStage('^1s')\n"
+        "    comp_desc = ComponentDescription.CreateFromStageMetadata(stage)\n"
+        "    if not comp_desc:\n"
+        "        print('No component description found for stage.')\n"
+        "        return 0\n"
+        "    variant_nesting = ComponentAPI.GetVariantTarget(comp_desc)\n"
+        "    if not variant_nesting:\n"
+        "        stage_name = '^1s'.split('|')[-1]\n"
+        "        om.MGlobal.displayError('Cannot Duplicate as USD to ' + stage_name + '. Target a "
+        "variant in the Variant Manager for ' + stage_name + ', then try again.')\n"
+        "        return 0\n"
+        "    variant_selections = GetVariantSelectionsFromNesting(variant_nesting)\n"
+        "    return 1 if add_to_component_from_nodes(^2s, variant_selections, False, "
+        "export_options, comp_desc) else 0\n",
+        proxyShapePath.c_str(),
+        pythonList.c_str(),
+        encodedOptions.c_str());
+
+    int     result = 0;
+    MStatus success = MGlobal::executePythonCommand(defineCmd, false, false);
+    if (success == MS::kSuccess) {
+        MString runCmd = "_usd_cc_add_nodes_to_component()";
+        success = MGlobal::executePythonCommand(runCmd, result);
+    }
+
+    if (success != MS::kSuccess) {
+        TF_RUNTIME_ERROR("Error while adding nodes to USD component '%s'.", proxyShapePath.c_str());
+    }
+
+    return result != 0;
 }
 
 } // namespace ComponentUtils

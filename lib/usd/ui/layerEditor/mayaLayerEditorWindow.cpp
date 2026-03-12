@@ -225,6 +225,33 @@ void MayaLayerEditorWindow::lockLayerAndSubLayers()
     }
 }
 
+void MayaLayerEditorWindow::stitchLayers()
+{
+    const auto selectedItems = treeView()->getSelectedLayerItems();
+
+    if (selectedItems.size() < 2)
+        return;
+
+    std::vector<PXR_NS::SdfLayerRefPtr> layers;
+    layers.reserve(selectedItems.size());
+
+    for (const auto& item : selectedItems) {
+        if (!item)
+            continue;
+
+        const auto layer = item->layer();
+        if (!layer)
+            continue;
+
+        layers.push_back(layer);
+    }
+
+    if (layers.size() < 2)
+        return;
+
+    _sessionState.commandHook()->stitchLayers(layers);
+}
+
 void MayaLayerEditorWindow::addParentLayer()
 {
     QString name = "Add Parent Layer";
