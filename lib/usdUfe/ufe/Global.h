@@ -66,8 +66,12 @@ struct USDUFE_PUBLIC DCCFunctions
     DisplayMessageFn displayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
 
     // Optional: nothing will be done if no function is supplied.
-    WaitCursorFn startWaitCursorFn = nullptr;
-    WaitCursorFn stopWaitCursorFn = nullptr;
+    WaitCursorFn                    startWaitCursorFn = nullptr;
+    WaitCursorFn                    stopWaitCursorFn = nullptr;
+    PauseEditForwardingFn           pauseEditForwardingFn = nullptr;
+    IsComponentStageFn              isComponentStageFn = nullptr;
+    GetComponentMaterialScopeNameFn getComponentMaterialScopeNameFn = nullptr;
+    GetComponentMeshScopeNameFn     getComponentMeshScopeNameFn = nullptr;
 };
 
 /*! Ufe runtime handlers used to initialize the plugin.

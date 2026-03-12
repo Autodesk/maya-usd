@@ -346,7 +346,7 @@ SdfPrimSpecHandleVector getDefiningPrimStack(const UsdPrim& prim)
     //
     // We build the defining prim stack by going outward from the defining
     // prim spec. We keep other prim spec if their layer is a parent or child
-    // of the layer that defines the prim. (The code beow starts from all the
+    // of the layer that defines the prim. (The code below starts from all the
     // prim specs and removes the ones that are not in the layer hierarchy
     // above and below the defining layer.)
 

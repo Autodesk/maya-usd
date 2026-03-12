@@ -35,6 +35,10 @@ namespace ComponentUtils {
 
 std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return {};
+    }
+
     // Ask via python what layers need to be saved for the component.
     // With the maya api we can only return a string, so we concat the ids.
     MString getLayersFromComponent;
@@ -73,6 +77,10 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
 
 bool isAdskUsdComponent(const std::string& proxyShapePath)
 {
+    if (proxyShapePath.empty()) {
+        return false;
+    }
+
     MString defineIsComponentCmd;
     defineIsComponentCmd.format(
         "def usd_component_creator_is_proxy_shape_a_component():\n"
@@ -109,6 +117,10 @@ bool isAdskUsdComponent(const std::string& proxyShapePath)
 
 void saveAdskUsdComponent(const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return;
+    }
+
     MString saveComponent;
     saveComponent.format(
         "from pxr import Sdf, Usd, UsdUtils\n"
@@ -151,6 +163,10 @@ bool isUnsavedAdskUsdComponent(const PXR_NS::UsdStageRefPtr stage)
 
 void reloadAdskUsdComponent(const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return;
+    }
+
     MString saveComponent;
     saveComponent.format(
         "from pxr import Sdf, Usd, UsdUtils\n"
@@ -171,6 +187,10 @@ std::string previewSaveAdskUsdComponent(
     const std::string& componentName,
     const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return {};
+    }
+
     MString defMoveComponentPreviewCmd;
     defMoveComponentPreviewCmd.format(
         "def usd_component_creator_move_component_preview():\n"
@@ -211,6 +231,10 @@ std::string moveAdskUsdComponent(
     const std::string& componentName,
     const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return {};
+    }
+
     MString defMoveComponentCmd;
     defMoveComponentCmd.format(
         "def usd_component_creator_move_component():\n"
@@ -286,6 +310,10 @@ std::string _encodeExportArgs(const VtDictionary& dict)
 
 std::string getComponentOptionString(const std::string& proxyPath, const char* optionsAttribute)
 {
+    if (proxyPath.empty()) {
+        return {};
+    }
+
     MString defCmd;
     defCmd.format(
         "def _cc_get_option_str():\n"
