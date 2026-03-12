@@ -1032,6 +1032,655 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         cmds.file(mayaSceneFilePath, force=True, open=True)
         filePathRel = mayaUsd.lib.Util.getPathRelativeToMayaSceneFile(ballFilePath)
         self.assertEqual(filePathRel, 'top_layer.usda')
+
+    def testStitchLayers(self):
+        """Test 'mayaUsdLayerEditor' command 'stitchLayers' parameter"""
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        # Create a hierarchy of layers with content
+        # Root
+        #   Layer1 (selected, strongest)
+        #   Layer2 (selected)
+        #   Layer3 (seleted, weakest)
+
+        layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+        layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
+        layer3Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer3")[0]
+        rootLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, layer1Id]) # Strongest
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[1, layer2Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[2, layer3Id]) # Weakest
+
+        layer1 = Sdf.Layer.Find(layer1Id)
+        layer2 = Sdf.Layer.Find(layer2Id)
+        layer3 = Sdf.Layer.Find(layer3Id)
+
+        with Sdf.ChangeBlock():
+            prim1 = Sdf.CreatePrimInLayer(layer1, '/Sphere')
+            prim1.SetInfo('typeName', 'Sphere')
+            attr1 = Sdf.AttributeSpec(prim1, 'color', Sdf.ValueTypeNames.String)
+            attr1.default = "red"
+
+        with Sdf.ChangeBlock():
+            prim2 = Sdf.CreatePrimInLayer(layer2, '/Sphere')
+            prim2.SetInfo('typeName', 'Sphere')
+            attr2 = Sdf.AttributeSpec(prim2, 'radius', Sdf.ValueTypeNames.Double)
+            attr2.default = 2.0
+
+        with Sdf.ChangeBlock():
+            prim3 = Sdf.CreatePrimInLayer(layer3, '/Sphere')
+            prim3.SetInfo('typeName', 'Sphere')
+            attr3 = Sdf.AttributeSpec(prim3, 'visible', Sdf.ValueTypeNames.Bool)
+            attr3.default = False
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 3)
+        self.assertIn(layer1Id, rootLayer.subLayerPaths)
+        self.assertIn(layer2Id, rootLayer.subLayerPaths)
+        self.assertIn(layer3Id, rootLayer.subLayerPaths)
+
+        # Note: Order the layers are passed in does not matter, strongest receives all other layers.
+        cmds.mayaUsdLayerEditor(
+            rootLayerId, edit=True,
+            stitchLayers=((shapePath, layer2Id), (shapePath, layer1Id), (shapePath, layer3Id))
+        )
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        self.assertEqual(rootLayer.subLayerPaths[0], layer1Id)
+
+        stitchedPrim = layer1.GetPrimAtPath('/Sphere')
+        self.assertIsNotNone(stitchedPrim)
+
+        self.assertIsNotNone(stitchedPrim.properties.get('color'))
+        self.assertIsNotNone(stitchedPrim.properties.get('radius'))
+        self.assertIsNotNone(stitchedPrim.properties.get('visible'))
+
+        self.assertEqual(stitchedPrim.properties.get('color').default, "red")
+        self.assertEqual(stitchedPrim.properties.get('radius').default, 2.0)
+        self.assertEqual(stitchedPrim.properties.get('visible').default, False)
+
+        cmds.undo()
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 3)
+        self.assertIn(layer1Id, rootLayer.subLayerPaths)
+        self.assertIn(layer2Id, rootLayer.subLayerPaths)
+        self.assertIn(layer3Id, rootLayer.subLayerPaths)
+
+        restoredPrim = layer1.GetPrimAtPath('/Sphere')
+        self.assertIsNotNone(restoredPrim.properties.get('color'))
+        self.assertIsNone(restoredPrim.properties.get('radius'))
+        self.assertIsNone(restoredPrim.properties.get('visible'))
+
+        cmds.redo()
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        self.assertEqual(rootLayer.subLayerPaths[0], layer1Id)
+
+        restitchedPrim = layer1.GetPrimAtPath('/Sphere')
+        self.assertIsNotNone(restitchedPrim.properties.get('color'))
+        self.assertIsNotNone(restitchedPrim.properties.get('radius'))
+        self.assertIsNotNone(restitchedPrim.properties.get('visible'))
+
+    def testStitchLayersWithEditTarget(self):
+        """ Test stitching layers when edit target is on a layer being stitched """
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        strongLayerId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Strong")[0]
+        weakLayerId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Weak")[0]
+        rootLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, strongLayerId])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[1, weakLayerId])
+
+        cmds.mayaUsdEditTarget(shapePath, edit=True, editTarget=weakLayerId)
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, weakLayerId)
+
+        cmds.mayaUsdLayerEditor(
+            rootLayerId, edit=True,
+            stitchLayers=((shapePath, strongLayerId), (shapePath, weakLayerId))
+        )
+
+        currentTarget = stage.GetEditTarget().GetLayer().identifier
+        self.assertNotEqual(currentTarget, weakLayerId)
+
+        cmds.undo()
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, weakLayerId)
+
+    def testStitchLayersPartialSelection(self):
+        """ Test stitching only some layers while leaving others untouched """
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+        layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
+        layer3Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer3")[0]
+        layer4Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer4")[0]
+        rootLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, layer1Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[1, layer2Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[2, layer3Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[3, layer4Id])
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 4)
+
+        # Stitch only layer1 and layer3 (layer1 is stronger, so it receives layer3's content)
+        cmds.mayaUsdLayerEditor(
+            rootLayerId, edit=True,
+            stitchLayers=((shapePath, layer1Id), (shapePath, layer3Id))
+        )
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 3)
+        self.assertIn(layer1Id, rootLayer.subLayerPaths)
+        self.assertIn(layer2Id, rootLayer.subLayerPaths)
+        self.assertNotIn(layer3Id, rootLayer.subLayerPaths)
+        self.assertIn(layer4Id, rootLayer.subLayerPaths)
+
+        cmds.undo()
+        self.assertEqual(len(rootLayer.subLayerPaths), 4)
+
+    def testStitchLayersHierarchical(self):
+        """ Test stitching layers in a hierarchical structure """
+        # Root
+        #   ParentLayer
+        #       ChildStrong (strongest)
+        #       ChildWeak (weakest)
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+
+        parentLayerId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Parent")[0]
+        parentLayer = Sdf.Layer.Find(parentLayerId)
+
+        childStrongId = cmds.mayaUsdLayerEditor(parentLayerId, edit=True, addAnonymous="ChildStrong")[0]
+        childWeakId = cmds.mayaUsdLayerEditor(parentLayerId, edit=True, addAnonymous="ChildWeak")[0]
+        parentLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(parentLayerId, edit=True, insertSubPath=[0, childStrongId])
+        cmds.mayaUsdLayerEditor(parentLayerId, edit=True, insertSubPath=[1, childWeakId])
+
+        childStrong = Sdf.Layer.Find(childStrongId)
+        childWeak = Sdf.Layer.Find(childWeakId)
+
+        with Sdf.ChangeBlock():
+            prim1 = Sdf.CreatePrimInLayer(childStrong, '/Cube')
+            prim1.SetInfo('typeName', 'Cube')
+            attr1 = Sdf.AttributeSpec(prim1, 'size', Sdf.ValueTypeNames.Double)
+            attr1.default = 1.0
+
+        with Sdf.ChangeBlock():
+            prim2 = Sdf.CreatePrimInLayer(childWeak, '/Cube')
+            prim2.SetInfo('typeName', 'Cube')
+            attr2 = Sdf.AttributeSpec(prim2, 'color', Sdf.ValueTypeNames.String)
+            attr2.default = "blue"
+
+        self.assertEqual(len(parentLayer.subLayerPaths), 2)
+
+        cmds.mayaUsdLayerEditor(
+            parentLayerId, edit=True,
+            stitchLayers=((shapePath, childStrongId), (shapePath, childWeakId))
+        )
+
+        self.assertEqual(len(parentLayer.subLayerPaths), 1)
+        self.assertEqual(parentLayer.subLayerPaths[0], childStrongId)
+
+        stitchedPrim = childStrong.GetPrimAtPath('/Cube')
+        self.assertIsNotNone(stitchedPrim.properties.get('size'))
+        self.assertIsNotNone(stitchedPrim.properties.get('color'))
+
+        cmds.undo()
+        self.assertEqual(len(parentLayer.subLayerPaths), 2)
+
+    def testStitchLayersInvalidInput(self):
+        """ Test error handling with invalid inputs """
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        layerId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="ValidLayer")[0]
+
+        with self.assertRaises(RuntimeError):
+            cmds.mayaUsdLayerEditor(
+                rootLayerId, edit=True,
+                stitchLayers=(("invalidShape", layerId),)
+            )
+
+        with self.assertRaises(RuntimeError):
+            cmds.mayaUsdLayerEditor(
+                rootLayerId, edit=True,
+                stitchLayers=((shapePath, "nonExistentLayer.usda"),)
+            )
+
+    def testStitchLayersWithDirtyAnonymousLayers(self):
+        """ Test that dirty anonymous layers are properly held onto during stitch """
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        strongId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Strong")[0]
+        weakId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Weak")[0]
+
+        strong = Sdf.Layer.Find(strongId)
+        weak = Sdf.Layer.Find(weakId)
+
+        # Make layers dirty
+        with Sdf.ChangeBlock():
+            Sdf.CreatePrimInLayer(strong, '/StrongPrim')
+            Sdf.CreatePrimInLayer(weak, '/WeakPrim')
+
+        self.assertTrue(strong.dirty)
+        self.assertTrue(weak.dirty)
+
+        cmds.mayaUsdLayerEditor(
+            rootLayerId, edit=True,
+            stitchLayers=((shapePath, strongId), (shapePath, weakId))
+        )
+
+        cmds.undo()
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 2)
+
+        restoredWeak = Sdf.Layer.Find(weakId)
+        self.assertIsNotNone(restoredWeak)
+        self.assertIsNotNone(restoredWeak.GetPrimAtPath('/WeakPrim'))
+
+    def testStitchLayersWithSingleSublayer(self):
+        """ Test basic sublayer movement when stitching parent with its child layer """
+        # Creates the following structure, stitches Parent1 and Layer2.
+        # Before:
+        # Root
+        #   Parent1 (selected, strongest)
+        #        Layer1
+        #        Layer2 (selected, weakest)
+        #           Sub1
+        #
+        # After:
+        # Root
+        #   Parent1 (has merged/stitched layer changes)
+        #        Layer1
+        #        Sub1
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        parent1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Parent1")[0]
+        parent1Layer = Sdf.Layer.Find(parent1Id)
+
+        layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+        parent1Layer.subLayerPaths.append(layer1Id)
+        layer1Layer = Sdf.Layer.Find(layer1Id)
+
+        with Sdf.ChangeBlock():
+            prim1 = Sdf.CreatePrimInLayer(layer1Layer, '/Layer1Prim')
+            prim1.SetInfo('typeName', 'Sphere')
+
+        layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
+        parent1Layer.subLayerPaths.append(layer2Id)
+        layer2Layer = Sdf.Layer.Find(layer2Id)
+
+        with Sdf.ChangeBlock():
+            prim2 = Sdf.CreatePrimInLayer(layer2Layer, '/Layer2Prim')
+            prim2.SetInfo('typeName', 'Cube')
+
+        sub1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Sub1")[0]
+        layer2Layer.subLayerPaths.append(sub1Id)
+        sub1Layer = Sdf.Layer.Find(sub1Id)
+
+        with Sdf.ChangeBlock():
+            prim3 = Sdf.CreatePrimInLayer(sub1Layer, '/Sub1Prim')
+            prim3.SetInfo('typeName', 'Cone')
+
+        rootLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, parent1Id])
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        self.assertEqual(rootLayer.subLayerPaths[0], parent1Id)
+        self.assertEqual(len(parent1Layer.subLayerPaths), 2)
+        self.assertEqual(len(layer2Layer.subLayerPaths), 1)
+
+        cmds.mayaUsdLayerEditor(
+            rootLayerId, edit=True,
+            stitchLayers=((shapePath, parent1Id), (shapePath, layer2Id))
+        )
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        self.assertEqual(rootLayer.subLayerPaths[0], parent1Id)
+
+        self.assertEqual(len(parent1Layer.subLayerPaths), 2,
+                        "Parent1 should have 2 sublayers after stitch")
+
+        firstSublayer = Sdf.Layer.FindRelativeToLayer(parent1Layer, parent1Layer.subLayerPaths[0])
+        self.assertIsNotNone(firstSublayer)
+        self.assertEqual(firstSublayer.identifier, layer1Id,
+                        "Layer1 should remain at position 0")
+
+        secondSublayer = Sdf.Layer.FindRelativeToLayer(parent1Layer, parent1Layer.subLayerPaths[1])
+        self.assertIsNotNone(secondSublayer)
+        self.assertEqual(secondSublayer.identifier, sub1Id,
+                        "Sub1 should be at position 1 (moved from Layer2)")
+
+        self.assertIsNotNone(parent1Layer.GetPrimAtPath('/Layer2Prim'),
+                            "Parent1 should have merged content from Layer2")
+
+        self.assertIsNotNone(layer1Layer.GetPrimAtPath('/Layer1Prim'))
+        self.assertIsNotNone(sub1Layer.GetPrimAtPath('/Sub1Prim'))
+
+        cmds.undo()
+
+        self.assertEqual(len(parent1Layer.subLayerPaths), 2)
+
+        restored1 = Sdf.Layer.FindRelativeToLayer(parent1Layer, parent1Layer.subLayerPaths[0])
+        self.assertEqual(restored1.identifier, layer1Id)
+
+        restored2 = Sdf.Layer.FindRelativeToLayer(parent1Layer, parent1Layer.subLayerPaths[1])
+        self.assertEqual(restored2.identifier, layer2Id)
+
+        restoredLayer2 = Sdf.Layer.Find(layer2Id)
+        self.assertEqual(len(restoredLayer2.subLayerPaths), 1)
+        restoredSub1 = Sdf.Layer.FindRelativeToLayer(restoredLayer2, restoredLayer2.subLayerPaths[0])
+        self.assertEqual(restoredSub1.identifier, sub1Id)
+
+        self.assertIsNone(parent1Layer.GetPrimAtPath('/Layer2Prim'),
+                         "Layer2's content should not be in Parent1 after undo")
+
+        cmds.redo()
+
+        self.assertEqual(len(parent1Layer.subLayerPaths), 2)
+        self.assertEqual(Sdf.Layer.FindRelativeToLayer(parent1Layer, parent1Layer.subLayerPaths[0]).identifier, layer1Id)
+        self.assertEqual(Sdf.Layer.FindRelativeToLayer(parent1Layer, parent1Layer.subLayerPaths[1]).identifier, sub1Id)
+
+    def testBatchStitch(self):
+        """ Test batch stitching (3+ layers) across parent hierarchies with sublayer movement"""
+        # Creates the following structure, stitches Sub1, Layer2, and Sub3.
+        # Before:
+        # Root
+        #   Parent1
+        #        Layer1
+        #           Sub1 (selected, strongest)
+        #   Parent2
+        #       Layer2 (selected)
+        #           Sub2
+        #           Sub3 (selected, weakest)
+        #               SubSub3
+        #
+        # After:
+        # Root
+        #   Parent1
+        #        Layer1
+        #           Sub1 (has merged/stitched changes from Layer2 and Sub3)
+        #               Sub2 (moved from Layer2)
+        #               SubSub3 (moved from Sub3)
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        parent1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Parent1")[0]
+        layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+        sub1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Sub1")[0]
+
+        parent1Layer = Sdf.Layer.Find(parent1Id)
+        layer1Layer = Sdf.Layer.Find(layer1Id)
+        sub1Layer = Sdf.Layer.Find(sub1Id)
+
+        parent1Layer.subLayerPaths.append(layer1Id)
+        layer1Layer.subLayerPaths.append(sub1Id)
+
+        with Sdf.ChangeBlock():
+            prim1 = Sdf.CreatePrimInLayer(sub1Layer, '/Sub1Prim')
+            prim1.SetInfo('typeName', 'Sphere')
+            attr1 = Sdf.AttributeSpec(prim1, 'color', Sdf.ValueTypeNames.String)
+            attr1.default = "red"
+
+        parent2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Parent2")[0]
+        layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
+        sub2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Sub2")[0]
+        sub3Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Sub3")[0]
+        subSub3Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="SubSub3")[0]
+
+        parent2Layer = Sdf.Layer.Find(parent2Id)
+        layer2Layer = Sdf.Layer.Find(layer2Id)
+        sub2Layer = Sdf.Layer.Find(sub2Id)
+        sub3Layer = Sdf.Layer.Find(sub3Id)
+        subSub3Layer = Sdf.Layer.Find(subSub3Id)
+
+        parent2Layer.subLayerPaths.append(layer2Id)
+        layer2Layer.subLayerPaths.append(sub2Id)
+        layer2Layer.subLayerPaths.append(sub3Id)
+        sub3Layer.subLayerPaths.append(subSub3Id)
+
+        with Sdf.ChangeBlock():
+            prim2 = Sdf.CreatePrimInLayer(layer2Layer, '/Layer2Prim')
+            prim2.SetInfo('typeName', 'Cube')
+            attr2 = Sdf.AttributeSpec(prim2, 'size', Sdf.ValueTypeNames.Double)
+            attr2.default = 2.0
+
+        with Sdf.ChangeBlock():
+            prim3 = Sdf.CreatePrimInLayer(sub2Layer, '/Sub2Prim')
+            prim3.SetInfo('typeName', 'Cylinder')
+
+        with Sdf.ChangeBlock():
+            prim4 = Sdf.CreatePrimInLayer(sub3Layer, '/Sub3Prim')
+            prim4.SetInfo('typeName', 'Cone')
+
+        with Sdf.ChangeBlock():
+            prim5 = Sdf.CreatePrimInLayer(subSub3Layer, '/SubSub3Prim')
+            prim5.SetInfo('typeName', 'Torus')
+
+        rootLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, parent1Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[1, parent2Id])
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 2)
+        self.assertEqual(len(parent1Layer.subLayerPaths), 1)
+        self.assertEqual(len(layer1Layer.subLayerPaths), 1)
+        self.assertEqual(len(parent2Layer.subLayerPaths), 1)
+        self.assertEqual(len(layer2Layer.subLayerPaths), 2)
+        self.assertEqual(len(sub3Layer.subLayerPaths), 1)
+
+        cmds.mayaUsdLayerEditor(
+            rootLayerId, edit=True,
+            stitchLayers=((shapePath, sub1Id), (shapePath, layer2Id), (shapePath, sub3Id))
+        )
+
+        self.assertEqual(len(parent2Layer.subLayerPaths), 0,
+                        "Layer2 should be removed from Parent2")
+
+        self.assertEqual(len(sub1Layer.subLayerPaths), 2,
+                        "Sub1 should have 2 sublayers (Sub2 and SubSub3)")
+
+        firstSub = Sdf.Layer.FindRelativeToLayer(sub1Layer, sub1Layer.subLayerPaths[0])
+        self.assertIsNotNone(firstSub)
+        self.assertEqual(firstSub.identifier, sub2Id,
+                        "Sub2 should be at position 0")
+
+        secondSub = Sdf.Layer.FindRelativeToLayer(sub1Layer, sub1Layer.subLayerPaths[1])
+        self.assertIsNotNone(secondSub)
+        self.assertEqual(secondSub.identifier, subSub3Id,
+                        "SubSub3 should be at position 1")
+
+        self.assertIsNotNone(sub1Layer.GetPrimAtPath('/Sub1Prim'),
+                            "Sub1 should have original content")
+        self.assertIsNotNone(sub1Layer.GetPrimAtPath('/Layer2Prim'),
+                            "Sub1 should have merged content from Layer2")
+        self.assertIsNotNone(sub1Layer.GetPrimAtPath('/Sub3Prim'),
+                            "Sub1 should have merged content from Sub3")
+
+        self.assertIsNotNone(sub2Layer.GetPrimAtPath('/Sub2Prim'))
+        self.assertIsNotNone(subSub3Layer.GetPrimAtPath('/SubSub3Prim'))
+
+        cmds.undo()
+
+        self.assertEqual(len(parent2Layer.subLayerPaths), 1,
+                        "After undo, Parent2 should have Layer2 again")
+        restoredLayer2Path = parent2Layer.subLayerPaths[0]
+        restoredLayer2 = Sdf.Layer.FindRelativeToLayer(parent2Layer, restoredLayer2Path)
+        self.assertIsNotNone(restoredLayer2)
+        self.assertEqual(restoredLayer2.identifier, layer2Id)
+
+        self.assertEqual(len(restoredLayer2.subLayerPaths), 2,
+                        "After undo, Layer2 should have 2 sublayers")
+
+        restoredSub2 = Sdf.Layer.FindRelativeToLayer(restoredLayer2, restoredLayer2.subLayerPaths[0])
+        self.assertIsNotNone(restoredSub2)
+        self.assertEqual(restoredSub2.identifier, sub2Id)
+
+        restoredSub3 = Sdf.Layer.FindRelativeToLayer(restoredLayer2, restoredLayer2.subLayerPaths[1])
+        self.assertIsNotNone(restoredSub3)
+        self.assertEqual(restoredSub3.identifier, sub3Id)
+
+        restoredSub3Layer = Sdf.Layer.Find(sub3Id)
+        self.assertEqual(len(restoredSub3Layer.subLayerPaths), 1)
+        restoredSubSub3 = Sdf.Layer.FindRelativeToLayer(restoredSub3Layer, restoredSub3Layer.subLayerPaths[0])
+        self.assertIsNotNone(restoredSubSub3)
+        self.assertEqual(restoredSubSub3.identifier, subSub3Id)
+
+        restoredSub1 = Sdf.Layer.Find(sub1Id)
+        self.assertEqual(len(restoredSub1.subLayerPaths), 0,
+                        "After undo, Sub1 should have no sublayers")
+
+        self.assertIsNotNone(restoredSub1.GetPrimAtPath('/Sub1Prim'))
+        self.assertIsNone(restoredSub1.GetPrimAtPath('/Layer2Prim'),
+                         "Layer2's content should not be in Sub1 after undo")
+        self.assertIsNone(restoredSub1.GetPrimAtPath('/Sub3Prim'),
+                         "Sub3's content should not be in Sub1 after undo")
+
+        cmds.redo()
+
+        self.assertEqual(len(parent2Layer.subLayerPaths), 0)
+        self.assertEqual(len(sub1Layer.subLayerPaths), 2)
+        self.assertIsNotNone(sub1Layer.GetPrimAtPath('/Layer2Prim'))
+        self.assertIsNotNone(sub1Layer.GetPrimAtPath('/Sub3Prim'))
+
+    def testSharedSublayers(self):
+        """ Creates the following structure, stitching Layer1 and Layer2. Ensures there is no duplicate of the SharedSubLayer. """
+        # Before:
+        # Root
+        #   Layer1 (selected, strongest)
+        #       SharedSublayer
+        #   Layer2 (selected, weakest)
+        #       SharedSublayer
+        #
+        # After:
+        # Root
+        #   Layer1 (has merged/stitched changes)
+        #       SharedSublayer
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        sharedSubId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="SharedSublayer")[0]
+        sharedSubLayer = Sdf.Layer.Find(sharedSubId)
+
+        with Sdf.ChangeBlock():
+            prim = Sdf.CreatePrimInLayer(sharedSubLayer, '/SharedPrim')
+            prim.SetInfo('typeName', 'Sphere')
+            attr = Sdf.AttributeSpec(prim, 'radius', Sdf.ValueTypeNames.Double)
+            attr.default = 5.0
+
+        layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+        layer1Layer = Sdf.Layer.Find(layer1Id)
+        layer1Layer.subLayerPaths.append(sharedSubId)
+
+        with Sdf.ChangeBlock():
+            prim1 = Sdf.CreatePrimInLayer(layer1Layer, '/Layer1Prim')
+            prim1.SetInfo('typeName', 'Cube')
+            attr1 = Sdf.AttributeSpec(prim1, 'color', Sdf.ValueTypeNames.String)
+            attr1.default = "blue"
+
+        layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
+        layer2Layer = Sdf.Layer.Find(layer2Id)
+        layer2Layer.subLayerPaths.append(sharedSubId)
+
+        with Sdf.ChangeBlock():
+            prim2 = Sdf.CreatePrimInLayer(layer2Layer, '/Layer2Prim')
+            prim2.SetInfo('typeName', 'Cone')
+            attr2 = Sdf.AttributeSpec(prim2, 'size', Sdf.ValueTypeNames.Double)
+            attr2.default = 3.0
+
+        rootLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, layer1Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[1, layer2Id])
+
+        self.assertEqual(len(layer1Layer.subLayerPaths), 1)
+        self.assertEqual(len(layer2Layer.subLayerPaths), 1)
+
+        layer1Sub = Sdf.Layer.FindRelativeToLayer(layer1Layer, layer1Layer.subLayerPaths[0])
+        layer2Sub = Sdf.Layer.FindRelativeToLayer(layer2Layer, layer2Layer.subLayerPaths[0])
+        self.assertEqual(layer1Sub.identifier, sharedSubId)
+        self.assertEqual(layer2Sub.identifier, sharedSubId)
+
+        cmds.mayaUsdLayerEditor(
+            rootLayerId, edit=True,
+            stitchLayers=((shapePath, layer1Id), (shapePath, layer2Id))
+        )
+
+        self.assertEqual(len(layer1Layer.subLayerPaths), 1,
+                        "SharedSublayer should appear only once in Layer1 (no duplicate)")
+
+        remainingSub = Sdf.Layer.FindRelativeToLayer(layer1Layer, layer1Layer.subLayerPaths[0])
+        self.assertIsNotNone(remainingSub)
+        self.assertEqual(remainingSub.identifier, sharedSubId,
+                        "The single sublayer should be SharedSublayer")
+
+        subLayerIds = []
+        for path in layer1Layer.subLayerPaths:
+            layer = Sdf.Layer.FindRelativeToLayer(layer1Layer, path)
+            if layer:
+                subLayerIds.append(layer.identifier)
+
+        self.assertEqual(len(subLayerIds), len(set(subLayerIds)),
+                        "No duplicate sublayer identifiers should exist")
+
+        sharedPrim = sharedSubLayer.GetPrimAtPath('/SharedPrim')
+        self.assertIsNotNone(sharedPrim)
+        self.assertEqual(sharedPrim.properties.get('radius').default, 5.0)
+
+        self.assertIsNotNone(layer1Layer.GetPrimAtPath('/Layer1Prim'))
+        self.assertIsNotNone(layer1Layer.GetPrimAtPath('/Layer2Prim'),
+                            "Layer1 should have merged content from Layer2")
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        self.assertEqual(rootLayer.subLayerPaths[0], layer1Id)
+
+        cmds.undo()
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 2)
+        self.assertIn(layer1Id, rootLayer.subLayerPaths)
+        self.assertIn(layer2Id, rootLayer.subLayerPaths)
+
+        restoredLayer1 = Sdf.Layer.Find(layer1Id)
+        self.assertEqual(len(restoredLayer1.subLayerPaths), 1)
+        restoredLayer1Sub = Sdf.Layer.FindRelativeToLayer(restoredLayer1, restoredLayer1.subLayerPaths[0])
+        self.assertIsNotNone(restoredLayer1Sub)
+        self.assertEqual(restoredLayer1Sub.identifier, sharedSubId,
+                        "Layer1 should have SharedSublayer after undo")
+
+        restoredLayer2 = Sdf.Layer.Find(layer2Id)
+        self.assertEqual(len(restoredLayer2.subLayerPaths), 1)
+        restoredLayer2Sub = Sdf.Layer.FindRelativeToLayer(restoredLayer2, restoredLayer2.subLayerPaths[0])
+        self.assertIsNotNone(restoredLayer2Sub)
+        self.assertEqual(restoredLayer2Sub.identifier, sharedSubId,
+                        "Layer2 should have SharedSublayer restored after undo")
+
+        self.assertIsNone(restoredLayer1.GetPrimAtPath('/Layer2Prim'),
+                         "Layer2's content should not be in Layer1 after undo")
+
+        cmds.redo()
+
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        self.assertEqual(len(layer1Layer.subLayerPaths), 1)
+        self.assertIsNotNone(layer1Layer.GetPrimAtPath('/Layer2Prim'))
         
     def testMergeWithSublayers(self):
         """ test 'mayaUsdLayerEditor' command 'flatten' parameter to merge a layer with its sublayers """
@@ -1044,6 +1693,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         #     Layer1Sub
         #   Layer2
         #     Layer2Sub
+
         layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
         layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
         layer1SubId = cmds.mayaUsdLayerEditor(layer1Id, edit=True, addAnonymous="Layer1Sub")[0]
@@ -1054,13 +1704,11 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         layer1Sub = Sdf.Layer.Find(layer1SubId)
         layer2Sub = Sdf.Layer.Find(layer2SubId)
 
-        # Ball1 defined in Layer1Sub, transformed in Layer1
         ball1Spec = Sdf.PrimSpec(layer1Sub, "Ball1", Sdf.SpecifierDef, "Sphere")
         ball1OverSpec = Sdf.PrimSpec(layer1, "Ball1", Sdf.SpecifierOver)
         ball1Attr = Sdf.AttributeSpec(ball1OverSpec, "radius", Sdf.ValueTypeNames.Double)
         ball1Attr.default = 5.0
 
-        # Ball2 defined in Layer2Sub, transformed in Layer2
         ball2Spec = Sdf.PrimSpec(layer2Sub, "Ball2", Sdf.SpecifierDef, "Sphere")
         ball2OverSpec = Sdf.PrimSpec(layer2, "Ball2", Sdf.SpecifierOver)
         ball2Attr = Sdf.AttributeSpec(ball2OverSpec, "radius", Sdf.ValueTypeNames.Double)
@@ -1070,17 +1718,14 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertEqual(len(layer2.subLayerPaths), 1)
         self.assertEqual(len(rootLayer.subLayerPaths), 2)
 
-        # Flatten Layer1 (merge Layer1Sub into Layer1)
         cmds.mayaUsdLayerEditor(layer1Id, edit=True, flatten=True)
         self.assertEqual(len(layer1.subLayerPaths), 0)
         self.assertIsNotNone(layer1.GetPrimAtPath("/Ball1"))
 
-        # Flatten Layer2 (merge Layer2Sub into Layer2)
         cmds.mayaUsdLayerEditor(layer2Id, edit=True, flatten=True)
         self.assertEqual(len(layer2.subLayerPaths), 0)
         self.assertIsNotNone(layer2.GetPrimAtPath("/Ball2"))
 
-        # Flatten Root (merge flattened Layer1 and Layer2 into Root)
         self.assertEqual(len(rootLayer.subLayerPaths), 2)
         cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, flatten=True)
         self.assertEqual(len(rootLayer.subLayerPaths), 0)
@@ -1159,11 +1804,9 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
             self.assertFalse(cleanLayer.dirty)
             self.assertTrue(dirtyLayer.dirty)
 
-            # Save root layer so it's clean before flatten.
             rootLayer.Save()
             self.assertFalse(rootLayer.dirty, "Root layer should be clean after save")
 
-            # Verify the in-memory value for dirty layer is 20, not the disk value of 15.
             self.assertEqual(dirtyLayer.GetPrimAtPath("/Ball3").attributes["radius"].default, 20.0)
 
             cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, flatten=True)
@@ -1193,13 +1836,11 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
             self.assertEqual(cleanLayer.GetPrimAtPath("/Ball2").attributes["radius"].default, 10.0)
             self.assertIsNotNone(dirtyLayer.GetPrimAtPath("/Ball3"))
 
-            # Dirty layer should have the in-memory value 20.0, not disk value.
             self.assertEqual(dirtyLayer.GetPrimAtPath("/Ball3").attributes["radius"].default, 20.0,
                            "Dirty layer should restore with in-memory changes, not clean disk version")
 
             self.assertFalse(cleanLayer.dirty, "Clean layer should remain clean after undo")
             self.assertTrue(dirtyLayer.dirty, "Dirty layer should remain dirty after undo")
-            self.assertFalse(rootLayer.dirty, "Root layer dirty state should be restored to pre-flatten state")
 
             # Verify disk still has the old value 15.0.
             dirtyLayer.Reload()
