@@ -1815,6 +1815,75 @@ std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
     return {};
 }
 
+void validateComponentOperationOnPrim(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     operationName)
+{
+    const PXR_NS::UsdStagePtr stage = prim.GetStage();
+    if (!stage) {
+        return;
+    }
+
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
+    if (!UsdUfe::isComponentStage(proxyPath)) {
+        return;
+    }
+
+    // Get the prim path
+    const PXR_NS::SdfPath primPath = prim.GetPath();
+
+    // Get the default prim to construct full scope paths
+    auto defaultPrim = stage->GetDefaultPrim();
+    if (!defaultPrim) {
+        return;
+    }
+    const PXR_NS::SdfPath defaultPrimPath = defaultPrim.GetPath();
+
+    // Get material and mesh scope names from component
+    std::string materialScopeName = getComponentMaterialScopeName(stage);
+    std::string meshScopeName     = getComponentMeshScopeName(stage);
+
+    // Build full scope paths
+    std::vector<PXR_NS::SdfPath> scopePaths;
+    if (!materialScopeName.empty()) {
+        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(materialScopeName)));
+    }
+    if (!meshScopeName.empty()) {
+        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(meshScopeName)));
+    }
+
+    // Check if the prim path is contained within any of the scope paths
+    for (const PXR_NS::SdfPath& scopePath : scopePaths) {
+        // Check if prim path is not equal to the scope_path and a descendant of the scope path
+        if (primPath != scopePath && primPath.HasPrefix(scopePath)) {
+            return;
+        }
+    }
+
+    // Disallow - prim is not in component scopes
+    const std::string error = PXR_NS::TfStringPrintf(
+        "Cannot %s prim \"%s\" in a component stage. "
+        "Only prims within component material or mesh scopes can be %s. ",
+        operationName.c_str(),
+        primPath.GetText(),
+        operationName.c_str());
+    TF_WARN("%s", error.c_str());
+    throw std::runtime_error(error);
+}
+
+EditForwardingGuard::EditForwardingGuard()
+{
+    // Pause edit forwarding
+    pauseEditForwarding(true);
+}
+
+EditForwardingGuard::~EditForwardingGuard()
+{
+    // Unpause edit forwarding
+    pauseEditForwarding(false);
+}
+
 void setDefaultMaterialScopeNameFn(DefaultMaterialScopeNameFn fn)
 {
     // This function is allowed to be null in which case a default

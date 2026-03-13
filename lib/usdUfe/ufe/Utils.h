@@ -522,6 +522,24 @@ void setGetComponentMeshScopeNameFn(GetComponentMeshScopeNameFn fn);
 USDUFE_PUBLIC
 std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage);
 
+//! Validate that an operation can be done on a component prim.
+//! \param prim The prim to validate the operation on.
+//! \param operationName The name of the operation (e.g., "reparent", "delete") for error messages.
+//! \throws std::runtime_error if the operation cannot be performed on the prim.
+USDUFE_PUBLIC
+void validateComponentOperationOnPrim(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     operationName);
+
+
+//! RAII guard to pause/unpause edit forwarding.
+class USDUFE_PUBLIC EditForwardingGuard
+{
+public:
+    EditForwardingGuard();
+    ~EditForwardingGuard();
+};
+
 //! Start and stop the wait cursor in the constructor and destructor.
 struct USDUFE_PUBLIC WaitCursor
 {

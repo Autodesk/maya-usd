@@ -32,88 +32,6 @@
 
 #include <ufe/pathString.h>
 
-namespace {
-
-// Validate that a prim can be deleted in a component stage.
-// Components only allow deleting prims whose path is contained within
-// either the material or geometry scope
-void validateComponentDelete(const PXR_NS::UsdPrim& prim)
-{
-    const PXR_NS::UsdStagePtr stage = prim.GetStage();
-    if (!stage) {
-        return;
-    }
-
-    // Get the prim path
-    const PXR_NS::SdfPath primPath = prim.GetPath();
-
-    // Get the default prim to construct full scope paths
-    auto defaultPrim = stage->GetDefaultPrim();
-    if (!defaultPrim) {
-        return;
-    }
-    const PXR_NS::SdfPath defaultPrimPath = defaultPrim.GetPath();
-
-    // Don't allow deleting the default prim itself
-    if (primPath == defaultPrimPath) {
-        const std::string error = PXR_NS::TfStringPrintf(
-            "Cannot delete prim \"%s\" in a component stage. "
-            "This is the default prim.",
-            primPath.GetText());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
-    }
-
-    // Get material and mesh scope names from component
-    std::string materialScopeName = UsdUfe::getComponentMaterialScopeName(stage);
-    std::string meshScopeName     = UsdUfe::getComponentMeshScopeName(stage);
-
-    // Build full scope paths
-    std::vector<PXR_NS::SdfPath> scopePaths;
-    if (!materialScopeName.empty()) {
-        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(materialScopeName)));
-    }
-    if (!meshScopeName.empty()) {
-        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(meshScopeName)));
-    }
-
-    // Don't allow deleting the scope prims themselves
-    for (const PXR_NS::SdfPath& scopePath : scopePaths) {
-        if (primPath == scopePath) {
-            const std::string error = PXR_NS::TfStringPrintf(
-                "Cannot delete prim \"%s\" in a component stage. "
-                "This is a protected scope.",
-                primPath.GetText());
-            TF_WARN("%s", error.c_str());
-            throw std::runtime_error(error);
-        }
-    }
-
-    // Check if the prim path is contained within any of the scope paths
-    bool isInScope = false;
-    for (const PXR_NS::SdfPath& scopePath : scopePaths) {
-        if (primPath.HasPrefix(scopePath)) {
-            isInScope = true;
-            break;
-        }
-    }
-
-    // Allow if prim is within a component scope
-    if (isInScope) {
-        return;
-    }
-
-    // Disallow - prim is not in component scopes
-    const std::string error = PXR_NS::TfStringPrintf(
-        "Cannot delete prim \"%s\" in a component stage. "
-        "Only prims within component material or mesh scopes can be deleted. ",
-        primPath.GetText());
-    TF_WARN("%s", error.c_str());
-    throw std::runtime_error(error);
-}
-
-} // namespace
-
 namespace USDUFE_NS_DEF {
 
 USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDeleteCommand);
@@ -137,6 +55,9 @@ void UsdUndoDeleteCommand::execute()
     UsdUfe::enforceMutedLayer(_prim, "remove");
 
     UsdUfe::InAddOrDeleteOperation ad;
+
+    // Pause edit forwarding during the delete operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
 
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
@@ -165,7 +86,7 @@ void UsdUndoDeleteCommand::execute()
 
     if (isComponent) {
         // Validate that the prim can be deleted in a component stage
-        validateComponentDelete(_prim);
+        UsdUfe::validateComponentOperationOnPrim(_prim, "delete");
 
         // Get all prim specs from all layers (including non-local layers like payloads)
         const PXR_NS::SdfPrimSpecHandleVector primStack = _prim.GetPrimStack();
@@ -270,12 +191,18 @@ void UsdUndoDeleteCommand::undo()
 {
     UsdUfe::InAddOrDeleteOperation ad;
 
+    // Pause edit forwarding during the undo operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
+
     _undoableItem.undo();
 }
 
 void UsdUndoDeleteCommand::redo()
 {
     UsdUfe::InAddOrDeleteOperation ad;
+
+    // Pause edit forwarding during the redo operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
 
     _undoableItem.redo();
 }
