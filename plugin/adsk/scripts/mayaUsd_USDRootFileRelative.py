@@ -203,7 +203,7 @@ class usdFileRelative(object):
             # Find the accept button, so we can know when there is valid input in the file name edit field.
             buttonBox = maya_window.findChild(QDialogButtonBox, 'buttonBox')
             if buttonBox and cls._fileDialog:
-                btn = QDialogButtonBox.Open if (cls._fileDialog.acceptMode() == QFileDialog.AcceptOpen) else QDialogButtonBox.Save
+                btn = QDialogButtonBox.StandardButton.Open if (cls._fileDialog.acceptMode() == QFileDialog.AcceptMode.AcceptOpen) else QDialogButtonBox.StandardButton.Save
                 cls._acceptButton = buttonBox.button(btn)
 
             # Find the lookin combobox and connect to it so we know when user changes directories.
