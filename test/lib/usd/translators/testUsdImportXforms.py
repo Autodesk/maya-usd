@@ -15,13 +15,14 @@
 # limitations under the License.
 #
 
-from pxr import Gf
+from pxr import Gf, Usd, UsdGeom
 
 from maya import cmds
 from maya.api import OpenMaya as OM
 from maya import standalone
 
 import os
+import tempfile
 import unittest
 import pprint
 
@@ -269,6 +270,27 @@ class testUsdImportXforms(unittest.TestCase):
                 usdMatrix.ExtractTranslation(), 
                 mayaMatrix.ExtractTranslation(), 
                 self.EPSILON))
+
+    def testImportOffsetParentMatrixCreatesComposeMatrix(self):
+        stage = Usd.Stage.CreateInMemory()
+        prim = stage.DefinePrim("/XformWithOpm", "Xform")
+        stage.SetDefaultPrim(prim)
+        xformable = UsdGeom.Xformable(prim)
+        xformable.AddTransformOp(opSuffix='offsetParentMatrix').Set(
+            Gf.Matrix4d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1))
+        xformable.AddTranslateOp().Set(Gf.Vec3d(0, 0, 0))
+        with tempfile.NamedTemporaryFile(suffix=".usda", delete=False) as f:
+            path = f.name
+        try:
+            stage.GetRootLayer().Export(path)
+            cmds.usdImport(file=path)
+            self.assertTrue(cmds.objExists("XformWithOpm"))
+            conn = cmds.listConnections(
+                "XformWithOpm.offsetParentMatrix", source=True, destination=False)
+            self.assertTrue(conn, "offsetParentMatrix should be driven by a source node")
+            self.assertEqual(cmds.nodeType(conn[0]), "composeMatrix")
+        finally:
+            os.unlink(path)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
