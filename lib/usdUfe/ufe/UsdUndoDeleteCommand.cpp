@@ -82,9 +82,8 @@ void UsdUndoDeleteCommand::execute()
 
     // Check if this is a component stage
     const Ufe::Path proxyPath   = UsdUfe::stagePath(stage);
-    const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
 
-    if (isComponent) {
+    if (UsdUfe::isComponentStage(proxyPath)) {
         // Validate that the prim can be deleted in a component stage
         UsdUfe::validateComponentOperationOnPrim(_prim, "delete");
 
@@ -101,14 +100,6 @@ void UsdUndoDeleteCommand::execute()
 
             const PXR_NS::SdfPath primPath = primSpec->GetPath();
 
-            // DEBUG: Print primspec information
-            TF_WARN("DEBUG: Component delete - PrimSpec path: %s", primPath.GetText());
-            TF_WARN("DEBUG: Component delete - Layer: %s", layer->GetDisplayName().c_str());
-            TF_WARN("DEBUG: Component delete - Layer identifier: %s",
-                    layer->GetIdentifier().c_str());
-            TF_WARN("DEBUG: Component delete - PrimSpec specifier: %s",
-                    TfEnum::GetName(primSpec->GetSpecifier()).c_str());
-
             UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
 
             // Get the parent spec
@@ -122,13 +113,6 @@ void UsdUndoDeleteCommand::execute()
                 throw std::runtime_error(error);
             }
 
-            // DEBUG: Print parent information
-            TF_WARN("DEBUG: Component delete - Parent path: %s", parent->GetPath().GetText());
-            TF_WARN("DEBUG: Component delete - Parent specifier: %s",
-                    TfEnum::GetName(parent->GetSpecifier()).c_str());
-            TF_WARN("DEBUG: Component delete - Parent has %zu children",
-                    parent->GetNameChildren().size());
-
             // Remove the prim spec from its parent
             if (!parent->RemoveNameChild(primSpec)) {
                 const std::string error = TfStringPrintf(
@@ -139,14 +123,9 @@ void UsdUndoDeleteCommand::execute()
                 throw std::runtime_error(error);
             }
 
-            // DEBUG: Confirm removal
-            TF_WARN("DEBUG: Component delete - Successfully removed prim from parent");
-
             layer->RemovePrimIfInert(parent);
         }
     } else if (!routingEditTarget.IsNull()) {
-        // NOTE: Need to consider the case of edit routing as well probably
-        // maybe in the future???
         PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
 
         // Note: we allow stronger opinion when editing inside a reference or payload.
