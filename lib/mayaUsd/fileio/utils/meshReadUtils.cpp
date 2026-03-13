@@ -166,6 +166,29 @@ MIntArray getMayaFaceVertexAssignmentIds(
 {
     MIntArray valueIds(meshFn.numFaceVertices(), -1);
 
+    // Precompute the face base indices for left-handed meshes
+    // to avoid recomputing them for each face vertex.
+    MIntArray vertexCounts;
+    MIntArray vertexList;
+    std::vector<unsigned int> faceBaseIndices;
+    if (isLeftHanded && interpolation == UsdGeomTokens->faceVarying)
+    {
+        MStatus status = meshFn.getVertices(vertexCounts, vertexList);
+        if (status != MS::kSuccess) {
+            TF_WARN(
+                "Could not get vertex counts on mesh: %s",
+                meshFn.fullPathName().asChar());
+        } else {
+            const int numPolygons = vertexCounts.length();
+            faceBaseIndices = std::vector<unsigned int>(static_cast<size_t>(numPolygons) + 1);
+            faceBaseIndices[0] = 0;
+            std::partial_sum(
+                &vertexCounts[0],
+                &vertexCounts[0] + numPolygons,
+                faceBaseIndices.begin() + 1);
+        }
+    }
+
     MItMeshFaceVertex itFV(meshFn.object());
     unsigned int      fvi = 0;
     for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
@@ -177,20 +200,13 @@ MIntArray getMayaFaceVertexAssignmentIds(
         } else if (interpolation == UsdGeomTokens->vertex) {
             valueId = itFV.vertId();
         } else if (interpolation == UsdGeomTokens->faceVarying) {
-            if (isLeftHanded) {
+            if (isLeftHanded && faceBaseIndices.size() > 0) {
                 // When the mesh is left-handed, face winding order was reversed.
                 // We need to adjust the face-vertex index to match the corrected order.
                 // Find the position of this vertex within its face and reverse it.
                 const int faceId = itFV.faceId();
-                int       vertexCount = meshFn.polygonVertexCount(faceId);
-
-                // Find which vertex we are within this face
-                unsigned int baseFvi = 0;
-                for (int f = 0; f < faceId; ++f) {
-                    int faceVertCount = meshFn.polygonVertexCount(f);
-                    baseFvi += faceVertCount;
-                }
-
+                const int vertexCount = vertexCounts[faceId];
+                const unsigned int baseFvi = faceBaseIndices[faceId];
                 const int vertexPosInFace = fvi - baseFvi;
                 const int reversedVertexPosInFace = vertexCount - 1 - vertexPosInFace;
                 valueId = baseFvi + reversedVertexPosInFace;
