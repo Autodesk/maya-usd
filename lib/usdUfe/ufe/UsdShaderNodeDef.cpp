@@ -16,19 +16,13 @@
 
 #include "UsdShaderNodeDef.h"
 
-#include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
-#include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
-
+#include <usdUfe/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #include <usdUfe/ufe/UsdShaderAttributeDef.h>
 #endif
 
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/util.h>
-
 #include <usdUfe/base/tokens.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/Utils.h>
 
 #include <pxr/base/tf/stringUtils.h>
@@ -49,10 +43,9 @@
 
 #include <map>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::NodeDef, UsdShaderNodeDef);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::NodeDef, UsdShaderNodeDef);
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -397,10 +390,6 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
     TF_DEV_AXIOM(_shaderNodeDef);
     auto parentItem = downcast(parent);
     if (parentItem) {
-        if (UsdUndoAddNewMaterialCommand::CompatiblePrim(parentItem)) {
-            return UsdUndoAddNewMaterialCommand::create(
-                parentItem, _shaderNodeDef->GetIdentifier());
-        }
         return UsdUndoCreateFromNodeDefCommand::create(
             _shaderNodeDef, parentItem, UsdUfe::sanitizeName(name.string()));
     }
@@ -428,7 +417,7 @@ Ufe::NodeDefs UsdShaderNodeDef::definitions(const std::string& category)
         SdrShaderNodePtrVec shaderNodeDefs;
 
         if (category == kNodeDefCategorySurface) {
-            shaderNodeDefs = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+            shaderNodeDefs = GetSurfaceShaderNodeDefs();
         } else {
             SdrRegistry& registry = SdrRegistry::GetInstance();
             shaderNodeDefs = registry.GetShaderNodesByFamily();
@@ -448,5 +437,4 @@ Ufe::NodeDefs UsdShaderNodeDef::definitions(const std::string& category)
     return result;
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

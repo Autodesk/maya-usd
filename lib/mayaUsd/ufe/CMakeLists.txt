@@ -206,9 +206,6 @@ endif()
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            UsdShaderNodeDef.cpp
-            UsdShaderNodeDefHandler.cpp
-            UsdUndoCreateFromNodeDefCommand.cpp
             UsdConnections.cpp
             UsdConnectionHandler.cpp
             UsdUINodeGraphNode.cpp
@@ -310,9 +307,6 @@ endif()
        
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
-        UsdShaderNodeDef.h
-        UsdShaderNodeDefHandler.h
-        UsdUndoCreateFromNodeDefCommand.h
         UsdConnections.h
         UsdConnectionHandler.h
         UsdUINodeGraphNode.h

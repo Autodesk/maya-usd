@@ -22,9 +22,8 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
-
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #endif
 
 #include <pxr/usd/usd/prim.h>
@@ -166,7 +165,7 @@ private:
     const std::string _nodeId;
 
     UsdUfe::UsdUndoAddNewPrimCommand::Ptr _createMaterialCmd;
-    UsdUndoCreateFromNodeDefCommand::Ptr  _createShaderCmd;
+    UsdUfe::UsdUndoCreateFromNodeDefCommand::Ptr _createShaderCmd;
     // An extra undo item for operation that dont themselves run a full fledged command.
     UsdUfe::UsdUndoableItem _undoItem;
 

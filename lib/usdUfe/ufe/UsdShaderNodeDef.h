@@ -13,20 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_USDSHADERNODEDEF_H
-#define MAYAUSD_USDSHADERNODEDEF_H
+#ifndef USDUFE_USDSHADERNODEDEF_H
+#define USDUFE_USDSHADERNODEDEF_H
 
-#include <mayaUsd/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/usd/sdr/shaderNode.h>
 
 #include <ufe/nodeDef.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief UsdShaderNodeDef interface.
-class MAYAUSD_CORE_PUBLIC UsdShaderNodeDef : public Ufe::NodeDef
+class USDUFE_PUBLIC UsdShaderNodeDef : public Ufe::NodeDef
 {
 public:
     typedef std::shared_ptr<UsdShaderNodeDef> Ptr;
@@ -36,7 +35,7 @@ public:
 
     UsdShaderNodeDef(const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderNodeDef);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderNodeDef);
 
 #ifndef UFE_V4_FEATURES_AVAILABLE
     //! \return The type of the shader node definition.
@@ -153,7 +152,6 @@ private:
 
 }; // UsdShaderNodeDef
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDSHADERNODEDEF_H
+#endif // USDUFE_USDSHADERNODEDEF_H

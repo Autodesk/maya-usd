@@ -13,27 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_USDSHADERNODEDEFHANDLER_H
-#define MAYAUSD_USDSHADERNODEDEFHANDLER_H
+#ifndef USDUFE_USDSHADERNODEDEFHANDLER_H
+#define USDUFE_USDSHADERNODEDEFHANDLER_H
 
-#include <mayaUsd/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/usd/sdr/shaderNode.h>
 
 #include <ufe/nodeDefHandler.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Interface to create a UsdShaderNodeDefHandler interface object.
-class MAYAUSD_CORE_PUBLIC UsdShaderNodeDefHandler : public Ufe::NodeDefHandler
+class USDUFE_PUBLIC UsdShaderNodeDefHandler : public Ufe::NodeDefHandler
 {
 public:
     typedef std::shared_ptr<UsdShaderNodeDefHandler> Ptr;
 
     UsdShaderNodeDefHandler() = default;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderNodeDefHandler);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdShaderNodeDefHandler);
 
     //! Create a UsdShaderNodeDefHandler.
     static Ptr create();
@@ -57,7 +56,6 @@ public:
 
 }; // UsdShaderNodeDefHandler
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDSHADERNODEDEFHANDLER_H
+#endif // USDUFE_USDSHADERNODEDEFHANDLER_H

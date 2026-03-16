@@ -360,7 +360,8 @@ Ufe::SceneItem::Ptr UsdUndoAssignNewMaterialCommand::insertedChild() const
     if (_cmds) {
         auto cmdsIt = _cmds->cmdsList().begin();
         std::advance(cmdsIt, _createMaterialCmdIdx + 1);
-        auto addShaderCmd = std::dynamic_pointer_cast<UsdUndoCreateFromNodeDefCommand>(*cmdsIt);
+        auto addShaderCmd
+            = std::dynamic_pointer_cast<UsdUfe::UsdUndoCreateFromNodeDefCommand>(*cmdsIt);
         return addShaderCmd->insertedChild();
     }
     return {};
@@ -456,7 +457,7 @@ void UsdUndoAssignNewMaterialCommand::execute()
         // 3. Create the Shader:
         //
         auto materialItem = downcast(createMaterialCmd->sceneItem());
-        auto createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
+        auto createShaderCmd = UsdUfe::UsdUndoCreateFromNodeDefCommand::create(
             shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
         if (!createShaderCmd) {
             markAsFailed();
@@ -633,7 +634,7 @@ void UsdUndoAddNewMaterialCommand::execute()
     // Create the Shader:
     //
     auto materialItem = downcast(_createMaterialCmd->sceneItem());
-    _createShaderCmd = UsdUndoCreateFromNodeDefCommand::create(
+    _createShaderCmd = UsdUfe::UsdUndoCreateFromNodeDefCommand::create(
         shaderNodeDef, materialItem, shaderNodeDef->GetFamily().GetString());
     if (!_createShaderCmd) {
         markAsFailed();
@@ -653,7 +654,7 @@ void UsdUndoAddNewMaterialCommand::execute()
         // Connect the Shader to the material, only for surfaces:
         //
 
-        auto surfaces = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+        auto surfaces = UsdUfe::GetSurfaceShaderNodeDefs();
         if (std::find(surfaces.begin(), surfaces.end(), shaderNodeDef) != surfaces.end()) {
             if (!connectShaderToMaterial(
                     _createShaderCmd->insertedChild(), _createMaterialCmd->newPrim(), _nodeId)) {
