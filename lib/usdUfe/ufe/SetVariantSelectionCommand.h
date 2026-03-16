@@ -18,6 +18,7 @@
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/variantSets.h>
@@ -63,6 +64,7 @@ private:
     const std::string      _newSelection;
     Ufe::Selection         _savedSn;  // For global selection save and restore.
     PXR_NS::SdfLayerHandle _dstLayer; // To ensure consistent editTarget at undo.
+    UsdUfe::UsdUndoableItem _undoItem;
 };
 
 } // namespace USDUFE_NS_DEF

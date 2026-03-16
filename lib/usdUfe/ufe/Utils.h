@@ -80,6 +80,10 @@ typedef void (*PauseEditForwardingFn)(bool pause);
 typedef bool (*IsComponentStageFn)(const Ufe::Path&);
 typedef std::string (*GetComponentMaterialScopeNameFn)(const PXR_NS::UsdStageRefPtr&);
 typedef std::string (*GetComponentMeshScopeNameFn)(const PXR_NS::UsdStageRefPtr&);
+typedef bool (*SetComponentVariantSelectionFn)(
+    const PXR_NS::UsdStageRefPtr&,
+    const std::string&,
+    const std::string&);
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -521,6 +525,18 @@ void setGetComponentMeshScopeNameFn(GetComponentMeshScopeNameFn fn);
 //! \return The mesh scope name, or empty string if not a component or not set.
 USDUFE_PUBLIC
 std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage);
+
+//! Set the DCC specific set-component-variant-selection function.
+//! Use of this function is optional, if not supplied then false is returned.
+USDUFE_PUBLIC
+void setSetComponentVariantSelectionFn(SetComponentVariantSelectionFn fn);
+
+//! Set the temporary variant selection for a component prim's variant set.
+USDUFE_PUBLIC
+bool setComponentVariantSelection(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            variantSetName,
+    const std::string&            variantSelection);
 
 //! Validate that an namespace operation can be done on a component prim.
 //! \param prim The prim to validate the operation on.
