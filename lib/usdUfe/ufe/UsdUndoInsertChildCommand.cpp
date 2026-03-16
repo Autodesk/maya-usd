@@ -63,75 +63,9 @@ template <class T> struct MakeSharedEnabler : public T
     }
 };
 
-// Validate that a prim can be reparented in a component stage.
-// Components only allow reparenting prims whose path is contained within
-// either the material or geometry scope
-void validateComponentReparent(const UsdPrim& prim)
-{
-    const UsdStagePtr stage = prim.GetStage();
-    if (!stage) {
-        return;
-    }
-
-    // Get the prim path
-    const SdfPath primPath = prim.GetPath();
-
-    // Get the default prim to construct full scope paths
-    auto defaultPrim = stage->GetDefaultPrim();
-    if (!defaultPrim) {
-        return;
-    }
-    const SdfPath defaultPrimPath = defaultPrim.GetPath();
-
-    // Get material and mesh scope names from component
-    std::string materialScopeName = UsdUfe::getComponentMaterialScopeName(stage);
-    std::string meshScopeName = UsdUfe::getComponentMeshScopeName(stage);
-
-    // Build full scope paths
-    std::vector<SdfPath> scopePaths;
-    if (!materialScopeName.empty()) {
-        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(materialScopeName)));
-    }
-    if (!meshScopeName.empty()) {
-        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(meshScopeName)));
-    }
-
-    // Check if the prim path is contained within any of the scope paths
-    for (const SdfPath& scopePath : scopePaths) {
-        // Check if prim path is not equal to the scope_path and a descendant of the scope path
-        if (primPath != scopePath && primPath.HasPrefix(scopePath)) {
-            return;
-        }
-    }
-
-    // Disallow - prim is not in component scopes
-    const std::string error = TfStringPrintf(
-        "Cannot reparent prim \"%s\" in a component stage. "
-        "Only prims within component material or mesh scopes can be reparented. ",
-        prim.GetPath().GetText());
-    TF_WARN("%s", error.c_str());
-    throw std::runtime_error(error);
-}
-
 } // namespace
 
 namespace USDUFE_NS_DEF {
-
-class EditForwardingGuard
-{
-public:
-    EditForwardingGuard()
-    {
-        // Pause edit forwarding
-        pauseEditForwarding(true);
-    }
-
-    ~EditForwardingGuard()
-    {
-        // Unpause edit forwarding
-        pauseEditForwarding(false);
-    }
-};
 
 USDUFE_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoInsertChildCommand);
 
@@ -204,9 +138,9 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     }
 
     // Check component-specific restrictions
-    if (isComponentStage(child->path())) {
+    if (isComponentStage(_ufeSrcPath)) {
         // Components only allow reparenting prims from payloads
-        validateComponentReparent(childPrim);
+        UsdUfe::validateComponentNamespaceOperation(childPrim, "reparent");
     } else {
         // Apply restriction rules for non-component stages
         UsdUfe::applyCommandRestriction(childPrim, "reparent");
@@ -421,7 +355,7 @@ void UsdUndoInsertChildCommand::execute()
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
     // Pause edit forwarding during the undo operation with RAII
-    const EditForwardingGuard efPauser {};
+    const UsdUfe::EditForwardingGuard efPauser {};
 
     // We need to keep the generated item to be able to return it to the caller
     // via the insertedChild() member function.
@@ -492,7 +426,7 @@ void UsdUndoInsertChildCommand::undo()
     preserveLoadRules(_ufeDstPath, _usdDstPath, _usdSrcPath);
 
     // Pause edit forwarding during the undo operation with RAII
-    const EditForwardingGuard efPauser {};
+    const UsdUfe::EditForwardingGuard efPauser {};
 
     _undoableItem.undo();
 
@@ -509,7 +443,7 @@ void UsdUndoInsertChildCommand::redo()
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
     // Pause edit forwarding during the undo operation with RAII
-    const EditForwardingGuard efPauser {};
+    const UsdUfe::EditForwardingGuard efPauser {};
 
     _undoableItem.redo();
 

@@ -30,6 +30,8 @@
 #include <usdUfe/ufe/UsdAttributes.h>
 #endif
 
+#include <ufe/pathString.h>
+
 namespace USDUFE_NS_DEF {
 
 USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDeleteCommand);
@@ -54,6 +56,9 @@ void UsdUndoDeleteCommand::execute()
 
     UsdUfe::InAddOrDeleteOperation ad;
 
+    // Pause edit forwarding during the delete operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
+
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
 #ifdef MAYA_ENABLE_NEW_PRIM_DELETE
@@ -75,7 +80,52 @@ void UsdUndoDeleteCommand::execute()
         throw std::runtime_error(error);
     }
 
-    if (!routingEditTarget.IsNull()) {
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
+
+    if (UsdUfe::isComponentStage(proxyPath)) {
+        // Validate that the prim can be deleted in a component stage
+        UsdUfe::validateComponentNamespaceOperation(_prim, "delete");
+
+        // Get all prim specs from all layers (including non-local layers like payloads)
+        const PXR_NS::SdfPrimSpecHandleVector primStack = _prim.GetPrimStack();
+
+        for (const PXR_NS::SdfPrimSpecHandle& primSpec : primStack) {
+            if (!primSpec)
+                continue;
+
+            const PXR_NS::SdfLayerHandle layer = primSpec->GetLayer();
+            if (!layer)
+                continue;
+
+            const PXR_NS::SdfPath primPath = primSpec->GetPath();
+
+            UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
+
+            // Get the parent spec
+            PXR_NS::SdfPrimSpecHandle parent = primSpec->GetRealNameParent();
+            if (!parent) {
+                const std::string error = TfStringPrintf(
+                    "Failed to get parent for prim \"%s\" in layer \"%s\".",
+                    primPath.GetText(),
+                    layer->GetDisplayName().c_str());
+                TF_WARN("%s", error.c_str());
+                throw std::runtime_error(error);
+            }
+
+            // Remove the prim spec from its parent
+            if (!parent->RemoveNameChild(primSpec)) {
+                const std::string error = TfStringPrintf(
+                    "Failed to delete prim \"%s\" from layer \"%s\".",
+                    primPath.GetText(),
+                    layer->GetDisplayName().c_str());
+                TF_WARN("%s", error.c_str());
+                throw std::runtime_error(error);
+            }
+
+            layer->RemovePrimIfInert(parent);
+        }
+    } else if (!routingEditTarget.IsNull()) {
         PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
 
         // Note: we allow stronger opinion when editing inside a reference or payload.
@@ -120,12 +170,18 @@ void UsdUndoDeleteCommand::undo()
 {
     UsdUfe::InAddOrDeleteOperation ad;
 
+    // Pause edit forwarding during the undo operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
+
     _undoableItem.undo();
 }
 
 void UsdUndoDeleteCommand::redo()
 {
     UsdUfe::InAddOrDeleteOperation ad;
+
+    // Pause edit forwarding during the redo operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
 
     _undoableItem.redo();
 }
