@@ -16,8 +16,8 @@
 #include "SetVariantSelectionCommand.h"
 
 #include <usdUfe/ufe/Utils.h>
-#include <usdUfe/utils/editRouterContext.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/usd/usd/variantSets.h>
 

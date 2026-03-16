@@ -421,6 +421,7 @@ bool setComponentVariantSelection(
         return false;
     }
 
+    // clang-format off
     MString setVariantSelectionCmd;
     setVariantSelectionCmd.format(
         "def _usd_cc_set_component_variant_selection():\n"
@@ -455,6 +456,7 @@ bool setComponentVariantSelection(
         proxyPath.c_str(),
         variantSetName.c_str(),
         variantSelection.c_str());
+    // clang-format on
 
     int     result = 0;
     MStatus success = MGlobal::executePythonCommand(setVariantSelectionCmd, false, false);
