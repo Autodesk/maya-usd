@@ -65,4 +65,10 @@ global proc mayaUsd_pluginUICreation()
         source "mayaUsdClearRefsOrPayloadsOptions.mel";
         source "mayaUsdDuplicateAsUsdDataOptions.mel";
     }
+
+    // Try and initialize the Component Creator. If the Component Creator is not available,
+    // it will fail gracefully and not cause any issues.
+    // The CC init code relies on MayaUsd being loaded, including menus which is why we
+    // try to initialize it here (last).
+    python("import mayaUsd_initializeComponentCreator; mayaUsd_initializeComponentCreator.initializeComponentCreator()");
 }

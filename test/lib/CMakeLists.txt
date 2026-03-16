@@ -85,6 +85,11 @@ if (AdskUsdComponentCreator_FOUND)
         PYTHON_SCRIPT testAdskUsdComponentCreator.py
         ENV
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            # The earlier Component Creator installs had a Maya plugin to initialize the CC
+            # so we need to find the CC .mod file for the test.
+            # This can be removed once we integrate the update CC which removed the Maya plugin
+            # and we initialize the CC directly from MayaUsd. Having this MAYA_MODULE_PATH is
+            # okay after the CC update since this path won't exist and therefore will be ignored.
             "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}/../AdskUsdComponentCreator"
             "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
     )

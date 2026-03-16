@@ -13,6 +13,7 @@ list(APPEND scripts_src
     mayaUsd_createStageWithNewLayer.py
     mayaUsd_createStageFromAsset.mel
     mayaUsd_imageFileDialogs.mel
+    mayaUsd_initializeComponentCreator.py
     mayaUsd_layerEditorFileDialogs.mel
     mayaUsd_fileOptions.mel
     mayaUsd_pluginUICreation.mel
