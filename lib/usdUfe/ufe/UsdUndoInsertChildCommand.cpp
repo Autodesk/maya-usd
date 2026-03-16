@@ -136,11 +136,11 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
             parentPrim.GetName().GetString().c_str());
         throw std::runtime_error(err);
     }
-    
+
     // Check component-specific restrictions
     if (isComponentStage(_ufeSrcPath)) {
         // Components only allow reparenting prims from payloads
-        UsdUfe::validateComponentOperationOnPrim(childPrim, "reparent");
+        UsdUfe::validateComponentNamespaceOperation(childPrim, "reparent");
     } else {
         // Apply restriction rules for non-component stages
         UsdUfe::applyCommandRestriction(childPrim, "reparent");

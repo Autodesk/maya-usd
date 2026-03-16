@@ -1815,7 +1815,7 @@ std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
     return {};
 }
 
-void validateComponentOperationOnPrim(
+void validateComponentNamespaceOperation(
     const PXR_NS::UsdPrim& prim,
     const std::string&     operationName)
 {
@@ -1842,7 +1842,7 @@ void validateComponentOperationOnPrim(
 
     // Get material and mesh scope names from component
     std::string materialScopeName = getComponentMaterialScopeName(stage);
-    std::string meshScopeName     = getComponentMeshScopeName(stage);
+    std::string meshScopeName = getComponentMeshScopeName(stage);
 
     // Build full scope paths
     std::vector<PXR_NS::SdfPath> scopePaths;

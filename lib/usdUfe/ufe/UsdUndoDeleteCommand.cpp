@@ -81,11 +81,11 @@ void UsdUndoDeleteCommand::execute()
     }
 
     // Check if this is a component stage
-    const Ufe::Path proxyPath   = UsdUfe::stagePath(stage);
+    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
 
     if (UsdUfe::isComponentStage(proxyPath)) {
         // Validate that the prim can be deleted in a component stage
-        UsdUfe::validateComponentOperationOnPrim(_prim, "delete");
+        UsdUfe::validateComponentNamespaceOperation(_prim, "delete");
 
         // Get all prim specs from all layers (including non-local layers like payloads)
         const PXR_NS::SdfPrimSpecHandleVector primStack = _prim.GetPrimStack();
