@@ -173,7 +173,7 @@ void doUsdRename(
     const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
     if (isComponent) {
         // For component stages, we need to rename the prim in all layers that have opinions.
-        // This includes both the defining layer stack and any overriding opinions in 
+        // This includes both the defining layer stack and any overriding opinions in
         // other layers (local and non-local).
         const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
         for (const SdfPrimSpecHandle& spec : primStack) {
