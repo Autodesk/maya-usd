@@ -17,8 +17,8 @@
 #include "UsdShaderNodeDef.h"
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <usdUfe/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #include <usdUfe/ufe/UsdShaderAttributeDef.h>
+#include <usdUfe/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #endif
 
 #include <usdUfe/base/tokens.h>

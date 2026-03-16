@@ -164,7 +164,7 @@ private:
     Ufe::Path         _parentPath;
     const std::string _nodeId;
 
-    UsdUfe::UsdUndoAddNewPrimCommand::Ptr _createMaterialCmd;
+    UsdUfe::UsdUndoAddNewPrimCommand::Ptr        _createMaterialCmd;
     UsdUfe::UsdUndoCreateFromNodeDefCommand::Ptr _createShaderCmd;
     // An extra undo item for operation that dont themselves run a full fledged command.
     UsdUfe::UsdUndoableItem _undoItem;
