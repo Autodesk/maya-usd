@@ -26,16 +26,32 @@ import tempfile
 from maya import cmds
 
 import os
+import sys
 
 def _isCCAvailable():
-    if 'MAYA_MODULE_PATH' not in os.environ:
-        return False
-    for pp in os.environ['MAYA_MODULE_PATH'].split(os.path.pathsep):
-        if os.path.exists(pp) and 'usd_component_creator.mod' in os.listdir(pp):
-            return True
+    # Check to see if the AdskUsdComponentCreator exist in python path. If so it means
+    # we have the Component Creator installed with this MayaUsd.
+    for pp in sys.path:
+        if not os.path.exists(pp):
+            continue
+        with os.scandir(path=pp) as entries:
+            for entry in entries:
+                if entry.is_dir() and entry.name == 'AdskUsdComponentCreator':
+                    return True
     return False
 
+# The USD component creator Maya plugin will only be there in certain circumstances so
+# only try and load it if the CC Maya plugin actually exists.
+def haveMayaCCPlugin():
+    if 'MAYA_PLUG_IN_PATH' in os.environ:
+        pluginPath = os.environ['MAYA_PLUG_IN_PATH']
+        for pp in pluginPath.split(os.path.pathsep):
+            if os.path.exists(pp) and ('usd_component_creator.py' in os.listdir(pp)):
+                return True
+        return False
+
 _CC_AVAILABLE = _isCCAvailable()
+_HAVE_CC_MAYA_PLUGIN = haveMayaCCPlugin()
 
 class LoadComponentCreatorPluginTestCase(unittest.TestCase):
     """
@@ -47,16 +63,34 @@ class LoadComponentCreatorPluginTestCase(unittest.TestCase):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
 
     def testPluginLoadable(self):
+        forceTest = os.environ.get('MAYAUSD_FORCE_CC_TEST', '0') == '1'
         if not _CC_AVAILABLE:
-            forceTest = os.environ.get('MAYAUSD_FORCE_CC_TEST', '0') == '1'
             if forceTest:
-                self.fail('USD component creator plugin was not found but MAYAUSD_FORCE_CC_TEST is set. '
-                          'MAYA_MODULE_PATH={}'.format(os.environ.get('MAYA_MODULE_PATH', '')))
+                self.fail('AdskUsdComponentCreator was not found but MAYAUSD_FORCE_CC_TEST is set.')
             else:
-                self.skipTest('Could not find the USD component creator plugin')
+                self.skipTest('Could not find the AdskUsdComponentCreator.')
 
+        # Both cases rely on the MayaUsd plugin being loaded first.
         self.assertTrue(mayaUtils.loadPlugin('mayaUsdPlugin'))
-        self.assertTrue(mayaUtils.loadPlugin('usd_component_creator'))
+        if _HAVE_CC_MAYA_PLUGIN:
+            self.assertTrue(mayaUtils.loadPlugin('usd_component_creator'))
+        else:
+            # In Maya at startup the idle events are suspended during initialization to prevent
+            # plugins from being loaded before the UI is initialized.
+            #
+            # In an interactive test the startup command (for the test) is called before Maya
+            # resumes the idle event processing. So we need to force resume it here and flush
+            # the idle queue to ensure that the MayaUsd plugin UI Creation script is called
+            # which is where the Component Creator initialization is done.
+            #
+            cmds.flushIdleQueue(resume=True)
+            cmds.flushIdleQueue()
+
+            # The Component Creator Maya plugin was removed and replace with a direct CC
+            # initialization. We make sure CC was init correctly.
+            from usd_component_creator_plugin import is_initialized as is_initializedCC
+            is_cc_init = is_initializedCC()
+            self.assertTrue(is_cc_init, "Component Creator was not initialized but MAYAUSD_FORCE_CC_TEST is set.")
 
 
 class DuplicateToComponentTestCase(unittest.TestCase):
@@ -73,7 +107,12 @@ class DuplicateToComponentTestCase(unittest.TestCase):
         if not _CC_AVAILABLE:
             self.skipTest('Could not find the USD component creator plugin')
         mayaUtils.loadPlugin('mayaUsdPlugin')
-        mayaUtils.loadPlugin('usd_component_creator')
+        if _HAVE_CC_MAYA_PLUGIN:
+            mayaUtils.loadPlugin('usd_component_creator')
+        else:
+            # See comment in test above.
+            cmds.flushIdleQueue(resume=True)
+            cmds.flushIdleQueue()
         cmds.file(new=True, force=True)
 
     def _createComponent(self):
