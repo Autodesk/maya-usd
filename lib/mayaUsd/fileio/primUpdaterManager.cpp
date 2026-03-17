@@ -887,6 +887,9 @@ private:
 class RecordPullVariantInfoUndoItem : public MayaUsd::OpUndoItem
 {
 public:
+    // This avoids hiding the base class execute function.
+    using OpUndoItem::execute;
+
     // Add the path to the orphaned nodes manager, and add an undo entry onto
     // the global undo list.
     static bool execute(
@@ -942,6 +945,9 @@ private:
 class RemovePullVariantInfoUndoItem : public MayaUsd::OpUndoItem
 {
 public:
+    // This avoids hiding the base class execute function.
+    using OpUndoItem::execute;
+
     // Remove the path from the orphaned nodes manager, and add an entry onto
     // the global undo list.
     static bool execute(

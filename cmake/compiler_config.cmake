@@ -15,6 +15,7 @@ set(GNU_CLANG_FLAGS
     -Wno-deprecated
     -Wno-deprecated-declarations
     -Wno-unused-local-typedefs
+    -Wno-maybe-uninitialized
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
