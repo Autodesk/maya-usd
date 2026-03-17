@@ -412,5 +412,68 @@ bool addMayaNodesToComponent(
     return result != 0;
 }
 
+bool setComponentVariantSelection(
+    const std::string& proxyPath,
+    const std::string& variantSetName,
+    const std::string& variantSelection)
+{
+    if (proxyPath.empty() || variantSetName.empty()) {
+        return false;
+    }
+
+    // clang-format off
+    MString setVariantSelectionCmd;
+    setVariantSelectionCmd.format(
+        "def _usd_cc_set_component_variant_selection():\n"
+        "    try:\n"
+        "        import mayaUsd.ufe\n"
+        "        from AdskUsdComponentCreator import ComponentAPI, ComponentDescription\n"
+        "    except ImportError:\n"
+        "        return 0\n"
+        "    stage = mayaUsd.ufe.getStage('^1s')\n"
+        "    if stage is None:\n"
+        "        return 0\n"
+        "    comp_desc = ComponentDescription.CreateFromStageMetadata(stage)\n"
+        "    if not comp_desc:\n"
+        "        return 0\n"
+        "    variant_set_name = '^2s'\n"
+        "    variant_selection = '^3s'\n"
+        "    if not variant_selection:\n"
+        "        return 1 if ComponentAPI.SetVariantTemporarySelection(comp_desc, [], True) else 0\n"
+        "    def _find_nesting(vs_map, nesting):\n"
+        "        for vs_name, vs_desc in vs_map.items():\n"
+        "            if vs_name == variant_set_name and vs_desc.HasVariant(variant_selection):\n"
+        "                return nesting + [vs_desc, vs_desc.GetVariantDescription(variant_selection)]\n"
+        "            for v_name, v_desc in vs_desc.GetVariants().items():\n"
+        "                result = _find_nesting(v_desc.GetSubVariantSets(), nesting + [vs_desc, v_desc])\n"
+        "                if result is not None:\n"
+        "                    return result\n"
+        "        return None\n"
+        "    nesting = _find_nesting(comp_desc.GetVariantSets(), [])\n"
+        "    if nesting is None:\n"
+        "        return 0\n"
+        "    return 1 if ComponentAPI.SetVariantTemporarySelection(comp_desc, nesting, True) else 0\n",
+        proxyPath.c_str(),
+        variantSetName.c_str(),
+        variantSelection.c_str());
+    // clang-format on
+
+    int     result = 0;
+    MStatus success = MGlobal::executePythonCommand(setVariantSelectionCmd, false, false);
+    if (success == MS::kSuccess) {
+        MString runCmd = "_usd_cc_set_component_variant_selection()";
+        success = MGlobal::executePythonCommand(runCmd, result);
+    }
+
+    if (success != MS::kSuccess) {
+        TF_WARN(
+            "Error while setting component variant selection for '%s' variant set '%s'.",
+            proxyPath.c_str(),
+            variantSetName.c_str());
+    }
+
+    return result != 0;
+}
+
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF

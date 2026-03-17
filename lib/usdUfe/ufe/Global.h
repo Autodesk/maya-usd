@@ -72,6 +72,7 @@ struct USDUFE_PUBLIC DCCFunctions
     IsComponentStageFn              isComponentStageFn = nullptr;
     GetComponentMaterialScopeNameFn getComponentMaterialScopeNameFn = nullptr;
     GetComponentMeshScopeNameFn     getComponentMeshScopeNameFn = nullptr;
+    SetComponentVariantSelectionFn  setComponentVariantSelectionFn = nullptr;
 };
 
 /*! Ufe runtime handlers used to initialize the plugin.

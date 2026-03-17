@@ -106,6 +106,14 @@ bool addMayaNodesToComponent(
     const std::vector<std::string>& nodeNames,
     const PXR_NS::VtDictionary&     exportArgs = PXR_NS::VtDictionary {});
 
+/*! \brief Sets the temporary variant selection on the Autodesk USD Component at \p proxyPath.
+ */
+MAYAUSD_CORE_PUBLIC
+bool setComponentVariantSelection(
+    const std::string& proxyPath,
+    const std::string& variantSetName,
+    const std::string& variantSelection);
+
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF
 

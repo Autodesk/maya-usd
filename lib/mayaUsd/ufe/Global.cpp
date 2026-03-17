@@ -206,6 +206,25 @@ std::string mayaGetComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
     return MayaUsd::ComponentUtils::getMeshScopeName(proxyPath);
 }
 
+bool mayaSetComponentVariantSelection(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            variantSetName,
+    const std::string&            variantSelection)
+{
+    if (!stage) {
+        return false;
+    }
+
+    Ufe::Path ufePath = MayaUsd::ufe::stagePath(stage);
+    if (ufePath.empty()) {
+        return false;
+    }
+
+    std::string proxyPath = Ufe::PathString::string(ufePath);
+    return MayaUsd::ComponentUtils::setComponentVariantSelection(
+        proxyPath, variantSetName, variantSelection);
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -281,6 +300,7 @@ MStatus initialize()
     dccFunctions.isComponentStageFn = mayaIsComponentStage;
     dccFunctions.getComponentMaterialScopeNameFn = mayaGetComponentMaterialScopeName;
     dccFunctions.getComponentMeshScopeNameFn = mayaGetComponentMeshScopeName;
+    dccFunctions.setComponentVariantSelectionFn = mayaSetComponentVariantSelection;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();

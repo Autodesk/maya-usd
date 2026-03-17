@@ -110,6 +110,8 @@ Ufe::Rtid initialize(
         UsdUfe::setGetComponentMaterialScopeNameFn(dccFunctions.getComponentMaterialScopeNameFn);
     if (dccFunctions.getComponentMeshScopeNameFn)
         UsdUfe::setGetComponentMeshScopeNameFn(dccFunctions.getComponentMeshScopeNameFn);
+    if (dccFunctions.setComponentVariantSelectionFn)
+        UsdUfe::setSetComponentVariantSelectionFn(dccFunctions.setComponentVariantSelectionFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {
