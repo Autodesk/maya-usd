@@ -108,7 +108,7 @@ class SaveMixedLocationsTest(unittest.TestCase):
         # saveLocation 1 means on-disk, 2 in the Maya scene.
         saveLocation = 2
         tempMayaFile = 'saveMixedLocationsTest.ma'
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
+        cmds.optionVar(intValue=(mayaUsd.lib.OptionVarTokens.SerializedUsdEditsLocation, saveLocation))
         cmds.file(rename=tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
 

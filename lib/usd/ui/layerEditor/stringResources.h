@@ -52,6 +52,9 @@ const auto kAddSublayer                  { create("kAddSublayer", "Add sublayer"
 const auto kAutoHideSessionLayer         { create("kAutoHideSessionLayer", "Auto-Hide Session Layer") };
 const auto kDisplayLayerContents         { create("kDisplayLayerContents", "Display Layer Content") };
 const auto kDisplayLayerContentsEmpty    { create("kDisplayLayerContentsEmpty", "Select a single layer to display the contents.\n\nLarge layers may take longer to load.") };
+const auto kDisplayLayerExpandAllValues  { create("kDisplayLayerExpandAllValues", "Expand All Values") };
+const auto kDisplayLayerExpandAllValuesTooltip { create("kDisplayLayerExpandAllValuesTooltip",
+                                                        "Enable to display all array values and timeSamples in the layer content") };
 const auto kConvertToRelativePath        { create("kConvertToRelativePath", "Convert to Relative Path") };
 const auto kCancel                       { create("kCancel", "Cancel") };
 const auto kCreate                       { create("kCreate", "Create") };

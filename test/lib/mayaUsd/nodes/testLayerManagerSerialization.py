@@ -173,7 +173,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         self.copyTestFilesAndMakeEdits()
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
 
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
@@ -196,7 +196,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         self.copyTestFilesAndMakeEdits()
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 1))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 1))
 
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
@@ -219,7 +219,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         self.copyTestFilesAndMakeEdits()
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 3))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 3))
 
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
@@ -260,7 +260,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         self.confirmStageHasTestEdits(stage, True, not muteRootSubLayer, not muteSessionLayer)
 
         # Save and reopen the maya file.
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', serializedUsdEditsLocation))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, serializedUsdEditsLocation))
 
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
@@ -319,7 +319,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         stage.DefinePrim(newSessionsPrimPath, "xform")
         self.assertTrue(stage.GetPrimAtPath(newSessionsPrimPath).IsValid())
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
 
         cmds.file(save=True, force=True, type='mayaAscii')
         cmds.file(new=True, force=True)
@@ -351,7 +351,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         stage.DefinePrim(newSessionsPrimPath, "xform")
         self.assertTrue(stage.GetPrimAtPath(newSessionsPrimPath).IsValid())
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 1))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 1))
 
         msg = ("Session Layer before: " + stage.GetSessionLayer().identifier)
         stage = None

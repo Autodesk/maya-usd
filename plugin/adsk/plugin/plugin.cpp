@@ -29,6 +29,7 @@
 #include "mayaUsdInfoCommand.h"
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/commands/layerEditorWindowCommand.h>
@@ -46,6 +47,7 @@
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -434,7 +436,7 @@ MStatus initializePlugin(MObject obj)
 
         // Load Maya project tokens to AdskAssetResolver if the preference is enabled
         // This needs to be done after InitializeUsdPreferences()
-        static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
+        auto IncludeMayaTokenInAR = UsdMayaUtil::convert(MayaUsdOptionVars->IncludeMayaTokenInAR);
         if (MGlobal::optionVarExists(IncludeMayaTokenInAR)
             && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
             MayaUsd::AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();

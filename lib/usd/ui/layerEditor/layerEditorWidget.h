@@ -79,6 +79,7 @@ protected:
     {
         QAction* _autoHide { nullptr };
         QAction* _displayLayerContents { nullptr };
+        QAction* _displayLayerExpandAllValues { nullptr };
     } _actions;
     void updateNewLayerButton();
     void updateButtons();
