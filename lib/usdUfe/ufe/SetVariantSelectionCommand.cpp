@@ -16,6 +16,7 @@
 #include "SetVariantSelectionCommand.h"
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/usd/usd/variantSets.h>
@@ -70,7 +71,16 @@ void SetVariantSelectionCommand::redo()
     _savedSn.replaceWith(*globalSn);
     // Filter the global selection, removing items below our prim.
     globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, _path));
-    _varSet.SetVariantSelection(_newSelection);
+
+    {
+        UsdUfe::UsdUndoBlock undoBlock(&_undoItem);
+        if (UsdUfe::isComponentStage(_path)) {
+            UsdUfe::setComponentVariantSelection(
+                _prim.GetStage(), _varSet.GetName(), _newSelection);
+        } else {
+            _varSet.SetVariantSelection(_newSelection);
+        }
+    }
 }
 
 void SetVariantSelectionCommand::undo()
@@ -86,7 +96,8 @@ void SetVariantSelectionCommand::undo()
         throw std::runtime_error(errMsg.c_str());
     }
 
-    _varSet.SetVariantSelection(_oldSelection);
+    _undoItem.undo();
+
     // Restore the saved selection to the global selection.  If a saved
     // selection item started with the prim's path, re-create it.
     auto globalSn = Ufe::GlobalSelection::get();

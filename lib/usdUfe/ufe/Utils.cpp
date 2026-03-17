@@ -128,6 +128,7 @@ UsdUfe::PauseEditForwardingFn           gPauseEditForwardingFn = nullptr;
 UsdUfe::IsComponentStageFn              gIsComponentStageFn = nullptr;
 UsdUfe::GetComponentMaterialScopeNameFn gGetComponentMaterialScopeNameFn = nullptr;
 UsdUfe::GetComponentMeshScopeNameFn     gGetComponentMeshScopeNameFn = nullptr;
+UsdUfe::SetComponentVariantSelectionFn  gSetComponentVariantSelectionFn = nullptr;
 UsdUfe::DefaultMaterialScopeNameFn      gGetDefaultMaterialScopeNameFn = nullptr;
 UsdUfe::ExtractTRSFn                    gExtractTRSFn = nullptr;
 UsdUfe::Transform3dMatrixOpNameFn       gTransform3dMatrixOpNameFn = nullptr;
@@ -1813,6 +1814,22 @@ std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
         return gGetComponentMeshScopeNameFn(stage);
     }
     return {};
+}
+
+void setSetComponentVariantSelectionFn(SetComponentVariantSelectionFn fn)
+{
+    gSetComponentVariantSelectionFn = fn;
+}
+
+bool setComponentVariantSelection(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            variantSetName,
+    const std::string&            variantSelection)
+{
+    if (gSetComponentVariantSelectionFn) {
+        return gSetComponentVariantSelectionFn(stage, variantSetName, variantSelection);
+    }
+    return false;
 }
 
 void validateComponentNamespaceOperation(
