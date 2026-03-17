@@ -78,7 +78,16 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
 
     const UsdPrim prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    UsdUfe::applyCommandRestriction(prim, "rename");
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(_stage);
+    const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
+
+    // Validate the operation based on stage type
+    if (isComponent) {
+        UsdUfe::validateComponentNamespaceOperation(prim, "rename");
+    } else {
+        UsdUfe::applyCommandRestriction(prim, "rename");
+    }
 
     // Handle trailing #: convert it to a number which will be increased as needed.
     // Increasing the number to make it unique is handled in the function uniqueChildName
@@ -120,6 +129,9 @@ void doUsdRename(
     const Ufe::Path    srcPath,
     const Ufe::Path    dstPath)
 {
+    // Pause edit forwarding during the delete operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
+
     UsdUfe::enforceMutedLayer(prim, "rename");
 
     // 1- open a changeblock to delay sending notifications.
@@ -156,7 +168,22 @@ void doUsdRename(
         }
     };
 
-    UsdUfe::applyToAllPrimSpecs(prim, renameFunc);
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
+    const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
+    if (isComponent) {
+        // For component stages, we need to rename the prim in all layers that have opinions.
+        // This includes both the defining layer stack and any overriding opinions in
+        // other layers (local and non-local).
+        const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+        for (const SdfPrimSpecHandle& spec : primStack) {
+            if (spec) {
+                renameFunc(prim, spec);
+            }
+        }
+    } else {
+        UsdUfe::applyToAllPrimSpecs(prim, renameFunc);
+    }
 }
 
 } // namespace
@@ -220,12 +247,20 @@ void UsdUndoRenameCommand::renameHelper(
 void UsdUndoRenameCommand::undo()
 {
     UsdUfe::InPathChange pc;
+
+    // Pause edit forwarding during the undo operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
+
     renameUndo();
 }
 
 void UsdUndoRenameCommand::redo()
 {
     UsdUfe::InPathChange pc;
+
+    // Pause edit forwarding during the redo operation with RAII
+    const UsdUfe::EditForwardingGuard efPauser {};
+
     renameRedo();
 }
 
