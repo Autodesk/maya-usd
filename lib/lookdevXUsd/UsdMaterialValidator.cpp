@@ -386,9 +386,9 @@ LookdevXUfe::AttributeComponentInfo UsdMaterialValidator::remapComponentConnecti
                     if (output)
                     {
 #if PXR_VERSION > 2408
-                        const auto& outputType = output->GetTypeAsSdfType().GetSdfType();
+                        const auto outputType = output->GetTypeAsSdfType().GetSdfType();
 #else
-                        const auto& outputType = output->GetTypeAsSdfType().first;
+                        const auto outputType = output->GetTypeAsSdfType().first;
 #endif
 
                         if (outputType == SdfValueTypeNames->Color3f || outputType == SdfValueTypeNames->Color4f)

@@ -232,6 +232,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     static bool execute(const std::string name, MString pythonDo, MString pythonUndo);
 
+    // This avoids hiding the base class execute function.
+    using OpUndoItem::execute;
+
     /// \brief create a python undo item.
     MAYAUSD_CORE_PUBLIC
     PythonUndoItem(const std::string name, MString pythonDo, MString pythonUndo);
@@ -292,6 +295,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     static bool
     execute(const std::string name, std::function<bool()> redo, std::function<bool()> undo);
+
+    // This avoids hiding the base class execute function.
+    using OpUndoItem::execute;
 
     /// \brief create a function undo item.
     MAYAUSD_CORE_PUBLIC
@@ -489,6 +495,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     static bool
     execute(const std::string& name, const std::shared_ptr<Ufe::UndoableCommand>& command);
+
+    // This avoids hiding the base class execute function.
+    using OpUndoItem::execute;
 
     /// \brief Keep track of a UFE command.
     MAYAUSD_CORE_PUBLIC
