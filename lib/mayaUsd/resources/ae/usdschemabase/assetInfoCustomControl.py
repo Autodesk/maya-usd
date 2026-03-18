@@ -56,6 +56,8 @@ class AssetInfoCustomControl(object):
 
     _ignoredFields = { 'payloadAssetDependencies' }
 
+    _nested = '_nested'
+
     def _createFieldsForDict(self, dataDict, parentLabel=''):
         '''
         Recursively create UI fields for dictionary data.
@@ -79,7 +81,7 @@ class AssetInfoCustomControl(object):
                 # Recursively create fields for nested dictionary
                 nestedFields = self._createFieldsForDict(value, label)
                 uiElements[key] = {
-                    '_nested': nestedFields
+                    AssetInfoCustomControl._nested: nestedFields
                 }
             else:
                 # Create a text field for non-dictionary values
@@ -107,7 +109,7 @@ class AssetInfoCustomControl(object):
             if isinstance(value, dict):
                 nestedFields = self._createFieldsForDict(value, label)
                 self._assetInfoFieldUIs[key] = {
-                    '_nested': nestedFields
+                    AssetInfoCustomControl._nested: nestedFields
                 }
             else:
                 self._assetInfoFieldUIs[key] = cmds.textFieldGrp(label=label, editable=False, enableKeyboardFocus=True)
@@ -132,11 +134,8 @@ class AssetInfoCustomControl(object):
         pass
 
     def _getAssetInfoValue(self, value):
-        if isinstance(value, dict):
-            # For dictionaries, return a string representation
-            return '{...}'  # UI fields for dicts are handled separately
-        if isinstance(value, list):
-            value = ', '.join([str(v) for v in value])
+        if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+            value = ', '.join([self._getAssetInfoValue(v) for v in value])
         text = str(value)
         text = text.strip('@')
         return text
@@ -151,10 +150,10 @@ class AssetInfoCustomControl(object):
             
             uiElement = uiElements[key]
             
-            if isinstance(uiElement, dict) and '_nested' in uiElement:
+            if isinstance(uiElement, dict) and AssetInfoCustomControl._nested in uiElement:
                 # This is a nested dictionary, recursively update
                 if isinstance(value, dict):
-                    self._updateFieldsForDict(uiElement['_nested'], value)
+                    self._updateFieldsForDict(uiElement[AssetInfoCustomControl._nested], value)
             elif isinstance(value, dict):
                 # Value is a dict but UI element is not structured as nested
                 # This shouldn't happen if onCreate worked correctly, but handle it
@@ -173,10 +172,10 @@ class AssetInfoCustomControl(object):
             if key in self._assetInfoFieldUIs:
                 uiElement = self._assetInfoFieldUIs[key]
                 
-                if isinstance(uiElement, dict) and '_nested' in uiElement:
+                if isinstance(uiElement, dict) and AssetInfoCustomControl._nested in uiElement:
                     # This is a nested dictionary structure
                     if isinstance(value, dict):
-                        self._updateFieldsForDict(uiElement['_nested'], value)
+                        self._updateFieldsForDict(uiElement[AssetInfoCustomControl._nested], value)
                 elif isinstance(value, dict):
                     # Value is a dict but UI element is not structured as nested
                     # Skip updating or log a warning
