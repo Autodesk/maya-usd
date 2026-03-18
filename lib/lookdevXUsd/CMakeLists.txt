@@ -24,7 +24,6 @@ add_library(${PROJECT_NAME} SHARED)
 target_sources(${PROJECT_NAME}
     PRIVATE
         LookdevXUsd.cpp
-        ProxyShapeLookdevHandler.cpp
         UsdCapabilityHandler.cpp
         UsdClipboardHandler.cpp
         UsdDebugHandler.cpp
@@ -49,7 +48,6 @@ target_sources(${PROJECT_NAME}
 set(HEADERS
     Export.h
     LookdevXUsd.h
-    ProxyShapeLookdevHandler.h
     UsdCapabilityHandler.h
     UsdClipboardHandler.h
     UsdDebugHandler.h
@@ -71,6 +69,17 @@ set(HEADERS
     Utils.h
 )
 
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            ProxyShapeLookdevHandler.cpp
+    )
+
+    list(APPEND HEADERS
+        ProxyShapeLookdevHandler.h
+    )
+endif()
+
 # -----------------------------------------------------------------------------
 # Compiler configuration
 # -----------------------------------------------------------------------------
@@ -86,6 +95,14 @@ target_compile_definitions(${PROJECT_NAME}
         # this flag is needed when building for Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
+
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    message(STATUS "Building LookdevXUsd with MayaUsdAPI support")
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            LDX_USD_USE_MAYAUSDAPI=1
+    )
+endif()
 
 mayaUsd_compile_config(${PROJECT_NAME})
 
@@ -154,7 +171,7 @@ target_link_libraries(${PROJECT_NAME}
         sdf
         sdr
         usdMtlx
-        mayaUsdAPI
+        $<$<BOOL:${BUILD_MAYAUSDAPI_LIBRARY}>:mayaUsdAPI>
     PRIVATE
         usd
         usdShade

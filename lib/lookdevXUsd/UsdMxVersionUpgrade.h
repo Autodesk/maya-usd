@@ -15,7 +15,7 @@
 
 #include "Export.h"
 
-#include <mayaUsdAPI/undo.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <ufe/path.h>
 #include <ufe/undoableCommand.h>
@@ -58,8 +58,8 @@ public:
     UFE_V4(std::string commandString() const override { return "MaterialXUpgradeMaterial"; })
 
 private:
-    Ufe::Path                   _materialPath;
-    MayaUsdAPI::UsdUndoableItem _undoableItem;
+    Ufe::Path               _materialPath;
+    UsdUfe::UsdUndoableItem _undoableItem;
 };
 
 } // namespace LookdevXUsd::Version

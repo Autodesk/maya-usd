@@ -10,12 +10,12 @@
 //*****************************************************************************
 #include "UsdClipboardHandler.h"
 
+#include <usdUfe/ufe/UsdClipboardHandler.h>
+
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
 
 #include <ufe/runTimeMgr.h>
-
-#include <mayaUsdAPI/clipboard.h>
 
 #include <filesystem>
 
@@ -96,7 +96,10 @@ Ufe::UndoableCommand::Ptr UsdClipboardHandler::pasteCmd_(const Ufe::Selection& p
 
 bool UsdClipboardHandler::hasMaterialToPasteImpl()
 {
-    return MayaUsdAPI::hasItemToPaste(m_wrappedClipboardHandler, &isMaterial);
+    if (auto usdClipboardHandler = std::dynamic_pointer_cast<UsdUfe::UsdClipboardHandler>(m_wrappedClipboardHandler)) {
+        return usdClipboardHandler->hasItemToPaste(&isMaterial);
+    }
+    return false;
 }
 
 bool UsdClipboardHandler::hasItemsToPaste_()
@@ -106,21 +109,30 @@ bool UsdClipboardHandler::hasItemsToPaste_()
 
 bool UsdClipboardHandler::hasNodeGraphsToPasteImpl()
 {
-    return MayaUsdAPI::hasItemToPaste(m_wrappedClipboardHandler, &isNodeGraph);
+    if (auto usdClipboardHandler = std::dynamic_pointer_cast<UsdUfe::UsdClipboardHandler>(m_wrappedClipboardHandler)) {
+        return usdClipboardHandler->hasItemToPaste(&isNodeGraph);
+    }
+    return false;
 }
 
 bool UsdClipboardHandler::hasNonMaterialToPasteImpl()
 {
-    return MayaUsdAPI::hasItemToPaste(m_wrappedClipboardHandler, &isNonMaterial);
+    if (auto usdClipboardHandler = std::dynamic_pointer_cast<UsdUfe::UsdClipboardHandler>(m_wrappedClipboardHandler)) {
+        return usdClipboardHandler->hasItemToPaste(&isNonMaterial);
+    }
+    return false;
 }
 
 void UsdClipboardHandler::setClipboardPath(const std::string& clipboardPath)
 {
-    auto tmpPath = std::filesystem::path(clipboardPath);
-    tmpPath.append(clipboardFileName);
-    tmpPath.replace_extension("usda");
-    MayaUsdAPI::setClipboardFilePath(m_wrappedClipboardHandler, tmpPath.string());
-    MayaUsdAPI::setClipboardFileFormat(m_wrappedClipboardHandler, "usda");
+    if (auto usdClipboardHandler = std::dynamic_pointer_cast<UsdUfe::UsdClipboardHandler>(m_wrappedClipboardHandler))
+    {
+        auto tmpPath = std::filesystem::path(clipboardPath);
+        tmpPath.append(clipboardFileName);
+        tmpPath.replace_extension("usda");
+        usdClipboardHandler->setClipboardFilePath(tmpPath.string());
+        usdClipboardHandler->setClipboardFileFormat("usda");
+    }
 }
 
 bool UsdClipboardHandler::canBeCut_(const Ufe::SceneItem::Ptr& item)

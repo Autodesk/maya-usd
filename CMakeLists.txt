@@ -151,7 +151,7 @@ endif()
 if (NOT PYTHONLIBS_FOUND)
     include(cmake/python.cmake)
 endif()
-message(STATUS "Build MayaUSD with Python3 = " ${BUILD_WITH_PYTHON_3})
+message(STATUS "Building with Python3 = " ${BUILD_WITH_PYTHON_3})
 message(STATUS "   PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "   PYTHON_LIBRARIES    = ${PYTHON_LIBRARIES}")
 message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
@@ -228,30 +228,33 @@ if(BUILD_MAYAUSD_LIBRARY)
     endif()
 endif()
 
-if (NOT BUILD_ADSK_PLUGIN)
-        set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
-endif()
-# Need LookdevXUfe/MayaUsdAPI when building LookdevXUsd.
+# Need LookdevXUfe when building LookdevXUsd.
 if(BUILD_LOOKDEVXUSD_LIBRARY)
-    if(NOT BUILD_MAYAUSDAPI_LIBRARY)
-        message(FATAL_ERROR "Building LookdevXUsd requires MayaUsdAPI.")
-    endif()
-
-    if(MAYA_APP_VERSION VERSION_GREATER 2025)
-        find_package(LookdevXUfe) # Optional component - if not found, disable LookdevXUsd.
+    if (Maya_FOUND)
+        if(MAYA_APP_VERSION VERSION_GREATER 2025)
+            find_package(LookdevXUfe) # Optional component - if not found, disable LookdevXUsd.
+        else()
+            set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
+            message(WARNING "Disabling LookdevXUsd: it is not supported by Maya ${MAYA_APP_VERSION}.")
+        endif()
     else()
-        set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
-        message(WARNING "Disabling LookdevXUsd: it is not supported by Maya ${MAYA_APP_VERSION}.")
+        find_package(LookdevXUfe) # Optional component - if not found, disable LookdevXUsd.
     endif()
     if (NOT LookdevXUfe_FOUND)
         set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
-        message(WARNING "Disabling LookdevXUsd as LookdevXUfe was not found (in Maya devkit).")
+        if (Maya_FOUND)
+            message(WARNING "Disabling LookdevXUsd as LookdevXUfe was not found (in Maya devkit).")
+        else()
+            message(WARNING "Disabling LookdevXUsd as LookdevXUfe was not found (set LOOKDEVXUFE_INCLUDE_ROOT/LOOKDEVXUFE_LIB_ROOT).")
+        endif()
     endif()
 endif()
 
-find_package(AdskUsdComponentCreator)
-find_package(AdskUsdAssetResolver)
-find_package(AdskUsdEditForward)
+if(BUILD_MAYAUSD_LIBRARY)
+    find_package(AdskUsdComponentCreator)
+    find_package(AdskUsdAssetResolver)
+    find_package(AdskUsdEditForward)
+endif()
 
 #------------------------------------------------------------------------------
 # compiler configuration

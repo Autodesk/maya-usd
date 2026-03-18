@@ -4,7 +4,7 @@
 # and related paths (scripts)
 #
 # Variables that will be defined:
-# MAYA_FOUND          Defined if a Maya installation has been detected
+# Maya_FOUND          Defined if a Maya installation has been detected
 # MAYA_EXECUTABLE     Path to Maya's executable
 # MAYA_<lib>_FOUND    Defined if <lib> has been found
 # MAYA_<lib>_LIBRARY  Path to <lib> library
@@ -510,7 +510,7 @@ if(IS_MACOSX AND MAYA_Foundation_LIBRARY)
     endif()
 endif()
 
-# handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
+# handle the QUIETLY and REQUIRED arguments and set Maya_FOUND to TRUE if
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
 
