@@ -60,8 +60,8 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
                 }
                 if (!StageLayersToSave._dirtyFileBackedLayers.empty()) {
                     atLeastOneLayerToSave = true;
-                    // If the option is set to show the confirmation dialog, 
-                    // we can stop here, we already know we will have to show it 
+                    // If the option is set to show the confirmation dialog,
+                    // we can stop here, we already know we will have to show it
                     // below, no need to complete the search for atLeastOneAnonToSave.
                     if (showConfirmDglOption) {
                         break;
@@ -73,7 +73,7 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
             // so the user can choose where to save the anonymous layers.
             bool showConfirmDgl
                 = (showConfirmDglOption || atLeastOneAnonToSave) && atLeastOneLayerToSave;
-            
+
             if (showConfirmDgl) {
 
                 UsdLayerEditor::SaveLayersDialog dlg(nullptr, infos, isExporting);
