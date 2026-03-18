@@ -16,6 +16,8 @@
 import maya.cmds as cmds
 from maya.common.ui import LayoutManager
 
+import mayaUsd.ufe as mayaUsdUfe
+
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 
 from pxr import Usd
@@ -31,6 +33,8 @@ class AssetInfoCustomControl(object):
         self._item = item if mayaVer == '2022.1' else None
         self._prim = prim
         self._useNiceName = useNiceName
+        self._assetInfoFieldUIs = dict()
+        self._payloadDepsButton = None
 
     @staticmethod
     def hasAssetInfo(prim):
@@ -38,24 +42,87 @@ class AssetInfoCustomControl(object):
         Check if the given prim has asset info metadata.
         '''
         model = Usd.ModelAPI(prim)
-        name = str(model.GetAssetName())
-        identifier = str(model.GetAssetIdentifier().path)
-        version = str(model.GetAssetVersion())
-        deps = model.GetPayloadAssetDependencies()
-        return name or identifier or version or deps
+        assetInfoDict  = model.GetAssetInfo()
+        for key, value in assetInfoDict.items():
+            if value:
+                return True
+        return False
+    
+    _labelForFields = {
+        'identifier': 'kLabelAssetIdentifier',
+        'assetName': 'kLabelAssetName',
+        'assetVersion': 'kLabelAssetVersion',
+    }
+
+    _ignoredFields = { 'payloadAssetDependencies' }
+
+    def _createFieldsForDict(self, dataDict, parentLabel=''):
+        '''
+        Recursively create UI fields for dictionary data.
+        Returns a dictionary structure mirroring the input with UI element names as values.
+        '''
+        uiElements = dict()
+        
+        for key, value in dataDict.items():
+            if not value:
+                continue
+
+            if key in AssetInfoCustomControl._labelForFields:
+                label = getMayaUsdLibString(AssetInfoCustomControl._labelForFields[key])
+            else:
+                label = mayaUsdUfe.prettifyName(key) if self._useNiceName else key
+            
+            label = f'{parentLabel}: {label}' if parentLabel else label
+            
+            if isinstance(value, dict):
+                # Create a frame layout for dictionary values
+                # Recursively create fields for nested dictionary
+                nestedFields = self._createFieldsForDict(value, label)
+                uiElements[key] = {
+                    '_nested': nestedFields
+                }
+            else:
+                # Create a text field for non-dictionary values
+                uiElements[key] = cmds.textFieldGrp(
+                    label=label,
+                    editable=False,
+                    enableKeyboardFocus=True
+                )
+        
+        return uiElements
 
     def onCreate(self, *args):
-        self._nameTextField = cmds.textFieldGrp(label=getMayaUsdLibString('kLabelAssetName'), editable=False, enableKeyboardFocus=True)
-        self._identifierTextField = cmds.textFieldGrp(label=getMayaUsdLibString('kLabelAssetIdentifier'), editable=False, enableKeyboardFocus=True)
-        self._versionTextField = cmds.textFieldGrp(label=getMayaUsdLibString('kLabelAssetVersion'), editable=False, enableKeyboardFocus=True)
+        model = Usd.ModelAPI(self._prim)
+        assetInfoDict  = model.GetAssetInfo()
+        for key, value in assetInfoDict.items():
+            if not value:
+                continue
+            if key in self._ignoredFields:
+                continue
+            if key in AssetInfoCustomControl._labelForFields:
+                label = getMayaUsdLibString(AssetInfoCustomControl._labelForFields[key])
+            else:
+                label = mayaUsdUfe.prettifyName(key) if self._useNiceName else key
 
-        rl = cmds.rowLayout(nc=5, adj=4)
-        with LayoutManager(rl):
-            cmds.text(al='right', label=getMayaUsdLibString('kLabelAssetPayloadDeps'))
-            command = lambda *_: self._showPayloads()
-            self._payloadDepsButton  = cmds.button('assetInfoPayloadDeps', label=getMayaUsdLibString('kLabelViewAssetPayloadDeps'), command=command, enable=False)
+            if isinstance(value, dict):
+                nestedFields = self._createFieldsForDict(value, label)
+                self._assetInfoFieldUIs[key] = {
+                    '_nested': nestedFields
+                }
+            else:
+                self._assetInfoFieldUIs[key] = cmds.textFieldGrp(label=label, editable=False, enableKeyboardFocus=True)
 
-        # Update all metadata values.
+        deps = model.GetPayloadAssetDependencies()
+        if len(deps):
+            rl = cmds.rowLayout(nc=5, adj=4)
+            with LayoutManager(rl):
+                cmds.text(al='right', label=getMayaUsdLibString('kLabelAssetPayloadDeps'))
+                command = lambda *_: self._showPayloads()
+                self._payloadDepsButton  = cmds.button('assetInfoPayloadDeps', label=getMayaUsdLibString('kLabelViewAssetPayloadDeps'), command=command, enable=False)
+        else:
+            self._payloadDepsButton = None
+
+        # Update all metadata values. 
         self.refresh()
 
     def onReplace(self, *args):
@@ -64,23 +131,63 @@ class AssetInfoCustomControl(object):
         # that case we don't need to update our controls since none will change.
         pass
 
-    def refresh(self):
-        if self._prim:
-            model = Usd.ModelAPI(self._prim)
-            name = str(model.GetAssetName())
-            identifier = str(model.GetAssetIdentifier().path)
-            version = str(model.GetAssetVersion())
-            deps = model.GetPayloadAssetDependencies()
-        else:
-            name = ''
-            identifier = ''
-            version = ''
-            deps = None
+    def _getAssetInfoValue(self, value):
+        if isinstance(value, dict):
+            # For dictionaries, return a string representation
+            return '{...}'  # UI fields for dicts are handled separately
+        if isinstance(value, list):
+            value = ', '.join([str(v) for v in value])
+        text = str(value)
+        text = text.strip('@')
+        return text
 
-        cmds.textFieldGrp(self._nameTextField, edit=True, text=name)
-        cmds.textFieldGrp(self._identifierTextField, edit=True, text=identifier)
-        cmds.textFieldGrp(self._versionTextField, edit=True, text=version)
-        cmds.button(self._payloadDepsButton, edit=True, enable=bool(deps))
+    def _updateFieldsForDict(self, uiElements, dataDict):
+        '''
+        Recursively update UI fields with dictionary data.
+        '''
+        for key, value in dataDict.items():
+            if key not in uiElements:
+                continue
+            
+            uiElement = uiElements[key]
+            
+            if isinstance(uiElement, dict) and '_nested' in uiElement:
+                # This is a nested dictionary, recursively update
+                if isinstance(value, dict):
+                    self._updateFieldsForDict(uiElement['_nested'], value)
+            elif isinstance(value, dict):
+                # Value is a dict but UI element is not structured as nested
+                # This shouldn't happen if onCreate worked correctly, but handle it
+                pass
+            else:
+                # Simple field, update the text
+                cmds.textFieldGrp(uiElement, edit=True, text=self._getAssetInfoValue(value))
+
+    def refresh(self):
+        if not self._prim:
+            return
+
+        model = Usd.ModelAPI(self._prim)
+        assetInfoDict  = model.GetAssetInfo()
+        for key, value in assetInfoDict.items():
+            if key in self._assetInfoFieldUIs:
+                uiElement = self._assetInfoFieldUIs[key]
+                
+                if isinstance(uiElement, dict) and '_nested' in uiElement:
+                    # This is a nested dictionary structure
+                    if isinstance(value, dict):
+                        self._updateFieldsForDict(uiElement['_nested'], value)
+                elif isinstance(value, dict):
+                    # Value is a dict but UI element is not structured as nested
+                    # Skip updating or log a warning
+                    pass
+                else:
+                    # Simple text field
+                    cmds.textFieldGrp(uiElement, edit=True, text=self._getAssetInfoValue(value))
+
+        if self._payloadDepsButton:
+            deps = model.GetPayloadAssetDependencies()
+            cmds.button(self._payloadDepsButton, edit=True, enable=bool(deps))
 
     _previewWindowId = 'assetInfoCustomControlPreviewWindow'
     
