@@ -354,9 +354,6 @@ void UsdUndoInsertChildCommand::execute()
     // to access the existing rules.
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
 
-    // Pause edit forwarding during the undo operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
-
     // We need to keep the generated item to be able to return it to the caller
     // via the insertedChild() member function.
     {
@@ -425,9 +422,6 @@ void UsdUndoInsertChildCommand::undo()
     // Note: the arguments passed are the opposite of those in execute and redo().
     preserveLoadRules(_ufeDstPath, _usdDstPath, _usdSrcPath);
 
-    // Pause edit forwarding during the undo operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
-
     _undoableItem.undo();
 
     // Note: the arguments passed are the opposite of those in execute and redo().
@@ -441,9 +435,6 @@ void UsdUndoInsertChildCommand::redo()
     // Load rules must be duplicated before the prim is moved to be able
     // to access the existing rules.
     preserveLoadRules(_ufeSrcPath, _usdSrcPath, _usdDstPath);
-
-    // Pause edit forwarding during the undo operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
 
     _undoableItem.redo();
 
