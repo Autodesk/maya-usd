@@ -23,10 +23,9 @@
 
 #include <pxr/usd/sdr/registry.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::NodeDefHandler, UsdShaderNodeDefHandler);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::NodeDefHandler, UsdShaderNodeDefHandler);
 
 UsdShaderNodeDefHandler::Ptr UsdShaderNodeDefHandler::create()
 {
@@ -68,5 +67,4 @@ Ufe::NodeDefs UsdShaderNodeDefHandler::definitions(const std::string& category) 
     return UsdShaderNodeDef::definitions(category);
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

@@ -93,16 +93,16 @@ class StringListPanel(QWidget):
             opt = QStyleOptionHeaderV2()
             opt.initFrom(self)
             opt.position = QStyleOptionHeaderV2.SectionPosition.Middle
-            opt.orientation = Qt.Horizontal
-            opt.state = QStyle.State_None | QStyle.State_Raised | QStyle.State_Horizontal
+            opt.orientation = Qt.Orientation.Horizontal
+            opt.state = QStyle.StateFlag.State_None | QStyle.StateFlag.State_Raised | QStyle.StateFlag.State_Horizontal
             opt.section = 0
             
             # adjust the rect to not draw the right border
             opt.rect.adjust(-1,0,1,0)
 
             if self.isEnabled():
-                opt.state |= QStyle.State_Enabled
+                opt.state |= QStyle.StateFlag.State_Enabled
             if self.isActiveWindow():
-                opt.state |= QStyle.State_Active
+                opt.state |= QStyle.StateFlag.State_Active
             opt.text = self._headerTitle
-            painter.drawControl(QStyle.CE_Header, opt)
+            painter.drawControl(QStyle.ControlElement.CE_Header, opt)

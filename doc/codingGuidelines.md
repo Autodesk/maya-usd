@@ -299,8 +299,10 @@ We are adopting the [PEP-8](https://www.python.org/dev/peps/pep-0008) style for 
 
 [Pylint](https://www.pylint.org/) is recommended for automation.
 
+### Qt Enum Names
+Always use fully qualified enum names when accessing Qt enums in Python (e.g., `QtCore.Qt.AlignmentFlag.AlignLeft` instead of `QtCore.Qt.AlignLeft`). The shorter unqualified forms were deprecated in PyQt5/PySide2 and have been removed in PyQt6/PySide6, so using fully qualified names ensures forward compatibility.
 
-# Coding guidelines for CMake 
+# Coding guidelines for CMake
 ## Modern CMake
 1. Target Build and Usage requirements should be very clear.
 * build requirements ( everything that is needed to build the target )

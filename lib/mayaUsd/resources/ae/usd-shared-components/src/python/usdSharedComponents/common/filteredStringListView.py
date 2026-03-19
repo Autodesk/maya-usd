@@ -65,7 +65,7 @@ class FilteredStringDelegate(QItemDelegate):
         if editLine and self._listView:
             suggestions = self._listView.model()._collData.getSuggestions()
             self._completer = QCompleter(suggestions)
-            self._completer.setCaseSensitivity(Qt.CaseInsensitive)
+            self._completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
             self._completer.popup().setFrameStyle(QFrame.Shape.StyledPanel)
             itemDelegate = CompleterItemDelegate(self._completer)
             self._completer.popup().setItemDelegate(itemDelegate)
@@ -73,7 +73,7 @@ class FilteredStringDelegate(QItemDelegate):
         return editLine
 
     def setModelData(self, editor, model, index):
-        oldValue = model.data(index, Qt.DisplayRole)
+        oldValue = model.data(index, Qt.ItemDataRole.DisplayRole)
         newValue = editor.text().strip()
         if newValue:
             model._collData.replaceStrings(oldValue, newValue)
@@ -116,7 +116,7 @@ class FilteredStringListView(QListView):
         self.placeholder_label.setPalette(palette)
         self.placeholder_label.hide()
 
-        self.setCursor(Qt.ArrowCursor)
+        self.setCursor(Qt.CursorShape.ArrowCursor)
 
         DragAndDropAndDeleteEventFilter(self, data)
 
@@ -158,10 +158,10 @@ class FilteredStringListView(QListView):
             mimeData.setText("\n".join([index.data() for index in selectedIndexes]))
 
         drag.setMimeData(mimeData)
-        drag.exec(Qt.MoveAction)
+        drag.exec(Qt.DropAction.MoveAction)
 
     def selectedItems(self) -> Sequence[str]:
-        return [str(index.data(Qt.DisplayRole)) for index in self.selectedIndexes()]
+        return [str(index.data(Qt.ItemDataRole.DisplayRole)) for index in self.selectedIndexes()]
 
     def hasSelectedItems(self) -> bool:
         return bool(self.selectionModel().hasSelection())
@@ -176,7 +176,7 @@ class DragAndDropAndDeleteEventFilter(QObject):
         widget.setDropIndicatorShown(True)
 
     def eventFilter(self, obj: QObject, event: QEvent):
-        if event.type() == QEvent.Drop:
+        if event.type() == QEvent.Type.Drop:
             mime_data = event.mimeData()
             draggedItems = mime_data.text()
 
@@ -198,16 +198,16 @@ class DragAndDropAndDeleteEventFilter(QObject):
             self._collData.addMultiLineStrings(draggedItems)
 
             return True
-        elif event.type() == QEvent.DragEnter:
+        elif event.type() == QEvent.Type.DragEnter:
             event.acceptProposedAction()
             return True
-        elif event.type() == QEvent.DragMove:
+        elif event.type() == QEvent.Type.DragMove:
             event.acceptProposedAction()
             return True
-        elif event.type() == QEvent.KeyPress:
+        elif event.type() == QEvent.Type.KeyPress:
             # These are to prevent deleting the overall DCC selection when
             # an item in the listview is selected.
-            if event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
+            if event.key() == Qt.Key.Key_Delete or event.key() == Qt.Key.Key_Backspace:
                 return True
 
         return super().eventFilter(obj, event)

@@ -64,7 +64,10 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         PRIVATE
             UsdShaderAttributeDef.cpp
             UsdShaderAttributeHolder.cpp
+            UsdShaderNodeDef.cpp
+            UsdShaderNodeDefHandler.cpp
             UsdUndoAttributesCommands.cpp
+            UsdUndoCreateFromNodeDefCommand.cpp
     )
 endif()
 
@@ -214,7 +217,10 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdShaderAttributeDef.h
         UsdShaderAttributeHolder.h
+        UsdShaderNodeDef.h
+        UsdShaderNodeDefHandler.h
         UsdUndoAttributesCommands.h
+        UsdUndoCreateFromNodeDefCommand.h
     )
 endif()
 

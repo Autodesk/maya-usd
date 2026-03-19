@@ -1535,6 +1535,21 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(ufe.PathString.string(mxConn.dst.path), "|stage1|stageShape1,/mtl/standard_surface1")
         self.assertEqual(mxConn.dst.name, "outputs:mtlx:surface")
 
+        # Construct a non surface shader node at the mtl scope
+        # Note: This functionallity is not exposed in the UI, it's accessible via addNewMaterialCommand()
+        # exposed in the mayaUsdAPI.
+        cmdAddNonSS = scopeOps.doOpCmd(['Add New Material', 'MaterialX', 'ND_image_color3'])
+        self.assertIsNotNone(cmdAddNonSS)
+        cmdAddNonSS.execute()
+
+        # Verify that a new material is created, but without connections this time as it is not a surface
+        self.assertEqual(len(scopeHier.children()), 3)
+        nonSSMatItem = scopeHier.children()[-1]
+        self.assertEqual(ufe.PathString.string(nonSSMatItem.path()), "|stage1|stageShape1,/mtl/image1")
+        connections = connectionHandler.sourceConnections(nonSSMatItem)
+        self.assertIsNotNone(connections)
+        self.assertEqual(len(connections.allConnections()), 0)
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testMaterialBindingWithNodeDefHandler(self):
         """In this test we will go as far as possible towards creating and binding a working

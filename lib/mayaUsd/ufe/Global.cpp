@@ -63,7 +63,6 @@
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
 
 #include <usdUfe/ufe/trf/UsdTransform3dRead.h>
@@ -353,8 +352,6 @@ MStatus initialize()
 #elif UFE_PREVIEW_BATCHOPS_SUPPORT
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
 #endif
-
-    handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 
 #endif /* UFE_V4_FEATURES_AVAILABLE */
 

@@ -22,8 +22,9 @@
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
+
+#include <usdUfe/ufe/UsdShaderNodeDefHandler.h>
 #endif
 
 namespace MAYAUSDAPI_NS_DEF {
@@ -41,7 +42,7 @@ Ufe::ConnectionHandler::Ptr createUsdConnectionHandler()
 
 Ufe::NodeDefHandler::Ptr createUsdShaderNodeDefHandler()
 {
-    return MayaUsd::ufe::UsdShaderNodeDefHandler::create();
+    return UsdUfe::UsdShaderNodeDefHandler::create();
 }
 #endif
 

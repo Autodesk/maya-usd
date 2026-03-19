@@ -26,7 +26,7 @@ class PersistentStorage(object):
         cls._instance = persistentStorage
 
     def _settings(self) -> QSettings:
-        return QSettings("settings.ini", QSettings.IniFormat)
+        return QSettings("settings.ini", QSettings.Format.IniFormat)
 
     def set(self, group: str, key: str, value: object):
         '''

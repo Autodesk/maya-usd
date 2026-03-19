@@ -26,16 +26,16 @@ class Resizable(QWidget):
             self._mousePressGlobalPosY: Union[int, None] = None
             self._resizeHandleMask: QRect = None
 
-            self.setWindowFlags(Qt.FramelessWindowHint)
-            self.setAttribute(Qt.WA_TranslucentBackground)
-            self.setAttribute(Qt.WA_NoSystemBackground)
-            self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             self.setMinimumSize(
                 self.RESIZE_HANDLE_SIZE,
                 self.RESIZE_HANDLE_SIZE,
             )
             self.setMouseTracking(True)
-            self.setFocusPolicy(Qt.NoFocus)
+            self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         def paintEvent(self, _):
             if self._active:
@@ -78,7 +78,7 @@ class Resizable(QWidget):
             self._active = value
             self._updateMask()
             self.update()
-            self.setCursor(Qt.SizeVerCursor if value else Qt.ArrowCursor)
+            self.setCursor(Qt.CursorShape.SizeVerCursor if value else Qt.CursorShape.ArrowCursor)
 
         def mouseMoveEvent(self, event):
             if self._mousePressGlobalPosY is not None:
@@ -130,12 +130,12 @@ class Resizable(QWidget):
     ):
         super(Resizable, self).__init__(parent)
 
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         stackedLayout = QStackedLayout()
         stackedLayout.setContentsMargins(0, 0, 0, 0)
         stackedLayout.setSpacing(0)
-        stackedLayout.setStackingMode(QStackedLayout.StackAll)
+        stackedLayout.setStackingMode(QStackedLayout.StackingMode.StackAll)
 
         contentWidget = QWidget(self)
         self._contentLayout = QVBoxLayout(contentWidget)

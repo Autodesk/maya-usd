@@ -95,8 +95,8 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         cmds.setToolTo('CreatePolyTorusCtx')
 
         # Click in the center of the viewport widget.
-        QTest.mouseClick(self._viewWidget, QtCore.Qt.LeftButton,
-            QtCore.Qt.NoModifier, self._viewWidget.rect().center())
+        QTest.mouseClick(self._viewWidget, QtCore.Qt.MouseButton.LeftButton,
+            QtCore.Qt.KeyboardModifier.NoModifier, self._viewWidget.rect().center())
 
         # Find the torus (it should be called pTorus1).
         self.assertTrue(cmds.ls('pTorus1'))
@@ -123,8 +123,8 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         cmds.setToolTo('CreatePolyConeCtx')
 
         # Click in the center of the viewport widget.
-        QTest.mouseClick(self._viewWidget, QtCore.Qt.LeftButton,
-            QtCore.Qt.NoModifier, self._viewWidget.rect().center())
+        QTest.mouseClick(self._viewWidget, QtCore.Qt.MouseButton.LeftButton,
+            QtCore.Qt.KeyboardModifier.NoModifier, self._viewWidget.rect().center())
 
         # Find the cone (it should be called pCone1).
         self.assertTrue(cmds.ls('pCone1'))

@@ -48,19 +48,19 @@ class ExpressionWidget(QWidget):
 
         self._warningWidget = WarningWidget(menuWidget)
         self._warningSeparator = QFrame()
-        self._warningSeparator.setFrameShape(QFrame.VLine)
+        self._warningSeparator.setFrameShape(QFrame.Shape.VLine)
         self._warningSeparator.setMaximumHeight(Theme.instance().uiScaled(20))
         self._warningSeparator.setVisible(False)
         menuLayout.addWidget(self._warningWidget)
         menuLayout.addWidget(self._warningSeparator)
 
         menuLayout.addWidget(menuButton)
-        menuWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        menuWidget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self._expressionText = QTextEdit(self)
         self._expressionText.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         self._expressionText.setMinimumHeight(Theme.instance().uiScaled(80))
-        self._expressionText.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self._expressionText.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self._expressionText.setPlaceholderText("Type an expression here...")
         self._expressionText.setAcceptRichText(False)
 
@@ -105,13 +105,13 @@ class ExpressionWidget(QWidget):
             self._expressionText.setPlainText(membershipExpression)
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.KeyPress and obj is self._expressionText:
-            if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+        if event.type() == QEvent.Type.KeyPress and obj is self._expressionText:
+            if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
                 self.submitExpression()
                 return True
         # For the case when they change prim without hitting enter;
         # or click somewhere else in the UI
-        elif event.type() == QEvent.FocusOut:
+        elif event.type() == QEvent.Type.FocusOut:
             self.submitExpression()
 
         return super().eventFilter(obj, event)
