@@ -369,6 +369,10 @@ USDUFE_PUBLIC Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue);
 USDUFE_PUBLIC
 PXR_NS::SdrShaderNodeConstPtr usdShaderNodeFromSceneItem(const Ufe::SceneItem::Ptr& item);
 
+/// Access to materials associated with available renderers
+USDUFE_PUBLIC
+PXR_NS::SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
+
 //------------------------------------------------------------------------------
 // Verify edit restrictions.
 //------------------------------------------------------------------------------
