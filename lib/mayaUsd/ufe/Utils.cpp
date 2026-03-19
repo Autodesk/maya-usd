@@ -187,6 +187,10 @@ std::string uniqueChildNameMayaStandard(
 
 bool isAGatewayType(const std::string& mayaNodeType)
 {
+    if (mayaNodeType.empty()) {
+        return false;
+    }
+
     // If we've seen this node type before, return the cached value.
     auto iter = g_GatewayType.find(mayaNodeType);
     if (iter != std::end(g_GatewayType)) {
