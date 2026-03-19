@@ -43,13 +43,17 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
 
     QWidget*     saveAndCloseWidget = new QWidget(this);
     QHBoxLayout* saveAndCloselayout = new QHBoxLayout(saveAndCloseWidget);
-    QPushButton* saveButtonBox = new QPushButton(tr("Save && Refresh"), this);
-    saveButtonBox->setDefault(true);
-    saveButtonBox->setAutoDefault(true);
+    QPushButton* saveButtonBox = new QPushButton(tr("Save && Close"), this);
+    saveButtonBox->setDefault(false);
+    saveButtonBox->setAutoDefault(false);
+    saveButtonBox->setFocusPolicy(Qt::NoFocus);
     saveButtonBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     saveButtonBox->setToolTip(tr("Save settings"));
     saveAndCloselayout->addWidget(saveButtonBox);
     QPushButton* closeButtonBox = new QPushButton(tr("Close"), this);
+    closeButtonBox->setDefault(false);
+    closeButtonBox->setAutoDefault(false);
+    closeButtonBox->setFocusPolicy(Qt::NoFocus);
     closeButtonBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     saveAndCloselayout->addWidget(closeButtonBox);
     layout->addWidget(saveAndCloseWidget);
