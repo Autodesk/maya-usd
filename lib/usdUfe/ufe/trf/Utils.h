@@ -54,6 +54,35 @@ void rotatePivotTranslateOp(
     double                 y,
     double                 z);
 
+//! Guard to set and reset a flag indicating that we are in the set() function
+//! of a transform command.
+class USDUFE_PUBLIC SetTransformGuard
+{
+public:
+    SetTransformGuard(bool inSet)
+        : _inSet(inSet)
+    {
+        if (_inSet)
+            _getGuardedFlag()++;
+    }
+    ~SetTransformGuard()
+    {
+        if (_inSet)
+            _getGuardedFlag()--;
+    }
+
+    static bool isInSetTransform() { return _getGuardedFlag() > 0; }
+
+private:
+    static int& _getGuardedFlag()
+    {
+        static int flag = 0;
+        return flag;
+    }
+
+    bool _inSet;
+};
+
 } // namespace USDUFE_NS_DEF
 
 #endif // USDUFE_UFE_TRF_UTILS_H

@@ -114,6 +114,9 @@ private:
     bool                      _isPrepared;
     bool                      _canUpdateValue;
     bool                      _opCreated;
+
+protected:
+    bool _wasExecuted;
 };
 
 } // namespace USDUFE_NS_DEF

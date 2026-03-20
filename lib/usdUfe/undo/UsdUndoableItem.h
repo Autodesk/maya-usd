@@ -50,6 +50,8 @@ public:
     void undo();
     void redo();
 
+    size_t getEditCount() const { return _invertFuncs.size(); }
+
 private:
     friend class UsdUndoManager;
 

@@ -15,14 +15,17 @@
 //
 #include "UsdTransform3dMatrixOp.h"
 
+#include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
 #include <usdUfe/ufe/trf/UsdTransform3dSetObjectMatrix.h>
+#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/ufe/trf/XformOpUtils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
@@ -144,6 +147,7 @@ public:
         UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         GfMatrix4d           matrix = _op.GetOpTransform(writeTime());
         _op.GetAttr().Set(matrix, writeTime());
+        _wasExecuted |= (undoableItem.getEditCount() > 0);
     }
 
     void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
@@ -184,8 +188,13 @@ public:
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
-        _opTransform.SetTranslateOnly(GfVec3d(x, y, z));
-        updateNewValue(VtValue(_opTransform));
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+        {
+            UsdUfe::SetTransformGuard guard(true);
+            _opTransform.SetTranslateOnly(GfVec3d(x, y, z));
+            updateNewValue(VtValue(_opTransform));
+        }
         return true;
     }
 
@@ -231,10 +240,15 @@ public:
             GfRotation(GfVec3d::XAxis(), x) * GfRotation(GfVec3d::YAxis(), y)
             * GfRotation(GfVec3d::ZAxis(), z));
 
-        fU.SetRotate(r);
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+        {
+            UsdUfe::SetTransformGuard guard(true);
+            fU.SetRotate(r);
 
-        GfMatrix4d opTransform = (fS * fU).SetTranslateOnly(fT);
-        updateNewValue(VtValue(opTransform));
+            GfMatrix4d opTransform = (fS * fU).SetTranslateOnly(fT);
+            updateNewValue(VtValue(opTransform));
+        }
         return true;
     }
 
@@ -271,7 +285,12 @@ public:
     bool set(double x, double y, double z) override
     {
         GfMatrix4d opTransform = (GfMatrix4d(GfVec4d(x, y, z, 1.0)) * fU).SetTranslateOnly(fT);
-        updateNewValue(VtValue(opTransform));
+        UsdUfe::OperationEditRouterContext editContext(
+            UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
+        {
+            UsdUfe::SetTransformGuard guard(true);
+            updateNewValue(VtValue(opTransform));
+        }
         return true;
     }
 
