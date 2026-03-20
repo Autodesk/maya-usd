@@ -23,6 +23,9 @@
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/nodes/stageNode.h>
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+#include <mayaUsd/nodes/sceneRenderSettings.h>
+#endif
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h>
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeUI.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyDrawOverride.h>
@@ -171,6 +174,18 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
     status = MayaUsd::MayaUsdProxyShapeStageExtraData::initialize();
     CHECK_MSTATUS(status);
 
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    status = plugin.registerNode(
+        MayaUsd::UsdSceneRenderSettings::typeName,
+        MayaUsd::UsdSceneRenderSettings::typeId,
+        MayaUsd::UsdSceneRenderSettings::creator,
+        MayaUsd::UsdSceneRenderSettings::initialize,
+        MPxNode::kLocatorNode);
+    CHECK_MSTATUS(status);
+
+    MayaUsd::UsdSceneRenderSettings::installCallbacks();
+#endif
+
     return status;
 }
 
@@ -191,6 +206,10 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
             + _registrantPluginName + " is unloaded.");
         return MS::kSuccess;
     }
+
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    MayaUsd::UsdSceneRenderSettings::removeCallbacks();
+#endif
 
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
     CHECK_MSTATUS(status);
@@ -235,6 +254,11 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 
     status = plugin.deregisterNode(MayaUsdProxyShapeBase::typeId);
     CHECK_MSTATUS(status);
+
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    status = plugin.deregisterNode(MayaUsd::UsdSceneRenderSettings::typeId);
+    CHECK_MSTATUS(status);
+#endif
 
     status = plugin.deregisterData(MayaUsdStageData::mayaTypeId);
     CHECK_MSTATUS(status);

@@ -47,7 +47,8 @@ ProxyShapeContextOpsHandler::create(const Ufe::ContextOpsHandler::Ptr& mayaConte
 
 Ufe::ContextOps::Ptr ProxyShapeContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr& item) const
 {
-    if (isAGatewayType(UsdUfe::getSceneItemNodeType(item))) {
+    auto nodeType = UsdUfe::getSceneItemNodeType(item);
+    if (isAGatewayType(nodeType) && !isSceneRenderSettingsNode(nodeType)) {
         // UsdContextOps expects a UsdSceneItem which wraps a prim, so
         // create one using the pseudo-root and our own path.
         PXR_NS::UsdStageWeakPtr stage = getStage(item->path());

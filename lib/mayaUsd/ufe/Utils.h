@@ -89,6 +89,14 @@ std::string uniqueChildNameMayaStandard(
 MAYAUSD_CORE_PUBLIC
 bool isAGatewayType(const std::string& mayaNodeType);
 
+//! Return true if the Maya node type is the UsdSceneRenderSettings node.
+MAYAUSD_CORE_PUBLIC
+bool isSceneRenderSettingsNode(const std::string& mayaNodeType);
+
+//! Mark the UFE stage map as dirty so it will be rebuilt on next access.
+MAYAUSD_CORE_PUBLIC
+void setStageMapDirty();
+
 MAYAUSD_CORE_PUBLIC
 Ufe::Path dagPathToUfe(const MDagPath& dagPath);
 

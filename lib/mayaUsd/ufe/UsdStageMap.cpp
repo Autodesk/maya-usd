@@ -17,12 +17,17 @@
 
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/proxyStageProvider.h>
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+#include <mayaUsd/nodes/sceneRenderSettings.h>
+#endif
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
 #include <ufe/pathString.h>
@@ -79,10 +84,35 @@ MayaUsdProxyShapeBase* objToProxyShape(MObject& obj)
 UsdStageWeakPtr objToStage(MObject& obj)
 {
     MayaUsdProxyShapeBase* ps = objToProxyShape(obj);
-    if (!ps)
-        return {};
+    if (ps)
+        return ps->getUsdStage();
 
-    return ps->getUsdStage();
+    // Fall back to ProxyStageProvider for non-proxy-shape gateway nodes
+    // (e.g. UsdSceneRenderSettings).
+    if (!obj.isNull()) {
+        MFnDependencyNode  fn(obj);
+        ProxyStageProvider* provider = dynamic_cast<ProxyStageProvider*>(fn.userNode());
+        if (provider)
+            return provider->getUsdStage();
+    }
+
+    return {};
+}
+
+// Find the singleton UsdSceneRenderSettings node and add it to the stage map.
+void discoverSceneRenderSettingsNode(
+    const std::function<void(const Ufe::Path&)>& addItemFn)
+{
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    MObject obj = MayaUsd::UsdSceneRenderSettings::findInstance();
+    if (!obj.isNull()) {
+        MFnDagNode dagFn(obj);
+        MDagPath   dagPath;
+        if (dagFn.getPath(dagPath) == MS::kSuccess) {
+            addItemFn(MayaUsd::ufe::dagPathToUfe(dagPath));
+        }
+    }
+#endif
 }
 
 inline Ufe::Path toPath(const std::string& mayaPathString)
@@ -178,9 +208,12 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
     MProfilingScope profilingScope(
         kUsdStageMapProfilerCategory, MProfiler::kColorB_L1, "UsdStageMap::proxyShape()");
 
-    // Optimization: if there are not proxy shape instances,
-    // there is nothing that can be mapped.
-    if (MayaUsdProxyShapeBase::countProxyShapeInstances() == 0)
+    // Optimization: if there are no proxy shape instances, the map is not
+    // dirty, and the map is empty, there is nothing that can be mapped.
+    // We must still check the map because non-proxy-shape gateway nodes
+    // (e.g. UsdSceneRenderSettings) may have been added during a previous rebuild.
+    if (MayaUsdProxyShapeBase::countProxyShapeInstances() == 0 && !_dirty
+        && _pathToObject.empty())
         return MObject();
 
     const bool wasRebuilt = rebuildIfDirty();
@@ -198,6 +231,12 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
                     addItem(psPath);
                 }
             }
+            // Also try UsdSceneRenderSettings nodes.
+            discoverSceneRenderSettingsNode([this](const Ufe::Path& path) {
+                if (_pathToObject.find(path) == std::end(_pathToObject)) {
+                    addItem(path);
+                }
+            });
             iter = _pathToObject.find(singleSegmentPath);
         }
     }
@@ -331,6 +370,9 @@ bool UsdStageMap::rebuildIfDirty()
     for (const auto& psn : ProxyShapeHandler::getAllNames()) {
         addItem(toPath(psn));
     }
+
+    // Also discover UsdSceneRenderSettings nodes.
+    discoverSceneRenderSettingsNode([this](const Ufe::Path& path) { addItem(path); });
 
     TF_DEBUG(MAYAUSD_STAGEMAP)
         .Msg("Rebuilt stage map, found %d proxy shapes\n", int(_stageToObject.size()));

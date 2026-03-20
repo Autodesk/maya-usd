@@ -15,6 +15,9 @@
 //
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+#include <mayaUsd/nodes/sceneRenderSettings.h>
+#endif
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
@@ -187,6 +190,11 @@ std::string uniqueChildNameMayaStandard(
 
 bool isAGatewayType(const std::string& mayaNodeType)
 {
+    // Check if this is the UsdSceneRenderSettings node type.
+    if (isSceneRenderSettingsNode(mayaNodeType)) {
+        return true;
+    }
+
     // If we've seen this node type before, return the cached value.
     auto iter = g_GatewayType.find(mayaNodeType);
     if (iter != std::end(g_GatewayType)) {
@@ -210,6 +218,17 @@ bool isAGatewayType(const std::string& mayaNodeType)
     }
     return isInherited;
 }
+
+bool isSceneRenderSettingsNode(const std::string& mayaNodeType)
+{
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    return mayaNodeType == UsdSceneRenderSettings::typeName.asChar();
+#else
+    return false;
+#endif
+}
+
+void setStageMapDirty() { UsdStageMap::getInstance().setDirty(); }
 
 Ufe::Path dagPathToUfe(const MDagPath& dagPath)
 {
