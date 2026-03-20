@@ -1267,7 +1267,6 @@ bool isAttributeEditAllowed(const PXR_NS::UsdProperty& attr, std::string* errMsg
     const auto& propertyStack = attr.GetPropertyStack();
 
     if (!propertyStack.empty()) {
-
         // get the strongest layer that has the attr.
         auto strongestLayer = attr.GetPropertyStack().front()->GetLayer();
 
