@@ -385,6 +385,11 @@ class AttributeBlockTestCase(unittest.TestCase):
         # edit target layer would override it at every frame
         self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(translateAttr))
 
+        # switch the edit target to the root layer - editing should be allowed
+        # even though time samples exist on the weaker layer (LayerA)
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=rootLayer.identifier)
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr))
+
     def testIsAttributeEditAllowed(self):
         '''
         Verify a edit target layer from a referenced prim can be allowed to edit if it's a stronger layer.
