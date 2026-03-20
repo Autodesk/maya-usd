@@ -224,10 +224,15 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     // Construct the variant opinion for the session layer.
     SdfLayerRefPtr sessionLayer = SdfLayer::CreateAnonymous();
     {
-        TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
-        if (modelName != TfToken()) {
-            SdfVariantSelectionMap varSelsMap = mImportData.rootVariantSelections();
-            if (!modelName.IsEmpty()) {
+        const auto& varSelsMap = mImportData.rootVariantSelections();
+        if (!varSelsMap.empty()) {
+            const auto modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer).GetString();
+            if (!SdfPrimSpec::IsValidName(modelName)) {
+                TF_WARN(
+                    "Could not determine a valid root prim for layer '%s'; "
+                    "ignoring the requested root variant selection(s).",
+                    rootLayer->GetDisplayName().c_str());
+            } else {
                 SdfPrimSpecHandle over
                     = SdfPrimSpec::New(sessionLayer, modelName, SdfSpecifierOver);
                 for (auto varSel : varSelsMap) {
