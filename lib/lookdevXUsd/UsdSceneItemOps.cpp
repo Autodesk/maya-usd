@@ -13,7 +13,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // Note: Some of the functions are not covered by unit tests because they are simple wrappers around the
 // MayaUsd::ufe::UsdSceneItemOps functions. If we add our own logic to these functions, we should add unit tests for

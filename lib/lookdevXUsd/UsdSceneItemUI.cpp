@@ -41,10 +41,10 @@ std::string getHiddenKeyMetadata(const Ufe::SceneItemPtr& item)
     if (item)
     {
         // Short circuit the NodeDef handler. Works even if the LookdevX converter nodes are unavailable in Sdr.
-        auto usdShaderItem = pxr::UsdShadeShader(MayaUsdAPI::getPrimForUsdSceneItem(item));
+        auto usdShaderItem = PXR_NS::UsdShadeShader(MayaUsdAPI::getPrimForUsdSceneItem(item));
         if (usdShaderItem)
         {
-            pxr::TfToken mxNodeType;
+            PXR_NS::TfToken mxNodeType;
             usdShaderItem.GetIdAttr().Get(&mxNodeType);
             if (mxNodeType.GetString().rfind("ND_adsk_converter", 0) != std::string::npos)
             {
