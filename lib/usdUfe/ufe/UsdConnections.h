@@ -13,26 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_USDCONNECTIONS_H
-#define MAYAUSD_USDCONNECTIONS_H
+#ifndef USDUFE_USDCONNECTIONS_H
+#define USDUFE_USDCONNECTIONS_H
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/connections.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-class MAYAUSD_CORE_PUBLIC UsdConnections : public Ufe::Connections
+class USDUFE_PUBLIC UsdConnections : public Ufe::Connections
 {
 public:
     typedef std::shared_ptr<UsdConnections> Ptr;
 
     UsdConnections(const Ufe::SceneItem::Ptr& item);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdConnections);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdConnections);
 
     static UsdConnections::Ptr create(const Ufe::SceneItem::Ptr& item);
 
@@ -43,7 +41,6 @@ private:
 
 }; // UsdConnections
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDCONNECTIONS_H
+#endif // USDUFE_USDCONNECTIONS_H

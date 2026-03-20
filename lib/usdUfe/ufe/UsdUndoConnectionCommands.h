@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_UFE_USDUNDOCONNECTIONCOMMANDS_H
-#define MAYAUSD_UFE_USDUNDOCONNECTIONCOMMANDS_H
+#ifndef USDUFE_USDUNDOCONNECTIONCOMMANDS_H
+#define USDUFE_USDUNDOCONNECTIONCOMMANDS_H
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
@@ -32,11 +31,10 @@ UFE_NS_DEF
     class Connection;
 }
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief UsdUndoCreateConnectionCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoCreateConnectionCommand
+class USDUFE_PUBLIC UsdUndoCreateConnectionCommand
     : public Ufe::ConnectionResultUndoableCommand
 {
 public:
@@ -46,7 +44,7 @@ public:
         const Ufe::Attribute::Ptr& srcAttr,
         const Ufe::Attribute::Ptr& dstAttr);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateConnectionCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateConnectionCommand);
 
     //! Create a UsdUndoCreateConnectionCommand from two attributes.
     static Ptr create(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr);
@@ -65,7 +63,7 @@ private:
 }; // UsdUndoCreateConnectionCommand
 
 //! \brief UsdUndoDeleteConnectionCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoDeleteConnectionCommand : public Ufe::UndoableCommand
+class USDUFE_PUBLIC UsdUndoDeleteConnectionCommand : public Ufe::UndoableCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoDeleteConnectionCommand> Ptr;
@@ -75,7 +73,7 @@ public:
         const Ufe::Attribute::Ptr& dstAttr);
     ~UsdUndoDeleteConnectionCommand() override;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDeleteConnectionCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDeleteConnectionCommand);
 
     //! Create a UsdUndoDeleteConnectionCommand from two attributes.
     static Ptr create(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr);
@@ -90,7 +88,6 @@ private:
     std::unique_ptr<Ufe::AttributeInfo> _dstInfo;
 }; // UsdUndoDeleteConnectionCommand
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif
+#endif // USDUFE_USDUNDOCONNECTIONCOMMANDS_H
