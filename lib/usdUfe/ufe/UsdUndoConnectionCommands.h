@@ -34,8 +34,7 @@ UFE_NS_DEF
 namespace USDUFE_NS_DEF {
 
 //! \brief UsdUndoCreateConnectionCommand
-class USDUFE_PUBLIC UsdUndoCreateConnectionCommand
-    : public Ufe::ConnectionResultUndoableCommand
+class USDUFE_PUBLIC UsdUndoCreateConnectionCommand : public Ufe::ConnectionResultUndoableCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoCreateConnectionCommand> Ptr;

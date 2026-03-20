@@ -17,6 +17,7 @@
 #define USDUFE_USDCONNECTIONHANDLER_H
 
 #include <usdUfe/base/api.h>
+
 #include <ufe/connectionHandler.h>
 
 #include <memory>
