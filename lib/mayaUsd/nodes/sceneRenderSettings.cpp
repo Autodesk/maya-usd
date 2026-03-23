@@ -360,10 +360,7 @@ MObject UsdSceneRenderSettings::findOrCreateInstance()
 
 namespace {
 
-void afterNewCallback(void* /*clientData*/)
-{
-    UsdSceneRenderSettings::findOrCreateInstance();
-}
+void afterNewCallback(void* /*clientData*/) { UsdSceneRenderSettings::findOrCreateInstance(); }
 
 void afterOpenCallback(void* /*clientData*/)
 {
