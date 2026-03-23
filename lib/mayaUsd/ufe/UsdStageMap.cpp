@@ -90,7 +90,7 @@ UsdStageWeakPtr objToStage(MObject& obj)
     // Fall back to ProxyStageProvider for non-proxy-shape gateway nodes
     // (e.g. UsdSceneRenderSettings).
     if (!obj.isNull()) {
-        MFnDependencyNode  fn(obj);
+        MFnDependencyNode   fn(obj);
         ProxyStageProvider* provider = dynamic_cast<ProxyStageProvider*>(fn.userNode());
         if (provider)
             return provider->getUsdStage();
@@ -100,8 +100,7 @@ UsdStageWeakPtr objToStage(MObject& obj)
 }
 
 // Find the singleton UsdSceneRenderSettings node and add it to the stage map.
-void discoverSceneRenderSettingsNode(
-    const std::function<void(const Ufe::Path&)>& addItemFn)
+void discoverSceneRenderSettingsNode(const std::function<void(const Ufe::Path&)>& addItemFn)
 {
 #ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
     MObject obj = MayaUsd::UsdSceneRenderSettings::findInstance();
@@ -212,8 +211,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
     // dirty, and the map is empty, there is nothing that can be mapped.
     // We must still check the map because non-proxy-shape gateway nodes
     // (e.g. UsdSceneRenderSettings) may have been added during a previous rebuild.
-    if (MayaUsdProxyShapeBase::countProxyShapeInstances() == 0 && !_dirty
-        && _pathToObject.empty())
+    if (MayaUsdProxyShapeBase::countProxyShapeInstances() == 0 && !_dirty && _pathToObject.empty())
         return MObject();
 
     const bool wasRebuilt = rebuildIfDirty();

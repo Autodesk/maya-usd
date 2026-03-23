@@ -19,10 +19,6 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
-#include <ufe/hierarchy.h>
-#include <ufe/scene.h>
-#include <ufe/sceneNotification.h>
-
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/scope.h>
@@ -33,14 +29,17 @@
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFnDagNode.h>
-#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MPlug.h>
 #include <maya/MSceneMessage.h>
+#include <ufe/hierarchy.h>
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -57,7 +56,6 @@ const MString UsdSceneRenderSettings::typeName("mayaUsdSceneRenderSettings");
 MObject UsdSceneRenderSettings::serializedRootLayerAttr;
 MObject UsdSceneRenderSettings::serializedSessionLayerAttr;
 MObject UsdSceneRenderSettings::outStageCacheIdAttr;
-
 
 MObjectHandle UsdSceneRenderSettings::_cachedInstance;
 MCallbackId   UsdSceneRenderSettings::_afterNewCbId = 0;
@@ -311,7 +309,7 @@ MObject UsdSceneRenderSettings::findOrCreateInstance()
 
     // The createNode for a DAG node creates a transform + shape.
     // Find the shape under the transform.
-    MObject shapeObj = MObject::kNullObj;
+    MObject    shapeObj = MObject::kNullObj;
     MFnDagNode dagFn(transformObj);
     if (dagFn.typeName() == typeName) {
         // If createNode returned the shape directly.
@@ -319,7 +317,7 @@ MObject UsdSceneRenderSettings::findOrCreateInstance()
     } else {
         // The transform was returned; find the shape child.
         for (unsigned int i = 0; i < dagFn.childCount(); ++i) {
-            MObject child = dagFn.child(i);
+            MObject           child = dagFn.child(i);
             MFnDependencyNode childDepFn(child);
             if (childDepFn.typeId() == typeId) {
                 shapeObj = child;

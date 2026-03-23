@@ -18,10 +18,9 @@
 
 #include <mayaUsd/nodes/sceneRenderSettings.h>
 
-#include <pxr_python.h>
-
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr_python.h>
 
 #include <maya/MFnDagNode.h>
 
@@ -76,14 +75,19 @@ void wrapSceneRenderSettings()
         no_init)
 
         // Discovery / stage access
-        .def("find", &SceneRenderSettings_find,
-             "[WIP] Find the singleton node. Returns its Maya DAG path, or empty if not found.")
+        .def(
+            "find",
+            &SceneRenderSettings_find,
+            "[WIP] Find the singleton node. Returns its Maya DAG path, or empty if not found.")
         .staticmethod("find")
-        .def("getUsdStage", &SceneRenderSettings_getUsdStage,
-             "[WIP] Get the USD stage from the singleton node.")
+        .def(
+            "getUsdStage",
+            &SceneRenderSettings_getUsdStage,
+            "[WIP] Get the USD stage from the singleton node.")
         .staticmethod("getUsdStage")
-        .def("getDefaultRenderSettingsPrim", &getDefaultRenderSettingsPrim,
-             "[WIP] Get the default render settings prim from the USD stage.")
-        .staticmethod("getDefaultRenderSettingsPrim")
-    ;
+        .def(
+            "getDefaultRenderSettingsPrim",
+            &getDefaultRenderSettingsPrim,
+            "[WIP] Get the default render settings prim from the USD stage.")
+        .staticmethod("getDefaultRenderSettingsPrim");
 }
