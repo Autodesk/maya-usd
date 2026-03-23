@@ -1,5 +1,5 @@
 //
-// Copyright 2025 Autodesk
+// Copyright 2026 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+// WIP – This file is under active development and should not be used in production.
 
 #include <mayaUsd/nodes/sceneRenderSettings.h>
 
@@ -68,17 +70,20 @@ using namespace PXR_BOOST_PYTHON_NAMESPACE;
 void wrapSceneRenderSettings()
 {
     class_<MayaUsd::UsdSceneRenderSettings, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
-        "SceneRenderSettings", no_init)
+        "SceneRenderSettings",
+        "WIP - This API is under active development and should not be used in production. "
+        "It may change without notice.",
+        no_init)
 
         // Discovery / stage access
         .def("find", &SceneRenderSettings_find,
-             "Find the singleton node. Returns its Maya DAG path, or empty if not found.")
+             "[WIP] Find the singleton node. Returns its Maya DAG path, or empty if not found.")
         .staticmethod("find")
         .def("getUsdStage", &SceneRenderSettings_getUsdStage,
-             "Get the USD stage from the singleton node.")
+             "[WIP] Get the USD stage from the singleton node.")
         .staticmethod("getUsdStage")
         .def("getDefaultRenderSettingsPrim", &getDefaultRenderSettingsPrim,
-             "Get the default render settings prim from the USD stage.")
+             "[WIP] Get the default render settings prim from the USD stage.")
         .staticmethod("getDefaultRenderSettingsPrim")
     ;
 }

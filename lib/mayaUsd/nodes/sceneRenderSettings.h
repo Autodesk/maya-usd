@@ -1,5 +1,5 @@
 //
-// Copyright 2025 Autodesk
+// Copyright 2026 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@
 namespace MAYAUSD_NS_DEF {
 
 /*! \brief Singleton DAG node that holds an in-memory USD Stage for scene-level render settings.
+ *
+ *  \warning WIP – This class is under active development and should not be used in production.
+ *           Its API may change without notice.
  *
  *  This node is automatically created on scene new and restored on scene open.
  *  It is hidden in the outliner by default. Its USD stage data is serialized

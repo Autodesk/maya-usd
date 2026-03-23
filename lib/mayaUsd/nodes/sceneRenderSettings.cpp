@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// WIP – This file is under active development and should not be used in production.
+
 #include "sceneRenderSettings.h"
 
 #include <mayaUsd/ufe/Utils.h>
