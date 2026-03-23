@@ -37,9 +37,6 @@
 #include <maya/MItDependencyNodes.h>
 #include <maya/MPlug.h>
 #include <maya/MSceneMessage.h>
-#include <ufe/hierarchy.h>
-#include <ufe/scene.h>
-#include <ufe/sceneNotification.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -363,38 +360,16 @@ MObject UsdSceneRenderSettings::findOrCreateInstance()
 
 namespace {
 
-// Notify UFE that the singleton's subtree is available so the outliner
-// re-queries its children and displays the USD prims underneath.
-void notifySubtreeInvalidate(const MObject& shapeObj)
-{
-    MFnDagNode dagFn(shapeObj);
-    MDagPath   dagPath;
-    if (dagFn.getPath(dagPath) == MS::kSuccess) {
-        Ufe::Path ufePath = MayaUsd::ufe::dagPathToUfe(dagPath);
-        auto      sceneItem = Ufe::Hierarchy::createItem(ufePath);
-        if (sceneItem) {
-            Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-        }
-    }
-}
-
 void afterNewCallback(void* /*clientData*/)
 {
-    MObject instance = UsdSceneRenderSettings::findOrCreateInstance();
-    if (!instance.isNull()) {
-        notifySubtreeInvalidate(instance);
-    }
+    UsdSceneRenderSettings::findOrCreateInstance();
 }
 
 void afterOpenCallback(void* /*clientData*/)
 {
     MObject instance = UsdSceneRenderSettings::findInstance();
     if (instance.isNull()) {
-        // Scene had no render settings node; create one.
-        instance = UsdSceneRenderSettings::findOrCreateInstance();
-        if (!instance.isNull()) {
-            notifySubtreeInvalidate(instance);
-        }
+        UsdSceneRenderSettings::findOrCreateInstance();
         return;
     }
 
@@ -406,8 +381,6 @@ void afterOpenCallback(void* /*clientData*/)
         // Dirty the stage map so the restored stage is discoverable
         // (see comment in findOrCreateInstance for why this is needed).
         MayaUsd::ufe::setStageMapDirty();
-
-        notifySubtreeInvalidate(instance);
     }
 }
 
