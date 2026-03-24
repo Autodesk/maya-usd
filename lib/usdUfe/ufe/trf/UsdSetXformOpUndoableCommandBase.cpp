@@ -38,7 +38,6 @@ UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
     , _isPrepared(false)
     , _canUpdateValue(true)
     , _opCreated(false)
-    , _wasExecuted(false)
 {
 }
 
@@ -63,7 +62,6 @@ void UsdSetXformOpUndoableCommandBase::execute()
     // Set the new value.
     prepareAndSet(_newOpValue);
     _canUpdateValue = true;
-    _wasExecuted = true;
 }
 
 void UsdSetXformOpUndoableCommandBase::undo()
@@ -77,10 +75,8 @@ void UsdSetXformOpUndoableCommandBase::undo()
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    // Note If the command was never executed but only its `set` function called,
-    // then when undoing, we are undoing in the set-transform mode.
-    // IOW, the SetTransformGuard is only active if the command was never executed.
-    SetTransformGuard guard(!_wasExecuted);
+    // Note: the command never use a UsdUndpBlock when setting values.
+    NoUsdUndoBlockGuard guard(true);
 
     // Restore the initial value and potentially remove the creatd attributes.
     setValue(_initialOpValue, _writeTime);
@@ -94,10 +90,8 @@ void UsdSetXformOpUndoableCommandBase::redo()
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    // Note If the command was never executed but only its `set` function called,
-    // then when undoing, we are undoing in the set-transform mode.
-    // IOW, the SetTransformGuard is only active if the command was never executed.
-    SetTransformGuard guard(!_wasExecuted);
+    // Note: the command never use a UsdUndpBlock when setting values.
+    NoUsdUndoBlockGuard guard(true);
 
     // Redo the attribute creation if the attribute was already created
     // but then undone.
@@ -139,6 +133,8 @@ void UsdSetXformOpUndoableCommandBase::prepareAndSet(const VtValue& v)
         return;
 
     prepareOpIfNeeded();
+    // Note: the command never use a UsdUndpBlock when setting values.
+    NoUsdUndoBlockGuard guard(true);
     setValue(v, _writeTime);
 }
 

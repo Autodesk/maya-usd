@@ -95,42 +95,81 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         self._primUfe3d = ufe.Transform3d.transform3d(primUfeSceneItem)
 
 
-    def _runEditForwarding(self, cmdFunc, xformOpPropPath):
+    def _runEditForwarding(self, cmdFunc, xformOpPropPath, is_using_execute: bool, had_xform_already=False):
         '''
         Run the provided command function that performs edits on the prim,
         then flush the idle queue to trigger continuous forwarding, and finally
         call the provided verify function to check the expected state after forwarding.
         '''
         def verifyDone():
+            self.assertIsNotNone(self._testLayer.GetPrimAtPath(self._primPath))
             sessionLayerXformOp = self._sessionLayer.GetPropertyAtPath(xformOpPropPath)
             self.assertIsNone(sessionLayerXformOp, "Expected original session-layer edit to be forwarded")
             testLayerXformOp = self._testLayer.GetPropertyAtPath(xformOpPropPath)
             self.assertIsNotNone(testLayerXformOp, "Expected scale xformOp to be forwarded to TEST layer")
         
-        def verifyUndone():
+        def verifyUndone(had_xform_already):
+            self.assertIsNotNone(self._testLayer.GetPrimAtPath(self._primPath))
             # Note: the UFE command above was not added to the Maya undo queue,
             #       so it is not undone by the cmds.undo() below, only the forwarding command is undone.
             # sessionLayerXformOp = self._sessionLayer.GetPropertyAtPath(xformOpPropPath)
             # self.assertIsNone(sessionLayerXformOp, "Expected original session-layer edit to also be undone")
             testLayerXformOp = self._testLayer.GetPropertyAtPath(xformOpPropPath)
-            self.assertIsNone(testLayerXformOp, "Expected prim to be removed from TEST layer after undo")
+            if had_xform_already:
+                self.assertIsNotNone(testLayerXformOp, "Expected property to be kept in TEST layer after undo")
+            else:
+                self.assertIsNone(testLayerXformOp, "Expected property to be removed from TEST layer after undo")
 
 
         # Translate the prim using UFE and onyl its set() function
         # which mimicks how Maya viewport manipulators work.
-        cmdFunc()
+        ufeCmds = cmdFunc()
+        verifyDone()
 
-        # Continuous forwarding happens on the next idle.
+        # If the UFE command is using execute(), then the edit-forwarding will use
+        # a Maya command (undo chunk), so we must call cmds. If the UFE command is
+        # using set(), then we only undo the UFE command (as Maya would have done)
+        # a the edit-forwarding will be done *not* in a command, so we must *not*
+        # call cmds.undo.
+        if is_using_execute:
+            ufeCmds[1].undo()
+        else:
+            ufeCmds[1].set(1, 2, 3)
+        cmds.flushIdleQueue()
+        # Note: the was a UFE command before this one that also set the value,
+        #       so after undo there is *still* a value that was forwarded by that
+        #       first command, so we call verifyDone() here even though we just undid
+        #       the second command, because the first command is still in effect.
+        verifyDone()
+
+        # For the very first edit, the command always uses a UsdUndoBlock to capture
+        # the creation of the xformOp, so the edit-forwarding will always use a Maya
+        # command for the forwarding, so we must call cmds.undo to undo the forwarding,
+        if had_xform_already:
+            ufeCmds[0].undo()
+        else:
+            cmds.undo()
+            ufeCmds[0].undo()
+        cmds.flushIdleQueue()
+        verifyUndone(had_xform_already)
+
+        # Redo should restore the forwarded state.
+
+        # For The first redo, The first command is always creating the xformOp,
+        # so we always call cmds.redo, but if using set(), we must also call
+        # the redo of the UFE command.
+        ufeCmds[0].redo()
+        if not had_xform_already:
+            cmds.redo()
         cmds.flushIdleQueue()
         verifyDone()
 
-        # Undo should revert both the forward command and the original session-layer
-        # edit as a single operation (they are grouped in one Maya undo chunk).
-        cmds.undo()
-        verifyUndone()
-
-        # Redo should restore the forwarded state.
-        cmds.redo()
+        # For the second redo, if using execute(), then the edit forwarding will
+        # be done in a Maya command, so we must call cmds.redo, but if using set(),
+        # then the edit-forwarding will be done *not* in a command, so we must *not*
+        # call cmds.redo.
+        ufeCmds[1].redo()
+        cmds.flushIdleQueue()
         verifyDone()
 
 
@@ -144,11 +183,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:translate')
 
         def cmdFunc():
-            primUfeTranslateCmd = self._primUfe3d.translateCmd()
-            self.assertIsNotNone(primUfeTranslateCmd, "Expected translateCmd to be available")
-            primUfeTranslateCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.translateCmd()
+                self.assertIsNotNone(cmd, "Expected translateCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False)
 
 
     def testEditForwardingTranslateExecute(self):
@@ -156,11 +201,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:translate')
 
         def cmdFunc():
-            primUfeTranslateCmd = self._primUfe3d.translateCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeTranslateCmd, "Expected translateCmd to be available")
-            primUfeTranslateCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.translateCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected translateCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True)
 
 
     def testEditForwardingScaleSet(self):
@@ -168,11 +219,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:scale')
 
         def cmdFunc():
-            primUfeScaleCmd = self._primUfe3d.scaleCmd()
-            self.assertIsNotNone(primUfeScaleCmd, "Expected scaleCmd to be available")
-            primUfeScaleCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.scaleCmd()
+                self.assertIsNotNone(cmd, "Expected scaleCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False)
 
 
     def testEditForwardingScaleExecute(self):
@@ -180,11 +237,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:scale')
 
         def cmdFunc():
-            primUfeScaleCmd = self._primUfe3d.scaleCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeScaleCmd, "Expected scaleCmd to be available")
-            primUfeScaleCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.scaleCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected scaleCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True)
 
 
     def testEditForwardingRotateSet(self):
@@ -192,10 +255,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:rotateXYZ')
 
         def cmdFunc():
-            primUfeRotateCmd = self._primUfe3d.rotateCmd()
-            primUfeRotateCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.rotateCmd()
+                self.assertIsNotNone(cmd, "Expected rotateCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False)
 
 
     def testEditForwardingRotateExecute(self):
@@ -203,11 +273,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:rotateXYZ')
 
         def cmdFunc():
-            primUfeRotateCmd = self._primUfe3d.rotateCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeRotateCmd, "Expected rotateCmd to be available")
-            primUfeRotateCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.rotateCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected rotateCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True)
 
 
     #################################################################
@@ -218,12 +294,14 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
     def _createNonMayaXformStack(self):
         # Author a non-Maya-style xform stack with multiple scales.
         # Give them unique op-names so that they don't clash with standard ops.
+        self._stage.SetEditTarget(self._testLayer)
         self._stage.GetPrimAtPath(self._primPath).CreateAttribute('xformOp:scale:first', Sdf.ValueTypeNames.Float3)
         self._stage.GetPrimAtPath(self._primPath).CreateAttribute('xformOp:rotateX:onlyX', Sdf.ValueTypeNames.Float)
         self._stage.GetPrimAtPath(self._primPath).CreateAttribute('xformOp:scale:second', Sdf.ValueTypeNames.Float3)
 
         xformOpOrderProp = self._stage.GetPrimAtPath(self._primPath).CreateAttribute('xformOpOrder', Sdf.ValueTypeNames.TokenArray)
         xformOpOrderProp.Set(['xformOp:scale:first', 'xformOp:rotateX:onlyX', 'xformOp:scale:second'])
+        self._stage.SetEditTarget(self._sessionLayer)
 
 
     def testEditForwardingNonMayaTranslateSet(self):
@@ -233,11 +311,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:translate')
 
         def cmdFunc():
-            primUfeTranslateCmd = self._primUfe3d.translateCmd()
-            self.assertIsNotNone(primUfeTranslateCmd, "Expected translateCmd to be available")
-            primUfeTranslateCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.translateCmd()
+                self.assertIsNotNone(cmd, "Expected translateCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False, had_xform_already=True)
 
 
     def testEditForwardingNonMayaTranslateExecute(self):
@@ -247,11 +331,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:translate')
 
         def cmdFunc():
-            primUfeTranslateCmd = self._primUfe3d.translateCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeTranslateCmd, "Expected translateCmd to be available")
-            primUfeTranslateCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.translateCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected translateCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True, had_xform_already=True)
 
 
     def testEditForwardingNonMayaScaleSet(self):
@@ -261,11 +351,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:scale')
 
         def cmdFunc():
-            primUfeScaleCmd = self._primUfe3d.scaleCmd()
-            self.assertIsNotNone(primUfeScaleCmd, "Expected scaleCmd to be available")
-            primUfeScaleCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.scaleCmd()
+                self.assertIsNotNone(cmd, "Expected scaleCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False, had_xform_already=True)
 
 
     def testEditForwardingNonMayaScaleExecute(self):
@@ -275,11 +371,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:scale')
 
         def cmdFunc():
-            primUfeScaleCmd = self._primUfe3d.scaleCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeScaleCmd, "Expected scaleCmd to be available")
-            primUfeScaleCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.scaleCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected scaleCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True, had_xform_already=True)
 
 
     def testEditForwardingNonMayaRotateSet(self):
@@ -289,11 +391,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:rotateXYZ')
 
         def cmdFunc():
-            primUfeRotateCmd = self._primUfe3d.rotateCmd()
-            self.assertIsNotNone(primUfeRotateCmd, "Expected rotateCmd to be available")
-            primUfeRotateCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.rotateCmd()
+                self.assertIsNotNone(cmd, "Expected rotateCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False, had_xform_already=True)
 
 
     def testEditForwardingNonMayaRotateExecute(self):
@@ -303,11 +411,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:rotateXYZ')
 
         def cmdFunc():
-            primUfeRotateCmd = self._primUfe3d.rotateCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeRotateCmd, "Expected rotateCmd to be available")
-            primUfeRotateCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.rotateCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected rotateCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True, had_xform_already=True)
 
 
     #################################################################
@@ -318,10 +432,12 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
     def _createMatrixXformStack(self):
         # Author a non-Maya-style xform stack with multiple scales.
         # Give them unique op-names so that they don't clash with standard ops.
+        self._stage.SetEditTarget(self._testLayer)
         self._stage.GetPrimAtPath(self._primPath).CreateAttribute('xformOp:transform', Sdf.ValueTypeNames.Matrix4d)
 
         xformOpOrderProp = self._stage.GetPrimAtPath(self._primPath).CreateAttribute('xformOpOrder', Sdf.ValueTypeNames.TokenArray)
         xformOpOrderProp.Set(['xformOp:transform'])
+        self._stage.SetEditTarget(self._sessionLayer)
 
 
     def testEditForwardingMatrixTranslateSet(self):
@@ -331,11 +447,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:translate')
 
         def cmdFunc():
-            primUfeTranslateCmd = self._primUfe3d.translateCmd()
-            self.assertIsNotNone(primUfeTranslateCmd, "Expected translateCmd to be available")
-            primUfeTranslateCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.translateCmd()
+                self.assertIsNotNone(cmd, "Expected translateCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False, had_xform_already=True)
 
 
     def testEditForwardingMatrixTranslateExecute(self):
@@ -345,11 +467,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:translate')
 
         def cmdFunc():
-            primUfeTranslateCmd = self._primUfe3d.translateCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeTranslateCmd, "Expected translateCmd to be available")
-            primUfeTranslateCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.translateCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected translateCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True, had_xform_already=True)
 
 
     def testEditForwardingMatrixScaleSet(self):
@@ -359,11 +487,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:scale')
 
         def cmdFunc():
-            primUfeScaleCmd = self._primUfe3d.scaleCmd()
-            self.assertIsNotNone(primUfeScaleCmd, "Expected scaleCmd to be available")
-            primUfeScaleCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.scaleCmd()
+                self.assertIsNotNone(cmd, "Expected scaleCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False, had_xform_already=True)
 
 
     def testEditForwardingMatrixScaleExecute(self):
@@ -373,11 +507,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:scale')
 
         def cmdFunc():
-            primUfeScaleCmd = self._primUfe3d.scaleCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeScaleCmd, "Expected scaleCmd to be available")
-            primUfeScaleCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.scaleCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected scaleCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True, had_xform_already=True)
 
 
     def testEditForwardingMatrixRotateSet(self):
@@ -387,11 +527,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:rotateXYZ')
 
         def cmdFunc():
-            primUfeRotateCmd = self._primUfe3d.rotateCmd()
-            self.assertIsNotNone(primUfeRotateCmd, "Expected rotateCmd to be available")
-            primUfeRotateCmd.set(1, 2, 3)
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.rotateCmd()
+                self.assertIsNotNone(cmd, "Expected rotateCmd to be available")
+                cmd.set(i * 1, i * 2, i * 3)
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=False, had_xform_already=True)
 
 
     def testEditForwardingMatrixRotateExecute(self):
@@ -401,11 +547,17 @@ class AdskUsdEditForwardXformOpTestCase(unittest.TestCase):
         xformOpPropPath = self._primPath.AppendProperty('xformOp:rotateXYZ')
 
         def cmdFunc():
-            primUfeRotateCmd = self._primUfe3d.rotateCmd(1, 2, 3)
-            self.assertIsNotNone(primUfeRotateCmd, "Expected rotateCmd to be available")
-            primUfeRotateCmd.execute()
+            ufeCmds = []
+            for i in range(2):
+                cmd = self._primUfe3d.rotateCmd(i * 1, i * 2, i * 3)
+                self.assertIsNotNone(cmd, "Expected rotateCmd to be available")
+                cmd.execute()
+                ufeCmds.append(cmd)
+                # Continuous forwarding happens on the next idle.
+                cmds.flushIdleQueue()
+            return ufeCmds
 
-        self._runEditForwarding(cmdFunc, xformOpPropPath)
+        self._runEditForwarding(cmdFunc, xformOpPropPath, is_using_execute=True, had_xform_already=True)
 
 
 if __name__ == '__main__':

@@ -44,7 +44,6 @@ public:
     {
         UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpTranslate);
-        _wasExecuted |= (undoableItem.getEditCount() > 0);
     }
 
     void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
@@ -67,7 +66,7 @@ public:
     {
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             updateNewValue(VtValue(GfVec3d(x, y, z)));
         }
         return true;
@@ -92,7 +91,6 @@ public:
     {
         UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpRotate);
-        _wasExecuted |= (undoableItem.getEditCount() > 0);
     }
 
     void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
@@ -115,7 +113,7 @@ public:
     {
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             updateNewValue(VtValue(GfVec3f(x, y, z)));
         }
         return true;
@@ -142,7 +140,6 @@ public:
     {
         UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpScale);
-        _wasExecuted |= (undoableItem.getEditCount() > 0);
     }
 
     void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
@@ -165,7 +162,7 @@ public:
     {
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             updateNewValue(VtValue(GfVec3f(x, y, z)));
         }
         return true;
@@ -192,7 +189,6 @@ public:
     {
         UsdUndoBlock undoBlock(&undoableItem);
         _commonAPI.CreateXformOps(UsdGeomXformCommonAPI::OpPivot);
-        _wasExecuted |= (undoableItem.getEditCount() > 0);
     }
 
     void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
@@ -215,7 +211,7 @@ public:
     {
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             updateNewValue(VtValue(GfVec3f(x, y, z)));
         }
         return true;

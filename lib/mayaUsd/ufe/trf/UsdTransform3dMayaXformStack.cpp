@@ -274,7 +274,6 @@ protected:
 
         bool opWasCreated = false;
         std::tie(_op, opWasCreated) = _opFunc(*this, undoableItem);
-        _wasExecuted |= opWasCreated;
 
         TF_DEBUG_MSG(USDUFE_UNDOCMD, "Creating xformOp: %s\n", opWasCreated ? "yes" : "no");
     }
@@ -340,7 +339,7 @@ public:
         VtValue v;
         v = V(x, y, z);
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             updateNewValue(v);
         }
         return true;
@@ -372,7 +371,7 @@ public:
         VtValue v;
         v = _cvtRotXYZToAttr(x, y, z);
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             updateNewValue(v);
         }
         return true;

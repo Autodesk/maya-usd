@@ -54,24 +54,24 @@ void rotatePivotTranslateOp(
     double                 y,
     double                 z);
 
-//! Guard to set and reset a flag indicating that we are in the set() function
-//! of a transform command.
-class USDUFE_PUBLIC SetTransformGuard
+//! Guard to set and reset a flag indicating that we are in a command
+//! that does not use a UsdUndoBlock but still wants edit-forwarding.
+class USDUFE_PUBLIC NoUsdUndoBlockGuard
 {
 public:
-    SetTransformGuard(bool inSet)
-        : _inSet(inSet)
+    NoUsdUndoBlockGuard(bool noUsdUndoBlock)
+        : _noUsdUndoBlock(noUsdUndoBlock)
     {
-        if (_inSet)
+        if (_noUsdUndoBlock)
             _getGuardedFlag()++;
     }
-    ~SetTransformGuard()
+    ~NoUsdUndoBlockGuard()
     {
-        if (_inSet)
+        if (_noUsdUndoBlock)
             _getGuardedFlag()--;
     }
 
-    static bool isInSetTransform() { return _getGuardedFlag() > 0; }
+    static bool wantsForwarding() { return _getGuardedFlag() > 0; }
 
 private:
     static int& _getGuardedFlag()
@@ -80,7 +80,7 @@ private:
         return flag;
     }
 
-    bool _inSet;
+    bool _noUsdUndoBlock;
 };
 
 } // namespace USDUFE_NS_DEF

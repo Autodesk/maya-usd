@@ -42,8 +42,8 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
     // This could be a script editing USD data, or an interactive edit (slider drag from
     // attribute editor).
     static MayaUsd::MayaUsdEditForwardCommand::Callbacks callbacks;
-    const bool inSetTransform = UsdUfe::SetTransformGuard::isInSetTransform();
-    if (!inSetTransform && !IsInUsdUndoBlock()) {
+    const bool forwardEditsWithoutUsdUndoBlock = UsdUfe::NoUsdUndoBlockGuard::wantsForwarding();
+    if (!forwardEditsWithoutUsdUndoBlock && !IsInUsdUndoBlock()) {
         TF_DEBUG_MSG(USDUFE_UNDOCMD, "No forwarding: not in set command and not in undo block\n");
         return;
     }
@@ -111,7 +111,7 @@ bool MayaUsdEditForwardHost::IsEditForwardingPaused() const
     // We never pause forwarding when in a transform set operation, as that
     // does not use a UsdUndoBlock in its execute, set, undo and redo functions.
     // IOW, even undo and redo need to forwarded.
-    if (UsdUfe::SetTransformGuard::isInSetTransform()) {
+    if (UsdUfe::NoUsdUndoBlockGuard::wantsForwarding()) {
         TF_DEBUG_MSG(USDUFE_UNDOCMD, "Forwarding is not paused: in transform set()\n");
         return false;
     }

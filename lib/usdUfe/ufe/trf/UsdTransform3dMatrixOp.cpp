@@ -147,7 +147,6 @@ public:
         UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
         GfMatrix4d           matrix = _op.GetOpTransform(writeTime());
         _op.GetAttr().Set(matrix, writeTime());
-        _wasExecuted |= (undoableItem.getEditCount() > 0);
     }
 
     void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
@@ -191,7 +190,7 @@ public:
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             _opTransform.SetTranslateOnly(GfVec3d(x, y, z));
             updateNewValue(VtValue(_opTransform));
         }
@@ -243,7 +242,7 @@ public:
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             fU.SetRotate(r);
 
             GfMatrix4d opTransform = (fS * fU).SetTranslateOnly(fT);
@@ -288,7 +287,7 @@ public:
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
         {
-            UsdUfe::SetTransformGuard guard(true);
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
             updateNewValue(VtValue(opTransform));
         }
         return true;
