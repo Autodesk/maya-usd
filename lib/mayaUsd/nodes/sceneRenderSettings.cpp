@@ -434,6 +434,30 @@ void UsdSceneRenderSettings::removeCallbacks()
         MSceneMessage::removeCallback(_beforeSaveCbId);
         _beforeSaveCbId = 0;
     }
+
+    // Delete the singleton node so the plugin can be unloaded.
+    // The node (and its parent transform) are locked, so unlock first.
+    MObject instance = findInstance();
+    if (!instance.isNull()) {
+        MFnDagNode shapeDagFn(instance);
+        MObject    parentObj = shapeDagFn.parent(0);
+
+        MFnDependencyNode depFn(instance);
+        depFn.setLocked(false);
+        if (!parentObj.isNull()) {
+            MFnDependencyNode parentDepFn(parentObj);
+            parentDepFn.setLocked(false);
+        }
+
+        MDagModifier modifier;
+        modifier.deleteNode(instance);
+        if (!parentObj.isNull()) {
+            modifier.deleteNode(parentObj);
+        }
+        modifier.doIt();
+
+        _cachedInstance = MObjectHandle();
+    }
 }
 
 } // namespace MAYAUSD_NS_DEF

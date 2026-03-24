@@ -20,7 +20,7 @@ from maya import standalone
 
 from mayaUsd.lib import SceneRenderSettings
 
-from pxr import UsdGeom, UsdRender, UsdUtils
+from pxr import Usd, UsdGeom, UsdRender, UsdUtils
 
 import fixturesUtils
 
@@ -84,7 +84,7 @@ class testSceneRenderSettings(unittest.TestCase):
     def testRenderSettingsPrimPathMetadata(self):
         '''Stage metadata should point to the default render settings prim.'''
         stage = SceneRenderSettings.getUsdStage()
-        metadata = stage.GetMetadataByDictKey('', 'renderSettingsPrimPath')
+        metadata = stage.GetMetadata('renderSettingsPrimPath')
         self.assertEqual(metadata, '/Render/SceneRenderSettings')
 
     # ------------------------------------------------------------------
@@ -123,7 +123,7 @@ class testSceneRenderSettings(unittest.TestCase):
 
         # Verify we can retrieve the same stage from the cache.
         cachedStage = UsdUtils.StageCache.Get().Find(
-            UsdUtils.StageCache.Id.FromLongInt(cacheId))
+            Usd.StageCache.Id.FromLongInt(cacheId))
         apiStage = SceneRenderSettings.getUsdStage()
         self.assertEqual(cachedStage.GetRootLayer().identifier,
                          apiStage.GetRootLayer().identifier)

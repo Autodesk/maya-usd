@@ -24,6 +24,10 @@
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+#include <mayaUsd/nodes/sceneRenderSettings.h>
+#endif
+
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
@@ -398,6 +402,17 @@ bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
             return false;
         }
     }
+
+    // Always skip the SceneRenderSettings singleton node – its internal
+    // USD stage is not part of the scene content that should be exported.
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    {
+        MFnDependencyNode mfnNode(ob);
+        if (mfnNode.typeId() == MAYAUSD_NS::UsdSceneRenderSettings::typeId) {
+            return false;
+        }
+    }
+#endif
 
     if (!mArgs.filteredTypeIds.empty()) {
         MFnDependencyNode mfnNode(ob);
