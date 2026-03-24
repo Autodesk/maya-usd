@@ -172,7 +172,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 PXR_NAMESPACE_CLOSE_SCOPE
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 constexpr size_t kInvalidChannelIndex = -1;
 size_t _channelIndexMap(const char c)
