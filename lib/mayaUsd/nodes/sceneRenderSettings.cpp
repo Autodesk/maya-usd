@@ -29,12 +29,12 @@
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFnDagNode.h>
-#include <maya/MGlobal.h>
 #include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MPlug.h>
 #include <maya/MSceneMessage.h>
