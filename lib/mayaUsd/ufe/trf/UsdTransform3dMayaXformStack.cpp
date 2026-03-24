@@ -148,12 +148,15 @@ bool setXformOpOrder(const UsdGeomXformable& xformable)
     bool                                                          resetsXformStack = false;
     auto oldOrder = xformable.GetOrderedXformOps(&resetsXformStack);
     for (const auto& op : oldOrder) {
+        // Support unknown xformOpName because the UsdTransform3dMayaXformStack class
+        // has a fallback sub-class that supports unknown xform ops, and we don't want
+        // to fail in those cases. The unknown ops will be added at the end, after the
+        // known ops.
         auto it = gOpNameToNdx.find(op.GetOpName());
         if (it == gOpNameToNdx.end()) {
             continue;
         }
-        auto ndx = gOpNameToNdx.at(op.GetOpName());
-        orderedOps[ndx] = op;
+        orderedOps[it->second] = op;
     }
 
     // Set the transform op order attribute.
@@ -886,7 +889,7 @@ UsdTransform3dMayaXformStack::getOrderedOps() const
     auto                            ops = _xformable.GetOrderedXformOps(&resetsXformStack);
     for (const auto& op : ops) {
         // For non-Maya xform stack, which derives from this class and reuse its code,
-        // there might be xformOps with unknown nanmes, that have no pre-defined index.
+        // there might be xformOps with unknown names, that have no pre-defined index.
         auto it = gOpNameToNdx.find(op.GetOpName());
         if (it == gOpNameToNdx.end()) {
             continue;

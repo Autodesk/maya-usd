@@ -77,6 +77,9 @@ void UsdSetXformOpUndoableCommandBase::undo()
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
+    // Note If the command was never executed but only its `set` function called,
+    // then when undoing, we are undoing in the set-transform mode.
+    // IOW, the SetTransformGuard is only active if the command was never executed.
     SetTransformGuard guard(!_wasExecuted);
 
     // Restore the initial value and potentially remove the creatd attributes.
@@ -91,6 +94,9 @@ void UsdSetXformOpUndoableCommandBase::redo()
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
+    // Note If the command was never executed but only its `set` function called,
+    // then when undoing, we are undoing in the set-transform mode.
+    // IOW, the SetTransformGuard is only active if the command was never executed.
     SetTransformGuard guard(!_wasExecuted);
 
     // Redo the attribute creation if the attribute was already created

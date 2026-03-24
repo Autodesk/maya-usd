@@ -104,14 +104,21 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
 
 bool MayaUsdEditForwardHost::IsEditForwardingPaused() const
 {
+    // We always respect the pause flag.
     if (_paused)
         return true;
 
+    // We never pause forwarding when in a transform set operation, as that
+    // does not use a UsdUndoBlock in its execute, set, undo and redo functions.
+    // IOW, even undo and redo need to forwarded.
     if (UsdUfe::SetTransformGuard::isInSetTransform()) {
         TF_DEBUG_MSG(USDUFE_UNDOCMD, "Forwarding is not paused: in transform set()\n");
         return false;
     }
 
+    // When in undo/redo that *do* use UsdUndoBlocks, we pause forwarding.
+    // This is because the UsdUndoBlock will correctly restore the data
+    // and thus will not need to be forwarded.
     if (MGlobal::isUndoing() || MGlobal::isRedoing()) {
         TF_DEBUG_MSG(USDUFE_UNDOCMD, "Forwarding is paused: in undo/redo, \n");
         return true;
