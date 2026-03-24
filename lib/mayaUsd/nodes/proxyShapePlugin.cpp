@@ -264,7 +264,6 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     status = plugin.deregisterNode(MayaUsdProxyShapeBase::typeId);
     CHECK_MSTATUS(status);
 
-
     status = plugin.deregisterData(MayaUsdStageData::mayaTypeId);
     CHECK_MSTATUS(status);
 
