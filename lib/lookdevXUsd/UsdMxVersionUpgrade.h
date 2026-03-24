@@ -21,7 +21,7 @@
 #include <ufe/undoableCommand.h>
 
 namespace LookdevXUsd::Version {
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 //! \brief Checks if the given UsdShadeMaterial path belongs to a legacy MaterialX shader graph
 //! requiring upgrade. \param materialPath The Ufe::Path of the UsdShadeMaterial to check.

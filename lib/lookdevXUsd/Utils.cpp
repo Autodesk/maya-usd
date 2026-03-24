@@ -18,7 +18,7 @@
 #include <ufe/runTimeMgr.h>
 
 using namespace LookdevXUfe;
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace LookdevXUsdUtils
 {

@@ -31,6 +31,7 @@
 #include <ufe/runTimeMgr.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#include <usdUfe/ufe/UsdConnectionHandler.h>
 #include <usdUfe/ufe/UsdShaderNodeDefHandler.h>
 #include <usdUfe/ufe/trf/UsdTransform3dRead.h>
 #endif
@@ -139,6 +140,8 @@ Ufe::Rtid initialize(
         = handlers.cameraHandler ? handlers.cameraHandler : UsdCameraHandler::create();
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+    rtHandlers.connectionHandler
+        = handlers.connectionHandler ? handlers.connectionHandler : UsdConnectionHandler::create();
     rtHandlers.nodeDefHandler
         = handlers.nodeDefHandler ? handlers.nodeDefHandler : UsdShaderNodeDefHandler::create();
 #endif
