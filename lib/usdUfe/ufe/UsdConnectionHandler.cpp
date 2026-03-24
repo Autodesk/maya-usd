@@ -14,16 +14,15 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdConnectionHandler.h>
-#include <mayaUsd/ufe/UsdConnections.h>
+#include "UsdConnectionHandler.h"
 
 #include <usdUfe/ufe/UsdAttribute.h>
+#include <usdUfe/ufe/UsdConnections.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/usdUtils.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdUndoConnectionCommands.h>
+#include <usdUfe/ufe/UsdUndoConnectionCommands.h>
 #endif
 
 #include <pxr/base/tf/diagnostic.h>
@@ -34,8 +33,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 #ifndef UFE_V4_FEATURES_AVAILABLE
 
@@ -102,7 +100,7 @@ void _SendStrongConnectionChangeNotification(const UsdPrim& usdPrim)
 
 #endif
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::ConnectionHandler, UsdConnectionHandler);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::ConnectionHandler, UsdConnectionHandler);
 
 UsdConnectionHandler::Ptr UsdConnectionHandler::create()
 {
@@ -276,5 +274,4 @@ bool UsdConnectionHandler::deleteConnection(
 
 #endif
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
