@@ -403,13 +403,24 @@ bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
         }
     }
 
-    // Always skip the SceneRenderSettings singleton node – its internal
-    // USD stage is not part of the scene content that should be exported.
+    // Always skip the SceneRenderSettings singleton node and its parent
+    // transform – its internal USD stage is not part of the scene content
+    // that should be exported.
 #ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
     {
         MFnDependencyNode mfnNode(ob);
         if (mfnNode.typeId() == MAYAUSD_NS::UsdSceneRenderSettings::typeId) {
             return false;
+        }
+        // Also skip the parent transform of the SceneRenderSettings shape.
+        if (ob.hasFn(MFn::kTransform)) {
+            MFnDagNode dagNode(curDag);
+            for (unsigned int i = 0; i < dagNode.childCount(); ++i) {
+                MFnDependencyNode childFn(dagNode.child(i));
+                if (childFn.typeId() == MAYAUSD_NS::UsdSceneRenderSettings::typeId) {
+                    return false;
+                }
+            }
         }
     }
 #endif
