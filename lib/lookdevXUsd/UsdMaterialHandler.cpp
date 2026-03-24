@@ -40,7 +40,7 @@ UsdMaterialHandler::~UsdMaterialHandler()
 
 LookdevXUfe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Ptr& item) const
 {
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     if (!TF_VERIFY(MayaUsdAPI::isUsdSceneItem(item), "Invalid item\n"))
     {

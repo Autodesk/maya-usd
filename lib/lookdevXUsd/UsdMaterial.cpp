@@ -16,7 +16,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace LookdevXUsd
 {

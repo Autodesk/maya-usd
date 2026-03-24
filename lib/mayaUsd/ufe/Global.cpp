@@ -62,7 +62,6 @@
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
 
 #include <usdUfe/ufe/trf/UsdTransform3dRead.h>
@@ -344,7 +343,6 @@ MStatus initialize()
 #if UFE_MATERIALS_SUPPORT
     handlers.materialHandler = UsdMaterialHandler::create();
 #endif
-    handlers.connectionHandler = UsdConnectionHandler::create();
     handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
 
 #ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT

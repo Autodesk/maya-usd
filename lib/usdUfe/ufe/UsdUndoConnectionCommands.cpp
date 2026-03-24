@@ -15,13 +15,10 @@
 //
 #include "UsdUndoConnectionCommands.h"
 
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdConnectionHandler.h>
-#include <mayaUsd/ufe/UsdConnections.h>
-#include <mayaUsd/ufe/Utils.h>
-
 #include <usdUfe/ufe/UsdAttribute.h>
 #include <usdUfe/ufe/UsdAttributes.h>
+#include <usdUfe/ufe/UsdConnectionHandler.h>
+#include <usdUfe/ufe/UsdConnections.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
@@ -34,10 +31,9 @@
 #include <ufe/connection.h>
 #include <ufe/pathString.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::ConnectionResultUndoableCommand, UsdUndoCreateConnectionCommand);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::ConnectionResultUndoableCommand, UsdUndoCreateConnectionCommand);
 
 namespace {
 
@@ -300,5 +296,4 @@ void UsdUndoDeleteConnectionCommand::undo() { _undoableItem.undo(); }
 
 void UsdUndoDeleteConnectionCommand::redo() { _undoableItem.redo(); }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

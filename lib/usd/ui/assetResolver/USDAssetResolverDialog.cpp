@@ -19,9 +19,15 @@
 
 #include <AssetResolverPreferences/AssetResolverSettingsManagement.h>
 #include <AssetResolverPreferences/USDAssetResolverSettingsWidget.h>
+#include <QtCore/QSettings>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
+
+namespace {
+const QString kSettingsGroup = QStringLiteral("USDAssetResolverDialog");
+const QString kGeometryKey = QStringLiteral("geometry");
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 
@@ -33,6 +39,7 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
     // Set the default size for the dialog
     resize(800, 600);
     setWindowTitle("USD Asset Resolver Settings");
+    restoreWindowGeometry();
 
     // Create the settings widget
     settingsWidget = new Adsk::USDAssetResolverSettingsWidget(
@@ -69,6 +76,12 @@ USDAssetResolverDialog::~USDAssetResolverDialog() { }
 
 bool USDAssetResolverDialog::execute() { return exec() == QDialog::Accepted; }
 
+void USDAssetResolverDialog::closeEvent(QCloseEvent* event)
+{
+    saveWindowGeometry();
+    QDialog::closeEvent(event);
+}
+
 void USDAssetResolverDialog::OnSaveRequested()
 {
     auto newOptions = settingsWidget->getSettings();
@@ -76,10 +89,33 @@ void USDAssetResolverDialog::OnSaveRequested()
         Adsk::AssetResolverSettings::GetInstance(), newOptions);
     PreferencesManagement::SaveUsdPreferences(newOptions);
 
-    // Close the dialog
+    saveWindowGeometry();
     accept();
 }
 
-void USDAssetResolverDialog::OnCloseRequested() { accept(); }
+void USDAssetResolverDialog::OnCloseRequested()
+{
+    saveWindowGeometry();
+    accept();
+}
+
+void USDAssetResolverDialog::saveWindowGeometry()
+{
+    QSettings settings;
+    settings.beginGroup(kSettingsGroup);
+    settings.setValue(kGeometryKey, saveGeometry());
+    settings.endGroup();
+}
+
+void USDAssetResolverDialog::restoreWindowGeometry()
+{
+    QSettings settings;
+    settings.beginGroup(kSettingsGroup);
+    const QByteArray geometry = settings.value(kGeometryKey).toByteArray();
+    if (!geometry.isEmpty()) {
+        restoreGeometry(geometry);
+    }
+    settings.endGroup();
+}
 
 } // namespace MAYAUSD_NS_DEF
