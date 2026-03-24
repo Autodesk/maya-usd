@@ -29,6 +29,7 @@
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNumericAttribute.h>
@@ -115,7 +116,15 @@ UsdSceneRenderSettings::UsdSceneRenderSettings()
 {
 }
 
-UsdSceneRenderSettings::~UsdSceneRenderSettings() { }
+UsdSceneRenderSettings::~UsdSceneRenderSettings()
+{
+    // Remove our stage from the global cache so nothing holds it alive
+    // after the node is destroyed.
+    if (_stage) {
+        UsdUtilsStageCache::Get().Erase(_stage);
+        _stage = nullptr;
+    }
+}
 
 bool UsdSceneRenderSettings::isBounded() const { return false; }
 
@@ -329,7 +338,10 @@ MObject UsdSceneRenderSettings::findOrCreateInstance()
         MFnDependencyNode depFn(shapeObj);
         depFn.setLocked(true);
 
-        // Name, hide, and lock the parent transform.
+        // Name and hide the parent transform.
+        // Note: the transform is intentionally NOT locked so that generic
+        // MEL scripts (e.g. the up-axis export helper that groups all
+        // assemblies) can reparent it without errors.
         MFnDagNode shapeDagFn(shapeObj);
         MObject    parentObj = shapeDagFn.parent(0);
         if (!parentObj.isNull()) {
@@ -339,7 +351,6 @@ MObject UsdSceneRenderSettings::findOrCreateInstance()
             if (!hiddenPlug.isNull()) {
                 hiddenPlug.setBool(true);
             }
-            parentDepFn.setLocked(true);
         }
 
         // Dirty the UFE stage map so this node's stage is discoverable.
@@ -413,10 +424,6 @@ void UsdSceneRenderSettings::installCallbacks()
     _beforeSaveCbId = MSceneMessage::addCallback(
         MSceneMessage::kBeforeSave, beforeSaveCallback, nullptr, &status);
     CHECK_MSTATUS(status);
-
-    // Create the singleton node for the current scene. Maya doesn't send
-    // kAfterNew for the default scene that exists at startup.
-    findOrCreateInstance();
 }
 
 /* static */

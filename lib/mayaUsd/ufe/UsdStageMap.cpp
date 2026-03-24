@@ -315,9 +315,20 @@ UsdStageMap::StageSet UsdStageMap::allStages()
          /* no ++it here, we manually move it in the loop */) {
         const auto&      pair = *it;
         const Ufe::Path& path = pair.first;
+        MObjectHandle    objectHandle = pair.second;
         // Calling UsdStageMap::stage may erase the entry in fPathToObject at path.
         // Advance the iterator so that the iterator stays valid if erasure occurs.
         it++;
+
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+        // Exclude the SceneRenderSettings internal stage.
+        if (objectHandle.isValid()) {
+            MFnDependencyNode depFn(objectHandle.object());
+            if (depFn.typeId() == MAYAUSD_NS::UsdSceneRenderSettings::typeId)
+                continue;
+        }
+#endif
+
         // Now handle path.
         PXR_NS::UsdStageWeakPtr matchingStage = stage(path);
         // After this point pair and path cannot be safely used, they may have been erased.
@@ -340,6 +351,17 @@ std::vector<Ufe::Path> UsdStageMap::allStagesPaths()
     for (auto it = _pathToObject.begin(); it != _pathToObject.end(); ++it) {
         const auto&      pair = *it;
         const Ufe::Path& path = pair.first;
+
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+        // Exclude the SceneRenderSettings internal stage.
+        MObjectHandle objectHandle = pair.second;
+        if (objectHandle.isValid()) {
+            MFnDependencyNode depFn(objectHandle.object());
+            if (depFn.typeId() == MAYAUSD_NS::UsdSceneRenderSettings::typeId)
+                continue;
+        }
+#endif
+
         _stagePaths.push_back(path);
     }
     return _stagePaths;

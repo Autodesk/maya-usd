@@ -208,6 +208,20 @@ class testDiagnosticDelegate(unittest.TestCase):
             Tf.Warn("this warning won't be lost")
             Tf.Status("this status won't be lost")
 
+            # Delete the SceneRenderSettings singleton node with undo off
+            # so the undo queue doesn't hold references to plugin data types.
+            srsNodes = cmds.ls(type='mayaUsdSceneRenderSettings')
+            if srsNodes:
+                cmds.undoInfo(stateWithoutFlush=False)
+                for node in srsNodes:
+                    parent = cmds.listRelatives(node, parent=True, fullPath=True)
+                    cmds.lockNode(node, lock=False)
+                    if parent:
+                        cmds.lockNode(parent[0], lock=False)
+                        cmds.delete(parent[0])
+                    else:
+                        cmds.delete(node)
+                cmds.undoInfo(stateWithoutFlush=True)
             cmds.unloadPlugin('mayaUsdPlugin', force=True)
 
             for i in range(5):

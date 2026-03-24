@@ -175,15 +175,20 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
     CHECK_MSTATUS(status);
 
 #ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
-    status = plugin.registerNode(
-        MayaUsd::UsdSceneRenderSettings::typeName,
-        MayaUsd::UsdSceneRenderSettings::typeId,
-        MayaUsd::UsdSceneRenderSettings::creator,
-        MayaUsd::UsdSceneRenderSettings::initialize,
-        MPxNode::kLocatorNode);
-    CHECK_MSTATUS(status);
+    // Only register and activate the SceneRenderSettings node for mayaUsdPlugin.
+    if (plugin.name() == "mayaUsdPlugin") {
+        status = plugin.registerNode(
+            MayaUsd::UsdSceneRenderSettings::typeName,
+            MayaUsd::UsdSceneRenderSettings::typeId,
+            MayaUsd::UsdSceneRenderSettings::creator,
+            MayaUsd::UsdSceneRenderSettings::initialize,
+            MPxNode::kLocatorNode);
+        CHECK_MSTATUS(status);
 
-    MayaUsd::UsdSceneRenderSettings::installCallbacks();
+        MayaUsd::UsdSceneRenderSettings::installCallbacks();
+        // Maya doesn't send kAfterNew for the default scene that exists at startup.
+        MayaUsd::UsdSceneRenderSettings::findOrCreateInstance();
+    }
 #endif
 
     return status;
@@ -208,7 +213,11 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     }
 
 #ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
-    MayaUsd::UsdSceneRenderSettings::removeCallbacks();
+    if (plugin.name() == "mayaUsdPlugin") {
+        MayaUsd::UsdSceneRenderSettings::removeCallbacks();
+        MStatus srsStatus = plugin.deregisterNode(MayaUsd::UsdSceneRenderSettings::typeId);
+        CHECK_MSTATUS(srsStatus);
+    }
 #endif
 
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
@@ -255,10 +264,6 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     status = plugin.deregisterNode(MayaUsdProxyShapeBase::typeId);
     CHECK_MSTATUS(status);
 
-#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
-    status = plugin.deregisterNode(MayaUsd::UsdSceneRenderSettings::typeId);
-    CHECK_MSTATUS(status);
-#endif
 
     status = plugin.deregisterData(MayaUsdStageData::mayaTypeId);
     CHECK_MSTATUS(status);
