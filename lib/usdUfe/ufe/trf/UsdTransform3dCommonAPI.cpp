@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
 #include <usdUfe/ufe/trf/UsdTransform3dUndoableCommands.h>
+#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/stringUtils.h>
@@ -64,7 +65,10 @@ public:
     bool set(double x, double y, double z) override
     {
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
-        updateNewValue(VtValue(GfVec3d(x, y, z)));
+        {
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
+            updateNewValue(VtValue(GfVec3d(x, y, z)));
+        }
         return true;
     }
 
@@ -108,7 +112,10 @@ public:
     bool set(double x, double y, double z) override
     {
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
-        updateNewValue(VtValue(GfVec3f(x, y, z)));
+        {
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
+            updateNewValue(VtValue(GfVec3f(x, y, z)));
+        }
         return true;
     }
 
@@ -154,7 +161,10 @@ public:
     bool set(double x, double y, double z) override
     {
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
-        updateNewValue(VtValue(GfVec3f(x, y, z)));
+        {
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
+            updateNewValue(VtValue(GfVec3f(x, y, z)));
+        }
         return true;
     }
 
@@ -200,7 +210,10 @@ public:
     bool set(double x, double y, double z) override
     {
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
-        updateNewValue(VtValue(GfVec3f(x, y, z)));
+        {
+            UsdUfe::NoUsdUndoBlockGuard guard(true);
+            updateNewValue(VtValue(GfVec3f(x, y, z)));
+        }
         return true;
     }
 

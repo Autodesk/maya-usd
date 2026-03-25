@@ -15,8 +15,10 @@
 //
 #include "UsdSetXformOpUndoableCommandBase.h"
 
+#include <usdUfe/base/debugCodes.h>
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouterContext.h>
 
@@ -48,6 +50,8 @@ UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
 
 void UsdSetXformOpUndoableCommandBase::execute()
 {
+    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Executing command\n");
+
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
     // Create the attribute and cache the initial value,
@@ -67,7 +71,12 @@ void UsdSetXformOpUndoableCommandBase::undo()
     if (!_isPrepared)
         return;
 
+    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Undoing command\n");
+
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
+
+    // Note: the command never use a UsdUndpBlock when setting values.
+    NoUsdUndoBlockGuard guard(true);
 
     // Restore the initial value and potentially remove the creatd attributes.
     setValue(_initialOpValue, _writeTime);
@@ -77,7 +86,12 @@ void UsdSetXformOpUndoableCommandBase::undo()
 
 void UsdSetXformOpUndoableCommandBase::redo()
 {
+    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Redoing command\n");
+
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
+
+    // Note: the command never use a UsdUndpBlock when setting values.
+    NoUsdUndoBlockGuard guard(true);
 
     // Redo the attribute creation if the attribute was already created
     // but then undone.
@@ -119,6 +133,8 @@ void UsdSetXformOpUndoableCommandBase::prepareAndSet(const VtValue& v)
         return;
 
     prepareOpIfNeeded();
+    // Note: the command never use a UsdUndpBlock when setting values.
+    NoUsdUndoBlockGuard guard(true);
     setValue(v, _writeTime);
 }
 
