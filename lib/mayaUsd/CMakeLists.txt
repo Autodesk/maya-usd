@@ -224,6 +224,7 @@ if(IS_LINUX)
         target_compile_options(${PROJECT_NAME} 
             PRIVATE
                 -Wno-maybe-uninitialized
+                $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-Wno-uninitialized>
         )
     endif()
 endif()

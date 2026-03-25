@@ -96,14 +96,6 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
         cmds.flushIdleQueue()
         
         testLayerHasPrim = testLayer.GetPrimAtPath(primPath) is not None
-        
-        if not testLayerHasPrim:
-            forceTest = os.environ.get('MAYAUSD_FORCE_EF_TEST', '0') == '1'
-            if forceTest:
-                self.fail("Edit forwarding did not work but MAYAUSD_FORCE_EF_TEST is set")
-            else:
-                self.skipTest('Edit forwarding functionality not available (set MAYAUSD_FORCE_EF_TEST=1 to fail)')
-
         self.assertTrue(testLayerHasPrim, "Expected prim to be forwarded to TEST layer")
         
         # Undo should revert both the forward command and the original session-layer
