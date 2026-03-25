@@ -215,20 +215,6 @@ endif()
 
 mayaUsd_compile_config(${PROJECT_NAME})
 
-# This is to work around a warning that comes from OpenUSD VtValue header
-# in deeply templated code that end up swapping a value when removing data.
-# The data is being removed, so the warning is incorrect, but the compiler
-# cannot know that.
-if(IS_LINUX)
-    if(IS_GNU OR IS_CLANG)
-        target_compile_options(${PROJECT_NAME} 
-            PRIVATE
-                -Wno-maybe-uninitialized
-                $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-Wno-uninitialized>
-        )
-    endif()
-endif()
-
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
