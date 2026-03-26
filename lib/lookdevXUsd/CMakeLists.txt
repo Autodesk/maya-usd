@@ -205,11 +205,10 @@ endif()
 # install
 # -----------------------------------------------------------------------------
 
-# TODO - do we need to install the headers?
-#install(FILES  ${HEADERS}
-#    DESTINATION 
-#        ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
-#)
+install(FILES  ${HEADERS}
+    DESTINATION 
+        ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
+)
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY
