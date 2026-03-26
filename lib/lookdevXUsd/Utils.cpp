@@ -12,7 +12,7 @@
 
 #include <LookdevXUfe/UfeUtils.h>
 
-#include <usdufe/ufe/Utils.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <ufe/attributes.h>
 #include <ufe/runTimeMgr.h>

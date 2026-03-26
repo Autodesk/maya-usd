@@ -13,7 +13,7 @@
 #include "UsdMaterialCommands.h"
 
 #include <usdUfe/ufe/Global.h>
-#include <usdufe/ufe/UsdUndoAddNewPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/Utils.h>
 
 #ifdef LDX_USD_USE_MAYAUSDAPI
