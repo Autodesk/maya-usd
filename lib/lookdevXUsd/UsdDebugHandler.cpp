@@ -14,7 +14,7 @@
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <any>
 
@@ -41,7 +41,8 @@ std::string UsdDebugHandler::dumpPrim(const PXR_NS::UsdPrim& prim)
 
 std::string UsdDebugHandler::exportToString(Ufe::SceneItem::Ptr sceneItem)
 {
-    auto prim = MayaUsdAPI::getPrimForUsdSceneItem(sceneItem);
+    auto usdItem = UsdUfe::downcast(sceneItem);
+    auto prim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
     if (prim.IsValid())
     {
         return dumpPrim(prim);

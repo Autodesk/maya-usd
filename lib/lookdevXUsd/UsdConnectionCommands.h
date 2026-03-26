@@ -18,7 +18,7 @@
 #include <LookdevXUfe/ExtendedConnection.h>
 #include <LookdevXUfe/UndoableCommand.h>
 
-#include <mayaUsdAPI/undo.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 namespace LookdevXUsd
 {
@@ -70,7 +70,7 @@ protected:
         const Ufe::Attribute::Ptr& attr) const override;
 
 private:
-    MayaUsdAPI::UsdUndoableItem m_undoableItem;
+    UsdUfe::UsdUndoableItem m_undoableItem;
 
     std::unique_ptr<LookdevXUfe::AttributeComponentInfo> m_srcInfo;
     std::unique_ptr<LookdevXUfe::AttributeComponentInfo> m_dstInfo;
@@ -110,7 +110,7 @@ protected:
         const Ufe::Attribute::Ptr& attr) const override;
 
 private:
-    MayaUsdAPI::UsdUndoableItem m_undoableItem;
+    UsdUfe::UsdUndoableItem m_undoableItem;
 
     std::unique_ptr<LookdevXUfe::AttributeComponentInfo> m_srcInfo;
     std::unique_ptr<LookdevXUfe::AttributeComponentInfo> m_dstInfo;

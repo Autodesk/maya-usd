@@ -11,7 +11,7 @@
 #include "UsdMaterialValidator.h"
 #include "Utils.h"
 
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -474,8 +474,8 @@ void UsdMaterialValidator::validateComponentLocation(const LookdevXUfe::Attribut
 
 Ufe::Path UsdMaterialValidator::toUfe(const UsdStageWeakPtr& stage, const SdfPath& path)
 {
-    auto stagePath = MayaUsdAPI::stagePath(stage);
-    return Ufe::Path::Segments{stagePath.getSegments()[0], MayaUsdAPI::usdPathToUfePathSegment(path)};
+    auto stagePath = UsdUfe::stagePath(stage);
+    return Ufe::Path::Segments{stagePath.getSegments()[0], UsdUfe::usdPathToUfePathSegment(path)};
 }
 
 Ufe::Path UsdMaterialValidator::toUfe(const UsdPrim& prim)

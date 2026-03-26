@@ -10,17 +10,16 @@
 //*****************************************************************************
 
 #include "UsdSceneItemUI.h"
+
 #include <LookdevXUfe/SoloingHandler.h>
 #include <LookdevXUfe/UfeUtils.h>
 #include <LookdevXUfe/Utils.h>
-
-#include <mayaUsdAPI/utils.h>
 
 namespace
 {
 
 // For backwards compatibility for when we used usd prim hidden flag. Needs to be removed at some point.
-bool isLegacyHiddenItem(const Ufe::SceneItem::Ptr& item)
+bool isLegacyHiddenItem(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     if (!item)
     {
@@ -31,17 +30,17 @@ bool isLegacyHiddenItem(const Ufe::SceneItem::Ptr& item)
     const auto isSeparateOrCombine =
         nodeDef ? LookdevXUfe::identifyComponentNode(nodeDef->type()) != LookdevXUfe::ComponentNodeType::eNone : false;
 
-    auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
+    auto prim = item->prim();
     return (prim.IsValid() && prim.IsHidden()) &&
            (isSeparateOrCombine || (soloingHandler && soloingHandler->isSoloingItem(item)));
 }
 
-std::string getHiddenKeyMetadata(const Ufe::SceneItemPtr& item)
+std::string getHiddenKeyMetadata(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     if (item)
     {
         // Short circuit the NodeDef handler. Works even if the LookdevX converter nodes are unavailable in Sdr.
-        auto usdShaderItem = PXR_NS::UsdShadeShader(MayaUsdAPI::getPrimForUsdSceneItem(item));
+        auto usdShaderItem = PXR_NS::UsdShadeShader(item->prim());
         if (usdShaderItem)
         {
             PXR_NS::TfToken mxNodeType;
@@ -60,17 +59,15 @@ std::string getHiddenKeyMetadata(const Ufe::SceneItemPtr& item)
 namespace LookdevXUsd
 {
 
-UsdSceneItemUI::UsdSceneItemUI(Ufe::SceneItem::Ptr item, const PXR_NS::UsdPrim& prim)
-    : m_item(std::move(item)), m_stage(prim.IsValid() ? prim.GetStage() : nullptr),
-      m_path(prim.IsValid() ? prim.GetPath() : PXR_NS::SdfPath())
+UsdSceneItemUI::UsdSceneItemUI(UsdUfe::UsdSceneItem::Ptr item)
+    : m_item(std::move(item))
 {
 }
 
 /*static*/
-UsdSceneItemUI::Ptr UsdSceneItemUI::create(const Ufe::SceneItem::Ptr& item)
+UsdSceneItemUI::Ptr UsdSceneItemUI::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
-    auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
-    return std::make_shared<UsdSceneItemUI>(item, prim);
+    return std::make_shared<UsdSceneItemUI>(item);
 }
 
 //------------------------------------------------------------------------------

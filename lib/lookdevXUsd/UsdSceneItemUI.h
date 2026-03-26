@@ -17,6 +17,8 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <usdUfe/ufe/UsdSceneItem.h>
+
 #include <ufe/sceneItem.h>
 
 namespace LookdevXUsd
@@ -31,7 +33,7 @@ class UsdSceneItemUI : public LookdevXUfe::SceneItemUI
 public:
     using Ptr = std::shared_ptr<UsdSceneItemUI>;
 
-    explicit UsdSceneItemUI(Ufe::SceneItem::Ptr item, const PXR_NS::UsdPrim& prim);
+    explicit UsdSceneItemUI(UsdUfe::UsdSceneItem::Ptr item);
     ~UsdSceneItemUI() override = default;
 
     // Delete the copy/move constructors assignment operators.
@@ -41,7 +43,7 @@ public:
     UsdSceneItemUI& operator=(UsdSceneItemUI&&) = delete;
 
     //! Create a UsdSceneItemUI.
-    static UsdSceneItemUI::Ptr create(const Ufe::SceneItem::Ptr& item);
+    static UsdSceneItemUI::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
     // Ufe::SceneItemUI overrides
     Ufe::SceneItem::Ptr sceneItem() const override;
@@ -49,9 +51,7 @@ public:
     Ufe::UndoableCommand::Ptr setHiddenCmd(bool hidden) override;
 
 private:
-    Ufe::SceneItem::Ptr m_item;
-    const PXR_NS::UsdStageWeakPtr m_stage;
-    const PXR_NS::SdfPath m_path;
+    UsdUfe::UsdSceneItem::Ptr m_item;
 };
 
 } // namespace LookdevXUsd

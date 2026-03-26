@@ -11,6 +11,8 @@
 
 #include "UsdConnectionCommands.h"
 
+#include <usdUfe/undo/UsdUndoBlock.h>
+
 #include <LookdevXUfe/UfeUtils.h>
 
 namespace LookdevXUsd
@@ -58,7 +60,7 @@ UsdCreateConnectionCommand::Ptr UsdCreateConnectionCommand::create(const Ufe::At
 
 void UsdCreateConnectionCommand::execute()
 {
-    const MayaUsdAPI::UsdUndoBlock undoBlock(&m_undoableItem);
+    const UsdUfe::UsdUndoBlock undoBlock(&m_undoableItem);
 
     createConnection(*m_srcInfo, *m_dstInfo);
 }
@@ -104,7 +106,7 @@ UsdDeleteConnectionCommand::Ptr UsdDeleteConnectionCommand::create(const Ufe::At
 
 void UsdDeleteConnectionCommand::execute()
 {
-    const MayaUsdAPI::UsdUndoBlock undoBlock(&m_undoableItem);
+    const UsdUfe::UsdUndoBlock undoBlock(&m_undoableItem);
 
     deleteConnection(*m_srcInfo, *m_dstInfo);
 }

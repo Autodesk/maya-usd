@@ -14,6 +14,9 @@
 
 #include <ufe/hierarchy.h>
 
+#include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/Utils.h>
 
 namespace LookdevXUsd
@@ -44,13 +47,13 @@ Ufe::SceneItemResultUndoableCommand::Ptr ProxyShapeLookdevHandler::createLookdev
     }
 
     // Treat proxy shapes in the same way as every other USD item.
-    auto parentItem = MayaUsdAPI::createUsdSceneItem(parent->path(), MayaUsdAPI::ufePathToPrim(parent->path()));
-    if (!parentItem || !MayaUsdAPI::getPrimForUsdSceneItem(parentItem).IsValid())
+    auto parentItem = UsdUfe::UsdSceneItem::create(parent->path(), UsdUfe::ufePathToPrim(parent->path()));
+    if (!parentItem || !parentItem->prim().IsValid())
     {
         return nullptr;
     }
 
-    return MayaUsdAPI::createAddNewPrimCommand(parentItem, name.string(), "Material");
+    return UsdUfe::UsdUndoAddNewPrimCommand::create(parentItem, name.string(), "Material");
 }
 
 Ufe::SceneItemResultUndoableCommand::Ptr ProxyShapeLookdevHandler::createLookdevContainerCmdImpl(
@@ -66,7 +69,7 @@ Ufe::SceneItemResultUndoableCommand::Ptr ProxyShapeLookdevHandler::createLookdev
 {
     // This handler is only aware of gateways from Maya to USD.
     if (!ancestor || ancestor->runTimeId() != MayaUsdAPI::getMayaRunTimeId() ||
-        targetRunTimeId != MayaUsdAPI::getUsdRunTimeId())
+        targetRunTimeId != UsdUfe::getUsdRunTimeId())
     {
         return m_previousHandler ? m_previousHandler->createLookdevEnvironmentCmdImpl(ancestor, targetRunTimeId)
                                  : nullptr;
@@ -161,22 +164,22 @@ bool MayaUsdCreateLookdevEnvironmentCommand::executeCommand()
 
     // Create a materials scope, preferring the default prim as parent if one exists.
     auto proxyShapeItem =
-        MayaUsdAPI::createUsdSceneItem(proxyShape->path(), MayaUsdAPI::ufePathToPrim(proxyShape->path()));
-    if (!proxyShapeItem || !MayaUsdAPI::getPrimForUsdSceneItem(proxyShapeItem).IsValid())
+        UsdUfe::UsdSceneItem::create(proxyShape->path(), UsdUfe::ufePathToPrim(proxyShape->path()));
+    if (!proxyShapeItem || !proxyShapeItem->prim().IsValid())
     {
         return false;
     }
 
     Ufe::SceneItem::Ptr scopeParentItem = proxyShapeItem;
-    auto stage = MayaUsdAPI::getStage(proxyShape->path());
+    auto stage = UsdUfe::getStage(proxyShape->path());
     if (stage && stage->HasDefaultPrim())
     {
         auto defaultPrim = stage->GetDefaultPrim();
         if (defaultPrim.IsValid())
         {
-            auto defaultPrimUfePath = MayaUsdAPI::stagePath(stage)
-                + MayaUsdAPI::usdPathToUfePathSegment(defaultPrim.GetPath());
-            auto defaultPrimItem = MayaUsdAPI::createUsdSceneItem(defaultPrimUfePath, defaultPrim);
+            auto defaultPrimUfePath = UsdUfe::stagePath(stage)
+                + UsdUfe::usdPathToUfePathSegment(defaultPrim.GetPath());
+            auto defaultPrimItem = UsdUfe::UsdSceneItem::create(defaultPrimUfePath, defaultPrim);
             if (defaultPrimItem)
             {
                 scopeParentItem = defaultPrimItem;

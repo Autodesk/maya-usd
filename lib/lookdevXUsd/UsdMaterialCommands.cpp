@@ -10,7 +10,11 @@
 //*****************************************************************************
 #include "UsdMaterialCommands.h"
 
+#include <usdUfe/ufe/Utils.h>
+
+#ifdef LDX_USD_USE_MAYAUSDAPI
 #include <mayaUsdAPI/utils.h>
+#endif
 
 namespace LookdevXUsd
 {
@@ -37,21 +41,25 @@ Ufe::SceneItem::Ptr UsdCreateMaterialParentCommand::sceneItem() const
 
 void UsdCreateMaterialParentCommand::execute()
 {
-    if (!m_ancestor || !MayaUsdAPI::getPrimForUsdSceneItem(m_ancestor).IsValid())
+    auto usdItem = UsdUfe::downcast(m_ancestor);
+    auto prim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
+    if (!prim.IsValid())
     {
         return;
     }
 
     // If m_ancestor is a materials scope, it can be used as material parent.
-    if (MayaUsdAPI::isMaterialsScope(m_ancestor))
+    if (UsdUfe::isMaterialsScope(m_ancestor))
     {
         m_materialParent = m_ancestor;
         return;
     }
 
+#ifdef LDX_USD_USE_MAYAUSDAPI
     // Create a materials scope.
     m_cmd = std::dynamic_pointer_cast<Ufe::SceneItemResultUndoableCommand>(
         MayaUsdAPI::createMaterialsScopeCommand(m_ancestor));
+#endif
     if (!m_cmd)
     {
         return;

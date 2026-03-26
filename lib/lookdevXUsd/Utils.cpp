@@ -12,7 +12,7 @@
 
 #include <LookdevXUfe/UfeUtils.h>
 
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <ufe/attributes.h>
 #include <ufe/runTimeMgr.h>
@@ -24,12 +24,13 @@ namespace LookdevXUsdUtils
 {
 SdfLayerRefPtr getSessionLayer(const Ufe::SceneItem::Ptr& item)
 {
-    if (!item)
+    auto usdSceneItem = UsdUfe::downcast(item);
+    if (!usdSceneItem)
     {
         return {};
     }
 
-    auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
+    auto prim = usdSceneItem->prim();
     auto sessionLayer = prim.GetStage()->GetSessionLayer();
     return sessionLayer;
 }
