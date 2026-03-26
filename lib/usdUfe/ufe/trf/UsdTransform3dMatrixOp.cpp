@@ -187,13 +187,20 @@ public:
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
-        {
-            UsdUfe::NoUsdUndoBlockGuard guard(true);
-            _opTransform.SetTranslateOnly(GfVec3d(x, y, z));
-            updateNewValue(VtValue(_opTransform));
-        }
+        _opTransform.SetTranslateOnly(GfVec3d(x, y, z));
+        updateNewValue(VtValue(_opTransform));
         return true;
     }
 
@@ -234,6 +241,16 @@ public:
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
         // Expect XYZ Euler angles in degrees.
         GfMatrix3d r(
             GfRotation(GfVec3d::XAxis(), x) * GfRotation(GfVec3d::YAxis(), y)
@@ -241,13 +258,10 @@ public:
 
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
-        {
-            UsdUfe::NoUsdUndoBlockGuard guard(true);
-            fU.SetRotate(r);
+        fU.SetRotate(r);
 
-            GfMatrix4d opTransform = (fS * fU).SetTranslateOnly(fT);
-            updateNewValue(VtValue(opTransform));
-        }
+        GfMatrix4d opTransform = (fS * fU).SetTranslateOnly(fT);
+        updateNewValue(VtValue(opTransform));
         return true;
     }
 
@@ -283,13 +297,20 @@ public:
     // Executes the command by setting the scale onto the transform op.
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
         GfMatrix4d opTransform = (GfMatrix4d(GfVec4d(x, y, z, 1.0)) * fU).SetTranslateOnly(fT);
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
-        {
-            UsdUfe::NoUsdUndoBlockGuard guard(true);
-            updateNewValue(VtValue(opTransform));
-        }
+        updateNewValue(VtValue(opTransform));
         return true;
     }
 

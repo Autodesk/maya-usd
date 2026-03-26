@@ -145,6 +145,10 @@ bool mayaIsSceneLoading()
         || MFileIO::isImportingFile() || MFileIO::isReferencingFile();
 }
 
+bool mayaIsUndoing() { return MGlobal::isUndoing(); }
+
+bool mayaIsRedoing() { return MGlobal::isRedoing(); }
+
 // Note: MayaUsd::ufe::getStage takes two parameters, so wrap it in a function taking only one.
 PXR_NS::UsdStageWeakPtr mayaGetStage(const Ufe::Path& path) { return MayaUsd::ufe::getStage(path); }
 
@@ -292,6 +296,8 @@ MStatus initialize()
     dccFunctions.extractTRSFn = MayaUsd::ufe::extractTRS;
     dccFunctions.transform3dMatrixOpNameFn = getTransform3dMatrixOpName;
     dccFunctions.isLoadingSceneFn = mayaIsSceneLoading;
+    dccFunctions.isUndoingFn = mayaIsUndoing;
+    dccFunctions.isRedoingFn = mayaIsRedoing;
 #ifdef WANT_ADSKUSDEDITFORWARD_BUILD
     dccFunctions.pauseEditForwardingFn = mayaPauseEditForwarding;
 #endif
