@@ -17,10 +17,23 @@ set(GNU_CLANG_FLAGS
     -Wno-unused-local-typedefs
 )
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if(IS_GNU)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14)
+        # This is to work around a warning that comes from OpenUSD VtValue header
+        # in deeply templated code that end up swapping a value when removing data.
+        # The data is being removed, so the warning is incorrect, but the compiler
+        # cannot know that.
+        list(APPEND GNU_CLANG_FLAGS
+                -Wno-maybe-uninitialized
+                $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-Wno-uninitialized>
+        )
+    endif()
+endif()
+
+if (IS_CLANG)
     list(APPEND GNU_CLANG_FLAGS
             -Wrange-loop-analysis
-        )
+    )
 endif()
 
 set(MSVC_FLAGS

@@ -348,6 +348,48 @@ class AttributeBlockTestCase(unittest.TestCase):
         # authoring new transformation edit is allowed.
         self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(transformAttr))
 
+    def testTimeSampleAttributeBlocking(self):
+        '''Authoring a default value on an attribute that has time samples in the edit target layer is not permitted.'''
+
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # cylinder prim
+        cylinderPrim = stage.GetPrimAtPath('/pCylinder1')
+        self.assertIsNotNone(cylinderPrim)
+
+        # add a sublayer and make it the edit target
+        rootLayer = stage.GetRootLayer()
+        subLayerA = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="LayerA")[0]
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerA)
+
+        # create a translate xform op in the edit target layer - edit should be allowed
+        cylinderXformable = UsdGeom.Xformable(cylinderPrim)
+        translateOp = cylinderXformable.AddTranslateOp()
+        translateAttr = translateOp.GetAttr()
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr))
+
+        # author time samples on the attribute in the edit target layer
+        translateAttr.Set(Gf.Vec3d(1.0, 0.0, 0.0), Usd.TimeCode(1.0))
+        translateAttr.Set(Gf.Vec3d(2.0, 0.0, 0.0), Usd.TimeCode(2.0))
+
+        # setting a default value is no longer allowed since time samples in the
+        # edit target layer would override it at every frame
+        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(translateAttr))
+
+        # switch the edit target to the root layer - editing should be allowed
+        # even though time samples exist on the weaker layer (LayerA)
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=rootLayer.identifier)
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr))
+
     def testIsAttributeEditAllowed(self):
         '''
         Verify a edit target layer from a referenced prim can be allowed to edit if it's a stronger layer.

@@ -1284,6 +1284,26 @@ bool isAttributeEditAllowed(const PXR_NS::UsdProperty& attr, std::string* errMsg
         }
     }
 
+    // Time samples in the edit target layer take precedence over any default value written there.
+    // The edit would have no visible effect at any frame. Opinions from stronger layers are already
+    // caught by the property stack check above, so we only inspect the edit target layer's own spec
+    // here.
+    for (const auto& spec : propertyStack) {
+        const auto& specLayer = spec->GetLayer();
+        if (specLayer == editTarget.GetLayer()) {
+            if (specLayer->GetNumTimeSamplesForPath(spec->GetPath()) > 0) {
+                if (errMsg) {
+                    *errMsg = TfStringPrintf(
+                        "Cannot edit [%s] attribute because it has time samples in [%s].",
+                        attr.GetBaseName().GetText(),
+                        specLayer->GetDisplayName().c_str());
+                }
+                return false;
+            }
+            break; // Avoid checking weaker layers since they won't have any effect.
+        }
+    }
+
     return true;
 }
 
