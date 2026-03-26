@@ -14,8 +14,6 @@
 
 #include "UsdMxVersionUpgrade.h"
 
-#include <mayaUsdAPI/utils.h>
-
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -34,9 +32,9 @@
 
 #include <ufe/hierarchy.h>
 
+#include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
-
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <regex>
 #include <string>
@@ -932,8 +930,8 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
         return std::nullopt;
     }
 
-    const auto materialItem = Ufe::Hierarchy::createItem(adjustedMaterialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(adjustedMaterialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : PXR_NS::UsdPrim());
     if (!materialPrim)
     {
         return std::nullopt;
@@ -944,8 +942,8 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
 void UpgradeMaterial(const Ufe::Path& materialPath)
 {
     const auto adjustedMaterialPath = _getMaterialPath(materialPath);
-    const auto materialItem = Ufe::Hierarchy::createItem(adjustedMaterialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(adjustedMaterialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
     if (materialPrim && _isLegacyMaterial(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
@@ -969,10 +967,10 @@ UsdMxUpgradeMaterialCmd::~UsdMxUpgradeMaterialCmd() = default;
 void UsdMxUpgradeMaterialCmd::execute()
 {
     // I do hope the undo block is strong enough to track multi-layer changes because the upgrade process can go dig into a nested material layer and execute some changes there.
-    MayaUsdAPI::UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
-    const auto materialItem = Ufe::Hierarchy::createItem(_materialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(_materialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
     if (materialPrim && _isLegacyMaterial(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
