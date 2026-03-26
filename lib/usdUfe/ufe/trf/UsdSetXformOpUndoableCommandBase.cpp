@@ -82,6 +82,16 @@ void UsdSetXformOpUndoableCommandBase::undo()
 
 void UsdSetXformOpUndoableCommandBase::redo()
 {
+    // Note: various Maya commands call this `redo` function instead of `execute`
+    //       in their `doIt` function.That's because many commands implement their
+    //       `doIt` by calling their `redoIt`. Then they end-up calling `redo` on
+    //       the UFE commands. Redirect to `execute` when we detect suck shenanigans,
+    //       because our `execute` capture undo info but our `redo` replays them.
+    if (!UsdUfe::isRedoing()) {
+        execute();
+        return;
+    }
+
     TF_DEBUG_MSG(USDUFE_UNDOCMD, "Redoing command\n");
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());

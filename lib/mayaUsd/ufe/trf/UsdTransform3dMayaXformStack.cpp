@@ -341,7 +341,7 @@ public:
             return true;
         }
 
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value\n");
+        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value %lf %lf %lf\n", x, y, z);
 
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
@@ -380,7 +380,7 @@ public:
             return true;
         }
 
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value\n");
+        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value %lf %lf %lf\n", x, y, z);
 
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
