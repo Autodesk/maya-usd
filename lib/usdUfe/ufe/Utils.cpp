@@ -118,6 +118,8 @@ UsdUfe::StagePathAccessorFn             gStagePathAccessorFn = nullptr;
 UsdUfe::UfePathToPrimFn                 gUfePathToPrimFn = nullptr;
 UsdUfe::TimeAccessorFn                  gTimeAccessorFn = nullptr;
 UsdUfe::IsLoadingSceneFn                gIsLoadingSceneFn = nullptr;
+UsdUfe::IsInUndoRedoFn                  gIsUndoingFn = nullptr;
+UsdUfe::IsInUndoRedoFn                  gIsRedoingFn = nullptr;
 UsdUfe::IsAttributeLockedFn             gIsAttributeLockedFn = nullptr;
 UsdUfe::SaveStageLoadRulesFn            gSaveStageLoadRulesFn = nullptr;
 UsdUfe::IsRootChildFn                   gIsRootChildFn = nullptr;
@@ -271,6 +273,36 @@ bool isSceneLoading()
     // Otherwise return false.
     if (gIsLoadingSceneFn)
         return gIsLoadingSceneFn();
+    return false;
+}
+
+void setIsUndoing(IsInUndoRedoFn fn)
+{
+    // This function is allowed to be null in which case return default (false).
+    gIsUndoingFn = fn;
+}
+
+bool isUndoing()
+{
+    // If we have (optional) undoing function, use it.
+    // Otherwise return false.
+    if (gIsUndoingFn)
+        return gIsUndoingFn();
+    return false;
+}
+
+void setIsRedoing(IsInUndoRedoFn fn)
+{
+    // This function is allowed to be null in which case return default (false).
+    gIsRedoingFn = fn;
+}
+
+bool isRedoing()
+{
+    // If we have (optional) redoing function, use it.
+    // Otherwise return false.
+    if (gIsRedoingFn)
+        return gIsRedoingFn();
     return false;
 }
 

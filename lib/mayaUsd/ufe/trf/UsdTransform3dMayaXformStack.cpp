@@ -331,17 +331,24 @@ public:
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value\n");
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
+        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value %lf %lf %lf\n", x, y, z);
 
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
 
         VtValue v;
         v = V(x, y, z);
-        {
-            UsdUfe::NoUsdUndoBlockGuard guard(true);
-            updateNewValue(v);
-        }
+        updateNewValue(v);
         return true;
     }
 };
@@ -363,17 +370,24 @@ public:
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value\n");
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
+        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value %lf %lf %lf\n", x, y, z);
 
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
 
         VtValue v;
         v = _cvtRotXYZToAttr(x, y, z);
-        {
-            UsdUfe::NoUsdUndoBlockGuard guard(true);
-            updateNewValue(v);
-        }
+        updateNewValue(v);
         return true;
     }
 

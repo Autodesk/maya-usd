@@ -77,6 +77,7 @@ typedef void (
 typedef const char* (*Transform3dMatrixOpNameFn)();
 typedef bool (*IsLoadingSceneFn)();
 typedef void (*PauseEditForwardingFn)(bool pause);
+typedef bool (*IsInUndoRedoFn)();
 typedef bool (*IsComponentStageFn)(const Ufe::Path&);
 typedef std::string (*GetComponentMaterialScopeNameFn)(const PXR_NS::UsdStageRefPtr&);
 typedef std::string (*GetComponentMeshScopeNameFn)(const PXR_NS::UsdStageRefPtr&);
@@ -157,6 +158,28 @@ void setIsLoadingSceneFn(IsLoadingSceneFn fn);
 //! \return True if the DCC is currently loading a scene, otherwise false
 USDUFE_PUBLIC
 bool isSceneLoading();
+
+//! Set the DCC specific is-undoing test function.
+//! Use of this function is optional, if one is not supplied then
+//! a default test function will be used.
+USDUFE_PUBLIC
+void setIsUndoing(IsInUndoRedoFn fn);
+
+//! Return whether the DCC is currently undoing commands.
+//! \return True if the DCC is currently undoing commands, otherwise false
+USDUFE_PUBLIC
+bool isUndoing();
+
+//! Set the DCC specific is-readoing test function.
+//! Use of this function is optional, if one is not supplied then
+//! a default test function will be used.
+USDUFE_PUBLIC
+void setIsRedoing(IsInUndoRedoFn fn);
+
+//! Return whether the DCC is currently redoing commands.
+//! \return True if the DCC is currently redoing commands, otherwise false
+USDUFE_PUBLIC
+bool isRedoing();
 
 //! Set the DCC specific USD attribute is locked test function.
 //! Use of this function is optional, if one is not supplied then

@@ -75,32 +75,29 @@ void UsdSetXformOpUndoableCommandBase::undo()
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    // Note: the command never use a UsdUndpBlock when setting values.
-    NoUsdUndoBlockGuard guard(true);
-
-    // Restore the initial value and potentially remove the creatd attributes.
-    setValue(_initialOpValue, _writeTime);
-    removeOpIfNeeded();
+    _valueUndo.undo();
+    _opCreationUndo.undo();
     _canUpdateValue = false;
 }
 
 void UsdSetXformOpUndoableCommandBase::redo()
 {
+    // Note: various Maya commands call this `redo` function instead of `execute`
+    //       in their `doIt` function.That's because many commands implement their
+    //       `doIt` by calling their `redoIt`. Then they end-up calling `redo` on
+    //       the UFE commands. Redirect to `execute` when we detect suck shenanigans,
+    //       because our `execute` capture undo info but our `redo` replays them.
+    if (!UsdUfe::isRedoing()) {
+        execute();
+        return;
+    }
+
     TF_DEBUG_MSG(USDUFE_UNDOCMD, "Redoing command\n");
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    // Note: the command never use a UsdUndpBlock when setting values.
-    NoUsdUndoBlockGuard guard(true);
-
-    // Redo the attribute creation if the attribute was already created
-    // but then undone.
-    recreateOpIfNeeded();
-
-    // Set the new value, potentially creating the attribute if it
-    // did not exists or caching the initial value if this is the
-    // first time the command is executed, redone or undone.
-    prepareAndSet(_newOpValue);
+    _opCreationUndo.redo();
+    _valueUndo.redo();
     _canUpdateValue = true;
 }
 
@@ -133,8 +130,8 @@ void UsdSetXformOpUndoableCommandBase::prepareAndSet(const VtValue& v)
         return;
 
     prepareOpIfNeeded();
-    // Note: the command never use a UsdUndpBlock when setting values.
-    NoUsdUndoBlockGuard guard(true);
+    _valueUndo.undo();
+    UsdUndoBlock undoBlock(&_valueUndo);
     setValue(v, _writeTime);
 }
 
