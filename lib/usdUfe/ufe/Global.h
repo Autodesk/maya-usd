@@ -74,6 +74,8 @@ struct USDUFE_PUBLIC DCCFunctions
     WaitCursorFn                    startWaitCursorFn = nullptr;
     WaitCursorFn                    stopWaitCursorFn = nullptr;
     PauseEditForwardingFn           pauseEditForwardingFn = nullptr;
+    IsInUndoRedoFn                  isUndoingFn = nullptr;
+    IsInUndoRedoFn                  isRedoingFn = nullptr;
     IsComponentStageFn              isComponentStageFn = nullptr;
     GetComponentMaterialScopeNameFn getComponentMaterialScopeNameFn = nullptr;
     GetComponentMeshScopeNameFn     getComponentMeshScopeNameFn = nullptr;

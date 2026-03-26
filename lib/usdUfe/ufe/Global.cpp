@@ -89,6 +89,10 @@ Ufe::Rtid initialize(
     // Optional DCC specific functions.
     if (dccFunctions.isLoadingSceneFn)
         UsdUfe::setIsLoadingSceneFn(dccFunctions.isLoadingSceneFn);
+    if (dccFunctions.isUndoingFn)
+        UsdUfe::setIsUndoing(dccFunctions.isUndoingFn);
+    if (dccFunctions.isRedoingFn)
+        UsdUfe::setIsRedoing(dccFunctions.isRedoingFn);
     if (dccFunctions.isAttributeLockedFn)
         UsdUfe::setIsAttributeLockedFn(dccFunctions.isAttributeLockedFn);
     if (dccFunctions.saveStageLoadRulesFn)
