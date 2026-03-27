@@ -78,6 +78,10 @@ public:
     static void installCallbacks();
     static void removeCallbacks();
 
+    //! Return true if the internal stage has already been created.
+    //! Unlike getUsdStage(), this does not trigger lazy creation.
+    bool hasStage() const { return _stage != nullptr; }
+
     // Serialization (called from scene callbacks)
     void serializeToAttributes();
     void deserializeFromAttributes();

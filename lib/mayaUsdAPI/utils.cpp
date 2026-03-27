@@ -147,6 +147,13 @@ bool isAGatewayType(const std::string& mayaNodeType)
     return MayaUsd::ufe::isAGatewayType(mayaNodeType);
 }
 
+bool isReferencedSceneRenderSettingsNode(
+    const std::string& mayaNodeType,
+    const Ufe::Path&   ufePath)
+{
+    return MayaUsd::ufe::isReferencedSceneRenderSettingsNode(mayaNodeType, ufePath);
+}
+
 bool mergePrims(
     const PXR_NS::UsdStageRefPtr& srcStage,
     const PXR_NS::SdfLayerRefPtr& srcLayer,

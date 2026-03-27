@@ -232,6 +232,25 @@ bool isSceneRenderSettingsNode(const std::string& mayaNodeType)
 #endif
 }
 
+bool isReferencedSceneRenderSettingsNode(
+    const std::string& mayaNodeType,
+    const Ufe::Path&   ufePath)
+{
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    if (!isSceneRenderSettingsNode(mayaNodeType)) {
+        return false;
+    }
+    MDagPath dagPath = ufeToDagPath(ufePath);
+    if (!dagPath.isValid()) {
+        return false;
+    }
+    MFnDependencyNode depFn(dagPath.node());
+    return depFn.isFromReferencedFile();
+#else
+    return false;
+#endif
+}
+
 void setStageMapDirty() { UsdStageMap::getInstance().setDirty(); }
 
 Ufe::Path dagPathToUfe(const MDagPath& dagPath)

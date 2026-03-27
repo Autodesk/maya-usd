@@ -93,6 +93,14 @@ bool isAGatewayType(const std::string& mayaNodeType);
 MAYAUSD_CORE_PUBLIC
 bool isSceneRenderSettingsNode(const std::string& mayaNodeType);
 
+//! Return true if the UFE item is a SceneRenderSettings node that comes
+//! from a Maya reference.  Referenced copies must not be treated as live
+//! gateway nodes because they would interfere with the local singleton.
+MAYAUSD_CORE_PUBLIC
+bool isReferencedSceneRenderSettingsNode(
+    const std::string& mayaNodeType,
+    const Ufe::Path&   ufePath);
+
 //! Mark the UFE stage map as dirty so it will be rebuilt on next access.
 MAYAUSD_CORE_PUBLIC
 void setStageMapDirty();

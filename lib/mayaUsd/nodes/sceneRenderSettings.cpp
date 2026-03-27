@@ -387,15 +387,23 @@ void afterOpenCallback(void* /*clientData*/)
         return;
     }
 
-    // Deserialize the stage from the saved attributes.
     MFnDependencyNode depFn(instance);
     auto*             node = dynamic_cast<UsdSceneRenderSettings*>(depFn.userNode());
-    if (node) {
-        node->deserializeFromAttributes();
-        // Dirty the stage map so the restored stage is discoverable
-        // (see comment in findOrCreateInstance for why this is needed).
-        MayaUsd::ufe::setStageMapDirty();
+    if (!node) {
+        return;
     }
+
+    // kAfterSceneReadAndRecordEdits fires for File > Open, Import, and
+    // Reference.  Only deserialize when the node was just restored from a
+    // saved file (stage not yet created).  If the stage already exists we
+    // are handling a reference or import — leave the live stage untouched.
+    if (!node->hasStage()) {
+        node->deserializeFromAttributes();
+    }
+
+    // Dirty the stage map so the (restored or existing) stage is discoverable
+    // (see comment in findOrCreateInstance for why this is needed).
+    MayaUsd::ufe::setStageMapDirty();
 }
 
 void beforeSaveCallback(void* /*clientData*/)
