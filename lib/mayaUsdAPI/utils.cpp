@@ -147,9 +147,7 @@ bool isAGatewayType(const std::string& mayaNodeType)
     return MayaUsd::ufe::isAGatewayType(mayaNodeType);
 }
 
-bool isReferencedSceneRenderSettingsNode(
-    const std::string& mayaNodeType,
-    const Ufe::Path&   ufePath)
+bool isReferencedSceneRenderSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath)
 {
     return MayaUsd::ufe::isReferencedSceneRenderSettingsNode(mayaNodeType, ufePath);
 }

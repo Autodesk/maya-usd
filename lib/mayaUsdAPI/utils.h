@@ -163,9 +163,7 @@ bool isAGatewayType(const std::string& mayaNodeType);
 
 //! Return true if the UFE item is a SceneRenderSettings node from a Maya reference.
 MAYAUSD_API_PUBLIC
-bool isReferencedSceneRenderSettingsNode(
-    const std::string& mayaNodeType,
-    const Ufe::Path&   ufePath);
+bool isReferencedSceneRenderSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath);
 
 /*! Merges prims starting at a source path from a source layer and stage to a destination, returning
  *  true if it succeeds.

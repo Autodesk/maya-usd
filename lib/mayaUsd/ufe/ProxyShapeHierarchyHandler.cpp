@@ -47,8 +47,7 @@ ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarc
 Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
     auto nodeType = UsdUfe::getSceneItemNodeType(item);
-    if (isAGatewayType(nodeType)
-        && !isReferencedSceneRenderSettingsNode(nodeType, item->path())) {
+    if (isAGatewayType(nodeType) && !isReferencedSceneRenderSettingsNode(nodeType, item->path())) {
         return ProxyShapeHierarchy::create(_mayaHierarchyHandler, item);
     } else {
         return _mayaHierarchyHandler->hierarchy(item);

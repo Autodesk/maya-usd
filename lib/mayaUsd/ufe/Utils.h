@@ -97,9 +97,7 @@ bool isSceneRenderSettingsNode(const std::string& mayaNodeType);
 //! from a Maya reference.  Referenced copies must not be treated as live
 //! gateway nodes because they would interfere with the local singleton.
 MAYAUSD_CORE_PUBLIC
-bool isReferencedSceneRenderSettingsNode(
-    const std::string& mayaNodeType,
-    const Ufe::Path&   ufePath);
+bool isReferencedSceneRenderSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath);
 
 //! Mark the UFE stage map as dirty so it will be rebuilt on next access.
 MAYAUSD_CORE_PUBLIC
