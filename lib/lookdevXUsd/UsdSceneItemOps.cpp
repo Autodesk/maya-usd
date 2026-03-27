@@ -9,11 +9,12 @@
 #include "UsdSceneItemOps.h"
 #include "UsdDeleteCommand.h"
 
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 // Note: Some of the functions are not covered by unit tests because they are simple wrappers around the
 // MayaUsd::ufe::UsdSceneItemOps functions. If we add our own logic to these functions, we should add unit tests for
@@ -53,11 +54,12 @@ Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 bool UsdSceneItemOps::deleteItem()
 {
     auto prim = [this]() {
-        if (!TF_VERIFY(MayaUsdAPI::isUsdSceneItem(m_wrappedMayaUsdSceneItemOps->sceneItem()), "Invalid item\n"))
+        if (!TF_VERIFY(UsdUfe::downcast(m_wrappedMayaUsdSceneItemOps->sceneItem()), "Invalid item\n"))
         {
             return PXR_NS::UsdPrim();
         }
-        return MayaUsdAPI::getPrimForUsdSceneItem(m_wrappedMayaUsdSceneItemOps->sceneItem());
+        auto usdItem = UsdUfe::downcast(m_wrappedMayaUsdSceneItemOps->sceneItem());
+        return usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
     };
 
     // Same check as in MayaUsd::ufe::UsdSceneItemOps::deleteItem()

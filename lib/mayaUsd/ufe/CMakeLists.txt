@@ -206,11 +206,8 @@ endif()
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            UsdConnections.cpp
-            UsdConnectionHandler.cpp
             UsdUINodeGraphNode.cpp
             UsdUINodeGraphNodeHandler.cpp
-            UsdUndoConnectionCommands.cpp
             UsdUndoCreateStageWithNewLayerCommand.cpp
     )
 endif()
@@ -307,11 +304,8 @@ endif()
        
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
-        UsdConnections.h
-        UsdConnectionHandler.h
         UsdUINodeGraphNode.h
         UsdUINodeGraphNodeHandler.h
-        UsdUndoConnectionCommands.h
         UsdUndoCreateStageWithNewLayerCommand.h
     )
 endif()

@@ -30,15 +30,17 @@
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 
-#include <mayaUsdAPI/undo.h>
-#include <mayaUsdAPI/utils.h>
-
+#include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <memory>
 
 using namespace LookdevXUfe;
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace LookdevXUsd
 {
@@ -85,7 +87,7 @@ void setMetadata(const Ufe::SceneItem::Ptr& item, const std::string& key, const 
 
 Ufe::ConnectionHandler::Ptr getConnHandler()
 {
-    static auto connHandler = Ufe::RunTimeMgr::instance().connectionHandler(MayaUsdAPI::getUsdRunTimeId());
+    static auto connHandler = Ufe::RunTimeMgr::instance().connectionHandler(UsdUfe::getUsdRunTimeId());
     return connHandler;
 }
 
@@ -180,7 +182,7 @@ public:
         // the NodeDef. As you have noticed, it is currently impossible to Solo a native USD shader.
         const auto* mtlxShaderNodeDef =
             SdrRegistry::GetInstance().GetShaderNodeByIdentifier(TfToken(kMtlxStandardSurface));
-        const auto nodeDefHandler = Ufe::RunTimeMgr::instance().nodeDefHandler(MayaUsdAPI::getUsdRunTimeId());
+        const auto nodeDefHandler = Ufe::RunTimeMgr::instance().nodeDefHandler(UsdUfe::getUsdRunTimeId());
         if (mtlxShaderNodeDef)
         {
             const auto nodeDef = nodeDefHandler ? nodeDefHandler->definition(kMtlxStandardSurface) : nullptr;
@@ -463,7 +465,13 @@ private:
     {
         Ufe::NotificationGuard guard(Ufe::Scene::instance());
         // Use a noop compound as an intermediary node for holding soloing information.
-        auto cmd = MayaUsdAPI::createAddNewPrimCommand(parent, std::string(kSoloingTag), "NodeGraph");
+        auto usdParentItem = UsdUfe::downcast(parent);
+        if (!usdParentItem)
+        {
+            return;
+        }
+
+        auto cmd = UsdUfe::UsdUndoAddNewPrimCommand::create(usdParentItem, std::string(kSoloingTag), "NodeGraph");
         cmd->execute();
 
         auto compound = cmd->sceneItem();
@@ -529,7 +537,7 @@ public:
 
     void execute() override
     {
-        const MayaUsdAPI::UsdUndoBlock undoBlock(&m_undoableItem);
+        const UsdUfe::UsdUndoBlock undoBlock(&m_undoableItem);
 
         auto sessionLayer = m_item ? LookdevXUsdUtils::getSessionLayer(m_item) : nullptr;
         if (!sessionLayer)
@@ -545,9 +553,7 @@ public:
 
         m_soloedItem = getSoloedUsdItem(material);
 
-        auto prim = MayaUsdAPI::getPrimForUsdSceneItem(material);
-        auto stage = prim.GetStage();
-
+        auto stage = UsdUfe::getStage(material->path());
         {
             EditTargetGuard editTargetGuard(stage, sessionLayer);
 
@@ -586,7 +592,7 @@ private:
         }
     }
 
-    MayaUsdAPI::UsdUndoableItem m_undoableItem;
+    UsdUfe::UsdUndoableItem m_undoableItem;
 
     // Input item.
     Ufe::SceneItem::Ptr m_item;
@@ -623,11 +629,10 @@ public:
 
     void execute() override
     {
-        const MayaUsdAPI::UsdUndoBlock undoBlock(&m_undoableItem);
+        const UsdUfe::UsdUndoBlock undoBlock(&m_undoableItem);
 
         auto item = m_attr->sceneItem();
-        auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
-        auto stage = prim.GetStage();
+        auto stage = UsdUfe::getStage(item->path());
         auto material = getParentUsdMaterial(item);
         auto sessionLayer = LookdevXUsdUtils::getSessionLayer(item);
 
@@ -690,7 +695,7 @@ public:
     }
 
 private:
-    MayaUsdAPI::UsdUndoableItem m_undoableItem;
+    UsdUfe::UsdUndoableItem m_undoableItem;
 
     // Input attribute to solo.
     Ufe::Attribute::Ptr m_attr;
@@ -801,8 +806,8 @@ public:
             // The user can attempt to connect other surface shaders to the material output while soloing is active.
             // In that case, the fake connection information needs to be updated.
 
-            const auto item = Ufe::Hierarchy::createItem(connNotif->path());
-            const auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
+            const auto item = UsdUfe::downcast(Ufe::Hierarchy::createItem(connNotif->path()));
+            auto prim = item ? item->prim() : PXR_NS::UsdPrim();
             // Only applicable to material nodes.
             if (!item || !prim || prim.GetTypeName() != TfToken("Material"))
             {
@@ -964,7 +969,8 @@ bool UsdSoloingHandler::hasSoloedDescendant(const Ufe::SceneItem::Ptr& item) con
 
 Ufe::Attribute::Ptr UsdSoloingHandler::getSoloedAttribute(const Ufe::SceneItem::Ptr& item) const
 {
-    if (!MayaUsdAPI::isUsdSceneItem(item))
+    auto usdItem = UsdUfe::downcast(item);
+    if (!usdItem)
     {
         return nullptr;
     }
@@ -975,18 +981,19 @@ Ufe::Attribute::Ptr UsdSoloingHandler::getSoloedAttribute(const Ufe::SceneItem::
     // USD does not seem to track outgoing connections. Instead, a search is performed on the
     // incoming connections of soloing nodes until one is found that matches the input item.
     processSoloingPrimChildren(material, [&](const auto& child) {
-        auto prim = MayaUsdAPI::getPrimForUsdSceneItem(child);
+        auto usdChildItem = UsdUfe::downcast(child);
+        auto prim = usdChildItem ? usdChildItem->prim() : PXR_NS::UsdPrim();
         const UsdShadeConnectableAPI connectableAttrs(prim);
         for (const auto& input : connectableAttrs.GetInputs(false))
         {
             for (const auto& sourceInfo : input.GetConnectedSources())
             {
                 const auto connectedPrim = sourceInfo.source.GetPrim();
-                auto usdPrim = MayaUsdAPI::getPrimForUsdSceneItem(item);
+                auto usdPrim = usdItem->prim();
                 if (connectedPrim == usdPrim)
                 {
                     auto attrOut = sourceInfo.source.GetOutput(sourceInfo.sourceName);
-                    auto attrs = Ufe::Attributes::attributes(item);
+                    auto attrs = Ufe::Attributes::attributes(usdItem);
                     retval = attrs->attribute(attrOut.GetFullName());
                     return false;
                 }
@@ -1005,7 +1012,7 @@ bool UsdSoloingHandler::isSoloingItem(const Ufe::SceneItem::Ptr& item) const
 
 Ufe::Connection::Ptr UsdSoloingHandler::replacedConnection(const Ufe::SceneItem::Ptr& item) const
 {
-    if (!MayaUsdAPI::isUsdSceneItem(item))
+    if (!UsdUfe::downcast(item))
     {
         return nullptr;
     }

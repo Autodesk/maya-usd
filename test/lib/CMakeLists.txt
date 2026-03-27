@@ -60,15 +60,24 @@ set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 
 if (AdskUsdEditForward_FOUND)
     # Install a test to verify edit forwarding integration works correctly.
-    mayaUsd_get_unittest_target(target testAdskUsdEditForward.py)
-    mayaUsd_add_test(${target}
-        INTERACTIVE
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        PYTHON_SCRIPT testAdskUsdEditForward.py
-        ENV
-            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+    set(EDIT_FORWARDING_TEST_SCRIPT_FILES
+        testAdskUsdEditForward.py
+        testAdskUsdEditForwardXformOp.py
     )
-    set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+
+    foreach(script ${EDIT_FORWARDING_TEST_SCRIPT_FILES})
+        mayaUsd_get_unittest_target(target ${script})
+        mayaUsd_add_test(${target}
+            INTERACTIVE
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            PYTHON_SCRIPT ${script}
+            ENV
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+                "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+                "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
+        )
+        set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+    endforeach()
 else()
     # If MAYAUSD_FORCE_EF_TEST is set to 1, fail the build when edit forwarding is not found
     if (DEFINED ENV{MAYAUSD_FORCE_EF_TEST} AND "$ENV{MAYAUSD_FORCE_EF_TEST}" STREQUAL "1")

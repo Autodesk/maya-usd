@@ -14,8 +14,7 @@
 #include "UsdMaterialValidator.h"
 #include "UsdMxVersionUpgrade.h"
 
-#include <mayaUsdAPI/utils.h>
-
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -40,16 +39,17 @@ UsdMaterialHandler::~UsdMaterialHandler()
 
 LookdevXUfe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Ptr& item) const
 {
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
-    if (!TF_VERIFY(MayaUsdAPI::isUsdSceneItem(item), "Invalid item\n"))
+    if (!TF_VERIFY(UsdUfe::downcast(item), "Invalid item\n"))
     {
         return nullptr;
     }
 
     // Test if this item is imageable or a geom subset. If not, then we cannot create a material
     // interface for it, which is a valid case (such as for a material node type).
-    const auto prim = MayaUsdAPI::getPrimForUsdSceneItem(item);
+    auto usdItem = UsdUfe::downcast(item);
+    auto prim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
     if (!UsdGeomImageable(prim) && !prim.IsA<UsdGeomSubset>())
     {
         return nullptr;
@@ -61,7 +61,8 @@ LookdevXUfe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Pt
 Ufe::SceneItemResultUndoableCommand::Ptr UsdMaterialHandler::createBackdropCmdImpl(const Ufe::SceneItem::Ptr& parent,
                                                                                    const Ufe::PathComponent& name) const
 {
-    if (!MayaUsdAPI::isUsdSceneItem(parent))
+    auto usdItem = UsdUfe::downcast(parent);
+    if (!usdItem)
     {
         return nullptr;
     }
@@ -74,23 +75,29 @@ Ufe::SceneItemResultUndoableCommand::Ptr UsdMaterialHandler::createBackdropCmdIm
         }
     }
 
-    return MayaUsdAPI::createAddNewPrimCommand(parent, name.string(), "Backdrop");
+    return UsdUfe::UsdUndoAddNewPrimCommand::create(usdItem, name.string(), "Backdrop");
 }
 
 Ufe::SceneItemResultUndoableCommand::Ptr UsdMaterialHandler::createNodeGraphCmdImpl(
     const Ufe::SceneItem::Ptr& parent, const Ufe::PathComponent& name) const
 {
-    return MayaUsdAPI::createAddNewPrimCommand(parent, name.string(), "NodeGraph");
+    auto usdItem = UsdUfe::downcast(parent);
+    if (!usdItem) {
+        return nullptr;
+    }
+    return UsdUfe::UsdUndoAddNewPrimCommand::create(usdItem, name.string(), "NodeGraph");
 }
 
 LookdevXUfe::ValidationLog::Ptr UsdMaterialHandler::validateMaterial(const Ufe::SceneItem::Ptr& material) const
 {
-    if (!MayaUsdAPI::isUsdSceneItem(material))
+    if (!UsdUfe::downcast(material))
     {
         return nullptr;
     }
 
-    auto materialPrim = PXR_NS::UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(material));
+    auto usdItem = UsdUfe::downcast(material);
+    auto prim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
+    auto materialPrim = PXR_NS::UsdShadeMaterial(prim);
     if (!materialPrim)
     {
         return nullptr;

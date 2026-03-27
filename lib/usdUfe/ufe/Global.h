@@ -36,6 +36,7 @@
 #include <string>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#include <ufe/connectionHandler.h>
 #include <ufe/nodeDefHandler.h>
 #endif
 
@@ -73,6 +74,8 @@ struct USDUFE_PUBLIC DCCFunctions
     WaitCursorFn                    startWaitCursorFn = nullptr;
     WaitCursorFn                    stopWaitCursorFn = nullptr;
     PauseEditForwardingFn           pauseEditForwardingFn = nullptr;
+    IsInUndoRedoFn                  isUndoingFn = nullptr;
+    IsInUndoRedoFn                  isRedoingFn = nullptr;
     IsComponentStageFn              isComponentStageFn = nullptr;
     GetComponentMaterialScopeNameFn getComponentMaterialScopeNameFn = nullptr;
     GetComponentMeshScopeNameFn     getComponentMeshScopeNameFn = nullptr;
@@ -106,9 +109,9 @@ struct USDUFE_PUBLIC Handlers
 //     Ufe::SceneSegmentHandler::Ptr sceneSegmentHandler;
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    Ufe::NodeDefHandler::Ptr nodeDefHandler;
+    Ufe::ConnectionHandler::Ptr connectionHandler;
+    Ufe::NodeDefHandler::Ptr    nodeDefHandler;
 //     Ufe::MaterialHandler::Ptr        materialHandler;
-//     Ufe::ConnectionHandler::Ptr      connectionHandler;
 //     Ufe::UINodeGraphNodeHandler::Ptr uiNodeGraphNodeHandler;
 //     Ufe::BatchOpsHandler::Ptr        batchOpsHandler;
 #endif

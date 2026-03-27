@@ -62,11 +62,14 @@ endif()
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            UsdConnections.cpp
+            UsdConnectionHandler.cpp
             UsdShaderAttributeDef.cpp
             UsdShaderAttributeHolder.cpp
             UsdShaderNodeDef.cpp
             UsdShaderNodeDefHandler.cpp
             UsdUndoAttributesCommands.cpp
+            UsdUndoConnectionCommands.cpp
             UsdUndoCreateFromNodeDefCommand.cpp
     )
 endif()
@@ -190,6 +193,7 @@ set(HEADERS
     UsdUndoClearDefaultPrimCommand.h
     UsdUndoableCommand.h
     Utils.h
+    trf/Utils.h
 )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
@@ -215,11 +219,14 @@ endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        UsdConnections.h
+        UsdConnectionHandler.h
         UsdShaderAttributeDef.h
         UsdShaderAttributeHolder.h
         UsdShaderNodeDef.h
         UsdShaderNodeDefHandler.h
         UsdUndoAttributesCommands.h
+        UsdUndoConnectionCommands.h
         UsdUndoCreateFromNodeDefCommand.h
     )
 endif()

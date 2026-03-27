@@ -12,7 +12,7 @@
 #include "UsdSceneItemUIHandler.h"
 #include "UsdSceneItemUI.h"
 
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/ufe/Utils.h>
 
 namespace LookdevXUsd
 {
@@ -29,11 +29,12 @@ UsdSceneItemUIHandler::Ptr UsdSceneItemUIHandler::create()
 
 LookdevXUfe::SceneItemUI::Ptr UsdSceneItemUIHandler::sceneItemUI(const Ufe::SceneItem::Ptr& item) const
 {
+    auto usdItem = UsdUfe::downcast(item);
 #if !defined(NDEBUG)
-    assert(MayaUsdAPI::isUsdSceneItem(item));
+    assert(usdItem);
 #endif
 
-    return LookdevXUsd::UsdSceneItemUI::create(item);
+    return LookdevXUsd::UsdSceneItemUI::create(usdItem);
 }
 
 } // namespace LookdevXUsd

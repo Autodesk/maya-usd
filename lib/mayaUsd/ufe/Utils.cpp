@@ -190,6 +190,10 @@ std::string uniqueChildNameMayaStandard(
 
 bool isAGatewayType(const std::string& mayaNodeType)
 {
+    if (mayaNodeType.empty()) {
+        return false;
+    }
+
     // Check if this is the UsdSceneRenderSettings node type.
     if (isSceneRenderSettingsNode(mayaNodeType)) {
         return true;
