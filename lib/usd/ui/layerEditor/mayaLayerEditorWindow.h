@@ -65,6 +65,7 @@ public:
     bool        layerAppearsSystemLocked() override;
     bool        layerIsSystemLocked() override;
     bool        layerHasSubLayers() override;
+    bool        strongestLayerIsLocked() override;
 
     void removeSubLayer() override;
     void saveEdits() override;

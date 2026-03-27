@@ -177,6 +177,30 @@ std::string MayaLayerEditorWindow::proxyShapeName(const bool fullPath) const
     return fullPath ? stageEntry._proxyShapePath : stageEntry._displayName;
 }
 
+bool MayaLayerEditorWindow::strongestLayerIsLocked()
+{
+    // selectedItems are ordered by order of selection, not by strength.
+    const LayerItemVector selectedItems = treeView()->getSelectedLayerItems();
+    if (selectedItems.size() < 2) {
+        return false;        
+    }
+
+    const UsdStageRefPtr stage = _sessionState.stage();
+    if (!stage)
+        return false;
+
+    // Finds strongest layer from selectedItems.
+    const SdfLayerHandleVector stageLayersByStrength = stage->GetLayerStack();
+    for (const auto& stageLayer : stageLayersByStrength) {
+        for (const auto* selectedItem : selectedItems) {
+            if (selectedItem && selectedItem->layer() == stageLayer)
+                return selectedItem->isLocked();
+        }
+    }
+
+    return false;
+}
+
 void MayaLayerEditorWindow::removeSubLayer()
 {
     QString name = "Remove";
