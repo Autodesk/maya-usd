@@ -19,16 +19,23 @@
 #include "stringResources.h"
 #include "usdSyntaxHighlighter.h"
 
+#include <cxx17_legacy_support.h>
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/patternMatcher.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/primSpec.h>
+
+#if PXR_VERSION < 2508
+#include "pxr/usd/sdf/textFileFormat.h"
+#else
 #include <pxr/usd/sdf/usdFileFormat.h>
 #include <pxr/usd/sdf/usdaFileFormat.h>
+#endif
 
 #include <maya/MGlobal.h>
 
@@ -51,16 +58,23 @@ PXR_NAMESPACE_USING_DIRECTIVE
 // A file format for the human readable "pseudoLayer" output.  We use this so
 // that the terse human-readable output we produce is not a valid layer nor may
 // be mistaken for one.
-class SdfFilterPseudoFileFormat : public SdfUsdaFileFormat
+#if PXR_VERSION < 2508
+#define LCWBASEFILEFORMAT SdfTextFileFormat
+#define LCWBASEFILEFORMATTOKENS SdfTextFileFormatTokens
+#else
+#define LCWBASEFILEFORMAT SdfUsdaFileFormat
+#define LCWBASEFILEFORMATTOKENS SdfUsdFileFormatTokens
+#endif
+class SdfFilterPseudoFileFormat : public LCWBASEFILEFORMAT
 {
 private:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
 public:
     SdfFilterPseudoFileFormat(std::string description="<< human readable >>")
-        : SdfUsdaFileFormat(TfToken("pseudousda"),
+        : LCWBASEFILEFORMAT(TfToken("pseudousda"),
                             TfToken(description),
-                            SdfUsdFileFormatTokens->Target) {}
+                            LCWBASEFILEFORMATTOKENS->Target) {}
 private:
 
     virtual ~SdfFilterPseudoFileFormat() {}
@@ -68,7 +82,7 @@ private:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    SDF_DEFINE_FILE_FORMAT(SdfFilterPseudoFileFormat, SdfUsdaFileFormat);
+    SDF_DEFINE_FILE_FORMAT(SdfFilterPseudoFileFormat, LCWBASEFILEFORMAT);
 }
 
 // An enum representing the type of output to produce.
@@ -206,8 +220,12 @@ FilterLayer(SdfLayerHandle const &inLayer,
         SdfSpecType specType, TfToken const &field,
         SdfLayerHandle const &srcLayer, const SdfPath& srcPath, bool fieldInSrc,
         const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-        std::optional<VtValue> *valueToCopy) {
-
+#if PXR_VERSION >= 2403
+        std::optional<VtValue> *valueToCopy)
+#else
+        boost::optional<VtValue> *valueToCopy)
+#endif
+    {
         if (!p.fieldMatcher || p.fieldMatcher->Match(field.GetString())) {
             *valueToCopy = GetReportFieldValue(
                 srcLayer, srcPath, field, p);
