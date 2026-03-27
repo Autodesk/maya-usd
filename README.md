@@ -32,6 +32,7 @@ Installers for MayaUSD can be found [here](https://github.com/Autodesk/maya-usd/
 - 2024
 - 2025
 - 2026
+- 2027
 
 
 ## Plugin Documentation
@@ -39,6 +40,7 @@ Installers for MayaUSD can be found [here](https://github.com/Autodesk/maya-usd/
 + [Getting Started with USD in Maya 2024](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
 + [Getting Started with USD in Maya 2025](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
 + [Getting Started with USD in Maya 2026](https://help.autodesk.com/view/MAYAUL/2026/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
++ [Getting Started with USD in Maya 2027](https://help.autodesk.com/view/MAYAUL/2027/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
 
 ## Building
 Everything needed to build maya-usd is provided in the form of source and a devkit that needs to be installed.  Unit tests are provided for all projects and can be optionally built and executed using google tests. Full details on how to build and test maya-usd can be found in [BUILD.md](doc/build.md)
