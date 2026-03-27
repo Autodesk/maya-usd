@@ -280,14 +280,20 @@ void UsdSceneRenderSettings::deserializeFromAttributes()
 MObject UsdSceneRenderSettings::findInstance()
 {
     if (_cachedInstance.isValid()) {
-        return _cachedInstance.object();
+        MObject           cachedObj = _cachedInstance.object();
+        MFnDependencyNode depFn(cachedObj);
+        if (!depFn.isFromReferencedFile()) {
+            return cachedObj;
+        }
+        // Cached instance is from a reference — discard and re-scan.
+        _cachedInstance = MObjectHandle();
     }
 
     MItDependencyNodes it(MFn::kPluginLocatorNode);
     while (!it.isDone()) {
         MObject           obj = it.thisNode();
         MFnDependencyNode depFn(obj);
-        if (depFn.typeId() == typeId) {
+        if (depFn.typeId() == typeId && !depFn.isFromReferencedFile()) {
             _cachedInstance = MObjectHandle(obj);
             return obj;
         }

@@ -216,11 +216,15 @@ class CacheToUsdTestCase(unittest.TestCase):
         self.assertEqual(mayaTransformItem.nodeType(), 'transform')
 
         # The child of the Maya transform is the top-level transform of the
-        # referenced Maya scene.
+        # referenced Maya scene.  Find it by name because the referenced file
+        # may contain additional nodes (e.g. the SceneRenderSettings singleton).
         mayaTransformHier = createHierarchy(mayaTransformItem)
         mayaTransformChildren = mayaTransformHier.children()
-        self.assertTrue(len(mayaTransformChildren), 1)
-        sphereTransformItem = mayaTransformChildren[0]
+        sphereTransformItem = next(
+            (c for c in mayaTransformChildren
+             if c.nodeName().endswith('pSphere1')),
+            None)
+        self.assertIsNotNone(sphereTransformItem)
         self.assertEqual(sphereTransformItem.nodeType(), 'transform')
 
         # As the sphereTransformItem is a pulled node, its path is a pure Maya

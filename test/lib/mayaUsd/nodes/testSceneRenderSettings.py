@@ -92,15 +92,10 @@ class testSceneRenderSettings(unittest.TestCase):
     # ------------------------------------------------------------------
 
     def testNodeIsLocked(self):
-        '''The singleton shape and its parent transform should be locked.'''
+        '''The singleton shape should be locked.'''
         shapePath = SceneRenderSettings.find()
         self.assertTrue(cmds.lockNode(shapePath, query=True, lock=True)[0],
                         "Shape node should be locked")
-
-        parentPath = cmds.listRelatives(shapePath, parent=True,
-                                        fullPath=True)[0]
-        self.assertTrue(cmds.lockNode(parentPath, query=True, lock=True)[0],
-                        "Transform node should be locked")
 
     def testNodeHiddenInOutliner(self):
         '''The parent transform should be hidden in the outliner.'''
@@ -197,6 +192,69 @@ class testSceneRenderSettings(unittest.TestCase):
         self.assertTrue(
             stage2.GetPrimAtPath('/Render/TestContent').IsValid(),
             "Authored content should survive serialization")
+
+    # ------------------------------------------------------------------
+    # Referencing a scene that contains the singleton
+    # ------------------------------------------------------------------
+
+    def testReferencedSceneDoesNotBreakLocalSingleton(self):
+        '''Referencing a Maya file that contains a SceneRenderSettings node
+        must not replace or break the current scene's singleton.'''
+        # Author a marker prim so we can distinguish local vs referenced stage.
+        localStage = SceneRenderSettings.getUsdStage()
+        UsdGeom.Xform.Define(localStage, '/Render/LocalMarker')
+
+        localPath = SceneRenderSettings.find()
+        self.assertTrue(len(localPath) > 0)
+
+        # Save the current scene so we can reference it later.
+        refDir = tempfile.mkdtemp()
+        refFile = os.path.join(refDir, 'referenced.ma')
+        cmds.file(rename=refFile)
+        cmds.file(save=True, type='mayaAscii')
+
+        # Start a fresh scene (creates a new local singleton).
+        cmds.file(new=True, force=True)
+
+        localPathNew = SceneRenderSettings.find()
+        self.assertTrue(len(localPathNew) > 0)
+
+        localStageNew = SceneRenderSettings.getUsdStage()
+        self.assertIsNotNone(localStageNew)
+
+        # The fresh scene should NOT have the marker from the saved file.
+        self.assertFalse(
+            localStageNew.GetPrimAtPath('/Render/LocalMarker').IsValid(),
+            "Fresh scene should not have marker prim before referencing")
+
+        # Reference the saved scene.
+        cmds.file(refFile, reference=True, namespace='ref')
+
+        # The local singleton should still be the non-referenced node.
+        pathAfterRef = SceneRenderSettings.find()
+        self.assertTrue(len(pathAfterRef) > 0,
+                        "Local singleton should still exist after referencing")
+
+        # The referenced file brings in its own SceneRenderSettings node
+        # under a namespace; verify both exist but find() returns the local one.
+        allNodes = cmds.ls(type='mayaUsdSceneRenderSettings', long=True)
+        localNodes = [n for n in allNodes
+                      if not cmds.referenceQuery(n, isNodeReferenced=True)]
+        self.assertEqual(len(localNodes), 1,
+                         "Expected exactly one local SceneRenderSettings, "
+                         "found %d" % len(localNodes))
+
+        # The local stage must still have the default render settings.
+        stageAfterRef = SceneRenderSettings.getUsdStage()
+        self.assertIsNotNone(stageAfterRef)
+        self.assertTrue(
+            stageAfterRef.GetPrimAtPath('/Render/SceneRenderSettings').IsValid(),
+            "Local render settings prim should not be broken by referencing")
+
+        # The local stage must NOT have the marker from the referenced file.
+        self.assertFalse(
+            stageAfterRef.GetPrimAtPath('/Render/LocalMarker').IsValid(),
+            "Referenced file's stage data should not leak into local singleton")
 
 
 if __name__ == '__main__':

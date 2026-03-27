@@ -164,6 +164,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # Check that we have no spurious "Looks" transform
         expectedTr = set(['front', 'persp', 'side', 'top', 'Test:pSphere1'])
         allTr = set(cmds.ls(tr=True))
+        # The SceneRenderSettings singleton is not scene content; ignore it.
+        allTr.discard('SceneRenderSettings')
         self.assertEqual(allTr, expectedTr)
 
         # Check connections:
