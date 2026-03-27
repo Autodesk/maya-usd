@@ -64,6 +64,8 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         PRIVATE
             UsdConnections.cpp
             UsdConnectionHandler.cpp
+            UsdUINodeGraphNode.cpp
+            UsdUINodeGraphNodeHandler.cpp
             UsdShaderAttributeDef.cpp
             UsdShaderAttributeHolder.cpp
             UsdShaderNodeDef.cpp
@@ -145,6 +147,20 @@ if (UFE_HAS_COLOR_MANAGEMENT_HANDLER)
     )
 endif()
 
+if (UFE_UINODEGRAPHNODE_HAS_SIZE)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_UINODEGRAPHNODE_HAS_SIZE=1
+    )
+endif()
+
+if (UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR=1
+    )
+endif()
+
 set(HEADERS
     Global.h
     SetVariantSelectionCommand.h
@@ -221,6 +237,8 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdConnections.h
         UsdConnectionHandler.h
+        UsdUINodeGraphNode.h
+        UsdUINodeGraphNodeHandler.h
         UsdShaderAttributeDef.h
         UsdShaderAttributeHolder.h
         UsdShaderNodeDef.h

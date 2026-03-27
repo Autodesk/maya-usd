@@ -1,5 +1,5 @@
-#ifndef USDUINODEGRAPHNODE_H
-#define USDUINODEGRAPHNODE_H
+#ifndef USDUFE_USDUINODEGRAPHNODE_H
+#define USDUFE_USDUINODEGRAPHNODE_H
 
 // =======================================================================
 // Copyright 2022 Autodesk, Inc. All rights reserved.
@@ -11,18 +11,16 @@
 // prior written consent of Autodesk, Inc.
 // =======================================================================
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 
 #include <ufe/uiNodeGraphNode.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Implementation of Ufe::UINodeGraphNode interface for USD objects.
-class MAYAUSD_CORE_PUBLIC UsdUINodeGraphNode
+class USDUFE_PUBLIC UsdUINodeGraphNode
     : public
 #ifdef UFE_V4_1_FEATURES_AVAILABLE
       Ufe::UINodeGraphNode_v4_1
@@ -35,7 +33,7 @@ public:
 
     UsdUINodeGraphNode(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUINodeGraphNode);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUINodeGraphNode);
 
     //! Create a UsdUINodeGraphNode.
     static UsdUINodeGraphNode::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
@@ -101,7 +99,6 @@ private:
     Ufe::Vector2f getPosOrSize(CoordType coordType) const;
 };
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // USDUINODEGRAPHNODE_H
+#endif // USDUFE_USDUINODEGRAPHNODE_H

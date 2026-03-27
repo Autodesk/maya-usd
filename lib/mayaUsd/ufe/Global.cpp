@@ -62,8 +62,6 @@
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
-
 #include <usdUfe/ufe/trf/UsdTransform3dRead.h>
 
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
@@ -349,7 +347,6 @@ MStatus initialize()
 #if UFE_MATERIALS_SUPPORT
     handlers.materialHandler = UsdMaterialHandler::create();
 #endif
-    handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
 
 #ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
     handlers.batchOpsHandler = UsdCodeWrapperHandler::create();

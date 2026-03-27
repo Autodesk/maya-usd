@@ -104,20 +104,6 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     )
 endif()
 
-if (UFE_UINODEGRAPHNODE_HAS_SIZE)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_UINODEGRAPHNODE_HAS_SIZE=1
-    )
-endif()
-
-if (UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR=1
-    )
-endif()
-
 if (UFE_CONTEXTOPS_HAS_OPTIONBOX)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
@@ -206,8 +192,6 @@ endif()
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            UsdUINodeGraphNode.cpp
-            UsdUINodeGraphNodeHandler.cpp
             UsdUndoCreateStageWithNewLayerCommand.cpp
     )
 endif()
@@ -304,8 +288,6 @@ endif()
        
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
-        UsdUINodeGraphNode.h
-        UsdUINodeGraphNodeHandler.h
         UsdUndoCreateStageWithNewLayerCommand.h
     )
 endif()

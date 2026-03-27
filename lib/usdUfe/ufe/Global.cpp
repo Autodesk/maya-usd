@@ -33,6 +33,7 @@
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <usdUfe/ufe/UsdConnectionHandler.h>
 #include <usdUfe/ufe/UsdShaderNodeDefHandler.h>
+#include <usdUfe/ufe/UsdUINodeGraphNodeHandler.h>
 #include <usdUfe/ufe/trf/UsdTransform3dRead.h>
 #endif
 
@@ -148,6 +149,9 @@ Ufe::Rtid initialize(
         = handlers.connectionHandler ? handlers.connectionHandler : UsdConnectionHandler::create();
     rtHandlers.nodeDefHandler
         = handlers.nodeDefHandler ? handlers.nodeDefHandler : UsdShaderNodeDefHandler::create();
+    rtHandlers.uiNodeGraphNodeHandler = handlers.uiNodeGraphNodeHandler
+        ? handlers.uiNodeGraphNodeHandler
+        : UsdUINodeGraphNodeHandler::create();
 #endif
 
     if (handlers.transform3dHandler) {
