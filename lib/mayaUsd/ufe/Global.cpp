@@ -53,10 +53,6 @@
 #include <mayaUsd/ufe/UsdLight2Handler.h>
 #endif
 
-#if UFE_MATERIALS_SUPPORT
-#include <mayaUsd/ufe/UsdMaterialHandler.h>
-#endif
-
 #if defined(UFE_V4_FEATURES_AVAILABLE) || (UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL)
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #endif
@@ -344,10 +340,6 @@ MStatus initialize()
     handlers.lightHandler = UsdLightHandler::create();
 #endif
 
-#if UFE_MATERIALS_SUPPORT
-    handlers.materialHandler = UsdMaterialHandler::create();
-#endif
-
 #ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
     handlers.batchOpsHandler = UsdCodeWrapperHandler::create();
 #elif UFE_PREVIEW_BATCHOPS_SUPPORT
@@ -447,9 +439,6 @@ MStatus initialize()
 
 #if UFE_LIGHTS_SUPPORT
     runTimeMgr.setLightHandler(usdRtid, UsdLightHandler::create());
-#endif
-#if UFE_MATERIALS_SUPPORT
-    runTimeMgr.setMaterialHandler(usdRtid, UsdMaterialHandler::create());
 #endif
 
 #endif /* UFE_V4_FEATURES_AVAILABLE */

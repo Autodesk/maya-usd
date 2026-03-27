@@ -13,31 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_USDMATERIAL_H
-#define MAYAUSD_USDMATERIAL_H
+#ifndef USDUFE_USDMATERIAL_H
+#define USDUFE_USDMATERIAL_H
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <ufe/material.h>
 #include <ufe/sceneItem.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief USD run-time material interface
 /*!
     This class implements the Material interface for USD prims.
 */
-class MAYAUSD_CORE_PUBLIC UsdMaterial : public Ufe::Material
+class USDUFE_PUBLIC UsdMaterial : public Ufe::Material
 {
 public:
     using Ptr = std::shared_ptr<UsdMaterial>;
 
     UsdMaterial(const UsdUfe::UsdSceneItem::Ptr& item);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMaterial);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMaterial);
 
     //! Create a UsdMaterial.
     static UsdMaterial::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
@@ -52,7 +50,6 @@ private:
     UsdUfe::UsdSceneItem::Ptr _item;
 }; // UsdMaterial
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDMATERIAL_H
+#endif // USDUFE_USDMATERIAL_H

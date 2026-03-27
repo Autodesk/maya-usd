@@ -37,6 +37,7 @@
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <ufe/connectionHandler.h>
+#include <ufe/materialHandler.h>
 #include <ufe/nodeDefHandler.h>
 #include <ufe/uiNodeGraphNodeHandler.h>
 #endif
@@ -111,9 +112,9 @@ struct USDUFE_PUBLIC Handlers
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
     Ufe::ConnectionHandler::Ptr      connectionHandler;
+    Ufe::MaterialHandler::Ptr        materialHandler;
     Ufe::NodeDefHandler::Ptr         nodeDefHandler;
     Ufe::UINodeGraphNodeHandler::Ptr uiNodeGraphNodeHandler;
-//     Ufe::MaterialHandler::Ptr        materialHandler;
 //     Ufe::BatchOpsHandler::Ptr        batchOpsHandler;
 #endif
 

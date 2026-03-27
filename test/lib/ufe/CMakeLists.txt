@@ -91,6 +91,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testAttributeInfo.py
         testConnections.py
+        testMaterial.py
         testUINodeGraphNode.py
     )
 
@@ -104,12 +105,6 @@ endif()
 if (UFE_LIGHTS_SUPPORT)
     list(APPEND TEST_SCRIPT_FILES
         testLight.py
-    )
-endif()
-
-if (UFE_MATERIALS_SUPPORT)
-    list(APPEND TEST_SCRIPT_FILES
-        testMaterial.py
     )
 endif()
 

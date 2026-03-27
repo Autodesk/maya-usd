@@ -8,19 +8,17 @@
 
 #include "UsdMaterialHandler.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usdGeom/imageable.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::MaterialHandler, UsdMaterialHandler);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::MaterialHandler, UsdMaterialHandler);
 
 /*static*/
 UsdMaterialHandler::Ptr UsdMaterialHandler::create()
@@ -49,5 +47,4 @@ Ufe::Material::Ptr UsdMaterialHandler::material(const Ufe::SceneItem::Ptr& item)
     return UsdMaterial::create(usdItem);
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

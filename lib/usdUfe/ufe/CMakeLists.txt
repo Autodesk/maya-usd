@@ -64,6 +64,8 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         PRIVATE
             UsdConnections.cpp
             UsdConnectionHandler.cpp
+            UsdMaterial.cpp
+            UsdMaterialHandler.cpp
             UsdUINodeGraphNode.cpp
             UsdUINodeGraphNodeHandler.cpp
             UsdShaderAttributeDef.cpp
@@ -109,6 +111,14 @@ if (UFE_CLIPBOARD_SUPPORT)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
             UFE_CLIPBOARD_SUPPORT=1
+    )
+endif()
+
+
+if (UFE_MATERIAL_HAS_HASMATERIAL)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_MATERIAL_HAS_HASMATERIAL=1
     )
 endif()
 
@@ -237,6 +247,8 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdConnections.h
         UsdConnectionHandler.h
+        UsdMaterial.h
+        UsdMaterialHandler.h
         UsdUINodeGraphNode.h
         UsdUINodeGraphNodeHandler.h
         UsdShaderAttributeDef.h

@@ -72,26 +72,6 @@ if (UFE_LIGHTS2_SUPPORT)
     )
 endif()
 
-if (UFE_MATERIALS_SUPPORT)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            UsdMaterial.cpp
-            UsdMaterialHandler.cpp
-    )
-
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_MATERIALS_SUPPORT=1
-    )
-
-    if (UFE_MATERIAL_HAS_HASMATERIAL)
-        target_compile_definitions(${PROJECT_NAME}
-        PRIVATE
-            UFE_MATERIAL_HAS_HASMATERIAL=1
-        )
-    endif()
-endif()
-
 if (UFE_SCENE_SEGMENT_SUPPORT)
     target_sources(${PROJECT_NAME}
     PRIVATE
@@ -244,13 +224,6 @@ if (UFE_LIGHTS2_SUPPORT)
     list(APPEND HEADERS
         UsdLight2.h
         UsdLight2Handler.h
-    )
-endif()
-
-if (UFE_MATERIALS_SUPPORT)
-    list(APPEND HEADERS
-        UsdMaterial.h
-        UsdMaterialHandler.h
     )
 endif()
 
