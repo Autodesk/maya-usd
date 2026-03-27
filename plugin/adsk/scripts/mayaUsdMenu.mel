@@ -1038,10 +1038,11 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
         return; // that's all we can support on invalid layers
     }
 
+    // Single selection flags
+    int $singleSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` == 1;
     int $isSessionLayer = `mayaUsdLayerEditorWindow -q -isSessionLayer $panelName`;
     int $isAnonymousLayer = `mayaUsdLayerEditorWindow -q -isAnonymousLayer $panelName`;
     int $needsSaving = `mayaUsdLayerEditorWindow -q -layerNeedsSaving $panelName`;
-    int $singleSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` == 1;
     int $appearsMuted = `mayaUsdLayerEditorWindow -q -layerAppearsMuted $panelName`;
     int $isSubLayer = `mayaUsdLayerEditorWindow -q -isSubLayer $panelName`;
     int $isMuted = `mayaUsdLayerEditorWindow -q -layerIsMuted $panelName`;
@@ -1052,9 +1053,12 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     int $isSystemLocked = `mayaUsdLayerEditorWindow -q -layerIsSystemLocked $panelName`;
     int $isIncoming = `mayaUsdLayerEditorWindow -q -isIncomingLayer $panelName`;
     int $hasSublayers = `mayaUsdLayerEditorWindow -q -layerHasSubLayers $panelName`;
+    string $proxyShape = `mayaUsdLayerEditorWindow -q -proxyShape $panelName`;
+    
+    // Multi selection flags
     int $multiSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` > 1;
     int $strongestLayerIsLocked = `mayaUsdLayerEditorWindow -q -strongestLayerIsLocked $panelName`;
-    string $proxyShape = `mayaUsdLayerEditorWindow -q -proxyShape $panelName`;
+    int $hasSessionAndNonSessionLayers = `mayaUsdLayerEditorWindow -q -selectionHasSessionAndNonSessionLayers $panelName`;
 
     string $label;
     int $enabled;
@@ -1101,7 +1105,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     if ($multiSelect && !$singleSelect) {
             $label = getMayaUsdString("kMenuStitchLayers");
             $cmd = makeCommand($panelName, "stitchLayers");
-            $enabled = !$isReadOnly && !$appearsLocked && !$appearsSystemLocked && !$appearsMuted && !$strongestLayerIsLocked;
+            $enabled = !$isReadOnly && !$appearsLocked && !$appearsSystemLocked && !$appearsMuted && !$strongestLayerIsLocked && !$hasSessionAndNonSessionLayers;
             menuItem -label $label -enable $enabled -c $cmd;
     }
 

@@ -182,7 +182,7 @@ bool MayaLayerEditorWindow::strongestLayerIsLocked()
     // selectedItems are ordered by order of selection, not by strength.
     const LayerItemVector selectedItems = treeView()->getSelectedLayerItems();
     if (selectedItems.size() < 2) {
-        return false;        
+        return false;
     }
 
     const UsdStageRefPtr stage = _sessionState.stage();
@@ -196,6 +196,42 @@ bool MayaLayerEditorWindow::strongestLayerIsLocked()
             if (selectedItem && selectedItem->layer() == stageLayer)
                 return selectedItem->isLocked();
         }
+    }
+
+    return false;
+}
+
+bool MayaLayerEditorWindow::selectionHasSessionAndNonSessionLayers()
+{
+    const LayerItemVector selectedItems = treeView()->getSelectedLayerItems();
+    if (selectedItems.size() < 2)
+        return false;
+
+    bool hasSessionLayerItem = false;
+    bool hasNonSessionLayerItem = false;
+
+    for (const auto* item : selectedItems) {
+        if (!item)
+            continue;
+
+        // Sub layers of a session layer are not marked as session layers, need to check if the
+        // strongest parent is a session layer.
+        bool inSessionHierarchy = item->isSessionLayer();
+        if (!inSessionHierarchy) {
+            LayerTreeItem* ancestor = item->parentLayerItem();
+            while (ancestor && ancestor->parentLayerItem()) {
+                ancestor = ancestor->parentLayerItem();
+            }
+            inSessionHierarchy = ancestor && ancestor->isSessionLayer();
+        }
+
+        if (inSessionHierarchy)
+            hasSessionLayerItem = true;
+        else
+            hasNonSessionLayerItem = true;
+
+        if (hasSessionLayerItem && hasNonSessionLayerItem)
+            return true;
     }
 
     return false;

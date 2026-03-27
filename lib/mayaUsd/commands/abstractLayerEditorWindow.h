@@ -91,6 +91,7 @@ public:
     virtual bool        layerIsReadOnly() = 0;
     virtual bool        layerHasSubLayers() = 0;
     virtual bool        strongestLayerIsLocked() = 0;
+    virtual bool        selectionHasSessionAndNonSessionLayers() = 0;
     virtual std::string proxyShapeName(const bool fullPath = false) const = 0;
 
     virtual void removeSubLayer() = 0;
