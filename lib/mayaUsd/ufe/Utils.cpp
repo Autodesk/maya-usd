@@ -232,9 +232,7 @@ bool isSceneRenderSettingsNode(const std::string& mayaNodeType)
 #endif
 }
 
-bool isReferencedSceneRenderSettingsNode(
-    const std::string& mayaNodeType,
-    const Ufe::Path&   ufePath)
+bool isReferencedSceneRenderSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath)
 {
 #ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
     if (!isSceneRenderSettingsNode(mayaNodeType)) {
