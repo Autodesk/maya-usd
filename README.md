@@ -11,7 +11,7 @@ The plugin comes with a powerful API to allow extending the default import and e
 
 
 ## Features
-- Component Creator with Variant Manger
+- New for Maya 2027 Component Creator with Variant Manager
 - Autodesk Asset Resolver
 - Import and Export text and Binary USD formats
 - Open a USD Stage directly for editing
