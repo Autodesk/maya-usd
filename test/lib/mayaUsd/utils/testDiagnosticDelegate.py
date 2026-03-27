@@ -210,7 +210,11 @@ class testDiagnosticDelegate(unittest.TestCase):
 
             # Delete the SceneRenderSettings singleton node with undo off
             # so the undo queue doesn't hold references to plugin data types.
-            srsNodes = cmds.ls(type='mayaUsdSceneRenderSettings')
+            # Guard with allNodeTypes check: the type may not be compiled in
+            # every build configuration.
+            srsNodes = (cmds.ls(type='mayaUsdSceneRenderSettings')
+                        if 'mayaUsdSceneRenderSettings' in cmds.allNodeTypes()
+                        else [])
             if srsNodes:
                 cmds.undoInfo(stateWithoutFlush=False)
                 for node in srsNodes:
