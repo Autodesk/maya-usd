@@ -11,6 +11,8 @@ The plugin comes with a powerful API to allow extending the default import and e
 
 
 ## Features
+- Component Creator with Variant Manger
+- Autodesk Asset Resolver
 - Import and Export text and Binary USD formats
 - Open a USD Stage directly for editing
 - Edit USD data as Maya
@@ -26,7 +28,6 @@ The plugin comes with a powerful API to allow extending the default import and e
 
 ## Install MayaUSD
 Installers for MayaUSD can be found [here](https://github.com/Autodesk/maya-usd/releases).  Currently the plugins supports the following version of Maya
-- 2022
 - 2023
 - 2024
 - 2025
@@ -34,7 +35,6 @@ Installers for MayaUSD can be found [here](https://github.com/Autodesk/maya-usd/
 
 
 ## Plugin Documentation
-+ [Getting Started with USD in Maya 2022](https://help.autodesk.com/view/MAYAUL/2022/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
 + [Getting Started with USD in Maya 2023](https://help.autodesk.com/view/MAYAUL/2023/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
 + [Getting Started with USD in Maya 2024](https://help.autodesk.com/view/MAYAUL/2024/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
 + [Getting Started with USD in Maya 2025](https://help.autodesk.com/view/MAYAUL/2025/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
