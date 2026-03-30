@@ -264,15 +264,17 @@ private:
         static const char scriptPrefix[] =
             // Preserve the selection. Grouping and ungrouping changes it.
             "string $selection[] = `ls -selection`;\n"
-            // Find all root nodes, excluding the internal SceneRenderSettings
-            // singleton which is not scene content and must not be grouped.
             "string $rootNodeNames[] = `ls -assemblies`;\n"
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+            // Exclude the internal SceneRenderSettings singleton which is not
+            // scene content and must not be grouped.
             "string $filteredRoots[];\n"
             "for ($r in $rootNodeNames) {\n"
             "    string $shapes[] = `listRelatives -shapes -type mayaUsdSceneRenderSettings $r`;\n"
             "    if (size($shapes) == 0) $filteredRoots[size($filteredRoots)] = $r;\n"
             "}\n"
             "$rootNodeNames = $filteredRoots;\n"
+#endif
             // Group all root node under a new group:
             //
             //    - Use -absolute to keep the grouped node world positions
