@@ -17,6 +17,8 @@
 
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
 #include <usdUfe/utils/usdUtils.h>
@@ -129,10 +131,22 @@ void doUsdRename(
     const Ufe::Path    srcPath,
     const Ufe::Path    dstPath)
 {
-    // Pause edit forwarding during the delete operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
-
     UsdUfe::enforceMutedLayer(prim, "rename");
+
+    {
+        // The command doesnt use an undo block, but set one up to get edit forwarding working.
+        // TODO : Actually perform undo using the undo block.
+
+        UsdUndoableItem dummyItem;
+        UsdUndoBlock    dummyBlock { &dummyItem };
+        SdfChangeBlock  changeBlock;
+        if (!UsdUfe::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
+            const std::string error = TfStringPrintf(
+                "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
+    }
 
     // 1- open a changeblock to delay sending notifications.
     // 2- update the Internal References paths (if any) first
@@ -140,13 +154,6 @@ void doUsdRename(
     // Note: during the changeBlock scope we are still working with old items/paths/prims.
     // it's only after the scope ends that we start working with new items/paths/prims
     SdfChangeBlock changeBlock;
-
-    if (!UsdUfe::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
-        const std::string error = TfStringPrintf(
-            "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
-    }
 
     // Make sure the load state of the renamed prim will be preserved.
     {
@@ -247,19 +254,12 @@ void UsdUndoRenameCommand::renameHelper(
 void UsdUndoRenameCommand::undo()
 {
     UsdUfe::InPathChange pc;
-
-    // Pause edit forwarding during the undo operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
-
     renameUndo();
 }
 
 void UsdUndoRenameCommand::redo()
 {
     UsdUfe::InPathChange pc;
-
-    // Pause edit forwarding during the redo operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
 
     renameRedo();
 }
