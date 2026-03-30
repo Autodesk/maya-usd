@@ -28,7 +28,6 @@ class RelationshipCustomControl(AttributeCustomControl):
         usdPrim = mayaUsdUfe.getPrimFromRawItem(aeTemplate.item.getRawAddress())
         usdRel = usdPrim.GetRelationship(attrName)
         if usdRel.IsValid():
-            print(f"Creating relationship custom control for {attrName}")
             return RelationshipCustomControl(aeTemplate.item, ufeAttr, aeTemplate.prim, attrName, aeTemplate.useNiceName, label=label)
         else:
             return None
@@ -78,7 +77,6 @@ class RelationshipCustomControl(AttributeCustomControl):
                 enable=not isLocked,
                 changeCommand=lambda value : self.setValue(attr, value)
             )
-            print(f"args: {args}")
             cmds.textField(self.uiControl, e=True, **args)
             if bgClr:
                 cmds.textField(self.uiControl, e=True, backgroundColor=bgClr)
@@ -94,6 +92,5 @@ class RelationshipCustomControl(AttributeCustomControl):
     
     def getValue(self, ufeAttr):
         targets = self.usdRel.GetTargets()
-        print(f"targets: {targets}")
         result = " ".join([target.pathString for target in targets])
         return result

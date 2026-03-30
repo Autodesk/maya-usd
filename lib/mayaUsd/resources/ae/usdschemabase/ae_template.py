@@ -25,7 +25,7 @@ from .assetInfoCustomControl import AssetInfoCustomControl
 from .relationshipCustomControl import RelationshipCustomControl
 from .observers import UfeAttributesObserver, UfeConnectionChangedObserver, UsdNoticeListener
 from .layouts.shaderLayout import AEShaderLayout
-from .layouts.renderSettingsLayout import AERenderSettingsLayout, RenderSettingsTabLayout
+from .layouts.renderSettingsLayout import AERenderSettingsLayout
 try:
     from .collectionCustomControl import CollectionCustomControl
     collectionsSupported = True
@@ -72,7 +72,6 @@ class AETemplate(object):
         self.assetPathType = Tf.Type.FindByName('SdfAssetPath')
         self.item = ufeSceneItem
         self.prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(self.item.path()))
-        print(f"Creating AETemplate for: {self.item.path()}")
         # Get the UFE Attributes interface for this scene item.
         self.attrs = ufe.Attributes.attributes(self.item)
         self.addedAttrs = set()
@@ -103,7 +102,6 @@ class AETemplate(object):
         schemasAttributes.update(self.findAppliedSchemas())
         schemasAttributes.update(self.findClassSchemas())
         schemasAttributes.update(self.findSpecialSections())
-        print(f"Schemas attributes: {schemasAttributes}")
         # Order schema sections according to designer's choices.
         orderedSchemas = self.orderSections(schemasAttributes)
 
@@ -142,28 +140,18 @@ class AETemplate(object):
             '.* Light',
             'lightLinkCollectionAPI',
             'shadowLinkCollectionAPI',
-            # 'renderSettings',
+            'customCallbacks',
         ]
 
         desiredLastSchemas = [
             'shader',
             'transforms',
             'display',
-            # 'customCallbacks',
             'extraAttributes',
             'assetInfo',
             '.*AccessibilityAPI',
             'metadata',
         ]
-
-        # if this a UsdRender node, add the renderSettings section to the first schemas
-        # and move the customCallbacks to the last schemas
-        print("prim type name", self.prim.GetTypeName())
-        if self.prim.GetTypeName().startswith('Render'):
-            desiredFirstSchemas.append('renderSettings')
-            # desiredLastSchemas.append('customCallbacks')
-        else:
-            desiredFirstSchemas.append('customCallbacks')
 
         def addSchemas(desiredOrder, availableSchemas):
             orderedSchemas = []
@@ -216,7 +204,6 @@ class AETemplate(object):
     def createSection(self, layoutName, attrList, schemasAttributes, collapse=False):
         # We create the section named "layoutName" if at least one
         # of the attributes from the input list exists.
-        print(f"Creating section: {layoutName}")
         for attr in attrList:
             if attr in self.suppressedAttrs:
                 continue
@@ -287,36 +274,9 @@ class AETemplate(object):
         nodeDef = nodeDefHandler.definition(self.item)
         return nodeDef and nodeDef.type() == "ND_adsk_ramp"
     
-    def runRenderSettingsCallback(self):
-        # Create the callback context/data (empty).
-        cbContext = {
-            'ufe_path_string' : ufe.PathString.string(self.item.path()),
-        }
-        cbContextDict = Vt._ReturnDictionary(cbContext)
-        cbDataDict = Vt._ReturnDictionary({})
-
-        # Trigger the callback which will give other plugins the opportunity
-        # to add controls to our AE template.
-        global _aeTemplate
-        try:
-            _aeTemplate = self
-            cbDataDict = mayaUsdLib.triggerUICallback('onBuildRenderSettingsTabs', cbContextDict, cbDataDict)
-        except Exception as ex:
-            # Do not let any of the callback failures affect our template.
-            print('Failed triggerUICallback: %s' % ex)
-        _aeTemplate = None
-        print("cbDataDict", cbDataDict)
-        return cbDataDict
-
     def addRenderSettingsLayout(self, group, renderSettingsLayout):
         """recursively create the full attribute layout section"""
         with ufeAeTemplate.Layout(self, group.name, collapse=False):
-            # for item in group.items:
-            #     if isinstance(item, AERenderSettingsLayout.Group):
-            #         self.addRenderSettingsLayout(item, renderSettingsLayout)
-            #     else:
-            #         if self.attrs.attribute(item):
-            #             self.addControls([item])
             # create the tab layout
             if group.root:                
                 global _aeTemplate
@@ -326,9 +286,6 @@ class AETemplate(object):
     
     def createRenderSettingsSection(self, sectionName, attrs, schemasAttributes, collapse):
         """Use AEREnderSettingsLayout class to populate the render settings section"""
-        print(f"Creating render settings section: {sectionName}")
-        # TODO make a new class for render settings layout with tabs for 3rd-party renderers based on available schemas
-
         # Trigger the callback which will give other plugins the opportunity
         # to add controls to our AE template.
         global _aeTemplate
@@ -555,7 +512,6 @@ class AETemplate(object):
         See https://github.com/Autodesk/maya-usd/blob/dev/lib/mayaUsd/resources/ae/usdschemabase/Attribute-Editor-Template-Doc.md
         for more info.
         '''
-
         # Create the callback context/data (empty).
         cbContext = {
             'ufe_path_string' : ufe.PathString.string(self.item.path())
@@ -590,14 +546,11 @@ class AETemplate(object):
             schemaType = usdSch.GetTypeFromName(schemaType)
             schemaTypeName = schemaType.typeName
             sectionName = self.sectionNameFromSchema(schemaTypeName)
-            print(f"Finding class schema: {schemaTypeName} -> {sectionName}")
             attrsToAdd = []
             primDef = usdSch.FindConcretePrimDefinition(schemaTypeName.replace('Usd', ''))
             if primDef: 
-                print(f"Found concrete prim definition for: {schemaTypeName}")
                 attrsToAdd = primDef.GetPropertyNames()
             elif schemaType.pythonClass:
-                print(f"No concrete prim definition found for: {schemaTypeName}")
                 attrsToAdd = schemaType.pythonClass.GetSchemaAttributeNames(False)
 
             if attrsToAdd:
@@ -622,13 +575,10 @@ class AETemplate(object):
             schemaTypeName = schemaType.typeName
             sectionName = self.sectionNameFromSchema(schemaTypeName)
             attrsToAdd = []
-            print(f"Finding concrete prim definition for: {schemaTypeName.replace('Usd', '')}")
             primDef = usdSch.FindConcretePrimDefinition(schemaTypeName.replace('Usd', ''))
             if primDef: 
-                print(f"Found concrete prim definition for: {schemaTypeName}")
                 attrsToAdd = primDef.GetPropertyNames()
             elif schemaType.pythonClass:
-                print(f"No concrete prim definition found for: {schemaTypeName}")
                 attrsToAdd = schemaType.pythonClass.GetSchemaAttributeNames(False)
             
             if attrsToAdd:
@@ -646,10 +596,6 @@ class AETemplate(object):
                     schemasAttributes['transforms'] = attrsToAdd
                 elif schemaTypeName == 'UsdGeomImageable':
                     schemasAttributes['display'] = attrsToAdd
-                elif schemaTypeName in ['UsdRenderSettings', 'UsdRenderSettingsBase', 'UsdRenderProduct' ]:
-                    if 'renderSettings' not in schemasAttributes:
-                        schemasAttributes['renderSettings'] = []
-                    schemasAttributes['renderSettings'] += attrsToAdd
 
         return schemasAttributes
 
@@ -671,21 +617,32 @@ class AETemplate(object):
             lowerName = sectionName.lower()
             return 'light' in lowerName and 'link' not in lowerName
         
+        # Function to check if the current prim is  UsdRender type
+        def isUsdRender(prim):
+            # for now we only do the tab layout for RenderSettings and RenderProduct
+            return prim.GetTypeName() in ['RenderSettings', 'RenderSettingsBase', 'RenderProduct']
+        
         # Dictionary of which function to call to create a given section.
         # By default, calls the generic createSection, which will search
         # in the list of known custom control creators for the one to be
         # used.
         customAttributes = {
             'shader': self.createShaderAttributesSection,
-            'renderSettings': self.createRenderSettingsSection,
             'transforms': self.createTransformAttributesSection,
             'display': self.createDisplaySection,
             'extraAttributes': self.createCustomExtraAttrs,
             'assetInfo': self.createAssetInfoSection,
             'metadata': self.createMetadataSection,
-            'customCallbacks': self.createCustomCallbackSection,
             ".*AccessibilityAPI": self.createAccessibilitySection,
         }
+
+        # We only want the attributes appearing once so if the prim 
+        # is a UsdRender* prim we use the Render Settings tabbed 
+        # layout other wise the usual grouped layout.
+        if isUsdRender(self.prim):
+            customAttributes['customCallbacks'] = self.createRenderSettingsSection
+        else:
+            customAttributes['customCallbacks'] = self.createCustomCallbackSection
 
         # Create the section in the specified order.
         for typeName in schemasOrder:

@@ -16,87 +16,12 @@
 import collections
 import re
 import ufe
-import maya.mel as mel
 import maya.cmds as cmds
 import mayaUsd.lib as mayaUsdLib
 import mayaUsd.ufe as mayaUsdUfe
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
-from maya.common.ui import LayoutManager, ParentManager
 
 from pxr import Vt
-
-class DummyButtonControl(object):
-    def __init__(self, item, prim, template):
-        super(DummyButtonControl, self).__init__()
-        self.item = item
-        self.prim = prim
-        self.template = template
-
-    def onCreate(self, *args):
-        # cmds.setUITemplate('attributeEditorTemplate', pst=True)
-        rl = cmds.rowLayout(nc=1)
-        with LayoutManager(rl):
-            cmds.button(label='Apply Arnold Schema')
-        
-        # cmds.setUITemplate(ppt=True)
-
-    def onReplace(self, *args):
-        pass
-
-class RenderSettingsTabLayout(object):
-
-    def __init__(self, item, prim, template):
-        super(RenderSettingsTabLayout, self).__init__()
-        self.item = item
-        self.prim = prim
-        self.typeName = prim.GetTypeName()
-        self.template = template # template to use to add controls to
-
-    def onCreate(self, *args):
-        cmds.setUITemplate('attributeEditorTemplate', pst=True)
-        
-        form = cmds.formLayout()
-        with LayoutManager(form):
-            tabbar = cmds.tabLayout(innerMarginHeight=5)
-            cmds.formLayout( form, edit=True, attachForm=((tabbar , 'top', 0), (tabbar , 'left', 0), (tabbar , 'bottom', 0), (tabbar , 'right', 0)) )
-
-            cbDataDict = self.template.runRenderSettingsCallback()
-
-            # loop over the rendererSettingsTabs and create a tab for each
-            tabs = []
-            for tab, controlLayout in cbDataDict.items():
-                print("createTabLayout", tab)
-                # if controlLayout:
-                #     if isinstance(controlLayout, list):
-                #         controlLayout = controlLayout[0]
-                #     tabs.append((controlLayout, tab))
-                # else:
-                # create a blank tab
-                blankControlLayout = cmds.rowColumnLayout(numberOfColumns=2)
-                with LayoutManager(blankControlLayout):
-                    cmds.button(label='Apply Schema')
-                    # with ufeAeTemplate.Layout(self, "Apply Schema", collapse=False):
-                    #     dummybutton = DummyButtonControl(self.item, self.prim, self.template)
-                    #     self.template.defineCustom(dummybutton)
-                
-                tabs.append((blankControlLayout, tab))
-
-            if len(tabs) == 0:
-                # create a blank tab
-                blankControlLayout = cmds.rowColumnLayout(numberOfColumns=2)
-                cmds.setParent('..')
-                tabs.append((blankControlLayout, 'Empty'))
-            
-            print("tabs", tabs)
-            cmds.tabLayout(tabbar, edit=True, tabLabel=tabs)
-            
-        
-        cmds.setUITemplate(ppt=True)
-
-    def onReplace(self, *args):
-        pass
-
-
 
 class AERenderSettingsLayout(object):
     '''
@@ -153,10 +78,9 @@ class AERenderSettingsLayout(object):
         self.propertyGroups = {
             'Settings': [
                 'includedPurposes',
-                'instantaneousShutter',
                 'materialBindingPurposes',
                 'products',
-                'renderingColorSpace'
+                'renderingColorSpace',
             ],
             'Base': [
                 'resolution',
@@ -166,7 +90,13 @@ class AERenderSettingsLayout(object):
                 'disableMotionBlur',
                 'disableDepthOfField',
                 'camera',
+                'instantaneousShutter',
             ],
+            'Product': [
+                'orderedVars',
+                'productName',
+                'productType',
+            ]
         }
 
         self.parseRenderSettingsAttributes()
@@ -177,13 +107,12 @@ class AERenderSettingsLayout(object):
         def _createGroup(groupName, items):
             
             with ufeAeTemplate.Layout(self, groupName, collapse=False):
-                if isinstance(items, dict):
-                    for name in items.keys():
-                        _createGroup(name, items[name])
-                else:
-                    for attr in items:
-                        if self.template.attrs.hasAttribute(attr):
-                            self.template.addControls([attr])
+                for i in items:
+                    if isinstance(i, AERenderSettingsLayout.Group):
+                        _createGroup(i.name, i.items)
+                    else:
+                        if self.template.attrs.hasAttribute(i):
+                            self.template.addControls([i])
 
         # Create the callback context/data (empty).
         cbContext = {
@@ -192,34 +121,29 @@ class AERenderSettingsLayout(object):
         cbContextDict = Vt._ReturnDictionary(cbContext)
         cbDataDict = Vt._ReturnDictionary({})
 
-        cmds.setUITemplate('attributeEditorTemplate', pst=True)    
-        with ufeAeTemplate.Layout(self, "", collapse=False):
-            # cmds.editorTemplate(beginNoOptimize=True)
+        cmds.setUITemplate('attributeEditorTemplate', pst=True)
 
-            if cmds.about(apiVersion=True) >= 20270100:
-                cmds.editorTemplate(beginTabLayout=True)
-            
+        layout = ufeAeTemplate.Layout(self, "", collapse=False)
+        if cmds.about(apiVersion=True) >= 20270100:
+            # TabLayout introduced in Maya 2027.1
+            layout = ufeAeTemplate.TabLayout(self)
+        
+        with layout:            
             for item in self._attributeLayout.items:
                 if isinstance(item, AERenderSettingsLayout.Group):
                     _createGroup(item.name, item.items)
                 else:
                     if self.template.attrs.attribute(item):
                         self.template.addControls([item])
+            
             # Trigger the callback which will give other plugins the opportunity
             # to add controls to our AE template.
             try:
-                cbDataDict = mayaUsdLib.triggerUICallback('onBuildRenderSettingsTabs', cbContextDict, cbDataDict)
+                # cbDataDict = mayaUsdLib.triggerUICallback('onBuildRenderSettingsTabs', cbContextDict, cbDataDict)
+                cbDataDict = mayaUsdLib.triggerUICallback('onBuildAETemplate', cbContextDict, cbDataDict)
             except Exception as ex:
                 # Do not let any of the callback failures affect our template.
                 print('Failed triggerUICallback: %s' % ex)
-
-            if cmds.about(apiVersion=True) >= 20270100:
-                cmds.editorTemplate(endTabLayout=True)
-
-        with ufeAeTemplate.Layout(self, "After tabs", collapse=False):
-
-            dummybutton = DummyButtonControl(self.item, self.prim, self.template)
-            self.template.defineCustom(dummybutton)
         
         cmds.setUITemplate(ppt=True)
 
@@ -228,20 +152,19 @@ class AERenderSettingsLayout(object):
         """Parse render settings attributes using the UsdRenderSettings node and property APIs."""
 
         self._properties = self.prim.GetProperties()
-        rootDefGroup = AERenderSettingsLayout.Group(mayaUsdUfe.prettifyName(self.prim.GetTypeName().replace('Render', '')))
-        groups = {rootDefGroup: None, 'Base': None, 'Extra Attributes': None}
+        # The root group for the "Common" tab
+        rootDefGroup = AERenderSettingsLayout.Group("Common")
         # get the main sections for the render settings
         for property in self._properties:
             for group, properties in self.propertyGroups.items():
                 if property.GetName() in properties:
-                    if groups.get(group) is None:
-                        groups[group] = AERenderSettingsLayout.Group(group)
-                    groups[group].items.append(property.GetName())
+                    if rootDefGroup.get(group) is None:
+                        rootDefGroup.addItem(AERenderSettingsLayout.Group(group))
+                    g = rootDefGroup.get(group)
+                    g.addItem(property.GetName())
                     break            
         
-        for group in groups.keys():
-            if groups[group]:
-                self._attributeLayout.items.append(groups[group])
+        self._attributeLayout.items.append(rootDefGroup)
             
         # renderer settings tabs
         # create a new callback that 3rdparties can register on e.g 'onBuildRenderSettingsLayout'
