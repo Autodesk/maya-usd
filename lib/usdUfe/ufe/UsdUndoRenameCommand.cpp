@@ -17,6 +17,9 @@
 
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/ufe/trf/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
 #include <usdUfe/utils/usdUtils.h>
@@ -129,23 +132,21 @@ void doUsdRename(
     const Ufe::Path    srcPath,
     const Ufe::Path    dstPath)
 {
-    // Pause edit forwarding during the delete operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
-
     UsdUfe::enforceMutedLayer(prim, "rename");
 
-    // 1- open a changeblock to delay sending notifications.
-    // 2- update the Internal References paths (if any) first
-    // 3- set the new name
-    // Note: during the changeBlock scope we are still working with old items/paths/prims.
-    // it's only after the scope ends that we start working with new items/paths/prims
-    SdfChangeBlock changeBlock;
+    // 1- update the Internal References paths (if any) first
+    // 2- set the new name
+    {
+        // The command doesn't use an undoable item, but we still we want the path remapping edits
+        // forwarded.
+        UsdUfe::NoUsdUndoBlockGuard forceForward { true };
 
-    if (!UsdUfe::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
-        const std::string error = TfStringPrintf(
-            "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
+        if (!UsdUfe::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
+            const std::string error = TfStringPrintf(
+                "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
     }
 
     // Make sure the load state of the renamed prim will be preserved.
@@ -154,6 +155,10 @@ void doUsdRename(
         auto destPath = SdfPath(dstPath.getSegments()[1].string());
         UsdUfe::moveLoadRules(*stage, fromPath, destPath);
     }
+
+    // Note: during the changeBlock scope we are still working with old items/paths/prims.
+    // it's only after the scope ends that we start working with new items/paths/prims
+    SdfChangeBlock changeBlock;
 
     // Do the renaming in the target layer and all other applicable layers,
     // which, due to command restrictions that have been verified when the
@@ -167,7 +172,6 @@ void doUsdRename(
             throw std::runtime_error(error);
         }
     };
-
     // Check if this is a component stage
     const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
     const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
@@ -185,7 +189,6 @@ void doUsdRename(
         UsdUfe::applyToAllPrimSpecs(prim, renameFunc);
     }
 }
-
 } // namespace
 
 void UsdUndoRenameCommand::renameRedo()
@@ -247,19 +250,12 @@ void UsdUndoRenameCommand::renameHelper(
 void UsdUndoRenameCommand::undo()
 {
     UsdUfe::InPathChange pc;
-
-    // Pause edit forwarding during the undo operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
-
     renameUndo();
 }
 
 void UsdUndoRenameCommand::redo()
 {
     UsdUfe::InPathChange pc;
-
-    // Pause edit forwarding during the redo operation with RAII
-    const UsdUfe::EditForwardingGuard efPauser {};
 
     renameRedo();
 }
