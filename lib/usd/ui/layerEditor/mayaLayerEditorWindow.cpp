@@ -235,6 +235,20 @@ bool MayaLayerEditorWindow::selectionHasSessionAndNonSessionLayers()
     return false;
 }
 
+bool MayaLayerEditorWindow::selectionHasALockedLayer()
+{
+    const LayerItemVector selectedItems = treeView()->getSelectedLayerItems();
+    if (selectedItems.empty())
+        return false;
+
+    for (const auto* item : selectedItems) {
+        if (item->isLocked())
+            return true;
+    }
+
+    return false;
+}
+
 void MayaLayerEditorWindow::removeSubLayer()
 {
     QString name = "Remove";

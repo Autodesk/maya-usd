@@ -54,6 +54,7 @@ DEF_FLAG(ls, layerIsSystemLocked)
 DEF_FLAG(ll, layerHasSubLayers)
 DEF_FLAG(sk, strongestLayerIsLocked)
 DEF_FLAG(ss, selectionHasSessionAndNonSessionLayers)
+DEF_FLAG(sl, selectionHasALockedLayer)
 
 // edit flags
 DEF_FLAG(rs, removeSubLayer)
@@ -149,6 +150,7 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(layerHasSubLayers);
     ADD_FLAG(strongestLayerIsLocked);
     ADD_FLAG(selectionHasSessionAndNonSessionLayers);
+    ADD_FLAG(selectionHasALockedLayer);
 
     ADD_FLAG(removeSubLayer);
     ADD_FLAG(saveEdits);
@@ -344,6 +346,7 @@ MStatus LayerEditorWindowCommand::handleQueries(
     HANDLE_Q_FLAG(layerHasSubLayers)
     HANDLE_Q_FLAG(strongestLayerIsLocked)
     HANDLE_Q_FLAG(selectionHasSessionAndNonSessionLayers)
+    HANDLE_Q_FLAG(selectionHasALockedLayer)
 
     // proxyShape flag is both create/query.
     if (argParser.isFlagSet(FLAG(proxyShape)) && argParser.isQuery()) {

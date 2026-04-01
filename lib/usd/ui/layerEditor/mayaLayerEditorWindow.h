@@ -67,6 +67,7 @@ public:
     bool        layerHasSubLayers() override;
     bool        strongestLayerIsLocked() override;
     bool        selectionHasSessionAndNonSessionLayers() override;
+    bool        selectionHasALockedLayer() override;
 
     void removeSubLayer() override;
     void saveEdits() override;
