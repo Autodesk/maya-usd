@@ -191,7 +191,7 @@ bool MayaLayerEditorWindow::strongestLayerIsLocked()
         return false;
 
     // Finds strongest layer from selectedItems by folding over the selection.
-    SdfLayerHandle      strongestLayer;
+    SdfLayerHandle       strongestLayer;
     const LayerTreeItem* strongestItem = nullptr;
     for (const auto* item : selectedItems) {
         SdfLayerHandle layer = item->layer();
