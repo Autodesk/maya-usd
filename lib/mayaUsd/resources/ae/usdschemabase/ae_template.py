@@ -140,7 +140,7 @@ class AETemplate(object):
             '.* Light',
             'lightLinkCollectionAPI',
             'shadowLinkCollectionAPI',
-            'customCallbacks',
+            'customCallbacks'
         ]
 
         desiredLastSchemas = [
@@ -553,10 +553,9 @@ class AETemplate(object):
             elif schemaType.pythonClass:
                 attrsToAdd = schemaType.pythonClass.GetSchemaAttributeNames(False)
 
-            if attrsToAdd:
-                if schemaTypeName in specialSchemas:
-                    continue
-                schemasAttributes[sectionName] = attrsToAdd
+            if schemaTypeName in specialSchemas:
+                continue
+            schemasAttributes[sectionName] = attrsToAdd
     
         return schemasAttributes
     
@@ -581,21 +580,20 @@ class AETemplate(object):
             elif schemaType.pythonClass:
                 attrsToAdd = schemaType.pythonClass.GetSchemaAttributeNames(False)
             
-            if attrsToAdd:
-                if schemaTypeName in ['UsdShadeShader', 'UsdShadeNodeGraph', 'UsdShadeMaterial']:
-                    # Material has NodeGraph as base. We want to process once for both schema types:
-                    if hasProcessedMaterial:
-                        continue
-                    # Shader attributes are special
-                    schemasAttributes['shader'] = []
-                    hasProcessedMaterial = True
-                    # Note: don't show the material section for materials.
-                    self.addedMaterialSection = True
-                # We have a special case when building the Xformable section.
-                elif schemaTypeName == 'UsdGeomXformable':
-                    schemasAttributes['transforms'] = attrsToAdd
-                elif schemaTypeName == 'UsdGeomImageable':
-                    schemasAttributes['display'] = attrsToAdd
+            if schemaTypeName in ['UsdShadeShader', 'UsdShadeNodeGraph', 'UsdShadeMaterial']:
+                # Material has NodeGraph as base. We want to process once for both schema types:
+                if hasProcessedMaterial:
+                    continue
+                # Shader attributes are special
+                schemasAttributes['shader'] = []
+                hasProcessedMaterial = True
+                # Note: don't show the material section for materials.
+                self.addedMaterialSection = True
+            # We have a special case when building the Xformable section.
+            elif schemaTypeName == 'UsdGeomXformable':
+                schemasAttributes['transforms'] = attrsToAdd
+            elif schemaTypeName == 'UsdGeomImageable':
+                schemasAttributes['display'] = attrsToAdd
 
         return schemasAttributes
 
