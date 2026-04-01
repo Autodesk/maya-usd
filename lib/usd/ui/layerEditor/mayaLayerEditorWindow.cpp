@@ -211,6 +211,12 @@ bool MayaLayerEditorWindow::selectionHasSessionAndNonSessionLayers()
     if (selectedItems.size() < 2)
         return false;
 
+    const UsdStageRefPtr stage = _sessionState.stage();
+    if (!stage)
+        return false;
+
+    const auto sessionLayers = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), true);
+
     bool hasSessionLayerItem = false;
     bool hasNonSessionLayerItem = false;
 
@@ -218,18 +224,7 @@ bool MayaLayerEditorWindow::selectionHasSessionAndNonSessionLayers()
         if (!item)
             continue;
 
-        // Sub layers of a session layer are not marked as session layers, need to check if the
-        // strongest parent is a session layer.
-        bool inSessionHierarchy = item->isSessionLayer();
-        if (!inSessionHierarchy) {
-            LayerTreeItem* ancestor = item->parentLayerItem();
-            while (ancestor && ancestor->parentLayerItem()) {
-                ancestor = ancestor->parentLayerItem();
-            }
-            inSessionHierarchy = ancestor && ancestor->isSessionLayer();
-        }
-
-        if (inSessionHierarchy)
+        if (UsdUfe::isSessionLayer(item->layer(), sessionLayers))
             hasSessionLayerItem = true;
         else
             hasNonSessionLayerItem = true;
