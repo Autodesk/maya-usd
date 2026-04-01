@@ -27,6 +27,8 @@
 
 #include <mayaUsd/utils/query.h>
 
+#include <usdUfe/utils/layers.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 
@@ -189,16 +191,18 @@ bool MayaLayerEditorWindow::strongestLayerIsLocked()
     if (!stage)
         return false;
 
-    // Finds strongest layer from selectedItems.
-    const SdfLayerHandleVector stageLayersByStrength = stage->GetLayerStack();
-    for (const auto& stageLayer : stageLayersByStrength) {
-        for (const auto* selectedItem : selectedItems) {
-            if (selectedItem && selectedItem->layer() == stageLayer)
-                return selectedItem->isLocked();
+    // Finds strongest layer from selectedItems by folding over the selection.
+    SdfLayerHandle      strongestLayer;
+    const LayerTreeItem* strongestItem = nullptr;
+    for (const auto* item : selectedItems) {
+        SdfLayerHandle layer = item->layer();
+        if (!strongestLayer || UsdUfe::getStrongerLayer(stage, layer, strongestLayer) == layer) {
+            strongestLayer = layer;
+            strongestItem = item;
         }
     }
 
-    return false;
+    return strongestItem && strongestItem->isLocked();
 }
 
 bool MayaLayerEditorWindow::selectionHasSessionAndNonSessionLayers()
