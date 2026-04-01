@@ -181,7 +181,6 @@ std::string MayaLayerEditorWindow::proxyShapeName(const bool fullPath) const
 
 bool MayaLayerEditorWindow::strongestLayerIsLocked()
 {
-    // selectedItems are ordered by order of selection, not by strength.
     const LayerItemVector selectedItems = treeView()->getSelectedLayerItems();
     if (selectedItems.size() < 2) {
         return false;
