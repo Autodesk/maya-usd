@@ -1074,6 +1074,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     } else {
                         sharedUsdStage = UsdStage::Open(rootLayer, loadSet);
                     }
+
+                    // Make sure we never target a locked layer.
+                    auto editTargetLayer = sharedUsdStage->GetEditTarget().GetLayer();
+                    if (editTargetLayer && !editTargetLayer->PermissionToEdit()) {
+                        sharedUsdStage->SetEditTarget(sharedUsdStage->GetSessionLayer());
+                    }
                 }
 
                 // Update file path attribute to match the correct root layer id if it was anonymous
