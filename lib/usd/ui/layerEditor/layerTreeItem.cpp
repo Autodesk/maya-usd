@@ -644,7 +644,7 @@ void LayerTreeItem::clearLayer(QWidget* /*in_parent*/) { commandHook()->clearLay
 
 void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
 {
-    if (!_layer || isInvalidLayer() || !hasSubLayers())
+    if (!_layer || isInvalidLayer() || !hasSubLayers() || isLocked())
         return;
 
     commandHook()->flattenLayer(_layer);
