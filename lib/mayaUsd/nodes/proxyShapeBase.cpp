@@ -1076,9 +1076,11 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     }
 
                     // Make sure we never target a locked layer.
-                    auto editTargetLayer = sharedUsdStage->GetEditTarget().GetLayer();
-                    if (editTargetLayer && !editTargetLayer->PermissionToEdit()) {
-                        sharedUsdStage->SetEditTarget(sharedUsdStage->GetSessionLayer());
+                    if (sharedUsdStage) {
+                        auto editTargetLayer = sharedUsdStage->GetEditTarget().GetLayer();
+                        if (editTargetLayer && !editTargetLayer->PermissionToEdit()) {
+                            sharedUsdStage->SetEditTarget(sharedUsdStage->GetSessionLayer());
+                        }
                     }
                 }
 
