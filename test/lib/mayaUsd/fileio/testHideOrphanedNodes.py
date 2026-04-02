@@ -268,7 +268,7 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         cMayaPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(cPrim)
         self.assertEqual(cMayaPathStr, '')
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+        cmds.optionVar(intValue=(mayaUsd.lib.OptionVarTokens.SerializedUsdEditsLocation, 2))
         filename = os.path.abspath("orphaned.ma")
         self._saveScene(filename)
         self._reloadScene(filename)

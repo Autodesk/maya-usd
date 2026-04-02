@@ -19,6 +19,7 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
@@ -45,8 +46,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 MString PROXY_NODE_TYPE = "mayaUsdProxyShapeBase";
-MString AUTO_HIDE_OPTION_VAR = "MayaUSDLayerEditor_AutoHideSessionLayer";
-MString DISPLAY_LAYER_CONTENTS_OPTION_VAR = "MayaUSDLayerEditor_DisplayLayerContents";
+MString AUTO_HIDE_OPTION_VAR
+    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorAutoHideSessionLayer);
+MString DISPLAY_LAYER_CONTENTS_OPTION_VAR
+    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorDisplayLayerContents);
+MString DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR
+    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorExpandAllValues);
 } // namespace
 
 namespace UsdLayerEditor {
@@ -59,6 +64,10 @@ MayaSessionState::MayaSessionState()
     }
     if (MGlobal::optionVarExists(DISPLAY_LAYER_CONTENTS_OPTION_VAR)) {
         _displayLayerContents = MGlobal::optionVarIntValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR) != 0;
+    }
+    if (MGlobal::optionVarExists(DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR)) {
+        _displayLayerExpandAllValues
+            = MGlobal::optionVarIntValue(DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR) != 0;
     }
 
     registerNotifications();
@@ -439,6 +448,13 @@ void MayaSessionState::setDisplayLayerContents(bool showIt)
     int value = showIt ? 1 : 0;
     MGlobal::setOptionVarValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR, value);
     PARENT_CLASS::setDisplayLayerContents(showIt);
+}
+
+void MayaSessionState::setDisplayLayerExpandAllValues(bool expand)
+{
+    int value = expand ? 1 : 0;
+    MGlobal::setOptionVarValue(DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR, value);
+    PARENT_CLASS::setDisplayLayerExpandAllValues(expand);
 }
 
 void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const

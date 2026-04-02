@@ -104,7 +104,7 @@ class NonLocalEditTargetLayer(unittest.TestCase):
     def _saveAndReopen(self, sceneName, testDir, saveLocation, proxyShapePath):
         targetLayerPath = os.path.join(testDir, 'data', 'nested_reference_geo.usda')
         # Save and reopen the maya file
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
+        cmds.optionVar(intValue=(mayaUsd.lib.OptionVarTokens.SerializedUsdEditsLocation, saveLocation))
         tempMayaFile = os.path.join(testDir, '{}.ma'.format(sceneName))
         cmds.file(rename=tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')

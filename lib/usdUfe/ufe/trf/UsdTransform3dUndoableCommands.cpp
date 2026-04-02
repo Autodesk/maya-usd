@@ -29,7 +29,7 @@ USDUFE_VERIFY_CLASS_SETUP(Ufe::SetMatrix4dUndoableCommand, UsdSetMatrix4dUndoabl
 UsdSetMatrix4dUndoableCommand::UsdSetMatrix4dUndoableCommand(
     const Ufe::Path&     path,
     const Ufe::Matrix4d& newM)
-    : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
+    : Ufe::SetMatrix4dUndoableCommand(path)
 {
     extractTRS(newM, &_newT, &_newR, &_newS);
 }
@@ -40,7 +40,7 @@ bool UsdSetMatrix4dUndoableCommand::set(const Ufe::Matrix4d&)
     return true;
 }
 
-void UsdSetMatrix4dUndoableCommand::executeImplementation()
+void UsdSetMatrix4dUndoableCommand::execute()
 {
     OperationEditRouterContext editContext(
         EditRoutingTokens->RouteTransform, ufePathToPrim(path()));
@@ -53,9 +53,25 @@ void UsdSetMatrix4dUndoableCommand::executeImplementation()
     if (!TF_VERIFY(t3d)) {
         return;
     }
-    t3d->translate(_newT.x(), _newT.y(), _newT.z());
-    t3d->rotate(_newR.x(), _newR.y(), _newR.z());
-    t3d->scale(_newS.x(), _newS.y(), _newS.z());
+    _compositeCmd = Ufe::CompositeUndoableCommand::create(
+        { t3d->translateCmd(_newT.x(), _newT.y(), _newT.z()),
+          t3d->rotateCmd(_newR.x(), _newR.y(), _newR.z()),
+          t3d->scaleCmd(_newS.x(), _newS.y(), _newS.z()) });
+    _compositeCmd->execute();
+}
+
+void UsdSetMatrix4dUndoableCommand::undo()
+{
+    if (_compositeCmd) {
+        _compositeCmd->undo();
+    }
+}
+
+void UsdSetMatrix4dUndoableCommand::redo()
+{
+    if (_compositeCmd) {
+        _compositeCmd->redo();
+    }
 }
 
 } // namespace USDUFE_NS_DEF

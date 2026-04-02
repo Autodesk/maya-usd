@@ -57,7 +57,7 @@ def createMayaSceneWithStageWithUsdRef(root_path, usd_cube_file):
     maya_with_usd_ref = os.path.join(root_path, "maya_with_usd_ref.ma").replace('\\', '/')
     # Save the scene
     SAVE_USD_TO_MAYA_SCENE = 2
-    cmds.optionVar(iv=("mayaUsd_SerializedUsdEditsLocation", SAVE_USD_TO_MAYA_SCENE))
+    cmds.optionVar(iv=(mayaUsd.lib.OptionVarTokens.SerializedUsdEditsLocation, SAVE_USD_TO_MAYA_SCENE))
     om.MFileIO.saveAs(maya_with_usd_ref, "mayaAscii")
     return proxy_shape, usd_cube_path, maya_with_usd_ref
 

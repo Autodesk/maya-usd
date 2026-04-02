@@ -93,7 +93,7 @@ class SaveLockedLayerTest(unittest.TestCase):
 
         # Save the file. Make sure the edit will go where requested by saveLocation.
         tempMayaFile = 'saveLockedAnonLayer.ma'
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
+        cmds.optionVar(intValue=(mayaUsd.lib.OptionVarTokens.SerializedUsdEditsLocation, saveLocation))
         cmds.file(rename=tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
 
@@ -164,7 +164,7 @@ class SaveLockedLayerTest(unittest.TestCase):
 
         # Save the file. Make sure the edit will go where requested by saveLocation.
         tempMayaFile = 'saveSystemLockedAnonLayer.ma'
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveLocation))
+        cmds.optionVar(intValue=(mayaUsd.lib.OptionVarTokens.SerializedUsdEditsLocation, saveLocation))
         cmds.file(rename=tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
 

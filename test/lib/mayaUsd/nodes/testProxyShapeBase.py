@@ -31,6 +31,7 @@ import usdUtils, mayaUtils, ufeUtils, testUtils
 
 import ufe
 import mayaUsd.ufe
+from mayaUsd import lib as mayaUsdLib
 
 class testProxyShapeBase(unittest.TestCase):
 
@@ -472,7 +473,7 @@ class testProxyShapeBase(unittest.TestCase):
         Verify that setting the option var mayaUsd_ProxyTargetsSessionLayerOnOpen
         to 1 targets the session layer instead of the layer that was previously targeted.
         '''
-        cmds.optionVar(iv=["mayaUsd_ProxyTargetsSessionLayerOnOpen",  1])
+        cmds.optionVar(iv=[mayaUsdLib.OptionVarTokens.ProxyTargetsSessionLayerOnOpen,  1])
 
         try:
             # create new stage
@@ -490,7 +491,7 @@ class testProxyShapeBase(unittest.TestCase):
             self.assertTrue(stage)
             self.assertEqual(stage.GetSessionLayer().identifier, stage.GetEditTarget().GetLayer().identifier)
         finally:
-            cmds.optionVar(iv=["mayaUsd_ProxyTargetsSessionLayerOnOpen",  0])
+            cmds.optionVar(iv=[mayaUsdLib.OptionVarTokens.ProxyTargetsSessionLayerOnOpen,  0])
 
     def _saveStagePreserveLayerHelper(self, targetRoot, saveInMaya):
         '''
@@ -532,7 +533,7 @@ class testProxyShapeBase(unittest.TestCase):
             # Make sure layers are saved to the desired location (Maya or USD)
             # when the Maya scene is saved.
             location = 2 if saveInMaya else 1
-            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', location))
+            cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, location))
 
             # Save the stage.
             cmds.file(rename=tempMayaFile)
@@ -640,7 +641,7 @@ class testProxyShapeBase(unittest.TestCase):
             # Make sure layers are saved to the desired location
             # when the Maya scene is saved.
             saveInUSD = 1
-            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', saveInUSD))
+            cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, saveInUSD))
 
             # Save the stage.
             tempMayaFile = os.path.join(testDir, 'StageViaIdPreservedWhenSaved')
@@ -808,7 +809,7 @@ class testProxyShapeBase(unittest.TestCase):
         # Save and re-open
         with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
             # Save the dirty layer along with Maya scene
-            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+            cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
             tempMayaFile = os.path.join(testDir, 'StageAnonymousSubLayerAsTargetLayer.ma')
             cmds.file(rename=tempMayaFile)
             cmds.file(save=True, force=True)
@@ -856,7 +857,7 @@ class testProxyShapeBase(unittest.TestCase):
         # Save and re-open
         with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
             # Save the dirty layer along with Maya scene
-            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+            cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
             tempMayaFile = os.path.join(testDir, 'AnonymousRootLayerTest.ma')
             cmds.file(rename=tempMayaFile)
             cmds.file(save=True, force=True)
@@ -1129,7 +1130,7 @@ class testProxyShapeBase(unittest.TestCase):
 
             # Make sure to save USD back to Maya file, so that the USD test
             # file we loaded (from source folder) isn't modified.
-            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+            cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
 
             cmds.file(rename=pathToSave)
             cmds.file(save=True, force=True, type='mayaAscii')
@@ -1230,7 +1231,7 @@ class testProxyShapeBase(unittest.TestCase):
 
             # Make sure to save USD back to Maya file, so that the USD test
             # file we loaded (from source folder) isn't modified.
-            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+            cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
 
             cmds.file(rename=pathToSave)
             cmds.file(save=True, force=True, type='mayaAscii')

@@ -80,6 +80,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((AdskAssetResolverUserPathsFirst, "mayaUsd_AdskAssetResolverUserPathsFirst")) \
     /* option var to remember if only user paths are used in AdskAssetResolver */ \
     ((AdskAssetResolverUserPathsOnly, "mayaUsd_AdskAssetResolverUserPathsOnly")) \
+    /* option var to remember if the Layer Editor is show/hiding the Session Layer */ \
+    ((LayerEditorAutoHideSessionLayer, "MayaUSDLayerEditor_AutoHideSessionLayer")) \
+    /* option var to remember if the Layer Editor is displaying the layer contents */ \
+    ((LayerEditorDisplayLayerContents, "MayaUSDLayerEditor_DisplayLayerContents")) \
+    /* option var to remember if the Layer Editor contents is expanded to show all values or not */ \
+    ((LayerEditorExpandAllValues, "MayaUSDLayerEditor_DisplayLayerExpandAllValues")) \
+    /* option var to change the default array size limit for pseudoLayer output in Layer Contents */ \
+    ((LayerContentsArraySizeLimit, "MayaUSDLayerEditor_LayerContentsArraySizeLimit")) \
+    /* option var to change the default time sample size limit for pseudoLayer output in Layer Contents */ \
+    ((LayerContentsTimeSamplesSizeLimit, "MayaUSDLayerEditor_LayerContentsTimeSamplesSizeLimit")) \
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);

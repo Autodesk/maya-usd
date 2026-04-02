@@ -30,6 +30,7 @@ import maya.internal.common.ufe_ae.template as ufeAeTemplate
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 import mayaUsd_createStageWithNewLayer
 import mayaUsd.lib
+import mayaUsd.ufe
 
 import ufe
 
@@ -240,6 +241,14 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         # This prim type has extra attributes.
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'PhysicsScene'])
+
+        # due to changes in EMSUSD-2948 we now populate based on the concrete prim definition (primDef.GetPropertyNames())
+        # so we add a custom attr so it appears in the Extra Attributes section
+        from pxr import Sdf
+        usdPrim = mayaUsd.ufe.ufePathToPrim(proxyShape + ",/PhysicsScene1")
+        usdAttr = usdPrim.CreateAttribute("testExtraAttr", Sdf.ValueTypeNames.String, True)
+        usdAttr.Set("testValue")
+
         cmds.select(proxyShape + ",/PhysicsScene1")
         maya.mel.eval('openAEWindow')
 

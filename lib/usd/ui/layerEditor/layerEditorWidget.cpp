@@ -273,6 +273,8 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         _actions._autoHide->setCheckable(true);
         _actions._autoHide->setChecked(ss->autoHideSessionLayer());
 
+        optionMenu->addSeparator();
+
         _actions._displayLayerContents = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kDisplayLayerContents));
         QObject::connect(
@@ -282,6 +284,18 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
             &SessionState::setDisplayLayerContents);
         _actions._displayLayerContents->setCheckable(true);
         _actions._displayLayerContents->setChecked(ss->displayLayerContents());
+
+        _actions._displayLayerExpandAllValues = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValues));
+        _actions._displayLayerExpandAllValues->setStatusTip(
+            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValuesTooltip));
+        QObject::connect(
+            _actions._displayLayerExpandAllValues,
+            &QAction::toggled,
+            ss,
+            &SessionState::setDisplayLayerExpandAllValues);
+        _actions._displayLayerExpandAllValues->setCheckable(true);
+        _actions._displayLayerExpandAllValues->setChecked(ss->diplayLayerExpandAllValues());
 
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
         helpMenu->addAction(
@@ -496,7 +510,8 @@ void LayerEditorWidget::updateLayerContentsWidget()
         if (selection.size() == 1) {
             const auto model = _treeView->layerTreeModel();
             auto       layerTreeItem = model->layerItemFromIndex(selection[0]);
-            _layerContents->setLayer(layerTreeItem->layer());
+            _layerContents->setLayer(
+                layerTreeItem->layer(), _sessionState.diplayLayerExpandAllValues());
         } else {
             // If there is no selection or multiple items selected, clear the contents.
             _layerContents->setLayer(nullptr);
