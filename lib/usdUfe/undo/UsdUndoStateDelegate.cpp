@@ -65,6 +65,10 @@ public:
 
 namespace USDUFE_NS_DEF {
 
+uint32_t UsdUndoStateDelegate::_invertCount { 0 };
+
+void UsdUndoStateDelegate::notifyInvert() { ++_invertCount; }
+
 UsdUndoStateDelegate::UsdUndoStateDelegate()
     : _dirty(false)
     , _setMessageAlreadyShowed(false)
@@ -106,7 +110,60 @@ void UsdUndoStateDelegate::invertSetField(
     TF_DEBUG(USDUFE_UNDOSTATEDELEGATE)
         .Msg("Inverting set Field '%s' for Spec '%s'\n", fieldName.GetText(), path.GetText());
 
-    SetField(path, fieldName, inverse);
+    // New invert — clear stale tracking from the previous one.
+    if (_invertCount != _lastInvertCount) {
+        _deletedByUndoCreate.clear();
+        _lastInvertCount = _invertCount;
+    }
+
+    // Children list fields may reference specs that no longer exist.
+    //
+    //  Case 1 : child temporarily absent (undo of normal deletion):
+    //     Sequence: invertSetField(/parent, primChildren, [child])  -> child missing now
+    //               invertDeleteSpec(/parent/child)                  -> recreates child
+    //     The layer is only temporarily in a bad state, nothing special to do.
+    //
+    //  Case 2 : child permanently gone (undo of creation)
+    //     This case is only reproducible when the data on the layer no longer matches what is
+    //     expected by the invert functions, and can lead to a corrupt layer state causing crashes.
+    //     Sequence: invertCreateSpec(/root/geo)                     -> deletes geo
+    //               invertSetField(/root, primChildren, [geo])      -> missing geo
+    //     We need to filter out the bad children.
+    //
+    // To distinguish these two cases we keep track of the paths hit by invertCreateSpec() in
+    // _deletedByUndoCreate. It is reset for every inversion sequence.
+    VtValue filteredInverse = inverse;
+    if (!_deletedByUndoCreate.empty() && inverse.IsHolding<std::vector<TfToken>>()
+        && (fieldName == SdfChildrenKeys->PrimChildren
+            || fieldName == SdfChildrenKeys->PropertyChildren)) {
+        const auto&          nameList = inverse.UncheckedGet<std::vector<TfToken>>();
+        std::vector<TfToken> filteredList;
+        filteredList.reserve(nameList.size());
+        const bool isPrimChildren = (fieldName == SdfChildrenKeys->PrimChildren);
+        auto       layerData = _GetLayerData();
+        for (const TfToken& childName : nameList) {
+            const SdfPath childPath
+                = isPrimChildren ? path.AppendChild(childName) : path.AppendProperty(childName);
+            // If not in a normal delete scenario, and the child doesn't exist, filter it out,
+            // leaving a stale reference to it would corrupt the layer.
+            if (_deletedByUndoCreate.count(childPath) != 0 && !layerData->HasSpec(childPath)) {
+                TF_DEBUG(USDUFE_UNDOSTATEDELEGATE)
+                    .Msg(
+                        "invertSetField: filtering child '%s' (deleted by invertCreateSpec "
+                        "and absent from layer data) from field '%s' on '%s'\n",
+                        childName.GetText(),
+                        fieldName.GetText(),
+                        path.GetText());
+            } else {
+                filteredList.push_back(childName);
+            }
+        }
+        if (filteredList.size() != nameList.size()) {
+            filteredInverse = filteredList.empty() ? VtValue() : VtValue(std::move(filteredList));
+        }
+    }
+
+    SetField(path, fieldName, filteredInverse);
 
     _setMessageAlreadyShowed = false;
 }
@@ -130,6 +187,8 @@ void UsdUndoStateDelegate::invertCreateSpec(const SdfPath& path, bool inert)
         return;
     }
     DeleteSpec(path, inert);
+
+    _deletedByUndoCreate.insert(path);
 
     _setMessageAlreadyShowed = false;
 }
@@ -364,6 +423,8 @@ void UsdUndoStateDelegate::_OnCreateSpec(const SdfPath& path, SdfSpecType specTy
     if (!_layer) {
         return;
     }
+
+    _deletedByUndoCreate.erase(path);
 
     UsdUfe::UsdUndoManagerAccessor::addInverse(
         std::bind(&UsdUndoStateDelegate::invertCreateSpec, this, path, inert));
