@@ -17,6 +17,7 @@
 #include "UsdUndoableItem.h"
 
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoStateDelegate.h>
 
 #include <pxr/usd/sdf/changeBlock.h>
 
@@ -32,6 +33,9 @@ void UsdUndoableItem::doInvert()
         TF_CODING_ERROR("Inversion during open edit block may result in corrupted undo "
                         "stack.");
     }
+
+    // Signal so that any per-invert tracking state can be updated.
+    UsdUndoStateDelegate::notifyInvert();
 
     UsdUndoBlock undoBlock(this);
 

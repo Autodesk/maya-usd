@@ -25,6 +25,8 @@
 // convenient way to bring in other headers
 #include <pxr/usd/usd/prim.h>
 
+#include <unordered_set>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace USDUFE_NS_DEF {
@@ -46,6 +48,10 @@ public:
     ~UsdUndoStateDelegate() override;
 
     static UsdUndoStateDelegateRefPtr New();
+
+    /// Called at the start of each undo/redo replay. Increments _invertCount, useful
+    /// to manage any per-undo/redo state.
+    static void notifyInvert();
 
 private:
     void invertSetField(const SdfPath& path, const TfToken& fieldName, const VtValue& inverse);
@@ -127,6 +133,13 @@ private:
     SdfLayerHandle _layer;
     bool           _dirty;
     bool           _setMessageAlreadyShowed;
+
+    // Tracks specs deleted by invertCreateSpec during an undo/redo replay.
+    // See invertSetField() for a detailed explaination.
+    std::unordered_set<SdfPath, SdfPath::Hash> _deletedByUndoCreate;
+
+    uint32_t        _lastInvertCount { 0 };
+    static uint32_t _invertCount;
 };
 
 } // namespace USDUFE_NS_DEF

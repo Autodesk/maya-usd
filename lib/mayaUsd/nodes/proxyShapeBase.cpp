@@ -1074,6 +1074,16 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     } else {
                         sharedUsdStage = UsdStage::Open(rootLayer, loadSet);
                     }
+
+                    // Make sure we never target a locked layer.
+                    // It was possible to get in that state when loading from a maya scene on disk,
+                    // where the root layer was locked, but ended up targeted.
+                    if (sharedUsdStage) {
+                        auto editTargetLayer = sharedUsdStage->GetEditTarget().GetLayer();
+                        if (editTargetLayer && !editTargetLayer->PermissionToEdit()) {
+                            sharedUsdStage->SetEditTarget(sharedUsdStage->GetSessionLayer());
+                        }
+                    }
                 }
 
                 // Update file path attribute to match the correct root layer id if it was anonymous
