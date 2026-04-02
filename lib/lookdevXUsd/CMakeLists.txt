@@ -24,15 +24,10 @@ add_library(${PROJECT_NAME} SHARED)
 target_sources(${PROJECT_NAME}
     PRIVATE
         LookdevXUsd.cpp
-        ProxyShapeLookdevHandler.cpp
         UsdCapabilityHandler.cpp
         UsdClipboardHandler.cpp
-        UsdComponentConnections.cpp
-        UsdConnectionCommands.cpp
         UsdDebugHandler.cpp
-        UsdDeleteCommand.cpp
         UsdExtendedAttributeHandler.cpp
-        UsdExtendedConnectionHandler.cpp
         UsdFileHandler.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
@@ -41,8 +36,6 @@ target_sources(${PROJECT_NAME}
         UsdMaterialCommands.cpp
         UsdMaterialHandler.cpp
         UsdMaterialValidator.cpp
-        UsdSceneItemOps.cpp
-        UsdSceneItemOpsHandler.cpp
         UsdSceneItemUI.cpp
         UsdSceneItemUIHandler.cpp
         UsdSoloingHandler.cpp
@@ -55,15 +48,10 @@ target_sources(${PROJECT_NAME}
 set(HEADERS
     Export.h
     LookdevXUsd.h
-    ProxyShapeLookdevHandler.h
     UsdCapabilityHandler.h
     UsdClipboardHandler.h
-    UsdComponentConnections.h
-    UsdConnectionCommands.h
     UsdDebugHandler.h
-    UsdDeleteCommand.h
     UsdExtendedAttributeHandler.h
-    UsdExtendedConnectionHandler.h
     UsdFileHandler.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
@@ -72,8 +60,6 @@ set(HEADERS
     UsdMaterialCommands.h
     UsdMaterialHandler.h
     UsdMaterialValidator.h
-    UsdSceneItemOps.h
-    UsdSceneItemOpsHandler.h
     UsdSceneItemUI.h
     UsdSceneItemUIHandler.h
     UsdSoloingHandler.h
@@ -82,6 +68,17 @@ set(HEADERS
     UsdMxVersionUpgrade.h
     Utils.h
 )
+
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            ProxyShapeLookdevHandler.cpp
+    )
+
+    list(APPEND HEADERS
+        ProxyShapeLookdevHandler.h
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # Compiler configuration
@@ -98,6 +95,14 @@ target_compile_definitions(${PROJECT_NAME}
         # this flag is needed when building for Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
+
+if (BUILD_MAYAUSDAPI_LIBRARY)
+    message(STATUS "Building LookdevXUsd with MayaUsdAPI support")
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            LDX_USD_USE_MAYAUSDAPI=1
+    )
+endif()
 
 mayaUsd_compile_config(${PROJECT_NAME})
 
@@ -131,6 +136,33 @@ if (LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION)
     )
 endif()
 
+# The ExtendedConnectionHandler and associated classes get removed from LookdevXUfe in UFE v8 / LookdevXUfe v3.
+if (LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER)
+    target_sources(${PROJECT_NAME}
+    PRIVATE
+        UsdComponentConnections.cpp
+        UsdConnectionCommands.cpp
+        UsdDeleteCommand.cpp
+        UsdExtendedConnectionHandler.cpp
+        UsdSceneItemOps.cpp
+        UsdSceneItemOpsHandler.cpp
+    )
+
+    list(APPEND HEADERS
+        UsdComponentConnections.h
+        UsdConnectionCommands.h
+        UsdDeleteCommand.h
+        UsdExtendedConnectionHandler.h
+        UsdSceneItemOps.h
+        UsdSceneItemOpsHandler.h
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER=1
+    )
+endif()
+
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
@@ -139,7 +171,7 @@ target_link_libraries(${PROJECT_NAME}
         sdf
         sdr
         usdMtlx
-        mayaUsdAPI
+        $<$<BOOL:${BUILD_MAYAUSDAPI_LIBRARY}>:mayaUsdAPI>
     PRIVATE
         usd
         usdShade
@@ -173,11 +205,10 @@ endif()
 # install
 # -----------------------------------------------------------------------------
 
-# TODO - do we need to install the headers?
-#install(FILES  ${HEADERS}
-#    DESTINATION 
-#        ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
-#)
+install(FILES  ${HEADERS}
+    DESTINATION 
+        ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
+)
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY

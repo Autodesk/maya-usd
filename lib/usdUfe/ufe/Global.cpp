@@ -31,6 +31,8 @@
 #include <ufe/runTimeMgr.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#include <usdUfe/ufe/UsdConnectionHandler.h>
+#include <usdUfe/ufe/UsdShaderNodeDefHandler.h>
 #include <usdUfe/ufe/trf/UsdTransform3dRead.h>
 #endif
 
@@ -85,6 +87,12 @@ Ufe::Rtid initialize(
     UsdUfe::setWaitCursorFns(dccFunctions.startWaitCursorFn, dccFunctions.stopWaitCursorFn);
 
     // Optional DCC specific functions.
+    if (dccFunctions.isLoadingSceneFn)
+        UsdUfe::setIsLoadingSceneFn(dccFunctions.isLoadingSceneFn);
+    if (dccFunctions.isUndoingFn)
+        UsdUfe::setIsUndoing(dccFunctions.isUndoingFn);
+    if (dccFunctions.isRedoingFn)
+        UsdUfe::setIsRedoing(dccFunctions.isRedoingFn);
     if (dccFunctions.isAttributeLockedFn)
         UsdUfe::setIsAttributeLockedFn(dccFunctions.isAttributeLockedFn);
     if (dccFunctions.saveStageLoadRulesFn)
@@ -100,6 +108,16 @@ Ufe::Rtid initialize(
         UsdUfe::setExtractTRSFn(dccFunctions.extractTRSFn);
     if (dccFunctions.transform3dMatrixOpNameFn)
         UsdUfe::setTransform3dMatrixOpNameFn(dccFunctions.transform3dMatrixOpNameFn);
+    if (dccFunctions.pauseEditForwardingFn)
+        UsdUfe::setPauseEditForwardingFn(dccFunctions.pauseEditForwardingFn);
+    if (dccFunctions.isComponentStageFn)
+        UsdUfe::setIsComponentStageFn(dccFunctions.isComponentStageFn);
+    if (dccFunctions.getComponentMaterialScopeNameFn)
+        UsdUfe::setGetComponentMaterialScopeNameFn(dccFunctions.getComponentMaterialScopeNameFn);
+    if (dccFunctions.getComponentMeshScopeNameFn)
+        UsdUfe::setGetComponentMeshScopeNameFn(dccFunctions.getComponentMeshScopeNameFn);
+    if (dccFunctions.setComponentVariantSelectionFn)
+        UsdUfe::setSetComponentVariantSelectionFn(dccFunctions.setComponentVariantSelectionFn);
 
     // Create a default stages subject if none is provided.
     if (nullptr == ss) {
@@ -124,6 +142,13 @@ Ufe::Rtid initialize(
         = handlers.uiInfoHandler ? handlers.uiInfoHandler : UsdUIInfoHandler::create();
     rtHandlers.cameraHandler
         = handlers.cameraHandler ? handlers.cameraHandler : UsdCameraHandler::create();
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    rtHandlers.connectionHandler
+        = handlers.connectionHandler ? handlers.connectionHandler : UsdConnectionHandler::create();
+    rtHandlers.nodeDefHandler
+        = handlers.nodeDefHandler ? handlers.nodeDefHandler : UsdShaderNodeDefHandler::create();
+#endif
 
     if (handlers.transform3dHandler) {
         rtHandlers.transform3dHandler = handlers.transform3dHandler;

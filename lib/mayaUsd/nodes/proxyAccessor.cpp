@@ -26,6 +26,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -80,7 +81,7 @@ public:
         : _restoreState(accessor._inCompute)
         , _accessor(accessor)
         , _stage(accessor.getUsdStage())
-        , _editContext(_stage, getLayer(useTargetLayer))
+        , _editTarget(getEditTarget(useTargetLayer))
     {
         // Start with setting this context on the accessor. This is important in case
         // anything below causes compute.
@@ -105,7 +106,7 @@ public:
         : _restoreState(accessor._inCompute)
         , _accessor(accessor)
         , _stage(accessor.getUsdStage())
-        , _editContext(_stage, getLayer(useTargetLayer))
+        , _editTarget(getEditTarget(useTargetLayer))
     {
         // Start with setting this context on the accessor. This is important in case
         // anything below causes compute.
@@ -127,13 +128,13 @@ public:
     MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ComputeContext);
 
 private:
-    PXR_NS::SdfLayerHandle getLayer(bool useTargetLayer)
+    UsdEditTarget getEditTarget(bool useTargetLayer) const
     {
         if (useTargetLayer || useTargetedLayerInProxyAccessor()) {
-            return _stage->GetEditTarget().GetLayer();
+            return _stage->GetEditTarget();
         }
 
-        return _stage->GetSessionLayer();
+        return _stage->GetEditTargetForLocalLayer(_stage->GetSessionLayer());
     }
 
     //! Remember context pointer at the creation of this object
@@ -147,8 +148,9 @@ public:
 
     //! Scoped objects setting up resolver cache
     ArResolverScopedCache _resolverCache;
-    //! Scoped object changing current edit context to the given layer
-    UsdEditContext _editContext;
+    //! The edit target where USD data from input items will be authored.
+    const UsdEditTarget _editTarget;
+
     //! Xform compute cache
     UsdGeomXformCache _xformCache;
 
@@ -222,6 +224,61 @@ SdfPathAndPropName getAccessorSdfPath(const MPlug& plug)
 
     return std::make_pair(SdfPath(niceNameCmdResult.asChar()), propName);
 }
+
+MStatus setUsdAttributeInEditTarget(
+    const UsdAttribute&  attribute,
+    const UsdEditTarget& editTarget,
+    const VtValue&       value,
+    const UsdTimeCode&   timeCode)
+{
+    if (!attribute.IsDefined()) {
+        TF_CODING_ERROR(
+            "setUsdAttributeInEditTarget can not set value on undefined attribute '%s'",
+            attribute.GetPath().GetText());
+        return MS::kFailure;
+    }
+
+    const auto& targetLayer = editTarget.GetLayer();
+    if (!targetLayer) {
+        TF_CODING_ERROR("invalid edit target");
+        return MS::kFailure;
+    }
+
+    const auto& attrPath = attribute.GetPath();
+
+#if PXR_VERSION >= 2411
+    auto attrSpec = editTarget.GetAttributeSpecForScenePath(attrPath);
+#else
+    auto attrSpec = targetLayer->GetAttributeAtPath(editTarget.MapToSpecPath(attrPath));
+#endif
+
+    if (!attrSpec) {
+        const auto primSpecPath = editTarget.MapToSpecPath(attribute.GetPrimPath());
+        if (primSpecPath.IsEmpty())
+            return MS::kFailure;
+
+        attrSpec = SdfAttributeSpec::New(
+            SdfCreatePrimInLayer(targetLayer, primSpecPath),
+            attribute.GetName(),
+            attribute.GetTypeName(),
+            attribute.GetVariability(),
+            attribute.IsCustom());
+
+        if (!attrSpec)
+            return MS::kFailure;
+    }
+
+    if (timeCode.IsDefault()) {
+        return attrSpec->SetDefaultValue(value) ? MS::kSuccess : MS::kFailure;
+    }
+
+    const auto targetTime
+        = editTarget.GetMapFunction().GetTimeOffset().GetInverse() * timeCode.GetValue();
+
+    targetLayer->SetTimeSample(attrSpec->GetPath(), targetTime, value);
+    return MS::kSuccess;
+}
+
 } // namespace
 
 MStatus ProxyAccessor::addCallbacks(MObject object)
@@ -385,8 +442,20 @@ void ProxyAccessor::collectAccessorItems(MObject node)
         }
 
         if (isAccessorInputPlug(item.plug)) {
-            TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added INPUT '%s'\n", item.path.GetText());
-            _accessorInputItems.emplace_back(item);
+            if (prim.IsInPrototype()) {
+                TF_DEBUG(USDMAYA_PROXYACCESSOR)
+                    .Msg(
+                        "Skipped input attribute, cannot author to instancing prototype '%s'\n",
+                        item.path.GetText());
+            } else if (prim.IsInstanceProxy()) {
+                TF_DEBUG(USDMAYA_PROXYACCESSOR)
+                    .Msg(
+                        "Skipped input attribute, cannot author to instance proxy '%s'\n",
+                        item.path.GetText());
+            } else {
+                TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added INPUT '%s'\n", item.path.GetText());
+                _accessorInputItems.emplace_back(item);
+            }
         } else {
             TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added OUTPUT '%s'\n", item.path.GetText());
             _accessorOutputItems.emplace_back(item);
@@ -462,7 +531,12 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock, bool us
                 for (auto& inputItem : _accessorInputItems) {
                     if (UsdGeomXformOp::IsXformOp(inputItem.property)
                         && accessorItem->path.HasPrefix(inputItem.path)) {
-                        computeInput(inputItem, topState._stage, dataBlock, topState._args);
+                        computeInput(
+                            inputItem,
+                            topState._stage,
+                            dataBlock,
+                            topState._editTarget,
+                            topState._args);
                     }
                 }
 
@@ -507,7 +581,7 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock, bool us
     // Read and set inputs on the stage. If recursive computation was performed,
     // some of the inputs may have been already evaluated (see evaluationId check)
     for (auto& item : _accessorInputItems) {
-        computeInput(item, evalState._stage, dataBlock, evalState._args);
+        computeInput(item, evalState._stage, dataBlock, evalState._editTarget, evalState._args);
     }
     // Write outputs that haven't been yet computed
     for (const auto& item : _accessorOutputItems) {
@@ -527,6 +601,7 @@ MStatus ProxyAccessor::computeInput(
     Item&                item,
     const UsdStageRefPtr stage,
     MDataBlock&          dataBlock,
+    const UsdEditTarget& editTarget,
     const ConverterArgs& args)
 {
     MStatus retValue = MS::kSuccess;
@@ -568,7 +643,8 @@ MStatus ProxyAccessor::computeInput(
     // compute
     VtValue currentValue;
     if (itemAttribute.Get(&currentValue, args._timeCode) && convertedValue != currentValue) {
-        itemAttribute.Set(convertedValue, args._timeCode);
+        return setUsdAttributeInEditTarget(
+            itemAttribute, editTarget, convertedValue, args._timeCode);
     }
 
     return MS::kSuccess;
@@ -675,7 +751,7 @@ MStatus ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock, boo
 
     ComputeContext evalState(*this, node, useTargetLayer);
     for (auto& item : _accessorInputItems) {
-        computeInput(item, evalState._stage, dataBlock, evalState._args);
+        computeInput(item, evalState._stage, dataBlock, evalState._editTarget, evalState._args);
     }
 
     return MS::kSuccess;
@@ -706,9 +782,6 @@ MStatus ProxyAccessor::stageChanged(const MObject& node, const UsdNotice::Object
         // UFE currently doesn't write time sampled data.
         ConverterArgs args;
         args._timeCode = UsdTimeCode::Default(); // getTime();
-
-        // Compute dependencies is considered as temporary data
-        UsdEditContext editContext(stage, stage->GetSessionLayer());
 
         for (const auto& changedPath : notice.GetChangedInfoOnlyPaths()) {
             if (changedPath.IsPrimPropertyPath()) {

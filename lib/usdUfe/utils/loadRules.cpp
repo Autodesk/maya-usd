@@ -23,8 +23,16 @@ void duplicateLoadRules(
     const PXR_NS::SdfPath& fromPath,
     const PXR_NS::SdfPath& destPath)
 {
-    // Note: get a *copy* of the rules since we are going to insert new rules as we iterate.
-    auto loadRules = stage.GetLoadRules();
+    // Use const references for the fast-path check to avoid copies.
+    // SetLoadRules triggers a full stage recomposition, so we want to
+    // avoid calling it when nothing needs to change.
+    const auto& originalRules = stage.GetLoadRules();
+    const auto& existingRules = originalRules.GetRules();
+
+    const bool hasSourceRules
+        = std::any_of(existingRules.begin(), existingRules.end(), [&fromPath](const auto& rule) {
+              return rule.first.HasPrefix(fromPath);
+          });
 
     // Retrieve the effective rule for the source path.
     //
@@ -38,7 +46,18 @@ void duplicateLoadRules(
     //
     // In that case, we will have to reproduce that rule at the
     // destination as a path-specific rule.
-    const auto desiredRule = loadRules.GetEffectiveRuleForPath(fromPath);
+    const auto desiredRule = originalRules.GetEffectiveRuleForPath(fromPath);
+
+    // If no rules explicitly reference the source path and the effective
+    // rule at the destination already matches, nothing needs to change.
+    // This is the common case: all payloads loaded, no prim-specific rules.
+    if (!hasSourceRules && desiredRule == originalRules.GetEffectiveRuleForPath(destPath)) {
+        return;
+    }
+
+    // Take copies since we are going to insert new rules as we iterate.
+    auto       loadRules = originalRules;
+    const auto rulesSnapshot = existingRules;
 
     // Analyze the reasons the source path was loaded or unloaded and
     // replicate them to the destination.
@@ -49,13 +68,9 @@ void duplicateLoadRules(
     //
     // We do this by iterating over all rules and duplicating all rules that
     // contain the source path to create rules with the destination path.
-
-    auto oldRules = loadRules.GetRules();
-    for (const auto& rule : oldRules) {
-        const PXR_NS::SdfPath& rulePath = rule.first;
-        if (rulePath.HasPrefix(fromPath)) {
-            const auto newPath = rulePath.ReplacePrefix(fromPath, destPath);
-            loadRules.AddRule(newPath, rule.second);
+    for (const auto& rule : rulesSnapshot) {
+        if (rule.first.HasPrefix(fromPath)) {
+            loadRules.AddRule(rule.first.ReplacePrefix(fromPath, destPath), rule.second);
         }
     }
 
@@ -79,15 +94,28 @@ void duplicateLoadRules(
         loadRules.AddRule(destPath, desiredRule);
     }
 
-    // Update the rules in the load rules object and then in the stage
-    // since we were operating on a copy.
+    // Update the rules in the stage since we were operating on a copy.
     stage.SetLoadRules(loadRules);
 }
 
 void removeRulesForPath(PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path)
 {
+    // SetLoadRules triggers a full stage recomposition, so check
+    // if any rules actually reference this path before doing work.
+    const auto& originalRules = stage.GetLoadRules();
+    const auto& existingRules = originalRules.GetRules();
+
+    const bool hasRules
+        = std::any_of(existingRules.begin(), existingRules.end(), [&path](const auto& rule) {
+              return rule.first.HasPrefix(path);
+          });
+
+    if (!hasRules) {
+        return;
+    }
+
     // Note: get a *copy* of the rules since we are going to remove rules.
-    auto loadRules = stage.GetLoadRules();
+    auto loadRules = originalRules;
     auto rules = loadRules.GetRules();
 
     // Remove all rules that match the given path.
@@ -100,6 +128,63 @@ void removeRulesForPath(PXR_NS::UsdStage& stage, const PXR_NS::SdfPath& path)
     // Update the rules in the load rules object and then in the stage
     // since we were operating on a copy.
     loadRules.SetRules(rules);
+    stage.SetLoadRules(loadRules);
+}
+
+void moveLoadRules(
+    PXR_NS::UsdStage&      stage,
+    const PXR_NS::SdfPath& fromPath,
+    const PXR_NS::SdfPath& destPath)
+{
+    // Use const references for the fast-path check to avoid copies.
+    // SetLoadRules triggers a full stage recomposition, so we want to
+    // avoid calling it when nothing needs to change.
+    const auto& originalRules = stage.GetLoadRules();
+    const auto& existingRules = originalRules.GetRules();
+
+    const bool hasSourceRules
+        = std::any_of(existingRules.begin(), existingRules.end(), [&fromPath](const auto& rule) {
+              return rule.first.HasPrefix(fromPath);
+          });
+
+    // GetEffectiveRuleForPath accounts for ancestor rules, so even when no
+    // explicit rules exist for fromPath the prim may still be governed by
+    // an ancestor (e.g. an ancestor NoneRule unloads all descendants).
+    const auto desiredRule = originalRules.GetEffectiveRuleForPath(fromPath);
+
+    // If no rules explicitly reference the source path and the effective
+    // rule at the destination already matches, nothing needs to change.
+    // This is the common case: all payloads loaded, no prim-specific rules.
+    if (!hasSourceRules && desiredRule == originalRules.GetEffectiveRuleForPath(destPath)) {
+        return;
+    }
+
+    // Take copies since we are going to insert new rules as we iterate.
+    auto       loadRules = originalRules;
+    const auto rulesSnapshot = existingRules;
+
+    // Duplicate rules from the source path to the destination path.
+    for (const auto& rule : rulesSnapshot) {
+        if (rule.first.HasPrefix(fromPath)) {
+            loadRules.AddRule(rule.first.ReplacePrefix(fromPath, destPath), rule.second);
+        }
+    }
+
+    // If the duplicated rules don't fully reproduce the desired effective
+    // rule (e.g. the source was governed by an ancestor with no explicit
+    // rule on itself), add an explicit rule at the destination.
+    if (desiredRule != loadRules.GetEffectiveRuleForPath(destPath)) {
+        loadRules.AddRule(destPath, desiredRule);
+    }
+
+    // Remove all rules that match the source path.
+    auto rules = loadRules.GetRules();
+    auto newEnd = std::remove_if(rules.begin(), rules.end(), [&fromPath](const auto& rule) {
+        return rule.first.HasPrefix(fromPath);
+    });
+    rules.erase(newEnd, rules.end());
+    loadRules.SetRules(rules);
+
     stage.SetLoadRules(loadRules);
 }
 

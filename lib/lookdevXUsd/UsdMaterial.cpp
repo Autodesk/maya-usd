@@ -10,13 +10,14 @@
 //*****************************************************************************
 #include "UsdMaterial.h"
 
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <ufe/types.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace LookdevXUsd
 {
@@ -47,7 +48,8 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
 
     std::vector<PXR_NS::UsdPrim> materialPrims;
 
-    const PXR_NS::UsdPrim& prim = MayaUsdAPI::getPrimForUsdSceneItem(m_item);
+    auto usdItem = UsdUfe::downcast(m_item);
+    const PXR_NS::UsdPrim& prim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
     PXR_NS::UsdShadeMaterialBindingAPI bindingApi(prim);
 
     // 1. Simple case: A material is directly attached to our object.
@@ -74,7 +76,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
     for (auto& materialPrim : materialPrims)
     {
         const PXR_NS::SdfPath& materialSdfPath = materialPrim.GetPath();
-        const Ufe::Path materialUfePath = MayaUsdAPI::usdPathToUfePathSegment(materialSdfPath);
+        const Ufe::Path materialUfePath = UsdUfe::usdPathToUfePathSegment(materialSdfPath);
 
         // Construct a UFE path consisting of two segments:
         // 1. The path to the USD stage
@@ -89,7 +91,7 @@ std::vector<Ufe::SceneItem::Ptr> UsdMaterial::getMaterials() const
         const auto ufePath = Ufe::Path({stagePathSegments[0], materialPathSegments[0]});
 
         // Now we have the full path to the material's SceneItem.
-        materials.push_back(MayaUsdAPI::createUsdSceneItem(ufePath, materialPrim));
+        materials.push_back(UsdUfe::UsdSceneItem::create(ufePath, materialPrim));
     }
 
     return materials;
@@ -102,7 +104,8 @@ bool UsdMaterial::hasMaterial() const
         return false;
     }
 
-    const PXR_NS::UsdPrim& prim = MayaUsdAPI::getPrimForUsdSceneItem(m_item);
+    auto usdItem = UsdUfe::downcast(m_item);
+    const PXR_NS::UsdPrim& prim = usdItem ? usdItem->prim() : PXR_NS::UsdPrim();
     PXR_NS::UsdShadeMaterialBindingAPI bindingApi(prim);
 
     // 1. Simple case: A material is directly attached to our object.

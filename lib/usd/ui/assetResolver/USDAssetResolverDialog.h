@@ -20,6 +20,8 @@
 #include <mayaUsd/mayaUsd.h>
 #include <mayaUsdUI/ui/api.h>
 
+#include <AssetResolverPreferences/AssetResolverSettings.h>
+#include <QtGui/QCloseEvent>
 #include <QtWidgets/QDialog>
 
 namespace Adsk {
@@ -38,17 +40,17 @@ public:
     ~USDAssetResolverDialog();
     bool execute();
 
-    /// Get the options from the dialog UI
-    const UsdPreferenceOptions getOptions() const;
-
 protected:
-    /// Load the options into the dialog UI
-    void loadOptions(const UsdPreferenceOptions& options);
+    void closeEvent(QCloseEvent* event) override;
 
     void OnSaveRequested();
     void OnCloseRequested();
 
     Adsk::USDAssetResolverSettingsWidget* settingsWidget { nullptr };
+
+private:
+    void saveWindowGeometry();
+    void restoreWindowGeometry();
 };
 } // namespace MAYAUSD_NS_DEF
 #endif

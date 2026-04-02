@@ -101,10 +101,12 @@ public:
     virtual void muteLayer() = 0;
     virtual void printLayer() = 0;
     virtual void clearLayer() = 0;
+    virtual void mergeWithSublayers() = 0;
     virtual void selectPrimsWithSpec() = 0;
     virtual void updateLayerModel() = 0;
     virtual void lockLayer() = 0;
     virtual void lockLayerAndSubLayers() = 0;
+    virtual void stitchLayers() = 0;
 
     virtual void                     selectProxyShape(const char* shapePath) = 0;
     virtual std::vector<std::string> getSelectedLayers() = 0;

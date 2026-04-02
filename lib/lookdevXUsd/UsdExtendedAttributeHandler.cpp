@@ -11,7 +11,8 @@
 
 #include "UsdExtendedAttributeHandler.h"
 
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/token.h>
 
@@ -25,9 +26,10 @@ UsdExtendedAttributeHandler::Ptr UsdExtendedAttributeHandler::create()
 
 bool UsdExtendedAttributeHandler::isAuthoredAttribute(const Ufe::Attribute::Ptr& attribute) const
 {
-    if (attribute && attribute->sceneItem() && MayaUsdAPI::isUsdSceneItem(attribute->sceneItem()))
+    auto usdItem = attribute ? UsdUfe::downcast(attribute->sceneItem()) : nullptr;
+    if (usdItem)
     {
-        auto prim = MayaUsdAPI::getPrimForUsdSceneItem(attribute->sceneItem());
+        auto prim = usdItem->prim();
         return prim.GetAttribute(PXR_NS::TfToken(attribute->name())).IsAuthored();
     }
     return false;

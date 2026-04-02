@@ -31,10 +31,9 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Connections, UsdConnections);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::Connections, UsdConnections);
 
 UsdConnections::UsdConnections(const Ufe::SceneItem::Ptr& item)
     : Ufe::Connections()
@@ -110,5 +109,4 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
     return result;
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

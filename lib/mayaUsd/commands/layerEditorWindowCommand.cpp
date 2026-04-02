@@ -63,9 +63,11 @@ DEF_FLAG(lo, loadSubLayers)
 DEF_FLAG(ml, muteLayer)
 DEF_FLAG(pl, printLayer)
 DEF_FLAG(cl, clearLayer)
+DEF_FLAG(ms, mergeWithSublayers)
 DEF_FLAG(sp, selectPrimsWithSpec)
 DEF_FLAG(lk, lockLayer)
 DEF_FLAG(la, lockLayerAndSubLayers)
+DEF_FLAG(st, stitchLayers)
 
 const MString WORKSPACE_CONTROL_NAME = "mayaUsdLayerEditor";
 } // namespace
@@ -153,9 +155,11 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(muteLayer);
     ADD_FLAG(printLayer);
     ADD_FLAG(clearLayer);
+    ADD_FLAG(mergeWithSublayers);
     ADD_FLAG(selectPrimsWithSpec);
     ADD_FLAG(lockLayer);
     ADD_FLAG(lockLayerAndSubLayers);
+    ADD_FLAG(stitchLayers);
 
     // editor name
     syntax.addArg(MSyntax::kString);
@@ -391,9 +395,11 @@ MStatus LayerEditorWindowCommand::handleEdits(
     HANDLE_E_FLAG(muteLayer, true)
     HANDLE_E_FLAG(printLayer, false)
     HANDLE_E_FLAG(clearLayer, false)
+    HANDLE_E_FLAG(mergeWithSublayers, true)
     HANDLE_E_FLAG(selectPrimsWithSpec, true)
     HANDLE_E_FLAG(lockLayer, true)
     HANDLE_E_FLAG(lockLayerAndSubLayers, true)
+    HANDLE_E_FLAG(stitchLayers, false)
 
     if (argParser.isFlagSet(FLAG(setSelectedLayers))) {
         if (notEdit) {

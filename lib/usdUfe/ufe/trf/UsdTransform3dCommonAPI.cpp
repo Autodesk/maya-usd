@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
 #include <usdUfe/ufe/trf/UsdTransform3dUndoableCommands.h>
+#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/stringUtils.h>
@@ -63,6 +64,16 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3d(x, y, z)));
         return true;
@@ -107,6 +118,16 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
@@ -153,6 +174,16 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;
@@ -199,6 +230,16 @@ public:
 
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
         OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
         updateNewValue(VtValue(GfVec3f(x, y, z)));
         return true;

@@ -20,7 +20,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/utils/Utils.h>
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdShaderNodeDef.h>
+#include <usdUfe/ufe/UsdShaderNodeDef.h>
 #endif
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/query.h>
@@ -128,10 +128,10 @@ MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::doIt(const MArgList& argList
         // installed renderers report as supported materials.
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    const auto shaderNodeDefs = UsdMayaUtil::GetSurfaceShaderNodeDefs();
+    const auto shaderNodeDefs = UsdUfe::GetSurfaceShaderNodeDefs();
     for (const auto& nodeDef : shaderNodeDefs) {
         // To make use of ufe classifications
-        auto ufeNodeDef = ufe::UsdShaderNodeDef::create(nodeDef);
+        auto ufeNodeDef = UsdUfe::UsdShaderNodeDef::create(nodeDef);
         auto familyName = ufeNodeDef->classification(0);
         auto sourceType = ufeNodeDef->classification(ufeNodeDef->nbClassifications() - 1);
         appendToResult(MString(TfStringPrintf(
@@ -231,8 +231,8 @@ static bool isNodeTypeInList(
     const std::vector<std::string>& nodeTypeList,
     bool                            checkAllAncestors)
 {
-    const auto canonicalName
-        = TfType::Find<UsdSchemaBase>().FindDerivedByName(sceneItem->nodeType().c_str());
+    const auto canonicalName = TfType::Find<UsdSchemaBase>().FindDerivedByName(
+        UsdUfe::getSceneItemNodeType(sceneItem).c_str());
 
     if (canonicalName.IsUnknown()) {
         return false;

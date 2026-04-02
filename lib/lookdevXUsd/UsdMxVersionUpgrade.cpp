@@ -9,11 +9,10 @@
 // the prior written consent of Autodesk, Inc.
 //*****************************************************************************
 
+#include <pxr/usd/usdShade/input.h>
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 
 #include "UsdMxVersionUpgrade.h"
-
-#include <mayaUsdAPI/utils.h>
 
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -33,9 +32,9 @@
 
 #include <ufe/hierarchy.h>
 
+#include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
-
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <regex>
 #include <string>
@@ -171,7 +170,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 PXR_NAMESPACE_CLOSE_SCOPE
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 constexpr size_t kInvalidChannelIndex = -1;
 size_t _channelIndexMap(const char c)
@@ -319,6 +318,13 @@ const auto kMaterialXToUsdType = std::unordered_map<TfToken, SdfValueTypeName, T
 
 namespace {
 
+void _copyInput(const UsdShadeInput& input, const UsdPrim& targetPrim, const TfToken& targetInputName) {
+    if (!input || !targetPrim || targetInputName.IsEmpty()) {
+        return;
+    }
+    input.GetAttr().FlattenTo(targetPrim, targetInputName);
+}
+
 Ufe::Path _getMaterialPath(const Ufe::Path& materialPath)
 {
     if (materialPath.empty()) {
@@ -327,7 +333,7 @@ Ufe::Path _getMaterialPath(const Ufe::Path& materialPath)
 
     auto sceneItem = Ufe::Hierarchy::createItem(materialPath);
 
-    while (sceneItem && sceneItem->nodeType() != _tokens->Material) {
+    while (sceneItem && UsdUfe::getSceneItemNodeType(sceneItem) != _tokens->Material) {
         auto hierarchy = Ufe::Hierarchy::hierarchy(sceneItem);
         sceneItem = hierarchy->parent();
     }
@@ -582,8 +588,8 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                             continue;
                         }
                     }
-                    topSource.GetInput(_tokens->thickness).GetAttr().FlattenTo(upstream.GetPrim(), UsdShadeUtils::GetFullName(_tokens->thinfilm_thickness, UsdShadeAttributeType::Input));
-                    topSource.GetInput(_tokens->ior).GetAttr().FlattenTo(upstream.GetPrim(), UsdShadeUtils::GetFullName(_tokens->thinfilm_ior, UsdShadeAttributeType::Input));
+                    _copyInput(topSource.GetInput(_tokens->thickness), upstream.GetPrim(), UsdShadeUtils::GetFullName(_tokens->thinfilm_thickness, UsdShadeAttributeType::Input));
+                    _copyInput(topSource.GetInput(_tokens->ior), upstream.GetPrim(), UsdShadeUtils::GetFullName(_tokens->thinfilm_ior, UsdShadeAttributeType::Input));
                 }
 
                 // Bypass the thin-film layer operator.
@@ -767,7 +773,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                         continue;
                     }
                     else {
-                        inInput.GetAttr().FlattenTo(node.GetPrim(), UsdShadeUtils::GetFullName(TfToken(_tokens->in.GetString() + std::to_string(i+1)), UsdShadeAttributeType::Input));
+                        _copyInput(inInput, node.GetPrim(), UsdShadeUtils::GetFullName(TfToken(_tokens->in.GetString() + std::to_string(i+1)), UsdShadeAttributeType::Input));
                     }
                 }
                 auto editor = UsdNamespaceEditor(usdMaterial.GetPrim().GetStage());
@@ -819,7 +825,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
             auto editor = UsdNamespaceEditor(usdMaterial.GetPrim().GetStage());
             auto input1 = node.GetInput(_tokens->in1);
             if (input1) {
-                input1.GetAttr().FlattenTo(node.GetPrim(), UsdShadeUtils::GetFullName(_tokens->iny, UsdShadeAttributeType::Input));
+                _copyInput(input1, node.GetPrim(), UsdShadeUtils::GetFullName(_tokens->iny, UsdShadeAttributeType::Input));
                 editor.DeleteProperty(input1.GetAttr());
                 if (editor.CanApplyEdits()) {
                     editor.ApplyEdits();
@@ -829,7 +835,7 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
             }
             auto input2 = node.GetInput(_tokens->in2);
             if (input2) {
-                input2.GetAttr().FlattenTo(node.GetPrim(), UsdShadeUtils::GetFullName(_tokens->inx, UsdShadeAttributeType::Input));
+                _copyInput(input2, node.GetPrim(), UsdShadeUtils::GetFullName(_tokens->inx, UsdShadeAttributeType::Input));
                 editor.DeleteProperty(input2.GetAttr());
                 if (editor.CanApplyEdits()) {
                     editor.ApplyEdits();
@@ -883,9 +889,8 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
                 if ((normalInput || tangentInput) && !bitangentInput) {
                     auto ngPrim = node.GetPrim().GetParent();
                     auto crossNode = _createSiblingNode(node, _tokens->ND_crossproduct_vector3, "normalmap_cross");
-                    normalInput.GetAttr().FlattenTo(crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in1, UsdShadeAttributeType::Input));
-                    tangentInput.GetAttr().FlattenTo(crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in2, UsdShadeAttributeType::Input));
-
+                    _copyInput(normalInput, crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in1, UsdShadeAttributeType::Input));
+                    _copyInput(tangentInput, crossNode.GetPrim(), UsdShadeUtils::GetFullName(_tokens->in2, UsdShadeAttributeType::Input));
                     auto normalizeNode = _createSiblingNode(node, _tokens->ND_normalize_vector3, "normalmap_cross_norm");
                     normalizeNode.CreateInput(_tokens->in, kMaterialXToUsdType.at(_tokens->vector3)).ConnectToSource(crossNode.CreateOutput(_tokens->out, kMaterialXToUsdType.at(_tokens->vector3)));
                     node.CreateInput(_tokens->bitangent, kMaterialXToUsdType.at(_tokens->vector3)).ConnectToSource(normalizeNode.CreateOutput(_tokens->out, kMaterialXToUsdType.at(_tokens->vector3)));
@@ -925,8 +930,8 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
         return std::nullopt;
     }
 
-    const auto materialItem = Ufe::Hierarchy::createItem(adjustedMaterialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(adjustedMaterialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : PXR_NS::UsdPrim());
     if (!materialPrim)
     {
         return std::nullopt;
@@ -937,8 +942,8 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
 void UpgradeMaterial(const Ufe::Path& materialPath)
 {
     const auto adjustedMaterialPath = _getMaterialPath(materialPath);
-    const auto materialItem = Ufe::Hierarchy::createItem(adjustedMaterialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(adjustedMaterialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
     if (materialPrim && _isLegacyMaterial(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
@@ -962,10 +967,10 @@ UsdMxUpgradeMaterialCmd::~UsdMxUpgradeMaterialCmd() = default;
 void UsdMxUpgradeMaterialCmd::execute()
 {
     // I do hope the undo block is strong enough to track multi-layer changes because the upgrade process can go dig into a nested material layer and execute some changes there.
-    MayaUsdAPI::UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
-    const auto materialItem = Ufe::Hierarchy::createItem(_materialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(_materialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
     if (materialPrim && _isLegacyMaterial(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }

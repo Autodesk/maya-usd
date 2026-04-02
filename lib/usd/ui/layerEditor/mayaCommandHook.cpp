@@ -182,6 +182,15 @@ void MayaCommandHook::clearLayer(UsdLayer usdLayer)
     executeMel(cmd);
 }
 
+// flattens a layer with its sublayers
+void MayaCommandHook::flattenLayer(UsdLayer usdLayer)
+{
+    std::string cmd;
+    cmd = "mayaUsdLayerEditor -edit -flatten ";
+    cmd += quote(usdLayer->GetIdentifier());
+    executeMel(cmd);
+}
+
 // add an anon layer at the top of the stack, returns it
 UsdLayer MayaCommandHook::addAnonymousSubLayer(UsdLayer usdLayer, std::string newName)
 {
@@ -235,6 +244,30 @@ void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubL
     cmd += " ";
     cmd += std::to_string(refreshSubLayers);
     cmd += quote(usdLayer->GetIdentifier());
+    executeMel(cmd);
+}
+
+void MayaCommandHook::stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers)
+{
+    if (layers.empty())
+        return;
+
+    std::string       cmd = "mayaUsdLayerEditor -edit ";
+    const std::string proxyShape = proxyShapePath();
+
+    for (const auto& layer : layers) {
+        if (!layer)
+            continue;
+
+        cmd += "-stitchLayers ";
+        cmd += quote(proxyShape);
+        cmd += " ";
+        cmd += quote(layer->GetIdentifier());
+        cmd += " ";
+    }
+
+    // Target layer isn't actually used, but needed for the command syntax.
+    cmd += quote(layers[0]->GetIdentifier());
     executeMel(cmd);
 }
 

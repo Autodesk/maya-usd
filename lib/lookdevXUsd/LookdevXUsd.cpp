@@ -10,12 +10,13 @@
 //*****************************************************************************
 #include "LookdevXUsd.h"
 
+#ifdef LDX_USD_USE_MAYAUSDAPI
 #include "ProxyShapeLookdevHandler.h"
+#endif
 #include "UsdCapabilityHandler.h"
 #include "UsdClipboardHandler.h"
 #include "UsdDebugHandler.h"
 #include "UsdExtendedAttributeHandler.h"
-#include "UsdExtendedConnectionHandler.h"
 #include "UsdFileHandler.h"
 #include "UsdHierarchyHandler.h"
 #include "UsdLookdevHandler.h"
@@ -25,69 +26,75 @@
 #include "UsdSoloingHandler.h"
 #include "UsdUINodeGraphNodeHandler.h"
 
+#include <usdUfe/ufe/Global.h>
+
 #include <ufe/handlerInterface.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 
 #include <pxr/usd/sdr/registry.h>
 
+#ifdef LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER
+#include "UsdExtendedConnectionHandler.h"
+#endif
+#ifdef LDX_USD_USE_MAYAUSDAPI
+#include <mayaUsdAPI/utils.h>
+#endif
+
 namespace
 {
 
-// Runtime ids (default 0 is invalid).
-Ufe::Rtid mayaUsdRuntimeId = 0;
-Ufe::Rtid mayaRuntimeId = 0;
-
+#ifdef LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER
 Ufe::SceneItemOpsHandler::Ptr mayaUsdSceneItemOpsHandler;
+#endif
+#ifdef LDX_USD_USE_MAYAUSDAPI
 LookdevXUfe::LookdevHandler::Ptr mayaLookdevHandler;
+#endif
 
 } // namespace
 
 namespace LookdevXUsd
 {
 
-constexpr auto kMayaUsdRuntimeName = "USD";
-constexpr auto kMayaRuntimeName = "Maya-DG";
-
 void initialize()
 {
-    // New extension handlers.
-    try
-    {
-        mayaUsdRuntimeId = Ufe::RunTimeMgr::instance().getId(kMayaUsdRuntimeName);
-        mayaRuntimeId = Ufe::RunTimeMgr::instance().getId(kMayaRuntimeName);
-    }
-    catch (const std::exception&)
-    {
-        return;
-    }
+    auto & runTimeMgr = Ufe::RunTimeMgr::instance();
 
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdDebugHandler::id, UsdDebugHandler::create());
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdLookdevHandler::id, UsdLookdevHandler::create());
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdMaterialHandler::id, UsdMaterialHandler::create());
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdSoloingHandler::id, UsdSoloingHandler::create());
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdFileHandler::id, UsdFileHandler::create());
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdSceneItemUIHandler::id,
-                                                UsdSceneItemUIHandler::create());
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdExtendedAttributeHandler::id,
-                                                UsdExtendedAttributeHandler::create());
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdExtendedConnectionHandler::id,
-                                                UsdExtendedConnectionHandler::create());
-    Ufe::RunTimeMgr::instance().registerHandler(mayaUsdRuntimeId, UsdCapabilityHandler::id,
-                                                UsdCapabilityHandler::create());
+    // New extension handlers.
+    const auto usdRuntimeId = UsdUfe::getUsdRunTimeId();
+    runTimeMgr.registerHandler(usdRuntimeId, UsdDebugHandler::id, UsdDebugHandler::create());
+    runTimeMgr.registerHandler(usdRuntimeId, UsdLookdevHandler::id, UsdLookdevHandler::create());
+    runTimeMgr.registerHandler(usdRuntimeId, UsdMaterialHandler::id, UsdMaterialHandler::create());
+    runTimeMgr.registerHandler(usdRuntimeId, UsdSoloingHandler::id, UsdSoloingHandler::create());
+    runTimeMgr.registerHandler(usdRuntimeId, UsdFileHandler::id, UsdFileHandler::create());
+    runTimeMgr.registerHandler(usdRuntimeId, UsdSceneItemUIHandler::id,
+                                             UsdSceneItemUIHandler::create());
+    runTimeMgr.registerHandler(usdRuntimeId, UsdExtendedAttributeHandler::id,
+                                             UsdExtendedAttributeHandler::create());
+    runTimeMgr.registerHandler(usdRuntimeId, UsdCapabilityHandler::id,
+                                             UsdCapabilityHandler::create());
+#ifdef LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER
+    runTimeMgr.registerHandler(usdRuntimeId, UsdExtendedConnectionHandler::id,
+                                             UsdExtendedConnectionHandler::create());
+#endif
 
     // Replacements/wrappers for existing handlers.
-    UsdUINodeGraphNodeHandler::registerHandler(mayaUsdRuntimeId);
-    UsdHierarchyHandler::registerHandler(mayaUsdRuntimeId);
-    UsdClipboardHandler::registerHandler(mayaUsdRuntimeId);
+    UsdUINodeGraphNodeHandler::registerHandler(usdRuntimeId);
+    UsdHierarchyHandler::registerHandler(usdRuntimeId);
+    UsdClipboardHandler::registerHandler(usdRuntimeId);
 
-    mayaUsdSceneItemOpsHandler = Ufe::RunTimeMgr::instance().sceneItemOpsHandler(mayaUsdRuntimeId);
-    Ufe::RunTimeMgr::instance().setSceneItemOpsHandler(
-        mayaUsdRuntimeId, LookdevXUsd::UsdSceneItemOpsHandler::create(mayaUsdSceneItemOpsHandler));
+#ifdef LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER
+    mayaUsdSceneItemOpsHandler = runTimeMgr.sceneItemOpsHandler(usdRuntimeId);
+    runTimeMgr.setSceneItemOpsHandler(
+        usdRuntimeId, LookdevXUsd::UsdSceneItemOpsHandler::create(mayaUsdSceneItemOpsHandler));
+#endif
 
+#ifdef LDX_USD_USE_MAYAUSDAPI
+    auto mayaRuntimeId = MayaUsdAPI::getMayaRunTimeId();
     mayaLookdevHandler = LookdevXUfe::LookdevHandler::get(mayaRuntimeId);
-    Ufe::RunTimeMgr::instance().registerHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id,
+    runTimeMgr.registerHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id,
         ProxyShapeLookdevHandler::create(mayaLookdevHandler));
+#endif
 
     // Force loading the Sdr library to preload the source of the NodeLibrary on the USD side. This will load the Arnold
     // DLL if it is in the USD paths and initialize it for its nodes, which should result in a slight delay.
@@ -106,15 +113,19 @@ void initialize()
 void uninitialize()
 {
     // New extension handlers.
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdDebugHandler::id);
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdLookdevHandler::id);
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdMaterialHandler::id);
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdSoloingHandler::id);
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdFileHandler::id);
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdSceneItemUIHandler::id);
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdExtendedAttributeHandler::id);
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdExtendedConnectionHandler::id);
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaUsdRuntimeId, UsdCapabilityHandler::id);
+    auto & runTimeMgr = Ufe::RunTimeMgr::instance();
+    const auto usdRuntimeId = UsdUfe::getUsdRunTimeId();
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdDebugHandler::id);
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdLookdevHandler::id);
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdMaterialHandler::id);
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdSoloingHandler::id);
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdFileHandler::id);
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdSceneItemUIHandler::id);
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdExtendedAttributeHandler::id);
+#ifdef LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdExtendedConnectionHandler::id);
+#endif
+    runTimeMgr.unregisterHandler(usdRuntimeId, UsdCapabilityHandler::id);
 
     // Replacements/wrappers for existing handlers
     UsdUINodeGraphNodeHandler::unregisterHandler();
@@ -122,18 +133,22 @@ void uninitialize()
     UsdClipboardHandler::unregisterHandler();
 
     // Unregister the decorated MayaUsd handlers and restore the original ones.
-    auto& runTimeMgr = Ufe::RunTimeMgr::instance();
-    if (runTimeMgr.hasId(mayaUsdRuntimeId)) {
-        runTimeMgr.setSceneItemOpsHandler(mayaUsdRuntimeId, mayaUsdSceneItemOpsHandler);
+#ifdef LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER
+    if (runTimeMgr.hasId(usdRuntimeId)) {
+        runTimeMgr.setSceneItemOpsHandler(usdRuntimeId, mayaUsdSceneItemOpsHandler);
     }
     mayaUsdSceneItemOpsHandler.reset();
+#endif
 
+#ifdef LDX_USD_USE_MAYAUSDAPI
     // Unregister the decorated Maya handlers and restore the original ones.
-    Ufe::RunTimeMgr::instance().unregisterHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id);
+    auto mayaRuntimeId = MayaUsdAPI::getMayaRunTimeId();
+    runTimeMgr.unregisterHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id);
     if (runTimeMgr.hasId(mayaRuntimeId) && mayaLookdevHandler) {
-      Ufe::RunTimeMgr::instance().registerHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id, mayaLookdevHandler);
+        runTimeMgr.registerHandler(mayaRuntimeId, ProxyShapeLookdevHandler::id, mayaLookdevHandler);
     }
     mayaLookdevHandler.reset();
+#endif
 }
 
 } // namespace LookdevXUsd

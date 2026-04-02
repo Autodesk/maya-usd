@@ -16,10 +16,18 @@
 #include "USDAssetResolverDialog.h"
 
 #include "PreferencesManagement.h"
-#include "PreferencesOptions.h"
-#include "USDAssetResolverSettingsWidget.h"
 
+#include <AssetResolverPreferences/AssetResolverSettingsManagement.h>
+#include <AssetResolverPreferences/USDAssetResolverSettingsWidget.h>
+#include <QtCore/QSettings>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QVBoxLayout>
+
+namespace {
+const QString kSettingsGroup = QStringLiteral("USDAssetResolverDialog");
+const QString kGeometryKey = QStringLiteral("geometry");
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 
@@ -31,95 +39,83 @@ USDAssetResolverDialog::USDAssetResolverDialog(QWidget* parent)
     // Set the default size for the dialog
     resize(800, 600);
     setWindowTitle("USD Asset Resolver Settings");
+    restoreWindowGeometry();
 
     // Create the settings widget
-    settingsWidget = new Adsk::USDAssetResolverSettingsWidget(this);
+    settingsWidget = new Adsk::USDAssetResolverSettingsWidget(
+        Adsk::AssetResolverSettingsManagement::FillSettingsWithExtensions(), this);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(settingsWidget);
 
+    QWidget*     saveAndCloseWidget = new QWidget(this);
+    QHBoxLayout* saveAndCloselayout = new QHBoxLayout(saveAndCloseWidget);
+    QPushButton* saveButtonBox = new QPushButton(tr("Save && Close"), this);
+    saveButtonBox->setDefault(false);
+    saveButtonBox->setAutoDefault(false);
+    saveButtonBox->setFocusPolicy(Qt::NoFocus);
+    saveButtonBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    saveButtonBox->setToolTip(tr("Save settings"));
+    saveAndCloselayout->addWidget(saveButtonBox);
+    QPushButton* closeButtonBox = new QPushButton(tr("Close"), this);
+    closeButtonBox->setDefault(false);
+    closeButtonBox->setAutoDefault(false);
+    closeButtonBox->setFocusPolicy(Qt::NoFocus);
+    closeButtonBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    saveAndCloselayout->addWidget(closeButtonBox);
+    layout->addWidget(saveAndCloseWidget);
+
     // Connect only the action signals (save and close)
     QObject::connect(
-        settingsWidget,
-        &Adsk::USDAssetResolverSettingsWidget::saveRequested,
-        this,
-        &USDAssetResolverDialog::OnSaveRequested);
-
+        saveButtonBox, &QPushButton::clicked, this, &USDAssetResolverDialog::OnSaveRequested);
     QObject::connect(
-        settingsWidget,
-        &Adsk::USDAssetResolverSettingsWidget::closeRequested,
-        this,
-        &USDAssetResolverDialog::OnCloseRequested);
-
-    // Load current preferences into the dialog
-    loadOptions(PreferencesManagement::GetUsdPreferences());
+        closeButtonBox, &QPushButton::clicked, this, &USDAssetResolverDialog::OnCloseRequested);
 }
 
 USDAssetResolverDialog::~USDAssetResolverDialog() { }
 
 bool USDAssetResolverDialog::execute() { return exec() == QDialog::Accepted; }
 
-void USDAssetResolverDialog::loadOptions(const UsdPreferenceOptions& options)
+void USDAssetResolverDialog::closeEvent(QCloseEvent* event)
 {
-    if (settingsWidget) {
-        settingsWidget->setIncludeProjectTokens(options.IsUsingProjectTokens());
-        settingsWidget->setMappingFilePath(QString::fromStdString(options.GetMappingFile()));
-
-        settingsWidget->setUserPathsFirst(options.IsUsingUserSearchPathsFirst());
-        settingsWidget->setUserPathsOnly(!options.IsIncludingEnvironmentSearchPaths());
-
-        QStringList qUserPaths;
-        for (const auto& path : options.GetUserSearchPaths()) {
-            qUserPaths.append(QString::fromStdString(path));
-        }
-        settingsWidget->setUserPaths(qUserPaths);
-
-        QStringList qEnvPaths;
-        for (const auto& path : options.GetEnvironmentSearchPaths()) {
-            qEnvPaths.append(QString::fromStdString(path));
-        }
-        settingsWidget->setExtAndEnvPaths(qEnvPaths);
-    }
-}
-
-const UsdPreferenceOptions USDAssetResolverDialog::getOptions() const
-{
-    UsdPreferenceOptions options;
-
-    if (settingsWidget) {
-        options.SetUsingProjectTokens(settingsWidget->includeProjectTokens());
-        options.SetMappingFile(settingsWidget->mappingFilePath().toStdString());
-
-        std::vector<std::string> userPaths;
-        for (auto qPath : settingsWidget->userPaths()) {
-            userPaths.push_back(qPath.toStdString());
-        }
-        options.SetUserSearchPaths(userPaths);
-        options.SetUsingUserSearchPathsFirst(settingsWidget->userPathsFirst());
-        options.SetIncludingEnvironmentSearchPaths(!settingsWidget->userPathsOnly());
-    }
-
-    return options;
+    saveWindowGeometry();
+    QDialog::closeEvent(event);
 }
 
 void USDAssetResolverDialog::OnSaveRequested()
 {
-    // Get the current preferences
-    UsdPreferenceOptions oldOptions = PreferencesManagement::GetUsdPreferences();
-
-    // Get the new options from the dialog UI
-    UsdPreferenceOptions newOptions = getOptions();
-
-    // Apply the changes to the asset resolver
-    PreferencesManagement::ApplyUsdPreferences(oldOptions, newOptions);
-
-    // Save the preferences to Maya option vars
+    auto newOptions = settingsWidget->getSettings();
+    Adsk::AssetResolverSettingsManagement::ApplySettings(
+        Adsk::AssetResolverSettings::GetInstance(), newOptions);
     PreferencesManagement::SaveUsdPreferences(newOptions);
 
-    // Close the dialog
+    saveWindowGeometry();
     accept();
 }
 
-void USDAssetResolverDialog::OnCloseRequested() { accept(); }
+void USDAssetResolverDialog::OnCloseRequested()
+{
+    saveWindowGeometry();
+    accept();
+}
+
+void USDAssetResolverDialog::saveWindowGeometry()
+{
+    QSettings settings;
+    settings.beginGroup(kSettingsGroup);
+    settings.setValue(kGeometryKey, saveGeometry());
+    settings.endGroup();
+}
+
+void USDAssetResolverDialog::restoreWindowGeometry()
+{
+    QSettings settings;
+    settings.beginGroup(kSettingsGroup);
+    const QByteArray geometry = settings.value(kGeometryKey).toByteArray();
+    if (!geometry.isEmpty()) {
+        restoreGeometry(geometry);
+    }
+    settings.endGroup();
+}
 
 } // namespace MAYAUSD_NS_DEF

@@ -23,10 +23,9 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoCreateFromNodeDefCommand);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoCreateFromNodeDefCommand);
 
 UsdUndoCreateFromNodeDefCommand::UsdUndoCreateFromNodeDefCommand(
     const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
@@ -68,5 +67,4 @@ void UsdUndoCreateFromNodeDefCommand::setIdAttr()
     shader.CreateIdAttr(VtValue(_shaderNodeDef->GetIdentifier()));
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

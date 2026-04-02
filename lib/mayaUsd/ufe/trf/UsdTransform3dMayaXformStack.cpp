@@ -19,11 +19,13 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/trf/RotationUtils.h>
 
+#include <usdUfe/base/debugCodes.h>
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
 #include <usdUfe/ufe/trf/UsdTransform3dUndoableCommands.h>
+#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/editRouterContext.h>
@@ -43,7 +45,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 using BaseUndoableCommand = Ufe::BaseUndoableCommand;
-using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&, UsdUfe::UsdUndoableItem&)>;
+using OpFunc = std::function<
+    std::pair<UsdGeomXformOp, bool>(const BaseUndoableCommand&, UsdUfe::UsdUndoableItem&)>;
 
 using MayaUsd::ufe::UsdTransform3dMayaXformStack;
 
@@ -145,8 +148,15 @@ bool setXformOpOrder(const UsdGeomXformable& xformable)
     bool                                                          resetsXformStack = false;
     auto oldOrder = xformable.GetOrderedXformOps(&resetsXformStack);
     for (const auto& op : oldOrder) {
-        auto ndx = gOpNameToNdx.at(op.GetOpName());
-        orderedOps[ndx] = op;
+        // Support unknown xformOpName because the UsdTransform3dMayaXformStack class
+        // has a fallback sub-class that supports unknown xform ops, and we don't want
+        // to fail in those cases. The unknown ops will be added at the end, after the
+        // known ops.
+        auto it = gOpNameToNdx.find(op.GetOpName());
+        if (it == gOpNameToNdx.end()) {
+            continue;
+        }
+        orderedOps[it->second] = op;
     }
 
     // Set the transform op order attribute.
@@ -155,6 +165,14 @@ bool setXformOpOrder(const UsdGeomXformable& xformable)
     for (const auto& orderedOp : orderedOps) {
         const auto& op = orderedOp.second;
         newOrder.emplace_back(op);
+    }
+
+    // Add the unknown ops at the end.
+    for (const auto& op : oldOrder) {
+        auto it = gOpNameToNdx.find(op.GetOpName());
+        if (it == gOpNameToNdx.end()) {
+            newOrder.emplace_back(op);
+        }
     }
 
     return xformable.SetXformOpOrder(newOrder, resetsXformStack);
@@ -254,7 +272,10 @@ protected:
         if (_op)
             return;
 
-        _op = _opFunc(*this, undoableItem);
+        bool opWasCreated = false;
+        std::tie(_op, opWasCreated) = _opFunc(*this, undoableItem);
+
+        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Creating xformOp: %s\n", opWasCreated ? "yes" : "no");
     }
 
     void setValue(const VtValue& v, const UsdTimeCode& writeTime) override
@@ -310,6 +331,18 @@ public:
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
+        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value %lf %lf %lf\n", x, y, z);
+
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
 
@@ -337,6 +370,18 @@ public:
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
+        // Note: Maya viewport manipulators call the set function for the initial changes
+        //       and for redo! Detect we're in an undo or redo and call undo and redo instead.
+        if (UsdUfe::isRedoing()) {
+            redo();
+            return true;
+        } else if (UsdUfe::isUndoing()) {
+            undo();
+            return true;
+        }
+
+        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value %lf %lf %lf\n", x, y, z);
+
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
 
@@ -564,7 +609,7 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 
               auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
               if (attr) {
-                  return UsdGeomXformOp(attr);
+                  return std::make_pair(UsdGeomXformOp(attr), false);
               } else {
                   UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
@@ -581,7 +626,7 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
                       throw std::runtime_error("Cannot set rotation transform operation");
                   }
 
-                  return r;
+                  return std::make_pair(UsdGeomXformOp(r), true);
               }
           });
 
@@ -613,7 +658,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
 
               auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
               if (attr) {
-                  return UsdGeomXformOp(attr);
+                  return std::make_pair(UsdGeomXformOp(attr), false);
               } else {
                   UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
@@ -628,7 +673,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
                       throw std::runtime_error("Cannot set scaling transform operation");
                   }
 
-                  return s;
+                  return std::make_pair(UsdGeomXformOp(s), true);
               }
           });
 
@@ -758,7 +803,7 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
 
             auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
             if (attr) {
-                return UsdGeomXformOp(attr);
+                return std::make_pair(UsdGeomXformOp(attr), false);
             } else {
                 UsdUfe::UsdUndoBlock undoBlock(&undoableItem);
 
@@ -771,7 +816,7 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
                 if (!setXformOpOrderFn(xformable)) {
                     throw std::runtime_error("Cannot set translation transform operation");
                 }
-                return op;
+                return std::make_pair(op, true);
             }
         });
 
@@ -797,7 +842,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
         auto attr = usdSceneItem.item().prim().GetAttribute(pvtAttrName);
         if (attr) {
             auto attr = usdSceneItem.item().prim().GetAttribute(pvtAttrName);
-            return UsdGeomXformOp(attr);
+            return std::make_pair(UsdGeomXformOp(attr), false);
         } else {
             // Without a notification guard each operation (each transform op
             // addition, setting the attribute value, and setting the transform
@@ -820,7 +865,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
             if (!setXformOpOrderFn(xformable)) {
                 throw std::runtime_error("Cannot set translation transform operation");
             }
-            return p;
+            return std::make_pair(p, true);
         }
     });
 
@@ -856,8 +901,13 @@ UsdTransform3dMayaXformStack::getOrderedOps() const
     bool                            resetsXformStack = false;
     auto                            ops = _xformable.GetOrderedXformOps(&resetsXformStack);
     for (const auto& op : ops) {
-        auto ndx = gOpNameToNdx.at(op.GetOpName());
-        orderedOps[ndx] = op;
+        // For non-Maya xform stack, which derives from this class and reuse its code,
+        // there might be xformOps with unknown names, that have no pre-defined index.
+        auto it = gOpNameToNdx.find(op.GetOpName());
+        if (it == gOpNameToNdx.end()) {
+            continue;
+        }
+        orderedOps[it->second] = op;
     }
     return orderedOps;
 }

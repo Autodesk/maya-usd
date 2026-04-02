@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_USDUNDOCREATEFROMNODEDEFCOMMAND_H
-#define MAYAUSD_USDUNDOCREATEFROMNODEDEFCOMMAND_H
+#ifndef USDUFE_USDUNDOCREATEFROMNODEDEFCOMMAND_H
+#define USDUFE_USDUNDOCREATEFROMNODEDEFCOMMAND_H
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
@@ -30,11 +29,10 @@
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief UsdUndoCreateFromNodeDefCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoCreateFromNodeDefCommand : public Ufe::InsertChildCommand
+class USDUFE_PUBLIC UsdUndoCreateFromNodeDefCommand : public Ufe::InsertChildCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoCreateFromNodeDefCommand> Ptr;
@@ -44,7 +42,7 @@ public:
         const UsdUfe::UsdSceneItem::Ptr&    parentItem,
         const Ufe::PathComponent&           name);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateFromNodeDefCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateFromNodeDefCommand);
 
     //! Create a UsdUndoCreateFromNodeDefCommand from a USD scene item and a UFE path component.
     static UsdUndoCreateFromNodeDefCommand::Ptr create(
@@ -69,7 +67,6 @@ private:
     void setIdAttr();
 }; // UsdUndoCreateFromNodeDefCommand
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDUNDOCREATEFROMNODEDEFCOMMAND_H
+#endif // USDUFE_USDUNDOCREATEFROMNODEDEFCOMMAND_H

@@ -203,7 +203,7 @@ pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection
         auto       usdItem = UsdUfe::downcast(materialItem);
         const auto matHierarchy = Ufe::Hierarchy::hierarchy(materialItem);
         if (matHierarchy) {
-            for (auto& child : matHierarchy->children()) {
+            for (auto& child : UsdUfe::getHierarchyChildren(matHierarchy)) {
                 // If necessary, rename the child using the name in the metadata.
                 pastedItems.push_back(renameItemUsingMetadata(child));
             }

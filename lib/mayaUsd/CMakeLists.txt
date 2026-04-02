@@ -29,6 +29,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         $<$<BOOL:${CMAKE_WANT_VALIDATE_UNDO_ITEM}>:WANT_VALIDATE_UNDO_ITEM>
         $<$<BOOL:${MAYA_ENABLE_NEW_PRIM_DELETE}>:MAYA_ENABLE_NEW_PRIM_DELETE>
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:WANT_ADSK_USD_EDIT_FORWARD_BUILD>
     PRIVATE
         MAYAUSD_MACROS_EXPORT
         MAYAUSD_CORE_EXPORT
@@ -43,7 +44,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${MAYA_HAS_SCENE_RENDER_SETTINGS}>:MAYA_HAS_SCENE_RENDER_SETTINGS>
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
-        $<$<BOOL:${AR_FOUND}>:WANT_AR_BUILD>
+        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:WANT_ADSK_USD_ASSET_RESOLVER_BUILD>
 
         # this flag is needed when building maya-usd in Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
@@ -223,6 +224,7 @@ target_include_directories(${PROJECT_NAME}
         ${PXR_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_INCLUDE_DIR}>
 )
 target_include_directories(${PROJECT_NAME} 
     PUBLIC
@@ -259,6 +261,7 @@ target_link_libraries(${PROJECT_NAME}
         ${UFE_LIBRARY}
         ${MAYA_LIBRARIES}
         usdUfe
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_LIBRARY}>
     PRIVATE
         ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
@@ -319,6 +322,9 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
 # -----------------------------------------------------------------------------
 add_subdirectory(base)
 add_subdirectory(commands)
+if(AdskUsdEditForward_FOUND)
+    add_subdirectory(editForward)
+endif()
 add_subdirectory(fileio)
 add_subdirectory(listeners)
 add_subdirectory(nodes)

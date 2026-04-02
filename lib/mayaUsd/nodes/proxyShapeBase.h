@@ -56,6 +56,12 @@ namespace MAYAUSD_NS_DEF {
 class LayerManager;
 }
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+namespace AdskUsdEditForward {
+class Forwarder;
+}
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -489,6 +495,10 @@ private:
     std::set<std::string> _incomingLayers;
 
     MCallbackId _preSaveCallbackId = 0;
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    std::shared_ptr<AdskUsdEditForward::Forwarder> _forwarder;
+#endif
 
 public:
     // Counter for the number of times compute is re-entered

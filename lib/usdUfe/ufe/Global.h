@@ -35,6 +35,11 @@
 
 #include <string>
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <ufe/connectionHandler.h>
+#include <ufe/nodeDefHandler.h>
+#endif
+
 #if UFE_CLIPBOARD_SUPPORT
 #include <ufe/clipboardHandler.h>
 #endif
@@ -55,6 +60,7 @@ struct USDUFE_PUBLIC DCCFunctions
     TimeAccessorFn      timeAccessorFn = nullptr;
 
     // Optional: default values will be used if no function is supplied.
+    IsLoadingSceneFn           isLoadingSceneFn = nullptr;
     IsAttributeLockedFn        isAttributeLockedFn = nullptr;
     SaveStageLoadRulesFn       saveStageLoadRulesFn = nullptr;
     IsRootChildFn              isRootChildFn = nullptr;
@@ -65,8 +71,15 @@ struct USDUFE_PUBLIC DCCFunctions
     DisplayMessageFn displayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
 
     // Optional: nothing will be done if no function is supplied.
-    WaitCursorFn startWaitCursorFn = nullptr;
-    WaitCursorFn stopWaitCursorFn = nullptr;
+    WaitCursorFn                    startWaitCursorFn = nullptr;
+    WaitCursorFn                    stopWaitCursorFn = nullptr;
+    PauseEditForwardingFn           pauseEditForwardingFn = nullptr;
+    IsInUndoRedoFn                  isUndoingFn = nullptr;
+    IsInUndoRedoFn                  isRedoingFn = nullptr;
+    IsComponentStageFn              isComponentStageFn = nullptr;
+    GetComponentMaterialScopeNameFn getComponentMaterialScopeNameFn = nullptr;
+    GetComponentMeshScopeNameFn     getComponentMeshScopeNameFn = nullptr;
+    SetComponentVariantSelectionFn  setComponentVariantSelectionFn = nullptr;
 };
 
 /*! Ufe runtime handlers used to initialize the plugin.
@@ -96,9 +109,9 @@ struct USDUFE_PUBLIC Handlers
 //     Ufe::SceneSegmentHandler::Ptr sceneSegmentHandler;
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
+    Ufe::ConnectionHandler::Ptr connectionHandler;
+    Ufe::NodeDefHandler::Ptr    nodeDefHandler;
 //     Ufe::MaterialHandler::Ptr        materialHandler;
-//     Ufe::NodeDefHandler::Ptr         nodeDefHandler;
-//     Ufe::ConnectionHandler::Ptr      connectionHandler;
 //     Ufe::UINodeGraphNodeHandler::Ptr uiNodeGraphNodeHandler;
 //     Ufe::BatchOpsHandler::Ptr        batchOpsHandler;
 #endif
