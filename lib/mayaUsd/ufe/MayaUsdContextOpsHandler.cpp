@@ -17,7 +17,14 @@
 #include "MayaUsdContextOpsHandler.h"
 
 #include <mayaUsd/ufe/MayaUsdContextOps.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+#include <mayaUsd/nodes/sceneRenderSettings.h>
+#endif
+
+#include <maya/MFnDependencyNode.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -36,6 +43,25 @@ MayaUsdContextOpsHandler::Ptr MayaUsdContextOpsHandler::create()
 
 Ufe::ContextOps::Ptr MayaUsdContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr& item) const
 {
+    // Suppress context ops for USD prims under the SceneRenderSettings node.
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    if (item) {
+        const auto& path = item->path();
+        if (!path.empty()) {
+            const Ufe::Path gatewayPath
+                = path.nbSegments() > 1 ? Ufe::Path(path.getSegments()[0]) : path;
+            MObject gatewayObj
+                = UsdStageMap::getInstance().proxyShape(gatewayPath, /*rebuildCacheIfNeeded=*/true);
+            if (!gatewayObj.isNull()) {
+                MFnDependencyNode depFn(gatewayObj);
+                if (depFn.typeId() == UsdSceneRenderSettings::typeId) {
+                    return nullptr;
+                }
+            }
+        }
+    }
+#endif
+
     auto usdItem = downcast(item);
 #if !defined(NDEBUG)
     assert(usdItem);

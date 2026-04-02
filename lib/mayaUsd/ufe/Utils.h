@@ -78,16 +78,41 @@ bool isInStagesCache(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 
-//! Returns a unique child name following the Maya standard naming rules.
+//! Returns a unique child name following the Maya standard naming rules, excluding specified name.
 MAYAUSD_CORE_PUBLIC
-std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+std::string uniqueChildNameMayaStandard(
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name,
+    const std::string*     excludeName);
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
 bool isAGatewayType(const std::string& mayaNodeType);
 
+//! Return true if the Maya node type is the UsdSceneRenderSettings node.
+MAYAUSD_CORE_PUBLIC
+bool isSceneRenderSettingsNode(const std::string& mayaNodeType);
+
+//! Return true if the UFE item is a SceneRenderSettings node that comes
+//! from a Maya reference.  Referenced copies must not be treated as live
+//! gateway nodes because they would interfere with the local singleton.
+MAYAUSD_CORE_PUBLIC
+bool isReferencedSceneRenderSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath);
+
+//! Mark the UFE stage map as dirty so it will be rebuilt on next access.
+MAYAUSD_CORE_PUBLIC
+void setStageMapDirty();
+
 MAYAUSD_CORE_PUBLIC
 Ufe::Path dagPathToUfe(const MDagPath& dagPath);
+
+//! Separator for DG node UFE paths (null character — no visible prefix).
+MAYAUSD_CORE_PUBLIC
+extern const char DGPathSeparator;
+
+//! Build a single-segment UFE path "nodeName" for a pure DG node.
+MAYAUSD_CORE_PUBLIC
+Ufe::Path dgNodeToUfePath(const MObject& object);
 
 MAYAUSD_CORE_PUBLIC
 Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);

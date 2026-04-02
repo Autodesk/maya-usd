@@ -15,6 +15,9 @@
 //
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+#include <mayaUsd/nodes/sceneRenderSettings.h>
+#endif
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
@@ -48,6 +51,7 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MSelectionList.h>
 #include <ufe/hierarchy.h>
 #include <ufe/object3d.h>
 #include <ufe/object3dHandler.h>
@@ -82,6 +86,8 @@ namespace ufe {
 //------------------------------------------------------------------------------
 
 extern Ufe::Rtid g_MayaRtid;
+
+const char DGPathSeparator = '\0';
 
 // Cache of Maya node types we've queried before for inheritance from the
 // gateway node type.
@@ -135,7 +141,10 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
 }
 
-std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const std::string& name)
+std::string uniqueChildNameMayaStandard(
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name,
+    const std::string*     excludeName)
 {
     if (!usdParent.IsValid())
         return std::string();
@@ -145,6 +154,8 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
     //       Outliner can show class prims now.
     TfToken::HashSet allChildrenNames;
     for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+        if (excludeName != nullptr && child.GetName().GetString() == *excludeName)
+            continue;
         allChildrenNames.insert(child.GetName());
     }
 
@@ -154,37 +165,43 @@ std::string uniqueChildNameMayaStandard(const PXR_NS::UsdPrim& usdParent, const 
     //          will set new unique name to Capsule007.
     std::string childName { name };
     if (allChildrenNames.find(TfToken(childName)) != allChildrenNames.end()) {
-        // Get the base name (removing the numerical suffix) so that we can compare
-        // that to all the sibling names.
-        std::string baseName, suffix;
-        UsdUfe::splitNumericalSuffix(childName, baseName, suffix);
-        int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
+        childName = UsdUfe::uniqueNameMaxSuffix(allChildrenNames, childName);
+    } else {
+        if (excludeName == nullptr) {
+            // Not renaming, check for identical bases
+            std::string baseName, suffix;
+            UsdUfe::splitNumericalSuffix(childName, baseName, suffix);
 
-        std::string                 childBaseName;
-        std::pair<std::string, int> largestMatching(childName, suffixValue);
-        for (const auto& child : allChildrenNames) {
-            // While iterating thru all the children look for ones that match
-            // the base name of the input. When we find one check its numerical
-            // suffix and store the greatest one.
-            UsdUfe::splitNumericalSuffix(child.GetString(), childBaseName, suffix);
-            if (baseName == childBaseName) {
-                int suffixValue = !suffix.empty() ? std::stoi(suffix) : 0;
-                if (suffixValue > largestMatching.second) {
-                    largestMatching = std::make_pair(child.GetString(), suffixValue);
+            bool hasMatchingBase = false;
+            for (const auto& child : allChildrenNames) {
+                std::string childBaseName, childSuffix;
+                if (UsdUfe::splitNumericalSuffix(child.GetString(), childBaseName, childSuffix)
+                    && baseName == childBaseName) {
+                    hasMatchingBase = true;
+                    break;
                 }
             }
-        }
 
-        // By sending in the largest matching name (instead of the input name)
-        // the unique name function will increment its numerical suffix by 1
-        // and thus it will be unique and follow Maya naming standard.
-        childName = UsdUfe::uniqueName(allChildrenNames, largestMatching.first);
+            if (hasMatchingBase) {
+                childName = UsdUfe::uniqueNameMaxSuffix(allChildrenNames, childName);
+            }
+        }
     }
+
     return childName;
 }
 
 bool isAGatewayType(const std::string& mayaNodeType)
 {
+    if (mayaNodeType.empty()) {
+        return false;
+    }
+
+    // Check if this is the UsdSceneRenderSettings node type.
+    if (isSceneRenderSettingsNode(mayaNodeType)) {
+        return true;
+    }
+
     // If we've seen this node type before, return the cached value.
     auto iter = g_GatewayType.find(mayaNodeType);
     if (iter != std::end(g_GatewayType)) {
@@ -209,11 +226,55 @@ bool isAGatewayType(const std::string& mayaNodeType)
     return isInherited;
 }
 
+bool isSceneRenderSettingsNode(const std::string& mayaNodeType)
+{
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    return mayaNodeType == UsdSceneRenderSettings::typeName.asChar();
+#else
+    return false;
+#endif
+}
+
+bool isReferencedSceneRenderSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath)
+{
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    if (!isSceneRenderSettingsNode(mayaNodeType)) {
+        return false;
+    }
+    // The SRS node is a DG node whose UFE path uses a null separator ("nodeName").
+    if (ufePath.empty()) {
+        return false;
+    }
+    MSelectionList sel;
+    if (sel.add(MString(ufePath.back().string().c_str())) != MS::kSuccess) {
+        return false;
+    }
+    MObject obj;
+    if (sel.getDependNode(0, obj) != MS::kSuccess) {
+        return false;
+    }
+    MFnDependencyNode depFn(obj);
+    return depFn.isFromReferencedFile();
+#else
+    return false;
+#endif
+}
+
+void setStageMapDirty() { UsdStageMap::getInstance().setDirty(); }
+
 Ufe::Path dagPathToUfe(const MDagPath& dagPath)
 {
     // This function can only create UFE Maya scene items with a single
     // segment, as it is only given a Dag path as input.
     return Ufe::Path(dagPathToPathSegment(dagPath));
+}
+
+Ufe::Path dgNodeToUfePath(const MObject& object)
+{
+    MFnDependencyNode            depFn(object);
+    Ufe::PathSegment::Components components;
+    components.emplace_back(depFn.name().asChar());
+    return Ufe::Path(Ufe::PathSegment(std::move(components), g_MayaRtid, DGPathSeparator));
 }
 
 Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath)
@@ -353,7 +414,7 @@ void ReplicateExtrasFromUSD::initRecursive(Ufe::SceneItem::Ptr ufeItem) const
     auto hier = Ufe::Hierarchy::hierarchy(ufeItem);
     if (hier) {
         // Go through the entire hierarchy
-        for (auto child : hier->children()) {
+        for (auto child : UsdUfe::getHierarchyChildren(hier)) {
             initRecursive(child);
         }
     }
@@ -415,7 +476,7 @@ void ReplicateExtrasToUSD::initRecursive(const Ufe::SceneItem::Ptr& item) const
     auto hier = Ufe::Hierarchy::hierarchy(item);
     if (hier) {
         // Go through the entire hierarchy.
-        for (auto child : hier->children()) {
+        for (auto child : UsdUfe::getHierarchyChildren(hier)) {
             initRecursive(child);
         }
     }

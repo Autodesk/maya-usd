@@ -237,7 +237,13 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
     return children;
 }
 
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const { return _mayaHierarchy->parent(); }
+Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const
+{
+    // _mayaHierarchy may be null for pure DG gateway nodes (e.g.
+    // UsdSceneRenderSettings) because Maya's hierarchy handler only
+    // handles DAG nodes.
+    return _mayaHierarchy ? _mayaHierarchy->parent() : nullptr;
+}
 
 Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,

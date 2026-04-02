@@ -71,4 +71,7 @@ TF_WRAP_MODULE
     TF_WRAP(SchemaApiAdaptor);
     TF_WRAP(ShadingUtil);
     TF_WRAP(ShadingMode);
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    TF_WRAP(SceneRenderSettings);
+#endif
 }
