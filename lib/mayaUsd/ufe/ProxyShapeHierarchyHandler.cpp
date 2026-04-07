@@ -125,7 +125,7 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path
     // on a null-separated segment would yield an empty C-string.
     if (path.nbSegments() >= 1
         && path.getSegments()[0].separator() == MayaUsd::ufe::DGPathSeparator) {
-        auto          nodeName = path.getSegments()[0].begin()->string();
+        auto           nodeName = path.getSegments()[0].begin()->string();
         MSelectionList sel;
         if (sel.add(MString(nodeName.c_str())) == MS::kSuccess) {
             MObject obj;
