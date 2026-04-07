@@ -920,6 +920,7 @@ public:
             // preserved.
             auto strongLayerSubLayers = strongestLayer->GetSubLayerPaths();
 
+            // Creates a set of the added subLayers, prevent duplicates.
             std::set<std::string> addedSublayerIds;
             for (const auto path : strongLayerSubLayers) {
                 const auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
@@ -928,6 +929,8 @@ public:
                 }
             }
 
+            // Adds any moved sub layers to the strong layers sub layers to prevent layers from
+            // being lost when the weak layer is deleted.
             for (const auto& subLayerList : movedSubLayers) {
                 for (const auto& subLayerPath : subLayerList) {
                     const auto subLayer
@@ -941,24 +944,19 @@ public:
                 }
             }
 
-            strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
-
-            // Remove any selected weak layers from the strongest layer's sublayer list to prevent
+            // Remove any merged weak layers from the sublayer list before setting, to prevent
             // them from being both stitched (merged) and referenced as subLayers.
-            auto dedupedSubLayers = strongestLayer->GetSubLayerPaths();
-            bool anyRemoved = false;
             for (size_t i = 1; i < layersByStrength.size(); ++i) {
                 const std::string weakLayerId = layersByStrength[i]->GetIdentifier();
-                const auto        it
-                    = std::find(dedupedSubLayers.begin(), dedupedSubLayers.end(), weakLayerId);
-                if (it != dedupedSubLayers.end()) {
-                    dedupedSubLayers.erase(it);
-                    anyRemoved = true;
-                }
+                const auto        it = std::find(
+                    strongLayerSubLayers.begin(), strongLayerSubLayers.end(), weakLayerId);
+                if (it != strongLayerSubLayers.end())
+                    strongLayerSubLayers.erase(it);
             }
-            if (anyRemoved)
-                strongestLayer->SetSubLayerPaths(dedupedSubLayers);
 
+            strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
+
+            // Removes the selected weak layers from their parents.
             for (auto& entry : removalsByParent) {
                 const auto parentLayer = SdfLayer::Find(entry.first);
                 if (parentLayer) {
@@ -968,7 +966,6 @@ public:
                             = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
                         if (it != subLayerPaths.end())
                             subLayerPaths.erase(it);
-                            
                     }
                     if (parentLayer && parentLayer->PermissionToEdit()) {
                         parentLayer->SetSubLayerPaths(subLayerPaths);
