@@ -313,13 +313,14 @@ MObject UsdSceneRenderSettings::findOrCreateInstance()
     _isCreatingInstance = true;
 
     MDGModifier modifier;
-    MObject     nodeObj = modifier.createNode(typeName, MString("UsdSceneRenderSettings"));
+    MObject     nodeObj = modifier.createNode(typeName);
     modifier.doIt();
 
     if (!nodeObj.isNull()) {
         _cachedInstance = MObjectHandle(nodeObj);
 
         MFnDependencyNode depFn(nodeObj);
+        depFn.setName("SceneRenderSettings");
         depFn.setLocked(true);
 
         // Dirty the UFE stage map so this node's stage is discoverable.
