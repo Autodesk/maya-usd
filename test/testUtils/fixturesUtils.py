@@ -87,6 +87,18 @@ def tearDownClass(unloadPlugin=True, pluginName=_defaultPluginName):
     
     if unloadPlugin:
         import maya.cmds as cmds
+        # Delete the SceneRenderSettings singleton node with undo off
+        # so the undo queue doesn't hold references to plugin data types.
+        srsNodes = cmds.ls(type='mayaUsdSceneRenderSettings')
+        if srsNodes:
+            cmds.undoInfo(stateWithoutFlush=False)
+            for node in srsNodes:
+                parent = cmds.listRelatives(node, parent=True, fullPath=True)
+                cmds.lockNode(node, lock=False)
+                cmds.delete(node)
+                if parent:
+                    cmds.delete(parent[0])
+            cmds.undoInfo(stateWithoutFlush=True)
         cmds.unloadPlugin(pluginName, force=True)
 
     # Exit into the main test directory
