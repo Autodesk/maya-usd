@@ -49,7 +49,7 @@ MObjectHandle nameLookup(const Ufe::Path& path)
     // empty C-string.
     const auto& firstSeg = path.getSegments()[0];
     if (firstSeg.separator() == MayaUsd::ufe::DGPathSeparator) {
-        auto          nodeName = firstSeg.begin()->string();
+        auto           nodeName = firstSeg.begin()->string();
         MSelectionList sel;
         if (sel.add(MString(nodeName.c_str())) == MS::kSuccess) {
             MObject obj;
