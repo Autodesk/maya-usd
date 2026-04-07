@@ -10,7 +10,6 @@
 //*****************************************************************************
 
 #include <pxr/usd/usdShade/input.h>
-#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 
 #include "UsdMxVersionUpgrade.h"
 
@@ -24,7 +23,9 @@
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usd/stage.h>
+#if PXR_VERSION >= 2502
 #include <pxr/usd/usdMtlx/materialXConfigAPI.h>
+#endif
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
@@ -372,6 +373,7 @@ std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
     // Fetch the version from the MaterialXConfigAPI schema:
     auto materialXVersion = _getDefaultVersionFromMxConfigAPI();
 
+#if PXR_VERSION >= 2502
     const auto configAPI = UsdMtlxMaterialXConfigAPI(material);
     if (configAPI)
     {
@@ -382,6 +384,7 @@ std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
             versionAttr.Get(&materialXVersion);
         }
     }
+#endif
 
     if (materialXVersion != _tokens->currentMxVersion.GetString())
     {
@@ -912,10 +915,12 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
         }
     }
 
+#if PXR_VERSION >= 2502
     // Update the version attribute using the MaterialXConfigAPI schema:
     auto configAPI = UsdMtlxMaterialXConfigAPI::Apply(usdMaterial.GetPrim());
     auto versionAttr = configAPI.CreateConfigMtlxVersionAttr();
     versionAttr.Set(_tokens->currentMxVersion.GetString());
+#endif
 }
 
 } // namespace
@@ -987,5 +992,3 @@ void UsdMxUpgradeMaterialCmd::redo()
 }
 
 } // namespace LookdevXUsd::Version
-
-#endif // LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION

@@ -41,7 +41,6 @@ target_sources(${PROJECT_NAME}
         UsdSoloingHandler.cpp
         UsdUINodeGraphNode.cpp
         UsdUINodeGraphNodeHandler.cpp
-        UsdMxVersionUpgrade.cpp
         Utils.cpp
 )
 
@@ -65,7 +64,6 @@ set(HEADERS
     UsdSoloingHandler.h
     UsdUINodeGraphNode.h
     UsdUINodeGraphNodeHandler.h
-    UsdMxVersionUpgrade.h
     Utils.h
 )
 
@@ -129,6 +127,14 @@ target_include_directories(${PROJECT_NAME}
 # -----------------------------------------------------------------------------
 if (LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION)
     message(STATUS "Enabling legacy detection for MaterialX ${MaterialX_VERSION_MAJOR}.${MaterialX_VERSION_MINOR}")
+
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdMxVersionUpgrade.cpp
+    )
+    list(APPEND HEADER_DIRS
+        UsdMxVersionUpgrade.h
+    )
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION=1

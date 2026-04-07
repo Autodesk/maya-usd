@@ -10,14 +10,13 @@
 
 #include "UsdUINodeGraphNode.h"
 
-#include <mayaUsd/ufe/Utils.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/usd/usdUI/nodeGraphNodeAPI.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNodeHandler, UsdUINodeGraphNodeHandler);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNodeHandler, UsdUINodeGraphNodeHandler);
 
 UsdUINodeGraphNodeHandler::Ptr UsdUINodeGraphNodeHandler::create()
 {
@@ -38,5 +37,4 @@ UsdUINodeGraphNodeHandler::uiNodeGraphNode(const Ufe::SceneItem::Ptr& item) cons
     return nullptr;
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

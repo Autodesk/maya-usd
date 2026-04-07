@@ -5,29 +5,28 @@
 // agreement provided at the time of installation or download, or which
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
-#ifndef MAYAUSD_USDMATERIALHANDLER_H
-#define MAYAUSD_USDMATERIALHANDLER_H
+#ifndef USDUFE_USDMATERIALHANDLER_H
+#define USDUFE_USDMATERIALHANDLER_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdMaterial.h>
+#include <usdUfe/base/api.h>
+#include <usdUfe/ufe/UsdMaterial.h>
 
 #include <ufe/materialHandler.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief USD run-time Material handler.
 /*!
         Factory object for Material interfaces.
  */
-class MAYAUSD_CORE_PUBLIC UsdMaterialHandler : public Ufe::MaterialHandler
+class USDUFE_PUBLIC UsdMaterialHandler : public Ufe::MaterialHandler
 {
 public:
     typedef std::shared_ptr<UsdMaterialHandler> Ptr;
 
     UsdMaterialHandler() = default;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMaterialHandler);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdMaterialHandler);
 
     //! Create a UsdMaterialHandler.
     static UsdMaterialHandler::Ptr create();
@@ -37,7 +36,6 @@ public:
 
 }; // UsdMaterialHandler
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDMATERIALHANDLER_H
+#endif // USDUFE_USDMATERIALHANDLER_H

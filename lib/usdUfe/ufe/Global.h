@@ -37,7 +37,9 @@
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <ufe/connectionHandler.h>
+#include <ufe/materialHandler.h>
 #include <ufe/nodeDefHandler.h>
+#include <ufe/uiNodeGraphNodeHandler.h>
 #endif
 
 #if UFE_CLIPBOARD_SUPPORT
@@ -109,10 +111,10 @@ struct USDUFE_PUBLIC Handlers
 //     Ufe::SceneSegmentHandler::Ptr sceneSegmentHandler;
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    Ufe::ConnectionHandler::Ptr connectionHandler;
-    Ufe::NodeDefHandler::Ptr    nodeDefHandler;
-//     Ufe::MaterialHandler::Ptr        materialHandler;
-//     Ufe::UINodeGraphNodeHandler::Ptr uiNodeGraphNodeHandler;
+    Ufe::ConnectionHandler::Ptr      connectionHandler;
+    Ufe::MaterialHandler::Ptr        materialHandler;
+    Ufe::NodeDefHandler::Ptr         nodeDefHandler;
+    Ufe::UINodeGraphNodeHandler::Ptr uiNodeGraphNodeHandler;
 //     Ufe::BatchOpsHandler::Ptr        batchOpsHandler;
 #endif
 

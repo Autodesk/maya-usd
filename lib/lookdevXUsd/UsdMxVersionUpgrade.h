@@ -11,8 +11,6 @@
 #ifndef USD_MX_VERSION_UPGRADE_H
 #define USD_MX_VERSION_UPGRADE_H
 
-#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
-
 #include "Export.h"
 
 #include <usdUfe/undo/UsdUndoableItem.h>
@@ -64,5 +62,4 @@ private:
 
 } // namespace LookdevXUsd::Version
 
-#endif // LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 #endif // USD_MX_VERSION_UPGRADE_H
