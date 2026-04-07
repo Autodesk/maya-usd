@@ -12,14 +12,13 @@
 
 #include <pxr/usd/usdUI/nodeGraphNodeAPI.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 // Ensure that UsdUINodeGraphNode is properly setup.
 #ifdef UFE_V4_1_FEATURES_AVAILABLE
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNode_v4_1, UsdUINodeGraphNode);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNode_v4_1, UsdUINodeGraphNode);
 #else
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNode, UsdUINodeGraphNode);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UINodeGraphNode, UsdUINodeGraphNode);
 #endif
 
 UsdUINodeGraphNode::SetPosOrSizeCommand::SetPosOrSizeCommand(
@@ -196,5 +195,4 @@ Ufe::Vector2f UsdUINodeGraphNode::getPosOrSize(CoordType coordType) const
     }
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
