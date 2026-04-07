@@ -911,7 +911,6 @@ public:
             for (size_t i = 1; i < layersByStrength.size(); ++i) {
                 const SdfLayerHandle& weakLayer = layersByStrength[i];
                 movedSubLayers.push_back(weakLayer->GetSubLayerPaths());
-                weakLayer->SetSubLayerPaths({});
                 UsdUtilsStitchLayers(strongestLayer, weakLayer);
             }
 
@@ -969,8 +968,15 @@ public:
                             = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
                         if (it != subLayerPaths.end())
                             subLayerPaths.erase(it);
+                            
                     }
-                    parentLayer->SetSubLayerPaths(subLayerPaths);
+                    if (parentLayer && parentLayer->PermissionToEdit()) {
+                        parentLayer->SetSubLayerPaths(subLayerPaths);
+                    } else {
+                        TF_WARN(
+                            "Cannot update layer '%s' because it is locked.",
+                            strongestLayer->GetIdentifier().c_str());
+                    }
                 }
             }
         }
