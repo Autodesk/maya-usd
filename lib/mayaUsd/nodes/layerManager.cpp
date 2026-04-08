@@ -575,7 +575,17 @@ void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
     for (const auto& info : layerDB._internalProxiesToSave)
         handleDirtyStageDuringExport(info);
 
-    prepareForWriteCheck(retCode, true);
+    const auto currentExportType = MFileIO::exportType();
+    const bool mightWriteProxyShapes
+        = (currentExportType == MFileIO::kExportTypeAll
+           || currentExportType == MFileIO::kExportTypeSelected
+           || currentExportType == MFileIO::kExportTypeAsReference);
+
+    if (mightWriteProxyShapes) {
+        prepareForWriteCheck(retCode, true);
+    } else {
+        layerDB.clearProxies();
+    }
 }
 
 void LayerDatabase::cleanupForExport(void*)
@@ -668,7 +678,10 @@ bool LayerDatabase::getProxiesToSave(bool isExport, bool* hasAnyProxy)
     if (hasAnyProxy)
         *hasAnyProxy = false;
 
-    bool checkSelection = isExport && (MFileIO::kExportTypeSelected == MFileIO::exportType());
+    bool checkSelection = isExport
+        && ((MFileIO::kExportTypeSelected == MFileIO::exportType())
+            || (MFileIO::kExportTypeAsReference == MFileIO::exportType()));
+
     const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
 
     clearProxies();

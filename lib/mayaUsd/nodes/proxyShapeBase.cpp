@@ -508,7 +508,7 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     numericAttrFn.setCached(true);
     numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
+    numericAttrFn.setStorable(false);
     numericAttrFn.setHidden(true);
     retValue = addAttribute(recomputeLayersAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -1819,7 +1819,8 @@ MStatus MayaUsdProxyShapeBase::preEvaluation(
             || evaluationNode.dirtyPlugExists(loadPayloadsAttr)
             || evaluationNode.dirtyPlugExists(shareStageAttr)
             || evaluationNode.dirtyPlugExists(inStageDataAttr)
-            || evaluationNode.dirtyPlugExists(stageCacheIdAttr)) {
+            || evaluationNode.dirtyPlugExists(stageCacheIdAttr)
+            || evaluationNode.dirtyPlugExists(recomputeLayersAttr)) {
             _IncreaseUsdStageVersion();
             MayaUsdProxyStageInvalidateNotice(*this).Send();
         }
@@ -1872,7 +1873,8 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
         plug == outStageDataAttr ||
         // All the plugs that affect outStageDataAttr
         plug == filePathAttr || plug == primPathAttr || plug == loadPayloadsAttr
-        || plug == shareStageAttr || plug == inStageDataAttr || plug == stageCacheIdAttr) {
+        || plug == shareStageAttr || plug == inStageDataAttr || plug == stageCacheIdAttr
+        || plug == recomputeLayersAttr) {
         _IncreaseUsdStageVersion();
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
