@@ -38,6 +38,14 @@ bool forwardingOpenedUndoChunk = false;
 
 void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool immediate)
 {
+    if (immediate) {
+        if (callback) {
+            auto cmd = MayaUsd::MayaUsdEditForwardCommand::create(callback);
+            Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
+        }
+        return;
+    }
+
     // If we are not inside a USD undoable command, do not forward. We would not know how to.
     // This could be a script editing USD data, or an interactive edit (slider drag from
     // attribute editor).
@@ -90,15 +98,8 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         });
     }
 
-    if (immediate) {
-        if (callback) {
-            auto cmd = MayaUsd::MayaUsdEditForwardCommand::create(callback);
-            Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
-        }
-    } else {
-        if (callback) {
-            callbacks.push_back(callback);
-        }
+    if (callback) {
+        callbacks.push_back(callback);
     }
 }
 

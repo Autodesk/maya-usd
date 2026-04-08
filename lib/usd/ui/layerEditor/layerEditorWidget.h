@@ -20,10 +20,14 @@
 #include "layerTreeItem.h"
 #include "layerTreeView.h"
 
+#include <pxr/base/tf/notice.h>
+#include <pxr/usd/sdf/notice.h>
+
 #include <QtCore/QBasicTimer>
 #include <QtCore/QPointer>
 #include <QtWidgets/QWidget>
 
+class QLabel;
 class QMainWindow;
 class QLayout;
 class QPushButton;
@@ -40,11 +44,12 @@ class LayerContentsWidget;
  * This widget is meant to be hosted by a parent QMainWindow, where the menu will be created
  **/
 
-class LayerEditorWidget : public QWidget
+class LayerEditorWidget : public QWidget, public PXR_NS::TfWeakBase
 {
     Q_OBJECT
 public:
     explicit LayerEditorWidget(SessionState& in_sessionState, QMainWindow* in_parent = nullptr);
+    ~LayerEditorWidget() override;
 
 Q_SIGNALS:
 
@@ -94,7 +99,15 @@ private:
     QPointer<LayerContentsWidget> _layerContents;
     QBasicTimer                   _layerContentsTimer;
 
+    QLabel*               _editForwardBanner { nullptr };
+    PXR_NS::TfNotice::Key _layerChangedKey;
+
     bool _updateButtonsOnIdle = false; // true if request to update on idle is pending
+
+private Q_SLOTS:
+    void updateEditForwardBanner();
+
+    void onLayerChanged(PXR_NS::SdfNotice::LayersDidChangeSentPerLayer const& notice);
 };
 
 } // namespace UsdLayerEditor
