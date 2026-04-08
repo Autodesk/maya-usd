@@ -18,6 +18,7 @@
 #include "sceneRenderSettings.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/blockSceneModificationContext.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -311,6 +312,10 @@ MObject UsdSceneRenderSettings::findOrCreateInstance()
         return MObject::kNullObj;
     }
     _isCreatingInstance = true;
+
+    // The singleton is internal infrastructure — its creation should not
+    // mark the scene as having unsaved changes.
+    MAYAUSD_NS::utils::BlockSceneModificationContext blockModContext;
 
     MDGModifier modifier;
     MObject     nodeObj = modifier.createNode(typeName);

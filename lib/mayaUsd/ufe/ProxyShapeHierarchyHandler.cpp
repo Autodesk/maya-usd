@@ -40,6 +40,7 @@ public:
     std::string              nodeType() const override { return _nodeType; }
     std::vector<std::string> ancestorNodeTypes() const override { return {}; }
 
+#ifdef UFE_SCENEITEM_HAS_METADATA
     Ufe::Value getMetadata(const std::string& /*key*/) const override { return {}; }
 
     Ufe::UndoableCommandPtr
@@ -72,6 +73,7 @@ public:
     {
         return nullptr;
     }
+#endif
 
 private:
     std::string _nodeType;
