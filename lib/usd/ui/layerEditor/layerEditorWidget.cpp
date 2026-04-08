@@ -52,10 +52,10 @@
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QGraphicsOpacityEffect>
 #include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QLabel>
 #include <QtWidgets/QVBoxLayout>
 
 #include <cstddef>
@@ -237,17 +237,19 @@ void LayerEditorWidget::setupLayout()
         treeContainer->setObjectName("layerEditorTreeContainer");
 
         // Also mimic the selection highlight of treeview around both the banner and tree.
-        QString baseStyle = "QFrame#layerEditorTreeContainer { border: 2px solid rgb(55, 55, 55); }";
+        QString baseStyle
+            = "QFrame#layerEditorTreeContainer { border: 2px solid rgb(55, 55, 55); }";
         QString focusStyle
             = "QFrame#layerEditorTreeContainer { border: 1px solid palette(highlight); }";
-        auto updateTreeContainerBorder = [treeContainer, baseStyle, focusStyle](QWidget*, QWidget* now) {
-            const bool focused = now && treeContainer->isAncestorOf(now);
+        auto updateTreeContainerBorder
+            = [treeContainer, baseStyle, focusStyle](QWidget*, QWidget* now) {
+                  const bool focused = now && treeContainer->isAncestorOf(now);
                   treeContainer->setStyleSheet(focused ? focusStyle : baseStyle);
-            // When highlighted we want the border to be a single pixel wide, so adjust the margin to avoid
-            // the content moving.
-            const int m = focused ? 1 : 0;
-            treeContainer->layout()->setContentsMargins(m, m, m, m);
-        };
+                  // When highlighted we want the border to be a single pixel wide, so adjust the
+                  // margin to avoid the content moving.
+                  const int m = focused ? 1 : 0;
+                  treeContainer->layout()->setContentsMargins(m, m, m, m);
+              };
         treeContainer->setStyleSheet(baseStyle);
 
         connect(qApp, &QApplication::focusChanged, treeContainer, updateTreeContainerBorder);
@@ -260,15 +262,13 @@ void LayerEditorWidget::setupLayout()
             StringResources::getAsQString(StringResources::kEditForwardBanner));
         _editForwardBanner->setWordWrap(true);
         _editForwardBanner->setVisible(false);
-        _editForwardBanner->setContentsMargins(
-            DPIScale(8), DPIScale(6), DPIScale(8), DPIScale(6));
-        _editForwardBanner->setStyleSheet(
-            "QLabel {"
-            "  background-color: rgb(40, 40, 40);"
-            "  color: palette(text);"
-            "  border-left: 3px solid #38abdf;"
-            "  padding-left: 6px;"
-            "}");
+        _editForwardBanner->setContentsMargins(DPIScale(8), DPIScale(6), DPIScale(8), DPIScale(6));
+        _editForwardBanner->setStyleSheet("QLabel {"
+                                          "  background-color: rgb(40, 40, 40);"
+                                          "  color: palette(text);"
+                                          "  border-left: 3px solid #38abdf;"
+                                          "  padding-left: 6px;"
+                                          "}");
         treeContainerLayout->addWidget(_editForwardBanner);
 
         _treeView->setFrameShape(QFrame::NoFrame);
