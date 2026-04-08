@@ -111,7 +111,6 @@ private:
     PXR_NS::VtValue           _initialOpValue;
     PXR_NS::VtValue           _newOpValue;
     UsdUndoableItem           _opCreationUndo;
-    UsdUndoableItem           _valueUndo;
     bool                      _isPrepared;
     bool                      _canUpdateValue;
     bool                      _opCreated;
