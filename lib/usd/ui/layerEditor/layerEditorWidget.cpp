@@ -264,7 +264,7 @@ void LayerEditorWidget::setupLayout()
         _editForwardBanner->setVisible(false);
         _editForwardBanner->setContentsMargins(DPIScale(8), DPIScale(6), DPIScale(8), DPIScale(6));
         _editForwardBanner->setStyleSheet("QLabel {"
-                                          "  background-color: rgb(40, 40, 40);"
+                                          "  background-color: rgb(55, 55, 55);"
                                           "  color: palette(text);"
                                           "  border-left: 3px solid #38abdf;"
                                           "  padding-left: 6px;"
