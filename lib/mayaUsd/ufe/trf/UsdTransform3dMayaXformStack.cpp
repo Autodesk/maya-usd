@@ -619,6 +619,10 @@ static CreateOpFunc getCreateOpFunc(
             }
         }
 
+        if (!setXformOpOrderFn(xformable)) {
+            throw std::runtime_error(std::string("Cannot set ") + opName + " operation order");
+        }
+
         return op;
     };
 }
