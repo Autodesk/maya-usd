@@ -38,6 +38,9 @@ bool forwardingOpenedUndoChunk = false;
 
 void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool immediate)
 {
+    // If requested to be run immediately, likely an explicit request to forward edits, 
+    // we can just create an undoable command and run it (no need to consider the UndoBlock 
+    // context etc. below, that is only relevant when reacting to changes in the scene).
     if (immediate) {
         if (callback) {
             auto cmd = MayaUsd::MayaUsdEditForwardCommand::create(callback);
