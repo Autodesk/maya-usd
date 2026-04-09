@@ -17,6 +17,7 @@
 #define USDUFE_DEBUGCODES_H
 
 #include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -28,6 +29,13 @@ TF_DEBUG_CODES(
     USDUFE_UNDOCMD
 );
 // clang-format on
+
+// Macro like TF_DEBUG_MSG, but for informational messages.
+#define TF_DEBUG_INFO_MSG(enumVal, ...)           \
+    if (!TfDebug::IsEnabled(enumVal)) /* empty */ \
+        ;                                         \
+    else                                          \
+        TF_STATUS(__VA_ARGS__)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
