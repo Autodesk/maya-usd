@@ -48,7 +48,7 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         }
         return;
     }
-
+        
     // If we are not inside a USD undoable command, do not forward. We would not know how to.
     // This could be a script editing USD data, or an interactive edit (slider drag from
     // attribute editor).

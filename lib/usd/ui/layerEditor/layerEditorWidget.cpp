@@ -96,6 +96,45 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
               return higBtn;
           };
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // Toggle Edit Forwarding button (checkable, becomes visually active with a blue border)
+    _buttons._toggleEFButton = addHIGButton(
+        ":/UsdLayerEditor/ef_toggle",
+        StringResources::getAsQString(StringResources::kToggleEditForwarding),
+        "LayerEditorToggleEFButton");
+    _buttons._toggleEFButton->setCheckable(true);
+    // Append a :checked style so the button shows a blue border when EF mode is active.
+    // Same blue (#38abdf) as the EF banner accent.
+    _buttons._toggleEFButton->setStyleSheet(
+        _buttons._toggleEFButton->styleSheet()
+        + "\nQPushButton:checked { border: 2px solid #38abdf; border-radius: 2px; }");
+    connect(
+        _buttons._toggleEFButton,
+        &QAbstractButton::clicked,
+        this,
+        &LayerEditorWidget::onToggleEditForwardButtonClicked);
+
+    // Configure Edit Forwarding button (placeholder — no dialog implemented yet)
+    _buttons._configEFButton = addHIGButton(
+        ":/UsdLayerEditor/ef_configure",
+        StringResources::getAsQString(StringResources::kConfigureEditForwarding),
+        "LayerEditorConfigEFButton");
+    connect(
+        _buttons._configEFButton,
+        &QAbstractButton::clicked,
+        this,
+        &LayerEditorWidget::onConfigureEditForwardButtonClicked);
+
+    // Vertical separator between the EF buttons and the layer management buttons
+    {
+        auto separator = new QFrame();
+        separator->setFrameShape(QFrame::VLine);
+        separator->setFrameShadow(QFrame::Sunken);
+        separator->setFixedHeight(buttonSize);
+        toolbar->addWidget(separator);
+    }
+#endif
+
     _buttons._newLayer = addHIGButton(
         ":/UsdLayerEditor/add_layer",
         StringResources::getAsQString(StringResources::kAddNewLayer),
@@ -295,6 +334,14 @@ void LayerEditorWidget::setupLayout()
         &SessionState::currentStageChangedSignal,
         this,
         &LayerEditorWidget::updateEditForwardBanner);
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    connect(
+        &_sessionState,
+        &SessionState::editForwardModeChangedSignal,
+        this,
+        &LayerEditorWidget::onEditForwardModeChanged);
+#endif
 
     {
         TfWeakPtr<LayerEditorWidget> me(this);
@@ -692,5 +739,80 @@ void LayerEditorWidget::onSplitterMoved(int pos, int index)
         }
     }
 }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+
+void LayerEditorWidget::onToggleEditForwardButtonClicked()
+{
+    if (!_sessionState.editForwardMode())
+        enterEditForwardMode();
+    else
+        exitEditForwardMode();
+}
+
+void LayerEditorWidget::onConfigureEditForwardButtonClicked()
+{
+    // PROTOTYPE: placeholder — configure dialog not yet implemented
+}
+
+void LayerEditorWidget::onEditForwardModeChanged(bool active)
+{
+    if (_buttons._toggleEFButton)
+        _buttons._toggleEFButton->setChecked(active);
+}
+
+void LayerEditorWidget::enterEditForwardMode()
+{
+    auto stage = _sessionState.stage();
+    if (!stage)
+        return;
+
+    auto model = qobject_cast<LayerTreeModel*>(_treeView->model());
+    if (!model)
+        return;
+
+    // Save current edit target so we can restore it when exiting EF mode.
+    auto prevTarget = _sessionState.targetLayer();
+    _sessionState.setPreviewEditTarget(prevTarget);
+
+    // Switch the actual stage edit target to the session layer.
+    // This goes through the command hook directly — intentionally bypassing the
+    // LayerTreeModel::setEditTarget EF mode intercept, since this is a stage operation,
+    // not a rule change.
+    auto sessionLayer = stage->GetSessionLayer();
+    {
+        auto sessionLayerItem = model->findUSDLayerItem(sessionLayer);
+        if (sessionLayerItem && !sessionLayerItem->appearsMuted()
+            && !sessionLayerItem->isReadOnly() && !sessionLayerItem->isLocked()) {
+            UndoContext context(_sessionState.commandHook(), "Enter Edit Forward Mode");
+            context.hook()->setEditTarget(sessionLayer);
+        }
+    }
+
+    // Enter EF mode first, then write the initial forwarding rule by routing through
+    // LayerTreeModel::setEditTarget — which now hits the EF mode intercept and calls
+    // setEditForwardRule, keeping all rule-writing logic in one place.
+    _sessionState.setEditForwardMode(true);
+    if (prevTarget) {
+        auto prevTargetItem = model->findUSDLayerItem(prevTarget);
+        if (prevTargetItem)
+            model->setEditTarget(prevTargetItem);
+    }
+}
+
+void LayerEditorWidget::exitEditForwardMode()
+{
+    _sessionState.setEditForwardMode(false);
+
+    // Restore the edit target that was active before entering EF mode.
+    auto prevTarget = _sessionState.previewEditTarget();
+    if (prevTarget) {
+        UndoContext context(_sessionState.commandHook(), "Exit Edit Forward Mode");
+        context.hook()->setEditTarget(prevTarget);
+        _sessionState.setPreviewEditTarget(nullptr);
+    }
+}
+
+#endif // WANT_ADSK_USD_EDIT_FORWARD_BUILD
 
 } // namespace UsdLayerEditor

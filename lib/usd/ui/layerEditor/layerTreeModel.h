@@ -147,6 +147,10 @@ protected:
     void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    void setEditForwardRule(const PXR_NS::SdfLayerRefPtr& targetLayer);
+#endif
 };
 
 } // namespace UsdLayerEditor

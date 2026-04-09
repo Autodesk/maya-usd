@@ -112,6 +112,26 @@ public:
         return _currentStageEntry._stage && _currentStageEntry._stage->GetRootLayer();
     }
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    bool editForwardMode() const { return _editForwardMode; }
+    void setEditForwardMode(bool active)
+    {
+        if (_editForwardMode == active)
+            return;
+        _editForwardMode = active;
+        Q_EMIT editForwardModeChangedSignal(active);
+    }
+    PXR_NS::SdfLayerRefPtr previewEditTarget() const { return _previewEditTarget; }
+    void setPreviewEditTarget(const PXR_NS::SdfLayerRefPtr& layer) { _previewEditTarget = layer; }
+    // The layer currently designated as the EF rule target (distinct from the actual
+    // stage edit target, which is always the session layer while in EF mode).
+    PXR_NS::SdfLayerRefPtr editForwardTargetLayer() const { return _editForwardTargetLayer; }
+    void setEditForwardTargetLayer(const PXR_NS::SdfLayerRefPtr& layer)
+    {
+        _editForwardTargetLayer = layer;
+    }
+#endif
+
 Q_SIGNALS:
     void currentStageChangedSignal();
     void stageListChangedSignal(StageEntry const& toSelect = StageEntry());
@@ -119,12 +139,20 @@ Q_SIGNALS:
     void autoHideSessionLayerSignal(bool hideIt);
     void showDisplayLayerContents(bool showIt);
     void stageResetSignal(StageEntry const& entry);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    void editForwardModeChangedSignal(bool active);
+#endif
 
 protected:
     StageEntry _currentStageEntry;
     bool       _autoHideSessionLayer { true };
     bool       _displayLayerContents { true };
     bool       _displayLayerExpandAllValues { false };
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    bool                   _editForwardMode { false };
+    PXR_NS::SdfLayerRefPtr _previewEditTarget;
+    PXR_NS::SdfLayerRefPtr _editForwardTargetLayer;
+#endif
 };
 
 } // namespace UsdLayerEditor

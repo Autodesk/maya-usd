@@ -63,6 +63,11 @@ public Q_SLOTS:
     void showDisplayLayerContents(bool show);
     void onSplitterMoved(int pos, int index);
     void onLazyUpdateLayerContents();
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    void onToggleEditForwardButtonClicked();
+    void onConfigureEditForwardButtonClicked();
+    void onEditForwardModeChanged(bool active);
+#endif
 
 public:
     LayerTreeView*           layerTree() { return _treeView.data(); }
@@ -75,6 +80,10 @@ protected:
     SessionState& _sessionState;
     struct
     {
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        QPushButton*           _toggleEFButton { nullptr };
+        QPushButton*           _configEFButton { nullptr };
+#endif
         QPushButton*           _newLayer { nullptr };
         QPushButton*           _loadLayer { nullptr };
         QPushButton*           _saveStageButton { nullptr };
@@ -110,6 +119,12 @@ private Q_SLOTS:
     void updateEditForwardBanner();
 
     void onLayerChanged(PXR_NS::SdfNotice::LayersDidChangeSentPerLayer const& notice);
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+private:
+    void enterEditForwardMode();
+    void exitEditForwardMode();
+#endif
 };
 
 } // namespace UsdLayerEditor

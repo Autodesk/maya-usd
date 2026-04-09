@@ -38,6 +38,10 @@
 
 #include <QtCore/QTimer>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <AdskUsdEditForward/RuleDef.h>
+#endif
+
 #include <algorithm>
 #include <string>
 
@@ -241,10 +245,98 @@ void LayerTreeModel::setEditTarget(LayerTreeItem* item)
 {
     if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked()
         && !item->isSystemLocked()) {
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        // PROTOTYPE: In EF mode, add a forwarding rule instead of changing the edit target.
+        if (_sessionState->editForwardMode()) {
+            setEditForwardRule(item->layer());
+            return;
+        }
+#endif
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
     }
 }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+
+namespace {
+
+// Escape special regex characters so a layer path can be used as a literal
+// regex pattern when matching against layer identifiers.
+std::string regexEscapeLayerPath(const std::string& input)
+{
+    // Characters that have special meaning in std::regex (ECMAScript syntax).
+    static const std::string specialChars = R"(\.^$*+?()[]{}|)";
+    std::string              result;
+    result.reserve(input.size() * 2);
+    for (char c : input) {
+        if (specialChars.find(c) != std::string::npos)
+            result += '\\';
+        result += c;
+    }
+    return result;
+}
+
+} // namespace
+
+void LayerTreeModel::setEditForwardRule(const SdfLayerRefPtr& targetLayer)
+{
+    // PROTOTYPE CODE: Adds (or replaces) a catch-all forwarding rule in the root layer's
+    // custom data that targets the selected layer.  The rule is appended last so that any
+    // pre-existing user rules take precedence over it.
+
+    auto stage = _sessionState->stage();
+    if (!stage || !targetLayer)
+        return;
+
+    auto rootLayer = stage->GetRootLayer();
+    if (!rootLayer)
+        return;
+
+    // Special ID used to detect and replace this prototype rule on subsequent calls.
+    static const std::string kPrototypeRuleId = "zzz_layer_editor_ef_preview_rule";
+
+    // Load existing rule set from the root layer custom data.
+    auto ruleSet = AdskUsdEditForward::RuleDef::ReadRuleSetFromLayerCustomData(rootLayer);
+
+    // Remove any previously inserted prototype rule so we can re-add it updated.
+    auto& rules = ruleSet.rules;
+    rules.erase(
+        std::remove_if(
+            rules.begin(),
+            rules.end(),
+            [](const AdskUsdEditForward::RuleDef::Ptr& r) {
+                return r && r->id == kPrototypeRuleId;
+            }),
+        rules.end());
+
+    // Build a new rule whose target is the absolute identifier of the selected layer.
+    // The identifier is regex-escaped so it is treated as a literal path.
+    // PROTOTYPE NOTE: proper path token substitution (Utils.h) should replace this escaping
+    // in a production implementation.
+    auto rule       = std::make_shared<AdskUsdEditForward::RuleDef>();
+    rule->id        = kPrototypeRuleId;
+    rule->description
+        = "Layer Editor EF Preview (PROTOTYPE) - auto-generated, do not edit manually";
+    rule->inputObjectExpression
+        = AdskUsdEditForward::RuleExpression(".*"); // match all prim paths
+    rule->targetLayerExpression
+        = AdskUsdEditForward::RuleExpression(regexEscapeLayerPath(targetLayer->GetIdentifier()));
+
+    // Append as last rule so any pre-existing rules take precedence.
+    rules.push_back(rule);
+
+    // PROTOTYPE: ensure continuous forwarding is active whenever the EF rule is present.
+    ruleSet.continuous = true;
+
+    AdskUsdEditForward::RuleDef::WriteRuleSetToLayerCustomData(rootLayer, ruleSet);
+
+    // Track the EF rule target so the tree can display the correct target icon.
+    _sessionState->setEditForwardTargetLayer(targetLayer);
+    updateTargetLayer(InRebuildModel::No);
+}
+
+#endif // WANT_ADSK_USD_EDIT_FORWARD_BUILD
 
 void LayerTreeModel::selectUsdLayerOnIdle(const SdfLayerRefPtr& usdLayer)
 {
@@ -390,6 +482,21 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
     if (rowCount() == 0) {
         return;
     }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // In EF mode the stage edit target is always the session layer, but the target icon
+    // should reflect the forwarding rule's target instead.  Skip the auto-hide session-layer
+    // rebuild logic entirely — it is not meaningful while EF mode is active.
+    if (_sessionState->editForwardMode()) {
+        auto efTarget = _sessionState->editForwardTargetLayer();
+        auto root = invisibleRootItem();
+        for (int i = 0, count = root->rowCount(); i < count; i++) {
+            auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
+            child->updateTargetLayerRecursive(efTarget);
+        }
+        return;
+    }
+#endif
 
     auto editTarget = _sessionState->targetLayer();
     auto root = invisibleRootItem();

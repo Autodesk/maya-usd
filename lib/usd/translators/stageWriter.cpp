@@ -32,10 +32,15 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
+
+#include <map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -75,25 +80,85 @@ std::string getUsdRefIdentifier(const UsdStage& stage, const MDagPath& dagPath)
     return rootLayer->GetRealPath();
 }
 
-std::pair<TfToken, SdfPath> getReferencedPrimNameAndPath(const UsdStage& stage)
+std::vector<std::pair<TfToken, SdfPath>> getReferencedRootPrims(const UsdStage& stage)
 {
-    // If there is a default prim, we use that as the root prim.
-    if (stage.HasDefaultPrim())
-        return std::make_pair(stage.GetDefaultPrim().GetName(), SdfPath());
+    std::vector<std::pair<TfToken, SdfPath>> rootPrims;
 
-    // Otherwise we use the first root prim of the stage.
     UsdPrimSiblingRange usdRootPrims = stage.GetPseudoRoot().GetChildren();
     for (UsdPrim const& prim : usdRootPrims)
-        return std::make_pair(prim.GetName(), prim.GetPath());
+        rootPrims.emplace_back(prim.GetName(), prim.GetPath());
 
-    // Otherwise... there is nothing to reference.
-    return {};
+    return rootPrims;
 }
 
 UsdPrim createOverForUsdRef(UsdStage& stage, const SdfPath& basePath, const TfToken& primName)
 {
     SdfPath primWithRefPath = basePath.AppendChild(primName.IsEmpty() ? TfToken("Top") : primName);
     return stage.OverridePrim(primWithRefPath);
+}
+
+// Returns the name of the root prim ancestor for a given path, or empty token if pseudo-root.
+TfToken getRootPrimName(const SdfPath& path)
+{
+    if (path.IsEmpty() || path == SdfPath::AbsoluteRootPath())
+        return {};
+
+    // Walk up to find the root-level ancestor (child of the absolute root).
+    SdfPath current = path;
+    while (!current.GetParentPath().IsEmpty()
+           && current.GetParentPath() != SdfPath::AbsoluteRootPath()) {
+        current = current.GetParentPath();
+    }
+    return current.GetNameToken();
+}
+
+// After references are authored, relationships whose targets live under a different
+// root prim will be broken because each root prim is in its own reference arc.
+// This function finds such cross-root relationships in the proxy stage and authors
+// local opinion overrides on the exported stage so those targets resolve correctly.
+void fixCrossRootRelationships(
+    UsdStage&      proxyStage,
+    UsdStage&      exportedStage,
+    const SdfPath& basePath)
+{
+    for (const UsdPrim& prim : proxyStage.Traverse()) {
+        const SdfPath& primPath = prim.GetPath();
+        TfToken        primRoot = getRootPrimName(primPath);
+        if (primRoot.IsEmpty())
+            continue;
+
+        for (const UsdRelationship& rel : prim.GetRelationships()) {
+            SdfPathVector targets;
+            rel.GetTargets(&targets);
+
+            bool            hasCrossRoot = false;
+            SdfPathVector   remappedTargets;
+            remappedTargets.reserve(targets.size());
+
+            for (const SdfPath& target : targets) {
+                TfToken targetRoot = getRootPrimName(target);
+                if (!targetRoot.IsEmpty() && targetRoot != primRoot) {
+                    hasCrossRoot = true;
+                }
+                // Remap: /RootX/... -> {basePath}/RootX/...
+                remappedTargets.push_back(
+                    target.ReplacePrefix(SdfPath::AbsoluteRootPath(), basePath));
+            }
+
+            if (!hasCrossRoot)
+                continue;
+
+            // Create an override prim at the corresponding exported path and
+            // author the relationship with remapped targets.
+            SdfPath overPath = primPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), basePath);
+            UsdPrim overPrim = exportedStage.OverridePrim(overPath);
+            if (!overPrim)
+                continue;
+
+            UsdRelationship overRel = overPrim.CreateRelationship(rel.GetName());
+            overRel.SetTargets(remappedTargets);
+        }
+    }
 }
 } // namespace
 
@@ -166,17 +231,26 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
         refIdentifier = UsdMayaUtilFileSystem::makePathRelativeTo(refIdentifier, baseDir).first;
     }
 
-    // Figure out what will be the root prim of the reference.
-    TfToken rootPrimName;
-    SdfPath rootPrimPath;
-    std::tie(rootPrimName, rootPrimPath) = getReferencedPrimNameAndPath(*proxyStage);
+    // Create a reference for each root prim in the stage.
+    std::vector<std::pair<TfToken, SdfPath>> rootPrims = getReferencedRootPrims(*proxyStage);
+    for (const auto& rootPrim : rootPrims) {
+        const TfToken& rootPrimName = rootPrim.first;
+        const SdfPath& rootPrimPath = rootPrim.second;
 
-    // Create the over that will contain the USD reference. It has the same name
-    // as the root prim.
-    UsdPrim primWithRef = createOverForUsdRef(*GetUsdStage(), GetUsdPath(), rootPrimName);
+        // Create the over that will contain the USD reference. It has the same name
+        // as the root prim.
+        UsdPrim primWithRef = createOverForUsdRef(*GetUsdStage(), GetUsdPath(), rootPrimName);
 
-    // Create the USD reference.
-    primWithRef.GetReferences().AddReference(refIdentifier, rootPrimPath);
+        // Create the USD reference.
+        primWithRef.GetReferences().AddReference(refIdentifier, rootPrimPath);
+    }
+
+    // Relationships that cross root prim boundaries (e.g. material bindings from
+    // one root referencing a material under another root) are broken by the per-root
+    // reference arcs. Fix them by authoring local overrides on the exported stage.
+    if (rootPrims.size() > 1) {
+        fixCrossRootRelationships(*proxyStage, *GetUsdStage(), GetUsdPath());
+    }
 }
 
 /* virtual */
