@@ -19,6 +19,9 @@
 #define MNoVersionString
 #include "AssetResolverUtils.h"
 
+#include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/util.h>
+
 #include <maya/MCallbackIdArray.h>
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
@@ -31,7 +34,7 @@ static MCallbackId _projectChangedId;
 void AssetResolverProjectChangeTracker::onProjectChanged(void* clientData)
 {
     const bool includeMayaProjectTokens
-        = MGlobal::optionVarIntValue("mayaUsd_AdskAssetResolverIncludeMayaToken");
+        = MGlobal::optionVarIntValue(UsdMayaUtil::convert(MayaUsdOptionVars->IncludeMayaTokenInAR));
     if (includeMayaProjectTokens)
         AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
 }

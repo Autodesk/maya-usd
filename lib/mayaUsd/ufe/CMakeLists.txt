@@ -72,26 +72,6 @@ if (UFE_LIGHTS2_SUPPORT)
     )
 endif()
 
-if (UFE_MATERIALS_SUPPORT)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            UsdMaterial.cpp
-            UsdMaterialHandler.cpp
-    )
-
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_MATERIALS_SUPPORT=1
-    )
-
-    if (UFE_MATERIAL_HAS_HASMATERIAL)
-        target_compile_definitions(${PROJECT_NAME}
-        PRIVATE
-            UFE_MATERIAL_HAS_HASMATERIAL=1
-        )
-    endif()
-endif()
-
 if (UFE_SCENE_SEGMENT_SUPPORT)
     target_sources(${PROJECT_NAME}
     PRIVATE
@@ -101,20 +81,6 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         UFE_SCENE_SEGMENT_SUPPORT=1
-    )
-endif()
-
-if (UFE_UINODEGRAPHNODE_HAS_SIZE)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_UINODEGRAPHNODE_HAS_SIZE=1
-    )
-endif()
-
-if (UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR=1
     )
 endif()
 
@@ -206,8 +172,6 @@ endif()
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            UsdUINodeGraphNode.cpp
-            UsdUINodeGraphNodeHandler.cpp
             UsdUndoCreateStageWithNewLayerCommand.cpp
     )
 endif()
@@ -263,13 +227,6 @@ if (UFE_LIGHTS2_SUPPORT)
     )
 endif()
 
-if (UFE_MATERIALS_SUPPORT)
-    list(APPEND HEADERS
-        UsdMaterial.h
-        UsdMaterialHandler.h
-    )
-endif()
-
 if (UFE_SCENE_SEGMENT_SUPPORT)
     list(APPEND HEADERS
         ProxyShapeSceneSegmentHandler.h
@@ -304,8 +261,6 @@ endif()
        
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
-        UsdUINodeGraphNode.h
-        UsdUINodeGraphNodeHandler.h
         UsdUndoCreateStageWithNewLayerCommand.h
     )
 endif()

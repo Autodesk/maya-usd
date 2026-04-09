@@ -29,8 +29,7 @@ namespace USDUFE_NS_DEF {
 // This class provides the implementation for Ufe::Transform3d::setMatrixCmd()
 // derived classes, with undo / redo support.
 //
-class USDUFE_PUBLIC UsdSetMatrix4dUndoableCommand
-    : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
+class USDUFE_PUBLIC UsdSetMatrix4dUndoableCommand : public Ufe::SetMatrix4dUndoableCommand
 {
 public:
     UsdSetMatrix4dUndoableCommand(const Ufe::Path& path, const Ufe::Matrix4d& newM);
@@ -39,14 +38,16 @@ public:
 
     // No-op: for example, Maya does not set matrices through interactive manipulation.
     bool set(const Ufe::Matrix4d&) override;
-
-protected:
-    void executeImplementation() override;
+    void execute() override;
+    void undo() override;
+    void redo() override;
 
 private:
     Ufe::Vector3d _newT;
     Ufe::Vector3d _newR;
     Ufe::Vector3d _newS;
+
+    std::shared_ptr<Ufe::CompositeUndoableCommand> _compositeCmd;
 };
 
 } // namespace USDUFE_NS_DEF
