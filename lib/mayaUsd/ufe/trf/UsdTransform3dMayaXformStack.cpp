@@ -227,27 +227,6 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
 
-std::string convertValueToString(const VtValue& v)
-{
-    std::string valueStr;
-    if (v.IsHolding<GfVec3d>()) {
-        GfVec3d vec = v.UncheckedGet<GfVec3d>();
-        valueStr = TfStringPrintf("%lf %lf %lf", vec[0], vec[1], vec[2]);
-    } else if (v.IsHolding<GfVec3f>()) {
-        GfVec3f vec = v.UncheckedGet<GfVec3f>();
-        valueStr = TfStringPrintf("%f %f %f", vec[0], vec[1], vec[2]);
-    } else if (v.IsHolding<float>()) {
-        float value = v.UncheckedGet<float>();
-        valueStr = TfStringPrintf("%f", value);
-    } else if (v.IsHolding<double>()) {
-        double value = v.UncheckedGet<double>();
-        valueStr = TfStringPrintf("%lf", value);
-    } else {
-        valueStr = v.GetTypeid().name();
-    }
-    return valueStr;
-}
-
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
 //
@@ -356,6 +335,27 @@ protected:
     }
 
 protected:
+    static std::string convertValueToString(const VtValue& v)
+    {
+        std::string valueStr;
+        if (v.IsHolding<GfVec3d>()) {
+            GfVec3d vec = v.UncheckedGet<GfVec3d>();
+            valueStr = TfStringPrintf("%lf %lf %lf", vec[0], vec[1], vec[2]);
+        } else if (v.IsHolding<GfVec3f>()) {
+            GfVec3f vec = v.UncheckedGet<GfVec3f>();
+            valueStr = TfStringPrintf("%f %f %f", vec[0], vec[1], vec[2]);
+        } else if (v.IsHolding<float>()) {
+            float value = v.UncheckedGet<float>();
+            valueStr = TfStringPrintf("%f", value);
+        } else if (v.IsHolding<double>()) {
+            double value = v.UncheckedGet<double>();
+            valueStr = TfStringPrintf("%lf", value);
+        } else {
+            valueStr = v.GetTypeid().name();
+        }
+        return valueStr;
+    }
+
     const char* _opName = nullptr;
 
 private:
