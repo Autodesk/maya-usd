@@ -257,25 +257,31 @@ class UsdTRSUndoableCmdBase : public UsdUfe::UsdSetXformOpUndoableCommandBase
 {
 public:
     UsdTRSUndoableCmdBase(
+        const char*        opName,
         const VtValue&     newOpValue,
         const Ufe::Path&   path,
         GetOpFunc          getOpFunc,
         CreateOpFunc       createOpFunc,
         const UsdTimeCode& writeTime)
         : UsdUfe::UsdSetXformOpUndoableCommandBase(newOpValue, path, writeTime)
+        , _opName(opName)
         , _getOpFunc(std::move(getOpFunc))
         , _createOpFunc(std::move(createOpFunc))
     {
     }
 
+    std::string commandString() const override { return _opName; }
+
 protected:
     void createOpIfNeeded(UsdUfe::UsdUndoableItem& undoableItem) override
     {
         UsdGeomXformOp op = _getOpFunc(*this);
-        if (op)
+        if (op) {
+            TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Already existing xformOp for %s\n", _opName);
             return;
+        }
 
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Creating xformOp\n");
+        TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Creating xformOp for %s\n", _opName);
         op = _createOpFunc(*this, undoableItem);
     }
 
@@ -285,33 +291,72 @@ protected:
         //       the undo/redo may have made the original xformOp invalid, so we need to
         //       get it again.
         UsdGeomXformOp op = _getOpFunc(*this);
-        if (!op)
+        if (!op) {
+            TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Set %s value failed: no UsdGeomXformOp\n", _opName);
             return;
+        }
 
-        if (v.IsEmpty())
+        if (v.IsEmpty()) {
+            TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Set %s value failed: value is empty\n", _opName);
             return;
+        }
 
         auto attr = op.GetAttr();
-        if (!attr)
+        if (!attr) {
+            TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Set %s value failed: no attribute\n", _opName);
             return;
+        }
 
+        TF_DEBUG_INFO_MSG(
+            USDUFE_UNDOCMD, "Set %s value %s\n", _opName, convertValueToString(v).c_str());
         attr.Set(v, writeTime);
     }
 
     VtValue getValue(const UsdTimeCode& readTime) const override
     {
+
         UsdGeomXformOp op = _getOpFunc(*this);
-        if (!op)
+        if (!op) {
+            TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Get %s value failed: no UsdGeomXformOp\n", _opName);
             return {};
+        }
 
         auto attr = op.GetAttr();
-        if (!attr)
+        if (!attr) {
+            TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Get %s value failed: no attribute\n", _opName);
             return {};
+        }
 
         VtValue value;
         attr.Get(&value, readTime);
+        TF_DEBUG_INFO_MSG(
+            USDUFE_UNDOCMD, "Get %s value %s\n", _opName, convertValueToString(value).c_str());
         return value;
     }
+
+protected:
+    static std::string convertValueToString(const VtValue& v)
+    {
+        std::string valueStr;
+        if (v.IsHolding<GfVec3d>()) {
+            GfVec3d vec = v.UncheckedGet<GfVec3d>();
+            valueStr = TfStringPrintf("%lf %lf %lf", vec[0], vec[1], vec[2]);
+        } else if (v.IsHolding<GfVec3f>()) {
+            GfVec3f vec = v.UncheckedGet<GfVec3f>();
+            valueStr = TfStringPrintf("%f %f %f", vec[0], vec[1], vec[2]);
+        } else if (v.IsHolding<float>()) {
+            float value = v.UncheckedGet<float>();
+            valueStr = TfStringPrintf("%f", value);
+        } else if (v.IsHolding<double>()) {
+            double value = v.UncheckedGet<double>();
+            valueStr = TfStringPrintf("%lf", value);
+        } else {
+            valueStr = v.GetTypeid().name();
+        }
+        return valueStr;
+    }
+
+    const char* _opName = nullptr;
 
 private:
     GetOpFunc    _getOpFunc;
@@ -326,12 +371,13 @@ template <class V> class UsdVecOpUndoableCmd : public UsdTRSUndoableCmdBase
 {
 public:
     UsdVecOpUndoableCmd(
+        const char*        opName,
         const V&           v,
         const Ufe::Path&   path,
         GetOpFunc          opFunc,
         CreateOpFunc       createOpFunc,
         const UsdTimeCode& writeTime)
-        : UsdTRSUndoableCmdBase(VtValue(v), path, opFunc, createOpFunc, writeTime)
+        : UsdTRSUndoableCmdBase(opName, VtValue(v), path, opFunc, createOpFunc, writeTime)
     {
     }
 
@@ -348,7 +394,7 @@ public:
             return true;
         }
 
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value %lf %lf %lf\n", x, y, z);
+        TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "About to set %s value %lf %lf %lf\n", _opName, x, y, z);
 
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
@@ -370,7 +416,7 @@ public:
         CreateOpFunc                                    createOpFunc,
         UsdTransform3dMayaXformStack::CvtRotXYZToAttrFn cvt,
         const UsdTimeCode&                              writeTime)
-        : UsdTRSUndoableCmdBase(VtValue(r), path, opFunc, createOpFunc, writeTime)
+        : UsdTRSUndoableCmdBase("rotate", VtValue(r), path, opFunc, createOpFunc, writeTime)
         , _cvtRotXYZToAttr(cvt)
     {
     }
@@ -388,7 +434,7 @@ public:
             return true;
         }
 
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Setting value %lf %lf %lf\n", x, y, z);
+        TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "About to set %s value %lf %lf %lf\n", _opName, x, y, z);
 
         UsdUfe::OperationEditRouterContext editContext(
             UsdUfe::EditRoutingTokens->RouteTransform, getPrim());
@@ -564,6 +610,7 @@ Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::translateCmd(double x, double y, double z)
 {
     return setVector3dCmd(
+        "translate",
         GfVec3d(x, y, z),
         UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, getTRSOpSuffix()),
         getTRSOpSuffix());
@@ -574,8 +621,8 @@ bool UsdTransform3dMayaXformStack::isFallback() const { return false; }
 static GetOpFunc getGetOpFunc(const TfToken& attrName)
 {
     return [attrName](const BaseUndoableCommand& cmd) {
-        auto usdSceneItem = SceneItemHolder(cmd);
-        auto attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
+        SceneItemHolder usdSceneItem = SceneItemHolder(cmd);
+        UsdAttribute    attr = getUsdPrimAttribute(usdSceneItem.item().prim(), attrName);
         if (!attr) {
             return UsdGeomXformOp();
         }
@@ -699,7 +746,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
         "scaling");
 
     return std::make_shared<UsdVecOpUndoableCmd<GfVec3f>>(
-        v, path(), std::move(getOp), std::move(createOp), UsdTimeCode::Default());
+        "scale", v, path(), std::move(getOp), std::move(createOp), UsdTimeCode::Default());
 }
 
 Ufe::TranslateUndoableCommand::Ptr
@@ -707,7 +754,7 @@ UsdTransform3dMayaXformStack::rotatePivotCmd(double x, double y, double z)
 {
     convertToMayaPivotIfNeeded();
 
-    return pivotCmd(getOpSuffix(NdxRotatePivot), x, y, z);
+    return pivotCmd("rotate pivot", getOpSuffix(NdxRotatePivot), x, y, z);
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::rotatePivot() const
@@ -733,7 +780,7 @@ UsdTransform3dMayaXformStack::scalePivotCmd(double x, double y, double z)
 {
     convertToMayaPivotIfNeeded();
 
-    return pivotCmd(getOpSuffix(NdxScalePivot), x, y, z);
+    return pivotCmd("scale pivot", getOpSuffix(NdxScalePivot), x, y, z);
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::scalePivot() const
@@ -761,7 +808,7 @@ UsdTransform3dMayaXformStack::translateRotatePivotCmd(double x, double y, double
 
     auto opSuffix = getOpSuffix(NdxRotatePivotTranslate);
     auto attrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, opSuffix);
-    return setVector3dCmd(GfVec3f(x, y, z), attrName, opSuffix);
+    return setVector3dCmd("translate rotate pivot", GfVec3f(x, y, z), attrName, opSuffix);
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::rotatePivotTranslation() const
@@ -777,7 +824,7 @@ UsdTransform3dMayaXformStack::translateScalePivotCmd(double x, double y, double 
 
     auto opSuffix = getOpSuffix(NdxScalePivotTranslate);
     auto attrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, opSuffix);
-    return setVector3dCmd(GfVec3f(x, y, z), attrName, opSuffix);
+    return setVector3dCmd("translate scale pivot", GfVec3f(x, y, z), attrName, opSuffix);
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::scalePivotTranslation() const
@@ -802,6 +849,7 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::getVector3d(const TfToken& attrName)
 
 template <class V>
 Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCmd(
+    const char*    opName,
     const V&       v,
     const TfToken& attrName,
     const TfToken& opSuffix)
@@ -822,11 +870,15 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
         "translation");
 
     return std::make_shared<UsdVecOpUndoableCmd<V>>(
-        v, path(), std::move(getOp), std::move(createOp), UsdTimeCode::Default());
+        opName, v, path(), std::move(getOp), std::move(createOp), UsdTimeCode::Default());
 }
 
-Ufe::TranslateUndoableCommand::Ptr
-UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, double y, double z)
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3dMayaXformStack::pivotCmd(
+    const char*    opName,
+    const TfToken& pvtOpSuffix,
+    double         x,
+    double         y,
+    double         z)
 {
     auto pvtAttrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, pvtOpSuffix);
 
@@ -847,7 +899,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
         true);
 
     return std::make_shared<UsdVecOpUndoableCmd<GfVec3f>>(
-        v, path(), std::move(getOp), std::move(createOp), UsdTimeCode::Default());
+        opName, v, path(), std::move(getOp), std::move(createOp), UsdTimeCode::Default());
 }
 
 Ufe::SetMatrix4dUndoableCommand::Ptr

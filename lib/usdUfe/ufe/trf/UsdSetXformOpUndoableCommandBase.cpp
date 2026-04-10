@@ -51,7 +51,7 @@ UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
 
 void UsdSetXformOpUndoableCommandBase::execute()
 {
-    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Executing command\n");
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Executing %s command\n", commandString().c_str());
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
@@ -72,7 +72,7 @@ void UsdSetXformOpUndoableCommandBase::undo()
     if (!_isPrepared)
         return;
 
-    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Undoing command\n");
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Undoing %s command\n", commandString().c_str());
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
@@ -87,7 +87,7 @@ void UsdSetXformOpUndoableCommandBase::undo()
         setValue(_initialOpValue, _writeTime);
     }
 
-    _opCreationUndo.undo();
+    removeOpIfNeeded();
     _canUpdateValue = false;
 }
 
@@ -103,11 +103,11 @@ void UsdSetXformOpUndoableCommandBase::redo()
         return;
     }
 
-    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Redoing command\n");
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Redoing %s command\n", commandString().c_str());
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    _opCreationUndo.redo();
+    recreateOpIfNeeded();
 
     {
         // Set the new value.
