@@ -17,6 +17,9 @@
 
 #include "MayaUsdEditForwardCommand.h"
 
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
+
 #include <usdUfe/base/debugCodes.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 #include <usdUfe/ufe/trf/Utils.h>
@@ -222,7 +225,15 @@ MayaForwardRuleProvider::GetForStage(const PXR_NS::UsdStageRefPtr& stage)
     if (!stage)
         return nullptr;
     std::lock_guard<std::mutex> lock(s_registryMutex);
-    auto                        it = s_registry.find(stage.operator->());
+    // Prune all expired entries on each lookup. The map stays small (one entry per open
+    // stage), so a full scan is negligible and avoids unbounded accumulation of dead keys.
+    for (auto it = s_registry.begin(); it != s_registry.end();) {
+        if (it->second.expired())
+            it = s_registry.erase(it);
+        else
+            ++it;
+    }
+    auto it = s_registry.find(stage.operator->());
     if (it != s_registry.end())
         return it->second.lock();
     return nullptr;

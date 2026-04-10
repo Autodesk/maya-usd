@@ -271,8 +271,6 @@ void LayerTreeModel::setEditForwardRule(const SdfLayerRefPtr& targetLayer)
     if (prov)
         prov->setFallbackTarget(targetLayer);
 
-    // Track the EF rule target so the tree can display the correct target icon.
-    _sessionState->setEditForwardTargetLayer(targetLayer);
     updateTargetLayer(InRebuildModel::No);
 }
 
@@ -428,7 +426,9 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
     // should reflect the forwarding rule's target instead.  Skip the auto-hide session-layer
     // rebuild logic entirely — it is not meaningful while EF mode is active.
     if (_sessionState->editForwardMode()) {
-        auto efTarget = _sessionState->editForwardTargetLayer();
+        // Query the provider directly — single source of truth for the fallback target.
+        auto                   prov = MayaUsd::MayaForwardRuleProvider::GetForStage(_sessionState->stage());
+        PXR_NS::SdfLayerRefPtr efTarget = prov ? prov->fallbackTarget() : PXR_NS::SdfLayerRefPtr();
         auto root = invisibleRootItem();
         for (int i = 0, count = root->rowCount(); i < count; i++) {
             auto child = dynamic_cast<LayerTreeItem*>(root->child(i));

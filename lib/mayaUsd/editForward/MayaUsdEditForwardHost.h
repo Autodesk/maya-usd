@@ -18,8 +18,6 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <pxr/base/vt/dictionary.h>
-#include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -84,8 +82,9 @@ public:
     bool isEnabled() const;
 
     // Set/clear the catch-all fallback target layer.
-    void setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer);
-    void clearFallbackTarget();
+    void                         setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer);
+    void                         clearFallbackTarget();
+    PXR_NS::SdfLayerRefPtr       fallbackTarget() const { return _fallbackTarget; }
 
     // Registry — look up the provider for a specific stage without going
     // through proxyShapeBase.

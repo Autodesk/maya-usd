@@ -773,7 +773,7 @@ void LayerEditorWidget::enterEditForwardMode()
 
     // Save current edit target so we can restore it when exiting EF mode.
     auto prevTarget = _sessionState.targetLayer();
-    _sessionState.setPreviewEditTarget(prevTarget);
+    _sessionState.setSavedEditTarget(prevTarget);
 
     // Switch the actual stage edit target to the session layer.
     // This goes through the command hook directly — intentionally bypassing the
@@ -808,9 +808,8 @@ void LayerEditorWidget::enterEditForwardMode()
 
 void LayerEditorWidget::exitEditForwardMode()
 {
-    _sessionState.setEditForwardMode(false);
-
-    // Disable forwarding and clear the fallback target.
+    // Disable forwarding and clear the fallback target first, so that the provider
+    // is in its final state before the mode flag changes and triggers a tree refresh.
     auto prov = MayaUsd::MayaForwardRuleProvider::GetForStage(_sessionState.stage());
     if (prov) {
         prov->setEnabled(false);
@@ -818,12 +817,16 @@ void LayerEditorWidget::exitEditForwardMode()
     }
 
     // Restore the edit target that was active before entering EF mode.
-    auto prevTarget = _sessionState.previewEditTarget();
-    if (prevTarget) {
+    auto savedTarget = _sessionState.savedEditTarget();
+    if (savedTarget) {
         UndoContext context(_sessionState.commandHook(), "Exit Edit Forward Mode");
-        context.hook()->setEditTarget(prevTarget);
-        _sessionState.setPreviewEditTarget(nullptr);
+        context.hook()->setEditTarget(savedTarget);
+        _sessionState.setSavedEditTarget(nullptr);
     }
+
+    // Flip the mode flag last — the signal triggers a tree refresh, which now
+    // runs with the correct provider state and restored edit target.
+    _sessionState.setEditForwardMode(false);
 }
 
 #endif // WANT_ADSK_USD_EDIT_FORWARD_BUILD

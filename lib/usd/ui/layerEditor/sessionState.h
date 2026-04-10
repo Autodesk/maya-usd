@@ -121,15 +121,9 @@ public:
         _editForwardMode = active;
         Q_EMIT editForwardModeChangedSignal(active);
     }
-    PXR_NS::SdfLayerRefPtr previewEditTarget() const { return _previewEditTarget; }
-    void setPreviewEditTarget(const PXR_NS::SdfLayerRefPtr& layer) { _previewEditTarget = layer; }
-    // The layer currently designated as the EF rule target (distinct from the actual
-    // stage edit target, which is always the session layer while in EF mode).
-    PXR_NS::SdfLayerRefPtr editForwardTargetLayer() const { return _editForwardTargetLayer; }
-    void setEditForwardTargetLayer(const PXR_NS::SdfLayerRefPtr& layer)
-    {
-        _editForwardTargetLayer = layer;
-    }
+    // The edit target saved on EF mode entry, restored on exit.
+    PXR_NS::SdfLayerRefPtr savedEditTarget() const { return _savedEditTarget; }
+    void setSavedEditTarget(const PXR_NS::SdfLayerRefPtr& layer) { _savedEditTarget = layer; }
 #endif
 
 Q_SIGNALS:
@@ -150,8 +144,7 @@ protected:
     bool       _displayLayerExpandAllValues { false };
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
     bool                   _editForwardMode { false };
-    PXR_NS::SdfLayerRefPtr _previewEditTarget;
-    PXR_NS::SdfLayerRefPtr _editForwardTargetLayer;
+    PXR_NS::SdfLayerRefPtr _savedEditTarget;
 #endif
 };
 
