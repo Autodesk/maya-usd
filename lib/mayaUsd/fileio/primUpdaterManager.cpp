@@ -1754,8 +1754,7 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
 
         // Fallback for DG nodes (e.g. shaders) that have no DAG path.
         MObject dgNode;
-        if (UsdMayaUtil::GetMObjectByName(srcName, dgNode) == MS::kSuccess
-            && !dgNode.isNull()) {
+        if (UsdMayaUtil::GetMObjectByName(srcName, dgNode) == MS::kSuccess && !dgNode.isNull()) {
             return duplicateToUsd(dgNode, dstPath, userArgs);
         }
 
