@@ -1408,8 +1408,8 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         AdskUsdEditForward::Host::SetInstance(mayaHost);
     });
 
-    auto prov = std::make_shared<MayaUsd::LayerEditorRuleProvider>(usdStage);
-    MayaUsd::LayerEditorRuleProvider::RegisterForStage(usdStage, prov);
+    auto prov = std::make_shared<MayaUsd::MayaForwardRuleProvider>(usdStage);
+    MayaUsd::MayaForwardRuleProvider::RegisterForStage(usdStage, prov);
     _forwarder = std::make_shared<AdskUsdEditForward::Forwarder>(
         usdStage, prov, usdStage->GetSessionLayer());
 #endif

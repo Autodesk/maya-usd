@@ -789,6 +789,12 @@ void LayerEditorWidget::enterEditForwardMode()
         }
     }
 
+    // Enable the provider before entering EF mode so GetRules() starts returning
+    // rules as soon as the mode flag is set.
+    auto prov = MayaUsd::MayaForwardRuleProvider::GetForStage(stage);
+    if (prov)
+        prov->setEnabled(true);
+
     // Enter EF mode first, then write the initial forwarding rule by routing through
     // LayerTreeModel::setEditTarget — which now hits the EF mode intercept and calls
     // setEditForwardRule, keeping all rule-writing logic in one place.
@@ -804,10 +810,12 @@ void LayerEditorWidget::exitEditForwardMode()
 {
     _sessionState.setEditForwardMode(false);
 
-    // Remove the in-memory preview rule so forwarding no longer applies after EF mode exits.
-    auto prov = MayaUsd::LayerEditorRuleProvider::GetForStage(_sessionState.stage());
-    if (prov)
-        prov->clearPreviewTarget();
+    // Disable forwarding and clear the fallback target.
+    auto prov = MayaUsd::MayaForwardRuleProvider::GetForStage(_sessionState.stage());
+    if (prov) {
+        prov->setEnabled(false);
+        prov->clearFallbackTarget();
+    }
 
     // Restore the edit target that was active before entering EF mode.
     auto prevTarget = _sessionState.previewEditTarget();

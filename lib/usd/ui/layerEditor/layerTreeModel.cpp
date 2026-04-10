@@ -265,11 +265,11 @@ void LayerTreeModel::setEditForwardRule(const SdfLayerRefPtr& targetLayer)
     if (!stage || !targetLayer)
         return;
 
-    // Update the in-memory preview rule via the LayerEditorRuleProvider.
+    // Update the in-memory fallback rule via MayaForwardRuleProvider.
     // Nothing is written to the root layer custom data.
-    auto prov = MayaUsd::LayerEditorRuleProvider::GetForStage(stage);
+    auto prov = MayaUsd::MayaForwardRuleProvider::GetForStage(stage);
     if (prov)
-        prov->setPreviewTarget(targetLayer);
+        prov->setFallbackTarget(targetLayer);
 
     // Track the EF rule target so the tree can display the correct target icon.
     _sessionState->setEditForwardTargetLayer(targetLayer);

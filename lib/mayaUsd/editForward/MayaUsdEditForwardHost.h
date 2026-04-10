@@ -18,6 +18,8 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -53,46 +55,52 @@ private:
 namespace MayaUsd {
 
 /**
- * PROTOTYPE rule provider for the Layer Editor's Edit Forwarding mode.
+ * Maya-level rule provider for Edit Forwarding mode.
  *
- * Extends StageRuleProvider by appending an in-memory "preview" rule that
- * targets whatever layer the user has selected in the Layer Editor while in
- * EF mode.  The rule lives purely in memory — it is never written to the
- * stage's root layer custom data — and disappears when EF mode is exited.
+ * Extends StageRuleProvider by appending an in-memory catch-all "fallback"
+ * rule that targets a layer chosen by the caller. The rule lives purely in
+ * memory and never touches the root layer custom data.
  *
- * IsContinuous() always returns true so that forwarding runs continuously
- * as edits arrive on the session layer.
+ * Whether forwarding is active is stored in the session layer's custom data
+ * under the key "adsk_forward_active", making it stage-attached and
+ * inspectable from Python without a separate in-memory flag.
+ *
+ * IsContinuous() always returns true so forwarding runs continuously.
  */
-class MAYAUSD_CORE_PUBLIC LayerEditorRuleProvider : public AdskUsdEditForward::StageRuleProvider
+class MAYAUSD_CORE_PUBLIC MayaForwardRuleProvider : public AdskUsdEditForward::StageRuleProvider
 {
 public:
-    using Ptr = std::shared_ptr<LayerEditorRuleProvider>;
+    using Ptr = std::shared_ptr<MayaForwardRuleProvider>;
 
-    explicit LayerEditorRuleProvider(const PXR_NS::UsdStageRefPtr& stage);
+    explicit MayaForwardRuleProvider(const PXR_NS::UsdStageRefPtr& stage);
 
     // IRuleProvider overrides
     std::vector<AdskUsdEditForward::RuleDef::Ptr> GetRules() const override;
     bool IsContinuous() const override { return true; }
 
-    // Set the layer that the in-memory preview rule should forward to.
-    void setPreviewTarget(const PXR_NS::SdfLayerRefPtr& layer);
+    // Enable/disable forwarding. Reads/writes "adsk_forward_active" on the
+    // stage's session layer custom data — no separate in-memory flag.
+    void setEnabled(bool enabled);
+    bool isEnabled() const;
 
-    // Remove the in-memory preview rule (call when exiting EF mode).
-    void clearPreviewTarget();
+    // Set/clear the catch-all fallback target layer.
+    void setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer);
+    void clearFallbackTarget();
 
-    // Registry — look up the provider created for a specific stage so that
-    // the layer editor can reach it without going through proxyShapeBase.
+    // Registry — look up the provider for a specific stage without going
+    // through proxyShapeBase.
     static Ptr  GetForStage(const PXR_NS::UsdStageRefPtr& stage);
     static void RegisterForStage(const PXR_NS::UsdStageRefPtr& stage, const Ptr& provider);
 
 private:
     static std::string regexEscapeLayerPath(const std::string& input);
 
-    PXR_NS::SdfLayerRefPtr _previewTarget;
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _fallbackTarget;
 
-    static std::mutex                                                                   s_registryMutex;
-    static std::unordered_map<const PXR_NS::UsdStage*, std::weak_ptr<LayerEditorRuleProvider>>
-                                                                                        s_registry;
+    static std::mutex                                                                s_registryMutex;
+    static std::unordered_map<const PXR_NS::UsdStage*, std::weak_ptr<MayaForwardRuleProvider>>
+                                                                                     s_registry;
 };
 
 } // namespace MayaUsd

@@ -140,37 +140,42 @@ void MayaUsdEditForwardHost::TrackLayerStates(const pxr::SdfLayerHandle& layer)
 }
 
 // =============================================================================
-// MayaUsd::LayerEditorRuleProvider
+// MayaUsd::MayaForwardRuleProvider
 // =============================================================================
 
 namespace MayaUsd {
 
-std::mutex LayerEditorRuleProvider::s_registryMutex;
-std::unordered_map<const PXR_NS::UsdStage*, std::weak_ptr<LayerEditorRuleProvider>>
-    LayerEditorRuleProvider::s_registry;
+std::mutex MayaForwardRuleProvider::s_registryMutex;
+std::unordered_map<const PXR_NS::UsdStage*, std::weak_ptr<MayaForwardRuleProvider>>
+    MayaForwardRuleProvider::s_registry;
 
-LayerEditorRuleProvider::LayerEditorRuleProvider(const PXR_NS::UsdStageRefPtr& stage)
+MayaForwardRuleProvider::MayaForwardRuleProvider(const PXR_NS::UsdStageRefPtr& stage)
     : AdskUsdEditForward::StageRuleProvider(stage)
+    , _stage(stage)
 {
 }
 
-std::vector<AdskUsdEditForward::RuleDef::Ptr> LayerEditorRuleProvider::GetRules() const
+std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaForwardRuleProvider::GetRules() const
 {
+    // When forwarding is disabled, return no rules.
+    if (!isEnabled())
+        return {};
+
     // Start with any rules authored on the stage (read from root layer custom data).
     auto rules = AdskUsdEditForward::StageRuleProvider::GetRules();
 
-    if (_previewTarget) {
-        // PROTOTYPE: append an in-memory catch-all rule targeting the selected layer.
+    if (_fallbackTarget) {
+        // Append an in-memory catch-all rule targeting the fallback layer.
         // Appended last so any user-authored rules take precedence.
-        static const std::string kPrototypeRuleId = "layer_editor_ef_preview_rule";
+        static const std::string kFallbackRuleId = "maya_ef_fallback_rule";
 
         auto rule       = std::make_shared<AdskUsdEditForward::RuleDef>();
-        rule->id        = kPrototypeRuleId;
+        rule->id        = kFallbackRuleId;
         rule->description
-            = "Layer Editor EF Preview (PROTOTYPE) - in-memory, not persisted to layer";
+            = "Maya EF fallback rule (in-memory, not persisted to root layer)";
         rule->inputObjectExpression = AdskUsdEditForward::RuleExpression(".*");
         rule->targetLayerExpression = AdskUsdEditForward::RuleExpression(
-            regexEscapeLayerPath(_previewTarget->GetIdentifier()));
+            regexEscapeLayerPath(_fallbackTarget->GetIdentifier()));
 
         rules.push_back(rule);
     }
@@ -178,16 +183,41 @@ std::vector<AdskUsdEditForward::RuleDef::Ptr> LayerEditorRuleProvider::GetRules(
     return rules;
 }
 
-void LayerEditorRuleProvider::setPreviewTarget(const PXR_NS::SdfLayerRefPtr& layer)
+void MayaForwardRuleProvider::setEnabled(bool enabled)
 {
-    _previewTarget = layer;
+    if (!_stage)
+        return;
+    auto sessionLayer = _stage->GetSessionLayer();
+    if (!sessionLayer)
+        return;
+    PXR_NS::VtDictionary data = sessionLayer->GetCustomLayerData();
+    data["adsk_forward_active"]  = PXR_NS::VtValue(enabled);
+    sessionLayer->SetCustomLayerData(data);
 }
 
-void LayerEditorRuleProvider::clearPreviewTarget() { _previewTarget = nullptr; }
+bool MayaForwardRuleProvider::isEnabled() const
+{
+    if (!_stage)
+        return false;
+    auto sessionLayer = _stage->GetSessionLayer();
+    if (!sessionLayer)
+        return false;
+    const auto& data = sessionLayer->GetCustomLayerData();
+    auto        it   = data.find("adsk_forward_active");
+    return it != data.end() && it->second.IsHolding<bool>()
+        && it->second.UncheckedGet<bool>();
+}
+
+void MayaForwardRuleProvider::setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    _fallbackTarget = layer;
+}
+
+void MayaForwardRuleProvider::clearFallbackTarget() { _fallbackTarget = nullptr; }
 
 /*static*/
-LayerEditorRuleProvider::Ptr
-LayerEditorRuleProvider::GetForStage(const PXR_NS::UsdStageRefPtr& stage)
+MayaForwardRuleProvider::Ptr
+MayaForwardRuleProvider::GetForStage(const PXR_NS::UsdStageRefPtr& stage)
 {
     if (!stage)
         return nullptr;
@@ -199,7 +229,7 @@ LayerEditorRuleProvider::GetForStage(const PXR_NS::UsdStageRefPtr& stage)
 }
 
 /*static*/
-void LayerEditorRuleProvider::RegisterForStage(
+void MayaForwardRuleProvider::RegisterForStage(
     const PXR_NS::UsdStageRefPtr& stage,
     const Ptr&                    provider)
 {
@@ -210,7 +240,7 @@ void LayerEditorRuleProvider::RegisterForStage(
 }
 
 /*static*/
-std::string LayerEditorRuleProvider::regexEscapeLayerPath(const std::string& input)
+std::string MayaForwardRuleProvider::regexEscapeLayerPath(const std::string& input)
 {
     static const std::string specialChars = R"(\.^$*+?()[]{}|)";
     std::string              result;
