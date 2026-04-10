@@ -31,6 +31,13 @@ TF_DEBUG_CODES(
 // clang-format on
 
 // Macro like TF_DEBUG_MSG, but for informational messages.
+// IOW, it output its messages to the same place as TF_STATUS while being controlled
+// by the same debug codes as TF_DEBUG_MSG. This is useful because the debug message
+// are output to the standard error output while the status message are handled by
+// the DCC diagnostic dellegate and are sent to a more appropriate place for the
+// user to see. For example, in Maya, the status message are sent to the script editor
+// which has nice feature like clearing, searching and identical-messages consolidation,
+// while the debug message are output in a featureless console.
 #define TF_DEBUG_INFO_MSG(enumVal, ...)           \
     if (!TfDebug::IsEnabled(enumVal)) /* empty */ \
         ;                                         \
