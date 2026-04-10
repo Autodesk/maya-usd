@@ -19,12 +19,16 @@
 
 #include "sampler.h"
 
+#include <mayaUsd/render/px_vp20/utils.h>
+
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/quaternion.h>
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/staticTokens.h>
+#include <pxr/imaging/hd/utils.h>
+#include <pxr/imaging/hd/dataSource.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 
 #include <algorithm>
@@ -219,7 +223,7 @@ VtMatrix4dArray HdVP2Instancer::GetInstanceTransforms(SdfPath const& prototypeId
     HdInstancer::_SyncInstancerAndParents(GetDelegate()->GetRenderIndex(), GetId());
 
     // Get the instance indices from our cache instead of querying the scene delegate.
-    auto itInstanceIndices = _instanceIndicesByPrototype.find(prototypeId);
+    auto itInstanceIndices = FindSelfOrFirstParent(prototypeId, _instanceIndicesByPrototype);
     if (itInstanceIndices == _instanceIndicesByPrototype.end()) {
         return {};
     }

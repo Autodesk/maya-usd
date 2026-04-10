@@ -100,6 +100,7 @@ struct MayaUsdCommitState
     //! Instancing doesn't have dirty bits, every time we do update, we must update instance
     //! transforms
     std::shared_ptr<MMatrixArray> _instanceTransforms;
+    std::shared_ptr<MMatrixArray> _oldInstanceTransforms;
 
     //! Color parameter that _instanceColors should be bound to
     MString _instanceColorParam;
