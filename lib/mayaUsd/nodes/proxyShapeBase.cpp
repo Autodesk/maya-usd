@@ -123,7 +123,6 @@ using MayaUsd::ProxyAccessor;
 
 #include <AdskUsdEditForward/Forwarder.h>
 #include <AdskUsdEditForward/Host.h>
-#include <AdskUsdEditForward/StageRuleProvider.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -1409,8 +1408,8 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         AdskUsdEditForward::Host::SetInstance(mayaHost);
     });
 
-    std::shared_ptr<AdskUsdEditForward::IRuleProvider> prov
-        = std::make_shared<AdskUsdEditForward::StageRuleProvider>(usdStage);
+    auto prov = std::make_shared<MayaUsd::LayerEditorRuleProvider>(usdStage);
+    MayaUsd::LayerEditorRuleProvider::RegisterForStage(usdStage, prov);
     _forwarder = std::make_shared<AdskUsdEditForward::Forwarder>(
         usdStage, prov, usdStage->GetSessionLayer());
 #endif

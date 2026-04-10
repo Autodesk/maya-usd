@@ -138,3 +138,89 @@ void MayaUsdEditForwardHost::TrackLayerStates(const pxr::SdfLayerHandle& layer)
 {
     UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
 }
+
+// =============================================================================
+// MayaUsd::LayerEditorRuleProvider
+// =============================================================================
+
+namespace MayaUsd {
+
+std::mutex LayerEditorRuleProvider::s_registryMutex;
+std::unordered_map<const PXR_NS::UsdStage*, std::weak_ptr<LayerEditorRuleProvider>>
+    LayerEditorRuleProvider::s_registry;
+
+LayerEditorRuleProvider::LayerEditorRuleProvider(const PXR_NS::UsdStageRefPtr& stage)
+    : AdskUsdEditForward::StageRuleProvider(stage)
+{
+}
+
+std::vector<AdskUsdEditForward::RuleDef::Ptr> LayerEditorRuleProvider::GetRules() const
+{
+    // Start with any rules authored on the stage (read from root layer custom data).
+    auto rules = AdskUsdEditForward::StageRuleProvider::GetRules();
+
+    if (_previewTarget) {
+        // PROTOTYPE: append an in-memory catch-all rule targeting the selected layer.
+        // Appended last so any user-authored rules take precedence.
+        static const std::string kPrototypeRuleId = "layer_editor_ef_preview_rule";
+
+        auto rule       = std::make_shared<AdskUsdEditForward::RuleDef>();
+        rule->id        = kPrototypeRuleId;
+        rule->description
+            = "Layer Editor EF Preview (PROTOTYPE) - in-memory, not persisted to layer";
+        rule->inputObjectExpression = AdskUsdEditForward::RuleExpression(".*");
+        rule->targetLayerExpression = AdskUsdEditForward::RuleExpression(
+            regexEscapeLayerPath(_previewTarget->GetIdentifier()));
+
+        rules.push_back(rule);
+    }
+
+    return rules;
+}
+
+void LayerEditorRuleProvider::setPreviewTarget(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    _previewTarget = layer;
+}
+
+void LayerEditorRuleProvider::clearPreviewTarget() { _previewTarget = nullptr; }
+
+/*static*/
+LayerEditorRuleProvider::Ptr
+LayerEditorRuleProvider::GetForStage(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage)
+        return nullptr;
+    std::lock_guard<std::mutex> lock(s_registryMutex);
+    auto                        it = s_registry.find(stage.operator->());
+    if (it != s_registry.end())
+        return it->second.lock();
+    return nullptr;
+}
+
+/*static*/
+void LayerEditorRuleProvider::RegisterForStage(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const Ptr&                    provider)
+{
+    if (!stage)
+        return;
+    std::lock_guard<std::mutex> lock(s_registryMutex);
+    s_registry[stage.operator->()] = provider;
+}
+
+/*static*/
+std::string LayerEditorRuleProvider::regexEscapeLayerPath(const std::string& input)
+{
+    static const std::string specialChars = R"(\.^$*+?()[]{}|)";
+    std::string              result;
+    result.reserve(input.size() * 2);
+    for (char c : input) {
+        if (specialChars.find(c) != std::string::npos)
+            result += '\\';
+        result += c;
+    }
+    return result;
+}
+
+} // namespace MayaUsd

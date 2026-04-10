@@ -30,7 +30,7 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-#include <AdskUsdEditForward/StageRuleProvider.h>
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 #endif
 
 #include <pxr/usd/sdf/schema.h>
@@ -803,6 +803,11 @@ void LayerEditorWidget::enterEditForwardMode()
 void LayerEditorWidget::exitEditForwardMode()
 {
     _sessionState.setEditForwardMode(false);
+
+    // Remove the in-memory preview rule so forwarding no longer applies after EF mode exits.
+    auto prov = MayaUsd::LayerEditorRuleProvider::GetForStage(_sessionState.stage());
+    if (prov)
+        prov->clearPreviewTarget();
 
     // Restore the edit target that was active before entering EF mode.
     auto prevTarget = _sessionState.previewEditTarget();

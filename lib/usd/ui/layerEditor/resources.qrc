@@ -5,26 +5,25 @@
         <file alias="addCreateGeneric_150.png">resources/addCreateGeneric_150.png</file>
         <file alias="addCreateGeneric_200.png">resources/addCreateGeneric_200.png</file>
 
-        <!-- TODO: Replace ef_toggle and ef_configure with proper lightning/configure icons -->
-        <file alias="ef_toggle_100.png">resources/save_all_100.png</file>
-        <file alias="ef_toggle_150.png">resources/save_all_150.png</file>
-        <file alias="ef_toggle_200.png">resources/save_all_200.png</file>
-        <file alias="ef_toggle_hover_100.png">resources/save_all_hover_100.png</file>
-        <file alias="ef_toggle_hover_150.png">resources/save_all_hover_150.png</file>
-        <file alias="ef_toggle_hover_200.png">resources/save_all_hover_200.png</file>
-        <file alias="ef_toggle_pressed_100.png">resources/save_all_hover_100.png</file>
-        <file alias="ef_toggle_pressed_150.png">resources/save_all_hover_150.png</file>
-        <file alias="ef_toggle_pressed_200.png">resources/save_all_hover_200.png</file>
+        <file alias="ef_toggle_100.png">resources/ef_toggle_100.png</file>
+        <file alias="ef_toggle_150.png">resources/ef_toggle_150.png</file>
+        <file alias="ef_toggle_200.png">resources/ef_toggle_200.png</file>
+        <file alias="ef_toggle_hover_100.png">resources/ef_toggle_hover_100.png</file>
+        <file alias="ef_toggle_hover_150.png">resources/ef_toggle_hover_150.png</file>
+        <file alias="ef_toggle_hover_200.png">resources/ef_toggle_hover_200.png</file>
+        <file alias="ef_toggle_pressed_100.png">resources/ef_toggle_pressed_100.png</file>
+        <file alias="ef_toggle_pressed_150.png">resources/ef_toggle_pressed_150.png</file>
+        <file alias="ef_toggle_pressed_200.png">resources/ef_toggle_pressed_200.png</file>
 
-        <file alias="ef_configure_100.png">resources/import_layer_100.png</file>
-        <file alias="ef_configure_150.png">resources/import_layer_150.png</file>
-        <file alias="ef_configure_200.png">resources/import_layer_200.png</file>
-        <file alias="ef_configure_hover_100.png">resources/import_layer_hover_100.png</file>
-        <file alias="ef_configure_hover_150.png">resources/import_layer_hover_150.png</file>
-        <file alias="ef_configure_hover_200.png">resources/import_layer_hover_200.png</file>
-        <file alias="ef_configure_pressed_100.png">resources/import_layer_hover_100.png</file>
-        <file alias="ef_configure_pressed_150.png">resources/import_layer_hover_150.png</file>
-        <file alias="ef_configure_pressed_200.png">resources/import_layer_hover_200.png</file>
+        <file alias="ef_configure_100.png">resources/ef_configure_100.png</file>
+        <file alias="ef_configure_150.png">resources/ef_configure_150.png</file>
+        <file alias="ef_configure_200.png">resources/ef_configure_200.png</file>
+        <file alias="ef_configure_hover_100.png">resources/ef_configure_hover_100.png</file>
+        <file alias="ef_configure_hover_150.png">resources/ef_configure_hover_150.png</file>
+        <file alias="ef_configure_hover_200.png">resources/ef_configure_hover_200.png</file>
+        <file alias="ef_configure_pressed_100.png">resources/ef_configure_pressed_100.png</file>
+        <file alias="ef_configure_pressed_150.png">resources/ef_configure_pressed_150.png</file>
+        <file alias="ef_configure_pressed_200.png">resources/ef_configure_pressed_200.png</file>
 
         <file alias="save_all_100.png">resources/save_all_100.png</file>
         <file alias="save_all_150.png">resources/save_all_150.png</file>
