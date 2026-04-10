@@ -103,11 +103,15 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         StringResources::getAsQString(StringResources::kToggleEditForwarding),
         "LayerEditorToggleEFButton");
     _buttons._toggleEFButton->setCheckable(true);
-    // Append a :checked style so the button shows a blue border when EF mode is active.
-    // Same blue (#38abdf) as the EF banner accent.
+    // Append :checked rules to swap the icon to the orange variants when EF mode is active.
     _buttons._toggleEFButton->setStyleSheet(
         _buttons._toggleEFButton->styleSheet()
-        + "\nQPushButton:checked { border: 2px solid #38abdf; border-radius: 2px; }");
+        + QString("\nQPushButton:checked         { background-image: url(%1); }"
+                  "\nQPushButton:checked:hover   { background-image: url(%2); }"
+                  "\nQPushButton:checked:pressed { background-image: url(%3); }")
+              .arg(QtUtils::getDPIPixmapName(":/UsdLayerEditor/ef_toggle_on"))
+              .arg(QtUtils::getDPIPixmapName(":/UsdLayerEditor/ef_toggle_on_hover"))
+              .arg(QtUtils::getDPIPixmapName(":/UsdLayerEditor/ef_toggle_on_pressed")));
     connect(
         _buttons._toggleEFButton,
         &QAbstractButton::clicked,
@@ -808,21 +812,27 @@ void LayerEditorWidget::enterEditForwardMode()
 
 void LayerEditorWidget::exitEditForwardMode()
 {
-    // Disable forwarding and clear the fallback target first, so that the provider
-    // is in its final state before the mode flag changes and triggers a tree refresh.
+    // Capture the fallback target before disabling the provider — the user was
+    // forwarding edits to this layer while in EF mode, so we restore to it on exit
+    // to keep the effective edit target unchanged from the user's perspective.
+    PXR_NS::SdfLayerRefPtr targetToRestore;
     auto prov = MayaUsd::MayaForwardRuleProvider::GetForStage(_sessionState.stage());
     if (prov) {
+        targetToRestore = prov->fallbackTarget();
         prov->setEnabled(false);
         prov->clearFallbackTarget();
     }
 
-    // Restore the edit target that was active before entering EF mode.
-    auto savedTarget = _sessionState.savedEditTarget();
-    if (savedTarget) {
+    // Fall back to the target saved when entering EF mode, in case no fallback
+    // was ever configured.
+    if (!targetToRestore)
+        targetToRestore = _sessionState.savedEditTarget();
+
+    if (targetToRestore) {
         UndoContext context(_sessionState.commandHook(), "Exit Edit Forward Mode");
-        context.hook()->setEditTarget(savedTarget);
-        _sessionState.setSavedEditTarget(nullptr);
+        context.hook()->setEditTarget(targetToRestore);
     }
+    _sessionState.setSavedEditTarget(nullptr);
 
     // Flip the mode flag last — the signal triggers a tree refresh, which now
     // runs with the correct provider state and restored edit target.

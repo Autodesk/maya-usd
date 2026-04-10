@@ -179,6 +179,8 @@ std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaForwardRuleProvider::GetRules(
         rule->inputObjectExpression = AdskUsdEditForward::RuleExpression(".*");
         rule->targetLayerExpression = AdskUsdEditForward::RuleExpression(
             regexEscapeLayerPath(_fallbackTarget->GetIdentifier()));
+        
+        rule->blockWeakLocalOpinion = true;
 
         rules.push_back(rule);
     }

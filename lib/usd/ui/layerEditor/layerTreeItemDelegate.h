@@ -130,6 +130,9 @@ protected:
     QPixmap      DISABLED_HIGHLIGHT_IMAGE;
     QPixmap      TARGET_ON_IMAGES[3];
     QPixmap      TARGET_OFF_IMAGES[3];
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    QPixmap      TARGET_EF_IMAGES[3];
+#endif
     QPixmap      WARNING_IMAGE;
 
     // gets the rectangle of the item, adjusted for the tree indentation

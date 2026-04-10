@@ -55,6 +55,9 @@ public:
     LayerTreeModel(SessionState* in_sessionState, QObject* in_parent);
     ~LayerTreeModel();
     SessionState* sessionState() { return _sessionState; }
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    bool editForwardMode() const { return _sessionState && _sessionState->editForwardMode(); }
+#endif
 
     // API to suspend reacting to USD notifications
     static void suspendUsdNotices(bool suspend);

@@ -5,6 +5,16 @@
         <file alias="addCreateGeneric_150.png">resources/addCreateGeneric_150.png</file>
         <file alias="addCreateGeneric_200.png">resources/addCreateGeneric_200.png</file>
 
+        <file alias="ef_toggle_on_100.png">resources/ef_toggle_on_100.png</file>
+        <file alias="ef_toggle_on_150.png">resources/ef_toggle_on_150.png</file>
+        <file alias="ef_toggle_on_200.png">resources/ef_toggle_on_200.png</file>
+        <file alias="ef_toggle_on_hover_100.png">resources/ef_toggle_on_hover_100.png</file>
+        <file alias="ef_toggle_on_hover_150.png">resources/ef_toggle_on_hover_150.png</file>
+        <file alias="ef_toggle_on_hover_200.png">resources/ef_toggle_on_hover_200.png</file>
+        <file alias="ef_toggle_on_pressed_100.png">resources/ef_toggle_on_pressed_100.png</file>
+        <file alias="ef_toggle_on_pressed_150.png">resources/ef_toggle_on_pressed_150.png</file>
+        <file alias="ef_toggle_on_pressed_200.png">resources/ef_toggle_on_pressed_200.png</file>
+
         <file alias="ef_toggle_100.png">resources/ef_toggle_100.png</file>
         <file alias="ef_toggle_150.png">resources/ef_toggle_150.png</file>
         <file alias="ef_toggle_200.png">resources/ef_toggle_200.png</file>
@@ -110,6 +120,16 @@
         <file alias="striped_selected.png">resources/striped_selected_100.png</file>
         <file alias="striped_selected_150.png">resources/striped_selected_150.png</file>
         <file alias="striped_selected_200.png">resources/striped_selected_200.png</file>
+
+        <file alias="target_ef.png">resources/target_ef_100.png</file>
+        <file alias="target_ef_150.png">resources/target_ef_150.png</file>
+        <file alias="target_ef_200.png">resources/target_ef_200.png</file>
+        <file alias="target_ef_hover.png">resources/target_ef_hover_100.png</file>
+        <file alias="target_ef_hover_150.png">resources/target_ef_hover_150.png</file>
+        <file alias="target_ef_hover_200.png">resources/target_ef_hover_200.png</file>
+        <file alias="target_ef_pressed.png">resources/target_ef_pressed_100.png</file>
+        <file alias="target_ef_pressed_150.png">resources/target_ef_pressed_150.png</file>
+        <file alias="target_ef_pressed_200.png">resources/target_ef_pressed_200.png</file>
 
         <file alias="target_on.png">resources/target_on_100.png</file>
         <file alias="target_on_150.png">resources/target_on_150.png</file>

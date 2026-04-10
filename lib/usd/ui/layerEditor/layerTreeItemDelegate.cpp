@@ -101,6 +101,14 @@ LayerTreeItemDelegate::LayerTreeItemDelegate(LayerTreeView* in_parent)
         TARGET_OFF_IMAGES[i]
             = utils->createPNGResPixmap(QString(":/UsdLayerEditor/") + targetOffPixmaps[i]);
     }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    const char* targetEFPixmaps[3] { "target_ef", "target_ef_hover", "target_ef_pressed" };
+    for (int i = 0; i < 3; i++) {
+        TARGET_EF_IMAGES[i]
+            = utils->createPNGResPixmap(QString(":/UsdLayerEditor/") + targetEFPixmaps[i]);
+    }
+#endif
 }
 
 QRect LayerTreeItemDelegate::getAdjustedItemRect(LayerTreeItem const* item, QRect const& optionRect)
@@ -190,7 +198,17 @@ void LayerTreeItemDelegate::paint_drawTarget(
 
     QPixmap icon;
     if (ctx.item->isTargetLayer()) {
-        icon = ctx.isPressed ? TARGET_ON_IMAGES[2] : TARGET_ON_IMAGES[hover ? 1 : 0];
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        bool efMode = false;
+        if (auto model = qobject_cast<const LayerTreeModel*>(_treeView->model()))
+            efMode = model->editForwardMode();
+        if (efMode) {
+            icon = ctx.isPressed ? TARGET_EF_IMAGES[2] : TARGET_EF_IMAGES[hover ? 1 : 0];
+        } else
+#endif
+        {
+            icon = ctx.isPressed ? TARGET_ON_IMAGES[2] : TARGET_ON_IMAGES[hover ? 1 : 0];
+        }
     } else {
         icon = ctx.isPressed ? TARGET_OFF_IMAGES[2] : TARGET_OFF_IMAGES[hover ? 1 : 0];
     }
