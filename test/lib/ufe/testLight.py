@@ -80,7 +80,7 @@ class LightTestCase(unittest.TestCase):
     def _TestSpotLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
-        self.assertEqual(ufeLight.type(), ufe.Light.Spot)
+        self.assertEqual(ufeLight.type(), ufe.Light.Type.Spot)
         self._TestIntensity(ufeLight, usdLight)
         self._TestDiffuse(ufeLight, usdLight)
         self._TestSpecular(ufeLight, usdLight)
@@ -98,9 +98,9 @@ class LightTestCase(unittest.TestCase):
         if (os.getenv('UFE_VOLUME_LIGHTS_SUPPORT', 'FALSE') == 'TRUE'):
             # With Ufe volume light support point light will be treated as a special kind of
             # sphere light where the gizmo will be handled in Maya.
-            self.assertEqual(ufeLight.type(), ufe.Light.Sphere)
+            self.assertEqual(ufeLight.type(), ufe.Light.Type.Sphere)
         else:
-            self.assertEqual(ufeLight.type(), ufe.Light.Point)
+            self.assertEqual(ufeLight.type(), ufe.Light.Type.Point)
         self._TestIntensity(ufeLight, usdLight)
         self._TestDiffuse(ufeLight, usdLight)
         self._TestSpecular(ufeLight, usdLight)
@@ -115,7 +115,7 @@ class LightTestCase(unittest.TestCase):
     def _TestDirectionalLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
-        self.assertEqual(ufeLight.type(), ufe.Light.Directional)
+        self.assertEqual(ufeLight.type(), ufe.Light.Type.Directional)
         self._TestIntensity(ufeLight, usdLight)
         self._TestDiffuse(ufeLight, usdLight)
         self._TestSpecular(ufeLight, usdLight)
@@ -131,9 +131,9 @@ class LightTestCase(unittest.TestCase):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
         if (os.getenv('UFE_LIGHTS2_SUPPORT', 'FALSE') == 'TRUE'):
-            self.assertEqual(ufeLight.type(), ufe.Light2.Area)
+            self.assertEqual(ufeLight.type(), ufe.Light2.Type.Area)
         else:
-            self.assertEqual(ufeLight.type(), ufe.Light.Area)
+            self.assertEqual(ufeLight.type(), ufe.Light.Type.Area)
         self._TestIntensity(ufeLight, usdLight)
         self._TestDiffuse(ufeLight, usdLight)
         self._TestSpecular(ufeLight, usdLight)
@@ -151,21 +151,21 @@ class LightTestCase(unittest.TestCase):
     def _TestCylinderLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
-        self.assertEqual(ufeLight.type(), ufe.Light.Cylinder)
+        self.assertEqual(ufeLight.type(), ufe.Light.Type.Cylinder)
         self.assertEqual(None, ufeLight.diskInterface())
         self.assertEqual(None, ufeLight.domeInterface())
    
     def _TestDiskLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
-        self.assertEqual(ufeLight.type(), ufe.Light.Disk)
+        self.assertEqual(ufeLight.type(), ufe.Light.Type.Disk)
         self.assertEqual(None, ufeLight.cylinderInterface())
         self.assertEqual(None, ufeLight.domeInterface())
 
     def _TestDomeLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
-        self.assertEqual(ufeLight.type(), ufe.Light.Dome)
+        self.assertEqual(ufeLight.type(), ufe.Light.Type.Dome)
         self.assertEqual(None, ufeLight.cylinderInterface())
         self.assertEqual(None, ufeLight.diskInterface())
     

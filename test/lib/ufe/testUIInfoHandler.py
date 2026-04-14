@@ -94,7 +94,7 @@ class UIInfoHandlerTestCase(unittest.TestCase):
 
         if ufeUtils.ufeFeatureSetVersion() >= 4:
             # Ball_3 should have a "normal" icon mode.
-            self.assertEqual(ufe.UIInfoHandler.Normal, icon.mode)
+            self.assertEqual(ufe.UIInfoHandler.Mode.Normal, icon.mode)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
