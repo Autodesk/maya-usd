@@ -144,13 +144,13 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Test the list of connections.
 
-        self.assertTrue(connections.hasConnection(dstAttr.attribute(), ufe.Connections.ATTR_IS_DESTINATION))
-        self.assertFalse(connections.hasConnection(srcAttr.attribute(), ufe.Connections.ATTR_IS_DESTINATION))
+        self.assertTrue(connections.hasConnection(dstAttr.attribute(), ufe.Connections.AttributeType.ATTR_IS_DESTINATION))
+        self.assertFalse(connections.hasConnection(srcAttr.attribute(), ufe.Connections.AttributeType.ATTR_IS_DESTINATION))
 
-        conns = connections.connections(dstAttr.attribute(), ufe.Connections.ATTR_IS_DESTINATION)
+        conns = connections.connections(dstAttr.attribute(), ufe.Connections.AttributeType.ATTR_IS_DESTINATION)
         self.assertEqual(len(conns), 1)
 
-        conns = connections.connections(srcAttr.attribute(), ufe.Connections.ATTR_IS_DESTINATION)
+        conns = connections.connections(srcAttr.attribute(), ufe.Connections.AttributeType.ATTR_IS_DESTINATION)
         self.assertEqual(len(conns), 0)
 
         # Step 2 - Find all the existing connections for for the Shader 'TexCoordReader'
