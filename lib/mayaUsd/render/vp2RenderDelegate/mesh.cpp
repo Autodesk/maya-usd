@@ -1407,6 +1407,12 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
         if (SdfPath::EmptyPath() == geomSubset.materialId)
             continue;
 
+        // Skip subsets with no face indices, they contribute nothing
+        // to the topology partition, would create empty render items,
+        // and could lead to vertex mangling.
+        if (geomSubset.indices.empty())
+            continue;
+
         MString renderItemName = drawItem.GetDrawItemName();
         renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
         renderItemName += geomSubset.id.GetString().c_str();
