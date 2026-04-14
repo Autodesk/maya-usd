@@ -886,7 +886,16 @@ void MayaUsdRPrim::_SyncSharedData(
     }
 
     // If instancer is dirty, update instancing map
-    if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
+    // Use the DirtyInstanceIndex flag to determine if instancing topology has changed,
+    // and if _pathInPrototype needs to be updated. Even if the instancing topology
+    // change comes from elsewhere in the instancing hierarchy, at least one instancer
+    // will have the DirtyInstanceIndex flag dirtied. According to the behaviour
+    // in HdChangeTracker::_MarkInstancerDirty, this will propagate to all other
+    // prims in the instancing hierarchy, so we can use this check.
+    // For now, also still use a fallback check when the path is empty to catch any 
+    // potential initialization/reset edge cases. Potentially not needed, TBD.
+    if (HdChangeTracker::IsInstanceIndexDirty(*dirtyBits, id) || 
+        (HdChangeTracker::IsInstancerDirty(*dirtyBits, id) && _pathInPrototype.first.IsEmpty())) {
         bool instanced = !refThis.GetInstancerId().IsEmpty();
         // The additional condition below is to prevent a crash in USD function GetScenePrimPath
         instanced
