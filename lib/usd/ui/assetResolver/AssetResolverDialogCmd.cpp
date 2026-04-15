@@ -35,12 +35,14 @@
 #define MNoVersionString
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsdUI/ui/USDAssetResolverDialog.h>
+#include <mayaUsdUI/ui/PreferencesManagement.h>
 #include <mayaUsdUI/ui/USDQtUtil.h>
 
 #include <maya/MFnPlugin.h>
 
+#include <AssetResolverWidgets/PathDialog/PathDialog.h>
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
 
@@ -52,6 +54,10 @@ namespace {
 
 constexpr auto kParentWindowFlag = "-pw";
 constexpr auto kParentWindowFlagLong = "-parentWindow";
+constexpr auto kTabFlag = "-tab";
+constexpr auto kTabFlagLong = "-tabName";
+constexpr auto kPathsTabName = "paths";
+constexpr auto kSettingsTabName = "globalSettings";
 
 MString parseTextArg(const MArgParser& argData, const char* flag, const MString& defaultValue)
 {
@@ -98,11 +104,31 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
         const MString parentWindowName = parseTextArg(argData, kParentWindowFlag, "");
         QWidget*      parentWindow = findParentWindow(parentWindowName);
 
-        std::unique_ptr<USDAssetResolverDialog> usdAssetResolverDialog(
-            new USDAssetResolverDialog(parentWindow));
+        std::unique_ptr<Adsk::AssetResolverPathDialog> assetResolverPathDialog(
+            new Adsk::AssetResolverPathDialog(parentWindow));
+
+        assetResolverPathDialog->setGetStagesFunctor([]() {
+            auto allStages = ufe::UsdStageMap::getInstance().allStages();
+            return std::vector<PXR_NS::UsdStageRefPtr>(allStages.begin(), allStages.end());
+        });
+
+        const MString tabName = parseTextArg(argData, kTabFlag, kPathsTabName);
+        if (tabName == kSettingsTabName) {
+            assetResolverPathDialog->setCurrentTab(
+                Adsk::AssetResolverPathDialog::Tab::GlobalSettings);
+        } else {
+            assetResolverPathDialog->setCurrentTab(Adsk::AssetResolverPathDialog::Tab::Paths);
+        }
+
+        QObject::connect(
+            assetResolverPathDialog.get(),
+            &Adsk::AssetResolverPathDialog::settingsApplied,
+            [](const Adsk::AssetResolverSettings& settings) {
+                PreferencesManagement::SaveUsdPreferences(settings);
+            });
 
         QApplication::restoreOverrideCursor();
-        usdAssetResolverDialog->execute();
+        assetResolverPathDialog->exec();
         return MS::kSuccess;
     }
 
@@ -115,6 +141,7 @@ MSyntax AssetResolverDialogCmd::createSyntax()
     syntax.enableQuery(true);
     syntax.enableEdit(false);
     syntax.addFlag(kParentWindowFlag, kParentWindowFlagLong, MSyntax::kString);
+    syntax.addFlag(kTabFlag, kTabFlagLong, MSyntax::kString);
 
     syntax.setObjectType(MSyntax::kStringObjects, 0, 1);
     return syntax;
