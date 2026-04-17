@@ -110,8 +110,7 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
                 g_assetResolverDialog->setCurrentTab(
                     Adsk::AssetResolverPathDialog::Tab::GlobalSettings);
             } else {
-                g_assetResolverDialog->setCurrentTab(
-                    Adsk::AssetResolverPathDialog::Tab::Paths);
+                g_assetResolverDialog->setCurrentTab(Adsk::AssetResolverPathDialog::Tab::Paths);
             }
             g_assetResolverDialog->raise();
             g_assetResolverDialog->activateWindow();

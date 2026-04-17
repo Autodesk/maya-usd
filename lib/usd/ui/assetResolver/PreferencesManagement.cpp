@@ -15,8 +15,8 @@
 //
 #include "PreferencesManagement.h"
 
-#include "AssetResolverUtils.h"
 #include "AssetResolverApplicationHost.h"
+#include "AssetResolverUtils.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
