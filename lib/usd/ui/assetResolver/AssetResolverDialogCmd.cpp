@@ -80,6 +80,9 @@ MStatus AssetResolverDialogCmd::initialize(MFnPlugin& plugin)
 /*static*/
 MStatus AssetResolverDialogCmd::finalize(MFnPlugin& plugin)
 {
+    if (g_assetResolverDialog) {
+        g_assetResolverDialog->close();
+    }
     return plugin.deregisterCommand(name);
 }
 void* AssetResolverDialogCmd::creator() { return new AssetResolverDialogCmd(); }
