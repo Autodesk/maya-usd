@@ -100,7 +100,14 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
 
             g_assetResolverDialog->setGetStagesFunctor([]() {
                 auto allStages = ufe::UsdStageMap::getInstance().allStages();
-                return std::vector<PXR_NS::UsdStageRefPtr>(allStages.begin(), allStages.end());
+                std::vector<PXR_NS::UsdStageRefPtr> stages;
+                stages.reserve(allStages.size());
+                for (const auto& weakStage : allStages) {
+                    if (PXR_NS::UsdStageRefPtr stage { weakStage }) {
+                        stages.push_back(stage);
+                    }
+                }
+                return stages;
             });
 
             QObject::connect(
