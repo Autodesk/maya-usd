@@ -55,8 +55,6 @@ namespace {
 
 QPointer<Adsk::AssetResolverPathDialog> g_assetResolverDialog;
 
-constexpr auto kParentWindowFlag = "-pw";
-constexpr auto kParentWindowFlagLong = "-parentWindow";
 constexpr auto kTabFlag = "-tab";
 constexpr auto kTabFlagLong = "-tabName";
 constexpr auto kPathsTabName = "paths";
@@ -68,17 +66,6 @@ MString parseTextArg(const MArgParser& argData, const char* flag, const MString&
     if (argData.isFlagSet(flag))
         argData.getFlagArgument(flag, 0, value);
     return value;
-}
-
-QWidget* findParentWindow(const MString& controlName)
-{
-    QWidget* originalWidget = MQtUtil::findControl(controlName);
-    for (QWidget* widget = originalWidget; widget; widget = widget->parentWidget()) {
-        if (widget->isWindow()) {
-            return widget;
-        }
-    }
-    return MQtUtil::mainWindow();
 }
 
 } // namespace
@@ -107,10 +94,8 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
 
         if (!g_assetResolverDialog) {
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-            const MString parentWindowName = parseTextArg(argData, kParentWindowFlag, "");
-            QWidget*      parentWindow = findParentWindow(parentWindowName);
 
-            g_assetResolverDialog = new Adsk::AssetResolverPathDialog(parentWindow);
+            g_assetResolverDialog = new Adsk::AssetResolverPathDialog(MQtUtil::mainWindow());
             g_assetResolverDialog->setAttribute(Qt::WA_DeleteOnClose);
 
             g_assetResolverDialog->setGetStagesFunctor([]() {
@@ -147,7 +132,6 @@ MSyntax AssetResolverDialogCmd::createSyntax()
     MSyntax syntax;
     syntax.enableQuery(true);
     syntax.enableEdit(false);
-    syntax.addFlag(kParentWindowFlag, kParentWindowFlagLong, MSyntax::kString);
     syntax.addFlag(kTabFlag, kTabFlagLong, MSyntax::kString);
 
     syntax.setObjectType(MSyntax::kStringObjects, 0, 1);
