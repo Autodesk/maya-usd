@@ -105,45 +105,36 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
     if (st) {
         const MString tabName = parseTextArg(argData, kTabFlag, kPathsTabName);
 
-        if (g_assetResolverDialog) {
-            if (tabName == kSettingsTabName) {
-                g_assetResolverDialog->setCurrentTab(
-                    Adsk::AssetResolverPathDialog::Tab::GlobalSettings);
-            } else {
-                g_assetResolverDialog->setCurrentTab(Adsk::AssetResolverPathDialog::Tab::Paths);
-            }
-            g_assetResolverDialog->raise();
-            g_assetResolverDialog->activateWindow();
-            return MS::kSuccess;
-        }
+        if (!g_assetResolverDialog) {
+            QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+            const MString parentWindowName = parseTextArg(argData, kParentWindowFlag, "");
+            QWidget*      parentWindow = findParentWindow(parentWindowName);
 
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        const MString parentWindowName = parseTextArg(argData, kParentWindowFlag, "");
-        QWidget*      parentWindow = findParentWindow(parentWindowName);
+            g_assetResolverDialog = new Adsk::AssetResolverPathDialog(parentWindow);
+            g_assetResolverDialog->setAttribute(Qt::WA_DeleteOnClose);
 
-        g_assetResolverDialog = new Adsk::AssetResolverPathDialog(parentWindow);
-        g_assetResolverDialog->setAttribute(Qt::WA_DeleteOnClose);
-
-        g_assetResolverDialog->setGetStagesFunctor([]() {
-            auto allStages = ufe::UsdStageMap::getInstance().allStages();
-            return std::vector<PXR_NS::UsdStageRefPtr>(allStages.begin(), allStages.end());
-        });
-
-        if (tabName == kSettingsTabName) {
-            g_assetResolverDialog->setCurrentTab(
-                Adsk::AssetResolverPathDialog::Tab::GlobalSettings);
-        } else {
-            g_assetResolverDialog->setCurrentTab(Adsk::AssetResolverPathDialog::Tab::Paths);
-        }
-
-        QObject::connect(
-            g_assetResolverDialog,
-            &Adsk::AssetResolverPathDialog::settingsApplied,
-            [](const Adsk::AssetResolverSettings& settings) {
-                PreferencesManagement::SaveUsdPreferences(settings);
+            g_assetResolverDialog->setGetStagesFunctor([]() {
+                auto allStages = ufe::UsdStageMap::getInstance().allStages();
+                return std::vector<PXR_NS::UsdStageRefPtr>(allStages.begin(), allStages.end());
             });
 
-        QApplication::restoreOverrideCursor();
+            QObject::connect(
+                g_assetResolverDialog,
+                &Adsk::AssetResolverPathDialog::settingsApplied,
+                [](const Adsk::AssetResolverSettings& settings) {
+                    PreferencesManagement::SaveUsdPreferences(settings);
+                });
+
+            QApplication::restoreOverrideCursor();
+        }
+
+        g_assetResolverDialog->setCurrentTab(
+            tabName == kSettingsTabName
+                ? Adsk::AssetResolverPathDialog::Tab::GlobalSettings
+                : Adsk::AssetResolverPathDialog::Tab::Paths);
+
+        g_assetResolverDialog->raise();
+        g_assetResolverDialog->activateWindow();
         g_assetResolverDialog->show();
         return MS::kSuccess;
     }
