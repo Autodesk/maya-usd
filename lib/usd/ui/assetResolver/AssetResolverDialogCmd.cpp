@@ -116,9 +116,7 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
             QObject::connect(
                 g_assetResolverDialog,
                 &Adsk::AssetResolverPathDialog::settingsApplied,
-                [](const Adsk::AssetResolverSettings& settings) {
-                    PreferencesManagement::SaveUsdPreferences(settings);
-                });
+                PreferencesManagement::SaveUsdPreferences);
 
             QApplication::restoreOverrideCursor();
         }
