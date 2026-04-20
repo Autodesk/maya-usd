@@ -273,21 +273,21 @@ UsdStageMap::StageSet UsdStageMap::allStages()
 
     rebuildIfDirty();
 
+    // We can't rely on using the cached paths to find all the stages.
+    // There might have been changes made to the stages, but we might not
+    // yet have received the notification(s) required to update the cache,
+    // and so the cache might not have been dirtied just yet.
+    // Therefore, directly query the Maya data model to get the most up-to-date
+    // info. This will add any missing stages in the cache. If there are outdated
+    // stages in the cache, they will be cleared on the next cache rebuild, or
+    // the next time anyone queries such an outdated stage.
     StageSet stages;
-    for (auto it = _pathToObject.begin(); it != _pathToObject.end();
-         /* no ++it here, we manually move it in the loop */) {
-        const auto&      pair = *it;
-        const Ufe::Path& path = pair.first;
-        // Calling UsdStageMap::stage may erase the entry in fPathToObject at path.
-        // Advance the iterator so that the iterator stays valid if erasure occurs.
-        it++;
-        // Now handle path.
-        PXR_NS::UsdStageWeakPtr matchingStage = stage(path);
-        // After this point pair and path cannot be safely used, they may have been erased.
-        // If the object cached in fPathToObject was invalid we'll get back a nullptr.
-        // Don't add nullptr to the returned StageSet.
-        if (matchingStage)
-            stages.insert(matchingStage);
+    for (const auto& proxyShapeName : ProxyShapeHandler::getAllNames()) {
+        auto proxyShapePath = toPath(proxyShapeName);
+        auto foundStage = stage(proxyShapePath);
+        if (foundStage) {
+            stages.insert(foundStage);
+        }
     }
     return stages;
 }
