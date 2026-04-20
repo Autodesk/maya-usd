@@ -72,7 +72,7 @@ if (AdskUsdEditForward_FOUND)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             PYTHON_SCRIPT ${script}
             ENV
-                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}:${USD_INSTALL_LOCATION}/lib"
                 "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
                 "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
         )
