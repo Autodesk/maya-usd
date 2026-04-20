@@ -33,7 +33,7 @@ def run_usd_tool():
     update_os_dylib_env_var(lib_folders)
 
     # Run the specified tool executable with the remaining arguments
-    cmd = os.path.join(script_folder, tool_name)
+    cmd = tool_name
     args = [cmd] + sys.argv[2:]
     subprocess.run(args)
 
