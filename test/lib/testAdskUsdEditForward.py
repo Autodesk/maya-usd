@@ -21,6 +21,7 @@ import os
 import time
 
 from pxr import Sdf, Usd
+import AdskUsdEditForward
 from maya import cmds
 import maya.utils
 import mayaUsd
@@ -61,22 +62,15 @@ class AdskUsdEditForwardTestCase(unittest.TestCase):
         rootLayer.subLayerPaths.append(testLayer.identifier)
 
         # Configure forwarding to target layers matching .*TEST.*
-        # TODO : Would ideally use edit forwarding python API to configure the rule.
-        # Update the test when these are available.
-        customData = rootLayer.customLayerData
-        customData['adsk_forward_continuously'] = True
-        customData['adsk_forward_ruleset'] = {
-            'rules': {
-                'rule_0': {
-                    'description': 'test rule',
-                    'id': 'rule_0',
-                    'input_path_regex': '.*',
-                    'target_layer_regex': '.*TEST.*'
-                }
-            },
-            'version': 1
-        }
-        rootLayer.customLayerData = customData
+        rule_def = AdskUsdEditForward.RuleDef()
+        rule_def.id = 'rule_0'
+        rule_def.description = 'test rule'
+        rule_def.input_object_expression = AdskUsdEditForward.RuleExpression('.*')
+        rule_def.target_layer_expression = AdskUsdEditForward.RuleExpression('.*TEST.*')
+
+        rule_set = AdskUsdEditForward.RuleSet([rule_def])
+        rule_set.continuous = True
+        AdskUsdEditForward.RuleDef.WriteRuleSetToLayerCustomData(rootLayer, rule_set)
 
         # Create a prim on the session layer via a UFE undoable command, so that
         # cmds.undo() can revert it along with the forward command as one unit.

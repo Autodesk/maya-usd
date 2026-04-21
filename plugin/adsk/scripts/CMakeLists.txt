@@ -41,3 +41,7 @@ configure_file("${PROJECT_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewS
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AEusdPreviewSurfaceTemplate.mel
     DESTINATION ${INSTALL_DIR_SUFFIX}/scripts
 )
+
+install(FILES RunUsdTool.py
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+)
