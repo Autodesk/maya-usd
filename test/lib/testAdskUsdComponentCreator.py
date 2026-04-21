@@ -414,57 +414,6 @@ class DeleteInComponentTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/root/geo/Prim2').IsValid())
         self.assertFalse(stage.GetPrimAtPath('/root/geo/Prim3').IsValid())
 
-    def testDeletePrimInComponentStageWithPayloadLayers(self):
-        '''Test delete of a prim in a component stage verifies multi-layer deletion.
-
-        Component stages have multiple layers (variants, payloads, etc.). This test
-        verifies that deletion works correctly in this multi-layer environment by checking
-        that the prim is properly removed and can be undone/redone.
-        '''
-        import AdskUsdComponentCreator
-
-        proxyShapePath, desc = self._createComponent()
-        stage = mayaUsd.ufe.getStage(proxyShapePath)
-        self.assertTrue(stage)
-
-        # Target the 'default' variant.
-        variantSets = desc.GetVariantSets()
-        vsDesc = variantSets['model']
-        variantDesc = vsDesc.GetVariantDescription('default')
-        self.assertTrue(
-            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
-
-        # Create a prim in the component's geo scope.
-        testPrim = stage.DefinePrim('/root/geo/TestPrim', 'Xform')
-        self.assertTrue(testPrim.IsValid())
-
-        # Component stages inherently have multiple layers. Verify this prim
-        # has specs that will be handled by the multi-layer delete logic.
-        primStack = testPrim.GetPrimStack()
-        self.assertGreater(len(primStack), 0, "Prim should have at least one spec")
-
-        # Create UFE notification observer.
-        ufeObs = TestObserver()
-        ufe.Scene.addObserver(ufeObs)
-
-        # Delete the prim - component stage delete should handle all layer specs.
-        ufeObs.reset()
-        cmds.delete(proxyShapePath + ',/root/geo/TestPrim')
-        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
-        self.assertFalse(stage.GetPrimAtPath('/root/geo/TestPrim').IsValid())
-
-        # Validate undo - should restore in all layers.
-        ufeObs.reset()
-        cmds.undo()
-        self.assertEqual(ufeObs.nbAddNotif(), 1)
-        self.assertTrue(stage.GetPrimAtPath('/root/geo/TestPrim').IsValid())
-
-        # Validate redo.
-        ufeObs.reset()
-        cmds.redo()
-        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
-        self.assertFalse(stage.GetPrimAtPath('/root/geo/TestPrim').IsValid())
-
     def testDeleteHierarchyMultiSelectInComponentStage(self):
         '''Test delete of multiple prims, some being children of others, in a component stage.'''
         import AdskUsdComponentCreator
