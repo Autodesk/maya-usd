@@ -16,12 +16,11 @@
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        PreferencesApplicationHost.cpp
+        AssetResolverApplicationHost.cpp
         AssetResolverDialogCmd.cpp
         AssetResolverProjectChangeTracker.cpp
         AssetResolverUtils.cpp
         PreferencesManagement.cpp
-        USDAssetResolverDialog.cpp
 )
 
 target_compile_definitions(${PROJECT_NAME}
@@ -40,12 +39,11 @@ endif()
 # promoted headers
 # -----------------------------------------------------------------------------
 set(HEADERS
-    PreferencesApplicationHost.h
+    AssetResolverApplicationHost.h
     AssetResolverDialogCmd.h
     AssetResolverProjectChangeTracker.h
     AssetResolverUtils.h
     PreferencesManagement.h
-    USDAssetResolverDialog.h
 )
 
 mayaUsd_promoteHeaderList( 

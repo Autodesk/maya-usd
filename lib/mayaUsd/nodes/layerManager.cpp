@@ -308,6 +308,7 @@ public:
     static void           prepareForWriteCheck(bool*, bool);
     static void           cleanupForWrite();
     static void           loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape);
+    static void           beforeReadCallback(void*);
     static void           afterReadCallback(void*);
     static void           cleanUpNewScene(void*);
     static void           clearManagerNode(MayaUsd::LayerManager* lm);
@@ -366,12 +367,20 @@ private:
     std::string                           _selectedStage;
     static std::vector<MCallbackId>       _callbackIds;
 
+    static bool _isReadingMayaFile;
+
+    static UsdMayaUtil::MObjectHandleUnorderedSet _proxiesBeforeRead;
+
     static MayaUsd::BatchSaveDelegate _batchSaveDelegate;
 
     static bool _isSavingMayaFile;
 };
 
 std::vector<MCallbackId> LayerDatabase::_callbackIds;
+
+bool LayerDatabase::_isReadingMayaFile = false;
+
+UsdMayaUtil::MObjectHandleUnorderedSet LayerDatabase::_proxiesBeforeRead;
 
 MayaUsd::BatchSaveDelegate LayerDatabase::_batchSaveDelegate = nullptr;
 
@@ -403,6 +412,10 @@ LayerDatabase::~LayerDatabase()
 void LayerDatabase::registerCallbacks()
 {
     if (_callbackIds.size() <= 0) {
+        // If the plugin gets loaded from a requires statement while Maya is already reading a
+        // file, we missed the top-level kBeforeFileRead, keep the broad recompute.
+        _isReadingMayaFile = MFileIO::isReadingFile();
+
         _callbackIds.emplace_back(MSceneMessage::addCallback(
             MSceneMessage::kBeforeSaveCheck, LayerDatabase::prepareForSaveCheck));
         _callbackIds.emplace_back(
@@ -417,6 +430,8 @@ void LayerDatabase::registerCallbacks()
             MSceneMessage::addCallback(MSceneMessage::kBeforeNew, LayerDatabase::cleanUpNewScene));
         _callbackIds.emplace_back(
             MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, LayerDatabase::cleanUpNewScene));
+        _callbackIds.emplace_back(MSceneMessage::addCallback(
+            MSceneMessage::kBeforeFileRead, LayerDatabase::beforeReadCallback));
         _callbackIds.emplace_back(MSceneMessage::addCallback(
             MSceneMessage::kAfterSceneReadAndRecordEdits, LayerDatabase::afterReadCallback));
     }
@@ -474,8 +489,33 @@ void LayerDatabase::prepareForSaveCheck(bool* retCode, void*)
     prepareForWriteCheck(retCode, false);
 }
 
+void LayerDatabase::beforeReadCallback(void*)
+{
+    if (_isReadingMayaFile) {
+        // Maya can emit nested kBeforeFileRead callbacks while loading references,
+        // ignore nested calls until the matching kAfterSceneReadAndRecordEdits
+        // called once.
+        return;
+    }
+
+    // Snapshot proxy shapes that existed before this read cascade so that
+    // afterReadCallback only touches proxy shapes introduced by this read.
+    _isReadingMayaFile = true;
+    _proxiesBeforeRead.clear();
+
+    for (const std::string& shapeName : ufe::ProxyShapeHandler::getAllNames()) {
+        MObject shapeObj;
+        if (UsdMayaUtil::GetMObjectByName(shapeName, shapeObj)) {
+            _proxiesBeforeRead.insert(shapeObj);
+        }
+    }
+}
+
 void LayerDatabase::afterReadCallback(void*)
 {
+    const bool isImportingOrReferencing
+        = MFileIO::isImportingFile() || MFileIO::isReferencingFile();
+
     // Make sure the layers saved in the layer manager are loaded at the end of the load,
     // when we know both the proxy shapes and the layer manager have been loaded.
     const std::vector<std::string> shapeNames = ufe::ProxyShapeHandler::getAllNames();
@@ -485,11 +525,16 @@ void LayerDatabase::afterReadCallback(void*)
         if (status != MStatus::kSuccess) {
             continue;
         }
-
+        // This proxyShape was here before and is not related to this read operation.
+        if (isImportingOrReferencing && _proxiesBeforeRead.count(shapeObj) != 0) {
+            continue;
+        }
         // Increase the recompute-layers plug to make sure the proxy shape will be recomputed.
         MPlug recomputePlug(shapeObj, MayaUsdProxyShapeBase::recomputeLayersAttr);
         recomputePlug.setInt64(recomputePlug.asInt64() + 1);
     }
+    _isReadingMayaFile = false;
+    _proxiesBeforeRead.clear();
 }
 
 void LayerDatabase::cleanupForSave(void*)
@@ -1384,6 +1429,8 @@ void LayerDatabase::loadLayersPostRead(MayaUsdProxyShapeBase* forProxyShape)
 
 void LayerDatabase::cleanUpNewScene(void*)
 {
+    _isReadingMayaFile = false;
+    _proxiesBeforeRead.clear();
     LayerDatabase::instance().removeAllLayers();
     LayerDatabase::removeManagerNode();
     clearProcessedLayerManagers();

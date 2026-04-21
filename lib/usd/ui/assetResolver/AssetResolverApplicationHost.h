@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <AssetResolverPreferences/ApplicationHost.h>
+#include <AssetResolverWidgets/ApplicationHost.h>
 
-class PreferencesApplicationHost : public Adsk::ApplicationHost
+class AssetResolverApplicationHost : public Adsk::ApplicationHost
 {
 public:
     static void CreateInstance(QObject* parent = nullptr);
@@ -42,10 +42,10 @@ public:
         QFileDialog::Options options = QFileDialog::ShowDirsOnly) const override;
 
 protected:
-    PreferencesApplicationHost(QObject* parent = nullptr);
-    ~PreferencesApplicationHost() override = default;
+    AssetResolverApplicationHost(QObject* parent = nullptr);
+    ~AssetResolverApplicationHost() override = default;
 
     QIcon getIcon(const char* iconName) const;
 
-    static PreferencesApplicationHost* s_instance;
+    static AssetResolverApplicationHost* s_instance;
 };

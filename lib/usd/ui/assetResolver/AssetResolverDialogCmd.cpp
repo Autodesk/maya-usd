@@ -35,12 +35,15 @@
 #define MNoVersionString
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsdUI/ui/USDAssetResolverDialog.h>
+#include <mayaUsdUI/ui/PreferencesManagement.h>
 #include <mayaUsdUI/ui/USDQtUtil.h>
 
 #include <maya/MFnPlugin.h>
 
+#include <AssetResolverWidgets/PathDialog/PathDialog.h>
+#include <QtCore/QPointer>
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
 
@@ -50,8 +53,12 @@ const MString AssetResolverDialogCmd::name("assetResolverDialog");
 
 namespace {
 
-constexpr auto kParentWindowFlag = "-pw";
-constexpr auto kParentWindowFlagLong = "-parentWindow";
+QPointer<Adsk::AssetResolverPathDialog> g_assetResolverDialog;
+
+constexpr auto kTabFlag = "-tab";
+constexpr auto kTabFlagLong = "-tabName";
+constexpr auto kPathsTabName = "paths";
+constexpr auto kSettingsTabName = "globalSettings";
 
 MString parseTextArg(const MArgParser& argData, const char* flag, const MString& defaultValue)
 {
@@ -59,17 +66,6 @@ MString parseTextArg(const MArgParser& argData, const char* flag, const MString&
     if (argData.isFlagSet(flag))
         argData.getFlagArgument(flag, 0, value);
     return value;
-}
-
-QWidget* findParentWindow(const MString& controlName)
-{
-    QWidget* originalWidget = MQtUtil::findControl(controlName);
-    for (QWidget* widget = originalWidget; widget; widget = widget->parentWidget()) {
-        if (widget->isWindow()) {
-            return widget;
-        }
-    }
-    return MQtUtil::mainWindow();
 }
 
 } // namespace
@@ -84,6 +80,9 @@ MStatus AssetResolverDialogCmd::initialize(MFnPlugin& plugin)
 /*static*/
 MStatus AssetResolverDialogCmd::finalize(MFnPlugin& plugin)
 {
+    if (g_assetResolverDialog) {
+        g_assetResolverDialog->close();
+    }
     return plugin.deregisterCommand(name);
 }
 void* AssetResolverDialogCmd::creator() { return new AssetResolverDialogCmd(); }
@@ -94,15 +93,41 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
     MArgParser argData(syntax(), args, &st);
 
     if (st) {
-        QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-        const MString parentWindowName = parseTextArg(argData, kParentWindowFlag, "");
-        QWidget*      parentWindow = findParentWindow(parentWindowName);
+        const MString tabName = parseTextArg(argData, kTabFlag, kPathsTabName);
 
-        std::unique_ptr<USDAssetResolverDialog> usdAssetResolverDialog(
-            new USDAssetResolverDialog(parentWindow));
+        if (!g_assetResolverDialog) {
+            QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-        QApplication::restoreOverrideCursor();
-        usdAssetResolverDialog->execute();
+            g_assetResolverDialog = new Adsk::AssetResolverPathDialog(MQtUtil::mainWindow());
+            g_assetResolverDialog->setAttribute(Qt::WA_DeleteOnClose);
+
+            g_assetResolverDialog->setGetStagesFunctor([]() {
+                auto allStages = ufe::UsdStageMap::getInstance().allStages();
+                std::vector<PXR_NS::UsdStageRefPtr> stages;
+                stages.reserve(allStages.size());
+                for (const auto& weakStage : allStages) {
+                    if (PXR_NS::UsdStageRefPtr stage { weakStage }) {
+                        stages.push_back(stage);
+                    }
+                }
+                return stages;
+            });
+
+            QObject::connect(
+                g_assetResolverDialog,
+                &Adsk::AssetResolverPathDialog::settingsApplied,
+                PreferencesManagement::SaveUsdPreferences);
+
+            QApplication::restoreOverrideCursor();
+        }
+
+        g_assetResolverDialog->setCurrentTab(
+            tabName == kSettingsTabName ? Adsk::AssetResolverPathDialog::Tab::GlobalSettings
+                                        : Adsk::AssetResolverPathDialog::Tab::Paths);
+
+        g_assetResolverDialog->raise();
+        g_assetResolverDialog->activateWindow();
+        g_assetResolverDialog->show();
         return MS::kSuccess;
     }
 
@@ -114,7 +139,7 @@ MSyntax AssetResolverDialogCmd::createSyntax()
     MSyntax syntax;
     syntax.enableQuery(true);
     syntax.enableEdit(false);
-    syntax.addFlag(kParentWindowFlag, kParentWindowFlagLong, MSyntax::kString);
+    syntax.addFlag(kTabFlag, kTabFlagLong, MSyntax::kString);
 
     syntax.setObjectType(MSyntax::kStringObjects, 0, 1);
     return syntax;

@@ -15,45 +15,35 @@
 //
 //
 
-#include "PreferencesApplicationHost.h"
+#include "AssetResolverApplicationHost.h"
 
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
-PreferencesApplicationHost* PreferencesApplicationHost::s_instance = nullptr;
+AssetResolverApplicationHost* AssetResolverApplicationHost::s_instance = nullptr;
 
-PreferencesApplicationHost::PreferencesApplicationHost(QObject* parent)
+AssetResolverApplicationHost::AssetResolverApplicationHost(QObject* parent)
     : Adsk::ApplicationHost(parent)
 {
     Adsk::ApplicationHost::injectInstance(this);
 }
 
-void PreferencesApplicationHost::CreateInstance(QObject* parent)
+void AssetResolverApplicationHost::CreateInstance(QObject* parent)
 {
     if (!s_instance) {
-        s_instance = new PreferencesApplicationHost(parent);
+        s_instance = new AssetResolverApplicationHost(parent);
     }
 }
 
-float PreferencesApplicationHost::uiScale() const { return MQtUtil::dpiScale(1.0f); }
+float AssetResolverApplicationHost::uiScale() const { return MQtUtil::dpiScale(1.0f); }
 
-QIcon PreferencesApplicationHost::icon(const IconName& name) const
+QIcon AssetResolverApplicationHost::icon(const IconName& name) const
 {
-    switch (name) {
-    case IconName::Add: return getIcon(":/UsdLayerEditor/addCreateGeneric");
-    case IconName::AddFolder: return getIcon(":/AdskAssetResolver/addFolder");
-    case IconName::OpenFile: return getIcon("fileOpen.png");
-    case IconName::Delete: return getIcon("trash.png");
-    case IconName::MoveUp: return getIcon(":/AdskAssetResolver/moveUp");
-    case IconName::MoveDown: return getIcon(":/AdskAssetResolver/moveDown");
-    case IconName::Gripper: return getIcon(":/AdskAssetResolver/gripper");
-    case IconName::GripperActive: return getIcon(":/AdskAssetResolver/gripperActive");
-    default: return QIcon();
-    }
+    return ApplicationHost::icon(name);
 }
 
-QIcon PreferencesApplicationHost::getIcon(const char* iconName) const
+QIcon AssetResolverApplicationHost::getIcon(const char* iconName) const
 {
     QIcon* icon = MQtUtil::createIcon(iconName);
     QIcon  copy;
@@ -64,7 +54,7 @@ QIcon PreferencesApplicationHost::getIcon(const char* iconName) const
     return copy;
 }
 
-int PreferencesApplicationHost::pm(const PixelMetric& metric) const
+int AssetResolverApplicationHost::pm(const PixelMetric& metric) const
 {
     const float scale = uiScale();
     switch (metric) {
@@ -78,7 +68,7 @@ int PreferencesApplicationHost::pm(const PixelMetric& metric) const
     }
 };
 
-QString PreferencesApplicationHost::getUSDDialogFileFilters() const
+QString AssetResolverApplicationHost::getUSDDialogFileFilters() const
 {
     MString filters = MGlobal::executePythonCommandStringResult(
         "from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
@@ -97,7 +87,7 @@ MString createMStringFormatArg(const MString& arg, const QString& str)
     return mstr;
 }
 
-QString PreferencesApplicationHost::getOpenFileName(
+QString AssetResolverApplicationHost::getOpenFileName(
     QWidget*       parent,
     const QString& caption,
     const QString& dir,
@@ -128,7 +118,7 @@ QString PreferencesApplicationHost::getOpenFileName(
     return MQtUtil::toQString(filePath);
 }
 
-QString PreferencesApplicationHost::getExistingDirectory(
+QString AssetResolverApplicationHost::getExistingDirectory(
     QWidget*             parent,
     const QString&       caption,
     const QString&       dir,
