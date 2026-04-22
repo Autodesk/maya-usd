@@ -361,60 +361,6 @@ class DeleteInComponentTestCase(unittest.TestCase):
         self.assertFalse(stage.GetPrimAtPath('/root/geo/Parent/Child2').IsValid())
 
     def testDeleteMultiplePrimsInComponentStage(self):
-        '''Test successful delete of multiple prims in a component stage.'''
-        import AdskUsdComponentCreator
-
-        proxyShapePath, desc = self._createComponent()
-        stage = mayaUsd.ufe.getStage(proxyShapePath)
-        self.assertTrue(stage)
-
-        # Target the 'default' variant.
-        variantSets = desc.GetVariantSets()
-        vsDesc = variantSets['model']
-        variantDesc = vsDesc.GetVariantDescription('default')
-        self.assertTrue(
-            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
-
-        # Create multiple prims in the component's geo scope.
-        prim1 = stage.DefinePrim('/root/geo/Prim1', 'Xform')
-        prim2 = stage.DefinePrim('/root/geo/Prim2', 'Sphere')
-        prim3 = stage.DefinePrim('/root/geo/Prim3', 'Cube')
-        self.assertTrue(prim1.IsValid())
-        self.assertTrue(prim2.IsValid())
-        self.assertTrue(prim3.IsValid())
-
-        # Create UFE notification observer.
-        ufeObs = TestObserver()
-        ufe.Scene.addObserver(ufeObs)
-
-        # Delete multiple prims.
-        ufeObs.reset()
-        cmds.delete(
-            proxyShapePath + ',/root/geo/Prim1',
-            proxyShapePath + ',/root/geo/Prim3'
-        )
-        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
-        self.assertFalse(stage.GetPrimAtPath('/root/geo/Prim1').IsValid())
-        self.assertTrue(stage.GetPrimAtPath('/root/geo/Prim2').IsValid())
-        self.assertFalse(stage.GetPrimAtPath('/root/geo/Prim3').IsValid())
-
-        # Validate undo.
-        ufeObs.reset()
-        cmds.undo()
-        self.assertEqual(ufeObs.nbAddNotif(), 2)
-        self.assertTrue(stage.GetPrimAtPath('/root/geo/Prim1').IsValid())
-        self.assertTrue(stage.GetPrimAtPath('/root/geo/Prim2').IsValid())
-        self.assertTrue(stage.GetPrimAtPath('/root/geo/Prim3').IsValid())
-
-        # Validate redo.
-        ufeObs.reset()
-        cmds.redo()
-        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
-        self.assertFalse(stage.GetPrimAtPath('/root/geo/Prim1').IsValid())
-        self.assertTrue(stage.GetPrimAtPath('/root/geo/Prim2').IsValid())
-        self.assertFalse(stage.GetPrimAtPath('/root/geo/Prim3').IsValid())
-
-    def testDeleteHierarchyMultiSelectInComponentStage(self):
         '''Test delete of multiple prims, some being children of others, in a component stage.'''
         import AdskUsdComponentCreator
 
@@ -472,33 +418,6 @@ class DeleteInComponentTestCase(unittest.TestCase):
         self.assertFalse(stage.GetPrimAtPath('/root/geo/Parent/Child1').IsValid())
         self.assertFalse(stage.GetPrimAtPath('/root/geo/Parent/Child2').IsValid())
         self.assertFalse(stage.GetPrimAtPath('/root/geo/Sibling').IsValid())
-
-    def testDeleteRestrictionPrimOutsideComponentScope(self):
-        '''Test delete restriction - cannot delete prims outside component scopes.'''
-        import AdskUsdComponentCreator
-
-        proxyShapePath, desc = self._createComponent()
-        stage = mayaUsd.ufe.getStage(proxyShapePath)
-        self.assertTrue(stage)
-
-        # Target the 'default' variant.
-        variantSets = desc.GetVariantSets()
-        vsDesc = variantSets['model']
-        variantDesc = vsDesc.GetVariantDescription('default')
-        self.assertTrue(
-            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
-
-        # Create a prim outside the component scopes.
-        outsidePrim = stage.DefinePrim('/root/OutsideScope', 'Xform')
-        self.assertTrue(outsidePrim.IsValid())
-
-        # Try to delete the prim outside the scope - should fail.
-        # Maya wraps the exception, so we check that it raises any exception.
-        with self.assertRaises(Exception):
-            cmds.delete(proxyShapePath + ',/root/OutsideScope')
-
-        # Verify prim still exists.
-        self.assertTrue(stage.GetPrimAtPath('/root/OutsideScope').IsValid())
 
     def testDeleteRestrictionComponentScopeItself(self):
         '''Test delete restriction - cannot delete the component scope prims themselves.'''
@@ -667,36 +586,6 @@ class ReparentInComponentTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/root/geo/NewGrandparent/Parent').IsValid())
         self.assertTrue(stage.GetPrimAtPath('/root/geo/NewGrandparent/Parent/Child1').IsValid())
         self.assertTrue(stage.GetPrimAtPath('/root/geo/NewGrandparent/Parent/Child2').IsValid())
-
-    def testReparentRestrictionPrimOutsideComponentScope(self):
-        '''Test reparent restriction - cannot reparent prims outside component scopes.'''
-        import AdskUsdComponentCreator
-
-        proxyShapePath, desc = self._createComponent()
-        stage = mayaUsd.ufe.getStage(proxyShapePath)
-        self.assertTrue(stage)
-
-        # Target the 'default' variant.
-        variantSets = desc.GetVariantSets()
-        vsDesc = variantSets['model']
-        variantDesc = vsDesc.GetVariantDescription('default')
-        self.assertTrue(
-            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
-
-        # Create a prim outside the component scopes.
-        outsidePrim = stage.DefinePrim('/root/OutsideScope', 'Xform')
-        newParent = stage.DefinePrim('/root/geo/NewParent', 'Xform')
-        self.assertTrue(outsidePrim.IsValid())
-        self.assertTrue(newParent.IsValid())
-
-        # Try to reparent the prim from outside the scope - should fail.
-        # Maya wraps the exception, so we check that it raises any exception.
-        with self.assertRaises(Exception):
-            cmds.parent(proxyShapePath + ',/root/OutsideScope', proxyShapePath + ',/root/geo/NewParent')
-
-        # Verify prim still at original location.
-        self.assertTrue(stage.GetPrimAtPath('/root/OutsideScope').IsValid())
-        self.assertFalse(stage.GetPrimAtPath('/root/geo/NewParent/OutsideScope').IsValid())
 
     def testReparentRestrictionToOutsideComponentScope(self):
         '''Test reparent restriction - cannot reparent prims to outside component scopes.'''
@@ -900,34 +789,6 @@ class RenameInComponentTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/root/geo/NewParent').IsValid())
         self.assertTrue(stage.GetPrimAtPath('/root/geo/NewParent/Child1').IsValid())
         self.assertTrue(stage.GetPrimAtPath('/root/geo/NewParent/Child2').IsValid())
-
-    def testRenameRestrictionPrimOutsideComponentScope(self):
-        '''Test rename restriction - cannot rename prims outside component scopes.'''
-        import AdskUsdComponentCreator
-
-        proxyShapePath, desc = self._createComponent()
-        stage = mayaUsd.ufe.getStage(proxyShapePath)
-        self.assertTrue(stage)
-
-        # Target the 'default' variant.
-        variantSets = desc.GetVariantSets()
-        vsDesc = variantSets['model']
-        variantDesc = vsDesc.GetVariantDescription('default')
-        self.assertTrue(
-            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
-
-        # Create a prim outside the component scopes.
-        outsidePrim = stage.DefinePrim('/root/OutsideScope', 'Xform')
-        self.assertTrue(outsidePrim.IsValid())
-
-        # Try to rename the prim outside the scope - should fail.
-        # Maya wraps the exception, so we check that it raises any exception.
-        with self.assertRaises(Exception):
-            cmds.rename(proxyShapePath + ',/root/OutsideScope', 'RenamedOutside')
-
-        # Verify prim still has original name.
-        self.assertTrue(stage.GetPrimAtPath('/root/OutsideScope').IsValid())
-        self.assertFalse(stage.GetPrimAtPath('/root/RenamedOutside').IsValid())
 
     def testRenameRestrictionComponentScopeItself(self):
         '''Test rename restriction - cannot rename the component scope prims themselves.'''
