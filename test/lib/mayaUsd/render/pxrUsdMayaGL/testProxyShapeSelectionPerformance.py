@@ -28,16 +28,16 @@ import ufe
 
 try:
     from PySide2 import QtCore
-    from PySide2.QtTest import QTest
     from PySide2.QtWidgets import QApplication
     from PySide2.QtWidgets import QWidget
     from shiboken2 import wrapInstance
 except Exception:
     from PySide6 import QtCore
-    from PySide6.QtTest import QTest
     from PySide6.QtWidgets import QApplication
     from PySide6.QtWidgets import QWidget
     from shiboken6 import wrapInstance
+
+import qtInputHelpers
 
 import contextlib
 import json
@@ -62,18 +62,16 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
     def _ClickInView(viewWidget, clickPosition,
             keyboardModifier=QtCore.Qt.KeyboardModifier.NoModifier):
         clickPoint = QtCore.QPoint(clickPosition[0], clickPosition[1])
-        QTest.mouseClick(viewWidget, QtCore.Qt.MouseButton.LeftButton, keyboardModifier,
-            clickPoint)
+        qtInputHelpers.send_mouse_click(
+            viewWidget, clickPoint, modifiers=keyboardModifier)
 
     @staticmethod
     def _SelectAreaInView(viewWidget, selectAreaRange,
             keyboardModifier=QtCore.Qt.KeyboardModifier.NoModifier):
         pressPoint = QtCore.QPoint(selectAreaRange.min[0], selectAreaRange.min[1])
         releasePoint = QtCore.QPoint(selectAreaRange.max[0], selectAreaRange.max[1])
-        QTest.mousePress(viewWidget, QtCore.Qt.MouseButton.LeftButton, keyboardModifier,
-            pressPoint)
-        QTest.mouseRelease(viewWidget, QtCore.Qt.MouseButton.LeftButton, keyboardModifier,
-            releasePoint)
+        qtInputHelpers.send_mouse_drag(
+            viewWidget, pressPoint, releasePoint, modifiers=keyboardModifier)
 
     @classmethod
     def setUpClass(cls):
