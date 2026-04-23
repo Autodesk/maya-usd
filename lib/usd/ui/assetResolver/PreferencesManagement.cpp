@@ -15,8 +15,8 @@
 //
 #include "PreferencesManagement.h"
 
+#include "AssetResolverApplicationHost.h"
 #include "AssetResolverUtils.h"
-#include "PreferencesApplicationHost.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
@@ -27,8 +27,8 @@
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
-#include <AssetResolverPreferences/AssetResolverSettings.h>
-#include <AssetResolverPreferences/AssetResolverSettingsManagement.h>
+#include <AssetResolverWidgets/Settings/AssetResolverSettings.h>
+#include <AssetResolverWidgets/Settings/AssetResolverSettingsManagement.h>
 
 #include <algorithm>
 
@@ -98,7 +98,7 @@ void SaveUsdPreferences(const Adsk::AssetResolverSettings& options)
 void InitializeUsdPreferences()
 {
     // Add ApplicationHost for the USD Preferences dialog
-    PreferencesApplicationHost::CreateInstance(MQtUtil::mainWindow());
+    AssetResolverApplicationHost::CreateInstance(MQtUtil::mainWindow());
 
     // Load USD Preference options to ensure the Adsk Asset Resolver works as configured
     Adsk::AssetResolverSettings::GetInstance().SetSettings(LoadUsdPreferences());
