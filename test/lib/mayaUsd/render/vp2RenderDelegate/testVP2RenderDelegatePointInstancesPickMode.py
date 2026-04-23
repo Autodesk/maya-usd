@@ -29,15 +29,13 @@ from maya.api import OpenMayaUI as OMUI
 import ufe
 
 try:
-    from PySide2 import QtCore
-    from PySide2.QtTest import QTest
     from PySide2.QtWidgets import QWidget
     from shiboken2 import wrapInstance
 except Exception:
-    from PySide6 import QtCore
-    from PySide6.QtTest import QTest
     from PySide6.QtWidgets import QWidget
     from shiboken6 import wrapInstance
+
+import qtInputHelpers
 
 import os
 
@@ -103,8 +101,7 @@ class testVP2RenderDelegatePointInstancesPickMode(imageUtils.ImageDiffingTestCas
         view = OMUI.M3dView.active3dView()
         viewWidget = wrapInstance(int(view.widget()), QWidget)
 
-        QTest.mouseClick(viewWidget, QtCore.Qt.MouseButton.LeftButton,
-            QtCore.Qt.KeyboardModifier.NoModifier, viewWidget.rect().center())
+        qtInputHelpers.send_mouse_click(viewWidget, viewWidget.rect().center())
 
     def assertSnapshotClose(self, imageName):
         baselineImage = os.path.join(self._baselineDir, imageName)
