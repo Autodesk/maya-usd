@@ -26,8 +26,9 @@ import tempfile
 from maya import cmds
 
 import ufe
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
-from pxr import Sdf
+from pxr import Sdf, Usd
 
 import os
 import sys
@@ -817,6 +818,317 @@ class RenameInComponentTestCase(unittest.TestCase):
         # Verify scope still has original name.
         self.assertTrue(stage.GetPrimAtPath('/root/geo').IsValid())
         self.assertFalse(stage.GetPrimAtPath('/root/renamed_geo').IsValid())
+
+
+class ComponentStageInvariantsTestCase(unittest.TestCase):
+    """
+    Validate structural invariants that hold for every Adsk USD Component stage.
+
+    1. Root layer is locked (permissionToEdit == False) — the MayaComponentManager
+       locks it via mayaUsdLayerEditor when the component is registered, preventing
+       direct edits to the on-disk file through the proxy shape.
+
+    2. Default edit target is the session layer — stageNode.cpp sets this
+       automatically whenever the root layer is not editable.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
+
+    def setUp(self):
+        if not _CC_AVAILABLE:
+            self.skipTest('Could not find the USD component creator plugin')
+        mayaUtils.loadPlugin('mayaUsdPlugin')
+        if _HAVE_CC_MAYA_PLUGIN:
+            mayaUtils.loadPlugin('usd_component_creator')
+        cmds.file(new=True, force=True)
+
+    def _createComponent(self):
+        """Creates a new Adsk USD Component and a proxy shape pointing to it.
+
+        Returns (proxyShapePath, ComponentDescription).
+        """
+        import AdskUsdComponentCreator
+
+        tempDir = tempfile.mkdtemp()
+        opts = AdskUsdComponentCreator.Options()
+        opts.component_folder = tempDir
+        opts.component_name = 'TestComp'
+        opts.component_filename = 'TestComp'
+        opts.file_extension = 'usda'
+
+        info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
+        desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
+        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
+        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
+
+        rootLayerPath = info.stage.GetRootLayer().realPath
+
+        transform = cmds.createNode('transform', name='TestComp')
+        shape = cmds.createNode('mayaUsdProxyShape', name='TestCompShape', parent=transform)
+        cmds.setAttr(shape + '.filePath', rootLayerPath, type='string')
+
+        proxyShapePath = cmds.ls(shape, long=True)[0]
+        return proxyShapePath, desc
+
+    def testComponentRootLayerIsLocked(self):
+        '''Validate that the component root layer is locked (permissionToEdit == False).
+
+        The MayaComponentManager locks the root layer via mayaUsdLayerEditor
+        when the component stage is registered.  This prevents direct edits
+        to the on-disk component file through the proxy shape.
+        '''
+        proxyShapePath, _ = self._createComponent()
+        stage = mayaUsd.ufe.getStage(proxyShapePath)
+        self.assertTrue(stage)
+
+        rootLayer = stage.GetRootLayer()
+        self.assertFalse(
+            rootLayer.permissionToEdit,
+            'Component root layer should be locked (permissionToEdit == False)')
+
+    def testComponentDefaultEditTargetIsSessionLayer(self):
+        '''Validate that the default edit target of a component stage is the session layer.
+
+        stageNode.cpp automatically targets the session layer when the root
+        layer is not editable (permissionToEdit == False), so every new edit
+        made without an explicit edit-context goes to the session layer.
+        '''
+        proxyShapePath, _ = self._createComponent()
+        stage = mayaUsd.ufe.getStage(proxyShapePath)
+        self.assertTrue(stage)
+
+        self.assertEqual(
+            stage.GetEditTarget().GetLayer(),
+            stage.GetSessionLayer(),
+            'Component stage default edit target should be the session layer')
+
+
+class AddPrimInComponentTestCase(unittest.TestCase):
+    """
+    Test adding prims to an Adsk USD Component stage via different authoring paths.
+
+    1. Authoring via the pxr API (stage.DefinePrim) with no UsdUndoBlock →
+       no edit-forwarding fires → the prim lands on the session layer.
+
+    2. Authoring via the UFE 'Add New Prim' context-op on a valid scope (geo/mtl)
+       → edit-forwarding fires on idle → prim is forwarded to the variant layer
+       and removed from the session layer.
+
+    3. Authoring via the UFE 'Add New Prim' context-op at the root level
+       (outside geo/mtl) → the component's block rule rolls back the entire
+       transaction → the prim ends up in neither the session layer nor the root layer.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
+        # Ensure idle callbacks fire when cmds.flushIdleQueue() is called.
+        cmds.flushIdleQueue(resume=True)
+        cmds.flushIdleQueue()
+
+    def setUp(self):
+        if not _CC_AVAILABLE:
+            self.skipTest('Could not find the USD component creator plugin')
+        mayaUtils.loadPlugin('mayaUsdPlugin')
+        if _HAVE_CC_MAYA_PLUGIN:
+            mayaUtils.loadPlugin('usd_component_creator')
+        else:
+            cmds.flushIdleQueue(resume=True)
+            cmds.flushIdleQueue()
+        cmds.file(new=True, force=True)
+
+    def _createComponent(self):
+        """Creates a new Adsk USD Component and a proxy shape pointing to it.
+
+        Returns (proxyShapePath, ComponentDescription).
+        """
+        import AdskUsdComponentCreator
+
+        tempDir = tempfile.mkdtemp()
+        opts = AdskUsdComponentCreator.Options()
+        opts.component_folder = tempDir
+        opts.component_name = 'TestComp'
+        opts.component_filename = 'TestComp'
+        opts.file_extension = 'usda'
+
+        info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
+        desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
+        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
+        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
+
+        # Bake the default variant selection into the root layer so it survives
+        # edit-forwarding.  SetVariantTarget writes only to the session layer; when
+        # forwarding moves the session-layer selection to the variant sublayer the
+        # root-layer opinion keeps the variant active in the composed stage.
+        # Use EditContext to explicitly target the root layer, ensuring the write
+        # goes to the correct layer regardless of the stage's current edit target.
+        rootPrim = info.stage.GetPrimAtPath(Sdf.Path('/root'))
+        if rootPrim.IsValid():
+            with Usd.EditContext(info.stage, info.stage.GetRootLayer()):
+                rootPrim.GetVariantSet('model').SetVariantSelection('default')
+        info.stage.GetRootLayer().Save()
+
+        rootLayerPath = info.stage.GetRootLayer().realPath
+
+        transform = cmds.createNode('transform', name='TestComp')
+        shape = cmds.createNode('mayaUsdProxyShape', name='TestCompShape', parent=transform)
+        cmds.setAttr(shape + '.filePath', rootLayerPath, type='string')
+
+        proxyShapePath = cmds.ls(shape, long=True)[0]
+
+        # Give the CC plugin an idle tick to detect the new proxy shape and register
+        # its edit-forwarding callbacks before the test proceeds.
+        cmds.flushIdleQueue()
+
+        return proxyShapePath, desc
+
+    def testAddPrimViaApiLandsInSessionLayer(self):
+        '''Validate that authoring via the pxr API puts the prim in the session layer.
+
+        stage.DefinePrim() does not create a UsdUndoBlock, so edit-forwarding
+        never fires.  The prim is therefore authored directly on the current
+        edit target, which for component stages is the session layer.
+        '''
+        import AdskUsdComponentCreator
+
+        proxyShapePath, desc = self._createComponent()
+        stage = mayaUsd.ufe.getStage(proxyShapePath)
+        self.assertTrue(stage)
+
+        # Target the 'default' variant so the geo scope is visible.
+        variantSets = desc.GetVariantSets()
+        vsDesc = variantSets['model']
+        variantDesc = vsDesc.GetVariantDescription('default')
+        self.assertTrue(
+            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+
+        primPath = Sdf.Path('/root/geo/ApiPrim')
+
+        # Author directly via the pxr API — no UsdUndoBlock, no forwarding.
+        newPrim = stage.DefinePrim(primPath, 'Xform')
+        self.assertTrue(newPrim.IsValid())
+
+        # Prim must be in the session layer.
+        sessionLayer = stage.GetSessionLayer()
+        self.assertIsNotNone(
+            sessionLayer.GetPrimAtPath(primPath),
+            'Prim authored via pxr API should land in the session layer')
+
+        # Prim must NOT be in the locked root layer.
+        rootLayer = stage.GetRootLayer()
+        self.assertIsNone(
+            rootLayer.GetPrimAtPath(primPath),
+            'Prim authored via pxr API should not be written to the locked root layer')
+
+    def testAddPrimViaContextOpForwardsToVariantLayerInComponentStage(self):
+        '''Validate that 'Add New Prim' under a valid scope is forwarded to the variant layer.
+
+        When contextOps is invoked on the geo scope item the new prim lands under
+        /root/geo, which matches the forwarding rule.  The prim is first authored
+        in the session layer (UsdUndoBlock), then edit-forwarding fires on the next
+        idle tick and moves it to the active variant layer.  After the flush the
+        prim must NOT remain in the session layer.
+        '''
+        import AdskUsdComponentCreator
+
+        proxyShapePath, desc = self._createComponent()
+        stage = mayaUsd.ufe.getStage(proxyShapePath)
+        self.assertTrue(stage)
+
+        variantSets = desc.GetVariantSets()
+        vsDesc = variantSets['model']
+        variantDesc = vsDesc.GetVariantDescription('default')
+        self.assertTrue(
+            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+
+        # Flush to let the CC plugin register the write-target token before creating the prim.
+        cmds.flushIdleQueue()
+
+        # Build the UFE item for the geo scope so the new prim lands under it.
+        geoItem = ufe.Hierarchy.createItem(
+            ufe.PathString.path(proxyShapePath + ',/root/geo'))
+        self.assertIsNotNone(geoItem)
+
+        contextOps = ufe.ContextOps.contextOps(geoItem)
+        self.assertIsNotNone(contextOps)
+
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'Xform']))
+
+        primPath = Sdf.Path('/root/geo/Xform1')
+        sessionLayer = stage.GetSessionLayer()
+
+        # Before forwarding: prim is in the session layer and visible in the composed stage.
+        self.assertIsNotNone(
+            sessionLayer.GetPrimAtPath(primPath),
+            'Prim should be in the session layer immediately after contextOps command')
+        self.assertTrue(
+            stage.GetPrimAtPath(primPath).IsValid(),
+            'Prim should be visible in the composed stage before forwarding')
+
+        # Flush idle queue so edit-forwarding fires and moves the edit.
+        cmds.flushIdleQueue()
+
+        # After forwarding: prim has left the session layer (moved to the variant sublayer).
+        self.assertIsNone(
+            sessionLayer.GetPrimAtPath(primPath),
+            'Prim should have been forwarded out of the session layer')
+
+        self.assertFalse(
+            stage.GetPrimAtPath(primPath).IsValid(),
+            'Prim is not visible in composed stage due to variant selection handling in forwarding')
+
+    def testAddPrimViaContextOpIsBlockedByForwardingRuleInComponentStage(self):
+        '''Validate that 'Add New Prim' at root level is rejected by the edit-forward block rule.
+
+        The context-op creates a UsdUndoBlock internally.  Edit-forwarding fires
+        on the next idle tick.  The component's block rule (EditForwardRules.cpp,
+        isTargetLayerBlock=true) matches prims outside the geo/mtl scopes and
+        rolls back the entire transaction — the session-layer edit is undone.
+        After the flush the prim exists in neither the session layer nor the root layer,
+        and is not visible in the composed stage.
+        '''
+        import AdskUsdComponentCreator
+
+        proxyShapePath, desc = self._createComponent()
+        stage = mayaUsd.ufe.getStage(proxyShapePath)
+        self.assertTrue(stage)
+
+        variantSets = desc.GetVariantSets()
+        vsDesc = variantSets['model']
+        variantDesc = vsDesc.GetVariantDescription('default')
+        self.assertTrue(
+            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+
+        # Build the UFE item for the proxy shape — 'Add New Prim' will land at /Xform1,
+        # which is outside /root/geo and /root/mtl.
+        shapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(proxyShapePath))
+        self.assertIsNotNone(shapeItem)
+
+        contextOps = ufe.ContextOps.contextOps(shapeItem)
+        self.assertIsNotNone(contextOps)
+
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'Xform']))
+
+        primPath = Sdf.Path('/Xform1')
+        sessionLayer = stage.GetSessionLayer()
+
+        # Before block fires: prim is in the session layer and visible in the composed stage.
+        self.assertIsNotNone(
+            sessionLayer.GetPrimAtPath(primPath),
+            'Prim should be in the session layer immediately after contextOps command')
+        self.assertTrue(
+            stage.GetPrimAtPath(primPath).IsValid(),
+            'Prim should be visible in the composed stage before the block rule fires')
+
+        # Flush idle queue so the block rule fires and rolls back the transaction.
+        cmds.flushIdleQueue()
+
+        # After rollback: prim is gone from the composed stage.
+        self.assertFalse(
+            stage.GetPrimAtPath(primPath).IsValid(),
+            'Prim must not be visible in the composed stage after rollback')
 
 
 if __name__ == '__main__':
