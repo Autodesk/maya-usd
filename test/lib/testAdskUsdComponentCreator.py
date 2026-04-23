@@ -28,7 +28,7 @@ from maya import cmds
 import ufe
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
-from pxr import Sdf, Usd
+from pxr import Sdf
 
 import os
 import sys
@@ -972,6 +972,14 @@ class AddPrimInComponentTestCase(unittest.TestCase):
 
         return proxyShapePath, desc
 
+    def _setDefaultVariantTarget(self, desc):
+        """Target the `model=default` variant on the given component description."""
+        import AdskUsdComponentCreator
+        vsDesc = desc.GetVariantSets()['model']
+        variantDesc = vsDesc.GetVariantDescription('default')
+        self.assertTrue(
+            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+
     def testAddPrimViaApiLandsInSessionLayer(self):
         '''Validate that authoring via the pxr API puts the prim in the session layer.
 
@@ -979,18 +987,12 @@ class AddPrimInComponentTestCase(unittest.TestCase):
         never fires.  The prim is therefore authored directly on the current
         edit target, which for component stages is the session layer.
         '''
-        import AdskUsdComponentCreator
-
         proxyShapePath, desc = self._createComponent()
         stage = mayaUsd.ufe.getStage(proxyShapePath)
         self.assertTrue(stage)
 
         # Target the 'default' variant so the geo scope is visible.
-        variantSets = desc.GetVariantSets()
-        vsDesc = variantSets['model']
-        variantDesc = vsDesc.GetVariantDescription('default')
-        self.assertTrue(
-            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+        self._setDefaultVariantTarget(desc)
 
         primPath = Sdf.Path('/root/geo/ApiPrim')
 
@@ -1020,17 +1022,11 @@ class AddPrimInComponentTestCase(unittest.TestCase):
         prim must NOT remain in the session layer, and must be visible in the
         composed stage via the active variant.
         '''
-        import AdskUsdComponentCreator
-
         proxyShapePath, desc = self._createComponent()
         stage = mayaUsd.ufe.getStage(proxyShapePath)
         self.assertTrue(stage)
 
-        variantSets = desc.GetVariantSets()
-        vsDesc = variantSets['model']
-        variantDesc = vsDesc.GetVariantDescription('default')
-        self.assertTrue(
-            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+        self._setDefaultVariantTarget(desc)
 
         # Build the UFE item for the geo scope so the new prim lands under it.
         geoItem = ufe.Hierarchy.createItem(
@@ -1076,17 +1072,11 @@ class AddPrimInComponentTestCase(unittest.TestCase):
         After the flush the prim exists in neither the session layer nor the root layer,
         and is not visible in the composed stage.
         '''
-        import AdskUsdComponentCreator
-
         proxyShapePath, desc = self._createComponent()
         stage = mayaUsd.ufe.getStage(proxyShapePath)
         self.assertTrue(stage)
 
-        variantSets = desc.GetVariantSets()
-        vsDesc = variantSets['model']
-        variantDesc = vsDesc.GetVariantDescription('default')
-        self.assertTrue(
-            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+        self._setDefaultVariantTarget(desc)
 
         # Build the UFE item for the proxy shape — 'Add New Prim' will land at /Xform1,
         # which is outside /root/geo and /root/mtl.
