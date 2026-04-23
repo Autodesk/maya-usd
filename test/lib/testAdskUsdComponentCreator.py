@@ -952,23 +952,11 @@ class AddPrimInComponentTestCase(unittest.TestCase):
         opts.component_name = 'TestComp'
         opts.component_filename = 'TestComp'
         opts.file_extension = 'usda'
+        opts.component_variants = [('model', 'default')]
+        opts.is_default_variant = True
 
         info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
         desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
-        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
-        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
-
-        # Bake the default variant selection into the root layer so it survives
-        # edit-forwarding.  SetVariantTarget writes only to the session layer; when
-        # forwarding moves the session-layer selection to the variant sublayer the
-        # root-layer opinion keeps the variant active in the composed stage.
-        # Use EditContext to explicitly target the root layer, ensuring the write
-        # goes to the correct layer regardless of the stage's current edit target.
-        rootPrim = info.stage.GetPrimAtPath(Sdf.Path('/root'))
-        if rootPrim.IsValid():
-            with Usd.EditContext(info.stage, info.stage.GetRootLayer()):
-                rootPrim.GetVariantSet('model').SetVariantSelection('default')
-        info.stage.GetRootLayer().Save()
 
         rootLayerPath = info.stage.GetRootLayer().realPath
 
@@ -1029,7 +1017,8 @@ class AddPrimInComponentTestCase(unittest.TestCase):
         /root/geo, which matches the forwarding rule.  The prim is first authored
         in the session layer (UsdUndoBlock), then edit-forwarding fires on the next
         idle tick and moves it to the active variant layer.  After the flush the
-        prim must NOT remain in the session layer.
+        prim must NOT remain in the session layer, and must be visible in the
+        composed stage via the active variant.
         '''
         import AdskUsdComponentCreator
 
@@ -1042,9 +1031,6 @@ class AddPrimInComponentTestCase(unittest.TestCase):
         variantDesc = vsDesc.GetVariantDescription('default')
         self.assertTrue(
             AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
-
-        # Flush to let the CC plugin register the write-target token before creating the prim.
-        cmds.flushIdleQueue()
 
         # Build the UFE item for the geo scope so the new prim lands under it.
         geoItem = ufe.Hierarchy.createItem(
@@ -1074,10 +1060,11 @@ class AddPrimInComponentTestCase(unittest.TestCase):
         self.assertIsNone(
             sessionLayer.GetPrimAtPath(primPath),
             'Prim should have been forwarded out of the session layer')
-
-        self.assertFalse(
+        # The prim must remain visible in the composed stage via the active variant
+        # payload (the root-layer variant selection keeps the variant active).
+        self.assertTrue(
             stage.GetPrimAtPath(primPath).IsValid(),
-            'Prim is not visible in composed stage due to variant selection handling in forwarding')
+            'Prim should remain visible in the composed stage after forwarding')
 
     def testAddPrimViaContextOpIsBlockedByForwardingRuleInComponentStage(self):
         '''Validate that 'Add New Prim' at root level is rejected by the edit-forward block rule.
