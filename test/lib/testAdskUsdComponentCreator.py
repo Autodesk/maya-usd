@@ -134,6 +134,35 @@ class _ComponentCreatorTestBase:
         import AdskUsdComponentCreator
         return AdskUsdComponentCreator.ComponentDescription.CreateFromStageMetadata(stage)
 
+    def _createComponent(self):
+        """Create a new Adsk USD Component with a `model/default` variant and a
+        proxy shape pointing to its root layer.
+
+        Returns (proxyShapePath, ComponentDescription).
+        """
+        import AdskUsdComponentCreator
+
+        tempDir = tempfile.mkdtemp()
+        opts = AdskUsdComponentCreator.Options()
+        opts.component_folder = tempDir
+        opts.component_name = 'TestComp'
+        opts.component_filename = 'TestComp'
+        opts.file_extension = 'usda'
+
+        info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
+        desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
+        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
+        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
+
+        rootLayerPath = info.stage.GetRootLayer().realPath
+
+        transform = cmds.createNode('transform', name='TestComp')
+        shape = cmds.createNode('mayaUsdProxyShape', name='TestCompShape', parent=transform)
+        cmds.setAttr(shape + '.filePath', rootLayerPath, type='string')
+
+        proxyShapePath = cmds.ls(shape, long=True)[0]
+        return proxyShapePath, desc
+
 # ---------------------------------------------------------------------------
 # Test: create_component_from_nodes
 # ---------------------------------------------------------------------------
@@ -485,7 +514,7 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
             AdskUsdComponentCreator.ComponentAPI.IsVariantTarget(
                 updated_desc, [updated_vs, updated_default_var_desc]))
 
-class DuplicateToComponentTestCase(unittest.TestCase):
+class DuplicateToComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
     """
     Test duplicating Maya nodes to an Adsk USD Component stage via the
     'Duplicate as USD' command.
@@ -496,45 +525,7 @@ class DuplicateToComponentTestCase(unittest.TestCase):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
 
     def setUp(self):
-        if not _CC_AVAILABLE:
-            self.skipTest('Could not find the USD component creator plugin')
-        mayaUtils.loadPlugin('mayaUsdPlugin')
-        if _HAVE_CC_MAYA_PLUGIN:
-            mayaUtils.loadPlugin('usd_component_creator')
-        else:
-            # See comment in test above.
-            cmds.flushIdleQueue(resume=True)
-            cmds.flushIdleQueue()
-        cmds.file(new=True, force=True)
-
-    def _createComponent(self):
-        """Creates a new Adsk USD Component and a proxy shape pointing to it.
-
-        Returns (proxyShapePath, ComponentDescription).
-        """
-        import AdskUsdComponentCreator
-        
-        tempDir = tempfile.mkdtemp()
-        opts = AdskUsdComponentCreator.Options()
-        opts.component_folder = tempDir
-        opts.component_name = 'TestComp'
-        opts.component_filename = 'TestComp'
-        opts.file_extension = 'usda'
-
-        info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
-        desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
-        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
-        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
-
-        rootLayerPath = info.stage.GetRootLayer().realPath
-
-        # Create a proxy shape and point it at the component's root layer.
-        transform = cmds.createNode('transform', name='TestComp')
-        shape = cmds.createNode('mayaUsdProxyShape', name='TestCompShape', parent=transform)
-        cmds.setAttr(shape + '.filePath', rootLayerPath, type='string')
-
-        proxyShapePath = cmds.ls(shape, long=True)[0]
-        return proxyShapePath, desc
+        self._setUpCC()
 
     def testDuplicateAsUsdToComponentNoVariantTarget(self):
         '''Duplicate to an Adsk USD Component with no variant targeted — should fail with an error.'''
@@ -599,7 +590,7 @@ class TestObserver(ufe.Observer):
         self.deleteNotif = 0
 
 
-class DeleteInComponentTestCase(unittest.TestCase):
+class DeleteInComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
     """
     Test deleting prims in Adsk USD Component stages.
 
@@ -612,45 +603,7 @@ class DeleteInComponentTestCase(unittest.TestCase):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
 
     def setUp(self):
-        if not _CC_AVAILABLE:
-            self.skipTest('Could not find the USD component creator plugin')
-        mayaUtils.loadPlugin('mayaUsdPlugin')
-        if _HAVE_CC_MAYA_PLUGIN:
-            mayaUtils.loadPlugin('usd_component_creator')
-        else:
-            # See comment in test above.
-            cmds.flushIdleQueue(resume=True)
-            cmds.flushIdleQueue()
-        cmds.file(new=True, force=True)
-
-    def _createComponent(self):
-        """Creates a new Adsk USD Component and a proxy shape pointing to it.
-
-        Returns (proxyShapePath, ComponentDescription).
-        """
-        import AdskUsdComponentCreator
-
-        tempDir = tempfile.mkdtemp()
-        opts = AdskUsdComponentCreator.Options()
-        opts.component_folder = tempDir
-        opts.component_name = 'TestComp'
-        opts.component_filename = 'TestComp'
-        opts.file_extension = 'usda'
-
-        info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
-        desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
-        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
-        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
-
-        rootLayerPath = info.stage.GetRootLayer().realPath
-
-        # Create a proxy shape and point it at the component's root layer.
-        transform = cmds.createNode('transform', name='TestComp')
-        shape = cmds.createNode('mayaUsdProxyShape', name='TestCompShape', parent=transform)
-        cmds.setAttr(shape + '.filePath', rootLayerPath, type='string')
-
-        proxyShapePath = cmds.ls(shape, long=True)[0]
-        return proxyShapePath, desc
+        self._setUpCC()
 
     def testDeleteLeafPrimInComponentStage(self):
         '''Test successful delete of a leaf prim in a component stage.'''
@@ -835,7 +788,7 @@ class DeleteInComponentTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/root/geo').IsValid())
 
 
-class ReparentInComponentTestCase(unittest.TestCase):
+class ReparentInComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
     """
     Test reparenting (insert child) prims in Adsk USD Component stages.
 
@@ -848,43 +801,7 @@ class ReparentInComponentTestCase(unittest.TestCase):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
 
     def setUp(self):
-        if not _CC_AVAILABLE:
-            self.skipTest('Could not find the USD component creator plugin')
-        mayaUtils.loadPlugin('mayaUsdPlugin')
-        if _HAVE_CC_MAYA_PLUGIN:
-            mayaUtils.loadPlugin('usd_component_creator')
-        else:
-            cmds.flushIdleQueue(resume=True)
-            cmds.flushIdleQueue()
-        cmds.file(new=True, force=True)
-
-    def _createComponent(self):
-        """Creates a new Adsk USD Component and a proxy shape pointing to it.
-
-        Returns (proxyShapePath, ComponentDescription).
-        """
-        import AdskUsdComponentCreator
-
-        tempDir = tempfile.mkdtemp()
-        opts = AdskUsdComponentCreator.Options()
-        opts.component_folder = tempDir
-        opts.component_name = 'TestComp'
-        opts.component_filename = 'TestComp'
-        opts.file_extension = 'usda'
-
-        info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
-        desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
-        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
-        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
-
-        rootLayerPath = info.stage.GetRootLayer().realPath
-
-        transform = cmds.createNode('transform', name='TestComp')
-        shape = cmds.createNode('mayaUsdProxyShape', name='TestCompShape', parent=transform)
-        cmds.setAttr(shape + '.filePath', rootLayerPath, type='string')
-
-        proxyShapePath = cmds.ls(shape, long=True)[0]
-        return proxyShapePath, desc
+        self._setUpCC()
 
     def testReparentPrimInComponentStage(self):
         '''Test successful reparenting of a prim in a component stage.'''
@@ -1039,7 +956,7 @@ class ReparentInComponentTestCase(unittest.TestCase):
         self.assertFalse(stage.GetPrimAtPath('/root/NewParent/geo').IsValid())
 
 
-class RenameInComponentTestCase(unittest.TestCase):
+class RenameInComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
     """
     Test renaming prims in Adsk USD Component stages.
 
@@ -1052,43 +969,7 @@ class RenameInComponentTestCase(unittest.TestCase):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
 
     def setUp(self):
-        if not _CC_AVAILABLE:
-            self.skipTest('Could not find the USD component creator plugin')
-        mayaUtils.loadPlugin('mayaUsdPlugin')
-        if _HAVE_CC_MAYA_PLUGIN:
-            mayaUtils.loadPlugin('usd_component_creator')
-        else:
-            cmds.flushIdleQueue(resume=True)
-            cmds.flushIdleQueue()
-        cmds.file(new=True, force=True)
-
-    def _createComponent(self):
-        """Creates a new Adsk USD Component and a proxy shape pointing to it.
-
-        Returns (proxyShapePath, ComponentDescription).
-        """
-        import AdskUsdComponentCreator
-
-        tempDir = tempfile.mkdtemp()
-        opts = AdskUsdComponentCreator.Options()
-        opts.component_folder = tempDir
-        opts.component_name = 'TestComp'
-        opts.component_filename = 'TestComp'
-        opts.file_extension = 'usda'
-
-        info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
-        desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
-        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
-        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
-
-        rootLayerPath = info.stage.GetRootLayer().realPath
-
-        transform = cmds.createNode('transform', name='TestComp')
-        shape = cmds.createNode('mayaUsdProxyShape', name='TestCompShape', parent=transform)
-        cmds.setAttr(shape + '.filePath', rootLayerPath, type='string')
-
-        proxyShapePath = cmds.ls(shape, long=True)[0]
-        return proxyShapePath, desc
+        self._setUpCC()
 
     def testRenamePrimInComponentStage(self):
         '''Test successful renaming of a prim in a component stage.'''
@@ -1207,7 +1088,7 @@ class RenameInComponentTestCase(unittest.TestCase):
         self.assertFalse(stage.GetPrimAtPath('/root/renamed_geo').IsValid())
 
 
-class ComponentStageInvariantsTestCase(unittest.TestCase):
+class ComponentStageInvariantsTestCase(_ComponentCreatorTestBase, unittest.TestCase):
     """
     Validate structural invariants that hold for every Adsk USD Component stage.
 
@@ -1224,40 +1105,7 @@ class ComponentStageInvariantsTestCase(unittest.TestCase):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
 
     def setUp(self):
-        if not _CC_AVAILABLE:
-            self.skipTest('Could not find the USD component creator plugin')
-        mayaUtils.loadPlugin('mayaUsdPlugin')
-        if _HAVE_CC_MAYA_PLUGIN:
-            mayaUtils.loadPlugin('usd_component_creator')
-        cmds.file(new=True, force=True)
-
-    def _createComponent(self):
-        """Creates a new Adsk USD Component and a proxy shape pointing to it.
-
-        Returns (proxyShapePath, ComponentDescription).
-        """
-        import AdskUsdComponentCreator
-
-        tempDir = tempfile.mkdtemp()
-        opts = AdskUsdComponentCreator.Options()
-        opts.component_folder = tempDir
-        opts.component_name = 'TestComp'
-        opts.component_filename = 'TestComp'
-        opts.file_extension = 'usda'
-
-        info = AdskUsdComponentCreator.ComponentAPI.CreateFromNothing(opts)
-        desc = AdskUsdComponentCreator.ComponentDescription.CreateFromInfo(info)
-        vsDesc = AdskUsdComponentCreator.ComponentAPI.AddVariantSet(desc, [], 'model')
-        AdskUsdComponentCreator.ComponentAPI.AddVariant(desc, [], vsDesc, 'default')
-
-        rootLayerPath = info.stage.GetRootLayer().realPath
-
-        transform = cmds.createNode('transform', name='TestComp')
-        shape = cmds.createNode('mayaUsdProxyShape', name='TestCompShape', parent=transform)
-        cmds.setAttr(shape + '.filePath', rootLayerPath, type='string')
-
-        proxyShapePath = cmds.ls(shape, long=True)[0]
-        return proxyShapePath, desc
+        self._setUpCC()
 
     def testComponentRootLayerIsLocked(self):
         '''Validate that the component root layer is locked (permissionToEdit == False).
@@ -1292,7 +1140,7 @@ class ComponentStageInvariantsTestCase(unittest.TestCase):
             'Component stage default edit target should be the session layer')
 
 
-class AddPrimInComponentTestCase(unittest.TestCase):
+class AddPrimInComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
     """
     Test adding prims to an Adsk USD Component stage via different authoring paths.
 
@@ -1311,20 +1159,14 @@ class AddPrimInComponentTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
-        # Ensure idle callbacks fire when cmds.flushIdleQueue() is called.
+        # Tests in this class drive edit-forwarding through `ufeCmd.execute`, which
+        # wraps `cmds.ufeCmd` — a command mayaUsdPlugin registers on idle.  Resume
+        # and drain the idle queue once at class setup so the command is available.
         cmds.flushIdleQueue(resume=True)
         cmds.flushIdleQueue()
 
     def setUp(self):
-        if not _CC_AVAILABLE:
-            self.skipTest('Could not find the USD component creator plugin')
-        mayaUtils.loadPlugin('mayaUsdPlugin')
-        if _HAVE_CC_MAYA_PLUGIN:
-            mayaUtils.loadPlugin('usd_component_creator')
-        else:
-            cmds.flushIdleQueue(resume=True)
-            cmds.flushIdleQueue()
-        cmds.file(new=True, force=True)
+        self._setUpCC()
 
     def _createComponent(self):
         """Creates a new Adsk USD Component and a proxy shape pointing to it.
