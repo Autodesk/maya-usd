@@ -240,8 +240,10 @@ FilterLayer(SdfLayerHandle const &inLayer,
         CollectMatchingSpecPaths(inLayer, p.pathMatcher.get());
     for (auto const &path: paths) {
         if (path == SdfPath::AbsoluteRootPath() ||
-            path.IsPrimOrPrimVariantSelectionPath()) {
-            SdfPrimSpecHandle outPrim = SdfCreatePrimInLayer(outLayer, path);
+            path.IsPrimPath()) {
+            if (path.IsPrimPath()) {
+                SdfPrimSpecHandle outPrim = SdfCreatePrimInLayer(outLayer, path);
+            }
             SdfCopySpec(inLayer, path, outLayer, path,
                         copyValueFn,
                         std::bind(SdfShouldCopyChildren,

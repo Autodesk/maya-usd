@@ -238,9 +238,18 @@ void MayaCommandHook::lockLayer(
 
 void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers /*= false*/)
 {
+    const std::string shapePath = proxyShapePath();
+    if (shapePath.empty())
+        return;
+
+    MObject mobj;
+    if (PXR_NS::UsdMayaUtil::GetMObjectByName(getProxyShapeName(shapePath), mobj)
+        != MStatus::kSuccess)
+        return;
+
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -refreshSystemLock ";
-    cmd += quote(proxyShapePath());
+    cmd += quote(shapePath);
     cmd += " ";
     cmd += std::to_string(refreshSubLayers);
     cmd += quote(usdLayer->GetIdentifier());
