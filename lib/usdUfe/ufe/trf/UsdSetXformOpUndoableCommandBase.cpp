@@ -15,8 +15,10 @@
 //
 #include "UsdSetXformOpUndoableCommandBase.h"
 
+#include <usdUfe/base/debugCodes.h>
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouterContext.h>
 
@@ -37,6 +39,7 @@ UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
     , _canUpdateValue(true)
     , _opCreated(false)
 {
+    // TfDebug::Enable(USDUFE_UNDOCMD);
 }
 
 UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
@@ -48,6 +51,8 @@ UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
 
 void UsdSetXformOpUndoableCommandBase::execute()
 {
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Executing %s command\n", commandString().c_str());
+
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
     // Create the attribute and cache the initial value,
@@ -67,26 +72,54 @@ void UsdSetXformOpUndoableCommandBase::undo()
     if (!_isPrepared)
         return;
 
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Undoing %s command\n", commandString().c_str());
+
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    // Restore the initial value and potentially remove the creatd attributes.
-    setValue(_initialOpValue, _writeTime);
+    {
+        // Restore the initial value.
+        //
+        // Note: the command does not use a UsdUndoBlock when setting values, so we
+        //        must manually tell the edit-forwarding do do its work, but only
+        //        for the value setting, not for the op creation/removal, which use
+        //        an UsdUndoBlock.
+        NoUsdUndoBlockGuard guard(true);
+        setValue(_initialOpValue, _writeTime);
+    }
+
     removeOpIfNeeded();
     _canUpdateValue = false;
 }
 
 void UsdSetXformOpUndoableCommandBase::redo()
 {
+    // Note: various Maya commands call this `redo` function instead of `execute`
+    //       in their `doIt` function.That's because many commands implement their
+    //       `doIt` by calling their `redoIt`. Then they end-up calling `redo` on
+    //       the UFE commands. Redirect to `execute` when we detect suck shenanigans,
+    //       because our `execute` capture undo info but our `redo` replays them.
+    if (!UsdUfe::isRedoing()) {
+        execute();
+        return;
+    }
+
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Redoing %s command\n", commandString().c_str());
+
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    // Redo the attribute creation if the attribute was already created
-    // but then undone.
     recreateOpIfNeeded();
 
-    // Set the new value, potentially creating the attribute if it
-    // did not exists or caching the initial value if this is the
-    // first time the command is executed, redone or undone.
-    prepareAndSet(_newOpValue);
+    {
+        // Set the new value.
+        //
+        // Note: the command does not use a UsdUndoBlock when setting values, so we
+        //        must manually tell the edit-forwarding do do its work, but only
+        //        for the value setting, not for the op creation/removal, which use
+        //        an UsdUndoBlock.
+        NoUsdUndoBlockGuard guard(true);
+        setValue(_newOpValue, _writeTime);
+    }
+
     _canUpdateValue = true;
 }
 
@@ -119,7 +152,16 @@ void UsdSetXformOpUndoableCommandBase::prepareAndSet(const VtValue& v)
         return;
 
     prepareOpIfNeeded();
-    setValue(v, _writeTime);
+    {
+        // Set the new value.
+        //
+        // Note: the command does not use a UsdUndoBlock when setting values, so we
+        //        must manually tell the edit-forwarding do do its work, but only
+        //        for the value setting, not for the op creation/removal, which use
+        //        an UsdUndoBlock.
+        NoUsdUndoBlockGuard guard(true);
+        setValue(v, _writeTime);
+    }
 }
 
 void UsdSetXformOpUndoableCommandBase::prepareOpIfNeeded()

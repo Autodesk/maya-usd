@@ -21,9 +21,9 @@
 #include <usdUfe/ufe/UsdHierarchyHandler.h>
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdConnectionHandler.h>
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
+#include <usdUfe/ufe/UsdConnectionHandler.h>
+#include <usdUfe/ufe/UsdShaderNodeDefHandler.h>
+#include <usdUfe/ufe/UsdUINodeGraphNodeHandler.h>
 #endif
 
 namespace MAYAUSDAPI_NS_DEF {
@@ -31,17 +31,17 @@ namespace MAYAUSDAPI_NS_DEF {
 #ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::UINodeGraphNodeHandler::Ptr createUsdUINodeGraphNodeHandler()
 {
-    return MayaUsd::ufe::UsdUINodeGraphNodeHandler::create();
+    return UsdUfe::UsdUINodeGraphNodeHandler::create();
 }
 
 Ufe::ConnectionHandler::Ptr createUsdConnectionHandler()
 {
-    return MayaUsd::ufe::UsdConnectionHandler::create();
+    return UsdUfe::UsdConnectionHandler::create();
 }
 
 Ufe::NodeDefHandler::Ptr createUsdShaderNodeDefHandler()
 {
-    return MayaUsd::ufe::UsdShaderNodeDefHandler::create();
+    return UsdUfe::UsdShaderNodeDefHandler::create();
 }
 #endif
 

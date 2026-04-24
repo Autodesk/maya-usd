@@ -13,6 +13,7 @@ list(APPEND scripts_src
     mayaUsd_createStageWithNewLayer.py
     mayaUsd_createStageFromAsset.mel
     mayaUsd_imageFileDialogs.mel
+    mayaUsd_initializeComponentCreator.py
     mayaUsd_layerEditorFileDialogs.mel
     mayaUsd_fileOptions.mel
     mayaUsd_pluginUICreation.mel
@@ -39,4 +40,8 @@ configure_file("${PROJECT_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewS
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AEusdPreviewSurfaceTemplate.mel
     DESTINATION ${INSTALL_DIR_SUFFIX}/scripts
+)
+
+install(FILES RunUsdTool.py
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 )

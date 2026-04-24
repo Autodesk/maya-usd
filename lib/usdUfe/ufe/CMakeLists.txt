@@ -62,9 +62,19 @@ endif()
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            UsdConnections.cpp
+            UsdConnectionHandler.cpp
+            UsdMaterial.cpp
+            UsdMaterialHandler.cpp
+            UsdUINodeGraphNode.cpp
+            UsdUINodeGraphNodeHandler.cpp
             UsdShaderAttributeDef.cpp
             UsdShaderAttributeHolder.cpp
+            UsdShaderNodeDef.cpp
+            UsdShaderNodeDefHandler.cpp
             UsdUndoAttributesCommands.cpp
+            UsdUndoConnectionCommands.cpp
+            UsdUndoCreateFromNodeDefCommand.cpp
     )
 endif()
 
@@ -104,6 +114,14 @@ if (UFE_CLIPBOARD_SUPPORT)
     )
 endif()
 
+
+if (UFE_MATERIAL_HAS_HASMATERIAL)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_MATERIAL_HAS_HASMATERIAL=1
+    )
+endif()
+
 if (UFE_ATTRIBUTES_GET_ENUMS)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
@@ -136,6 +154,20 @@ if (UFE_HAS_COLOR_MANAGEMENT_HANDLER)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         UFE_HAS_COLOR_MANAGEMENT_HANDLER=1
+    )
+endif()
+
+if (UFE_UINODEGRAPHNODE_HAS_SIZE)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_UINODEGRAPHNODE_HAS_SIZE=1
+    )
+endif()
+
+if (UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR=1
     )
 endif()
 
@@ -187,6 +219,7 @@ set(HEADERS
     UsdUndoClearDefaultPrimCommand.h
     UsdUndoableCommand.h
     Utils.h
+    trf/Utils.h
 )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
@@ -212,9 +245,19 @@ endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        UsdConnections.h
+        UsdConnectionHandler.h
+        UsdMaterial.h
+        UsdMaterialHandler.h
+        UsdUINodeGraphNode.h
+        UsdUINodeGraphNodeHandler.h
         UsdShaderAttributeDef.h
         UsdShaderAttributeHolder.h
+        UsdShaderNodeDef.h
+        UsdShaderNodeDefHandler.h
         UsdUndoAttributesCommands.h
+        UsdUndoConnectionCommands.h
+        UsdUndoCreateFromNodeDefCommand.h
     )
 endif()
 

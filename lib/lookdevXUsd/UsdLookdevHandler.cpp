@@ -12,7 +12,13 @@
 
 #include "UsdMaterialCommands.h"
 
+#include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
+#include <usdUfe/ufe/Utils.h>
+
+#ifdef LDX_USD_USE_MAYAUSDAPI
 #include <mayaUsdAPI/utils.h>
+#endif
 
 namespace
 {
@@ -88,18 +94,23 @@ namespace LookdevXUsd
 Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevContainerCmdImpl(
     const Ufe::SceneItem::Ptr& parent, const Ufe::PathComponent& name) const
 {
-    if (!MayaUsdAPI::isUsdSceneItem(parent) || !MayaUsdAPI::getPrimForUsdSceneItem(parent).IsValid())
+    auto usdParent = UsdUfe::downcast(parent);
+    auto prim = usdParent ? usdParent->prim() : PXR_NS::UsdPrim();
+    if (!prim.IsValid())
     {
         return nullptr;
     }
 
-    return MayaUsdAPI::createAddNewPrimCommand(parent, name.string(), "Material");
+    return UsdUfe::UsdUndoAddNewPrimCommand::create(usdParent, name.string(), "Material");
 }
 
 Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevContainerCmdImpl(
     const Ufe::SceneItem::Ptr& parent, const Ufe::NodeDef::Ptr& nodeDef) const
 {
-    if (!MayaUsdAPI::isUsdSceneItem(parent) || !MayaUsdAPI::getPrimForUsdSceneItem(parent).IsValid())
+#ifdef LDX_USD_USE_MAYAUSDAPI
+    auto usdParent = UsdUfe::downcast(parent);
+    auto prim = usdParent ? usdParent->prim() : PXR_NS::UsdPrim();
+    if (!prim.IsValid())
     {
         return nullptr;
     }
@@ -116,12 +127,15 @@ Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevContain
         return nullptr;
     }
     return WrapInsertChildCommand::create(cmd);
+#else
+    return nullptr;
+#endif
 }
 
 Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevEnvironmentCmdImpl(
     const Ufe::SceneItem::Ptr& ancestor, Ufe::Rtid targetRunTimeId) const
 {
-    if (!MayaUsdAPI::isUsdSceneItem(ancestor) || targetRunTimeId != MayaUsdAPI::getUsdRunTimeId())
+    if (!UsdUfe::downcast(ancestor) || targetRunTimeId != UsdUfe::getUsdRunTimeId())
     {
         return nullptr;
     }
@@ -131,7 +145,7 @@ Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevEnviron
 
 bool UsdLookdevHandler::isLookdevContainerImpl(const Ufe::SceneItem::Ptr& item) const
 {
-    return item->nodeType() == "Material";
+    return UsdUfe::getSceneItemNodeType(item) == "Material";
 }
 
 } // namespace LookdevXUsd

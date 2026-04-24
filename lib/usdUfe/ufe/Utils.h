@@ -41,6 +41,7 @@
 #endif // UFE_V3_FEATURES_AVAILABLE
 
 #include <string>
+#include <unordered_map>
 
 UFE_NS_DEF
 {
@@ -64,13 +65,26 @@ typedef PXR_NS::UsdTimeCode (*TimeAccessorFn)(const Ufe::Path&);
 typedef bool (*IsAttributeLockedFn)(const PXR_NS::UsdProperty& attr, std::string* errMsg);
 typedef void (*SaveStageLoadRulesFn)(const PXR_NS::UsdStageRefPtr&);
 typedef bool (*IsRootChildFn)(const Ufe::Path& path);
-typedef std::string (*UniqueChildNameFn)(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+typedef std::string (*UniqueChildNameFn)(
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name,
+    const std::string*     excludeName);
 typedef void (*DisplayMessageFn)(const std::string& msg);
 typedef void (*WaitCursorFn)();
 typedef std::string (*DefaultMaterialScopeNameFn)();
 typedef void (
     *ExtractTRSFn)(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s);
 typedef const char* (*Transform3dMatrixOpNameFn)();
+typedef bool (*IsLoadingSceneFn)();
+typedef void (*PauseEditForwardingFn)(bool pause);
+typedef bool (*IsInUndoRedoFn)();
+typedef bool (*IsComponentStageFn)(const Ufe::Path&);
+typedef std::string (*GetComponentMaterialScopeNameFn)(const PXR_NS::UsdStageRefPtr&);
+typedef std::string (*GetComponentMeshScopeNameFn)(const PXR_NS::UsdStageRefPtr&);
+typedef bool (*SetComponentVariantSelectionFn)(
+    const PXR_NS::UsdStageRefPtr&,
+    const std::string&,
+    const std::string&);
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -134,6 +148,39 @@ void setTimeAccessorFn(TimeAccessorFn fn);
 USDUFE_PUBLIC
 PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 
+//! Set the DCC specific is-scene-loading test function.
+//! Use of this function is optional, if one is not supplied then
+//! a default test function will be used.
+USDUFE_PUBLIC
+void setIsLoadingSceneFn(IsLoadingSceneFn fn);
+
+//! Return whether the DCC is loading a scene.
+//! \return True if the DCC is currently loading a scene, otherwise false
+USDUFE_PUBLIC
+bool isSceneLoading();
+
+//! Set the DCC specific is-undoing test function.
+//! Use of this function is optional, if one is not supplied then
+//! a default test function will be used.
+USDUFE_PUBLIC
+void setIsUndoing(IsInUndoRedoFn fn);
+
+//! Return whether the DCC is currently undoing commands.
+//! \return True if the DCC is currently undoing commands, otherwise false
+USDUFE_PUBLIC
+bool isUndoing();
+
+//! Set the DCC specific is-readoing test function.
+//! Use of this function is optional, if one is not supplied then
+//! a default test function will be used.
+USDUFE_PUBLIC
+void setIsRedoing(IsInUndoRedoFn fn);
+
+//! Return whether the DCC is currently redoing commands.
+//! \return True if the DCC is currently redoing commands, otherwise false
+USDUFE_PUBLIC
+bool isRedoing();
+
 //! Set the DCC specific USD attribute is locked test function.
 //! Use of this function is optional, if one is not supplied then
 //! a default test function will be used.
@@ -192,9 +239,15 @@ USDUFE_PUBLIC
 bool splitNumericalSuffix(const std::string srcName, std::string& base, std::string& suffix);
 
 //! Split the source name into a base name and a numerical suffix (set to
-//! 1 if absent).  Increment the numerical suffix until name is unique.
+//! 1 if absent). Increment the numerical suffix until name is unique.
 USDUFE_PUBLIC
 std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName);
+
+//! Find the maximum numerical suffix for names with the same base, then
+//! increment it by 1 to create a unique name. This ensures names like "group7"
+//! are created immediately if "group6" exists, rather than creating "group1" first.
+USDUFE_PUBLIC
+std::string uniqueNameMaxSuffix(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName);
 
 //! Set the DCC specific "uniqueChildName" function.
 //! Use of this function is optional, if one is not supplied then
@@ -202,9 +255,12 @@ std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::strin
 USDUFE_PUBLIC
 void setUniqueChildNameFn(UniqueChildNameFn fn);
 
-//! Return a unique child name.
+//! Return a unique child name, excluding specified excludeName.
 USDUFE_PUBLIC
-std::string uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std::string& name);
+std::string uniqueChildName(
+    const PXR_NS::UsdPrim& usdParent,
+    const std::string&     name,
+    const std::string*     excludeName = nullptr);
 
 //! Return a relatively unique prim name.
 //! That is, make some effort so that the name is unique relative to other prims
@@ -214,7 +270,10 @@ std::string relativelyUniqueName(const PXR_NS::UsdPrim& usdParent, const std::st
 
 //! Default uniqueChildName() implementation. Uses all the prim's children.
 USDUFE_PUBLIC
-std::string uniqueChildNameDefault(const PXR_NS::UsdPrim& parent, const std::string& name);
+std::string uniqueChildNameDefault(
+    const PXR_NS::UsdPrim& parent,
+    const std::string&     name,
+    const std::string*     excludeName = nullptr);
 
 //! Return a unique SdfPath by looking at existing siblings under the path's parent.
 USDUFE_PUBLIC
@@ -222,6 +281,14 @@ PXR_NS::SdfPath uniqueChildPath(const PXR_NS::UsdStage& stage, const PXR_NS::Sdf
 
 USDUFE_PUBLIC
 Ufe::Path appendToUsdPath(const Ufe::Path& path, const std::string& name);
+
+//! Returns the node type of the \p item safely, avoiding problem during scene loads.
+USDUFE_PUBLIC
+std::string getSceneItemNodeType(const Ufe::SceneItem::Ptr& item);
+
+//! Returns the children of the \p hierarchy safely, avoiding problem during scene loads.
+USDUFE_PUBLIC
+Ufe::SceneItemList getHierarchyChildren(const Ufe::Hierarchy::Ptr& hierarchy);
 
 //! Returns true if \p item is a materials scope.
 USDUFE_PUBLIC
@@ -324,6 +391,10 @@ USDUFE_PUBLIC Ufe::Value vtValueToUfeValue(const PXR_NS::VtValue& vtValue);
 //! nullptr is returned.
 USDUFE_PUBLIC
 PXR_NS::SdrShaderNodeConstPtr usdShaderNodeFromSceneItem(const Ufe::SceneItem::Ptr& item);
+
+/// Access to materials associated with available renderers
+USDUFE_PUBLIC
+PXR_NS::SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
 
 //------------------------------------------------------------------------------
 // Verify edit restrictions.
@@ -442,6 +513,74 @@ void startWaitCursor();
 //! Stop the wait cursor. Can be called recursively.
 USDUFE_PUBLIC
 void stopWaitCursor();
+
+//! Set the DCC specific pause edit forwarding function.
+//! Use of this function is optional, if not supplied then no action is taken.
+USDUFE_PUBLIC
+void setPauseEditForwardingFn(PauseEditForwardingFn fn);
+
+//! Pause or resume edit forwarding (if function was provided).
+USDUFE_PUBLIC
+void pauseEditForwarding(bool pause);
+
+//! Set the DCC specific is-component-stage test function.
+//! Use of this function is optional, if not supplied then false is returned.
+USDUFE_PUBLIC
+void setIsComponentStageFn(IsComponentStageFn fn);
+
+//! Return whether the stage at the given path is a component stage.
+//! \return True if the stage is a component stage, otherwise false (default).
+USDUFE_PUBLIC
+bool isComponentStage(const Ufe::Path& path);
+
+//! Set the DCC specific get-component-material-scope-name function.
+//! Use of this function is optional, if not supplied then an empty string is returned.
+USDUFE_PUBLIC
+void setGetComponentMaterialScopeNameFn(GetComponentMaterialScopeNameFn fn);
+
+//! Get the material scope name from a component stage.
+//! \return The material scope name, or empty string if not a component or not set.
+USDUFE_PUBLIC
+std::string getComponentMaterialScopeName(const PXR_NS::UsdStageRefPtr& stage);
+
+//! Set the DCC specific get-component-mesh-scope-name function.
+//! Use of this function is optional, if not supplied then an empty string is returned.
+USDUFE_PUBLIC
+void setGetComponentMeshScopeNameFn(GetComponentMeshScopeNameFn fn);
+
+//! Get the mesh scope name from a component stage.
+//! \return The mesh scope name, or empty string if not a component or not set.
+USDUFE_PUBLIC
+std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage);
+
+//! Set the DCC specific set-component-variant-selection function.
+//! Use of this function is optional, if not supplied then false is returned.
+USDUFE_PUBLIC
+void setSetComponentVariantSelectionFn(SetComponentVariantSelectionFn fn);
+
+//! Set the temporary variant selection for a component prim's variant set.
+USDUFE_PUBLIC
+bool setComponentVariantSelection(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            variantSetName,
+    const std::string&            variantSelection);
+
+//! Validate that an namespace operation can be done on a component prim.
+//! \param prim The prim to validate the operation on.
+//! \param operationName The name of the operation (e.g., "reparent", "delete") for error messages.
+//! \throws std::runtime_error if the operation cannot be performed on the prim.
+USDUFE_PUBLIC
+void validateComponentNamespaceOperation(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     operationName);
+
+//! RAII guard to pause/unpause edit forwarding.
+class USDUFE_PUBLIC EditForwardingGuard
+{
+public:
+    EditForwardingGuard();
+    ~EditForwardingGuard();
+};
 
 //! Start and stop the wait cursor in the constructor and destructor.
 struct USDUFE_PUBLIC WaitCursor

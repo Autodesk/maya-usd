@@ -40,13 +40,15 @@ public:
     LayerContentsWidget(QWidget* in_parent);
     ~LayerContentsWidget() override;
 
-    void setLayer(const PXR_NS::SdfLayerRefPtr);
+    void setLayer(const PXR_NS::SdfLayerRefPtr, bool expandAllValues = false);
 
     void clear();
     bool isEmpty() const { return _isEmpty; }
 
 private:
     void createUI();
+
+    bool exportPseudoLayer(const PXR_NS::SdfLayerRefPtr in_layer, std::string& out_contents);
 
     QPointer<QTextEdit>          _layerContents;
     QPointer<QSyntaxHighlighter> _syntaxHighlighter;

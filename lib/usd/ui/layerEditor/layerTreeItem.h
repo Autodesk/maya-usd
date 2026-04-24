@@ -194,6 +194,7 @@ public:
     void                   loadSubLayers(QWidget* in_parent);
     void                   printLayer(QWidget* in_parent);
     void                   clearLayer(QWidget* in_parent);
+    void                   mergeWithSublayers(QWidget* in_parent);
 
     // delegate Action API for command buttons
     void getActionButton(LayerActionType actionType, LayerActionInfo& out_info) const;

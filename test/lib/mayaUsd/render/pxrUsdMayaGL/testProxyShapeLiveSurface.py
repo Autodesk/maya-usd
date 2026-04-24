@@ -21,15 +21,13 @@ from maya import OpenMayaUI as OMUI
 from maya import cmds
 
 try:
-    from PySide2 import QtCore
-    from PySide2.QtTest import QTest
     from PySide2.QtWidgets import QWidget
     from shiboken2 import wrapInstance
 except Exception:
-    from PySide6 import QtCore
-    from PySide6.QtTest import QTest
     from PySide6.QtWidgets import QWidget
     from shiboken6 import wrapInstance
+
+import qtInputHelpers
 
 import os
 import sys
@@ -95,8 +93,8 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         cmds.setToolTo('CreatePolyTorusCtx')
 
         # Click in the center of the viewport widget.
-        QTest.mouseClick(self._viewWidget, QtCore.Qt.LeftButton,
-            QtCore.Qt.NoModifier, self._viewWidget.rect().center())
+        qtInputHelpers.send_mouse_click(
+            self._viewWidget, self._viewWidget.rect().center())
 
         # Find the torus (it should be called pTorus1).
         self.assertTrue(cmds.ls('pTorus1'))
@@ -123,8 +121,8 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         cmds.setToolTo('CreatePolyConeCtx')
 
         # Click in the center of the viewport widget.
-        QTest.mouseClick(self._viewWidget, QtCore.Qt.LeftButton,
-            QtCore.Qt.NoModifier, self._viewWidget.rect().center())
+        qtInputHelpers.send_mouse_click(
+            self._viewWidget, self._viewWidget.rect().center())
 
         # Find the cone (it should be called pCone1).
         self.assertTrue(cmds.ls('pCone1'))

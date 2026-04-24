@@ -11,7 +11,7 @@
 #include "UsdMaterialValidator.h"
 #include "Utils.h"
 
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -386,9 +386,9 @@ LookdevXUfe::AttributeComponentInfo UsdMaterialValidator::remapComponentConnecti
                     if (output)
                     {
 #if PXR_VERSION > 2408
-                        const auto& outputType = output->GetTypeAsSdfType().GetSdfType();
+                        const auto outputType = output->GetTypeAsSdfType().GetSdfType();
 #else
-                        const auto& outputType = output->GetTypeAsSdfType().first;
+                        const auto outputType = output->GetTypeAsSdfType().first;
 #endif
 
                         if (outputType == SdfValueTypeNames->Color3f || outputType == SdfValueTypeNames->Color4f)
@@ -474,8 +474,8 @@ void UsdMaterialValidator::validateComponentLocation(const LookdevXUfe::Attribut
 
 Ufe::Path UsdMaterialValidator::toUfe(const UsdStageWeakPtr& stage, const SdfPath& path)
 {
-    auto stagePath = MayaUsdAPI::stagePath(stage);
-    return Ufe::Path::Segments{stagePath.getSegments()[0], MayaUsdAPI::usdPathToUfePathSegment(path)};
+    auto stagePath = UsdUfe::stagePath(stage);
+    return Ufe::Path::Segments{stagePath.getSegments()[0], UsdUfe::usdPathToUfePathSegment(path)};
 }
 
 Ufe::Path UsdMaterialValidator::toUfe(const UsdPrim& prim)

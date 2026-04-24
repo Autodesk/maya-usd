@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${PROJECT_NAME} 
+target_sources(${PROJECT_NAME}
     PRIVATE
         buildInfo.cpp
         debugCodes.cpp

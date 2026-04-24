@@ -35,14 +35,14 @@ import unittest
 
 try:
     from PySide2 import QtCore
-    from PySide2.QtTest import QTest
     from PySide2.QtWidgets import QWidget
     from shiboken2 import wrapInstance
 except Exception:
     from PySide6 import QtCore
-    from PySide6.QtTest import QTest
     from PySide6.QtWidgets import QWidget
     from shiboken6 import wrapInstance
+
+import qtInputHelpers
 
 class testUtilsSelectabilityPointInstanceSelection(unittest.TestCase):
     """
@@ -108,7 +108,7 @@ class testUtilsSelectabilityPointInstanceSelection(unittest.TestCase):
         '''
         Helper that forces Maya to process events.
         '''
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, timeout)
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, timeout)
 
     def _dragSelectActiveView(self):
         '''
@@ -120,11 +120,9 @@ class testUtilsSelectabilityPointInstanceSelection(unittest.TestCase):
         viewWidget.update()
         self._processViewEvents()
 
-        QTest.mousePress(viewWidget, QtCore.Qt.LeftButton,
-                    QtCore.Qt.NoModifier, viewWidget.rect().topLeft() + QtCore.QPoint(1, 1))
-        QTest.mouseMove(viewWidget, viewWidget.rect().bottomRight() - QtCore.QPoint(1,1))
-        QTest.mouseRelease(viewWidget, QtCore.Qt.LeftButton,
-            QtCore.Qt.NoModifier, viewWidget.rect().bottomRight() - QtCore.QPoint(1, 1))
+        top_left = viewWidget.rect().topLeft() + QtCore.QPoint(1, 1)
+        bottom_right = viewWidget.rect().bottomRight() - QtCore.QPoint(1, 1)
+        qtInputHelpers.send_mouse_drag(viewWidget, top_left, bottom_right)
 
     @staticmethod
     def _GetUfePath(instanceIndex=-1):

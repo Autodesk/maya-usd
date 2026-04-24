@@ -29,6 +29,7 @@
 #include "mayaUsdInfoCommand.h"
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/commands/layerEditorWindowCommand.h>
@@ -46,6 +47,7 @@
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -76,12 +78,11 @@
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
 #include <mayaUsdUI/ui/initStringResources.h>
-#if defined(WANT_AR_BUILD)
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
 #include <mayaUsdUI/ui/AssetResolverDialogCmd.h>
 #include <mayaUsdUI/ui/AssetResolverProjectChangeTracker.h>
 #include <mayaUsdUI/ui/AssetResolverUtils.h>
 #include <mayaUsdUI/ui/PreferencesManagement.h>
-#include <mayaUsdUI/ui/PreferencesOptions.h>
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #endif
@@ -358,7 +359,7 @@ MStatus initializePlugin(MObject obj)
         err += MayaUsd::USDImportDialogCmd::name;
         status.perror(err);
     }
-#if defined(WANT_AR_BUILD)
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     status = MayaUsd::AssetResolverDialogCmd::initialize(plugin);
     if (!status) {
         MString err("registerCommand");
@@ -425,7 +426,7 @@ MStatus initializePlugin(MObject obj)
     PrimUpdaterManager::getInstance();
 #endif
 
-#ifdef WANT_AR_BUILD
+#ifdef WANT_ADSK_USD_ASSET_RESOLVER_BUILD
     // Initialize USD preferences and apply them to the Asset Resolver
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
@@ -435,7 +436,7 @@ MStatus initializePlugin(MObject obj)
 
         // Load Maya project tokens to AdskAssetResolver if the preference is enabled
         // This needs to be done after InitializeUsdPreferences()
-        static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
+        auto IncludeMayaTokenInAR = UsdMayaUtil::convert(MayaUsdOptionVars->IncludeMayaTokenInAR);
         if (MGlobal::optionVarExists(IncludeMayaTokenInAR)
             && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
             MayaUsd::AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
@@ -444,7 +445,7 @@ MStatus initializePlugin(MObject obj)
 
     MayaUsd::AssetResolverProjectChangeTracker::startTracking();
 
-#endif // WANT_AR_BUILD
+#endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
 
     return status;
 }
@@ -455,7 +456,7 @@ MStatus uninitializePlugin(MObject obj)
     MFnPlugin plugin(obj);
     MStatus   status;
 
-#if defined(WANT_AR_BUILD)
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     MayaUsd::AssetResolverProjectChangeTracker::stopTracking();
     status = MayaUsd::AssetResolverDialogCmd::finalize(plugin);
     if (!status) {
@@ -463,7 +464,7 @@ MStatus uninitializePlugin(MObject obj)
         err += MayaUsd::AssetResolverDialogCmd::name;
         status.perror(err);
     }
-#endif // WANT_AR_BUILD
+#endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,

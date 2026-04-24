@@ -35,6 +35,10 @@ namespace ComponentUtils {
 
 std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return {};
+    }
+
     // Ask via python what layers need to be saved for the component.
     // With the maya api we can only return a string, so we concat the ids.
     MString getLayersFromComponent;
@@ -73,6 +77,10 @@ std::vector<std::string> getAdskUsdComponentLayersToSave(const std::string& prox
 
 bool isAdskUsdComponent(const std::string& proxyShapePath)
 {
+    if (proxyShapePath.empty()) {
+        return false;
+    }
+
     MString defineIsComponentCmd;
     defineIsComponentCmd.format(
         "def usd_component_creator_is_proxy_shape_a_component():\n"
@@ -109,6 +117,10 @@ bool isAdskUsdComponent(const std::string& proxyShapePath)
 
 void saveAdskUsdComponent(const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return;
+    }
+
     MString saveComponent;
     saveComponent.format(
         "from pxr import Sdf, Usd, UsdUtils\n"
@@ -151,6 +163,10 @@ bool isUnsavedAdskUsdComponent(const PXR_NS::UsdStageRefPtr stage)
 
 void reloadAdskUsdComponent(const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return;
+    }
+
     MString saveComponent;
     saveComponent.format(
         "from pxr import Sdf, Usd, UsdUtils\n"
@@ -171,6 +187,10 @@ std::string previewSaveAdskUsdComponent(
     const std::string& componentName,
     const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return {};
+    }
+
     MString defMoveComponentPreviewCmd;
     defMoveComponentPreviewCmd.format(
         "def usd_component_creator_move_component_preview():\n"
@@ -211,6 +231,10 @@ std::string moveAdskUsdComponent(
     const std::string& componentName,
     const std::string& proxyPath)
 {
+    if (proxyPath.empty()) {
+        return {};
+    }
+
     MString defMoveComponentCmd;
     defMoveComponentCmd.format(
         "def usd_component_creator_move_component():\n"
@@ -261,6 +285,194 @@ bool shouldDisplayComponentInitialSaveDialog(
     MGlobal::executeCommand("internalVar -userTmpDir", tempDir);
     return UsdMayaUtilFileSystem::isPathInside(
         UsdMayaUtil::convert(tempDir), stage->GetRootLayer()->GetRealPath());
+}
+
+namespace {
+
+// Serialises a VtDictionary to the "key=value;key=value" encoded format understood by
+// UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions()
+std::string _encodeExportArgs(const VtDictionary& dict)
+{
+    std::string result;
+    bool        success;
+    std::string valueStr;
+    for (const auto& kv : dict) {
+        std::tie(success, valueStr) = UsdMayaUtil::ValueToArgument(kv.second);
+        if (!success) {
+            continue;
+        }
+        if (!result.empty())
+            result += ';';
+        result += kv.first + '=' + valueStr;
+    }
+    return result;
+}
+
+std::string getComponentOptionString(const std::string& proxyPath, const char* optionsAttribute)
+{
+    if (proxyPath.empty()) {
+        return {};
+    }
+
+    MString defCmd;
+    defCmd.format(
+        "def _cc_get_option_str():\n"
+        "    import mayaUsd.ufe\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentDescription\n"
+        "    except ImportError:\n"
+        "        return ''\n"
+        "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
+        "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
+        "    if not component_description:\n"
+        "        return ''\n"
+        "    return component_description.GetOptions().^2s\n",
+        proxyPath.c_str(),
+        optionsAttribute);
+
+    if (MS::kSuccess == MGlobal::executePythonCommand(defCmd)) {
+        MString result;
+        if (MS::kSuccess == MGlobal::executePythonCommand("_cc_get_option_str()", result)) {
+            return result.asUTF8();
+        }
+    }
+    return {};
+}
+
+} // namespace
+
+std::string getMaterialScopeName(const std::string& proxyPath)
+{
+    return getComponentOptionString(proxyPath, "materials_scope_name");
+}
+
+std::string getMeshScopeName(const std::string& proxyPath)
+{
+    return getComponentOptionString(proxyPath, "meshes_scope_name");
+}
+
+bool addMayaNodesToComponent(
+    const std::string&              proxyShapePath,
+    const std::vector<std::string>& fullNodeNames,
+    const VtDictionary&             exportArgs)
+{
+    // Build a Python list literal from fullNodeNames: ['name1', 'name2', ...]
+    std::string pythonList = "[";
+    for (size_t i = 0; i < fullNodeNames.size(); ++i) {
+        if (i > 0)
+            pythonList += ", ";
+        pythonList += "'" + fullNodeNames[i] + "'";
+    }
+    pythonList += "]";
+
+    const std::string encodedOptions = _encodeExportArgs(exportArgs);
+
+    MString defineCmd;
+    defineCmd.format(
+        "def _usd_cc_add_nodes_to_component():\n"
+        "    try:\n"
+        "        from AdskUsdComponentCreator import ComponentAPI, ComponentDescription, "
+        "GetVariantSelectionsFromNesting\n"
+        "        from usd_component_creator_plugin.create_component import"
+        " add_to_component_from_nodes\n"
+        "        import mayaUsd.ufe, mayaUsd.lib\n"
+        "        import maya.OpenMaya as om\n"
+        "    except ImportError as e:\n"
+        "        return 0\n"
+        "    export_options = mayaUsd.lib.Util.getDictionaryFromEncodedOptions('^3s')\n"
+        "    stage = mayaUsd.ufe.getStage('^1s')\n"
+        "    comp_desc = ComponentDescription.CreateFromStageMetadata(stage)\n"
+        "    if not comp_desc:\n"
+        "        print('No component description found for stage.')\n"
+        "        return 0\n"
+        "    variant_nesting = ComponentAPI.GetVariantTarget(comp_desc)\n"
+        "    if not variant_nesting:\n"
+        "        stage_name = '^1s'.split('|')[-1]\n"
+        "        om.MGlobal.displayError('Cannot Duplicate as USD to ' + stage_name + '. Target a "
+        "variant in the Variant Manager for ' + stage_name + ', then try again.')\n"
+        "        return 0\n"
+        "    variant_selections = GetVariantSelectionsFromNesting(variant_nesting)\n"
+        "    return 1 if add_to_component_from_nodes(^2s, variant_selections, False, "
+        "export_options, comp_desc) else 0\n",
+        proxyShapePath.c_str(),
+        pythonList.c_str(),
+        encodedOptions.c_str());
+
+    int     result = 0;
+    MStatus success = MGlobal::executePythonCommand(defineCmd, false, false);
+    if (success == MS::kSuccess) {
+        MString runCmd = "_usd_cc_add_nodes_to_component()";
+        success = MGlobal::executePythonCommand(runCmd, result);
+    }
+
+    if (success != MS::kSuccess) {
+        TF_RUNTIME_ERROR("Error while adding nodes to USD component '%s'.", proxyShapePath.c_str());
+    }
+
+    return result != 0;
+}
+
+bool setComponentVariantSelection(
+    const std::string& proxyPath,
+    const std::string& variantSetName,
+    const std::string& variantSelection)
+{
+    if (proxyPath.empty() || variantSetName.empty()) {
+        return false;
+    }
+
+    // clang-format off
+    MString setVariantSelectionCmd;
+    setVariantSelectionCmd.format(
+        "def _usd_cc_set_component_variant_selection():\n"
+        "    try:\n"
+        "        import mayaUsd.ufe\n"
+        "        from AdskUsdComponentCreator import ComponentAPI, ComponentDescription\n"
+        "    except ImportError:\n"
+        "        return 0\n"
+        "    stage = mayaUsd.ufe.getStage('^1s')\n"
+        "    if stage is None:\n"
+        "        return 0\n"
+        "    comp_desc = ComponentDescription.CreateFromStageMetadata(stage)\n"
+        "    if not comp_desc:\n"
+        "        return 0\n"
+        "    variant_set_name = '^2s'\n"
+        "    variant_selection = '^3s'\n"
+        "    if not variant_selection:\n"
+        "        return 1 if ComponentAPI.SetVariantTemporarySelection(comp_desc, [], True) else 0\n"
+        "    def _find_nesting(vs_map, nesting):\n"
+        "        for vs_name, vs_desc in vs_map.items():\n"
+        "            if vs_name == variant_set_name and vs_desc.HasVariant(variant_selection):\n"
+        "                return nesting + [vs_desc, vs_desc.GetVariantDescription(variant_selection)]\n"
+        "            for v_name, v_desc in vs_desc.GetVariants().items():\n"
+        "                result = _find_nesting(v_desc.GetSubVariantSets(), nesting + [vs_desc, v_desc])\n"
+        "                if result is not None:\n"
+        "                    return result\n"
+        "        return None\n"
+        "    nesting = _find_nesting(comp_desc.GetVariantSets(), [])\n"
+        "    if nesting is None:\n"
+        "        return 0\n"
+        "    return 1 if ComponentAPI.SetVariantTemporarySelection(comp_desc, nesting, True) else 0\n",
+        proxyPath.c_str(),
+        variantSetName.c_str(),
+        variantSelection.c_str());
+    // clang-format on
+
+    int     result = 0;
+    MStatus success = MGlobal::executePythonCommand(setVariantSelectionCmd, false, false);
+    if (success == MS::kSuccess) {
+        MString runCmd = "_usd_cc_set_component_variant_selection()";
+        success = MGlobal::executePythonCommand(runCmd, result);
+    }
+
+    if (success != MS::kSuccess) {
+        TF_WARN(
+            "Error while setting component variant selection for '%s' variant set '%s'.",
+            proxyPath.c_str(),
+            variantSetName.c_str());
+    }
+
+    return result != 0;
 }
 
 } // namespace ComponentUtils

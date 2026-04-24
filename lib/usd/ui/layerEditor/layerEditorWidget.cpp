@@ -29,6 +29,12 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <AdskUsdEditForward/StageRuleProvider.h>
+#endif
+
+#include <pxr/usd/sdf/schema.h>
+
 #include <maya/MGlobal.h>
 
 #include <QtCore/QItemSelectionModel>
@@ -42,8 +48,11 @@
 
 #include <usdUfe/ufe/Utils.h>
 
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QFrame>
 #include <QtWidgets/QGraphicsOpacityEffect>
 #include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
@@ -55,6 +64,8 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
+LayerEditorWidget::~LayerEditorWidget() { TfNotice::Revoke(_layerChangedKey); }
+
 LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow* in_parent)
     : QWidget(in_parent)
     , _sessionState(in_sessionState)
@@ -218,7 +229,52 @@ void LayerEditorWidget::setupLayout()
         auto toolbarLayout = setupLayout_toolbar();
         mainVLayout->addLayout(toolbarLayout);
 
-        mainVLayout->addWidget(_treeView);
+        // Wrap the banner and tree view together in a framed container so they
+        // share the same border.
+        auto treeContainer = new QFrame(mainVWidget);
+        treeContainer->setFrameShape(QFrame::NoFrame);
+        treeContainer->setFocusPolicy(Qt::NoFocus);
+        treeContainer->setObjectName("layerEditorTreeContainer");
+
+        // Also mimic the selection highlight of treeview around both the banner and tree.
+        QString baseStyle
+            = "QFrame#layerEditorTreeContainer { border: 2px solid rgb(55, 55, 55); }";
+        QString focusStyle
+            = "QFrame#layerEditorTreeContainer { border: 1px solid palette(highlight); }";
+        auto updateTreeContainerBorder
+            = [treeContainer, baseStyle, focusStyle](QWidget*, QWidget* now) {
+                  const bool focused = now && treeContainer->isAncestorOf(now);
+                  treeContainer->setStyleSheet(focused ? focusStyle : baseStyle);
+                  // When highlighted we want the border to be a single pixel wide, so adjust the
+                  // margin to avoid the content moving.
+                  const int m = focused ? 1 : 0;
+                  treeContainer->layout()->setContentsMargins(m, m, m, m);
+              };
+        treeContainer->setStyleSheet(baseStyle);
+
+        connect(qApp, &QApplication::focusChanged, treeContainer, updateTreeContainerBorder);
+        auto treeContainerLayout = new QVBoxLayout(treeContainer);
+        treeContainerLayout->setSpacing(0);
+        treeContainerLayout->setContentsMargins(0, 0, 0, 0);
+
+        _editForwardBanner = new QLabel(treeContainer);
+        _editForwardBanner->setText(
+            StringResources::getAsQString(StringResources::kEditForwardBanner));
+        _editForwardBanner->setWordWrap(true);
+        _editForwardBanner->setVisible(false);
+        _editForwardBanner->setContentsMargins(DPIScale(8), DPIScale(6), DPIScale(8), DPIScale(6));
+        _editForwardBanner->setStyleSheet("QLabel {"
+                                          "  background-color: rgb(55, 55, 55);"
+                                          "  color: palette(text);"
+                                          "  border-left: 3px solid #38abdf;"
+                                          "  padding-left: 6px;"
+                                          "}");
+        treeContainerLayout->addWidget(_editForwardBanner);
+
+        _treeView->setFrameShape(QFrame::NoFrame);
+        treeContainerLayout->addWidget(_treeView);
+
+        mainVLayout->addWidget(treeContainer);
 
         mainVWidget->setLayout(mainVLayout);
         mainHSplitter->addWidget(mainVWidget);
@@ -234,6 +290,17 @@ void LayerEditorWidget::setupLayout()
         this,
         &LayerEditorWidget::showDisplayLayerContents);
 
+    connect(
+        &_sessionState,
+        &SessionState::currentStageChangedSignal,
+        this,
+        &LayerEditorWidget::updateEditForwardBanner);
+
+    {
+        TfWeakPtr<LayerEditorWidget> me(this);
+        _layerChangedKey = TfNotice::Register(me, &LayerEditorWidget::onLayerChanged);
+    }
+
     auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(DPIScale(4), DPIScale(4), DPIScale(4), DPIScale(4));
@@ -244,6 +311,7 @@ void LayerEditorWidget::setupLayout()
 
     updateNewLayerButton();
     updateButtons();
+    updateEditForwardBanner();
 }
 
 // create the default menus on the parent QMainWindow
@@ -273,6 +341,8 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         _actions._autoHide->setCheckable(true);
         _actions._autoHide->setChecked(ss->autoHideSessionLayer());
 
+        optionMenu->addSeparator();
+
         _actions._displayLayerContents = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kDisplayLayerContents));
         QObject::connect(
@@ -282,6 +352,18 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
             &SessionState::setDisplayLayerContents);
         _actions._displayLayerContents->setCheckable(true);
         _actions._displayLayerContents->setChecked(ss->displayLayerContents());
+
+        _actions._displayLayerExpandAllValues = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValues));
+        _actions._displayLayerExpandAllValues->setStatusTip(
+            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValuesTooltip));
+        QObject::connect(
+            _actions._displayLayerExpandAllValues,
+            &QAction::toggled,
+            ss,
+            &SessionState::setDisplayLayerExpandAllValues);
+        _actions._displayLayerExpandAllValues->setCheckable(true);
+        _actions._displayLayerExpandAllValues->setChecked(ss->diplayLayerExpandAllValues());
 
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
         helpMenu->addAction(
@@ -496,7 +578,8 @@ void LayerEditorWidget::updateLayerContentsWidget()
         if (selection.size() == 1) {
             const auto model = _treeView->layerTreeModel();
             auto       layerTreeItem = model->layerItemFromIndex(selection[0]);
-            _layerContents->setLayer(layerTreeItem->layer());
+            _layerContents->setLayer(
+                layerTreeItem->layer(), _sessionState.diplayLayerExpandAllValues());
         } else {
             // If there is no selection or multiple items selected, clear the contents.
             _layerContents->setLayer(nullptr);
@@ -549,6 +632,49 @@ void LayerEditorWidget::selectLayers(const std::vector<std::string>& layerIdenti
             *selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
         delete selection;
     }
+}
+
+void LayerEditorWidget::onLayerChanged(SdfNotice::LayersDidChangeSentPerLayer const& notice)
+{
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    auto stage = _sessionState.stage();
+    if (!stage)
+        return;
+
+    auto rootLayer = stage->GetRootLayer();
+    for (const auto& layerAndChanges : notice.GetChangeListVec()) {
+        if (layerAndChanges.first != rootLayer)
+            continue;
+        for (const auto& pathAndEntry : layerAndChanges.second.GetEntryList()) {
+            if (pathAndEntry.first != SdfPath::AbsoluteRootPath())
+                continue;
+            bool customLayerDataChanged = false;
+            for (const auto& item : pathAndEntry.second.infoChanged) {
+                if (item.first == SdfFieldKeys->CustomLayerData) {
+                    customLayerDataChanged = true;
+                    break;
+                }
+            }
+            if (customLayerDataChanged) {
+                updateEditForwardBanner();
+                return;
+            }
+        }
+    }
+#endif
+}
+
+void LayerEditorWidget::updateEditForwardBanner()
+{
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    auto stage = _sessionState.stage();
+    if (stage) {
+        AdskUsdEditForward::StageRuleProvider provider(stage);
+        _editForwardBanner->setVisible(!provider.GetRules().empty());
+    } else {
+        _editForwardBanner->setVisible(false);
+    }
+#endif
 }
 
 void LayerEditorWidget::onSplitterMoved(int pos, int index)

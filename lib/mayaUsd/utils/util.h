@@ -700,10 +700,6 @@ void AddMayaExtents(
     const PXR_NS::UsdPrim&    root,
     const PXR_NS::UsdTimeCode time);
 
-/// Access to materials associated with available renderers
-MAYAUSD_CORE_PUBLIC
-SdrShaderNodePtrVec GetSurfaceShaderNodeDefs();
-
 MAYAUSD_CORE_PUBLIC
 bool isShape(const MDagPath& dagPath);
 

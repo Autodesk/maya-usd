@@ -113,19 +113,27 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
 
 int gWaitCursorCount = 0;
 
-UsdUfe::StageAccessorFn            gStageAccessorFn = nullptr;
-UsdUfe::StagePathAccessorFn        gStagePathAccessorFn = nullptr;
-UsdUfe::UfePathToPrimFn            gUfePathToPrimFn = nullptr;
-UsdUfe::TimeAccessorFn             gTimeAccessorFn = nullptr;
-UsdUfe::IsAttributeLockedFn        gIsAttributeLockedFn = nullptr;
-UsdUfe::SaveStageLoadRulesFn       gSaveStageLoadRulesFn = nullptr;
-UsdUfe::IsRootChildFn              gIsRootChildFn = nullptr;
-UsdUfe::UniqueChildNameFn          gUniqueChildNameFn = nullptr;
-UsdUfe::WaitCursorFn               gStartWaitCursorFn = nullptr;
-UsdUfe::WaitCursorFn               gStopWaitCursorFn = nullptr;
-UsdUfe::DefaultMaterialScopeNameFn gGetDefaultMaterialScopeNameFn = nullptr;
-UsdUfe::ExtractTRSFn               gExtractTRSFn = nullptr;
-UsdUfe::Transform3dMatrixOpNameFn  gTransform3dMatrixOpNameFn = nullptr;
+UsdUfe::StageAccessorFn                 gStageAccessorFn = nullptr;
+UsdUfe::StagePathAccessorFn             gStagePathAccessorFn = nullptr;
+UsdUfe::UfePathToPrimFn                 gUfePathToPrimFn = nullptr;
+UsdUfe::TimeAccessorFn                  gTimeAccessorFn = nullptr;
+UsdUfe::IsLoadingSceneFn                gIsLoadingSceneFn = nullptr;
+UsdUfe::IsInUndoRedoFn                  gIsUndoingFn = nullptr;
+UsdUfe::IsInUndoRedoFn                  gIsRedoingFn = nullptr;
+UsdUfe::IsAttributeLockedFn             gIsAttributeLockedFn = nullptr;
+UsdUfe::SaveStageLoadRulesFn            gSaveStageLoadRulesFn = nullptr;
+UsdUfe::IsRootChildFn                   gIsRootChildFn = nullptr;
+UsdUfe::UniqueChildNameFn               gUniqueChildNameFn = nullptr;
+UsdUfe::WaitCursorFn                    gStartWaitCursorFn = nullptr;
+UsdUfe::WaitCursorFn                    gStopWaitCursorFn = nullptr;
+UsdUfe::PauseEditForwardingFn           gPauseEditForwardingFn = nullptr;
+UsdUfe::IsComponentStageFn              gIsComponentStageFn = nullptr;
+UsdUfe::GetComponentMaterialScopeNameFn gGetComponentMaterialScopeNameFn = nullptr;
+UsdUfe::GetComponentMeshScopeNameFn     gGetComponentMeshScopeNameFn = nullptr;
+UsdUfe::SetComponentVariantSelectionFn  gSetComponentVariantSelectionFn = nullptr;
+UsdUfe::DefaultMaterialScopeNameFn      gGetDefaultMaterialScopeNameFn = nullptr;
+UsdUfe::ExtractTRSFn                    gExtractTRSFn = nullptr;
+UsdUfe::Transform3dMatrixOpNameFn       gTransform3dMatrixOpNameFn = nullptr;
 
 UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
     = { nullptr };
@@ -253,6 +261,51 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path)
     return gTimeAccessorFn(path);
 }
 
+void setIsLoadingSceneFn(IsLoadingSceneFn fn)
+{
+    // This function is allowed to be null in which case return default (false).
+    gIsLoadingSceneFn = fn;
+}
+
+bool isSceneLoading()
+{
+    // If we have (optional) scene loading function, use it.
+    // Otherwise return false.
+    if (gIsLoadingSceneFn)
+        return gIsLoadingSceneFn();
+    return false;
+}
+
+void setIsUndoing(IsInUndoRedoFn fn)
+{
+    // This function is allowed to be null in which case return default (false).
+    gIsUndoingFn = fn;
+}
+
+bool isUndoing()
+{
+    // If we have (optional) undoing function, use it.
+    // Otherwise return false.
+    if (gIsUndoingFn)
+        return gIsUndoingFn();
+    return false;
+}
+
+void setIsRedoing(IsInUndoRedoFn fn)
+{
+    // This function is allowed to be null in which case return default (false).
+    gIsRedoingFn = fn;
+}
+
+bool isRedoing()
+{
+    // If we have (optional) redoing function, use it.
+    // Otherwise return false.
+    if (gIsRedoingFn)
+        return gIsRedoingFn();
+    return false;
+}
+
 void setIsAttributeLockedFn(IsAttributeLockedFn fn)
 {
     // This function is allowed to be null in which case return default (false).
@@ -319,7 +372,7 @@ int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
     // Once more as above in usdPathToUfePathSegment() and
     // stripInstanceIndexFromUfePath(), a path component at the tail of the
     // path that begins with a digit is assumed to represent an instance index.
-    const std::string& tailComponentString = path.back().string();
+    const std::string tailComponentString = path.back().string();
     if (stringBeginsWithDigit(path.back().string())) {
         instanceIndex = std::stoi(tailComponentString);
     }
@@ -367,6 +420,44 @@ std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcNam
     return dstName;
 }
 
+std::string uniqueNameMaxSuffix(const TfToken::HashSet& existingNames, std::string srcName)
+{
+    std::string base, suffixStr;
+    size_t      lenSuffix { 1 };
+    if (splitNumericalSuffix(srcName, base, suffixStr)) {
+        lenSuffix = suffixStr.length();
+    }
+
+    int maxSuffix = 0;
+
+    // Scan existing names to find the maxSuffix for this base.
+    // Padding width is from the sibling with the max value, or on a tie, choose the less padded
+    // width.
+    for (const TfToken& token : existingNames) {
+        const std::string& existingName = token.GetString();
+
+        std::string existingNameBase, existingNameSuffix;
+        if (!splitNumericalSuffix(existingName, existingNameBase, existingNameSuffix)
+            || existingNameBase != base) {
+            continue;
+        }
+
+        int value = std::stoi(existingNameSuffix);
+        if (value > maxSuffix) {
+            maxSuffix = value;
+            lenSuffix = existingNameSuffix.length();
+        } else if (value == maxSuffix) {
+            lenSuffix = std::min(lenSuffix, existingNameSuffix.length());
+        }
+    }
+
+    // Format suffix with zero-padding.
+    suffixStr = std::to_string(++maxSuffix);
+    suffixStr = std::string(lenSuffix - std::min(lenSuffix, suffixStr.length()), '0') + suffixStr;
+
+    return base + suffixStr;
+}
+
 void setUniqueChildNameFn(UniqueChildNameFn fn)
 {
     // This function is allowed to be null in which case, the default implementation
@@ -374,13 +465,17 @@ void setUniqueChildNameFn(UniqueChildNameFn fn)
     gUniqueChildNameFn = fn;
 }
 
-std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
+std::string
+uniqueChildName(const UsdPrim& usdParent, const std::string& name, const std::string* excludeName)
 {
-    return gUniqueChildNameFn ? gUniqueChildNameFn(usdParent, name)
-                              : uniqueChildNameDefault(usdParent, name);
+    return gUniqueChildNameFn ? gUniqueChildNameFn(usdParent, name, excludeName)
+                              : uniqueChildNameDefault(usdParent, name, excludeName);
 }
 
-std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& name)
+std::string uniqueChildNameDefault(
+    const UsdPrim&     usdParent,
+    const std::string& name,
+    const std::string* excludeName)
 {
     if (!usdParent.IsValid())
         return std::string();
@@ -402,6 +497,8 @@ std::string uniqueChildNameDefault(const UsdPrim& usdParent, const std::string& 
     //
     // Note: our UsdHierarchy uses instance proxies, so we also use them here.
     for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined))) {
+        if (excludeName != nullptr && child.GetName().GetString() == *excludeName)
+            continue;
         childrenNames.insert(child.GetName());
     }
     std::string childName { name };
@@ -462,10 +559,55 @@ std::string relativelyUniqueName(const UsdPrim& usdParent, const std::string& ba
     }
 
     std::string childName { name };
-    if (relativesNames.find(TfToken(childName)) != relativesNames.end()) {
-        childName = uniqueName(relativesNames, childName);
+    std::string baseNameOnly, suffix;
+    splitNumericalSuffix(childName, baseNameOnly, suffix);
+
+    for (const auto& relative : relativesNames) {
+        std::string relativeBaseName, relativeSuffix;
+        splitNumericalSuffix(relative.GetString(), relativeBaseName, relativeSuffix);
+
+        if (baseNameOnly == relativeBaseName) {
+            childName = uniqueNameMaxSuffix(relativesNames, childName);
+            break;
+        }
     }
+
     return childName;
+}
+
+std::string getSceneItemNodeType(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item) {
+        return {};
+    }
+
+    if (isSceneLoading()) {
+        // During Maya scene load, querying the node type of a USD scene item
+        // may cause Maya to crash (EMSUSD-1397). These crashes are due to missing
+        // null pointer checks in UFE code, where they access Maya node that are
+        // invalid. So we return an empty string in that case.
+        return {};
+    }
+
+    return item->nodeType();
+}
+
+Ufe::SceneItemList getHierarchyChildren(const Ufe::Hierarchy::Ptr& hierarchy)
+{
+    if (!hierarchy) {
+        return {};
+    }
+
+    if (isSceneLoading()) {
+        // During Maya scene load, querying the children of a USD hierarchy may
+        // cause Maya to crash (EMSUSD-1397). These crashes are due to missing
+        // null pointer checks in UFE code, where they access Maya node that are
+        // invalid. So we return an empty list in that
+        // case.
+        return {};
+    }
+
+    return hierarchy->children();
 }
 
 bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
@@ -475,7 +617,7 @@ bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
     }
 
     // Must be a scope.
-    if (item->nodeType() != "Scope") {
+    if (UsdUfe::getSceneItemNodeType(item) != "Scope") {
         return false;
     }
 
@@ -487,8 +629,8 @@ bool isMaterialsScope(const Ufe::SceneItem::Ptr& item)
     // Or with only materials inside
     auto scopeHierarchy = Ufe::Hierarchy::hierarchy(item);
     if (scopeHierarchy) {
-        for (auto&& child : scopeHierarchy->children()) {
-            if (child->nodeType() != "Material") {
+        for (auto&& child : UsdUfe::getHierarchyChildren(scopeHierarchy)) {
+            if (UsdUfe::getSceneItemNodeType(child) != "Material") {
                 // At least one non material
                 return false;
             }
@@ -1174,6 +1316,26 @@ bool isAttributeEditAllowed(const PXR_NS::UsdProperty& attr, std::string* errMsg
         }
     }
 
+    // Time samples in the edit target layer take precedence over any default value written there.
+    // The edit would have no visible effect at any frame. Opinions from stronger layers are already
+    // caught by the property stack check above, so we only inspect the edit target layer's own spec
+    // here.
+    for (const auto& spec : propertyStack) {
+        const auto& specLayer = spec->GetLayer();
+        if (specLayer == editTarget.GetLayer()) {
+            if (specLayer->GetNumTimeSamplesForPath(spec->GetPath()) > 0) {
+                if (errMsg) {
+                    *errMsg = TfStringPrintf(
+                        "Cannot edit [%s] attribute because it has time samples in [%s].",
+                        attr.GetBaseName().GetText(),
+                        specLayer->GetDisplayName().c_str());
+                }
+                return false;
+            }
+            break; // Avoid checking weaker layers since they won't have any effect.
+        }
+    }
+
     return true;
 }
 
@@ -1633,6 +1795,41 @@ PXR_NS::SdrShaderNodeConstPtr usdShaderNodeFromSceneItem(const Ufe::SceneItem::P
     return registry.GetShaderNodeByIdentifier(mxNodeType);
 }
 
+PXR_NS::SdrShaderNodePtrVec GetSurfaceShaderNodeDefs()
+{
+    // TODO: Replace hard-coded materials with dynamically generated list.
+    // Note: Since we recheck against SDR, we can add all known future ones.
+    static const std::set<TfToken> vettedSurfaces
+        = { TfToken("ND_standard_surface_surfaceshader"),
+            TfToken("ND_gltf_pbr_surfaceshader"),
+            TfToken("ND_UsdPreviewSurface_surfaceshader"),
+            TfToken("UsdPreviewSurface"),
+            TfToken("ND_disney_principled"),
+            TfToken("ND_open_pbr_surface_surfaceshader") };
+
+    SdrShaderNodePtrVec surfaceShaderNodeDefs;
+
+    auto& registry = SdrRegistry::GetInstance();
+    for (auto&& id : vettedSurfaces) {
+        SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(id);
+        if (shaderNodeDef) {
+            surfaceShaderNodeDefs.emplace_back(shaderNodeDef);
+        }
+    }
+
+    for (auto&& sdrNode : registry.GetShaderNodesByFamily()) {
+        // Any shader that has the "shader/surface" role will
+        // be exposed in the material creation menus. This
+        // includes nodes from Arnold, but also VRay, PRMan,
+        // if they use the same string to tag surface nodes.
+        if (sdrNode->GetRole() == "shader/surface") {
+            surfaceShaderNodeDefs.emplace_back(sdrNode);
+        }
+    }
+
+    return surfaceShaderNodeDefs;
+}
+
 void setWaitCursorFns(WaitCursorFn startFn, WaitCursorFn stopFn)
 {
     gStartWaitCursorFn = startFn;
@@ -1659,6 +1856,136 @@ void stopWaitCursor()
 
     if (gWaitCursorCount == 0)
         gStopWaitCursorFn();
+}
+
+void setPauseEditForwardingFn(PauseEditForwardingFn fn) { gPauseEditForwardingFn = fn; }
+
+void pauseEditForwarding(bool pause)
+{
+    if (gPauseEditForwardingFn) {
+        gPauseEditForwardingFn(pause);
+    }
+}
+
+void setIsComponentStageFn(IsComponentStageFn fn) { gIsComponentStageFn = fn; }
+
+bool isComponentStage(const Ufe::Path& path)
+{
+    if (gIsComponentStageFn) {
+        return gIsComponentStageFn(path);
+    }
+    return false;
+}
+
+void setGetComponentMaterialScopeNameFn(GetComponentMaterialScopeNameFn fn)
+{
+    gGetComponentMaterialScopeNameFn = fn;
+}
+
+std::string getComponentMaterialScopeName(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (gGetComponentMaterialScopeNameFn) {
+        return gGetComponentMaterialScopeNameFn(stage);
+    }
+    return {};
+}
+
+void setGetComponentMeshScopeNameFn(GetComponentMeshScopeNameFn fn)
+{
+    gGetComponentMeshScopeNameFn = fn;
+}
+
+std::string getComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (gGetComponentMeshScopeNameFn) {
+        return gGetComponentMeshScopeNameFn(stage);
+    }
+    return {};
+}
+
+void setSetComponentVariantSelectionFn(SetComponentVariantSelectionFn fn)
+{
+    gSetComponentVariantSelectionFn = fn;
+}
+
+bool setComponentVariantSelection(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            variantSetName,
+    const std::string&            variantSelection)
+{
+    if (gSetComponentVariantSelectionFn) {
+        return gSetComponentVariantSelectionFn(stage, variantSetName, variantSelection);
+    }
+    return false;
+}
+
+void validateComponentNamespaceOperation(
+    const PXR_NS::UsdPrim& prim,
+    const std::string&     operationName)
+{
+    const PXR_NS::UsdStagePtr stage = prim.GetStage();
+    if (!stage) {
+        return;
+    }
+
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
+    if (!UsdUfe::isComponentStage(proxyPath)) {
+        return;
+    }
+
+    // Get the prim path
+    const PXR_NS::SdfPath primPath = prim.GetPath();
+
+    // Get the default prim to construct full scope paths
+    auto defaultPrim = stage->GetDefaultPrim();
+    if (!defaultPrim) {
+        return;
+    }
+    const PXR_NS::SdfPath defaultPrimPath = defaultPrim.GetPath();
+
+    // Get material and mesh scope names from component
+    std::string materialScopeName = getComponentMaterialScopeName(stage);
+    std::string meshScopeName = getComponentMeshScopeName(stage);
+
+    // Build full scope paths
+    std::vector<PXR_NS::SdfPath> scopePaths;
+    if (!materialScopeName.empty()) {
+        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(materialScopeName)));
+    }
+    if (!meshScopeName.empty()) {
+        scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(meshScopeName)));
+    }
+
+    // Check if the prim path is contained within any of the scope paths
+    for (const PXR_NS::SdfPath& scopePath : scopePaths) {
+        // Check if prim path is not equal to the scope_path and a descendant of the scope path
+        if (primPath != scopePath && primPath.HasPrefix(scopePath)) {
+            return;
+        }
+    }
+
+    // Disallow - prim is not in component scopes
+    const std::string error = PXR_NS::TfStringPrintf(
+        "Cannot %s prim \"%s\" in a component stage. "
+        "Only prims within component material or mesh scopes can be %s. ",
+        operationName.c_str(),
+        primPath.GetText(),
+        operationName.c_str());
+    TF_WARN("%s", error.c_str());
+    throw std::runtime_error(error);
+}
+
+EditForwardingGuard::EditForwardingGuard()
+{
+    // Pause edit forwarding
+    pauseEditForwarding(true);
+}
+
+EditForwardingGuard::~EditForwardingGuard()
+{
+    // Unpause edit forwarding
+    pauseEditForwarding(false);
 }
 
 void setDefaultMaterialScopeNameFn(DefaultMaterialScopeNameFn fn)

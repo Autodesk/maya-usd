@@ -17,6 +17,9 @@
 
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/ufe/trf/Utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
 #include <usdUfe/utils/usdUtils.h>
@@ -78,7 +81,16 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
 
     const UsdPrim prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    UsdUfe::applyCommandRestriction(prim, "rename");
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(_stage);
+    const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
+
+    // Validate the operation based on stage type
+    if (isComponent) {
+        UsdUfe::validateComponentNamespaceOperation(prim, "rename");
+    } else {
+        UsdUfe::applyCommandRestriction(prim, "rename");
+    }
 
     // Handle trailing #: convert it to a number which will be increased as needed.
     // Increasing the number to make it unique is handled in the function uniqueChildName
@@ -95,9 +107,10 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     // the command does nothing and the destination item is the same
     // as the source item.
     const std::string validNewName = TfMakeValidIdentifier(newNameStr);
-    if (validNewName != prim.GetName())
-        _newName = UsdUfe::uniqueChildName(prim.GetParent(), validNewName);
-    else
+    if (validNewName != prim.GetName()) {
+        const std::string oldName = srcItem->prim().GetName();
+        _newName = UsdUfe::uniqueChildName(prim.GetParent(), validNewName, &oldName);
+    } else
         _ufeDstItem = srcItem;
 }
 
@@ -121,29 +134,31 @@ void doUsdRename(
 {
     UsdUfe::enforceMutedLayer(prim, "rename");
 
-    // 1- open a changeblock to delay sending notifications.
-    // 2- update the Internal References paths (if any) first
-    // 3- set the new name
-    // Note: during the changeBlock scope we are still working with old items/paths/prims.
-    // it's only after the scope ends that we start working with new items/paths/prims
-    SdfChangeBlock changeBlock;
+    // 1- update the Internal References paths (if any) first
+    // 2- set the new name
+    {
+        // The command doesn't use an undoable item, but we still we want the path remapping edits
+        // forwarded.
+        UsdUfe::NoUsdUndoBlockGuard forceForward { true };
 
-    if (!UsdUfe::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
-        const std::string error = TfStringPrintf(
-            "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
+        if (!UsdUfe::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
+            const std::string error = TfStringPrintf(
+                "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
     }
 
     // Make sure the load state of the renamed prim will be preserved.
-    // We copy all rules that applied to it specifically and remove the rules
-    // that applied to it specifically.
     {
         auto fromPath = SdfPath(srcPath.getSegments()[1].string());
         auto destPath = SdfPath(dstPath.getSegments()[1].string());
-        UsdUfe::duplicateLoadRules(*stage, fromPath, destPath);
-        UsdUfe::removeRulesForPath(*stage, fromPath);
+        UsdUfe::moveLoadRules(*stage, fromPath, destPath);
     }
+
+    // Note: during the changeBlock scope we are still working with old items/paths/prims.
+    // it's only after the scope ends that we start working with new items/paths/prims
+    SdfChangeBlock changeBlock;
 
     // Do the renaming in the target layer and all other applicable layers,
     // which, due to command restrictions that have been verified when the
@@ -157,10 +172,23 @@ void doUsdRename(
             throw std::runtime_error(error);
         }
     };
-
-    UsdUfe::applyToAllPrimSpecs(prim, renameFunc);
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
+    const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
+    if (isComponent) {
+        // For component stages, we need to rename the prim in all layers that have opinions.
+        // This includes both the defining layer stack and any overriding opinions in
+        // other layers (local and non-local).
+        const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+        for (const SdfPrimSpecHandle& spec : primStack) {
+            if (spec) {
+                renameFunc(prim, spec);
+            }
+        }
+    } else {
+        UsdUfe::applyToAllPrimSpecs(prim, renameFunc);
+    }
 }
-
 } // namespace
 
 void UsdUndoRenameCommand::renameRedo()
@@ -228,6 +256,7 @@ void UsdUndoRenameCommand::undo()
 void UsdUndoRenameCommand::redo()
 {
     UsdUfe::InPathChange pc;
+
     renameRedo();
 }
 

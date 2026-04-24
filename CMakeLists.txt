@@ -151,7 +151,7 @@ endif()
 if (NOT PYTHONLIBS_FOUND)
     include(cmake/python.cmake)
 endif()
-message(STATUS "Build MayaUSD with Python3 = " ${BUILD_WITH_PYTHON_3})
+message(STATUS "Building with Python3 = " ${BUILD_WITH_PYTHON_3})
 message(STATUS "   PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "   PYTHON_LIBRARIES    = ${PYTHON_LIBRARIES}")
 message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
@@ -176,10 +176,6 @@ endif()
 include(cmake/usd.cmake)
 
 find_package(UFE 0.2.0 REQUIRED)
-message(STATUS "Build MayaUsd with UFE version ${UFE_VERSION}")
-message(STATUS "   UFE include dir: ${UFE_INCLUDE_DIR}")
-message(STATUS "   UFE library: ${UFE_LIBRARY}")
-message(STATUS "   UFE preview features: ${UFE_PREVIEW_FEATURES}")
 
 if(CMAKE_WANT_MATERIALX_BUILD AND MAYA_LIGHTAPI_VERSION LESS 2)
     set(CMAKE_WANT_MATERIALX_BUILD OFF)
@@ -232,33 +228,33 @@ if(BUILD_MAYAUSD_LIBRARY)
     endif()
 endif()
 
-if (NOT BUILD_ADSK_PLUGIN)
-        set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
-endif()
-# Need LookdevXUfe/MayaUsdAPI when building LookdevXUsd.
+# Need LookdevXUfe when building LookdevXUsd.
 if(BUILD_LOOKDEVXUSD_LIBRARY)
-    if(NOT BUILD_MAYAUSDAPI_LIBRARY)
-        message(FATAL_ERROR "Building LookdevXUsd requires MayaUsdAPI.")
-    endif()
-
-    if(MAYA_APP_VERSION VERSION_GREATER 2025)
+    if (Maya_FOUND)
+        if(MAYA_APP_VERSION VERSION_GREATER 2025)
+            find_package(LookdevXUfe) # Optional component - if not found, disable LookdevXUsd.
+        else()
+            set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
+            message(WARNING "Disabling LookdevXUsd: it is not supported by Maya ${MAYA_APP_VERSION}.")
+        endif()
+    else()
         find_package(LookdevXUfe) # Optional component - if not found, disable LookdevXUsd.
-    else()
-        set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
-        message(WARNING "Disabling LookdevXUsd: it is not supported by Maya ${MAYA_APP_VERSION}.")
     endif()
-    if (LookdevXUfe_FOUND)
-        message(STATUS "Build LookdevXUsd with LookdevXUfe version: ${LookdevXUfe_VERSION}")
-        message(STATUS "   LookdevXUfe include dir: ${LookdevXUfe_INCLUDE_DIR}")
-        message(STATUS "   LookdevXUfe library    : ${LookdevXUfe_LIBRARY}")
-    else()
+    if (NOT LookdevXUfe_FOUND)
         set(BUILD_LOOKDEVXUSD_LIBRARY OFF)
-        message(WARNING "Disabling LookdevXUsd as LookdevXUfe was not found (in Maya devkit).")
+        if (Maya_FOUND)
+            message(WARNING "Disabling LookdevXUsd as LookdevXUfe was not found (in Maya devkit).")
+        else()
+            message(WARNING "Disabling LookdevXUsd as LookdevXUfe was not found (set LOOKDEVXUFE_INCLUDE_ROOT/LOOKDEVXUFE_LIB_ROOT).")
+        endif()
     endif()
 endif()
 
-find_package(AdskUsdComponentCreator)
-find_package(AR)
+if(BUILD_MAYAUSD_LIBRARY)
+    find_package(AdskUsdComponentCreator)
+    find_package(AdskUsdAssetResolver)
+    find_package(AdskUsdEditForward)
+endif()
 
 #------------------------------------------------------------------------------
 # compiler configuration
@@ -401,9 +397,7 @@ set(TOP_HEADERS
 )
 
 mayaUsd_promoteHeaderList(HEADERS ${TOP_HEADERS} BASEDIR "NONE")
-install(FILES ${CMAKE_BINARY_DIR}/include/pxr_python.h
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
-)
-install(FILES ${CMAKE_BINARY_DIR}/include/cxx17_legacy_support.h
+
+install(FILES ${TOP_HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )

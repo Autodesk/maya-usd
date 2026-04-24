@@ -215,37 +215,6 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertIsNotNone(connections)
         self.assertEqual(len(connections.allConnections()), 0)
 
-        # Construct a surface shader node at the mtl scope
-        scopeSceneItem = ufe.Hierarchy.createItem(ufe.PathString.path(scopePathStr))
-        self.assertIsNotNone(scopeSceneItem)
-        command = nodeDef.createNodeCmd(scopeSceneItem, ufe.PathComponent("UsdPreviewSurface"))
-        self.assertIsNotNone(command)
-        command.execute()
-        self.assertIsNotNone(command.insertedChild)
-        # Verify that a new material is created, matching the shader name, and the connection set
-        self.assertEqual(ufe.PathString.string(command.insertedChild.path()), scopePathStr + "/UsdPreviewSurface1/UsdPreviewSurface1")
-        newMaterialSceneItem = ufe.Hierarchy.createItem(ufe.PathString.path(scopePathStr + "/UsdPreviewSurface1"))
-        connections = connectionHandler.sourceConnections(newMaterialSceneItem)
-        self.assertIsNotNone(connections)
-        self.assertEqual(len(connections.allConnections()), 1)
-
-        # Construct a non surface shader node at the mtl scope
-        type = "ND_image_color3"
-        nodeDef = nodeDefHandler.definition(type)
-        self.assertIsNotNone(nodeDef)
-        scopeSceneItem = ufe.Hierarchy.createItem(ufe.PathString.path(scopePathStr))
-        self.assertIsNotNone(scopeSceneItem)
-        command = nodeDef.createNodeCmd(scopeSceneItem, ufe.PathComponent("image"))
-        self.assertIsNotNone(command)
-        command.execute()
-        self.assertIsNotNone(command.insertedChild)
-        # Verify that a new material is created, but without connections this time as it is not a surface
-        self.assertEqual(ufe.PathString.string(command.insertedChild.path()), scopePathStr + "/image1/image1")
-        newMaterialSceneItem = ufe.Hierarchy.createItem(ufe.PathString.path(scopePathStr + "/image1"))
-        connections = connectionHandler.sourceConnections(newMaterialSceneItem)
-        self.assertIsNotNone(connections)
-        self.assertEqual(len(connections.allConnections()), 0)
-
     @unittest.skipIf(os.getenv('UFE_HAS_NATIVE_TYPE_METADATA', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if UFE AttributeDef \'NativeType\' metadata exists.')
     def testNativeTypeMetadata(self):
         type = "ND_constant_color3"

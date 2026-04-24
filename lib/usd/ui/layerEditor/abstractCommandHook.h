@@ -76,6 +76,9 @@ public:
     // erases everything on a layer
     virtual void clearLayer(UsdLayer usdLayer) = 0;
 
+    // flattens a layer with its sublayers
+    virtual void flattenLayer(UsdLayer usdLayer) = 0;
+
     // add an anon layer at the top of the stack, returns it
     virtual UsdLayer addAnonymousSubLayer(UsdLayer usdLayer, std::string newName) = 0;
 
@@ -90,6 +93,9 @@ public:
     // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
     // status.
     virtual void refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers = false) = 0;
+
+    // merge multiple layers into the strongest layer, removing them from their parents
+    virtual void stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers) = 0;
 
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close

@@ -53,19 +53,11 @@
 #include <mayaUsd/ufe/UsdLight2Handler.h>
 #endif
 
-#if UFE_MATERIALS_SUPPORT
-#include <mayaUsd/ufe/UsdMaterialHandler.h>
-#endif
-
 #if defined(UFE_V4_FEATURES_AVAILABLE) || (UFE_MAJOR_VERSION == 3 && UFE_CAMERAHANDLER_HAS_FINDALL)
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #endif
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdConnectionHandler.h>
-#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
-#include <mayaUsd/ufe/UsdUINodeGraphNodeHandler.h>
-
 #include <usdUfe/ufe/trf/UsdTransform3dRead.h>
 
 #if UFE_PREVIEW_BATCHOPS_SUPPORT
@@ -82,6 +74,7 @@
 #include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
 #endif
 #include <mayaUsd/utils/mayaEditRouter.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
@@ -93,6 +86,11 @@
 #include <usdUfe/ufe/UsdClipboardHandler.h>
 #endif
 
+#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+#include <AdskUsdEditForward/Host.h>
+#endif
+
+#include <maya/MFileIO.h>
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
@@ -135,6 +133,16 @@ void mayaStartWaitCursor()
 
 void mayaStopWaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 
+bool mayaIsSceneLoading()
+{
+    return MFileIO::isReadingFile() || MFileIO::isOpeningFile() || MFileIO::isNewingFile()
+        || MFileIO::isImportingFile() || MFileIO::isReferencingFile();
+}
+
+bool mayaIsUndoing() { return MGlobal::isUndoing(); }
+
+bool mayaIsRedoing() { return MGlobal::isRedoing(); }
+
 // Note: MayaUsd::ufe::getStage takes two parameters, so wrap it in a function taking only one.
 PXR_NS::UsdStageWeakPtr mayaGetStage(const Ufe::Path& path) { return MayaUsd::ufe::getStage(path); }
 
@@ -149,6 +157,69 @@ const char* getTransform3dMatrixOpName() { return std::getenv("MAYA_USD_MATRIX_X
 void displayInfoMessage(const std::string& msg) { MGlobal::displayInfo(msg.c_str()); }
 void displayWarningMessage(const std::string& msg) { MGlobal::displayWarning(msg.c_str()); }
 void displayErrorMessage(const std::string& msg) { MGlobal::displayError(msg.c_str()); }
+
+#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+void mayaPauseEditForwarding(bool pause)
+{
+    AdskUsdEditForward::Host::GetInstance()->PauseEditForwarding(pause);
+}
+#endif
+
+bool mayaIsComponentStage(const Ufe::Path& path)
+{
+    return MayaUsd::ComponentUtils::isAdskUsdComponent(Ufe::PathString::string(path));
+}
+
+std::string mayaGetComponentMaterialScopeName(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage) {
+        return {};
+    }
+
+    // Convert stage to proxy path
+    Ufe::Path ufePath = MayaUsd::ufe::stagePath(stage);
+    if (ufePath.empty()) {
+        return {};
+    }
+
+    std::string proxyPath = Ufe::PathString::string(ufePath);
+    return MayaUsd::ComponentUtils::getMaterialScopeName(proxyPath);
+}
+
+std::string mayaGetComponentMeshScopeName(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage) {
+        return {};
+    }
+
+    // Convert stage to proxy path
+    Ufe::Path ufePath = MayaUsd::ufe::stagePath(stage);
+    if (ufePath.empty()) {
+        return {};
+    }
+
+    std::string proxyPath = Ufe::PathString::string(ufePath);
+    return MayaUsd::ComponentUtils::getMeshScopeName(proxyPath);
+}
+
+bool mayaSetComponentVariantSelection(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            variantSetName,
+    const std::string&            variantSelection)
+{
+    if (!stage) {
+        return false;
+    }
+
+    Ufe::Path ufePath = MayaUsd::ufe::stagePath(stage);
+    if (ufePath.empty()) {
+        return false;
+    }
+
+    std::string proxyPath = Ufe::PathString::string(ufePath);
+    return MayaUsd::ComponentUtils::setComponentVariantSelection(
+        proxyPath, variantSetName, variantSelection);
+}
 
 } // namespace
 
@@ -218,6 +289,16 @@ MStatus initialize()
     dccFunctions.defaultMaterialScopeNameFn = defaultMaterialsScopeName;
     dccFunctions.extractTRSFn = MayaUsd::ufe::extractTRS;
     dccFunctions.transform3dMatrixOpNameFn = getTransform3dMatrixOpName;
+    dccFunctions.isLoadingSceneFn = mayaIsSceneLoading;
+    dccFunctions.isUndoingFn = mayaIsUndoing;
+    dccFunctions.isRedoingFn = mayaIsRedoing;
+#ifdef WANT_ADSKUSDEDITFORWARD_BUILD
+    dccFunctions.pauseEditForwardingFn = mayaPauseEditForwarding;
+#endif
+    dccFunctions.isComponentStageFn = mayaIsComponentStage;
+    dccFunctions.getComponentMaterialScopeNameFn = mayaGetComponentMaterialScopeName;
+    dccFunctions.getComponentMeshScopeNameFn = mayaGetComponentMeshScopeName;
+    dccFunctions.setComponentVariantSelectionFn = mayaSetComponentVariantSelection;
 
     // Replace the Maya hierarchy handler with ours.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
@@ -259,19 +340,11 @@ MStatus initialize()
     handlers.lightHandler = UsdLightHandler::create();
 #endif
 
-#if UFE_MATERIALS_SUPPORT
-    handlers.materialHandler = UsdMaterialHandler::create();
-#endif
-    handlers.connectionHandler = UsdConnectionHandler::create();
-    handlers.uiNodeGraphNodeHandler = UsdUINodeGraphNodeHandler::create();
-
 #ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
     handlers.batchOpsHandler = UsdCodeWrapperHandler::create();
 #elif UFE_PREVIEW_BATCHOPS_SUPPORT
     handlers.batchOpsHandler = UsdBatchOpsHandler::create();
 #endif
-
-    handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 
 #endif /* UFE_V4_FEATURES_AVAILABLE */
 
@@ -366,9 +439,6 @@ MStatus initialize()
 
 #if UFE_LIGHTS_SUPPORT
     runTimeMgr.setLightHandler(usdRtid, UsdLightHandler::create());
-#endif
-#if UFE_MATERIALS_SUPPORT
-    runTimeMgr.setMaterialHandler(usdRtid, UsdMaterialHandler::create());
 #endif
 
 #endif /* UFE_V4_FEATURES_AVAILABLE */

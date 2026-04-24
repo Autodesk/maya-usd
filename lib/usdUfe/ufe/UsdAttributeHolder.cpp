@@ -484,7 +484,8 @@ Ufe::Value UsdAttributeHolder::getMetadata(const std::string& key) const
             DefVec defsToExplore;
 
             const UsdSchemaRegistry& schemaReg = UsdSchemaRegistry::GetInstance();
-            for (auto&& name : _usdAttr.GetPrim().GetAppliedSchemas()) {
+            UsdPrim                  attrPrim = _usdAttr.GetPrim();
+            for (auto name : attrPrim.GetAppliedSchemas()) {
 
                 std::pair<TfToken, TfToken> typeNameAndInstance
                     = schemaReg.GetTypeNameAndInstance(name);

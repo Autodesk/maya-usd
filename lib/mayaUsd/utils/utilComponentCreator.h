@@ -21,6 +21,8 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/base/vt/dictionary.h>
+
 #include <string>
 #include <vector>
 
@@ -84,6 +86,33 @@ MAYAUSD_CORE_PUBLIC
 bool shouldDisplayComponentInitialSaveDialog(
     const PXR_NS::UsdStageRefPtr stage,
     const std::string&           proxyShapePath);
+
+/*! \brief Returns the name of the materials scope used in the component at the given path
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getMaterialScopeName(const std::string& proxyPath);
+
+/*! \brief Returns the name of the mesh scope used in the component at the given path.
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getMeshScopeName(const std::string& proxyPath);
+
+/*! \brief Adds the given Maya nodes to the Autodesk USD Component at \p proxyShapePath.
+ *  \return True on success.
+ */
+MAYAUSD_CORE_PUBLIC
+bool addMayaNodesToComponent(
+    const std::string&              proxyShapePath,
+    const std::vector<std::string>& nodeNames,
+    const PXR_NS::VtDictionary&     exportArgs = PXR_NS::VtDictionary {});
+
+/*! \brief Sets the temporary variant selection on the Autodesk USD Component at \p proxyPath.
+ */
+MAYAUSD_CORE_PUBLIC
+bool setComponentVariantSelection(
+    const std::string& proxyPath,
+    const std::string& variantSetName,
+    const std::string& variantSelection);
 
 } // namespace ComponentUtils
 } // namespace MAYAUSD_NS_DEF

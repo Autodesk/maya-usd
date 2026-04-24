@@ -120,7 +120,8 @@ global proc mayaUsd_PrefUntexturedModeChanged()
 // Add this proc at the end of the file or with the other global procs
 global proc mayaUsd_AssetResolverButtonPressed(string $parent)
 {
-	string $result = `assetResolverDialog -parentWindow $parent`;
+	// Opens the Asset Resolver dialog's settings tab.
+	assetResolverDialog -tab "globalSettings";
 }
 
 global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)

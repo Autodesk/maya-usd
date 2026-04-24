@@ -118,6 +118,14 @@
 using MayaUsd::LayerManager;
 using MayaUsd::ProxyAccessor;
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+
+#include <AdskUsdEditForward/Forwarder.h>
+#include <AdskUsdEditForward/Host.h>
+#include <AdskUsdEditForward/StageRuleProvider.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens, MAYAUSD_PROXY_SHAPE_BASE_TOKENS);
@@ -500,7 +508,7 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     numericAttrFn.setCached(true);
     numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
+    numericAttrFn.setStorable(false);
     numericAttrFn.setHidden(true);
     retValue = addAttribute(recomputeLayersAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -1066,6 +1074,16 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     } else {
                         sharedUsdStage = UsdStage::Open(rootLayer, loadSet);
                     }
+
+                    // Make sure we never target a locked layer.
+                    // It was possible to get in that state when loading from a maya scene on disk,
+                    // where the root layer was locked, but ended up targeted.
+                    if (sharedUsdStage) {
+                        auto editTargetLayer = sharedUsdStage->GetEditTarget().GetLayer();
+                        if (editTargetLayer && !editTargetLayer->PermissionToEdit()) {
+                            sharedUsdStage->SetEditTarget(sharedUsdStage->GetSessionLayer());
+                        }
+                    }
                 }
 
                 // Update file path attribute to match the correct root layer id if it was anonymous
@@ -1373,8 +1391,29 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         MDataHandle outDataHandle = dataBlock.outputValue(outStageDataAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
         outDataHandle.copy(inDataCachedHandle);
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        _forwarder.reset();
+#endif
         return MS::kSuccess;
     }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // Setup edit forwarding.
+    // When edits are made, the edit forwarding will be run to possibly forward edits to different
+    // layers, based on configurable rules authored on the stage's root layer.
+    static std::once_flag initHostOnce;
+    std::call_once(initHostOnce, []() {
+        // The host implements some DCC specific functionality for edit forwarding.
+        auto mayaHost = std::make_shared<MayaUsdEditForwardHost>();
+        AdskUsdEditForward::Host::SetInstance(mayaHost);
+    });
+
+    std::shared_ptr<AdskUsdEditForward::IRuleProvider> prov
+        = std::make_shared<AdskUsdEditForward::StageRuleProvider>(usdStage);
+    _forwarder = std::make_shared<AdskUsdEditForward::Forwarder>(
+        usdStage, prov, usdStage->GetSessionLayer());
+#endif
 
     // Get the primPath
     const SdfPath primPath = _GetPrimPath(dataBlock);
@@ -1780,7 +1819,8 @@ MStatus MayaUsdProxyShapeBase::preEvaluation(
             || evaluationNode.dirtyPlugExists(loadPayloadsAttr)
             || evaluationNode.dirtyPlugExists(shareStageAttr)
             || evaluationNode.dirtyPlugExists(inStageDataAttr)
-            || evaluationNode.dirtyPlugExists(stageCacheIdAttr)) {
+            || evaluationNode.dirtyPlugExists(stageCacheIdAttr)
+            || evaluationNode.dirtyPlugExists(recomputeLayersAttr)) {
             _IncreaseUsdStageVersion();
             MayaUsdProxyStageInvalidateNotice(*this).Send();
         }
@@ -1833,7 +1873,8 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
         plug == outStageDataAttr ||
         // All the plugs that affect outStageDataAttr
         plug == filePathAttr || plug == primPathAttr || plug == loadPayloadsAttr
-        || plug == shareStageAttr || plug == inStageDataAttr || plug == stageCacheIdAttr) {
+        || plug == shareStageAttr || plug == inStageDataAttr || plug == stageCacheIdAttr
+        || plug == recomputeLayersAttr) {
         _IncreaseUsdStageVersion();
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }

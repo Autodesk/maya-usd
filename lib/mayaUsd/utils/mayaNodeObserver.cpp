@@ -21,6 +21,8 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MNodeMessage.h>
 
+#include <functional>
+
 namespace MAYAUSD_NS_DEF {
 
 MAYAUSD_VERIFY_CLASS_NOT_MOVE_OR_COPY(MayaNodeObserver);
@@ -67,18 +69,25 @@ void MayaNodeObserver::startObserving(const MObject& observedNode)
 
     _observedNode = observedNode;
 
-    updateRenameCallback();
+    updateRenameCallbacks();
     updateAncestorCallbacks();
     updateDagPathCallbacks();
 }
 
 void MayaNodeObserver::stopObserving()
 {
-    removeRenameCallback();
+    removeRenameCallbacks();
     removeDagPathCallbacks();
     removeAncestorCallbacks();
 
     _observedNode = MObject();
+}
+
+void MayaNodeObserver::updateObserving()
+{
+    updateRenameCallbacks();
+    updateAncestorCallbacks();
+    updateDagPathCallbacks();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -120,33 +129,62 @@ void MayaNodeObserver::removeCallbackId(MCallbackId& callbackId)
 //
 // Maya callbacks registration and cleanup.
 
-void MayaNodeObserver::updateRenameCallback()
+static void doForNodeAndAncestors(MObject& node, std::function<void(MObject&, MDagPath&)> func)
 {
-    removeRenameCallback();
-    _renameCallbackId
-        = MNodeMessage::addNameChangedCallback(_observedNode, processNodeRenamed, this);
+    // Make sure to call the call for the node itself even if it has no path
+    // As nodes initially are not added to the DAG at creation time and this
+    // might be called at creation time.
+    {
+        MDagPath path;
+        MDagPath::getAPathTo(node, path);
+        func(node, path);
+    }
+
+    MDagPathArray dags;
+    if (MDagPath::getAllPathsTo(node, dags)) {
+        const auto numDags = dags.length();
+        for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
+            // Note: we lready processed the node itself above
+            //       so don't process it multiple times. We would
+            //       need to avoid processing multiple time anyway
+            //       in the case it has multipke paths.
+            MDagPath& dag = dags[i];
+            for (dag.pop(); dag.length() > 0; dag.pop()) {
+                MObject obj = dag.node();
+                if (obj == MObject::kNullObj)
+                    continue;
+                func(obj, dag);
+            }
+        }
+    }
 }
 
-void MayaNodeObserver::removeRenameCallback() { removeCallbackId(_renameCallbackId); }
+void MayaNodeObserver::updateRenameCallbacks()
+{
+    removeRenameCallbacks();
+
+    // We need to observe name change in the node and any ancestor.
+    // This is to support listeners that track the node by full path
+    // and need to update data related to this full path.
+    doForNodeAndAncestors(_observedNode, [this](MObject& obj, MDagPath& /*dag*/) {
+        _renameCallbackIds.push_back(
+            MNodeMessage::addNameChangedCallback(obj, processNodeRenamed, this));
+    });
+}
+
+void MayaNodeObserver::removeRenameCallbacks() { removeCallbackIds(_renameCallbackIds); }
 
 void MayaNodeObserver::updateDagPathCallbacks()
 {
     removeDagPathCallbacks();
 
-    MDagPathArray dags;
-    if (MDagPath::getAllPathsTo(_observedNode, dags)) {
-        const auto numDags = dags.length();
-        for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
-            MDagPath& dag = dags[i];
-            for (; dag.length() > 0; dag.pop()) {
-                MObject obj = dag.node();
-                if (obj == MObject::kNullObj)
-                    continue;
-                _parentAddedCallbackIds.push_back(
-                    MDagMessage::addParentAddedDagPathCallback(dag, processParentAdded, this));
-            }
-        }
-    }
+    // We need to observe parenting change in the node and any ancestor.
+    // This is to support listeners that track the node by full path
+    // and need to update data related to this full path.
+    doForNodeAndAncestors(_observedNode, [this](MObject& /*obj*/, MDagPath& dag) {
+        _parentAddedCallbackIds.push_back(
+            MDagMessage::addParentAddedDagPathCallback(dag, processParentAdded, this));
+    });
 }
 
 void MayaNodeObserver::removeDagPathCallbacks() { removeCallbackIds(_parentAddedCallbackIds); }
@@ -155,31 +193,21 @@ void MayaNodeObserver::updateAncestorCallbacks()
 {
     removeAncestorCallbacks();
 
-    // Add our own callback
-    _ancestorCallbackIds.push_back(
-        MNodeMessage::addNodeDirtyPlugCallback(_observedNode, processPlugDirty, this));
-
     // Remember the path for which we are accumulating the listener
-    MDagPath ancestorPath;
-    MDagPath::getAPathTo(_observedNode, ancestorPath);
-    _ancestorCallbacksPath = ancestorPath.fullPathName();
+    {
+        MDagPath ancestorPath;
+        MDagPath::getAPathTo(_observedNode, ancestorPath);
+        _ancestorCallbacksPath = ancestorPath.fullPathName();
+    }
 
     // Add listener for all the ancestors
-    for (ancestorPath.pop(); ancestorPath.isValid() && ancestorPath.length() > 0;
-         ancestorPath.pop()) {
-        MObject ancestorObj = ancestorPath.node();
+    doForNodeAndAncestors(_observedNode, [this](MObject& obj, MDagPath& /*dag*/) {
         _ancestorCallbackIds.push_back(
-            MNodeMessage::addNodeDirtyPlugCallback(ancestorObj, processPlugDirty, this));
-    }
+            MNodeMessage::addNodeDirtyPlugCallback(obj, processPlugDirty, this));
+    });
 }
 
 void MayaNodeObserver::removeAncestorCallbacks() { removeCallbackIds(_ancestorCallbackIds); }
-
-void MayaNodeObserver::updateAllNameRelatedCallbacks()
-{
-    updateAncestorCallbacks();
-    updateDagPathCallbacks();
-}
 
 ////////////////////////////////////////////////////////////////////////////
 //
@@ -217,23 +245,32 @@ void MayaNodeObserver::processPlugDirty(MObject& node, MPlug& plug, void* client
 
     AutoValueRestore<bool> restoreInAncestor(self->_inAncestorCallback, true);
 
+    // Note: we make a copy of the set of listeners in case calling
+    //       a listener adds or remove listeners.
+    const auto cachedListeners = self->_listeners;
+
     // If the observed node's path has changed, update ancestor listener
     // and the DAG listener.
     MDagPath currentPath;
     MDagPath::getAPathTo(self->_observedNode, currentPath);
     const bool pathChanged = (currentPath.fullPathName() != self->_ancestorCallbacksPath);
-    if (pathChanged)
-        self->updateAllNameRelatedCallbacks();
+    if (pathChanged) {
+        // Note: we need to copy the old name before calling processNodeRename
+        //       because it will call the updateObserving function which will
+        //       change the _ancestorCallbacksPath value.
+        const MString oldName = self->_ancestorCallbacksPath;
+        self->processNodeRenamed(self->_observedNode, oldName, clientData);
+    }
 
-    // Note: we make a copy of the set of listeners in case calling
-    //       a listener adds or remove listeners.
-    const auto cachedListeners = self->_listeners;
     for (Listener* cb : cachedListeners)
         cb->processPlugDirty(self->_observedNode, node, plug, pathChanged);
 }
 
 /* static */
-void MayaNodeObserver::processNodeRenamed(MObject& node, const MString& oldName, void* clientData)
+void MayaNodeObserver::processNodeRenamed(
+    MObject& /*node*/,
+    const MString& oldName,
+    void*          clientData)
 {
     auto self = static_cast<MayaNodeObserver*>(clientData);
     if (!self)
@@ -241,13 +278,15 @@ void MayaNodeObserver::processNodeRenamed(MObject& node, const MString& oldName,
 
     // Nodes only have a proper DAG path once renamed.
     // So, on rename, we update the listener.
-    self->updateAllNameRelatedCallbacks();
+    // Note that even then, they might still not have a parent...
+    // So we will again possibly update on reparenting.
+    self->updateObserving();
 
     // Note: we make a copy of the set of listeners in case calling
     //       a listener adds or remove listeners.
     const auto cachedListeners = self->_listeners;
     for (Listener* cb : cachedListeners)
-        cb->processNodeRenamed(node, oldName);
+        cb->processNodeRenamed(self->_observedNode, oldName);
 }
 
 /* static */
@@ -261,7 +300,7 @@ void MayaNodeObserver::processParentAdded(
         return;
 
     // Reparented, so listen to new hierarchy.
-    self->updateAllNameRelatedCallbacks();
+    self->updateObserving();
 
     // Note: we make a copy of the set of listeners in case calling
     //       a listener adds or remove listeners.

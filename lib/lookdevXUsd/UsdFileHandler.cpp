@@ -10,24 +10,31 @@
 //*****************************************************************************
 #include "UsdFileHandler.h"
 
-#include <mayaUsdAPI/utils.h>
-
 #include <pxr/usd/usdShade/udimUtils.h>
+
+#include <usdUfe/ufe/UsdAttribute.h>
+#include <usdUfe/ufe/Global.h>
 
 #include <LookdevXUfe/UfeUtils.h>
 
 #include <algorithm>
+
+#ifdef LDX_USD_USE_MAYAUSDAPI
+#include <mayaUsdAPI/utils.h>
+#endif
 
 namespace LookdevXUsd
 {
 
 namespace
 {
+#ifdef LDX_USD_USE_MAYAUSDAPI
 std::string getRelativePath(const Ufe::AttributeFilename::Ptr& fnAttr, const std::string& path)
 {
-    if (fnAttr && fnAttr->sceneItem()->runTimeId() == MayaUsdAPI::getUsdRunTimeId())
+    if (fnAttr && fnAttr->sceneItem()->runTimeId() == UsdUfe::getUsdRunTimeId())
     {
-        auto stage = MayaUsdAPI::usdStage(fnAttr);
+        auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(fnAttr);
+        auto stage = usdAttribute ? usdAttribute->usdPrim().GetStage() : nullptr;
         if (stage && stage->GetEditTarget().GetLayer())
         {
             const std::string layerDirPath = MayaUsdAPI::getDir(stage->GetEditTarget().GetLayer()->GetRealPath());
@@ -42,6 +49,7 @@ std::string getRelativePath(const Ufe::AttributeFilename::Ptr& fnAttr, const std
     }
     return path;
 }
+#endif
 
 // From USD's materialParamsUtil.cpp:
 // We need to find the first layer that changes the value
@@ -69,15 +77,17 @@ UsdFileHandler::~UsdFileHandler() = default;
 
 std::string UsdFileHandler::getResolvedPath(const Ufe::AttributeFilename::Ptr& fnAttr) const
 {
-    if (fnAttr && fnAttr->sceneItem()->runTimeId() == MayaUsdAPI::getUsdRunTimeId())
+    if (fnAttr && fnAttr->sceneItem()->runTimeId() == UsdUfe::getUsdRunTimeId())
     {
-        auto attributeType = MayaUsdAPI::usdAttributeType(fnAttr);
+        auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(fnAttr);
+        auto attributeType = usdAttribute ? usdAttribute->usdAttributeType() : PXR_NS::SdfValueTypeName();
         if (attributeType == PXR_NS::SdfValueTypeNames->Asset)
         {
-            const auto prim = MayaUsdAPI::getPrimForUsdSceneItem(fnAttr->sceneItem());
+            auto usdAttrItem = UsdUfe::downcast(fnAttr->sceneItem());
+            auto prim = usdAttrItem ? usdAttrItem->prim() : PXR_NS::UsdPrim();
             const auto usdAttribute = prim.GetAttribute(PXR_NS::TfToken(fnAttr->name()));
             const auto attrQuery = PXR_NS::UsdAttributeQuery(usdAttribute);
-            const auto time = MayaUsdAPI::getTime(fnAttr->sceneItem()->path());
+            const auto time = UsdUfe::getTime(fnAttr->sceneItem()->path());
             PXR_NS::SdfAssetPath assetPath;
 
             if (attrQuery.Get(&assetPath, time))
@@ -113,17 +123,20 @@ Ufe::UndoableCommand::Ptr UsdFileHandler::convertPathToAbsoluteCmd(const Ufe::At
 
 Ufe::UndoableCommand::Ptr UsdFileHandler::convertPathToRelativeCmd(const Ufe::AttributeFilename::Ptr& fnAttr) const
 {
+#ifdef LDX_USD_USE_MAYAUSDAPI
     auto relativePath = getRelativePath(fnAttr, fnAttr->get());
     if (!relativePath.empty() && relativePath != fnAttr->get())
     {
         return fnAttr->setCmd(relativePath);
     }
+#endif
     return {};
 }
 
 Ufe::UndoableCommand::Ptr UsdFileHandler::setPreferredPathCmd(const Ufe::AttributeFilename::Ptr& fnAttr,
                                                               const std::string& path) const
 {
+#ifdef LDX_USD_USE_MAYAUSDAPI
     if (MayaUsdAPI::requireUsdPathsRelativeToEditTargetLayer())
     {
         auto relativePath = getRelativePath(fnAttr, path);
@@ -133,12 +146,14 @@ Ufe::UndoableCommand::Ptr UsdFileHandler::setPreferredPathCmd(const Ufe::Attribu
             return fnAttr->setCmd(LookdevXUfe::UfeUtils::insertUdimTagInFilename(relativePath));
         }
     }
+#endif
     return fnAttr->setCmd(LookdevXUfe::UfeUtils::insertUdimTagInFilename(path));
 }
 
 std::string UsdFileHandler::openFileDialog(const Ufe::AttributeFilename::Ptr& fnAttr) const
 {
-    if (fnAttr && fnAttr->sceneItem()->runTimeId() == MayaUsdAPI::getUsdRunTimeId())
+#ifdef LDX_USD_USE_MAYAUSDAPI
+    if (fnAttr && fnAttr->sceneItem()->runTimeId() == UsdUfe::getUsdRunTimeId())
     {
         auto fileHandler = LookdevXUfe::FileHandler::get(fnAttr->sceneItem()->path().popSegment().runTimeId());
         if (!fileHandler)
@@ -147,7 +162,9 @@ std::string UsdFileHandler::openFileDialog(const Ufe::AttributeFilename::Ptr& fn
         }
 
         std::string relativeRoot;
-        auto stage = MayaUsdAPI::usdStage(fnAttr);
+
+        auto usdAttribute = std::dynamic_pointer_cast<UsdUfe::UsdAttribute>(fnAttr);
+        auto stage = usdAttribute ? usdAttribute->usdPrim().GetStage() : nullptr;
         if (stage && stage->GetEditTarget().GetLayer())
         {
             relativeRoot = MayaUsdAPI::getDir(stage->GetEditTarget().GetLayer()->GetRealPath());
@@ -166,6 +183,7 @@ std::string UsdFileHandler::openFileDialog(const Ufe::AttributeFilename::Ptr& fn
 
         return pickedPath;
     }
+#endif
     return {};
 }
 } // namespace LookdevXUsd

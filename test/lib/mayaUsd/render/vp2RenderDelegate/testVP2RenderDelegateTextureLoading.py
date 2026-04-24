@@ -23,6 +23,8 @@ import testUtils
 
 from maya import cmds
 
+from mayaUsd import lib as mayaUsdLib
+
 import os
 
 class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
@@ -42,7 +44,7 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
 
         cls._test_dir = os.path.abspath(".")
 
-        cls._optVarName = "mayaUsd_DisableAsyncTextureLoading"
+        cls._optVarName = mayaUsdLib.OptionVarTokens.DisableAsyncTextureLoading
         # Save optionVar preference
         cls._hasDisabledAsync = cmds.optionVar(exists=cls._optVarName)
         if cls._hasDisabledAsync:

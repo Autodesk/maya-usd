@@ -25,7 +25,7 @@ const char* MayaUsdBuildInfo::cutId() { return MAYAUSD_CUT_ID; }
 const char* MayaUsdBuildInfo::buildDate() { return MAYAUSD_BUILD_DATE; }
 bool        MayaUsdBuildInfo::buildAR()
 {
-#ifdef WANT_AR_BUILD
+#ifdef WANT_ADSK_USD_ASSET_RESOLVER_BUILD
     return true;
 #else
     return false;

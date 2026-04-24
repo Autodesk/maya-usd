@@ -10,11 +10,8 @@
 //*****************************************************************************
 
 #include <pxr/usd/usdShade/input.h>
-#ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 
 #include "UsdMxVersionUpgrade.h"
-
-#include <mayaUsdAPI/utils.h>
 
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -26,7 +23,9 @@
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usd/stage.h>
+#if PXR_VERSION >= 2502
 #include <pxr/usd/usdMtlx/materialXConfigAPI.h>
+#endif
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
@@ -34,9 +33,9 @@
 
 #include <ufe/hierarchy.h>
 
+#include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
-
-#include <mayaUsdAPI/utils.h>
+#include <usdUfe/undo/UsdUndoBlock.h>
 
 #include <regex>
 #include <string>
@@ -172,7 +171,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 PXR_NAMESPACE_CLOSE_SCOPE
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 constexpr size_t kInvalidChannelIndex = -1;
 size_t _channelIndexMap(const char c)
@@ -335,7 +334,7 @@ Ufe::Path _getMaterialPath(const Ufe::Path& materialPath)
 
     auto sceneItem = Ufe::Hierarchy::createItem(materialPath);
 
-    while (sceneItem && sceneItem->nodeType() != _tokens->Material) {
+    while (sceneItem && UsdUfe::getSceneItemNodeType(sceneItem) != _tokens->Material) {
         auto hierarchy = Ufe::Hierarchy::hierarchy(sceneItem);
         sceneItem = hierarchy->parent();
     }
@@ -374,6 +373,7 @@ std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
     // Fetch the version from the MaterialXConfigAPI schema:
     auto materialXVersion = _getDefaultVersionFromMxConfigAPI();
 
+#if PXR_VERSION >= 2502
     const auto configAPI = UsdMtlxMaterialXConfigAPI(material);
     if (configAPI)
     {
@@ -384,6 +384,7 @@ std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
             versionAttr.Get(&materialXVersion);
         }
     }
+#endif
 
     if (materialXVersion != _tokens->currentMxVersion.GetString())
     {
@@ -914,10 +915,12 @@ void _upgradeMaterial(UsdShadeMaterial usdMaterial)
         }
     }
 
+#if PXR_VERSION >= 2502
     // Update the version attribute using the MaterialXConfigAPI schema:
     auto configAPI = UsdMtlxMaterialXConfigAPI::Apply(usdMaterial.GetPrim());
     auto versionAttr = configAPI.CreateConfigMtlxVersionAttr();
     versionAttr.Set(_tokens->currentMxVersion.GetString());
+#endif
 }
 
 } // namespace
@@ -932,8 +935,8 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
         return std::nullopt;
     }
 
-    const auto materialItem = Ufe::Hierarchy::createItem(adjustedMaterialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(adjustedMaterialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : PXR_NS::UsdPrim());
     if (!materialPrim)
     {
         return std::nullopt;
@@ -944,8 +947,8 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
 void UpgradeMaterial(const Ufe::Path& materialPath)
 {
     const auto adjustedMaterialPath = _getMaterialPath(materialPath);
-    const auto materialItem = Ufe::Hierarchy::createItem(adjustedMaterialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(adjustedMaterialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
     if (materialPrim && _isLegacyMaterial(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
@@ -969,10 +972,10 @@ UsdMxUpgradeMaterialCmd::~UsdMxUpgradeMaterialCmd() = default;
 void UsdMxUpgradeMaterialCmd::execute()
 {
     // I do hope the undo block is strong enough to track multi-layer changes because the upgrade process can go dig into a nested material layer and execute some changes there.
-    MayaUsdAPI::UsdUndoBlock undoBlock(&_undoableItem);
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
-    const auto materialItem = Ufe::Hierarchy::createItem(_materialPath);
-    auto materialPrim = UsdShadeMaterial(MayaUsdAPI::getPrimForUsdSceneItem(materialItem));
+    const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(_materialPath));
+    auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
     if (materialPrim && _isLegacyMaterial(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
@@ -989,5 +992,3 @@ void UsdMxUpgradeMaterialCmd::redo()
 }
 
 } // namespace LookdevXUsd::Version
-
-#endif // LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION

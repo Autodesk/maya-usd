@@ -389,8 +389,13 @@ void UsdStageMap::processNodeAdded(MObject& node)
 
     MayaUsd::MayaNodeTypeObserver& shapeObserver = MayaUsdProxyShapeBase::getProxyShapesObserver();
     MayaNodeObserver*              observer = shapeObserver.addObservedNode(node);
-    if (observer)
+    if (observer) {
         observer->addListener(*this);
+        // Note: due to the timing of Maya notifications, the node gets added the the observer
+        //       right at creation, before it gets named and parented. This menas the obervations
+        //       were not setup for its parents, so we update the observer at this point.
+        observer->updateObserving();
+    }
 
     addProxyShapeNode(*proxyShape, node);
 }

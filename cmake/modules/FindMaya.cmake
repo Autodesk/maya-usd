@@ -4,7 +4,7 @@
 # and related paths (scripts)
 #
 # Variables that will be defined:
-# MAYA_FOUND          Defined if a Maya installation has been detected
+# Maya_FOUND          Defined if a Maya installation has been detected
 # MAYA_EXECUTABLE     Path to Maya's executable
 # MAYA_<lib>_FOUND    Defined if <lib> has been found
 # MAYA_<lib>_LIBRARY  Path to <lib> library
@@ -430,14 +430,14 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFnSet.h")
     file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MFnSet.h MAYA_HAS_API REGEX "getMemberPaths")
     if(MAYA_HAS_API)
         set(MAYA_HAS_GET_MEMBER_PATHS TRUE CACHE INTERNAL "hasGetMemberPaths")
-        message(STATUS "MFnSet has getMemberPaths function")
+        message(STATUS "Maya MFnSet has getMemberPaths function")
     endif()
 endif()
 
 set(MAYA_HAS_DISPLAY_LAYER_API FALSE CACHE INTERNAL "hasDisplayLayerAPI")
 if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFnDisplayLayer.h")
     set(MAYA_HAS_DISPLAY_LAYER_API TRUE CACHE INTERNAL "hasDisplayLayerAPI")
-    message(STATUS "MFnDisplayLayer exists")
+    message(STATUS "Maya MFnDisplayLayer exists")
 endif()
 
 set(MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API FALSE CACHE INTERNAL "hasDisplayLayerMemberChangedFunction")
@@ -445,7 +445,7 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MDisplayLayerMessage.h
     file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MDisplayLayerMessage.h MAYA_HAS_API REGEX "MDisplayLayerMemberChangedFunction")
     if(MAYA_HAS_API)
         set(MAYA_HAS_NEW_DISPLAY_LAYER_MESSAGING_API TRUE CACHE INTERNAL "hasDisplayLayerMemberChangedFunction")
-        message(STATUS "MDisplayLayerMessage has MDisplayLayerMemberChangedFunction")
+        message(STATUS "Maya MDisplayLayerMessage has MDisplayLayerMemberChangedFunction")
     endif()
 endif()
 
@@ -454,7 +454,7 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
     file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h MAYA_HAS_API REGEX "isHideOnPlayback")
     if(MAYA_HAS_API)
         set(MAYA_HAS_RENDER_ITEM_HIDE_ON_PLAYBACK_API TRUE CACHE INTERNAL "hasRenderItemHideOnPlaybackFunction")
-        message(STATUS "MRenderItem has HideOnPlayback API")
+        message(STATUS "Maya MRenderItem has HideOnPlayback API")
     endif()
 endif()
 
@@ -510,7 +510,7 @@ if(IS_MACOSX AND MAYA_Foundation_LIBRARY)
     endif()
 endif()
 
-# handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
+# handle the QUIETLY and REQUIRED arguments and set Maya_FOUND to TRUE if
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
 

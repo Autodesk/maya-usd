@@ -464,7 +464,7 @@ void StagesSubject::stageChanged(
             ufePath = stagePath(sender);
             prim = stage->GetPseudoRoot();
         } else {
-            const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
+            const std::string usdPrimPathStr = changedPath.GetPrimPath().GetString();
             ufePath = stagePath(sender)
                 + Ufe::PathSegment(usdPrimPathStr, UsdUfe::getUsdRunTimeId(), '/');
             prim = stage->GetPrimAtPath(changedPath);

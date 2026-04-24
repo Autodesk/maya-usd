@@ -1,0 +1,70 @@
+//
+// Copyright 2022 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#include "UsdUndoCreateFromNodeDefCommand.h"
+
+#include <usdUfe/undo/UsdUndoBlock.h>
+
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdShade/shader.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace USDUFE_NS_DEF {
+
+USDUFE_VERIFY_CLASS_SETUP(Ufe::InsertChildCommand, UsdUndoCreateFromNodeDefCommand);
+
+UsdUndoCreateFromNodeDefCommand::UsdUndoCreateFromNodeDefCommand(
+    const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
+    const UsdUfe::UsdSceneItem::Ptr&    parentItem,
+    const Ufe::PathComponent&           name)
+    : Ufe::InsertChildCommand()
+    , _shaderNodeDef(shaderNodeDef)
+    , _addPrimCmd(UsdUfe::UsdUndoAddNewPrimCommand::create(parentItem, name.string(), "Shader"))
+{
+}
+
+UsdUndoCreateFromNodeDefCommand::Ptr UsdUndoCreateFromNodeDefCommand::create(
+    const PXR_NS::SdrShaderNodeConstPtr shaderNodeDef,
+    const UsdUfe::UsdSceneItem::Ptr&    parentItem,
+    const Ufe::PathComponent&           name)
+{
+    return std::make_shared<UsdUndoCreateFromNodeDefCommand>(shaderNodeDef, parentItem, name);
+}
+
+Ufe::SceneItem::Ptr UsdUndoCreateFromNodeDefCommand::insertedChild() const
+{
+    return UsdUfe::UsdSceneItem::create(_addPrimCmd->newUfePath(), _addPrimCmd->newPrim());
+}
+
+void UsdUndoCreateFromNodeDefCommand::execute()
+{
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
+    _addPrimCmd->execute();
+    setIdAttr();
+}
+
+void UsdUndoCreateFromNodeDefCommand::undo() { _undoableItem.undo(); }
+
+void UsdUndoCreateFromNodeDefCommand::redo() { _undoableItem.redo(); }
+
+void UsdUndoCreateFromNodeDefCommand::setIdAttr()
+{
+    UsdShadeShader shader(_addPrimCmd->newPrim());
+    shader.CreateIdAttr(VtValue(_shaderNodeDef->GetIdentifier()));
+}
+
+} // namespace USDUFE_NS_DEF

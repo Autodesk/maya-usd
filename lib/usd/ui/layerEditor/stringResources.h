@@ -52,6 +52,10 @@ const auto kAddSublayer                  { create("kAddSublayer", "Add sublayer"
 const auto kAutoHideSessionLayer         { create("kAutoHideSessionLayer", "Auto-Hide Session Layer") };
 const auto kDisplayLayerContents         { create("kDisplayLayerContents", "Display Layer Content") };
 const auto kDisplayLayerContentsEmpty    { create("kDisplayLayerContentsEmpty", "Select a single layer to display the contents.\n\nLarge layers may take longer to load.") };
+const auto kEditForwardBanner            { create("kEditForwardBanner", "Edits made in the sessionLayer are automatically forwarded to other layers based on rule configuration.") };
+const auto kDisplayLayerExpandAllValues  { create("kDisplayLayerExpandAllValues", "Expand All Values") };
+const auto kDisplayLayerExpandAllValuesTooltip { create("kDisplayLayerExpandAllValuesTooltip",
+                                                        "Enable to display all array values and timeSamples in the layer content") };
 const auto kConvertToRelativePath        { create("kConvertToRelativePath", "Convert to Relative Path") };
 const auto kCancel                       { create("kCancel", "Cancel") };
 const auto kCreate                       { create("kCreate", "Create") };
@@ -74,6 +78,7 @@ const auto kOption                       { create("kOption", "Option") };
 const auto kPathNotFound                 { create("kPathNotFound", "Path not found: ") };
 const auto kRealPath                     { create("kRealPath", "Real Path: ^1s") };
 const auto kRemoveSublayer               { create("kRemoveSublayer", "Remove sublayer") };
+const auto kMenuStitchLayers             { create("kMenuStitchLayers", "Merge Layers") };
 const auto kSave                         { create("kSave", "Save") };
 const auto kSaveAll                      { create("kSaveAll", "Save All") };
 const auto kSaveAllEditsInLayerStack     { create("kSaveAllEditsInLayerStack", "Save all edits in the Layer Stack")};

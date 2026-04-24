@@ -442,7 +442,7 @@ class EditAsMayaTestCase(unittest.TestCase):
         ufeUIInfo.treeViewCellInfo(bMayaItem, ci)
         self.assertEqual(initTextFgClr, ci.textFgColor)
         icon = ufeUIInfo.treeViewIcon(bMayaItem)
-        self.assertEqual(ufe.UIInfoHandler.Normal, icon.mode)
+        self.assertEqual(ufe.UIInfoHandler.Mode.Normal, icon.mode)
 
         # Deactivating the parent of this pulled item will orphan it.
         # This will set a disabled text foreground color and a disabled mode for the icon.
@@ -451,7 +451,7 @@ class EditAsMayaTestCase(unittest.TestCase):
         self.assertFalse(initTextFgClr == ci.textFgColor)
         icon = ufeUIInfo.treeViewIcon(bMayaItem)
         self.assertEqual('', icon.baseIcon)
-        self.assertEqual(ufe.UIInfoHandler.Disabled, icon.mode)
+        self.assertEqual(ufe.UIInfoHandler.Mode.Disabled, icon.mode)
 
     def testIllegalEditAsMaya(self):
         '''Trying to edit as Maya on object that doesn't support it.'''

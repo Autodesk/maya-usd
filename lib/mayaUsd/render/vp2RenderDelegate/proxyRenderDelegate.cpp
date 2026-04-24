@@ -947,7 +947,8 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
     auto markRprimDirty = [this, &changeTracker](const UsdPrim& prim) {
         constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
             | HdChangeTracker::DirtyRepr | HdChangeTracker::DirtyDisplayStyle
-            | MayaUsdRPrim::DirtySelectionHighlight | HdChangeTracker::DirtyMaterialId;
+            | MayaUsdRPrim::DirtySelectionHighlight | MayaUsdRPrim::DirtyDisplayLayers
+            | HdChangeTracker::DirtyMaterialId;
 
         if (prim.IsA<UsdGeomGprim>()) {
             auto range = _instancingMap.equal_range(
@@ -1187,11 +1188,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             auto materials = _renderIndex->GetSprimSubtree(
                 HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());
             for (auto material : materials) {
-                changeTracker.MarkSprimDirty(material, HdMaterial::DirtyParams);
-                // Tell all the Rprims associated with this material to recompute primvars
                 HdVP2Material* vp2material = static_cast<HdVP2Material*>(
                     _renderIndex->GetSprim(HdPrimTypeTokens->material, material));
-                vp2material->MaterialChanged(_sceneDelegate.get());
+
+                vp2material->TexturedDisplayModeEnabled(_sceneDelegate.get());
             }
         }
 

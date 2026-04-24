@@ -25,13 +25,14 @@
 #include <AdskAssetResolver/AdskAssetResolver.h>
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #include <AdskAssetResolver/AssetResolverContextExtension.h>
+#include <AssetResolverWidgets/Settings/AssetResolverSettingsManagement.h>
 
 namespace MAYAUSD_NS_DEF {
 
 void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
 {
     {
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
         Adsk::PreventContextDataChangedNotification preventNotifications;
 #endif
 
@@ -41,7 +42,8 @@ void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
 
         if (status == MS::kSuccess) {
             Adsk::AssetResolverContextExtension contextData
-                = Adsk::AssetResolverContextDataRegistry::RegisterContextData("MayaUSDExtension");
+                = Adsk::AssetResolverContextDataRegistry::RegisterContextData(
+                    Adsk::AssetResolverSettingsManagement::PROJECT_TOKENS_DATA_SET_NAME);
 
             contextData.AddStaticToken("Project", workspaceDirectory.asChar());
 
@@ -52,7 +54,7 @@ void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
             }
         }
     }
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
     Adsk::SendContextDataChanged(Adsk::ContextDataType::TOKEN);
 #endif
 }
@@ -60,12 +62,12 @@ void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
 void AssetResolverUtils::excludeMayaProjectTokensFromAdskAssetResolver()
 {
     {
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
         Adsk::PreventContextDataChangedNotification preventNotifications;
 #endif
         Adsk::AssetResolverContextDataRegistry::RemoveContextData("MayaUSDExtension");
     }
-#if AR_ASSETRESOLVERCONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
     Adsk::SendContextDataChanged(Adsk::ContextDataType::TOKEN);
 #endif
 }

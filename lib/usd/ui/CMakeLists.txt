@@ -24,7 +24,7 @@ add_library(${PROJECT_NAME} SHARED)
 
 add_subdirectory(layerEditor)
 add_subdirectory(importDialog)
-if (AR_FOUND)
+if (AdskUsdAssetResolver_FOUND)
     add_subdirectory(assetResolver)
 endif()
 # -----------------------------------------------------------------------------
@@ -61,8 +61,8 @@ mayaUsd_compile_config(${PROJECT_NAME})
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
-if(AR_FOUND)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${AR_INCLUDE_DIR})
+if(AdskUsdAssetResolver_FOUND)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR})
 endif()
 
 target_link_libraries(${PROJECT_NAME}
@@ -72,7 +72,8 @@ target_link_libraries(${PROJECT_NAME}
 		Qt::Core
 		Qt::Gui
 		Qt::Widgets
-        $<$<BOOL:${AR_FOUND}>:${AR_LIBRARY}>
+        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_LIBRARY}>
+        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------

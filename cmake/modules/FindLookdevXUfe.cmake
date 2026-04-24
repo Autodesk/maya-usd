@@ -78,16 +78,34 @@ find_package_handle_standard_args(LookdevXUfe
         LookdevXUfe_VERSION
 )
 
+if (LookdevXUfe_FOUND)
+    # This will follow a message "-- Found LookdevXUfe: <path> ..."
+    message(STATUS "  Version: ${LookdevXUfe_VERSION}")
+    message(STATUS "  Include dir: ${LookdevXUfe_INCLUDE_DIR}")
+    message(STATUS "  Library : ${LookdevXUfe_LIBRARY}")
+endif()
+
 set(LOOKDEVXUFE_HAS_PYTHON_BINDINGS FALSE CACHE INTERNAL "PyLookdevXUfe")
 if(LookdevXUfe_VERSION VERSION_GREATER_EQUAL "1.0.1" OR
     (LookdevXUfe_VERSION VERSION_LESS "1.0.0" AND LookdevXUfe_VERSION VERSION_GREATER_EQUAL "0.2.0"))
     set(LOOKDEVXUFE_HAS_PYTHON_BINDINGS TRUE CACHE INTERNAL "PyLookdevXUfe")
-    message(STATUS "Maya has LookdevXUfe Python bindings")
+    message(STATUS "LookdevXUfe has Python bindings")
 endif()
 
 set(LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION FALSE CACHE INTERNAL "LegacyMxLookdevXUfe")
-if(LookdevXUfe_VERSION VERSION_GREATER_EQUAL "2.0.0" OR
-    (LookdevXUfe_VERSION VERSION_LESS "1.0.0" AND LookdevXUfe_VERSION VERSION_GREATER_EQUAL "0.2.12"))
-    set(LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION TRUE CACHE INTERNAL "LegacyMxLookdevXUfe")
-    message(STATUS "Maya has LookdevXUfe Legacy MaterialX handling")
+if(PXR_VERSION GREATER_EQUAL 2403)
+    if(LookdevXUfe_INCLUDE_DIR AND EXISTS "${LookdevXUfe_INCLUDE_DIR}/LookdevXUfe/MaterialHandler.h")
+        file(STRINGS ${LookdevXUfe_INCLUDE_DIR}/LookdevXUfe/MaterialHandler.h LDXUFE_HAS_API REGEX "isLegacyShaderGraph")
+        if(LDXUFE_HAS_API)
+            set(LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION TRUE CACHE INTERNAL "LegacyMxLookdevXUfe")
+            message(STATUS "LookdevXUfe Legacy MaterialX handling")
+        endif()
+    endif()
+endif()
+
+# The ExtendedConnectionHandler and associated classes get removed from LookdevXUfe in UFE v8 / LookdevXUfe v3.
+set(LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER FALSE CACHE INTERNAL "LookdevXUfeHasExtendedConnectionHandler")
+if (LookdevXUfe_INCLUDE_DIR AND EXISTS "${LookdevXUfe_INCLUDE_DIR}/LookdevXUfe/ExtendedConnectionHandler.h")
+    set(LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER TRUE CACHE INTERNAL "LookdevXUfeHasExtendedConnectionHandler")
+    message(STATUS "LookdevXUfe ExtendedConnectionHandler")
 endif()
