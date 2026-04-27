@@ -13,6 +13,7 @@ set(TEST_SCRIPT_FILES
     testDuplicateProxyShape.py
     testEditRouting.py
     testPrimMetadataEditRouting.py
+    testGetStage.py
     testGroupCmd.py
     testMatrices.py
     testMayaPickwalk.py

@@ -183,6 +183,10 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
     if (MayaUsdProxyShapeBase::countProxyShapeInstances() == 0)
         return MObject();
 
+    // Protect against empty path as the code below assumes there is at least one segment.
+    if (path.empty())
+        return MObject();
+
     const bool wasRebuilt = rebuildIfDirty();
 
     const auto& singleSegmentPath
