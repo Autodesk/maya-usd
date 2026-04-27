@@ -15,12 +15,6 @@
 //
 #include "UsdUndoMaterialCommands.h"
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/ufe/MayaUsdUndoRenameCommand.h>
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/utilComponentCreator.h>
-
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
@@ -40,14 +34,11 @@
 #include <ufe/sceneItemOps.h>
 #include <ufe/selection.h>
 
-#include <iostream>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, BindMaterialUndoableCommand);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, BindMaterialUndoableCommand);
 
 namespace {
 
@@ -114,20 +105,12 @@ bool connectShaderToMaterial(
 //! otherwise falls back to the default export job args name.
 std::string resolveMaterialScopeName(const Ufe::Path& parentPath)
 {
-    const UsdStageWeakPtr stage = getStage(parentPath);
-    if (stage) {
-        auto proxyShapePath = MayaUsd::ufe::ufeToDagPath(MayaUsd::ufe::stagePath(stage));
-        if (proxyShapePath.isValid()) {
-            const std::string proxyPath = proxyShapePath.fullPathName().asChar();
-            if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
-                auto name = MayaUsd::ComponentUtils::getMaterialScopeName(proxyPath);
-                if (!name.empty()) {
-                    return name;
-                }
-            }
-        }
+    const auto scopeName = getComponentMaterialScopeName(getStage(parentPath));
+    if (!scopeName.empty()) {
+        return scopeName;
     }
-    return UsdMayaJobExportArgs::GetDefaultMaterialsScopeName();
+
+    return defaultMaterialScopeName();
 }
 
 //! Searches the children of \p parentPath for a materials scope. Returns a null pointer if no
@@ -175,8 +158,7 @@ bool _BindMaterialCompatiblePrim(const UsdPrim& usdPrim)
         // material or a shader.
         return false;
     }
-    if (UsdGeomScope(usdPrim)
-        && usdPrim.GetName() == UsdMayaJobExportArgs::GetDefaultMaterialsScopeName()) {
+    if (UsdGeomScope(usdPrim) && usdPrim.GetName() == defaultMaterialScopeName()) {
         return false;
     }
     if (auto subset = UsdGeomSubset(usdPrim)) {
@@ -764,19 +746,23 @@ bool UsdUndoCreateMaterialsScopeCommand::doExecute()
     }
     createScopeCmd->execute();
 
-    auto scopeItem = downcast(createScopeCmd->sceneItem());
+    auto scopeItem = createScopeCmd->sceneItem();
     if (!scopeItem || scopeItem->path().empty()) {
         return false;
     }
 
     std::string materialsScopeName = resolveMaterialScopeName(_parentItem->path());
-    auto        renameCmd = MayaUsdUndoRenameCommand::create(scopeItem, materialsScopeName);
+    const auto  sceneItemOps = Ufe::SceneItemOps::sceneItemOps(scopeItem);
+    if (!sceneItemOps) {
+        return false;
+    }
+    auto renameCmd = sceneItemOps->renameItemCmdNoExecute(materialsScopeName);
     if (!renameCmd) {
         return false;
     }
     renameCmd->execute();
 
-    scopeItem = renameCmd->renamedItem();
+    scopeItem = renameCmd->sceneItem();
     if (!scopeItem || scopeItem->path().empty()) {
         return false;
     }
@@ -807,5 +793,4 @@ void UsdUndoCreateMaterialsScopeCommand::markAsFailed()
 }
 
 #endif
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
