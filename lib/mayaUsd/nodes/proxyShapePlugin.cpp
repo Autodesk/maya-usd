@@ -23,6 +23,9 @@
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/nodes/stageNode.h>
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+#include <mayaUsd/nodes/sceneRenderSettings.h>
+#endif
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h>
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeUI.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyDrawOverride.h>
@@ -171,6 +174,23 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
     status = MayaUsd::MayaUsdProxyShapeStageExtraData::initialize();
     CHECK_MSTATUS(status);
 
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    // Only register and activate the SceneRenderSettings node for mayaUsdPlugin.
+    if (plugin.name() == "mayaUsdPlugin") {
+        status = plugin.registerNode(
+            MayaUsd::UsdSceneRenderSettings::typeName,
+            MayaUsd::UsdSceneRenderSettings::typeId,
+            MayaUsd::UsdSceneRenderSettings::creator,
+            MayaUsd::UsdSceneRenderSettings::initialize,
+            MPxNode::kDependNode);
+        CHECK_MSTATUS(status);
+
+        MayaUsd::UsdSceneRenderSettings::installCallbacks();
+        // Maya doesn't send kAfterNew for the default scene that exists at startup.
+        MayaUsd::UsdSceneRenderSettings::findOrCreateInstance();
+    }
+#endif
+
     return status;
 }
 
@@ -191,6 +211,14 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
             + _registrantPluginName + " is unloaded.");
         return MS::kSuccess;
     }
+
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    if (plugin.name() == "mayaUsdPlugin") {
+        MayaUsd::UsdSceneRenderSettings::removeCallbacks();
+        MStatus srsStatus = plugin.deregisterNode(MayaUsd::UsdSceneRenderSettings::typeId);
+        CHECK_MSTATUS(srsStatus);
+    }
+#endif
 
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
     CHECK_MSTATUS(status);

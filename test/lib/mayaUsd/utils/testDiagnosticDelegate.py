@@ -203,6 +203,16 @@ class testDiagnosticDelegate(unittest.TestCase):
     def testZZZBatching_DelegateRemoved(self):
         """Tests removing the diagnostic delegate when the batch context is
         still open."""
+        # Delete the SceneRenderSettings singleton node with undo off
+        # so the undo queue doesn't hold references to plugin data types.
+        srsNodes = cmds.ls(type='mayaUsdSceneRenderSettings')
+        if srsNodes:
+            cmds.undoInfo(stateWithoutFlush=False)
+            for node in srsNodes:
+                cmds.lockNode(node, lock=False)
+                cmds.delete(node)
+            cmds.undoInfo(stateWithoutFlush=True)
+
         self._StartRecording()
         with mayaUsdLib.DiagnosticBatchContext():
             Tf.Warn("this warning won't be lost")

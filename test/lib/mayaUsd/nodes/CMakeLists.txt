@@ -29,3 +29,14 @@ mayaUsd_add_test(testHdImagingShape
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testHdImagingShape APPEND PROPERTY LABELS nodes)
+
+if(MAYA_HAS_SCENE_RENDER_SETTINGS)
+    mayaUsd_get_unittest_target(target testSceneRenderSettings.py)
+    mayaUsd_add_test(${target}
+        PYTHON_MODULE ${target}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+    )
+    set_property(TEST ${target} APPEND PROPERTY LABELS nodes)
+endif()

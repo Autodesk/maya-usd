@@ -1,0 +1,260 @@
+#!/usr/bin/env mayapy
+#
+# Copyright 2026 Autodesk
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+from maya import cmds
+from maya import standalone
+
+from mayaUsd.lib import SceneRenderSettings
+
+from pxr import Usd, UsdGeom, UsdRender, UsdUtils
+
+import fixturesUtils
+
+import os
+import tempfile
+import unittest
+
+
+class testSceneRenderSettings(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        fixturesUtils.setUpClass(__file__)
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
+    def setUp(self):
+        cmds.file(new=True, force=True)
+
+    # ------------------------------------------------------------------
+    # Node existence and singleton
+    # ------------------------------------------------------------------
+
+    def testNodeExistsOnStartup(self):
+        '''The singleton node should exist after plugin load.'''
+        path = SceneRenderSettings.find()
+        self.assertTrue(len(path) > 0, "SceneRenderSettings node not found")
+        self.assertTrue(cmds.objExists(path))
+
+    def testSingleton(self):
+        '''find called twice should return the same node; only one instance exists.'''
+        path1 = SceneRenderSettings.find()
+        path2 = SceneRenderSettings.find()
+        self.assertEqual(path1, path2)
+
+        nodes = cmds.ls(type='mayaUsdSceneRenderSettings')
+        self.assertEqual(len(nodes), 1,
+                         "Expected exactly one SceneRenderSettings node, "
+                         "found %d" % len(nodes))
+
+    # ------------------------------------------------------------------
+    # Default stage structure
+    # ------------------------------------------------------------------
+
+    def testDefaultStageStructure(self):
+        '''The default stage should have /Render scope and /Render/SceneRenderSettings prim.'''
+        stage = SceneRenderSettings.getUsdStage()
+        self.assertIsNotNone(stage)
+
+        renderPrim = stage.GetPrimAtPath('/Render')
+        self.assertTrue(renderPrim.IsValid(), "/Render prim not found")
+        self.assertTrue(renderPrim.IsA(UsdGeom.Scope))
+
+        settingsPrim = stage.GetPrimAtPath('/Render/SceneRenderSettings')
+        self.assertTrue(settingsPrim.IsValid(),
+                        "/Render/SceneRenderSettings prim not found")
+        self.assertTrue(settingsPrim.IsA(UsdRender.Settings))
+
+    def testRenderSettingsPrimPathMetadata(self):
+        '''Stage metadata should point to the default render settings prim.'''
+        stage = SceneRenderSettings.getUsdStage()
+        metadata = stage.GetMetadata('renderSettingsPrimPath')
+        self.assertEqual(metadata, '/Render/SceneRenderSettings')
+
+    # ------------------------------------------------------------------
+    # Node properties
+    # ------------------------------------------------------------------
+
+    def testNodeIsLocked(self):
+        '''The singleton node should be locked.'''
+        nodeName = SceneRenderSettings.find()
+        self.assertTrue(cmds.lockNode(nodeName, query=True, lock=True)[0],
+                        "Node should be locked")
+
+    def testNodeIsDG(self):
+        '''The singleton should be a DG node with no parent transform.'''
+        nodeName = SceneRenderSettings.find()
+        parents = cmds.listRelatives(nodeName, parent=True, fullPath=True)
+        self.assertIsNone(parents,
+                          "DG node should have no parent transform")
+
+    # ------------------------------------------------------------------
+    # Output attributes
+    # ------------------------------------------------------------------
+
+    def testOutStageCacheId(self):
+        '''outStageCacheId should return a valid stage cache ID.'''
+        shapePath = SceneRenderSettings.find()
+        cacheId = cmds.getAttr(shapePath + '.outStageCacheId')
+        self.assertGreaterEqual(cacheId, 0,
+                                "Expected valid cache ID, got %d" % cacheId)
+
+        # Verify we can retrieve the same stage from the cache.
+        cachedStage = UsdUtils.StageCache.Get().Find(
+            Usd.StageCache.Id.FromLongInt(cacheId))
+        apiStage = SceneRenderSettings.getUsdStage()
+        self.assertEqual(cachedStage.GetRootLayer().identifier,
+                         apiStage.GetRootLayer().identifier)
+
+    # ------------------------------------------------------------------
+    # Stage access
+    # ------------------------------------------------------------------
+
+    def testGetUsdStageConsistency(self):
+        '''getUsdStage should return the same stage on repeated calls.'''
+        stage1 = SceneRenderSettings.getUsdStage()
+        stage2 = SceneRenderSettings.getUsdStage()
+        self.assertIsNotNone(stage1)
+        self.assertEqual(stage1.GetRootLayer().identifier,
+                         stage2.GetRootLayer().identifier)
+
+    def testGetDefaultRenderSettingsPrim(self):
+        '''getDefaultRenderSettingsPrim should return the /Render/SceneRenderSettings prim.'''
+        prim = SceneRenderSettings.getDefaultRenderSettingsPrim()
+        self.assertTrue(prim.IsValid())
+        self.assertEqual(prim.GetPath().pathString,
+                         '/Render/SceneRenderSettings')
+        self.assertTrue(prim.IsA(UsdRender.Settings))
+
+    # ------------------------------------------------------------------
+    # Node recreation on file new
+    # ------------------------------------------------------------------
+
+    def testNodeRecreatedAfterFileNew(self):
+        '''The singleton should be recreated after file new.'''
+        pathBefore = SceneRenderSettings.find()
+        self.assertTrue(len(pathBefore) > 0)
+
+        cmds.file(new=True, force=True)
+
+        pathAfter = SceneRenderSettings.find()
+        self.assertTrue(len(pathAfter) > 0,
+                        "Node should be recreated after file new")
+
+        # The new stage should have the default structure.
+        stage = SceneRenderSettings.getUsdStage()
+        self.assertTrue(
+            stage.GetPrimAtPath('/Render/SceneRenderSettings').IsValid())
+
+    # ------------------------------------------------------------------
+    # Serialization round-trip
+    # ------------------------------------------------------------------
+
+    def testSerializationRoundTrip(self):
+        '''Stage content should survive a save/open cycle.'''
+        stage = SceneRenderSettings.getUsdStage()
+
+        # Author a prim directly on the stage.
+        UsdGeom.Xform.Define(stage, '/Render/TestContent')
+
+        # Save.
+        tmpFile = os.path.join(tempfile.mkdtemp(), 'testScene.ma')
+        cmds.file(rename=tmpFile)
+        cmds.file(save=True, type='mayaAscii')
+
+        # Re-open.
+        cmds.file(tmpFile, open=True, force=True)
+
+        # Verify.
+        stage2 = SceneRenderSettings.getUsdStage()
+        self.assertIsNotNone(stage2)
+
+        self.assertTrue(
+            stage2.GetPrimAtPath('/Render/SceneRenderSettings').IsValid(),
+            "Default render settings prim should survive serialization")
+        self.assertTrue(
+            stage2.GetPrimAtPath('/Render/TestContent').IsValid(),
+            "Authored content should survive serialization")
+
+    # ------------------------------------------------------------------
+    # Referencing a scene that contains the singleton
+    # ------------------------------------------------------------------
+
+    def testReferencedSceneDoesNotBreakLocalSingleton(self):
+        '''Referencing a Maya file that contains a SceneRenderSettings node
+        must not replace or break the current scene's singleton.'''
+        # Author a marker prim so we can distinguish local vs referenced stage.
+        localStage = SceneRenderSettings.getUsdStage()
+        UsdGeom.Xform.Define(localStage, '/Render/LocalMarker')
+
+        localPath = SceneRenderSettings.find()
+        self.assertTrue(len(localPath) > 0)
+
+        # Save the current scene so we can reference it later.
+        refDir = tempfile.mkdtemp()
+        refFile = os.path.join(refDir, 'referenced.ma')
+        cmds.file(rename=refFile)
+        cmds.file(save=True, type='mayaAscii')
+
+        # Start a fresh scene (creates a new local singleton).
+        cmds.file(new=True, force=True)
+
+        localPathNew = SceneRenderSettings.find()
+        self.assertTrue(len(localPathNew) > 0)
+
+        localStageNew = SceneRenderSettings.getUsdStage()
+        self.assertIsNotNone(localStageNew)
+
+        # The fresh scene should NOT have the marker from the saved file.
+        self.assertFalse(
+            localStageNew.GetPrimAtPath('/Render/LocalMarker').IsValid(),
+            "Fresh scene should not have marker prim before referencing")
+
+        # Reference the saved scene.
+        cmds.file(refFile, reference=True, namespace='ref')
+
+        # The local singleton should still be the non-referenced node.
+        pathAfterRef = SceneRenderSettings.find()
+        self.assertTrue(len(pathAfterRef) > 0,
+                        "Local singleton should still exist after referencing")
+
+        # The referenced file brings in its own SceneRenderSettings node
+        # under a namespace; verify both exist but find() returns the local one.
+        allNodes = cmds.ls(type='mayaUsdSceneRenderSettings', long=True)
+        localNodes = [n for n in allNodes
+                      if not cmds.referenceQuery(n, isNodeReferenced=True)]
+        self.assertEqual(len(localNodes), 1,
+                         "Expected exactly one local SceneRenderSettings, "
+                         "found %d" % len(localNodes))
+
+        # The local stage must still have the default render settings.
+        stageAfterRef = SceneRenderSettings.getUsdStage()
+        self.assertIsNotNone(stageAfterRef)
+        self.assertTrue(
+            stageAfterRef.GetPrimAtPath('/Render/SceneRenderSettings').IsValid(),
+            "Local render settings prim should not be broken by referencing")
+
+        # The local stage must NOT have the marker from the referenced file.
+        self.assertFalse(
+            stageAfterRef.GetPrimAtPath('/Render/LocalMarker').IsValid(),
+            "Referenced file's stage data should not leak into local singleton")
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

@@ -19,7 +19,67 @@
 #include <mayaUsd/ufe/ProxyShapeHierarchy.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <maya/MFnDependencyNode.h>
+#include <maya/MSelectionList.h>
 #include <ufe/runTimeMgr.h>
+
+namespace {
+
+// Lightweight SceneItem for pure DG nodes that serve as UFE gateways
+// (e.g. UsdSceneRenderSettings).  Maya's built-in hierarchy handler only
+// creates items for DAG nodes, so we provide this for DG gateway nodes.
+class DGGatewaySceneItem : public Ufe::SceneItem
+{
+public:
+    DGGatewaySceneItem(const Ufe::Path& path, const std::string& nodeType)
+        : Ufe::SceneItem(path)
+        , _nodeType(nodeType)
+    {
+    }
+
+    std::string              nodeType() const override { return _nodeType; }
+    std::vector<std::string> ancestorNodeTypes() const override { return {}; }
+
+#ifdef UFE_SCENEITEM_HAS_METADATA
+    Ufe::Value getMetadata(const std::string& /*key*/) const override { return {}; }
+
+    Ufe::UndoableCommandPtr
+    setMetadataCmd(const std::string& /*key*/, const Ufe::Value& /*value*/) override
+    {
+        return nullptr;
+    }
+
+    Ufe::UndoableCommandPtr clearMetadataCmd(const std::string& /*key*/) override
+    {
+        return nullptr;
+    }
+
+    Ufe::Value
+    getGroupMetadata(const std::string& /*group*/, const std::string& /*key*/) const override
+    {
+        return {};
+    }
+
+    Ufe::UndoableCommandPtr setGroupMetadataCmd(
+        const std::string& /*group*/,
+        const std::string& /*key*/,
+        const Ufe::Value& /*value*/) override
+    {
+        return nullptr;
+    }
+
+    Ufe::UndoableCommandPtr
+    clearGroupMetadataCmd(const std::string& /*group*/, const std::string& /*key*/) override
+    {
+        return nullptr;
+    }
+#endif
+
+private:
+    std::string _nodeType;
+};
+
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -46,7 +106,8 @@ ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarc
 
 Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
-    if (isAGatewayType(UsdUfe::getSceneItemNodeType(item))) {
+    auto nodeType = UsdUfe::getSceneItemNodeType(item);
+    if (isAGatewayType(nodeType) && !isReferencedSceneRenderSettingsNode(nodeType, item->path())) {
         return ProxyShapeHierarchy::create(_mayaHierarchyHandler, item);
     } else {
         return _mayaHierarchyHandler->hierarchy(item);
@@ -55,7 +116,32 @@ Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path) const
 {
-    return _mayaHierarchyHandler->createItem(path);
+    auto item = _mayaHierarchyHandler->createItem(path);
+    if (item) {
+        return item;
+    }
+
+    // Maya's handler doesn't create items for DG nodes.  DG gateway nodes
+    // use a null separator (e.g. "nodeName").  Extract the component name
+    // directly — PathSegment::string() prepends the separator, so .c_str()
+    // on a null-separated segment would yield an empty C-string.
+    if (path.nbSegments() >= 1
+        && path.getSegments()[0].separator() == MayaUsd::ufe::DGPathSeparator) {
+        auto           nodeName = path.getSegments()[0].begin()->string();
+        MSelectionList sel;
+        if (sel.add(MString(nodeName.c_str())) == MS::kSuccess) {
+            MObject obj;
+            if (sel.getDependNode(0, obj) == MS::kSuccess && !obj.hasFn(MFn::kDagNode)) {
+                MFnDependencyNode depFn(obj);
+                std::string       nodeType(depFn.typeName().asChar());
+                if (isAGatewayType(nodeType)) {
+                    return std::make_shared<DGGatewaySceneItem>(path, nodeType);
+                }
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 Ufe::Hierarchy::ChildFilter ProxyShapeHierarchyHandler::childFilter() const

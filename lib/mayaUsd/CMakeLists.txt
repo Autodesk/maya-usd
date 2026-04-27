@@ -41,6 +41,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
         $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
+        $<$<BOOL:${MAYA_HAS_SCENE_RENDER_SETTINGS}>:MAYA_HAS_SCENE_RENDER_SETTINGS>
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:WANT_ADSK_USD_ASSET_RESOLVER_BUILD>
@@ -179,6 +180,13 @@ if (UFE_CLIPBOARD_SUPPORT)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
             UFE_CLIPBOARD_SUPPORT=1
+    )
+endif()
+
+if (UFE_SCENEITEM_HAS_METADATA)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_SCENEITEM_HAS_METADATA=1
     )
 endif()
 

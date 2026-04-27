@@ -60,6 +60,13 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapShadingMode.cpp
 )
 
+if(MAYA_HAS_SCENE_RENDER_SETTINGS)
+    target_sources(${PYTHON_TARGET_NAME}
+        PRIVATE
+            wrapSceneRenderSettings.cpp
+    )
+endif()
+
 # Edit as Maya requires UFE path mapping.
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PYTHON_TARGET_NAME}
@@ -78,6 +85,7 @@ target_compile_definitions(${PYTHON_TARGET_NAME}
         MFB_PACKAGE_NAME=${PROJECT_NAME}
         MFB_ALT_PACKAGE_NAME=${PROJECT_NAME}
         MFB_PACKAGE_MODULE=${PROJECT_NAME}
+        $<$<BOOL:${MAYA_HAS_SCENE_RENDER_SETTINGS}>:MAYA_HAS_SCENE_RENDER_SETTINGS>
 )
 
 mayaUsd_compile_config(${PYTHON_TARGET_NAME})

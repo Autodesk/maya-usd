@@ -15,6 +15,9 @@
 //
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+#include <mayaUsd/nodes/sceneRenderSettings.h>
+#endif
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
@@ -48,6 +51,7 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MSelectionList.h>
 #include <ufe/hierarchy.h>
 #include <ufe/object3d.h>
 #include <ufe/object3dHandler.h>
@@ -82,6 +86,8 @@ namespace ufe {
 //------------------------------------------------------------------------------
 
 extern Ufe::Rtid g_MayaRtid;
+
+const char DGPathSeparator = '\0';
 
 // Cache of Maya node types we've queried before for inheritance from the
 // gateway node type.
@@ -191,6 +197,11 @@ bool isAGatewayType(const std::string& mayaNodeType)
         return false;
     }
 
+    // Check if this is the UsdSceneRenderSettings node type.
+    if (isSceneRenderSettingsNode(mayaNodeType)) {
+        return true;
+    }
+
     // If we've seen this node type before, return the cached value.
     auto iter = g_GatewayType.find(mayaNodeType);
     if (iter != std::end(g_GatewayType)) {
@@ -215,11 +226,55 @@ bool isAGatewayType(const std::string& mayaNodeType)
     return isInherited;
 }
 
+bool isSceneRenderSettingsNode(const std::string& mayaNodeType)
+{
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    return mayaNodeType == UsdSceneRenderSettings::typeName.asChar();
+#else
+    return false;
+#endif
+}
+
+bool isReferencedSceneRenderSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath)
+{
+#ifdef MAYA_HAS_SCENE_RENDER_SETTINGS
+    if (!isSceneRenderSettingsNode(mayaNodeType)) {
+        return false;
+    }
+    // The SRS node is a DG node whose UFE path uses a null separator ("nodeName").
+    if (ufePath.empty()) {
+        return false;
+    }
+    MSelectionList sel;
+    if (sel.add(MString(ufePath.back().string().c_str())) != MS::kSuccess) {
+        return false;
+    }
+    MObject obj;
+    if (sel.getDependNode(0, obj) != MS::kSuccess) {
+        return false;
+    }
+    MFnDependencyNode depFn(obj);
+    return depFn.isFromReferencedFile();
+#else
+    return false;
+#endif
+}
+
+void setStageMapDirty() { UsdStageMap::getInstance().setDirty(); }
+
 Ufe::Path dagPathToUfe(const MDagPath& dagPath)
 {
     // This function can only create UFE Maya scene items with a single
     // segment, as it is only given a Dag path as input.
     return Ufe::Path(dagPathToPathSegment(dagPath));
+}
+
+Ufe::Path dgNodeToUfePath(const MObject& object)
+{
+    MFnDependencyNode            depFn(object);
+    Ufe::PathSegment::Components components;
+    components.emplace_back(depFn.name().asChar());
+    return Ufe::Path(Ufe::PathSegment(std::move(components), g_MayaRtid, DGPathSeparator));
 }
 
 Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath)

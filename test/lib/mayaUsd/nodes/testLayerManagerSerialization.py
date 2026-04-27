@@ -158,6 +158,17 @@ class testLayerManagerSerialization(unittest.TestCase):
         self._tempMayaFile = os.path.join(
             self._currentTestDir, 'EmptySerializationTest.ma')
         cmds.file(new=True, force=True)
+
+        # Delete the SceneRenderSettings singleton if present so it doesn't
+        # create a plugin dependency in an otherwise empty scene.
+        srsNodes = cmds.ls(type='mayaUsdSceneRenderSettings')
+        if srsNodes:
+            cmds.undoInfo(stateWithoutFlush=False)
+            for node in srsNodes:
+                cmds.lockNode(node, lock=False)
+                cmds.delete(node)
+            cmds.undoInfo(stateWithoutFlush=True)
+
         cmds.file(rename=self._tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
         cmds.file(new=True, force=True)

@@ -512,7 +512,10 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     MObject   srcMayaObject;
     Ufe::Path srcPath;
     status = parseUfePathArg(argParser, 0, srcPath);
-    if (status != MS::kSuccess) {
+    if ((status == MS::kSuccess) && !srcPath.empty()) {
+        MString text(Ufe::PathString::string(srcPath).c_str());
+        PXR_NS::UsdMayaUtil::GetMObjectByName(text, srcMayaObject);
+    } else {
         status = parseObjectArg(argParser, 0, srcMayaObject);
         if (status != MS::kSuccess) {
             return reportError(status);

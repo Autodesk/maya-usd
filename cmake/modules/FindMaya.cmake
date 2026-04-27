@@ -464,6 +464,12 @@ if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230200)
     message(STATUS "Maya has UFE gizmo drawing")
 endif()
 
+set(MAYA_HAS_SCENE_RENDER_SETTINGS FALSE CACHE INTERNAL "sceneRenderSettings")
+if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20270000)
+    set(MAYA_HAS_SCENE_RENDER_SETTINGS TRUE CACHE INTERNAL "sceneRenderSettings")
+    message(STATUS "Maya has scene render settings support")
+endif()
+
 set(MAYA_LINUX_BUILT_WITH_CXX11_ABI FALSE CACHE INTERNAL "MayaLinuxBuiltWithCxx11ABI")
 if(IS_LINUX AND MAYA_Foundation_LIBRARY)
     # Determine if Maya (on Linux) was built using the new CXX11 ABI.
