@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2024 Autodesk
+# Copyright 2026 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import mayaUsd
 import mayaUsd_createStageWithNewLayer
 
 from maya import standalone
-
-import ufe
 
 import unittest
 
