@@ -51,6 +51,7 @@ class GetStageTestCase(unittest.TestCase):
         stage = mayaUsd.ufe.getStage("")
         self.assertIsNone(stage)
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2025, 'Crash on exit in Maya 2025 or earlier.')
     def testGetStage(self):
         '''Test getStage for a valid stage path gives the same answer as GetPrim().GetStage().'''
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
