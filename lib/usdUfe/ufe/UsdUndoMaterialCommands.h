@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_USDUNDOMATERIALCOMMANDS_H
-#define MAYAUSD_USDUNDOMATERIALCOMMANDS_H
+#ifndef USDUFE_USDUNDOMATERIALCOMMANDS_H
+#define USDUFE_USDUNDOMATERIALCOMMANDS_H
 
-#include <mayaUsd/base/api.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoCreateFromNodeDefCommand.h>
@@ -36,11 +36,10 @@
 #include <map>
 #include <vector>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief BindMaterialUndoableCommand
-class MAYAUSD_CORE_PUBLIC BindMaterialUndoableCommand : public Ufe::UndoableCommand
+class USDUFE_PUBLIC BindMaterialUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     static const std::string commandName;
@@ -49,7 +48,7 @@ public:
 
     BindMaterialUndoableCommand(Ufe::Path primPath, const PXR_NS::SdfPath& materialPath);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(BindMaterialUndoableCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(BindMaterialUndoableCommand);
 
     void execute() override;
     void undo() override;
@@ -63,7 +62,7 @@ private:
 };
 
 //! \brief UnbindMaterialUndoableCommand
-class MAYAUSD_CORE_PUBLIC UnbindMaterialUndoableCommand : public Ufe::UndoableCommand
+class USDUFE_PUBLIC UnbindMaterialUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     static const std::string commandName;
@@ -71,7 +70,7 @@ public:
     UnbindMaterialUndoableCommand(Ufe::Path primPath);
     ~UnbindMaterialUndoableCommand() override;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UnbindMaterialUndoableCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UnbindMaterialUndoableCommand);
 
     void execute() override;
     void undo() override;
@@ -85,7 +84,7 @@ private:
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 //! \brief UsdUndoAssignNewMaterialCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoAssignNewMaterialCommand : public Ufe::InsertChildCommand
+class USDUFE_PUBLIC UsdUndoAssignNewMaterialCommand : public Ufe::InsertChildCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoAssignNewMaterialCommand> Ptr;
@@ -98,7 +97,7 @@ public:
         const std::string&    sdrShaderIdentifier);
     ~UsdUndoAssignNewMaterialCommand() override;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAssignNewMaterialCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAssignNewMaterialCommand);
 
     //! Create a UsdUndoAssignNewMaterialCommand that creates a new material based on
     //! \p sdrShaderIdentifier and assigns it to \p parentItem
@@ -131,7 +130,7 @@ private:
 }; // UsdUndoAssignNewMaterialCommand
 
 //! \brief UsdUndoAddNewMaterialCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoAddNewMaterialCommand : public Ufe::InsertChildCommand
+class USDUFE_PUBLIC UsdUndoAddNewMaterialCommand : public Ufe::InsertChildCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoAddNewMaterialCommand> Ptr;
@@ -141,7 +140,7 @@ public:
         const std::string&               sdrShaderIdentifier);
     ~UsdUndoAddNewMaterialCommand() override;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAddNewMaterialCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAddNewMaterialCommand);
 
     //! Create a UsdUndoAddNewMaterialCommand that creates a new material based on
     //! \p sdrShaderIdentifier and adds it as child of \p parentItem
@@ -174,8 +173,7 @@ private:
 //! \brief This command is used to create a materials scope under a specified parent item. A
 //! materials scope is a USD Scope with a special name (usually "mtl"), which holds materials. By
 //! convention, all materials should reside within such a scope.
-class MAYAUSD_CORE_PUBLIC UsdUndoCreateMaterialsScopeCommand
-    : public Ufe::SceneItemResultUndoableCommand
+class USDUFE_PUBLIC UsdUndoCreateMaterialsScopeCommand : public Ufe::SceneItemResultUndoableCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoCreateMaterialsScopeCommand> Ptr;
@@ -183,7 +181,7 @@ public:
     UsdUndoCreateMaterialsScopeCommand(const UsdUfe::UsdSceneItem::Ptr& parentItem);
     ~UsdUndoCreateMaterialsScopeCommand() override;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateMaterialsScopeCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoCreateMaterialsScopeCommand);
 
     //! Create a UsdUndoCreateMaterialsScopeCommand that creates a new materials scope under \p
     //! parentItem. If there already is a materials scope under \p parentItem, the command will
@@ -208,7 +206,6 @@ private:
 }; // UsdUndoCreateMaterialsScopeCommand
 #endif
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // MAYAUSD_USDUNDOMATERIALCOMMANDS_H
+#endif // USDUFE_USDUNDOMATERIALCOMMANDS_H

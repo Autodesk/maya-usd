@@ -20,7 +20,6 @@ target_sources(${PROJECT_NAME}
         UsdStageMap.cpp
         UsdUIUfeObserver.cpp
         UsdUndoDuplicateCommand.cpp
-        UsdUndoMaterialCommands.cpp
         Utils.cpp
         moduleDeps.cpp
 )
@@ -194,7 +193,6 @@ set(HEADERS
     UsdStageMap.h
     UsdUIUfeObserver.h
     UsdUndoDuplicateCommand.h
-    UsdUndoMaterialCommands.h
     Utils.h
 )
 

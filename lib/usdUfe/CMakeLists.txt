@@ -130,6 +130,7 @@ target_link_libraries(${PROJECT_NAME}
         usdShade
         usdUI
         usdUtils
+        usdMtlx
         vt
         ${UFE_LIBRARY}
 )
