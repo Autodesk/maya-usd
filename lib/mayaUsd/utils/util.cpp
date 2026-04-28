@@ -882,10 +882,7 @@ bool _GetColorAndTransparencyFromStandardSurface(
 }
 
 #ifdef MAYA_HAS_OPENPBR_SURFACE_SHADER
-bool _GetColorAndTransparencyFromOpenPBR(
-    const MObject& shaderObj,
-    GfVec3f*       rgb,
-    float*         alpha)
+bool _GetColorAndTransparencyFromOpenPBR(const MObject& shaderObj, GfVec3f* rgb, float* alpha)
 {
     MStatus                 status;
     MFnOpenPBRSurfaceShader openPbrFn(shaderObj, &status);
