@@ -101,7 +101,7 @@
 #include <cstdlib>
 #include <string>
 #if UFE_CLIPBOARD_SUPPORT
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 #endif
 
 namespace {
@@ -426,7 +426,7 @@ MStatus initialize()
     auto clipboardHandler = std::dynamic_pointer_cast<UsdUfe::UsdClipboardHandler>(
         runTimeMgr.clipboardHandler(usdRtid));
     if (clipboardHandler) {
-        auto clipboardFilePath = ghc::filesystem::temp_directory_path();
+        auto clipboardFilePath = fs::filesystem::temp_directory_path();
         clipboardFilePath.append("MayaUsdClipboard.usd");
         clipboardHandler->setClipboardFilePath(clipboardFilePath.string());
         clipboardHandler->setClipboardFileFormat(MayaUsd::utils::usdFormatArgOption());

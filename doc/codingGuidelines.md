@@ -261,7 +261,7 @@ MayaUsd currently only has the following boost dependencies:
 *Note*: all these Boost dependencies are header only and thus don't require linking to actual Boost libraries.
 
 ***Update:***
-* Use of `boost::filesystem` and `boost::system` are not allowed and have been removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the entire MayaUsd project.
+* Use of `boost::filesystem` and `boost::system` are not allowed and have been removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the entire MayaUsd project. Include the file <ghc/fs_std.hpp> and use `fs::filesystem` which will use `std::filesystem` where available and `ghc::filesystem` where not.
 
 * `boost::hash_combine` is also not allowed and `MayaUsd::hash_combine` should be used instead.
 

@@ -1,3 +1,9 @@
 # Note: This file only work with clang-format v18 and after
 # Skip clang-format of LookdevXUsd for now
-./lib/lookdevXUsd/*
+lib/lookdevXUsd/*
+
+# Ignore some global header files.
+include/cxx17_legacy_support.h
+include/filesystem.hpp
+include/fs_std.hpp
+include/pxr_python.h
