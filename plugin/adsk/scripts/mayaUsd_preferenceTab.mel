@@ -31,7 +31,7 @@ global proc mayaUsd_PrefSaveMayaSceneFilesChanged()
 	if (`text -exists usdPrefSaveOptions2GBWarning`) {
 		string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
 		string $t = ($saveOption == 2) ? `getMayaUsdString($warningKey)` : "";
-		text -e -label $t usdPrefSaveOptions2GBWarning;
+		text -e -align "left" -label $t usdPrefSaveOptions2GBWarning;
 	}
 	if (`checkBoxGrp -exists usdPrefSaveAskMe`) {
 		int $v = `checkBoxGrp -q -v1 usdPrefSaveAskMe`;
@@ -361,7 +361,7 @@ global proc mayaUsd_PrefUpdate()
 
 		string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
 		string $t = ($saveOption == 2) ? `getMayaUsdString($warningKey)` : "";
-		text -e -label $t usdPrefSaveOptions2GBWarning;
+		text -e -align "left" -label $t usdPrefSaveOptions2GBWarning;
 	}
 
 	if (`optionVar -exists mayaUsd_SerializedUsdEditsLocationPrompt`) {

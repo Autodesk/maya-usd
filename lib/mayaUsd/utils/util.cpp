@@ -59,6 +59,9 @@
 #include <maya/MFnSet.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnStandardSurfaceShader.h>
+#ifdef MAYA_HAS_OPENPBR_SURFACE_SHADER
+#include <maya/MFnOpenPBRSurfaceShader.h>
+#endif
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
@@ -878,6 +881,30 @@ bool _GetColorAndTransparencyFromStandardSurface(
     return false;
 }
 
+#ifdef MAYA_HAS_OPENPBR_SURFACE_SHADER
+bool _GetColorAndTransparencyFromOpenPBR(const MObject& shaderObj, GfVec3f* rgb, float* alpha)
+{
+    MStatus                 status;
+    MFnOpenPBRSurfaceShader openPbrFn(shaderObj, &status);
+    if (status == MS::kSuccess) {
+        if (rgb) {
+            GfVec3f displayColor;
+            MColor  color = openPbrFn.baseColor();
+            for (int j = 0; j < 3; j++) {
+                displayColor[j] = color[j];
+            }
+            displayColor *= openPbrFn.baseWeight();
+            *rgb = MayaUsd::utils::ConvertMayaToLinear(displayColor);
+        }
+        if (alpha) {
+            *alpha = openPbrFn.geometryOpacity();
+        }
+        return true;
+    }
+    return false;
+}
+#endif
+
 bool _GetColorAndTransparencyFromDepNode(const MObject& shaderObj, GfVec3f* rgb, float* alpha)
 {
     MStatus           status;
@@ -966,6 +993,13 @@ _getMayaShadersColor(const MObjectArray& shaderObjs, VtVec3fArray* RGBData, VtFl
                                          shaderObjs[i],
                                          RGBData ? &(*RGBData)[i] : nullptr,
                                          AlphaData ? &(*AlphaData)[i] : nullptr)
+
+#ifdef MAYA_HAS_OPENPBR_SURFACE_SHADER
+            || _GetColorAndTransparencyFromOpenPBR(
+                                         shaderObjs[i],
+                                         RGBData ? &(*RGBData)[i] : nullptr,
+                                         AlphaData ? &(*AlphaData)[i] : nullptr)
+#endif
 
             || _GetColorAndTransparencyFromDepNode(
                                          shaderObjs[i],
