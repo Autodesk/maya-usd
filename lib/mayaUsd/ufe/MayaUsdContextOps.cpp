@@ -28,6 +28,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
+#include <usdUfe/ufe/UsdUndoAddReferenceToNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
 #include <usdUfe/ufe/UsdUndoMaterialCommands.h>
@@ -38,7 +39,9 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/fileFormat.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/prim.h>
@@ -103,8 +106,10 @@ static constexpr char kAddNewMaterialLabel[] = "Add New Material";
 static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
 static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material";
 #endif
-static constexpr char kAddRefOrPayloadLabel[] = "Add...";
+static constexpr char kAddRefOrPayloadLabel[] = "Add to Prim...";
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
+static constexpr char kAddRefToNewPrimItem[]  = "AddReferenceToNewPrim";
+static constexpr char kAddRefToNewPrimLabel[] = "Add...";
 const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear...";
 const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPayloads";
 const constexpr char  kReloadReferenceLabel[] = "Reload";
@@ -644,6 +649,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             assignExistingMaterialItems(_item, itemPath, items);
 #endif
         } else if (itemPath[0] == kUSDReferenceItem) {
+            items.emplace_back(kAddRefToNewPrimItem, kAddRefToNewPrimLabel);
             items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
             auto prim = _item->prim();
             if (prim.HasAuthoredReferences() || prim.HasAuthoredPayloads()) {
@@ -757,7 +763,51 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 #endif
 
     if (itemPath.size() == 2u && itemPath[0] == kUSDReferenceItem) {
-        if (itemPath[1] == kAddRefOrPayloadItem) {
+        if (itemPath[1] == kAddRefToNewPrimItem) {
+            if (!_prepareUSDReferenceTargetLayer(prim()))
+                return nullptr;
+
+            MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
+            if (fileRef.length() == 0)
+                return nullptr;
+
+            const std::string path = makeUSDReferenceFilePathRelativeIfRequested(
+                UsdMayaUtil::convert(fileRef), prim());
+            if (path.empty())
+                return nullptr;
+
+            // Derive the new prim name from the referenced filename stem.
+            std::string stem = path;
+            const size_t slash = stem.find_last_of("/\\");
+            if (slash != std::string::npos)
+                stem = stem.substr(slash + 1);
+            const size_t dot = stem.find_last_of('.');
+            if (dot != std::string::npos)
+                stem = stem.substr(0, dot);
+            std::string newPrimName = TfMakeValidIdentifier(stem);
+            if (newPrimName.empty())
+                newPrimName = "Reference";
+
+            // Inspect the referenced layer to determine the default prim type.
+            std::string    newPrimType;
+            SdfLayerRefPtr layer = SdfLayer::FindOrOpen(path);
+            if (layer && layer->HasDefaultPrim()) {
+                const std::string defaultPrimName = layer->GetDefaultPrim().GetString();
+                SdfPrimSpecHandle primSpec
+                    = layer->GetPrimAtPath(SdfPath("/" + defaultPrimName));
+                if (primSpec)
+                    newPrimType = primSpec->GetTypeName().GetString();
+            }
+
+            const std::string refPrimPath = UsdMayaUtilFileSystem::getReferencedPrimPath();
+            const bool        asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
+            const bool        prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
+            const bool        preload = !asRef && UsdMayaUtilFileSystem::wantPayloadLoaded();
+
+            return std::make_shared<UsdUfe::UsdUndoAddReferenceToNewPrimCommand>(
+                prim(), newPrimName, newPrimType, path, refPrimPath, prepend, !asRef, preload);
+
+        } else if (itemPath[1] == kAddRefOrPayloadItem) {
             if (!_prepareUSDReferenceTargetLayer(prim()))
                 return nullptr;
 
