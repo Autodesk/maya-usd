@@ -26,14 +26,20 @@
 #include <pxr/usd/ar/packageUtils.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/assetPath.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/usd/resolver.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/input.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/nodeGraph.h>
+#include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 
 #include <ghc/filesystem.hpp>
 
 #include <sstream>
+#include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,16 +56,64 @@ updateAssetPath(std::string assetPath, std::string resolvedPath, SdfAssetPath* r
     *resolvedAssetPath = SdfAssetPath(assetPath, resolvedPath);
 }
 
+// Resolve SdfAssetPath from a shader input, following UsdShade connections when the
+// value is not authored locally (e.g. UsdUVTexture.inputs:file connected to a Material
+// interface input that holds the asset path).
 static SdfAssetPath handleShaderInput(const UsdShadeInput& usdInput)
 {
-    VtValue val;
-    if (!usdInput.Get(&val))
-        return {};
+    std::unordered_set<std::string> visited;
+    UsdShadeInput                   input = usdInput;
 
-    if (!val.IsHolding<SdfAssetPath>())
-        return {};
+    while (true) {
+        if (!input) {
+            return {};
+        }
 
-    return val.UncheckedGet<SdfAssetPath>();
+        const std::string pathStr = input.GetAttr().GetPath().GetString();
+        if (!visited.insert(pathStr).second) {
+            return {};
+        }
+
+        VtValue val;
+        if (input.Get(&val) && val.IsHolding<SdfAssetPath>()) {
+            return val.UncheckedGet<SdfAssetPath>();
+        }
+
+        UsdShadeConnectableAPI source;
+        TfToken                sourceOutputName;
+        UsdShadeAttributeType  sourceType;
+        if (!UsdShadeConnectableAPI::GetConnectedSource(
+                input, &source, &sourceOutputName, &sourceType)) {
+            return {};
+        }
+
+        UsdShadeNodeGraph sourceNodeGraph = UsdShadeNodeGraph(source.GetPrim());
+        if (sourceNodeGraph) {
+            // Follow through to see if the node graph output is connected:
+            const UsdShadeOutput& ngOutput = sourceNodeGraph.GetOutput(sourceOutputName);
+            if (!ngOutput
+                || !UsdShadeConnectableAPI::GetConnectedSource(
+                    ngOutput, &source, &sourceOutputName, &sourceType)) {
+                return {};
+            }
+        }
+
+        if (sourceType != UsdShadeAttributeType::Input) {
+            return {};
+        }
+
+        if (UsdShadeMaterial mat = UsdShadeMaterial(source.GetPrim())) {
+            input = mat.GetInput(sourceOutputName);
+            continue;
+        }
+
+        if (UsdShadeShader shader = UsdShadeShader(source.GetPrim())) {
+            input = shader.GetInput(sourceOutputName);
+            continue;
+        }
+
+        return {};
+    }
 }
 
 static void handleMissingResolvedPath(SdfAssetPath* resolvedAssetPath)
