@@ -776,29 +776,27 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             if (path.empty())
                 return nullptr;
 
-            // Inspect the referenced layer to determine the default prim name and type.
-            std::string    newPrimName;
+            // Derive the new prim name from the referenced filename stem.
+            std::string stem = path;
+            const size_t slash = stem.find_last_of("/\\");
+            if (slash != std::string::npos)
+                stem = stem.substr(slash + 1);
+            const size_t dot = stem.find_last_of('.');
+            if (dot != std::string::npos)
+                stem = stem.substr(0, dot);
+            std::string newPrimName = TfMakeValidIdentifier(stem);
+            if (newPrimName.empty())
+                newPrimName = "Reference";
+
+            // Inspect the referenced layer to determine the default prim type.
             std::string    newPrimType;
             SdfLayerRefPtr layer = SdfLayer::FindOrOpen(path);
             if (layer && layer->HasDefaultPrim()) {
-                newPrimName = layer->GetDefaultPrim().GetString();
+                const std::string defaultPrimName = layer->GetDefaultPrim().GetString();
                 SdfPrimSpecHandle primSpec
-                    = layer->GetPrimAtPath(SdfPath("/" + newPrimName));
+                    = layer->GetPrimAtPath(SdfPath("/" + defaultPrimName));
                 if (primSpec)
                     newPrimType = primSpec->GetTypeName().GetString();
-            }
-            // Fallback: when no default prim, derive the name from the filename stem.
-            if (newPrimName.empty()) {
-                std::string stem = path;
-                const size_t slash = stem.find_last_of("/\\");
-                if (slash != std::string::npos)
-                    stem = stem.substr(slash + 1);
-                const size_t dot = stem.find_last_of('.');
-                if (dot != std::string::npos)
-                    stem = stem.substr(0, dot);
-                newPrimName = TfMakeValidIdentifier(stem);
-                if (newPrimName.empty())
-                    newPrimName = "Reference";
             }
 
             const std::string refPrimPath = UsdMayaUtilFileSystem::getReferencedPrimPath();
