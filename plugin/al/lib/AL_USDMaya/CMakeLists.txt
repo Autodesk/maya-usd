@@ -200,7 +200,6 @@ target_link_libraries(${LIBRARY_NAME}
     mayaUsd
     usdUfe
     ${UFE_LIBRARY}
-    ghc_filesystem
 )
 
 install(TARGETS ${LIBRARY_NAME}

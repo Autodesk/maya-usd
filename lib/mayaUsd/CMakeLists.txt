@@ -262,7 +262,6 @@ target_link_libraries(${PROJECT_NAME}
         usdUfe
         $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_LIBRARY}>
     PRIVATE
-        ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXCore>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXFormat>

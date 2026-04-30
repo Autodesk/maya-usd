@@ -52,7 +52,7 @@
 #include <maya/MNodeClass.h>
 #include <maya/MTypeId.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <cstdlib>
 #include <mutex>
@@ -1651,7 +1651,7 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const VtDi
             return "";
         }
         if (currentMayaWorkspacePath.length() == 0
-            || !ghc::filesystem::is_directory(currentMayaWorkspacePath.asChar())) {
+            || !fs::filesystem::is_directory(currentMayaWorkspacePath.asChar())) {
             TF_RUNTIME_ERROR(
                 "Could not automatically determine a path to write out USDZ texture imports. "
                 "Please specify a location using the -importUSDZTexturesFilePath argument, or "
@@ -1685,7 +1685,7 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const VtDi
         importTexturesRootDirPath.assign(pathArg);
     }
 
-    if (!ghc::filesystem::is_directory(importTexturesRootDirPath)) {
+    if (!fs::filesystem::is_directory(importTexturesRootDirPath)) {
         TF_RUNTIME_ERROR(
             "The directory specified for USDZ texture imports: %s is not valid.",
             importTexturesRootDirPath.c_str());

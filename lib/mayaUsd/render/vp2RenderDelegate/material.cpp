@@ -89,7 +89,7 @@
 #if (__cplusplus < 201703L)
 #include <boost/functional/hash.hpp>
 #endif
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 #include <tbb/parallel_for.h>
 
 #include <iostream>
@@ -2563,7 +2563,7 @@ void HdVP2Material::CompiledNetwork::Sync(
                           << _GenerateXMLString(dispNet) << "\n";
 
                 if (_surfaceShader) {
-                    auto tmpDir = ghc::filesystem::temp_directory_path();
+                    auto tmpDir = fs::filesystem::temp_directory_path();
                     tmpDir /= "HdVP2Material_";
                     tmpDir += id.GetName();
                     tmpDir += ".txt";
@@ -3418,7 +3418,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::_CreateMaterialXShad
             std::cout << "\t" << primvar << std::endl;
         }
 
-        auto tmpDir = ghc::filesystem::temp_directory_path();
+        auto tmpDir = fs::filesystem::temp_directory_path();
         tmpDir /= "HdVP2Material_";
         tmpDir += materialId.GetName();
         tmpDir += ".txt";

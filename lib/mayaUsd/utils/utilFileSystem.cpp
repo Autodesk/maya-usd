@@ -28,7 +28,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <random>
 #include <system_error>
@@ -54,8 +54,8 @@ std::string generateUniqueName()
 
 struct PostponedRelativeInfo
 {
-    std::set<ghc::filesystem::path> paths;
-    std::set<TfToken>               attrs;
+    std::set<fs::filesystem::path> paths;
+    std::set<TfToken>              attrs;
 };
 
 using PostponedRelativePaths = std::map<PXR_NS::SdfLayerHandle, PostponedRelativeInfo>;
@@ -81,14 +81,14 @@ std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
 
 std::string UsdMayaUtilFileSystem::getDir(const std::string& fullFilePath)
 {
-    return ghc::filesystem::path(fullFilePath).parent_path().string();
+    return fs::filesystem::path(fullFilePath).parent_path().string();
 }
 
 UsdMayaUtilFileSystem::TemporaryCurrentDir::TemporaryCurrentDir(const std::string& newCurDir)
 {
     if (newCurDir.size() > 0) {
-        _previousCurDir = ghc::filesystem::current_path().string();
-        ghc::filesystem::current_path(newCurDir);
+        _previousCurDir = fs::filesystem::current_path().string();
+        fs::filesystem::current_path(newCurDir);
     }
 }
 
@@ -104,7 +104,7 @@ UsdMayaUtilFileSystem::TemporaryCurrentDir::~TemporaryCurrentDir()
 void UsdMayaUtilFileSystem::TemporaryCurrentDir::restore()
 {
     if (_previousCurDir.size() > 0) {
-        ghc::filesystem::current_path(_previousCurDir);
+        fs::filesystem::current_path(_previousCurDir);
         _previousCurDir.clear();
     }
 }
@@ -176,7 +176,7 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
     const std::string& fileName,
     const std::string& relativeToDir)
 {
-    ghc::filesystem::path absolutePath(fileName);
+    fs::filesystem::path absolutePath(fileName);
 
     // If the anchor relative-to-directory doesn't exist yet, use the unchanged path,
     // but don't return a failure. The anchor path being empty is not considered
@@ -186,7 +186,7 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
         return std::make_pair(fileName, true);
     }
 
-    ghc::filesystem::path relativePath = absolutePath.lexically_relative(relativeToDir);
+    fs::filesystem::path relativePath = absolutePath.lexically_relative(relativeToDir);
 
     if (relativePath.empty()) {
         return std::make_pair(fileName, false);
@@ -305,8 +305,8 @@ void UsdMayaUtilFileSystem::markPathAsPostponedRelative(
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            contentPath)
 {
-    ghc::filesystem::path filePath(contentPath);
-    auto&                 postponedRelativePaths = getPostponedRelativePaths();
+    fs::filesystem::path filePath(contentPath);
+    auto&                postponedRelativePaths = getPostponedRelativePaths();
     postponedRelativePaths[layer].paths.insert(filePath.lexically_normal());
 }
 
@@ -317,7 +317,7 @@ void UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(
     auto& postponedRelativePaths = getPostponedRelativePaths();
     auto  layerEntry = postponedRelativePaths.find(layer);
     if (layerEntry != postponedRelativePaths.end()) {
-        ghc::filesystem::path filePath(contentPath);
+        fs::filesystem::path filePath(contentPath);
         layerEntry->second.paths.erase(filePath.lexically_normal());
     }
 }
@@ -358,7 +358,7 @@ void updatePathList(
 {
     for (auto proxy : list) {
         typename TypePolicy::value_type item = proxy;
-        ghc::filesystem::path           filePath(item.GetAssetPath());
+        fs::filesystem::path            filePath(item.GetAssetPath());
         filePath = filePath.lexically_normal();
 
         auto it = layerEntry->second.paths.find(filePath);
@@ -420,10 +420,10 @@ void updatePostponedRelativePathsForPrim(
                 continue;
             }
 
-            VtValue               filePathValue = attr->GetDefaultValue();
-            auto                  filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
-            ghc::filesystem::path filePath(filePathStr);
-            auto                  it = layerEntry->second.paths.find(filePath);
+            VtValue              filePathValue = attr->GetDefaultValue();
+            auto                 filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
+            fs::filesystem::path filePath(filePathStr);
+            auto                 it = layerEntry->second.paths.find(filePath);
             if (it == layerEntry->second.paths.end()) {
                 continue;
             }
@@ -458,7 +458,7 @@ void UsdMayaUtilFileSystem::updatePostponedRelativePaths(
         return;
     }
 
-    auto anchorDir = ghc::filesystem::path(layerFileName).lexically_normal().remove_filename();
+    auto anchorDir = fs::filesystem::path(layerFileName).lexically_normal().remove_filename();
     auto anchorDirStr = anchorDir.generic_string();
 
     // Update sublayer paths
@@ -469,7 +469,7 @@ void UsdMayaUtilFileSystem::updatePostponedRelativePaths(
             continue;
         }
 
-        ghc::filesystem::path filePath(subLayer->GetRealPath());
+        fs::filesystem::path filePath(subLayer->GetRealPath());
         filePath = filePath.lexically_normal();
 
         auto it = layerEntry->second.paths.find(filePath);
@@ -605,8 +605,8 @@ std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     }
 
     std::error_code errorCode;
-    auto            path = ghc::filesystem::canonical(
-        ghc::filesystem::path(currentFileDir).append(relativeFilePath), errorCode);
+    auto            path = fs::filesystem::canonical(
+        fs::filesystem::path(currentFileDir).append(relativeFilePath), errorCode);
 
     if (errorCode) {
         // file does not exist
@@ -623,7 +623,7 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
 {
     const std::string fileNameModel = basename + '-' + generateUniqueName() + '.' + ext;
 
-    ghc::filesystem::path pathModel(dir);
+    fs::filesystem::path pathModel(dir);
     pathModel.append(fileNameModel);
 
     return pathModel.generic_string();
@@ -633,7 +633,7 @@ std::string UsdMayaUtilFileSystem::ensureUniqueFileName(const std::string& filen
 {
     std::string uniqueName = filename;
     while (true) {
-        if (!ghc::filesystem::exists(ghc::filesystem::path(uniqueName)))
+        if (!fs::filesystem::exists(fs::filesystem::path(uniqueName)))
             return uniqueName;
 
         // Algorithm to generate a unique name:
@@ -641,7 +641,7 @@ std::string UsdMayaUtilFileSystem::ensureUniqueFileName(const std::string& filen
         //    2. Replace the filename with the filename plus random text
         //    3. Put the extension back.
 
-        ghc::filesystem::path uniquePath(filename);
+        fs::filesystem::path uniquePath(filename);
 
         const std::string extOnly = uniquePath.extension().generic_string();
         uniquePath = uniquePath.replace_extension();
@@ -686,11 +686,11 @@ std::string UsdMayaUtilFileSystem::increaseNumberSuffix(const std::string& text)
 
 bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
 {
-    if (!ghc::filesystem::is_directory(a)) {
+    if (!fs::filesystem::is_directory(a)) {
         return false;
     }
-    ghc::filesystem::path aPath(a);
-    ghc::filesystem::path bPath(b);
+    fs::filesystem::path aPath(a);
+    fs::filesystem::path bPath(b);
     aPath /= b;
     a.assign(aPath.string());
     return true;
@@ -698,8 +698,8 @@ bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
 
 std::string UsdMayaUtilFileSystem::appendPaths(const std::string& a, const std::string& b)
 {
-    ghc::filesystem::path aPath(a);
-    ghc::filesystem::path bPath(b);
+    fs::filesystem::path aPath(a);
+    fs::filesystem::path bPath(b);
     aPath /= b;
 
     return aPath.string();
@@ -726,28 +726,28 @@ UsdMayaUtilFileSystem::writeToFilePath(const char* filePath, const void* buffer,
 
 void UsdMayaUtilFileSystem::pathStripPath(std::string& filePath)
 {
-    ghc::filesystem::path p(filePath);
-    ghc::filesystem::path filename = p.filename();
+    fs::filesystem::path p(filePath);
+    fs::filesystem::path filename = p.filename();
     filePath.assign(filename.string());
     return;
 }
 
 void UsdMayaUtilFileSystem::pathRemoveExtension(std::string& filePath)
 {
-    ghc::filesystem::path p(filePath);
-    ghc::filesystem::path dir = p.parent_path();
-    ghc::filesystem::path finalPath = dir / p.stem();
+    fs::filesystem::path p(filePath);
+    fs::filesystem::path dir = p.parent_path();
+    fs::filesystem::path finalPath = dir / p.stem();
     filePath.assign(finalPath.string());
     return;
 }
 
 std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
 {
-    ghc::filesystem::path p(filePath);
+    fs::filesystem::path p(filePath);
     if (!p.has_extension()) {
         return std::string();
     }
-    ghc::filesystem::path ext = p.extension();
+    fs::filesystem::path ext = p.extension();
     return ext.string();
 }
 
@@ -777,7 +777,7 @@ std::string UsdMayaUtilFileSystem::FileBackup::getBackupFilename() const
 
 void UsdMayaUtilFileSystem::FileBackup::backup()
 {
-    if (!ghc::filesystem::exists(ghc::filesystem::path(_filename)))
+    if (!fs::filesystem::exists(fs::filesystem::path(_filename)))
         return;
 
     const std::string backupFileName = getBackupFilename();
@@ -806,15 +806,15 @@ void UsdMayaUtilFileSystem::FileBackup::restore()
 
 bool UsdMayaUtilFileSystem::isPathInside(const std::string& parentDir, const std::string& childPath)
 {
-    ghc::filesystem::path parent = ghc::filesystem::weakly_canonical(parentDir);
-    ghc::filesystem::path child = ghc::filesystem::weakly_canonical(childPath);
+    fs::filesystem::path parent = fs::filesystem::weakly_canonical(parentDir);
+    fs::filesystem::path child = fs::filesystem::weakly_canonical(childPath);
 
     // Iterate up from child to root
-    for (ghc::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
+    for (fs::filesystem::path p = child; !p.empty(); p = p.parent_path()) {
         if (p == parent)
             return true;
 
-        ghc::filesystem::path next = p.parent_path();
+        fs::filesystem::path next = p.parent_path();
         if (next == p) // reached root (ex "C:\")
             break;
     }

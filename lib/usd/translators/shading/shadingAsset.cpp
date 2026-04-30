@@ -31,7 +31,7 @@
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/shader.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <sstream>
 
@@ -195,7 +195,7 @@ static bool handleUSDZTexture(
     if (needsUniqueFilename) {
         int         counter = 0;
         std::string checkPath(extractedFilePath);
-        while (ghc::filesystem::is_regular_file(checkPath)) {
+        while (fs::filesystem::is_regular_file(checkPath)) {
             checkPath.assign(extractedFilePath);
             std::string filenameNoExt(checkPath);
             std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
@@ -216,7 +216,7 @@ static bool handleUSDZTexture(
     // If the texture exists on disk already and it is has the same contents, however, we
     // skip overwriting it.
     bool needsWrite = true;
-    if (ghc::filesystem::is_regular_file(extractedFilePath)) {
+    if (fs::filesystem::is_regular_file(extractedFilePath)) {
         FILE* pFile = fopen(extractedFilePath.c_str(), "rb");
         fseek(pFile, 0, SEEK_END);
         long fileSize = ftell(pFile);
@@ -234,7 +234,7 @@ static bool handleUSDZTexture(
         } else {
             int         counter = 0;
             std::string checkPath(extractedFilePath);
-            while (ghc::filesystem::is_regular_file(checkPath)) {
+            while (fs::filesystem::is_regular_file(checkPath)) {
                 checkPath.assign(extractedFilePath);
                 std::string filenameNoExt(checkPath);
                 std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
@@ -289,7 +289,7 @@ static bool handleMakeRelative(
     const bool isForced = (makeRelative || makeAbsolute);
     if (!isForced) {
         const std::string& fileName = originalAssetPath.GetAssetPath();
-        const bool         isAbs = ghc::filesystem::path(fileName).is_absolute();
+        const bool         isAbs = fs::filesystem::path(fileName).is_absolute();
         if (isAbs) {
             makeAbsolute = true;
         } else {
@@ -299,9 +299,9 @@ static bool handleMakeRelative(
 
     // Make the path relative to the project if requested.
     if (makeAbsolute) {
-        std::error_code       ec;
-        ghc::filesystem::path absolutePath
-            = ghc::filesystem::absolute(resolvedAssetPath->GetAssetPath(), ec);
+        std::error_code      ec;
+        fs::filesystem::path absolutePath
+            = fs::filesystem::absolute(resolvedAssetPath->GetAssetPath(), ec);
         if (!ec && !absolutePath.empty()) {
             const std::string absPath = absolutePath.generic_string();
             updateAssetPath(absPath, absPath, resolvedAssetPath);
