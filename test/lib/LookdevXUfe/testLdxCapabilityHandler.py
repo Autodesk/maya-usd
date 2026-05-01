@@ -64,10 +64,10 @@ class CapabilityHandlerTestCase(unittest.TestCase):
         ldxCaps = ufe.extensions.lookdevXUfe.CapabilityHandler.get(rid)
         self.assertIsNotNone(ldxCaps)
 
-        self.assertTrue(ldxCaps.hasCapability(ufe.extensions.lookdevXUfe.CapabilityHandler.kCanPromoteToMaterial))
-        self.assertTrue(ldxCaps.hasCapability(ufe.extensions.lookdevXUfe.CapabilityHandler.kCanPromoteInputAtTopLevel))
-        self.assertTrue(ldxCaps.hasCapability(ufe.extensions.lookdevXUfe.CapabilityHandler.kCanHaveNestedNodeGraphs))
-        self.assertFalse(ldxCaps.hasCapability(ufe.extensions.lookdevXUfe.CapabilityHandler.kCanUseCreateShaderCommandForComponentConnections))
+        self.assertTrue(ldxCaps.hasCapability(ufe.extensions.lookdevXUfe.CapabilityHandler.Capability.kCanPromoteToMaterial))
+        self.assertTrue(ldxCaps.hasCapability(ufe.extensions.lookdevXUfe.CapabilityHandler.Capability.kCanPromoteInputAtTopLevel))
+        self.assertTrue(ldxCaps.hasCapability(ufe.extensions.lookdevXUfe.CapabilityHandler.Capability.kCanHaveNestedNodeGraphs))
+        self.assertFalse(ldxCaps.hasCapability(ufe.extensions.lookdevXUfe.CapabilityHandler.Capability.kCanUseCreateShaderCommandForComponentConnections))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
