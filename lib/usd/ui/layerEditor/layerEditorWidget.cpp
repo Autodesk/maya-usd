@@ -365,6 +365,19 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         _actions._displayLayerExpandAllValues->setCheckable(true);
         _actions._displayLayerExpandAllValues->setChecked(ss->diplayLayerExpandAllValues());
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        optionMenu->addSeparator();
+        _actions._echoEditForwarding = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kEchoEditForwarding));
+        QObject::connect(
+            _actions._echoEditForwarding,
+            &QAction::toggled,
+            ss,
+            &SessionState::setEchoEditForwarding);
+        _actions._echoEditForwarding->setCheckable(true);
+        _actions._echoEditForwarding->setChecked(ss->echoEditForwarding());
+#endif
+
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
         helpMenu->addAction(
             StringResources::getAsQString(StringResources::kHelpOnUSDLayerEditor),

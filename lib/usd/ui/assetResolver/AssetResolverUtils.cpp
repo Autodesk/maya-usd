@@ -25,7 +25,7 @@
 #include <AdskAssetResolver/AdskAssetResolver.h>
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #include <AdskAssetResolver/AssetResolverContextExtension.h>
-#include <AssetResolverWidgets/Settings/AssetResolverSettingsManagement.h>
+#include <AssetResolverExtensions/Settings/AssetResolverSettingsManagement.h>
 
 namespace MAYAUSD_NS_DEF {
 

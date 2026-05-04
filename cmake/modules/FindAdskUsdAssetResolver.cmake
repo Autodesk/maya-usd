@@ -49,7 +49,7 @@ find_library(ADSK_USD_ASSET_RESOLVER_LIBRARY
 )
 find_library(ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY
     NAMES
-        AssetResolverWidgets
+        AssetResolverExtensions
     HINTS
         $ENV{ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
         ${ADSK_USD_ASSET_RESOLVER_ROOT_DIR}

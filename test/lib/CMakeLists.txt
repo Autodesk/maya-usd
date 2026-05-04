@@ -110,6 +110,31 @@ else()
     endif()
 endif()
 
+if (AdskUsdAssetResolver_FOUND)
+    # Install a test to verify Asset Resolver integration works correctly.
+    set(ASSET_RESOLVER_TEST_SCRIPT_FILES
+        testAdskAssetResolver.py
+    )
+    foreach(script ${ASSET_RESOLVER_TEST_SCRIPT_FILES})
+        mayaUsd_get_unittest_target(target ${script})
+        mayaUsd_add_test(${target}
+            INTERACTIVE
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            PYTHON_SCRIPT ${script}
+            ENV
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}:${PXR_USD_LOCATION}/lib"
+                "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+                "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
+        )
+        set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+    endforeach()
+else()
+    # If MAYAUSD_FORCE_AR_TEST is set to 1, fail the build when Asset Resolver is not found
+    if (DEFINED ENV{MAYAUSD_FORCE_AR_TEST} AND "$ENV{MAYAUSD_FORCE_AR_TEST}" STREQUAL "1")
+        message(FATAL_ERROR "MAYAUSD_FORCE_AR_TEST is set to 1 but AdskUsdAssetResolver was not found. ")
+    endif()
+endif()
+
 foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}

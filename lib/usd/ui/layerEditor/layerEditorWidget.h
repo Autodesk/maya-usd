@@ -87,6 +87,9 @@ protected:
         QAction* _autoHide { nullptr };
         QAction* _displayLayerContents { nullptr };
         QAction* _displayLayerExpandAllValues { nullptr };
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        QAction* _echoEditForwarding { nullptr };
+#endif
     } _actions;
     void updateNewLayerButton();
     void updateButtons();

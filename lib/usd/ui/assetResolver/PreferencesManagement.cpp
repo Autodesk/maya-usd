@@ -27,8 +27,8 @@
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
-#include <AssetResolverWidgets/Settings/AssetResolverSettings.h>
-#include <AssetResolverWidgets/Settings/AssetResolverSettingsManagement.h>
+#include <AssetResolverExtensions/Settings/AssetResolverSettings.h>
+#include <AssetResolverExtensions/Settings/AssetResolverSettingsManagement.h>
 
 #include <algorithm>
 

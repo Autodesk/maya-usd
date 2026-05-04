@@ -48,7 +48,7 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -466,17 +466,17 @@ public:
             }
 
             // See if the path should be reparented
-            ghc::filesystem::path filePath(_path);
-            bool                  needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_path);
+            fs::filesystem::path filePath(_path);
+            bool                 needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_path);
             needsRepathing &= filePath.is_relative();
             needsRepathing &= !layer->GetRealPath().empty();
             needsRepathing &= !newParentLayer->GetRealPath().empty();
 
             // Reparent the path if needed
             if (needsRepathing) {
-                auto oldLayerDir = ghc::filesystem::path(layer->GetRealPath()).remove_filename();
+                auto oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
                 auto newLayerDir
-                    = ghc::filesystem::path(newParentLayer->GetRealPath()).remove_filename();
+                    = fs::filesystem::path(newParentLayer->GetRealPath()).remove_filename();
 
                 std::string absolutePath
                     = (oldLayerDir / filePath).lexically_normal().generic_string();

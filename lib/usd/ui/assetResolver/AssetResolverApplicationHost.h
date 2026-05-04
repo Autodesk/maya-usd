@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <AssetResolverWidgets/ApplicationHost.h>
+#include <AssetResolverExtensions/ApplicationHost.h>
 
 class AssetResolverApplicationHost : public Adsk::ApplicationHost
 {

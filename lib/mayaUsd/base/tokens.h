@@ -82,6 +82,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((AdskAssetResolverUserPathsOnly, "mayaUsd_AdskAssetResolverUserPathsOnly")) \
     /* option var to remember if the Layer Editor is show/hiding the Session Layer */ \
     ((LayerEditorAutoHideSessionLayer, "MayaUSDLayerEditor_AutoHideSessionLayer")) \
+    /* option var to remember if the Layer Editor is echoing edit forward operations */ \
+    ((LayerEditorEchoEditForwarding, "MayaUSDLayerEditor_EchoEditForwarding")) \
     /* option var to remember if the Layer Editor is displaying the layer contents */ \
     ((LayerEditorDisplayLayerContents, "MayaUSDLayerEditor_DisplayLayerContents")) \
     /* option var to remember if the Layer Editor contents is expanded to show all values or not */ \

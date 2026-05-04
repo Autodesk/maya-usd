@@ -42,7 +42,7 @@
 
 #include <maya/MFnPlugin.h>
 
-#include <AssetResolverWidgets/PathDialog/PathDialog.h>
+#include <AssetResolverExtensions/PathDialog/PathDialog.h>
 #include <QtCore/QPointer>
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
@@ -80,8 +80,12 @@ MStatus AssetResolverDialogCmd::initialize(MFnPlugin& plugin)
 /*static*/
 MStatus AssetResolverDialogCmd::finalize(MFnPlugin& plugin)
 {
+    // Destroy the dialog synchronously here (rather than relying on deleteLater
+    // via close()) so that its captured functors, which point into this
+    // plugin's binary, cannot fire after the plugin is unloaded.
     if (g_assetResolverDialog) {
-        g_assetResolverDialog->close();
+        delete g_assetResolverDialog.data();
+        g_assetResolverDialog.clear();
     }
     return plugin.deregisterCommand(name);
 }
@@ -99,7 +103,19 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
             g_assetResolverDialog = new Adsk::AssetResolverPathDialog(MQtUtil::mainWindow());
-            g_assetResolverDialog->setAttribute(Qt::WA_DeleteOnClose);
+            // Intentionally do NOT set Qt::WA_DeleteOnClose. That attribute
+            // schedules deletion via deleteLater(), which races with:
+            //   * the user reinvoking this command before the deferred delete
+            //     runs (g_assetResolverDialog is still non-null until ~QObject
+            //     actually starts, so we'd re-show a dialog that is queued for
+            //     destruction);
+            //   * pending events / signals on child widgets firing during
+            //     deferred destruction;
+            //   * plugin unload happening before the deferred delete runs,
+            //     leaving the captured functors below dangling.
+            // Instead we keep the dialog alive across closes (Qt's default
+            // closeEvent just hides it) and destroy it explicitly in
+            // finalize().
 
             g_assetResolverDialog->setGetStagesFunctor([]() {
                 auto allStages = ufe::UsdStageMap::getInstance().allStages();
@@ -113,9 +129,7 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
                 return stages;
             });
 
-            QObject::connect(
-                g_assetResolverDialog,
-                &Adsk::AssetResolverPathDialog::settingsApplied,
+            g_assetResolverDialog->setSettingsAppliedFunctor(
                 PreferencesManagement::SaveUsdPreferences);
 
             QApplication::restoreOverrideCursor();

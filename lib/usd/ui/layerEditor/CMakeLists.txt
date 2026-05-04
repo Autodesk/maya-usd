@@ -64,14 +64,6 @@ target_sources(${PROJECT_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# link libraries
-# -----------------------------------------------------------------------------
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        ghc_filesystem
-)
-
-# -----------------------------------------------------------------------------
 # MSVC fix: avoid ambiguous qfloat16 arithmetic operators pulled by Qt headers
 # Only needed for <= VS2017 
 # -----------------------------------------------------------------------------
