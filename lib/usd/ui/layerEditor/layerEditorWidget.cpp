@@ -64,7 +64,12 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
-LayerEditorWidget::~LayerEditorWidget() { TfNotice::Revoke(_layerChangedKey); }
+LayerEditorWidget::~LayerEditorWidget()
+{
+    TfNotice::Revoke(_layerChangedKey);
+    disconnect(
+        qApp, &QApplication::focusChanged, this, &LayerEditorWidget::updateTreeContainerBorder);
+}
 
 LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow* in_parent)
     : QWidget(in_parent)
@@ -231,33 +236,20 @@ void LayerEditorWidget::setupLayout()
 
         // Wrap the banner and tree view together in a framed container so they
         // share the same border.
-        auto treeContainer = new QFrame(mainVWidget);
-        treeContainer->setFrameShape(QFrame::NoFrame);
-        treeContainer->setFocusPolicy(Qt::NoFocus);
-        treeContainer->setObjectName("layerEditorTreeContainer");
+        _treeContainer = new QFrame(mainVWidget);
+        _treeContainer->setFrameShape(QFrame::NoFrame);
+        _treeContainer->setFocusPolicy(Qt::NoFocus);
+        _treeContainer->setObjectName("layerEditorTreeContainer");
+        updateTreeContainerStyle(false);
 
-        // Also mimic the selection highlight of treeview around both the banner and tree.
-        QString baseStyle
-            = "QFrame#layerEditorTreeContainer { border: 2px solid rgb(55, 55, 55); }";
-        QString focusStyle
-            = "QFrame#layerEditorTreeContainer { border: 1px solid palette(highlight); }";
-        auto updateTreeContainerBorder
-            = [treeContainer, baseStyle, focusStyle](QWidget*, QWidget* now) {
-                  const bool focused = now && treeContainer->isAncestorOf(now);
-                  treeContainer->setStyleSheet(focused ? focusStyle : baseStyle);
-                  // When highlighted we want the border to be a single pixel wide, so adjust the
-                  // margin to avoid the content moving.
-                  const int m = focused ? 1 : 0;
-                  treeContainer->layout()->setContentsMargins(m, m, m, m);
-              };
-        treeContainer->setStyleSheet(baseStyle);
+        connect(
+            qApp, &QApplication::focusChanged, this, &LayerEditorWidget::updateTreeContainerBorder);
 
-        connect(qApp, &QApplication::focusChanged, treeContainer, updateTreeContainerBorder);
-        auto treeContainerLayout = new QVBoxLayout(treeContainer);
+        auto treeContainerLayout = new QVBoxLayout(_treeContainer);
         treeContainerLayout->setSpacing(0);
         treeContainerLayout->setContentsMargins(0, 0, 0, 0);
 
-        _editForwardBanner = new QLabel(treeContainer);
+        _editForwardBanner = new QLabel(_treeContainer);
         _editForwardBanner->setText(
             StringResources::getAsQString(StringResources::kEditForwardBanner));
         _editForwardBanner->setWordWrap(true);
@@ -274,7 +266,7 @@ void LayerEditorWidget::setupLayout()
         _treeView->setFrameShape(QFrame::NoFrame);
         treeContainerLayout->addWidget(_treeView);
 
-        mainVLayout->addWidget(treeContainer);
+        mainVLayout->addWidget(_treeContainer);
 
         mainVWidget->setLayout(mainVLayout);
         mainHSplitter->addWidget(mainVWidget);
@@ -312,6 +304,38 @@ void LayerEditorWidget::setupLayout()
     updateNewLayerButton();
     updateButtons();
     updateEditForwardBanner();
+}
+
+void LayerEditorWidget::updateTreeContainerBorder(QWidget*, QWidget* now)
+{
+    if (!_treeContainer)
+        return;
+
+    const bool focused = now && _treeContainer->isAncestorOf(now);
+    updateTreeContainerStyle(focused);
+}
+
+void LayerEditorWidget::updateTreeContainerStyle(bool focused)
+{
+    // Also mimic the selection highlight of treeview around both the banner and tree.
+    static const QString baseStyle
+        = "QFrame#layerEditorTreeContainer { border: 2px solid rgb(55, 55, 55); }";
+    static const QString focusStyle
+        = "QFrame#layerEditorTreeContainer { border: 1px solid palette(highlight); }";
+
+    if (!_treeContainer)
+        return;
+
+    _treeContainer->setStyleSheet(focused ? focusStyle : baseStyle);
+
+    // When highlighted we want the border to be a single pixel wide, so adjust the
+    // margin to avoid the content moving.
+    auto layout = _treeContainer->layout();
+    if (!layout)
+        return;
+
+    const int margin = focused ? 1 : 0;
+    layout->setContentsMargins(margin, margin, margin, margin);
 }
 
 // create the default menus on the parent QMainWindow

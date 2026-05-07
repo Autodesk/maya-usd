@@ -663,6 +663,35 @@ void removeSessionLeftOvers(
 USDUFE_PUBLIC
 PXR_NS::Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childFilter);
 
+//! Guard to set and reset a flag indicating that we are in a command
+//! that does not use a UsdUndoBlock but still wants edit-forwarding.
+class USDUFE_PUBLIC NoUsdUndoBlockGuard
+{
+public:
+    NoUsdUndoBlockGuard(bool noUsdUndoBlock)
+        : _noUsdUndoBlock(noUsdUndoBlock)
+    {
+        if (_noUsdUndoBlock)
+            _getGuardedFlag()++;
+    }
+    ~NoUsdUndoBlockGuard()
+    {
+        if (_noUsdUndoBlock)
+            _getGuardedFlag()--;
+    }
+
+    static bool wantsForwarding() { return _getGuardedFlag() > 0; }
+
+private:
+    static int& _getGuardedFlag()
+    {
+        static int flag = 0;
+        return flag;
+    }
+
+    bool _noUsdUndoBlock;
+};
+
 } // namespace USDUFE_NS_DEF
 
 #endif // USDUFE_UFE_UTILS_H

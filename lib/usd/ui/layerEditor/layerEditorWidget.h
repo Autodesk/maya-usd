@@ -98,8 +98,11 @@ protected:
 
     void timerEvent(QTimerEvent* event) override;
     void updateLayerContentsWidget();
+    void updateTreeContainerStyle(bool focused);
+    void updateTreeContainerBorder(QWidget* previous, QWidget* now);
 
 private:
+    QPointer<QFrame>              _treeContainer;
     QPointer<LayerTreeView>       _treeView;
     QPointer<LayerContentsWidget> _layerContents;
     QBasicTimer                   _layerContentsTimer;
