@@ -1332,7 +1332,7 @@ class ReparentInComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/root/geo/NewGrandparent/Parent/Child2').IsValid())
 
     def testReparentRestrictionToOutsideComponentScope(self):
-        '''Test reparent restriction - cannot reparent prims to outside component scopes.'''
+        '''Reparenting a prim to a destination outside the component scopes must be rejected.'''
         import AdskUsdComponentCreator
 
         proxyShapePath, desc = self._createComponent()
@@ -1346,25 +1346,50 @@ class ReparentInComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
         self.assertTrue(
             AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
 
-        # Create a prim inside the geo scope and a parent outside.
+        # Create a prim inside the geo scope and a destination outside any scope.
         child = stage.DefinePrim('/root/geo/Child', 'Xform')
         outsideParent = stage.DefinePrim('/root/OutsideScope', 'Xform')
         self.assertTrue(child.IsValid())
         self.assertTrue(outsideParent.IsValid())
 
-        # Try to reparent the prim to outside the scope - this should succeed
-        # because the child is within the scope (source validation passes).
-        # But the operation itself might fail or succeed depending on the implementation.
-        # In component stages, we validate the child being moved, not the destination.
-        # So this should actually work - the child can be moved anywhere.
-        cmds.parent(proxyShapePath + ',/root/geo/Child', proxyShapePath + ',/root/OutsideScope')
+        # Reparenting to a destination outside the component scopes must be rejected.
+        with self.assertRaises(Exception):
+            cmds.parent(
+                proxyShapePath + ',/root/geo/Child',
+                proxyShapePath + ',/root/OutsideScope')
 
-        # Verify the child was moved.
-        self.assertFalse(stage.GetPrimAtPath('/root/geo/Child').IsValid())
-        self.assertTrue(stage.GetPrimAtPath('/root/OutsideScope/Child').IsValid())
+        # Verify the prim was not moved.
+        self.assertTrue(stage.GetPrimAtPath('/root/geo/Child').IsValid())
+        self.assertFalse(stage.GetPrimAtPath('/root/OutsideScope/Child').IsValid())
 
-        # Undo to clean up.
-        cmds.undo()
+    def testReparentRestrictionToRootPrim(self):
+        '''Reparenting a prim directly under the root prim must be rejected.'''
+        import AdskUsdComponentCreator
+
+        proxyShapePath, desc = self._createComponent()
+        stage = mayaUsd.ufe.getStage(proxyShapePath)
+        self.assertTrue(stage)
+
+        # Target the 'default' variant.
+        variantSets = desc.GetVariantSets()
+        vsDesc = variantSets['model']
+        variantDesc = vsDesc.GetVariantDescription('default')
+        self.assertTrue(
+            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+
+        # Create a prim inside the geo scope.
+        child = stage.DefinePrim('/root/geo/Child', 'Xform')
+        self.assertTrue(child.IsValid())
+
+        # Reparenting directly under the root prim must be rejected.
+        with self.assertRaises(Exception):
+            cmds.parent(
+                proxyShapePath + ',/root/geo/Child',
+                proxyShapePath + ',/root')
+
+        # Verify the prim was not moved.
+        self.assertTrue(stage.GetPrimAtPath('/root/geo/Child').IsValid())
+        self.assertFalse(stage.GetPrimAtPath('/root/Child').IsValid())
 
     def testReparentRestrictionComponentScopeItself(self):
         '''Test reparent restriction - cannot reparent the component scope prims themselves.'''

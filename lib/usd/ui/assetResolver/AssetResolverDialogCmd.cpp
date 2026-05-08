@@ -60,6 +60,9 @@ constexpr auto kTabFlagLong = "-tabName";
 constexpr auto kPathsTabName = "paths";
 constexpr auto kSettingsTabName = "globalSettings";
 
+constexpr auto kProxyShapeFlag = "-ps";
+constexpr auto kProxyShapeFlagLong = "-proxyShape";
+
 MString parseTextArg(const MArgParser& argData, const char* flag, const MString& defaultValue)
 {
     MString value = defaultValue;
@@ -98,6 +101,7 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
 
     if (st) {
         const MString tabName = parseTextArg(argData, kTabFlag, kPathsTabName);
+        const MString proxyShapePath = parseTextArg(argData, kProxyShapeFlag, MString());
 
         if (!g_assetResolverDialog) {
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
@@ -135,6 +139,15 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
             QApplication::restoreOverrideCursor();
         }
 
+        // If a proxy shape was provided, resolve it to a stage and select it
+        // in the dialog. If resolution fails, leave whatever the dialog
+        // currently has selected untouched.
+        if (proxyShapePath.length() > 0) {
+            if (auto stage = UsdMayaUtil::GetStageByProxyName(proxyShapePath.asChar())) {
+                g_assetResolverDialog->setCurrentStage(stage);
+            }
+        }
+
         g_assetResolverDialog->setCurrentTab(
             tabName == kSettingsTabName ? Adsk::AssetResolverPathDialog::Tab::GlobalSettings
                                         : Adsk::AssetResolverPathDialog::Tab::Paths);
@@ -154,6 +167,7 @@ MSyntax AssetResolverDialogCmd::createSyntax()
     syntax.enableQuery(true);
     syntax.enableEdit(false);
     syntax.addFlag(kTabFlag, kTabFlagLong, MSyntax::kString);
+    syntax.addFlag(kProxyShapeFlag, kProxyShapeFlagLong, MSyntax::kString);
 
     syntax.setObjectType(MSyntax::kStringObjects, 0, 1);
     return syntax;

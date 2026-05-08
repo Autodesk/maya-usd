@@ -139,8 +139,8 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
 
     // Check component-specific restrictions
     if (isComponentStage(_ufeSrcPath)) {
-        // Components only allow reparenting prims from payloads
         UsdUfe::validateComponentNamespaceOperation(childPrim, "reparent");
+        UsdUfe::validateComponentNamespaceOperation(parentPrim, "reparent", /*isDestination=*/true);
     } else {
         // Apply restriction rules for non-component stages
         UsdUfe::applyCommandRestriction(childPrim, "reparent");

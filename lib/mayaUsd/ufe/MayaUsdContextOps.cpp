@@ -75,6 +75,10 @@ namespace {
 #ifdef WANT_QT_BUILD
 static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
 static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor";
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
+static constexpr char kAssetResolverDialogItem[] = "Asset Resolver Dialog";
+static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor...";
+#endif
 #endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -511,6 +515,14 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         // Top-level item - USD Layer editor (for all context op types).
         // Only available when building with Qt enabled.
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
+        // Top-level item - USD Path Editor (Asset Resolver dialog).
+        // Only shown on the stage root (gateway type), since the dialog
+        // operates at the stage / resolver level rather than on a specific prim.
+        if (_isAGatewayType) {
+            items.emplace_back(kAssetResolverDialogItem, kAssetResolverDialogLabel);
+        }
+#endif
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -744,16 +756,28 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     // When building without Qt there is no LayerEditor
     if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.
-        auto ufePath = ufe::stagePath(prim().GetStage());
-        auto noWorld = ufePath.popHead().string();
-        auto dagPath = UsdMayaUtil::nameToDagPath(noWorld);
-        auto shapePath = dagPath.fullPathName();
+        auto       ufePath = ufe::stagePath(prim().GetStage());
+        const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
+        auto       shapePath = dagPath.fullPathName();
 
         MString script;
         script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
         MGlobal::executeCommand(script);
         return nullptr;
     }
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
+    if (itemPath[0] == kAssetResolverDialogItem) {
+        // Passing the selected stage to the asset resolver dialog
+        auto       ufePath = ufe::stagePath(prim().GetStage());
+        const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
+        auto       shapePath = dagPath.fullPathName();
+        // Open the Asset Resolver dialog (paths tab).
+        MString script;
+        script.format("assetResolverDialog -tab \"paths\" -proxyShape \"^1s\"", shapePath);
+        MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ false);
+        return nullptr;
+    }
+#endif
 #endif
 
     if (itemPath.size() == 2u && itemPath[0] == kUSDReferenceItem) {

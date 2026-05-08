@@ -1921,7 +1921,8 @@ bool setComponentVariantSelection(
 
 void validateComponentNamespaceOperation(
     const PXR_NS::UsdPrim& prim,
-    const std::string&     operationName)
+    const std::string&     operationName,
+    bool                   isDestination)
 {
     const PXR_NS::UsdStagePtr stage = prim.GetStage();
     if (!stage) {
@@ -1957,10 +1958,11 @@ void validateComponentNamespaceOperation(
         scopePaths.push_back(defaultPrimPath.AppendChild(PXR_NS::TfToken(meshScopeName)));
     }
 
-    // Check if the prim path is contained within any of the scope paths
+    // Check if the prim path is contained within any of the scope paths.
+    // For destinations (reparent targets), the scope root itself is also valid.
     for (const PXR_NS::SdfPath& scopePath : scopePaths) {
-        // Check if prim path is not equal to the scope_path and a descendant of the scope path
-        if (primPath != scopePath && primPath.HasPrefix(scopePath)) {
+        if (isDestination ? primPath.HasPrefix(scopePath)
+                          : (primPath != scopePath && primPath.HasPrefix(scopePath))) {
             return;
         }
     }
