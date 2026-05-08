@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "ProxyShapeHierarchy.h"
+#include "GatewayHierarchy.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
@@ -66,27 +66,27 @@ UsdPrimSiblingRange getUSDFilteredChildren(
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Hierarchy, ProxyShapeHierarchy);
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::Hierarchy, GatewayHierarchy);
 
 //------------------------------------------------------------------------------
-// ProxyShapeHierarchy
+// GatewayHierarchy
 //------------------------------------------------------------------------------
 
-ProxyShapeHierarchy::ProxyShapeHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
+GatewayHierarchy::GatewayHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
     : Ufe::Hierarchy()
     , _mayaHierarchyHandler(mayaHierarchyHandler)
 {
 }
 
 /*static*/
-ProxyShapeHierarchy::Ptr
-ProxyShapeHierarchy::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
+GatewayHierarchy::Ptr
+GatewayHierarchy::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
 {
-    return std::make_shared<ProxyShapeHierarchy>(mayaHierarchyHandler);
+    return std::make_shared<GatewayHierarchy>(mayaHierarchyHandler);
 }
 
 /*static*/
-ProxyShapeHierarchy::Ptr ProxyShapeHierarchy::create(
+GatewayHierarchy::Ptr GatewayHierarchy::create(
     const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler,
     const Ufe::SceneItem::Ptr&        item)
 {
@@ -95,7 +95,7 @@ ProxyShapeHierarchy::Ptr ProxyShapeHierarchy::create(
     return hierarchy;
 }
 
-void ProxyShapeHierarchy::setItem(const Ufe::SceneItem::Ptr& item)
+void GatewayHierarchy::setItem(const Ufe::SceneItem::Ptr& item)
 {
     // Our USD root prim is from the stage, which is from the item. So if we are
     // changing the item, it's possible that we won't have the same stage (and
@@ -107,7 +107,7 @@ void ProxyShapeHierarchy::setItem(const Ufe::SceneItem::Ptr& item)
     _mayaHierarchy = _mayaHierarchyHandler->hierarchy(item);
 }
 
-const UsdPrim& ProxyShapeHierarchy::getUsdRootPrim() const
+const UsdPrim& GatewayHierarchy::getUsdRootPrim() const
 {
     if (!_usdRootPrim.IsValid()) {
         // FIXME During AL_usdmaya_ProxyShapeImport, nodes (both Maya
@@ -126,11 +126,11 @@ const UsdPrim& ProxyShapeHierarchy::getUsdRootPrim() const
 // Ufe::Hierarchy overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::sceneItem() const { return _item; }
+Ufe::SceneItem::Ptr GatewayHierarchy::sceneItem() const { return _item; }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 
-bool ProxyShapeHierarchy::hasChildren() const
+bool GatewayHierarchy::hasChildren() const
 {
     // We have an extra logic in createUFEChildList to remap and filter
     // prims. Going this direction is more costly, but easier to maintain.
@@ -140,7 +140,7 @@ bool ProxyShapeHierarchy::hasChildren() const
     return !children().empty();
 }
 
-bool ProxyShapeHierarchy::hasFilteredChildren(const ChildFilter& childFilter) const
+bool GatewayHierarchy::hasFilteredChildren(const ChildFilter& childFilter) const
 {
     // We have an extra logic in createUFEChildList to remap and filter
     // prims. Going this direction is more costly, but easier to maintain.
@@ -152,7 +152,7 @@ bool ProxyShapeHierarchy::hasFilteredChildren(const ChildFilter& childFilter) co
 
 #else
 
-bool ProxyShapeHierarchy::hasChildren() const
+bool GatewayHierarchy::hasChildren() const
 {
     // Return children of the USD root.
     const UsdPrim& rootPrim = getUsdRootPrim();
@@ -169,7 +169,7 @@ bool ProxyShapeHierarchy::hasChildren() const
 
 #endif
 
-Ufe::SceneItemList ProxyShapeHierarchy::children() const
+Ufe::SceneItemList GatewayHierarchy::children() const
 {
     // Return children of the USD root.
     const UsdPrim& rootPrim = getUsdRootPrim();
@@ -179,7 +179,7 @@ Ufe::SceneItemList ProxyShapeHierarchy::children() const
     return createUFEChildList(getUSDFilteredChildren(rootPrim), true /*filterInactive*/);
 }
 
-Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& childFilter) const
+Ufe::SceneItemList GatewayHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {
     // Return filtered children of the USD root.
     const UsdPrim& rootPrim = getUsdRootPrim();
@@ -192,11 +192,10 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
 
 // Return UFE child list from input USD child list.
 Ufe::SceneItemList
-ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool filterInactive) const
+GatewayHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool filterInactive) const
 {
-    // We must create selection items for our children.  These will have as
-    // path the path of the proxy shape, with a single path segment of a
-    // single component appended to it.
+    // Selection items for the gateway node's USD children share its UFE path
+    // and append a single-component USD path segment for the child prim name.
     auto               parentPath = _item->path();
     Ufe::SceneItemList children;
     UFE_V3(std::string dagPathStr;)
@@ -237,11 +236,16 @@ ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool f
     return children;
 }
 
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const { return _mayaHierarchy->parent(); }
+Ufe::SceneItem::Ptr GatewayHierarchy::parent() const
+{
+    // _mayaHierarchy may be null for pure DG gateway nodes (e.g.
+    // UsdDefaultRenderSettings) because Maya's hierarchy handler only
+    // handles DAG nodes.
+    return _mayaHierarchy ? _mayaHierarchy->parent() : nullptr;
+}
 
-Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
-    const Ufe::SceneItem::Ptr& child,
-    const Ufe::SceneItem::Ptr& pos)
+Ufe::InsertChildCommand::Ptr
+GatewayHierarchy::insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
 {
     // UsdUndoInsertChildCommand expects a UsdSceneItem which wraps a prim, so
     // create one using the pseudo-root and our own path.
@@ -251,14 +255,14 @@ Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
 }
 
 Ufe::SceneItem::Ptr
-ProxyShapeHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
+GatewayHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
 {
     auto insertChildCommand = insertChildCmd(child, pos);
     return insertChildCommand->insertedChild();
 }
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
+Ufe::SceneItem::Ptr GatewayHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
     Ufe::SceneItem::Ptr createdItem;
 
@@ -272,9 +276,8 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& n
     return createdItem;
 }
 #else
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
-    const Ufe::Selection&     selection,
-    const Ufe::PathComponent& name) const
+Ufe::SceneItem::Ptr
+GatewayHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
     Ufe::SceneItem::Ptr createdItem;
 
@@ -290,15 +293,14 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-Ufe::InsertChildCommand::Ptr
-ProxyShapeHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
+Ufe::InsertChildCommand::Ptr GatewayHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 {
     auto usdItem = UsdUfe::UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 
     return UsdUfe::UsdUndoCreateGroupCommand::create(usdItem, name.string());
 }
 #else
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
+Ufe::UndoableCommand::Ptr GatewayHierarchy::createGroupCmd(
     const Ufe::Selection&     selection,
     const Ufe::PathComponent& name) const
 {
@@ -308,8 +310,7 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
 }
 #endif
 
-Ufe::UndoableCommand::Ptr
-ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
+Ufe::UndoableCommand::Ptr GatewayHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 {
     std::vector<TfToken> orderedTokens;
 
@@ -321,29 +322,19 @@ ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
     return UsdUfe::UsdUndoReorderCommand::create(getUsdRootPrim(), orderedTokens);
 }
 
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
+Ufe::SceneItem::Ptr GatewayHierarchy::defaultParent() const
 {
-    // The documentation for defaultParent() stipulate that it should return
-    // where this node should be inserted to be added back. The proxy shape need
-    // to be inserted under its Maya shape node, which is its default parent,
-    // so we return that.
-    //
-    // It used to return the USD virtual root prim, but that caused problem since
-    // the UFE path pointed to a Maya node (the proxy shape) and the default parent
-    // was a USD object, leading to a contradiction. In particular, it became
-    // impossible to create a UFE Hiearchy interface from that default parent: its
-    // path indicated it was in the Maya run-time, yet its scene item claimed to
-    // be in the USD run-time.
-    //
-    // As far as I can tell, the defaultParent function is only used when reparenting
-    // nodes that lacked a parent, to figure a default location where to insert them.
-    //
-    // The PrimUpdaterManager also used to call it, but it no longer does.
+    // defaultParent() must return a re-insertion point for this gateway node.
+    // Gateway nodes always belong under their Maya parent (the shape node for a
+    // proxy shape, the DG owner for a DG gateway), never under the USD pseudo-root:
+    // returning a USD object here would put the item in the USD run-time while its
+    // path remains in the Maya run-time, which UFE rejects when constructing a
+    // Hierarchy interface from the result.
     return parent();
 }
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::ungroupCmd() const
+Ufe::UndoableCommand::Ptr GatewayHierarchy::ungroupCmd() const
 {
     // pseudo root can not be ungrouped.
     return nullptr;

@@ -18,6 +18,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/ufe/GatewayHierarchyHandler.h>
 #include <mayaUsd/ufe/MayaStagesSubject.h>
 #include <mayaUsd/ufe/MayaUsdContextOpsHandler.h>
 #include <mayaUsd/ufe/MayaUsdObject3dHandler.h>
@@ -25,7 +26,6 @@
 #include <mayaUsd/ufe/MayaUsdUIInfoHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
-#include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/trf/UsdTransform3dFallbackMayaXformStack.h>
@@ -36,6 +36,10 @@
 #include <usdUfe/ufe/trf/UsdTransform3dCommonAPI.h>
 #include <usdUfe/ufe/trf/UsdTransform3dMatrixOp.h>
 #include <usdUfe/ufe/trf/UsdTransform3dPointInstance.h>
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <mayaUsd/nodes/usdSceneSettingsManager.h>
+#endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #define HAVE_PATH_MAPPING
@@ -312,12 +316,12 @@ MStatus initialize()
     const std::string kUSDRunTimeName = UsdUfe::getUsdRunTimeName();
 
     g_MayaHierarchyHandler = runTimeMgr.hierarchyHandler(g_MayaRtid);
-    auto proxyShapeHierHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
+    auto gatewayHierHandler = GatewayHierarchyHandler::create(g_MayaHierarchyHandler);
 #ifdef UFE_V3_FEATURES_AVAILABLE
-    auto pulledObjectHierHandler = PulledObjectHierarchyHandler::create(proxyShapeHierHandler);
+    auto pulledObjectHierHandler = PulledObjectHierarchyHandler::create(gatewayHierHandler);
     runTimeMgr.setHierarchyHandler(g_MayaRtid, pulledObjectHierHandler);
 #else
-    runTimeMgr.setHierarchyHandler(g_MayaRtid, proxyShapeHierHandler);
+    runTimeMgr.setHierarchyHandler(g_MayaRtid, gatewayHierHandler);
 #endif
 
     g_MayaContextOpsHandler = runTimeMgr.contextOpsHandler(g_MayaRtid);
@@ -389,6 +393,27 @@ MStatus initialize()
     // Subject singleton for observation of all USD stages.
     g_StagesSubject = MayaStagesSubject::create();
     auto usdRtid = UsdUfe::initialize(dccFunctions, usdUfeHandlers, g_StagesSubject);
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // Plug settings-node stages into the UFE notification flow at the
+    // moment they are materialized. Keeping the hook out of Utils::getStage
+    // avoids paying registration cost on every UFE traversal and closes the
+    // observation gap that exists between clearListeners() and the next
+    // UI-driven getStage() call.
+    UsdSceneSettingsManager::setStageObserverHook([](const PXR_NS::UsdStageRefPtr& stage) {
+        if (auto subject = getStagesSubject()) {
+            subject->observeStage(stage);
+        }
+    });
+
+    // Catch up on any stage that materialized before this point (e.g. if
+    // plugin init order ever materializes a stage prior to UFE wiring).
+    // setupListeners() also covers settings-node stages on every rebuild,
+    // so this is a safety net rather than the primary mechanism.
+    for (const auto& settingsStage : UsdSceneSettingsManager::getAllLiveStages()) {
+        g_StagesSubject->observeStage(settingsStage);
+    }
+#endif
 
     // Can only call Ufe::RunTimeMgr::register_() once for a given runtime name.
     // UsdUfe does that (in the call to initialize), so we must individually
@@ -489,6 +514,13 @@ MStatus finalize(bool exiting)
 
     MayaUsd::ufe::UsdUIUfeObserver::destroy();
 
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // Drop the stage observer hook before tearing down the subject so
+    // any late stage materialization (during teardown) cannot dereference
+    // a half-destroyed g_StagesSubject.
+    UsdSceneSettingsManager::setStageObserverHook(nullptr);
+#endif
+
     UsdUfe::finalize(exiting);
     g_MayaHierarchyHandler.reset();
 
@@ -521,6 +553,8 @@ MStatus finalize(bool exiting)
 }
 
 Ufe::Rtid getMayaRunTimeId() { return g_MayaRtid; }
+
+PXR_NS::TfRefPtr<MayaStagesSubject> getStagesSubject() { return g_StagesSubject; }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

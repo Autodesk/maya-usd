@@ -20,11 +20,15 @@
 
 #include <usdUfe/ufe/Global.h>
 
+#include <pxr/base/tf/refPtr.h>
+
 #include <maya/MStatus.h>
 #include <ufe/rtid.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+class MayaStagesSubject;
 
 // Only intended to be called by the plugin initialization, to
 // initialize the handlers and stage model.
@@ -42,6 +46,13 @@ inline Ufe::Rtid getUsdRunTimeId() { return UsdUfe::getUsdRunTimeId(); }
 //! Return the run-time ID allocated to Maya.
 MAYAUSD_CORE_PUBLIC
 Ufe::Rtid getMayaRunTimeId();
+
+//! Return the singleton MayaStagesSubject created by initialize().
+//! May be a null TfRefPtr before initialize() / after finalize().
+//! Used by external gateways (e.g. UsdSceneSettingsManager) to plug
+//! their stages into UFE's stage observation flow on demand.
+MAYAUSD_CORE_PUBLIC
+PXR_NS::TfRefPtr<MayaStagesSubject> getStagesSubject();
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

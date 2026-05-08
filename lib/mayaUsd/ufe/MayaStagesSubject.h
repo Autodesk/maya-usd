@@ -51,6 +51,14 @@ public:
     //! Create the MayaStagesSubject.
     static MayaStagesSubject::RefPtr create();
 
+    //! Idempotently register stageChanged + stageEditTargetChanged listeners
+    //! for the given stage, tracking the keys in _stageListeners so that
+    //! clearListeners() can revoke them.  Mirrors the per-stage body of
+    //! setupListeners() but allows external (non-proxy-shape) gateways
+    //! such as UsdSceneSettingsManager to plug into the UFE notification
+    //! flow on demand.  No-op if the stage is null or already observed.
+    void observeStage(const PXR_NS::UsdStageRefPtr& stage);
+
 protected:
     bool isInNewScene() const;
     void setInNewScene(bool b);

@@ -16,6 +16,9 @@
 #include "MayaStagesSubject.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <mayaUsd/nodes/usdSceneSettingsManager.h>
+#endif
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 
@@ -24,6 +27,8 @@
 #include <maya/MMessage.h>
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchy.h>
+
+#include <vector>
 
 namespace {
 
@@ -185,6 +190,16 @@ void MayaStagesSubject::setupListeners()
             _stageListeners[stage] = noticeKeys;
         }
 
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+        // Settings-node stages live outside ProxyShapeHandler::getAllStages()
+        // (UsdStageMap is intentionally proxy-shape-only). Re-observe them
+        // here so a clearListeners() / setupListeners() rebuild restores
+        // notice flow for settings-node gateways.
+        for (const auto& settingsStage : UsdSceneSettingsManager::getAllLiveStages()) {
+            observeStage(settingsStage);
+        }
+#endif
+
         UsdStageMap::getInstance().setDirty();
 
         // Now we can send the notifications about stage change.
@@ -199,6 +214,42 @@ void MayaStagesSubject::setupListeners()
 
         stageSetGuardCount = false;
     }
+}
+
+void MayaStagesSubject::observeStage(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage) {
+        return;
+    }
+    // Sweep entries whose weak pointer no longer resolves. Settings-node
+    // gateways replace their internal stage on deserializeFromAttributes
+    // (or any future re-Open path), which leaves a now-expired key plus
+    // its now-stale TfNotice keys behind. Revoke and erase them here so
+    // the map does not grow across in-session re-opens.
+    {
+        std::vector<PXR_NS::UsdStageWeakPtr> staleKeys;
+        for (auto& entry : _stageListeners) {
+            if (!entry.first) {
+                for (auto& noticeKey : entry.second) {
+                    TfNotice::Revoke(noticeKey);
+                }
+                staleKeys.push_back(entry.first);
+            }
+        }
+        for (const auto& key : staleKeys) {
+            _stageListeners.erase(key);
+        }
+    }
+
+    PXR_NS::UsdStageWeakPtr weak(stage);
+    if (_stageListeners.find(weak) != _stageListeners.end()) {
+        return; // already observed; idempotent.
+    }
+    auto       me = PXR_NS::TfCreateWeakPtr(this);
+    NoticeKeys noticeKeys;
+    noticeKeys[0] = TfNotice::Register(me, &MayaStagesSubject::stageChanged, stage);
+    noticeKeys[1] = TfNotice::Register(me, &MayaStagesSubject::stageEditTargetChanged, stage);
+    _stageListeners[weak] = noticeKeys;
 }
 
 void MayaStagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice)

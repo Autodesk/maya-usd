@@ -37,8 +37,9 @@ const int kUsdStageMapProfilerCategory = MProfiler::addCategory("USDStages", "US
 
 MObjectHandle nameLookup(const Ufe::Path& path)
 {
-    // Get the MObjectHandle from the tail of the MDagPath.  Remove the leading
-    // '|world' component.
+    // Maya DAG paths are '|'-separated and prefixed with "|world"
+    // (e.g. "|world|transform|shape"). Drop the leading "|world" segment so
+    // the remainder is a Maya-resolvable name path for nameToDagPath.
     auto          noWorld = path.popHead().string();
     auto          dagPath = UsdMayaUtil::nameToDagPath(noWorld);
     MObjectHandle handle(dagPath.node());
@@ -227,8 +228,8 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
         // but the notification to update stage map has not been received yet
         // and the old path has been used to search for the stage. In this case
         // there is a cache hit when there should not be. Update the entry in
-        // fPathToObject so that the key path is the current object path and
-        // return an invalidobject to signify we did not find the proxy shape.
+        // _pathToObject so that the key path is the current object path and
+        // return an invalid object to signify we did not find the proxy shape.
         _pathToObject.erase(singleSegmentPath);
         if (!objectPath.empty())
             _pathToObject[objectPath] = object;

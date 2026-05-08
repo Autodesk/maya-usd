@@ -89,8 +89,27 @@ std::string uniqueChildNameMayaStandard(
 MAYAUSD_CORE_PUBLIC
 bool isAGatewayType(const std::string& mayaNodeType);
 
+//! Return true if the Maya node type is the UsdSettingsNode type (UsdDefaultSettings).
+MAYAUSD_CORE_PUBLIC
+bool isUsdSettingsNode(const std::string& mayaNodeType);
+
+//! Return true if the UFE item is a UsdSettingsNode that comes from a Maya reference.
+//! Referenced copies must not be treated as live gateway nodes because they would
+//! interfere with the local singleton managed by UsdSceneSettingsManager.
+MAYAUSD_CORE_PUBLIC
+bool isReferencedUsdSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath);
+
 MAYAUSD_CORE_PUBLIC
 Ufe::Path dagPathToUfe(const MDagPath& dagPath);
+
+//! Separator for DG node UFE paths. The null character keeps a single-segment
+//! DG path's string form free of any visible prefix (e.g. "myNode" rather
+//! than "|myNode" used by DAG paths).
+constexpr char DGPathSeparator = '\0';
+
+//! Build a single-segment UFE path "nodeName" for a pure DG node.
+MAYAUSD_CORE_PUBLIC
+Ufe::Path dgNodeToUfePath(const MObject& object);
 
 MAYAUSD_CORE_PUBLIC
 Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);

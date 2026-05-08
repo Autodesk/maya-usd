@@ -71,4 +71,7 @@ TF_WRAP_MODULE
     TF_WRAP(SchemaApiAdaptor);
     TF_WRAP(ShadingUtil);
     TF_WRAP(ShadingMode);
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    TF_WRAP(SceneRenderSettings);
+#endif
 }

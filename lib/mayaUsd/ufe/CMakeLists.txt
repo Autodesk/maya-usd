@@ -3,6 +3,8 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        GatewayHierarchy.cpp
+        GatewayHierarchyHandler.cpp
         Global.cpp
         MayaStagesSubject.cpp
         MayaUsdContextOps.cpp
@@ -15,8 +17,6 @@ target_sources(${PROJECT_NAME}
         MayaUsdUndoRenameCommand.cpp
         ProxyShapeContextOpsHandler.cpp
         ProxyShapeHandler.cpp
-        ProxyShapeHierarchy.cpp
-        ProxyShapeHierarchyHandler.cpp
         UsdStageMap.cpp
         UsdUIUfeObserver.cpp
         UsdUndoDuplicateCommand.cpp
@@ -176,6 +176,8 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
 endif()
 
 set(HEADERS
+    GatewayHierarchy.h
+    GatewayHierarchyHandler.h
     Global.h
     MayaStagesSubject.h
     MayaUsdContextOps.h
@@ -188,8 +190,6 @@ set(HEADERS
     MayaUsdUndoRenameCommand.h
     ProxyShapeContextOpsHandler.h
     ProxyShapeHandler.h
-    ProxyShapeHierarchy.h
-    ProxyShapeHierarchyHandler.h
     UsdStageMap.h
     UsdUIUfeObserver.h
     UsdUndoDuplicateCommand.h

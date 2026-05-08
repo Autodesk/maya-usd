@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "ProxyShapeHierarchyHandler.h"
+#include "GatewayHierarchyHandler.h"
 
+#include <mayaUsd/ufe/GatewayHierarchy.h>
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/ProxyShapeHierarchy.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/runTimeMgr.h>
@@ -24,9 +24,9 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::HierarchyHandler, ProxyShapeHierarchyHandler);
+MAYAUSD_VERIFY_CLASS_SETUP(Ufe::HierarchyHandler, GatewayHierarchyHandler);
 
-ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(
+GatewayHierarchyHandler::GatewayHierarchyHandler(
     const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
     : Ufe::HierarchyHandler()
     , _mayaHierarchyHandler(mayaHierarchyHandler)
@@ -34,31 +34,35 @@ ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(
 }
 
 /*static*/
-ProxyShapeHierarchyHandler::Ptr
-ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
+GatewayHierarchyHandler::Ptr
+GatewayHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
 {
-    return std::make_shared<ProxyShapeHierarchyHandler>(mayaHierarchyHandler);
+    return std::make_shared<GatewayHierarchyHandler>(mayaHierarchyHandler);
 }
 
 //------------------------------------------------------------------------------
 // Ufe::HierarchyHandler overrides
 //------------------------------------------------------------------------------
 
-Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
+Ufe::Hierarchy::Ptr GatewayHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
-    if (isAGatewayType(UsdUfe::getSceneItemNodeType(item))) {
-        return ProxyShapeHierarchy::create(_mayaHierarchyHandler, item);
+    auto nodeType = UsdUfe::getSceneItemNodeType(item);
+    if (isAGatewayType(nodeType) && !isReferencedUsdSettingsNode(nodeType, item->path())) {
+        return GatewayHierarchy::create(_mayaHierarchyHandler, item);
     } else {
         return _mayaHierarchyHandler->hierarchy(item);
     }
 }
 
-Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path) const
+Ufe::SceneItem::Ptr GatewayHierarchyHandler::createItem(const Ufe::Path& path) const
 {
+    // The gateway distinction is decided in hierarchy() based on the item's
+    // nodeType. Item construction itself does not depend on that distinction,
+    // so the wrapped Maya hierarchy handler can produce the SceneItem directly.
     return _mayaHierarchyHandler->createItem(path);
 }
 
-Ufe::Hierarchy::ChildFilter ProxyShapeHierarchyHandler::childFilter() const
+Ufe::Hierarchy::ChildFilter GatewayHierarchyHandler::childFilter() const
 {
     // Use the same child filter as the USD hierarchy handler.
     auto usdHierHand = Ufe::RunTimeMgr::instance().hierarchyHandler(getUsdRunTimeId());

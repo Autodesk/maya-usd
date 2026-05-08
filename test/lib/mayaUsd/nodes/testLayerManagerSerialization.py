@@ -158,6 +158,11 @@ class testLayerManagerSerialization(unittest.TestCase):
         self._tempMayaFile = os.path.join(
             self._currentTestDir, 'EmptySerializationTest.ma')
         cmds.file(new=True, force=True)
+
+        # Drop the settings singleton(s) so they don't create a plugin
+        # dependency in an otherwise empty scene.
+        fixturesUtils.deleteUsdSettingsSingletons()
+
         cmds.file(rename=self._tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
         cmds.file(new=True, force=True)
