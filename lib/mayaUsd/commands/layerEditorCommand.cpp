@@ -227,7 +227,9 @@ public:
             }
 
             layer->InsertSubLayerPath(_subPath, _index);
-            TF_VERIFY(layer->GetSubLayerPaths()[_index] == _subPath);
+            TF_VERIFY(
+                (static_cast<size_t>(_index) < layer->GetSubLayerPaths().size())
+                && layer->GetSubLayerPaths()[_index] == _subPath);
         } else {
             TF_VERIFY(_cmdId == CmdId::kRemove);
             if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths())) {

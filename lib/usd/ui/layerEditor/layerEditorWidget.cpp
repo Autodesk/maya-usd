@@ -427,7 +427,17 @@ void LayerEditorWidget::updateNewLayerButton()
 
         // also disable if the selected layer is muted or invalid
         if (!disabled) {
-            auto item = _treeView->currentLayerItem();
+            auto           selectedRows = selectionModel->selectedRows();
+            LayerTreeItem* item = nullptr;
+            if (!selectedRows.empty()) {
+                item = _treeView->layerItemFromIndex(selectedRows[0]);
+            }
+            // When nothing is selected, the button adds a new layer to the root layer.
+            else {
+                auto treeModel = _treeView->layerTreeModel();
+                item = treeModel->layerItemFromIndex(treeModel->rootLayerIndex());
+            }
+
             if (item) {
                 disabled = item->isInvalidLayer() || item->appearsMuted() || item->isReadOnly()
                     || item->isLocked();
