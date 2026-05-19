@@ -64,6 +64,7 @@
 #include <maya/MItDag.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MSceneMessage.h>
+#include <maya/MSelectionList.h>
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selectionNotification.h>
@@ -1557,6 +1558,13 @@ void LayerDatabase::removeManagerNode(
     OpUndoItemMuting muting;
 
     clearManagerNode(lm);
+
+    // Remove the layer manager from the selection list if it's selected,
+    // otherwise Maya might crash in the future after we delete the node.
+    {
+        MObject lmObject = lm->thisMObject();
+        MGlobal::unselect(lmObject);
+    }
 
     MDGModifier& modifier = MDGModifierUndoItem::create("Manager node removal");
     modifier.deleteNode(lm->thisMObject());

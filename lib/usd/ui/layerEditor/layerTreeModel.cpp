@@ -445,6 +445,11 @@ void LayerTreeModel::usd_layerDirtinessChanged(
         auto layerItem = findUSDLayerItem(layer);
         if (layerItem) {
             layerItem->fetchData(RebuildChildren::No);
+        } else if (rowCount() > 0) {
+            // A non-local layer would not be visible in the tree - but in some cases
+            // (components) we still want to signal a data change - so that the save button
+            // refreshes.
+            Q_EMIT dataChanged(index(0, 0), index(0, 0));
         }
     }
 }

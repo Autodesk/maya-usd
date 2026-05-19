@@ -36,6 +36,7 @@
 #include <maya/MFileIO.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
+#include <maya/MItDag.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPxNode.h>
 #include <maya/MSceneMessage.h>
@@ -148,12 +149,31 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
 std::vector<SessionState::StageEntry> MayaSessionState::allStages() const
 {
     std::vector<StageEntry> stages;
-    MStringArray            shapes;
-    MGlobal::executeCommand(
-        MString("ls -long -type ") + PROXY_NODE_TYPE, shapes, /*display*/ false, /*undo*/ false);
-    StageEntry entry;
-    for (unsigned i = 0; i < shapes.length(); ++i) {
-        if (getStageEntry(&entry, shapes[i])) {
+
+    // Iterate through all shape DAG nodes to find proxy shape nodes
+    MItDag dagIterator(MItDag::kDepthFirst, MFn::kPluginShape);
+    for (; !dagIterator.isDone(); dagIterator.next()) {
+        MObject    mobj = dagIterator.currentItem();
+        MFnDagNode fnDagNode(mobj);
+
+        const PXR_NS::MayaUsdProxyShapeBase* proxyShape
+            = dynamic_cast<const PXR_NS::MayaUsdProxyShapeBase*>(fnDagNode.userNode());
+        if (!proxyShape)
+            continue;
+
+        // Check if this node is a proxy shape by type name
+        MDagPath dagPath;
+        dagIterator.getPath(dagPath);
+
+        // Avoid instances of the same shape by only looking at the first instance (instance number
+        // 0)
+        if (dagPath.instanceNumber() != 0) {
+            continue;
+        }
+
+        MString    shapePath = dagPath.fullPathName();
+        StageEntry entry;
+        if (getStageEntry(&entry, shapePath)) {
             stages.push_back(entry);
         }
     }
