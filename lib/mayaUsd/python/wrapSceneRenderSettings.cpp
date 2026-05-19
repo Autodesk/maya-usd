@@ -36,5 +36,11 @@ void wrapSceneRenderSettings()
         .def("getActiveRenderSettingsPath", &MayaUsd::SceneRenderSettings::getActiveSettingPath)
         .staticmethod("getActiveRenderSettingsPath")
         .def("setActiveRenderSettingsPath", &MayaUsd::SceneRenderSettings::setActiveSettingPath)
-        .staticmethod("setActiveRenderSettingsPath");
+        .staticmethod("setActiveRenderSettingsPath")
+        .def(
+            "externalCameraAttrName",
+            +[]() { return MayaUsd::SceneRenderSettings::externalCameraAttrName().GetString(); })
+        .staticmethod("externalCameraAttrName")
+        .def("setCamera", &MayaUsd::SceneRenderSettings::setRenderSettingsCamera)
+        .staticmethod("setCamera");
 }

@@ -80,7 +80,8 @@ void UsdSceneSettingsManager::registerSettingNode(const std::string& nodeName, P
 /* static */
 void UsdSceneSettingsManager::callPopulator(
     const std::string&     nodeName,
-    PXR_NS::UsdStageRefPtr stage)
+    PXR_NS::UsdStageRefPtr stage,
+    UsdSettingsNode&       node)
 {
     // Centralize the stage null-guard here so individual populators do not
     // each have to repeat it. ensureStage may pass a null stage if
@@ -90,7 +91,7 @@ void UsdSceneSettingsManager::callPopulator(
     }
     auto it = registry().find(nodeName);
     if (it != registry().end() && it->second) {
-        it->second(stage);
+        it->second(stage, node);
     }
 }
 
@@ -152,20 +153,20 @@ PXR_NS::UsdStageRefPtr UsdSceneSettingsManager::getStage(const std::string& node
 /* static */
 PXR_NS::UsdStageRefPtr UsdSceneSettingsManager::getStageForNodeName(const std::string& nodeName)
 {
+    UsdSettingsNode* node = getNodeForNodeName(nodeName);
+    return node ? node->getUsdStage() : nullptr;
+}
+
+/* static */
+UsdSettingsNode* UsdSceneSettingsManager::getNodeForNodeName(const std::string& nodeName)
+{
     // Never create a node here. The instances map is keyed by DG node name
     // (see createNode) and is the authoritative source for managed nodes.
-    // The stage itself is materialized lazily on first access
-    // (UsdSettingsNode::ensureStage), which runs the populator and fires
-    // the stage observer hook.
     auto it = instances().find(nodeName);
     if (it == instances().end() || !it->second.isValid()) {
         return nullptr;
     }
-    UsdSettingsNode* node = nodeFromHandle(it->second);
-    if (!node) {
-        return nullptr;
-    }
-    return node->getUsdStage();
+    return nodeFromHandle(it->second);
 }
 
 /* static */

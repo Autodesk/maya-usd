@@ -20,13 +20,6 @@
                         "type": "token",
                         "appliesTo": "properties",
                         "default": "off"
-                    },
-                    # UFE path of the currently active settings prim, authored on
-                    # the stage of a UsdSettingsNode (e.g. UsdDefaultRenderSettings).
-                    "activeSettingsPath": {
-                        "type": "string",
-                        "appliesTo": "layers",
-                        "default": ""
                     }
                 }
             },

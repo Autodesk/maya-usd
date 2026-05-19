@@ -18,9 +18,10 @@
 from maya import cmds
 from maya import standalone
 
+import mayaUsd.lib as mayaUsdLib
 from mayaUsd.lib import UsdDefaultRenderSettings
 
-from pxr import Usd, UsdGeom, UsdRender
+from pxr import Sdf, Usd, UsdGeom, UsdRender
 
 import fixturesUtils
 
@@ -326,7 +327,7 @@ class testSceneRenderSettings(unittest.TestCase):
             shutil.rmtree(tmpDir, ignore_errors=True)
 
     # ------------------------------------------------------------------
-    # Active settings UFE path (stage metadata)
+    # Active settings UFE path
     # ------------------------------------------------------------------
 
     def testActiveSettingsPathDefault(self):
@@ -337,8 +338,8 @@ class testSceneRenderSettings(unittest.TestCase):
         self.assertIn(nodeName, activePath)
         self.assertIn('/Render/SceneRenderSettings', activePath)
 
-        stage = UsdDefaultRenderSettings.getUsdStage()
-        self.assertEqual(stage.GetMetadata('activeSettingsPath'), activePath)
+        self.assertEqual(
+            cmds.getAttr(nodeName + '.activeSettingsPath'), activePath)
 
     def testActiveSettingsPathSetter(self):
         '''Writing through the helper updates every read path.'''
@@ -348,8 +349,9 @@ class testSceneRenderSettings(unittest.TestCase):
 
         self.assertEqual(
             UsdDefaultRenderSettings.getActiveRenderSettingsPath(), newPath)
-        stage = UsdDefaultRenderSettings.getUsdStage()
-        self.assertEqual(stage.GetMetadata('activeSettingsPath'), newPath)
+        nodeName = UsdDefaultRenderSettings.find()
+        self.assertEqual(
+            cmds.getAttr(nodeName + '.activeSettingsPath'), newPath)
 
     def testActiveSettingsPathRoundTrip(self):
         '''A custom activeSettingsPath survives a save/open cycle.'''
@@ -419,6 +421,157 @@ class testSceneRenderSettings(unittest.TestCase):
                         "Locked node must keep its name after a rename attempt")
         self.assertEqual(uuidBefore, cmds.ls(nodeName, uuid=True)[0],
                          "Locked node must remain the same MObject after rename")
+
+
+    # ------------------------------------------------------------------
+    # External camera attribute (adskUsd:externalCamera)
+    # ------------------------------------------------------------------
+
+    EXTERNAL_CAMERA_ATTR = 'adskUsd:externalCamera'
+    DEFAULT_EXTERNAL_CAMERA = '|persp'
+
+    def _createUsdProxyWithCamera(self, cameraPrimPath='/cameras/cam1'):
+        '''Create a Maya proxy shape backed by an in-memory stage that
+        contains a UsdGeomCamera at cameraPrimPath. Returns
+        (proxyShapeNode, stage, cameraUfePath) where cameraUfePath is the
+        user-facing UFE form '|proxyParent|proxyShape,/prim'.'''
+        cmds.createNode('mayaUsdProxyShape', name='extCamProxyShape')
+        shapeNode = cmds.ls(sl=True, long=True)[0]
+        cmds.select(clear=True)
+        cmds.connectAttr('time1.outTime', '{}.time'.format(shapeNode))
+        stage = mayaUsdLib.GetPrim(shapeNode).GetStage()
+        UsdGeom.Camera.Define(stage, cameraPrimPath)
+        cameraUfePath = '{}{}'.format(shapeNode, cameraPrimPath)
+        return shapeNode, stage, cameraUfePath
+
+    def testExternalCameraDefaultValue(self):
+        '''The singleton's default render-settings prim is pre-populated with
+        adskUsd:externalCamera = "|persp" and has no schema camera
+        relationship targets.'''
+        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        self.assertTrue(prim.IsValid())
+
+        attr = prim.GetAttribute(self.EXTERNAL_CAMERA_ATTR)
+        self.assertTrue(attr.IsValid(),
+                        '%s should be authored on the default prim'
+                        % self.EXTERNAL_CAMERA_ATTR)
+        self.assertEqual(attr.Get(), self.DEFAULT_EXTERNAL_CAMERA)
+
+        cameraRel = UsdRender.Settings(prim).GetCameraRel()
+        self.assertEqual(cameraRel.GetTargets(), [])
+
+    def testExternalCameraAttrName(self):
+        '''The Python binding exposes the canonical attribute name.'''
+        self.assertEqual(UsdDefaultRenderSettings.externalCameraAttrName(),
+                         self.EXTERNAL_CAMERA_ATTR)
+
+    def testSetCameraSameStage(self):
+        '''Setting a camera on the same stage authors the schema relationship
+        and removes any pre-existing external-camera attribute.'''
+        stage = UsdDefaultRenderSettings.getUsdStage()
+        cameraPrim = UsdGeom.Camera.Define(stage, '/Render/Cam1').GetPrim()
+
+        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        self.assertTrue(prim.HasAttribute(self.EXTERNAL_CAMERA_ATTR))
+
+        self.assertTrue(
+            UsdDefaultRenderSettings.setCamera(prim, cameraPrim.GetPath().pathString))
+
+        self.assertFalse(
+            prim.HasAttribute(self.EXTERNAL_CAMERA_ATTR),
+            'External camera attribute should be removed when a same-stage '
+            'camera is set')
+        self.assertEqual(
+            UsdRender.Settings(prim).GetCameraRel().GetTargets(),
+            [Sdf.Path('/Render/Cam1')])
+
+    def testSetCameraMayaNative(self):
+        '''Setting a Maya native camera UFE path authors the external
+        attribute and clears the schema relationship targets.'''
+        stage = UsdDefaultRenderSettings.getUsdStage()
+        cameraPrim = UsdGeom.Camera.Define(stage, '/Render/Cam1').GetPrim()
+        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+
+        # Seed the relationship so the assertion below confirms it is cleared
+        # by the subsequent setCamera call to a Maya-native path.
+        UsdDefaultRenderSettings.setCamera(prim, cameraPrim.GetPath().pathString)
+        self.assertEqual(
+            UsdRender.Settings(prim).GetCameraRel().GetTargets(),
+            [Sdf.Path('/Render/Cam1')])
+
+        self.assertTrue(
+            UsdDefaultRenderSettings.setCamera(prim, '|persp|perspShape'))
+
+        self.assertEqual(
+            UsdRender.Settings(prim).GetCameraRel().GetTargets(), [])
+        attr = prim.GetAttribute(self.EXTERNAL_CAMERA_ATTR)
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), '|persp|perspShape')
+
+    def testSetCameraDifferentStage(self):
+        '''A UsdGeomCamera on a different stage routes through the external
+        attribute, not the schema relationship.'''
+        proxyShape, _proxyStage, cameraUfePath = self._createUsdProxyWithCamera()
+
+        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        self.assertTrue(UsdDefaultRenderSettings.setCamera(prim, cameraUfePath))
+
+        self.assertEqual(
+            UsdRender.Settings(prim).GetCameraRel().GetTargets(), [])
+        attr = prim.GetAttribute(self.EXTERNAL_CAMERA_ATTR)
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), cameraUfePath)
+
+    def testSetCameraInvalidPrim(self):
+        '''Invalid prim or non-RenderSettings prim returns False.'''
+        invalidPrim = Usd.Prim()
+        self.assertFalse(
+            UsdDefaultRenderSettings.setCamera(invalidPrim, '|persp|perspShape'))
+
+        stage = UsdDefaultRenderSettings.getUsdStage()
+        nonSettings = UsdGeom.Xform.Define(stage, '/Render/NotSettings').GetPrim()
+        self.assertFalse(
+            UsdDefaultRenderSettings.setCamera(nonSettings, '|persp|perspShape'))
+
+    def testSetCameraRoundTrip(self):
+        '''An external camera value survives a save/open cycle.'''
+        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        customCameraPath = '|some|custom|cameraShape'
+        self.assertTrue(
+            UsdDefaultRenderSettings.setCamera(prim, customCameraPath))
+
+        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        try:
+            tmpFile = os.path.join(tmpDir, 'externalCameraRoundTrip.ma')
+            cmds.file(rename=tmpFile)
+            cmds.file(save=True, type='mayaAscii')
+            cmds.file(new=True, force=True)
+            cmds.file(tmpFile, open=True, force=True)
+
+            primAfter = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+            attr = primAfter.GetAttribute(self.EXTERNAL_CAMERA_ATTR)
+            self.assertTrue(attr.IsValid())
+            self.assertEqual(attr.Get(), customCameraPath)
+        finally:
+            cmds.file(new=True, force=True)
+            shutil.rmtree(tmpDir, ignore_errors=True)
+
+    def testExternalCameraDefaultRestoredOnFileNew(self):
+        '''File > New restores the populator-authored default value, even
+        after a prior override on the singleton's prim.'''
+        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        self.assertTrue(
+            UsdDefaultRenderSettings.setCamera(prim, '|some|other|cameraShape'))
+        self.assertEqual(
+            prim.GetAttribute(self.EXTERNAL_CAMERA_ATTR).Get(),
+            '|some|other|cameraShape')
+
+        cmds.file(new=True, force=True)
+
+        primAfter = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        self.assertEqual(
+            primAfter.GetAttribute(self.EXTERNAL_CAMERA_ATTR).Get(),
+            self.DEFAULT_EXTERNAL_CAMERA)
 
 
 if __name__ == '__main__':

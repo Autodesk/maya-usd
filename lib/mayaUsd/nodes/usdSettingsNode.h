@@ -60,6 +60,7 @@ public:
     // Attributes
     static MObject serializedRootLayerAttr;
     static MObject serializedSessionLayerAttr;
+    static MObject activeSettingsPathAttr;
 
     static void*   creator();
     static MStatus initialize();
@@ -76,6 +77,13 @@ public:
     //! Return true if the internal stage has already been created.
     //! Unlike getUsdStage(), this does not trigger lazy creation.
     bool hasStage() const { return _stage != nullptr; }
+
+    //! UFE path string of the currently active settings prim.
+    std::string activeSettingsPath() const;
+
+    //! Author the UFE path string of the currently active settings prim. Returns
+    //! false on plug-write failure.
+    bool setActiveSettingsPath(const std::string& ufePath);
 
     // Serialization (called by UsdSceneSettingsManager scene callbacks)
     void serializeToAttributes();

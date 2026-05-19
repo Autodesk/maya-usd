@@ -14,41 +14,57 @@
 // limitations under the License.
 //
 
-// Registration site and public C++ surface for the UsdDefaultRenderSettings
-// settings node. Node type, callbacks and serialization are handled
-// generically by UsdSettingsNode and UsdSceneSettingsManager.
-
 #include <mayaUsd/nodes/sceneRenderSettings.h>
 #include <mayaUsd/nodes/usdSceneSettingsManager.h>
+#include <mayaUsd/nodes/usdSettingsNode.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/relationship.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdRender/settings.h>
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
+#include <ufe/path.h>
+#include <ufe/pathString.h>
 
 #include <string>
 
 namespace {
 
-// Locked DG node name and UsdSceneSettingsManager lookup key.
-const std::string kRenderSettingsNodeName("UsdDefaultRenderSettings");
-
-// Stage metadata key for the SdfPath of the default render-settings prim.
+const std::string     kRenderSettingsNodeName("UsdDefaultRenderSettings");
 const PXR_NS::TfToken kRenderSettingsPrimPathToken("renderSettingsPrimPath");
 
-// Stage metadata key for the UFE path of the currently active settings prim.
-const PXR_NS::TfToken kActiveSettingsPathToken("activeSettingsPath");
+// UFE path to a camera that lives outside renderSettings's stage (Maya native
+// camera, or a camera in a different USD stage). Overrides the schema `camera`
+// relationship for active-camera selection when authored.
+const PXR_NS::TfToken kExternalCameraAttrName("adskUsd:externalCamera");
 
-// Static initializer ensures registration happens before
-// UsdSceneSettingsManager::onPluginInitialize(). When the plugin is already
-// running (sub-plugin load), registerSettingNode() creates the node directly.
+// Transform path (not shape) for end-user readability; Maya Hydra resolves to
+// the underlying camera shape when required.
+const std::string kDefaultExternalCameraUfePath("|persp");
+
+// Avoids the AE default name-splitting of "adskUsd:externalCamera".
+const std::string kExternalCameraDisplayName("External Camera");
+
+PXR_NS::UsdAttribute createExternalCameraAttr(const PXR_NS::UsdPrim& renderSettings)
+{
+    PXR_NS::UsdAttribute attr = renderSettings.CreateAttribute(
+        kExternalCameraAttrName, PXR_NS::SdfValueTypeNames->String, /*custom=*/true);
+    if (attr) {
+        attr.SetDisplayName(kExternalCameraDisplayName);
+    }
+    return attr;
+}
+
 // NOLINTNEXTLINE(cert-err58-cpp) -- intentional static initializer pattern
 const bool kRenderSettingsRegistered = []() {
     MayaUsd::UsdSceneSettingsManager::registerSettingNode(
-        kRenderSettingsNodeName, [](PXR_NS::UsdStageRefPtr stage) {
+        kRenderSettingsNodeName, [](PXR_NS::UsdStageRefPtr stage, MayaUsd::UsdSettingsNode& node) {
             if (!stage) {
                 return;
             }
@@ -60,19 +76,21 @@ const bool kRenderSettingsRegistered = []() {
 
             PXR_NS::UsdGeomScope::Define(stage, renderScopePath);
 
-            // Leave attributes un-authored so they fall back to schema defaults.
             PXR_NS::UsdRenderSettings renderSettings
                 = PXR_NS::UsdRenderSettings::Define(stage, renderSettingsPath);
             if (!renderSettings) {
                 return;
             }
 
+            createExternalCameraAttr(renderSettings.GetPrim()).Set(kDefaultExternalCameraUfePath);
+
             stage->SetMetadata(kRenderSettingsPrimPathToken, renderSettingsPath.GetString());
 
-            // Comma is the segment separator used by Ufe::PathString.
-            const std::string defaultActivePath
-                = kRenderSettingsNodeName + "," + renderSettingsPath.GetString();
-            stage->SetMetadata(kActiveSettingsPathToken, defaultActivePath);
+            // Skip when non-empty so a pre-populator user value is preserved.
+            if (node.activeSettingsPath().empty()) {
+                node.setActiveSettingsPath(
+                    kRenderSettingsNodeName + "," + renderSettingsPath.GetString());
+            }
         });
     return true;
 }();
@@ -84,12 +102,9 @@ namespace SceneRenderSettings {
 
 std::string find()
 {
-    MObject obj = MayaUsd::UsdSceneSettingsManager::find(kRenderSettingsNodeName);
-    if (obj.isNull()) {
-        return {};
-    }
-    MFnDependencyNode depFn(obj);
-    return depFn.name().asChar();
+    MayaUsd::UsdSettingsNode* node
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+    return node ? node->nodeName() : std::string();
 }
 
 PXR_NS::UsdStageRefPtr getUsdStage()
@@ -113,22 +128,80 @@ PXR_NS::UsdPrim getDefaultRenderSettingsPrim()
 
 std::string getActiveSettingPath()
 {
-    auto stage = MayaUsd::UsdSceneSettingsManager::getStage(kRenderSettingsNodeName);
-    if (!stage) {
+    MayaUsd::UsdSettingsNode* node
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+    if (!node) {
         return {};
     }
-    std::string path;
-    stage->GetMetadata(kActiveSettingsPathToken, &path);
-    return path;
+    // Force the populator to seed the default before reading.
+    node->getUsdStage();
+    return node->activeSettingsPath();
 }
 
 bool setActiveSettingPath(const std::string& ufePath)
 {
-    auto stage = MayaUsd::UsdSceneSettingsManager::getStage(kRenderSettingsNodeName);
-    if (!stage) {
+    MayaUsd::UsdSettingsNode* node
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+    if (!node) {
         return false;
     }
-    return stage->SetMetadata(kActiveSettingsPathToken, ufePath);
+    // Run the populator first so a later replay cannot overwrite this write.
+    node->getUsdStage();
+    return node->setActiveSettingsPath(ufePath);
+}
+
+const PXR_NS::TfToken& externalCameraAttrName() { return kExternalCameraAttrName; }
+
+bool setRenderSettingsCamera(
+    const PXR_NS::UsdPrim& renderSettings,
+    const std::string&     cameraUfePath)
+{
+    if (!renderSettings || !renderSettings.IsA<PXR_NS::UsdRenderSettings>()) {
+        return false;
+    }
+
+    // Try SdfPath against renderSettings's stage first (handles bare USD
+    // paths and prims on stages not reachable through any UFE gateway), then
+    // fall back to UFE for paths with a Maya gateway segment.
+    PXR_NS::UsdPrim resolvedPrim;
+    if (!cameraUfePath.empty()) {
+        if (PXR_NS::SdfPath::IsValidPathString(cameraUfePath)) {
+            const PXR_NS::SdfPath sdfPath(cameraUfePath);
+            if (sdfPath.IsAbsolutePath() && sdfPath.IsPrimPath()) {
+                resolvedPrim = renderSettings.GetStage()->GetPrimAtPath(sdfPath);
+            }
+        }
+        if (!resolvedPrim) {
+            try {
+                const Ufe::Path ufePath = Ufe::PathString::path(cameraUfePath);
+                resolvedPrim = MayaUsd::ufe::ufePathToPrim(ufePath);
+            } catch (const std::exception&) {
+            }
+        }
+    }
+
+    PXR_NS::UsdRenderSettings settingsSchema(renderSettings);
+    PXR_NS::UsdRelationship   cameraRel = settingsSchema.CreateCameraRel();
+
+    const bool resolvesToSameStageCamera = resolvedPrim && resolvedPrim.IsA<PXR_NS::UsdGeomCamera>()
+        && resolvedPrim.GetStage() == renderSettings.GetStage();
+
+    if (resolvesToSameStageCamera) {
+        if (!cameraRel.SetTargets({ resolvedPrim.GetPath() })) {
+            return false;
+        }
+        if (renderSettings.HasAttribute(kExternalCameraAttrName)) {
+            // RemoveProperty is non-const; UsdPrim is a value-type handle.
+            PXR_NS::UsdPrim mutablePrim = renderSettings;
+            mutablePrim.RemoveProperty(kExternalCameraAttrName);
+        }
+        return true;
+    }
+
+    cameraRel.SetTargets({});
+
+    PXR_NS::UsdAttribute externalCameraAttr = createExternalCameraAttr(renderSettings);
+    return externalCameraAttr && externalCameraAttr.Set(cameraUfePath);
 }
 
 } // namespace SceneRenderSettings

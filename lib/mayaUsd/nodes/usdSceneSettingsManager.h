@@ -43,8 +43,9 @@ namespace MAYAUSD_NS_DEF {
 class MAYAUSD_CORE_PUBLIC UsdSceneSettingsManager
 {
 public:
-    //! Seeds a managed node's USD stage with domain-specific content.
-    using Populator = std::function<void(PXR_NS::UsdStageRefPtr)>;
+    //! Seeds a managed node's USD stage and its node-level attributes (e.g.
+    //! the activeSettingsPath plug) with domain-specific content.
+    using Populator = std::function<void(PXR_NS::UsdStageRefPtr, UsdSettingsNode&)>;
 
     // -----------------------------------------------------------------------
     // Registration
@@ -54,9 +55,10 @@ public:
     //! initialized (sub-plugin load), the node is created immediately.
     static void registerSettingNode(const std::string& nodeName, Populator populate);
 
-    //! Invoke the populator for \p nodeName on \p stage. Called from
-    //! UsdSettingsNode::ensureStage().
-    static void callPopulator(const std::string& nodeName, PXR_NS::UsdStageRefPtr stage);
+    //! Invoke the populator for \p nodeName on \p stage and \p node. Called
+    //! from UsdSettingsNode::ensureStage() and ::deserializeFromAttributes().
+    static void
+    callPopulator(const std::string& nodeName, PXR_NS::UsdStageRefPtr stage, UsdSettingsNode& node);
 
     // -----------------------------------------------------------------------
     // Node access
@@ -73,6 +75,10 @@ public:
     //! torn-down names. The stage itself is still materialized lazily on first
     //! call (which runs the populator and fires the stage observer hook).
     static PXR_NS::UsdStageRefPtr getStageForNodeName(const std::string& nodeName);
+
+    //! Live UsdSettingsNode* for \p nodeName, or nullptr if none is tracked.
+    //! Does not create or materialize the stage.
+    static UsdSettingsNode* getNodeForNodeName(const std::string& nodeName);
 
     //! Reverse lookup: live MObject of the managed node whose stage matches
     //! \p stage, or a null MObject if none. Does NOT trigger lazy stage

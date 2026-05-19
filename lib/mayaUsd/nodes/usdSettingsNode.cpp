@@ -35,6 +35,7 @@ const MString UsdSettingsNode::typeName("UsdDefaultSettings");
 
 MObject UsdSettingsNode::serializedRootLayerAttr;
 MObject UsdSettingsNode::serializedSessionLayerAttr;
+MObject UsdSettingsNode::activeSettingsPathAttr;
 
 /* static */
 void* UsdSettingsNode::creator() { return new UsdSettingsNode(); }
@@ -72,6 +73,17 @@ MStatus UsdSettingsNode::initialize()
     status = addAttribute(serializedSessionLayerAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    // UFE path of the currently active settings prim, persisted with the
+    // scene. Hidden/internal: reads/writes go through the typed accessors.
+    activeSettingsPathAttr = typedAttrFn.create(
+        "activeSettingsPath", "asp", MFnData::kString, defaultStringDataObj, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setHidden(true);
+    typedAttrFn.setInternal(true);
+    status = addAttribute(activeSettingsPathAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
     return status;
 }
 
@@ -92,6 +104,19 @@ std::string UsdSettingsNode::nodeName() const
 {
     MFnDependencyNode depFn(thisMObject());
     return depFn.name().asChar();
+}
+
+std::string UsdSettingsNode::activeSettingsPath() const
+{
+    MPlug plug(thisMObject(), activeSettingsPathAttr);
+    return plug.asString().asChar();
+}
+
+bool UsdSettingsNode::setActiveSettingsPath(const std::string& ufePath)
+{
+    MPlug   plug(thisMObject(), activeSettingsPathAttr);
+    MStatus status = plug.setString(MString(ufePath.c_str()));
+    return status == MS::kSuccess;
 }
 
 void UsdSettingsNode::ensureStage() const
@@ -118,7 +143,7 @@ void UsdSettingsNode::ensureStage() const
         return;
     }
 
-    UsdSceneSettingsManager::callPopulator(name, _stage);
+    UsdSceneSettingsManager::callPopulator(name, _stage, const_cast<UsdSettingsNode&>(*this));
 
     // Hook USD-notice observers (UFE notification flow) onto the freshly
     // created stage. Done after the populator so the initial population is
@@ -241,7 +266,7 @@ void UsdSettingsNode::deserializeFromAttributes()
     // empty layers to write). Run the populator so the resulting stage
     // matches what a freshly-created node would produce.
     if (rootStr.length() == 0 && sessionStr.length() == 0) {
-        UsdSceneSettingsManager::callPopulator(name, _stage);
+        UsdSceneSettingsManager::callPopulator(name, _stage, *this);
     }
 
     // Newly deserialized stage: re-hook USD-notice observers via the manager
