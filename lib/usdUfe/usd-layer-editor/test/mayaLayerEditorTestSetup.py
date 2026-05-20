@@ -78,6 +78,22 @@ def redo():
     cmds.redo()
 
 
+def executeCmd(cmd):
+    """Execute a UsdLayerEditor command in Maya.
+
+    UsdLayerEditor's command classes are bound with boost.python while UFE is
+    bound with pybind11, so the commands can't cross into
+    ``ufe.UndoableCommandMgr.executeCmd()``. Wrap a direct ``cmd.execute()``
+    in a Maya undo chunk so the operation participates in MEL undo via
+    whatever MEL/MPx commands the C++ implementation issues.
+    """
+    cmds.undoInfo(openChunk=True)
+    try:
+        cmd.execute()
+    finally:
+        cmds.undoInfo(closeChunk=True)
+
+
 def openStageLayerEditor(rootFile):
     """Create a Maya USD stage from ``rootFile`` and open the Layer Editor on it.
 
@@ -107,3 +123,4 @@ def setup():
     UsdLayerEditorTest._undo = staticmethod(undo)
     UsdLayerEditorTest._redo = staticmethod(redo)
     UsdLayerEditorTest._openStageLayerEditor = staticmethod(openStageLayerEditor)
+    UsdLayerEditorTest._executeCmd = staticmethod(executeCmd)
