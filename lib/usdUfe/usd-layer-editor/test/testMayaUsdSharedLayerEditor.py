@@ -25,7 +25,6 @@ layer_editor_test.py.
 
 import os
 import sys
-import unittest
 
 # Make sure the shared component's test directory (this file's own dir) is
 # importable so layer_editor_test and mayaLayerEditorTestSetup resolve.
@@ -33,13 +32,14 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
+import fixturesUtils  # noqa: E402
 import mayaLayerEditorTestSetup  # noqa: E402
 mayaLayerEditorTestSetup.setup()
 
-# Re-export the shared test class so unittest discovery finds it under this
-# module's name (ctest invokes us as a python module).
+# Re-export the shared test class so fixturesUtils.runTests(globals()) loads
+# every test_* method from the shared component's layer_editor_test.py.
 from layer_editor_test import UsdLayerEditorTest  # noqa: E402,F401
 
 
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
+    fixturesUtils.runTests(globals())
