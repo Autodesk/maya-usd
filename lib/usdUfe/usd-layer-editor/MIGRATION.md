@@ -111,32 +111,32 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 4bd0774c | Lint the code | skip | skip | Formatting/lint commit, no functional change |
 | 7d5ff145 | Merge branch 'dev' into kheloua/dev/EMSUSD-2997_bulk_save_components | component-creator | pending |  |
 | f33b4b84 | Remove bad comments | bug-fix | needs-port-file | Comment deletions inside _componentStageInfos / _componentSaveWidgets code paths in saveLayersDialog — component-creator feature batch |
-| da8e6c30 | Change to use stringResources strings instead of string formating for compone... | bug-fix | pending |  |
-| 20baa74a | Remove componentSaveDialog from codebase (using SaveLayerDialog instead) | bug-fix | pending |  |
+| da8e6c30 | Change to use stringResources strings instead of string formating for compone... | bug-fix | needs-port-file | Component-section msg3 in getDialogMessages and kToSaveTheStageSaveComponents string resource — depends on component-creator feature batch (msg3/component flow not in shared saveLayersDialog) |
+| 20baa74a | Remove componentSaveDialog from codebase (using SaveLayerDialog instead) | bug-fix | skip | Removes componentSaveDialog.cpp/h which never existed in shared — nothing to remove on shared side |
 | 3e470937 | Add 10px of padding above tree area for componentsavewidget | component-creator | pending |  |
-| 492988e4 | Move towards using the SaveLayerDialog instead of the ComponentSaveDialog for... | bug-fix | pending |  |
+| 492988e4 | Move towards using the SaveLayerDialog instead of the ComponentSaveDialog for... | bug-fix | needs-port-file | Removes ComponentSaveDialog usage from saveStage; uses shouldDisplayComponentInitialSaveDialog/_componentStageInfos/ComponentUtils::isAdskUsdComponent — component-creator feature batch |
 | f6f7b68a | clang | skip | skip | Formatting/lint commit, no functional change |
-| 0086a2f0 | Remove unused | bug-fix | pending |  |
-| 831664f8 | Use existing utils | bug-fix | pending |  |
-| 77aca3e7 | Make sure we init right | bug-fix | pending |  |
-| e79550e3 | Change the default save location for components to the maya scene if it exists | bug-fix | pending |  |
-| 4652debe | UI formating and remove component stages from layer processing in the rest of... | bug-fix | pending |  |
-| f6cdb922 | Add onSave logic for components in bulk save | bug-fix | pending |  |
-| c2e4af5e | Create moveComponent function and make use of it | bug-fix | pending |  |
-| 944ac093 | Move normalization code into setter | bug-fix | pending |  |
+| 0086a2f0 | Remove unused | bug-fix | skip | Removes unused getCurrentSceneDirectory from componentSaveDialog.cpp — file not in shared |
+| 831664f8 | Use existing utils | bug-fix | skip | Refactor inside componentSaveDialog.cpp to use MayaUsd::utils::getSceneFolder — file not in shared |
+| 77aca3e7 | Make sure we init right | bug-fix | skip | Touches componentSaveDialog.cpp and ComponentSaveDialog code path in layerTreeModel — file/branch not in shared (component-creator feature batch) |
+| e79550e3 | Change the default save location for components to the maya scene if it exists | bug-fix | skip | Touches only componentSaveDialog.cpp — file not in shared (component-creator feature batch) |
+| 4652debe | UI formating and remove component stages from layer processing in the rest of... | bug-fix | needs-port-file | Touches componentSaveWidget.cpp (not in shared) and _componentStageInfos / haveComponentStages branches in saveLayersDialog — component-creator feature batch |
+| f6cdb922 | Add onSave logic for components in bulk save | bug-fix | needs-port-file | Adds _componentSaveWidgets, component onSaveAll loop using ComponentUtils::moveAdskUsdComponent and Maya DAG renames — component-creator feature batch |
+| c2e4af5e | Create moveComponent function and make use of it | bug-fix | needs-port-file | Adds ComponentUtils::moveAdskUsdComponent + refactors saveStage to call it via ComponentSaveDialog branch — component-creator feature batch |
+| 944ac093 | Move normalization code into setter | bug-fix | skip | Touches only componentSaveWidget.cpp — file not in shared (component-creator feature batch) |
 | 71a9640d | Fix CC api usage | component-creator | pending |  |
-| 1c7f731d | Add SaveLayerPathRowArea to components section | bug-fix | pending |  |
-| e3f4ec64 | Add compact mode to widget, label and fix button size | bug-fix | pending |  |
+| 1c7f731d | Add SaveLayerPathRowArea to components section | bug-fix | needs-port-file | Adds _componentStagesWidget + componentScrollArea in saveLayersDialog::buildDialog — component-creator feature batch |
+| e3f4ec64 | Add compact mode to widget, label and fix button size | bug-fix | needs-port-file | Adds compact mode to componentSaveWidget + msg3 / haveComponentStages branches in saveLayersDialog — component-creator feature batch |
 | e3a08466 | clang | skip | skip | Formatting/lint commit, no functional change |
-| 8701f40f | Transfer over session layer content when we save. | bug-fix | pending |  |
-| 5ff15789 | Add basic abstraction of component save widget from dialog and use it in the ... | bug-fix | pending |  |
+| 8701f40f | Transfer over session layer content when we save. | bug-fix | needs-port-file | TransferContent for session layer inside ComponentSaveDialog branch in saveStage — component-creator feature batch |
+| 5ff15789 | Add basic abstraction of component save widget from dialog and use it in the ... | bug-fix | needs-port-file | Introduces componentSaveWidget.cpp/h (not in shared) and wires into saveLayersDialog — component-creator feature batch |
 | b1b118b3 | Merge pull request #4391 from Autodesk/deboisj/block_overwrite | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
-| 2f31607b | Rename to not prefix with TF | bug-fix | pending |  |
-| ab4828e9 | Only do it for <= 2017 | bug-fix | pending |  |
-| 9f4843a5 | Attempt | bug-fix | pending |  |
-| bf969b60 | fix 2023 windows? | bug-fix | pending |  |
+| 2f31607b | Rename to not prefix with TF | bug-fix | needs-port-file | Renames TfValidIdentifierValidator → ValidTfIdentifierValidator in qtUtils.cpp/h (not in shared) — qtUtils file not in shared (component-creator/feature batch dependency) |
+| ab4828e9 | Only do it for <= 2017 | bug-fix | skip | Maya-side CMakeLists.txt MSVC QT_NO_FLOAT16_OPERATORS fix; shared CMakeLists has no such MSVC compile-definition block |
+| 9f4843a5 | Attempt | bug-fix | skip | Maya-side CMakeLists.txt MSVC QT_NO_FLOAT16_OPERATORS fix + componentSaveDialog cleanup; neither in shared |
+| bf969b60 | fix 2023 windows? | bug-fix | skip | QT_NO_FLOAT16_OPERATORS workaround added to componentSaveDialog.cpp — file not in shared |
 | 445d7dd6 | Use GHC for filesystem access. | filesystem | pending |  |
-| 635f0277 | Move var inside scope | bug-fix | pending |  |
+| 635f0277 | Move var inside scope | bug-fix | skip | Scope tweak inside componentSaveDialog.cpp — file not in shared |
 | 530753c4 | typo / clang | skip | skip | Formatting/lint commit, no functional change |
 | d888d13e | move validator to util. | bug-fix | pending |  |
 | c43de2b8 | Merge pull request #4386 from Autodesk/deboisj/comp_mgr | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
