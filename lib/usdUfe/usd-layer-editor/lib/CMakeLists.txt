@@ -98,6 +98,7 @@ endif()
 
 target_compile_definitions(UsdLayerEditorLib
     PRIVATE
+        LAYEREDITOR_EXPORTS
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
