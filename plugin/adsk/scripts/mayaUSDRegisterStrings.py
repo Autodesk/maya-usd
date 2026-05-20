@@ -101,6 +101,7 @@ __mayaUSDStringResources = {
     "kMenuPrintToScriptEditor": "Print to Script Editor",
     "kMenuRemove": "Remove",
     "kMenuSelectPrimsWithSpec": "Select Prims With Spec",
+    "kMenuStitchLayers": "Merge Layers",
     "kMenuStageCreateMenuError": "Could not create mayaUSD create menu",
     "kMenuStageWithNewLayer": "Stage with New Layer",
     "kMenuStageWithNewLayerAnn": "Create a new, empty USD Stage",
