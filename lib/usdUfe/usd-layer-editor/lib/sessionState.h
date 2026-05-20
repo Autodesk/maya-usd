@@ -91,6 +91,23 @@ public:
     virtual bool displayLayerHideIndices() const { return _displayLayerHideIndices; }
     virtual void setDisplayLayerHideIndices(bool hide);
 
+    // Edit Forwarding hooks. The shared component does not depend on any
+    // particular EF implementation (which lives in DCC-specific code, e.g.
+    // AdskUsdEditForward / MayaUsdEditForwardHost on the Maya side). The
+    // shared layer-editor widget only needs to know whether the current
+    // stage has active edit forwarding so it can show/hide the banner. DCC
+    // integrations override hasEditForwarding() to drive the real state and
+    // emit editForwardingChanged() when it changes. echoEditForwarding /
+    // setEchoEditForwarding are no-ops in the shared base; DCC integrations
+    // wire them through to whatever EF-host preference exists.
+    // supportsEditForwarding() returns true when the DCC integration is
+    // built with EF support — used by the UI to decide whether to show the
+    // Echo Edit Forwarding menu item.
+    virtual bool supportsEditForwarding() const { return false; }
+    virtual bool hasEditForwarding() const { return false; }
+    virtual bool echoEditForwarding() const { return false; }
+    virtual void setEchoEditForwarding(bool /*echo*/) { /* no-op */ }
+
     PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
     StageEntry const&               stageEntry() const { return _currentStageEntry; }
     PXR_NS::SdfLayerRefPtr          targetLayer() const;
@@ -134,6 +151,9 @@ Q_SIGNALS:
     void stageResetSignal(StageEntry const& entry);
     void dccSelectionChangedSignal();
     void showDisplayLayerContents(bool showIt);
+    // Emitted by DCC integrations when the EF state of the current stage
+    // changes (banner should re-evaluate hasEditForwarding()).
+    void editForwardingChanged();
 
 protected:
     StageEntry _currentStageEntry;

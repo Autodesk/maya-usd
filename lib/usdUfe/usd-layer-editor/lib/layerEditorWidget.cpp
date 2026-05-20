@@ -22,9 +22,12 @@
 #include "layerContentsWidget.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
+#include "sessionState.h"
 #include "stageSelectorWidget.h"
 #include "stringResources.h"
 #include "utilQT.h"
+
+#include <pxr/usd/sdf/schema.h>
 
 #include <QtCore/QItemSelectionModel>
 #include <QtCore/QSignalBlocker>
@@ -37,8 +40,11 @@
 #endif
 
 #include <usdUfe/ufe/Utils.h>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QFrame>
 #include <QtWidgets/QGraphicsOpacityEffect>
 #include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
@@ -50,6 +56,13 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
+LayerEditorWidget::~LayerEditorWidget()
+{
+    TfNotice::Revoke(_layerChangedKey);
+    disconnect(
+        qApp, &QApplication::focusChanged, this, &LayerEditorWidget::updateTreeContainerBorder);
+}
+
 LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow* in_parent)
     : QWidget(in_parent)
     , _sessionState(in_sessionState)
@@ -104,6 +117,22 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
             &SessionState::setDisplayLayerExpandAllValues);
         _actions._displayLayerExpandAllValues->setCheckable(true);
         _actions._displayLayerExpandAllValues->setChecked(ss->displayLayerExpandAllValues());
+
+        // Echo Edit Forwarding menu item is only shown when the DCC integration
+        // actually supports EF (e.g. Maya builds with WANT_ADSK_USD_EDIT_FORWARD_BUILD).
+        // No EF symbols are referenced here — only the SessionState virtuals.
+        if (ss->supportsEditForwarding()) {
+            optionMenu->addSeparator();
+            _actions._echoEditForwarding = optionMenu->addAction(
+                StringResources::getAsQString(StringResources::kEchoEditForwarding));
+            QObject::connect(
+                _actions._echoEditForwarding,
+                &QAction::toggled,
+                ss,
+                &SessionState::setEchoEditForwarding);
+            _actions._echoEditForwarding->setCheckable(true);
+            _actions._echoEditForwarding->setChecked(ss->echoEditForwarding());
+        }
 
         // TODO LE-EXTRACT Maya-usd menus (auto-hide session layer / help menu)
         /*auto action = optionMenu->addAction(
@@ -270,7 +299,42 @@ void LayerEditorWidget::setupLayout()
         auto toolbarLayout = setupLayout_toolbar();
         mainVLayout->addLayout(toolbarLayout);
 
-        mainVLayout->addWidget(_treeView);
+        // Wrap the banner and tree view together in a framed container so they
+        // share the same border.
+        _treeContainer = new QFrame(mainVWidget);
+        _treeContainer->setFrameShape(QFrame::NoFrame);
+        _treeContainer->setFocusPolicy(Qt::NoFocus);
+        _treeContainer->setObjectName("layerEditorTreeContainer");
+        updateTreeContainerStyle(false);
+
+        connect(
+            qApp,
+            &QApplication::focusChanged,
+            this,
+            &LayerEditorWidget::updateTreeContainerBorder);
+
+        auto treeContainerLayout = new QVBoxLayout(_treeContainer);
+        treeContainerLayout->setSpacing(0);
+        treeContainerLayout->setContentsMargins(0, 0, 0, 0);
+
+        _editForwardBanner = new QLabel(_treeContainer);
+        _editForwardBanner->setText(
+            StringResources::getAsQString(StringResources::kEditForwardBanner));
+        _editForwardBanner->setWordWrap(true);
+        _editForwardBanner->setVisible(false);
+        _editForwardBanner->setContentsMargins(DPIScale(8), DPIScale(6), DPIScale(8), DPIScale(6));
+        _editForwardBanner->setStyleSheet("QLabel {"
+                                          "  background-color: rgb(55, 55, 55);"
+                                          "  color: palette(text);"
+                                          "  border-left: 3px solid #38abdf;"
+                                          "  padding-left: 6px;"
+                                          "}");
+        treeContainerLayout->addWidget(_editForwardBanner);
+
+        _treeView->setFrameShape(QFrame::NoFrame);
+        treeContainerLayout->addWidget(_treeView);
+
+        mainVLayout->addWidget(_treeContainer);
 
         mainVWidget->setLayout(mainVLayout);
         mainHSplitter->addWidget(mainVWidget);
@@ -286,6 +350,24 @@ void LayerEditorWidget::setupLayout()
         this,
         &LayerEditorWidget::showDisplayLayerContents);
 
+    // Update the EF banner whenever the current stage changes (or whenever the
+    // DCC integration signals an EF state change for the active stage).
+    connect(
+        &_sessionState,
+        &SessionState::currentStageChangedSignal,
+        this,
+        &LayerEditorWidget::updateEditForwardBanner);
+    connect(
+        &_sessionState,
+        &SessionState::editForwardingChanged,
+        this,
+        &LayerEditorWidget::updateEditForwardBanner);
+
+    {
+        TfWeakPtr<LayerEditorWidget> me(this);
+        _layerChangedKey = TfNotice::Register(me, &LayerEditorWidget::onLayerChanged);
+    }
+
     auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(DPIScale(4), DPIScale(4), DPIScale(4), DPIScale(4));
@@ -296,6 +378,77 @@ void LayerEditorWidget::setupLayout()
 
     updateNewLayerButton();
     updateButtons();
+    updateEditForwardBanner();
+}
+
+void LayerEditorWidget::updateTreeContainerBorder(QWidget*, QWidget* now)
+{
+    if (!_treeContainer)
+        return;
+
+    const bool focused = now && _treeContainer->isAncestorOf(now);
+    updateTreeContainerStyle(focused);
+}
+
+void LayerEditorWidget::updateTreeContainerStyle(bool focused)
+{
+    // Also mimic the selection highlight of treeview around both the banner and tree.
+    static const QString baseStyle
+        = "QFrame#layerEditorTreeContainer { border: 2px solid rgb(55, 55, 55); }";
+    static const QString focusStyle
+        = "QFrame#layerEditorTreeContainer { border: 1px solid palette(highlight); }";
+
+    if (!_treeContainer)
+        return;
+
+    _treeContainer->setStyleSheet(focused ? focusStyle : baseStyle);
+
+    // When highlighted we want the border to be a single pixel wide, so adjust the
+    // margin to avoid the content moving.
+    auto layout = _treeContainer->layout();
+    if (!layout)
+        return;
+
+    const int margin = focused ? 1 : 0;
+    layout->setContentsMargins(margin, margin, margin, margin);
+}
+
+void LayerEditorWidget::onLayerChanged(SdfNotice::LayersDidChangeSentPerLayer const& notice)
+{
+    // Only the DCC knows what EF state is, but the banner needs to refresh
+    // when CustomLayerData on the root layer changes (that is where EF rules
+    // live). Re-poll the SessionState predicate when that field changes.
+    auto stage = _sessionState.stage();
+    if (!stage)
+        return;
+
+    auto rootLayer = stage->GetRootLayer();
+    for (const auto& layerAndChanges : notice.GetChangeListVec()) {
+        if (layerAndChanges.first != rootLayer)
+            continue;
+        for (const auto& pathAndEntry : layerAndChanges.second.GetEntryList()) {
+            if (pathAndEntry.first != SdfPath::AbsoluteRootPath())
+                continue;
+            bool customLayerDataChanged = false;
+            for (const auto& item : pathAndEntry.second.infoChanged) {
+                if (item.first == SdfFieldKeys->CustomLayerData) {
+                    customLayerDataChanged = true;
+                    break;
+                }
+            }
+            if (customLayerDataChanged) {
+                updateEditForwardBanner();
+                return;
+            }
+        }
+    }
+}
+
+void LayerEditorWidget::updateEditForwardBanner()
+{
+    if (!_editForwardBanner)
+        return;
+    _editForwardBanner->setVisible(_sessionState.hasEditForwarding());
 }
 
 void LayerEditorWidget::updateButtonsOnIdle()
