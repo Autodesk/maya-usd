@@ -530,13 +530,13 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
     bool showConfirmDgl = Options::optionVarExists(kConfirmExistingFileSave)
         && Options::optionVarIntValue(kConfirmExistingFileSave) != 0;
 
-    // if the stage contains anonymous layers, you need to show the comfirm dialog
+    // if the stage contains anonymous layers, you need to show the confirm dialog
     // so the user can choose where to save the anonymous layers.
     if (!showConfirmDgl) {
-         // Get the layers to save for this stage.
          Serialization::StageLayersToSave StageLayersToSave;
-         auto&                             stageEntry = _sessionState->stageEntry();
-         Serialization::getLayersToSaveFromDCCObject(stageEntry._dccObjectPath, StageLayersToSave);
+         auto& stageEntry = _sessionState->stageEntry();
+         Serialization::getLayersToSaveFromStage(
+             stageEntry._stage, stageEntry._dccObjectPath, StageLayersToSave);
          showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 

@@ -467,7 +467,8 @@ void updateRootLayer(
     const SdfLayerRefPtr& layer,
     bool                          isTargetLayer)
 {
-    updateDCCObjectRootLayerFunction(proxy, layerPath);
+    if (updateDCCObjectRootLayerFunction)
+        updateDCCObjectRootLayerFunction(proxy, layerPath);
 }
 
  SdfLayerRefPtr saveAnonymousLayer(
@@ -568,7 +569,8 @@ void updateRootLayer(
     } else if (!parent._objectPath.empty()) {
         // if ever we support relative paths in the DCC, can return the relative path
         // i.e. "filePath" variable
-        updateDCCObjectRootLayerFunction(parent._objectPath, pathInfo.absolutePath);
+        if (updateDCCObjectRootLayerFunction)
+            updateDCCObjectRootLayerFunction(parent._objectPath, pathInfo.absolutePath);
     }
 
     updateTargetLayer(parent._objectPath, newLayer);
@@ -621,9 +623,11 @@ void updateRootLayer(
     }
 }
 
-void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo)
+void getLayersToSaveFromStage(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            objectPath,
+    StageLayersToSave&            layersInfo)
 {
-    auto stage = UsdUfe::getStage(Ufe::PathString::path(objectPath));
     if (!stage) {
         return;
     }
@@ -655,6 +659,15 @@ void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSa
         nullptr,
         layersInfo._anonLayers,
         layersInfo._dirtyFileBackedLayers);
+}
+
+void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo)
+{
+    auto stage = UsdUfe::getStage(Ufe::PathString::path(objectPath));
+    if (!stage) {
+        return;
+    }
+    getLayersToSaveFromStage(stage, objectPath, layersInfo);
 }
 
 } // namespace Serialization

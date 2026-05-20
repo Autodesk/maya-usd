@@ -21,7 +21,9 @@
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <batchSaveLayersUIDelegate.h>
 #include <saveLayersDialog.h>
+#include <utilFileSystem.h>
 #include <utilQT.h>
+#include <utilSerialization.h>
 #else
 #include "saveLayersDialog.h"
 #endif
@@ -29,9 +31,13 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <maya/MGlobal.h>
+#include <maya/MString.h>
+
+#include <filesystem>
 
 void UsdLayerEditor::initialize()
 {
@@ -39,6 +45,32 @@ void UsdLayerEditor::initialize()
     if (nullptr == UsdLayerEditor::getQtUtils()) {
         UsdLayerEditor::setQtUtils(new MayaQtUtils());
     }
+
+    UsdLayerEditor::FileSystem::setDCCSceneLocationFunc(
+        []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); });
+
+    UsdLayerEditor::FileSystem::setDCCWorkspaceSceneLocationFunc(
+        []() { return UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir(); });
+
+    UsdLayerEditor::Serialization::setUpdateDCCObjectRootLayerFunction(
+        [](const std::string& proxyPath, const std::string& layerPath) {
+            MayaUsd::utils::setNewProxyPath(
+                MString(proxyPath.c_str()),
+                MString(layerPath.c_str()),
+                MayaUsd::utils::kProxyPathFollowProxyShape,
+                nullptr,
+                false);
+        });
+
+    UsdLayerEditor::FileSystem::setFileWriteAccessFunction(
+        [](const std::string& filePath) -> bool {
+            namespace fs = std::filesystem;
+            const fs::path p(filePath);
+            if (!fs::exists(p))
+                return true;
+            const auto perms = fs::status(p).permissions();
+            return (perms & fs::perms::owner_write) != fs::perms::none;
+        });
 #else
     if (nullptr == UsdLayerEditor::utils) {
         UsdLayerEditor::utils = new MayaQtUtils();

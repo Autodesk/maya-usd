@@ -554,9 +554,15 @@ void SaveLayersDialog::getLayersToSave(
     const std::string&            objectPath,
     const std::string&            stageName)
 {
-    // Get the layers to save for this stage.
+    // Get the layers to save for this stage. Use the stage directly when available
+    // to avoid UFE path-format mismatches (e.g. Maya DAG paths vs |world-prefixed
+    // UFE keys) that cause getLayersToSaveFromDCCObject to silently return nothing.
     Serialization::StageLayersToSave StageLayersToSave;
-    Serialization::getLayersToSaveFromDCCObject(objectPath, StageLayersToSave);
+    if (stage) {
+        Serialization::getLayersToSaveFromStage(stage, objectPath, StageLayersToSave);
+    } else {
+        Serialization::getLayersToSaveFromDCCObject(objectPath, StageLayersToSave);
+    }
 
     // Keep track of all the layers for this particular stage.
     for (const auto& layerInfo : StageLayersToSave._anonLayers) {
