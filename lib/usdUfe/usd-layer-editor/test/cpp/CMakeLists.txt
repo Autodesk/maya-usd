@@ -14,8 +14,6 @@
 # limitations under the License.
 #
 
-# The same test sources compile into two executables.
-# Only include paths and link targets differ — no #ifdef in test code.
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
@@ -31,80 +29,9 @@ set(LAYER_EDITOR_TEST_SOURCES
 )
 
 # ------------------------------------------------------------------------------
-# UsdLayerEditorOldTests
-# Compiles the old layer-editor sources from lib/usd/ui/layerEditor/ directly.
-# Links Foundation/OpenMaya/OpenMayaUI (required by stringResources.cpp) but
-# NOT mayaUsdUI (the heavy Maya plug-in library).
-# ------------------------------------------------------------------------------
-set(OLD_LE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../lib/usd/ui/layerEditor)
-
-set(OLD_LE_SOURCES
-    ${OLD_LE_DIR}/batchSaveLayersUIDelegate.cpp
-    ${OLD_LE_DIR}/dirtyLayersCountBadge.cpp
-    ${OLD_LE_DIR}/generatedIconButton.cpp
-    ${OLD_LE_DIR}/layerContentsWidget.cpp
-    ${OLD_LE_DIR}/layerEditorWidget.cpp
-    ${OLD_LE_DIR}/layerTreeItem.cpp
-    ${OLD_LE_DIR}/layerTreeItemDelegate.cpp
-    ${OLD_LE_DIR}/layerTreeModel.cpp
-    ${OLD_LE_DIR}/layerTreeView.cpp
-    ${OLD_LE_DIR}/loadLayersDialog.cpp
-    ${OLD_LE_DIR}/pathChecker.cpp
-    ${OLD_LE_DIR}/qtUtils.cpp
-    ${OLD_LE_DIR}/saveLayersDialog.cpp
-    ${OLD_LE_DIR}/sessionState.cpp
-    ${OLD_LE_DIR}/stageSelectorWidget.cpp
-    ${OLD_LE_DIR}/stringResources.cpp
-    ${OLD_LE_DIR}/usdSyntaxHighlighter.cpp
-    ${OLD_LE_DIR}/warningDialogs.cpp
-    ${OLD_LE_DIR}/resources.qrc
-    # componentSaveWidget.cpp excluded: despite its generic name, it includes
-    # maya/MGlobal.h and MayaUsd::utils — it is Maya-specific.
-)
-
-add_executable(UsdLayerEditorOldTests
-    ${LAYER_EDITOR_TEST_SOURCES}
-    ${OLD_LE_SOURCES}
-)
-
-mayaUsd_compile_config(UsdLayerEditorOldTests)
-
-target_compile_definitions(UsdLayerEditorOldTests
-    PRIVATE
-        $<$<BOOL:${IS_WINDOWS}>:WIN32>
-        $<$<BOOL:${IS_LINUX}>:LINUX>
-        $<$<BOOL:${IS_MACOSX}>:OSMac_>
-)
-
-target_include_directories(UsdLayerEditorOldTests
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${OLD_LE_DIR}
-        ${MAYA_INCLUDE_DIRS}
-        ${UFE_INCLUDE_DIR}
-        ${PXR_INCLUDE_DIRS}
-)
-
-target_link_libraries(UsdLayerEditorOldTests
-    PRIVATE
-        GTest::GTest
-        Qt::Core Qt::Gui Qt::Widgets
-        sdf tf usd usdUfe
-        ${UFE_LIBRARY}
-        ${MAYA_Foundation_LIBRARY}
-        ${MAYA_OpenMaya_LIBRARY}
-        ${MAYA_OpenMayaUI_LIBRARY}
-)
-
-mayaUsd_add_test(UsdLayerEditorOldTests
-    COMMAND $<TARGET_FILE:UsdLayerEditorOldTests>
-    ENV
-        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-)
-
-# ------------------------------------------------------------------------------
 # UsdLayerEditorNewTests
-# Links UsdLayerEditorLib. Only built when BUILD_NEW_LAYER_EDITOR=ON.
+# Links UsdLayerEditorLib (the DCC-agnostic shared component).
+# Built only when BUILD_NEW_LAYER_EDITOR=ON.
 # ------------------------------------------------------------------------------
 if(BUILD_NEW_LAYER_EDITOR)
     set(NEW_LE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib)
