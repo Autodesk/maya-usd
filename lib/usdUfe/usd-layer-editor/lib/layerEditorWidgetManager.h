@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef LAYER_EDITOR_WIDGETMANAGER_H
+#define LAYER_EDITOR_WIDGETMANAGER_H
 
 #include "layerEditorAPI.h"
 
@@ -45,3 +47,5 @@ private:
 };
 
 } // namespace UsdLayerEditor
+
+#endif // LAYER_EDITOR_WIDGETMANAGER_H
