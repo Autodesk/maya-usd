@@ -79,6 +79,18 @@ public:
     virtual bool                    autoHideSessionLayer() const { return _autoHideSessionLayer; }
     virtual void                    setAutoHideSessionLayer(bool hide);
     virtual bool                    autoObserveUfeSelection() const { return true; }
+
+    // Layer-contents display options. Default implementations store the value
+    // in protected members; DCC integrations (e.g. MayaSessionState) override
+    // these setters to persist the value in their preference store (optionVar
+    // etc.). The default getters return the cached value.
+    virtual bool displayLayerContents() const { return _displayLayerContents; }
+    virtual void setDisplayLayerContents(bool show);
+    virtual bool displayLayerExpandAllValues() const { return _displayLayerExpandAllValues; }
+    virtual void setDisplayLayerExpandAllValues(bool expand);
+    virtual bool displayLayerHideIndices() const { return _displayLayerHideIndices; }
+    virtual void setDisplayLayerHideIndices(bool hide);
+
     PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
     StageEntry const&               stageEntry() const { return _currentStageEntry; }
     PXR_NS::SdfLayerRefPtr          targetLayer() const;
@@ -121,10 +133,14 @@ Q_SIGNALS:
     void autoHideSessionLayerSignal(bool hideIt);
     void stageResetSignal(StageEntry const& entry);
     void dccSelectionChangedSignal();
+    void showDisplayLayerContents(bool showIt);
 
 protected:
     StageEntry _currentStageEntry;
     bool       _autoHideSessionLayer = true;
+    bool       _displayLayerContents { true };
+    bool       _displayLayerExpandAllValues { false };
+    bool       _displayLayerHideIndices { false };
 };
 
 } // namespace UsdLayerEditor
