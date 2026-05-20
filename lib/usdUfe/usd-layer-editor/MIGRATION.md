@@ -81,36 +81,36 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 51cad71d | clang | skip | skip | Formatting/lint commit, no functional change |
 | 379c5b14 | Do not show the confirmation dialog if there are no layers to save | bug-fix | ported | Applied to lib/usdUfe/usd-layer-editor/lib/batchSaveLayersUIDelegate.cpp: track atLeastOneLayerToSave / atLeastOneAnonToSave and only show dialog when there are layers to save |
 | 79e3197a | linter fix | bug-fix | skip | Formatting/lint commit, no functional change |
-| 41293729 | StitchLayer constructor and private member vars, missing consts | bug-fix | pending |  |
+| 41293729 | StitchLayer constructor and private member vars, missing consts | bug-fix | skip | Already in shared — StitchLayersCmd in LayerEditorCommands.h already uses constructor-based init with private _layerIdentifiersByStrength/_stage; const-correctness diffs are Maya-side only |
 | bd13ab96 | cherrypick | bug-fix | skip | Formatting/lint commit, no functional change |
 | 67ae6ead | Merge pull request #4469 from Autodesk/kylerasinger/dev/EMSUSD-3078_flatten_l... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 336c8781 | Merge pull request #4480 from Autodesk/bailp/EMSUSD-1397/multi-refs-stage-crash | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
-| 7c572bf5 | EMSUSD-1397 fixMaya scene with Maya refs | bug-fix | pending |  |
-| 265edb85 | undo works for script editor | bug-fix | pending |  |
+| 7c572bf5 | EMSUSD-1397 fixMaya scene with Maya refs | bug-fix | skip | Touches getChildProxyShape() in stageSelectorWidget.cpp — that helper is Maya-only (MayaUsdProxyShapeBase) and is commented out in the shared version |
+| 265edb85 | undo works for script editor | bug-fix | skip | Already in shared — FlattenLayerCmd / kFlattenLayer in LayerEditorCommands.h + UfeCommandHook::flattenLayer; LayerTreeItem::mergeWithSublayers already routes through commandHook()->flattenLayer() |
 | 3c22da42 | clang | skip | skip | Formatting/lint commit, no functional change |
-| cf187c34 | make sure we dont always popup the save dialog for components | bug-fix | pending |  |
+| cf187c34 | make sure we dont always popup the save dialog for components | bug-fix | needs-port-file | Depends on MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog and _componentStageInfos in saveLayersDialog — component-creator feature batch not yet in shared |
 | 3d5bc6ff | clang fixes | skip | skip | Formatting/lint commit, no functional change |
-| 81a18e43 | Undo functionality | bug-fix | pending |  |
-| 049f2d62 | Merge with Sublayers, undo missing, no unit tests. | bug-fix | pending |  |
-| 8aa5a9ce | Add context menu option | bug-fix | pending |  |
+| 81a18e43 | Undo functionality | bug-fix | skip | Already in shared — undo is handled via FlattenLayerCmd's BackupLayerBaseCmd; LayerTreeItem::mergeWithSublayers in shared now just calls commandHook()->flattenLayer() (no MayaUsdUndoBlock needed) |
+| 049f2d62 | Merge with Sublayers, undo missing, no unit tests. | bug-fix | skip | Already in shared — original inline flatten logic was superseded in shared by FlattenLayerCmd dispatched via commandHook()->flattenLayer() in layerTreeItem.cpp |
+| 8aa5a9ce | Add context menu option | bug-fix | skip | Already in shared — LayerTreeItem::mergeWithSublayers() exists in lib/usdUfe/usd-layer-editor/lib/layerTreeItem.{cpp,h}; abstractLayerEditorWindow/mayaLayerEditorWindow/MEL wiring is Maya-only |
 | 3f262318 | Merge pull request #4455 from dj-mcg/pr/Remove_Unnecessary_Headers | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
-| 2f2eb930 | Remove (seemingly) unnecessary headers | bug-fix | pending |  |
-| 7fba398f | Use PXR_NS namespacing macro instead of pxr namespace | bug-fix | pending |  |
-| f31f60b2 | anon layers with locked parents are not saveable. | bug-fix | pending |  |
+| 2f2eb930 | Remove (seemingly) unnecessary headers | bug-fix | skip | Already in shared — ghc/filesystem.hpp include is not present in shared layerTreeModel.cpp |
+| 7fba398f | Use PXR_NS namespacing macro instead of pxr namespace | bug-fix | needs-port-file | Touches qtUtils.cpp::ValidTfIdentifierValidator — qtUtils.cpp/ValidTfIdentifierValidator not yet in shared; trivial pxr::→PXR_NS:: tweak to apply when the file is ported |
+| f31f60b2 | anon layers with locked parents are not saveable. | bug-fix | skip | Already in shared — getLayersToSave in saveLayersDialog.cpp already checks (isLayerLocked \|\| isLayerSystemLocked) for the anonymous-layer parent |
 | 85721e66 | EMSUSD-3020 change function nae | component-creator | pending |  |
 | c032474d | EMSUSD-3020 reload component | component-creator | pending |  |
 | 1ca43946 | EMSUSD-3016 save edits for component | component-creator | pending |  |
-| cc852191 | Reapplying lost change on bulk save merge. | bug-fix | pending |  |
-| d8c679f0 | Fix component save after initial saving. | bug-fix | pending |  |
+| cc852191 | Reapplying lost change on bulk save merge. | bug-fix | skip | Maya-only code path inside SaveLayersDialog::onSaveAll — uses UsdMayaUtil::GetStageByProxyName, proxy-shape rename, MayaUsd::lockLayer; shared onSaveAll does not perform that proxy-shape swap |
+| d8c679f0 | Fix component save after initial saving. | bug-fix | needs-port-file | Depends on MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog and component-stage dialog flow in saveLayersDialog/layerTreeModel — component-creator feature batch |
 | b25862b5 | Lint | skip | skip | Formatting/lint commit, no functional change |
-| 9998b98f | Add logic to prompt user for saving components when serializing to disk | bug-fix | pending |  |
+| 9998b98f | Add logic to prompt user for saving components when serializing to disk | bug-fix | needs-port-file | Adds componentsOnly mode to SaveLayersDialog + kSaveToMayaSceneFile branch in batchSaveLayersUIDelegate keyed off MayaUsd::ComponentUtils::isAdskUsdComponent — component-creator feature batch |
 | e0f8b216 | Address PR feedback and lint | skip | skip | Formatting/lint commit, no functional change |
 | 40f455bd | Merge branch 'dev' into kheloua/dev/EMSUSD-2997_bulk_save_components | component-creator | pending |  |
 | cbf6ba84 | Merge pull request #4401 from Autodesk/deboisj/change_default_component_folder | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
-| 409ad376 | unused failing linux | bug-fix | pending |  |
+| 409ad376 | unused failing linux | bug-fix | needs-port-file | Touches componentSaveDialog.cpp which is not in shared — component-creator feature batch |
 | 4bd0774c | Lint the code | skip | skip | Formatting/lint commit, no functional change |
 | 7d5ff145 | Merge branch 'dev' into kheloua/dev/EMSUSD-2997_bulk_save_components | component-creator | pending |  |
-| f33b4b84 | Remove bad comments | bug-fix | pending |  |
+| f33b4b84 | Remove bad comments | bug-fix | needs-port-file | Comment deletions inside _componentStageInfos / _componentSaveWidgets code paths in saveLayersDialog — component-creator feature batch |
 | da8e6c30 | Change to use stringResources strings instead of string formating for compone... | bug-fix | pending |  |
 | 20baa74a | Remove componentSaveDialog from codebase (using SaveLayerDialog instead) | bug-fix | pending |  |
 | 3e470937 | Add 10px of padding above tree area for componentsavewidget | component-creator | pending |  |
