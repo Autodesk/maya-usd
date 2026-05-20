@@ -90,6 +90,8 @@ std::string getDir(const std::string& fullFilePath)
 
 std::string getDCCSceneFileDir()
 {
+    if (!dccSceneSaveLocationFunc)
+        return {};
     return dccSceneSaveLocationFunc();
 }
 
@@ -477,6 +479,8 @@ std::string getReferencedPrimPath()
 
 std::string getDCCWorkspaceScenesDir()
 {
+    if (!dccWorkspaceSceneSaveLocationFunc)
+        return {};
     return dccWorkspaceSceneSaveLocationFunc();
 }
 

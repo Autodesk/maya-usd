@@ -1,6 +1,25 @@
 <RCC>
     <qresource prefix="/UsdLayerEditor">
 
+        <file alias="contents_off_100.png">resources/contents_off_100.png</file>
+        <file alias="contents_off_150.png">resources/contents_off_150.png</file>
+        <file alias="contents_off_200.png">resources/contents_off_200.png</file>
+        <file alias="contents_off_hover_100.png">resources/contents_off_hover_100.png</file>
+        <file alias="contents_off_hover_150.png">resources/contents_off_hover_150.png</file>
+        <file alias="contents_off_hover_200.png">resources/contents_off_hover_200.png</file>
+        <file alias="contents_off_pressed_100.png">resources/contents_on_hover_100.png</file>
+        <file alias="contents_off_pressed_150.png">resources/contents_on_hover_150.png</file>
+        <file alias="contents_off_pressed_200.png">resources/contents_on_hover_200.png</file>
+        <file alias="contents_on_100.png">resources/contents_on_100.png</file>
+        <file alias="contents_on_150.png">resources/contents_on_150.png</file>
+        <file alias="contents_on_200.png">resources/contents_on_200.png</file>
+        <file alias="contents_on_hover_100.png">resources/contents_on_hover_100.png</file>
+        <file alias="contents_on_hover_150.png">resources/contents_on_hover_150.png</file>
+        <file alias="contents_on_hover_200.png">resources/contents_on_hover_200.png</file>
+        <file alias="contents_on_pressed_100.png">resources/contents_off_hover_100.png</file>
+        <file alias="contents_on_pressed_150.png">resources/contents_off_hover_150.png</file>
+        <file alias="contents_on_pressed_200.png">resources/contents_off_hover_200.png</file>
+
         <file alias="LE_addCreateGeneric.png">resources/addCreateGeneric_100.png</file>
         <file alias="LE_addCreateGeneric_100.png">resources/addCreateGeneric_100.png</file>
         <file alias="LE_addCreateGeneric_150.png">resources/addCreateGeneric_150.png</file>
