@@ -36,7 +36,6 @@ public:
 
     AbstractCommandHook*     commandHook() override;
     std::vector<StageEntry>  allStages() const override;
-    std::vector<StageEntry>  selectedStages() const override;
     std::string              defaultLoadPath() const override;
     std::vector<std::string> loadLayersUI(
         const QString& title, const std::string& default_path) const override;
@@ -45,8 +44,6 @@ public:
         std::string*                  out_filePath,
         const PXR_NS::SdfLayerRefPtr& parentLayer) const override;
     void printLayer(const PXR_NS::SdfLayerRefPtr& layer) const override;
-    void refreshCurrentStageEntry() override;
-    void refreshStageEntry(std::string const& dccObjectPath) override;
     void setupCreateMenu(QMenu* menu) override;
     void rootLayerPathChanged(std::string const& path) override;
 

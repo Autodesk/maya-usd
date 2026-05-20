@@ -43,13 +43,15 @@ public:
     void     flattenLayer(UsdLayer layer) override;
     UsdLayer addAnonymousSubLayer(UsdLayer layer, std::string newName) override;
     void     muteSubLayer(UsdLayer layer, bool muteIt) override;
-    void     lockLayer(UsdLayer layer, LayerLockType lockState, bool includeSubLayers) override;
+    void     lockLayer(UsdLayer layer, MayaUsd::LayerLockType lockState, bool includeSubLayers) override;
     void     refreshLayerSystemLock(UsdLayer layer, bool refreshSubLayers = false) override;
     void     stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers) override;
     void     openUndoBracket(const QString& name) override;
     void     closeUndoBracket() override;
     void     showLayerEditorHelp() override;
     void     selectPrimsWithSpec(UsdLayer layer) override;
+    bool     isProxyShapeStageIncoming(const std::string& proxyShapePath) override;
+    bool     isProxyShapeSharedStage(const std::string& proxyShapePath) override;
 
     void               clearCalls();
     bool               hasCall(std::string_view method) const;

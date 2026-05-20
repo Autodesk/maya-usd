@@ -16,7 +16,7 @@
 
 #include "stubCommandHook.h"
 
-#include "layerLocking.h"
+#include <mayaUsd/utils/layerLocking.h>
 
 #include <pxr/usd/sdf/layer.h>
 
@@ -106,10 +106,10 @@ void StubCommandHook::muteSubLayer(UsdLayer layer, bool muteIt)
 }
 
 void StubCommandHook::lockLayer(
-    UsdLayer layer, LayerLockType lockState, bool /*includeSubLayers*/)
+    UsdLayer layer, MayaUsd::LayerLockType lockState, bool /*includeSubLayers*/)
 {
     _calls.push_back({ "lockLayer", { layer->GetIdentifier() } });
-    UsdLayerEditor::lockLayer(std::string {}, layer, lockState, /*updateDCCObjectAttr=*/false);
+    MayaUsd::lockLayer(std::string {}, layer, lockState, /*updateDCCObjectAttr=*/false);
 }
 
 void StubCommandHook::refreshLayerSystemLock(UsdLayer layer, bool /*refreshSubLayers*/)
@@ -140,6 +140,16 @@ void StubCommandHook::showLayerEditorHelp()
 void StubCommandHook::selectPrimsWithSpec(UsdLayer layer)
 {
     _calls.push_back({ "selectPrimsWithSpec", { layer->GetIdentifier() } });
+}
+
+bool StubCommandHook::isProxyShapeStageIncoming(const std::string& /*proxyShapePath*/)
+{
+    return false;
+}
+
+bool StubCommandHook::isProxyShapeSharedStage(const std::string& /*proxyShapePath*/)
+{
+    return false;
 }
 
 void StubCommandHook::clearCalls()
