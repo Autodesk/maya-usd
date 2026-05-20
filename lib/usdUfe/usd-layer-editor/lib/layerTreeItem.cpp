@@ -439,7 +439,7 @@ void LayerTreeItem::saveEdits()
     static const std::string kConfirmExistingFileSave
         = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
     const bool showConfirmDgl = Options::optionVarExists(kConfirmExistingFileSave)
-        && Options::optionVarExists(kConfirmExistingFileSave) != 0;
+        && Options::optionVarIntValue(kConfirmExistingFileSave) != 0;
     if (showConfirmDgl && !isAnonymous()) {
         const std::string titleFormat = StringResources::kSaveLayerWarnTitle.value;
         const std::string msgFormat = StringResources::kSaveLayerWarnMsg.value;
