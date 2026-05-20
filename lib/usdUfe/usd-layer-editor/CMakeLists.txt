@@ -20,4 +20,6 @@
 add_subdirectory(lib)
 add_subdirectory(python)
 
-add_subdirectory(test)
+if(BUILD_TESTS)
+    add_subdirectory(test)
+endif()
