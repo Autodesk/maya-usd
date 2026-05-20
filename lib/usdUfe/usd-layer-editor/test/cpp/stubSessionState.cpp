@@ -48,6 +48,11 @@ std::vector<SessionState::StageEntry> StubSessionState::allStages() const
     return _stages;
 }
 
+std::vector<SessionState::StageEntry> StubSessionState::selectedStages() const
+{
+    return { _currentStageEntry };
+}
+
 std::string StubSessionState::defaultLoadPath() const
 {
     return "/tmp";
@@ -79,6 +84,9 @@ void StubSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& /*layer*/) const
 {
     ++_printLayerCallCount;
 }
+
+void StubSessionState::refreshCurrentStageEntry() { }
+void StubSessionState::refreshStageEntry(std::string const& /*dccObjectPath*/) { }
 
 void StubSessionState::setupCreateMenu(QMenu* menu)
 {
@@ -114,7 +122,11 @@ StubSessionState::makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id)
     e._id            = id;
     e._stage         = stage;
     e._displayName   = id;
+#ifdef USDLAYEREDITOR_SESSIONSTATE_H
+    e._dccObjectPath  = id;
+#else
     e._proxyShapePath = id;
+#endif
     return e;
 }
 
