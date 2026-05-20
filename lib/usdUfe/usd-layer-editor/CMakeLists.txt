@@ -18,5 +18,6 @@
 # (DCC-agnostic). Built when BUILD_NEW_LAYER_EDITOR is ON.
 
 add_subdirectory(lib)
+add_subdirectory(python)
 
-# Python bindings and tests are added in later tasks.
+# Tests are added in later tasks.
