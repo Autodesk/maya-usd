@@ -91,7 +91,7 @@ void StubCommandHook::flattenLayer(UsdLayer layer)
     _calls.push_back({ "flattenLayer", { layer->GetIdentifier() } });
 }
 
-StubCommandHook::UsdLayer StubCommandHook::addAnonymousSubLayer(
+UsdLayer StubCommandHook::addAnonymousSubLayer(
     UsdLayer layer, std::string newName)
 {
     _calls.push_back({ "addAnonymousSubLayer", { layer->GetIdentifier(), newName } });
