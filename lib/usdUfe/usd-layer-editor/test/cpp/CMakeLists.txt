@@ -32,8 +32,9 @@ set(LAYER_EDITOR_TEST_SOURCES
 
 # ------------------------------------------------------------------------------
 # UsdLayerEditorOldTests
-# Compiles the DCC-agnostic sources from lib/usd/ui/layerEditor/ directly.
-# Does NOT link mayaUsdUI (which carries Maya SDK dependencies).
+# Compiles the old layer-editor sources from lib/usd/ui/layerEditor/ directly.
+# Links Foundation/OpenMaya/OpenMayaUI (required by stringResources.cpp) but
+# NOT mayaUsdUI (the heavy Maya plug-in library).
 # ------------------------------------------------------------------------------
 set(OLD_LE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../lib/usd/ui/layerEditor)
 
@@ -90,6 +91,9 @@ target_link_libraries(UsdLayerEditorOldTests
         Qt::Core Qt::Gui Qt::Widgets
         sdf tf usd usdUfe
         ${UFE_LIBRARY}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaUI_LIBRARY}
 )
 
 mayaUsd_add_test(UsdLayerEditorOldTests
