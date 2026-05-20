@@ -199,7 +199,7 @@ void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::stri
     for (auto& stage : stages) {
         auto sessionLayer = stage->GetSessionLayer();
         updatedStages.emplace_back(UsdStage::UsdStage::Open(newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone));
-        bool erased = cache.Erase(stage);
+        cache.Erase(stage);
     }
     for (auto& updatedStage : updatedStages) {
         cache.Insert(updatedStage);

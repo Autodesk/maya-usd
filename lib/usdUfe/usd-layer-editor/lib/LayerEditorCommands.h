@@ -198,10 +198,10 @@ public:
         bool                       includeSubLayers = false,
         bool                       skipSystemLockedLayers = false)
         : BaseCmd(CmdId::kLockLayer, layer)
-        , _stage(stage)
+        , _lockType(lockState)
         , _includeSublayers(includeSubLayers)
         , _skipSystemLockedLayers(skipSystemLockedLayers)
-        , _lockType(lockState)
+        , _stage(stage)
     {
     }
 
@@ -306,8 +306,8 @@ public:
         const pxr::SdfLayerHandle& layer,
         bool                       refreshSubLayers)
         : BaseCmd(CmdId::kRefreshSystemLock, layer)
-        , _stage(stage)
         , _refreshSubLayers(refreshSubLayers)
+        , _stage(stage)
     {
     }
 
@@ -341,8 +341,8 @@ public:
         const pxr::UsdStageRefPtr&      stage,
         const std::vector<std::string>& layerIdentifiers)
         : BackupLayerBaseCmd(CmdId::kStitchLayers, pxr::SdfLayerRefPtr())
-        , _stage(stage)
         , _layerIdentifiersByStrength(layerIdentifiers)
+        , _stage(stage)
     {
     }
 
