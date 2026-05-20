@@ -18,7 +18,8 @@
 #define MAYASESSIONSTATE_H
 
 #include "mayaCommandHook.h"
-#include "sessionState.h"
+
+#include <sessionState.h>
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
