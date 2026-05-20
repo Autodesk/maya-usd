@@ -23,6 +23,8 @@
 
 #include <QtCore/QPointer>
 
+class QMenu;
+
 namespace UsdLayerEditor {
 
 class LayerEditorWidget;
@@ -74,6 +76,10 @@ public:
     virtual QMainWindow* getMainWindow() = 0;
 
 protected:
+
+    // Override to append DCC-specific items after "Select Prims with Spec".
+    // Default implementation does nothing.
+    virtual void addDCCContextMenuItems(QMenu* menu) { (void)menu; }
 
     QPointer<LayerEditorWidget> _layerEditor;
     std::string                 _panelName;
