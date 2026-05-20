@@ -53,33 +53,33 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 9a13cd9f | Point maya layer editor wiring at UsdLayerEditorLib headers | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |
 | dbfb9b43 | Conditionally drop shared sources from mayaUsdUI layer editor | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |
 | e585a445 | Merge pull request #4609 from Autodesk/bailp/EMSUSD-3181/faster-all-stages | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
-| 7b51144e | EMSUSD-3181 use depth-first | bug-fix | pending |  |
-| f18d7545 | EMSUSD-3181 filter instances | bug-fix | pending |  |
-| 5afb128c | EMSUSD-3181 faster all-stages | bug-fix | pending |  |
+| 7b51144e | EMSUSD-3181 use depth-first | bug-fix | maya-only | Touches only mayaSessionState.cpp (Maya MItDag iteration) — no shared counterpart |
+| f18d7545 | EMSUSD-3181 filter instances | bug-fix | maya-only | Touches only mayaSessionState.cpp (Maya DAG instance filtering) — no shared counterpart |
+| 5afb128c | EMSUSD-3181 faster all-stages | bug-fix | skip | mayaSessionState.cpp is Maya-only; shared stageSelectorWidget.cpp::selectionChanged already calls allStages() only once via selectedStages() path |
 | 4f8b0a66 | Fix save icon refresh | bug-fix | ported | Applied to lib/usdUfe/usd-layer-editor/lib/layerTreeModel.cpp (usd_layerDirtinessChanged emits dataChanged for non-local layers) |
-| 78c34506 | Fix comment wording | bug-fix | pending |  |
-| c710f926 | Fix crash on add layer when root is locked. | bug-fix | pending |  |
-| c985a4f9 | EMSUSD-3687 moved comments | bug-fix | pending |  |
-| 60cf0f23 | EMSUSD-3687 fix layer-editor-crash | bug-fix | pending |  |
+| 78c34506 | Fix comment wording | bug-fix | skip | Comment-only change to maya-usd updateNewLayerButton fallback branch; that branch logic isn't in the shared implementation |
+| c710f926 | Fix crash on add layer when root is locked. | bug-fix | ported | Tightened TF_VERIFY in layerEditorCommands.cpp InsertSubLayerPath; updateNewLayerButton in layerEditorWidget.cpp now falls back to root-layer item when nothing is selected, so locked-root state is detected |
+| c985a4f9 | EMSUSD-3687 moved comments | bug-fix | needs-port-file | Refactor inside updateTreeContainerBorder/Style; shared layerEditorWidget has no _treeContainer/banner feature yet (depends on the EF banner feature batch) |
+| 60cf0f23 | EMSUSD-3687 fix layer-editor-crash | bug-fix | needs-port-file | Crash fix around _treeContainer/EF-banner focus tracking; shared layerEditorWidget has no _treeContainer/_editForwardBanner yet (depends on EF banner feature batch) |
 | d29de840 | Merge pull request #4595 from Autodesk/deboisj/ef_echo | ef-banner | pending |  |
 | 954b7917 | clang | skip | skip | Formatting/lint commit, no functional change |
 | 43f7c18c | update | bug-fix | skip | Formatting/lint commit, no functional change |
-| 7f4b4cf3 | want echo | bug-fix | pending |  |
+| 7f4b4cf3 | want echo | bug-fix | needs-port-file | Adds EF Echo plumbing — depends on EF banner/SessionState extensions not yet in shared (echoEditForwarding option, MayaUsdEditForwardHost is Maya-only); part of EF banner feature batch |
 | 026d3073 | EMSUSD-3654 - MayaUsd: Update gulrak filesystem usage * Fix failing test on W... | component-creator | pending |  |
 | 78b55a22 | EMSUSD-3654 - MayaUsd: Update gulrak filesystem usage * Remove the download a... | component-creator | pending |  |
-| d9fe6df8 | Fix error un pseudo layers with variants & refresh system lock error | bug-fix | pending |  |
+| d9fe6df8 | Fix error un pseudo layers with variants & refresh system lock error | bug-fix | needs-port-file | Touches layerContentsWidget.cpp (not in shared yet; layer-contents feature batch) and mayaCommandHook.cpp (Maya-only) |
 | 93f72d11 | Merge pull request #4572 from Autodesk/deboisj/LE_EF_banner | ef-banner | pending |  |
-| 32d2d8d0 | Update color after feedback from UX | bug-fix | pending |  |
+| 32d2d8d0 | Update color after feedback from UX | bug-fix | needs-port-file | EF banner background-color tweak; banner not in shared layerEditorWidget yet (EF banner feature batch) |
 | 692d93e6 | clang | skip | skip | Formatting/lint commit, no functional change |
 | 5359d7f0 | Add banner for EF | ef-banner | pending |  |
 | fc9d5ec7 | Merge pull request #4563 from Autodesk/bailp/EMSUSDC-411/refresh-lock-not-und... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | a20f8d63 | Merge pull request #4566 from Autodesk/kylerasinger/dev/EMSUSD-3219_flatten_l... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 4f0bcc73 | fix | bug-fix | skip | Formatting/lint commit, no functional change |
-| 735d45f6 | EMSUSDC-411 do not disturb redo | bug-fix | pending |  |
+| 735d45f6 | EMSUSDC-411 do not disturb redo | bug-fix | maya-only | Touches only mayaCommandHook.cpp/h (Maya MEL/Python undoable flag plumbing) |
 | 85c3966a | EMSUSD-3189: [GitHub #4521] 'Hide indices option' for the Display Layer Conte... | layer-contents | pending |  |
 | 7b3f6c83 | EMSUSD-3189: [GitHub #4521] 'Hide indices option' for the Display Layer Conte... | layer-contents | pending |  |
 | 51cad71d | clang | skip | skip | Formatting/lint commit, no functional change |
-| 379c5b14 | Do not show the confirmation dialog if there are no layers to save | bug-fix | pending |  |
+| 379c5b14 | Do not show the confirmation dialog if there are no layers to save | bug-fix | ported | Applied to lib/usdUfe/usd-layer-editor/lib/batchSaveLayersUIDelegate.cpp: track atLeastOneLayerToSave / atLeastOneAnonToSave and only show dialog when there are layers to save |
 | 79e3197a | linter fix | bug-fix | skip | Formatting/lint commit, no functional change |
 | 41293729 | StitchLayer constructor and private member vars, missing consts | bug-fix | pending |  |
 | bd13ab96 | cherrypick | bug-fix | skip | Formatting/lint commit, no functional change |

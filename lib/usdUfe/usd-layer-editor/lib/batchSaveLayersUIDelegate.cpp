@@ -36,22 +36,36 @@ UsdLayerEditor::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
 
         static const std::string kConfirmExistingFileSave
             = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
-        bool showConfirmDgl = Options::optionVarExists(kConfirmExistingFileSave)
+        bool showConfirmDglOption = Options::optionVarExists(kConfirmExistingFileSave)
             && Options::optionVarIntValue(kConfirmExistingFileSave) != 0;
 
-        // if at least one stage contains anonymous layers, you need to show the comfirm dialog
-        // so the user can choose where to save the anonymous layers.
-         if (!showConfirmDgl) {
-            for (const auto& info : infos) {
-                Serialization::StageLayersToSave StageLayersToSave;
-                const auto dccObjectPath = UsdUfe::stagePath(info.stage).string();
-                Serialization::getLayersToSaveFromDCCObject(dccObjectPath, StageLayersToSave);
-                if (!StageLayersToSave._anonLayers.empty()) {
-                    showConfirmDgl = true;
+        bool atLeastOneLayerToSave = false;
+        bool atLeastOneAnonToSave = false;
+
+        for (const auto& info : infos) {
+            Serialization::StageLayersToSave StageLayersToSave;
+            const auto dccObjectPath = UsdUfe::stagePath(info.stage).string();
+            Serialization::getLayersToSaveFromDCCObject(dccObjectPath, StageLayersToSave);
+            if (!StageLayersToSave._anonLayers.empty()) {
+                atLeastOneAnonToSave = true;
+                atLeastOneLayerToSave = true;
+                break;
+            }
+            if (!StageLayersToSave._dirtyFileBackedLayers.empty()) {
+                atLeastOneLayerToSave = true;
+                // If the option is set to show the confirmation dialog,
+                // we can stop here, we already know we will have to show it
+                // below, no need to complete the search for atLeastOneAnonToSave.
+                if (showConfirmDglOption) {
                     break;
                 }
             }
         }
+
+        // if at least one stage contains anonymous layers, you need to show the comfirm dialog
+        // so the user can choose where to save the anonymous layers.
+        bool showConfirmDgl
+            = (showConfirmDglOption || atLeastOneAnonToSave) && atLeastOneLayerToSave;
 
         if (showConfirmDgl) {
             UsdLayerEditor::SaveLayersDialog dlg(nullptr, infos, isExporting);
