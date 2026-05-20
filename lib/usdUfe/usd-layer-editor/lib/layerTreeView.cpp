@@ -87,10 +87,12 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     connect(_model, &LayerTreeModel::selectLayerSignal, this, &LayerTreeView::selectLayerRequest);
 
     // clang-format off
-    QString styleSheet = 
+    QString styleSheet =
     "QTreeView { "
                 "background: " + QApplication::palette().color(QPalette::Dark).name() + ";"
                 "show-decoration-selected: 0;"
+                "outline: none;"
+                "border: none;"
                 "}";
     // clang-format on
     setStyleSheet(styleSheet);
