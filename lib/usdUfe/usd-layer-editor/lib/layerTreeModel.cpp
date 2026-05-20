@@ -512,6 +512,16 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
     auto saveAllLayers = [this]() {
+        // Special case for components created by the component creator. Only
+        // the component creator knows how to save a component properly. The
+        // hook is a no-op for DCCs without component support.
+        if (_sessionState
+            && _sessionState->isStageAComponent(_sessionState->stageEntry()._dccObjectPath)) {
+            _sessionState->commandHook()->saveComponent(
+                _sessionState->stageEntry()._stage, _sessionState->stageEntry()._dccObjectPath);
+            return;
+        }
+
         const auto layers = getAllNeedsSavingLayers();
         for (auto layer : layers) {
             if (!layer->isSystemLocked()) {
@@ -535,6 +545,13 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
          auto&                             stageEntry = _sessionState->stageEntry();
          Serialization::getLayersToSaveFromDCCObject(stageEntry._dccObjectPath, StageLayersToSave);
          showConfirmDgl = !StageLayersToSave._anonLayers.empty();
+    }
+
+    // Show the save dialog for component stages (initial save) or if confirmation is needed
+    if (_sessionState
+        && _sessionState->shouldDisplayComponentInitialSaveDialog(
+            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._dccObjectPath)) {
+        showConfirmDgl = true;
     }
 
     if (showConfirmDgl) {
@@ -568,6 +585,17 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
     } else {
         saveAllLayers();
     }
+}
+
+void LayerTreeModel::reloadComponent(QWidget* /*in_parent*/)
+{
+    if (!_sessionState) {
+        return;
+    }
+    if (_sessionState->isUnsavedComponent(_sessionState->stage())) {
+        return;
+    }
+    _sessionState->commandHook()->reloadComponent(_sessionState->stageEntry()._dccObjectPath);
 }
 
 std::string LayerTreeModel::findNameForNewAnonymousLayer() const

@@ -114,6 +114,22 @@ public:
     // or has an owned root
     virtual bool isDccObjectSharedStage(const std::string& dccObjectPath) { return true; };
 
+    // Component Creator hooks. The shared layer editor's CC save flow asks
+    // the command hook to perform the DCC-specific side-effects of saving a
+    // component: invoking the DCC-side component manager (e.g. Maya's
+    // MayaComponentManager.SaveComponent python helper) and renaming the
+    // owning DCC proxy/object after a component is moved on disk. Defaults
+    // are no-ops so a DCC integration without component support is unaffected.
+    virtual void
+    saveComponent(const PXR_NS::UsdStageRefPtr& /*stage*/, const std::string& /*dccObjectPath*/)
+    { /* no-op */
+    }
+    virtual void reloadComponent(const std::string& /*dccObjectPath*/) { /* no-op */ }
+    virtual void
+    renameProxyShape(const std::string& /*oldDccObjectPath*/, const std::string& /*newName*/)
+    { /* no-op */
+    }
+
     // Increase the count tracking if command executions are delayed.
     void increaseDelayedCommands() { _delayCount += 1; }
 

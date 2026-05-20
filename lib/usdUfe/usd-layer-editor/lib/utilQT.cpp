@@ -15,6 +15,8 @@
 //
 #include "utilQT.h"
 
+#include <pxr/base/tf/stringUtils.h>
+
 #include <QtGui/QIcon>
 #include <QtGui/QPixmap>
 #include <QtWidgets/QtWidgets>
@@ -183,5 +185,23 @@ QtUtils* utils = nullptr;
 QtUtils* getQtUtils() { return utils; }
 
 void setQtUtils(QtUtils* qtUtils) { utils = qtUtils; }
+
+ValidTfIdentifierValidator::ValidTfIdentifierValidator(QObject* parent)
+    : QValidator(parent)
+{
+}
+
+QValidator::State ValidTfIdentifierValidator::validate(QString& input, int& /*pos*/) const
+{
+    std::string orig = input.toStdString();
+    std::string valid = PXR_NS::TfMakeValidIdentifier(orig);
+    if (input.isEmpty()) {
+        return Intermediate; // Allow user to type
+    }
+    if (orig == valid && !valid.empty()) {
+        return Acceptable;
+    }
+    return Invalid;
+}
 
 } // namespace UsdLayerEditor
