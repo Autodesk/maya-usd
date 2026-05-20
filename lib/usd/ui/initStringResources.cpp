@@ -15,7 +15,7 @@
 //
 #include "initStringResources.h"
 
-#include <stringResources.h>
+#include "layerEditor/stringResources.h"
 
 namespace MAYAUSD_NS_DEF {
 
