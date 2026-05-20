@@ -15,53 +15,71 @@
 # limitations under the License.
 #
 
-target_sources(${PROJECT_NAME}
-    PRIVATE
-        batchSaveLayersUIDelegate.cpp
-        componentSaveWidget.cpp
-        componentSaveWidget.h
-        dirtyLayersCountBadge.cpp
-        generatedIconButton.cpp
-        layerContentsWidget.cpp
-        layerContentsWidget.h
-        layerEditorWidget.cpp
-        layerEditorWidget.h
-        layerTreeItem.cpp
-        layerTreeItem.h
-        layerTreeItemDelegate.cpp
-        layerTreeItemDelegate.h
-        layerTreeModel.cpp
-        layerTreeModel.h
-        layerTreeView.cpp
-        layerTreeView.h
-        loadLayersDialog.cpp
-        loadLayersDialog.h
-        mayaCommandHook.cpp
-        mayaCommandHook.h
-        mayaLayerEditorWindow.cpp
-        mayaLayerEditorWindow.h
-        mayaSessionState.cpp
-        mayaSessionState.h
-        mayaQtUtils.cpp
-        mayaQtUtils.h
-        pathChecker.cpp
-        pathChecker.h
-        qtUtils.cpp
-        qtUtils.h
-        resources.qrc
-        saveLayersDialog.cpp
-        saveLayersDialog.h
-        sessionState.cpp
-        sessionState.h
-        stageSelectorWidget.cpp
-        stageSelectorWidget.h
-        stringResources.cpp
-        stringResources.h
-        usdSyntaxHighlighter.cpp
-        usdSyntaxHighlighter.h
-        warningDialogs.cpp
-        warningDialogs.h
-)
+if(BUILD_NEW_LAYER_EDITOR)
+    # When using the shared usd-layer-editor component, only the Maya-specific
+    # wiring files build here. All shared sources are provided by UsdLayerEditorLib.
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            mayaCommandHook.cpp
+            mayaCommandHook.h
+            mayaLayerEditorWindow.cpp
+            mayaLayerEditorWindow.h
+            mayaSessionState.cpp
+            mayaSessionState.h
+            mayaQtUtils.cpp
+            mayaQtUtils.h
+    )
+    target_link_libraries(${PROJECT_NAME} PRIVATE UsdLayerEditorLib)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDITOR=1)
+else()
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            batchSaveLayersUIDelegate.cpp
+            componentSaveWidget.cpp
+            componentSaveWidget.h
+            dirtyLayersCountBadge.cpp
+            generatedIconButton.cpp
+            layerContentsWidget.cpp
+            layerContentsWidget.h
+            layerEditorWidget.cpp
+            layerEditorWidget.h
+            layerTreeItem.cpp
+            layerTreeItem.h
+            layerTreeItemDelegate.cpp
+            layerTreeItemDelegate.h
+            layerTreeModel.cpp
+            layerTreeModel.h
+            layerTreeView.cpp
+            layerTreeView.h
+            loadLayersDialog.cpp
+            loadLayersDialog.h
+            mayaCommandHook.cpp
+            mayaCommandHook.h
+            mayaLayerEditorWindow.cpp
+            mayaLayerEditorWindow.h
+            mayaSessionState.cpp
+            mayaSessionState.h
+            mayaQtUtils.cpp
+            mayaQtUtils.h
+            pathChecker.cpp
+            pathChecker.h
+            qtUtils.cpp
+            qtUtils.h
+            resources.qrc
+            saveLayersDialog.cpp
+            saveLayersDialog.h
+            sessionState.cpp
+            sessionState.h
+            stageSelectorWidget.cpp
+            stageSelectorWidget.h
+            stringResources.cpp
+            stringResources.h
+            usdSyntaxHighlighter.cpp
+            usdSyntaxHighlighter.h
+            warningDialogs.cpp
+            warningDialogs.h
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # MSVC fix: avoid ambiguous qfloat16 arithmetic operators pulled by Qt headers
