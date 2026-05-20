@@ -48,11 +48,11 @@ Resume point for porting maya-usd layer editor commits into the shared component
 
 | Commit | Description | Group | Status | Notes |
 |--------|-------------|-------|--------|-------|
-| eb6c0123 | Revert "Conditionally drop shared sources from mayaUsdUI layer editor" | bug-fix | pending |  |
-| 0708dd9e | Revert "Point maya layer editor wiring at UsdLayerEditorLib headers" | bug-fix | pending |  |
-| 9a13cd9f | Point maya layer editor wiring at UsdLayerEditorLib headers | bug-fix | pending |  |
-| dbfb9b43 | Conditionally drop shared sources from mayaUsdUI layer editor | bug-fix | pending |  |
-| e585a445 | Merge pull request #4609 from Autodesk/bailp/EMSUSD-3181/faster-all-stages | bug-fix | pending |  |
+| eb6c0123 | Revert "Conditionally drop shared sources from mayaUsdUI layer editor" | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |
+| 0708dd9e | Revert "Point maya layer editor wiring at UsdLayerEditorLib headers" | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |
+| 9a13cd9f | Point maya layer editor wiring at UsdLayerEditorLib headers | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |
+| dbfb9b43 | Conditionally drop shared sources from mayaUsdUI layer editor | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |
+| e585a445 | Merge pull request #4609 from Autodesk/bailp/EMSUSD-3181/faster-all-stages | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 7b51144e | EMSUSD-3181 use depth-first | bug-fix | pending |  |
 | f18d7545 | EMSUSD-3181 filter instances | bug-fix | pending |  |
 | 5afb128c | EMSUSD-3181 faster all-stages | bug-fix | pending |  |
@@ -62,38 +62,38 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | c985a4f9 | EMSUSD-3687 moved comments | bug-fix | pending |  |
 | 60cf0f23 | EMSUSD-3687 fix layer-editor-crash | bug-fix | pending |  |
 | d29de840 | Merge pull request #4595 from Autodesk/deboisj/ef_echo | ef-banner | pending |  |
-| 954b7917 | clang | skip | pending |  |
-| 43f7c18c | update | bug-fix | pending |  |
+| 954b7917 | clang | skip | skip | Formatting/lint commit, no functional change |
+| 43f7c18c | update | bug-fix | skip | Formatting/lint commit, no functional change |
 | 7f4b4cf3 | want echo | bug-fix | pending |  |
 | 026d3073 | EMSUSD-3654 - MayaUsd: Update gulrak filesystem usage * Fix failing test on W... | component-creator | pending |  |
 | 78b55a22 | EMSUSD-3654 - MayaUsd: Update gulrak filesystem usage * Remove the download a... | component-creator | pending |  |
 | d9fe6df8 | Fix error un pseudo layers with variants & refresh system lock error | bug-fix | pending |  |
 | 93f72d11 | Merge pull request #4572 from Autodesk/deboisj/LE_EF_banner | ef-banner | pending |  |
 | 32d2d8d0 | Update color after feedback from UX | bug-fix | pending |  |
-| 692d93e6 | clang | skip | pending |  |
+| 692d93e6 | clang | skip | skip | Formatting/lint commit, no functional change |
 | 5359d7f0 | Add banner for EF | ef-banner | pending |  |
-| fc9d5ec7 | Merge pull request #4563 from Autodesk/bailp/EMSUSDC-411/refresh-lock-not-und... | bug-fix | pending |  |
-| a20f8d63 | Merge pull request #4566 from Autodesk/kylerasinger/dev/EMSUSD-3219_flatten_l... | bug-fix | pending |  |
-| 4f0bcc73 | fix | bug-fix | pending |  |
+| fc9d5ec7 | Merge pull request #4563 from Autodesk/bailp/EMSUSDC-411/refresh-lock-not-und... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
+| a20f8d63 | Merge pull request #4566 from Autodesk/kylerasinger/dev/EMSUSD-3219_flatten_l... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
+| 4f0bcc73 | fix | bug-fix | skip | Formatting/lint commit, no functional change |
 | 735d45f6 | EMSUSDC-411 do not disturb redo | bug-fix | pending |  |
 | 85c3966a | EMSUSD-3189: [GitHub #4521] 'Hide indices option' for the Display Layer Conte... | layer-contents | pending |  |
 | 7b3f6c83 | EMSUSD-3189: [GitHub #4521] 'Hide indices option' for the Display Layer Conte... | layer-contents | pending |  |
-| 51cad71d | clang | skip | pending |  |
+| 51cad71d | clang | skip | skip | Formatting/lint commit, no functional change |
 | 379c5b14 | Do not show the confirmation dialog if there are no layers to save | bug-fix | pending |  |
-| 79e3197a | linter fix | bug-fix | pending |  |
+| 79e3197a | linter fix | bug-fix | skip | Formatting/lint commit, no functional change |
 | 41293729 | StitchLayer constructor and private member vars, missing consts | bug-fix | pending |  |
-| bd13ab96 | cherrypick | bug-fix | pending |  |
-| 67ae6ead | Merge pull request #4469 from Autodesk/kylerasinger/dev/EMSUSD-3078_flatten_l... | bug-fix | pending |  |
-| 336c8781 | Merge pull request #4480 from Autodesk/bailp/EMSUSD-1397/multi-refs-stage-crash | bug-fix | pending |  |
+| bd13ab96 | cherrypick | bug-fix | skip | Formatting/lint commit, no functional change |
+| 67ae6ead | Merge pull request #4469 from Autodesk/kylerasinger/dev/EMSUSD-3078_flatten_l... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
+| 336c8781 | Merge pull request #4480 from Autodesk/bailp/EMSUSD-1397/multi-refs-stage-crash | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 7c572bf5 | EMSUSD-1397 fixMaya scene with Maya refs | bug-fix | pending |  |
 | 265edb85 | undo works for script editor | bug-fix | pending |  |
-| 3c22da42 | clang | skip | pending |  |
+| 3c22da42 | clang | skip | skip | Formatting/lint commit, no functional change |
 | cf187c34 | make sure we dont always popup the save dialog for components | bug-fix | pending |  |
-| 3d5bc6ff | clang fixes | skip | pending |  |
+| 3d5bc6ff | clang fixes | skip | skip | Formatting/lint commit, no functional change |
 | 81a18e43 | Undo functionality | bug-fix | pending |  |
 | 049f2d62 | Merge with Sublayers, undo missing, no unit tests. | bug-fix | pending |  |
 | 8aa5a9ce | Add context menu option | bug-fix | pending |  |
-| 3f262318 | Merge pull request #4455 from dj-mcg/pr/Remove_Unnecessary_Headers | bug-fix | pending |  |
+| 3f262318 | Merge pull request #4455 from dj-mcg/pr/Remove_Unnecessary_Headers | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 2f2eb930 | Remove (seemingly) unnecessary headers | bug-fix | pending |  |
 | 7fba398f | Use PXR_NS namespacing macro instead of pxr namespace | bug-fix | pending |  |
 | f31f60b2 | anon layers with locked parents are not saveable. | bug-fix | pending |  |
@@ -102,20 +102,20 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 1ca43946 | EMSUSD-3016 save edits for component | component-creator | pending |  |
 | cc852191 | Reapplying lost change on bulk save merge. | bug-fix | pending |  |
 | d8c679f0 | Fix component save after initial saving. | bug-fix | pending |  |
-| b25862b5 | Lint | skip | pending |  |
+| b25862b5 | Lint | skip | skip | Formatting/lint commit, no functional change |
 | 9998b98f | Add logic to prompt user for saving components when serializing to disk | bug-fix | pending |  |
-| e0f8b216 | Address PR feedback and lint | skip | pending |  |
+| e0f8b216 | Address PR feedback and lint | skip | skip | Formatting/lint commit, no functional change |
 | 40f455bd | Merge branch 'dev' into kheloua/dev/EMSUSD-2997_bulk_save_components | component-creator | pending |  |
-| cbf6ba84 | Merge pull request #4401 from Autodesk/deboisj/change_default_component_folder | bug-fix | pending |  |
+| cbf6ba84 | Merge pull request #4401 from Autodesk/deboisj/change_default_component_folder | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 409ad376 | unused failing linux | bug-fix | pending |  |
-| 4bd0774c | Lint the code | skip | pending |  |
+| 4bd0774c | Lint the code | skip | skip | Formatting/lint commit, no functional change |
 | 7d5ff145 | Merge branch 'dev' into kheloua/dev/EMSUSD-2997_bulk_save_components | component-creator | pending |  |
 | f33b4b84 | Remove bad comments | bug-fix | pending |  |
 | da8e6c30 | Change to use stringResources strings instead of string formating for compone... | bug-fix | pending |  |
 | 20baa74a | Remove componentSaveDialog from codebase (using SaveLayerDialog instead) | bug-fix | pending |  |
 | 3e470937 | Add 10px of padding above tree area for componentsavewidget | component-creator | pending |  |
 | 492988e4 | Move towards using the SaveLayerDialog instead of the ComponentSaveDialog for... | bug-fix | pending |  |
-| f6f7b68a | clang | skip | pending |  |
+| f6f7b68a | clang | skip | skip | Formatting/lint commit, no functional change |
 | 0086a2f0 | Remove unused | bug-fix | pending |  |
 | 831664f8 | Use existing utils | bug-fix | pending |  |
 | 77aca3e7 | Make sure we init right | bug-fix | pending |  |
@@ -127,60 +127,60 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 71a9640d | Fix CC api usage | component-creator | pending |  |
 | 1c7f731d | Add SaveLayerPathRowArea to components section | bug-fix | pending |  |
 | e3f4ec64 | Add compact mode to widget, label and fix button size | bug-fix | pending |  |
-| e3a08466 | clang | skip | pending |  |
+| e3a08466 | clang | skip | skip | Formatting/lint commit, no functional change |
 | 8701f40f | Transfer over session layer content when we save. | bug-fix | pending |  |
 | 5ff15789 | Add basic abstraction of component save widget from dialog and use it in the ... | bug-fix | pending |  |
-| b1b118b3 | Merge pull request #4391 from Autodesk/deboisj/block_overwrite | bug-fix | pending |  |
+| b1b118b3 | Merge pull request #4391 from Autodesk/deboisj/block_overwrite | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 2f31607b | Rename to not prefix with TF | bug-fix | pending |  |
 | ab4828e9 | Only do it for <= 2017 | bug-fix | pending |  |
 | 9f4843a5 | Attempt | bug-fix | pending |  |
 | bf969b60 | fix 2023 windows? | bug-fix | pending |  |
 | 445d7dd6 | Use GHC for filesystem access. | filesystem | pending |  |
 | 635f0277 | Move var inside scope | bug-fix | pending |  |
-| 530753c4 | typo / clang | skip | pending |  |
+| 530753c4 | typo / clang | skip | skip | Formatting/lint commit, no functional change |
 | d888d13e | move validator to util. | bug-fix | pending |  |
-| c43de2b8 | Merge pull request #4386 from Autodesk/deboisj/comp_mgr | bug-fix | pending |  |
-| 6953003f | Merge pull request #4389 from Autodesk/kheloua/dev/EMSUSD-2981_CC_crash_add_s... | bug-fix | pending |  |
+| c43de2b8 | Merge pull request #4386 from Autodesk/deboisj/comp_mgr | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
+| 6953003f | Merge pull request #4389 from Autodesk/kheloua/dev/EMSUSD-2981_CC_crash_add_s... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 7186d7ae | Misc fixes | bug-fix | pending |  |
-| bb186a1f | Linting | bug-fix | pending |  |
+| bb186a1f | Linting | bug-fix | skip | Formatting/lint commit, no functional change |
 | 393cb6dd | Add condition that checks for a valid LayerTreeItem for disabling of buttons | bug-fix | pending |  |
-| df85d8af | lint.. | skip | pending |  |
+| df85d8af | lint.. | skip | skip | Formatting/lint commit, no functional change |
 | 0ade03dd | block overwrite | bug-fix | pending |  |
 | 87da45d2 | Move CC code to util | component-creator | pending |  |
 | f2fa343c | Useless include | bug-fix | pending |  |
-| 3ad2d39b | Merge remote-tracking branch 'public/kheloua/dev/EMSUSD-2913_implement_show_m... | bug-fix | pending |  |
-| d0f3ee01 | Lint again | skip | pending |  |
+| 3ad2d39b | Merge remote-tracking branch 'public/kheloua/dev/EMSUSD-2913_implement_show_m... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
+| d0f3ee01 | Lint again | skip | skip | Formatting/lint commit, no functional change |
 | f3e10f4a | Address PR feedback | bug-fix | pending |  |
 | 50a6589a | cleanup pass | bug-fix | pending |  |
 | 8cb15558 | Add component manager | bug-fix | pending |  |
 | c53d6850 | Update VE | bug-fix | pending |  |
 | 80eecf6b | Support component save | bug-fix | pending |  |
-| 02f044db | Clang format again | skip | pending |  |
+| 02f044db | Clang format again | skip | skip | Formatting/lint commit, no functional change |
 | 68d7e07e | Add constants for show more and less strings | bug-fix | pending |  |
 | 9f9c2426 | Remove json parsing logic and add no data message | bug-fix | pending |  |
 | 59eada75 | Remove unnecessary include | bug-fix | pending |  |
-| 0a832995 | Linting issues | bug-fix | pending |  |
+| 0a832995 | Linting issues | bug-fix | skip | Formatting/lint commit, no functional change |
 | 060811c7 | Fix error related to bad stage entry state | bug-fix | pending |  |
 | 489a611c | Adjust constructor call to pass proxy shape path | bug-fix | pending |  |
 | 4aa8c952 | Add Show More functionality to the component save dialog | bug-fix | pending |  |
 | 8adf4920 | Remove dependency to utilSerialization.h and bring in code to get workspace s... | bug-fix | pending |  |
-| 6437fb66 | Lint | skip | pending |  |
+| 6437fb66 | Lint | skip | skip | Formatting/lint commit, no functional change |
 | fa7efa32 | Change to use #include <ghc/filesystem.hpp> | filesystem | pending |  |
 | e2eff3ea | Address missed PR feedback | bug-fix | pending |  |
 | 73f9c497 | Address PR feedback again | bug-fix | pending |  |
 | c77d22f8 | Add import failure check based on PR feedback | bug-fix | pending |  |
 | f562376e | Address PR feedback part 2 | bug-fix | pending |  |
-| 819b110f | Linting issue | bug-fix | pending |  |
+| 819b110f | Linting issue | bug-fix | skip | Formatting/lint commit, no functional change |
 | 1a5b496a | Fix address and address part of the feedback | bug-fix | pending |  |
 | 6a29d115 | Local linter misbehaving | bug-fix | pending |  |
 | 0d3da146 | Replace manual rename emit signal with rename command of proxy object | bug-fix | pending |  |
-| 4219f936 | Apply linting | bug-fix | pending |  |
+| 4219f936 | Apply linting | bug-fix | skip | Formatting/lint commit, no functional change |
 | 3f256b6f | Add code to change the stage entry display name and update the stage selector... | bug-fix | pending |  |
 | 1f367bcb | Add basic CC save dialog | component-creator | pending |  |
 | 80a63d77 | EMSUSD-2841 - Performance is really slow when updating prims in the viewport ... | layer-contents | pending |  |
 | 738aa5a8 | EMSUSD-2839 - Update styling in our layer content view * Update usdSyntaxConf... | bug-fix | pending |  |
-| 18d52fda | Linter again | bug-fix | pending |  |
-| 50f4a23f | Linter errors | bug-fix | pending |  |
+| 18d52fda | Linter again | bug-fix | skip | Formatting/lint commit, no functional change |
+| 50f4a23f | Linter errors | bug-fix | skip | Formatting/lint commit, no functional change |
 | 7383bc12 | Fix focus to Confirm/OK instead of cancel (EMSUSD-2328) | bug-fix | pending |  |
 | bbef9502 | Add Expression Var support to Layer Editor | bug-fix | pending |  |
 | 39b722a9 | EMSUSD-2655: Show Layer Data Window * Another attempt to fix the error only t... | bug-fix | pending |  |
@@ -207,9 +207,9 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 45745e01 | Address PR feedback 2 | bug-fix | pending |  |
 | 0755cdbb | Fix linux compilation issue | bug-fix | pending |  |
 | 1ed7bf6c | Add include vector | bug-fix | pending |  |
-| e9aa2a49 | Format with clang | skip | pending |  |
+| e9aa2a49 | Format with clang | skip | skip | Formatting/lint commit, no functional change |
 | b73dfe21 | Address PR feedback | bug-fix | pending |  |
 | 458ff6bb | Add "mayaUsdSetSelectedLayers" and "mayaUsdGetSelectedLayers" layer editor hooks | bug-fix | pending |  |
 | f17afccb | EMSUSD-1722 fix node origin detection | bug-fix | pending |  |
-| 9d770c0a | Merge pull request #3915 from Autodesk/bailp/EMSUSD-1619/remove-anon-layers | bug-fix | pending |  |
-| 5d5c4250 | Merge pull request #3911 from Autodesk/bailp/EMSUSD-1510/save-layer-button-name | bug-fix | pending |  |
+| 9d770c0a | Merge pull request #3915 from Autodesk/bailp/EMSUSD-1619/remove-anon-layers | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
+| 5d5c4250 | Merge pull request #3911 from Autodesk/bailp/EMSUSD-1510/save-layer-button-name | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
