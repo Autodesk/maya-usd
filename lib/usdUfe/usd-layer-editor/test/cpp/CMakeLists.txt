@@ -79,6 +79,7 @@ target_include_directories(UsdLayerEditorOldTests
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${OLD_LE_DIR}
+        ${MAYA_INCLUDE_DIRS}
         ${UFE_INCLUDE_DIR}
         ${PXR_INCLUDE_DIRS}
 )
@@ -86,7 +87,7 @@ target_include_directories(UsdLayerEditorOldTests
 target_link_libraries(UsdLayerEditorOldTests
     PRIVATE
         GTest::GTest
-        Qt::Core Qt::Gui Qt::Widgets Qt::Test
+        Qt::Core Qt::Gui Qt::Widgets
         sdf tf usd usdUfe
         ${UFE_LIBRARY}
 )
@@ -128,7 +129,7 @@ if(BUILD_NEW_LAYER_EDITOR)
         PRIVATE
             UsdLayerEditorLib
             GTest::GTest
-            Qt::Core Qt::Gui Qt::Widgets Qt::Test
+            Qt::Core Qt::Gui Qt::Widgets
             sdf tf usd
             ${UFE_LIBRARY}
     )
