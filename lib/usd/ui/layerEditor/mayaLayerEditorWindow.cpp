@@ -18,12 +18,13 @@
 
 #include "mayaLayerEditorWindow.h"
 
-#include "layerEditorWidget.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
 #include "mayaQtUtils.h"
 #include "mayaSessionState.h"
-#include "sessionState.h"
+
+#include <layerEditorWidget.h>
+#include <layerTreeModel.h>
+#include <layerTreeView.h>
+#include <sessionState.h>
 
 #include <mayaUsd/utils/query.h>
 
