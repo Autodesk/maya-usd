@@ -430,7 +430,9 @@ bool InsertRemoveSubPathBaseCmd::doIt(const pxr::SdfLayerHandle& layer)
         }
 
         layer->InsertSubLayerPath(_subPath, _index);
-        TF_VERIFY(layer->GetSubLayerPaths()[_index] == _subPath);
+        TF_VERIFY(
+            (layer->GetSubLayerPaths().size() == _index + 1)
+            && layer->GetSubLayerPaths()[_index] == _subPath);
     } else {
         TF_VERIFY(_cmdId == CmdId::kRemove);
 
