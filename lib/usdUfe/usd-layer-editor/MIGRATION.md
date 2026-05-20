@@ -193,23 +193,23 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 9be70aed | EMSUSD-2232 - Disables cache rebuild due to layer editor | bug-fix | skip | Maya-only rebuildCache plumbing — shared stageSelectorWidget already has the Maya getProxyShape/getChildProxyShape paths commented out; Utils.cpp/h are Maya-only |
 | 80cb4182 | Port layers editor fixes | bug-fix | skip | Already in shared — layerEditorCommands.cpp::backupLayer uses broader `_cmdId != kDiscardEdit` predicate (covers kClearLayer); stageSelectorWidget::updateFromSessionState already has _pinStageSelection/currentEntryQVariant logic; warningDialogs already sets focus on Ok. mayaSessionState.cpp is Maya-only |
 | b4ec9672 | EMSUSD-2301 - Layer Editor Won't Launch * The LayerEditorWindowCommand proxyS... | bug-fix | ported | Applied to lib/usdUfe/usd-layer-editor/lib/layerEditorWidget.cpp: getSelectedLayers now uses _treeView->getSelectedLayerItems(); selectLayers sets currentIndex on the first selected layer and applies the selection in a single ClearAndSelect|Rows pass. Maya files (layerEditorWindowCommand, abstractLayerEditorWindow, mayaCommandHook, mayaLayerEditorWindow, Readme) are Maya-only |
-| 4f945f1d | Add _cachedModelState nullptr check | bug-fix | pending |  |
-| 49753ba9 | Add documentation for notification and fix gcc compilation issue | bug-fix | pending |  |
-| 93b2eb24 | Remove _cachedModelState reset call | bug-fix | pending |  |
-| 41282ecb | Change elide mode to middle | bug-fix | pending |  |
-| c5a79c20 | Update pin layer tooltip | bug-fix | pending |  |
-| ecbc1dc8 | Keep cache object state in memory throughout session | bug-fix | pending |  |
-| 48fb043e | Remove layerEditorCommands and layerEditorWidgetManager, move implementation ... | bug-fix | pending |  |
-| fc11cde3 | Add space for linter | bug-fix | pending |  |
-| faa0f9ef | Add include guards | bug-fix | pending |  |
-| b37d31ee | Reorder includes | bug-fix | pending |  |
-| 1ed52bce | Address PR feedback 3 | bug-fix | pending |  |
-| 45745e01 | Address PR feedback 2 | bug-fix | pending |  |
-| 0755cdbb | Fix linux compilation issue | bug-fix | pending |  |
-| 1ed7bf6c | Add include vector | bug-fix | pending |  |
+| 4f945f1d | Add _cachedModelState nullptr check | bug-fix | skip | Already in shared: LayerTreeView::updateFromSessionState() in lib/usdUfe/usd-layer-editor/lib/layerTreeView.cpp already has the nullptr guard for _cachedModelState |
+| 49753ba9 | Add documentation for notification and fix gcc compilation issue | bug-fix | ported | Applied gcc fix `for (const auto& stageLayer : stageLayers)` in lib/usdUfe/usd-layer-editor/lib/layerTreeView.cpp; Readme.md is Maya-only documentation |
+| 93b2eb24 | Remove _cachedModelState reset call | bug-fix | skip | Already in shared: LayerTreeView::onModelReset() in shared lib already does not call _cachedModelState.reset() |
+| 41282ecb | Change elide mode to middle | bug-fix | skip | Already in shared: lib/usdUfe/usd-layer-editor/lib/layerTreeItemDelegate.cpp already uses Qt::ElideMiddle |
+| c5a79c20 | Update pin layer tooltip | bug-fix | skip | Already in shared: kPinUsdStageTooltip in lib/usdUfe/usd-layer-editor/lib/stringResources.h already has the updated text |
+| ecbc1dc8 | Keep cache object state in memory throughout session | bug-fix | skip | Already in shared: selectLayerRequest rename, updateFromSessionState, preserve method, and stageListChangedSignal connect all present in shared layerTreeView.{cpp,h} |
+| 48fb043e | Remove layerEditorCommands and layerEditorWidgetManager, move implementation ... | bug-fix | maya-only | Removes Maya-only MPxCommand-based layerEditorCommands.{h,cpp} and layerEditorWidgetManager.{h,cpp} from maya-usd, consolidating into Maya layerEditorWindowCommand.cpp. Shared lib has DCC-agnostic equivalents that remain in use |
+| fc11cde3 | Add space for linter | bug-fix | maya-only | Linter fix on `#endif //X` -> `#endif // X` in Maya-only layerEditorCommands.h and layerEditorWidgetManager.h. Shared headers had no include guards before; guards added with proper spacing as part of faa0f9ef port |
+| faa0f9ef | Add include guards | bug-fix | ported | Added include guards LAYER_EDITOR_COMMANDS_H and LAYER_EDITOR_WIDGETMANAGER_H to lib/usdUfe/usd-layer-editor/lib/LayerEditorCommands.h and layerEditorWidgetManager.h |
+| b37d31ee | Reorder includes | bug-fix | maya-only | Reorders maya/MSyntax.h and MStringArray.h in Maya-only MPxCommand layerEditorCommands.cpp. Shared layerEditorCommands.cpp has no Maya headers |
+| 1ed52bce | Address PR feedback 3 | bug-fix | maya-only | Maya MPxCommand layerEditorCommands.cpp and PXR_NAMESPACE_USING_DIRECTIVE move are Maya-only. Shared layerEditorWidgetManager.{cpp,h} already uses the un-prefixed names (instance, layerWidgetInstance) that match this commit's intent |
+| 45745e01 | Address PR feedback 2 | bug-fix | maya-only | Touches Maya-only files (layerEditorCommands MPxCommand .h/.cpp, plugin/adsk/plugin/plugin.cpp). Shared manager .h/.cpp ended up with the un-prefixed naming applied by the later commit 1ed52bce |
+| 0755cdbb | Fix linux compilation issue | bug-fix | maya-only | Touches Maya-only MPxCommand layerEditorCommands.cpp (loop signedness fix) |
+| 1ed7bf6c | Add include vector | bug-fix | maya-only | Adds `#include <vector>` to Maya-only MPxCommand layerEditorCommands.h |
 | e9aa2a49 | Format with clang | skip | skip | Formatting/lint commit, no functional change |
-| b73dfe21 | Address PR feedback | bug-fix | pending |  |
-| 458ff6bb | Add "mayaUsdSetSelectedLayers" and "mayaUsdGetSelectedLayers" layer editor hooks | bug-fix | pending |  |
-| f17afccb | EMSUSD-1722 fix node origin detection | bug-fix | pending |  |
+| b73dfe21 | Address PR feedback | bug-fix | skip | Maya-only MPxCommand layerEditorCommands.cpp parse() fix; layerEditorWidget.cpp duplicate loadSubLayers removal already in shared (single call only) |
+| 458ff6bb | Add "mayaUsdSetSelectedLayers" and "mayaUsdGetSelectedLayers" layer editor hooks | bug-fix | skip | DCC-agnostic parts (onSelectionChanged, getSelectedLayers, selectLayers in layerEditorWidget, findUSDLayerItem public in layerTreeModel) already in shared. MPxCommand layerEditorCommands.{h,cpp} and plugin.cpp registration are Maya-only |
+| f17afccb | EMSUSD-1722 fix node origin detection | bug-fix | maya-only | Touches Maya-only files: layerManager.{h,cpp}, proxyShapeBase.{h,cpp}, util.{h,cpp}, mayaSessionState.cpp, and a test file. No DCC-agnostic counterpart in shared lib |
 | 9d770c0a | Merge pull request #3915 from Autodesk/bailp/EMSUSD-1619/remove-anon-layers | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 5d5c4250 | Merge pull request #3911 from Autodesk/bailp/EMSUSD-1510/save-layer-button-name | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |

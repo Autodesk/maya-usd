@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef LAYER_EDITOR_COMMANDS_H
+#define LAYER_EDITOR_COMMANDS_H
 
 #include "abstractCommandHook.h"
 #include "layerEditorAPI.h"
@@ -398,3 +400,5 @@ protected:
 };
 
 } // namespace UsdLayerEditor
+
+#endif // LAYER_EDITOR_COMMANDS_H
