@@ -17,8 +17,13 @@
 #ifndef MAYALAYEREDITORWINDOW_H
 #define MAYALAYEREDITORWINDOW_H
 
-#include "layerTreeView.h"
 #include "mayaSessionState.h"
+
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+#include <layerTreeView.h>
+#else
+#include "layerTreeView.h"
+#endif
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/commands/abstractLayerEditorWindow.h>

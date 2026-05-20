@@ -17,7 +17,11 @@
 #ifndef MAYAQTUTILS_H
 #define MAYAQTUTILS_H
 
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+#include <utilQT.h>
+#else
 #include "qtUtils.h"
+#endif
 
 namespace UsdLayerEditor {
 

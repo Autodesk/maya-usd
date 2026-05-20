@@ -16,20 +16,36 @@
 
 #include "mayaSessionState.h"
 
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+#include <saveLayersDialog.h>
+#include <stringResources.h>
+#else
 #include "saveLayersDialog.h"
 #include "stringResources.h"
+#endif
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 
 #include <AdskUsdEditForward/Host.h>
+#include <AdskUsdEditForward/StageRuleProvider.h>
 #endif
+
+#include <ufe/globalSelection.h>
+#include <ufe/hierarchy.h>
+#include <ufe/observableSelection.h>
+#include <ufe/sceneItem.h>
+#include <ufe/selection.h>
 
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
@@ -106,7 +122,11 @@ void MayaSessionState::setStageEntry(StageEntry const& inEntry)
     }
 
     if (!_inLoad)
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+        MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._dccObjectPath);
+#else
         MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._proxyShapePath);
+#endif
 }
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
@@ -140,7 +160,11 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
         out_stageEntry->_id = dagNode.uuid().asString().asChar();
         out_stageEntry->_stage = stage;
         out_stageEntry->_displayName = niceName.toStdString();
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+        out_stageEntry->_dccObjectPath = shapePath.asChar();
+#else
         out_stageEntry->_proxyShapePath = shapePath.asChar();
+#endif
         return true;
     }
     return false;
@@ -240,14 +264,22 @@ void MayaSessionState::unregisterNotifications()
 
 void MayaSessionState::refreshCurrentStageEntry()
 {
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    refreshStageEntry(_currentStageEntry._dccObjectPath);
+#else
     refreshStageEntry(_currentStageEntry._proxyShapePath);
+#endif
 }
 
 void MayaSessionState::refreshStageEntry(std::string const& proxyShapePath)
 {
     StageEntry entry;
     if (getStageEntry(&entry, proxyShapePath.c_str())) {
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+        if (entry._dccObjectPath == _currentStageEntry._dccObjectPath) {
+#else
         if (entry._proxyShapePath == _currentStageEntry._proxyShapePath) {
+#endif
             QTimer::singleShot(0, this, [this, entry]() {
                 mayaUsdStageResetCBOnIdle(entry);
                 setStageEntry(entry);
@@ -380,7 +412,18 @@ bool MayaSessionState::saveLayerUI(
     std::string*                  out_filePath,
     const PXR_NS::SdfLayerRefPtr& parentLayer) const
 {
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    // Shared SaveLayersDialog takes a parent-layer file path (not an SdfLayer).
+    std::string parentLayerPath;
+    if (parentLayer) {
+        parentLayerPath = parentLayer->GetRealPath();
+        if (parentLayerPath.empty())
+            parentLayerPath = parentLayer->GetIdentifier();
+    }
+    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath, parentLayerPath);
+#else
     return SaveLayersDialog::saveLayerFilePathUI(*out_filePath, parentLayer);
+#endif
 }
 
 std::vector<std::string>
@@ -463,8 +506,13 @@ std::string MayaSessionState::defaultLoadPath() const
 // in this case, the stage needs to be re-created on the new file
 void MayaSessionState::rootLayerPathChanged(std::string const& in_path)
 {
-    if (!_currentStageEntry._proxyShapePath.empty()) {
-        MString proxyShape(_currentStageEntry._proxyShapePath.c_str());
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    const std::string& proxyPath = _currentStageEntry._dccObjectPath;
+#else
+    const std::string& proxyPath = _currentStageEntry._proxyShapePath;
+#endif
+    if (!proxyPath.empty()) {
+        MString proxyShape(proxyPath.c_str());
         MString newValue(in_path.c_str());
         MayaUsd::utils::setNewProxyPath(
             proxyShape, newValue, MayaUsd::utils::kProxyPathFollowProxyShape, nullptr, false);
@@ -486,7 +534,11 @@ void MayaSessionState::setEchoEditForwarding(bool echo)
             AdskUsdEditForward::Host::GetInstance())) {
         host->SetWantsEcho(echo);
     }
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    _echoEditForwarding = echo;
+#else
     PARENT_CLASS::setEchoEditForwarding(echo);
+#endif
 }
 #endif
 
@@ -508,15 +560,28 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
 {
     MString result, temp;
 
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    // The shared StringResources does not provide a getAsMString helper; the
+    // Resource struct carries the raw format string as a std::string.
+    temp.format(
+        MString(StringResources::kUsdLayerIdentifier.value.c_str()),
+        layer->GetIdentifier().c_str());
+#else
     temp.format(
         StringResources::getAsMString(StringResources::kUsdLayerIdentifier),
         layer->GetIdentifier().c_str());
+#endif
     result += temp;
     result += "\n";
     if (layer->GetRealPath() != layer->GetIdentifier()) {
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+        temp.format(
+            MString(StringResources::kRealPath.value.c_str()), layer->GetRealPath().c_str());
+#else
         temp.format(
             StringResources::getAsMString(StringResources::kRealPath),
             layer->GetRealPath().c_str());
+#endif
         result += temp;
         result += "\n";
     }
@@ -525,5 +590,130 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
     result += text.c_str();
     MGlobal::displayInfo(result);
 }
+
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+// -----------------------------------------------------------------------------
+// Shared-API overrides
+// -----------------------------------------------------------------------------
+
+std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
+{
+    std::vector<StageEntry> result;
+
+    const Ufe::GlobalSelection::Ptr& ufeGlobalSelection = Ufe::GlobalSelection::get();
+    if (!ufeGlobalSelection)
+        return result;
+
+    // Find the proxy shapes corresponding to UFE selected items. If a selected
+    // item is not a proxy shape itself, also peek at its hierarchy children
+    // for a contained proxy shape (matches legacy stageSelectorWidget behavior).
+    const std::vector<StageEntry> all = allStages();
+    auto                          findEntryById = [&](const std::string& id) -> const StageEntry* {
+        for (const auto& e : all) {
+            if (e._id == id)
+                return &e;
+        }
+        return nullptr;
+    };
+
+    const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
+    const bool            rebuildCacheIfNeeded = false;
+    for (const auto& item : ufeSelection) {
+        PXR_NS::MayaUsdProxyShapeBase* proxyShapePtr
+            = MayaUsd::ufe::getProxyShape(item->path(), rebuildCacheIfNeeded);
+        if (!proxyShapePtr) {
+            // Walk the immediate children to find an embedded proxy shape.
+            if (auto hierarchy = Ufe::Hierarchy::hierarchy(item)) {
+                for (const auto& subItem : hierarchy->children()) {
+                    auto p = MayaUsd::ufe::getProxyShape(subItem->path(), rebuildCacheIfNeeded);
+                    if (p) {
+                        proxyShapePtr = p;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!proxyShapePtr)
+            continue;
+
+        MFnDagNode        dagNode(proxyShapePtr->thisMObject());
+        const std::string id = dagNode.uuid().asString().asChar();
+        if (const StageEntry* entry = findEntryById(id)) {
+            result.push_back(*entry);
+        }
+    }
+    return result;
+}
+
+bool MayaSessionState::supportsEditForwarding() const
+{
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool MayaSessionState::hasEditForwarding() const
+{
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    auto stage = _currentStageEntry._stage;
+    if (!stage)
+        return false;
+    AdskUsdEditForward::StageRuleProvider provider(stage);
+    return !provider.GetRules().empty();
+#else
+    return false;
+#endif
+}
+
+bool MayaSessionState::echoEditForwarding() const { return _echoEditForwarding; }
+
+bool MayaSessionState::isStageAComponent(const std::string& dccObjectPath) const
+{
+    if (dccObjectPath.empty())
+        return false;
+    return MayaUsd::ComponentUtils::isAdskUsdComponent(dccObjectPath);
+}
+
+bool MayaSessionState::isUnsavedComponent(const PXR_NS::UsdStageRefPtr& stage) const
+{
+    return MayaUsd::ComponentUtils::isUnsavedAdskUsdComponent(stage);
+}
+
+bool MayaSessionState::shouldDisplayComponentInitialSaveDialog(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            dccObjectPath) const
+{
+    return MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(stage, dccObjectPath);
+}
+
+std::string MayaSessionState::sceneFolder() const { return MayaUsd::utils::getSceneFolder(); }
+
+std::string MayaSessionState::moveComponent(
+    const std::string& saveLocation,
+    const std::string& componentName,
+    const std::string& dccObjectPath)
+{
+    return MayaUsd::ComponentUtils::moveAdskUsdComponent(
+        saveLocation, componentName, dccObjectPath);
+}
+
+std::string MayaSessionState::previewComponentSave(
+    const std::string& saveLocation,
+    const std::string& componentName,
+    const std::string& dccObjectPath) const
+{
+    return MayaUsd::ComponentUtils::previewSaveAdskUsdComponent(
+        saveLocation, componentName, dccObjectPath);
+}
+
+std::vector<std::string>
+MayaSessionState::getComponentLayersToSave(const std::string& dccObjectPath) const
+{
+    return MayaUsd::ComponentUtils::getAdskUsdComponentLayersToSave(dccObjectPath);
+}
+
+#endif // MAYAUSD_USE_SHARED_LAYER_EDITOR
 
 } // namespace UsdLayerEditor

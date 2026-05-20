@@ -18,12 +18,22 @@
 
 #include "mayaLayerEditorWindow.h"
 
+#include "mayaQtUtils.h"
+#include "mayaSessionState.h"
+
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+#include <layerEditorWidget.h>
+#include <layerTreeModel.h>
+#include <layerTreeView.h>
+#include <sessionState.h>
+#include <utilQT.h>
+#else
 #include "layerEditorWidget.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
-#include "mayaQtUtils.h"
-#include "mayaSessionState.h"
+#include "qtUtils.h"
 #include "sessionState.h"
+#endif
 
 #include <mayaUsd/utils/query.h>
 
@@ -96,9 +106,15 @@ MayaLayerEditorWindow::MayaLayerEditorWindow(const char* panelName, QWidget* par
 {
     // Normally this will be set from the MayaUsd plugin, but only
     // when building with UFE (for the batch save case).
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    if (!UsdLayerEditor::getQtUtils()) {
+        UsdLayerEditor::setQtUtils(new MayaQtUtils());
+    }
+#else
     if (!UsdLayerEditor::utils) {
         UsdLayerEditor::utils = new MayaQtUtils();
     }
+#endif
     onCreateUI();
 
     connect(
@@ -174,13 +190,21 @@ bool MayaLayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers
 std::string MayaLayerEditorWindow::proxyShapeName(const bool fullPath) const
 {
     auto stageEntry = _sessionState.stageEntry();
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    return fullPath ? stageEntry._dccObjectPath : stageEntry._displayName;
+#else
     return fullPath ? stageEntry._proxyShapePath : stageEntry._displayName;
+#endif
 }
 
 void MayaLayerEditorWindow::removeSubLayer()
 {
     QString name = "Remove";
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    treeView()->callMethodOnSelection(name, &LayerTreeItem::removeSubLayer);
+#else
     treeView()->callMethodOnSelectionNoDelay(name, &LayerTreeItem::removeSubLayer);
+#endif
 }
 
 void MayaLayerEditorWindow::saveEdits()

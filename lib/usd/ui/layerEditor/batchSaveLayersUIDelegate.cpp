@@ -17,7 +17,14 @@
 #include "batchSaveLayersUIDelegate.h"
 
 #include "mayaQtUtils.h"
+
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+#include <batchSaveLayersUIDelegate.h>
+#include <saveLayersDialog.h>
+#include <utilQT.h>
+#else
 #include "saveLayersDialog.h"
+#endif
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
@@ -28,10 +35,42 @@
 
 void UsdLayerEditor::initialize()
 {
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    if (nullptr == UsdLayerEditor::getQtUtils()) {
+        UsdLayerEditor::setQtUtils(new MayaQtUtils());
+    }
+#else
     if (nullptr == UsdLayerEditor::utils) {
         UsdLayerEditor::utils = new MayaQtUtils();
     }
+#endif
 }
+
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+namespace {
+
+// Adapt Maya's StageSavingInfo (carrying an MDagPath) to the shared
+// StageSavingInfo (carrying a dccObjectPath string + stageName).
+std::vector<UsdLayerEditor::StageSavingInfo>
+toSharedInfos(const std::vector<MayaUsd::StageSavingInfo>& mayaInfos)
+{
+    std::vector<UsdLayerEditor::StageSavingInfo> sharedInfos;
+    sharedInfos.reserve(mayaInfos.size());
+    for (const auto& mi : mayaInfos) {
+        UsdLayerEditor::StageSavingInfo si;
+        si.stage = mi.stage;
+        si.dccObjectPath = mi.dagPath.fullPathName().asChar();
+        // Use the leaf name of the dag path as a friendly stage name.
+        si.stageName = mi.dagPath.partialPathName().asChar();
+        si.shareable = mi.shareable;
+        si.isIncoming = mi.isIncoming;
+        sharedInfos.push_back(si);
+    }
+    return sharedInfos;
+}
+
+} // namespace
+#endif
 
 MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
     const std::vector<MayaUsd::StageSavingInfo>& infos,
@@ -76,7 +115,12 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
 
             if (showConfirmDgl) {
 
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+                const auto                       sharedInfos = toSharedInfos(infos);
+                UsdLayerEditor::SaveLayersDialog dlg(nullptr, sharedInfos, isExporting);
+#else
                 UsdLayerEditor::SaveLayersDialog dlg(nullptr, infos, isExporting);
+#endif
 
                 // The SaveLayers dialog only handles choosing new names for anonymous layers and
                 // making sure that they are remapped correctly in either their parent layer or by
@@ -101,8 +145,14 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
             }
 
             if (hasComponentStages) {
-                const bool                       componentsOnly = true;
+                const bool componentsOnly = true;
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+                const auto                       sharedInfos = toSharedInfos(infos);
+                UsdLayerEditor::SaveLayersDialog dlg(
+                    nullptr, sharedInfos, isExporting, componentsOnly);
+#else
                 UsdLayerEditor::SaveLayersDialog dlg(nullptr, infos, isExporting, componentsOnly);
+#endif
 
                 // Execute the dialog and return partially completed even if the dialog is closed.
                 dlg.exec();
