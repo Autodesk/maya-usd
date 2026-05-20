@@ -122,11 +122,7 @@ StubSessionState::makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id)
     e._id            = id;
     e._stage         = stage;
     e._displayName   = id;
-#ifdef USDLAYEREDITOR_SESSIONSTATE_H
-    e._dccObjectPath  = id;
-#else
-    e._proxyShapePath = id;
-#endif
+    e._dccObjectPath = id;
     return e;
 }
 

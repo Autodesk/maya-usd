@@ -102,11 +102,9 @@ void StubCommandHook::muteSubLayer(UsdLayer layer, bool muteIt)
     _calls.push_back({ "muteSubLayer", { layer->GetIdentifier(), muteIt ? "true" : "false" } });
 }
 
-void StubCommandHook::lockLayer(
-    UsdLayer layer, StubLockType /*lockState*/, bool /*includeSubLayers*/)
+void StubCommandHook::lockLayer(UsdLayer layer, LayerLockType /*lockState*/, bool /*includeSubLayers*/)
 {
     _calls.push_back({ "lockLayer", { layer->GetIdentifier() } });
-    // Stub only records; no lock state mutation needed for unit tests.
 }
 
 void StubCommandHook::refreshLayerSystemLock(UsdLayer layer, bool /*refreshSubLayers*/)
@@ -138,18 +136,6 @@ void StubCommandHook::selectPrimsWithSpec(UsdLayer layer)
 {
     _calls.push_back({ "selectPrimsWithSpec", { layer->GetIdentifier() } });
 }
-
-#ifndef USDLAYEREDITOR_ABSTRACTCOMMANDHOOK_H
-bool StubCommandHook::isProxyShapeStageIncoming(const std::string& /*proxyShapePath*/)
-{
-    return false;
-}
-
-bool StubCommandHook::isProxyShapeSharedStage(const std::string& /*proxyShapePath*/)
-{
-    return false;
-}
-#endif
 
 void StubCommandHook::clearCalls()
 {
