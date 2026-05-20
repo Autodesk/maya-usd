@@ -90,12 +90,7 @@ Qt::ItemFlags LayerTreeModel::flags(const QModelIndex& index) const
         return Qt::ItemIsSelectable | Qt::ItemIsEnabled;
     }
 
-    // TODO LE-EXTRACT Move sublayers - reenable drag&drop.
     Qt::ItemFlags defaultFlags = QStandardItemModel::flags(index);
-    defaultFlags &= ~Qt::ItemIsDragEnabled;
-    defaultFlags &= ~Qt::ItemIsDropEnabled;
-    return defaultFlags;
-
     if (index.isValid() && item->isMovable()) {
         return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | defaultFlags;
     } else {
@@ -106,10 +101,8 @@ Qt::ItemFlags LayerTreeModel::flags(const QModelIndex& index) const
 
 Qt::DropActions LayerTreeModel::supportedDropActions() const
 {
-    // TODO LE-EXTRACT Move sublayers - reenable drag&drop.
-    return Qt::IgnoreAction;
     // We support only moving layers around to reorder or re-parent.
-    // return Qt::MoveAction;
+    return Qt::MoveAction;
 }
 
 QStringList LayerTreeModel::mimeTypes() const
@@ -535,7 +528,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
     static const std::string kConfirmExistingFileSave
         = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
     bool showConfirmDgl = Options::optionVarExists(kConfirmExistingFileSave)
-        && Options::optionVarExists(kConfirmExistingFileSave) != 0;
+        && Options::optionVarIntValue(kConfirmExistingFileSave) != 0;
 
     // if the stage contains anonymous layers, you need to show the comfirm dialog
     // so the user can choose where to save the anonymous layers.
