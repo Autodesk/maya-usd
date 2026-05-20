@@ -261,7 +261,7 @@ void LayerTreeItem::fetchData(RebuildChildren in_rebuild, RecursionDetector* in_
 QVariant LayerTreeItem::data(int role) const
 {
     switch (role) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#if QT_DISABLE_DEPRECATED_BEFORE || QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     case Qt::ForegroundRole: return QApplication::palette().color(QPalette::ButtonText);
 #else
     case Qt::TextColorRole: return QApplication::palette().color(QPalette::ButtonText);
