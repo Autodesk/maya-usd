@@ -2,7 +2,7 @@
 
 Resume point for porting maya-usd layer editor commits into the shared component (`lib/usdUfe/usd-layer-editor/`). See `docs/superpowers/specs/2026-05-19-usd-layer-editor-migration-design.md` and `docs/superpowers/plans/2026-05-19-usd-layer-editor-migration.md` for the full migration design and plan.
 
-## Current state (as of 2026-05-20)
+## Current state (as of 2026-05-20, after Batch 5)
 
 - `UsdLayerEditorLib` builds as a parallel artifact in the maya-usd build (Tasks 1-4 of the plan complete).
 - The bridge from maya-usd's existing `mayaUsdUI` layer editor to `UsdLayerEditorLib` is **deferred** (Tasks 5-6 of the plan were attempted and reverted) because the shared component's API has diverged substantively from maya-usd's mature implementation. Bridging requires the shared API to first be brought up to parity.
@@ -135,37 +135,37 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | ab4828e9 | Only do it for <= 2017 | bug-fix | skip | Maya-side CMakeLists.txt MSVC QT_NO_FLOAT16_OPERATORS fix; shared CMakeLists has no such MSVC compile-definition block |
 | 9f4843a5 | Attempt | bug-fix | skip | Maya-side CMakeLists.txt MSVC QT_NO_FLOAT16_OPERATORS fix + componentSaveDialog cleanup; neither in shared |
 | bf969b60 | fix 2023 windows? | bug-fix | skip | QT_NO_FLOAT16_OPERATORS workaround added to componentSaveDialog.cpp — file not in shared |
-| 445d7dd6 | Use GHC for filesystem access. | filesystem | pending |  |
+| 445d7dd6 | Use GHC for filesystem access. | filesystem | skip | Touches only componentSaveDialog.cpp — file not in shared (filesystem/component-creator feature batch dependency) |
 | 635f0277 | Move var inside scope | bug-fix | skip | Scope tweak inside componentSaveDialog.cpp — file not in shared |
 | 530753c4 | typo / clang | skip | skip | Formatting/lint commit, no functional change |
-| d888d13e | move validator to util. | bug-fix | pending |  |
+| d888d13e | move validator to util. | bug-fix | needs-port-file | Moves TfValidIdentifierValidator from componentSaveDialog.cpp into qtUtils.cpp/h — qtUtils.cpp/h and componentSaveDialog not in shared (component-creator feature batch) |
 | c43de2b8 | Merge pull request #4386 from Autodesk/deboisj/comp_mgr | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | 6953003f | Merge pull request #4389 from Autodesk/kheloua/dev/EMSUSD-2981_CC_crash_add_s... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
-| 7186d7ae | Misc fixes | bug-fix | pending |  |
+| 7186d7ae | Misc fixes | bug-fix | needs-port-file | Touches componentSaveDialog.cpp (not in shared) + adds CC branch in layerEditorWidget::updateButtons calling MayaUsd::ComponentUtils::isAdskUsdComponent/getAdskUsdComponentLayersToSave — component-creator feature batch |
 | bb186a1f | Linting | bug-fix | skip | Formatting/lint commit, no functional change |
-| 393cb6dd | Add condition that checks for a valid LayerTreeItem for disabling of buttons | bug-fix | pending |  |
+| 393cb6dd | Add condition that checks for a valid LayerTreeItem for disabling of buttons | bug-fix | ported | Applied to lib/usdUfe/usd-layer-editor/lib/layerEditorWidget.cpp::updateNewLayerButton — added defensive `else { disabled = true; }` when item is null |
 | df85d8af | lint.. | skip | skip | Formatting/lint commit, no functional change |
-| 0ade03dd | block overwrite | bug-fix | pending |  |
-| 87da45d2 | Move CC code to util | component-creator | pending |  |
-| f2fa343c | Useless include | bug-fix | pending |  |
+| 0ade03dd | block overwrite | bug-fix | skip | Touches only componentSaveDialog.cpp::onSaveStage — file not in shared (component-creator feature batch) |
+| 87da45d2 | Move CC code to util | component-creator | needs-port-file | Refactors componentSaveDialog to call MayaUsd::ComponentUtils helpers — component-creator feature batch (file not in shared) |
+| f2fa343c | Useless include | bug-fix | skip | Already in shared — layerTreeModel.cpp does not include mayaSessionState.h |
 | 3ad2d39b | Merge remote-tracking branch 'public/kheloua/dev/EMSUSD-2913_implement_show_m... | bug-fix | skip | Merge commit — content tracked in the individual commits being merged |
 | d0f3ee01 | Lint again | skip | skip | Formatting/lint commit, no functional change |
-| f3e10f4a | Address PR feedback | bug-fix | pending |  |
-| 50a6589a | cleanup pass | bug-fix | pending |  |
-| 8cb15558 | Add component manager | bug-fix | pending |  |
-| c53d6850 | Update VE | bug-fix | pending |  |
-| 80eecf6b | Support component save | bug-fix | pending |  |
+| f3e10f4a | Address PR feedback | bug-fix | skip | Patches the Maya-only proxy-shape-rename branch in layerTreeModel::saveStage (uses MayaSessionState::getStageEntry, setNewProxyPath) — that branch is not in shared (component-creator feature batch) |
+| 50a6589a | cleanup pass | bug-fix | needs-port-file | Refactors isComponent check + saveAdskUsdComponent call in layerTreeModel::saveStage + shouldDisplayComponentInitialSaveDialog — component-creator feature batch (MayaUsd::ComponentUtils not in shared) |
+| 8cb15558 | Add component manager | bug-fix | needs-port-file | Introduces utilComponentCreator + replaces inline Python ComponentDescription check in layerTreeModel with MayaUsd::ComponentUtils::isAdskUsdComponent/saveAdskUsdComponent — component-creator feature batch |
+| c53d6850 | Update VE | bug-fix | needs-port-file | Updates the Maya-only MoveComponent Python branch in saveStage (executePythonCommand + setNewProxyPath + MDagModifier rename) — component-creator feature batch |
+| 80eecf6b | Support component save | bug-fix | needs-port-file | Embeds Python MayaComponentManager.SaveComponent call inside layerTreeModel::saveStage + utilSerialization changes — component-creator feature batch |
 | 02f044db | Clang format again | skip | skip | Formatting/lint commit, no functional change |
-| 68d7e07e | Add constants for show more and less strings | bug-fix | pending |  |
-| 9f9c2426 | Remove json parsing logic and add no data message | bug-fix | pending |  |
-| 59eada75 | Remove unnecessary include | bug-fix | pending |  |
+| 68d7e07e | Add constants for show more and less strings | bug-fix | skip | Touches only componentSaveDialog.cpp — file not in shared (component-creator feature batch) |
+| 9f9c2426 | Remove json parsing logic and add no data message | bug-fix | skip | Touches only componentSaveDialog.cpp/h — file not in shared (component-creator feature batch) |
+| 59eada75 | Remove unnecessary include | bug-fix | skip | Touches only componentSaveDialog.cpp — file not in shared (component-creator feature batch) |
 | 0a832995 | Linting issues | bug-fix | skip | Formatting/lint commit, no functional change |
-| 060811c7 | Fix error related to bad stage entry state | bug-fix | pending |  |
-| 489a611c | Adjust constructor call to pass proxy shape path | bug-fix | pending |  |
-| 4aa8c952 | Add Show More functionality to the component save dialog | bug-fix | pending |  |
-| 8adf4920 | Remove dependency to utilSerialization.h and bring in code to get workspace s... | bug-fix | pending |  |
+| 060811c7 | Fix error related to bad stage entry state | bug-fix | needs-port-file | Reorders proxy-shape rename/setNewProxyPath/MayaSessionState::getStageEntry calls inside the Maya-only MoveComponent branch in saveStage — component-creator feature batch |
+| 489a611c | Adjust constructor call to pass proxy shape path | bug-fix | needs-port-file | Passes proxyShapePath to ComponentSaveDialog ctor in the saveStage CC branch — component-creator feature batch (dialog/branch not in shared) |
+| 4aa8c952 | Add Show More functionality to the component save dialog | bug-fix | skip | Touches only componentSaveDialog.cpp/h — file not in shared (component-creator feature batch) |
+| 8adf4920 | Remove dependency to utilSerialization.h and bring in code to get workspace s... | bug-fix | skip | Touches only componentSaveDialog.cpp — file not in shared (component-creator feature batch) |
 | 6437fb66 | Lint | skip | skip | Formatting/lint commit, no functional change |
-| fa7efa32 | Change to use #include <ghc/filesystem.hpp> | filesystem | pending |  |
+| fa7efa32 | Change to use #include <ghc/filesystem.hpp> | filesystem | skip | std::filesystem→ghc::filesystem swap inside isPathInside helper used only by shouldDisplayComponentInitialSaveDialog — not in shared (component-creator feature batch dependency) |
 | e2eff3ea | Address missed PR feedback | bug-fix | pending |  |
 | 73f9c497 | Address PR feedback again | bug-fix | pending |  |
 | c77d22f8 | Add import failure check based on PR feedback | bug-fix | pending |  |
