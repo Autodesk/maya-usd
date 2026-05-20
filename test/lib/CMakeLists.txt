@@ -127,6 +127,33 @@ endforeach()
 
 #
 # -----------------------------------------------------------------------------
+# Shared usd-layer-editor component tests
+#
+# When the shared component is built (BUILD_NEW_LAYER_EDITOR=ON), register the
+# Maya-driven ctest wrapper that runs the DCC-agnostic layer_editor_test.py
+# suite from lib/usdUfe/usd-layer-editor/test/. The wrapper installs the
+# Maya implementations of the DCC hooks and re-exports UsdLayerEditorTest so
+# unittest discovery picks up all test_* methods.
+# -----------------------------------------------------------------------------
+if(BUILD_NEW_LAYER_EDITOR)
+    set(SHARED_LAYER_EDITOR_TEST_DIR
+        ${CMAKE_SOURCE_DIR}/lib/usdUfe/usd-layer-editor/test
+    )
+    mayaUsd_get_unittest_target(target testMayaUsdSharedLayerEditor.py)
+    mayaUsd_add_test(${target}
+        INTERACTIVE
+        WORKING_DIRECTORY ${SHARED_LAYER_EDITOR_TEST_DIR}
+        PYTHON_SCRIPT ${SHARED_LAYER_EDITOR_TEST_DIR}/testMayaUsdSharedLayerEditor.py
+        ENV
+            "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "PYTHONPATH=${SHARED_LAYER_EDITOR_TEST_DIR}"
+    )
+    set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+endif()
+
+#
+# -----------------------------------------------------------------------------
 # Special interactive test to be able to start Maya with test configurations.
 # Can be started with VS Code but won't be part of test suites.
 # -----------------------------------------------------------------------------
