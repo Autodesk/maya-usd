@@ -56,7 +56,7 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 7b51144e | EMSUSD-3181 use depth-first | bug-fix | pending |  |
 | f18d7545 | EMSUSD-3181 filter instances | bug-fix | pending |  |
 | 5afb128c | EMSUSD-3181 faster all-stages | bug-fix | pending |  |
-| 4f8b0a66 | Fix save icon refresh | bug-fix | pending |  |
+| 4f8b0a66 | Fix save icon refresh | bug-fix | ported | Applied to lib/usdUfe/usd-layer-editor/lib/layerTreeModel.cpp (usd_layerDirtinessChanged emits dataChanged for non-local layers) |
 | 78c34506 | Fix comment wording | bug-fix | pending |  |
 | c710f926 | Fix crash on add layer when root is locked. | bug-fix | pending |  |
 | c985a4f9 | EMSUSD-3687 moved comments | bug-fix | pending |  |
