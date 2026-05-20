@@ -18,7 +18,12 @@
 #define MAYASESSIONSTATE_H
 
 #include "mayaCommandHook.h"
+
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+#include <sessionState.h>
+#else
 #include "sessionState.h"
+#endif
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
@@ -59,8 +64,37 @@ public:
     void setDisplayLayerContents(bool show) override;
     void setDisplayLayerExpandAllValues(bool expand) override;
 
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    // Edit Forwarding hooks (shared widget asks the session state whether the
+    // current stage has EF rules so it can show/hide the banner).
+    bool supportsEditForwarding() const override;
+    bool hasEditForwarding() const override;
+    bool echoEditForwarding() const override;
+
+    // Component Creator hooks routed to MayaUsd::ComponentUtils helpers.
+    bool        isStageAComponent(const std::string& dccObjectPath) const override;
+    bool        isUnsavedComponent(const PXR_NS::UsdStageRefPtr& stage) const override;
+    bool        shouldDisplayComponentInitialSaveDialog(
+               const PXR_NS::UsdStageRefPtr& stage,
+               const std::string&            dccObjectPath) const override;
+    std::string sceneFolder() const override;
+    std::string moveComponent(
+        const std::string& saveLocation,
+        const std::string& componentName,
+        const std::string& dccObjectPath) override;
+    std::string previewComponentSave(
+        const std::string& saveLocation,
+        const std::string& componentName,
+        const std::string& dccObjectPath) const override;
+    std::vector<std::string>
+    getComponentLayersToSave(const std::string& dccObjectPath) const override;
+#endif
+
     AbstractCommandHook*    commandHook() override;
     std::vector<StageEntry> allStages() const override;
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    std::vector<StageEntry> selectedStages() const override;
+#endif
     // path to default load layer dialogs to
     std::string defaultLoadPath() const override;
     // ui that returns a list of paths to load
@@ -82,7 +116,11 @@ public:
     void refreshCurrentStageEntry();
     void refreshStageEntry(std::string const& proxyShapePath);
 
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    std::string proxyShapePath() { return _currentStageEntry._dccObjectPath; }
+#else
     std::string proxyShapePath() { return _currentStageEntry._proxyShapePath; }
+#endif
 
 Q_SIGNALS:
     void clearUIOnSceneResetSignal();
@@ -119,6 +157,11 @@ protected:
     TfNotice::Key            _stageResetNoticeKey;
     MayaCommandHook          _mayaCommandHook;
     bool                     _inLoad = false;
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    // Maya tracks its own echo-edit-forwarding option; the shared base no
+    // longer carries it.
+    bool _echoEditForwarding { false };
+#endif
 };
 
 } // namespace UsdLayerEditor
