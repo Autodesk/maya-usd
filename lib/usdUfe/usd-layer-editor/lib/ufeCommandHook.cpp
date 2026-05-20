@@ -80,7 +80,13 @@ void UfeCommandHook::moveSubLayerPath(
     UsdLayer newParentUsdLayer,
     int      index)
 {
-    // TODO LE-EXTRACT Move sub-layer path.
+    auto removeCmd = ::std::make_shared<RemoveSubPathCmd>(
+        _sessionState->stage(), oldParentUsdLayer, path);
+    AppendOrExecuteCommand(removeCmd);
+
+    auto insertCmd = ::std::make_shared<InsertSubPathCmd>(
+        _sessionState->stage(), newParentUsdLayer, path, index);
+    AppendOrExecuteCommand(insertCmd);
 }
 
 void UfeCommandHook::replaceSubLayerPath(UsdLayer usdLayer, Path oldPath, Path newPath)
