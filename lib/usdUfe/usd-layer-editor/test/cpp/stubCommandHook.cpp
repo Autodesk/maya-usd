@@ -16,8 +16,6 @@
 
 #include "stubCommandHook.h"
 
-#include <mayaUsd/utils/layerLocking.h>
-
 #include <pxr/usd/sdf/layer.h>
 
 namespace UsdLayerEditor {
@@ -91,8 +89,7 @@ void StubCommandHook::flattenLayer(UsdLayer layer)
     _calls.push_back({ "flattenLayer", { layer->GetIdentifier() } });
 }
 
-UsdLayer StubCommandHook::addAnonymousSubLayer(
-    UsdLayer layer, std::string newName)
+UsdLayer StubCommandHook::addAnonymousSubLayer(UsdLayer layer, std::string newName)
 {
     _calls.push_back({ "addAnonymousSubLayer", { layer->GetIdentifier(), newName } });
     auto newLayer = PXR_NS::SdfLayer::CreateAnonymous(newName);
@@ -106,10 +103,10 @@ void StubCommandHook::muteSubLayer(UsdLayer layer, bool muteIt)
 }
 
 void StubCommandHook::lockLayer(
-    UsdLayer layer, MayaUsd::LayerLockType lockState, bool /*includeSubLayers*/)
+    UsdLayer layer, StubLockType /*lockState*/, bool /*includeSubLayers*/)
 {
     _calls.push_back({ "lockLayer", { layer->GetIdentifier() } });
-    MayaUsd::lockLayer(std::string {}, layer, lockState, /*updateDCCObjectAttr=*/false);
+    // Stub only records; no lock state mutation needed for unit tests.
 }
 
 void StubCommandHook::refreshLayerSystemLock(UsdLayer layer, bool /*refreshSubLayers*/)
@@ -142,6 +139,7 @@ void StubCommandHook::selectPrimsWithSpec(UsdLayer layer)
     _calls.push_back({ "selectPrimsWithSpec", { layer->GetIdentifier() } });
 }
 
+#ifndef USDLAYEREDITOR_ABSTRACTCOMMANDHOOK_H
 bool StubCommandHook::isProxyShapeStageIncoming(const std::string& /*proxyShapePath*/)
 {
     return false;
@@ -151,6 +149,7 @@ bool StubCommandHook::isProxyShapeSharedStage(const std::string& /*proxyShapePat
 {
     return false;
 }
+#endif
 
 void StubCommandHook::clearCalls()
 {

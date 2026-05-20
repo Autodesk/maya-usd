@@ -36,6 +36,8 @@ public:
 
     AbstractCommandHook*     commandHook() override;
     std::vector<StageEntry>  allStages() const override;
+    // selectedStages is pure virtual only in the new component; omit 'override' for portability.
+    std::vector<StageEntry>  selectedStages() const;
     std::string              defaultLoadPath() const override;
     std::vector<std::string> loadLayersUI(
         const QString& title, const std::string& default_path) const override;
@@ -44,6 +46,9 @@ public:
         std::string*                  out_filePath,
         const PXR_NS::SdfLayerRefPtr& parentLayer) const override;
     void printLayer(const PXR_NS::SdfLayerRefPtr& layer) const override;
+    // refreshCurrentStageEntry / refreshStageEntry are pure virtual only in the new component.
+    void refreshCurrentStageEntry();
+    void refreshStageEntry(std::string const& dccObjectPath);
     void setupCreateMenu(QMenu* menu) override;
     void rootLayerPathChanged(std::string const& path) override;
 

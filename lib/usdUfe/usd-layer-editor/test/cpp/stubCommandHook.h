@@ -23,6 +23,16 @@
 
 namespace UsdLayerEditor {
 
+// The two components expose lockLayer with different type qualifications:
+//   New (USDLAYEREDITOR_ABSTRACTCOMMANDHOOK_H): UsdLayerEditor::LayerLockType
+//   Old: MayaUsd::LayerLockType
+// StubLockType resolves to whichever the compiled-against base class uses.
+#ifdef USDLAYEREDITOR_ABSTRACTCOMMANDHOOK_H
+using StubLockType = LayerLockType;
+#else
+using StubLockType = MayaUsd::LayerLockType;
+#endif
+
 struct CommandCall {
     std::string              name;
     std::vector<std::string> args;
@@ -43,15 +53,19 @@ public:
     void     flattenLayer(UsdLayer layer) override;
     UsdLayer addAnonymousSubLayer(UsdLayer layer, std::string newName) override;
     void     muteSubLayer(UsdLayer layer, bool muteIt) override;
-    void     lockLayer(UsdLayer layer, MayaUsd::LayerLockType lockState, bool includeSubLayers) override;
+    void     lockLayer(UsdLayer layer, StubLockType lockState, bool includeSubLayers) override;
     void     refreshLayerSystemLock(UsdLayer layer, bool refreshSubLayers = false) override;
     void     stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers) override;
     void     openUndoBracket(const QString& name) override;
     void     closeUndoBracket() override;
     void     showLayerEditorHelp() override;
     void     selectPrimsWithSpec(UsdLayer layer) override;
-    bool     isProxyShapeStageIncoming(const std::string& proxyShapePath) override;
-    bool     isProxyShapeSharedStage(const std::string& proxyShapePath) override;
+
+#ifndef USDLAYEREDITOR_ABSTRACTCOMMANDHOOK_H
+    // Old component: isProxyShape* are pure virtuals; new component has default no-ops.
+    bool isProxyShapeStageIncoming(const std::string& proxyShapePath) override;
+    bool isProxyShapeSharedStage(const std::string& proxyShapePath) override;
+#endif
 
     void               clearCalls();
     bool               hasCall(std::string_view method) const;
