@@ -27,6 +27,8 @@ add_library(UsdLayerEditorLib SHARED
     abstractLayerEditorWindow.h
     batchSaveLayersUIDelegate.cpp
     batchSaveLayersUIDelegate.h
+    componentSaveWidget.cpp
+    componentSaveWidget.h
     customLayerData.cpp
     customLayerData.h
     dirtyLayersCountBadge.cpp

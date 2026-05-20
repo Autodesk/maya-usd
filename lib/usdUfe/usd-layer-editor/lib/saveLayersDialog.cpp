@@ -16,6 +16,7 @@
 
 #include "saveLayersDialog.h"
 
+#include "componentSaveWidget.h"
 #include "generatedIconButton.h"
 #include "layerLocking.h"
 #include "layerTreeItem.h"
@@ -32,6 +33,7 @@
 
 #include <usdUfe/ufe/Utils.h>
 
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/layer.h>
 
 #include <QtCore/QDir>
@@ -66,6 +68,7 @@ void getDialogMessages(
     const int nbAnonLayers,
     QString&  msg1,
     QString&  msg2,
+    QString&  msg3,
     bool      isExporting)
 {
     std::string strNbStages = std::to_string(nbStages);
@@ -80,6 +83,11 @@ void getDialogMessages(
                          : StringResources::kToSaveTheStageSaveFiles;
     msg = String::format(msgRes.value, strNbStages);
     msg2 = QString::fromStdString(msg);
+
+    msgRes = isExporting ? StringResources::kToExportTheStageSaveComponents
+                         : StringResources::kToSaveTheStageSaveComponents;
+    msg = String::format(msgRes.value, strNbStages);
+    msg3 = QString::fromStdString(msg);
 }
 
 class AnonLayerPathEdit : public QLineEdit
@@ -441,7 +449,8 @@ namespace UsdLayerEditor {
 SaveLayersDialog::SaveLayersDialog(
     QWidget*                            in_parent,
     const std::vector<StageSavingInfo>& infos,
-    bool                                isExporting)
+    bool                                isExporting,
+    bool                                componentsOnly)
     : QDialog(in_parent)
     , _sessionState(nullptr)
     , _isExporting(isExporting)
@@ -449,24 +458,56 @@ SaveLayersDialog::SaveLayersDialog(
     std::string msg = String::format(StringResources::kSaveXStages.value, std::to_string(infos.size()));
     setWindowTitle(QString::fromStdString(msg));
 
-    // For each stage collect the layers to save.
+    // For each stage collect the layers to save and identify component stages.
     for (const auto& info : infos) {
+        // Resolve the DCC object path for this stage. Prefer the explicit
+        // dccObjectPath set on the info (Maya side fills this in); fall back
+        // to the UFE-derived stage path for callers that haven't been
+        // updated yet.
+        std::string dccObjectPath = info.dccObjectPath;
+        if (dccObjectPath.empty()) {
+            dccObjectPath = UsdUfe::stagePath(info.stage).string();
+        }
 
-        const auto objectPath = UsdUfe::stagePath(info.stage);
-        getLayersToSave(
-            info.stage,
-            objectPath.string(),
-            info.stageName);
+        // Check if this stage is a component stage. The check is routed
+        // through the (no-op by default) SessionState hook so that the
+        // shared component picks up the Maya CC support when present and
+        // simply skips this branch in other DCCs.
+        // (No session state is attached to this bulk-save ctor — when there's
+        // no session state we still need a way to identify components, so the
+        // host should populate the dccObjectPath and we ask via... actually
+        // since _sessionState is nullptr for this ctor, we can't ask the
+        // session state. The Maya side of this code lived inside maya-usd
+        // and called MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog
+        // statically. We mirror that here only when we have a session state.)
+        const bool isComponent
+            = _sessionState
+            && _sessionState->shouldDisplayComponentInitialSaveDialog(info.stage, dccObjectPath);
+        if (isComponent) {
+            StageSavingInfo componentInfo = info;
+            componentInfo.dccObjectPath = dccObjectPath;
+            _componentStageInfos.push_back(componentInfo);
+            // Component stages are saved via the component system, skip layer collection
+            continue;
+        }
+
+        // If componentsOnly mode, skip non-component stages entirely
+        if (componentsOnly) {
+            continue;
+        }
+
+        getLayersToSave(info.stage, dccObjectPath, info.stageName);
     }
 
-    QString msg1, msg2;
+    QString msg1, msg2, msg3;
     getDialogMessages(
         static_cast<int>(infos.size()),
         static_cast<int>(_anonLayerInfos.size()),
         msg1,
         msg2,
+        msg3,
         isExporting);
-    buildDialog(msg1, msg2);
+    buildDialog(msg1, msg2, msg3);
 }
 
 SaveLayersDialog::SaveLayersDialog(
@@ -484,13 +525,26 @@ SaveLayersDialog::SaveLayersDialog(
         std::string stageName = stageEntry._displayName;
         msg = String::format(StringResources::kSaveName.value, stageName.c_str());
         dialogTitle = QString::fromStdString(msg);
-        getLayersToSave(stageEntry._stage, stageEntry._dccObjectPath, stageName);
+
+        // Check if this stage is an unsaved component stage. Routed through
+        // SessionState so DCCs without component support fall straight into
+        // the normal getLayersToSave path.
+        if (_sessionState->shouldDisplayComponentInitialSaveDialog(
+                stageEntry._stage, stageEntry._dccObjectPath)) {
+            StageSavingInfo info;
+            info.stage = stageEntry._stage;
+            info.stageName = stageName;
+            info.dccObjectPath = stageEntry._dccObjectPath;
+            _componentStageInfos.push_back(info);
+        } else {
+            getLayersToSave(stageEntry._stage, stageEntry._dccObjectPath, stageName);
+        }
     }
     setWindowTitle(dialogTitle);
 
-    QString msg1, msg2;
-    getDialogMessages(1, static_cast<int>(_anonLayerInfos.size()), msg1, msg2, isExporting);
-    buildDialog(msg1, msg2);
+    QString msg1, msg2, msg3;
+    getDialogMessages(1, static_cast<int>(_anonLayerInfos.size()), msg1, msg2, msg3, isExporting);
+    buildDialog(msg1, msg2, msg3);
 }
 
 SaveLayersDialog ::~SaveLayersDialog() { QApplication::restoreOverrideCursor(); }
@@ -546,7 +600,7 @@ void SaveLayersDialog::getLayersToSave(
         std::begin(dirtyFileBackedLayersToDisplay), std::end(dirtyFileBackedLayersToDisplay));
 }
 
-void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
+void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, const QString& msg3)
 {
     const int mainMargin = DPIScale(20);
 
@@ -567,8 +621,10 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
 
     const bool            haveAnonLayers { !_anonLayerInfos.empty() };
     const bool            haveFileBackedLayers { !_dirtyFileBackedLayers.empty() };
+    const bool            haveComponentStages { !_componentStageInfos.empty() };
     SaveLayerPathRowArea* anonScrollArea { nullptr };
     SaveLayerPathRowArea* fileScrollArea { nullptr };
+    SaveLayerPathRowArea* componentScrollArea { nullptr };
     const int             margin { DPIScale(10) };
 
     // Anonymous layers.
@@ -634,6 +690,62 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
     auto topLayout = new QVBoxLayout();
     QtUtils::initLayoutMargins(topLayout, mainMargin);
     topLayout->setSpacing(DPIScale(8));
+
+    // Component stages section - create ComponentSaveWidget for each component stage
+    if (haveComponentStages) {
+        auto componentLayout = new QVBoxLayout();
+        componentLayout->setContentsMargins(margin, margin, margin, 0);
+        componentLayout->setSpacing(DPIScale(8));
+        componentLayout->setAlignment(Qt::AlignTop);
+
+        for (size_t i = 0; i < _componentStageInfos.size(); ++i) {
+            const auto& componentInfo = _componentStageInfos[i];
+            auto        componentWidget
+                = new ComponentSaveWidget(this, _sessionState, componentInfo.dccObjectPath);
+            componentWidget->setComponentName(QString::fromStdString(componentInfo.stageName));
+            // Make compact if not the first component widget
+            if (i > 0) {
+                componentWidget->setCompactMode(true);
+            }
+            componentLayout->addWidget(componentWidget);
+            _componentSaveWidgets.push_back(componentWidget);
+        }
+
+        _componentStagesWidget = new QWidget();
+        _componentStagesWidget->setLayout(componentLayout);
+
+        // Setup the scroll area for component stages.
+        componentScrollArea = new SaveLayerPathRowArea();
+        componentScrollArea->setFrameShape(QFrame::NoFrame);
+        componentScrollArea->setBackgroundRole(QPalette::AlternateBase);
+        componentScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        componentScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        componentScrollArea->setWidget(_componentStagesWidget);
+        componentScrollArea->setWidgetResizable(true);
+    }
+
+    if (nullptr != componentScrollArea) {
+        // Add message above component save section
+        if (!msg3.isEmpty()) {
+            auto componentMessage = new QLabel(msg3, this);
+            topLayout->addWidget(componentMessage);
+        }
+
+        // Add the component scroll area
+        topLayout->addWidget(componentScrollArea);
+
+        // Add a separator if we also have anonymous layers or file backed layers
+        if (haveAnonLayers || haveFileBackedLayers) {
+            auto lineSep = new QFrame();
+            lineSep->setFrameShape(QFrame::HLine);
+            lineSep->setLineWidth(DPIScale(1));
+            QPalette pal(lineSep->palette());
+            pal.setColor(QPalette::Base, QColor("#575757"));
+            lineSep->setPalette(pal);
+            lineSep->setBackgroundRole(QPalette::Base);
+            topLayout->addWidget(lineSep);
+        }
+    }
 
     if (nullptr != anonScrollArea) {
         // Add the first message.
@@ -747,6 +859,54 @@ void SaveLayersDialog::onSaveAll()
     _problemLayers.clear();
     _emptyLayers.clear();
 
+    // Save component stages first. The actual DCC-specific work (moving the
+    // component on disk, renaming the proxy/object in the DCC, transferring
+    // the session layer content, locking the new root layer) is routed
+    // through SessionState / AbstractCommandHook virtuals so that DCCs
+    // without component-creator support simply skip this branch.
+    for (auto* componentWidget : _componentSaveWidgets) {
+        std::string saveLocation = componentWidget->folderLocation().toStdString();
+        std::string componentName = componentWidget->componentName().toStdString();
+        std::string dccObjectPath = componentWidget->dccObjectPath();
+
+        std::string newRootPath;
+        if (_sessionState) {
+            newRootPath = _sessionState->moveComponent(saveLocation, componentName, dccObjectPath);
+        }
+        if (!newRootPath.empty()) {
+            _newPaths.append(QString::fromStdString(componentName));
+            _newPaths.append(QString::fromStdString(newRootPath));
+
+            auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
+            if (newRootLayer && _sessionState) {
+                // Rename the DCC-side proxy/object so its name matches the
+                // component's new name. The hook is a no-op for DCCs that
+                // don't have a renamable proxy concept.
+                _sessionState->commandHook()->renameProxyShape(dccObjectPath, componentName);
+
+                // After the rename, the session state should point at the
+                // (now-renamed) stage entry. Try to relocate it among the
+                // session's known stages by matching on the new name.
+                auto entries = _sessionState->allStages();
+                for (const auto& entry : entries) {
+                    if (!entry._dccObjectPath.empty()
+                        && entry._dccObjectPath.find(componentName) != std::string::npos) {
+                        _sessionState->setStageEntry(entry);
+                        break;
+                    }
+                }
+
+                // Lock the newly-saved root layer. The shared lockLayer
+                // helper is DCC-agnostic.
+                std::string lockShapePath = _sessionState->stageEntry()._dccObjectPath;
+                lockLayer(lockShapePath, newRootLayer, LayerLockType::LayerLock_Locked, true);
+            }
+        } else {
+            _problemLayers.append(QString::fromStdString(componentName));
+            _problemLayers.append(QString::fromStdString(saveLocation + "/" + componentName));
+        }
+    }
+
     // Note: must start from the end so that sub-layers are saved before their parent.
     for (int count = _saveLayerPathRows.size(), i = count - 1; i >= 0; --i) {
         auto row = dynamic_cast<SaveLayerPathRow*>(_saveLayerPathRows[i]);
@@ -787,6 +947,23 @@ void SaveLayersDialog::onCancel() { reject(); }
 
 bool SaveLayersDialog::okToSave()
 {
+    // Block overwriting of components. The target folder must be empty.
+    // Otherwise, log an error and abort.
+    for (auto* componentWidget : _componentSaveWidgets) {
+        std::filesystem::path location { componentWidget->folderLocation().toStdString() };
+        location.append(componentWidget->componentName().toStdString());
+
+        if (std::filesystem::exists(location) && !std::filesystem::is_empty(location)) {
+            TF_RUNTIME_ERROR(
+                "Cannot save %s with the given name since a non-empty folder with the same "
+                "name is already in that location. Use a unique name or save to a different "
+                "location and try the save again. Folder path: %s",
+                componentWidget->componentName().toStdString().c_str(),
+                location.generic_string().c_str());
+            return false;
+        }
+    }
+
     // Files can have the same file names in complicated ways, with one file having two copies,
     // another three, so we keep the exact number of copies per file path.
     QMap<QString, int> alreadySeenPaths;

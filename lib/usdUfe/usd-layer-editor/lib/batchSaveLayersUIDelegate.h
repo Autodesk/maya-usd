@@ -44,6 +44,9 @@ struct StageSavingInfo
 {
     UsdStageRefPtr stage;
     std::string    stageName;
+    // DCC-side object path (e.g. proxy shape path on the Maya side) that
+    // owns the stage. May be empty if no DCC object is associated.
+    std::string    dccObjectPath;
     bool           shareable = true;
     bool           isIncoming = false;
 };

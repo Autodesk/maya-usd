@@ -77,6 +77,11 @@ public:
     // save stage UI
     void saveStage(QWidget* in_parent);
 
+    // reload a component stage (component-creator). Default behavior is to
+    // route to AbstractCommandHook::reloadComponent() which is a no-op for
+    // DCCs without component support.
+    void reloadComponent(QWidget* in_parent);
+
     // return the index of the root layer
     QModelIndex rootLayerIndex();
 

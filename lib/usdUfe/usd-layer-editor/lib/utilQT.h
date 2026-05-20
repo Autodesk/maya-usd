@@ -94,6 +94,20 @@ private:
     QWidget& _widget;
 };
 
+/**
+ * @brief Validator that only accepts strings that are also valid Tf identifiers.
+ *
+ * Used by the component-save widget to gate component-name entry to a USD-safe
+ * identifier.
+ */
+class LayerEditorAPI ValidTfIdentifierValidator : public QValidator
+{
+public:
+    explicit ValidTfIdentifierValidator(QObject* parent = nullptr);
+
+    State validate(QString& input, int& pos) const override;
+};
+
 #ifdef Q_OS_DARWIN
 const bool IS_MAC_OS = true;
 #else
