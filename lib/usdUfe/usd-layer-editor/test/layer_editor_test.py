@@ -59,6 +59,13 @@ class UsdLayerEditorTest(unittest.TestCase):
     def _openStageLayerEditor():
         raise Exception("_openStageLayerEditor() function not set - must be configured by the DCC")
         return None
+
+    @staticmethod
+    def _executeCmd(cmd):
+        # DCC-specific. 3dsmax/pybind11 hosts can delegate to ufe.UndoableCommandMgr.
+        # Maya wraps cmd.execute() in an MEL undo chunk because its UFE Python is
+        # pybind11 while UsdLayerEditor commands are boost.python-bound.
+        raise Exception("_executeCmd() function not set - must be configured by the DCC")
         
     def test_edit_target_cmd(self):
         
@@ -78,13 +85,13 @@ class UsdLayerEditorTest(unittest.TestCase):
         sublayer = Sdf.Layer.FindOrOpen(self.script_folder + "/data/sublayer.usda")
         
         cmd = UsdLayerEditor.SetEditTargetCommand(stage, sublayer)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
 
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, sublayer.identifier)
         
         # Can we set the target back to the root?
         cmd2 = UsdLayerEditor.SetEditTargetCommand(stage, rootLayer)
-        mgr.executeCmd(cmd2);
+        UsdLayerEditorTest._executeCmd(cmd2);
 
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayer.identifier)
           
@@ -98,18 +105,18 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Test with anonymous sublayer created by AddAnonSubLayerCommand
         addAnonCmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(addAnonCmd)
+        UsdLayerEditorTest._executeCmd(addAnonCmd)
         anonLayerId = addAnonCmd.addedLayer()
         anonLayer = Sdf.Layer.Find(anonLayerId)
         
         # Set edit target to the anonymous layer
         cmd3 = UsdLayerEditor.SetEditTargetCommand(stage, anonLayer)
-        mgr.executeCmd(cmd3)
+        UsdLayerEditorTest._executeCmd(cmd3)
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, anonLayerId)
         
         # Verify we can set target back to root from anonymous layer
         cmd4 = UsdLayerEditor.SetEditTargetCommand(stage, rootLayer)
-        mgr.executeCmd(cmd4)
+        UsdLayerEditorTest._executeCmd(cmd4)
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayer.identifier)
         
         # Test undo/redo with anonymous layer
@@ -132,7 +139,7 @@ class UsdLayerEditorTest(unittest.TestCase):
        # Clear the layer
        cmd = UsdLayerEditor.ClearLayerCommand(rootLayer)
        mgr = ufe.UndoableCommandMgr.instance()
-       mgr.executeCmd(cmd)
+       UsdLayerEditorTest._executeCmd(cmd)
        
        prim_count = sum(1 for _ in stage.Traverse())
        self.assertEqual(prim_count, 0)
@@ -157,11 +164,11 @@ class UsdLayerEditorTest(unittest.TestCase):
        
        # Add anonymous sublayers using AddAnonSubLayerCommand
        addAnonCmd1 = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-       mgr.executeCmd(addAnonCmd1)
+       UsdLayerEditorTest._executeCmd(addAnonCmd1)
        anonLayerId1 = addAnonCmd1.addedLayer()
        
        addAnonCmd2 = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-       mgr.executeCmd(addAnonCmd2)
+       UsdLayerEditorTest._executeCmd(addAnonCmd2)
        anonLayerId2 = addAnonCmd2.addedLayer()
        
        # Should now have 3 sublayers (1 original + 2 anonymous)
@@ -171,7 +178,7 @@ class UsdLayerEditorTest(unittest.TestCase):
        
        # Clear the layer - should remove all sublayers including anonymous ones
        clearCmd = UsdLayerEditor.ClearLayerCommand(rootLayer)
-       mgr.executeCmd(clearCmd)
+       UsdLayerEditorTest._executeCmd(clearCmd)
        
        self.assertEqual(len(rootLayer.subLayerPaths), 0)
        
@@ -213,7 +220,7 @@ class UsdLayerEditorTest(unittest.TestCase):
             # Mute the layer            
             cmd = UsdLayerEditor.MuteLayerCommand(stage, layer, True)
             mgr = ufe.UndoableCommandMgr.instance()
-            mgr.executeCmd(cmd);
+            UsdLayerEditorTest._executeCmd(cmd);
             
             # undo mute
             UsdLayerEditorTest._undo()
@@ -261,7 +268,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         cmd = UsdLayerEditor.DiscardEditsCommand(rootLayer)
         mgr = ufe.UndoableCommandMgr.instance()
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
 
         # Test everything is gone
         self.assertEqual(len(rootLayer.subLayerPaths), 0)
@@ -277,11 +284,11 @@ class UsdLayerEditorTest(unittest.TestCase):
         # Test discarding edits on a layer with anonymous sublayers created by AddAnonSubLayerCommand
         # First, add some anonymous sublayers
         addAnonCmd1 = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(addAnonCmd1)
+        UsdLayerEditorTest._executeCmd(addAnonCmd1)
         anonLayerId1 = addAnonCmd1.addedLayer()
         
         addAnonCmd2 = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(addAnonCmd2)
+        UsdLayerEditorTest._executeCmd(addAnonCmd2)
         anonLayerId2 = addAnonCmd2.addedLayer()
         
         # Verify anonymous layers were added
@@ -291,7 +298,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Discard edits - this should remove the anonymous sublayers
         discardCmd = UsdLayerEditor.DiscardEditsCommand(rootLayer)
-        mgr.executeCmd(discardCmd)
+        UsdLayerEditorTest._executeCmd(discardCmd)
         
         self.assertEqual(len(rootLayer.subLayerPaths), 0)
         
@@ -315,12 +322,12 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Make sure we start with an unlocked layer.
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer,  UsdLayerEditor.LayerLock_Unlocked)
-        mgr.executeCmd(cmd);        
+        UsdLayerEditorTest._executeCmd(cmd);        
         self.assertTrue(subLayer.permissionToEdit)
                         
         # Locking a layer
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer,  UsdLayerEditor.LayerLock_Locked)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
                 
         self.assertFalse(subLayer.permissionToEdit)
         UsdLayerEditorTest._undo()
@@ -330,7 +337,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Unlocking a layer
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer,  UsdLayerEditor.LayerLock_Unlocked)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertTrue(subLayer.permissionToEdit)
         UsdLayerEditorTest._undo()
@@ -340,7 +347,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # System locking a layer
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer,  UsdLayerEditor.LayerLock_SystemLocked)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
                 
         self.assertFalse(subLayer.permissionToEdit)
         self.assertFalse(subLayer.permissionToSave)
@@ -353,13 +360,13 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Unlock the system lock
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer,  UsdLayerEditor.LayerLock_Unlocked)
-        mgr.executeCmd(cmd);        
+        UsdLayerEditorTest._executeCmd(cmd);        
         self.assertTrue(subLayer.permissionToEdit)
         self.assertTrue(subLayer.permissionToSave)        
         
         # Test locking anonymous layers created by AddAnonSubLayerCommand
         addAnonCmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, stage.GetRootLayer())
-        mgr.executeCmd(addAnonCmd)
+        UsdLayerEditorTest._executeCmd(addAnonCmd)
         anonLayerId = addAnonCmd.addedLayer()
         anonLayer = Sdf.Layer.Find(anonLayerId)
         
@@ -370,7 +377,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         # Note: permissionToSave is related to filepath, and since anonymous layers are not file-backed,
         #       it is always false.
         lockAnonCmd = UsdLayerEditor.LockLayerCommand(stage, anonLayer, UsdLayerEditor.LayerLock_Locked)
-        mgr.executeCmd(lockAnonCmd)
+        UsdLayerEditorTest._executeCmd(lockAnonCmd)
         
         self.assertFalse(anonLayer.permissionToEdit)
    
@@ -384,13 +391,13 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         # System lock the anonymous layer
         sysLockAnonCmd = UsdLayerEditor.LockLayerCommand(stage, anonLayer, UsdLayerEditor.LayerLock_SystemLocked)
-        mgr.executeCmd(sysLockAnonCmd)
+        UsdLayerEditorTest._executeCmd(sysLockAnonCmd)
         
         self.assertFalse(anonLayer.permissionToEdit)
         
         # Unlock the anonymous layer
         unlockAnonCmd = UsdLayerEditor.LockLayerCommand(stage, anonLayer, UsdLayerEditor.LayerLock_Unlocked)
-        mgr.executeCmd(unlockAnonCmd)
+        UsdLayerEditorTest._executeCmd(unlockAnonCmd)
         
         self.assertTrue(anonLayer.permissionToEdit)
         
@@ -405,7 +412,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         # Start all unlocked.
         cmd = UsdLayerEditor.LockLayerCommand(stage, topLayer,  UsdLayerEditor.LayerLock_Unlocked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
 
         self.assertTrue(topLayer.permissionToEdit)
         self.assertTrue(topLayer.permissionToSave)
@@ -416,7 +423,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Locking a layer recursively
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1_1,  UsdLayerEditor.LayerLock_Locked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertFalse(subLayer1_1.permissionToEdit)
         self.assertTrue(subLayer1_1.permissionToSave)
@@ -429,7 +436,7 @@ class UsdLayerEditorTest(unittest.TestCase):
     
         # Unlocking a layer recursively
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1_1,  UsdLayerEditor.LayerLock_Unlocked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         self.assertTrue(subLayer1_1.permissionToEdit)
         self.assertTrue(subLayer1_1.permissionToSave)
         UsdLayerEditorTest._undo()
@@ -441,7 +448,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         # System locking a layer recursively
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1_1,  UsdLayerEditor.LayerLock_SystemLocked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         self.assertFalse(subLayer1_1.permissionToEdit)
         self.assertFalse(subLayer1_1.permissionToSave)
         UsdLayerEditorTest._undo()
@@ -453,7 +460,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         # Unlocking a system-locked layer recursively
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1_1,  UsdLayerEditor.LayerLock_Unlocked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         self.assertTrue(subLayer1_1.permissionToEdit)
         self.assertTrue(subLayer1_1.permissionToSave)
         UsdLayerEditorTest._undo()
@@ -474,7 +481,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         # Start all unlocked.
         cmd = UsdLayerEditor.LockLayerCommand(stage, topLayer,  UsdLayerEditor.LayerLock_Unlocked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
                 
         self.assertTrue(subLayer1.permissionToEdit)
         self.assertTrue(subLayer1.permissionToSave)
@@ -483,7 +490,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Locking a layer recursively
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1,  UsdLayerEditor.LayerLock_Locked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertFalse(subLayer1.permissionToEdit)
         self.assertTrue(subLayer1.permissionToSave)
@@ -502,7 +509,7 @@ class UsdLayerEditorTest(unittest.TestCase):
     
         # Unlocking a layer recursively
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1,  UsdLayerEditor.LayerLock_Unlocked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertTrue(subLayer1.permissionToEdit)
         self.assertTrue(subLayer1.permissionToSave)
@@ -521,7 +528,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         # System locking a layer
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1,  UsdLayerEditor.LayerLock_SystemLocked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertFalse(subLayer1.permissionToEdit)
         self.assertFalse(subLayer1.permissionToSave)
@@ -547,7 +554,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         #       Otherwise, unlocking recursively inthe UI would unlock system
         #       layers, which is not something we want the user to do.
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1,  UsdLayerEditor.LayerLock_Unlocked, True, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertTrue(subLayer1.permissionToEdit)
         self.assertTrue(subLayer1.permissionToSave)
@@ -567,7 +574,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         # Unlocking a system-locked layer recursively
         cmd = UsdLayerEditor.LockLayerCommand(stage, subLayer1,  UsdLayerEditor.LayerLock_Unlocked, True)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertTrue(subLayer1.permissionToEdit)
         self.assertTrue(subLayer1.permissionToSave)
@@ -602,12 +609,12 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Remove second sublayer
         cmd = UsdLayerEditor.RemoveSubPathCommand(stage, rootLayer, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         self.assertEqual(rootLayer.subLayerPaths, [layer1Id, layer3Id])
 
         # Remove second sublayer again to leave only one
         cmd = UsdLayerEditor.RemoveSubPathCommand(stage, rootLayer, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         self.assertEqual(rootLayer.subLayerPaths, [layer1Id])
 
         # Remove second sublayer,  out of bounds -> Exception
@@ -630,7 +637,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         # layer3 has a sub layer which it self also has a sublayer.
         # delete the top layer.  See if it comes back after redo.
         cmd = UsdLayerEditor.RemoveSubPathCommand(stage, rootLayer, 2)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         # check layer3 was deleted
         self.assertEqual(rootLayer.subLayerPaths, [layer1Id, layer2Id])
         # bring it back
@@ -654,15 +661,15 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Add anonymous sublayers using AddAnonSubLayerCommand
         addAnonCmd1 = UsdLayerEditor.AddAnonSubLayerCommand(stage2, rootLayer2)
-        mgr.executeCmd(addAnonCmd1)
+        UsdLayerEditorTest._executeCmd(addAnonCmd1)
         anonLayerId1 = addAnonCmd1.addedLayer()
         
         addAnonCmd2 = UsdLayerEditor.AddAnonSubLayerCommand(stage2, rootLayer2)
-        mgr.executeCmd(addAnonCmd2)
+        UsdLayerEditorTest._executeCmd(addAnonCmd2)
         anonLayerId2 = addAnonCmd2.addedLayer()
         
         addAnonCmd3 = UsdLayerEditor.AddAnonSubLayerCommand(stage2, rootLayer2)
-        mgr.executeCmd(addAnonCmd3)
+        UsdLayerEditorTest._executeCmd(addAnonCmd3)
         anonLayerId3 = addAnonCmd3.addedLayer()
         
         # Should have 3 anonymous sublayers
@@ -671,13 +678,13 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Remove middle anonymous sublayer (index 1)
         removeCmd1 = UsdLayerEditor.RemoveSubPathCommand(stage2, rootLayer2, 1)
-        mgr.executeCmd(removeCmd1)
+        UsdLayerEditorTest._executeCmd(removeCmd1)
         self.assertEqual(len(rootLayer2.subLayerPaths), 2)
         self.assertEqual(rootLayer2.subLayerPaths, [anonLayerId3, anonLayerId1])
         
         # Remove first anonymous sublayer (index 0)
         removeCmd2 = UsdLayerEditor.RemoveSubPathCommand(stage2, rootLayer2, 0)
-        mgr.executeCmd(removeCmd2)
+        UsdLayerEditorTest._executeCmd(removeCmd2)
         self.assertEqual(len(rootLayer2.subLayerPaths), 1)
         self.assertEqual(rootLayer2.subLayerPaths, [anonLayerId1])
         
@@ -708,12 +715,12 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Remove second sublayer
         cmd = UsdLayerEditor.RemoveSubPathCommand(stage, rootLayer, layer2Id)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         self.assertEqual(rootLayer.subLayerPaths, [layer1Id, layer3Id])
 
         # Remove second sublayer again to leave only one
         cmd = UsdLayerEditor.RemoveSubPathCommand(stage, rootLayer, layer3Id)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         self.assertEqual(rootLayer.subLayerPaths, [layer1Id])
                 
         # undo twice to get back to three layers
@@ -730,7 +737,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         # layer3 has a sub layer which it self also has a sublayer.
         # delete the top layer.  See if it comes back after redo.
         cmd = UsdLayerEditor.RemoveSubPathCommand(stage, rootLayer, layer3Id)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         # check layer3 was deleted
         self.assertEqual(rootLayer.subLayerPaths, [layer1Id, layer2Id])
         # bring it back
@@ -754,11 +761,11 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Add anonymous sublayers using AddAnonSubLayerCommand
         addAnonCmd1 = UsdLayerEditor.AddAnonSubLayerCommand(stage2, rootLayer2)
-        mgr.executeCmd(addAnonCmd1)
+        UsdLayerEditorTest._executeCmd(addAnonCmd1)
         anonLayerId1 = addAnonCmd1.addedLayer()
         
         addAnonCmd2 = UsdLayerEditor.AddAnonSubLayerCommand(stage2, rootLayer2)
-        mgr.executeCmd(addAnonCmd2)
+        UsdLayerEditorTest._executeCmd(addAnonCmd2)
         anonLayerId2 = addAnonCmd2.addedLayer()
         
         # Should have 2 anonymous sublayers
@@ -768,14 +775,14 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Remove first anonymous sublayer by path
         removeCmd1 = UsdLayerEditor.RemoveSubPathCommand(stage2, rootLayer2, anonLayerId1)
-        mgr.executeCmd(removeCmd1)
+        UsdLayerEditorTest._executeCmd(removeCmd1)
         self.assertEqual(len(rootLayer2.subLayerPaths), 1)
         self.assertNotIn(anonLayerId1, rootLayer2.subLayerPaths)
         self.assertIn(anonLayerId2, rootLayer2.subLayerPaths)
         
         # Remove second anonymous sublayer by path
         removeCmd2 = UsdLayerEditor.RemoveSubPathCommand(stage2, rootLayer2, anonLayerId2)
-        mgr.executeCmd(removeCmd2)
+        UsdLayerEditorTest._executeCmd(removeCmd2)
         self.assertEqual(len(rootLayer2.subLayerPaths), 0)
         
         # Test undo/redo
@@ -802,22 +809,22 @@ class UsdLayerEditorTest(unittest.TestCase):
         end = "child_layer.usda"
         
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, second, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
                 
         self.assertEqual(rootLayer.subLayerPaths, [second])
         
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, first, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         
         self.assertEqual(rootLayer.subLayerPaths, [first, second])
         
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, middle, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         
         self.assertEqual(rootLayer.subLayerPaths, [first, middle, second])
         
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, end, 3)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         
         self.assertEqual(rootLayer.subLayerPaths, [first, middle, second, end])
         
@@ -848,11 +855,11 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # First add some anonymous layers using AddAnonSubLayerCommand
         addAnonCmd1 = UsdLayerEditor.AddAnonSubLayerCommand(stage2, rootLayer2)
-        mgr.executeCmd(addAnonCmd1)
+        UsdLayerEditorTest._executeCmd(addAnonCmd1)
         anonLayerId1 = addAnonCmd1.addedLayer()
         
         addAnonCmd2 = UsdLayerEditor.AddAnonSubLayerCommand(stage2, rootLayer2)
-        mgr.executeCmd(addAnonCmd2)
+        UsdLayerEditorTest._executeCmd(addAnonCmd2)
         anonLayerId2 = addAnonCmd2.addedLayer()
         
         # Should have 2 anonymous layers, most recent first
@@ -861,17 +868,17 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Insert a regular layer at the beginning (index 0)
         insertCmd1 = UsdLayerEditor.InsertSubPathCommand(stage2, rootLayer2, first, 0)
-        mgr.executeCmd(insertCmd1)
+        UsdLayerEditorTest._executeCmd(insertCmd1)
         self.assertEqual(rootLayer2.subLayerPaths, [first, anonLayerId2, anonLayerId1])
         
         # Insert a regular layer in the middle (index 2)
         insertCmd2 = UsdLayerEditor.InsertSubPathCommand(stage2, rootLayer2, middle, 2)
-        mgr.executeCmd(insertCmd2)
+        UsdLayerEditorTest._executeCmd(insertCmd2)
         self.assertEqual(rootLayer2.subLayerPaths, [first, anonLayerId2, middle, anonLayerId1])
         
         # Insert a regular layer at the end
         insertCmd3 = UsdLayerEditor.InsertSubPathCommand(stage2, rootLayer2, end, 4)
-        mgr.executeCmd(insertCmd3)
+        UsdLayerEditorTest._executeCmd(insertCmd3)
         self.assertEqual(rootLayer2.subLayerPaths, [first, anonLayerId2, middle, anonLayerId1, end])
         
         # Test undo/redo
@@ -897,14 +904,14 @@ class UsdLayerEditorTest(unittest.TestCase):
         # 2- Setting a system lock on a layer loaded from a file
         # System locking a layer
         cmd = UsdLayerEditor.LockLayerCommand(stage, topLayer,  UsdLayerEditor.LayerLock_SystemLocked)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertFalse(topLayer.permissionToEdit)
         self.assertFalse(topLayer.permissionToSave)
         
         # 3- Refreshing the system lock should remove the lock if the file is writable
         cmd = UsdLayerEditor.RefreshSystemLockLayerCommand(stage, topLayer, False)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertTrue(topLayer.permissionToEdit)
         self.assertTrue(topLayer.permissionToSave)
@@ -920,7 +927,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # 2- Setting a system lock on a layer loaded from a file and its sub-layer
         cmd = UsdLayerEditor.LockLayerCommand(stage, topLayer,  UsdLayerEditor.LayerLock_SystemLocked)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         self.assertFalse(topLayer.permissionToEdit)
         self.assertFalse(topLayer.permissionToSave)
@@ -942,7 +949,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         usdUfe.registerUICallback('onRefreshSystemLock', refreshSystemLockCallback)        
         # 4- Refreshing the system lock should remove the lock.
         cmd = UsdLayerEditor.RefreshSystemLockLayerCommand(stage, topLayer, False)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         self.assertEqual(self.callCount, 1)
 
         # 5- Unregistering the callback and refreshing the system lock should not call
@@ -951,11 +958,11 @@ class UsdLayerEditorTest(unittest.TestCase):
         # Note: we must relock the layer for the callback to be called, otherwise it does not get
         #       called as the status of the layer would not have changed during the refresh.
         cmd = UsdLayerEditor.LockLayerCommand(stage, topLayer,  UsdLayerEditor.LayerLock_SystemLocked)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         
         usdUfe.unregisterUICallback('onRefreshSystemLock', refreshSystemLockCallback)
         cmd = UsdLayerEditor.RefreshSystemLockLayerCommand(stage, topLayer, False)
-        mgr.executeCmd(cmd);
+        UsdLayerEditorTest._executeCmd(cmd);
         self.assertEqual(self.callCount, 1)
 
         # 6- Unregistering again should do nothing and not crash.
@@ -993,10 +1000,10 @@ class UsdLayerEditorTest(unittest.TestCase):
                 # refreshSystemLock.
                 lockStatus = UsdLayerEditor.LayerLock_Unlocked if UsdLayerEditor.isLayerSystemLocked(rootLayer) else UsdLayerEditor.LayerLock_SystemLocked
                 cmd = UsdLayerEditor.LockLayerCommand(stage, rootLayer,  lockStatus)
-                mgr.executeCmd(cmd);
+                UsdLayerEditorTest._executeCmd(cmd);
             
             cmd = UsdLayerEditor.RefreshSystemLockLayerCommand(stage, rootLayer, True)
-            mgr.executeCmd(cmd);
+            UsdLayerEditorTest._executeCmd(cmd);
 
             if callback is not None:
                 usdUfe.unregisterUICallback('onRefreshSystemLock', callback)
@@ -1135,11 +1142,11 @@ class UsdLayerEditorTest(unittest.TestCase):
         mgr = ufe.UndoableCommandMgr.instance()
         
         addAnonCmd1 = UsdLayerEditor.AddAnonSubLayerCommand(stage, stage.GetRootLayer())
-        mgr.executeCmd(addAnonCmd1)
+        UsdLayerEditorTest._executeCmd(addAnonCmd1)
         anonLayerId1 = addAnonCmd1.addedLayer()
         
         addAnonCmd2 = UsdLayerEditor.AddAnonSubLayerCommand(stage, stage.GetRootLayer())
-        mgr.executeCmd(addAnonCmd2)
+        UsdLayerEditorTest._executeCmd(addAnonCmd2)
         anonLayerId2 = addAnonCmd2.addedLayer()
         
         # Verify anonymous layers were added to the stage
@@ -1188,7 +1195,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Create and execute AddAnonSubLayerCommand
         cmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         
         # Verify that a sublayer was added
         self.assertEqual(len(rootLayer.subLayerPaths), 1)
@@ -1229,7 +1236,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Add first anonymous layer
         cmd1 = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(cmd1)
+        UsdLayerEditorTest._executeCmd(cmd1)
         addedLayerId1 = cmd1.addedLayer()
         
         self.assertEqual(len(rootLayer.subLayerPaths), 1)
@@ -1237,7 +1244,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Add second anonymous layer (should be inserted at index 0, becoming the first)
         cmd2 = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(cmd2)
+        UsdLayerEditorTest._executeCmd(cmd2)
         addedLayerId2 = cmd2.addedLayer()
         
         self.assertEqual(len(rootLayer.subLayerPaths), 2)
@@ -1288,7 +1295,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         
         # Add anonymous sublayer
         cmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         addedLayerId = cmd.addedLayer()
         
         # Should now have one more sublayer, with the anonymous layer at index 0
@@ -1316,7 +1323,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         """Helper to create an anonymous sublayer and return its identifier."""
         mgr = ufe.UndoableCommandMgr.instance()
         cmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, parentLayer)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         return cmd.addedLayer()
 
     def test_stitch_layers(self):
@@ -1340,11 +1347,11 @@ class UsdLayerEditorTest(unittest.TestCase):
         # Clear and reinsert in desired strength order
         rootLayer.subLayerPaths.clear()
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer1Id, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer2Id, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer3Id, 2)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         layer1 = Sdf.Layer.Find(layer1Id)
         layer2 = Sdf.Layer.Find(layer2Id)
@@ -1375,7 +1382,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         # Stitch - order passed does not matter, strongest receives all other layers.
         cmd = UsdLayerEditor.StitchLayersCommand(stage, [layer2Id, layer1Id, layer3Id])
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(rootLayer.subLayerPaths), 1)
         self.assertEqual(rootLayer.subLayerPaths[0], layer1Id)
@@ -1424,16 +1431,16 @@ class UsdLayerEditorTest(unittest.TestCase):
         weakLayerId = self._createAnonymousLayer(stage, rootLayer)
         rootLayer.subLayerPaths.clear()
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, strongLayerId, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, weakLayerId, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         weakLayer = Sdf.Layer.Find(weakLayerId)
         stage.SetEditTarget(weakLayer)
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, weakLayerId)
 
         cmd = UsdLayerEditor.StitchLayersCommand(stage, [strongLayerId, weakLayerId])
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         currentTarget = stage.GetEditTarget().GetLayer().identifier
         self.assertNotEqual(currentTarget, weakLayerId)
@@ -1454,19 +1461,19 @@ class UsdLayerEditorTest(unittest.TestCase):
         layer4Id = self._createAnonymousLayer(stage, rootLayer)
         rootLayer.subLayerPaths.clear()
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer1Id, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer2Id, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer3Id, 2)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer4Id, 3)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(rootLayer.subLayerPaths), 4)
 
         # Stitch only layer1 and layer3 (layer1 is stronger, so it receives layer3's content)
         cmd = UsdLayerEditor.StitchLayersCommand(stage, [layer1Id, layer3Id])
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(rootLayer.subLayerPaths), 3)
         self.assertIn(layer1Id, rootLayer.subLayerPaths)
@@ -1495,9 +1502,9 @@ class UsdLayerEditorTest(unittest.TestCase):
         childWeakId = self._createAnonymousLayer(stage, parentLayer)
         parentLayer.subLayerPaths.clear()
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, parentLayer, childStrongId, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, parentLayer, childWeakId, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         childStrong = Sdf.Layer.Find(childStrongId)
         childWeak = Sdf.Layer.Find(childWeakId)
@@ -1517,7 +1524,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         self.assertEqual(len(parentLayer.subLayerPaths), 2)
 
         cmd = UsdLayerEditor.StitchLayersCommand(stage, [childStrongId, childWeakId])
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(parentLayer.subLayerPaths), 1)
         self.assertEqual(parentLayer.subLayerPaths[0], childStrongId)
@@ -1564,7 +1571,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         self.assertTrue(weak.dirty)
 
         cmd = UsdLayerEditor.StitchLayersCommand(stage, [strongId, weakId])
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         UsdLayerEditorTest._undo()
 
@@ -1622,7 +1629,7 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         rootLayer.subLayerPaths.clear()
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, parent1Id, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(rootLayer.subLayerPaths), 1)
         self.assertEqual(rootLayer.subLayerPaths[0], parent1Id)
@@ -1630,7 +1637,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         self.assertEqual(len(layer2Layer.subLayerPaths), 1)
 
         cmd = UsdLayerEditor.StitchLayersCommand(stage, [parent1Id, layer2Id])
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(rootLayer.subLayerPaths), 1)
         self.assertEqual(rootLayer.subLayerPaths[0], parent1Id)
@@ -1757,9 +1764,9 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         rootLayer.subLayerPaths.clear()
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, parent1Id, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, parent2Id, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(rootLayer.subLayerPaths), 2)
         self.assertEqual(len(parent1Layer.subLayerPaths), 1)
@@ -1769,7 +1776,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         self.assertEqual(len(sub3Layer.subLayerPaths), 1)
 
         cmd = UsdLayerEditor.StitchLayersCommand(stage, [sub1Id, layer2Id, sub3Id])
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(parent2Layer.subLayerPaths), 0,
                         "Layer2 should be removed from Parent2")
@@ -1889,9 +1896,9 @@ class UsdLayerEditorTest(unittest.TestCase):
 
         rootLayer.subLayerPaths.clear()
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer1Id, 0)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
         cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer2Id, 1)
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(layer1Layer.subLayerPaths), 1)
         self.assertEqual(len(layer2Layer.subLayerPaths), 1)
@@ -1902,7 +1909,7 @@ class UsdLayerEditorTest(unittest.TestCase):
         self.assertEqual(layer2Sub.identifier, sharedSubId)
 
         cmd = UsdLayerEditor.StitchLayersCommand(stage, [layer1Id, layer2Id])
-        mgr.executeCmd(cmd)
+        UsdLayerEditorTest._executeCmd(cmd)
 
         self.assertEqual(len(layer1Layer.subLayerPaths), 1,
                         "SharedSublayer should appear only once in Layer1 (no duplicate)")
@@ -1975,22 +1982,22 @@ class UsdLayerEditorTest(unittest.TestCase):
         #   Layer2
         #     Layer2Sub
         addLayer1Cmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(addLayer1Cmd)
+        UsdLayerEditorTest._executeCmd(addLayer1Cmd)
         layer1Id = addLayer1Cmd.addedLayer()
 
         addLayer2Cmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-        mgr.executeCmd(addLayer2Cmd)
+        UsdLayerEditorTest._executeCmd(addLayer2Cmd)
         layer2Id = addLayer2Cmd.addedLayer()
 
         layer1 = Sdf.Layer.Find(layer1Id)
         layer2 = Sdf.Layer.Find(layer2Id)
 
         addLayer1SubCmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, layer1)
-        mgr.executeCmd(addLayer1SubCmd)
+        UsdLayerEditorTest._executeCmd(addLayer1SubCmd)
         layer1SubId = addLayer1SubCmd.addedLayer()
 
         addLayer2SubCmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, layer2)
-        mgr.executeCmd(addLayer2SubCmd)
+        UsdLayerEditorTest._executeCmd(addLayer2SubCmd)
         layer2SubId = addLayer2SubCmd.addedLayer()
 
         layer1Sub = Sdf.Layer.Find(layer1SubId)
@@ -2013,18 +2020,18 @@ class UsdLayerEditorTest(unittest.TestCase):
         self.assertEqual(len(rootLayer.subLayerPaths), 2)
 
         flattenLayer1Cmd = UsdLayerEditor.FlattenLayerCommand(layer1)
-        mgr.executeCmd(flattenLayer1Cmd)
+        UsdLayerEditorTest._executeCmd(flattenLayer1Cmd)
         self.assertEqual(len(layer1.subLayerPaths), 0)
         self.assertIsNotNone(layer1.GetPrimAtPath("/Ball1"))
 
         flattenLayer2Cmd = UsdLayerEditor.FlattenLayerCommand(layer2)
-        mgr.executeCmd(flattenLayer2Cmd)
+        UsdLayerEditorTest._executeCmd(flattenLayer2Cmd)
         self.assertEqual(len(layer2.subLayerPaths), 0)
         self.assertIsNotNone(layer2.GetPrimAtPath("/Ball2"))
 
         self.assertEqual(len(rootLayer.subLayerPaths), 2)
         flattenRootCmd = UsdLayerEditor.FlattenLayerCommand(rootLayer)
-        mgr.executeCmd(flattenRootCmd)
+        UsdLayerEditorTest._executeCmd(flattenRootCmd)
         self.assertEqual(len(rootLayer.subLayerPaths), 0)
 
         self.assertIsNotNone(rootLayer.GetPrimAtPath("/Ball1"))
@@ -2067,7 +2074,7 @@ class UsdLayerEditorTest(unittest.TestCase):
             mgr = ufe.UndoableCommandMgr.instance()
 
             addAnonCmd = UsdLayerEditor.AddAnonSubLayerCommand(stage, rootLayer)
-            mgr.executeCmd(addAnonCmd)
+            UsdLayerEditorTest._executeCmd(addAnonCmd)
             anonLayerId = addAnonCmd.addedLayer()
             anonLayer = Sdf.Layer.Find(anonLayerId)
 
@@ -2075,14 +2082,14 @@ class UsdLayerEditorTest(unittest.TestCase):
             cleanLayer = Sdf.Layer.CreateNew(cleanLayerPath)
             cleanLayer.Save()
             insertCleanCmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, cleanLayerPath, 0)
-            mgr.executeCmd(insertCleanCmd)
+            UsdLayerEditorTest._executeCmd(insertCleanCmd)
             cleanLayer = Sdf.Layer.FindOrOpen(cleanLayerPath)
 
             dirtyLayerPath = os.path.join(testDir, "dirtyLayer.usda")
             dirtyLayer = Sdf.Layer.CreateNew(dirtyLayerPath)
             dirtyLayer.Save()
             insertDirtyCmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, dirtyLayerPath, 0)
-            mgr.executeCmd(insertDirtyCmd)
+            UsdLayerEditorTest._executeCmd(insertDirtyCmd)
             dirtyLayer = Sdf.Layer.FindOrOpen(dirtyLayerPath)
 
             ball1Spec = Sdf.PrimSpec(anonLayer, "Ball1", Sdf.SpecifierDef, "Sphere")
@@ -2114,7 +2121,7 @@ class UsdLayerEditorTest(unittest.TestCase):
             self.assertEqual(dirtyLayer.GetPrimAtPath("/Ball3").attributes["radius"].default, 20.0)
 
             flattenCmd = UsdLayerEditor.FlattenLayerCommand(rootLayer)
-            mgr.executeCmd(flattenCmd)
+            UsdLayerEditorTest._executeCmd(flattenCmd)
 
             self.assertEqual(len(rootLayer.subLayerPaths), 0)
             self.assertIsNotNone(rootLayer.GetPrimAtPath("/Ball1"))
@@ -2197,12 +2204,12 @@ class UsdLayerEditorTest(unittest.TestCase):
             mgr = ufe.UndoableCommandMgr.instance()
 
             insertLayer2Cmd = UsdLayerEditor.InsertSubPathCommand(stage, layer1, layer2Path, 0)
-            mgr.executeCmd(insertLayer2Cmd)
+            UsdLayerEditorTest._executeCmd(insertLayer2Cmd)
             layer2 = Sdf.Layer.FindOrOpen(layer2Path)
             self.assertIsNotNone(layer2)
 
             insertLayer3Cmd = UsdLayerEditor.InsertSubPathCommand(stage, layer2, layer3Path, 0)
-            mgr.executeCmd(insertLayer3Cmd)
+            UsdLayerEditorTest._executeCmd(insertLayer3Cmd)
             layer3 = Sdf.Layer.FindOrOpen(layer3Path)
             self.assertIsNotNone(layer3)
 
@@ -2228,7 +2235,7 @@ class UsdLayerEditorTest(unittest.TestCase):
             layer3 = None
 
             flattenCmd = UsdLayerEditor.FlattenLayerCommand(layer1)
-            mgr.executeCmd(flattenCmd)
+            UsdLayerEditorTest._executeCmd(flattenCmd)
 
             self.assertEqual(len(layer1.subLayerPaths), 0)
             self.assertIsNotNone(layer1.GetPrimAtPath("/Ball"),
