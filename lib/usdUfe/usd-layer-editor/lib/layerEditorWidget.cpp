@@ -19,6 +19,7 @@
 
 #include "abstractCommandHook.h"
 #include "dirtyLayersCountBadge.h"
+#include "layerContentsWidget.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 #include "stageSelectorWidget.h"
@@ -26,6 +27,7 @@
 #include "utilQT.h"
 
 #include <QtCore/QItemSelectionModel>
+#include <QtCore/QSignalBlocker>
 #include <QtCore/QTimer>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -40,53 +42,12 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QSplitter>
 #include <QtWidgets/QVBoxLayout>
 #include <cstddef>
 #include <type_traits>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-namespace {
-
-using namespace UsdLayerEditor;
-class LayerEditorWidgetManager;
-
-// create the default menus on the parent QMainWindow
-void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
-{
-    auto menuBar = in_parent->menuBar();
-    // don't add menu twice -- this window is destroyed and re-created on new scene
-    if (menuBar->actions().length() == 0) {
-        auto createMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kCreate));
-        auto aboutToShowCallback = [createMenu, in_sessionState]() {
-            if (createMenu->actions().length() == 0) {
-                in_sessionState->setupCreateMenu(createMenu);
-            }
-        };
-        // we delay populating the create menu to first show, because in the python prototype, if
-        // the layer editor was docked, the menu would get populated before the runtime commands had
-        // the time to be created
-        QObject::connect(createMenu, &QMenu::aboutToShow, in_parent, aboutToShowCallback);
-
-        // TODO LE-EXTRACT Maya-usd menus (auto-hide session layer / help menu)
-        /*auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
-        auto action = optionMenu->addAction(
-            StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
-        QObject::connect(
-            action, &QAction::toggled, in_sessionState, &SessionState::setAutoHideSessionLayer);
-        action->setCheckable(true);
-        action->setChecked(in_sessionState->autoHideSessionLayer());
-
-        auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
-        helpMenu->addAction(
-            StringResources::getAsQString(StringResources::kHelpOnUSDLayerEditor),
-            [in_sessionState]() { in_sessionState->commandHook()->showLayerEditorHelp(); });*/
-    }
-}
-
-} // namespace
-
-///////////////////////////////////////////////////////////////////////////////
 
 namespace UsdLayerEditor {
 LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow* in_parent)
@@ -97,9 +58,66 @@ LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow*
     Q_INIT_RESOURCE(resources);
 
     setupLayout();
-    ::setupDefaultMenu(&in_sessionState, in_parent);
+    setupDefaultMenu(in_parent);
     auto layerEditorManager = LayerEditorWidgetManager::getInstance();
     layerEditorManager->setWidget(this);
+}
+
+// create the default menus on the parent QMainWindow
+void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
+{
+    auto          menuBar = in_parent->menuBar();
+    SessionState* ss = &_sessionState;
+    // don't add menu twice -- this window is destroyed and re-created on new scene
+    if (menuBar->actions().length() == 0) {
+        auto createMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kCreate));
+        auto aboutToShowCallback = [createMenu, ss]() {
+            if (createMenu->actions().length() == 0) {
+                ss->setupCreateMenu(createMenu);
+            }
+        };
+        // we delay populating the create menu to first show, because in the python prototype, if
+        // the layer editor was docked, the menu would get populated before the runtime commands had
+        // the time to be created
+        QObject::connect(createMenu, &QMenu::aboutToShow, in_parent, aboutToShowCallback);
+
+        auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
+
+        _actions._displayLayerContents = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kDisplayLayerContents));
+        QObject::connect(
+            _actions._displayLayerContents,
+            &QAction::toggled,
+            ss,
+            &SessionState::setDisplayLayerContents);
+        _actions._displayLayerContents->setCheckable(true);
+        _actions._displayLayerContents->setChecked(ss->displayLayerContents());
+
+        _actions._displayLayerExpandAllValues = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValues));
+        _actions._displayLayerExpandAllValues->setStatusTip(
+            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValuesTooltip));
+        QObject::connect(
+            _actions._displayLayerExpandAllValues,
+            &QAction::toggled,
+            ss,
+            &SessionState::setDisplayLayerExpandAllValues);
+        _actions._displayLayerExpandAllValues->setCheckable(true);
+        _actions._displayLayerExpandAllValues->setChecked(ss->displayLayerExpandAllValues());
+
+        // TODO LE-EXTRACT Maya-usd menus (auto-hide session layer / help menu)
+        /*auto action = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
+        QObject::connect(
+            action, &QAction::toggled, ss, &SessionState::setAutoHideSessionLayer);
+        action->setCheckable(true);
+        action->setChecked(ss->autoHideSessionLayer());
+
+        auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
+        helpMenu->addAction(
+            StringResources::getAsQString(StringResources::kHelpOnUSDLayerEditor),
+            [ss]() { ss->commandHook()->showLayerEditorHelp(); });*/
+    }
 }
 
 // helper for setupLayout
@@ -156,6 +174,13 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         &QItemSelectionModel::selectionChanged,
         this,
         &LayerEditorWidget::onSelectionChanged);
+
+    // update layer contents widget on selection change
+    connect(
+        _treeView->selectionModel(),
+        &QItemSelectionModel::selectionChanged,
+        this,
+        &LayerEditorWidget::onLazyUpdateLayerContents);
 
     _buttons._loadLayer = addHIGButton(
         ":/UsdLayerEditor/LE_import_layer",
@@ -225,20 +250,49 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
 
 void LayerEditorWidget::setupLayout()
 {
-    _treeView = new LayerTreeView(&_sessionState, this);
+    // Horizontal splitter that will contain the Layer Editor and Display Layer
+    // Contents Window.
+    auto mainHSplitter = new QSplitter(Qt::Horizontal);
 
-    auto mainVLayout = new QVBoxLayout();
-    mainVLayout->setSpacing(DPIScale(4));
+    // Main LayerEditor widget that will contain the Stage Selector widget, toolbar
+    // and Layer Editor tree view.
+    auto mainVWidget = new QWidget();
+    {
+        _treeView = new LayerTreeView(&_sessionState, mainVWidget);
 
-    auto stageSelector = new StageSelectorWidget(&_sessionState, this);
-    mainVLayout->addWidget(stageSelector);
+        auto mainVLayout = new QVBoxLayout();
+        mainVLayout->setSpacing(DPIScale(4));
+        mainVLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto toolbarLayout = setupLayout_toolbar();
-    mainVLayout->addLayout(toolbarLayout);
+        auto stageSelector = new StageSelectorWidget(&_sessionState, mainVWidget);
+        mainVLayout->addWidget(stageSelector);
 
-    mainVLayout->addWidget(_treeView);
+        auto toolbarLayout = setupLayout_toolbar();
+        mainVLayout->addLayout(toolbarLayout);
 
-    setLayout(mainVLayout);
+        mainVLayout->addWidget(_treeView);
+
+        mainVWidget->setLayout(mainVLayout);
+        mainHSplitter->addWidget(mainVWidget);
+    }
+
+    _layerContents = new LayerContentsWidget(this);
+    mainHSplitter->addWidget(_layerContents);
+    _layerContents->setVisible(_sessionState.displayLayerContents());
+
+    connect(
+        &_sessionState,
+        &SessionState::showDisplayLayerContents,
+        this,
+        &LayerEditorWidget::showDisplayLayerContents);
+
+    auto mainLayout = new QVBoxLayout(this);
+    mainLayout->setSpacing(0);
+    mainLayout->setContentsMargins(DPIScale(4), DPIScale(4), DPIScale(4), DPIScale(4));
+    mainLayout->addWidget(mainHSplitter);
+    setLayout(mainLayout);
+
+    connect(mainHSplitter, &QSplitter::splitterMoved, this, &LayerEditorWidget::onSplitterMoved);
 
     updateNewLayerButton();
     updateButtons();
@@ -447,6 +501,78 @@ void LayerEditorWidget::selectLayers(const std::vector<std::string>& layerIdenti
         selectionModel->select(
             *selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
         delete selection;
+    }
+}
+
+void LayerEditorWidget::showDisplayLayerContents(bool showIt)
+{
+    // Update the menu action to reflect the current state.
+    // But don't send any Signal.
+    if (nullptr != _actions._displayLayerContents) {
+        QSignalBlocker blocker(_actions._displayLayerContents);
+        _actions._displayLayerContents->setChecked(showIt);
+    }
+
+    if (_layerContents) {
+        _layerContents->setVisible(showIt);
+    }
+    if (showIt) {
+        // Use lazy method in order to allow the window to become visible first.
+        onLazyUpdateLayerContents();
+    }
+}
+
+void LayerEditorWidget::onLazyUpdateLayerContents()
+{
+    // Start (or restart) the timer to update the layer contents widget.
+    _layerContentsTimer.start(500, this);
+}
+
+void LayerEditorWidget::timerEvent(QTimerEvent* event)
+{
+    if (event->timerId() == _layerContentsTimer.timerId()) {
+        _layerContentsTimer.stop();
+        updateLayerContentsWidget();
+    } else {
+        QWidget::timerEvent(event);
+    }
+}
+
+void LayerEditorWidget::updateLayerContentsWidget()
+{
+    if (!_layerContents) {
+        return;
+    }
+    // If the layer contents widget is not visible, we don't need to update it.
+    if (_layerContents->isVisible() && (_layerContents->width() > 0)) {
+        // Update the layer contents widget with the current selection
+        // if there is one selected item.
+        const auto selection = _treeView->selectionModel()->selectedRows();
+        if (selection.size() == 1) {
+            const auto model = _treeView->layerTreeModel();
+            auto       layerTreeItem = model->layerItemFromIndex(selection[0]);
+            _layerContents->setLayer(
+                layerTreeItem->layer(), _sessionState.displayLayerExpandAllValues());
+        } else {
+            // If there is no selection or multiple items selected, clear the contents.
+            _layerContents->setLayer(nullptr);
+        }
+    }
+}
+
+void LayerEditorWidget::onSplitterMoved(int pos, int index)
+{
+    if (index == 1 && _layerContents) {
+        // If the user collapsed the layer contents pane, we disable the contents.
+        auto w = _layerContents->width();
+        if (w == 0) {
+            _layerContents->clear();
+        }
+        // If the user expanded the layer contents pane, and it is empty, we update it.
+        else if ((w > 0) && _layerContents->isEmpty()) {
+            // Lazy update to allow the user to continue resizing panel.
+            onLazyUpdateLayerContents();
+        }
     }
 }
 

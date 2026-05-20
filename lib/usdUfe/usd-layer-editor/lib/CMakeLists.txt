@@ -33,6 +33,8 @@ add_library(UsdLayerEditorLib SHARED
     dirtyLayersCountBadge.h
     generatedIconButton.cpp
     generatedIconButton.h
+    layerContentsWidget.cpp
+    layerContentsWidget.h
     layerEditorAPI.h
     LayerEditorCommands.h
     layerEditorCommands.cpp
@@ -74,6 +76,8 @@ add_library(UsdLayerEditorLib SHARED
     tokens.h
     ufeCommandHook.cpp
     ufeCommandHook.h
+    usdSyntaxHighlighter.cpp
+    usdSyntaxHighlighter.h
     utilFileSystem.cpp
     utilFileSystem.h
     utilOptions.h
@@ -140,6 +144,13 @@ install(TARGETS UsdLayerEditorLib
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+
+# Install the USD syntax highlighting configuration file. The cpp resolves the path
+# at runtime via MAYAUSD_LIB_LOCATION + /syntaxHighlight/usdSyntaxConfig.json (or via
+# the MAYAUSD_USD_SYNTAX_HIGHLIGHTING_CONFIG env var for user overrides).
+install(FILES "usdSyntaxConfig.json"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/syntaxHighlight"
 )
 
 if(IS_WINDOWS)
