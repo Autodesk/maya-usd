@@ -16,8 +16,8 @@
 
 #include "mayaSessionState.h"
 
-#include <saveLayersDialog.h>
-#include <stringResources.h>
+#include "saveLayersDialog.h"
+#include "stringResources.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>

@@ -17,7 +17,7 @@
 #ifndef MAYACOMMANDHOOK_H
 #define MAYACOMMANDHOOK_H
 
-#include <abstractCommandHook.h>
+#include "abstractCommandHook.h"
 
 #include <vector>
 

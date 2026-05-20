@@ -17,7 +17,7 @@
 #ifndef MAYAQTUTILS_H
 #define MAYAQTUTILS_H
 
-#include <utilQT.h>
+#include "qtUtils.h"
 
 namespace UsdLayerEditor {
 

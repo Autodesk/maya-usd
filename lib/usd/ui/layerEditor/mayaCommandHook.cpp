@@ -16,9 +16,8 @@
 
 #include "mayaCommandHook.h"
 
+#include "abstractCommandHook.h"
 #include "mayaSessionState.h"
-
-#include <abstractCommandHook.h>
 
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/layerLocking.h>
