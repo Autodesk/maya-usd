@@ -57,6 +57,8 @@ set(OLD_LE_SOURCES
     ${OLD_LE_DIR}/usdSyntaxHighlighter.cpp
     ${OLD_LE_DIR}/warningDialogs.cpp
     ${OLD_LE_DIR}/resources.qrc
+    # componentSaveWidget.cpp excluded: despite its generic name, it includes
+    # maya/MGlobal.h and MayaUsd::utils — it is Maya-specific.
 )
 
 add_executable(UsdLayerEditorOldTests
