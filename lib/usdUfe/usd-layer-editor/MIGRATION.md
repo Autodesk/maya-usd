@@ -2,7 +2,7 @@
 
 Resume point for porting maya-usd layer editor commits into the shared component (`lib/usdUfe/usd-layer-editor/`). See `docs/superpowers/specs/2026-05-19-usd-layer-editor-migration-design.md` and `docs/superpowers/plans/2026-05-19-usd-layer-editor-migration.md` for the full migration design and plan.
 
-## Current state (as of 2026-05-20, after Batch 5)
+## Current state (as of 2026-05-20, after Batch 6)
 
 - `UsdLayerEditorLib` builds as a parallel artifact in the maya-usd build (Tasks 1-4 of the plan complete).
 - The bridge from maya-usd's existing `mayaUsdUI` layer editor to `UsdLayerEditorLib` is **deferred** (Tasks 5-6 of the plan were attempted and reverted) because the shared component's API has diverged substantively from maya-usd's mature implementation. Bridging requires the shared API to first be brought up to parity.
@@ -166,33 +166,33 @@ Resume point for porting maya-usd layer editor commits into the shared component
 | 8adf4920 | Remove dependency to utilSerialization.h and bring in code to get workspace s... | bug-fix | skip | Touches only componentSaveDialog.cpp — file not in shared (component-creator feature batch) |
 | 6437fb66 | Lint | skip | skip | Formatting/lint commit, no functional change |
 | fa7efa32 | Change to use #include <ghc/filesystem.hpp> | filesystem | skip | std::filesystem→ghc::filesystem swap inside isPathInside helper used only by shouldDisplayComponentInitialSaveDialog — not in shared (component-creator feature batch dependency) |
-| e2eff3ea | Address missed PR feedback | bug-fix | pending |  |
-| 73f9c497 | Address PR feedback again | bug-fix | pending |  |
-| c77d22f8 | Add import failure check based on PR feedback | bug-fix | pending |  |
-| f562376e | Address PR feedback part 2 | bug-fix | pending |  |
+| e2eff3ea | Address missed PR feedback | bug-fix | needs-port-file | Tweaks MStatus tracking inside shouldDisplayComponentInitialSaveDialog — component-creator feature batch (function not in shared) |
+| 73f9c497 | Address PR feedback again | bug-fix | needs-port-file | Adjusts isStageAComponent error/warning branches inside shouldDisplayComponentInitialSaveDialog — component-creator feature batch |
+| c77d22f8 | Add import failure check based on PR feedback | bug-fix | needs-port-file | Wraps AdskUsdComponentCreator import in try/except (-1 sentinel) inside shouldDisplayComponentInitialSaveDialog — component-creator feature batch |
+| f562376e | Address PR feedback part 2 | bug-fix | needs-port-file | Lifts shouldDisplayComponentInitialSaveDialog out of saveStage into file-scope helper and renames Python helpers — component-creator feature batch |
 | 819b110f | Linting issue | bug-fix | skip | Formatting/lint commit, no functional change |
-| 1a5b496a | Fix address and address part of the feedback | bug-fix | pending |  |
-| 6a29d115 | Local linter misbehaving | bug-fix | pending |  |
-| 0d3da146 | Replace manual rename emit signal with rename command of proxy object | bug-fix | pending |  |
+| 1a5b496a | Fix address and address part of the feedback | bug-fix | needs-port-file | Indents Python helpers + adds isStageAComponent==0 early-return inside saveStage's CC branch — component-creator feature batch |
+| 6a29d115 | Local linter misbehaving | bug-fix | skip | Formatting/lint commit, no functional change |
+| 0d3da146 | Replace manual rename emit signal with rename command of proxy object | bug-fix | needs-port-file | Replaces SessionState::renameCurrentStageEntry call inside saveStage with MDagModifier rename of proxy shape — component-creator/Maya feature batch (CC branch not in shared) |
 | 4219f936 | Apply linting | bug-fix | skip | Formatting/lint commit, no functional change |
-| 3f256b6f | Add code to change the stage entry display name and update the stage selector... | bug-fix | pending |  |
+| 3f256b6f | Add code to change the stage entry display name and update the stage selector... | bug-fix | needs-port-file | Adds SessionState::renameCurrentStageEntry helper + call from CC branch in saveStage — component-creator feature batch (CC branch not in shared); helper later removed in 0d3da146 |
 | 1f367bcb | Add basic CC save dialog | component-creator | pending |  |
 | 80a63d77 | EMSUSD-2841 - Performance is really slow when updating prims in the viewport ... | layer-contents | pending |  |
-| 738aa5a8 | EMSUSD-2839 - Update styling in our layer content view * Update usdSyntaxConf... | bug-fix | pending |  |
+| 738aa5a8 | EMSUSD-2839 - Update styling in our layer content view * Update usdSyntaxConf... | bug-fix | needs-port-file | Touches layerContentsWidget.cpp/h and usdSyntaxConfig.json — layer-contents feature batch (file not in shared) |
 | 18d52fda | Linter again | bug-fix | skip | Formatting/lint commit, no functional change |
 | 50f4a23f | Linter errors | bug-fix | skip | Formatting/lint commit, no functional change |
-| 7383bc12 | Fix focus to Confirm/OK instead of cancel (EMSUSD-2328) | bug-fix | pending |  |
-| bbef9502 | Add Expression Var support to Layer Editor | bug-fix | pending |  |
-| 39b722a9 | EMSUSD-2655: Show Layer Data Window * Another attempt to fix the error only t... | bug-fix | pending |  |
-| bd3b808c | EMSUSD-2655: Show Layer Data Window * Linux/Mac build fix | bug-fix | pending |  |
-| 52ad9a67 | EMSUSD-2655: Show Layer Data Window * Adjusted message displayed in Window wh... | bug-fix | pending |  |
-| f22aebe5 | EMSUSD-2655: Show Layer Data Window * Code review - adding extra code comment. | bug-fix | pending |  |
+| 7383bc12 | Fix focus to Confirm/OK instead of cancel (EMSUSD-2328) | bug-fix | skip | Already in shared — warningDialogs.cpp::confirmDialog_internal already uses setDefaultButton(QMessageBox::Ok) + setFocus() on the Ok button |
+| bbef9502 | Add Expression Var support to Layer Editor | bug-fix | skip | Already in shared — layerTreeItem.{cpp,h} already carry _stage member, expression-var resolution via SdfVariableExpression, and layerTreeModel passes _sessionState->stage() to LayerTreeItem ctor |
+| 39b722a9 | EMSUSD-2655: Show Layer Data Window * Another attempt to fix the error only t... | bug-fix | needs-port-file | Touches usdSyntaxHighlighter.cpp — layer-contents feature batch (file not in shared) |
+| bd3b808c | EMSUSD-2655: Show Layer Data Window * Linux/Mac build fix | bug-fix | needs-port-file | Touches usdSyntaxHighlighter.cpp — layer-contents feature batch (file not in shared) |
+| 52ad9a67 | EMSUSD-2655: Show Layer Data Window * Adjusted message displayed in Window wh... | bug-fix | needs-port-file | Tweaks kDisplayLayerContentsEmpty string — string not yet in shared stringResources.h (layer-contents feature batch) |
+| f22aebe5 | EMSUSD-2655: Show Layer Data Window * Code review - adding extra code comment. | bug-fix | needs-port-file | Comment-only addition to layerContentsWidget.cpp — layer-contents feature batch (file not in shared) |
 | 8b00f113 | EMSUSD-2655: Show Layer Data Window * Added new layer contents widget (to Lay... | layer-contents | pending |  |
-| defbebe9 | Update layerTreeViewStyle.h | bug-fix | pending |  |
-| 3150544f | Fixes for building with QT_DISABLE_DEPRECATED_BEFORE | bug-fix | pending |  |
-| 9be70aed | EMSUSD-2232 - Disables cache rebuild due to layer editor | bug-fix | pending |  |
-| 80cb4182 | Port layers editor fixes | bug-fix | pending |  |
-| b4ec9672 | EMSUSD-2301 - Layer Editor Won't Launch * The LayerEditorWindowCommand proxyS... | bug-fix | pending |  |
+| defbebe9 | Update layerTreeViewStyle.h | bug-fix | skip | Fixes QT_DISABLE_DEPRECATED_BEFOR typo introduced by 3150544f in layerTreeViewStyle.h; shared port (3150544f) already applies the corrected spelling, so no extra change needed |
+| 3150544f | Fixes for building with QT_DISABLE_DEPRECATED_BEFORE | bug-fix | ported | Added `QT_DISABLE_DEPRECATED_BEFORE \|\|` to the Qt6 #if checks in shared layerTreeItem.cpp, layerTreeItemDelegate.cpp, and layerTreeViewStyle.h (importDialog files are not in shared) |
+| 9be70aed | EMSUSD-2232 - Disables cache rebuild due to layer editor | bug-fix | skip | Maya-only rebuildCache plumbing — shared stageSelectorWidget already has the Maya getProxyShape/getChildProxyShape paths commented out; Utils.cpp/h are Maya-only |
+| 80cb4182 | Port layers editor fixes | bug-fix | skip | Already in shared — layerEditorCommands.cpp::backupLayer uses broader `_cmdId != kDiscardEdit` predicate (covers kClearLayer); stageSelectorWidget::updateFromSessionState already has _pinStageSelection/currentEntryQVariant logic; warningDialogs already sets focus on Ok. mayaSessionState.cpp is Maya-only |
+| b4ec9672 | EMSUSD-2301 - Layer Editor Won't Launch * The LayerEditorWindowCommand proxyS... | bug-fix | ported | Applied to lib/usdUfe/usd-layer-editor/lib/layerEditorWidget.cpp: getSelectedLayers now uses _treeView->getSelectedLayerItems(); selectLayers sets currentIndex on the first selected layer and applies the selection in a single ClearAndSelect|Rows pass. Maya files (layerEditorWindowCommand, abstractLayerEditorWindow, mayaCommandHook, mayaLayerEditorWindow, Readme) are Maya-only |
 | 4f945f1d | Add _cachedModelState nullptr check | bug-fix | pending |  |
 | 49753ba9 | Add documentation for notification and fix gcc compilation issue | bug-fix | pending |  |
 | 93b2eb24 | Remove _cachedModelState reset call | bug-fix | pending |  |
