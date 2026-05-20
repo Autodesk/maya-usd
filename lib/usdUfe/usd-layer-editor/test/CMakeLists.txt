@@ -14,10 +14,5 @@
 # limitations under the License.
 #
 
-# Top-level CMakeLists for the shared usd-layer-editor component
-# (DCC-agnostic). Built when BUILD_NEW_LAYER_EDITOR is ON.
-
-add_subdirectory(lib)
-add_subdirectory(python)
-
-add_subdirectory(test)
+# C++ GTest suite for the shared layer editor widget (and the old in-tree editor).
+add_subdirectory(cpp)
