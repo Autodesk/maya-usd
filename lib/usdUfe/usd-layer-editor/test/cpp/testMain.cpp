@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include "utilQT.h"
+
 #include <gtest/gtest.h>
 
 #include <QtWidgets/QApplication>
@@ -22,6 +24,8 @@ int main(int argc, char** argv)
 {
     // QApplication must be created before any QWidget and must outlive all tests.
     QApplication app(argc, argv);
+    // Initialize the DPI/Qt utilities singleton used by all layer editor widgets.
+    UsdLayerEditor::initializeQtUtils();
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

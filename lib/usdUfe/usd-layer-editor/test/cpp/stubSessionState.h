@@ -49,6 +49,7 @@ public:
     void refreshStageEntry(std::string const& dccObjectPath) override;
     void setupCreateMenu(QMenu* menu) override;
     void rootLayerPathChanged(std::string const& path) override;
+    bool autoObserveUfeSelection() const override { return false; }
 
     // Test helpers
     void addStage(PXR_NS::UsdStageRefPtr stage);
