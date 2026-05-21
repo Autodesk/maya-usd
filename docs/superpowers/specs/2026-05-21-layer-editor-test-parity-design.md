@@ -366,28 +366,56 @@ Add all new `test*.cpp` files to the `UsdLayerEditorNewTests` target in `lib/usd
 
 ## Implementation Order
 
+The workflow has two distinct phases. **Phase 1** generates all tests and builds. **Phase 2** triages failures before anything is fixed.
+
+### Phase 1: Generate all tests (write code only, no fixing)
+
 Tasks are ordered so each builds on verified infrastructure:
 
 1. **`testUtils.h`** — write shared helpers first; no build change needed
-2. **`testLayerTreeItem.cpp`** — pure state query tests, no window needed; validates core model logic
-3. **`testLayerTreeModel.cpp`** — depends on item state; validates rebuild, flags, filtering
+2. **`testLayerTreeItem.cpp`** — pure state query tests, no window needed
+3. **`testLayerTreeModel.cpp`** — flags, rebuild, filtering, naming
 4. **Expand `testReorder.cpp`** — `canDropMimeData` / `dropMimeData` ordering rules
-5. **`testLayerTreeView.cpp`** — memento + delegate geometry; depends on model being correct
-6. **Expand `testButtons.cpp`** — button enable/disable; depends on item state logic
-7. **Expand `testContextMenu.cpp`** — action preconditions; depends on state queries
+5. **`testLayerTreeView.cpp`** — memento + delegate geometry
+6. **Expand `testButtons.cpp`** — button enable/disable matrix
+7. **Expand `testContextMenu.cpp`** — action preconditions
 8. **Expand `testMenusAndStage.cpp`** — stage selector pin/content toggle
-9. **`testLayerContentsWidget.cpp`** — independent; just needs a stage and layer
-10. **`testSaveLayersDialog.cpp`** — independent dialog tests
-11. **`testLoadLayersDialog.cpp`** — independent dialog tests
-12. **`testLayerLocking.cpp`** — centralized lock API
-13. **`testLayerMuting.cpp`** — centralized mute API
-14. **CMakeLists.txt update** — add all new files; build and run full suite
+9. **`testLayerContentsWidget.cpp`** — content display and export truncation
+10. **`testSaveLayersDialog.cpp`** — construction, rows, checkbox logic
+11. **`testLoadLayersDialog.cpp`** — row add/remove, validation
+12. **`testLayerLocking.cpp`** — lock/unlock/systemlock transitions
+13. **`testLayerMuting.cpp`** — mute/unmute transitions
+14. **CMakeLists.txt update + build** — add all new files, verify it compiles
+
+### Phase 2: Triage failing tests (no fixes without user approval)
+
+After Phase 1 builds:
+
+1. **Run the full suite** via the host relay test command
+2. **For every failing test**, produce a triage entry containing:
+   - The test name and failure message
+   - The specific old-editor code excerpt that drove the test (the "source of truth")
+   - The corresponding new-editor code that the test exercises
+   - An assessment: one of —
+     - **Test is valid / new code is wrong** — the new implementation diverges from the old behavior; a code change to the new editor is needed
+     - **Test is wrong** — the test misread the old code or tests a behavior that doesn't apply to the new implementation; the test should be revised or removed
+     - **Ambiguous** — the old and new code differ but both behaviors are defensible; needs human judgment
+3. **Present all triage entries to the user before making any change** to either test code or new-editor code
+4. **Wait for user sign-off** on each entry before acting
+
+**No file outside `lib/usdUfe/usd-layer-editor/test/cpp/` is modified at any point without explicit user approval.**
 
 ---
 
 ## Success Criteria
 
-- All ~195 tests in `UsdLayerEditorNewTests` pass (exit 0 from relay test command with filter `UsdLayerEditorNewTests`)
-- No changes to any file outside `lib/usdUfe/usd-layer-editor/test/cpp/`
-- Each test name follows the convention `ClassName_Condition_ExpectedBehavior`
+### Phase 1 (generation)
+- All ~195 tests compile and the `UsdLayerEditorNewTests` binary links
+- Each test name follows `ClassName_Condition_ExpectedBehavior`
 - No test depends on disk I/O, Maya runtime, or display output
+- No changes to any file outside `lib/usdUfe/usd-layer-editor/test/cpp/`
+
+### Phase 2 (triage)
+- Every failing test has a written triage entry before any fix is attempted
+- User has reviewed and approved each triage entry before any code changes
+- After approved fixes: all tests pass
