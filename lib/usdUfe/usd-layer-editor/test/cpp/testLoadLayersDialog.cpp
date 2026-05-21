@@ -27,18 +27,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-// Find the root layer item to pass to LoadLayersDialog.
-static LayerTreeItem* getRootLayerItem(LayerEditorTestFixture* f)
-{
-    return dynamic_cast<LayerTreeItem*>(
-        f->treeModel()->itemFromIndex(f->rootLayerIndex()));
-}
-
 class LoadLayersDialogTest : public LayerEditorTestFixture {};
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_ConstructsWithoutCrash)
 {
-    auto* rootItem = getRootLayerItem(this);
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     EXPECT_NO_THROW({
         LoadLayersDialog dlg(rootItem, _mainWindow);
@@ -47,7 +41,8 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_ConstructsWithoutCrash)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasAtLeastOneLineEdit)
 {
-    auto* rootItem = getRootLayerItem(this);
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     auto lineEdits = dlg.findChildren<QLineEdit*>();
@@ -56,7 +51,8 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasAtLeastOneLineEdit)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasOkAndCancelButtons)
 {
-    auto* rootItem = getRootLayerItem(this);
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     bool hasOk = false, hasCancel = false;
@@ -73,7 +69,8 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasOkAndCancelButtons)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_StartsWithEmptyPath)
 {
-    auto* rootItem = getRootLayerItem(this);
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     auto lineEdits = dlg.findChildren<QLineEdit*>();
@@ -84,7 +81,8 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_StartsWithEmptyPath)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasScrollArea)
 {
-    auto* rootItem = getRootLayerItem(this);
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     auto* scroll = dlg.findChild<QScrollArea*>(QString(), Qt::FindChildrenRecursively);
@@ -93,7 +91,8 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasScrollArea)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_ExecDismissedByTimerDoesNotHang)
 {
-    auto* rootItem = getRootLayerItem(this);
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     TestUtils::dismissNextModal(100);
@@ -102,7 +101,8 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_ExecDismissedByTimerDoesNotHang)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_AddRowButtonExists)
 {
-    auto* rootItem = getRootLayerItem(this);
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     EXPECT_GE(dlg.findChildren<QPushButton*>().size(), 1);
@@ -110,7 +110,8 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_AddRowButtonExists)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_PathEditIsEnabled)
 {
-    auto* rootItem = getRootLayerItem(this);
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     auto lineEdits = dlg.findChildren<QLineEdit*>();
