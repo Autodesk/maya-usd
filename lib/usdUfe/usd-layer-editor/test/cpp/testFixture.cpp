@@ -23,8 +23,9 @@ namespace UsdLayerEditor {
 
 void LayerEditorTestFixture::SetUp()
 {
-    auto* win = new QMainWindow();
-    _widget   = std::make_unique<LayerEditorWidget>(_sessionState, win);
+    _mainWindow = new QMainWindow();
+    _window     = std::make_unique<StubLayerEditorWindow>(_sessionState, _mainWindow);
+    _widget     = _window->widget();
     _widget->show();
     QApplication::processEvents();
     _sessionState._commandHookImpl.clearCalls();
@@ -35,7 +36,10 @@ void LayerEditorTestFixture::SetUp()
 
 void LayerEditorTestFixture::TearDown()
 {
-    _widget.reset();
+    _widget = nullptr;
+    _window.reset();
+    delete _mainWindow;
+    _mainWindow = nullptr;
 }
 
 LayerTreeView* LayerEditorTestFixture::layerTree()
@@ -50,12 +54,26 @@ LayerTreeModel* LayerEditorTestFixture::treeModel()
 
 QModelIndex LayerEditorTestFixture::sessionLayerIndex()
 {
+    // The stub always shows the session layer (autoHideSessionLayer=false).
+    // It is always the first top-level item in the tree.
+    return treeModel()->index(0, 0);
+}
+
+QModelIndex LayerEditorTestFixture::rootLayerIndex()
+{
     return treeModel()->rootLayerIndex();
 }
 
 QModelIndex LayerEditorTestFixture::firstSublayerIndex()
 {
-    return treeModel()->index(0, 0, sessionLayerIndex());
+    return treeModel()->index(0, 0, rootLayerIndex());
+}
+
+void LayerEditorTestFixture::selectRow(const QModelIndex& index)
+{
+    layerTree()->selectionModel()->select(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    layerTree()->setCurrentIndex(index);
+    QApplication::processEvents();
 }
 
 QAction* findAction(QMenu* menu, const QString& text)

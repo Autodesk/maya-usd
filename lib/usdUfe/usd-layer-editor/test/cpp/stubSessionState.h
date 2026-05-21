@@ -50,6 +50,7 @@ public:
     void setupCreateMenu(QMenu* menu) override;
     void rootLayerPathChanged(std::string const& path) override;
     bool autoObserveUfeSelection() const override { return false; }
+    bool autoHideSessionLayer()    const override { return false; }
 
     // Test helpers
     void addStage(PXR_NS::UsdStageRefPtr stage);

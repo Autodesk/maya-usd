@@ -16,6 +16,7 @@
 #pragma once
 
 #include "stubCommandHook.h"
+#include "stubLayerEditorWindow.h"
 #include "stubSessionState.h"
 
 #include "layerEditorWidget.h"
@@ -25,6 +26,7 @@
 #include <gtest/gtest.h>
 
 #include <QtCore/QModelIndex>
+#include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <memory>
 
@@ -39,10 +41,18 @@ protected:
     LayerTreeView*  layerTree();
     LayerTreeModel* treeModel();
     QModelIndex     sessionLayerIndex();
+    QModelIndex     rootLayerIndex();
     QModelIndex     firstSublayerIndex();
 
-    StubSessionState                   _sessionState;
-    std::unique_ptr<LayerEditorWidget> _widget;
+    // Select a single tree row so LayerEditorWindow state queries are valid.
+    void selectRow(const QModelIndex& index);
+
+    StubSessionState                        _sessionState;
+    std::unique_ptr<StubLayerEditorWindow>  _window;
+    QMainWindow*                            _mainWindow { nullptr };
+
+    // Convenience: the widget owned by _window.
+    LayerEditorWidget* _widget { nullptr };
 };
 
 // Find a named action in a menu (searches recursively into submenus).
