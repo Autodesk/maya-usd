@@ -24,6 +24,8 @@
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
 
+#include <functional>
+
 namespace UsdLayerEditor {
 
 enum class CmdId
@@ -58,6 +60,10 @@ public:
 
     virtual bool doIt(const pxr::SdfLayerHandle& layer) = 0;
     virtual bool undoIt(const pxr::SdfLayerHandle& layer) = 0;
+
+    // Register a DCC-specific checker that suppresses auto edit-target changes.
+    // Pass nullptr to restore default behaviour (auto-retarget enabled).
+    static void setAutoRetargetDisabledChecker(std::function<bool()> checker);
 
 protected:
     CmdId               _cmdId;

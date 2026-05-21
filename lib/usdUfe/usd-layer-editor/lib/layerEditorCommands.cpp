@@ -46,7 +46,16 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+std::function<bool()> sAutoRetargetDisabled;
+} // namespace
+
 namespace UsdLayerEditor {
+
+void BaseCmd::setAutoRetargetDisabledChecker(std::function<bool()> checker)
+{
+    sAutoRetargetDisabled = std::move(checker);
+}
 
 void BaseCmd::holdOnPathIfDirty(const SdfLayerHandle& layer, const std::string& path)
 {
@@ -89,6 +98,9 @@ void BaseCmd::holdOntoSubLayers(const SdfLayerHandle& layer)
 // Set the edit target to Session layer if no other layers are modifiable
 void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
 {
+    if (sAutoRetargetDisabled && sAutoRetargetDisabled())
+        return;
+
     if (!stage)
         return;
 
