@@ -48,7 +48,7 @@ typedef void                        (LayerTreeItem::*simpleLayerMethod)();
  * Used to save and restore the state when the model is rebuilt.
  *
  */
-class LayerViewMemento
+class LayerEditorAPI LayerViewMemento
 {
 public:
     LayerViewMemento(const LayerTreeView&, const LayerTreeModel&);
