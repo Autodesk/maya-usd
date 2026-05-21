@@ -85,7 +85,7 @@ TEST_F(LayerTreeModelTest, Rebuild_AlwaysShowsSessionLayerWhenAutoHideFalse)
 {
     // StubSessionState::autoHideSessionLayer() returns false.
     // Session layer must always be the first top-level item.
-    treeModel()->rebuildModel();
+    treeModel()->forceRefresh();
     QApplication::processEvents();
     auto* first = itemAt(treeModel(), treeModel()->index(0, 0));
     ASSERT_NE(first, nullptr);
@@ -95,7 +95,7 @@ TEST_F(LayerTreeModelTest, Rebuild_AlwaysShowsSessionLayerWhenAutoHideFalse)
 TEST_F(LayerTreeModelTest, Rebuild_ClearsAndRepopulatesRows)
 {
     int rowsBefore = treeModel()->rowCount();
-    treeModel()->rebuildModel();
+    treeModel()->forceRefresh();
     QApplication::processEvents();
     // Row count should be consistent after rebuild.
     EXPECT_EQ(treeModel()->rowCount(), rowsBefore);
@@ -103,13 +103,13 @@ TEST_F(LayerTreeModelTest, Rebuild_ClearsAndRepopulatesRows)
 
 TEST_F(LayerTreeModelTest, RebuildOnIdle_DeduplicatesScheduling)
 {
-    // Calling rebuildModelOnIdle twice before processing events should
+    // Calling forceRefresh twice before processing events should
     // result in only one rebuild (not two).
     int resetCount = 0;
     QObject::connect(treeModel(), &QAbstractItemModel::modelReset,
         [&resetCount]() { ++resetCount; });
-    treeModel()->rebuildModelOnIdle();
-    treeModel()->rebuildModelOnIdle();
+    treeModel()->forceRefresh();
+    treeModel()->forceRefresh();
     QApplication::processEvents();
     EXPECT_EQ(resetCount, 1);
 }

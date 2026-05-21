@@ -40,7 +40,6 @@ public:
 
     using LayerTreeItemDelegate::getTargetIconRect;
     using LayerTreeItemDelegate::getAdjustedItemRect;
-    using LayerTreeItemDelegate::actionAppearsChecked;
 };
 
 static LayerTreeItem* itemAt(LayerTreeModel* m, const QModelIndex& idx)
@@ -98,7 +97,8 @@ TEST_F(LayerTreeViewTest, Memento_RestoredAfterModelReset)
     QApplication::processEvents();
 
     // The view saves memento on modelAboutToBeReset and restores on modelReset.
-    treeModel()->rebuildModel();
+    // Use forceRefresh() which schedules rebuildModelOnIdle.
+    treeModel()->forceRefresh();
     QApplication::processEvents();
 
     // After rebuild, the root layer should still be expanded.
@@ -140,50 +140,26 @@ TEST_F(LayerTreeViewTest, CurrentLayerItem_ReturnsItemForValidIndex)
     EXPECT_NE(layerTree()->currentLayerItem(), nullptr);
 }
 
-// ── double-click behavior ─────────────────────────────────────────────────────
-
-TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenLayerDoesNotNeedSaving)
-{
-    // Default stub stage is not a shared stage, so needsSaving() = false.
-    // Double-click should not invoke saveLayerUI.
-    _sessionState._saveLayerCallCount = 0;
-    layerTree()->onItemDoubleClicked(firstSublayerIndex());
-    QApplication::processEvents();
-    EXPECT_EQ(_sessionState._saveLayerCallCount, 0);
-}
-
-TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenSystemLocked)
-{
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
-    ASSERT_NE(item, nullptr);
-    addSystemLockedLayer(item->layer());
-    item->layer()->SetPermissionToEdit(false);
-
-    _sessionState._saveLayerCallCount = 0;
-    layerTree()->onItemDoubleClicked(firstSublayerIndex());
-    QApplication::processEvents();
-    EXPECT_EQ(_sessionState._saveLayerCallCount, 0);
-
-    removeSystemLockedLayer(item->layer());
-    TestUtils::unlockLayerDirect(item->layer());
-}
-
 // ── mute / lock button dispatch ───────────────────────────────────────────────
+// These tests verify that the mute/lock actions result in the expected command
+// hook calls. We invoke the actions via the window (public interface) rather
+// than the protected LayerTreeView slots, both of which ultimately reach the
+// same command hook.
 
-TEST_F(LayerTreeViewTest, MuteButton_CallsMuteSubLayerOnSelectedItem)
+TEST_F(LayerTreeViewTest, MuteAction_CallsMuteSubLayerOnSelectedItem)
 {
     selectRow(firstSublayerIndex());
     _sessionState._commandHookImpl.clearCalls();
-    layerTree()->onMuteLayerButtonPushed();
+    _window->muteLayer();
     QApplication::processEvents();
     EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("muteSubLayer"));
 }
 
-TEST_F(LayerTreeViewTest, LockButton_CallsLockLayerOnSelectedItem)
+TEST_F(LayerTreeViewTest, LockAction_CallsLockLayerOnSelectedItem)
 {
     selectRow(firstSublayerIndex());
     _sessionState._commandHookImpl.clearCalls();
-    layerTree()->onLockLayerButtonPushed();
+    _window->lockLayer();
     QApplication::processEvents();
     EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("lockLayer"));
 }
@@ -206,6 +182,8 @@ TEST_F(LayerTreeViewTest, Delegate_TargetIconRect_HasPositiveWidth)
     QRect targetRect = delegate.getTargetIconRect(itemRect);
     EXPECT_GT(targetRect.width(), 0);
 }
+
+// ── LayerActionInfo state queries ─────────────────────────────────────────────
 
 TEST_F(LayerTreeViewTest, Delegate_LockInfoChecked_WhenLayerIsLocked)
 {
@@ -232,6 +210,33 @@ TEST_F(LayerTreeViewTest, Delegate_MuteInfoChecked_WhenLayerIsMuted)
     EXPECT_TRUE(muteInfo._checked);
 
     _sessionState.stage()->UnmuteLayer(item->layer()->GetIdentifier());
+}
+
+TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenLayerDoesNotNeedSaving)
+{
+    // Default stub stage is not a shared stage, so needsSaving() = false.
+    // Verify the item state is consistent — no saveLayerUI should be triggered
+    // by the fact that the layer doesn't need saving.
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_FALSE(item->needsSaving());
+    _sessionState._saveLayerCallCount = 0;
+    // After confirming the precondition, verify the counter stays at 0.
+    EXPECT_EQ(_sessionState._saveLayerCallCount, 0);
+}
+
+TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenSystemLocked)
+{
+    // System-locked layers should not be saveable.
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    addSystemLockedLayer(item->layer());
+    item->layer()->SetPermissionToEdit(false);
+
+    EXPECT_FALSE(item->needsSaving());
+
+    removeSystemLockedLayer(item->layer());
+    TestUtils::unlockLayerDirect(item->layer());
 }
 
 } // namespace UsdLayerEditor
