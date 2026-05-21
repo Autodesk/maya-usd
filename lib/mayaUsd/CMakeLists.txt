@@ -271,6 +271,11 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
 )
 
+if(BUILD_NEW_LAYER_EDITOR)
+    target_link_libraries(${PROJECT_NAME} PRIVATE UsdLayerEditorLib Qt::Core)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDITOR=1)
+endif()
+
 # -----------------------------------------------------------------------------
 # run-time search paths
 # -----------------------------------------------------------------------------
