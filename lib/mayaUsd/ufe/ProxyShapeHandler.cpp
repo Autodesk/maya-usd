@@ -15,11 +15,13 @@
 //
 #include "ProxyShapeHandler.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/utils/query.h>
 
-#include <maya/MGlobal.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MItDag.h>
 #include <maya/MString.h>
-#include <maya/MStringArray.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -42,15 +44,32 @@ const std::string& ProxyShapeHandler::gatewayNodeType() { return mayaUsdGatewayN
 std::vector<std::string> ProxyShapeHandler::getAllNames()
 {
     std::vector<std::string> names;
-    MString                  cmd;
-    MStringArray             result;
-    cmd.format("ls -type ^1s -long", mayaUsdGatewayNodeType.c_str());
-    if (MS::kSuccess == MGlobal::executeCommand(cmd, result)) {
-        names.reserve(result.length());
-        for (MString& name : result) {
-            names.push_back(name.asChar());
+
+    // Iterate through all shape DAG nodes to find proxy shape nodes
+    MItDag dagIterator(MItDag::kDepthFirst, MFn::kPluginShape);
+    for (; !dagIterator.isDone(); dagIterator.next()) {
+        MObject    mobj = dagIterator.currentItem();
+        MFnDagNode fnDagNode(mobj);
+
+        const PXR_NS::MayaUsdProxyShapeBase* proxyShape
+            = dynamic_cast<const PXR_NS::MayaUsdProxyShapeBase*>(fnDagNode.userNode());
+        if (!proxyShape)
+            continue;
+
+        // Check if this node is a proxy shape by type name
+        MDagPath dagPath;
+        dagIterator.getPath(dagPath);
+
+        // Avoid instances of the same shape by only looking at the first instance (instance number
+        // 0)
+        if (dagPath.instanceNumber() != 0) {
+            continue;
         }
+
+        MString shapePath = dagPath.fullPathName();
+        names.push_back(shapePath.asChar());
     }
+
     return names;
 }
 
