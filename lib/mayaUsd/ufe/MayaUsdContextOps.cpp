@@ -77,7 +77,7 @@ static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
 static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor";
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
 static constexpr char kAssetResolverDialogItem[] = "Asset Resolver Dialog";
-static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor...";
+static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor";
 #endif
 #endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };

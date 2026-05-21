@@ -44,6 +44,7 @@
 
 #include <AssetResolverExtensions/PathDialog/PathDialog.h>
 #include <QtCore/QPointer>
+#include <QtCore/QVariant>
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
 
@@ -121,6 +122,13 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
             // closeEvent just hides it) and destroy it explicitly in
             // finalize().
 
+            // Tell Maya to treat this as a Maya-managed window. This is
+            // the same mechanism Maya uses internally to keep its own
+            // dialogs from going behind the main window. This should not be combined
+            // with other flags.
+            g_assetResolverDialog->setWindowFlags(Qt::Window);
+            g_assetResolverDialog->setProperty("saveWindowPref", QVariant::fromValue(true));
+
             g_assetResolverDialog->setGetStagesFunctor([]() {
                 auto allStages = ufe::UsdStageMap::getInstance().allStages();
                 std::vector<PXR_NS::UsdStageRefPtr> stages;
@@ -152,9 +160,16 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
             tabName == kSettingsTabName ? Adsk::AssetResolverPathDialog::Tab::GlobalSettings
                                         : Adsk::AssetResolverPathDialog::Tab::Paths);
 
+        // If the dialog was previously minimized, restore it before showing.
+        if (g_assetResolverDialog->isMinimized()) {
+            g_assetResolverDialog->setWindowState(
+                (g_assetResolverDialog->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+        }
+
+        g_assetResolverDialog->show();
         g_assetResolverDialog->raise();
         g_assetResolverDialog->activateWindow();
-        g_assetResolverDialog->show();
+
         return MS::kSuccess;
     }
 
