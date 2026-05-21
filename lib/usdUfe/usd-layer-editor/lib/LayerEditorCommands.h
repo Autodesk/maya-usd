@@ -91,6 +91,12 @@ public:
 
     bool undoIt(const pxr::SdfLayerHandle& layer) override;
 
+    // Register a DCC-specific provider for the full list of active stages.
+    // Used by backupEditTargets() to find stages not in the global USD cache.
+    // Pass nullptr to restore the default (global UsdUtilsStageCache only).
+    static void setStagesProvider(
+        std::function<std::vector<pxr::UsdStageRefPtr>()> provider);
+
 protected:
     // Backup and restore edit targets of stages that were targeting the sub-layers
     // of the cleared layer to support undo and redo.
