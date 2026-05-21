@@ -47,7 +47,8 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-std::function<bool()> sAutoRetargetDisabled;
+std::function<bool()>                              sAutoRetargetDisabled;
+std::function<std::vector<UsdStageRefPtr>()>       sStagesProvider;
 } // namespace
 
 namespace UsdLayerEditor {
@@ -55,6 +56,12 @@ namespace UsdLayerEditor {
 void BaseCmd::setAutoRetargetDisabledChecker(std::function<bool()> checker)
 {
     sAutoRetargetDisabled = std::move(checker);
+}
+
+void BackupLayerBaseCmd::setStagesProvider(
+    std::function<std::vector<UsdStageRefPtr>()> provider)
+{
+    sStagesProvider = std::move(provider);
 }
 
 void BaseCmd::holdOnPathIfDirty(const SdfLayerHandle& layer, const std::string& path)
@@ -215,8 +222,10 @@ void BackupLayerBaseCmd::backupEditTargets(const SdfLayerHandle& layer)
     if (!layer)
         return;
 
-    // TODO LE-EXTRACT : Maya has multiple caches, not just the global one.
-    const std::vector<UsdStageRefPtr> stages = UsdUtilsStageCache::Get().GetAllStages();
+    const std::vector<UsdStageRefPtr> stages = sStagesProvider
+        ? sStagesProvider()
+        : UsdUtilsStageCache::Get().GetAllStages();
+
     for (const PXR_NS::UsdStageRefPtr& stage : stages) {
         if (!stage)
             continue;

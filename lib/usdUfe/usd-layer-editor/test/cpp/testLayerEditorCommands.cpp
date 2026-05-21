@@ -111,4 +111,62 @@ TEST_F(UpdateEditTargetTest, WhenCheckerDisablesAutoRetarget_EditTargetUnchanged
     EXPECT_NE(_stage->GetEditTarget().GetLayer(), _stage->GetSessionLayer());
 }
 
+class BackupEditTargetsTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        // Build: root -> A -> B.  Edit target = B.
+        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _layerA = PXR_NS::SdfLayer::CreateAnonymous("A");
+        _layerB = PXR_NS::SdfLayer::CreateAnonymous("B");
+        _stage->GetRootLayer()->InsertSubLayerPath(_layerA->GetIdentifier(), 0);
+        _layerA->InsertSubLayerPath(_layerB->GetIdentifier(), 0);
+        _stage->SetEditTarget(_layerB);
+    }
+
+    void TearDown() override
+    {
+        BackupLayerBaseCmd::setStagesProvider(nullptr);
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _layerA;
+    PXR_NS::SdfLayerRefPtr _layerB;
+};
+
+// Clearing A removes B from the graph (it was A's sublayer).
+// Without the provider the in-memory stage is not in the global cache → backup is skipped.
+// USD retains the stale edit target reference (B) throughout — no reset, no restore.
+TEST_F(BackupEditTargetsTest, WithoutProvider_EditTargetNotRestoredOnUndo)
+{
+    // _stage is NOT in UsdUtilsStageCache — backupEditTargets won't find it.
+    auto cmd = std::make_shared<ClearLayerCmd>(_layerA);
+    cmd->execute();
+    // B is gone from the graph; USD retains the stale edit target reference.
+    // Undo: restores A's content (B is back) but the edit target was never backed up.
+    cmd->undo();
+    // Without the provider, no backup/restore cycle occurred; USD simply kept the stale
+    // edit target pointing at B throughout (never reset, never restored via backup).
+    // This confirms backupEditTargets was a no-op for this stage.
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _layerB);
+}
+
+// With the provider registered, backupEditTargets finds _stage → saves B → restores on undo.
+TEST_F(BackupEditTargetsTest, WithProvider_EditTargetRestoredOnUndo)
+{
+    BackupLayerBaseCmd::setStagesProvider([this]() -> std::vector<PXR_NS::UsdStageRefPtr> {
+        return { _stage };
+    });
+
+    auto cmd = std::make_shared<ClearLayerCmd>(_layerA);
+    cmd->execute();
+    // At this point edit target was backed up and reset to root.
+    EXPECT_NE(_stage->GetEditTarget().GetLayer(), _layerB);
+
+    cmd->undo();
+    // Undo restored A's content (B is back) and restored the edit target to B.
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _layerB);
+}
+
 } // namespace UsdLayerEditor
