@@ -15,6 +15,9 @@
 //
 
 #include "testFixture.h"
+#include "testUtils.h"
+#include "layerLocking.h"
+#include "layerTreeItem.h"
 
 #include <QtCore/QTimer>
 #include <QtWidgets/QApplication>
@@ -96,6 +99,98 @@ TEST_F(LayerEditorTestFixture, SaveStageButton_Click_DismissesDialog)
     btn->click();
     QApplication::processEvents();
     // Reaching here without a crash or hang is the pass criterion.
+}
+
+// ── updateNewLayerButton enable/disable matrix ────────────────────────────────
+
+static QPushButton* findButtonByTooltipFull(QWidget* root, const QString& tooltip)
+{
+    for (auto* btn : root->findChildren<QPushButton*>()) {
+        if (btn->toolTip().contains(tooltip, Qt::CaseInsensitive))
+            return btn;
+    }
+    return nullptr;
+}
+
+TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledWhenNoSelection)
+{
+    layerTree()->selectionModel()->clearSelection();
+    QApplication::processEvents();
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
+    ASSERT_NE(btn, nullptr);
+    EXPECT_FALSE(btn->isEnabled());
+}
+
+TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledForRootLayer)
+{
+    selectRow(rootLayerIndex());
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
+    ASSERT_NE(btn, nullptr);
+    EXPECT_TRUE(btn->isEnabled());
+}
+
+TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledForSessionLayer)
+{
+    selectRow(sessionLayerIndex());
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
+    ASSERT_NE(btn, nullptr);
+    EXPECT_TRUE(btn->isEnabled());
+}
+
+TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledWhenSelectionIsLocked)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    TestUtils::lockLayerDirect(rootItem->layer());
+
+    selectRow(rootLayerIndex());
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
+    ASSERT_NE(btn, nullptr);
+    EXPECT_FALSE(btn->isEnabled());
+
+    TestUtils::unlockLayerDirect(rootItem->layer());
+}
+
+TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledWhenSelectionIsSystemLocked)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    addSystemLockedLayer(rootItem->layer());
+    rootItem->layer()->SetPermissionToEdit(false);
+
+    selectRow(rootLayerIndex());
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
+    ASSERT_NE(btn, nullptr);
+    EXPECT_FALSE(btn->isEnabled());
+
+    removeSystemLockedLayer(rootItem->layer());
+    TestUtils::unlockLayerDirect(rootItem->layer());
+}
+
+TEST_F(LayerEditorTestFixture, SaveButton_DisabledWhenNoLayersNeedSaving)
+{
+    // StubSessionState is not shared: no layers need saving.
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Save all edits");
+    ASSERT_NE(btn, nullptr);
+    EXPECT_FALSE(btn->isEnabled());
+}
+
+TEST_F(LayerEditorTestFixture, LoadLayerButton_ExistsAndIsEnabled)
+{
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Load an Existing Layer");
+    ASSERT_NE(btn, nullptr);
+    EXPECT_TRUE(btn->isEnabled());
+}
+
+TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledForSublayerSelection)
+{
+    // Sublayers are not valid targets for the "new layer" action.
+    selectRow(firstSublayerIndex());
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
+    ASSERT_NE(btn, nullptr);
+    EXPECT_FALSE(btn->isEnabled());
 }
 
 } // namespace UsdLayerEditor

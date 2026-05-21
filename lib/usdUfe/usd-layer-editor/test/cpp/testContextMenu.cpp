@@ -15,8 +15,9 @@
 //
 
 #include "testFixture.h"
-
+#include "testUtils.h"
 #include "layerLocking.h"
+#include "layerTreeItem.h"
 
 #include <QtWidgets/QApplication>
 
@@ -133,6 +134,138 @@ TEST_F(LayerEditorTestFixture, ContextMenu_UnlockedLayer_IsNotLocked)
     selectRow(firstSublayerIndex());
     EXPECT_FALSE(_window->layerIsLocked())
         << "Fresh sublayer should not be locked";
+}
+
+// ── additional window actions ──────────────────────────────────────────────────
+
+TEST_F(LayerEditorTestFixture, ContextMenu_ClearLayer_CallsHook)
+{
+    selectRow(firstSublayerIndex());
+    _window->clearLayer();
+    QApplication::processEvents();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("clearLayer"));
+}
+
+TEST_F(LayerEditorTestFixture, ContextMenu_SaveEdits_DoesNotCrash)
+{
+    selectRow(firstSublayerIndex());
+    _sessionState._saveLayerCallCount = 0;
+    // saveEdits on an anonymous layer — must not crash regardless of path taken.
+    EXPECT_NO_THROW({
+        _window->saveEdits();
+        QApplication::processEvents();
+    });
+}
+
+TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenNoSublayers)
+{
+    // A leaf sublayer has no children — mergeWithSublayers should be a no-op.
+    selectRow(firstSublayerIndex());
+    _sessionState._commandHookImpl.clearCalls();
+    _window->mergeWithSublayers();
+    QApplication::processEvents();
+    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("stitchLayers"));
+}
+
+TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenLayerIsLocked)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    TestUtils::lockLayerDirect(rootItem->layer());
+
+    selectRow(rootLayerIndex());
+    _sessionState._commandHookImpl.clearCalls();
+    _window->mergeWithSublayers();
+    QApplication::processEvents();
+    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("stitchLayers"));
+
+    TestUtils::unlockLayerDirect(rootItem->layer());
+}
+
+TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_SkipsConfirmForAnonymousLayer)
+{
+    selectRow(firstSublayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isAnonymous());
+
+    _sessionState._commandHookImpl.clearCalls();
+    _window->discardEdits();
+    QApplication::processEvents();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("discardEdits"));
+}
+
+TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_SkipsConfirmForCleanLayer)
+{
+    selectRow(firstSublayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    ASSERT_FALSE(item->isDirty());
+
+    _sessionState._commandHookImpl.clearCalls();
+    _window->discardEdits();
+    QApplication::processEvents();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("discardEdits"));
+}
+
+// ── setEditTarget guards (via model) ──────────────────────────────────────────
+
+TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsMuted)
+{
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    _sessionState.stage()->MuteLayer(item->layer()->GetIdentifier());
+    QApplication::processEvents();
+
+    _sessionState._commandHookImpl.clearCalls();
+    treeModel()->setEditTarget(item);
+    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
+
+    _sessionState.stage()->UnmuteLayer(item->layer()->GetIdentifier());
+}
+
+TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsLocked)
+{
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    TestUtils::lockLayerDirect(item->layer());
+
+    _sessionState._commandHookImpl.clearCalls();
+    treeModel()->setEditTarget(item);
+    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
+
+    TestUtils::unlockLayerDirect(item->layer());
+}
+
+TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsSystemLocked)
+{
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    addSystemLockedLayer(item->layer());
+    item->layer()->SetPermissionToEdit(false);
+
+    _sessionState._commandHookImpl.clearCalls();
+    treeModel()->setEditTarget(item);
+    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
+
+    removeSystemLockedLayer(item->layer());
+    TestUtils::unlockLayerDirect(item->layer());
+}
+
+TEST_F(LayerEditorTestFixture, SetEditTarget_AllowedForNormalSublayer)
+{
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    _sessionState._commandHookImpl.clearCalls();
+    treeModel()->setEditTarget(item);
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
 }
 
 } // namespace UsdLayerEditor

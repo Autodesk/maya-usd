@@ -26,6 +26,14 @@ set(LAYER_EDITOR_TEST_SOURCES
     testContextMenu.cpp
     testReorder.cpp
     testMenusAndStage.cpp
+    testLayerTreeItem.cpp
+    testLayerTreeModel.cpp
+    testLayerTreeView.cpp
+    testLayerContentsWidget.cpp
+    testSaveLayersDialog.cpp
+    testLoadLayersDialog.cpp
+    testLayerLocking.cpp
+    testLayerMuting.cpp
 )
 
 # ------------------------------------------------------------------------------
