@@ -346,4 +346,58 @@ TEST_F(MuteLayerCmdTest, Undo_Unmute_RestoresMutedState)
     EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
 }
 
+// ============================================================================
+// Task 7: LockLayerCmd
+// ============================================================================
+
+class LockLayerCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        UsdUfe::setStagePathAccessorFn(stubStagePathAccessor);
+        forgetLockedLayers();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
+        _layer = PXR_NS::SdfLayer::CreateAnonymous("lockable");
+        _stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
+    }
+    void TearDown() override { forgetLockedLayers(); }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _layer;
+};
+
+TEST_F(LockLayerCmdTest, DoIt_LocksLayer)
+{
+    auto cmd = std::make_shared<LockLayerCmd>(_stage, _layer, LayerLock_Locked);
+    cmd->execute();
+    EXPECT_TRUE(isLayerLocked(_layer));
+}
+
+TEST_F(LockLayerCmdTest, Undo_UnlocksLayer)
+{
+    auto cmd = std::make_shared<LockLayerCmd>(_stage, _layer, LayerLock_Locked);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_FALSE(isLayerLocked(_layer));
+}
+
+TEST_F(LockLayerCmdTest, SkipSystemLocked_DoesNotLockSystemLockedSublayers)
+{
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sub");
+    _layer->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
+    // Mark sublayer as system-locked.
+    lockLayer("", sublayer, LayerLock_SystemLocked, /*updateDCCAttr=*/false);
+
+    auto cmd = std::make_shared<LockLayerCmd>(
+        _stage, _layer, LayerLock_Locked,
+        /*includeSubLayers=*/true, /*skipSystemLocked=*/true);
+    cmd->execute();
+
+    // Parent should be locked, system-locked sublayer should remain system-locked (not relocked).
+    EXPECT_TRUE(isLayerLocked(_layer));
+    EXPECT_TRUE(isLayerSystemLocked(sublayer));
+    EXPECT_FALSE(isLayerLocked(sublayer)); // must not have been changed to plain locked
+}
+
 } // namespace UsdLayerEditor
