@@ -50,7 +50,6 @@ public:
     void     closeUndoBracket() override;
     void     showLayerEditorHelp() override;
     void     selectPrimsWithSpec(UsdLayer layer) override;
-    bool     isDccObjectSharedStage(const std::string& /*dccObjectPath*/) override { return false; }
 
     void               clearCalls();
     bool               hasCall(std::string_view method) const;

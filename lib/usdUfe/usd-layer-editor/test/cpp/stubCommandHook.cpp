@@ -102,9 +102,10 @@ void StubCommandHook::muteSubLayer(UsdLayer layer, bool muteIt)
     _calls.push_back({ "muteSubLayer", { layer->GetIdentifier(), muteIt ? "true" : "false" } });
 }
 
-void StubCommandHook::lockLayer(UsdLayer layer, LayerLockType /*lockState*/, bool /*includeSubLayers*/)
+void StubCommandHook::lockLayer(UsdLayer layer, LayerLockType lockState, bool /*includeSubLayers*/)
 {
     _calls.push_back({ "lockLayer", { layer->GetIdentifier() } });
+    layer->SetPermissionToEdit(lockState == LayerLock_Unlocked);
 }
 
 void StubCommandHook::refreshLayerSystemLock(UsdLayer layer, bool /*refreshSubLayers*/)
