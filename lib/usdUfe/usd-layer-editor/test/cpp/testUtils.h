@@ -21,34 +21,32 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QWidget>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace UsdLayerEditor {
 namespace TestUtils {
 
 // Stage with one anonymous sublayer already inserted at index 0.
-inline UsdStageRefPtr makeStageWithSublayer(const std::string& sublayerName = "sub")
+inline PXR_NS::UsdStageRefPtr makeStageWithSublayer(const std::string& sublayerName = "sub")
 {
-    auto stage = UsdStage::CreateInMemory();
-    auto sub   = SdfLayer::CreateAnonymous(sublayerName);
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto sub   = PXR_NS::SdfLayer::CreateAnonymous(sublayerName);
     stage->GetRootLayer()->InsertSubLayerPath(sub->GetIdentifier(), 0);
     return stage;
 }
 
 // Mark the root layer dirty by setting a comment.
-inline void makeDirty(const UsdStageRefPtr& stage)
+inline void makeDirty(const PXR_NS::UsdStageRefPtr& stage)
 {
     stage->GetRootLayer()->SetComment("dirty");
 }
 
 // Lock a layer by revoking edit permission directly (no DCC attr update).
-inline void lockLayerDirect(const SdfLayerRefPtr& layer)
+inline void lockLayerDirect(const PXR_NS::SdfLayerRefPtr& layer)
 {
     layer->SetPermissionToEdit(false);
 }
 
 // Unlock a layer by restoring edit permission.
-inline void unlockLayerDirect(const SdfLayerRefPtr& layer)
+inline void unlockLayerDirect(const PXR_NS::SdfLayerRefPtr& layer)
 {
     layer->SetPermissionToEdit(true);
 }
