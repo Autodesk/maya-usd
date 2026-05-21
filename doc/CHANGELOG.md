@@ -1,5 +1,74 @@
 # Changelog
 
+## [v0.36.0] - 2026-05-20
+
+**Build:**
+* Fix GCC 14 build errors and warnings [#4552](https://github.com/Autodesk/maya-usd/pull/4552) [#4549](https://github.com/Autodesk/maya-usd/pull/4549) [#4533](https://github.com/Autodesk/maya-usd/pull/4533) [#4475](https://github.com/Autodesk/maya-usd/pull/4475)
+* Use the PXR namespace directive [#4542](https://github.com/Autodesk/maya-usd/pull/4542)
+* Adapt EF test for new rule encoding [#4515](https://github.com/Autodesk/maya-usd/pull/4515)
+* Use fully qualified Qt enum names in Python [#4512](https://github.com/Autodesk/maya-usd/pull/4512)
+* Fix edit forward undo test [#4510](https://github.com/Autodesk/maya-usd/pull/4510)
+* MayaUsd: cleanup CC/AR/EF find modules and var names [#4505](https://github.com/Autodesk/maya-usd/pull/4505)
+* Build: fix installation of `cxx17_legacy_support.h` and `pxr_python.h` [#4504](https://github.com/Autodesk/maya-usd/pull/4504)
+* MtlxMaterialXSurfaceShaderWriter: fix build with Maya 2025 when using OpenUSD 25.02+ [#4500](https://github.com/Autodesk/maya-usd/pull/4500)
+* Make WANT_ADSKUSDEDITFORWARD_BUILD public so AL/PXR know about it [#4492](https://github.com/Autodesk/maya-usd/pull/4492)
+
+**Translation Framework:**
+* UsdMaya_ReadJob: Avoid crash on invalid root variant prim name [#4543](https://github.com/Autodesk/maya-usd/pull/4543)
+* USD Import should restore offsetParentMatrix attributes [#4525](https://github.com/Autodesk/maya-usd/pull/4525)
+* Speed up conversion of meshes with left-handed winding order [#4516](https://github.com/Autodesk/maya-usd/pull/4516)
+* Deactivated animation type affect static export, can result in lost transform in earlier versions [#4507](https://github.com/Autodesk/maya-usd/pull/4507)
+* Remove the "both" UI option for animation type [#4497](https://github.com/Autodesk/maya-usd/pull/4497)
+* Exported file with both time samples and curves does not import correctly with animation [#4484](https://github.com/Autodesk/maya-usd/pull/4484)
+
+**Workflow:**
+* Fix locked edit target on load [#4565](https://github.com/Autodesk/maya-usd/pull/4565)
+* Fix rename in components [#4562](https://github.com/Autodesk/maya-usd/pull/4562)
+* Filter out stale field data when restoring state [#4559](https://github.com/Autodesk/maya-usd/pull/4559)
+* Improve transform command undo [#4554](https://github.com/Autodesk/maya-usd/pull/4554)
+* Remove MayaUsdAPI dependency from LookdevXUsd [#4550](https://github.com/Autodesk/maya-usd/pull/4550)
+* Fix forwarding with Maya viewport manip [#4547](https://github.com/Autodesk/maya-usd/pull/4547)
+* Move UsdConnectionHandler to UsdUfe [#4541](https://github.com/Autodesk/maya-usd/pull/4541)
+* Block attribute edits when the edit target layer has time samples [#4540](https://github.com/Autodesk/maya-usd/pull/4540)
+* Correctly report gateway on empty type [#4539](https://github.com/Autodesk/maya-usd/pull/4539)
+* Dynamic asset info [#4535](https://github.com/Autodesk/maya-usd/pull/4535)
+* Do not show the confirmation dialog if there are no layers to save [#4534](https://github.com/Autodesk/maya-usd/pull/4534)
+* Fix component reparent [#4532](https://github.com/Autodesk/maya-usd/pull/4532)
+* Properly setup component variant selection from ufe context op [#4531](https://github.com/Autodesk/maya-usd/pull/4531)
+* Move UsdShaderNodeDefHandler to UsdUfe [#4530](https://github.com/Autodesk/maya-usd/pull/4530)
+* Add component rename functionality [#4529](https://github.com/Autodesk/maya-usd/pull/4529)
+* Add basic delete implementation for component prims [#4528](https://github.com/Autodesk/maya-usd/pull/4528)
+* Reparent Component Prims [#4524](https://github.com/Autodesk/maya-usd/pull/4524)
+* Stitch Layers [#4518](https://github.com/Autodesk/maya-usd/pull/4518)
+* Fix material assignment command for edit forwarding + scope under default prim when exists [#4503](https://github.com/Autodesk/maya-usd/pull/4503)
+* Deprecate ExtendedConnectionHandler [#4494](https://github.com/Autodesk/maya-usd/pull/4494)
+* Rename command performance issue [#4493](https://github.com/Autodesk/maya-usd/pull/4493)
+* ProxyAccessor: avoid some potential GIL deadlocks during compute [#4488](https://github.com/Autodesk/maya-usd/pull/4488)
+* Fix getAllStages vs renaming node [#4482](https://github.com/Autodesk/maya-usd/pull/4482)
+* FixMaya scene with Maya refs [#4480](https://github.com/Autodesk/maya-usd/pull/4480)
+* Flatten layers [#4469](https://github.com/Autodesk/maya-usd/pull/4469)
+* Fix grouping suffix incrementation [#4459](https://github.com/Autodesk/maya-usd/pull/4459)
+* Fix component scene reload [#4491](https://github.com/Autodesk/maya-usd/pull/4491)
+
+**Render:**
+* Vp2RenderDelegate: reduce textured material network resyncs [#4511](https://github.com/Autodesk/maya-usd/pull/4511)
+* USD instancing performance improvements [#4467](https://github.com/Autodesk/maya-usd/pull/4467)
+
+**Shared Components:**
+* Asset Resolver Dialog Window Position / Scale fix [#4545](https://github.com/Autodesk/maya-usd/pull/4545)
+* Integrate latest AR UI changes [#4538](https://github.com/Autodesk/maya-usd/pull/4538)
+* Component Creator is not supported on Maya Creative [#4526](https://github.com/Autodesk/maya-usd/pull/4526)
+* Support duplicate to USD for components [#4523](https://github.com/Autodesk/maya-usd/pull/4523)
+* Use shared AR setting/options (UI + management) [#4519](https://github.com/Autodesk/maya-usd/pull/4519)
+* Add undo support for edit forwarding [#4501](https://github.com/Autodesk/maya-usd/pull/4501)
+* Link edit forwarding publicly & fix test [#4495](https://github.com/Autodesk/maya-usd/pull/4495)
+* Enable edit forwarding on proxy shape stages [#4481](https://github.com/Autodesk/maya-usd/pull/4481)
+* Integrate edit forwarding [#4474](https://github.com/Autodesk/maya-usd/pull/4474)
+
+**Documentation:**
+* Update README with supported versions and feature overview [#4557](https://github.com/Autodesk/maya-usd/pull/4557)
+* Add Component Creator help ID [#4499](https://github.com/Autodesk/maya-usd/pull/4499)
+
 ## [v0.35.0] - 2026-02-10
 
 **Build:**
