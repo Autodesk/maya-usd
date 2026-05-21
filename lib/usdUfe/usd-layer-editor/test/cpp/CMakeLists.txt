@@ -35,6 +35,7 @@ set(LAYER_EDITOR_TEST_SOURCES
     testLayerLocking.cpp
     testLayerMuting.cpp
     testSharedStage.cpp
+    testLayerEditorCommands.cpp
 )
 
 # ------------------------------------------------------------------------------
