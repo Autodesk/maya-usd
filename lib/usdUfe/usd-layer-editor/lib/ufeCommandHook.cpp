@@ -91,7 +91,8 @@ void UfeCommandHook::moveSubLayerPath(
 
 void UfeCommandHook::replaceSubLayerPath(UsdLayer usdLayer, Path oldPath, Path newPath)
 {
-    // TODO LE-EXTRACT replace sub-layer path.
+    auto cmd = ::std::make_shared<ReplaceSubPathCmd>(usdLayer, oldPath, newPath);
+    AppendOrExecuteCommand(cmd);
 }
 
 void UfeCommandHook::discardEdits(UsdLayer usdLayer)
