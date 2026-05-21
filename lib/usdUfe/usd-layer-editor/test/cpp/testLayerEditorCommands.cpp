@@ -289,4 +289,61 @@ TEST_F(BackupLayerCmdTest, ClearLayerCmd_Undo_RestoresContent)
     EXPECT_EQ(_layer->GetComment(), "original content");
 }
 
+// ============================================================================
+// Task 6: MuteLayerCmd
+// ============================================================================
+
+class MuteLayerCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        UsdUfe::setStagePathAccessorFn(stubStagePathAccessor);
+        if (!Ufe::GlobalSelection::get()) {
+            Ufe::GlobalSelection::initializeInstance(
+                std::make_shared<Ufe::ObservableSelection>());
+        }
+        forgetMutedLayers();
+        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _layer  = PXR_NS::SdfLayer::CreateAnonymous("mutable");
+        _stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
+    }
+    void TearDown() override { forgetMutedLayers(); }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _layer;
+};
+
+TEST_F(MuteLayerCmdTest, DoIt_MutesLayer)
+{
+    auto cmd = std::make_shared<MuteLayerCmd>(_stage, _layer, /*muteIt=*/true);
+    cmd->execute();
+    EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+}
+
+TEST_F(MuteLayerCmdTest, Undo_UnmutesLayer)
+{
+    auto cmd = std::make_shared<MuteLayerCmd>(_stage, _layer, /*muteIt=*/true);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+}
+
+TEST_F(MuteLayerCmdTest, DoIt_Unmute_UnmutesAlreadyMutedLayer)
+{
+    _stage->MuteLayer(_layer->GetIdentifier());
+    auto cmd = std::make_shared<MuteLayerCmd>(_stage, _layer, /*muteIt=*/false);
+    cmd->execute();
+    EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+}
+
+TEST_F(MuteLayerCmdTest, Undo_Unmute_RestoresMutedState)
+{
+    _stage->MuteLayer(_layer->GetIdentifier());
+    auto cmd = std::make_shared<MuteLayerCmd>(_stage, _layer, /*muteIt=*/false);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+}
+
 } // namespace UsdLayerEditor
