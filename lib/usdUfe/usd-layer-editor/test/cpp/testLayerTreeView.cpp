@@ -60,10 +60,11 @@ protected:
 
 // ── LayerViewMemento ───────────────────────────────────────────────────────────
 
-TEST_F(LayerTreeViewTest, Memento_EmptyBeforePreserve)
+// The constructor calls preserve() immediately — the memento is non-empty on construction.
+TEST_F(LayerTreeViewTest, Memento_PopulatedOnConstruction)
 {
     LayerViewMemento memento(*layerTree(), *treeModel());
-    EXPECT_TRUE(memento.empty());
+    EXPECT_FALSE(memento.empty());
 }
 
 TEST_F(LayerTreeViewTest, Memento_NotEmptyAfterPreserve)

@@ -33,6 +33,13 @@ class StubCommandHook : public AbstractCommandHook
 public:
     explicit StubCommandHook(SessionState* sessionState);
 
+    // Configurable flags — set before the widget is created to control model build.
+    bool _isSharedStage   = false;
+    bool _isStageIncoming = false;
+
+    bool isDccObjectSharedStage(const std::string&) override { return _isSharedStage; }
+    bool isDccObjectStageIncoming(const std::string&) override { return _isStageIncoming; }
+
     void     setEditTarget(UsdLayer layer) override;
     void     insertSubLayerPath(UsdLayer layer, Path path, int index) override;
     void     removeSubLayerPath(UsdLayer layer, Path path) override;
