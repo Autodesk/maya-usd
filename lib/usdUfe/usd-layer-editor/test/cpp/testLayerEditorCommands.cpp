@@ -231,4 +231,62 @@ TEST_F(ReplaceSubPathCmdTest, DoIt_ReturnsFalse_WhenOldPathNotFound)
     EXPECT_NE(paths.Find(_layerA->GetIdentifier()), static_cast<size_t>(-1));
 }
 
+// ============================================================================
+// Task 5: DiscardEditCmd and ClearLayerCmd
+// ============================================================================
+
+class BackupLayerCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        BackupLayerBaseCmd::setStagesProvider([this]() -> std::vector<PXR_NS::UsdStageRefPtr> {
+            return { _stage };
+        });
+        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _layer  = PXR_NS::SdfLayer::CreateAnonymous("target");
+        _stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
+        // Write something to the layer so it is dirty.
+        _layer->SetComment("original content");
+    }
+
+    void TearDown() override
+    {
+        BackupLayerBaseCmd::setStagesProvider(nullptr);
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _layer;
+};
+
+TEST_F(BackupLayerCmdTest, DiscardEditCmd_DoIt_ClearsLayerContent)
+{
+    auto cmd = std::make_shared<DiscardEditCmd>(_layer);
+    cmd->execute();
+    EXPECT_TRUE(_layer->GetComment().empty());
+}
+
+TEST_F(BackupLayerCmdTest, DiscardEditCmd_Undo_RestoresLayerContent)
+{
+    auto cmd = std::make_shared<DiscardEditCmd>(_layer);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_EQ(_layer->GetComment(), "original content");
+}
+
+TEST_F(BackupLayerCmdTest, ClearLayerCmd_DoIt_EmptiesLayer)
+{
+    auto cmd = std::make_shared<ClearLayerCmd>(_layer);
+    cmd->execute();
+    EXPECT_TRUE(_layer->GetComment().empty());
+}
+
+TEST_F(BackupLayerCmdTest, ClearLayerCmd_Undo_RestoresContent)
+{
+    auto cmd = std::make_shared<ClearLayerCmd>(_layer);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_EQ(_layer->GetComment(), "original content");
+}
+
 } // namespace UsdLayerEditor
