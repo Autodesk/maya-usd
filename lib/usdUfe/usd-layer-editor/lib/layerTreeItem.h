@@ -84,7 +84,7 @@ struct LayerActionInfo
     int             _order = 0;
 };
 
-bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag);
+LayerEditorAPI bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag);
 
 using recursionDetection = std::vector<std::string>;
 using LayerItemVector = std::vector<LayerTreeItem*>;
