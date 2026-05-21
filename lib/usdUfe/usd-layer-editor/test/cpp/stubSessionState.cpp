@@ -74,10 +74,10 @@ bool StubSessionState::saveLayerUI(
     const PXR_NS::SdfLayerRefPtr& /*parentLayer*/) const
 {
     ++_saveLayerCallCount;
-    if (out_filePath) {
-        *out_filePath = "/tmp/stub_save.usda";
-    }
-    return true;
+    // Simulates user cancelling the save dialog. Returning false prevents
+    // saveAnonymousLayer() from calling Ufe::PathString::path() with a stub path
+    // that has no valid UFE representation, which would throw in a test environment.
+    return false;
 }
 
 void StubSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& /*layer*/) const

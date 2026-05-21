@@ -112,13 +112,31 @@ static QPushButton* findButtonByTooltipFull(QWidget* root, const QString& toolti
     return nullptr;
 }
 
-TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledWhenNoSelection)
+// When nothing is selected the button falls back to the root layer and stays enabled.
+TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledWhenNoSelectionDefaultsToRoot)
 {
     layerTree()->selectionModel()->clearSelection();
     QApplication::processEvents();
     QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
     ASSERT_NE(btn, nullptr);
-    EXPECT_FALSE(btn->isEnabled());
+    EXPECT_TRUE(btn->isEnabled());
+}
+
+// Clicking with no selection should add an anonymous sublayer under the root.
+TEST_F(LayerEditorTestFixture, NewLayerButton_Click_NoSelection_AddsToRoot)
+{
+    layerTree()->selectionModel()->clearSelection();
+    QApplication::processEvents();
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
+    ASSERT_NE(btn, nullptr);
+    ASSERT_TRUE(btn->isEnabled());
+
+    _sessionState._commandHookImpl.clearCalls();
+    btn->click();
+    QApplication::processEvents();
+
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("addAnonymousSubLayer"))
+        << "addAnonymousSubLayer should be called on root layer when nothing is selected";
 }
 
 TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledForRootLayer)
@@ -169,12 +187,13 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledWhenSelectionIsSystemLocke
     TestUtils::unlockLayerDirect(rootItem->layer());
 }
 
-TEST_F(LayerEditorTestFixture, SaveButton_DisabledWhenNoLayersNeedSaving)
+TEST_F(LayerEditorTestFixture, SaveButton_HiddenWhenStageIsNotShared)
 {
-    // StubSessionState is not shared: no layers need saving.
+    // When the stage is not a shared stage, updateButtons() hides the save button.
+    QApplication::processEvents();
     QPushButton* btn = findButtonByTooltipFull(_widget, "Save all edits");
     ASSERT_NE(btn, nullptr);
-    EXPECT_FALSE(btn->isEnabled());
+    EXPECT_FALSE(btn->isVisible());
 }
 
 TEST_F(LayerEditorTestFixture, LoadLayerButton_ExistsAndIsEnabled)
@@ -184,13 +203,28 @@ TEST_F(LayerEditorTestFixture, LoadLayerButton_ExistsAndIsEnabled)
     EXPECT_TRUE(btn->isEnabled());
 }
 
-TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledForSublayerSelection)
+// Selecting a sublayer enables the button — clicking adds a sibling at that position.
+TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledForSublayerSelection)
 {
-    // Sublayers are not valid targets for the "new layer" action.
     selectRow(firstSublayerIndex());
     QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
     ASSERT_NE(btn, nullptr);
-    EXPECT_FALSE(btn->isEnabled());
+    EXPECT_TRUE(btn->isEnabled());
+}
+
+TEST_F(LayerEditorTestFixture, NewLayerButton_Click_WithSublayerSelectionAddsSibling)
+{
+    selectRow(firstSublayerIndex());
+    QPushButton* btn = findButtonByTooltipFull(_widget, "Add a New Layer");
+    ASSERT_NE(btn, nullptr);
+    ASSERT_TRUE(btn->isEnabled());
+
+    _sessionState._commandHookImpl.clearCalls();
+    btn->click();
+    QApplication::processEvents();
+
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("addAnonymousSubLayer"))
+        << "addAnonymousSubLayer should be called on the parent when adding a sibling";
 }
 
 } // namespace UsdLayerEditor

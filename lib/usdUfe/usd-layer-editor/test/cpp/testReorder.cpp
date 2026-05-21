@@ -180,6 +180,9 @@ TEST_F(LayerEditorTestFixture, DragDrop_Drop_AdjustsRowIndexWhenMovingUp)
     treeModel()->dropMimeData(mime.get(), Qt::MoveAction, 0, 0, parent);
     QApplication::processEvents();
 
+    // Re-fetch parent: the model rebuild triggered by moveSubLayerPath invalidates
+    // any QModelIndex captured before processEvents().
+    parent = rootLayerIndex();
     EXPECT_GE(treeModel()->rowCount(parent), 1);
 }
 

@@ -26,6 +26,7 @@ void LayerEditorTestFixture::SetUp()
     _mainWindow = new QMainWindow();
     _window     = std::make_unique<StubLayerEditorWindow>(_sessionState, _mainWindow);
     _widget     = _window->widget();
+    _mainWindow->show();
     _widget->show();
     QApplication::processEvents();
     _sessionState._commandHookImpl.clearCalls();
