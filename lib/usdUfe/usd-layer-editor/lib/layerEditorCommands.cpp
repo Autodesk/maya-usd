@@ -607,6 +607,29 @@ void InsertRemoveSubPathBaseCmd::restoreSelection()
     globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
 }
 
+bool ReplaceSubPathCmd::doIt(const SdfLayerHandle& layer)
+{
+    auto proxy = layer->GetSubLayerPaths();
+    if (proxy.Find(_oldPath) == static_cast<size_t>(-1)) {
+        std::string message = std::string("path ") + _oldPath
+            + std::string(" not found on layer ") + layer->GetIdentifier();
+        UIUtils::displayError(message.c_str());
+        return false;
+    }
+    holdOnPathIfDirty(layer, _oldPath);
+    proxy.Replace(_oldPath, _newPath);
+    return true;
+}
+
+bool ReplaceSubPathCmd::undoIt(const SdfLayerHandle& layer)
+{
+    auto proxy = layer->GetSubLayerPaths();
+    proxy.Replace(_newPath, _oldPath);
+    releaseSubLayers();
+    holdOnPathIfDirty(layer, _newPath);
+    return true;
+}
+
 bool RefreshSystemLockLayerCmd::doIt(const pxr::SdfLayerHandle& layer)
 {
     if (!_stage) {

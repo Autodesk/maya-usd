@@ -312,6 +312,28 @@ public:
     std::string commandString() const override { return "Remove USD sublayer"; }
 };
 
+class LayerEditorAPI ReplaceSubPathCmd : public BaseCmd
+{
+public:
+    ReplaceSubPathCmd(
+        const pxr::SdfLayerRefPtr& layer,
+        const std::string&         oldPath,
+        const std::string&         newPath)
+        : BaseCmd(CmdId::kReplace, layer)
+        , _oldPath(oldPath)
+        , _newPath(newPath)
+    {
+    }
+
+    bool        doIt(const pxr::SdfLayerHandle& layer) override;
+    bool        undoIt(const pxr::SdfLayerHandle& layer) override;
+    std::string commandString() const override { return "Replace USD sublayer path"; }
+
+private:
+    std::string _oldPath;
+    std::string _newPath;
+};
+
 class LayerEditorAPI RefreshSystemLockLayerCmd : public BaseCmd
 {
 public:

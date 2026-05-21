@@ -16,6 +16,7 @@
 #include "LayerEditorCommands.h"
 #include "layerLocking.h"
 #include "layerMuting.h"
+#include "utilUI.h"
 
 #include <usdUfe/ufe/Utils.h>
 
@@ -167,6 +168,67 @@ TEST_F(BackupEditTargetsTest, WithProvider_EditTargetRestoredOnUndo)
     cmd->undo();
     // Undo restored A's content (B is back) and restored the edit target to B.
     EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _layerB);
+}
+
+class ReplaceSubPathCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        // Register a no-op error display callback so that UIUtils::displayError
+        // does not throw std::bad_function_call when doIt() reports an error.
+        UIUtils::setErrorDisplayCallbackFunction([](std::string) {});
+
+        _parent = PXR_NS::SdfLayer::CreateAnonymous("parent");
+        _layerA = PXR_NS::SdfLayer::CreateAnonymous("A");
+        _layerB = PXR_NS::SdfLayer::CreateAnonymous("B");
+        _parent->InsertSubLayerPath(_layerA->GetIdentifier(), 0);
+    }
+
+    void TearDown() override
+    {
+        // Reset the error display callback to avoid leaking state into other tests.
+        UIUtils::setErrorDisplayCallbackFunction(nullptr);
+    }
+
+    PXR_NS::SdfLayerRefPtr _parent;
+    PXR_NS::SdfLayerRefPtr _layerA;
+    PXR_NS::SdfLayerRefPtr _layerB;
+};
+
+TEST_F(ReplaceSubPathCmdTest, DoIt_ReplacesOldPathWithNewPath)
+{
+    auto cmd = std::make_shared<ReplaceSubPathCmd>(
+        _parent, _layerA->GetIdentifier(), _layerB->GetIdentifier());
+    cmd->execute();
+
+    const auto& paths = _parent->GetSubLayerPaths();
+    EXPECT_EQ(paths.Find(_layerA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_NE(paths.Find(_layerB->GetIdentifier()), static_cast<size_t>(-1));
+}
+
+TEST_F(ReplaceSubPathCmdTest, UndoIt_RestoresOldPath)
+{
+    auto cmd = std::make_shared<ReplaceSubPathCmd>(
+        _parent, _layerA->GetIdentifier(), _layerB->GetIdentifier());
+    cmd->execute();
+    cmd->undo();
+
+    const auto& paths = _parent->GetSubLayerPaths();
+    EXPECT_NE(paths.Find(_layerA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_EQ(paths.Find(_layerB->GetIdentifier()), static_cast<size_t>(-1));
+}
+
+TEST_F(ReplaceSubPathCmdTest, DoIt_ReturnsFalse_WhenOldPathNotFound)
+{
+    auto cmd = std::make_shared<ReplaceSubPathCmd>(
+        _parent, "nonexistent.usda", _layerB->GetIdentifier());
+    // doIt() returns false when the old path is not found, so redo() throws.
+    EXPECT_THROW(cmd->execute(), std::runtime_error);
+
+    // Nothing should have changed.
+    const auto& paths = _parent->GetSubLayerPaths();
+    EXPECT_NE(paths.Find(_layerA->GetIdentifier()), static_cast<size_t>(-1));
 }
 
 } // namespace UsdLayerEditor
