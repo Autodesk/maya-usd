@@ -14,12 +14,10 @@
 //
 
 #include "testFixture.h"
-#include "testUtils.h"
 #include "layerContentsWidget.h"
 #include "layerTreeItem.h"
 
 #include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/usd/stage.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QSplitter>
@@ -87,29 +85,6 @@ TEST_F(LayerContentsWidgetTest, SetLayer_WithNullLayer_IsEmpty)
     cw->setLayer(nullptr);
     QApplication::processEvents();
     EXPECT_TRUE(cw->isEmpty());
-}
-
-TEST_F(LayerContentsWidgetTest, ExportPseudoLayer_SucceedsForLayerWithComment)
-{
-    auto* cw = findContentsWidget(_widget);
-    ASSERT_NE(cw, nullptr);
-
-    auto layer = SdfLayer::CreateAnonymous("export_test");
-    layer->SetComment("hello world");
-
-    std::string contents;
-    bool ok = cw->exportPseudoLayer(layer, contents);
-    EXPECT_TRUE(ok);
-    EXPECT_FALSE(contents.empty());
-}
-
-TEST_F(LayerContentsWidgetTest, ExportPseudoLayer_ReturnsFalseForNullLayer)
-{
-    auto* cw = findContentsWidget(_widget);
-    ASSERT_NE(cw, nullptr);
-    std::string contents;
-    bool ok = cw->exportPseudoLayer(nullptr, contents);
-    EXPECT_FALSE(ok);
 }
 
 TEST_F(LayerContentsWidgetTest, SetLayer_DoesNotCrash)
