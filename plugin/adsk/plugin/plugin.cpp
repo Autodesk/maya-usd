@@ -446,6 +446,8 @@ MStatus initializePlugin(MObject obj)
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
 #endif
 
+    MayaUsd::LayerEditorCommand::registerBackupStagesProvider();
+
     UsdMayaSceneResetNotice::InstallListener();
     UsdMayaBeforeSceneResetNotice::InstallListener();
     UsdMayaExitNotice::InstallListener();
@@ -485,6 +487,8 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
     MStatus   status;
+
+    MayaUsd::LayerEditorCommand::unregisterBackupStagesProvider();
 
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     MayaUsd::AssetResolverProjectChangeTracker::stopTracking();

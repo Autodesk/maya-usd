@@ -43,6 +43,10 @@ public:
     static void*      creator();
     static MSyntax    createSyntax();
 
+    // Lifecycle hooks called from plugin initialize/uninitialize
+    static void registerBackupStagesProvider();
+    static void unregisterBackupStagesProvider();
+
     // MPxCommand callbacks
     MStatus doIt(const MArgList& argList) override;
     MStatus undoIt() override;
