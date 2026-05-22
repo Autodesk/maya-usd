@@ -510,4 +510,69 @@ TEST_F(AddAnonSubLayerCmdTest, Undo_RemovesAnonLayer)
     EXPECT_EQ(_parent->GetNumSubLayerPaths(), static_cast<size_t>(0));
 }
 
+class MoveSubPathCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _parent = _stage->GetRootLayer();
+        _subA   = PXR_NS::SdfLayer::CreateAnonymous("subA");
+        _subB   = PXR_NS::SdfLayer::CreateAnonymous("subB");
+        _subC   = PXR_NS::SdfLayer::CreateAnonymous("subC");
+        _parent->InsertSubLayerPath(_subA->GetIdentifier(), 0);
+        _parent->InsertSubLayerPath(_subB->GetIdentifier(), 1);
+        _parent->InsertSubLayerPath(_subC->GetIdentifier(), 2);
+        // _parent sublayers: [A, B, C] at indices 0, 1, 2
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _parent;
+    PXR_NS::SdfLayerRefPtr _subA, _subB, _subC;
+};
+
+TEST_F(MoveSubPathCmdTest, DoIt_SameParent_ReordersSubLayer)
+{
+    // Move A from index 0 to index 2 → expect [B, C, A]
+    auto cmd = std::make_shared<MoveSubPathCmd>(_parent, _parent, _subA->GetIdentifier(), 2);
+    cmd->execute();
+    EXPECT_EQ(_parent->GetSubLayerPaths()[2], _subA->GetIdentifier());
+    EXPECT_EQ(_parent->GetSubLayerPaths()[0], _subB->GetIdentifier());
+}
+
+TEST_F(MoveSubPathCmdTest, Undo_SameParent_RestoresOriginalOrder)
+{
+    auto cmd = std::make_shared<MoveSubPathCmd>(_parent, _parent, _subA->GetIdentifier(), 2);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_EQ(_parent->GetSubLayerPaths()[0], _subA->GetIdentifier());
+    EXPECT_EQ(_parent->GetSubLayerPaths()[1], _subB->GetIdentifier());
+    EXPECT_EQ(_parent->GetSubLayerPaths()[2], _subC->GetIdentifier());
+}
+
+TEST_F(MoveSubPathCmdTest, DoIt_CrossParent_MovesSubLayerToNewParent)
+{
+    auto newParent = PXR_NS::SdfLayer::CreateAnonymous("newParent");
+    auto cmd = std::make_shared<MoveSubPathCmd>(
+        _parent, newParent, _subA->GetIdentifier(), 0);
+    cmd->execute();
+    EXPECT_EQ(
+        _parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_NE(
+        newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+}
+
+TEST_F(MoveSubPathCmdTest, Undo_CrossParent_RestoresSubLayerToOriginalParent)
+{
+    auto newParent = PXR_NS::SdfLayer::CreateAnonymous("newParent");
+    auto cmd = std::make_shared<MoveSubPathCmd>(
+        _parent, newParent, _subA->GetIdentifier(), 0);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_NE(
+        _parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_EQ(
+        newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+}
+
 } // namespace UsdLayerEditor

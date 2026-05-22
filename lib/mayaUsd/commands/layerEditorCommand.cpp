@@ -474,113 +474,27 @@ public:
 
     bool doIt(SdfLayerHandle layer) override
     {
-        auto proxy = layer->GetSubLayerPaths();
-        auto subPathIndex = proxy.Find(_path);
-        if (subPathIndex == size_t(-1)) {
-            std::string message = std::string("path ") + _path + std::string(" not found on layer ")
-                + layer->GetIdentifier();
-            MPxCommand::displayError(message.c_str());
-            return false;
-        }
-
-        _oldIndex = subPathIndex; // save for undo
-
-        SdfLayerHandle newParentLayer;
-        std::string    newPath = _path;
-
+        SdfLayerHandle newParentLayerH;
         if (layer->GetIdentifier() == _newParentLayer) {
-
-            if (_newIndex > layer->GetNumSubLayerPaths() - 1) {
-                std::string message = std::string("Index ") + std::to_string(_newIndex)
-                    + std::string(" out-of-bound for ") + layer->GetIdentifier();
-                MPxCommand::displayError(message.c_str());
-                return false;
-            }
-
-            newParentLayer = layer;
+            newParentLayerH = layer;
         } else {
-            newParentLayer = SdfLayer::Find(_newParentLayer);
-            if (!newParentLayer) {
-                std::string message
-                    = std::string("Layer ") + _newParentLayer + std::string(" not found!");
-                return false;
-            }
-
-            if (_newIndex > newParentLayer->GetNumSubLayerPaths()) {
-                std::string message = std::string("Index ") + std::to_string(_newIndex)
-                    + std::string(" out-of-bound for ") + newParentLayer->GetIdentifier();
-                MPxCommand::displayError(message.c_str());
-                return false;
-            }
-
-            // See if the path should be reparented
-            fs::filesystem::path filePath(_path);
-            bool                 needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_path);
-            needsRepathing &= filePath.is_relative();
-            needsRepathing &= !layer->GetRealPath().empty();
-            needsRepathing &= !newParentLayer->GetRealPath().empty();
-
-            // Reparent the path if needed
-            if (needsRepathing) {
-                auto oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
-                auto newLayerDir
-                    = fs::filesystem::path(newParentLayer->GetRealPath()).remove_filename();
-
-                std::string absolutePath
-                    = (oldLayerDir / filePath).lexically_normal().generic_string();
-                auto result = UsdMayaUtilFileSystem::makePathRelativeTo(
-                    absolutePath, newLayerDir.lexically_normal().generic_string());
-
-                if (result.second) {
-                    newPath = result.first;
-                } else {
-                    newPath = absolutePath;
-                    TF_WARN(
-                        "File name (%s) cannot be resolved as relative to the layer %s, "
-                        "using the absolute path.",
-                        absolutePath.c_str(),
-                        newParentLayer->GetIdentifier().c_str());
-                }
-            }
-
-            // make sure the subpath is not already in the new parent layer.
-            // Otherwise, the SdfLayer::InsertSubLayerPath() below will do nothing
-            // and the subpath will be removed from it's current parent.
-            if (newParentLayer->GetSubLayerPaths().Find(newPath) != size_t(-1)) {
-                std::string message = std::string("SubPath ") + newPath
-                    + std::string(" already exist in layer ") + newParentLayer->GetIdentifier();
+            newParentLayerH = SdfLayer::Find(_newParentLayer);
+            if (!newParentLayerH) {
+                std::string message = std::string("Layer ") + _newParentLayer + " not found!";
                 MPxCommand::displayError(message.c_str());
                 return false;
             }
         }
-
-        // When the subLayer is moved inside the current parent,
-        // Remove it from it's current location and insert it into it's
-        // new location. The order of remove / insert is important
-        // oterwise InsertSubLayerPath() will fail because the subLayer
-        // already exists.
-        layer->RemoveSubLayerPath(subPathIndex);
-        newParentLayer->InsertSubLayerPath(newPath, _newIndex);
-
+        _ufeCmd = std::make_shared<UsdLayerEditor::MoveSubPathCmd>(
+            layer, newParentLayerH, _path, static_cast<int>(_newIndex));
+        _ufeCmd->execute();
         return true;
     }
 
-    bool undoIt(SdfLayerHandle layer) override
+    bool undoIt(SdfLayerHandle /*layer*/) override
     {
-        if (layer->GetIdentifier() == _newParentLayer) {
-            // When the subLayer is moved inside the current parent,
-            // Remove it from it's current location and insert it into it's
-            // new location. The order of remove / insert is important
-            // oterwise InsertSubLayerPath() will fail because the subLayer
-            // already exists.
-            layer->RemoveSubLayerPath(_newIndex);
-            layer->InsertSubLayerPath(_path, _oldIndex);
-        } else {
-            auto newParentLayer = SdfLayer::Find(_newParentLayer);
-            newParentLayer->RemoveSubLayerPath(_newIndex);
-            layer->InsertSubLayerPath(_path, _oldIndex);
-        }
-
+        if (_ufeCmd)
+            _ufeCmd->undo();
         return true;
     }
 
@@ -588,7 +502,7 @@ private:
     std::string  _path;
     std::string  _newParentLayer;
     unsigned int _newIndex;
-    unsigned int _oldIndex { 0 };
+    std::shared_ptr<UsdLayerEditor::MoveSubPathCmd> _ufeCmd;
 };
 
 class ReplaceSubPath : public BaseCmd
