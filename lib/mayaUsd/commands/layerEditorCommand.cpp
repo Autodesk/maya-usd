@@ -21,6 +21,7 @@
 #endif
 
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/layers.h>
@@ -404,6 +405,24 @@ public:
         : InsertRemoveSubPathBase(CmdId::kInsert)
     {
     }
+
+    bool doIt(SdfLayerHandle layer) override
+    {
+        _ufeCmd = std::make_shared<UsdLayerEditor::InsertSubPathCmd>(
+            pxr::UsdStageRefPtr {}, layer, _subPath, _index);
+        _ufeCmd->execute();
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle /*layer*/) override
+    {
+        if (_ufeCmd)
+            _ufeCmd->undo();
+        return true;
+    }
+
+private:
+    std::shared_ptr<UsdLayerEditor::InsertSubPathCmd> _ufeCmd;
 };
 
 class RemoveSubPath : public InsertRemoveSubPathBase
@@ -413,6 +432,25 @@ public:
         : InsertRemoveSubPathBase(CmdId::kRemove)
     {
     }
+
+    bool doIt(SdfLayerHandle layer) override
+    {
+        auto           prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        UsdStageRefPtr stage = prim.GetStage();
+        _ufeCmd = std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(stage, layer, _index);
+        _ufeCmd->execute();
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle /*layer*/) override
+    {
+        if (_ufeCmd)
+            _ufeCmd->undo();
+        return true;
+    }
+
+private:
+    std::shared_ptr<UsdLayerEditor::RemoveSubPathCmd> _ufeCmd;
 };
 
 // Move a sublayer into another layer.
@@ -585,26 +623,25 @@ public:
 
     bool doIt(SdfLayerHandle layer) override
     {
-        // the first time, USD will create a layer with a certain identifier
-        // on undo(), we will remove the path, but hold onto the layer
-        // on redo, we want to put back that same identifier, for later commands
-        if (_anonIdentifier.empty()) {
-            _anonLayer = SdfLayer::CreateAnonymous(_anonName);
-            _anonIdentifier = _anonLayer->GetIdentifier();
-        }
-        _subPath = _anonIdentifier;
-        _index = 0;
-        _cmdResult = _subPath;
-        return InsertRemoveSubPathBase::doIt(layer);
+        _ufeCmd = std::make_shared<UsdLayerEditor::AddAnonSubLayerCmd>(
+            pxr::UsdStageRefPtr {}, layer);
+        _ufeCmd->_anonName = _anonName;
+        _ufeCmd->execute();
+        _cmdResult = _ufeCmd->addedLayer();
+        return true;
     }
 
-    bool undoIt(SdfLayerHandle layer) override { return InsertRemoveSubPathBase::undoIt(layer); }
+    bool undoIt(SdfLayerHandle /*layer*/) override
+    {
+        if (_ufeCmd)
+            _ufeCmd->undo();
+        return true;
+    }
 
     std::string _anonName;
 
-protected:
-    PXR_NS::SdfLayerRefPtr _anonLayer;
-    std::string            _anonIdentifier;
+private:
+    std::shared_ptr<UsdLayerEditor::AddAnonSubLayerCmd> _ufeCmd;
 };
 
 class BackupLayerBase : public BaseCmd
@@ -1197,7 +1234,13 @@ private:
                 MGlobal::executeCommand(commandString, result, /*display*/ false, /*undo*/ false);
                 if (result.length() > 0) {
 
-                    if (result[0] == 1 && MayaUsd::isLayerSystemLocked(usdLayer)) {
+                    bool isCurrentlySystemLocked = MayaUsd::isLayerSystemLocked(usdLayer);
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+                    isCurrentlySystemLocked
+                        = isCurrentlySystemLocked || UsdLayerEditor::isLayerSystemLocked(usdLayer);
+#endif
+
+                    if (result[0] == 1 && isCurrentlySystemLocked) {
                         // If the file has write permissions and the layer is currently
                         // system-locked: Unlock the layer
 
@@ -1212,7 +1255,7 @@ private:
                         // Add the lock command and its parameter to be executed
                         _lockCommands.push_back(std::move(cmd));
                         _layers.push_back(usdLayer);
-                    } else if (result[0] == 0 && !MayaUsd::isLayerSystemLocked(usdLayer)) {
+                    } else if (result[0] == 0 && !isCurrentlySystemLocked) {
                         // If the file doesn't have write permissions and the layer is currently not
                         // system-locked: System-lock the layer
 
@@ -1650,7 +1693,7 @@ MStatus LayerEditorCommand::undoIt()
     }
 
     // clang-format off
-    for (auto it = _subCommands.rbegin(); it != _subCommands.rend(); ++it) { 
+    for (auto it = _subCommands.rbegin(); it != _subCommands.rend(); ++it) {
         if (!(*it)->undoIt(layer)) {
             return MS::kFailure;
         }
@@ -1658,6 +1701,21 @@ MStatus LayerEditorCommand::undoIt()
 
     // clang-format on
     return MS::kSuccess;
+}
+
+void LayerEditorCommand::registerBackupStagesProvider()
+{
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    UsdLayerEditor::BackupLayerBaseCmd::setStagesProvider(
+        []() { return MayaUsd::ufe::ProxyShapeHandler::getAllStages(); });
+#endif
+}
+
+void LayerEditorCommand::unregisterBackupStagesProvider()
+{
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    UsdLayerEditor::BackupLayerBaseCmd::setStagesProvider(nullptr);
+#endif
 }
 
 } // namespace MAYAUSD_NS_DEF
