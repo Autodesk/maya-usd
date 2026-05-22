@@ -334,6 +334,33 @@ private:
     std::string _newPath;
 };
 
+class LayerEditorAPI MoveSubPathCmd : public BaseCmd
+{
+public:
+    MoveSubPathCmd(
+        const pxr::SdfLayerRefPtr& layer,
+        const pxr::SdfLayerRefPtr& newParentLayer,
+        const std::string&         subPath,
+        int                        newIndex)
+        : BaseCmd(CmdId::kMove, layer)
+        , _newParent(newParentLayer)
+        , _subPath(subPath)
+        , _newIndex(newIndex)
+    {
+    }
+
+    bool        doIt(const pxr::SdfLayerHandle& layer) override;
+    bool        undoIt(const pxr::SdfLayerHandle& layer) override;
+    std::string commandString() const override { return "Move USD sublayer"; }
+
+private:
+    pxr::SdfLayerRefPtr _newParent;
+    std::string         _subPath;
+    std::string         _newPath;
+    int                 _newIndex;
+    int                 _oldIndex { -1 };
+};
+
 class LayerEditorAPI RefreshSystemLockLayerCmd : public BaseCmd
 {
 public:

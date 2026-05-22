@@ -630,6 +630,88 @@ bool ReplaceSubPathCmd::undoIt(const SdfLayerHandle& layer)
     return true;
 }
 
+bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
+{
+    auto proxy = layer->GetSubLayerPaths();
+    auto subPathIndex = proxy.Find(_subPath);
+    if (subPathIndex == size_t(-1)) {
+        TF_RUNTIME_ERROR(
+            "path %s not found on layer %s",
+            _subPath.c_str(),
+            layer->GetIdentifier().c_str());
+        return false;
+    }
+    _oldIndex = static_cast<int>(subPathIndex);
+
+    std::string newPath = _subPath;
+
+    if (layer->GetIdentifier() == _newParent->GetIdentifier()) {
+        // Same-parent reorder: bounds-check against current count (before removal)
+        if (_newIndex > static_cast<int>(layer->GetNumSubLayerPaths()) - 1) {
+            TF_RUNTIME_ERROR(
+                "Index %d out-of-bound for %s",
+                _newIndex,
+                layer->GetIdentifier().c_str());
+            return false;
+        }
+    } else {
+        // Cross-parent move: append is allowed, so bound is GetNumSubLayerPaths()
+        if (_newIndex > static_cast<int>(_newParent->GetNumSubLayerPaths())) {
+            TF_RUNTIME_ERROR(
+                "Index %d out-of-bound for %s",
+                _newIndex,
+                _newParent->GetIdentifier().c_str());
+            return false;
+        }
+
+        // Reparent relative file paths
+        namespace fs = std::filesystem;
+        fs::path filePath(_subPath);
+        bool     needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_subPath)
+            && filePath.is_relative() && !layer->GetRealPath().empty()
+            && !_newParent->GetRealPath().empty();
+
+        if (needsRepathing) {
+            auto        oldLayerDir = fs::path(layer->GetRealPath()).remove_filename();
+            auto        newLayerDir = fs::path(_newParent->GetRealPath()).remove_filename();
+            std::string absolutePath
+                = (oldLayerDir / filePath).lexically_normal().generic_string();
+            auto result = FileSystem::makePathRelativeTo(
+                absolutePath, newLayerDir.lexically_normal().generic_string());
+            if (result.second) {
+                newPath = result.first;
+            } else {
+                newPath = absolutePath;
+                TF_WARN(
+                    "File name (%s) cannot be resolved as relative to layer %s, using "
+                    "absolute path.",
+                    absolutePath.c_str(),
+                    _newParent->GetIdentifier().c_str());
+            }
+        }
+
+        if (_newParent->GetSubLayerPaths().Find(newPath) != size_t(-1)) {
+            TF_RUNTIME_ERROR(
+                "SubPath %s already exists in layer %s",
+                newPath.c_str(),
+                _newParent->GetIdentifier().c_str());
+            return false;
+        }
+    }
+
+    _newPath = newPath;
+    layer->RemoveSubLayerPath(_oldIndex);
+    _newParent->InsertSubLayerPath(_newPath, _newIndex);
+    return true;
+}
+
+bool MoveSubPathCmd::undoIt(const pxr::SdfLayerHandle& layer)
+{
+    _newParent->RemoveSubLayerPath(_newIndex);
+    layer->InsertSubLayerPath(_subPath, _oldIndex);
+    return true;
+}
+
 bool RefreshSystemLockLayerCmd::doIt(const pxr::SdfLayerHandle& layer)
 {
     if (!_stage) {
