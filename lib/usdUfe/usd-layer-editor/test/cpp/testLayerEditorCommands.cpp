@@ -575,4 +575,18 @@ TEST_F(MoveSubPathCmdTest, Undo_CrossParent_RestoresSubLayerToOriginalParent)
         newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
 }
 
+TEST(RefreshSystemLockCallbackContextTest, AddCallbackContext_StoresEntry)
+{
+    auto stage     = PXR_NS::UsdStage::CreateInMemory();
+    auto rootLayer = stage->GetRootLayer();
+    auto cmd = std::make_shared<RefreshSystemLockLayerCmd>(stage, rootLayer, false);
+    cmd->addCallbackContext("proxyShapePath", PXR_NS::VtValue(std::string("/myShape")));
+    ASSERT_NE(
+        cmd->_extraCallbackContext.find("proxyShapePath"),
+        cmd->_extraCallbackContext.end());
+    EXPECT_EQ(
+        cmd->_extraCallbackContext["proxyShapePath"].UncheckedGet<std::string>(),
+        std::string("/myShape"));
+}
+
 } // namespace UsdLayerEditor

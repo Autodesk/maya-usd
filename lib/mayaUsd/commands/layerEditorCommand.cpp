@@ -18,6 +18,7 @@
 
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <LayerEditorCommands.h>
+#include <utilFileSystem.h>
 #endif
 
 #include <mayaUsd/ufe/Global.h>
@@ -774,158 +775,32 @@ public:
         if (!stage)
             return false;
 
-        if (_refreshSubLayers) {
-            // If refreshSubLayers is True, we attempt to refresh the system lock status of all
-            // layers under the given layer. This is specially useful when reloading a stage.
-            bool includeTopLayer = true;
-            auto allLayers = MayaUsd::getAllSublayerRefs(layer, includeTopLayer);
-            for (auto layerIt : allLayers) {
-                _refreshLayerSystemLock(layerIt);
-            }
-        } else {
-            // Only check and refresh the system lock status of the current layer.
-            _refreshLayerSystemLock(layer);
-        }
-
-        // Execute lock commands
-        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
-            if (!_lockCommands[layerIndex]->doIt(_layers[layerIndex])) {
-                return false;
-            }
-        }
-
-        if (!_layers.empty()) {
-            _notifySystemLockIsRefreshed();
-
-            // Finally update edit target after layer locks were changed
-            // by the command or a callback.
-            updateEditTarget(stage);
-        }
-
+        _ufeCmd = std::make_shared<UsdLayerEditor::RefreshSystemLockLayerCmd>(
+            stage, layer, _refreshSubLayers);
+        _ufeCmd->addCallbackContext(
+            "proxyShapePath", PXR_NS::VtValue(std::string(_proxyShapePath)));
+        _ufeCmd->execute();
         return true;
     }
 
     // The command itself doesn't retain its state. However, the underlying logic contains commands
     // that are undoable.
-    bool undoIt(SdfLayerHandle layer) override
+    bool undoIt(SdfLayerHandle /*layer*/) override
     {
-        auto stage = getStage();
-        if (!stage)
-            return false;
-
-        // Execute lock commands
-        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
-            if (!_lockCommands[layerIndex]->undoIt(_layers[layerIndex])) {
-                return false;
-            }
-        }
-
-        if (!_layers.empty()) {
-            _notifySystemLockIsRefreshed();
-
-            // Finally update edit target after layer locks were changed
-            // by the command or a callback.
-            updateEditTarget(stage);
-        }
-
+        if (_ufeCmd)
+            _ufeCmd->undo();
         return true;
     }
 
-    std::string                                 _proxyShapePath;
-    bool                                        _refreshSubLayers = false;
-    std::vector<std::shared_ptr<Impl::BaseCmd>> _lockCommands;
-    SdfLayerHandleVector                        _layers;
+    std::string _proxyShapePath;
+    bool        _refreshSubLayers = false;
 
 private:
-    std::string _quote(const std::string& string)
-    {
-        return std::string(" \"") + string + std::string("\"");
-    }
-
-    // Checks if the file layer or its subLayer are accessible on disk, and adds the layer
-    // to _layers along with the _lockCommands to updates the system-lock status.
-    void _refreshLayerSystemLock(SdfLayerHandle usdLayer)
-    {
-        // Anonymous layers do not need to be checked.
-        if (usdLayer && !usdLayer->IsAnonymous()) {
-            // Check if the layer's write permissions have changed.
-            std::string assetPath = usdLayer->GetResolvedPath();
-            std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
-
-            if (!assetPath.empty()) {
-                MString commandString;
-                commandString.format("filetest -w \"^1s\"", MString(assetPath.c_str()));
-                MIntArray result;
-                // filetest is NOT undoable
-                MGlobal::executeCommand(commandString, result, /*display*/ false, /*undo*/ false);
-                if (result.length() > 0) {
-
-                    bool isCurrentlySystemLocked = MayaUsd::isLayerSystemLocked(usdLayer);
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-                    isCurrentlySystemLocked
-                        = isCurrentlySystemLocked || UsdLayerEditor::isLayerSystemLocked(usdLayer);
-#endif
-
-                    if (result[0] == 1 && isCurrentlySystemLocked) {
-                        // If the file has write permissions and the layer is currently
-                        // system-locked: Unlock the layer
-
-                        // Create the lock command
-                        auto cmd = std::make_shared<Impl::LockLayer>();
-                        cmd->_lockType = MayaUsd::LayerLockType::LayerLock_Unlocked;
-                        cmd->_includeSublayers = false;
-                        cmd->_proxyShapePath = _proxyShapePath;
-                        // Edit target will be updated once at the end of the refresh command.
-                        cmd->_updateEditTarget = false;
-
-                        // Add the lock command and its parameter to be executed
-                        _lockCommands.push_back(std::move(cmd));
-                        _layers.push_back(usdLayer);
-                    } else if (result[0] == 0 && !isCurrentlySystemLocked) {
-                        // If the file doesn't have write permissions and the layer is currently not
-                        // system-locked: System-lock the layer
-
-                        // Create the lock command
-                        auto cmd = std::make_shared<Impl::LockLayer>();
-                        cmd->_lockType = MayaUsd::LayerLockType::LayerLock_SystemLocked;
-                        cmd->_includeSublayers = false;
-                        cmd->_proxyShapePath = _proxyShapePath;
-                        // Edit target will be updated once at the end of the refresh command.
-                        cmd->_updateEditTarget = false;
-
-                        // Add the lock command and its parameter to be executed
-                        _lockCommands.push_back(std::move(cmd));
-                        _layers.push_back(usdLayer);
-                    }
-                }
-            }
-        }
-    }
-
-    void _notifySystemLockIsRefreshed()
-    {
-        if (!UsdUfe::isUICallbackRegistered(TfToken("onRefreshSystemLock")))
-            return;
-
-        PXR_NS::VtDictionary callbackContext;
-        callbackContext["proxyShapePath"] = PXR_NS::VtValue(_proxyShapePath.c_str());
-        PXR_NS::VtDictionary callbackData;
-
-        std::vector<std::string> affectedLayers;
-        affectedLayers.reserve(_layers.size());
-        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
-            affectedLayers.push_back(_layers[layerIndex]->GetIdentifier());
-        }
-
-        VtStringArray lockedArray(affectedLayers.begin(), affectedLayers.end());
-        callbackData["affectedLayerIds"] = lockedArray;
-
-        UsdUfe::triggerUICallback(TfToken("onRefreshSystemLock"), callbackContext, callbackData);
-    }
+    std::shared_ptr<UsdLayerEditor::RefreshSystemLockLayerCmd> _ufeCmd;
 
     UsdStageWeakPtr getStage()
     {
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        auto prim  = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
         auto stage = prim.GetStage();
         return stage;
     }
@@ -1334,6 +1209,19 @@ void LayerEditorCommand::registerBackupStagesProvider()
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     UsdLayerEditor::BackupLayerBaseCmd::setStagesProvider(
         []() { return MayaUsd::ufe::ProxyShapeHandler::getAllStages(); });
+
+    // Provide a filesystem-based write-access checker so RefreshSystemLockLayerCmd
+    // can run even when the layer editor UI has never been opened (which would
+    // otherwise register this function via batchSaveLayersUIDelegate).
+    UsdLayerEditor::FileSystem::setFileWriteAccessFunction(
+        [](const std::string& filePath) -> bool {
+            const fs::filesystem::path p(filePath);
+            if (!fs::filesystem::exists(p))
+                return true;
+            const auto perms = fs::filesystem::status(p).permissions();
+            return (perms & fs::filesystem::perms::owner_write)
+                != fs::filesystem::perms::none;
+        });
 #endif
 }
 

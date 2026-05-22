@@ -24,6 +24,9 @@
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
 
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
+
 #include <functional>
 
 namespace UsdLayerEditor {
@@ -381,6 +384,13 @@ public:
     bool undoIt(const pxr::SdfLayerHandle& layer) override;
 
     std::string commandString() const override { return "Refresh System Lock"; }
+
+    // Adds a DCC-specific entry (e.g. "proxyShapePath") to the context sent with
+    // the onRefreshSystemLock UI callback. Public for testability.
+    void addCallbackContext(const std::string& key, const pxr::VtValue& value);
+
+    // public for testability (same pattern as AddAnonSubLayerCmd::_anonName)
+    pxr::VtDictionary _extraCallbackContext;
 
 private:
     std::string _quote(const std::string& string);
