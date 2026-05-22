@@ -937,51 +937,15 @@ public:
         UsdStageRefPtr stage = prim.GetStage();
         if (!stage)
             return false;
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
         _ufeCmd = std::make_shared<UsdLayerEditor::MuteLayerCmd>(stage, layer, _muteIt);
         _ufeCmd->execute();
-#else
-        if (_muteIt) {
-            _didAddOrRemMutedLayer = addMutedLayer(layer);
-            saveSelection();
-            stage->MuteLayer(layer->GetIdentifier());
-        } else {
-            stage->UnmuteLayer(layer->GetIdentifier());
-            _didAddOrRemMutedLayer = removeMutedLayer(layer);
-            restoreSelection();
-        }
-        updateEditTarget(stage);
-#endif
         return true;
     }
 
-    bool undoIt(SdfLayerHandle layer) override
+    bool undoIt(SdfLayerHandle /*layer*/) override
     {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
         if (_ufeCmd)
             _ufeCmd->undo();
-#else
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        auto stage = prim.GetStage();
-        if (!stage)
-            return false;
-        if (_muteIt) {
-            stage->UnmuteLayer(layer->GetIdentifier());
-            if (_didAddOrRemMutedLayer) {
-                removeMutedLayer(layer);
-                _didAddOrRemMutedLayer = false;
-            }
-            restoreSelection();
-        } else {
-            if (_didAddOrRemMutedLayer) {
-                addMutedLayer(layer);
-                _didAddOrRemMutedLayer = false;
-            }
-            saveSelection();
-            stage->MuteLayer(layer->GetIdentifier());
-        }
-        updateEditTarget(stage);
-#endif
         return true;
     }
 
@@ -989,29 +953,7 @@ public:
     bool        _muteIt = true;
 
 private:
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     std::shared_ptr<UsdLayerEditor::MuteLayerCmd> _ufeCmd;
-#else
-    void saveSelection()
-    {
-        auto globalSn = Ufe::GlobalSelection::get();
-        _savedSn.replaceWith(*globalSn);
-        Ufe::Path path(
-            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, path));
-    }
-
-    void restoreSelection()
-    {
-        Ufe::Path path(
-            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
-    }
-
-    Ufe::Selection _savedSn;
-    bool           _didAddOrRemMutedLayer = false;
-#endif
 };
 
 class LockLayer : public BaseCmd
@@ -1028,7 +970,6 @@ public:
         UsdStageRefPtr stage = prim.GetStage();
         if (!stage)
             return false;
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
         _ufeCmd = std::make_shared<UsdLayerEditor::LockLayerCmd>(
             stage,
             layer,
@@ -1037,78 +978,13 @@ public:
             _skipSystemLockedLayers);
         _ufeCmd->SetUpdateEditTarget(_updateEditTarget);
         _ufeCmd->execute();
-#else
-        std::set<PXR_NS::SdfLayerRefPtr> layersToUpdate;
-        if (_includeSublayers) {
-            bool includeTopLayer = true;
-            layersToUpdate = MayaUsd::getAllSublayerRefs(layer, includeTopLayer);
-        } else {
-            layersToUpdate.insert(layer);
-        }
-
-        for (auto layerIt : layersToUpdate) {
-            if (MayaUsd::isLayerLocked(layerIt)) {
-                _previousStates.push_back(MayaUsd::LayerLockType::LayerLock_Locked);
-            } else if (MayaUsd::isLayerSystemLocked(layerIt)) {
-                _previousStates.push_back(MayaUsd::LayerLockType::LayerLock_SystemLocked);
-            } else {
-                _previousStates.push_back(MayaUsd::LayerLockType::LayerLock_Unlocked);
-            }
-            _layers.push_back(layerIt);
-        }
-
-        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
-            auto curLayer = _layers[layerIndex];
-            if (_skipSystemLockedLayers) {
-                if (curLayer != layer) {
-                    if (_lockType != MayaUsd::LayerLockType::LayerLock_SystemLocked) {
-                        if (MayaUsd::isLayerSystemLocked(curLayer)) {
-                            continue;
-                        }
-                    }
-                }
-            }
-            MayaUsd::lockLayer(_proxyShapePath, curLayer, _lockType, true);
-        }
-
-        if (_updateEditTarget) {
-            updateEditTarget(stage);
-        }
-#endif
         return true;
     }
 
-    bool undoIt(SdfLayerHandle layer) override
+    bool undoIt(SdfLayerHandle /*layer*/) override
     {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
         if (_ufeCmd)
             _ufeCmd->undo();
-#else
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        auto stage = prim.GetStage();
-        if (!stage)
-            return false;
-
-        if (_layers.size() != _previousStates.size()) {
-            return false;
-        }
-        for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
-            if (_lockType == MayaUsd::LayerLockType::LayerLock_SystemLocked) {
-                MayaUsd::lockLayer(
-                    _proxyShapePath,
-                    _layers[layerIndex],
-                    MayaUsd::LayerLockType::LayerLock_Unlocked,
-                    true);
-            } else {
-                MayaUsd::lockLayer(
-                    _proxyShapePath, _layers[layerIndex], _previousStates[layerIndex], true);
-            }
-        }
-
-        if (_updateEditTarget) {
-            updateEditTarget(stage);
-        }
-#endif
         return true;
     }
 
@@ -1119,19 +995,7 @@ public:
     std::string            _proxyShapePath;
 
 private:
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     std::shared_ptr<UsdLayerEditor::LockLayerCmd> _ufeCmd;
-#else
-    UsdStageWeakPtr getStage()
-    {
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        auto stage = prim.GetStage();
-        return stage;
-    }
-
-    std::vector<MayaUsd::LayerLockType> _previousStates;
-    SdfLayerHandleVector                _layers;
-#endif
 };
 
 class RefreshSystemLockLayer : public BaseCmd
