@@ -408,8 +408,10 @@ public:
 
     bool doIt(SdfLayerHandle layer) override
     {
-        _ufeCmd = std::make_shared<UsdLayerEditor::InsertSubPathCmd>(
-            pxr::UsdStageRefPtr {}, layer, _subPath, _index);
+        if (!_ufeCmd) {
+            _ufeCmd = std::make_shared<UsdLayerEditor::InsertSubPathCmd>(
+                pxr::UsdStageRefPtr {}, layer, _subPath, _index);
+        }
         _ufeCmd->execute();
         return true;
     }
@@ -435,9 +437,11 @@ public:
 
     bool doIt(SdfLayerHandle layer) override
     {
-        auto           prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        UsdStageRefPtr stage = prim.GetStage();
-        _ufeCmd = std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(stage, layer, _index);
+        if (!_ufeCmd) {
+            auto           prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+            UsdStageRefPtr stage = prim.GetStage();
+            _ufeCmd = std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(stage, layer, _index);
+        }
         _ufeCmd->execute();
         return true;
     }
@@ -623,9 +627,11 @@ public:
 
     bool doIt(SdfLayerHandle layer) override
     {
-        _ufeCmd = std::make_shared<UsdLayerEditor::AddAnonSubLayerCmd>(
-            pxr::UsdStageRefPtr {}, layer);
-        _ufeCmd->_anonName = _anonName;
+        if (!_ufeCmd) {
+            _ufeCmd = std::make_shared<UsdLayerEditor::AddAnonSubLayerCmd>(
+                pxr::UsdStageRefPtr {}, layer);
+            _ufeCmd->_anonName = _anonName;
+        }
         _ufeCmd->execute();
         _cmdResult = _ufeCmd->addedLayer();
         return true;
