@@ -400,4 +400,114 @@ TEST_F(LockLayerCmdTest, SkipSystemLocked_DoesNotLockSystemLockedSublayers)
     EXPECT_FALSE(isLayerLocked(sublayer)); // must not have been changed to plain locked
 }
 
+// ============================================================================
+// Task 8: InsertSubPathCmd, RemoveSubPathCmd, AddAnonSubLayerCmd
+// ============================================================================
+
+class InsertSubPathCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _parent = _stage->GetRootLayer();
+        _sub    = PXR_NS::SdfLayer::CreateAnonymous("sub");
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _parent;
+    PXR_NS::SdfLayerRefPtr _sub;
+};
+
+TEST_F(InsertSubPathCmdTest, DoIt_InsertsSubLayerAtIndex)
+{
+    auto cmd = std::make_shared<InsertSubPathCmd>(
+        _stage, _parent, _sub->GetIdentifier(), 0);
+    cmd->execute();
+    EXPECT_NE(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
+}
+
+TEST_F(InsertSubPathCmdTest, Undo_RemovesInsertedSubLayer)
+{
+    auto cmd = std::make_shared<InsertSubPathCmd>(
+        _stage, _parent, _sub->GetIdentifier(), 0);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_EQ(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
+}
+
+class RemoveSubPathCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        UsdUfe::setStagePathAccessorFn(stubStagePathAccessor);
+        if (!Ufe::GlobalSelection::get()) {
+            Ufe::GlobalSelection::initializeInstance(
+                std::make_shared<Ufe::ObservableSelection>());
+        }
+        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _parent = _stage->GetRootLayer();
+        _sub    = PXR_NS::SdfLayer::CreateAnonymous("sub");
+        _parent->InsertSubLayerPath(_sub->GetIdentifier(), 0);
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _parent;
+    PXR_NS::SdfLayerRefPtr _sub;
+};
+
+TEST_F(RemoveSubPathCmdTest, DoIt_RemovesSubLayer)
+{
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 0);
+    cmd->execute();
+    EXPECT_EQ(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
+}
+
+TEST_F(RemoveSubPathCmdTest, Undo_RestoresSubLayer)
+{
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 0);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_NE(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
+}
+
+class AddAnonSubLayerCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _parent = _stage->GetRootLayer();
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _parent;
+};
+
+TEST_F(AddAnonSubLayerCmdTest, DoIt_InsertsAnonLayer)
+{
+    auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);
+    cmd->_anonName = "myLayer";
+    cmd->execute();
+    EXPECT_EQ(_parent->GetNumSubLayerPaths(), static_cast<size_t>(1));
+}
+
+TEST_F(AddAnonSubLayerCmdTest, DoIt_ReturnsNonEmptyIdentifier)
+{
+    auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);
+    cmd->_anonName = "myLayer";
+    cmd->execute();
+    EXPECT_FALSE(cmd->addedLayer().empty());
+}
+
+TEST_F(AddAnonSubLayerCmdTest, Undo_RemovesAnonLayer)
+{
+    auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);
+    cmd->_anonName = "myLayer";
+    cmd->execute();
+    cmd->undo();
+    EXPECT_EQ(_parent->GetNumSubLayerPaths(), static_cast<size_t>(0));
+}
+
 } // namespace UsdLayerEditor
