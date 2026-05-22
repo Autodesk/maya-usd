@@ -778,6 +778,12 @@ std::string RefreshSystemLockLayerCmd::_quote(const std::string& string)
     return std::string(" \"") + string + std::string("\"");
 }
 
+void RefreshSystemLockLayerCmd::addCallbackContext(
+    const std::string& key, const pxr::VtValue& value)
+{
+    _extraCallbackContext[key] = value;
+}
+
 void RefreshSystemLockLayerCmd::_refreshLayerSystemLock(const pxr::SdfLayerHandle& usdLayer)
 {
     // Anonymous layers do not need to be checked.
@@ -829,6 +835,9 @@ void RefreshSystemLockLayerCmd::_notifySystemLockIsRefreshed()
 
     PXR_NS::VtDictionary callbackContext;
     callbackContext["objectPath"] = PXR_NS::VtValue(UsdUfe::stagePath(_stage).string().c_str());
+    for (const auto& entry : _extraCallbackContext) {
+        callbackContext[entry.first] = entry.second;
+    }
     PXR_NS::VtDictionary callbackData;
 
     std::vector<std::string> affectedLayers;
