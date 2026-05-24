@@ -103,722 +103,15 @@ TF_DEFINE_ENV_SETTING(
     MAYAUSD_LAYEREDITOR_DISABLE_AUTOTARGET,
     false,
     "When set, disables auto retargeting of layers based on the file and permission status.");
-} // namespace
 
-namespace MAYAUSD_NS_DEF {
-
-namespace Impl {
-
-enum class CmdId
-{
-    kInsert,
-    kRemove,
-    kMove,
-    kReplace,
-    kDiscardEdit,
-    kClearLayer,
-    kFlattenLayer,
-    kAddAnonLayer,
-    kMuteLayer,
-    kLockLayer,
-    kRefreshSystemLock,
-    kStitchLayers
-};
-
-class BaseCmd
-{
-public:
-    BaseCmd(CmdId id)
-        : _cmdId(id)
-    {
-    }
-    virtual ~BaseCmd() { }
-    virtual bool doIt(SdfLayerHandle layer) = 0;
-    virtual bool undoIt(SdfLayerHandle layer) = 0;
-
-    std::string _cmdResult; // set if the command returns something
-
-protected:
-    CmdId _cmdId;
-    // we need to hold on to dirty subLayers if we remove them
-    std::vector<PXR_NS::SdfLayerRefPtr> _subLayersRefs;
-    void                                holdOntoSubLayers(SdfLayerHandle layer);
-    void                                releaseSubLayers() { _subLayersRefs.clear(); }
-    void                                holdOnPathIfDirty(SdfLayerHandle layer, std::string path);
-    void                                updateEditTarget(const PXR_NS::UsdStageWeakPtr stage);
-};
-
-void BaseCmd::holdOnPathIfDirty(SdfLayerHandle layer, std::string path)
-{
-    auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, path);
-    if (subLayerHandle != nullptr) {
-        if (subLayerHandle->IsDirty() || subLayerHandle->IsAnonymous()) {
-            _subLayersRefs.push_back(subLayerHandle);
-        }
-        holdOntoSubLayers(subLayerHandle); // we'll need to hold onto children as well
-    }
-}
-
-// hold references to any anon or dirty sublayer
-void BaseCmd::holdOntoSubLayers(SdfLayerHandle layer)
-{
-    const std::vector<std::string>& sublayers = layer->GetSubLayerPaths();
-    for (auto path : sublayers) {
-        holdOnPathIfDirty(layer, path);
-    }
-}
-
-// Set the edit target to Session layer if no other layers are modifiable,
-// unless the user has disabled this feature with an env var.
-void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
-{
-    //// User-controlled environment variable to disable automatic target change.
-    if (TfGetEnvSetting(MAYAUSD_LAYEREDITOR_DISABLE_AUTOTARGET)) {
-        return;
-    }
-
-    if (!stage)
-        return;
-
-    if (stage->GetEditTarget().GetLayer() == stage->GetSessionLayer())
-        return;
-
-    // If the currently targeted layer isn't locked, we don't need to change it.
-    if (!MayaUsd::isLayerLocked(stage->GetEditTarget().GetLayer()))
-        return;
-
-    // If there are no target-able layers, we set the target to session layer.
-    std::string errMsg;
-    if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
-        MPxCommand::displayInfo(errMsg.c_str());
-        stage->SetEditTarget(stage->GetSessionLayer());
-    }
-}
-
-class InsertRemoveSubPathBase : public BaseCmd
-{
-public:
-    int         _index = -1;
-    std::string _subPath;
-    std::string _proxyShapePath;
-
-    InsertRemoveSubPathBase(CmdId id)
-        : BaseCmd(id)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        if (_cmdId == CmdId::kInsert || _cmdId == CmdId::kAddAnonLayer) {
-            if (_index == -1) {
-                _index = (int)layer->GetNumSubLayerPaths();
-            }
-            if (_index != 0) {
-                if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths() + 1)) {
-                    return false;
-                }
-            }
-
-            // According to USD codebase, we should always call SdfLayer::InsertSubLayerPath()
-            // with a layer's identifier. So, if the layer exists, override _subPath with the
-            // identifier in case this command was called with a filesystem path. Otherwise,
-            // adding the layer with the filesystem path can cause issue when muting the layer
-            // on Windows if the path is absolute and start with a capital drive letter.
-            //
-            // Note: It's possible that SdfLayer::FindOrOpen() fail because we
-            //       allow user to add layer that does not exists.
-            auto layerToAdd = SdfLayer::FindOrOpen(_subPath);
-            if (layerToAdd) {
-                _subPath = layerToAdd->GetIdentifier();
-            }
-
-            layer->InsertSubLayerPath(_subPath, _index);
-            TF_VERIFY(
-                (static_cast<size_t>(_index) < layer->GetSubLayerPaths().size())
-                && layer->GetSubLayerPaths()[_index] == _subPath);
-        } else {
-            TF_VERIFY(_cmdId == CmdId::kRemove);
-            if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths())) {
-                return false;
-            }
-            saveSelection();
-            _subPath = layer->GetSubLayerPaths()[_index];
-            holdOnPathIfDirty(layer, _subPath);
-
-            // if the current edit target is the layer to remove or
-            // a sublayer of the layer to remove,
-            // set the root layer as the current edit target
-            auto layerToRemove = SdfLayer::FindRelativeToLayer(layer, _subPath);
-            auto stage = getStage();
-            auto currentTarget = stage->GetEditTarget().GetLayer();
-
-            // Helper function to find if a layer is in the
-            // hierarchy of another layer
-            //
-            // rootLayer: The root layer of the hierarchy
-            // layer: The layer to find
-            // ignore : Optional layer used has the root of a hierarchy that
-            //          we don't want to check in.
-            // ignoreSubPath : Optional subpath used whith ignore layer.
-            auto isInHierarchy = [](const SdfLayerHandle& rootLayer,
-                                    const SdfLayerHandle& layer,
-                                    const SdfLayerHandle* ignore = nullptr,
-                                    const std::string*    ignoreSubPath = nullptr) {
-                // Impl used for recursive call
-                auto isInHierarchyImpl = [](const SdfLayerHandle& rootLayer,
-                                            const SdfLayerHandle& layer,
-                                            const SdfLayerHandle* ignore,
-                                            const std::string*    ignoreSubPath,
-                                            auto&                 implRef) {
-                    if (!rootLayer || !layer)
-                        return false;
-
-                    if (rootLayer->GetIdentifier() == layer->GetIdentifier())
-                        return true;
-
-                    const auto subLayerPaths = rootLayer->GetSubLayerPaths();
-                    for (const auto& subLayerPath : subLayerPaths) {
-
-                        if (ignore && ignoreSubPath
-                            && (*ignore)->GetIdentifier() == rootLayer->GetIdentifier()
-                            && *ignoreSubPath == subLayerPath)
-                            continue;
-
-                        const auto subLayer
-                            = SdfLayer::FindRelativeToLayer(rootLayer, subLayerPath);
-                        if (implRef(subLayer, layer, ignore, ignoreSubPath, implRef))
-                            return true;
-                    }
-                    return false;
-                };
-                return isInHierarchyImpl(
-                    rootLayer, layer, ignore, ignoreSubPath, isInHierarchyImpl);
-            };
-
-            if (isInHierarchy(layerToRemove, currentTarget)) {
-                // The current edit layer is in the hierarchy of the layer to remove,
-                // now we need to be sure the edit target layer is not also a sublayer
-                // of another layer in the stage.
-                if (!isInHierarchy(stage->GetRootLayer(), currentTarget, &layer, &_subPath)) {
-                    _editTargetPath = currentTarget->GetIdentifier();
-                    stage->SetEditTarget(stage->GetRootLayer());
-                }
-            }
-
-            layer->RemoveSubLayerPath(_index);
-        }
-        return true;
-    }
-    bool undoIt(SdfLayerHandle layer) override
-    {
-        if (_cmdId == CmdId::kInsert || _cmdId == CmdId::kAddAnonLayer) {
-            auto index = _index;
-            if (index == -1) {
-                index = static_cast<int>(layer->GetNumSubLayerPaths() - 1);
-            }
-            if (validateUndoIndex(layer, _index)) {
-                TF_VERIFY(layer->GetSubLayerPaths()[index] == _subPath);
-                layer->RemoveSubLayerPath(index);
-            } else {
-                return false;
-            }
-        } else {
-            TF_VERIFY(_index != -1);
-            if (validateUndoIndex(layer, _index)) {
-                layer->InsertSubLayerPath(_subPath, _index);
-
-                // if the removed layer was the edit target,
-                // set it back to the current edit target
-                if (!_editTargetPath.empty()) {
-                    auto stage = getStage();
-                    auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _editTargetPath);
-                    stage->SetEditTarget(subLayerHandle);
-                }
-            } else {
-                return false;
-            }
-            restoreSelection();
-        }
-        return true;
-    }
-    static bool validateUndoIndex(SdfLayerHandle layer, int index)
-    { // allow re-inserting at the last index + 1, but -1 should have been changed to 0
-        return !(index < 0 || index > (int)layer->GetNumSubLayerPaths());
-    }
-
-    static bool validateAndReportIndex(SdfLayerHandle layer, int index, int maxIndex)
-    {
-        if (index < 0 || index >= maxIndex) {
-            std::string message = std::string("Index ") + std::to_string(index)
-                + std::string(" out-of-bound for ") + layer->GetIdentifier();
-            MPxCommand::displayError(message.c_str());
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    void saveSelection()
-    {
-        // Make a copy of the global selection, to restore it on undo.
-        auto globalSn = Ufe::GlobalSelection::get();
-        _savedSn.replaceWith(*globalSn);
-        // Filter the global selection, removing items below our proxy shape.
-        // We know the path to the proxy shape has a single segment. Not
-        // using Ufe::PathString::path() for UFE v1 compatibility, which
-        // unfortunately reveals leading "world" path component implementation
-        // detail.
-        Ufe::Path path(
-            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        globalSn->replaceWith(UsdUfe::removeDescendants(_savedSn, path));
-    }
-
-    void restoreSelection()
-    {
-        // Restore the saved selection to the global selection.  If a saved
-        // selection item started with the proxy shape path, re-create it.
-        // We know the path to the proxy shape has a single segment.  Not
-        // using Ufe::PathString::path() for UFE v1 compatibility, which
-        // unfortunately reveals leading "world" path component implementation
-        // detail.
-        Ufe::Path path(
-            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
-    }
-
-protected:
-    std::string    _editTargetPath;
-    Ufe::Selection _savedSn;
-
-    UsdStageWeakPtr getStage()
-    {
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        auto stage = prim.GetStage();
-        return stage;
-    }
-};
-
-class InsertSubPath : public InsertRemoveSubPathBase
-{
-public:
-    InsertSubPath()
-        : InsertRemoveSubPathBase(CmdId::kInsert)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        if (!_ufeCmd) {
-            _ufeCmd = std::make_shared<UsdLayerEditor::InsertSubPathCmd>(
-                pxr::UsdStageRefPtr {}, layer, _subPath, _index);
-        }
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-private:
-    std::shared_ptr<UsdLayerEditor::InsertSubPathCmd> _ufeCmd;
-};
-
-class RemoveSubPath : public InsertRemoveSubPathBase
-{
-public:
-    RemoveSubPath()
-        : InsertRemoveSubPathBase(CmdId::kRemove)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        if (!_ufeCmd) {
-            auto           prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-            UsdStageRefPtr stage = prim.GetStage();
-            _ufeCmd = std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(stage, layer, _index);
-        }
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-private:
-    std::shared_ptr<UsdLayerEditor::RemoveSubPathCmd> _ufeCmd;
-};
-
-// Move a sublayer into another layer.
-// @param path The layer's path to move.
-// @param newParentLayer The new parent layer's path
-// @param newIndex The index where the moved layer will be in the new parent.
-class MoveSubPath : public BaseCmd
-{
-public:
-    MoveSubPath(const std::string& path, const std::string& newParentLayer, unsigned newIndex)
-        : BaseCmd(CmdId::kMove)
-        , _path(path)
-        , _newParentLayer(newParentLayer)
-        , _newIndex(newIndex)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        SdfLayerHandle newParentLayerH;
-        if (layer->GetIdentifier() == _newParentLayer) {
-            newParentLayerH = layer;
-        } else {
-            newParentLayerH = SdfLayer::Find(_newParentLayer);
-            if (!newParentLayerH) {
-                std::string message = std::string("Layer ") + _newParentLayer + " not found!";
-                MPxCommand::displayError(message.c_str());
-                return false;
-            }
-        }
-        _ufeCmd = std::make_shared<UsdLayerEditor::MoveSubPathCmd>(
-            layer, newParentLayerH, _path, static_cast<int>(_newIndex));
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-private:
-    std::string  _path;
-    std::string  _newParentLayer;
-    unsigned int _newIndex;
-    std::shared_ptr<UsdLayerEditor::MoveSubPathCmd> _ufeCmd;
-};
-
-class ReplaceSubPath : public BaseCmd
-{
-public:
-    ReplaceSubPath()
-        : BaseCmd(CmdId::kReplace)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        _ufeCmd = std::make_shared<UsdLayerEditor::ReplaceSubPathCmd>(layer, _oldPath, _newPath);
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-    std::string _oldPath, _newPath;
-
-private:
-    std::shared_ptr<UsdLayerEditor::ReplaceSubPathCmd> _ufeCmd;
-};
-
-class AddAnonSubLayer : public InsertRemoveSubPathBase
-{
-public:
-    AddAnonSubLayer()
-        : InsertRemoveSubPathBase(CmdId::kAddAnonLayer) {};
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        if (!_ufeCmd) {
-            _ufeCmd = std::make_shared<UsdLayerEditor::AddAnonSubLayerCmd>(
-                pxr::UsdStageRefPtr {}, layer);
-            _ufeCmd->_anonName = _anonName;
-        }
-        _ufeCmd->execute();
-        _cmdResult = _ufeCmd->addedLayer();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-    std::string _anonName;
-
-private:
-    std::shared_ptr<UsdLayerEditor::AddAnonSubLayerCmd> _ufeCmd;
-};
-
-class DiscardEdit : public BaseCmd
-{
-public:
-    DiscardEdit()
-        : BaseCmd(CmdId::kDiscardEdit)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        _ufeCmd = std::make_shared<UsdLayerEditor::DiscardEditCmd>(layer);
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-private:
-    std::shared_ptr<UsdLayerEditor::DiscardEditCmd> _ufeCmd;
-};
-
-class ClearLayer : public BaseCmd
-{
-public:
-    ClearLayer()
-        : BaseCmd(CmdId::kClearLayer)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        _ufeCmd = std::make_shared<UsdLayerEditor::ClearLayerCmd>(layer);
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-private:
-    std::shared_ptr<UsdLayerEditor::ClearLayerCmd> _ufeCmd;
-};
-
-class FlattenLayer : public BaseCmd
-{
-public:
-    FlattenLayer()
-        : BaseCmd(CmdId::kFlattenLayer)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        _ufeCmd = std::make_shared<UsdLayerEditor::FlattenLayerCmd>(layer);
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-private:
-    std::shared_ptr<UsdLayerEditor::FlattenLayerCmd> _ufeCmd;
-};
-
-class StitchLayers : public BaseCmd
-{
-public:
-    StitchLayers(
-        const std::vector<std::string>& layerIdentifiers,
-        const std::string&              newParentLayer)
-        : BaseCmd(CmdId::kStitchLayers)
-        , _layerIdentifiersByStrength(layerIdentifiers)
-        , _proxyShapePath(newParentLayer)
-    {
-    }
-
-    bool doIt(SdfLayerHandle /*targetLayer*/) override
-    {
-        const auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        if (!prim.IsValid()) {
-            TF_RUNTIME_ERROR("Invalid proxy shape path: %s", _proxyShapePath.c_str());
-            return false;
-        }
-        UsdStageRefPtr stage = prim.GetStage();
-        if (!stage) {
-            TF_RUNTIME_ERROR("Cannot get stage for proxy shape: %s", _proxyShapePath.c_str());
-            return false;
-        }
-        _ufeCmd = std::make_shared<UsdLayerEditor::StitchLayersCmd>(stage, _layerIdentifiersByStrength);
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*targetLayer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-    std::vector<std::string> _layerIdentifiersByStrength;
-    std::string              _proxyShapePath;
-
-private:
-    std::shared_ptr<UsdLayerEditor::StitchLayersCmd> _ufeCmd;
-};
-
-class MuteLayer : public BaseCmd
-{
-public:
-    MuteLayer()
-        : BaseCmd(CmdId::kMuteLayer)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        UsdStageRefPtr stage = prim.GetStage();
-        if (!stage)
-            return false;
-        _ufeCmd = std::make_shared<UsdLayerEditor::MuteLayerCmd>(stage, layer, _muteIt);
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-    std::string _proxyShapePath;
-    bool        _muteIt = true;
-
-private:
-    std::shared_ptr<UsdLayerEditor::MuteLayerCmd> _ufeCmd;
-};
-
-class LockLayer : public BaseCmd
-{
-public:
-    LockLayer()
-        : BaseCmd(CmdId::kLockLayer)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        UsdStageRefPtr stage = prim.GetStage();
-        if (!stage)
-            return false;
-        _ufeCmd = std::make_shared<UsdLayerEditor::LockLayerCmd>(
-            stage,
-            layer,
-            static_cast<UsdLayerEditor::LayerLockType>(_lockType),
-            _includeSublayers,
-            _skipSystemLockedLayers);
-        _ufeCmd->SetUpdateEditTarget(_updateEditTarget);
-        _ufeCmd->execute();
-        return true;
-    }
-
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-    MayaUsd::LayerLockType _lockType = MayaUsd::LayerLockType::LayerLock_Locked;
-    bool                   _includeSublayers = false;
-    bool                   _skipSystemLockedLayers = false;
-    bool                   _updateEditTarget = true;
-    std::string            _proxyShapePath;
-
-private:
-    std::shared_ptr<UsdLayerEditor::LockLayerCmd> _ufeCmd;
-};
-
-class RefreshSystemLockLayer : public BaseCmd
-{
-public:
-    RefreshSystemLockLayer()
-        : BaseCmd(CmdId::kRefreshSystemLock)
-    {
-    }
-
-    bool doIt(SdfLayerHandle layer) override
-    {
-        auto stage = getStage();
-        if (!stage)
-            return false;
-
-        _ufeCmd = std::make_shared<UsdLayerEditor::RefreshSystemLockLayerCmd>(
-            stage, layer, _refreshSubLayers);
-        _ufeCmd->addCallbackContext(
-            "proxyShapePath", PXR_NS::VtValue(std::string(_proxyShapePath)));
-        _ufeCmd->execute();
-        return true;
-    }
-
-    // The command itself doesn't retain its state. However, the underlying logic contains commands
-    // that are undoable.
-    bool undoIt(SdfLayerHandle /*layer*/) override
-    {
-        if (_ufeCmd)
-            _ufeCmd->undo();
-        return true;
-    }
-
-    std::string _proxyShapePath;
-    bool        _refreshSubLayers = false;
-
-private:
-    std::shared_ptr<UsdLayerEditor::RefreshSystemLockLayerCmd> _ufeCmd;
-
-    UsdStageWeakPtr getStage()
-    {
-        auto prim  = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
-        auto stage = prim.GetStage();
-        return stage;
-    }
-};
-
-// We assume the indexes given to the command are the original indexes
-// of the layers. Since each command is executed individually and in
-// order, each one may affect the index of subsequent commands. We
-// records adjustements that must be applied to indexes in the map.
-// Removal of a layer creates a negative adjustment, insertion of a
-// layer creates a positive adjustment.
+// Tracks index offsets when multiple insert/remove sublayer operations are batched
+// in a single command invocation. Removal shifts subsequent indexes down by 1;
+// insertion shifts them up by 1.
 class IndexAdjustments
 {
 public:
     IndexAdjustments() = default;
 
-    // Convenience method that retrieve the adjusted index and adds
-    // the insertion index adjustment.
     int insertionAdjustment(int originalIndex)
     {
         const int adjustedIndex = getAdjustedIndex(originalIndex);
@@ -826,8 +119,6 @@ public:
         return adjustedIndex;
     }
 
-    // Convenience method that retrieve the adjusted index and adds
-    // the removal index adjustment.
     int removalAdjustment(int originalIndex)
     {
         const int adjustedIndex = getAdjustedIndex(originalIndex);
@@ -836,17 +127,11 @@ public:
     }
 
 private:
-    // Insertion and removal additional adjustment.
-    // Must be called with the original index as provided by the user.
     void addInsertionAdjustment(int index) { _indexAdjustments[index] += 1; }
     void addRemovalAdjustment(int index) { _indexAdjustments[index] -= 1; }
 
-    // Calculate the adjusted index from the user-supplied index that
-    // need to be used by the command to account for previous commands.
     int getAdjustedIndex(int index) const
     {
-        // Apply all adjustment that were done on indexes lower or
-        // equal to the input index.
         int adjustedIndex = index;
         for (const auto& indexAndAdjustement : _indexAdjustments) {
             if (indexAndAdjustement.first > index)
@@ -859,7 +144,9 @@ private:
     std::map<int, int> _indexAdjustments;
 };
 
-} // namespace Impl
+} // namespace
+
+namespace MAYAUSD_NS_DEF {
 
 const char LayerEditorCommand::commandName[] = "mayaUsdLayerEditor";
 
@@ -935,211 +222,184 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
     _layerIdentifier = objects[0].asChar();
 
     if (!isQuery()) {
-        Impl::IndexAdjustments indexAdjustments;
+        auto layer = SdfLayer::FindOrOpen(_layerIdentifier);
+        if (!layer) {
+            displayError(MString("Layer not found: ") + _layerIdentifier.c_str());
+            return MS::kInvalidParameter;
+        }
+
+        IndexAdjustments indexAdjustments;
 
         const bool skipSystemLockedLayers = argParser.isFlagSet(kSkipSystemLockedFlag);
 
         if (argParser.isFlagSet(kInsertSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kInsertSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
-                auto cmd = std::make_shared<Impl::InsertSubPath>();
-
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kInsertSubPathFlag, i, listOfArgs);
-
                 const int originalIndex = listOfArgs.asInt(0);
                 const int adjustedIndex = indexAdjustments.insertionAdjustment(originalIndex);
-
-                cmd->_index = adjustedIndex;
-                cmd->_subPath = listOfArgs.asString(1).asUTF8();
-
-                _subCommands.push_back(std::move(cmd));
+                _subCommands.push_back(std::make_shared<UsdLayerEditor::InsertSubPathCmd>(
+                    UsdStageRefPtr {}, layer, listOfArgs.asString(1).asUTF8(), adjustedIndex));
             }
         }
 
         if (argParser.isFlagSet(kRemoveSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kRemoveSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
-
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kRemoveSubPathFlag, i, listOfArgs);
-
                 auto shapePath = listOfArgs.asString(1);
                 auto prim = UsdMayaQuery::GetPrim(shapePath.asChar());
                 if (prim == UsdPrim()) {
                     displayError(MString("Invalid proxy shape \"") + shapePath.asChar() + "\"");
                     return MS::kInvalidParameter;
                 }
-
-                const int originalIndex = listOfArgs.asInt(0);
-                const int adjustedIndex = indexAdjustments.removalAdjustment(originalIndex);
-
-                auto cmd = std::make_shared<Impl::RemoveSubPath>();
-                cmd->_index = adjustedIndex;
-                cmd->_proxyShapePath = shapePath.asChar();
-                _subCommands.push_back(std::move(cmd));
+                UsdStageRefPtr stage      = prim.GetStage();
+                const int      originalIndex = listOfArgs.asInt(0);
+                const int      adjustedIndex = indexAdjustments.removalAdjustment(originalIndex);
+                _subCommands.push_back(
+                    std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(stage, layer, adjustedIndex));
             }
         }
 
         if (argParser.isFlagSet(kReplaceSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kReplaceSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
-                auto cmd = std::make_shared<Impl::ReplaceSubPath>();
-
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kReplaceSubPathFlag, i, listOfArgs);
-                cmd->_oldPath = listOfArgs.asString(0).asUTF8();
-                cmd->_newPath = listOfArgs.asString(1).asUTF8();
-                _subCommands.push_back(std::move(cmd));
+                _subCommands.push_back(std::make_shared<UsdLayerEditor::ReplaceSubPathCmd>(
+                    layer, listOfArgs.asString(0).asUTF8(), listOfArgs.asString(1).asUTF8()));
             }
         }
 
         if (argParser.isFlagSet(kMoveSubPathFlag)) {
             MString subPath;
             argParser.getFlagArgument(kMoveSubPathFlag, 0, subPath);
-
-            MString newParentLayer;
-            argParser.getFlagArgument(kMoveSubPathFlag, 1, newParentLayer);
-
+            MString newParentLayerStr;
+            argParser.getFlagArgument(kMoveSubPathFlag, 1, newParentLayerStr);
             int originalIndex { 0 };
             argParser.getFlagArgument(kMoveSubPathFlag, 2, originalIndex);
             const int adjustedIndex = indexAdjustments.removalAdjustment(originalIndex);
 
-            auto cmd = std::make_shared<Impl::MoveSubPath>(
-                subPath.asUTF8(), newParentLayer.asUTF8(), adjustedIndex);
-            _subCommands.push_back(std::move(cmd));
+            SdfLayerHandle newParentLayerH;
+            if (layer->GetIdentifier() == newParentLayerStr.asUTF8()) {
+                newParentLayerH = layer;
+            } else {
+                newParentLayerH = SdfLayer::Find(newParentLayerStr.asUTF8());
+                if (!newParentLayerH) {
+                    displayError(MString("Layer not found: ") + newParentLayerStr);
+                    return MS::kInvalidParameter;
+                }
+            }
+            _subCommands.push_back(std::make_shared<UsdLayerEditor::MoveSubPathCmd>(
+                layer, newParentLayerH, subPath.asUTF8(), adjustedIndex));
         }
 
         if (argParser.isFlagSet(kDiscardEditsFlag)) {
-            auto cmd = std::make_shared<Impl::DiscardEdit>();
-            _subCommands.push_back(std::move(cmd));
+            _subCommands.push_back(std::make_shared<UsdLayerEditor::DiscardEditCmd>(layer));
         }
 
         if (argParser.isFlagSet(kClearLayerFlag)) {
-            auto cmd = std::make_shared<Impl::ClearLayer>();
-            _subCommands.push_back(std::move(cmd));
+            _subCommands.push_back(std::make_shared<UsdLayerEditor::ClearLayerCmd>(layer));
         }
 
         if (argParser.isFlagSet(kFlattenLayerFlag)) {
-            auto cmd = std::make_shared<Impl::FlattenLayer>();
-            _subCommands.push_back(std::move(cmd));
+            _subCommands.push_back(std::make_shared<UsdLayerEditor::FlattenLayerCmd>(layer));
         }
 
         if (argParser.isFlagSet(kAddAnonSublayerFlag)) {
             auto count = argParser.numberOfFlagUses(kAddAnonSublayerFlag);
             for (unsigned i = 0; i < count; i++) {
-                auto cmd = std::make_shared<Impl::AddAnonSubLayer>();
-
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kAddAnonSublayerFlag, i, listOfArgs);
+                auto cmd = std::make_shared<UsdLayerEditor::AddAnonSubLayerCmd>(
+                    UsdStageRefPtr {}, layer);
                 cmd->_anonName = listOfArgs.asString(0).asUTF8();
                 _subCommands.push_back(std::move(cmd));
             }
         }
+
         if (argParser.isFlagSet(kMuteLayerFlag)) {
             bool muteIt = true;
             argParser.getFlagArgument(kMuteLayerFlag, 0, muteIt);
-
             MString proxyShapeName;
             argParser.getFlagArgument(kMuteLayerFlag, 1, proxyShapeName);
-
             auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
                 displayError(
-                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                    MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
                 return MS::kInvalidParameter;
             }
-
-            auto cmd = std::make_shared<Impl::MuteLayer>();
-            cmd->_muteIt = muteIt;
-            cmd->_proxyShapePath = proxyShapeName.asChar();
-            _subCommands.push_back(std::move(cmd));
+            UsdStageRefPtr stage = prim.GetStage();
+            _subCommands.push_back(
+                std::make_shared<UsdLayerEditor::MuteLayerCmd>(stage, layer, muteIt));
         }
+
         if (argParser.isFlagSet(kLockLayerFlag)) {
             int lockValue = 0;
-            // 0 = Unlocked
-            // 1 = Locked
-            // 2 = SystemLocked
+            // 0 = Unlocked, 1 = Locked, 2 = SystemLocked
             argParser.getFlagArgument(kLockLayerFlag, 0, lockValue);
-
             bool includeSublayers = false;
             argParser.getFlagArgument(kLockLayerFlag, 1, includeSublayers);
-
             MString proxyShapeName;
             argParser.getFlagArgument(kLockLayerFlag, 2, proxyShapeName);
-
             auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
                 displayError(
-                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                    MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
                 return MS::kInvalidParameter;
             }
-
-            auto cmd = std::make_shared<Impl::LockLayer>();
+            UsdStageRefPtr                stage = prim.GetStage();
+            UsdLayerEditor::LayerLockType lockType;
             switch (lockValue) {
-            case 1: {
-                cmd->_lockType = MayaUsd::LayerLockType::LayerLock_Locked;
-                break;
+            case 1:  lockType = UsdLayerEditor::LayerLock_Locked;       break;
+            case 2:  lockType = UsdLayerEditor::LayerLock_SystemLocked; break;
+            default: lockType = UsdLayerEditor::LayerLock_Unlocked;     break;
             }
-            case 2: {
-                cmd->_lockType = MayaUsd::LayerLockType::LayerLock_SystemLocked;
-                break;
-            }
-            default: {
-                cmd->_lockType = MayaUsd::LayerLockType::LayerLock_Unlocked;
-                break;
-            }
-            }
-            cmd->_includeSublayers = includeSublayers;
-            cmd->_skipSystemLockedLayers = skipSystemLockedLayers;
-            cmd->_proxyShapePath = proxyShapeName.asChar();
-            _subCommands.push_back(std::move(cmd));
+            _subCommands.push_back(std::make_shared<UsdLayerEditor::LockLayerCmd>(
+                stage, layer, lockType, includeSublayers, skipSystemLockedLayers));
         }
+
         if (argParser.isFlagSet(kRefreshSystemLockFlag)) {
             MString proxyShapeName;
             argParser.getFlagArgument(kRefreshSystemLockFlag, 0, proxyShapeName);
             bool refreshSubLayers = true;
             argParser.getFlagArgument(kRefreshSystemLockFlag, 1, refreshSubLayers);
-
             auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
                 displayError(
-                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                    MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
                 return MS::kInvalidParameter;
             }
-
-            auto cmd = std::make_shared<Impl::RefreshSystemLockLayer>();
-            cmd->_proxyShapePath = proxyShapeName.asChar();
-            cmd->_refreshSubLayers = refreshSubLayers;
+            UsdStageRefPtr stage = prim.GetStage();
+            auto cmd = std::make_shared<UsdLayerEditor::RefreshSystemLockLayerCmd>(
+                stage, layer, refreshSubLayers);
+            cmd->addCallbackContext(
+                "proxyShapePath", PXR_NS::VtValue(std::string(proxyShapeName.asChar())));
             _subCommands.push_back(std::move(cmd));
         }
+
         if (argParser.isFlagSet(kStitchLayersFlag)) {
             std::vector<std::string> layerIdentifiers;
             const auto               layerCount = argParser.numberOfFlagUses(kStitchLayersFlag);
             MString                  proxyShapeName;
-
             for (unsigned i = 0; i < layerCount; ++i) {
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kStitchLayersFlag, i, listOfArgs);
-
                 if (i == 0)
                     proxyShapeName = listOfArgs.asString(0);
-
-                const MString layerIdentifier = listOfArgs.asString(1);
-                layerIdentifiers.push_back(layerIdentifier.asChar());
+                layerIdentifiers.push_back(listOfArgs.asString(1).asChar());
             }
-
             const UsdPrim prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
                 displayError(
-                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                    MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
                 return MS::kInvalidParameter;
             }
-
-            auto cmd
-                = std::make_shared<Impl::StitchLayers>(layerIdentifiers, proxyShapeName.asChar());
-
-            _subCommands.push_back(std::move(cmd));
+            UsdStageRefPtr stage = prim.GetStage();
+            _subCommands.push_back(
+                std::make_shared<UsdLayerEditor::StitchLayersCmd>(stage, layerIdentifiers));
         }
     }
 
@@ -1165,42 +425,21 @@ MStatus LayerEditorCommand::doIt(const MArgList& argList)
 // main MPxCommand execution point
 MStatus LayerEditorCommand::redoIt()
 {
-
-    auto layer = SdfLayer::FindOrOpen(_layerIdentifier);
-    if (!layer) {
-        return MS::kInvalidParameter;
+    for (auto& cmd : _subCommands) {
+        cmd->redo();
+        // AddAnonSubLayerCmd is the only command that returns a result
+        // (the new anonymous layer identifier).
+        if (auto* anon = dynamic_cast<UsdLayerEditor::AddAnonSubLayerCmd*>(cmd.get()))
+            appendToResult(anon->addedLayer().c_str());
     }
-
-    for (auto it = _subCommands.begin(); it != _subCommands.end(); ++it) {
-        if (!(*it)->doIt(layer)) {
-            return MS::kFailure;
-        }
-        const auto& result = (*it)->_cmdResult;
-        if (!result.empty()) {
-            appendToResult(result.c_str());
-        }
-    }
-
     return MS::kSuccess;
 }
 
 // main MPxCommand execution point
 MStatus LayerEditorCommand::undoIt()
 {
-
-    auto layer = SdfLayer::FindOrOpen(_layerIdentifier);
-    if (!layer) {
-        return MS::kInvalidParameter;
-    }
-
-    // clang-format off
-    for (auto it = _subCommands.rbegin(); it != _subCommands.rend(); ++it) {
-        if (!(*it)->undoIt(layer)) {
-            return MS::kFailure;
-        }
-    }
-
-    // clang-format on
+    for (auto it = _subCommands.rbegin(); it != _subCommands.rend(); ++it)
+        (*it)->undo();
     return MS::kSuccess;
 }
 
