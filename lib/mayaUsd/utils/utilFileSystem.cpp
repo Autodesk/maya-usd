@@ -186,6 +186,10 @@ std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
         return std::make_pair(fileName, true);
     }
 
+    // Paths that are already relative (and thus unresolvable) short-circuit to failure.
+    if (!absolutePath.is_absolute()) {
+        return std::make_pair(fileName, false);
+    }
     fs::filesystem::path relativePath = fs::filesystem::relative(absolutePath, relativeToDir);
     if (relativePath.empty()) {
         return std::make_pair(fileName, false);
