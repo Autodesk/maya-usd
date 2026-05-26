@@ -48,6 +48,15 @@
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
 
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+
+#include <AdskAssetResolver/Notice.h>
+
+#include <memory>
+#endif
+
 namespace MAYAUSD_NS_DEF {
 
 const MString AssetResolverDialogCmd::name("assetResolverDialog");
@@ -72,11 +81,60 @@ MString parseTextArg(const MArgParser& argData, const char* flag, const MString&
     return value;
 }
 
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
+// Reloads Maya-owned USD stages on Adsk resolver context-data changes.
+// Adsk::SendContextDataChanged() walks pxr::UsdUtilsStageCache, which Maya
+// does not populate (stages live in UsdStageMap), so without this listener
+// an "Apply" leaves stages composed against the stale resolver context.
+// Hooked to ArContextDataChangeCompleted so we run after every
+// AdskResolverContext has refreshed its merged data, and inside
+// SendContextDataChanged's PreventContextDataChangedNotification scope so
+// our Reload() cannot trigger a re-entrant notification.
+class ContextDataChangedListener : public PXR_NS::TfWeakBase
+{
+public:
+    ContextDataChangedListener()
+    {
+        m_key = PXR_NS::TfNotice::Register(
+            PXR_NS::TfCreateWeakPtr(this),
+            &ContextDataChangedListener::onContextDataChangeCompleted);
+    }
+
+    ~ContextDataChangedListener() { PXR_NS::TfNotice::Revoke(m_key); }
+
+    ContextDataChangedListener(const ContextDataChangedListener&) = delete;
+    ContextDataChangedListener& operator=(const ContextDataChangedListener&) = delete;
+
+private:
+    void onContextDataChangeCompleted(const Adsk::ArContextDataChangeCompleted&)
+    {
+        // Same call the AE refresh button makes; ArNotice::ResolverChanged
+        // has already been sent by AdskResolverContext::UpdateMergedData,
+        // so Reload() recomposes against the new resolver state.
+        for (const auto& weakStage : ufe::UsdStageMap::getInstance().allStages()) {
+            if (PXR_NS::UsdStageRefPtr stage { weakStage }) {
+                stage->Reload();
+            }
+        }
+    }
+
+    PXR_NS::TfNotice::Key m_key;
+};
+
+std::unique_ptr<ContextDataChangedListener> g_contextDataChangedListener;
+#endif
+
 } // namespace
 
 /*static*/
 MStatus AssetResolverDialogCmd::initialize(MFnPlugin& plugin)
 {
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
+    // Reload Maya stages on resolver context-data changes; see listener docstring.
+    if (!g_contextDataChangedListener) {
+        g_contextDataChangedListener = std::make_unique<ContextDataChangedListener>();
+    }
+#endif
     return plugin.registerCommand(
         name, AssetResolverDialogCmd::creator, AssetResolverDialogCmd::createSyntax);
 }
@@ -91,6 +149,10 @@ MStatus AssetResolverDialogCmd::finalize(MFnPlugin& plugin)
         delete g_assetResolverDialog.data();
         g_assetResolverDialog.clear();
     }
+#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
+    // Revoke before plugin binary unload so a late notice can't dispatch into freed code.
+    g_contextDataChangedListener.reset();
+#endif
     return plugin.deregisterCommand(name);
 }
 void* AssetResolverDialogCmd::creator() { return new AssetResolverDialogCmd(); }
