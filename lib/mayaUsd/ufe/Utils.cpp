@@ -370,6 +370,24 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path, bool rebuildCacheIfN
     return result;
 }
 
+MayaUsdProxyShapeBase* getProxyShapeFromItemOrChildren(const Ufe::SceneItem::Ptr& item)
+{
+    const bool rebuildCacheIfNeeded = false;
+    if (auto* proxy = getProxyShape(item->path(), rebuildCacheIfNeeded))
+        return proxy;
+
+    Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
+    if (!hierarchy)
+        return nullptr;
+
+    for (const auto& child : UsdUfe::getHierarchyChildren(hierarchy)) {
+        if (auto* proxy = getProxyShape(child->path(), rebuildCacheIfNeeded))
+            return proxy;
+    }
+
+    return nullptr;
+}
+
 SdfPath getProxyShapePrimPath(const Ufe::Path& path)
 {
     if (auto proxyShape = getProxyShape(path)) {

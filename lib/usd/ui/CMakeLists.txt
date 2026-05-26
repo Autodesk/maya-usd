@@ -27,6 +27,9 @@ add_subdirectory(importDialog)
 if (AdskUsdAssetResolver_FOUND)
     add_subdirectory(assetResolver)
 endif()
+if (AdskUsdEditForward_FOUND)
+    add_subdirectory(editForward)
+endif()
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -74,6 +77,7 @@ target_link_libraries(${PROJECT_NAME}
 		Qt::Widgets
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_LIBRARY}>
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY}>
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_UI_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------
