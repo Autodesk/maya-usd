@@ -1,0 +1,106 @@
+---
+Language: Cpp
+
+BasedOnStyle: WebKit
+AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveMacros: 'true'
+AlignConsecutiveDeclarations: 'true'
+AlignEscapedNewlines: Left
+AlignTrailingComments: 'true'
+AllowAllConstructorInitializersOnNextLine: 'false'
+AllowAllParametersOfDeclarationOnNextLine: 'false'
+AllowShortCaseLabelsOnASingleLine: 'true'
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: 'false'
+AlwaysBreakTemplateDeclarations: MultiLine
+BinPackArguments: 'false'
+BinPackParameters: 'false'
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: 'true'
+  AfterEnum: 'true'
+  AfterFunction: 'true'
+  AfterStruct: 'true'
+  AfterUnion: 'true'
+BreakBeforeTernaryOperators: 'true'
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+ColumnLimit: '100'
+CommentPragmas:  '^\\.+'
+FixNamespaceComments: 'true'
+IncludeBlocks: Regroup
+IncludeCategories:
+
+  # Desired final ordering:
+  # 0. Glew must be included before any other GL header
+  # 1. Related header
+  # 2. All private headers
+  # 3/4/5. All public headers from this repository
+  # 6. UsdUfe headers
+  # 7. Pixar + USD headers
+  # 8. Autodesk + Qt headers
+  # 9. Other libraries' headers
+  # 10. C++ standard library headers
+  # 11. C system headers
+  # 12. Conditional includes
+
+  # 0. GL loaders must be included before any other GL header
+  # Negative priority puts it above the default IncludeIsMainRegex
+  - Regex:           '<pxr/imaging/(garch/glApi.h|glf/glew.h)>'
+    Priority:        -1
+
+  # 1. Related header
+  #    Handled  by the default IncludeIsMainRegex regex, and auto-assigned
+  #    Priority 0
+
+  # 2. All private headers
+  - Regex:           '^"'
+    Priority:        2
+
+  # 3. Headers from projects this repository that have dependencies on headers of 4 and/or 5
+  - Regex:           '^<(MaxUsdObjects)/'
+    Priority:        3
+
+  # 4.  Headers from projects this repository that have dependencies on headers of 4
+  - Regex:           '^<(RenderDelegate|UFEUI|USDExport|USDImport)/'
+    Priority:        4
+
+  # 5. MaxUsd Headers
+  - Regex:           '^<(MaxUsd)/'
+    Priority:        5
+
+  # 6. UsdUfe library headers
+  - Regex:           '^<usdUfe/'
+    Priority:        6
+
+  # 7. Pixar + USD headers
+  - Regex:           '^<pxr/'
+    Priority:        7
+
+  # 8. Autodesk + QT headers
+  - Regex:           '^<(maxscript|Graphics|ufe|Qt*)/'
+    Priority:        8
+
+  # 9. Other libraries' headers
+  - Regex:           '^<'
+    Priority:        9
+
+  # 10. C++ standard library headers
+  #    angle brackets, no directory, no extension
+  - Regex:           '^<[A-Za-z0-9_-]+>$'
+    Priority:        10
+
+  # 11. C system headers
+  #    angle brackets, no directory, end with ".h"
+  - Regex:           '^<[A-Za-z0-9_-]+\.h>$'
+    Priority:        11
+
+  # 12. Conditional includes
+  # Not reordered by clang-format, we need to manually make sure these come last
+
+MaxEmptyLinesToKeep: '1'
+NamespaceIndentation: None
+UseTab: Never
+
+...

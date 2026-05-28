@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    subLayers = [
+        @sublayer.usda@,
+    ]
+)
+
+# With sub-layer, the hierarchy is group/geo/cube and group/other
+def Xform "group" (
+    kind = "component"
+)
+{
+}
+

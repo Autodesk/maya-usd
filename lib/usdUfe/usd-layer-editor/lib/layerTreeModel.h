@@ -1,0 +1,149 @@
+//
+// Copyright 2020 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#ifndef USDLAYEREDITOR_LAYERTREEMODEL_H
+#define USDLAYEREDITOR_LAYERTREEMODEL_H
+
+#include "layerEditorAPI.h"
+#include "sessionState.h"
+
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/sdf/declareHandles.h>
+#include <pxr/usd/sdf/notice.h>
+#include <pxr/usd/usd/notice.h>
+
+#include <QtGui/QStandardItemModel>
+#include <string>
+#include <vector>
+
+namespace UsdLayerEditor {
+
+class LayerTreeItem;
+class SessionState;
+
+typedef std::vector<LayerTreeItem*> LayerItemVector;
+
+enum class InRebuildModel
+{
+    Yes,
+    No,
+};
+
+/**
+ * @brief Implements the Qt data model for the usd layer tree view
+ *
+ */
+class LayerEditorAPI LayerTreeModel
+    : public QStandardItemModel
+    , public PXR_NS::TfWeakBase
+{
+    Q_OBJECT
+public:
+    LayerTreeModel(SessionState* in_sessionState, QObject* in_parent);
+    ~LayerTreeModel();
+    SessionState* sessionState() { return _sessionState; }
+
+    // API to suspend reacting to USD notifications
+    static void suspendUsdNotices(bool suspend);
+
+    // get propertly typed item
+    LayerTreeItem* layerItemFromIndex(const QModelIndex& index) const;
+    // gets everything recursivly as an array : used to simplify iteration
+    typedef bool    (*ConditionFunc)(const LayerTreeItem*);
+    LayerItemVector getAllItems(
+        ConditionFunc        filter = [](const LayerTreeItem*) { return true; },
+        const LayerTreeItem* item = nullptr) const;
+    // get all the layers that need saving
+    LayerItemVector getAllNeedsSavingLayers() const;
+    // get all anonymous layers except the session layer
+    LayerItemVector getAllAnonymousLayers(const LayerTreeItem* item = nullptr) const;
+
+    // get an appropriate name for a new anonymous layer
+    std::string findNameForNewAnonymousLayer() const;
+
+    // save stage UI
+    void saveStage(QWidget* in_parent);
+
+    // return the index of the root layer
+    QModelIndex rootLayerIndex();
+
+    // target button callbacks
+    void setEditTarget(LayerTreeItem* item);
+
+    // mute layer management
+    void toggleMuteLayer(LayerTreeItem* item, bool* forcedState = nullptr);
+
+    // lock layer management
+    void toggleLockLayer(LayerTreeItem* item, bool includeSublayers, bool* forcedState = nullptr);
+
+    // ask to select a layer in the near future
+    void selectUsdLayerOnIdle(const PXR_NS::SdfLayerRefPtr& usdLayer);
+
+    // drag and drop support
+    Qt::ItemFlags   flags(const QModelIndex& index) const override;
+    Qt::DropActions supportedDropActions() const override;
+    QStringList     mimeTypes() const override;
+    QMimeData*      mimeData(const QModelIndexList& indexes) const override;
+    bool            dropMimeData(
+                   const QMimeData*   data,
+                   Qt::DropAction     action,
+                   int                row,
+                   int                column,
+                   const QModelIndex& parent) override;
+    bool canDropMimeData(
+        const QMimeData*   data,
+        Qt::DropAction     action,
+        int                row,
+        int                column,
+        const QModelIndex& parent) const override;
+
+    // for debugging
+    void forceRefresh() { rebuildModelOnIdle(); }
+    LayerTreeItem* findUSDLayerItem(const PXR_NS::SdfLayerRefPtr& usdLayer) const;
+
+Q_SIGNALS:
+    void selectLayerSignal(const QModelIndex&);
+
+protected:
+    // slots
+    void sessionStageChanged();
+    void autoHideSessionLayerChanged();
+
+    void          setSessionState(SessionState* in_sessionState);
+    SessionState* _sessionState = nullptr;
+
+    void registerUsdNotifications(bool in_register);
+    void usd_layerChanged(PXR_NS::SdfNotice::LayersDidChangeSentPerLayer const& notice);
+    void usd_editTargetChanged(PXR_NS::UsdNotice::StageEditTargetChanged const& notice);
+    void usd_layerDirtinessChanged(
+        PXR_NS::SdfNotice::LayerDirtinessChanged const& notice,
+        const PXR_NS::TfWeakPtr<PXR_NS::SdfLayer>&      layer);
+
+    PXR_NS::TfNotice::Keys _noticeKeys;
+    static bool            _blockUsdNotices;
+
+    mutable int _lastAskedAnonLayerNameSinceRebuild = 0;
+
+    void rebuildModelOnIdle();
+    bool _rebuildOnIdlePending = false;
+    void rebuildModel(bool refreshLockState = false);
+
+    void updateTargetLayer(InRebuildModel inRebuild);
+
+};
+
+} // namespace UsdLayerEditor
+#endif // LAYERTREEMODEL_H
