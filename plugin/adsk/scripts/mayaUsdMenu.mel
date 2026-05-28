@@ -1065,10 +1065,10 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
         return; // that's all we can support on invalid layers
     }
 
+
     int $isSessionLayer = `mayaUsdLayerEditorWindow -q -isSessionLayer $panelName`;
     int $isAnonymousLayer = `mayaUsdLayerEditorWindow -q -isAnonymousLayer $panelName`;
     int $needsSaving = `mayaUsdLayerEditorWindow -q -layerNeedsSaving $panelName`;
-    int $singleSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` == 1;
     int $appearsMuted = `mayaUsdLayerEditorWindow -q -layerAppearsMuted $panelName`;
     int $isSubLayer = `mayaUsdLayerEditorWindow -q -isSubLayer $panelName`;
     int $isMuted = `mayaUsdLayerEditorWindow -q -layerIsMuted $panelName`;
@@ -1080,6 +1080,12 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     int $isIncoming = `mayaUsdLayerEditorWindow -q -isIncomingLayer $panelName`;
     int $hasSublayers = `mayaUsdLayerEditorWindow -q -layerHasSubLayers $panelName`;
     string $proxyShape = `mayaUsdLayerEditorWindow -q -proxyShape $panelName`;
+
+    int $selectedCount = `mayaUsdLayerEditorWindow -q -selectionLength $panelName`;
+    int $singleSelect = ($selectedCount == 1);
+    int $multiSelect = ($selectedCount > 1);
+    int $hasSessionInSel = `python("import mayaUsd_layerUtils; mayaUsd_layerUtils.isSessionInLayerEditorSelection('" + $panelName + "')")`;
+    int $hasNonSessionInSel = `python("import mayaUsd_layerUtils; mayaUsd_layerUtils.isNonSessionInLayerEditorSelection('" + $panelName + "')")`;
 
     string $label;
     int $enabled;
@@ -1123,8 +1129,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     $enabled = $singleSelect && !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
     menuItem -label $label -enable $enabled -c $cmd;
 
-    int $multiSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` > 1;
-    if ($multiSelect && !$singleSelect) {
+    if ($multiSelect && !($hasSessionInSel && $hasNonSessionInSel)) {
         $label = getMayaUsdString("kMenuStitchLayers");
         $cmd = makeCommand($panelName, "stitchLayers");
         $enabled = !$isReadOnly && !$isLocked && !$appearsSystemLocked && !$appearsMuted;
