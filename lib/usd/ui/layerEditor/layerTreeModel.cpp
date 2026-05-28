@@ -353,11 +353,9 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         }
     }
 
-    LayerTreeItem* newSessionItem = nullptr;
-    LayerTreeItem* newRootItem = nullptr;
-
+    std::unique_ptr<LayerTreeItem> newSessionItem;
     if (showSessionLayer) {
-        newSessionItem = new LayerTreeItem(
+        newSessionItem = std::make_unique<LayerTreeItem>(
             sessionLayer,
             _sessionState->stage(),
             LayerType::SessionLayer,
@@ -367,7 +365,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
             &sharedLayers);
     }
 
-    newRootItem = new LayerTreeItem(
+    std::unique_ptr<LayerTreeItem> newRootItem = std::make_unique<LayerTreeItem>(
         rootLayer,
         _sessionState->stage(),
         LayerType::RootLayer,
@@ -377,7 +375,8 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         &sharedLayers);
 
     const bool rootIdentical = newRootItem->isIdenticalItem(oldRootItem);
-    const bool sessionIdentical = newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem);
+    const bool sessionIdentical = (!newSessionItem && !oldSessionItem)
+        || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
 
     if (rootIdentical && sessionIdentical) {
         return;
@@ -393,10 +392,10 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         removeRows(0, rowCount());
 
     if (newSessionItem) {
-        appendRow(newSessionItem);
+        appendRow(newSessionItem.release());
     }
 
-    appendRow(newRootItem);
+    appendRow(newRootItem.release());
 
     updateTargetLayer(InRebuildModel::Yes);
 
