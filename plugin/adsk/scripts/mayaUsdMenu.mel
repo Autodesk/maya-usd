@@ -809,6 +809,37 @@ global proc mayaUsdMenu_duplicateAsUsdDataOptions(string $obj)
     python("import mayaUsdDuplicateAsUsdDataOptions; mayaUsdDuplicateAsUsdDataOptions.showDuplicateAsUsdDataOptions()");
 }
 
+// USD Layer Editor and USD Path Editor at the top of the outliner menu, for the DAG
+// stage transform parent of the proxy shape. The stage shape itself is handled by UFE
+// ContextOps (MayaUsdContextOps). USD prims under the stage are handled by UFE as well.
+proc mayaUsdMenu_addStageGatewayContextMenuItems(string $proxyShape)
+{
+    if (size($proxyShape) == 0 || !`objExists $proxyShape`) {
+        return;
+    }
+    string $shapePath = `longNameOf $proxyShape`;
+    string $insertAfter = "";
+
+    if (`exists mayaUsdLayerEditorWindow`) {
+        string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapePath + "\" mayaUsdLayerEditor";
+        string $layerEditorLabel = `getMayaUsdString("kContextMenuLayerEditor")`;
+        menuItem -divider true -insertAfter "";
+        $insertAfter = `menuItem -enableCommandRepeat false
+            -label $layerEditorLabel
+            -insertAfter ""
+            -command $command openUsdLayerEditor`;
+    }
+
+    if (`exists assetResolverDialog`) {
+        string $command = "assetResolverDialog -tab \"paths\" -proxyShape \"" + $shapePath + "\"";
+        string $pathEditorLabel = `getMayaUsdString("kContextMenuPathEditor")`;
+        menuItem -enableCommandRepeat false
+            -label $pathEditorLabel
+            -insertAfter $insertAfter
+            -command $command;
+    }
+}
+
 proc notifyUsdContextMenuLoaded(string $mayaUsdMenu, string $nodeName)
 {
     // Trigger usdUfe UI callback so other plugins can add their own menus.
@@ -951,20 +982,16 @@ global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
 
     if ((size($nodeName) != 0) && `objExists $nodeName`) {
         int $isProxyNode = 0;
+
         if (`nodeType $nodeName` == "transform") {
             string $shapes[] = `listRelatives -shapes -fullPath $nodeName`;
             if (`size($shapes)` > 0) {
                 string $shapeNode = $shapes[0];
                 if (isMayaUsdProxyShape($shapeNode)) {
                     $isProxyNode = 1;
-                    if (`exists mayaUsdLayerEditorWindow`) {
-                        string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapeNode + "\" mayaUsdLayerEditor";
-                        menuItem -divider true -insertAfter "";
-                        menuItem -enableCommandRepeat false
-                            -label `getMayaUsdString("kContextMenuLayerEditor")`
-                            -insertAfter ""
-                            -command $command openUsdLayerEditor;
-                    }
+                    // DAG stage transform parent: add USD Layer Editor + USD Path Editor at the top.
+                    // The stage shape itself is handled by UFE ContextOps (MayaUsdContextOps).
+                    mayaUsdMenu_addStageGatewayContextMenuItems($shapeNode);
                 }
             }
         }

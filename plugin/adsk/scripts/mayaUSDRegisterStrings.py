@@ -92,6 +92,7 @@ __mayaUSDStringResources = {
     "kMenuLayerEditor": "USD Layer Editor",
     "kMenuUSDTools": "USD Tools",
     "kContextMenuLayerEditor": "USD Layer Editor",
+    "kContextMenuPathEditor": "USD Path Editor",
     "kMenuLayerEditorAnn": "Organize and edit USD data in layers",
     "kMenuLoadSublayers": "Load Sublayers...",
     "kMenuMergeWithSublayers": "Merge with Sublayers",
