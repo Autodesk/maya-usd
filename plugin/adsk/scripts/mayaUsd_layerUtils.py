@@ -37,7 +37,7 @@ def _getAllSessionLayerIds(stage):
         layer = todo.pop()
         sessionLayerIds.add(layer.identifier)
         for subLayerId in layer.subLayerPaths:
-            subLayer = Sdf.Layer.Find(subLayerId)
+            subLayer = Sdf.Layer.FindRelativeToLayer(layer, subLayerId)
             todo.append(subLayer)
     return sessionLayerIds
 
@@ -52,8 +52,7 @@ def isSessionInLayerEditorSelection(panelName):
 
     layerIds = getlayerEditorLayerIds(panelName)
     for layerId in layerIds:
-        layer = Sdf.Layer.Find(layerId)
-        if layer and layer.identifier in sessionLayers:
+        if layerId in sessionLayers:
             return True
     return False
 
@@ -68,7 +67,6 @@ def isNonSessionInLayerEditorSelection(panelName):
 
     layerIds = getlayerEditorLayerIds(panelName)
     for layerId in layerIds:
-        layer = Sdf.Layer.Find(layerId)
-        if layer and layer.identifier not in sessionLayers:
+        if layerId not in sessionLayers:
             return True
     return False
