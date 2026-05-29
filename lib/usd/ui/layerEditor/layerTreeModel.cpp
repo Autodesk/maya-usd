@@ -378,7 +378,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     const bool sessionIdentical = (!newSessionItem && !oldSessionItem)
         || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
 
-    if (rootIdentical && sessionIdentical) {
+    if (!refreshLockState && rootIdentical && sessionIdentical) {
         return;
     }
 
