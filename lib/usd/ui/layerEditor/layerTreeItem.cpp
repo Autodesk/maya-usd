@@ -205,6 +205,35 @@ LayerItemVector LayerTreeItem::childrenVector() const
     return result;
 }
 
+bool LayerTreeItem::isIdenticalItem(const LayerTreeItem* other) const
+{
+    if (!other) {
+        return false;
+    }
+
+    if (this == other) {
+        return true;
+    }
+
+    if (layer() != other->layer()) {
+        return false;
+    }
+
+    auto myChildren = childrenVector();
+    auto otherChildren = other->childrenVector();
+    if (myChildren.size() != otherChildren.size()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < myChildren.size(); i++) {
+        if (!myChildren[i]->isIdenticalItem(otherChildren[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // recursively update the target layer data member. Meant to be called from invisibleRoot
 void LayerTreeItem::updateTargetLayerRecursive(const PXR_NS::SdfLayerRefPtr& newTargetLayer)
 {
