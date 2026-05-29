@@ -348,21 +348,35 @@ TEST(LockPrims, onObjectsChanged)
     EXPECT_TRUE(checkUnlocked("world"));
     EXPECT_TRUE(checkUnlocked("cam"));
 
+#if PXR_VERSION >= 2603
+    hello.SetMetadata(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockTransform);
+    world.SetMetadata(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockUnlocked);
+#else
     hello.SetMetadata<TfToken>(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockTransform);
     world.SetMetadata<TfToken>(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockUnlocked);
+#endif
 
     EXPECT_TRUE(checkLocked("hello"));
     EXPECT_TRUE(checkUnlocked("world"));
     EXPECT_TRUE(checkUnlocked("cam"));
 
+#if PXR_VERSION >= 2603
+    hello.SetMetadata(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockUnlocked);
+    world.SetMetadata(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockTransform);
+#else
     hello.SetMetadata<TfToken>(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockUnlocked);
     world.SetMetadata<TfToken>(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockTransform);
+#endif
 
     EXPECT_TRUE(checkUnlocked("hello"));
     EXPECT_TRUE(checkLocked("world"));
     EXPECT_TRUE(checkLocked("cam"));
 
+#if PXR_VERSION >= 2603
+    world.SetMetadata(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockUnlocked);
+#else
     world.SetMetadata<TfToken>(AL::usdmaya::Metadata::locked, AL::usdmaya::Metadata::lockUnlocked);
+#endif
 
     EXPECT_TRUE(checkUnlocked("hello"));
     EXPECT_TRUE(checkUnlocked("world"));

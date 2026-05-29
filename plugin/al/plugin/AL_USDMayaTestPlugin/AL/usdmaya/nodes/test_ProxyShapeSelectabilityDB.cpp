@@ -47,7 +47,11 @@ TEST(ProxyShapeSelectabilityDB, selectablesOnOpen)
         UsdStageRefPtr stage = UsdStage::CreateInMemory();
         stage->DefinePrim(SdfPath("/A/B/C"));
         UsdPrim b = stage->GetPrimAtPath(expectedSelectable);
+#if PXR_VERSION >= 2603
+        b.SetMetadata(
+#else
         b.SetMetadata<TfToken>(
+#endif
             AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::unselectable);
         return stage;
     };

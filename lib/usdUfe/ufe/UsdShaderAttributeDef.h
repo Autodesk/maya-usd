@@ -24,6 +24,15 @@
 
 namespace USDUFE_NS_DEF {
 
+//! Returns true if the SdrShader{Node/Property} has metadata with the given key, false otherwise.
+template <class USD_SHADER>
+USDUFE_PUBLIC bool hasUsdShaderMetaData(const USD_SHADER& shader, const PXR_NS::TfToken& key);
+
+//! Returns the SdrShader{Node/Property} metadata value for the given key. If the key is not found,
+//! an empty Value is returned.
+template <class USD_SHADER>
+USDUFE_PUBLIC Ufe::Value getUsdShaderMetaData(const USD_SHADER& shader, const PXR_NS::TfToken& key);
+
 //! \brief UsdShaderAttributeDef interface.
 class USDUFE_PUBLIC UsdShaderAttributeDef : public Ufe::AttributeDef
 {
