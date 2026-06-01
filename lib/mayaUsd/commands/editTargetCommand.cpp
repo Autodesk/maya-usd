@@ -93,7 +93,8 @@ public:
                 if (oldLayer)
                     controller->setFallbackTarget(oldLayer);
                 else {
-                    reportError("Cannot undo edit target change: previous edit target layer not found");
+                    reportError(
+                        "Cannot undo edit target change: previous edit target layer not found");
                     controller->clearFallbackTarget();
                 }
             }
@@ -181,7 +182,8 @@ MStatus EditTargetCommand::parseArgs(const MArgList& argList)
                 if (auto fallback = controller->fallbackTarget())
                     layer = fallback;
                 else
-                    MGlobal::displayWarning("Edit forwarding is active but no fallback target is set.");
+                    MGlobal::displayWarning(
+                        "Edit forwarding is active but no fallback target is set.");
             }
 #endif
 

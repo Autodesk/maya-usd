@@ -87,8 +87,7 @@ void LayerTreeModel::registerUsdNotifications(bool in_register)
         _noticeKeys.push_back(TfNotice::Register(
             me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-        _noticeKeys.push_back(
-            TfNotice::Register(me, &LayerTreeModel::usd_efFallbackTargetChanged));
+        _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_efFallbackTargetChanged));
 #endif
 
     } else {
@@ -326,9 +325,10 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     auto sessionLayer = _sessionState->stage()->GetSessionLayer();
     bool showSessionLayer = true;
     if (_sessionState->autoHideSessionLayer()) {
-                    // Use the effective target so that in EF mode the decision follows the fallback
-            // target rather than the session layer (which is always the stage edit target there).
-        showSessionLayer = sessionLayer->IsDirty() || sessionLayer == _sessionState->effectiveTargetLayer();
+        // Use the effective target so that in EF mode the decision follows the fallback
+        // target rather than the session layer (which is always the stage edit target there).
+        showSessionLayer
+            = sessionLayer->IsDirty() || sessionLayer == _sessionState->effectiveTargetLayer();
     }
 
     std::set<std::string> sharedLayers;
@@ -486,8 +486,7 @@ void LayerTreeModel::usd_editTargetChanged(UsdNotice::StageEditTargetChanged con
 }
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-void LayerTreeModel::usd_efFallbackTargetChanged(
-    MayaUsdEFFallbackTargetChangedNotice const& notice)
+void LayerTreeModel::usd_efFallbackTargetChanged(MayaUsdEFFallbackTargetChangedNotice const& notice)
 {
     if (_blockUsdNotices)
         return;

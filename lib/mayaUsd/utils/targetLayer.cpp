@@ -211,7 +211,7 @@ MStatus copyLayerAsTargetLayerAttribute(
     if (proxyObj.isNull())
         return MS::kFailure;
 
-    const MString targetLayerText(layer->GetIdentifier().c_str());
+    const MString     targetLayerText(layer->GetIdentifier().c_str());
     MFnDependencyNode depNode(proxyObj);
 
     MString previousTargetLayerText;

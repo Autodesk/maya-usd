@@ -607,7 +607,7 @@ class AddAnonSubLayer : public InsertRemoveSubPathBase
 {
 public:
     AddAnonSubLayer()
-        : InsertRemoveSubPathBase(CmdId::kAddAnonLayer) { };
+        : InsertRemoveSubPathBase(CmdId::kAddAnonLayer) {};
 
     bool doIt(SdfLayerHandle layer) override
     {

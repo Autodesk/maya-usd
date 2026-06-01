@@ -104,12 +104,12 @@ public:
     std::vector<AdskUsdEditForward::RuleDef::Ptr> GetRules() const override;
 
     // Set/clear the catch-all fallback target layer. Does not affect whether EF is active.
-    void                         setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer);
-    void                         clearFallbackTarget();
-    PXR_NS::SdfLayerRefPtr       fallbackTarget() const { return _fallbackTarget; }
+    void                   setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer);
+    void                   clearFallbackTarget();
+    PXR_NS::SdfLayerRefPtr fallbackTarget() const { return _fallbackTarget; }
 
     // EF active state — true when continuous rules are present.
-    bool                   isForwardingActive() const { return _efActive; }
+    bool isForwardingActive() const { return _efActive; }
 
     // Re-evaluate whether EF mode should be on or off.
     void syncEditForwardMode();
@@ -127,11 +127,11 @@ private:
 
     void _setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer);
 
-    PXR_NS::UsdStageRefPtr  _stage;
-    PXR_NS::SdfLayerRefPtr  _fallbackTarget;
-    bool                    _efActive { false };
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _fallbackTarget;
+    bool                   _efActive { false };
 
-    PXR_NS::TfNotice::Keys  _noticeKeys;
+    PXR_NS::TfNotice::Keys _noticeKeys;
 };
 
 #endif // MAYAUSD_EDITFORWARDHOST_H

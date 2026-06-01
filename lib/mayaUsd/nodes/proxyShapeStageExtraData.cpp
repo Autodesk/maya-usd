@@ -82,8 +82,8 @@ void saveTrackedTargetLayer(const UsdStageRefPtr& stage)
                     if (auto fallback = controller->fallbackTarget()) {
                         return copyLayerAsTargetLayerAttribute(fallback, proxyShape);
                     }
-                    MGlobal::displayWarning(
-                        "Edit forwarding is active but no fallback target is set; target layer not saved.");
+                    MGlobal::displayWarning("Edit forwarding is active but no fallback target is "
+                                            "set; target layer not saved.");
                 }
             }
 #endif

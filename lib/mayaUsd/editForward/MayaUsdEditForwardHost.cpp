@@ -47,8 +47,7 @@ bool forwardingOpenedUndoChunk = false;
 
 } // namespace
 
-TF_INSTANTIATE_TYPE(
-    MayaUsdEFFallbackTargetChangedNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(MayaUsdEFFallbackTargetChangedNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 
 MayaUsdEditForwardHost::MayaUsdEditForwardHost()
 {
@@ -71,7 +70,7 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         }
         return;
     }
-        
+
     // If we are not inside a USD undoable command, do not forward. We would not know how to.
     // This could be a script editing USD data, or an interactive edit (slider drag from
     // attribute editor).
@@ -171,7 +170,7 @@ std::string EscapeForRegex(const std::string& s)
 {
     static const std::regex specialChars(R"([\.\^\$\+\(\)\[\]\{\}\|\?\*])");
     // \$& in replacement: $& expands to the matched char, \ makes it literal — inserts \<char>.
-    auto res =  std::regex_replace(s, specialChars, R"(\$&)");
+    auto res = std::regex_replace(s, specialChars, R"(\$&)");
     return res;
 }
 } // namespace
@@ -201,10 +200,7 @@ MayaUsdEditForwardController::MayaUsdEditForwardController(const PXR_NS::UsdStag
     }
 }
 
-MayaUsdEditForwardController::~MayaUsdEditForwardController()
-{
-    TfNotice::Revoke(&_noticeKeys);
-}
+MayaUsdEditForwardController::~MayaUsdEditForwardController() { TfNotice::Revoke(&_noticeKeys); }
 
 void MayaUsdEditForwardController::syncEditForwardMode()
 {
@@ -301,13 +297,13 @@ std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaUsdEditForwardController::GetR
         // Appended last so any user-authored rules take precedence.
         static const std::string kFallbackRuleId = "maya_ef_fallback_rule";
 
-        auto rule       = std::make_shared<AdskUsdEditForward::RuleDef>();
-        rule->id        = kFallbackRuleId;
+        auto rule = std::make_shared<AdskUsdEditForward::RuleDef>();
+        rule->id = kFallbackRuleId;
         rule->description = "MayaUsd Edit Forwarding Fallback Rule";
         rule->inputObjectExpression = AdskUsdEditForward::RuleExpression(".*");
-        rule->targetLayerExpression = AdskUsdEditForward::RuleExpression(
-            EscapeForRegex(_fallbackTarget->GetIdentifier()));
-        
+        rule->targetLayerExpression
+            = AdskUsdEditForward::RuleExpression(EscapeForRegex(_fallbackTarget->GetIdentifier()));
+
         rule->blockWeakOpinion = true;
 
         rules.push_back(rule);

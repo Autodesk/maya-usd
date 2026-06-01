@@ -91,9 +91,9 @@ public:
     virtual bool diplayLayerExpandAllValues() const { return _displayLayerExpandAllValues; }
     virtual void setDisplayLayerExpandAllValues(bool expand);
 
-    PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
-    StageEntry const&               stageEntry() const { return _currentStageEntry; }
-    PXR_NS::SdfLayerRefPtr          targetLayer() const;
+    PXR_NS::UsdStageRefPtr const& stage() const { return _currentStageEntry._stage; }
+    StageEntry const&             stageEntry() const { return _currentStageEntry; }
+    PXR_NS::SdfLayerRefPtr        targetLayer() const;
     // The layer the layer editor should treat as "the target". In edit forward mode this is
     // the fallback rule target (where unmatched edits go), since the stage edit target is
     // pinned to the session layer. Otherwise it is the stage edit target.
