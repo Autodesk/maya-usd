@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    defaultPrim = "WithVariants"
+    upAxis = "Z"
+)
+
+def Xform "WithVariants" (
+    variants = {
+        string modelingVariant = "A"
+        string shadingVariant = "Red"
+    }
+    prepend variantSets = ["shadingVariant", "modelingVariant"]
+)
+{
+    variantSet "shadingVariant" = {
+        "Red" {
+            color3f[] primvars:displayColor = [(0.8, 0.1, 0.1)]
+        }
+        "Green" {
+            color3f[] primvars:displayColor = [(0.1, 0.8, 0.1)]
+        }
+        "Blue" {
+            color3f[] primvars:displayColor = [(0.1, 0.1, 0.8)]
+        }
+    }
+    variantSet "modelingVariant" = {
+        "A" {
+            def Sphere "Sphere" {}
+        }
+        "B" {
+            def Cube "Cube" {}
+        }
+        "C" {
+            def Capsule "Capsule" {}
+        }
+    }
+}
+
+
