@@ -88,7 +88,7 @@ public:
     // IRuleProvider overrides
     std::vector<AdskUsdEditForward::RuleDef::Ptr> GetRules() const override;
 
-    // Set/clear the catch-all fallback target layer.
+    // Set/clear the catch-all fallback target layer. Does not affect whether EF is active.
     void                         setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer);
     void                         clearFallbackTarget();
     PXR_NS::SdfLayerRefPtr       fallbackTarget() const { return _fallbackTarget; }

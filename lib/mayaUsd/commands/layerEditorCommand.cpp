@@ -186,7 +186,11 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
         if (controller->isForwardingActive()) {
             auto fallback = controller->fallbackTarget();
             if (fallback && MayaUsd::isLayerLocked(fallback)) {
-                controller->setFallbackTarget(stage->GetSessionLayer());
+                std::string errMsg;
+                if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
+                    MPxCommand::displayInfo(errMsg.c_str());
+                    controller->setFallbackTarget(stage->GetSessionLayer());
+                }
             }
             return;
         }

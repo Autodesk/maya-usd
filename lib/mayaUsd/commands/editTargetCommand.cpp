@@ -92,8 +92,10 @@ public:
                 auto oldLayer = SdfLayer::Find(_oldTarget);
                 if (oldLayer)
                     controller->setFallbackTarget(oldLayer);
-                else
+                else {
+                    reportError("Cannot undo edit target change: previous edit target layer not found");
                     controller->clearFallbackTarget();
+                }
             }
             return;
         }
@@ -175,8 +177,11 @@ MStatus EditTargetCommand::parseArgs(const MArgList& argList)
             // edits land when not captured by a user forwarding rule). Report the fallback
             // so the query mirrors the visual target in the layer editor.
             auto controller = MayaUsdEditForwardController::GetForStage(stage);
-            if (controller && controller->isForwardingActive() && controller->fallbackTarget()) {
-                layer = controller->fallbackTarget();
+            if (controller && controller->isForwardingActive()) {
+                if (auto fallback = controller->fallbackTarget())
+                    layer = fallback;
+                else
+                    MGlobal::displayWarning("Edit forwarding is active but no fallback target is set.");
             }
 #endif
 

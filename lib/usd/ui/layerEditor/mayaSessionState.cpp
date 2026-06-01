@@ -508,6 +508,7 @@ PXR_NS::SdfLayerRefPtr MayaSessionState::effectiveTargetLayer() const
             // target is the fallback. Fall through to the stage edit target if it is not set.
             if (auto fallback = controller->fallbackTarget())
                 return fallback;
+            MGlobal::displayWarning("Edit forwarding is active but no fallback target is set.");
         }
     }
     return targetLayer();

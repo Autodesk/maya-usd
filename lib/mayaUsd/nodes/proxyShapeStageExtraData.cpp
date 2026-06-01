@@ -22,6 +22,7 @@
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 #endif
 
+#include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 
 #include <set>
@@ -81,6 +82,8 @@ void saveTrackedTargetLayer(const UsdStageRefPtr& stage)
                     if (auto fallback = controller->fallbackTarget()) {
                         return copyLayerAsTargetLayerAttribute(fallback, proxyShape);
                     }
+                    MGlobal::displayWarning(
+                        "Edit forwarding is active but no fallback target is set; target layer not saved.");
                 }
             }
 #endif

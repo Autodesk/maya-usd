@@ -166,6 +166,7 @@ std::unordered_map<const PXR_NS::UsdStage*, std::weak_ptr<MayaUsdEditForwardCont
 std::string EscapeForRegex(const std::string& s)
 {
     static const std::regex specialChars(R"([\.\^\$\+\(\)\[\]\{\}\|\?\*])");
+    // \$& in replacement: $& expands to the matched char, \ makes it literal — inserts \<char>.
     auto res =  std::regex_replace(s, specialChars, R"(\$&)");
     return res;
 }
@@ -302,6 +303,7 @@ std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaUsdEditForwardController::GetR
     return rules;
 }
 
+// These redirect where unmatched edits go; they do not toggle EF on or off.
 void MayaUsdEditForwardController::setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer)
 {
     _fallbackTarget = layer;
