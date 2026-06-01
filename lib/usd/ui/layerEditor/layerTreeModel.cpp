@@ -243,6 +243,14 @@ void LayerTreeModel::setEditTarget(LayerTreeItem* item)
         && !item->isSystemLocked()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        // When the edit forwarding mode is active, mayaUsdEditTarget routes to setFallbackTarget()
+        // instead of SetEditTarget().  setFallbackTarget() is in-memory only and fires no USD
+        // notice, so the tree would not refresh automatically — do it here.
+        if (_sessionState->isEditForwardMode()) {
+            updateTargetLayer(InRebuildModel::No);
+        }
+#endif
     }
 }
 
@@ -317,8 +325,10 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         bool showSessionLayer = true;
         auto sessionLayer = _sessionState->stage()->GetSessionLayer();
         if (_sessionState->autoHideSessionLayer()) {
+            // Use the effective target so that in EF mode the decision follows the fallback
+            // target rather than the session layer (which is always the stage edit target there).
             showSessionLayer
-                = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
+                = sessionLayer->IsDirty() || sessionLayer == _sessionState->effectiveTargetLayer();
         }
 
         std::set<std::string> sharedLayers;
@@ -391,7 +401,10 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
         return;
     }
 
-    auto editTarget = _sessionState->targetLayer();
+    // In Edit Forwarding mode the stage edit target is pinned to the session layer;
+    // effectiveTargetLayer() returns the fallback target in that case, and the stage edit
+    // target otherwise. The auto-hide logic below is target-source agnostic and works for both.
+    auto editTarget = _sessionState->effectiveTargetLayer();
     auto root = invisibleRootItem();
 
     // if session layer is in auto-hide handle case where it is the target
@@ -430,10 +443,11 @@ void LayerTreeModel::usd_layerChanged(SdfNotice::LayersDidChangeSentPerLayer con
 // notification from USD
 void LayerTreeModel::usd_editTargetChanged(UsdNotice::StageEditTargetChanged const& notice)
 {
-    if (!_blockUsdNotices) {
-        QTimer::singleShot(
-            0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
-    }
+    if (_blockUsdNotices)
+        return;
+
+    QTimer::singleShot(
+        0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
 }
 
 // notification from USD

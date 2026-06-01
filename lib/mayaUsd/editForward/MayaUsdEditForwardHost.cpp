@@ -26,10 +26,15 @@
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoManager.h>
 
+#include <pxr/base/tf/weakPtr.h>
+#include <pxr/usd/usd/editTarget.h>
+
 #include <maya/MGlobal.h>
 #include <ufe/undoableCommandMgr.h>
 
 #include <AdskUsdEditForward/Record.h>
+
+#include <regex>
 
 namespace {
 
@@ -62,7 +67,7 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         }
         return;
     }
-
+        
     // If we are not inside a USD undoable command, do not forward. We would not know how to.
     // This could be a script editing USD data, or an interactive edit (slider drag from
     // attribute editor).
@@ -152,6 +157,189 @@ void MayaUsdEditForwardHost::PauseEditForwarding(bool pause) { _paused = pause; 
 void MayaUsdEditForwardHost::TrackLayerStates(const pxr::SdfLayerHandle& layer)
 {
     UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
+}
+
+namespace {
+// Per-stage registry of controllers, used by GetForStage()/RegisterForStage().
+std::unordered_map<const PXR_NS::UsdStage*, std::weak_ptr<MayaUsdEditForwardController>> s_registry;
+
+std::string EscapeForRegex(const std::string& s)
+{
+    static const std::regex specialChars(R"([\.\^\$\+\(\)\[\]\{\}\|\?\*])");
+    auto res =  std::regex_replace(s, specialChars, R"(\$&)");
+    return res;
+}
+} // namespace
+
+MayaUsdEditForwardController::MayaUsdEditForwardController(const PXR_NS::UsdStageRefPtr& stage)
+    : AdskUsdEditForward::StageRuleProvider(stage)
+    , _stage(stage)
+{
+    if (stage) {
+        TfWeakPtr<MayaUsdEditForwardController> me(this);
+
+        // Listen to layer changes. If the layer metadata changes on the root layer, rules may
+        // have changed, and we may have to toggle the edit forward mode active state.
+        _noticeKeys.push_back(TfNotice::Register(
+            me, &MayaUsdEditForwardController::_onLayerChanged, TfWeakPtr<SdfLayer>(nullptr)));
+
+        // Listen to edit target changes. If the edit target is changed externally while in edit
+        // forward mode, we have to turn it off, as it requires the session layer to be targeted.
+        _noticeKeys.push_back(TfNotice::Register(
+            me,
+            &MayaUsdEditForwardController::_onEditTargetChanged,
+            TfWeakPtr<PXR_NS::UsdStage>(_stage)));
+
+        // Sync immediately so that a stage loaded with EF rules already authored
+        // (e.g. a component) starts with the correct EF active state.
+        syncEditForwardMode();
+    }
+}
+
+MayaUsdEditForwardController::~MayaUsdEditForwardController()
+{
+    TfNotice::Revoke(&_noticeKeys);
+}
+
+void MayaUsdEditForwardController::syncEditForwardMode()
+{
+    if (!_stage)
+        return;
+
+    // TODO : we may want to instead have two distinct states exposed to users, continuous or not,
+    // EF enabled or not. UX will iterate on this.
+    const bool efShouldBeActive = !GetRules().empty() && IsContinuous();
+
+    if (efShouldBeActive == _efActive)
+        return;
+
+    if (efShouldBeActive) {
+        // Seed the fallback from the current edit target (where edits were going). If that
+        // layer is locked, fall back to the session layer.
+        SdfLayerRefPtr currentTarget = _stage->GetEditTarget().GetLayer();
+        _fallbackTarget              = (currentTarget && currentTarget->PermissionToEdit())
+            ? currentTarget
+            : SdfLayerRefPtr(_stage->GetSessionLayer());
+        _efActive          = true;
+        // Edit forwarding needs the USD edit target on the session layer.
+        _stage->SetEditTarget(_stage->GetSessionLayer());
+    } else {
+        // Restore the last fallback target (the user-facing target during EF).
+        _efActive = false;
+        if (_fallbackTarget) {
+            _stage->SetEditTarget(_fallbackTarget);
+        }
+        _fallbackTarget = nullptr;
+    }
+}
+
+void MayaUsdEditForwardController::_onLayerChanged(
+    const SdfNotice::LayersDidChangeSentPerLayer& notice,
+    const TfWeakPtr<SdfLayer>&                    sender)
+{
+    if (!_stage || !sender)
+        return;
+    auto rootLayer = _stage->GetRootLayer();
+    if (!rootLayer || sender != rootLayer)
+        return;
+
+    // Only react when layer-level custom data changes, that is where EF rules live.
+    for (const auto& [layer, changeList] : notice.GetChangeListVec()) {
+        if (layer != rootLayer)
+            continue;
+        for (const auto& [path, entry] : changeList.GetEntryList()) {
+            if (path != SdfPath::AbsoluteRootPath())
+                continue;
+            for (const auto& [field, change] : entry.infoChanged) {
+                if (field == SdfFieldKeys->CustomLayerData) {
+                    syncEditForwardMode();
+                    return;
+                }
+            }
+        }
+    }
+}
+
+void MayaUsdEditForwardController::_onEditTargetChanged(
+    const UsdNotice::StageEditTargetChanged& /*notice*/,
+    const TfWeakPtr<PXR_NS::UsdStage>& /*sender*/)
+{
+    if (!_efActive)
+        return;
+    // If the stage's edit target is no longer the session layer, an external
+    // party changed it — exit EF mode without restoring the saved target.
+    if (_stage->GetEditTarget().GetLayer() != _stage->GetSessionLayer()) {
+        _efActive       = false;
+        _fallbackTarget = nullptr;
+        MGlobal::displayError(
+            "Edit forwarding rules are present but the edit target was changed "
+            "externally. Edit forwarding has been disabled.");
+    }
+}
+
+std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaUsdEditForwardController::GetRules() const
+{
+    // Start with any rules authored on the stage (read from root layer custom data).
+    auto rules = AdskUsdEditForward::StageRuleProvider::GetRules();
+
+    if (_fallbackTarget) {
+        // Append an in-memory catch-all rule targeting the fallback layer.
+        // Appended last so any user-authored rules take precedence.
+        static const std::string kFallbackRuleId = "maya_ef_fallback_rule";
+
+        auto rule       = std::make_shared<AdskUsdEditForward::RuleDef>();
+        rule->id        = kFallbackRuleId;
+        rule->description = "MayaUsd Edit Forwarding Fallback Rule";
+        rule->inputObjectExpression = AdskUsdEditForward::RuleExpression(".*");
+        rule->targetLayerExpression = AdskUsdEditForward::RuleExpression(
+            EscapeForRegex(_fallbackTarget->GetIdentifier()));
+        
+        rule->blockWeakOpinion = true;
+
+        rules.push_back(rule);
+    }
+
+    return rules;
+}
+
+void MayaUsdEditForwardController::setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    _fallbackTarget = layer;
+}
+
+void MayaUsdEditForwardController::clearFallbackTarget() { _fallbackTarget = nullptr; }
+
+/*static*/
+MayaUsdEditForwardController::Ptr
+MayaUsdEditForwardController::GetForStage(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (!stage) {
+        return nullptr;
+    }
+    // Prune all expired entries on each lookup.
+    for (auto it = s_registry.begin(); it != s_registry.end();) {
+        if (it->second.expired()) {
+            it = s_registry.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    auto it = s_registry.find(stage.operator->());
+    if (it != s_registry.end()) {
+        return it->second.lock();
+    }
+    return nullptr;
+}
+
+/*static*/
+void MayaUsdEditForwardController::RegisterForStage(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const Ptr&                    controller)
+{
+    if (!stage) {
+        return;
+    }
+    s_registry[stage.operator->()] = controller;
 }
 
 bool MayaUsdEditForwardHost::WantsEcho() const { return _wantsEcho; }
