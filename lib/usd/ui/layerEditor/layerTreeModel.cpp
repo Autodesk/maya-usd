@@ -30,6 +30,10 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+#endif
+
 #include <pxr/base/tf/notice.h>
 
 #include <maya/MDagModifier.h>
@@ -82,6 +86,10 @@ void LayerTreeModel::registerUsdNotifications(bool in_register)
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_editTargetChanged));
         _noticeKeys.push_back(TfNotice::Register(
             me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        _noticeKeys.push_back(
+            TfNotice::Register(me, &LayerTreeModel::usd_efFallbackTargetChanged));
+#endif
 
     } else {
         TfNotice::Revoke(&_noticeKeys);
@@ -243,14 +251,9 @@ void LayerTreeModel::setEditTarget(LayerTreeItem* item)
         && !item->isSystemLocked()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-        // When the edit forwarding mode is active, mayaUsdEditTarget routes to setFallbackTarget()
-        // instead of SetEditTarget().  setFallbackTarget() is in-memory only and fires no USD
-        // notice, so the tree would not refresh automatically — do it here.
-        if (_sessionState->isEditForwardMode()) {
-            updateTargetLayer(InRebuildModel::No);
-        }
-#endif
+        // In edit-forward mode this routes to the controller's fallback target rather than
+        // SdfLayer::SetEditTarget(); the controller fires MayaUsdEFFallbackTargetChangedNotice,
+        // which LayerTreeModel observes to refresh the target-layer display.
     }
 }
 
@@ -449,6 +452,19 @@ void LayerTreeModel::usd_editTargetChanged(UsdNotice::StageEditTargetChanged con
     QTimer::singleShot(
         0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
 }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+void LayerTreeModel::usd_efFallbackTargetChanged(
+    MayaUsdEFFallbackTargetChangedNotice const& notice)
+{
+    if (_blockUsdNotices)
+        return;
+    if (!_sessionState || notice.GetStage() != _sessionState->stage())
+        return;
+    QTimer::singleShot(
+        0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
+}
+#endif
 
 // notification from USD
 void LayerTreeModel::usd_layerDirtinessChanged(

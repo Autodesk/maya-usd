@@ -26,6 +26,7 @@
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoManager.h>
 
+#include <pxr/base/tf/instantiateType.h>
 #include <pxr/base/tf/weakPtr.h>
 #include <pxr/usd/usd/editTarget.h>
 
@@ -45,6 +46,9 @@ bool IsInUsdUndoBlock() { return UsdUfe::UsdUndoBlock::depth() > 0; }
 bool forwardingOpenedUndoChunk = false;
 
 } // namespace
+
+TF_INSTANTIATE_TYPE(
+    MayaUsdEFFallbackTargetChangedNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 
 MayaUsdEditForwardHost::MayaUsdEditForwardHost()
 {
@@ -215,13 +219,17 @@ void MayaUsdEditForwardController::syncEditForwardMode()
         return;
 
     if (efShouldBeActive) {
-        // Seed the fallback from the current edit target (where edits were going). If that
+        // Seed the fallback from the current edit target (where edits were going) only if we
+        // don't already have one — a suspended-then-resumed EF keeps its fallback. If the seed
         // layer is locked, fall back to the session layer.
-        SdfLayerRefPtr currentTarget = _stage->GetEditTarget().GetLayer();
-        _fallbackTarget              = (currentTarget && currentTarget->PermissionToEdit())
-            ? currentTarget
-            : SdfLayerRefPtr(_stage->GetSessionLayer());
-        _efActive          = true;
+        if (!_fallbackTarget) {
+            SdfLayerRefPtr currentTarget = _stage->GetEditTarget().GetLayer();
+            _setFallbackTarget(
+                (currentTarget && currentTarget->PermissionToEdit())
+                    ? currentTarget
+                    : SdfLayerRefPtr(_stage->GetSessionLayer()));
+        }
+        _efActive = true;
         // Edit forwarding needs the USD edit target on the session layer.
         _stage->SetEditTarget(_stage->GetSessionLayer());
     } else {
@@ -230,7 +238,7 @@ void MayaUsdEditForwardController::syncEditForwardMode()
         if (_fallbackTarget) {
             _stage->SetEditTarget(_fallbackTarget);
         }
-        _fallbackTarget = nullptr;
+        _setFallbackTarget(nullptr);
     }
 }
 
@@ -265,16 +273,21 @@ void MayaUsdEditForwardController::_onEditTargetChanged(
     const UsdNotice::StageEditTargetChanged& /*notice*/,
     const TfWeakPtr<PXR_NS::UsdStage>& /*sender*/)
 {
-    if (!_efActive)
+    if (!_stage)
         return;
-    // If the stage's edit target is no longer the session layer, an external
-    // party changed it — exit EF mode without restoring the saved target.
-    if (_stage->GetEditTarget().GetLayer() != _stage->GetSessionLayer()) {
-        _efActive       = false;
-        _fallbackTarget = nullptr;
-        MGlobal::displayError(
-            "Edit forwarding rules are present but the edit target was changed "
-            "externally. Edit forwarding has been disabled.");
+
+    if (_stage->GetEditTarget().GetLayer() == _stage->GetSessionLayer()) {
+        // Target is back on the session layer (e.g. a transient edit-routing scope ended).
+        // Re-evaluate EF: this reactivates it if continuous rules are present.
+        syncEditForwardMode();
+    } else if (_efActive) {
+        // Target moved off the session layer. EF requires the session layer as the stage
+        // target, so suspend it. Keep _fallbackTarget so EF can resume unchanged when the
+        // target returns to the session layer (the common transient-routing case).
+        _efActive = false;
+        MGlobal::displayInfo(
+            "Edit target moved off the session layer; edit forwarding is paused until the "
+            "session layer is targeted again.");
     }
 }
 
@@ -306,10 +319,18 @@ std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaUsdEditForwardController::GetR
 // These redirect where unmatched edits go; they do not toggle EF on or off.
 void MayaUsdEditForwardController::setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer)
 {
-    _fallbackTarget = layer;
+    _setFallbackTarget(layer);
 }
 
-void MayaUsdEditForwardController::clearFallbackTarget() { _fallbackTarget = nullptr; }
+void MayaUsdEditForwardController::clearFallbackTarget() { _setFallbackTarget(nullptr); }
+
+void MayaUsdEditForwardController::_setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    if (_fallbackTarget == layer)
+        return;
+    _fallbackTarget = layer;
+    MayaUsdEFFallbackTargetChangedNotice(_stage).Send();
+}
 
 /*static*/
 MayaUsdEditForwardController::Ptr

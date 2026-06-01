@@ -58,6 +58,21 @@ private:
     bool _wantsEcho = false;
 };
 
+/// Notice sent when a stage's edit-forward fallback target changes.
+class MAYAUSD_CORE_PUBLIC MayaUsdEFFallbackTargetChangedNotice : public PXR_NS::TfNotice
+{
+public:
+    explicit MayaUsdEFFallbackTargetChangedNotice(const PXR_NS::UsdStageRefPtr& stage)
+        : _stage(stage)
+    {
+    }
+
+    PXR_NS::UsdStageRefPtr GetStage() const { return _stage; }
+
+private:
+    PXR_NS::UsdStageRefPtr _stage;
+};
+
 /**
  * Maya-level controller for Edit Forwarding mode.
  *
@@ -109,6 +124,8 @@ private:
     void _onEditTargetChanged(
         const PXR_NS::UsdNotice::StageEditTargetChanged& notice,
         const PXR_NS::TfWeakPtr<PXR_NS::UsdStage>&       sender);
+
+    void _setFallbackTarget(const PXR_NS::SdfLayerRefPtr& layer);
 
     PXR_NS::UsdStageRefPtr  _stage;
     PXR_NS::SdfLayerRefPtr  _fallbackTarget;

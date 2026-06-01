@@ -150,23 +150,68 @@ class EditForwardLayerEditorTestCase(unittest.TestCase):
             "Re-enabling continuous mode should re-enter EF mode automatically")
 
     def testExternalEditTargetChange(self):
-        """Changing the edit target externally while EF is on exits EF mode; new target stands."""
+        """Moving the edit target off the session layer while EF is on *suspends* EF (the new
+        target stands); returning the target to the session layer reactivates EF with the
+        preserved fallback."""
         shapeNodePath, stage, layerA, layerB = self._createStageWithSublayers()
 
         cmds.mayaUsdEditTarget(shapeNodePath, edit=True, editTarget=layerA.identifier)
         self._writeRules(stage.GetRootLayer())
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
 
-        # Bypass the layer editor command to simulate an external change.
+        # Bypass the layer editor command to simulate an external change off the session layer.
         stage.SetEditTarget(Usd.EditTarget(layerB))
 
+        # EF is suspended (not permanently exited): the new target stands and is reported as the
+        # real edit target.
         self.assertEqual(
             stage.GetEditTarget().GetLayer(),
             layerB,
-            "External edit target change should exit EF mode; the new target should stand")
+            "Moving the edit target off the session layer should suspend EF; the new target stands")
         self.assertEqual(
             cmds.mayaUsdEditTarget(shapeNodePath, query=True, editTarget=True)[0],
             layerB.identifier)
+
+        # Returning the target to the session layer reactivates EF with the *preserved* fallback.
+        stage.SetEditTarget(Usd.EditTarget(stage.GetSessionLayer()))
+        self.assertEqual(
+            stage.GetEditTarget().GetLayer(),
+            stage.GetSessionLayer(),
+            "Targeting the session layer again should reactivate EF")
+        self.assertEqual(
+            cmds.mayaUsdEditTarget(shapeNodePath, query=True, editTarget=True)[0],
+            layerA.identifier,
+            "Reactivated EF should restore the preserved fallback (layerA), not reseed it")
+
+    def testEditContextTransientTargetChange(self):
+        """A scoped edit-target guard that authors into another layer while EF is active 
+        must not be hijacked by edit forwarding, and EF must resume with its fallback once
+        the scope restores the session layer."""
+        shapeNodePath, stage, layerA, layerB = self._createStageWithSublayers()
+
+        cmds.mayaUsdEditTarget(shapeNodePath, edit=True, editTarget=layerA.identifier)
+        self._writeRules(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # A routing scope transiently retargets the stage to layerB, authors there, and restores.
+        with Usd.EditContext(stage, Usd.EditTarget(layerB)):
+            self.assertEqual(stage.GetEditTarget().GetLayer(), layerB)
+            stage.DefinePrim('/RoutedPrim', 'Xform')
+
+        # The edit landed in layerB and was not forwarded elsewhere.
+        self.assertTrue(
+            layerB.GetPrimAtPath('/RoutedPrim'),
+            "The edit made inside the routing scope must land in the routed layer (layerB)")
+
+        # Leaving the scope restored the session layer, so EF is active again with fallback layerA.
+        self.assertEqual(
+            stage.GetEditTarget().GetLayer(),
+            stage.GetSessionLayer(),
+            "Leaving the routing scope should reactivate EF (target back on the session layer)")
+        self.assertEqual(
+            cmds.mayaUsdEditTarget(shapeNodePath, query=True, editTarget=True)[0],
+            layerA.identifier,
+            "EF should resume with the preserved fallback after the routing scope ends")
 
     def testEFTargetRouting(self):
         """In EF mode mayaUsdEditTarget routes to the fallback target, not the stage target."""
@@ -312,19 +357,24 @@ class EditForwardLayerEditorTestCase(unittest.TestCase):
             "Non-continuous rules must not activate EF mode or change the edit target")
 
     def testLockFallbackLayerSwitchesToSessionLayer(self):
-        """Locking the EF fallback layer keeps EF active and routes writes to the session layer."""
+        """Locking the EF fallback layer when no other layer is modifiable keeps EF active and
+        routes writes to the session layer."""
         shapeNodePath, stage, layerA, layerB = self._createStageWithSublayers()
         sessionLayer = stage.GetSessionLayer()
+        rootLayer = stage.GetRootLayer()
 
         # Activate EF mode and route the fallback to layerA.
-        self._writeRules(stage.GetRootLayer())
+        self._writeRules(rootLayer)
         self.assertEqual(stage.GetEditTarget().GetLayer(), sessionLayer)
         cmds.mayaUsdEditTarget(shapeNodePath, edit=True, editTarget=layerA.identifier)
 
-        # Lock layerA via the layer editor command.
+        # The redirect to the session layer only fires when NO layer in the stack (root +
+        # sublayers, per isAnyLayerModifiable) is writable. Lock every targetable layer, locking
+        # the fallback (layerA) last so the redirect check is entered while nothing is modifiable.
         # lockLayer flag: (lockType=1 locked, includeSublayers=0, proxyShapePath)
-        cmds.mayaUsdLayerEditor(layerA.identifier, edit=True,
-                                lockLayer=(1, 0, shapeNodePath))
+        cmds.mayaUsdLayerEditor(layerB.identifier, edit=True, lockLayer=(1, 0, shapeNodePath))
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, lockLayer=(1, 0, shapeNodePath))
+        cmds.mayaUsdLayerEditor(layerA.identifier, edit=True, lockLayer=(1, 0, shapeNodePath))
 
         # EF must still be active.
         self.assertEqual(
@@ -348,14 +398,17 @@ class EditForwardLayerEditorTestCase(unittest.TestCase):
         """Undoing the lock of the EF fallback layer keeps writes on the session layer."""
         shapeNodePath, stage, layerA, layerB = self._createStageWithSublayers()
         sessionLayer = stage.GetSessionLayer()
+        rootLayer = stage.GetRootLayer()
 
         # Activate EF and route fallback to layerA.
-        self._writeRules(stage.GetRootLayer())
+        self._writeRules(rootLayer)
         cmds.mayaUsdEditTarget(shapeNodePath, edit=True, editTarget=layerA.identifier)
 
-        # Lock layerA, which redirects the fallback to session layer.
-        cmds.mayaUsdLayerEditor(layerA.identifier, edit=True,
-                                lockLayer=(1, 0, shapeNodePath))
+        # Lock every targetable layer (the fallback layerA last) so locking the fallback leaves
+        # no writable layer and redirects the fallback to the session layer.
+        cmds.mayaUsdLayerEditor(layerB.identifier, edit=True, lockLayer=(1, 0, shapeNodePath))
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, lockLayer=(1, 0, shapeNodePath))
+        cmds.mayaUsdLayerEditor(layerA.identifier, edit=True, lockLayer=(1, 0, shapeNodePath))
         self.assertEqual(
             cmds.mayaUsdEditTarget(shapeNodePath, query=True, editTarget=True)[0],
             sessionLayer.identifier)
