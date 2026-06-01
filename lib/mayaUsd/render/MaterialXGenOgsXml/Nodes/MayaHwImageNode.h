@@ -6,7 +6,13 @@
 #ifndef MAYA_MATERIALX_HWIMAGECODENODE_H
 #define MAYA_MATERIALX_HWIMAGECODENODE_H
 
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
+
+#if MX_COMBINED_VERSION >= 13905
+#include <MaterialXGenHw/Nodes/HwImageNode.h>
+#else
 #include <MaterialXGenShader/Nodes/HwImageNode.h>
+#endif
 
 MATERIALX_NAMESPACE_BEGIN
 

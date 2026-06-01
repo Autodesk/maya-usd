@@ -5,9 +5,15 @@
 
 #include "MayaDarkClosureNode.h"
 
+#include <mayaUsd/render/MaterialXGenOgsXml/CombinedMaterialXVersion.h>
 #include <mayaUsd/render/MaterialXGenOgsXml/LobePruner.h>
 
+#if MX_COMBINED_VERSION >= 13905
+#include <MaterialXGenShader/Exception.h>
+#include <MaterialXGenHw/HwShaderGenerator.h>
+#else
 #include <MaterialXGenShader/HwShaderGenerator.h>
+#endif
 
 MATERIALX_NAMESPACE_BEGIN
 
