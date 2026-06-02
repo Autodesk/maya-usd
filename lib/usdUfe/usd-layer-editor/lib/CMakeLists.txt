@@ -103,6 +103,8 @@ else()
 endif()
 
 target_compile_definitions(UsdLayerEditorLib
+    PUBLIC
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:WANT_ADSK_USD_EDIT_FORWARD_BUILD>
     PRIVATE
         LAYEREDITOR_EXPORTS
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
@@ -116,6 +118,7 @@ target_include_directories(UsdLayerEditorLib
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${UFE_INCLUDE_DIR}
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_INCLUDE_DIR}>
 )
 
 target_link_libraries(UsdLayerEditorLib
