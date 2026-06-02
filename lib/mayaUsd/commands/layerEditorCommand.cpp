@@ -18,6 +18,9 @@
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/utils/layerLocking.h>
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+#endif
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/query.h>
@@ -173,6 +176,26 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
 
     if (!stage)
         return;
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // If edit forwarding is active and the fallback target is now locked, redirect the
+    // fallback to the session layer so unmatched edits still have a writable destination,
+    // then skip the normal auto-targeting (in EF mode the stage edit target is already the
+    // session layer).
+    if (auto controller = MayaUsdEditForwardController::GetForStage(UsdStageRefPtr(stage))) {
+        if (controller->isForwardingActive()) {
+            auto fallback = controller->fallbackTarget();
+            if (fallback && MayaUsd::isLayerLocked(fallback)) {
+                std::string errMsg;
+                if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
+                    MPxCommand::displayInfo(errMsg.c_str());
+                    controller->setFallbackTarget(stage->GetSessionLayer());
+                }
+            }
+            return;
+        }
+    }
+#endif
 
     if (stage->GetEditTarget().GetLayer() == stage->GetSessionLayer())
         return;

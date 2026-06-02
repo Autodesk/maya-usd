@@ -200,6 +200,28 @@ PXR_NS::SdfLayerHandle getTargetLayerFromAttribute(
     return getTargetLayerFromText(nameMap, stage, layerId);
 }
 
+MStatus copyLayerAsTargetLayerAttribute(
+    const PXR_NS::SdfLayerRefPtr& layer,
+    MayaUsdProxyShapeBase&        proxyShape)
+{
+    if (!layer)
+        return MS::kFailure;
+
+    MObject proxyObj = proxyShape.thisMObject();
+    if (proxyObj.isNull())
+        return MS::kFailure;
+
+    const MString     targetLayerText(layer->GetIdentifier().c_str());
+    MFnDependencyNode depNode(proxyObj);
+
+    MString previousTargetLayerText;
+    getDynamicAttribute(depNode, kTargetLayerAttrName, previousTargetLayerText);
+    if (previousTargetLayerText == targetLayerText)
+        return MS::kSuccess;
+
+    return setDynamicAttribute(depNode, kTargetLayerAttrName, targetLayerText);
+}
+
 MStatus
 copyTargetLayerFromAttribute(const MayaUsdProxyShapeBase& proxyShape, PXR_NS::UsdStage& stage)
 {

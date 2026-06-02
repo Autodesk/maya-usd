@@ -54,7 +54,9 @@ public:
     void setStageEntry(StageEntry const& in_entry) override;
     void setAutoHideSessionLayer(bool hide) override;
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    void setEchoEditForwarding(bool echo) override;
+    void                   setEchoEditForwarding(bool echo) override;
+    bool                   isEditForwardMode() const override;
+    PXR_NS::SdfLayerRefPtr effectiveTargetLayer() const override;
 #endif
     void setDisplayLayerContents(bool show) override;
     void setDisplayLayerExpandAllValues(bool expand) override;
