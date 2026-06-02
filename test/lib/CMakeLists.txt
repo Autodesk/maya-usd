@@ -110,6 +110,23 @@ else()
     endif()
 endif()
 
+if (AdskUsdDebugTools_FOUND)
+    # Install a test to verify Debug Tools integration works correctly.
+    mayaUsd_get_unittest_target(target testAdskUsdDebugTools.py)
+    mayaUsd_add_test(${target}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        PYTHON_MODULE ${target}
+        MODULE_PATH ${CMAKE_INSTALL_PREFIX}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+    )
+    set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+else()
+    if (DEFINED ENV{MAYAUSD_FORCE_DT_TEST} AND "$ENV{MAYAUSD_FORCE_DT_TEST}" STREQUAL "1")
+        message(FATAL_ERROR "MAYAUSD_FORCE_DT_TEST is set to 1 but AdskUsdDebugTools was not found. ")
+    endif()
+endif()
+
 foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}

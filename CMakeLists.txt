@@ -253,6 +253,7 @@ endif()
 if(BUILD_MAYAUSD_LIBRARY)
     find_package(AdskUsdComponentCreator)
     find_package(AdskUsdAssetResolver)
+    find_package(AdskUsdDebugTools)
     find_package(AdskUsdEditForward)
 endif()
 

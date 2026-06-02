@@ -27,6 +27,9 @@ add_subdirectory(importDialog)
 if (AdskUsdAssetResolver_FOUND)
     add_subdirectory(assetResolver)
 endif()
+if (AdskUsdDebugTools_FOUND)
+    add_subdirectory(debugTools)
+endif()
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -64,6 +67,9 @@ mayaUsd_compile_config(${PROJECT_NAME})
 if(AdskUsdAssetResolver_FOUND)
     target_include_directories(${PROJECT_NAME} PRIVATE ${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR})
 endif()
+if(AdskUsdDebugTools_FOUND)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ADSK_USD_DEBUG_TOOLS_INCLUDE_DIR})
+endif()
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
@@ -74,6 +80,8 @@ target_link_libraries(${PROJECT_NAME}
 		Qt::Widgets
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_LIBRARY}>
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY}>
+        $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_CORE_LIBRARY}>
+        $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_UI_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------
