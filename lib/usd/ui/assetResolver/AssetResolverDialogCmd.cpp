@@ -206,6 +206,14 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
             g_assetResolverDialog->setSettingsAppliedFunctor(
                 PreferencesManagement::SaveUsdPreferences);
 
+            g_assetResolverDialog->setHelpActionFunctor([]() {
+                MString helpLinkId = "MayaUsdAssetResolver";
+                MString cmd;
+                cmd.format(
+                    "from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD('^1s');",
+                    helpLinkId);
+                MGlobal::executePythonCommand(cmd);
+            });
             QApplication::restoreOverrideCursor();
         }
 
