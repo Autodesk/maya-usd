@@ -29,6 +29,10 @@
 #include <string>
 #include <vector>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+class MayaUsdEFFallbackTargetChangedNotice;
+#endif
+
 namespace UsdLayerEditor {
 
 class LayerTreeItem;
@@ -132,6 +136,9 @@ protected:
     void registerUsdNotifications(bool in_register);
     void usd_layerChanged(PXR_NS::SdfNotice::LayersDidChangeSentPerLayer const& notice);
     void usd_editTargetChanged(PXR_NS::UsdNotice::StageEditTargetChanged const& notice);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    void usd_efFallbackTargetChanged(MayaUsdEFFallbackTargetChangedNotice const& notice);
+#endif
     void usd_layerDirtinessChanged(
         PXR_NS::SdfNotice::LayerDirtinessChanged const& notice,
         const PXR_NS::TfWeakPtr<PXR_NS::SdfLayer>&      layer);

@@ -30,6 +30,10 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+#endif
+
 #include <pxr/base/tf/notice.h>
 
 #include <maya/MDagModifier.h>
@@ -82,6 +86,9 @@ void LayerTreeModel::registerUsdNotifications(bool in_register)
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_editTargetChanged));
         _noticeKeys.push_back(TfNotice::Register(
             me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_efFallbackTargetChanged));
+#endif
 
     } else {
         TfNotice::Revoke(&_noticeKeys);
@@ -243,6 +250,9 @@ void LayerTreeModel::setEditTarget(LayerTreeItem* item)
         && !item->isSystemLocked()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
+        // In edit-forward mode this routes to the controller's fallback target rather than
+        // SdfLayer::SetEditTarget(); the controller fires MayaUsdEFFallbackTargetChangedNotice,
+        // which LayerTreeModel observes to refresh the target-layer display.
     }
 }
 
@@ -315,7 +325,10 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     auto sessionLayer = _sessionState->stage()->GetSessionLayer();
     bool showSessionLayer = true;
     if (_sessionState->autoHideSessionLayer()) {
-        showSessionLayer = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
+        // Use the effective target so that in EF mode the decision follows the fallback
+        // target rather than the session layer (which is always the stage edit target there).
+        showSessionLayer
+            = sessionLayer->IsDirty() || sessionLayer == _sessionState->effectiveTargetLayer();
     }
 
     std::set<std::string> sharedLayers;
@@ -423,7 +436,10 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
         return;
     }
 
-    auto editTarget = _sessionState->targetLayer();
+    // In Edit Forwarding mode the stage edit target is pinned to the session layer;
+    // effectiveTargetLayer() returns the fallback target in that case, and the stage edit
+    // target otherwise. The auto-hide logic below is target-source agnostic and works for both.
+    auto editTarget = _sessionState->effectiveTargetLayer();
     auto root = invisibleRootItem();
 
     // if session layer is in auto-hide handle case where it is the target
@@ -462,11 +478,24 @@ void LayerTreeModel::usd_layerChanged(SdfNotice::LayersDidChangeSentPerLayer con
 // notification from USD
 void LayerTreeModel::usd_editTargetChanged(UsdNotice::StageEditTargetChanged const& notice)
 {
-    if (!_blockUsdNotices) {
-        QTimer::singleShot(
-            0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
-    }
+    if (_blockUsdNotices)
+        return;
+
+    QTimer::singleShot(
+        0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
 }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+void LayerTreeModel::usd_efFallbackTargetChanged(MayaUsdEFFallbackTargetChangedNotice const& notice)
+{
+    if (_blockUsdNotices)
+        return;
+    if (!_sessionState || notice.GetStage() != _sessionState->stage())
+        return;
+    QTimer::singleShot(
+        0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
+}
+#endif
 
 // notification from USD
 void LayerTreeModel::usd_layerDirtinessChanged(

@@ -81,15 +81,23 @@ public:
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
     virtual bool echoEditForwarding() const { return _echoEditForwarding; }
     virtual void setEchoEditForwarding(bool echo);
+    // In edit forward mode - the USD edit target is always kept on the session layer,
+    // and the visual targeting in the layer editor controls the "fallback" edit forward rule,
+    // sending edits that are not handled by user rules to that layer.
+    virtual bool isEditForwardMode() const;
 #endif
     virtual bool displayLayerContents() const { return _displayLayerContents; }
     virtual void setDisplayLayerContents(bool show);
     virtual bool diplayLayerExpandAllValues() const { return _displayLayerExpandAllValues; }
     virtual void setDisplayLayerExpandAllValues(bool expand);
 
-    PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
-    StageEntry const&               stageEntry() const { return _currentStageEntry; }
-    PXR_NS::SdfLayerRefPtr          targetLayer() const;
+    PXR_NS::UsdStageRefPtr const& stage() const { return _currentStageEntry._stage; }
+    StageEntry const&             stageEntry() const { return _currentStageEntry; }
+    PXR_NS::SdfLayerRefPtr        targetLayer() const;
+    // The layer the layer editor should treat as "the target". In edit forward mode this is
+    // the fallback rule target (where unmatched edits go), since the stage edit target is
+    // pinned to the session layer. Otherwise it is the stage edit target.
+    virtual PXR_NS::SdfLayerRefPtr  effectiveTargetLayer() const;
     virtual void                    setStageEntry(StageEntry const& in_entry);
     virtual AbstractCommandHook*    commandHook() = 0;
     virtual std::vector<StageEntry> allStages() const = 0;
@@ -127,11 +135,11 @@ Q_SIGNALS:
 protected:
     StageEntry _currentStageEntry;
     bool       _autoHideSessionLayer { true };
+    bool       _displayLayerContents { true };
+    bool       _displayLayerExpandAllValues { false };
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
     bool _echoEditForwarding { false };
 #endif
-    bool _displayLayerContents { true };
-    bool _displayLayerExpandAllValues { false };
 };
 
 } // namespace UsdLayerEditor
