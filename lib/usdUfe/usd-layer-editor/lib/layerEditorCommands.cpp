@@ -887,6 +887,9 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
             return itA->second < itB->second;
         });
 
+    // Validate and collect all problems before modifying anything.
+    bool hasProblems = false;
+
     SdfLayerHandleVector layersByStrength;
     layersByStrength.reserve(_layerIdentifiersByStrength.size());
     for (const auto& layerIdentifier : _layerIdentifiersByStrength) {
@@ -895,16 +898,16 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
             TF_RUNTIME_ERROR("Cannot find layer: %s", layerIdentifier.c_str());
             return false;
         }
+        if (!foundLayer->PermissionToEdit()) {
+            TF_WARN(
+                "Cannot update layer '%s' because it is locked.",
+                foundLayer->GetDisplayName().c_str());
+            hasProblems = true;
+        }
         layersByStrength.push_back(foundLayer);
     }
 
     const SdfLayerHandle strongestLayer = layersByStrength[0];
-
-    holdOntoSubLayers(strongestLayer);
-
-    // Keep a hold of references for all selected layers, needed for undo().
-    for (size_t i = 1; i < layersByStrength.size(); ++i)
-        _subLayersRefs.push_back(layersByStrength[i]);
 
     std::map<std::string, std::pair<SdfLayerHandle, std::string>> parentInfoByLayer;
     for (const auto& potentialParent : stageLayers) {
@@ -926,12 +929,33 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         const std::string     weakLayerId = weakLayer->GetIdentifier();
 
         const auto& it = parentInfoByLayer.find(weakLayerId);
-        if (it != parentInfoByLayer.end()) {
-            removalsByParent[it->second.first->GetIdentifier()].push_back(it->second.second);
-        } else {
-            TF_WARN("Could not find parent for layer: %s", weakLayerId.c_str());
+        if (it == parentInfoByLayer.end()) {
+            TF_WARN("Could not find parent for layer: %s", weakLayer->GetDisplayName().c_str());
+            hasProblems = true;
+            continue;
         }
+
+        const SdfLayerHandle& parentLayer = it->second.first;
+        if (!parentLayer->PermissionToEdit()) {
+            TF_WARN(
+                "Cannot update layer '%s' because its parent '%s' is locked.",
+                weakLayer->GetDisplayName().c_str(),
+                parentLayer->GetDisplayName().c_str());
+            hasProblems = true;
+            continue;
+        }
+
+        removalsByParent[parentLayer->GetIdentifier()].push_back(it->second.second);
     }
+
+    if (hasProblems)
+        return false;
+
+    holdOntoSubLayers(strongestLayer);
+
+    // Keep a hold of references for all selected layers, needed for undo().
+    for (size_t i = 1; i < layersByStrength.size(); ++i)
+        _subLayersRefs.push_back(layersByStrength[i]);
 
     UsdUfe::UsdUndoManager::instance().trackLayerStates(strongestLayer);
     for (size_t i = 1; i < layersByStrength.size(); ++i)
@@ -997,24 +1021,19 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
 
         // Removes the selected weak layers from their parents.
+        // All parents were validated as editable before reaching this point.
         for (auto& entry : removalsByParent) {
             const auto parentLayer = SdfLayer::Find(entry.first);
-            if (parentLayer) {
-                auto subLayerPaths = parentLayer->GetSubLayerPaths();
-                for (const auto& pathToRemove : entry.second) {
-                    auto it
-                        = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
-                    if (it != subLayerPaths.end())
-                        subLayerPaths.erase(it);
-                }
-                if (parentLayer && parentLayer->PermissionToEdit()) {
-                    parentLayer->SetSubLayerPaths(subLayerPaths);
-                } else {
-                    TF_WARN(
-                        "Cannot update layer '%s' because it is locked.",
-                        strongestLayer->GetIdentifier().c_str());
-                }
+            if (!parentLayer)
+                continue;
+
+            auto subLayerPaths = parentLayer->GetSubLayerPaths();
+            for (const auto& pathToRemove : entry.second) {
+                auto it = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
+                if (it != subLayerPaths.end())
+                    subLayerPaths.erase(it);
             }
+            parentLayer->SetSubLayerPaths(subLayerPaths);
         }
     }
 
