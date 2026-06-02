@@ -48,6 +48,15 @@ Resume point for porting maya-usd layer editor commits into the shared component
 
 | Commit | Description | Group | Status | Notes |
 |--------|-------------|-------|--------|-------|
+| d1b00150 | EMSUSD-3749 use FindRelativeToLayer | maya-only | maya-only | plugin/adsk/scripts/mayaUsd_layerUtils.py — Maya-specific Python utilities for layer editor menu; no shared counterpart |
+| bf45b02c | EMSUSD-3749 prevent merging session and non-session | maya-only | maya-only | plugin/adsk/scripts/mayaUsdMenu.mel + mayaUsd_layerUtils.py — Maya menu guard; no DCC-agnostic logic to port to shared |
+| aee2ab4f | Merge pull request #4629 EMSUSD-3749 | maya-only | skip | Merge commit |
+| 7ec54ae4 | EMSUSD-3680 respect refresh lock state | bug-fix | ported | Applied to shared layerTreeModel.cpp rebuildModel(): skip-identical check now respects refreshLockState flag (`if (!refreshLockState && rootIdentical && sessionIdentical)`) |
+| 4ce2af21 | EMSUSD-3680 fix memory leak and logic | bug-fix | ported | Applied to shared layerTreeModel.cpp rebuildModel(): newSessionItem/newRootItem promoted to std::unique_ptr; sessionIdentical check uses `(!newSessionItem && !oldSessionItem) \|\| ...` |
+| d70017ab | EMSUSD-3680 optimize layer tree model rebuilds | bug-fix | ported | Applied to shared layerTreeModel.cpp rebuildModel(): pre-builds new items, compares old vs new via LayerTreeItem::isIdenticalItem(), only calls beginResetModel/removeRows/appendRow/endResetModel when layers differ; LayerTreeItem::isIdenticalItem() added to layerTreeItem.{cpp,h}; invalid-session early-exit uses clear() not beginResetModel+clear |
+| e369d70c | Merge pull request #4625 EMSUSD-3680 | bug-fix | skip | Merge commit |
+| 3df7d5be | Remove LE dependency | bug-fix | maya-only | Touches layerEditorWidget.cpp/h (WANT_ADSK_USD_EDIT_FORWARD_BUILD / UsdEditForwardConfig::EditForwardDialog namespace) and editForwardDialog.{cpp,h} — all inside ifdef or Maya-only EF dialog; shared layer editor has no EditForward dialog |
+| 7da854fb | EMSUSD-3706 correctly handle locked layers when merging layers | bug-fix | ported | C++ already in shared StitchLayersCmd::doIt (pre-validates locked layers before modifying anything). Python test test_stitch_layers_with_locked_parent_layer added to layer_editor_test.py |
 | eb6c0123 | Revert "Conditionally drop shared sources from mayaUsdUI layer editor" | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |
 | 0708dd9e | Revert "Point maya layer editor wiring at UsdLayerEditorLib headers" | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |
 | 9a13cd9f | Point maya layer editor wiring at UsdLayerEditorLib headers | bug-fix | skip | Migration infrastructure (Tasks 5-6 of plan), not divergent feature work |

@@ -322,4 +322,30 @@ TEST_F(LayerTreeItemTest, ActionButtons_LockAppliesToRootAndSublayer)
     EXPECT_TRUE(IsLayerActionAllowed(it->second, LayerMasks_SubLayer));
 }
 
+// ── isIdenticalItem ────────────────────────────────────────────────────────────
+
+TEST_F(LayerTreeItemTest, IsIdenticalItem_NullOtherReturnsFalse)
+{
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_FALSE(item->isIdenticalItem(nullptr));
+}
+
+TEST_F(LayerTreeItemTest, IsIdenticalItem_SamePointerReturnsTrue)
+{
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_TRUE(item->isIdenticalItem(item));
+}
+
+TEST_F(LayerTreeItemTest, IsIdenticalItem_DifferentLayerReturnsFalse)
+{
+    // Root layer item vs first sublayer item — different layers.
+    auto* root = itemAt(treeModel(), treeModel()->rootLayerIndex());
+    ASSERT_NE(root, nullptr);
+    auto* sub = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(sub, nullptr);
+    EXPECT_FALSE(root->isIdenticalItem(sub));
+}
+
 } // namespace UsdLayerEditor

@@ -183,6 +183,9 @@ public:
     // allows c++ iteration of children
     LayerItemVector childrenVector() const;
 
+    // Check if this item and its children are identical.
+    bool isIdenticalItem(const LayerTreeItem* other) const;
+
     // menu callbacks
     void removeSubLayer();
     void saveEdits();

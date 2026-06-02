@@ -117,6 +117,20 @@ TEST_F(LayerTreeModelTest, RebuildOnIdle_DeduplicatesScheduling)
     EXPECT_LE(resetCount, 2);
 }
 
+TEST_F(LayerTreeModelTest, Rebuild_SkipsResetWhenLayersAreIdentical)
+{
+    // EMSUSD-3680: rebuilding the model when layer structure has not changed
+    // should not emit modelReset, to avoid redundant tree redraws.
+    QApplication::processEvents(); // let initial build settle
+    int resetCount = 0;
+    QObject::connect(treeModel(), &QAbstractItemModel::modelReset,
+        [&resetCount]() { ++resetCount; });
+    // Force a second rebuild with the same layer state — should be a no-op.
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+    EXPECT_EQ(resetCount, 0) << "modelReset should not fire when layers are identical";
+}
+
 // ── filtering helpers ──────────────────────────────────────────────────────────
 
 TEST_F(LayerTreeModelTest, GetAllNeedsSavingLayers_EmptyWhenNoLayersAreDirtyAndShared)
