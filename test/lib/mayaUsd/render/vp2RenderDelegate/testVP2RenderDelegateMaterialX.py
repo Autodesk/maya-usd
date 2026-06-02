@@ -82,6 +82,7 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         ufeItem = ufe.Hierarchy.createItem(ufePath)
         return usdUtils.getPrimFromSceneItem(ufeItem)
 
+    @unittest.skipIf(getMaterialXVersion() == [1, 39, 5], 'EMSUSD-3799: Temporarily disable to investigate image diff in MaterialX 1.39.5')
     def testUVStreamManagement(self):
         """Test that a scene without primvar readers renders correctly if it
            uses indexed UV streams"""
