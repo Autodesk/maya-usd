@@ -33,6 +33,7 @@
 
 #include <QtCore/QTimer>
 #include <algorithm>
+#include <memory>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -306,61 +307,105 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     _rebuildOnIdlePending = false;
     _lastAskedAnonLayerNameSinceRebuild = 0;
 
-    beginResetModel();
-    clear();
-
-    if (_sessionState->isValid()) {
-        auto rootLayer = _sessionState->stage()->GetRootLayer();
-        bool showSessionLayer = true;
-        auto sessionLayer = _sessionState->stage()->GetSessionLayer();
-        if (_sessionState->autoHideSessionLayer()) {
-            showSessionLayer
-                = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
+    if (!_sessionState->isValid()) {
+        if (rowCount() > 0) {
+            // Note: clear() calls beginResetModel and endResetModel for us.
+            clear();
         }
+        return;
+    }
 
-        std::set<std::string> sharedLayers;
-        auto                  sharedStage = _sessionState->commandHook()->isDccObjectSharedStage(
-            _sessionState->stageEntry()._dccObjectPath);
+    auto rootLayer = _sessionState->stage()->GetRootLayer();
+    auto sessionLayer = _sessionState->stage()->GetSessionLayer();
+    bool showSessionLayer = true;
+    if (_sessionState->autoHideSessionLayer()) {
+        showSessionLayer = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
+    }
+
+    std::set<std::string> sharedLayers;
+    auto                  sharedStage = _sessionState->commandHook()->isDccObjectSharedStage(
+        _sessionState->stageEntry()._dccObjectPath);
+    if (!sharedStage) {
+        auto layers = CustomLayerData::getStringArray(
+            rootLayer, UsdLayerEditorMetadata->ReferencedLayers);
+        std::vector<std::string> layerIds;
+        std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
+        sharedLayers = Layers::getAllSublayers(layerIds, true);
+    }
+
+    std::set<std::string> incomingLayers;
+    if (_sessionState->commandHook()->isDccObjectStageIncoming(
+            _sessionState->stageEntry()._dccObjectPath)) {
         if (!sharedStage) {
-            auto layers = CustomLayerData::getStringArray(
-                rootLayer, UsdLayerEditorMetadata->ReferencedLayers);
+            incomingLayers = sharedLayers;
+        } else {
             std::vector<std::string> layerIds;
-            std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
-            sharedLayers = Layers::getAllSublayers(layerIds, true);
+            layerIds.push_back(rootLayer->GetIdentifier());
+            incomingLayers = Layers::getAllSublayers(layerIds, true);
         }
+    }
 
-        std::set<std::string> incomingLayers;
-        if (_sessionState->commandHook()->isDccObjectStageIncoming(
-                _sessionState->stageEntry()._dccObjectPath)) {
-            if (!sharedStage) {
-                incomingLayers = sharedLayers;
-            } else {
-                std::vector<std::string> layerIds;
-                layerIds.push_back(rootLayer->GetIdentifier());
-                incomingLayers = Layers::getAllSublayers(layerIds, true);
-            }
+    LayerTreeItem* oldSessionItem = nullptr;
+    LayerTreeItem* oldRootItem = nullptr;
+
+    if (rowCount() > 0) {
+        if (rowCount() > 1) {
+            oldSessionItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(0));
+            oldRootItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(1));
+        } else {
+            oldRootItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(0));
         }
+    }
 
-        if (showSessionLayer) {
-            appendRow(new LayerTreeItem(
-                sessionLayer,
-                _sessionState->stage(),
-                LayerType::SessionLayer,
-                "",
-                &incomingLayers,
-                sharedStage,
-                &sharedLayers));
-        }
+    std::unique_ptr<LayerTreeItem> newSessionItem;
+    if (showSessionLayer) {
+        newSessionItem = std::make_unique<LayerTreeItem>(
+            sessionLayer,
+            _sessionState->stage(),
+            LayerType::SessionLayer,
+            "",
+            &incomingLayers,
+            sharedStage,
+            &sharedLayers);
+    }
 
-        appendRow(new LayerTreeItem(
-            rootLayer, _sessionState->stage(), LayerType::RootLayer, "", &incomingLayers, sharedStage, &sharedLayers));
+    std::unique_ptr<LayerTreeItem> newRootItem = std::make_unique<LayerTreeItem>(
+        rootLayer,
+        _sessionState->stage(),
+        LayerType::RootLayer,
+        "",
+        &incomingLayers,
+        sharedStage,
+        &sharedLayers);
 
-        updateTargetLayer(InRebuildModel::Yes);
+    const bool rootIdentical = newRootItem->isIdenticalItem(oldRootItem);
+    const bool sessionIdentical = (!newSessionItem && !oldSessionItem)
+        || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
 
-        if (refreshLockState) {
-            bool refreshSubLayers = true;
-            _sessionState->commandHook()->refreshLayerSystemLock(rootLayer, refreshSubLayers);
-        }
+    if (!refreshLockState && rootIdentical && sessionIdentical) {
+        return;
+    }
+
+    beginResetModel();
+
+    //  Note: do *not* call clear() here! Unfortunately, clear() itself calls,
+    //        beginResetModel() and endResetModel(). Qt does not detect the nested
+    //        begin/end/ So calling clear() would make the layer manager flicker
+    //        to be empty for a brief time.
+    if (rowCount() > 0)
+        removeRows(0, rowCount());
+
+    if (newSessionItem) {
+        appendRow(newSessionItem.release());
+    }
+
+    appendRow(newRootItem.release());
+
+    updateTargetLayer(InRebuildModel::Yes);
+
+    if (refreshLockState) {
+        bool refreshSubLayers = true;
+        _sessionState->commandHook()->refreshLayerSystemLock(rootLayer, refreshSubLayers);
     }
 
     endResetModel();

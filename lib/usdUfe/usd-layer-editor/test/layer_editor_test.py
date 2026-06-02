@@ -1448,6 +1448,47 @@ class UsdLayerEditorTest(unittest.TestCase):
         UsdLayerEditorTest._undo()
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, weakLayerId)
 
+    def test_stitch_layers_with_locked_parent_layer(self):
+        """Test stitching fails when one selected layer is under a locked parent layer (EMSUSD-3706)"""
+
+        stage = UsdLayerEditorTest._createStage(self.script_folder + "/data/empty.usda")
+        rootLayer = stage.GetRootLayer()
+
+        layer1Id = self._createAnonymousLayer(stage, rootLayer)
+        layer2Id = self._createAnonymousLayer(stage, rootLayer)
+        layer3Id = self._createAnonymousLayer(stage, Sdf.Layer.Find(layer2Id))
+
+        rootLayer.subLayerPaths.clear()
+        cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer1Id, 0)
+        UsdLayerEditorTest._executeCmd(cmd)
+        cmd = UsdLayerEditor.InsertSubPathCommand(stage, rootLayer, layer2Id, 1)
+        UsdLayerEditorTest._executeCmd(cmd)
+
+        layer1 = Sdf.Layer.Find(layer1Id)
+        layer2 = Sdf.Layer.Find(layer2Id)
+        layer3 = Sdf.Layer.Find(layer3Id)
+
+        with Sdf.ChangeBlock():
+            prim = Sdf.CreatePrimInLayer(layer3, '/Cube')
+            prim.SetInfo('typeName', 'Cube')
+
+        self.assertIsNotNone(layer3.GetPrimAtPath('/Cube'))
+        self.assertIsNone(layer1.GetPrimAtPath('/Cube'))
+
+        # Lock layer2 (the parent of layer3)
+        lockCmd = UsdLayerEditor.LockLayerCommand(stage, layer2, UsdLayerEditor.LayerLock_Locked)
+        UsdLayerEditorTest._executeCmd(lockCmd)
+        self.assertFalse(layer2.permissionToEdit)
+
+        # Stitching layer1 and layer3 should fail because layer3's parent (layer2) is locked
+        with self.assertRaises(RuntimeError):
+            cmd = UsdLayerEditor.StitchLayersCommand(stage, [layer1Id, layer3Id])
+            cmd.execute()
+
+        # Verify no content was moved
+        self.assertIsNotNone(layer3.GetPrimAtPath('/Cube'))
+        self.assertIsNone(layer1.GetPrimAtPath('/Cube'))
+
     def test_stitch_layers_partial_selection(self):
         """Test stitching only some layers while leaving others untouched"""
 
