@@ -303,6 +303,85 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     _rebuildOnIdlePending = false;
     _lastAskedAnonLayerNameSinceRebuild = 0;
 
+    if (!_sessionState->isValid()) {
+        if (rowCount() > 0) {
+            // Note: clear() calls beginResetModel and endResetModel for us.
+            clear();
+        }
+        return;
+    }
+
+    auto rootLayer = _sessionState->stage()->GetRootLayer();
+    auto sessionLayer = _sessionState->stage()->GetSessionLayer();
+    bool showSessionLayer = true;
+    if (_sessionState->autoHideSessionLayer()) {
+        showSessionLayer = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
+    }
+
+    std::set<std::string> sharedLayers;
+    auto                  sharedStage = _sessionState->commandHook()->isProxyShapeSharedStage(
+        _sessionState->stageEntry()._proxyShapePath);
+    if (!sharedStage) {
+        auto layers = MayaUsd::CustomLayerData::getStringArray(
+            rootLayer, MayaUsdMetadata->ReferencedLayers);
+        std::vector<std::string> layerIds;
+        std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
+        sharedLayers = MayaUsd::getAllSublayers(layerIds, true);
+    }
+
+    std::set<std::string> incomingLayers;
+    if (_sessionState->commandHook()->isProxyShapeStageIncoming(
+            _sessionState->stageEntry()._proxyShapePath)) {
+        if (!sharedStage) {
+            incomingLayers = sharedLayers;
+        } else {
+            std::vector<std::string> layerIds;
+            layerIds.push_back(rootLayer->GetIdentifier());
+            incomingLayers = MayaUsd::getAllSublayers(layerIds, true);
+        }
+    }
+
+    LayerTreeItem* oldSessionItem = nullptr;
+    LayerTreeItem* oldRootItem = nullptr;
+
+    if (rowCount() > 0) {
+        if (rowCount() > 1) {
+            oldSessionItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(0));
+            oldRootItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(1));
+        } else {
+            oldRootItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(0));
+        }
+    }
+
+    std::unique_ptr<LayerTreeItem> newSessionItem;
+    if (showSessionLayer) {
+        newSessionItem = std::make_unique<LayerTreeItem>(
+            sessionLayer,
+            _sessionState->stage(),
+            LayerType::SessionLayer,
+            "",
+            &incomingLayers,
+            sharedStage,
+            &sharedLayers);
+    }
+
+    std::unique_ptr<LayerTreeItem> newRootItem = std::make_unique<LayerTreeItem>(
+        rootLayer,
+        _sessionState->stage(),
+        LayerType::RootLayer,
+        "",
+        &incomingLayers,
+        sharedStage,
+        &sharedLayers);
+
+    const bool rootIdentical = newRootItem->isIdenticalItem(oldRootItem);
+    const bool sessionIdentical = (!newSessionItem && !oldSessionItem)
+        || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
+
+    if (!refreshLockState && rootIdentical && sessionIdentical) {
+        return;
+    }
+
     beginResetModel();
 
     //  Note: do *not* call clear() here! Unfortunately, clear() itself calls,
@@ -312,64 +391,17 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     if (rowCount() > 0)
         removeRows(0, rowCount());
 
-    if (_sessionState->isValid()) {
-        auto rootLayer = _sessionState->stage()->GetRootLayer();
-        bool showSessionLayer = true;
-        auto sessionLayer = _sessionState->stage()->GetSessionLayer();
-        if (_sessionState->autoHideSessionLayer()) {
-            showSessionLayer
-                = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
-        }
+    if (newSessionItem) {
+        appendRow(newSessionItem.release());
+    }
 
-        std::set<std::string> sharedLayers;
-        auto                  sharedStage = _sessionState->commandHook()->isProxyShapeSharedStage(
-            _sessionState->stageEntry()._proxyShapePath);
-        if (!sharedStage) {
-            auto layers = MayaUsd::CustomLayerData::getStringArray(
-                rootLayer, MayaUsdMetadata->ReferencedLayers);
-            std::vector<std::string> layerIds;
-            std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
-            sharedLayers = MayaUsd::getAllSublayers(layerIds, true);
-        }
+    appendRow(newRootItem.release());
 
-        std::set<std::string> incomingLayers;
-        if (_sessionState->commandHook()->isProxyShapeStageIncoming(
-                _sessionState->stageEntry()._proxyShapePath)) {
-            if (!sharedStage) {
-                incomingLayers = sharedLayers;
-            } else {
-                std::vector<std::string> layerIds;
-                layerIds.push_back(rootLayer->GetIdentifier());
-                incomingLayers = MayaUsd::getAllSublayers(layerIds, true);
-            }
-        }
+    updateTargetLayer(InRebuildModel::Yes);
 
-        if (showSessionLayer) {
-            appendRow(new LayerTreeItem(
-                sessionLayer,
-                _sessionState->stage(),
-                LayerType::SessionLayer,
-                "",
-                &incomingLayers,
-                sharedStage,
-                &sharedLayers));
-        }
-
-        appendRow(new LayerTreeItem(
-            rootLayer,
-            _sessionState->stage(),
-            LayerType::RootLayer,
-            "",
-            &incomingLayers,
-            sharedStage,
-            &sharedLayers));
-
-        updateTargetLayer(InRebuildModel::Yes);
-
-        if (refreshLockState) {
-            bool refreshSubLayers = true;
-            _sessionState->commandHook()->refreshLayerSystemLock(rootLayer, refreshSubLayers);
-        }
+    if (refreshLockState) {
+        bool refreshSubLayers = true;
+        _sessionState->commandHook()->refreshLayerSystemLock(rootLayer, refreshSubLayers);
     }
 
     endResetModel();

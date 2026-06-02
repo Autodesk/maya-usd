@@ -6,8 +6,6 @@ set(GNU_CLANG_FLAGS
     -Wall
     $<$<BOOL:${BUILD_STRICT_MODE}>:-Werror>
     $<$<CONFIG:DEBUG>:-fstack-check>
-    # optimization
-    -msse4.2
     # According to gcc help, -Og should be the optimization level of choice.
     # It is a better choice that default -O0 for producing debuggable code.
     $<$<CONFIG:DEBUG>:-Og>
@@ -28,12 +26,25 @@ if(IS_GNU)
                 $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:-Wno-uninitialized>
         )
     endif()
+    list(APPEND GNU_CLANG_FLAGS
+        # optimization
+        -msse4.2
+    )
 endif()
 
 if (IS_CLANG)
     list(APPEND GNU_CLANG_FLAGS
             -Wrange-loop-analysis
     )
+    # The flag -msse4.2 tells the compiler to use Intel-specific "Streaming SIMD Extensions."
+    # Because ARM-based processors (like the Apple M-series) do not support SSE, the compiler ignores the flag.
+    # That will cause build error since we have warnings as errors on.
+    if(NOT BUILD_ARM64)
+        list(APPEND GNU_CLANG_FLAGS
+            # optimization
+            -msse4.2
+        )
+    endif()
 endif()
 
 set(MSVC_FLAGS

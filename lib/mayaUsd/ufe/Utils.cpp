@@ -174,9 +174,19 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     // If there is only a single segment in the path, it must point to the
     // proxy shape, otherwise we would not have retrieved a valid stage.
     // The second path segment is the USD path.
-    return (segments.size() == 1u)
-        ? stage->GetPseudoRoot()
-        : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
+    if (segments.size() == 1u) {
+        return stage->GetPseudoRoot();
+    }
+
+    // If the USD path is empty, return the root. UfeSegment::string does not return a leading
+    // separator...!
+    std::string primPathStr = segments[1].string();
+    if (primPathStr.empty()) {
+        return stage->GetPseudoRoot();
+    }
+
+    // Note: we call GetPrimPath in case the path is to a property or relationship, etc.
+    return stage->GetPrimAtPath(SdfPath(primPathStr).GetPrimPath());
 }
 
 std::string uniqueChildNameMayaStandard(
@@ -368,6 +378,24 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path, bool rebuildCacheIfN
     MayaUsdProxyShapeBase* result
         = UsdStageMap::getInstance().proxyShapeNode(path, rebuildCacheIfNeeded);
     return result;
+}
+
+MayaUsdProxyShapeBase* getProxyShapeFromItemOrChildren(const Ufe::SceneItem::Ptr& item)
+{
+    const bool rebuildCacheIfNeeded = false;
+    if (auto* proxy = getProxyShape(item->path(), rebuildCacheIfNeeded))
+        return proxy;
+
+    Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
+    if (!hierarchy)
+        return nullptr;
+
+    for (const auto& child : UsdUfe::getHierarchyChildren(hierarchy)) {
+        if (auto* proxy = getProxyShape(child->path(), rebuildCacheIfNeeded))
+            return proxy;
+    }
+
+    return nullptr;
 }
 
 SdfPath getProxyShapePrimPath(const Ufe::Path& path)

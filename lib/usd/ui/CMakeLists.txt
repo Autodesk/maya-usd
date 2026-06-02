@@ -27,8 +27,12 @@ add_subdirectory(importDialog)
 if (AdskUsdAssetResolver_FOUND)
     add_subdirectory(assetResolver)
 endif()
+
 if (AdskUsdDebugTools_FOUND)
     add_subdirectory(debugTools)
+endif()
+if (AdskUsdEditForward_FOUND)
+    add_subdirectory(editForward)
 endif()
 # -----------------------------------------------------------------------------
 # sources
@@ -82,6 +86,7 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY}>
         $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_CORE_LIBRARY}>
         $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_UI_LIBRARY}>
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_UI_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------

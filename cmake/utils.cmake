@@ -302,8 +302,8 @@ function(get_external_project_default_values out_var)
     external_project_conditional_define(CMAKE_BUILD_TYPE)
     external_project_conditional_define(CMAKE_MAKE_PROGRAM)
 
-    if(BUILD_UB2)
-        # UB2 builds require this flag
+    if(APPLE)
+        # OSX builds require these flags
         external_project_conditional_define(CMAKE_OSX_ARCHITECTURES)
         external_project_conditional_define(CMAKE_OSX_DEPLOYMENT_TARGET)
     endif()
