@@ -579,6 +579,16 @@ ShaderPtr GlslFragmentGenerator::generate(
     MX_EMIT_INCLUDE(libRoot + "stdlib/genglsl/lib/mx_math.glsl", context, pixelStage);
     emitLineBreak(pixelStage);
 
+#if MX_COMBINED_VERSION >= 13905
+    // Define Airy Fresnel iterations
+    emitLine(
+        "#define AIRY_FRESNEL_ITERATIONS "
+            + std::to_string(context.getOptions().hwAiryFresnelIterations),
+        pixelStage,
+        false);
+    emitLineBreak(pixelStage);
+#endif
+
     if (lighting) {
         int specularMethod = context.getOptions().hwSpecularEnvironmentMethod;
         if (specularMethod == SPECULAR_ENVIRONMENT_FIS) {
