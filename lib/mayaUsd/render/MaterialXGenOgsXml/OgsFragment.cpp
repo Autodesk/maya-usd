@@ -662,22 +662,36 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
                 continue;
             }
             std::string path = port->getPath();
+
+            // Special case for surfaceshaders:
+            //
             // MaterialX 1.38.10 will return empty path for the root shader.
             // work around that. We know there is an associated node. No help
             // from the Node* in the port though since this will be the N0
             // ShaderGraph.
+            //
+            // Since MaterialX 1.39.5, `getPath()` no longer returns an empty path for the
+            // surfaceshader, but it's still not returning a path that usable for our purpose: It
+            // returns the path to the NodeDef-input, but we need the path of the node-input. We
+            // detect this case by checking if the path starts with the surfaceNodeDef path and
+            // update the path to point to the node-input instead.
+            //
+            // Handling `path.empty()` for the 1.38.10 case may no longer be required, but was kept
+            // for now.
             const std::string& variableName = port->getVariable();
-            if (path.empty()) {
+            if (path.empty() || path.rfind(surfaceNodeDef->getNamePath(), 0) == 0) {
                 // Assume it is the surface shader:
                 const std::string& originalName = getOriginalName(variableName, surfaceNodeDef);
                 if (originalName.empty()) {
                     continue;
                 }
+                path.clear();
                 path.reserve(surfaceNodeName.size() + 1 + variableName.size());
                 path += surfaceNodeName;
                 path += "/";
                 path += originalName;
             }
+            // Map the node-input path to the shader variable.
             if (!path.empty()) {
 #if MX_COMBINED_VERSION < 13900
                 if (port->getType()->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {

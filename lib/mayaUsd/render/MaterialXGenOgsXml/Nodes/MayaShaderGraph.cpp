@@ -212,7 +212,11 @@ MayaShaderGraph::MayaShaderGraph(
         parent,
         makeValidName(nodeGraph, context),
         nodeGraph.getDocument(),
+#if MX_COMBINED_VERSION >= 13905
+        context)
+#else
         context.getReservedWords())
+#endif
 #if MX_COMBINED_VERSION >= 13810 && MX_COMBINED_VERSION < 13903
     , _shouldPropagateInputs(true)
 #endif
