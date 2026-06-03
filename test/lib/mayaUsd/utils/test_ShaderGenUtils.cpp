@@ -207,7 +207,8 @@ TEST(ShaderGenUtils, lobePruner)
     ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x0x0");
 #else
     // Now have a 1 for subsurface since we can also optimize the 1 value for mix nodes.
-    // Note: mix node is back in 1.39.5. See https://github.com/AcademySoftwareFoundation/MaterialX/pull/2539
+    // Note: mix node is back in 1.39.5. See
+    // https://github.com/AcademySoftwareFoundation/MaterialX/pull/2539
     ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x010");
 #endif
 

@@ -9,8 +9,8 @@
 #include <mayaUsd/render/MaterialXGenOgsXml/LobePruner.h>
 
 #if MX_COMBINED_VERSION >= 13905
-#include <MaterialXGenShader/Exception.h>
 #include <MaterialXGenHw/HwShaderGenerator.h>
+#include <MaterialXGenShader/Exception.h>
 #else
 #include <MaterialXGenShader/HwShaderGenerator.h>
 #endif
