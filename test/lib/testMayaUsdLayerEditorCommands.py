@@ -1192,7 +1192,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertIsNone(layer1.GetPrimAtPath('/Cube'))
 
     def testStitchMultiLayersWithLockedParentLayer(self):
-        """ Test stitching succeeds when there is multiple layers to be merged and one is under a locked parent layer """
+        """ Test stitching succeeds when there are multiple layers to be merged and one is under a locked parent layer """
 
         shapePath, stage = getCleanMayaStage()
         rootLayer = stage.GetRootLayer()

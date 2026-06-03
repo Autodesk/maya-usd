@@ -852,7 +852,7 @@ public:
         }
 
         // We will analyze locked layers before doing any modification,
-        // report all problem and abort the command if any layer is locked.
+        // report all problem and abort the command if all layers are locked.
         bool hasProblems = false;
 
         // Convert the list of layer identifier to a list of layer handles.
