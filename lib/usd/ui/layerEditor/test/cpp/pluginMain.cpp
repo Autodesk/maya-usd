@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "mayaQtUtils.h"
+#include "qtUtils.h"
+
 #include <gtest/gtest.h>
 
 #include <maya/MFnPlugin.h>
@@ -119,15 +122,6 @@ public:
 
     MStatus doIt(const MArgList&) override
     {
-        // QWidget requires a QApplication. Maya standalone does not create one,
-        // so we create it here if absent. QT_QPA_PLATFORM=offscreen (set in the
-        // test env) ensures widget creation works without a display.
-        static int           sArgc = 0;
-        static QApplication* sApp  = nullptr;
-        if (!QCoreApplication::instance()) {
-            sApp = new QApplication(sArgc, nullptr);
-        }
-
         // InitGoogleTest may only be called once per process — guard on first call.
         static bool sInitialized = false;
         if (!sInitialized) {
@@ -161,6 +155,12 @@ const MString RunLayerEditorTestsCmd::kName("mayaUsd_runLayerEditorTests");
 
 MStatus initializePlugin(MObject obj)
 {
+    // utils is set by MayaLayerEditorWindow when the layer editor UI is first
+    // opened, but the tests construct LayerEditorWidget directly. Initialize it
+    // here so DPIScale() and Maya API guards work correctly.
+    if (!UsdLayerEditor::utils)
+        UsdLayerEditor::utils = new UsdLayerEditor::MayaQtUtils();
+
     MFnPlugin plugin(obj, "Autodesk", "1.0", "Any");
     return plugin.registerCommand(
         RunLayerEditorTestsCmd::kName, RunLayerEditorTestsCmd::creator);

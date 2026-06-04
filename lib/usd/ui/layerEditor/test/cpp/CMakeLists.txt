@@ -23,14 +23,10 @@ set(NEW_LE_TEST_CPP
 
 # ── Sources ────────────────────────────────────────────────────────────────────
 set(OLD_LE_OWN_SOURCES
-    # Headers-only so AUTOMOC generates staticMetaObject for Q_OBJECT classes
-    # not exported as data members from mayaUsdUI.dll.
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../sessionState.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../layerContentsWidget.h
     stubCommandHook.cpp
     stubSessionState.cpp
     testFixture.cpp
-    testMain.cpp
+    pluginMain.cpp
     testButtons.cpp
     testContextMenu.cpp
     testLayerContentsWidget.cpp
@@ -49,9 +45,15 @@ set(OLD_LE_OWN_SOURCES
 # ── Target ─────────────────────────────────────────────────────────────────────
 set(TARGET_NAME mayaUsdOldLayerEditorTests)
 
-add_executable(${TARGET_NAME}
+add_library(${TARGET_NAME} SHARED
     ${OLD_LE_OWN_SOURCES}
 )
+
+if(IS_WINDOWS)
+    set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".mll")
+elseif(IS_MACOSX)
+    set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "" SUFFIX ".bundle")
+endif()
 
 mayaUsd_compile_config(${TARGET_NAME})
 
@@ -83,14 +85,27 @@ target_link_libraries(${TARGET_NAME}
 )
 
 install(TARGETS ${TARGET_NAME}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/tests
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya
+)
+if(IS_WINDOWS)
+    install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}>
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya OPTIONAL)
+endif()
+
+install(FILES testOldLayerEditorParity.py
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/tests
 )
 
-# Register with CTest — run as a standalone executable (no Maya needed).
-mayaUsd_add_test(${TARGET_NAME}
-    COMMAND $<TARGET_FILE:${TARGET_NAME}>
-    ENV
-        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-        "QT_QPA_PLATFORM=offscreen"
-)
-set_property(TEST ${TARGET_NAME} APPEND PROPERTY LABELS MayaUsdOldLEParity)
+# Register with CTest — run inside interactive Maya so QApplication and all
+# Maya APIs are available for the old editor's widget tests.
+if (BUILD_TESTS)
+    mayaUsd_add_test(${TARGET_NAME}
+        INTERACTIVE
+        PYTHON_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/testOldLayerEditorParity.py
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+    )
+    set_property(TEST ${TARGET_NAME} APPEND PROPERTY LABELS MayaUsdOldLEParity)
+endif()
