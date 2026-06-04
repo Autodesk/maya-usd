@@ -18,5 +18,7 @@
 #include <mayaUsd/utils/layerMuting.h>
 
 namespace UsdLayerEditor {
+using MayaUsd::addMutedLayer;
+using MayaUsd::removeMutedLayer;
 using MayaUsd::forgetMutedLayers;
 } // namespace UsdLayerEditor

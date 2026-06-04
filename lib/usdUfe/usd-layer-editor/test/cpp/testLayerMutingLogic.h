@@ -32,7 +32,7 @@ protected:
     void SetUp() override
     {
         forgetMutedLayers();
-        _stage = UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _layer = SdfLayer::CreateAnonymous("mute_test");
         _stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
     }

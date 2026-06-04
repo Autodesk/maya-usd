@@ -327,6 +327,7 @@ TEST_F(LayerTreeItemTest, ActionButtons_LockAppliesToRootAndSublayer)
 
 // ── isIdenticalItem ────────────────────────────────────────────────────────────
 
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 TEST_F(LayerTreeItemTest, IsIdenticalItem_NullOtherReturnsFalse)
 {
     auto* item = itemAt(treeModel(), firstSublayerIndex());
@@ -350,5 +351,6 @@ TEST_F(LayerTreeItemTest, IsIdenticalItem_DifferentLayerReturnsFalse)
     ASSERT_NE(sub, nullptr);
     EXPECT_FALSE(root->isIdenticalItem(sub));
 }
+#endif
 
 } // namespace UsdLayerEditor
