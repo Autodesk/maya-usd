@@ -129,7 +129,7 @@ endforeach()
 # -----------------------------------------------------------------------------
 # Shared usd-layer-editor component tests
 #
-# When the shared component is built (BUILD_NEW_LAYER_EDITOR=ON), register the
+# When the shared component is built, register the
 # Maya-driven ctest wrapper that runs the DCC-agnostic layer_editor_test.py
 # suite from lib/usdUfe/usd-layer-editor/test/. The wrapper installs the
 # Maya implementations of the DCC hooks and re-exports UsdLayerEditorTest so
