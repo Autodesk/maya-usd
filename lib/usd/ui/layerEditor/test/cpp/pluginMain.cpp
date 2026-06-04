@@ -120,7 +120,8 @@ public:
     MStatus doIt(const MArgList&) override
     {
         // QWidget requires a QApplication. Maya standalone does not create one,
-        // so we create it here if absent. The instance persists for the process.
+        // so we create it here if absent. QT_QPA_PLATFORM=offscreen (set in the
+        // test env) ensures widget creation works without a display.
         static int           sArgc = 0;
         static QApplication* sApp  = nullptr;
         if (!QCoreApplication::instance()) {
