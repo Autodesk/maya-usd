@@ -53,9 +53,10 @@ TF_DECLARE_PUBLIC_TOKENS(UsdLayerEditorOptionVars, LayerEditorAPI, USDLAYEREDITO
 //
 // clang-format off
 #define USDLAYEREDITOR_METADATA_TOKENS \
-    /* Referenced layers.                             */ \
-    /* TODO LE-EXTRACT : mayaSharedLayers -> dccSharedLayers, do we need to support cross DCC metadata? */ \
-    ((ReferencedLayers, "adskSharedLayers"))
+    /* DCC-agnostic token for layers referenced from a shared asset (read-only in this context). */ \
+    ((ReferencedLayers, "adskSharedLayers")) \
+    /* Legacy Maya-specific token written by MayaUSD proxyShapeBase — read for backward compat. */ \
+    ((MayaReferencedLayers, "mayaSharedLayers"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(UsdLayerEditorMetadata, LayerEditorAPI, USDLAYEREDITOR_METADATA_TOKENS);
