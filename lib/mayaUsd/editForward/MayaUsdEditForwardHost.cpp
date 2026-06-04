@@ -292,7 +292,10 @@ std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaUsdEditForwardController::GetR
     // Start with any rules authored on the stage (read from root layer custom data).
     auto rules = AdskUsdEditForward::StageRuleProvider::GetRules();
 
-    if (_fallbackTarget) {
+    // No rule for a session-layer fallback: session->session moves nothing.
+    const bool hasNonSessionFallback
+        = _fallbackTarget && _stage && _fallbackTarget != _stage->GetSessionLayer();
+    if (hasNonSessionFallback) {
         // Append an in-memory catch-all rule targeting the fallback layer.
         // Appended last so any user-authored rules take precedence.
         static const std::string kFallbackRuleId = "maya_ef_fallback_rule";

@@ -691,7 +691,7 @@ void OrphanedNodesManager::recursiveSwitch(
         TF_VERIFY(trieNode->empty());
 
         auto pulledNode = MayaUsd::ufe::downcast(Ufe::Hierarchy::createItem(ufePath));
-        if (!TF_VERIFY(pulledNode)) {
+        if (pulledNode == nullptr) {
             return;
         }
 
@@ -703,10 +703,9 @@ void OrphanedNodesManager::recursiveSwitch(
         const PullVariantInfos infos = trieNode->data();
         for (const PullVariantInfo& variantInfo : infos) {
             const auto& originalDesc = variantInfo.variantSetDescriptors;
-            const bool  variantSetsMatch = (originalDesc == currentDesc);
-            const bool  orphaned = (pulledNode && !variantSetsMatch);
-            if (processOrphans == orphaned)
-                TF_VERIFY(setOrphaned(trieNode, variantInfo, orphaned));
+            const bool  orphanedByVariant = (originalDesc != currentDesc);
+            if (processOrphans == orphanedByVariant)
+                TF_VERIFY(setOrphaned(trieNode, variantInfo, orphanedByVariant));
         }
     } else {
         const bool isGatewayToUsd = Ufe::SceneSegmentHandler::isGateway(ufePath);

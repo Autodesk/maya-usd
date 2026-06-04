@@ -401,5 +401,23 @@ class HideOrphanedNodesTestCase(unittest.TestCase):
         cmds.undo()
         self.assertTrue(pullParentVisibilityPlug[self.cPathStr].asBool())
 
+    def testStructuralEditAfterInactiveAncestor(self):
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(self.cPathStr))
+
+        cPrim = mayaUsd.ufe.ufePathToPrim(self.cPathStr)
+        aPrim = cPrim.GetParent().GetParent()
+
+        # Make the pulled path stale: /A/B/C is no longer composed because /A is inactive.
+        aPrim.SetActive(False)
+
+        # A structural USD change used to raise a pxr.Tf.ErrorException from OrphanedNodesManager::recursiveSwitch(),
+        # because UFE could no longer create an item for the uncomposed pulled prim /A/B/C.
+        try:
+            aPrim.GetVariantSets().AddVariantSet("testVariantSet").AddVariant("testVariant")
+        except Exception as exc:
+            self.fail("An unwanted exception was raised: {}".format(exc))
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

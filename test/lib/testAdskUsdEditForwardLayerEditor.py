@@ -529,5 +529,39 @@ class EditForwardLayerEditorTestCase(unittest.TestCase):
             "Got: {}".format(stage.GetEditTarget().GetLayer().identifier))
 
 
+    def testActivateEFOnSessionLayerTargetNoFallbackRule(self):
+        """Activating EF while the edit target is the session layer stores the session layer as
+        the fallback (so the API can report it). With the target being the session layer, nothing
+        should be forwarded or removed, and the edits should stay on the session layer."""
+        shapeNodePath, stage, layerA, layerB = self._createStageWithSublayers()
+        sessionLayer = stage.GetSessionLayer()
+
+        # Set the edit target to the session layer before activating EF.
+        cmds.mayaUsdEditTarget(shapeNodePath, edit=True, editTarget=sessionLayer.identifier)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), sessionLayer)
+
+        # Activate EF with a rule that won't match edits, so they fall through to the fallback.
+        self._writeRules(stage.GetRootLayer(), inputExpr='/NoMatch.*')
+        self.assertEqual(stage.GetEditTarget().GetLayer(), sessionLayer)
+        self.assertEqual(
+            cmds.mayaUsdEditTarget(shapeNodePath, query=True, editTarget=True)[0],
+            sessionLayer.identifier,
+            "When EF seeds from the session layer, query must report the session layer")
+
+        # Edits must remain on the session layer.
+        shapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(shapeNodePath))
+        contextOps = ufe.ContextOps.contextOps(shapeItem)
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'Xform']))
+        cmds.flushIdleQueue()
+
+        primPath = Sdf.Path('/Xform1')
+        self.assertIsNotNone(
+            sessionLayer.GetPrimAtPath(primPath),
+            "With a session-layer fallback (no rule), edits must stay on the session layer")
+        self.assertIsNone(
+            layerA.GetPrimAtPath(primPath),
+            "With a session-layer fallback (no rule), edits must not reach layerA")
+
+
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
