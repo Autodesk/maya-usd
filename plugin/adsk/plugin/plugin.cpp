@@ -492,15 +492,6 @@ MStatus initializePlugin(MObject obj)
 
 #endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
 
-#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
-    {
-        Adsk::UsdDebug::CompositionAnalyzer probe;
-        MGlobal::displayInfo(
-            MString("[mayaUsd] AdskUsdDebugTools linked OK (probe.hasPrim=")
-            + (probe.hasPrim() ? "true" : "false") + ")");
-    }
-#endif // WANT_ADSK_USD_DEBUG_TOOLS_BUILD
-
     return status;
 }
 

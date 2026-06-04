@@ -101,7 +101,7 @@ target_link_libraries(${TARGET_NAME}
         basePxrUsdPreviewSurface
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_LIBRARY}>
         $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_CORE_LIBRARY}>
-        $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_UI_LIBRARY}>
+        $<$<AND:$<BOOL:${Qt_FOUND}>,$<BOOL:${AdskUsdDebugTools_FOUND}>>:${ADSK_USD_DEBUG_TOOLS_UI_LIBRARY}>
 )
 
 if (Qt_FOUND)
