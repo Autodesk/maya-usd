@@ -31,7 +31,6 @@
 #include <maya/MString.h>
 #include <maya/MUuid.h>
 #include <ufe/globalSelection.h>
-#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selection.h>
 #include <ufe/selectionNotification.h>
@@ -317,24 +316,6 @@ void StageSelectorWidget::selectedIndexChanged(int index)
     _internalChange = false;
 }
 
-static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item)
-{
-    Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
-    if (!hierarchy)
-        return nullptr;
-
-    const bool rebuildCacheIfNeeded = false;
-    for (const auto& subItem : UsdUfe::getHierarchyChildren(hierarchy)) {
-        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(subItem->path(), rebuildCacheIfNeeded);
-        if (!proxyShapePtr)
-            continue;
-
-        return proxyShapePtr;
-    }
-
-    return nullptr;
-}
-
 void StageSelectorWidget::selectionChanged()
 {
     // When the stage selection is pinned, don't follow the selection.
@@ -351,15 +332,10 @@ void StageSelectorWidget::selectionChanged()
     // We will set the currently selected stage to be the stage of the first item
     // that is a USD item. So if multiple stages are selected, the first one wins.
     const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
-    const bool            rebuildCacheIfNeeded = false;
     for (const auto& item : ufeSelection) {
-        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(item->path(), rebuildCacheIfNeeded);
-        if (!proxyShapePtr) {
-            proxyShapePtr = getChildProxyShape(item);
-            if (!proxyShapePtr) {
-                continue;
-            }
-        }
+        auto* proxyShapePtr = MayaUsd::ufe::getProxyShapeFromItemOrChildren(item);
+        if (!proxyShapePtr)
+            continue;
 
         if (!allStagesFilled) {
             allStages = _sessionState->allStages();

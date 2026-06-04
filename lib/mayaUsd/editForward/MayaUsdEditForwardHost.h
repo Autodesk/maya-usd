@@ -37,7 +37,7 @@ public:
     void TrackLayerStates(const pxr::SdfLayerHandle& layer) override;
 
     bool WantsEcho() const override;
-    void SetWantsEcho(bool echo);
+    void SetWantsEcho(bool echo) override;
     void Echo(const AdskUsdEditForward::Record& record) override;
 
 private:

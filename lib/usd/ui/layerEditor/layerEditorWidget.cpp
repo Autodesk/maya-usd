@@ -30,14 +30,18 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsdUI/ui/editForwardDialog.h>
+
 #include <AdskUsdEditForward/StageRuleProvider.h>
 #endif
 
 #include <pxr/usd/sdf/schema.h>
 
 #include <maya/MGlobal.h>
+#include <maya/MQtUtil.h>
 
 #include <QtCore/QItemSelectionModel>
+#include <QtCore/QPointer>
 #include <QtCore/QTimer>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -400,6 +404,27 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
             &SessionState::setEchoEditForwarding);
         _actions._echoEditForwarding->setCheckable(true);
         _actions._echoEditForwarding->setChecked(ss->echoEditForwarding());
+
+        auto configureEditForwardingAction = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kConfigureEditForwarding));
+        QObject::connect(configureEditForwardingAction, &QAction::triggered, this, [this, ss]() {
+            if (_editForwardDialog) {
+                _editForwardDialog->show();
+                _editForwardDialog->raise();
+                _editForwardDialog->activateWindow();
+                return;
+            }
+            _editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
+                StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
+                MQtUtil::mainWindow());
+            // While the layer editor is open, follow its current stage.
+            QObject::connect(ss, &SessionState::currentStageChangedSignal, this, [this, ss]() {
+                if (_editForwardDialog) {
+                    _editForwardDialog->setActiveStage(ss->stage());
+                }
+            });
+            _editForwardDialog->show();
+        });
 #endif
 
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));

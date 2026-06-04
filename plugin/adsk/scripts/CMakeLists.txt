@@ -15,6 +15,7 @@ list(APPEND scripts_src
     mayaUsd_imageFileDialogs.mel
     mayaUsd_initializeComponentCreator.py
     mayaUsd_layerEditorFileDialogs.mel
+    mayaUsd_layerUtils.py
     mayaUsd_fileOptions.mel
     mayaUsd_pluginUICreation.mel
     mayaUsd_pluginUIDeletion.mel

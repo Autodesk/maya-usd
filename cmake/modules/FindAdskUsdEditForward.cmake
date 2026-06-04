@@ -48,6 +48,18 @@ find_library(ADSK_USD_EDIT_FORWARD_LIBRARY
         "Edit Forward library path"
 )
 
+find_library(ADSK_USD_EDIT_FORWARD_UI_LIBRARY
+    NAMES
+        AdskUsdEditForwardUi
+    HINTS
+        $ENV{ADSK_USD_EDIT_FORWARD_ROOT_DIR}
+        ${ADSK_USD_EDIT_FORWARD_ROOT_DIR}
+    PATH_SUFFIXES
+        lib
+    DOC
+        "Edit Forward UI library path"
+)
+
 ############################################################################
 #
 # Edit Forward package
@@ -60,6 +72,7 @@ find_package_handle_standard_args(AdskUsdEditForward
     REQUIRED_VARS
         ADSK_USD_EDIT_FORWARD_INCLUDE_DIR
         ADSK_USD_EDIT_FORWARD_LIBRARY
+        ADSK_USD_EDIT_FORWARD_UI_LIBRARY
 )
 
 # Report to the user where the package was found.
@@ -68,4 +81,5 @@ if (AdskUsdEditForward_FOUND)
     # This will follow a message "-- Found AdskUsdEditForward: <path> ..."
     message(STATUS "   Include dir: ${ADSK_USD_EDIT_FORWARD_INCLUDE_DIR}")
     message(STATUS "   Library: ${ADSK_USD_EDIT_FORWARD_LIBRARY}")
+    message(STATUS "   UI Library: ${ADSK_USD_EDIT_FORWARD_UI_LIBRARY}")
 endif()
