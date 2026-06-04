@@ -17,10 +17,6 @@
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-# Path to the new editor's test/cpp — contains *Logic.h headers.
-set(NEW_LE_TEST_CPP
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../usdUfe/usd-layer-editor/test/cpp)
-
 # ── Sources ────────────────────────────────────────────────────────────────────
 set(OLD_LE_OWN_SOURCES
     stubCommandHook.cpp
@@ -42,11 +38,37 @@ set(OLD_LE_OWN_SOURCES
     testSharedStage.cpp
 )
 
+# Legacy widget sources compiled directly into this test DLL. This gives the
+# test a self-contained copy of the old editor, avoiding ODR conflicts with
+# UsdLayerEditorLib, which exports the new editor's versions of the same classes.
+set(LEGACY_SOURCES
+    ../../componentSaveWidget.cpp
+    ../../dirtyLayersCountBadge.cpp
+    ../../generatedIconButton.cpp
+    ../../layerContentsWidget.cpp
+    ../../layerEditorWidget.cpp
+    ../../layerTreeItem.cpp
+    ../../layerTreeItemDelegate.cpp
+    ../../layerTreeModel.cpp
+    ../../layerTreeView.cpp
+    ../../loadLayersDialog.cpp
+    ../../pathChecker.cpp
+    ../../qtUtils.cpp
+    ../../resources.qrc
+    ../../saveLayersDialog.cpp
+    ../../sessionState.cpp
+    ../../stageSelectorWidget.cpp
+    ../../stringResources.cpp
+    ../../usdSyntaxHighlighter.cpp
+    ../../warningDialogs.cpp
+)
+
 # ── Target ─────────────────────────────────────────────────────────────────────
 set(TARGET_NAME mayaUsdOldLayerEditorTests)
 
 add_library(${TARGET_NAME} SHARED
     ${OLD_LE_OWN_SOURCES}
+    ${LEGACY_SOURCES}
 )
 
 if(IS_WINDOWS)
@@ -59,25 +81,21 @@ mayaUsd_compile_config(${TARGET_NAME})
 
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
+        MAYAUSD_UI_EXPORT
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
-# Include path order is critical:
-#   1. OLD editor test dir FIRST — shim headers shadow new editor versions.
-#   2. NEW editor test dir SECOND — *Logic.h headers and testUtils.h.
-#   3. OLD editor lib sources — layerTreeItem.h, layerTreeModel.h, etc.
 target_include_directories(${TARGET_NAME}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${NEW_LE_TEST_CPP}
         ${CMAKE_CURRENT_SOURCE_DIR}/../../
 )
 
 target_link_libraries(${TARGET_NAME}
     PRIVATE
-        mayaUsdUI
+        mayaUsd
         GTest::GTest
         Qt::Core Qt::Gui Qt::Widgets
         sdf tf usd
