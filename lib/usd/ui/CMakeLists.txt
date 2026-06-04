@@ -146,4 +146,7 @@ install(FILES ${HEADERS}
 if (BUILD_TESTS)
     # A simple executable used to test the import dialog.
     add_subdirectory(importDialogDemo)
+    if (NOT BUILD_NEW_LAYER_EDITOR)
+        add_subdirectory(layerEditor/test/cpp)
+    endif()
 endif()
