@@ -1476,6 +1476,45 @@ private:
     }
 };
 
+// Tracks index offsets when multiple insert/remove sublayer operations are batched
+// in a single command invocation.
+class IndexAdjustments
+{
+public:
+    IndexAdjustments() = default;
+
+    int insertionAdjustment(int originalIndex)
+    {
+        const int adjustedIndex = getAdjustedIndex(originalIndex);
+        addInsertionAdjustment(originalIndex);
+        return adjustedIndex;
+    }
+
+    int removalAdjustment(int originalIndex)
+    {
+        const int adjustedIndex = getAdjustedIndex(originalIndex);
+        addRemovalAdjustment(originalIndex);
+        return adjustedIndex;
+    }
+
+private:
+    void addInsertionAdjustment(int index) { _indexAdjustments[index] += 1; }
+    void addRemovalAdjustment(int index) { _indexAdjustments[index] -= 1; }
+
+    int getAdjustedIndex(int index) const
+    {
+        int adjustedIndex = index;
+        for (const auto& indexAndAdjustement : _indexAdjustments) {
+            if (indexAndAdjustement.first > index)
+                break;
+            adjustedIndex += indexAndAdjustement.second;
+        }
+        return adjustedIndex;
+    }
+
+    std::map<int, int> _indexAdjustments;
+};
+
 // Wraps an Impl::BaseCmd as a Ufe::UndoableCommand so it can be stored in
 // LayerEditorCommand::_subCommands (which holds Ufe::UndoableCommand instances).
 // The layer handle is resolved at construction time and held for the lifetime of this wrapper.
