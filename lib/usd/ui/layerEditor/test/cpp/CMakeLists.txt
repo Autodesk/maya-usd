@@ -17,6 +17,11 @@
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# *Logic.h headers and testUtils.h live in the new editor's test/cpp dir and are
+# shared between old and new test suites.
+set(NEW_LE_TEST_CPP
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../usdUfe/usd-layer-editor/test/cpp)
+
 # ── Sources ────────────────────────────────────────────────────────────────────
 set(OLD_LE_OWN_SOURCES
     stubCommandHook.cpp
@@ -87,9 +92,14 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
+# Include path order is critical:
+#   1. OLD editor test dir FIRST — shim headers shadow new editor versions.
+#   2. NEW editor test dir SECOND — *Logic.h headers and testUtils.h.
+#   3. OLD editor lib sources — layerTreeItem.h, layerTreeModel.h, etc.
 target_include_directories(${TARGET_NAME}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${NEW_LE_TEST_CPP}
         ${CMAKE_CURRENT_SOURCE_DIR}/../../
 )
 
