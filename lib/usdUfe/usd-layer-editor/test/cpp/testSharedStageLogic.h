@@ -135,19 +135,16 @@ TEST_F(SharedStageFixture, GetAllNeedsSavingLayers_EmptyAfterSwitchingToNonShare
 }
 
 // ── ReferencedLayersFixture ───────────────────────────────────────────────────
-// isDccObjectSharedStage() = false (non-shared stage).  The root layer carries
-// "adskSharedLayers" metadata listing sublayers that are owned by another asset
-// and therefore read-only in this context.
+// Uses the DCC-agnostic "adskSharedLayers" token.
+// Skipped for the old Maya editor (which only writes/reads "mayaSharedLayers").
+// See MayaReferencedLayersFixture below for the token the old editor uses.
 
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 class ReferencedLayersFixture : public LayerEditorTestFixture
 {
 protected:
     void SetUp() override
     {
-        // _isSharedStage stays false (default) so the referenced-layers path activates.
-        // Stamp the first stub sublayer as a referenced (shared) layer BEFORE the widget
-        // is built, so rebuildModel() already sees the metadata on first run (no second
-        // rebuild needed and no USD notice race).
         auto        rootLayer    = _sessionState.stage()->GetRootLayer();
         std::string sublayerPath = rootLayer->GetSubLayerPaths()[0];
         PXR_NS::VtArray<std::string> refs = { sublayerPath };
@@ -160,7 +157,6 @@ protected:
 
 TEST_F(ReferencedLayersFixture, IsReadOnly_TrueForReferencedLayer)
 {
-    // The sublayer listed in adskSharedLayers must be read-only.
     auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_TRUE(item->isReadOnly());
@@ -168,7 +164,6 @@ TEST_F(ReferencedLayersFixture, IsReadOnly_TrueForReferencedLayer)
 
 TEST_F(ReferencedLayersFixture, NeedsSaving_FalseForReferencedLayerOnNonSharedStage)
 {
-    // Non-shared stage: needsSaving() is always false regardless of layer state.
     auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_FALSE(item->needsSaving());
@@ -176,7 +171,6 @@ TEST_F(ReferencedLayersFixture, NeedsSaving_FalseForReferencedLayerOnNonSharedSt
 
 TEST_F(ReferencedLayersFixture, IsReadOnly_FalseForNonReferencedRootLayer)
 {
-    // The root layer itself is NOT in the referenced set — should not be read-only.
     auto* root = itemAt(treeModel(), rootLayerIndex());
     ASSERT_NE(root, nullptr);
     EXPECT_FALSE(root->isReadOnly());
@@ -184,7 +178,53 @@ TEST_F(ReferencedLayersFixture, IsReadOnly_FalseForNonReferencedRootLayer)
 
 TEST_F(ReferencedLayersFixture, GetAllNeedsSavingLayers_EmptyOnNonSharedStage)
 {
-    // Even though a sublayer is referenced/shared, non-shared stage → nothing to save.
+    EXPECT_TRUE(treeModel()->getAllNeedsSavingLayers().empty());
+}
+#endif // LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+
+// ── MayaReferencedLayersFixture ───────────────────────────────────────────────
+// Uses the legacy Maya-specific "mayaSharedLayers" token written by proxyShapeBase.
+// Both the old and new editors must honour this token.
+
+class MayaReferencedLayersFixture : public LayerEditorTestFixture
+{
+protected:
+    void SetUp() override
+    {
+        auto        rootLayer    = _sessionState.stage()->GetRootLayer();
+        std::string sublayerPath = rootLayer->GetSubLayerPaths()[0];
+        PXR_NS::VtArray<std::string> refs = { sublayerPath };
+        CustomLayerData::setStringArray(refs, rootLayer, PXR_NS::TfToken("mayaSharedLayers"));
+
+        LayerEditorTestFixture::SetUp();
+        QApplication::processEvents();
+    }
+};
+
+TEST_F(MayaReferencedLayersFixture, IsReadOnly_TrueForMayaReferencedLayer)
+{
+    // A sublayer stamped with the legacy "mayaSharedLayers" token must be read-only.
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_TRUE(item->isReadOnly());
+}
+
+TEST_F(MayaReferencedLayersFixture, NeedsSaving_FalseForMayaReferencedLayerOnNonSharedStage)
+{
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_FALSE(item->needsSaving());
+}
+
+TEST_F(MayaReferencedLayersFixture, IsReadOnly_FalseForNonMayaReferencedRootLayer)
+{
+    auto* root = itemAt(treeModel(), rootLayerIndex());
+    ASSERT_NE(root, nullptr);
+    EXPECT_FALSE(root->isReadOnly());
+}
+
+TEST_F(MayaReferencedLayersFixture, GetAllNeedsSavingLayers_EmptyOnNonSharedStage)
+{
     EXPECT_TRUE(treeModel()->getAllNeedsSavingLayers().empty());
 }
 
