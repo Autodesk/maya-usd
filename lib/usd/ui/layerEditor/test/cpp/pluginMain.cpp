@@ -21,6 +21,8 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
+#include <QtWidgets/QApplication>
+
 #include <sstream>
 #include <string>
 #include <vector>
@@ -117,6 +119,14 @@ public:
 
     MStatus doIt(const MArgList&) override
     {
+        // QWidget requires a QApplication. Maya standalone does not create one,
+        // so we create it here if absent. The instance persists for the process.
+        static int           sArgc = 0;
+        static QApplication* sApp  = nullptr;
+        if (!QCoreApplication::instance()) {
+            sApp = new QApplication(sArgc, nullptr);
+        }
+
         // InitGoogleTest may only be called once per process — guard on first call.
         static bool sInitialized = false;
         if (!sInitialized) {
