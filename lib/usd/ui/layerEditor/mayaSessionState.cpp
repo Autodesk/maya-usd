@@ -540,6 +540,31 @@ void MayaSessionState::setEchoEditForwarding(bool echo)
     PARENT_CLASS::setEchoEditForwarding(echo);
 #endif
 }
+
+bool MayaSessionState::isEditForwardMode() const
+{
+    const auto& stage = stageEntry()._stage;
+    if (!stage)
+        return false;
+    auto controller = MayaUsdEditForwardController::GetForStage(stage);
+    return controller && controller->isForwardingActive();
+}
+
+PXR_NS::SdfLayerRefPtr MayaSessionState::effectiveTargetLayer() const
+{
+    const auto& stage = stageEntry()._stage;
+    if (stage) {
+        auto controller = MayaUsdEditForwardController::GetForStage(stage);
+        if (controller && controller->isForwardingActive()) {
+            // In EF mode the stage edit target is pinned to the session layer; the meaningful
+            // target is the fallback. Fall through to the stage edit target if it is not set.
+            if (auto fallback = controller->fallbackTarget())
+                return fallback;
+            MGlobal::displayWarning("Edit forwarding is active but no fallback target is set.");
+        }
+    }
+    return targetLayer();
+}
 #endif
 
 void MayaSessionState::setDisplayLayerContents(bool showIt)

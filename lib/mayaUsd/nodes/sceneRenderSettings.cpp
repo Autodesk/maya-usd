@@ -27,7 +27,9 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdRender/product.h>
 #include <pxr/usd/usdRender/settings.h>
+#include <pxr/usd/usdRender/var.h>
 
 #include <ufe/path.h>
 #include <ufe/pathString.h>
@@ -73,6 +75,8 @@ const bool kRenderSettingsRegistered = []() {
             // https://openusd.org/dev/api/usd_render_page_front.html
             const PXR_NS::SdfPath renderScopePath("/Render");
             const PXR_NS::SdfPath renderSettingsPath("/Render/SceneRenderSettings");
+            const PXR_NS::SdfPath renderVarPath("/Render/color");
+            const PXR_NS::SdfPath renderProductPath("/Render/BeautyProduct");
 
             PXR_NS::UsdGeomScope::Define(stage, renderScopePath);
 
@@ -81,6 +85,22 @@ const bool kRenderSettingsRegistered = []() {
             if (!renderSettings) {
                 return;
             }
+
+            PXR_NS::UsdRenderVar renderVar = PXR_NS::UsdRenderVar::Define(stage, renderVarPath);
+            if (!renderVar) {
+                return;
+            }
+            renderVar.GetSourceNameAttr().Set(std::string("color"));
+
+            PXR_NS::UsdRenderProduct renderProduct
+                = PXR_NS::UsdRenderProduct::Define(stage, renderProductPath);
+            if (!renderProduct) {
+                return;
+            }
+            renderProduct.GetProductNameAttr().Set(PXR_NS::TfToken("./default.png"));
+            renderProduct.GetOrderedVarsRel().SetTargets({ renderVarPath });
+
+            renderSettings.GetProductsRel().SetTargets({ renderProductPath });
 
             createExternalCameraAttr(renderSettings.GetPrim()).Set(kDefaultExternalCameraUfePath);
 

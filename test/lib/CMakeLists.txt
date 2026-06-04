@@ -63,6 +63,8 @@ if (AdskUsdEditForward_FOUND)
     set(EDIT_FORWARDING_TEST_SCRIPT_FILES
         testAdskUsdEditForward.py
         testAdskUsdEditForwardXformOp.py
+        testAdskUsdEditForwardLayerEditor.py
+        testComponentVariant.py
     )
 
     foreach(script ${EDIT_FORWARDING_TEST_SCRIPT_FILES})
