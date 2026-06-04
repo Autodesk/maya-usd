@@ -25,7 +25,6 @@ option(BUILD_MAYAUSDAPI_LIBRARY "Build the mayaUsdAPI subset library that provid
 option(BUILD_LOOKDEVXUSD_LIBRARY "Build LookdevXUsd library using LookdevXUfe." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
-option(BUILD_NEW_LAYER_EDITOR "Build and use the shared usd-layer-editor component instead of the in-tree mayaUsd layer editor." OFF)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(BUILD_HDMAYA "Build the legacy Maya-To-Hydra plugin and scene delegate." OFF)
 option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)

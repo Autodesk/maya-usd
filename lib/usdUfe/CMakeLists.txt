@@ -182,7 +182,4 @@ add_subdirectory(ufe)
 add_subdirectory(undo)
 add_subdirectory(utils)
 
-# Shared layer editor component (Qt-dependent). Off by default during migration.
-if(BUILD_NEW_LAYER_EDITOR)
-    add_subdirectory(usd-layer-editor)
-endif()
+add_subdirectory(usd-layer-editor)
