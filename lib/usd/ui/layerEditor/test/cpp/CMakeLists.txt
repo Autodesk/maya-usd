@@ -47,6 +47,7 @@ set(OLD_LE_OWN_SOURCES
 # test a self-contained copy of the old editor, avoiding ODR conflicts with
 # UsdLayerEditorLib, which exports the new editor's versions of the same classes.
 set(LEGACY_SOURCES
+    ../../mayaQtUtils.cpp
     ../../componentSaveWidget.cpp
     ../../dirtyLayersCountBadge.cpp
     ../../generatedIconButton.cpp
