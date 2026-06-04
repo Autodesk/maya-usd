@@ -16,6 +16,8 @@
 #ifndef LAYEREDITOR_QTUTILS_H
 #define LAYEREDITOR_QTUTILS_H
 
+#include <mayaUsdUI/ui/api.h>
+
 class QPushButton;
 class QSize;
 class QString;
@@ -92,7 +94,7 @@ const bool IS_MAC_OS = true;
 const bool IS_MAC_OS = false;
 #endif
 
-extern QtUtils* utils;
+MAYAUSD_UI_PUBLIC extern QtUtils* utils;
 
 template <class T> inline T DPIScale(T pixel) { return static_cast<T>(pixel * utils->dpiScale()); }
 
