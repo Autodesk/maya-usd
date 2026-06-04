@@ -152,7 +152,7 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
         // composed from root and session layer variables.
         std::string resolvedPath = path;
         if (_stage && SdfVariableExpression::IsExpression(path)) {
-            const auto& stageRootLayerStack
+            const auto stageRootLayerStack
                 = _stage->GetPseudoRoot().GetPrimIndex().GetRootNode().GetLayerStack();
 
             if (stageRootLayerStack) {
