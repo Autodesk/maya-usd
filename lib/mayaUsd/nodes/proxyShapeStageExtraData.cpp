@@ -18,6 +18,11 @@
 #include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/targetLayer.h>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+#endif
+
+#include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 
 #include <set>
@@ -65,7 +70,25 @@ void saveTrackedLoadRules(const UsdStageRefPtr& stage)
 
 void saveTrackedTargetLayer(const UsdStageRefPtr& stage)
 {
-    saveTrackedData(stage, copyTargetLayerToAttribute);
+    saveTrackedData(
+        stage, [](const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape) -> MStatus {
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+            // When Edit Forwarding is active the stage edit target is pinned to the session
+            // layer. Save the fallback target instead so that the meaningful "where edits go"
+            // layer is correctly restored on reload.
+            if (auto controller
+                = MayaUsdEditForwardController::GetForStage(proxyShape.getUsdStage())) {
+                if (controller->isForwardingActive()) {
+                    if (auto fallback = controller->fallbackTarget()) {
+                        return copyLayerAsTargetLayerAttribute(fallback, proxyShape);
+                    }
+                    MGlobal::displayWarning("Edit forwarding is active but no fallback target is "
+                                            "set; target layer not saved.");
+                }
+            }
+#endif
+            return copyTargetLayerToAttribute(stage, proxyShape);
+        });
 }
 
 } // namespace
