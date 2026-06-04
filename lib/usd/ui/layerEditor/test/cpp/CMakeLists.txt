@@ -110,5 +110,6 @@ mayaUsd_add_test(${parity_target}
     ENV
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+        "QT_QPA_PLATFORM=offscreen"
 )
 set_property(TEST ${parity_target} APPEND PROPERTY LABELS MayaUsdOldLEParity)
