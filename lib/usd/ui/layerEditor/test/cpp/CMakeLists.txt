@@ -17,20 +17,20 @@
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-# Path to the new editor's test/cpp — contains *Logic.h headers and the 7 as-is sources.
+# Path to the new editor's test/cpp — contains *Logic.h headers.
 set(NEW_LE_TEST_CPP
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../usdUfe/usd-layer-editor/test/cpp)
 
 # ── Sources ────────────────────────────────────────────────────────────────────
-# Old-editor-specific files (stubs, fixture, thin wrappers, plugin host):
 set(OLD_LE_OWN_SOURCES
-    # Headers-only sources so AUTOMOC generates staticMetaObject for
-    # classes whose Q_OBJECT data is not exported from mayaUsdUI.dll.
+    # Headers-only so AUTOMOC generates staticMetaObject for Q_OBJECT classes
+    # not exported as data members from mayaUsdUI.dll.
     ${CMAKE_CURRENT_SOURCE_DIR}/../../sessionState.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../../layerContentsWidget.h
     stubCommandHook.cpp
     stubSessionState.cpp
     testFixture.cpp
+    testMain.cpp
     testButtons.cpp
     testContextMenu.cpp
     testLayerContentsWidget.cpp
@@ -44,13 +44,12 @@ set(OLD_LE_OWN_SOURCES
     testReorder.cpp
     testSaveLayersDialog.cpp
     testSharedStage.cpp
-    pluginMain.cpp
 )
 
 # ── Target ─────────────────────────────────────────────────────────────────────
 set(TARGET_NAME mayaUsdOldLayerEditorTests)
 
-add_library(${TARGET_NAME} MODULE
+add_executable(${TARGET_NAME}
     ${OLD_LE_OWN_SOURCES}
 )
 
@@ -64,10 +63,9 @@ target_compile_definitions(${TARGET_NAME}
 )
 
 # Include path order is critical:
-#   1. OLD editor test dir FIRST — shim headers (layerLocking.h, layerMuting.h,
-#      customLayerData.h, testFixture.h) shadow the new editor's versions.
-#   2. NEW editor test dir SECOND — *Logic.h headers and testUtils.h found here.
-#   3. OLD editor lib sources — layerTreeItem.h, layerTreeModel.h, layerTreeView.h, etc.
+#   1. OLD editor test dir FIRST — shim headers shadow new editor versions.
+#   2. NEW editor test dir SECOND — *Logic.h headers and testUtils.h.
+#   3. OLD editor lib sources — layerTreeItem.h, layerTreeModel.h, etc.
 target_include_directories(${TARGET_NAME}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -84,32 +82,15 @@ target_link_libraries(${TARGET_NAME}
         ${MAYA_LIBRARIES}
 )
 
-# Maya plugin output conventions
-set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
-if(IS_WINDOWS)
-    set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".mll")
-else()
-    set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".so")
-endif()
-
 install(TARGETS ${TARGET_NAME}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya
-    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/tests
 )
 
-install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/testOldLayerEditorParity.py
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python
-)
-
-# Register with CTest via the Maya Python runner.
-mayaUsd_get_unittest_target(parity_target testOldLayerEditorParity.py)
-mayaUsd_add_test(${parity_target}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    PYTHON_MODULE ${parity_target}
+# Register with CTest — run as a standalone executable (no Maya needed).
+mayaUsd_add_test(${TARGET_NAME}
+    COMMAND $<TARGET_FILE:${TARGET_NAME}>
     ENV
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-        "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
         "QT_QPA_PLATFORM=offscreen"
 )
-set_property(TEST ${parity_target} APPEND PROPERTY LABELS MayaUsdOldLEParity)
+set_property(TEST ${TARGET_NAME} APPEND PROPERTY LABELS MayaUsdOldLEParity)
