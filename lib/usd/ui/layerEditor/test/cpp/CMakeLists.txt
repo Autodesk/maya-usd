@@ -24,6 +24,10 @@ set(NEW_LE_TEST_CPP
 # ── Sources ────────────────────────────────────────────────────────────────────
 # Old-editor-specific files (stubs, fixture, thin wrappers, plugin host):
 set(OLD_LE_OWN_SOURCES
+    # Headers-only sources so AUTOMOC generates staticMetaObject for
+    # classes whose Q_OBJECT data is not exported from mayaUsdUI.dll.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../sessionState.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../layerContentsWidget.h
     stubCommandHook.cpp
     stubSessionState.cpp
     testFixture.cpp
