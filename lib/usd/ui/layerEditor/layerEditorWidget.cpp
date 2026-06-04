@@ -31,8 +31,6 @@
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsdUI/ui/editForwardDialog.h>
-
-#include <AdskUsdEditForward/StageRuleProvider.h>
 #endif
 
 #include <pxr/usd/sdf/schema.h>
@@ -70,7 +68,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 LayerEditorWidget::~LayerEditorWidget()
 {
-    TfNotice::Revoke(_layerChangedKey);
     disconnect(
         qApp, &QApplication::focusChanged, this, &LayerEditorWidget::updateTreeContainerBorder);
 }
@@ -158,6 +155,32 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         &QAbstractButton::clicked,
         this,
         &LayerEditorWidget::onLoadLayersButtonClicked);
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // Vertical separator between the layer management buttons and the Edit Forward Config button
+    {
+        auto separator = new QFrame();
+        separator->setFrameShape(QFrame::VLine);
+        separator->setFrameShadow(QFrame::Sunken);
+        separator->setFixedHeight(buttonSize);
+        toolbar->addWidget(separator);
+    }
+
+    // Edit Forward Config button — opens the EF configuration dialog. The icon
+    // reflects whether edit forwarding is active on the stage.
+    _buttons._toggleEFButton = new QPushButton();
+    _buttons._toggleEFButton->setFlat(true);
+    _buttons._toggleEFButton->setFixedSize(buttonSize, buttonSize);
+    _buttons._toggleEFButton->setToolTip(
+        StringResources::getAsQString(StringResources::kToggleEditForwarding));
+    _buttons._toggleEFButton->setObjectName("LayerEditorToggleEFButton");
+    toolbar->addWidget(_buttons._toggleEFButton, 0, buttonAlignment);
+    connect(
+        _buttons._toggleEFButton,
+        &QAbstractButton::clicked,
+        this,
+        &LayerEditorWidget::openEditForwardDialog);
+#endif
 
     toolbar->addStretch();
 
@@ -253,20 +276,6 @@ void LayerEditorWidget::setupLayout()
         treeContainerLayout->setSpacing(0);
         treeContainerLayout->setContentsMargins(0, 0, 0, 0);
 
-        _editForwardBanner = new QLabel(_treeContainer);
-        _editForwardBanner->setText(
-            StringResources::getAsQString(StringResources::kEditForwardBanner));
-        _editForwardBanner->setWordWrap(true);
-        _editForwardBanner->setVisible(false);
-        _editForwardBanner->setContentsMargins(DPIScale(8), DPIScale(6), DPIScale(8), DPIScale(6));
-        _editForwardBanner->setStyleSheet("QLabel {"
-                                          "  background-color: rgb(55, 55, 55);"
-                                          "  color: palette(text);"
-                                          "  border-left: 3px solid #38abdf;"
-                                          "  padding-left: 6px;"
-                                          "}");
-        treeContainerLayout->addWidget(_editForwardBanner);
-
         _treeView->setFrameShape(QFrame::NoFrame);
         treeContainerLayout->addWidget(_treeView);
 
@@ -286,17 +295,6 @@ void LayerEditorWidget::setupLayout()
         this,
         &LayerEditorWidget::showDisplayLayerContents);
 
-    connect(
-        &_sessionState,
-        &SessionState::currentStageChangedSignal,
-        this,
-        &LayerEditorWidget::updateEditForwardBanner);
-
-    {
-        TfWeakPtr<LayerEditorWidget> me(this);
-        _layerChangedKey = TfNotice::Register(me, &LayerEditorWidget::onLayerChanged);
-    }
-
     auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(DPIScale(4), DPIScale(4), DPIScale(4), DPIScale(4));
@@ -307,7 +305,6 @@ void LayerEditorWidget::setupLayout()
 
     updateNewLayerButton();
     updateButtons();
-    updateEditForwardBanner();
 }
 
 void LayerEditorWidget::updateTreeContainerBorder(QWidget*, QWidget* now)
@@ -407,24 +404,12 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
 
         auto configureEditForwardingAction = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kConfigureEditForwarding));
-        QObject::connect(configureEditForwardingAction, &QAction::triggered, this, [this, ss]() {
-            if (_editForwardDialog) {
-                _editForwardDialog->show();
-                _editForwardDialog->raise();
-                _editForwardDialog->activateWindow();
-                return;
-            }
-            _editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
-                StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
-                MQtUtil::mainWindow());
-            // While the layer editor is open, follow its current stage.
-            QObject::connect(ss, &SessionState::currentStageChangedSignal, this, [this, ss]() {
-                if (_editForwardDialog) {
-                    _editForwardDialog->setActiveStage(ss->stage());
+        QObject::connect(
+            configureEditForwardingAction, &QAction::triggered, in_parent, [in_parent]() {
+                if (auto* editor = qobject_cast<LayerEditorWidget*>(in_parent->centralWidget())) {
+                    editor->openEditForwardDialog();
                 }
             });
-            _editForwardDialog->show();
-        });
 #endif
 
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
@@ -530,6 +515,20 @@ void LayerEditorWidget::updateButtons()
         }
     }
     _updateButtonsOnIdle = false;
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // Update the EF toolbar button icon to reflect the current edit forwarding active state.
+    if (_buttons._toggleEFButton) {
+        const bool efActive = _sessionState.isEditForwardMode();
+        const auto baseName = efActive ? ":/UsdLayerEditor/ef_on" : ":/UsdLayerEditor/ef_default";
+        _buttons._toggleEFButton->setStyleSheet(
+            QString("QPushButton { padding: %1px; background-image: url(%2); "
+                    "background-position: center center; background-repeat: no-repeat; "
+                    "border: 0px; background-origin: content; }")
+                .arg(DPIScale(4))
+                .arg(QtUtils::getDPIPixmapName(baseName)));
+    }
+#endif
 }
 
 void LayerEditorWidget::onNewLayerButtonClicked()
@@ -706,49 +705,6 @@ void LayerEditorWidget::selectLayers(const std::vector<std::string>& layerIdenti
     }
 }
 
-void LayerEditorWidget::onLayerChanged(SdfNotice::LayersDidChangeSentPerLayer const& notice)
-{
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    auto stage = _sessionState.stage();
-    if (!stage)
-        return;
-
-    auto rootLayer = stage->GetRootLayer();
-    for (const auto& layerAndChanges : notice.GetChangeListVec()) {
-        if (layerAndChanges.first != rootLayer)
-            continue;
-        for (const auto& pathAndEntry : layerAndChanges.second.GetEntryList()) {
-            if (pathAndEntry.first != SdfPath::AbsoluteRootPath())
-                continue;
-            bool customLayerDataChanged = false;
-            for (const auto& item : pathAndEntry.second.infoChanged) {
-                if (item.first == SdfFieldKeys->CustomLayerData) {
-                    customLayerDataChanged = true;
-                    break;
-                }
-            }
-            if (customLayerDataChanged) {
-                updateEditForwardBanner();
-                return;
-            }
-        }
-    }
-#endif
-}
-
-void LayerEditorWidget::updateEditForwardBanner()
-{
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    auto stage = _sessionState.stage();
-    if (stage) {
-        AdskUsdEditForward::StageRuleProvider provider(stage);
-        _editForwardBanner->setVisible(!provider.GetRules().empty());
-    } else {
-        _editForwardBanner->setVisible(false);
-    }
-#endif
-}
-
 void LayerEditorWidget::onSplitterMoved(int pos, int index)
 {
     if (index == 1) {
@@ -764,5 +720,30 @@ void LayerEditorWidget::onSplitterMoved(int pos, int index)
         }
     }
 }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+
+void LayerEditorWidget::openEditForwardDialog()
+{
+    auto* ss = &_sessionState;
+    if (_editForwardDialog) {
+        _editForwardDialog->show();
+        _editForwardDialog->raise();
+        _editForwardDialog->activateWindow();
+        return;
+    }
+    _editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
+        StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
+        MQtUtil::mainWindow());
+    // While the layer editor is open, follow its current stage.
+    QObject::connect(ss, &SessionState::currentStageChangedSignal, this, [this, ss]() {
+        if (_editForwardDialog) {
+            _editForwardDialog->setActiveStage(ss->stage());
+        }
+    });
+    _editForwardDialog->show();
+}
+
+#endif // WANT_ADSK_USD_EDIT_FORWARD_BUILD
 
 } // namespace UsdLayerEditor

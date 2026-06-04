@@ -201,13 +201,15 @@ TEST(ShaderGenUtils, lobePruner)
     input->setValueString("1.0");
     optimizedNodeDef = lobePruner->getOptimizedNodeDef(*node);
     ASSERT_TRUE(optimizedNodeDef);
-#if MX_COMBINED_VERSION < 13904
-    // Now have a 1 for subsurface since we can also optimize the 1 value for mix nodes.
-    ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x010");
-#else
-    // Starting at 1.39.4 we have an X for subsurface since standard surface no longer uses a mix
+#if MX_COMBINED_VERSION == 13904
+    // In 1.39.4 we have an X for subsurface since standard surface no longer uses a mix
     // node. See https://github.com/AcademySoftwareFoundation/MaterialX/pull/2483
     ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x0x0");
+#else
+    // Now have a 1 for subsurface since we can also optimize the 1 value for mix nodes.
+    // Note: mix node is back in 1.39.5. See
+    // https://github.com/AcademySoftwareFoundation/MaterialX/pull/2539
+    ASSERT_EQ(optimizedNodeDef->getNodeString(), "standard_surface_x0000x00x010");
 #endif
 
     PXR_NS::HdMaterialNode2 usdNode;
