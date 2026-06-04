@@ -41,43 +41,40 @@ set(LAYER_EDITOR_TEST_SOURCES
 # ------------------------------------------------------------------------------
 # UsdLayerEditorNewTests
 # Links UsdLayerEditorLib (the DCC-agnostic shared component).
-# Built only when BUILD_NEW_LAYER_EDITOR=ON.
 # ------------------------------------------------------------------------------
-if(BUILD_NEW_LAYER_EDITOR)
-    set(NEW_LE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib)
+set(NEW_LE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib)
 
-    add_executable(UsdLayerEditorNewTests
-        ${LAYER_EDITOR_TEST_SOURCES}
-    )
+add_executable(UsdLayerEditorNewTests
+    ${LAYER_EDITOR_TEST_SOURCES}
+)
 
-    mayaUsd_compile_config(UsdLayerEditorNewTests)
+mayaUsd_compile_config(UsdLayerEditorNewTests)
 
-    target_compile_definitions(UsdLayerEditorNewTests
-        PRIVATE
-            $<$<BOOL:${IS_WINDOWS}>:WIN32>
-            $<$<BOOL:${IS_LINUX}>:LINUX>
-            $<$<BOOL:${IS_MACOSX}>:OSMac_>
-    )
+target_compile_definitions(UsdLayerEditorNewTests
+    PRIVATE
+        $<$<BOOL:${IS_WINDOWS}>:WIN32>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+)
 
-    target_include_directories(UsdLayerEditorNewTests
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}
-            ${NEW_LE_DIR}
-            ${UFE_INCLUDE_DIR}
-    )
+target_include_directories(UsdLayerEditorNewTests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${NEW_LE_DIR}
+        ${UFE_INCLUDE_DIR}
+)
 
-    target_link_libraries(UsdLayerEditorNewTests
-        PRIVATE
-            UsdLayerEditorLib
-            GTest::GTest
-            Qt::Core Qt::Gui Qt::Widgets
-            sdf tf usd
-            ${UFE_LIBRARY}
-    )
+target_link_libraries(UsdLayerEditorNewTests
+    PRIVATE
+        UsdLayerEditorLib
+        GTest::GTest
+        Qt::Core Qt::Gui Qt::Widgets
+        sdf tf usd
+        ${UFE_LIBRARY}
+)
 
-    mayaUsd_add_test(UsdLayerEditorNewTests
-        COMMAND $<TARGET_FILE:UsdLayerEditorNewTests>
-        ENV
-            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-    )
-endif()
+mayaUsd_add_test(UsdLayerEditorNewTests
+    COMMAND $<TARGET_FILE:UsdLayerEditorNewTests>
+    ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+)

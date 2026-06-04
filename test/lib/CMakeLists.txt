@@ -140,7 +140,7 @@ endforeach()
 # boundary. The Maya-side _executeCmd hook bypasses UFE's undo manager (calls
 # cmd.execute() directly), so undo-driven tests fail. Re-enable once the binding
 # story is resolved (e.g. pybind11 conversion of UsdLayerEditor commands).
-if(BUILD_NEW_LAYER_EDITOR AND ENABLE_SHARED_LAYER_EDITOR_TESTS)
+if(ENABLE_SHARED_LAYER_EDITOR_TESTS)
     set(SHARED_LAYER_EDITOR_TEST_DIR
         ${CMAKE_SOURCE_DIR}/lib/usdUfe/usd-layer-editor/test
     )
