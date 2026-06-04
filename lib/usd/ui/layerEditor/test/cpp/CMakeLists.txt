@@ -101,7 +101,7 @@ install(TARGETS ${TARGET_NAME}
 )
 
 install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/../testOldLayerEditorParity.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/testOldLayerEditorParity.py
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python
 )
 
