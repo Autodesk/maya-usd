@@ -1,0 +1,162 @@
+//
+// Copyright 2026 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#pragma once
+
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+#include "testFixture.h"
+#endif
+
+#include <pxr/usd/usd/stage.h>
+
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QMainWindow>
+#include <QtWidgets/QMenuBar>
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace UsdLayerEditor {
+
+static QAction* findActionInMenuBar(QMainWindow* win, const QString& text)
+{
+    if (!win || !win->menuBar())
+        return nullptr;
+    for (QAction* top : win->menuBar()->actions()) {
+        if (QMenu* menu = top->menu()) {
+            QAction* found = findAction(menu, text);
+            if (found)
+                return found;
+        }
+    }
+    return nullptr;
+}
+
+TEST_F(LayerEditorTestFixture, OptionMenu_DisplayLayerContentsAction_Exists)
+{
+    auto* win    = qobject_cast<QMainWindow*>(_widget->parent());
+    auto* action = findActionInMenuBar(win, "Display Layer Content");
+    EXPECT_NE(action, nullptr)
+        << "Display Layer Content action should exist in the Option menu";
+}
+
+TEST_F(LayerEditorTestFixture, OptionMenu_DisplayLayerContents_Toggles)
+{
+    auto* win    = qobject_cast<QMainWindow*>(_widget->parent());
+    auto* action = findActionInMenuBar(win, "Display Layer Content");
+    ASSERT_NE(action, nullptr);
+    ASSERT_TRUE(action->isCheckable());
+
+    bool before = action->isChecked();
+    action->trigger();
+    QApplication::processEvents();
+    EXPECT_NE(action->isChecked(), before) << "Action should toggle";
+}
+
+TEST_F(LayerEditorTestFixture, StageSelector_ChangeStage_UpdatesSessionState)
+{
+    auto* combo = _widget->findChild<QComboBox*>(
+        QString(), Qt::FindChildrenRecursively);
+    ASSERT_NE(combo, nullptr) << "No stage selector QComboBox found";
+    ASSERT_GE(combo->count(), 2) << "Expected at least 2 stages in selector";
+
+    auto stageBefore = _sessionState.stage();
+    combo->setCurrentIndex(1);
+    QApplication::processEvents();
+
+    // The session state's current stage should have changed.
+    auto stageAfter = _sessionState.stage();
+    EXPECT_NE(stageAfter, stageBefore)
+        << "Active stage should change when stage selector changes";
+}
+
+TEST_F(LayerEditorTestFixture, StageList_AddStage_AppearsInSelector)
+{
+    auto* combo = _widget->findChild<QComboBox*>(
+        QString(), Qt::FindChildrenRecursively);
+    ASSERT_NE(combo, nullptr);
+
+    int countBefore = combo->count();
+    auto newStage   = PXR_NS::UsdStage::CreateInMemory();
+    _sessionState.addStage(newStage);
+    QApplication::processEvents();
+
+    EXPECT_GT(combo->count(), countBefore)
+        << "Adding a stage should increase the selector item count";
+}
+
+// ── stage selector pin / content toggle ───────────────────────────────────────
+
+TEST_F(LayerEditorTestFixture, StageSelector_HasAtLeastOneEntry)
+{
+    auto* combo = _widget->findChild<QComboBox*>(
+        QString(), Qt::FindChildrenRecursively);
+    ASSERT_NE(combo, nullptr);
+    EXPECT_GE(combo->count(), 1);
+}
+
+TEST_F(LayerEditorTestFixture, StageSelector_InitialCountMatchesSessionStageCount)
+{
+    auto* combo = _widget->findChild<QComboBox*>(
+        QString(), Qt::FindChildrenRecursively);
+    ASSERT_NE(combo, nullptr);
+    int sessionCount = static_cast<int>(_sessionState.allStages().size());
+    EXPECT_EQ(combo->count(), sessionCount);
+}
+
+TEST_F(LayerEditorTestFixture, StageSelector_AddStage_IncrementsComboCount)
+{
+    auto* combo = _widget->findChild<QComboBox*>(
+        QString(), Qt::FindChildrenRecursively);
+    ASSERT_NE(combo, nullptr);
+    int before = combo->count();
+    auto extra = PXR_NS::UsdStage::CreateInMemory();
+    _sessionState.addStage(extra);
+    QApplication::processEvents();
+    EXPECT_GT(combo->count(), before);
+}
+
+TEST_F(LayerEditorTestFixture, CollapseContent_TogglesDisplayLayerContentsInMenu)
+{
+    auto* win = qobject_cast<QMainWindow*>(_widget->parent());
+    if (!win || !win->menuBar()) GTEST_SKIP() << "No menu bar available";
+
+    QAction* action = findActionInMenuBar(win, "Display Layer Content");
+    if (!action) GTEST_SKIP() << "Display Layer Content action not found";
+
+    bool initial = action->isChecked();
+    action->trigger();
+    QApplication::processEvents();
+    EXPECT_NE(action->isChecked(), initial);
+    // Restore
+    action->trigger();
+    QApplication::processEvents();
+}
+
+TEST_F(LayerEditorTestFixture, StageSelector_RemoveAddStage_RoundtripDoesNotCrash)
+{
+    auto* combo = _widget->findChild<QComboBox*>(
+        QString(), Qt::FindChildrenRecursively);
+    ASSERT_NE(combo, nullptr);
+    int before = combo->count();
+
+    auto extra = PXR_NS::UsdStage::CreateInMemory();
+    _sessionState.addStage(extra);
+    QApplication::processEvents();
+    EXPECT_GT(combo->count(), before);
+    // No direct removeStage in stub — just verify no crash on the add path.
+}
+
+} // namespace UsdLayerEditor

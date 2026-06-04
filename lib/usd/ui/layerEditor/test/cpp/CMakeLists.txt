@@ -29,24 +29,18 @@ set(OLD_LE_OWN_SOURCES
     testFixture.cpp
     testButtons.cpp
     testContextMenu.cpp
+    testLayerContentsWidget.cpp
+    testLayerLocking.cpp
+    testLayerMuting.cpp
+    testLayerTreeItem.cpp
     testLayerTreeModel.cpp
     testLayerTreeView.cpp
+    testLoadLayersDialog.cpp
+    testMenusAndStage.cpp
     testReorder.cpp
+    testSaveLayersDialog.cpp
     testSharedStage.cpp
     pluginMain.cpp
-)
-
-# 7 as-is files shared from the new editor's test directory.
-# testLayerEditorCommands.cpp EXCLUDED — requires UFE/LayerEditorCommands.h
-# not available in old-editor builds.
-set(SHARED_AS_IS_SOURCES
-    ${NEW_LE_TEST_CPP}/testLayerContentsWidget.cpp
-    ${NEW_LE_TEST_CPP}/testLayerLocking.cpp
-    ${NEW_LE_TEST_CPP}/testLayerMuting.cpp
-    ${NEW_LE_TEST_CPP}/testLayerTreeItem.cpp
-    ${NEW_LE_TEST_CPP}/testLoadLayersDialog.cpp
-    ${NEW_LE_TEST_CPP}/testMenusAndStage.cpp
-    ${NEW_LE_TEST_CPP}/testSaveLayersDialog.cpp
 )
 
 # ── Target ─────────────────────────────────────────────────────────────────────
@@ -54,7 +48,6 @@ set(TARGET_NAME mayaUsdOldLayerEditorTests)
 
 add_library(${TARGET_NAME} MODULE
     ${OLD_LE_OWN_SOURCES}
-    ${SHARED_AS_IS_SOURCES}
 )
 
 mayaUsd_compile_config(${TARGET_NAME})

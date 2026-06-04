@@ -15,7 +15,9 @@
 //
 #pragma once
 
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 #include "testFixture.h"
+#endif
 #include "testUtils.h"
 #include "customLayerData.h"
 #include "layerTreeItem.h"
