@@ -14,22 +14,24 @@
 # limitations under the License.
 #
 import json
-import pytest
+import unittest
 import maya.cmds as cmds
 
 
-def test_old_layer_editor_parity():
-    plugin = "mayaUsdOldLayerEditorTests"
-    if not cmds.pluginInfo(plugin, q=True, loaded=True):
-        cmds.loadPlugin(plugin)
+class OldLayerEditorParityTest(unittest.TestCase):
 
-    raw     = cmds.mayaUsd_runLayerEditorTests()
-    results = json.loads(raw)
-    failures = [r for r in results if not r["passed"]]
+    def test_old_layer_editor_parity(self):
+        plugin = "mayaUsdOldLayerEditorTests"
+        if not cmds.pluginInfo(plugin, q=True, loaded=True):
+            cmds.loadPlugin(plugin)
 
-    if failures:
-        msg = "\n\n".join(
-            "{name}:\n{message}".format(**r) for r in failures
-        )
-        pytest.fail("{n} test(s) failed:\n\n{msg}".format(
-            n=len(failures), msg=msg))
+        raw     = cmds.mayaUsd_runLayerEditorTests()
+        results = json.loads(raw)
+        failures = [r for r in results if not r["passed"]]
+
+        if failures:
+            msg = "\n\n".join(
+                "{name}:\n{message}".format(**r) for r in failures
+            )
+            self.fail("{n} test(s) failed:\n\n{msg}".format(
+                n=len(failures), msg=msg))
