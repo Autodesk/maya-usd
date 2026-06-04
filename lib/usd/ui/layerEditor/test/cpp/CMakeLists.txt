@@ -88,10 +88,12 @@ target_link_libraries(${TARGET_NAME}
 )
 
 # Maya plugin output conventions
-set_target_properties(${TARGET_NAME} PROPERTIES
-    PREFIX ""
-    SUFFIX $<IF:$<BOOL:${IS_WINDOWS}>,.mll,.so>
-)
+set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
+if(IS_WINDOWS)
+    set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".mll")
+else()
+    set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".so")
+endif()
 
 install(TARGETS ${TARGET_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya
