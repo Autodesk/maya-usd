@@ -45,7 +45,7 @@ class ButtonsSharedStageFixture : public LayerEditorTestFixture
 protected:
     void SetUp() override
     {
-        _sessionState._commandHookImpl._isSharedStage = true;
+        setSharedStage(true);
         LayerEditorTestFixture::SetUp();
         QApplication::processEvents();
     }

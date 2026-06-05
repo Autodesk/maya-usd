@@ -58,7 +58,7 @@ class SharedStageFixture : public LayerEditorTestFixture
 protected:
     void SetUp() override
     {
-        _sessionState._commandHookImpl._isSharedStage = true;
+        setSharedStage(true);
         LayerEditorTestFixture::SetUp();
         QApplication::processEvents();
     }
@@ -116,7 +116,7 @@ TEST_F(SharedStageFixture, SaveButton_EnabledWhenLayersNeedSaving)
 TEST_F(SharedStageFixture, NeedsSaving_FalseAfterSwitchingToNonSharedStage)
 {
     // Dynamically flip to non-shared and rebuild the model.
-    _sessionState._commandHookImpl._isSharedStage = false;
+    setSharedStage(false);
     treeModel()->forceRefresh();
     QApplication::processEvents();
 
@@ -127,7 +127,7 @@ TEST_F(SharedStageFixture, NeedsSaving_FalseAfterSwitchingToNonSharedStage)
 
 TEST_F(SharedStageFixture, GetAllNeedsSavingLayers_EmptyAfterSwitchingToNonSharedStage)
 {
-    _sessionState._commandHookImpl._isSharedStage = false;
+    setSharedStage(false);
     treeModel()->forceRefresh();
     QApplication::processEvents();
 
@@ -237,8 +237,8 @@ class IncomingStageFixture : public LayerEditorTestFixture
 protected:
     void SetUp() override
     {
-        _sessionState._commandHookImpl._isSharedStage   = true;
-        _sessionState._commandHookImpl._isStageIncoming = true;
+        setSharedStage(true);
+        setStageIncoming(true);
         LayerEditorTestFixture::SetUp();
         QApplication::processEvents();
     }

@@ -20,6 +20,7 @@
 #include "abstractCommandHook.h"
 #include "dirtyLayersCountBadge.h"
 #include "layerContentsWidget.h"
+#include "layerEditorDCCFunctions.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 #include "sessionState.h"
@@ -120,17 +121,16 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         // Echo Edit Forwarding menu item is only shown when the DCC integration
         // actually supports EF (e.g. Maya builds with WANT_ADSK_USD_EDIT_FORWARD_BUILD).
         // No EF symbols are referenced here — only the SessionState virtuals.
-        if (ss->supportsEditForwarding()) {
+        if (UsdLayerEditor::supportsEditForwarding()) {
             optionMenu->addSeparator();
             _actions._echoEditForwarding = optionMenu->addAction(
                 StringResources::getAsQString(StringResources::kEchoEditForwarding));
             QObject::connect(
                 _actions._echoEditForwarding,
                 &QAction::toggled,
-                ss,
-                &SessionState::setEchoEditForwarding);
+                [](bool checked) { UsdLayerEditor::setEchoEditForwarding(checked); });
             _actions._echoEditForwarding->setCheckable(true);
-            _actions._echoEditForwarding->setChecked(ss->echoEditForwarding());
+            _actions._echoEditForwarding->setChecked(UsdLayerEditor::echoEditForwarding());
         }
 
         // TODO LE-EXTRACT Maya-usd menus (auto-hide session layer / help menu)
@@ -220,7 +220,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         this,
         &LayerEditorWidget::onLoadLayersButtonClicked);
 
-    if (_sessionState.supportsEditForwarding()) {
+    if (UsdLayerEditor::supportsEditForwarding()) {
         auto separator = new QFrame();
         separator->setFrameShape(QFrame::VLine);
         separator->setFrameShadow(QFrame::Sunken);
@@ -456,7 +456,7 @@ void LayerEditorWidget::updateNewLayerButton()
 
 void LayerEditorWidget::updateButtons()
 {
-    if (_sessionState.commandHook()->isDccObjectSharedStage(
+    if (UsdLayerEditor::isDccObjectSharedStage(
             _sessionState.stageEntry()._dccObjectPath)) {
         if (_buttons._dirtyCountBadge) {
             _buttons._dirtyCountBadge->setVisible(true);
@@ -473,8 +473,8 @@ void LayerEditorWidget::updateButtons()
         // properly, we need to ask it what layers will be impacted. The hook returns an
         // empty vector for DCCs without component support; that case falls through to the
         // normal counting below.
-        if (_sessionState.isStageAComponent(_sessionState.stageEntry()._dccObjectPath)) {
-            const auto layerIds = _sessionState.getComponentLayersToSave(
+        if (UsdLayerEditor::isStageAComponent(_sessionState.stageEntry()._dccObjectPath)) {
+            const auto layerIds = UsdLayerEditor::getComponentLayersToSave(
                 _sessionState.stageEntry()._dccObjectPath);
             count = static_cast<int>(layerIds.size());
         } else {
