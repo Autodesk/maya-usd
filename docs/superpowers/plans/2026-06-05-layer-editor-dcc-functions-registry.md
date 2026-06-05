@@ -445,12 +445,12 @@ The Component and Edit-Forwarding lambdas reproduce the bodies currently in `may
 
 #include <layerEditorDCCFunctions.h>
 
+#include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/usd/stage.h>
-
-#include <mayaUsd/utils/util.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MFnDependencyNode.h>
@@ -467,8 +467,6 @@ The Component and Edit-Forwarding lambdas reproduce the bodies currently in `may
 #endif
 
 namespace {
-
-const MString kEchoEditForwardingOptionVar("mayaUsd_LayerEditor_EchoEditForwarding");
 
 // Local copy of the proxy-shape boolean attribute reader (the original lives in
 // an anonymous namespace in mayaCommandHook.cpp and is not reachable here).
@@ -568,11 +566,14 @@ void registerLayerEditorDCCFunctions()
     EditForwardingFns editForwarding;
     editForwarding.supportsEditForwarding = []() { return true; };
     editForwarding.echoEditForwarding = []() {
-        return MGlobal::optionVarExists(kEchoEditForwardingOptionVar)
-            && MGlobal::optionVarIntValue(kEchoEditForwardingOptionVar) != 0;
+        const MString optVar
+            = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding);
+        return MGlobal::optionVarExists(optVar) && MGlobal::optionVarIntValue(optVar) != 0;
     };
     editForwarding.setEchoEditForwarding = [](bool echo) {
-        MGlobal::setOptionVarValue(kEchoEditForwardingOptionVar, echo ? 1 : 0);
+        const MString optVar
+            = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding);
+        MGlobal::setOptionVarValue(optVar, echo ? 1 : 0);
         if (auto host = std::dynamic_pointer_cast<MayaUsdEditForwardHost>(
                 AdskUsdEditForward::Host::GetInstance())) {
             host->SetWantsEcho(echo);
@@ -591,7 +592,17 @@ void deregisterLayerEditorDCCFunctions()
 } // namespace UsdLayerEditor
 ```
 
-> **Note for the implementer:** confirm the exact option-var string for echo. The current code declares `MString ECHO_EDIT_FORWARDING_OPTION_VAR` near `mayaSessionState.cpp:75` — copy its literal value into `kEchoEditForwardingOptionVar` above so the echo preference key is byte-identical (do **not** invent a new key). Likewise confirm `MayaUsd::ComponentUtils::previewSaveAdskUsdComponent` is the exact symbol name used by `MayaSessionState::previewComponentSave` (`mayaSessionState.cpp:732`).
+> **Note for the implementer:** the echo option-var is obtained via
+> `UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding)` (this is what
+> `mayaSessionState.cpp:75` does — `MayaUsdOptionVars` from `<mayaUsd/base/tokens.h>`, `convert`
+> from `<mayaUsd/utils/util.h>`). Match the namespace usage from `mayaSessionState.cpp` exactly
+> (it may use a `PXR_NAMESPACE_USING_DIRECTIVE`; replicate whatever lets `MayaUsdOptionVars` and
+> `UsdMayaUtil::convert` resolve). `MayaUsd::ComponentUtils::*` symbol names are confirmed against
+> `utilComponentCreator.h` (`isAdskUsdComponent`, `isUnsavedAdskUsdComponent`,
+> `saveAdskUsdComponent`, `reloadAdskUsdComponent`, `moveAdskUsdComponent`,
+> `previewSaveAdskUsdComponent`, `getAdskUsdComponentLayersToSave`,
+> `shouldDisplayComponentInitialSaveDialog`); `getSceneFolder` is `MayaUsd::utils::getSceneFolder`
+> from `<mayaUsd/utils/utilSerialization.h>`.
 
 - [ ] **Step 3: Commit**
 
