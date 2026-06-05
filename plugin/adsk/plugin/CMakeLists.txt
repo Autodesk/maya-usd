@@ -57,6 +57,7 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:BOOST_NS=PXR_NS::pxr_boost>
         $<$<BOOL:${AdskUsdDebugTools_FOUND}>:WANT_ADSK_USD_DEBUG_TOOLS_BUILD>
         $<$<BOOL:${MAYA_HAS_USD_SETTINGS_NODES}>:MAYA_HAS_USD_SETTINGS_NODES>
+        $<$<BOOL:${AdskUsdRenderSetup_FOUND}>:WANT_ADSK_USD_RENDER_SETUP_BUILD>
 )
 
 if(DEFINED MAYAUSD_VERSION)

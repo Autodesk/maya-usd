@@ -102,6 +102,8 @@ __mayaUSDStringResources = {
     "kMenuLockLayerAndSublayers": "Lock Layer and Sublayers",
     "kMenuMute": "Mute",
     "kMenuPrintToScriptEditor": "Print to Script Editor",
+    "kMenuUSDRenderSetup": "USD Render Setup",
+    "kMenuUSDRenderSetupAnn": "Open the USD Render Setup",
     "kMenuRemove": "Remove",
     "kMenuSelectPrimsWithSpec": "Select Prims With Spec",
     "kMenuStageCreateMenuError": "Could not create mayaUSD create menu",
