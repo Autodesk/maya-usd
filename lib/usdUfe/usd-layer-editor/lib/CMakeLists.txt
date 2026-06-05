@@ -40,6 +40,8 @@ add_library(UsdLayerEditorLib SHARED
     layerEditorAPI.h
     LayerEditorCommands.h
     layerEditorCommands.cpp
+    layerEditorDCCFunctions.cpp
+    layerEditorDCCFunctions.h
     layerEditorWidget.cpp
     layerEditorWidget.h
     layerEditorWidgetManager.cpp
