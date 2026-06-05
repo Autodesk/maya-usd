@@ -49,8 +49,19 @@ public:
     void refreshStageEntry(std::string const& dccObjectPath) override;
     void setupCreateMenu(QMenu* menu) override;
     void rootLayerPathChanged(std::string const& path) override;
-    bool autoObserveUfeSelection() const override { return false; }
-    bool autoHideSessionLayer()    const override { return false; }
+    bool autoObserveUfeSelection()  const override { return false; }
+    bool autoHideSessionLayer()     const override { return false; }
+    bool supportsEditForwarding()   const override { return _supportsEditForwarding; }
+    bool isEditForwardMode()        const override { return _isEFModeActive; }
+
+    void setIsEditForwardMode(bool v)
+    {
+        _isEFModeActive = v;
+        Q_EMIT editForwardingChanged();
+    }
+
+    bool _supportsEditForwarding { false };
+    bool _isEFModeActive         { false };
 
     // Test helpers
     void addStage(PXR_NS::UsdStageRefPtr stage);

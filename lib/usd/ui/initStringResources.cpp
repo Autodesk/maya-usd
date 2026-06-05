@@ -59,7 +59,7 @@ MStatus initStringResources()
     status = registerShared(kAutoHideSessionLayer);
     status = registerShared(kDisplayLayerContents);
     status = registerShared(kDisplayLayerContentsEmpty);
-    status = registerShared(kEditForwardBanner);
+    status = registerShared(kToggleEditForwarding);
     status = registerShared(kEchoEditForwarding);
     status = registerShared(kDisplayLayerExpandAllValues);
     status = registerShared(kDisplayLayerExpandAllValuesTooltip);

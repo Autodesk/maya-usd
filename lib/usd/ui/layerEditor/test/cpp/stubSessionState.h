@@ -46,6 +46,18 @@ public:
     void setupCreateMenu(QMenu* menu) override;
     void rootLayerPathChanged(std::string const& path) override;
     bool autoHideSessionLayer() const override { return false; }
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    bool isEditForwardMode()    const override { return _isEFModeActive; }
+#endif
+
+    // No-op setter: old editor SessionState has no editForwardingChanged signal,
+    // so we just update the flag. Test 225 is guarded to new editor only.
+    void setIsEditForwardMode(bool v) { _isEFModeActive = v; }
+
+    // Used by LayerEditorWithEFFixture; has no effect on old editor widget since
+    // it uses a compile-time #ifdef guard rather than a runtime check.
+    bool _supportsEditForwarding { false };
+    bool _isEFModeActive         { false };
 
     // Call counters — member names match new StubSessionState exactly.
     mutable int _saveLayerCallCount  { 0 };

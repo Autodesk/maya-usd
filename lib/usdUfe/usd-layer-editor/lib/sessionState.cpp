@@ -60,4 +60,6 @@ PXR_NS::SdfLayerRefPtr SessionState::targetLayer() const
     }
 }
 
+PXR_NS::SdfLayerRefPtr SessionState::effectiveTargetLayer() const { return targetLayer(); }
+
 } // namespace UsdLayerEditor

@@ -20,8 +20,6 @@
 #include "layerTreeItem.h"
 #include "layerTreeView.h"
 
-#include <pxr/base/tf/notice.h>
-#include <pxr/usd/sdf/notice.h>
 
 #include <QtCore/QBasicTimer>
 #include <QtCore/QPointer>
@@ -81,6 +79,7 @@ protected:
         QPushButton*           _loadLayer;
         QPushButton*           _saveStageButton;
         DirtyLayersCountBadge* _dirtyCountBadge;
+        QPushButton*           _toggleEFButton { nullptr };
     } _buttons;
 
     void setupDefaultMenu(QMainWindow* in_parent);
@@ -107,15 +106,10 @@ protected:
     QPointer<LayerContentsWidget> _layerContents;
     QBasicTimer                   _layerContentsTimer;
 
-    QLabel*               _editForwardBanner { nullptr };
-    PXR_NS::TfNotice::Key _layerChangedKey;
-
     bool _updateButtonsOnIdle = false; // true if request to update on idle is pending
 
-private Q_SLOTS:
-    void updateEditForwardBanner();
-
-    void onLayerChanged(PXR_NS::SdfNotice::LayersDidChangeSentPerLayer const& notice);
+private:
+    void openEditForwardDialog();
 };
 
 } // namespace UsdLayerEditor

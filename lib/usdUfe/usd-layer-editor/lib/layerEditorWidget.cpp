@@ -58,7 +58,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 LayerEditorWidget::~LayerEditorWidget()
 {
-    TfNotice::Revoke(_layerChangedKey);
     disconnect(
         qApp, &QApplication::focusChanged, this, &LayerEditorWidget::updateTreeContainerBorder);
 }
@@ -221,6 +220,27 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         this,
         &LayerEditorWidget::onLoadLayersButtonClicked);
 
+    if (_sessionState.supportsEditForwarding()) {
+        auto separator = new QFrame();
+        separator->setFrameShape(QFrame::VLine);
+        separator->setFrameShadow(QFrame::Sunken);
+        separator->setFixedHeight(buttonSize);
+        toolbar->addWidget(separator);
+
+        _buttons._toggleEFButton = new QPushButton();
+        _buttons._toggleEFButton->setFlat(true);
+        _buttons._toggleEFButton->setFixedSize(buttonSize, buttonSize);
+        _buttons._toggleEFButton->setToolTip(
+            StringResources::getAsQString(StringResources::kToggleEditForwarding));
+        _buttons._toggleEFButton->setObjectName("LayerEditorToggleEFButton");
+        toolbar->addWidget(_buttons._toggleEFButton, 0, buttonAlignment);
+        connect(
+            _buttons._toggleEFButton,
+            &QAbstractButton::clicked,
+            this,
+            &LayerEditorWidget::openEditForwardDialog);
+    }
+
     toolbar->addStretch();
 
     QWidget* saveContainer = new QWidget;
@@ -317,20 +337,6 @@ void LayerEditorWidget::setupLayout()
         treeContainerLayout->setSpacing(0);
         treeContainerLayout->setContentsMargins(0, 0, 0, 0);
 
-        _editForwardBanner = new QLabel(_treeContainer);
-        _editForwardBanner->setText(
-            StringResources::getAsQString(StringResources::kEditForwardBanner));
-        _editForwardBanner->setWordWrap(true);
-        _editForwardBanner->setVisible(false);
-        _editForwardBanner->setContentsMargins(DPIScale(8), DPIScale(6), DPIScale(8), DPIScale(6));
-        _editForwardBanner->setStyleSheet("QLabel {"
-                                          "  background-color: rgb(55, 55, 55);"
-                                          "  color: palette(text);"
-                                          "  border-left: 3px solid #38abdf;"
-                                          "  padding-left: 6px;"
-                                          "}");
-        treeContainerLayout->addWidget(_editForwardBanner);
-
         _treeView->setFrameShape(QFrame::NoFrame);
         treeContainerLayout->addWidget(_treeView);
 
@@ -350,23 +356,11 @@ void LayerEditorWidget::setupLayout()
         this,
         &LayerEditorWidget::showDisplayLayerContents);
 
-    // Update the EF banner whenever the current stage changes (or whenever the
-    // DCC integration signals an EF state change for the active stage).
-    connect(
-        &_sessionState,
-        &SessionState::currentStageChangedSignal,
-        this,
-        &LayerEditorWidget::updateEditForwardBanner);
     connect(
         &_sessionState,
         &SessionState::editForwardingChanged,
         this,
-        &LayerEditorWidget::updateEditForwardBanner);
-
-    {
-        TfWeakPtr<LayerEditorWidget> me(this);
-        _layerChangedKey = TfNotice::Register(me, &LayerEditorWidget::onLayerChanged);
-    }
+        &LayerEditorWidget::updateButtonsOnIdle);
 
     auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
@@ -378,7 +372,6 @@ void LayerEditorWidget::setupLayout()
 
     updateNewLayerButton();
     updateButtons();
-    updateEditForwardBanner();
 }
 
 void LayerEditorWidget::updateTreeContainerBorder(QWidget*, QWidget* now)
@@ -413,42 +406,9 @@ void LayerEditorWidget::updateTreeContainerStyle(bool focused)
     layout->setContentsMargins(margin, margin, margin, margin);
 }
 
-void LayerEditorWidget::onLayerChanged(SdfNotice::LayersDidChangeSentPerLayer const& notice)
+void LayerEditorWidget::openEditForwardDialog()
 {
-    // Only the DCC knows what EF state is, but the banner needs to refresh
-    // when CustomLayerData on the root layer changes (that is where EF rules
-    // live). Re-poll the SessionState predicate when that field changes.
-    auto stage = _sessionState.stage();
-    if (!stage)
-        return;
-
-    auto rootLayer = stage->GetRootLayer();
-    for (const auto& layerAndChanges : notice.GetChangeListVec()) {
-        if (layerAndChanges.first != rootLayer)
-            continue;
-        for (const auto& pathAndEntry : layerAndChanges.second.GetEntryList()) {
-            if (pathAndEntry.first != SdfPath::AbsoluteRootPath())
-                continue;
-            bool customLayerDataChanged = false;
-            for (const auto& item : pathAndEntry.second.infoChanged) {
-                if (item.first == SdfFieldKeys->CustomLayerData) {
-                    customLayerDataChanged = true;
-                    break;
-                }
-            }
-            if (customLayerDataChanged) {
-                updateEditForwardBanner();
-                return;
-            }
-        }
-    }
-}
-
-void LayerEditorWidget::updateEditForwardBanner()
-{
-    if (!_editForwardBanner)
-        return;
-    _editForwardBanner->setVisible(_sessionState.hasEditForwarding());
+    // DCC integrations override this to open the EF configuration dialog.
 }
 
 void LayerEditorWidget::updateButtonsOnIdle()
@@ -545,6 +505,17 @@ void LayerEditorWidget::updateButtons()
             _buttons._saveStageButton->setVisible(false);
         }
     }
+    if (_buttons._toggleEFButton) {
+        const bool   efActive = _sessionState.isEditForwardMode();
+        const auto   baseName = efActive ? ":/UsdLayerEditor/ef_on" : ":/UsdLayerEditor/ef_default";
+        _buttons._toggleEFButton->setStyleSheet(
+            QString("QPushButton { padding: %1px; background-image: url(%2); "
+                    "background-position: center center; background-repeat: no-repeat; "
+                    "border: 0px; background-origin: content; }")
+                .arg(DPIScale(4))
+                .arg(QtUtils::getDPIPixmapName(baseName)));
+    }
+
     _updateButtonsOnIdle = false;
 }
 

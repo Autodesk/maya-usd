@@ -530,9 +530,15 @@ void SaveLayersDialog::getLayersToSave(
     const std::string&            proxyPath,
     const std::string&            stageName)
 {
-    // Get the layers to save for this stage.
+    // MIRRORS THE NEW SHARED LAYER EDITOR: gather from the stage directly when available
+    // instead of re-resolving it from a Maya proxy-shape node, which fails for stages not
+    // backed by a real proxy (e.g. test stubs). See lib/usdUfe/usd-layer-editor/lib/saveLayersDialog.cpp.
     MayaUsd::utils::StageLayersToSave StageLayersToSave;
-    MayaUsd::utils::getLayersToSaveFromProxy(proxyPath, StageLayersToSave);
+    if (stage) {
+        MayaUsd::utils::getLayersToSaveFromStage(stage, proxyPath, StageLayersToSave);
+    } else {
+        MayaUsd::utils::getLayersToSaveFromProxy(proxyPath, StageLayersToSave);
+    }
 
     // Keep track of all the layers for this particular stage.
     for (const auto& layerInfo : StageLayersToSave._anonLayers) {

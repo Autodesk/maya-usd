@@ -279,6 +279,12 @@ void LayerTreeModel::setSessionState(SessionState* in_sessionState)
         this,
         &LayerTreeModel::autoHideSessionLayerChanged);
 
+    connect(
+        in_sessionState,
+        &SessionState::editForwardingFallbackTargetChangedSignal,
+        this,
+        &LayerTreeModel::onEFFallbackTargetChanged);
+
     rebuildModelOnIdle();
 }
 
@@ -503,6 +509,11 @@ void LayerTreeModel::sessionStageChanged()
 
 // called from SessionState::autoHideSessionLayerSignal
 void LayerTreeModel::autoHideSessionLayerChanged() { rebuildModelOnIdle(); }
+
+void LayerTreeModel::onEFFallbackTargetChanged()
+{
+    updateTargetLayer(InRebuildModel::No);
+}
 
 LayerTreeItem* LayerTreeModel::layerItemFromIndex(const QModelIndex& index) const
 {
