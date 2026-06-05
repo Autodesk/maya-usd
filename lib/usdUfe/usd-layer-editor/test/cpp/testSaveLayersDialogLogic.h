@@ -61,11 +61,16 @@ TEST_F(SaveLayersDialogTest, SaveLayersDialog_HasCancelButton)
 TEST_F(SaveLayersDialogTest, SaveLayersDialog_AllAsRelativeCheckboxExists)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    // The dialog may or may not have anonymous layers in the stub, so the
-    // all-as-relative checkbox may not be present. Just verify no crash.
     auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+    // New editor: getLayersToSaveFromStage inspects the stage directly and finds the
+    // stub's anonymous sublayers, so the all-as-relative checkbox is always created.
+    EXPECT_NE(cb, nullptr)
+        << "all-as-relative checkbox should exist when anonymous layers are present";
+#else
+    // Old editor: proxy-based discovery finds no anonymous layers for the stub path.
     (void)cb;
-    SUCCEED();
+#endif
 }
 
 TEST_F(SaveLayersDialogTest, QuietlyUncheckAllAsRelative_DoesNotCrash)
@@ -74,7 +79,9 @@ TEST_F(SaveLayersDialogTest, QuietlyUncheckAllAsRelative_DoesNotCrash)
     EXPECT_NO_THROW(dlg.quietlyUncheckAllAsRelative());
 }
 
-TEST_F(SaveLayersDialogTest, OkToSave_DoesNotCrashWithNoLayers)
+// Note: exec() + modal dismissal never clicks "Save All", so okToSave() is not
+// exercised — this only guards against a crash while showing/closing the dialog.
+TEST_F(SaveLayersDialogTest, ExecThenDismiss_DoesNotCrash)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
     TestUtils::dismissNextModal(100);
@@ -111,7 +118,11 @@ TEST_F(SaveLayersDialogTest, AllAsRelative_ToggleDoesNotCrash)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
     auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
-    if (!cb) GTEST_SKIP() << "No checkbox present (no anonymous layers in stub)";
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+    ASSERT_NE(cb, nullptr) << "new editor always finds the stub's anonymous layers";
+#else
+    if (!cb) GTEST_SKIP() << "old editor: no anonymous layers discovered for stub proxy path";
+#endif
     cb->setChecked(true);
     QApplication::processEvents();
     cb->setChecked(false);

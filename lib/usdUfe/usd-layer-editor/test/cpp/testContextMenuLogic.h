@@ -163,11 +163,13 @@ TEST_F(LayerEditorTestFixture, ContextMenu_SaveEdits_DoesNotCrash)
 TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenNoSublayers)
 {
     // A leaf sublayer has no children — mergeWithSublayers should be a no-op.
+    // mergeWithSublayers dispatches flattenLayer (not stitchLayers), so its
+    // absence is what proves the merge was blocked.
     selectRow(firstSublayerIndex());
     _sessionState._commandHookImpl.clearCalls();
     _window->mergeWithSublayers();
     QApplication::processEvents();
-    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("stitchLayers"));
+    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("flattenLayer"));
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenLayerIsLocked)
@@ -181,9 +183,25 @@ TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenLayerIs
     _sessionState._commandHookImpl.clearCalls();
     _window->mergeWithSublayers();
     QApplication::processEvents();
-    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("stitchLayers"));
+    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("flattenLayer"));
 
     TestUtils::unlockLayerDirect(rootItem->layer());
+}
+
+// Positive control: an unlocked layer that has sublayers must dispatch flattenLayer.
+// Without this, the two "blocked" tests above would pass even if merge never worked.
+TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_CallsFlattenWhenLayerHasSublayers)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    ASSERT_TRUE(rootItem->hasSubLayers()) << "Root must have a sublayer for this test";
+
+    selectRow(rootLayerIndex());
+    _sessionState._commandHookImpl.clearCalls();
+    _window->mergeWithSublayers();
+    QApplication::processEvents();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("flattenLayer"));
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_SkipsConfirmForAnonymousLayer)

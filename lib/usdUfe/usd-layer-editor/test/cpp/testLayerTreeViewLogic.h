@@ -27,6 +27,7 @@
 #include <pxr/usd/sdf/layer.h>
 
 #include <QtCore/QItemSelectionModel>
+#include <QtCore/QMetaObject>
 #include <QtWidgets/QAbstractItemView>
 #include <QtWidgets/QApplication>
 
@@ -58,6 +59,19 @@ protected:
         LayerEditorTestFixture::TearDown();
         forgetLockedLayers();
         forgetSystemLockedLayers();
+    }
+};
+
+// Shared-stage variant: on a shared stage anonymous layers report needsSaving()==true,
+// which is required to reach the save-related branches of the double-click handler.
+class LayerTreeViewSharedTest : public LayerTreeViewTest
+{
+protected:
+    void SetUp() override
+    {
+        _sessionState._commandHookImpl._isSharedStage = true;
+        LayerEditorTestFixture::SetUp();
+        QApplication::processEvents();
     }
 };
 
@@ -97,16 +111,22 @@ TEST_F(LayerTreeViewTest, Memento_PreservesExpandedStateByIdentifier)
 
 TEST_F(LayerTreeViewTest, Memento_RestoredAfterModelReset)
 {
-    layerTree()->expand(rootLayerIndex());
+    // Collapse the root so the restored state differs from the default expandAll
+    // that runs when no memento exists — this is what makes the assertion
+    // discriminating rather than tautological.
+    layerTree()->collapse(rootLayerIndex());
     QApplication::processEvents();
+    ASSERT_FALSE(layerTree()->isExpanded(rootLayerIndex()));
 
-    // The view saves memento on modelAboutToBeReset and restores on modelReset.
-    // Use forceRefresh() which schedules rebuildModelOnIdle.
+    // Add a sublayer so the rebuild is a genuine reset (not skipped by the
+    // identical-item optimization), exercising onModelAboutToBeReset/onModelReset.
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(
+        SdfLayer::CreateAnonymous("memento_extra")->GetIdentifier(), 0);
     treeModel()->forceRefresh();
     QApplication::processEvents();
 
-    // After rebuild, the root layer should still be expanded.
-    EXPECT_TRUE(layerTree()->isExpanded(rootLayerIndex()));
+    // The memento must restore the collapsed state across the reset.
+    EXPECT_FALSE(layerTree()->isExpanded(rootLayerIndex()));
 }
 
 TEST_F(LayerTreeViewTest, Memento_RestoreHandlesMissingItemsGracefully)
@@ -218,26 +238,44 @@ TEST_F(LayerTreeViewTest, Delegate_MuteInfoChecked_WhenLayerIsMuted)
 
 TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenLayerDoesNotNeedSaving)
 {
-    // Default stub stage is not a shared stage, so needsSaving() = false.
-    // Verify the item state is consistent — no saveLayerUI should be triggered
-    // by the fact that the layer doesn't need saving.
+    // Default stub stage is not shared, so needsSaving() == false and the handler
+    // must return before attempting any save.
     auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
-    EXPECT_FALSE(item->needsSaving());
+    ASSERT_FALSE(item->needsSaving());
+
     _sessionState._saveLayerCallCount = 0;
-    // After confirming the precondition, verify the counter stays at 0.
-    EXPECT_EQ(_sessionState._saveLayerCallCount, 0);
+    // onItemDoubleClicked is connected to the view's doubleClicked signal; emit it
+    // to drive the handler (the slot itself is not publicly callable).
+    bool invoked = QMetaObject::invokeMethod(
+        layerTree(), "doubleClicked", Qt::DirectConnection,
+        Q_ARG(QModelIndex, firstSublayerIndex()));
+    ASSERT_TRUE(invoked) << "failed to emit doubleClicked";
+    QApplication::processEvents();
+    EXPECT_EQ(_sessionState._saveLayerCallCount, 0)
+        << "No save should be attempted for a layer that does not need saving";
 }
 
-TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenSystemLocked)
+TEST_F(LayerTreeViewSharedTest, DoubleClick_SkipsWhenSystemLocked)
 {
-    // System-locked layers should not be saveable.
+    // On a shared stage the anonymous sublayer needs saving, so the handler reaches
+    // the system-lock guard — which must still skip the save.
     auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->needsSaving()) << "Anonymous layer on a shared stage should need saving";
+
     addSystemLockedLayer(item->layer());
     item->layer()->SetPermissionToEdit(false);
+    ASSERT_TRUE(item->isSystemLocked());
 
-    EXPECT_FALSE(item->needsSaving());
+    _sessionState._saveLayerCallCount = 0;
+    bool invoked = QMetaObject::invokeMethod(
+        layerTree(), "doubleClicked", Qt::DirectConnection,
+        Q_ARG(QModelIndex, firstSublayerIndex()));
+    ASSERT_TRUE(invoked) << "failed to emit doubleClicked";
+    QApplication::processEvents();
+    EXPECT_EQ(_sessionState._saveLayerCallCount, 0)
+        << "System-locked layers must not be saved on double-click";
 
     removeSystemLockedLayer(item->layer());
     TestUtils::unlockLayerDirect(item->layer());

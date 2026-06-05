@@ -203,12 +203,19 @@ TEST_F(LayerTreeModelTest, SetEditTarget_BlockedWhenLayerIsMuted)
 {
     auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
-    _sessionState.stage()->MuteLayer(item->layer()->GetIdentifier());
+    const std::string layerId = item->layer()->GetIdentifier();
+    _sessionState.stage()->MuteLayer(layerId);
     QApplication::processEvents();
+
+    // Muting fired a LayersDidChange notice that rebuilt the model and deleted the
+    // original item, so re-fetch it before use to avoid a dangling pointer.
+    item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+
     _sessionState._commandHookImpl.clearCalls();
     treeModel()->setEditTarget(item);
     EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
-    _sessionState.stage()->UnmuteLayer(item->layer()->GetIdentifier());
+    _sessionState.stage()->UnmuteLayer(layerId);
 }
 
 // ── rootLayerIndex ─────────────────────────────────────────────────────────────
