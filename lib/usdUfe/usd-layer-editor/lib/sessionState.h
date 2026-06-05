@@ -107,6 +107,8 @@ public:
     virtual bool hasEditForwarding() const { return false; }
     virtual bool echoEditForwarding() const { return false; }
     virtual void setEchoEditForwarding(bool /*echo*/) { /* no-op */ }
+    virtual bool isEditForwardMode() const { return false; }
+    virtual PXR_NS::SdfLayerRefPtr effectiveTargetLayer() const;
 
     // Component Creator hooks. The shared component does not depend on any
     // particular Component Creator implementation (Maya's MayaUsd::ComponentUtils
@@ -198,9 +200,10 @@ Q_SIGNALS:
     void stageResetSignal(StageEntry const& entry);
     void dccSelectionChangedSignal();
     void showDisplayLayerContents(bool showIt);
-    // Emitted by DCC integrations when the EF state of the current stage
-    // changes (banner should re-evaluate hasEditForwarding()).
+    // Emitted by DCC integrations when the EF state of the current stage changes.
     void editForwardingChanged();
+    // Emitted by DCC integrations when the EF fallback target layer changes.
+    void editForwardingFallbackTargetChangedSignal();
 
 protected:
     StageEntry _currentStageEntry;

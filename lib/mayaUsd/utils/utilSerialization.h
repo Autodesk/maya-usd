@@ -199,6 +199,12 @@ void ensureUSDFileExtension(std::string& filePath);
     layers that will need to be saved.
  */
 MAYAUSD_CORE_PUBLIC
+void getLayersToSaveFromStage(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            proxyPath,
+    StageLayersToSave&            layersInfo);
+
+MAYAUSD_CORE_PUBLIC
 void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& layersInfo);
 
 } // namespace utils

@@ -126,6 +126,7 @@ protected:
     // slots
     void sessionStageChanged();
     void autoHideSessionLayerChanged();
+    void onEFFallbackTargetChanged();
 
     void          setSessionState(SessionState* in_sessionState);
     SessionState* _sessionState = nullptr;

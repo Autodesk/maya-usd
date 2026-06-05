@@ -48,6 +48,11 @@ Resume point for porting maya-usd layer editor commits into the shared component
 
 | Commit | Description | Group | Status | Notes |
 |--------|-------------|-------|--------|-------|
+| 09e726da | Use a notice for fallback layer changes | bug-fix | ported | Shared: replaced TfNotice (MayaUsdEFFallbackTargetChangedNotice) with `SessionState::editForwardingFallbackTargetChangedSignal` Qt signal; `LayerTreeModel::onEFFallbackTargetChanged()` slot calls `updateTargetLayer(InRebuildModel::No)`. Maya side emits the signal from `MayaUsdEditForwardHost`. |
+| fef072da | Edit Forward Mode In Layer Editor | ef-banner | ported | Shared: removed EF banner (`_editForwardBanner`, TfNotice plumbing, `updateEditForwardBanner`, `onLayerChanged`); added `_toggleEFButton` runtime-guarded by `supportsEditForwarding()`; `openEditForwardDialog()` no-op stub; `updateButtons()` sets `ef_on`/`ef_default` stylesheet; `isEditForwardMode()` + `effectiveTargetLayer()` virtuals on `SessionState`; `kToggleEditForwarding` string (replaces `kEditForwardBanner`); `setEditTarget()` no longer calls `updateTargetLayer()` for EF mode. |
+| dc3f8a01 | Unify lock fallback behavior, add comments | maya-only | maya-only | Only touches `mayaSessionState.cpp` (EF mode lock fallback logic). No shared counterpart. |
+| b88a607e | clang (EF mode area) | skip | skip | Formatting/lint commit, no functional change. |
+| 82b7c66b | Merge origin/dev into deboisj/edit_forward_mode | skip | skip | Intermediate branch merge commit. |
 | d1b00150 | EMSUSD-3749 use FindRelativeToLayer | maya-only | maya-only | plugin/adsk/scripts/mayaUsd_layerUtils.py — Maya-specific Python utilities for layer editor menu; no shared counterpart |
 | bf45b02c | EMSUSD-3749 prevent merging session and non-session | maya-only | maya-only | plugin/adsk/scripts/mayaUsdMenu.mel + mayaUsd_layerUtils.py — Maya menu guard; no DCC-agnostic logic to port to shared |
 | aee2ab4f | Merge pull request #4629 EMSUSD-3749 | maya-only | skip | Merge commit |

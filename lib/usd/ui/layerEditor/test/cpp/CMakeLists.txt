@@ -29,6 +29,7 @@ set(OLD_LE_OWN_SOURCES
     testFixture.cpp
     pluginMain.cpp
     testButtons.cpp
+    testEFMode.cpp
     testContextMenu.cpp
     testLayerContentsWidget.cpp
     testLayerLocking.cpp
@@ -68,6 +69,11 @@ set(LEGACY_SOURCES
     ../../usdSyntaxHighlighter.cpp
     ../../warningDialogs.cpp
 )
+
+if(AdskUsdEditForward_FOUND)
+    list(APPEND LEGACY_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../editForward/editForwardDialog.cpp)
+endif()
 
 # ── Target ─────────────────────────────────────────────────────────────────────
 set(TARGET_NAME mayaUsdOldLayerEditorTests)
@@ -111,6 +117,7 @@ target_link_libraries(${TARGET_NAME}
         Qt::Core Qt::Gui Qt::Widgets
         sdf tf usd
         ${MAYA_LIBRARIES}
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_UI_LIBRARY}>
 )
 
 install(TARGETS ${TARGET_NAME}
