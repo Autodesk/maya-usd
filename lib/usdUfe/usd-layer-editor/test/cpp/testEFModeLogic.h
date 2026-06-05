@@ -41,7 +41,7 @@ class LayerEditorWithEFFixture : public LayerEditorTestFixture
 protected:
     void SetUp() override
     {
-        _sessionState._supportsEditForwarding = true;
+        setEditForwardingSupported(true);
         LayerEditorTestFixture::SetUp();
     }
 };

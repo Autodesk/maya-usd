@@ -45,6 +45,10 @@ protected:
     QModelIndex     firstSublayerIndex();
     void            selectRow(const QModelIndex& index);
 
+    void setEditForwardingSupported(bool supported) { _sessionState._supportsEditForwarding = supported; }
+    void setSharedStage(bool shared) { _sessionState._commandHookImpl._isSharedStage = shared; }
+    void setStageIncoming(bool incoming) { _sessionState._commandHookImpl._isStageIncoming = incoming; }
+
     // Members — names must match new editor's testFixture.h exactly
     OldEditorStubSessionState                        _sessionState;
     std::unique_ptr<OldEditorStubLayerEditorWindow>  _window;

@@ -18,6 +18,7 @@
 
 #include "componentSaveWidget.h"
 #include "generatedIconButton.h"
+#include "layerEditorDCCFunctions.h"
 #include "layerLocking.h"
 #include "layerTreeItem.h"
 #include "layerTreeModel.h"
@@ -482,7 +483,7 @@ SaveLayersDialog::SaveLayersDialog(
         // statically. We mirror that here only when we have a session state.)
         const bool isComponent
             = _sessionState
-            && _sessionState->shouldDisplayComponentInitialSaveDialog(info.stage, dccObjectPath);
+            && UsdLayerEditor::shouldDisplayComponentInitialSaveDialog(info.stage, dccObjectPath);
         if (isComponent) {
             StageSavingInfo componentInfo = info;
             componentInfo.dccObjectPath = dccObjectPath;
@@ -529,7 +530,7 @@ SaveLayersDialog::SaveLayersDialog(
         // Check if this stage is an unsaved component stage. Routed through
         // SessionState so DCCs without component support fall straight into
         // the normal getLayersToSave path.
-        if (_sessionState->shouldDisplayComponentInitialSaveDialog(
+        if (UsdLayerEditor::shouldDisplayComponentInitialSaveDialog(
                 stageEntry._stage, stageEntry._dccObjectPath)) {
             StageSavingInfo info;
             info.stage = stageEntry._stage;
@@ -877,7 +878,7 @@ void SaveLayersDialog::onSaveAll()
 
         std::string newRootPath;
         if (_sessionState) {
-            newRootPath = _sessionState->moveComponent(saveLocation, componentName, dccObjectPath);
+            newRootPath = UsdLayerEditor::moveComponent(saveLocation, componentName, dccObjectPath);
         }
         if (!newRootPath.empty()) {
             _newPaths.append(QString::fromStdString(componentName));
@@ -888,7 +889,7 @@ void SaveLayersDialog::onSaveAll()
                 // Rename the DCC-side proxy/object so its name matches the
                 // component's new name. The hook is a no-op for DCCs that
                 // don't have a renamable proxy concept.
-                _sessionState->commandHook()->renameProxyShape(dccObjectPath, componentName);
+                UsdLayerEditor::renameProxyShape(dccObjectPath, componentName);
 
                 // After the rename, the session state should point at the
                 // (now-renamed) stage entry. Try to relocate it among the

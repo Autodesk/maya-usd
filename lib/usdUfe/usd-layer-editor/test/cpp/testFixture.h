@@ -15,6 +15,7 @@
 //
 #pragma once
 
+#include "scopedLayerEditorDCCFunctions.h"
 #include "stubCommandHook.h"
 #include "stubLayerEditorWindow.h"
 #include "stubSessionState.h"
@@ -53,6 +54,18 @@ protected:
 
     // Convenience: the widget owned by _window.
     LayerEditorWidget* _widget { nullptr };
+
+    // DCC-function registry driven by these flags (installed in SetUp,
+    // restored in TearDown). Lambdas read the flags at call time, so flips
+    // mid-test take effect on the next model rebuild.
+    bool _efSupported   { false };
+    bool _sharedStage   { false };
+    bool _stageIncoming { false };
+    ScopedLayerEditorDCCFunctions _scopedDCCFunctions;
+
+    void setEditForwardingSupported(bool supported) { _efSupported = supported; }
+    void setSharedStage(bool shared) { _sharedStage = shared; }
+    void setStageIncoming(bool incoming) { _stageIncoming = incoming; }
 };
 
 // Find a named action in a menu (searches recursively into submenus).

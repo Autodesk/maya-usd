@@ -17,6 +17,7 @@
 #include "layerTreeModel.h"
 
 #include "customLayerData.h"
+#include "layerEditorDCCFunctions.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 #include "layers.h"
@@ -329,7 +330,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     }
 
     std::set<std::string> sharedLayers;
-    auto                  sharedStage = _sessionState->commandHook()->isDccObjectSharedStage(
+    auto                  sharedStage = UsdLayerEditor::isDccObjectSharedStage(
         _sessionState->stageEntry()._dccObjectPath);
     if (!sharedStage) {
         auto layers = CustomLayerData::getStringArray(
@@ -344,7 +345,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     }
 
     std::set<std::string> incomingLayers;
-    if (_sessionState->commandHook()->isDccObjectStageIncoming(
+    if (UsdLayerEditor::isDccObjectStageIncoming(
             _sessionState->stageEntry()._dccObjectPath)) {
         if (!sharedStage) {
             incomingLayers = sharedLayers;
@@ -569,8 +570,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         // the component creator knows how to save a component properly. The
         // hook is a no-op for DCCs without component support.
         if (_sessionState
-            && _sessionState->isStageAComponent(_sessionState->stageEntry()._dccObjectPath)) {
-            _sessionState->commandHook()->saveComponent(
+            && UsdLayerEditor::isStageAComponent(_sessionState->stageEntry()._dccObjectPath)) {
+            UsdLayerEditor::saveComponent(
                 _sessionState->stageEntry()._stage, _sessionState->stageEntry()._dccObjectPath);
             return;
         }
@@ -602,7 +603,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
     // Show the save dialog for component stages (initial save) or if confirmation is needed
     if (_sessionState
-        && _sessionState->shouldDisplayComponentInitialSaveDialog(
+        && UsdLayerEditor::shouldDisplayComponentInitialSaveDialog(
             _sessionState->stageEntry()._stage, _sessionState->stageEntry()._dccObjectPath)) {
         showConfirmDgl = true;
     }
@@ -645,10 +646,10 @@ void LayerTreeModel::reloadComponent(QWidget* /*in_parent*/)
     if (!_sessionState) {
         return;
     }
-    if (_sessionState->isUnsavedComponent(_sessionState->stage())) {
+    if (UsdLayerEditor::isUnsavedComponent(_sessionState->stage())) {
         return;
     }
-    _sessionState->commandHook()->reloadComponent(_sessionState->stageEntry()._dccObjectPath);
+    UsdLayerEditor::reloadComponent(_sessionState->stageEntry()._dccObjectPath);
 }
 
 std::string LayerTreeModel::findNameForNewAnonymousLayer() const

@@ -16,6 +16,8 @@
 
 #include "testFixture.h"
 
+#include "layerEditorDCCFunctions.h"
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMainWindow>
 
@@ -23,6 +25,17 @@ namespace UsdLayerEditor {
 
 void LayerEditorTestFixture::SetUp()
 {
+    EditForwardingFns ef;
+    ef.supportsEditForwarding = [this]() { return _efSupported; };
+    ef.echoEditForwarding = []() { return false; };
+    ef.setEchoEditForwarding = [](bool) {};
+    setEditForwardingFns(ef);
+
+    DccObjectFns dcc;
+    dcc.isDccObjectStageIncoming = [this](const std::string&) { return _stageIncoming; };
+    dcc.isDccObjectSharedStage = [this](const std::string&) { return _sharedStage; };
+    setDccObjectFns(dcc);
+
     _mainWindow = new QMainWindow();
     _window     = std::make_unique<StubLayerEditorWindow>(_sessionState, _mainWindow);
     _widget     = _window->widget();

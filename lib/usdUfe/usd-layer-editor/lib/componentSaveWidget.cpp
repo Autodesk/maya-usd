@@ -17,6 +17,7 @@
 #include "componentSaveWidget.h"
 
 #include "generatedIconButton.h"
+#include "layerEditorDCCFunctions.h"
 #include "sessionState.h"
 #include "utilQT.h"
 
@@ -73,7 +74,7 @@ ComponentSaveWidget::ComponentSaveWidget(
 {
     setupUI();
     if (_sessionState) {
-        setFolderLocation(QString::fromStdString(_sessionState->sceneFolder()));
+        setFolderLocation(QString::fromStdString(UsdLayerEditor::sceneFolder()));
     }
 }
 
@@ -230,7 +231,7 @@ void ComponentSaveWidget::onBrowseFolder()
     // Default to the directory of the current DCC scene if it's saved,
     // otherwise default to scene folder reported by SessionState.
     if (currentPath.isEmpty() && _sessionState) {
-        currentPath = QString::fromStdString(_sessionState->sceneFolder());
+        currentPath = QString::fromStdString(UsdLayerEditor::sceneFolder());
     }
 
     QString selectedFolder = QFileDialog::getExistingDirectory(
@@ -337,7 +338,7 @@ void ComponentSaveWidget::updateTreeView()
 
     std::string result;
     if (_sessionState) {
-        result = _sessionState->previewComponentSave(saveLocation, componentName, _dccObjectPath);
+        result = UsdLayerEditor::previewComponentSave(saveLocation, componentName, _dccObjectPath);
     }
 
     QString jsonStr = QString::fromStdString(result);
