@@ -21,6 +21,8 @@
 #include <usdUfe/ufe/Utils.h>
 
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <ufe/globalSelection.h>
@@ -28,6 +30,8 @@
 #include <ufe/path.h>
 
 #include <gtest/gtest.h>
+
+#include <filesystem>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -217,6 +221,12 @@ TEST_F(ReplaceSubPathCmdTest, UndoIt_RestoresOldPath)
     const auto& paths = _parent->GetSubLayerPaths();
     EXPECT_NE(paths.Find(_layerA->GetIdentifier()), static_cast<size_t>(-1));
     EXPECT_EQ(paths.Find(_layerB->GetIdentifier()), static_cast<size_t>(-1));
+
+    cmd->redo();
+    // Re-fetch the proxy: the one captured above does not reflect the redo's mutation.
+    const auto& pathsAfterRedo = _parent->GetSubLayerPaths();
+    EXPECT_EQ(pathsAfterRedo.Find(_layerA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_NE(pathsAfterRedo.Find(_layerB->GetIdentifier()), static_cast<size_t>(-1));
 }
 
 TEST_F(ReplaceSubPathCmdTest, DoIt_ReturnsFalse_WhenOldPathNotFound)
@@ -272,6 +282,8 @@ TEST_F(BackupLayerCmdTest, DiscardEditCmd_Undo_RestoresLayerContent)
     cmd->execute();
     cmd->undo();
     EXPECT_EQ(_layer->GetComment(), "original content");
+    cmd->redo();
+    EXPECT_TRUE(_layer->GetComment().empty());
 }
 
 TEST_F(BackupLayerCmdTest, ClearLayerCmd_DoIt_EmptiesLayer)
@@ -287,6 +299,8 @@ TEST_F(BackupLayerCmdTest, ClearLayerCmd_Undo_RestoresContent)
     cmd->execute();
     cmd->undo();
     EXPECT_EQ(_layer->GetComment(), "original content");
+    cmd->redo();
+    EXPECT_TRUE(_layer->GetComment().empty());
 }
 
 // ============================================================================
@@ -327,6 +341,8 @@ TEST_F(MuteLayerCmdTest, Undo_UnmutesLayer)
     cmd->execute();
     cmd->undo();
     EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+    cmd->redo();
+    EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
 }
 
 TEST_F(MuteLayerCmdTest, DoIt_Unmute_UnmutesAlreadyMutedLayer)
@@ -344,6 +360,8 @@ TEST_F(MuteLayerCmdTest, Undo_Unmute_RestoresMutedState)
     cmd->execute();
     cmd->undo();
     EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+    cmd->redo();
+    EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
 }
 
 // ============================================================================
@@ -380,6 +398,8 @@ TEST_F(LockLayerCmdTest, Undo_UnlocksLayer)
     cmd->execute();
     cmd->undo();
     EXPECT_FALSE(isLayerLocked(_layer));
+    cmd->redo();
+    EXPECT_TRUE(isLayerLocked(_layer));
 }
 
 TEST_F(LockLayerCmdTest, SkipSystemLocked_DoesNotLockSystemLockedSublayers)
@@ -434,6 +454,8 @@ TEST_F(InsertSubPathCmdTest, Undo_RemovesInsertedSubLayer)
     cmd->execute();
     cmd->undo();
     EXPECT_EQ(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
+    cmd->redo();
+    EXPECT_NE(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
 }
 
 class RemoveSubPathCmdTest : public ::testing::Test
@@ -470,6 +492,8 @@ TEST_F(RemoveSubPathCmdTest, Undo_RestoresSubLayer)
     cmd->execute();
     cmd->undo();
     EXPECT_NE(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
+    cmd->redo();
+    EXPECT_EQ(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
 }
 
 class AddAnonSubLayerCmdTest : public ::testing::Test
@@ -548,6 +572,9 @@ TEST_F(MoveSubPathCmdTest, Undo_SameParent_RestoresOriginalOrder)
     EXPECT_EQ(_parent->GetSubLayerPaths()[0], _subA->GetIdentifier());
     EXPECT_EQ(_parent->GetSubLayerPaths()[1], _subB->GetIdentifier());
     EXPECT_EQ(_parent->GetSubLayerPaths()[2], _subC->GetIdentifier());
+    cmd->redo();
+    EXPECT_EQ(_parent->GetSubLayerPaths()[0], _subB->GetIdentifier());
+    EXPECT_EQ(_parent->GetSubLayerPaths()[2], _subA->GetIdentifier());
 }
 
 TEST_F(MoveSubPathCmdTest, DoIt_CrossParent_MovesSubLayerToNewParent)
@@ -573,6 +600,12 @@ TEST_F(MoveSubPathCmdTest, Undo_CrossParent_RestoresSubLayerToOriginalParent)
         _parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
     EXPECT_EQ(
         newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+
+    cmd->redo();
+    EXPECT_EQ(
+        _parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_NE(
+        newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
 }
 
 TEST(RefreshSystemLockCallbackContextTest, AddCallbackContext_StoresEntry)
@@ -587,6 +620,346 @@ TEST(RefreshSystemLockCallbackContextTest, AddCallbackContext_StoresEntry)
     EXPECT_EQ(
         cmd->_extraCallbackContext["proxyShapePath"].UncheckedGet<std::string>(),
         std::string("/myShape"));
+}
+
+// ============================================================================
+// Task A-special: AddAnonSubLayerCmd redo reuses the same identifier
+// ============================================================================
+
+TEST_F(AddAnonSubLayerCmdTest, Redo_ReusesSameIdentifier)
+{
+    auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);
+    cmd->_anonName = "myLayer";
+    cmd->execute();
+    const std::string id1 = cmd->addedLayer();
+    cmd->undo();
+    cmd->redo();
+    const std::string id2 = cmd->addedLayer();
+    // The command intentionally caches the anonymous identifier so later commands
+    // referencing it stay valid across undo/redo.
+    EXPECT_EQ(id1, id2);
+    EXPECT_EQ(_parent->GetSubLayerPaths()[0], id2);
+}
+
+// ============================================================================
+// Task B: SetEditTargetCmd
+// ============================================================================
+
+class SetEditTargetCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        _stage = PXR_NS::UsdStage::CreateInMemory();
+        _sub   = PXR_NS::SdfLayer::CreateAnonymous("sub");
+        _stage->GetRootLayer()->InsertSubLayerPath(_sub->GetIdentifier(), 0);
+        _stage->SetEditTarget(_stage->GetRootLayer());
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _sub;
+};
+
+TEST_F(SetEditTargetCmdTest, DoIt_SetsTarget)
+{
+    auto cmd = std::make_shared<SetEditTargetCmd>(_stage, _sub);
+    cmd->execute();
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _sub);
+}
+
+TEST_F(SetEditTargetCmdTest, Undo_RestoresPreviousTarget)
+{
+    auto cmd = std::make_shared<SetEditTargetCmd>(_stage, _sub);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _stage->GetRootLayer());
+}
+
+TEST_F(SetEditTargetCmdTest, Redo_ReappliesTarget)
+{
+    auto cmd = std::make_shared<SetEditTargetCmd>(_stage, _sub);
+    cmd->execute();
+    cmd->undo();
+    cmd->redo();
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _sub);
+}
+
+// ============================================================================
+// Task C: FlattenLayerCmd
+// ============================================================================
+
+class FlattenLayerCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        UIUtils::setErrorDisplayCallbackFunction([](std::string) {});
+        _root = PXR_NS::SdfLayer::CreateAnonymous("flattenRoot");
+        _sub  = PXR_NS::SdfLayer::CreateAnonymous("flattenSub");
+        _root->InsertSubLayerPath(_sub->GetIdentifier(), 0);
+        // Define a prim only in the sublayer; flattening must inline it into _root.
+        PXR_NS::SdfPrimSpec::New(_sub, "Foo", PXR_NS::SdfSpecifierDef);
+    }
+
+    void TearDown() override { UIUtils::setErrorDisplayCallbackFunction(nullptr); }
+
+    PXR_NS::SdfLayerRefPtr _root;
+    PXR_NS::SdfLayerRefPtr _sub;
+};
+
+TEST_F(FlattenLayerCmdTest, DoIt_FlattensSublayerContentIntoLayer)
+{
+    ASSERT_FALSE(_root->GetPrimAtPath(PXR_NS::SdfPath("/Foo")));
+    auto cmd = std::make_shared<FlattenLayerCmd>(_root);
+    cmd->execute();
+    EXPECT_TRUE(_root->GetPrimAtPath(PXR_NS::SdfPath("/Foo")));
+}
+
+TEST_F(FlattenLayerCmdTest, Undo_RestoresPreFlattenContent)
+{
+    auto cmd = std::make_shared<FlattenLayerCmd>(_root);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_FALSE(_root->GetPrimAtPath(PXR_NS::SdfPath("/Foo")));
+}
+
+TEST_F(FlattenLayerCmdTest, Redo_ReflattensContent)
+{
+    auto cmd = std::make_shared<FlattenLayerCmd>(_root);
+    cmd->execute();
+    cmd->undo();
+    cmd->redo();
+    EXPECT_TRUE(_root->GetPrimAtPath(PXR_NS::SdfPath("/Foo")));
+}
+
+// ============================================================================
+// Task D: StitchLayersCmd
+// ============================================================================
+
+class StitchLayersCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _strong = PXR_NS::SdfLayer::CreateAnonymous("strong");
+        _weak   = PXR_NS::SdfLayer::CreateAnonymous("weak");
+        // Index 0 is the strongest sublayer.
+        _stage->GetRootLayer()->InsertSubLayerPath(_strong->GetIdentifier(), 0);
+        _stage->GetRootLayer()->InsertSubLayerPath(_weak->GetIdentifier(), 1);
+        PXR_NS::SdfPrimSpec::New(_strong, "Strong", PXR_NS::SdfSpecifierDef);
+        PXR_NS::SdfPrimSpec::New(_weak, "Weak", PXR_NS::SdfSpecifierDef);
+    }
+
+    std::vector<std::string> identifiers() const
+    {
+        return { _strong->GetIdentifier(), _weak->GetIdentifier() };
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _strong;
+    PXR_NS::SdfLayerRefPtr _weak;
+};
+
+TEST_F(StitchLayersCmdTest, DoIt_MergesWeakIntoStrongAndRemovesWeak)
+{
+    auto cmd = std::make_shared<StitchLayersCmd>(_stage, identifiers());
+    cmd->execute();
+
+    EXPECT_TRUE(_strong->GetPrimAtPath(PXR_NS::SdfPath("/Weak")));
+    EXPECT_EQ(
+        _stage->GetRootLayer()->GetSubLayerPaths().Find(_weak->GetIdentifier()),
+        static_cast<size_t>(-1));
+    EXPECT_NE(
+        _stage->GetRootLayer()->GetSubLayerPaths().Find(_strong->GetIdentifier()),
+        static_cast<size_t>(-1));
+}
+
+TEST_F(StitchLayersCmdTest, Undo_RestoresOriginalLayers)
+{
+    auto cmd = std::make_shared<StitchLayersCmd>(_stage, identifiers());
+    cmd->execute();
+    cmd->undo();
+
+    EXPECT_NE(
+        _stage->GetRootLayer()->GetSubLayerPaths().Find(_weak->GetIdentifier()),
+        static_cast<size_t>(-1));
+    EXPECT_FALSE(_strong->GetPrimAtPath(PXR_NS::SdfPath("/Weak")));
+}
+
+TEST_F(StitchLayersCmdTest, Redo_RestitchesLayers)
+{
+    auto cmd = std::make_shared<StitchLayersCmd>(_stage, identifiers());
+    cmd->execute();
+    cmd->undo();
+    cmd->redo();
+
+    EXPECT_TRUE(_strong->GetPrimAtPath(PXR_NS::SdfPath("/Weak")));
+    EXPECT_EQ(
+        _stage->GetRootLayer()->GetSubLayerPaths().Find(_weak->GetIdentifier()),
+        static_cast<size_t>(-1));
+}
+
+TEST_F(StitchLayersCmdTest, DoIt_ReturnsFalse_WhenAnyLayerIsLocked)
+{
+    _weak->SetPermissionToEdit(false);
+    auto cmd = std::make_shared<StitchLayersCmd>(_stage, identifiers());
+    // Validation collects problems before modifying, so a locked layer aborts the
+    // command (doIt returns false → redo throws) with no changes.
+    EXPECT_THROW(cmd->execute(), std::runtime_error);
+    EXPECT_NE(
+        _stage->GetRootLayer()->GetSubLayerPaths().Find(_weak->GetIdentifier()),
+        static_cast<size_t>(-1));
+    _weak->SetPermissionToEdit(true);
+}
+
+// ============================================================================
+// Task E: RefreshSystemLockLayerCmd (needs a real read-only file on disk)
+// ============================================================================
+
+class RefreshSystemLockLayerCmdTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        UsdUfe::setStagePathAccessorFn(stubStagePathAccessor);
+        if (!Ufe::GlobalSelection::get()) {
+            Ufe::GlobalSelection::initializeInstance(
+                std::make_shared<Ufe::ObservableSelection>());
+        }
+        forgetLockedLayers();
+        forgetSystemLockedLayers();
+
+        namespace fs = std::filesystem;
+        std::error_code ec;
+        _filePath = (fs::temp_directory_path() / "le_systemlock_test.usda").generic_string();
+        // Clear any leftover from a previous run (restore write first so remove succeeds).
+        fs::permissions(_filePath, fs::perms::owner_write, fs::perm_options::add, ec);
+        fs::remove(_filePath, ec);
+
+        _stage     = PXR_NS::UsdStage::CreateInMemory();
+        _fileLayer = PXR_NS::SdfLayer::CreateNew(_filePath);
+        _fileLayer->Save();
+        _stage->GetRootLayer()->InsertSubLayerPath(_fileLayer->GetIdentifier(), 0);
+
+        // Make the file read-only so checkWriteAccess() reports no write access.
+        fs::permissions(
+            _filePath,
+            fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write,
+            fs::perm_options::remove);
+    }
+
+    void TearDown() override
+    {
+        namespace fs = std::filesystem;
+        std::error_code ec;
+        fs::permissions(_filePath, fs::perms::owner_write, fs::perm_options::add, ec);
+        fs::remove(_filePath, ec);
+        forgetSystemLockedLayers();
+        forgetLockedLayers();
+    }
+
+    PXR_NS::UsdStageRefPtr _stage;
+    PXR_NS::SdfLayerRefPtr _fileLayer;
+    std::string            _filePath;
+};
+
+TEST_F(RefreshSystemLockLayerCmdTest, DoIt_SystemLocksReadOnlyFileLayer)
+{
+    ASSERT_FALSE(isLayerSystemLocked(_fileLayer));
+    auto cmd = std::make_shared<RefreshSystemLockLayerCmd>(_stage, _fileLayer, false);
+    cmd->execute();
+    EXPECT_TRUE(isLayerSystemLocked(_fileLayer));
+}
+
+TEST_F(RefreshSystemLockLayerCmdTest, Undo_RestoresLockState)
+{
+    auto cmd = std::make_shared<RefreshSystemLockLayerCmd>(_stage, _fileLayer, false);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_FALSE(isLayerSystemLocked(_fileLayer));
+}
+
+TEST_F(RefreshSystemLockLayerCmdTest, Redo_ReappliesSystemLock)
+{
+    auto cmd = std::make_shared<RefreshSystemLockLayerCmd>(_stage, _fileLayer, false);
+    cmd->execute();
+    cmd->undo();
+    cmd->redo();
+    EXPECT_TRUE(isLayerSystemLocked(_fileLayer));
+}
+
+// ============================================================================
+// Task F: error paths
+// ============================================================================
+
+TEST_F(InsertSubPathCmdTest, DoIt_ReturnsFalse_WhenIndexOutOfBounds)
+{
+    UIUtils::setErrorDisplayCallbackFunction([](std::string) {});
+    auto cmd = std::make_shared<InsertSubPathCmd>(_stage, _parent, _sub->GetIdentifier(), 99);
+    EXPECT_THROW(cmd->execute(), std::runtime_error);
+    EXPECT_EQ(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
+    UIUtils::setErrorDisplayCallbackFunction(nullptr);
+}
+
+TEST_F(RemoveSubPathCmdTest, DoIt_ReturnsFalse_WhenIndexOutOfBounds)
+{
+    UIUtils::setErrorDisplayCallbackFunction([](std::string) {});
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 99);
+    EXPECT_THROW(cmd->execute(), std::runtime_error);
+    EXPECT_NE(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
+    UIUtils::setErrorDisplayCallbackFunction(nullptr);
+}
+
+TEST_F(MoveSubPathCmdTest, DoIt_ReturnsFalse_WhenSubPathNotFound)
+{
+    auto cmd = std::make_shared<MoveSubPathCmd>(_parent, _parent, "nonexistent.usda", 0);
+    EXPECT_THROW(cmd->execute(), std::runtime_error);
+}
+
+TEST_F(MoveSubPathCmdTest, DoIt_ReturnsFalse_WhenSameParentIndexOutOfBounds)
+{
+    auto cmd = std::make_shared<MoveSubPathCmd>(_parent, _parent, _subA->GetIdentifier(), 99);
+    EXPECT_THROW(cmd->execute(), std::runtime_error);
+}
+
+TEST_F(MoveSubPathCmdTest, DoIt_ReturnsFalse_WhenCrossParentIndexOutOfBounds)
+{
+    auto newParent = PXR_NS::SdfLayer::CreateAnonymous("np_oob");
+    auto cmd = std::make_shared<MoveSubPathCmd>(_parent, newParent, _subA->GetIdentifier(), 99);
+    EXPECT_THROW(cmd->execute(), std::runtime_error);
+}
+
+TEST_F(MoveSubPathCmdTest, DoIt_ReturnsFalse_WhenSubPathExistsInNewParent)
+{
+    auto newParent = PXR_NS::SdfLayer::CreateAnonymous("np_dup");
+    newParent->InsertSubLayerPath(_subA->GetIdentifier(), 0);
+    auto cmd = std::make_shared<MoveSubPathCmd>(_parent, newParent, _subA->GetIdentifier(), 0);
+    EXPECT_THROW(cmd->execute(), std::runtime_error);
+}
+
+// ============================================================================
+// Task G: RemoveSubPathCmd edit-target redirect (documented crash-fix)
+// ============================================================================
+
+TEST_F(RemoveSubPathCmdTest, DoIt_RetargetsToRootWhenRemovingEditTargetLayer)
+{
+    _stage->SetEditTarget(_sub);
+    ASSERT_EQ(_stage->GetEditTarget().GetLayer(), _sub);
+
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 0);
+    cmd->execute();
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _stage->GetRootLayer());
+}
+
+TEST_F(RemoveSubPathCmdTest, Undo_RestoresEditTargetToReinsertedLayer)
+{
+    _stage->SetEditTarget(_sub);
+
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 0);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _sub);
 }
 
 } // namespace UsdLayerEditor

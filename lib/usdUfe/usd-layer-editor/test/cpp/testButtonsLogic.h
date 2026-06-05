@@ -38,6 +38,19 @@ static QPushButton* findButtonByTooltip(QWidget* root, const QString& tooltip)
     return nullptr;
 }
 
+// The Save Stage button is only created, shown, and enable-managed on a shared
+// stage; updateButtons() leaves it hidden and unmanaged otherwise.
+class ButtonsSharedStageFixture : public LayerEditorTestFixture
+{
+protected:
+    void SetUp() override
+    {
+        _sessionState._commandHookImpl._isSharedStage = true;
+        LayerEditorTestFixture::SetUp();
+        QApplication::processEvents();
+    }
+};
+
 // Clicking "Add a New Layer" with nothing selected inserts an anonymous sublayer at the root.
 TEST_F(LayerEditorTestFixture, NewLayerButton_Click_CallsAddAnonymousSubLayer)
 {
@@ -61,7 +74,7 @@ TEST_F(LayerEditorTestFixture, LoadLayerButton_ExistsAndEnabled)
     EXPECT_TRUE(btn->isEnabled()) << "Load Layer button should be enabled";
 }
 
-TEST_F(LayerEditorTestFixture, SaveStageButton_EnabledWhenDirty)
+TEST_F(ButtonsSharedStageFixture, SaveStageButton_EnabledWhenDirty)
 {
     QPushButton* btn = findButtonByTooltip(_widget, "Save all edits in the Layer Stack");
     ASSERT_NE(btn, nullptr) << "Could not find Save Stage button";
@@ -74,12 +87,13 @@ TEST_F(LayerEditorTestFixture, SaveStageButton_EnabledWhenDirty)
     QApplication::processEvents();
     QApplication::processEvents();
 
+    EXPECT_TRUE(btn->isVisible()) << "Save Stage button should be shown on a shared stage";
     EXPECT_TRUE(btn->isEnabled()) << "Save Stage button should be enabled when stage is dirty";
 }
 
 // Clicking the Save button may show a SaveLayersDialog (anonymous layers in the stage).
 // We schedule a timer to dismiss the modal so the test does not hang.
-TEST_F(LayerEditorTestFixture, SaveStageButton_Click_DismissesDialog)
+TEST_F(ButtonsSharedStageFixture, SaveStageButton_Click_DismissesDialog)
 {
     QPushButton* btn = findButtonByTooltip(_widget, "Save all edits in the Layer Stack");
     ASSERT_NE(btn, nullptr) << "Could not find Save Stage button";

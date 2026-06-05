@@ -46,6 +46,8 @@ TEST_F(LayerEditorTestFixture, DragDrop_MoveRowDown_CallsMoveSubLayerPath)
     auto paths     = rootLayer->GetSubLayerPaths();
     ASSERT_GE(paths.size(), 2u) << "Need at least 2 sublayers";
 
+    const std::string draggedPath = paths[0];
+
     QModelIndex parentIndex = rootLayerIndex();
     QMimeData*  mimeData    = treeModel()->mimeData({ treeModel()->index(0, 0, parentIndex) });
     ASSERT_NE(mimeData, nullptr) << "Model must supply MIME data for drag";
@@ -53,15 +55,16 @@ TEST_F(LayerEditorTestFixture, DragDrop_MoveRowDown_CallsMoveSubLayerPath)
     bool accepted = treeModel()->dropMimeData(mimeData, Qt::MoveAction, 2, 0, parentIndex);
     delete mimeData;
 
-    if (accepted) {
-        QApplication::processEvents();
-        EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"))
-            << "moveSubLayerPath should be called on reorder";
-    } else {
-        // Verify the model at least advertises drag support.
-        EXPECT_FALSE(treeModel()->mimeTypes().isEmpty())
-            << "Model should support MIME data for drag-drop";
-    }
+    ASSERT_TRUE(accepted) << "dropMimeData should accept a valid downward move";
+    QApplication::processEvents();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"))
+        << "moveSubLayerPath should be called on reorder";
+
+    // Moving the first sublayer down to the end must leave it last in the order.
+    auto newPaths = rootLayer->GetSubLayerPaths();
+    ASSERT_FALSE(newPaths.empty());
+    EXPECT_EQ(newPaths[newPaths.size() - 1], draggedPath)
+        << "Dragged layer should now be last";
 }
 
 TEST_F(LayerEditorTestFixture, DragDrop_MoveRowUp_CallsMoveSubLayerPath)
@@ -73,6 +76,8 @@ TEST_F(LayerEditorTestFixture, DragDrop_MoveRowUp_CallsMoveSubLayerPath)
     auto paths     = rootLayer->GetSubLayerPaths();
     ASSERT_GE(paths.size(), 2u);
 
+    const std::string draggedPath = paths[1];
+
     QModelIndex parentIndex = rootLayerIndex();
     QMimeData*  mimeData    = treeModel()->mimeData({ treeModel()->index(1, 0, parentIndex) });
     ASSERT_NE(mimeData, nullptr);
@@ -80,14 +85,15 @@ TEST_F(LayerEditorTestFixture, DragDrop_MoveRowUp_CallsMoveSubLayerPath)
     bool accepted = treeModel()->dropMimeData(mimeData, Qt::MoveAction, 0, 0, parentIndex);
     delete mimeData;
 
-    if (accepted) {
-        QApplication::processEvents();
-        EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"))
-            << "moveSubLayerPath should be called on reorder";
-    } else {
-        EXPECT_FALSE(treeModel()->mimeTypes().isEmpty())
-            << "Model should support MIME data for drag-drop";
-    }
+    ASSERT_TRUE(accepted) << "dropMimeData should accept a valid upward move";
+    QApplication::processEvents();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"))
+        << "moveSubLayerPath should be called on reorder";
+
+    // Moving the second sublayer up to the top must leave it first in the order.
+    auto newPaths = rootLayer->GetSubLayerPaths();
+    ASSERT_FALSE(newPaths.empty());
+    EXPECT_EQ(newPaths[0], draggedPath) << "Dragged layer should now be first";
 }
 
 // ── canDropMimeData validation ─────────────────────────────────────────────────
@@ -170,6 +176,9 @@ TEST_F(LayerEditorTestFixture, DragDrop_Drop_AdjustsRowIndexWhenMovingUp)
     addTwoSublayers(_sessionState.stage());
     QApplication::processEvents();
 
+    auto rootLayer = _sessionState.stage()->GetRootLayer();
+    const std::string draggedPath = rootLayer->GetSubLayerPaths()[1];
+
     QModelIndex parent = rootLayerIndex();
     ASSERT_GE(treeModel()->rowCount(parent), 2);
 
@@ -178,19 +187,25 @@ TEST_F(LayerEditorTestFixture, DragDrop_Drop_AdjustsRowIndexWhenMovingUp)
     ASSERT_NE(mime, nullptr);
 
     _sessionState._commandHookImpl.clearCalls();
-    treeModel()->dropMimeData(mime.get(), Qt::MoveAction, 0, 0, parent);
+    bool accepted = treeModel()->dropMimeData(mime.get(), Qt::MoveAction, 0, 0, parent);
     QApplication::processEvents();
 
-    // Re-fetch parent: the model rebuild triggered by moveSubLayerPath invalidates
-    // any QModelIndex captured before processEvents().
-    parent = rootLayerIndex();
-    EXPECT_GE(treeModel()->rowCount(parent), 1);
+    ASSERT_TRUE(accepted) << "dropMimeData should accept the upward move";
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"));
+
+    // Dropping row 1 at row 0 must land the dragged layer first (row-index adjustment).
+    auto newPaths = rootLayer->GetSubLayerPaths();
+    ASSERT_FALSE(newPaths.empty());
+    EXPECT_EQ(newPaths[0], draggedPath) << "Dragged layer should now be first";
 }
 
 TEST_F(LayerEditorTestFixture, DragDrop_Drop_CallsMoveSubLayerPathOnSuccess)
 {
     addTwoSublayers(_sessionState.stage());
     QApplication::processEvents();
+
+    auto rootLayer = _sessionState.stage()->GetRootLayer();
+    const std::string draggedPath = rootLayer->GetSubLayerPaths()[0];
 
     QModelIndex parent = rootLayerIndex();
     ASSERT_GE(treeModel()->rowCount(parent), 2);
@@ -204,11 +219,14 @@ TEST_F(LayerEditorTestFixture, DragDrop_Drop_CallsMoveSubLayerPathOnSuccess)
         mime.get(), Qt::MoveAction, 2, 0, parent);
     QApplication::processEvents();
 
-    if (accepted) {
-        EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"));
-    } else {
-        EXPECT_FALSE(treeModel()->mimeTypes().isEmpty());
-    }
+    ASSERT_TRUE(accepted) << "dropMimeData should accept the downward move";
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"));
+
+    // Dragged layer (row 0) dropped at the end must be last in the order.
+    auto newPaths = rootLayer->GetSubLayerPaths();
+    ASSERT_FALSE(newPaths.empty());
+    EXPECT_EQ(newPaths[newPaths.size() - 1], draggedPath)
+        << "Dragged layer should now be last";
 }
 
 } // namespace UsdLayerEditor
