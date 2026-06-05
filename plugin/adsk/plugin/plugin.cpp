@@ -97,6 +97,7 @@
 
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/batchSaveLayersUIDelegate.h>
+#include <mayaUsdUI/ui/mayaLayerEditorDCCFunctions.h>
 #endif
 
 #if defined(MAYAUSD_VERSION)
@@ -629,6 +630,7 @@ MStatus uninitializePlugin(MObject obj)
     MayaUsd::LayerManager::removeSupportForNodeType(MayaUsd::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
     MayaUsd::LayerManager::SetBatchSaveDelegate(nullptr);
+    UsdLayerEditor::deregisterLayerEditorDCCFunctions();
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();

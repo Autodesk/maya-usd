@@ -16,6 +16,7 @@
 
 #include "batchSaveLayersUIDelegate.h"
 
+#include "mayaLayerEditorDCCFunctions.h"
 #include "mayaQtUtils.h"
 
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
@@ -42,6 +43,8 @@
 void UsdLayerEditor::initialize()
 {
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    UsdLayerEditor::registerLayerEditorDCCFunctions();
+
     if (nullptr == UsdLayerEditor::getQtUtils()) {
         UsdLayerEditor::setQtUtils(new MayaQtUtils());
     }
