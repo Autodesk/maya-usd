@@ -91,10 +91,6 @@
 #endif
 #endif
 
-#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
-#include <UsdDebugCore/CompositionAnalyzer.h>
-#endif
-
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include "adskMaterialCommands.h"
 
