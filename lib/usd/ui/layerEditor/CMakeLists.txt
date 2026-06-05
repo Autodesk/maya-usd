@@ -23,6 +23,8 @@ target_sources(${PROJECT_NAME}
         batchSaveLayersUIDelegate.h
         mayaCommandHook.cpp
         mayaCommandHook.h
+        mayaLayerEditorDCCFunctions.cpp
+        mayaLayerEditorDCCFunctions.h
         mayaLayerEditorWindow.cpp
         mayaLayerEditorWindow.h
         mayaSessionState.cpp
@@ -49,6 +51,7 @@ endif()
 # -----------------------------------------------------------------------------
 set(HEADERS
     batchSaveLayersUIDelegate.h
+    mayaLayerEditorDCCFunctions.h
 )
 
 mayaUsd_promoteHeaderList( 
