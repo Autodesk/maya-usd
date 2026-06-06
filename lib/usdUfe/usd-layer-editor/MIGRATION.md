@@ -2,11 +2,12 @@
 
 Resume point for porting maya-usd layer editor commits into the shared component (`lib/usdUfe/usd-layer-editor/`). See `docs/superpowers/specs/2026-05-19-usd-layer-editor-migration-design.md` and `docs/superpowers/plans/2026-05-19-usd-layer-editor-migration.md` for the full migration design and plan.
 
-## Current state (as of 2026-05-20, after component-creator feature batch)
+## Current state (as of 2026-06-06)
 
-- `UsdLayerEditorLib` builds as a parallel artifact in the maya-usd build (Tasks 1-4 of the plan complete).
-- The bridge from maya-usd's existing `mayaUsdUI` layer editor to `UsdLayerEditorLib` is **deferred** (Tasks 5-6 of the plan were attempted and reverted) because the shared component's API has diverged substantively from maya-usd's mature implementation. Bridging requires the shared API to first be brought up to parity.
-- The 161 commits below are the maya-usd-side changes since the standalone component was extracted (~Sep 17, 2024). Each row must be reviewed and ported (or skipped) before the bridge tasks can resume.
+- `UsdLayerEditorLib` builds and **`mayaUsdUI` always uses it** in production. The `BUILD_NEW_LAYER_EDITOR` switch was removed (see `docs/superpowers/specs/2026-06-04-always-build-both-editors-design.md`); `MAYAUSD_USE_SHARED_LAYER_EDITOR` is always defined. The legacy widget sources now compile only into the `mayaUsdOldLayerEditorTests` parity target.
+- The bridge is therefore **live**, not deferred — the earlier "deferred (Tasks 5-6)" note predates the always-build-both change and is obsolete.
+- DCC-specific behavior is injected into the shared editor via the `UsdLayerEditor` DCC-functions registry (`lib/usdUfe/usd-layer-editor/lib/layerEditorDCCFunctions.{h,cpp}`), populated by Maya at plugin init (`lib/usd/ui/layerEditor/mayaLayerEditorDCCFunctions.{h,cpp}`). See `docs/superpowers/specs/2026-05-29-layer-editor-dcc-functions-registry-design.md`. The Component-Creator / Edit-Forwarding-query / DCC-object-query hooks no longer live on `AbstractCommandHook` / `SessionState`.
+- The commit table below remains the porting log of maya-usd-side changes since the standalone component was extracted (~Sep 17, 2024).
 
 ## How to use this file
 
