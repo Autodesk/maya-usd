@@ -51,7 +51,6 @@ public:
     void rootLayerPathChanged(std::string const& path) override;
     bool autoObserveUfeSelection()  const override { return false; }
     bool autoHideSessionLayer()     const override { return false; }
-    bool supportsEditForwarding()   const override { return _supportsEditForwarding; }
     bool isEditForwardMode()        const override { return _isEFModeActive; }
 
     void setIsEditForwardMode(bool v)
@@ -60,8 +59,7 @@ public:
         Q_EMIT editForwardingChanged();
     }
 
-    bool _supportsEditForwarding { false };
-    bool _isEFModeActive         { false };
+    bool _isEFModeActive { false };
 
     // Test helpers
     void addStage(PXR_NS::UsdStageRefPtr stage);

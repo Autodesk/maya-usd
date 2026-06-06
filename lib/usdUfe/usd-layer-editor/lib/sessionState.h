@@ -91,71 +91,8 @@ public:
     virtual bool displayLayerHideIndices() const { return _displayLayerHideIndices; }
     virtual void setDisplayLayerHideIndices(bool hide);
 
-    // Edit Forwarding hooks. The shared component does not depend on any
-    // particular EF implementation (which lives in DCC-specific code, e.g.
-    // AdskUsdEditForward / MayaUsdEditForwardHost on the Maya side). The
-    // shared layer-editor widget only needs to know whether the current
-    // stage has active edit forwarding so it can show/hide the banner. DCC
-    // integrations override hasEditForwarding() to drive the real state and
-    // emit editForwardingChanged() when it changes. echoEditForwarding /
-    // setEchoEditForwarding are no-ops in the shared base; DCC integrations
-    // wire them through to whatever EF-host preference exists.
-    // supportsEditForwarding() returns true when the DCC integration is
-    // built with EF support — used by the UI to decide whether to show the
-    // Echo Edit Forwarding menu item.
-    virtual bool supportsEditForwarding() const { return false; }
-    virtual bool hasEditForwarding() const { return false; }
-    virtual bool echoEditForwarding() const { return false; }
-    virtual void setEchoEditForwarding(bool /*echo*/) { /* no-op */ }
-    virtual bool isEditForwardMode() const { return false; }
-    virtual PXR_NS::SdfLayerRefPtr effectiveTargetLayer() const;
-
-    // Component Creator hooks. The shared component does not depend on any
-    // particular Component Creator implementation (Maya's MayaUsd::ComponentUtils
-    // / MayaComponentManager Python package). The shared save flow asks the
-    // session state whether a stage is a component, whether the initial save
-    // dialog should be displayed, queries the default scene folder for the
-    // component widget, and asks the session state to move (rename/relocate)
-    // a component on disk. Default implementations are no-ops / false / empty
-    // so a DCC integration without component support simply skips the CC
-    // branches.
-    virtual bool isStageAComponent(const std::string& /*dccObjectPath*/) const { return false; }
-    virtual bool isUnsavedComponent(const PXR_NS::UsdStageRefPtr& /*stage*/) const { return false; }
-    virtual bool shouldDisplayComponentInitialSaveDialog(
-        const PXR_NS::UsdStageRefPtr& /*stage*/,
-        const std::string& /*dccObjectPath*/) const
-    {
-        return false;
-    }
-    virtual std::string sceneFolder() const { return {}; }
-    // Move (rename / relocate) the component at dccObjectPath to saveLocation
-    // under componentName. Returns the new root layer path on success, or an
-    // empty string on failure. Default implementation is a no-op.
-    virtual std::string moveComponent(
-        const std::string& /*saveLocation*/,
-        const std::string& /*componentName*/,
-        const std::string& /*dccObjectPath*/)
-    {
-        return {};
-    }
-    // Preview the structure of a component at dccObjectPath when saved at
-    // saveLocation under componentName. Returns a JSON-encoded hierarchy or
-    // empty string when not supported. Default implementation returns empty.
-    virtual std::string previewComponentSave(
-        const std::string& /*saveLocation*/,
-        const std::string& /*componentName*/,
-        const std::string& /*dccObjectPath*/) const
-    {
-        return {};
-    }
-    // Returns the list of layer ids that should be considered when saving the
-    // component at dccObjectPath. The default implementation returns an empty
-    // vector and the caller falls back to normal layer counting.
-    virtual std::vector<std::string>
-    getComponentLayersToSave(const std::string& /*dccObjectPath*/) const
-    {
-        return {};
-    }
+    virtual bool                   isEditForwardMode() const { return false; }
+    virtual PXR_NS::SdfLayerRefPtr  effectiveTargetLayer() const;
 
     PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
     StageEntry const&               stageEntry() const { return _currentStageEntry; }

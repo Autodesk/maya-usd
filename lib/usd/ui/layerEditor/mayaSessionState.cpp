@@ -31,14 +31,10 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
-
-#include <AdskUsdEditForward/Host.h>
-#include <AdskUsdEditForward/StageRuleProvider.h>
 #endif
 
 #include <ufe/globalSelection.h>
@@ -71,10 +67,6 @@ namespace {
 MString PROXY_NODE_TYPE = "mayaUsdProxyShapeBase";
 MString AUTO_HIDE_OPTION_VAR
     = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorAutoHideSessionLayer);
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-MString ECHO_EDIT_FORWARDING_OPTION_VAR
-    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding);
-#endif
 MString DISPLAY_LAYER_CONTENTS_OPTION_VAR
     = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorDisplayLayerContents);
 MString DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR
@@ -89,11 +81,6 @@ MayaSessionState::MayaSessionState()
     if (MGlobal::optionVarExists(AUTO_HIDE_OPTION_VAR)) {
         _autoHideSessionLayer = MGlobal::optionVarIntValue(AUTO_HIDE_OPTION_VAR) != 0;
     }
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    if (MGlobal::optionVarExists(ECHO_EDIT_FORWARDING_OPTION_VAR)) {
-        _echoEditForwarding = MGlobal::optionVarIntValue(ECHO_EDIT_FORWARDING_OPTION_VAR) != 0;
-    }
-#endif
     if (MGlobal::optionVarExists(DISPLAY_LAYER_CONTENTS_OPTION_VAR)) {
         _displayLayerContents = MGlobal::optionVarIntValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR) != 0;
     }
@@ -527,20 +514,6 @@ void MayaSessionState::setAutoHideSessionLayer(bool hideIt)
 }
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-void MayaSessionState::setEchoEditForwarding(bool echo)
-{
-    MGlobal::setOptionVarValue(ECHO_EDIT_FORWARDING_OPTION_VAR, echo ? 1 : 0);
-    if (auto host = std::dynamic_pointer_cast<MayaUsdEditForwardHost>(
-            AdskUsdEditForward::Host::GetInstance())) {
-        host->SetWantsEcho(echo);
-    }
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-    _echoEditForwarding = echo;
-#else
-    PARENT_CLASS::setEchoEditForwarding(echo);
-#endif
-}
-
 bool MayaSessionState::isEditForwardMode() const
 {
     const auto& stage = stageEntry()._stage;
@@ -668,75 +641,6 @@ std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
         }
     }
     return result;
-}
-
-bool MayaSessionState::supportsEditForwarding() const
-{
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool MayaSessionState::hasEditForwarding() const
-{
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    auto stage = _currentStageEntry._stage;
-    if (!stage)
-        return false;
-    AdskUsdEditForward::StageRuleProvider provider(stage);
-    return !provider.GetRules().empty();
-#else
-    return false;
-#endif
-}
-
-bool MayaSessionState::echoEditForwarding() const { return _echoEditForwarding; }
-
-bool MayaSessionState::isStageAComponent(const std::string& dccObjectPath) const
-{
-    if (dccObjectPath.empty())
-        return false;
-    return MayaUsd::ComponentUtils::isAdskUsdComponent(dccObjectPath);
-}
-
-bool MayaSessionState::isUnsavedComponent(const PXR_NS::UsdStageRefPtr& stage) const
-{
-    return MayaUsd::ComponentUtils::isUnsavedAdskUsdComponent(stage);
-}
-
-bool MayaSessionState::shouldDisplayComponentInitialSaveDialog(
-    const PXR_NS::UsdStageRefPtr& stage,
-    const std::string&            dccObjectPath) const
-{
-    return MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(stage, dccObjectPath);
-}
-
-std::string MayaSessionState::sceneFolder() const { return MayaUsd::utils::getSceneFolder(); }
-
-std::string MayaSessionState::moveComponent(
-    const std::string& saveLocation,
-    const std::string& componentName,
-    const std::string& dccObjectPath)
-{
-    return MayaUsd::ComponentUtils::moveAdskUsdComponent(
-        saveLocation, componentName, dccObjectPath);
-}
-
-std::string MayaSessionState::previewComponentSave(
-    const std::string& saveLocation,
-    const std::string& componentName,
-    const std::string& dccObjectPath) const
-{
-    return MayaUsd::ComponentUtils::previewSaveAdskUsdComponent(
-        saveLocation, componentName, dccObjectPath);
-}
-
-std::vector<std::string>
-MayaSessionState::getComponentLayersToSave(const std::string& dccObjectPath) const
-{
-    return MayaUsd::ComponentUtils::getAdskUsdComponentLayersToSave(dccObjectPath);
 }
 
 #endif // MAYAUSD_USE_SHARED_LAYER_EDITOR
