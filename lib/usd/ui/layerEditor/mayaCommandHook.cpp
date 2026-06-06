@@ -28,13 +28,11 @@
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/utilComponentCreator.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usd/stage.h>
 
-#include <maya/MDagModifier.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
@@ -324,47 +322,7 @@ void MayaCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)
     MayaUsd::UfeSelectionUndoItem::select("selectPrimsWithSpec", sn);
 }
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-bool MayaCommandHook::isDccObjectStageIncoming(const std::string& dccObjectPath)
-{
-    return getBooleanAttributeOnProxyShape(dccObjectPath, "stageIncoming");
-}
-
-bool MayaCommandHook::isDccObjectSharedStage(const std::string& dccObjectPath)
-{
-    return getBooleanAttributeOnProxyShape(dccObjectPath, "shareStage");
-}
-
-void MayaCommandHook::saveComponent(
-    const PXR_NS::UsdStageRefPtr& /*stage*/,
-    const std::string&            dccObjectPath)
-{
-    MayaUsd::ComponentUtils::saveAdskUsdComponent(dccObjectPath);
-}
-
-void MayaCommandHook::reloadComponent(const std::string& dccObjectPath)
-{
-    MayaUsd::ComponentUtils::reloadAdskUsdComponent(dccObjectPath);
-}
-
-void MayaCommandHook::renameProxyShape(
-    const std::string& oldDccObjectPath,
-    const std::string& newName)
-{
-    if (oldDccObjectPath.empty() || newName.empty())
-        return;
-
-    MObject proxyNode;
-    if (PXR_NS::UsdMayaUtil::GetMObjectByName(oldDccObjectPath, proxyNode) != MStatus::kSuccess) {
-        return;
-    }
-    MDagModifier dagMod;
-    MStatus      status = dagMod.renameNode(proxyNode, newName.c_str());
-    if (status == MStatus::kSuccess) {
-        dagMod.doIt();
-    }
-}
-#else
+#if !defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 bool MayaCommandHook::isProxyShapeStageIncoming(const std::string& proxyShapePath)
 {
     return getBooleanAttributeOnProxyShape(proxyShapePath, "stageIncoming");
