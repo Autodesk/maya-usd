@@ -326,7 +326,8 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     auto sessionLayer = _sessionState->stage()->GetSessionLayer();
     bool showSessionLayer = true;
     if (_sessionState->autoHideSessionLayer()) {
-        showSessionLayer = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
+        showSessionLayer
+            = sessionLayer->IsDirty() || sessionLayer == _sessionState->effectiveTargetLayer();
     }
 
     std::set<std::string> sharedLayers;
@@ -438,7 +439,10 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
         return;
     }
 
-    auto editTarget = _sessionState->targetLayer();
+    // In Edit Forwarding mode the stage edit target is pinned to the session layer;
+    // effectiveTargetLayer() returns the fallback target in that case, and the stage edit
+    // target otherwise. The auto-hide logic below is target-source agnostic and works for both.
+    auto editTarget = _sessionState->effectiveTargetLayer();
     auto root = invisibleRootItem();
 
     // if session layer is in auto-hide handle case where it is the target
