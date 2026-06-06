@@ -45,6 +45,7 @@ using GetComponentLayersToSaveFn = std::function<std::vector<std::string>(const 
 using SupportsEditForwardingFn = std::function<bool()>;
 using EchoEditForwardingFn     = std::function<bool()>;
 using SetEchoEditForwardingFn  = std::function<void(bool)>;
+using OpenEditForwardDialogFn  = std::function<void(const PXR_NS::UsdStageRefPtr&)>;
 
 using IsDccObjectStageIncomingFn = std::function<bool(const std::string&)>;
 using IsDccObjectSharedStageFn   = std::function<bool(const std::string&)>;
@@ -68,6 +69,7 @@ struct EditForwardingFns
     SupportsEditForwardingFn supportsEditForwarding;
     EchoEditForwardingFn     echoEditForwarding;
     SetEchoEditForwardingFn  setEchoEditForwarding;
+    OpenEditForwardDialogFn  openEditForwardDialog;
 };
 
 struct DccObjectFns
@@ -112,6 +114,7 @@ LayerEditorAPI std::vector<std::string> getComponentLayersToSave(const std::stri
 LayerEditorAPI bool supportsEditForwarding();
 LayerEditorAPI bool echoEditForwarding();
 LayerEditorAPI void setEchoEditForwarding(bool);
+LayerEditorAPI void openEditForwardDialog(const PXR_NS::UsdStageRefPtr&);
 
 LayerEditorAPI bool isDccObjectStageIncoming(const std::string&);
 LayerEditorAPI bool isDccObjectSharedStage(const std::string&);
