@@ -32,10 +32,18 @@
 #include <maya/MString.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <stringResources.h>
+
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+
+#include <mayaUsdUI/ui/editForwardDialog.h>
 
 #include <AdskUsdEditForward/Host.h>
 #include <AdskUsdEditForward/StageRuleProvider.h>
+
+#include <maya/MQtUtil.h>
+
+#include <QtCore/QPointer>
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -152,6 +160,19 @@ void registerLayerEditorDCCFunctions()
                 AdskUsdEditForward::Host::GetInstance())) {
             host->SetWantsEcho(echo);
         }
+    };
+    editForwarding.openEditForwardDialog = [](const UsdStageRefPtr& stage) {
+        // Reuse a single dialog instance; QPointer auto-nulls if it is destroyed.
+        static QPointer<UsdEditForwardConfig::EditForwardDialog> dialog;
+        if (!dialog) {
+            dialog = new UsdEditForwardConfig::EditForwardDialog(
+                StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
+                MQtUtil::mainWindow());
+        }
+        dialog->setActiveStage(stage);
+        dialog->show();
+        dialog->raise();
+        dialog->activateWindow();
     };
     setEditForwardingFns(editForwarding);
 #endif

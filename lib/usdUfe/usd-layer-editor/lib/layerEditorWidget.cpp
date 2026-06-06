@@ -408,7 +408,8 @@ void LayerEditorWidget::updateTreeContainerStyle(bool focused)
 
 void LayerEditorWidget::openEditForwardDialog()
 {
-    // DCC integrations override this to open the EF configuration dialog.
+    // The DCC integration registers how to open its EF configuration dialog.
+    UsdLayerEditor::openEditForwardDialog(_sessionState.stage());
 }
 
 void LayerEditorWidget::updateButtonsOnIdle()
