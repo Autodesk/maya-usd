@@ -82,11 +82,39 @@ struct DccObjectFns
     IsDccObjectSharedStageFn   isDccObjectSharedStage;
 };
 
+struct SaveOptionFns
+{
+    std::function<bool()>        requireUsdPathsRelativeToSceneFile;        // default true
+    std::function<bool()>        requireUsdPathsRelativeToParentLayer;      // default true
+    std::function<bool()>        requireUsdPathsRelativeToEditTargetLayer;  // default true
+    std::function<bool()>        wantReferenceCompositionArc;               // default false
+    std::function<bool()>        wantPrependCompositionArc;                 // default true
+    std::function<bool()>        wantPayloadLoaded;                         // default true
+    std::function<std::string()> getReferencedPrimPath;                     // default ""
+    std::function<void(bool)>    setRequireUsdPathsRelativeToSceneFile;
+    std::function<void(bool)>    setRequireUsdPathsRelativeToParentLayer;
+    std::function<bool()>        confirmExistingFileSave;                   // default true
+    std::function<bool()>        getSaveLayerFormatBinary;                  // default true
+    std::function<void(bool)>    setSaveLayerFormatBinary;
+    std::function<int()>         getSerializedUsdEditsLocation;             // default 1 (kSaveToUSDFiles)
+    std::function<void(int)>     setSerializedUsdEditsLocation;
+};
+
+struct EnvironmentFns
+{
+    std::function<bool()>     getPinLayerEditorStage;     // default false
+    std::function<void(bool)> setPinLayerEditorStage;
+    std::function<bool()>     isInteractiveDCCSession;    // default true
+    std::function<bool()>     shouldExpandOrCollapseAll;  // default false
+};
+
 struct LayerEditorDCCFunctions
 {
     ComponentFns      component;
     EditForwardingFns editForwarding;
     DccObjectFns      dccObject;
+    SaveOptionFns     saveOption;
+    EnvironmentFns    environment;
 };
 
 // Registration API — per-group setters (play cleanly with #ifdef guards), plus a
@@ -94,6 +122,8 @@ struct LayerEditorDCCFunctions
 LayerEditorAPI void setComponentFns(const ComponentFns&);
 LayerEditorAPI void setEditForwardingFns(const EditForwardingFns&);
 LayerEditorAPI void setDccObjectFns(const DccObjectFns&);
+LayerEditorAPI void setSaveOptionFns(const SaveOptionFns&);
+LayerEditorAPI void setEnvironmentFns(const EnvironmentFns&);
 LayerEditorAPI void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
 LayerEditorAPI const LayerEditorDCCFunctions& layerEditorDCCFunctions();
 
@@ -123,6 +153,27 @@ LayerEditorAPI bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr&);
 
 LayerEditorAPI bool isDccObjectStageIncoming(const std::string&);
 LayerEditorAPI bool isDccObjectSharedStage(const std::string&);
+
+// SaveOptionFns
+LayerEditorAPI bool        requireUsdPathsRelativeToSceneFile();
+LayerEditorAPI bool        requireUsdPathsRelativeToParentLayer();
+LayerEditorAPI bool        requireUsdPathsRelativeToEditTargetLayer();
+LayerEditorAPI bool        wantReferenceCompositionArc();
+LayerEditorAPI bool        wantPrependCompositionArc();
+LayerEditorAPI bool        wantPayloadLoaded();
+LayerEditorAPI std::string getReferencedPrimPath();
+LayerEditorAPI void        setRequireUsdPathsRelativeToSceneFile(bool);
+LayerEditorAPI void        setRequireUsdPathsRelativeToParentLayer(bool);
+LayerEditorAPI bool        confirmExistingFileSave();
+LayerEditorAPI bool        getSaveLayerFormatBinary();
+LayerEditorAPI void        setSaveLayerFormatBinary(bool);
+LayerEditorAPI int         getSerializedUsdEditsLocation();
+LayerEditorAPI void        setSerializedUsdEditsLocation(int);
+// EnvironmentFns
+LayerEditorAPI bool        getPinLayerEditorStage();
+LayerEditorAPI void        setPinLayerEditorStage(bool);
+LayerEditorAPI bool        isInteractiveDCCSession();
+LayerEditorAPI bool        shouldExpandOrCollapseAll();
 
 } // namespace UsdLayerEditor
 

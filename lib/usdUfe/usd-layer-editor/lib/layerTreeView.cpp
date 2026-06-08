@@ -17,6 +17,7 @@
 #include "layerTreeView.h"
 
 #include "abstractCommandHook.h"
+#include "layerEditorDCCFunctions.h"
 #include "layerTreeItem.h"
 #include "layerTreeItemDelegate.h"
 #include "layerTreeModel.h"
@@ -204,21 +205,7 @@ void LayerTreeView::onItemDoubleClicked(const QModelIndex& index)
 
 bool LayerTreeView::shouldExpandOrCollapseAll() const
 {
-    // TODO LE-EXTRACT Treeview expand/collapse all key modifier.
-    return false;
-
-    //// Internal private function to check if the expand and collapse of
-    //// items should be recursive. Currently, this is controlled by the
-    //// fact the user is pressing the SHIFT key on the keyboard.
-    // int modifiers = 0;
-    // MGlobal::executeCommand("getModifiers", modifiers);
-
-    //// Magic constant 2 is how the getModifiers reports the SHIFT key.
-    //// This is a public command and the shift value is only declared in
-    //// its documentation. Being a public command, it is practically
-    //// guaranteed to never change, so hard-coding the value is not a problem.
-    // const bool shiftHeld = ((modifiers % 2) != 0);
-    // return shiftHeld;
+    return UsdLayerEditor::shouldExpandOrCollapseAll();
 }
 
 void LayerTreeView::onExpanded(const QModelIndex& index)

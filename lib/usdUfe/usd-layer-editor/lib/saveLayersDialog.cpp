@@ -26,7 +26,6 @@
 #include "sessionState.h"
 #include "stringResources.h"
 #include "utilFileSystem.h"
-#include "utilOptions.h"
 #include "utilQT.h"
 #include "utilSerialization.h"
 #include "utilString.h"
@@ -301,31 +300,28 @@ std::string SaveLayerPathRow::calculateParentLayerDir() const
 
 void SaveLayerPathRow::onOpenBrowser()
 {
-    // Calculate parent layer path
     auto&       parentLayer = _layerInfo.parent._layerParent;
     std::string parentLayerPath = calculateParentLayerDir();
 
-    // Update appropriate option var
-    const char* optionVarName = parentLayer ? "mayaUsd_MakePathRelativeToParentLayer"
-                                            : "mayaUsd_MakePathRelativeToSceneFile";
-    const bool  optionvarExists = Options::optionVarExists(optionVarName);
-    int         optionVarValue = 0;
-    if (optionvarExists) {
-        optionVarValue = Options::optionVarIntValue(optionVarName);
-        Options::setOptionVarValue(optionVarName, needToSaveAsRelative() ? 1 : 0);
-    }
+    const bool isParent = (parentLayer != nullptr);
+    const bool prev = isParent ? FileSystem::requireUsdPathsRelativeToParentLayer()
+                               : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+    if (isParent)
+        FileSystem::setRequireUsdPathsRelativeToParentLayer(needToSaveAsRelative());
+    else
+        FileSystem::setRequireUsdPathsRelativeToDCCSceneFile(needToSaveAsRelative());
 
-    // Run the UI and set the resulting path
     std::string absolutePath;
     if (SaveLayersDialog::saveLayerFilePathUI(absolutePath, parentLayerPath)) {
-        bool saveAsRelative = (optionvarExists && Options::optionVarIntValue(optionVarName) != 0);
+        const bool saveAsRelative = isParent ? FileSystem::requireUsdPathsRelativeToParentLayer()
+                                             : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
         setPathToSaveAs(absolutePath, saveAsRelative);
     }
 
-    // Restore original option var value
-    if (optionvarExists) {
-        Options::setOptionVarValue(optionVarName, optionVarValue);
-    }
+    if (isParent)
+        FileSystem::setRequireUsdPathsRelativeToParentLayer(prev);
+    else
+        FileSystem::setRequireUsdPathsRelativeToDCCSceneFile(prev);
 }
 
 void SaveLayerPathRow::onTextChanged(const QString& text)
@@ -658,10 +654,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
     }
 
     // File backed layers
-    static const std::string kConfirmExistingFileSave
-        = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
-    const bool showFileOverrideSection = Options::optionVarExists(kConfirmExistingFileSave)
-        && Options::optionVarIntValue(kConfirmExistingFileSave) != 0;
+    const bool showFileOverrideSection = confirmExistingFileSave();
     if (showFileOverrideSection && haveFileBackedLayers) {
         auto fileLayout = new QVBoxLayout();
         fileLayout->setContentsMargins(margin, margin, margin, 0);

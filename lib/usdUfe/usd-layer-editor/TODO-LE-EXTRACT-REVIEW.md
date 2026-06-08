@@ -188,32 +188,32 @@ All seven return **hardcoded constants** instead of reading the corresponding Ma
 - **State:** functionality works (falls back to session layer), but the user-facing message is dropped. **Injection point already exists** — `UIUtils::displayError(errMsg)` is used 20 lines below in the same file. Trivial wire-up.
 - **Verdict:** PARTIAL (quick fix)
 - **Your notes:**
-- **Decision:**
+- **Decision:** FIX IT, Use TF_ERROR
 
 ### C2. `layerEditorWidget.cpp:144` — Maya menus (auto-hide session layer / help menu)
 - **State:** menu items commented out. Auto-hide is a `SessionState` virtual; help routes through `commandHook()->showLayerEditorHelp()`.
 - **Decision needed:** do we want these menus in the shared editor, or keep them Maya-only?
 - **Verdict:** PARTIAL (product decision)
 - **Your notes:**
-- **Decision:**
+- **Decision:** Uncomment, we want these menus.
 
 ### C3. `ufeCommandHook.cpp:141` — Show layer editor help
 - **State:** empty no-op; only matters if the help menu (C2) is re-enabled. Decide together with C2.
 - **Verdict:** PARTIAL (tied to C2)
 - **Your notes:**
-- **Decision:**
+- **Decision:** Leave the TODO, maya-usd doesnt use the ufeCommandHook, we will do this later.
 
 ### C4. `utilFileSystem.h:81` — "Workspace" terminology outside Maya
 - **State:** injection (`dccWorkspaceSceneSaveLocationFunc`) is done; remaining question is purely naming ("workspace" is Maya-centric). Documentation/naming decision.
 - **Verdict:** PARTIAL (naming decision)
 - **Your notes:**
-- **Decision:**
+- **Decision:** OK, FIXED.
 
 ### C5. `utilSerialization.cpp:194` — Maya has multiple stage caches
 - **State:** `updateAllCachedStageWithLayer` is hardcoded to the global cache but is **currently dead in the shared flow** (only caller is the disabled call at `:434`; cache updating is delegated to `updateDCCObjectRootLayerFunction`). Either delete the helper or add a cache-enumeration callback if it should be DCC-pluggable.
 - **Verdict:** PARTIAL (dead helper / decision)
 - **Your notes:**
-- **Decision:**
+- **Decision:** I think this was already adressed from a previous point.
 
 ---
 

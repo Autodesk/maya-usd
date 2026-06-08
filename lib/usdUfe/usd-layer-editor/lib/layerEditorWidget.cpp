@@ -141,8 +141,7 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
                 &LayerEditorWidget::openEditForwardDialog);
         }
 
-        // TODO LE-EXTRACT Maya-usd menus (auto-hide session layer / help menu)
-        /*auto action = optionMenu->addAction(
+        auto action = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
         QObject::connect(
             action, &QAction::toggled, ss, &SessionState::setAutoHideSessionLayer);
@@ -152,7 +151,7 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
         helpMenu->addAction(
             StringResources::getAsQString(StringResources::kHelpOnUSDLayerEditor),
-            [ss]() { ss->commandHook()->showLayerEditorHelp(); });*/
+            [ss]() { ss->commandHook()->showLayerEditorHelp(); });
     }
 }
 

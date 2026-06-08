@@ -60,16 +60,6 @@ LayerEditorAPI std::pair<std::string, bool>
 LayerEditorAPI std::string
 getPathRelativeToDirectory(const std::string& fileName, const std::string& relativeToDir);
 
-/*! \brief returns the path of a file relative to the DCC scene project folder.
-           Returns an empty string if the path is not relative to the project.
- */
-LayerEditorAPI std::string getPathRelativeToProject(const std::string& fileName);
-
-/*! \brief returns the absolute path of a file but relative to the DCC scene project folder.
-           Returns an empty string if the path cannot be made relative to the project.
- */
-LayerEditorAPI std::string makeProjectRelatedPath(const std::string& fileName);
-
 /*! \brief returns parent directory of opened DCC scene file
  */
 LayerEditorAPI std::string getDCCSceneFileDir();
@@ -78,8 +68,6 @@ LayerEditorAPI std::string getDCCSceneFileDir();
  */
 LayerEditorAPI std::string getLayerFileDir(const PXR_NS::SdfLayerHandle& layer);
 
-// TODO LE-EXTRACT Does the concept of workspace exist outside of maya / should the terminology be
-// different?
 /*! \brief returns the DCC workspace file rule entry for scenes
  */
 LayerEditorAPI std::string getDCCWorkspaceScenesDir();
@@ -154,6 +142,9 @@ LayerEditorAPI bool requireUsdPathsRelativeToParentLayer();
  *         as relative to the current edit target layer.
  */
 LayerEditorAPI bool requireUsdPathsRelativeToEditTargetLayer();
+
+LayerEditorAPI void setRequireUsdPathsRelativeToDCCSceneFile(bool value);
+LayerEditorAPI void setRequireUsdPathsRelativeToParentLayer(bool value);
 
 /*! \brief returns a unique file name
  */
@@ -241,6 +232,8 @@ LayerEditorAPI bool checkWriteAccess(const std::string& filePath);
 LayerEditorAPI void setDCCSceneLocationFunc(std::function<std::string()> fn);
 
 LayerEditorAPI void setDCCWorkspaceSceneLocationFunc(std::function<std::string()> fn);
+
+LayerEditorAPI void setPrepareLayerSaveUILayerFn(std::function<bool(const std::string&)> fn);
 
 // Backup a file and restore it if not committed.
 class FileBackup

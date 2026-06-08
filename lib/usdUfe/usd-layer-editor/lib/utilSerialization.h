@@ -203,6 +203,12 @@ LayerEditorAPI void setUpdateDCCObjectRootLayerFunction(
 LayerEditorAPI void
 setGetStageCachesFunction(std::function<std::vector<PXR_NS::UsdStageCache*>()> getCachesFunction);
 
+/*! \brief Sets a function that authors up-axis and units metadata on an
+ *  anonymous root layer before it is saved. No-op when unset.
+ */
+LayerEditorAPI void
+setLayerUpAxisAndUnitsFn(std::function<void(const PXR_NS::SdfLayerRefPtr&)> fn);
+
 } // namespace Serialization
 } // namespace UsdLayerEditor
 

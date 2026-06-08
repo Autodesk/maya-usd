@@ -28,6 +28,8 @@ LayerEditorDCCFunctions& registry()
 void setComponentFns(const ComponentFns& fns) { registry().component = fns; }
 void setEditForwardingFns(const EditForwardingFns& fns) { registry().editForwarding = fns; }
 void setDccObjectFns(const DccObjectFns& fns) { registry().dccObject = fns; }
+void setSaveOptionFns(const SaveOptionFns& fns) { registry().saveOption = fns; }
+void setEnvironmentFns(const EnvironmentFns& fns) { registry().environment = fns; }
 void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions& fns) { registry() = fns; }
 const LayerEditorDCCFunctions& layerEditorDCCFunctions() { return registry(); }
 
@@ -138,6 +140,112 @@ bool isDccObjectSharedStage(const std::string& dccObjectPath)
     return registry().dccObject.isDccObjectSharedStage
         ? registry().dccObject.isDccObjectSharedStage(dccObjectPath)
         : true; // matches the former AbstractCommandHook default
+}
+
+// ---- SaveOption ----
+bool requireUsdPathsRelativeToSceneFile()
+{
+    return registry().saveOption.requireUsdPathsRelativeToSceneFile
+        ? registry().saveOption.requireUsdPathsRelativeToSceneFile()
+        : true;
+}
+bool requireUsdPathsRelativeToParentLayer()
+{
+    return registry().saveOption.requireUsdPathsRelativeToParentLayer
+        ? registry().saveOption.requireUsdPathsRelativeToParentLayer()
+        : true;
+}
+bool requireUsdPathsRelativeToEditTargetLayer()
+{
+    return registry().saveOption.requireUsdPathsRelativeToEditTargetLayer
+        ? registry().saveOption.requireUsdPathsRelativeToEditTargetLayer()
+        : true;
+}
+bool wantReferenceCompositionArc()
+{
+    return registry().saveOption.wantReferenceCompositionArc
+        ? registry().saveOption.wantReferenceCompositionArc()
+        : false;
+}
+bool wantPrependCompositionArc()
+{
+    return registry().saveOption.wantPrependCompositionArc
+        ? registry().saveOption.wantPrependCompositionArc()
+        : true;
+}
+bool wantPayloadLoaded()
+{
+    return registry().saveOption.wantPayloadLoaded
+        ? registry().saveOption.wantPayloadLoaded()
+        : true;
+}
+std::string getReferencedPrimPath()
+{
+    return registry().saveOption.getReferencedPrimPath
+        ? registry().saveOption.getReferencedPrimPath()
+        : std::string();
+}
+void setRequireUsdPathsRelativeToSceneFile(bool value)
+{
+    if (registry().saveOption.setRequireUsdPathsRelativeToSceneFile)
+        registry().saveOption.setRequireUsdPathsRelativeToSceneFile(value);
+}
+void setRequireUsdPathsRelativeToParentLayer(bool value)
+{
+    if (registry().saveOption.setRequireUsdPathsRelativeToParentLayer)
+        registry().saveOption.setRequireUsdPathsRelativeToParentLayer(value);
+}
+bool confirmExistingFileSave()
+{
+    return registry().saveOption.confirmExistingFileSave
+        ? registry().saveOption.confirmExistingFileSave()
+        : true;
+}
+bool getSaveLayerFormatBinary()
+{
+    return registry().saveOption.getSaveLayerFormatBinary
+        ? registry().saveOption.getSaveLayerFormatBinary()
+        : true;
+}
+void setSaveLayerFormatBinary(bool value)
+{
+    if (registry().saveOption.setSaveLayerFormatBinary)
+        registry().saveOption.setSaveLayerFormatBinary(value);
+}
+int getSerializedUsdEditsLocation()
+{
+    return registry().saveOption.getSerializedUsdEditsLocation
+        ? registry().saveOption.getSerializedUsdEditsLocation()
+        : 1; // kSaveToUSDFiles
+}
+void setSerializedUsdEditsLocation(int value)
+{
+    if (registry().saveOption.setSerializedUsdEditsLocation)
+        registry().saveOption.setSerializedUsdEditsLocation(value);
+}
+// ---- Environment ----
+bool getPinLayerEditorStage()
+{
+    return registry().environment.getPinLayerEditorStage
+        ? registry().environment.getPinLayerEditorStage()
+        : false;
+}
+void setPinLayerEditorStage(bool value)
+{
+    if (registry().environment.setPinLayerEditorStage)
+        registry().environment.setPinLayerEditorStage(value);
+}
+bool isInteractiveDCCSession()
+{
+    return registry().environment.isInteractiveDCCSession
+        ? registry().environment.isInteractiveDCCSession()
+        : true;
+}
+bool shouldExpandOrCollapseAll()
+{
+    return registry().environment.shouldExpandOrCollapseAll
+        ? registry().environment.shouldExpandOrCollapseAll()
+        : false;
 }
 
 } // namespace UsdLayerEditor
