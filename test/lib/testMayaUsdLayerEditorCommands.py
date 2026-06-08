@@ -1151,7 +1151,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, weakLayerId)
 
     def testStitchLayersWithLockedParentLayer(self):
-        """ Test stitching fails when one selected layer is under a locked parent layer """
+        """ Test stitching fails when there is only one layer to be merged and it is under a locked parent layer """
 
         shapePath, stage = getCleanMayaStage()
         rootLayer = stage.GetRootLayer()
@@ -1186,8 +1186,59 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
                 stitchLayers=((shapePath, layer1Id), (shapePath, layer3Id))
             )
 
+        self.assertIn(layer3Id, layer2.subLayerPaths)
+        
         self.assertIsNotNone(layer3.GetPrimAtPath('/Cube'))
         self.assertIsNone(layer1.GetPrimAtPath('/Cube'))
+
+    def testStitchMultiLayersWithLockedParentLayer(self):
+        """ Test stitching succeeds when there are multiple layers to be merged and one is under a locked parent layer """
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+        layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
+        layer4Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer4")[0]
+        layer3Id = cmds.mayaUsdLayerEditor(layer2Id, edit=True, addAnonymous="Layer3")[0]
+
+        rootLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, layer1Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[1, layer2Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[2, layer4Id])
+
+        layer1 = Sdf.Layer.Find(layer1Id)
+        layer2 = Sdf.Layer.Find(layer2Id)
+        layer3 = Sdf.Layer.Find(layer3Id)
+        layer4 = Sdf.Layer.Find(layer4Id)
+
+        with Sdf.ChangeBlock():
+            prim = Sdf.CreatePrimInLayer(layer3, '/Cube')
+            prim.SetInfo('typeName', 'Cube')
+            prim = Sdf.CreatePrimInLayer(layer4, '/Cone')
+            prim.SetInfo('typeName', 'Cone')
+
+        self.assertIsNotNone(layer3.GetPrimAtPath('/Cube'))
+        self.assertIsNone(layer1.GetPrimAtPath('/Cube'))
+
+        self.assertIsNotNone(layer4.GetPrimAtPath('/Cone'))
+        self.assertIsNone(layer1.GetPrimAtPath('/Cone'))
+
+        cmds.mayaUsdLayerEditor(layer2Id, edit=True, lockLayer=(1, 0, shapePath))
+        self.assertFalse(layer2.permissionToEdit)
+
+        cmds.mayaUsdLayerEditor(
+            rootLayerId, edit=True,
+            stitchLayers=((shapePath, layer1Id), (shapePath, layer3Id), (shapePath, layer4Id))
+        )
+
+        self.assertIsNotNone(layer3.GetPrimAtPath('/Cube'))
+        self.assertIsNone(layer1.GetPrimAtPath('/Cube'))
+        self.assertIsNotNone(layer1.GetPrimAtPath('/Cone'))
+
+        self.assertIn(layer3Id, layer2.subLayerPaths)
+        self.assertNotIn(layer4Id, rootLayer.subLayerPaths)
 
     def testStitchLayersPartialSelection(self):
         """ Test stitching only some layers while leaving others untouched """
