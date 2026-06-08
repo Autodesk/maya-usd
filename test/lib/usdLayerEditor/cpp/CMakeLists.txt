@@ -43,7 +43,7 @@ set(LAYER_EDITOR_TEST_SOURCES
 # UsdLayerEditorNewTests
 # Links UsdLayerEditorLib (the DCC-agnostic shared component).
 # ------------------------------------------------------------------------------
-set(NEW_LE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib)
+set(NEW_LE_DIR ${CMAKE_SOURCE_DIR}/lib/usdLayerEditor/lib)
 
 add_executable(UsdLayerEditorNewTests
     ${LAYER_EDITOR_TEST_SOURCES}

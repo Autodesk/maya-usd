@@ -1,12 +1,16 @@
 # USD Layer Editor Migration Tracking
 
-Resume point for porting maya-usd layer editor commits into the shared component (`lib/usdUfe/usd-layer-editor/`). See `docs/superpowers/specs/2026-05-19-usd-layer-editor-migration-design.md` and `docs/superpowers/plans/2026-05-19-usd-layer-editor-migration.md` for the full migration design and plan.
+Resume point for porting maya-usd layer editor commits into the shared component (`lib/usdLayerEditor/`). See `docs/superpowers/specs/2026-05-19-usd-layer-editor-migration-design.md` and `docs/superpowers/plans/2026-05-19-usd-layer-editor-migration.md` for the full migration design and plan.
 
-## Current state (as of 2026-06-06)
+## Relocation note (2026-06-08)
+
+The shared component was physically relocated from `lib/usdUfe/usd-layer-editor/` to `lib/usdLayerEditor/` (a sibling of `usdUfe` under `lib/`), and its tests were moved from the old `test/` subdirectory inside the library tree to `test/lib/usdLayerEditor/`. The CMake wiring was updated accordingly: `lib/CMakeLists.txt` now drives the subdirectory directly, the old `add_subdirectory(usd-layer-editor)` in `lib/usdUfe/CMakeLists.txt` was removed, and `test/lib/CMakeLists.txt` routes to `test/lib/usdLayerEditor/`. No source files were modified — this was a pure structural rename.
+
+## Current state (as of 2026-06-08)
 
 - `UsdLayerEditorLib` builds and **`mayaUsdUI` always uses it** in production. The `BUILD_NEW_LAYER_EDITOR` switch was removed (see `docs/superpowers/specs/2026-06-04-always-build-both-editors-design.md`); `MAYAUSD_USE_SHARED_LAYER_EDITOR` is always defined. The legacy widget sources now compile only into the `mayaUsdOldLayerEditorTests` parity target.
 - The bridge is therefore **live**, not deferred — the earlier "deferred (Tasks 5-6)" note predates the always-build-both change and is obsolete.
-- DCC-specific behavior is injected into the shared editor via the `UsdLayerEditor` DCC-functions registry (`lib/usdUfe/usd-layer-editor/lib/layerEditorDCCFunctions.{h,cpp}`), populated by Maya at plugin init (`lib/usd/ui/layerEditor/mayaLayerEditorDCCFunctions.{h,cpp}`). See `docs/superpowers/specs/2026-05-29-layer-editor-dcc-functions-registry-design.md`. The Component-Creator / Edit-Forwarding-query / DCC-object-query hooks no longer live on `AbstractCommandHook` / `SessionState`.
+- DCC-specific behavior is injected into the shared editor via the `UsdLayerEditor` DCC-functions registry (`lib/usdLayerEditor/lib/layerEditorDCCFunctions.{h,cpp}`), populated by Maya at plugin init (`lib/usd/ui/layerEditor/mayaLayerEditorDCCFunctions.{h,cpp}`). See `docs/superpowers/specs/2026-05-29-layer-editor-dcc-functions-registry-design.md`. The Component-Creator / Edit-Forwarding-query / DCC-object-query hooks no longer live on `AbstractCommandHook` / `SessionState`.
 - The commit table below remains the porting log of maya-usd-side changes since the standalone component was extracted (~Sep 17, 2024).
 
 ## How to use this file
@@ -19,9 +23,9 @@ Resume point for porting maya-usd layer editor commits into the shared component
 
 ## Porting rules per commit
 
-- Changed file has a counterpart in `lib/usdUfe/usd-layer-editor/lib/` → diff and port the logic, stripping any Maya dependencies. Mark `ported`.
+- Changed file has a counterpart in `lib/usdLayerEditor/lib/` → diff and port the logic, stripping any Maya dependencies. Mark `ported`.
 - Changed file is Maya-specific (`maya*.cpp/h`, `mayaCommandHook`, `mayaSessionState`, `mayaLayerEditorWindow`, `mayaQtUtils`) → no action. Mark `maya-only`.
-- Changed file doesn't exist in shared component but is DCC-agnostic → bring the whole file in, add to `lib/CMakeLists.txt`. Mark `ported`.
+- Changed file doesn't exist in shared component but is DCC-agnostic → bring the whole file in, add to `lib/usdLayerEditor/lib/CMakeLists.txt`. Mark `ported`.
 - Changed file has Maya dependencies that must be removed → add a virtual hook to `SessionState` / `AbstractCommandHook`, inject the Maya behavior from `MayaSessionState` / `MayaCommandHook`. Mark `needs-hook` until the hook lands, then `ported`.
 - Pure formatting / clang / whitespace → mark `skip`.
 - Already in shared component (diff shows the change is already there) → mark `skip` with note "Already in shared".

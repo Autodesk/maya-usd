@@ -181,5 +181,3 @@ add_subdirectory(resources)
 add_subdirectory(ufe)
 add_subdirectory(undo)
 add_subdirectory(utils)
-
-add_subdirectory(usd-layer-editor)
