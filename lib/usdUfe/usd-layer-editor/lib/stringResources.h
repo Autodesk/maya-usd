@@ -23,9 +23,6 @@
 
 class QString;
 
-// TODO LE-EXTRACT : String resources - Is this enough for maya-usd? Does the maya registration
-// matter?
-
 namespace UsdLayerEditor {
 
 namespace StringResources {
@@ -99,7 +96,6 @@ const auto kSaveStages                   { create("kSaveStages", "Save Stage(s)"
 const auto kSaveStagesAndExport          { create("kSaveStagesAndExport", "Save Stage(s) and Export") };
 const auto kSaveXStages                  { create("kSaveXStages", "Save ^1s Stage(s)") };
 const auto kToSaveTheStageSaveAnonym     { create("kToSaveTheStageSaveAnonym", "To save the ^1s stage(s), save the following ^2s anonymous layer(s).") };
-// TODO LE-EXTRACT Temporary confirmation dialog string. To be removed.
 const auto kToSaveStageFilesConfirm      { create("kToSaveStageFilesConfirm", "To save the stage, all its modified layers will be overwritten. Are you sure you want to proceed?") };
 const auto kToSaveTheStageSaveFiles      { create("kToSaveTheStageSaveFiles", "To save the ^1s stage(s), the following existing file(s) will be overwritten.") };
 const auto kToExportTheStageSaveAnonym   { create("kToExportTheStageSaveAnonym", "To export the ^1s stage(s), save the following ^2s anonymous layer(s).") };

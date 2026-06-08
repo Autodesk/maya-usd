@@ -37,7 +37,6 @@ enum BatchSaveResult
                         // Manager should continue to look for unsaved stages.
 };
 
-// TODO LE-EXTRACT Batch save layers.
 /*! \brief Information about the stages that need to be saved.
  */
 struct StageSavingInfo

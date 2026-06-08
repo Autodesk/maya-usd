@@ -34,7 +34,6 @@ QIcon QtUtils::createIcon(const char* iconName) { return QIcon(iconName); }
 
 QPixmap QtUtils::createPNGResPixmap(QString const& in_pixmapName, int width, int height)
 {
-
     QString pixmapName(in_pixmapName);
     if (pixmapName.indexOf(".png") == -1) {
         pixmapName += ".png";
@@ -45,14 +44,6 @@ QPixmap QtUtils::createPNGResPixmap(QString const& in_pixmapName, int width, int
         pixmapName = resourcePrefix + pixmapName;
     }
 
-    // TODO LE-EXTRACT Maya specific icon / pixmap behavior.
-    // Note: createPNGResPixmap calls QtUtils::createPNGResPixmap, but that is
-    //       *not* the function below but rather MayaQtUtils::createPixmap, since
-    //       these functions are virtual.
-    //
-    //       The MayaQtUtils version calls MQtUtil::createPixmap which calls
-    //       QmayaQtHelper::createPixmap which generates the scaled image name
-    //       by adding the _150 or _200 suffix as necessary.
     return createPixmap(pixmapName, width, height);
 }
 

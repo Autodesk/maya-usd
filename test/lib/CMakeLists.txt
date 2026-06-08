@@ -137,12 +137,7 @@ endforeach()
 # Maya implementations of the DCC hooks and re-exports UsdLayerEditorTest so
 # unittest discovery picks up all test_* methods.
 # -----------------------------------------------------------------------------
-# Temporarily disabled: most of the shared layer_editor_test.py suite relies on
-# ufe.UndoableCommandMgr.executeCmd() which crosses the boost.python <-> pybind11
-# boundary. The Maya-side _executeCmd hook bypasses UFE's undo manager (calls
-# cmd.execute() directly), so undo-driven tests fail. Re-enable once the binding
-# story is resolved (e.g. pybind11 conversion of UsdLayerEditor commands).
-if(ENABLE_SHARED_LAYER_EDITOR_TESTS)
+if(BUILD_NEW_LAYER_EDITOR)
     set(SHARED_LAYER_EDITOR_TEST_DIR
         ${CMAKE_SOURCE_DIR}/lib/usdUfe/usd-layer-editor/test
     )

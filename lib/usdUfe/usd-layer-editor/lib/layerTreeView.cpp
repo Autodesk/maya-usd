@@ -151,7 +151,6 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
         _actionButtons._staticActions.push_back(lockAction);
     }
 
-    // TODO LE-EXTRACT Refresh layer treeview on new system lock.
     _refreshCallback = std::make_shared<LayerTreeViewRefreshCallback>(this);
     UsdUfe::registerUICallback(PXR_NS::TfToken("onRefreshSystemLock"), _refreshCallback);
 
@@ -561,7 +560,6 @@ void LayerTreeView::mousePressEvent(QMouseEvent* event)
 
 void LayerTreeView::updateMouseCursor()
 {
-    // TODO LE-EXTRACT Update mouse cursor over layer tree.
     // Note: special mouse cursor taken from Maya resources.
     QString pixmapName = QtUtils::getDPIPixmapName(":/rmbMenu");
     // Note: in Maya, the normal-sized pixmap name does not ends with _100,
