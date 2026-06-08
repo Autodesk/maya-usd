@@ -1,0 +1,710 @@
+//
+// Copyright 2020 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#include "layerTreeModel.h"
+
+#include "customLayerData.h"
+#include "layerEditorDCCFunctions.h"
+#include "layerEditorWidget.h"
+#include "layerTreeItem.h"
+#include "layers.h"
+#include "saveLayersDialog.h"
+#include "stringResources.h"
+#include "tokens.h"
+#include "utilSerialization.h"
+#include "utilString.h"
+#include "utilUI.h"
+#include "warningDialogs.h"
+
+#include <pxr/base/tf/notice.h>
+
+#include <QtCore/QTimer>
+#include <algorithm>
+#include <memory>
+#include <string>
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+// drag and drop support
+// For now just use the plain text type to store the layer identifiers.
+const QString LAYER_EDITOR_MIME_TYPE = QStringLiteral("text/plain");
+const QString LAYED_EDITOR_MIME_SEP = QStringLiteral(";");
+
+} // namespace
+
+namespace UsdLayerEditor {
+
+bool LayerTreeModel::_blockUsdNotices = false;
+
+void LayerTreeModel::suspendUsdNotices(bool suspend)
+{
+    //
+    _blockUsdNotices = suspend;
+}
+
+LayerTreeModel::LayerTreeModel(SessionState* in_sessionState, QObject* in_parent)
+    : QStandardItemModel(in_parent)
+{
+    setSessionState(in_sessionState);
+    registerUsdNotifications(true);
+}
+
+LayerTreeModel::~LayerTreeModel()
+{
+    //
+    registerUsdNotifications(false);
+}
+
+void LayerTreeModel::registerUsdNotifications(bool in_register)
+{
+    if (in_register) {
+        TfWeakPtr<LayerTreeModel> me(this);
+        _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_layerChanged));
+        _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_editTargetChanged));
+        _noticeKeys.push_back(TfNotice::Register(
+            me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
+
+    } else {
+        TfNotice::Revoke(&_noticeKeys);
+    }
+}
+
+Qt::ItemFlags LayerTreeModel::flags(const QModelIndex& index) const
+{
+    // set flags for drag and drop support
+    auto item = layerItemFromIndex(index);
+    if (!item || item->isInvalidLayer()) {
+        return Qt::ItemIsSelectable | Qt::ItemIsEnabled;
+    }
+
+    Qt::ItemFlags defaultFlags = QStandardItemModel::flags(index);
+    if (index.isValid() && item->isMovable()) {
+        return Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled | defaultFlags;
+    } else {
+        defaultFlags &= ~Qt::ItemIsDragEnabled;
+        return Qt::ItemIsDropEnabled | defaultFlags;
+    }
+}
+
+Qt::DropActions LayerTreeModel::supportedDropActions() const
+{
+    // We support only moving layers around to reorder or re-parent.
+    return Qt::MoveAction;
+}
+
+QStringList LayerTreeModel::mimeTypes() const
+{
+    // Just return our supported type (i.e. not appending it to the current)
+    // list of supported types. This way our base class(es) won't perform
+    // any drop actions.
+    return QStringList(LAYER_EDITOR_MIME_TYPE);
+}
+
+QMimeData* LayerTreeModel::mimeData(const QModelIndexList& indexes) const
+{
+    // Returns an object that contains serialized items of data corresponding
+    // to the list of indexes specified.
+
+    // Prepare the entries to move. For now we just store the layer identifiers
+    // as a string separated by special character.
+    auto        mimeData = new QMimeData();
+    QStringList identifiers;
+    for (auto index : indexes) {
+        auto item = layerItemFromIndex(index);
+        if (item->isInvalidLayer()) {
+            identifiers += item->subLayerPath().c_str();
+        } else {
+            identifiers += item->layer()->GetIdentifier().c_str();
+        }
+    }
+    mimeData->setText(identifiers.join(LAYED_EDITOR_MIME_SEP));
+    return mimeData;
+}
+
+bool LayerTreeModel::canDropMimeData(
+    const QMimeData*   in_mimeData,
+    Qt::DropAction     action,
+    int                row,
+    int                column,
+    const QModelIndex& parentIndex) const
+{
+    if (!in_mimeData || (action != Qt::MoveAction)) {
+        return false;
+    }
+    if (!in_mimeData->hasFormat(LAYER_EDITOR_MIME_TYPE)) {
+        return false;
+    }
+
+    auto parentItem = layerItemFromIndex(parentIndex);
+    if (!parentItem || parentItem->isReadOnly() || parentItem->isLocked()) {
+        return false;
+    }
+
+    // Only anonymous layers have additional restrictions
+    if (!parentItem->layer()->IsAnonymous()) {
+        return true;
+    }
+
+    // Layer with its path relative cannot be dropped to an anonymous layer
+    QStringList identifiers = in_mimeData->text().split(LAYED_EDITOR_MIME_SEP);
+    for (QString const& ident : identifiers) {
+        if (auto layer = SdfLayer::FindOrOpen(ident.toStdString())) {
+            if (auto layerItem = findUSDLayerItem(layer)) {
+                if (!layer->IsAnonymous()
+                    && QDir::isRelativePath(layerItem->subLayerPath().c_str())) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool LayerTreeModel::dropMimeData(
+    const QMimeData*   in_mimeData,
+    Qt::DropAction     action,
+    int                row,
+    int                column,
+    const QModelIndex& parentIndex)
+{
+    // Handles the data supplied by a drag and drop operation that ended with the given action.
+
+    // Check if the action is supported?
+    if (!in_mimeData || (action != Qt::MoveAction)) {
+        return false;
+    }
+    if (!in_mimeData->hasFormat(LAYER_EDITOR_MIME_TYPE)) {
+        return false;
+    }
+
+    auto parentItem = layerItemFromIndex(parentIndex);
+    if (!parentItem || parentItem->isReadOnly() || parentItem->isLocked()) {
+        return false;
+    }
+
+    // row is -1 when dropped on a parent item and not between rows.
+    // In that case we want to insert at row 0 (first child).
+    if (row == -1) {
+        row = 0;
+    }
+
+    // Parse the mime data that was passed in to get the list of layers.
+    // We parse it in reversed order since when we insert the original
+    // order is maintained.
+    QStringList identifiers = in_mimeData->text().split(LAYED_EDITOR_MIME_SEP);
+    std::reverse(identifiers.begin(), identifiers.end());
+    UndoContext context(_sessionState->commandHook(), "Drop USD Layers");
+    for (QString const& ident : identifiers) {
+        auto layer = SdfLayer::FindOrOpen(ident.toStdString());
+        if (layer) {
+            auto layerItem = findUSDLayerItem(layer);
+            if (layerItem) {
+                auto oldParent = layerItem->parentLayerItem()->layer();
+                int  index = (int)oldParent->GetSubLayerPaths().Find(layerItem->subLayerPath());
+                auto itemSubLayerPath = layerItem->subLayerPath();
+
+                // When we are moving an item (underneath the same parent)
+                // to a new location higher up we have to adjust the row
+                // (new location) to account for the remove we just did.
+                if (oldParent == parentItem->layer() && (index < row)) {
+                    row -= 1;
+                }
+                context.hook()->moveSubLayerPath(
+                    itemSubLayerPath, oldParent, parentItem->layer(), row);
+            }
+        }
+    }
+    return true;
+}
+
+void LayerTreeModel::setEditTarget(LayerTreeItem* item)
+{
+    if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked()
+        && !item->isSystemLocked()) {
+        UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
+        context.hook()->setEditTarget(item->layer());
+    }
+}
+
+void LayerTreeModel::selectUsdLayerOnIdle(const SdfLayerRefPtr& usdLayer)
+{
+    QTimer::singleShot(0, this, [this, usdLayer]() {
+        auto item = findUSDLayerItem(usdLayer);
+        if (item != nullptr) {
+            auto index = indexFromItem(item);
+            Q_EMIT selectLayerSignal(index);
+        }
+    });
+}
+
+QModelIndex LayerTreeModel::rootLayerIndex()
+{
+    auto root = invisibleRootItem();
+    for (int row = 0; row < root->rowCount(); row++) {
+        auto child = dynamic_cast<LayerTreeItem*>(root->child(row));
+        if (child->isRootLayer()) {
+            return index(row, 0);
+        }
+    }
+    return QModelIndex();
+}
+
+void LayerTreeModel::setSessionState(SessionState* in_sessionState)
+{
+    _sessionState = in_sessionState;
+    connect(
+        in_sessionState,
+        &SessionState::currentStageChangedSignal,
+        this,
+        &LayerTreeModel::sessionStageChanged);
+
+    connect(
+        in_sessionState,
+        &SessionState::autoHideSessionLayerSignal,
+        this,
+        &LayerTreeModel::autoHideSessionLayerChanged);
+
+    connect(
+        in_sessionState,
+        &SessionState::editForwardingFallbackTargetChanged,
+        this,
+        &LayerTreeModel::onEFFallbackTargetChanged);
+
+    rebuildModelOnIdle();
+}
+
+void LayerTreeModel::rebuildModelOnIdle()
+{
+    if (!_rebuildOnIdlePending) {
+        _rebuildOnIdlePending = true;
+
+        //TODO: the fact that the model rebuilding call is async
+        // is causing issues in scripting, for example, when trying
+        // to add a layer and then immediately trying to select it
+        // will cause to fail because the `rebuildModel` call would
+        // not have been executed yet. Removing this singleShot
+        // wrapper and executing the rebuildModel right away fixes
+        // the issues, but this was probably written this way for a
+        // reason..
+        QTimer::singleShot(0, this, [this]() {
+            bool refreshLockState = false;
+            this->rebuildModel(refreshLockState);
+        });
+    }
+}
+
+void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
+{
+    _rebuildOnIdlePending = false;
+    _lastAskedAnonLayerNameSinceRebuild = 0;
+
+    if (!_sessionState->isValid()) {
+        if (rowCount() > 0) {
+            // Note: clear() calls beginResetModel and endResetModel for us.
+            clear();
+        }
+        return;
+    }
+
+    auto rootLayer = _sessionState->stage()->GetRootLayer();
+    auto sessionLayer = _sessionState->stage()->GetSessionLayer();
+    bool showSessionLayer = true;
+    if (_sessionState->autoHideSessionLayer()) {
+        showSessionLayer
+            = sessionLayer->IsDirty() || sessionLayer == _sessionState->effectiveTargetLayer();
+    }
+
+    std::set<std::string> sharedLayers;
+    auto                  sharedStage = UsdLayerEditor::isDccObjectSharedStage(
+        _sessionState->stageEntry()._dccObjectPath);
+    if (!sharedStage) {
+        auto layers = CustomLayerData::getStringArray(
+            rootLayer, UsdLayerEditorMetadata->ReferencedLayers);
+        // Also read the legacy Maya-specific token written by proxyShapeBase.
+        auto mayaLayers = CustomLayerData::getStringArray(
+            rootLayer, UsdLayerEditorMetadata->MayaReferencedLayers);
+        layers.insert(layers.end(), mayaLayers.begin(), mayaLayers.end());
+        std::vector<std::string> layerIds;
+        std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
+        sharedLayers = Layers::getAllSublayers(layerIds, true);
+    }
+
+    std::set<std::string> incomingLayers;
+    if (UsdLayerEditor::isDccObjectStageIncoming(
+            _sessionState->stageEntry()._dccObjectPath)) {
+        if (!sharedStage) {
+            incomingLayers = sharedLayers;
+        } else {
+            std::vector<std::string> layerIds;
+            layerIds.push_back(rootLayer->GetIdentifier());
+            incomingLayers = Layers::getAllSublayers(layerIds, true);
+        }
+    }
+
+    LayerTreeItem* oldSessionItem = nullptr;
+    LayerTreeItem* oldRootItem = nullptr;
+
+    if (rowCount() > 0) {
+        if (rowCount() > 1) {
+            oldSessionItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(0));
+            oldRootItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(1));
+        } else {
+            oldRootItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(0));
+        }
+    }
+
+    std::unique_ptr<LayerTreeItem> newSessionItem;
+    if (showSessionLayer) {
+        newSessionItem = std::make_unique<LayerTreeItem>(
+            sessionLayer,
+            _sessionState->stage(),
+            LayerType::SessionLayer,
+            "",
+            &incomingLayers,
+            sharedStage,
+            &sharedLayers);
+    }
+
+    std::unique_ptr<LayerTreeItem> newRootItem = std::make_unique<LayerTreeItem>(
+        rootLayer,
+        _sessionState->stage(),
+        LayerType::RootLayer,
+        "",
+        &incomingLayers,
+        sharedStage,
+        &sharedLayers);
+
+    const bool rootIdentical = newRootItem->isIdenticalItem(oldRootItem);
+    const bool sessionIdentical = (!newSessionItem && !oldSessionItem)
+        || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
+
+    if (!refreshLockState && rootIdentical && sessionIdentical) {
+        return;
+    }
+
+    beginResetModel();
+
+    //  Note: do *not* call clear() here! Unfortunately, clear() itself calls,
+    //        beginResetModel() and endResetModel(). Qt does not detect the nested
+    //        begin/end/ So calling clear() would make the layer manager flicker
+    //        to be empty for a brief time.
+    if (rowCount() > 0)
+        removeRows(0, rowCount());
+
+    if (newSessionItem) {
+        appendRow(newSessionItem.release());
+    }
+
+    appendRow(newRootItem.release());
+
+    updateTargetLayer(InRebuildModel::Yes);
+
+    if (refreshLockState) {
+        bool refreshSubLayers = true;
+        _sessionState->commandHook()->refreshLayerSystemLock(rootLayer, refreshSubLayers);
+    }
+
+    endResetModel();
+}
+
+LayerTreeItem* LayerTreeModel::findUSDLayerItem(const SdfLayerRefPtr& usdLayer) const
+{
+    const auto allItems = getAllItems();
+    for (auto item : allItems) {
+        if (item->layer() == usdLayer)
+            return item;
+    }
+    return nullptr;
+}
+
+void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
+{
+    if (rowCount() == 0) {
+        return;
+    }
+
+    // In Edit Forwarding mode the stage edit target is pinned to the session layer;
+    // effectiveTargetLayer() returns the fallback target in that case, and the stage edit
+    // target otherwise. The auto-hide logic below is target-source agnostic and works for both.
+    auto editTarget = _sessionState->effectiveTargetLayer();
+    auto root = invisibleRootItem();
+
+    // if session layer is in auto-hide handle case where it is the target
+    if (inRebuild == InRebuildModel::No && _sessionState->autoHideSessionLayer()) {
+        bool needToRebuild = false;
+        auto firstLayerItem = dynamic_cast<LayerTreeItem*>(root->child(0));
+        // if session layer is no longer the target layer, we need to rebuild to hide it
+        if (firstLayerItem->isSessionLayer() && firstLayerItem->isTargetLayer()) {
+            needToRebuild = firstLayerItem->layer() != editTarget;
+        }
+        // if the new target is the session layer
+        if (editTarget == _sessionState->stage()->GetSessionLayer()) {
+            needToRebuild = true;
+        }
+        if (needToRebuild) {
+            rebuildModelOnIdle();
+            return;
+        }
+    }
+
+    // all other cases, just update the icon
+    for (int i = 0, count = root->rowCount(); i < count; i++) {
+        auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
+        child->updateTargetLayerRecursive(editTarget);
+    }
+}
+
+// notification from USD
+void LayerTreeModel::usd_layerChanged(SdfNotice::LayersDidChangeSentPerLayer const& notice)
+{
+    // experienced crashes in python prototype  For now, rebuild everything
+    if (!_blockUsdNotices)
+        rebuildModelOnIdle();
+}
+
+// notification from USD
+void LayerTreeModel::usd_editTargetChanged(UsdNotice::StageEditTargetChanged const& notice)
+{
+    if (!_blockUsdNotices) {
+        QTimer::singleShot(
+            0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
+    }
+}
+
+// notification from USD
+void LayerTreeModel::usd_layerDirtinessChanged(
+    SdfNotice::LayerDirtinessChanged const& notice,
+    const TfWeakPtr<SdfLayer>&              layer)
+{
+    if (!_blockUsdNotices) {
+        auto layerItem = findUSDLayerItem(layer);
+        if (layerItem) {
+            layerItem->fetchData(RebuildChildren::No);
+        } else if (rowCount() > 0) {
+            // A non-local layer would not be visible in the tree - but in some cases
+            // (components) we still want to signal a data change - so that the save button
+            // refreshes.
+            Q_EMIT dataChanged(index(0, 0), index(0, 0));
+        }
+    }
+}
+
+// called from SessionState::currentStageChangedSignal
+void LayerTreeModel::sessionStageChanged()
+{
+    bool refreshLockState = true;
+    rebuildModel(refreshLockState);
+}
+
+// called from SessionState::autoHideSessionLayerSignal
+void LayerTreeModel::autoHideSessionLayerChanged() { rebuildModelOnIdle(); }
+
+void LayerTreeModel::onEFFallbackTargetChanged()
+{
+    updateTargetLayer(InRebuildModel::No);
+}
+
+LayerTreeItem* LayerTreeModel::layerItemFromIndex(const QModelIndex& index) const
+{
+    return dynamic_cast<LayerTreeItem*>(itemFromIndex(index));
+}
+
+void layerItemVectorRecurs(
+    LayerTreeItem*                parent,
+    LayerTreeModel::ConditionFunc filter,
+    std::vector<LayerTreeItem*>&  result)
+{
+    if (filter(parent)) {
+        result.push_back(parent);
+    }
+    if (parent->rowCount() > 0) {
+        const auto& children = parent->childrenVector();
+        for (auto const& child : children)
+            layerItemVectorRecurs(child, filter, result);
+    }
+}
+
+LayerItemVector
+LayerTreeModel::getAllItems(ConditionFunc filter, const LayerTreeItem* item /* = nullptr*/) const
+{
+
+    LayerItemVector result;
+    auto            root = item ? item : invisibleRootItem();
+    for (int i = 0, count = root->rowCount(); i < count; i++) {
+        auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
+        layerItemVectorRecurs(child, filter, result);
+    }
+    return result;
+}
+
+LayerItemVector LayerTreeModel::getAllNeedsSavingLayers() const
+{
+    auto filter = [](const LayerTreeItem* item) { return item->needsSaving(); };
+    return getAllItems(filter);
+}
+
+LayerItemVector
+LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) const
+{
+    auto filter
+        = [](const LayerTreeItem* item) { return item->isAnonymous() && !item->isSessionLayer(); };
+    return getAllItems(filter, item);
+}
+
+void LayerTreeModel::saveStage(QWidget* in_parent)
+{
+    auto saveAllLayers = [this]() {
+        // Special case for components created by the component creator. Only
+        // the component creator knows how to save a component properly. The
+        // hook is a no-op for DCCs without component support.
+        if (_sessionState
+            && UsdLayerEditor::isStageAComponent(_sessionState->stageEntry()._dccObjectPath)) {
+            UsdLayerEditor::saveComponent(
+                _sessionState->stageEntry()._stage, _sessionState->stageEntry()._dccObjectPath);
+            return;
+        }
+
+        const auto layers = getAllNeedsSavingLayers();
+        for (auto layer : layers) {
+            if (!layer->isSystemLocked()) {
+                if (!layer->isAnonymous()) {
+                    layer->saveEditsNoPrompt();
+                }
+            }
+        }
+    };
+
+    bool showConfirmDgl = confirmExistingFileSave();
+
+    // if the stage contains anonymous layers, you need to show the confirm dialog
+    // so the user can choose where to save the anonymous layers.
+    if (!showConfirmDgl) {
+         Serialization::StageLayersToSave StageLayersToSave;
+         auto& stageEntry = _sessionState->stageEntry();
+         Serialization::getLayersToSaveFromStage(
+             stageEntry._stage, stageEntry._dccObjectPath, StageLayersToSave);
+         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
+    }
+
+    // Show the save dialog for component stages (initial save) or if confirmation is needed
+    if (_sessionState
+        && UsdLayerEditor::shouldDisplayComponentInitialSaveDialog(
+            _sessionState->stageEntry()._stage, _sessionState->stageEntry()._dccObjectPath)) {
+        showConfirmDgl = true;
+    }
+
+    if (showConfirmDgl) {
+
+         bool             isExporting = false;
+         SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
+         if (QDialog::Accepted == dlg.exec()) {
+
+             if (!dlg.layersWithErrorPairs().isEmpty()) {
+                 const QStringList& errors = dlg.layersWithErrorPairs();
+                 std::string       resultMsg;
+                 for (int i = 0; i < errors.length() - 1; i += 2) {
+                     std::string errorMsg;
+                     errorMsg = String::format(
+                         
+                             StringResources::kSaveAnonymousLayersErrors.value,
+                         errors[i].toStdString(),
+                         errors[i + 1].toStdString());
+                     resultMsg += errorMsg + "\n";
+                 }
+
+                 UIUtils::displayError(resultMsg);
+
+                 warningDialog(
+                     StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
+                     StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
+             } else {
+                 saveAllLayers();
+             }
+         }
+    } else {
+        saveAllLayers();
+    }
+}
+
+void LayerTreeModel::reloadComponent(QWidget* /*in_parent*/)
+{
+    if (!_sessionState) {
+        return;
+    }
+    if (UsdLayerEditor::isUnsavedComponent(_sessionState->stage())) {
+        return;
+    }
+    UsdLayerEditor::reloadComponent(_sessionState->stageEntry()._dccObjectPath);
+}
+
+std::string LayerTreeModel::findNameForNewAnonymousLayer() const
+{
+    const std::string prefix = "anonymousLayer";
+    size_t            prefix_len = prefix.size();
+    int               largest = _lastAskedAnonLayerNameSinceRebuild;
+    int               suffix_int;
+    std::string       name, suffix_string;
+
+    // find the largest number we have
+    const auto allItems = getAllItems();
+    for (const auto& item : allItems) {
+        name = item->displayName();
+        if (name.compare(0, prefix_len, prefix) == 0) {
+            suffix_string = name.substr(prefix_len);
+            suffix_int = std::stoi(suffix_string);
+            if (suffix_int > largest)
+                largest = suffix_int;
+        }
+    }
+
+    _lastAskedAnonLayerNameSinceRebuild = largest + 1;
+    return prefix + std::to_string(largest + 1);
+}
+
+void LayerTreeModel::toggleMuteLayer(LayerTreeItem* item, bool* forcedState)
+{
+    if (item->isInvalidLayer() || !item->isSublayer())
+        return;
+
+    if (forcedState) {
+        if (*forcedState == item->isMuted())
+            return;
+    }
+
+    _sessionState->commandHook()->muteSubLayer(item->layer(), !item->isMuted());
+}
+
+void LayerTreeModel::toggleLockLayer(
+    LayerTreeItem* item,
+    bool           includeSublayers,
+    bool*          forcedState /*= nullptr*/)
+{
+    if (item->isInvalidLayer() || item->isSessionLayer() || item->isSystemLocked())
+        return;
+
+    if (forcedState) {
+        if (*forcedState == item->isLocked())
+            return;
+    }
+
+    LayerLockType toggledLockType
+        = item->isLocked() ? LayerLockType::LayerLock_Unlocked : LayerLockType::LayerLock_Locked;
+    _sessionState->commandHook()->lockLayer(item->layer(), toggledLockType, includeSublayers);
+}
+
+} // namespace UsdLayerEditor
