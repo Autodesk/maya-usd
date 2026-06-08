@@ -516,7 +516,7 @@ global proc mayaUsdMenu_windowMenuCallback() {
             -runTimeCommand mayaUsdOpenUsdLayerEditor
             wmUsdLayerEditorMenuitem`;
 
-        if (`exists mayaUsdCompositionEditor`) {
+        if (`runTimeCommand -exists mayaUsdOpenCompositionEditor`) {
             menuItem
                 -enableCommandRepeat false
                 -runTimeCommand mayaUsdOpenCompositionEditor

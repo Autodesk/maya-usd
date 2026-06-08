@@ -100,14 +100,11 @@ public:
         }
     }
 
-    float uiScale() const override { return MQtUtil::dpiScale(1.0f); }
-
     int pm(const PixelMetric& metric) const override
     {
-        const float scale = uiScale();
         switch (metric) {
-        case PixelMetric::OuterMargin: return static_cast<int>(6 * scale);
-        case PixelMetric::ContentMargin: return static_cast<int>(4 * scale);
+        case PixelMetric::OuterMargin: return MQtUtil::dpiScale(6);
+        case PixelMetric::ContentMargin: return MQtUtil::dpiScale(4);
         }
         return 0;
     }

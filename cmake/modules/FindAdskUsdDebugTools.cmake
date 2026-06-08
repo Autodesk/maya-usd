@@ -8,10 +8,6 @@
 
 message(STATUS "Finding Autodesk USD Debug Tools")
 
-if(DEFINED ENV{ADSK_USD_DEBUG_TOOLS_ROOT_DIR})
-    set(ADSK_USD_DEBUG_TOOLS_ROOT_DIR $ENV{ADSK_USD_DEBUG_TOOLS_ROOT_DIR})
-endif()
-
 ############################################################################
 #
 # C++ headers
@@ -84,6 +80,8 @@ find_package_handle_standard_args(AdskUsdDebugTools
         ADSK_USD_DEBUG_TOOLS_INCLUDE_DIR
         ADSK_USD_DEBUG_TOOLS_CORE_LIBRARY
         ADSK_USD_DEBUG_TOOLS_UI_LIBRARY
+    VERSION_VAR
+        ADSK_USD_DEBUG_TOOLS_VERSION
 )
 
 # Report to the user where the package was found.
