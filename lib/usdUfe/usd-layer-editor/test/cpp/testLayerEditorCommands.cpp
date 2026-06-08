@@ -364,6 +364,30 @@ TEST_F(MuteLayerCmdTest, Undo_Unmute_RestoresMutedState)
     EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
 }
 
+// MuteLayerCmd must hold the layer before muting it (OpenUSD lets go of muted
+// layers), so the authored content of a dirty anonymous sublayer survives a
+// mute / unmute / undo / redo cycle.
+TEST_F(MuteLayerCmdTest, MuteUnmuteUndoRedo_PreservesDirtyLayerContent)
+{
+    const PXR_NS::SdfPath fooPath("/Foo");
+    PXR_NS::SdfPrimSpec::New(_layer, "Foo", PXR_NS::SdfSpecifierDef);
+    ASSERT_TRUE(_layer->GetPrimAtPath(fooPath));
+
+    auto cmd = std::make_shared<MuteLayerCmd>(_stage, _layer, /*muteIt=*/true);
+
+    cmd->execute(); // hold-before-mute, then mute
+    EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+    EXPECT_TRUE(_layer->GetPrimAtPath(fooPath)) << "muted dirty layer content must be retained";
+
+    cmd->undo(); // unmute, then release
+    EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+    EXPECT_TRUE(_layer->GetPrimAtPath(fooPath));
+
+    cmd->redo(); // re-hold, then re-mute
+    EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+    EXPECT_TRUE(_layer->GetPrimAtPath(fooPath)) << "content must survive a re-mute on redo";
+}
+
 // ============================================================================
 // Task 7: LockLayerCmd
 // ============================================================================

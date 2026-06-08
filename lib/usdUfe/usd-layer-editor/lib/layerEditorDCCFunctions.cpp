@@ -119,6 +119,12 @@ void openEditForwardDialog(const PXR_NS::UsdStageRefPtr& currentStage)
     if (registry().editForwarding.openEditForwardDialog)
         registry().editForwarding.openEditForwardDialog(currentStage);
 }
+bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return registry().editForwarding.handleEFEditTargetUpdate
+        ? registry().editForwarding.handleEFEditTargetUpdate(stage)
+        : false;
+}
 
 // ---- DCC object/stage queries ----
 bool isDccObjectStageIncoming(const std::string& dccObjectPath)

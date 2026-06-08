@@ -311,14 +311,14 @@ void SaveLayerPathRow::onOpenBrowser()
     const bool  optionvarExists = Options::optionVarExists(optionVarName);
     int         optionVarValue = 0;
     if (optionvarExists) {
-        optionVarValue = Options::optionVarExists(optionVarName);
+        optionVarValue = Options::optionVarIntValue(optionVarName);
         Options::setOptionVarValue(optionVarName, needToSaveAsRelative() ? 1 : 0);
     }
 
     // Run the UI and set the resulting path
     std::string absolutePath;
     if (SaveLayersDialog::saveLayerFilePathUI(absolutePath, parentLayerPath)) {
-        bool saveAsRelative = (optionvarExists && Options::optionVarExists(optionVarName) != 0);
+        bool saveAsRelative = (optionvarExists && Options::optionVarIntValue(optionVarName) != 0);
         setPathToSaveAs(absolutePath, saveAsRelative);
     }
 
@@ -470,20 +470,13 @@ SaveLayersDialog::SaveLayersDialog(
             dccObjectPath = UsdUfe::stagePath(info.stage).string();
         }
 
-        // Check if this stage is a component stage. The check is routed
-        // through the (no-op by default) SessionState hook so that the
-        // shared component picks up the Maya CC support when present and
-        // simply skips this branch in other DCCs.
-        // (No session state is attached to this bulk-save ctor — when there's
-        // no session state we still need a way to identify components, so the
-        // host should populate the dccObjectPath and we ask via... actually
-        // since _sessionState is nullptr for this ctor, we can't ask the
-        // session state. The Maya side of this code lived inside maya-usd
-        // and called MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog
-        // statically. We mirror that here only when we have a session state.)
+        // Check if this stage is a component stage. The check is routed through
+        // the DCC-functions registry, which returns false by default so DCCs
+        // without component support simply skip this branch. The accessor is a
+        // free function that reads the registry directly, so it works even in
+        // this bulk-save constructor where no SessionState is attached.
         const bool isComponent
-            = _sessionState
-            && UsdLayerEditor::shouldDisplayComponentInitialSaveDialog(info.stage, dccObjectPath);
+            = UsdLayerEditor::shouldDisplayComponentInitialSaveDialog(info.stage, dccObjectPath);
         if (isComponent) {
             StageSavingInfo componentInfo = info;
             componentInfo.dccObjectPath = dccObjectPath;
@@ -668,7 +661,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
     static const std::string kConfirmExistingFileSave
         = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
     const bool showFileOverrideSection = Options::optionVarExists(kConfirmExistingFileSave)
-        && Options::optionVarExists(kConfirmExistingFileSave) != 0;
+        && Options::optionVarIntValue(kConfirmExistingFileSave) != 0;
     if (showFileOverrideSection && haveFileBackedLayers) {
         auto fileLayout = new QVBoxLayout();
         fileLayout->setContentsMargins(margin, margin, margin, 0);

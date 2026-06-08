@@ -131,6 +131,14 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
                 [](bool checked) { UsdLayerEditor::setEchoEditForwarding(checked); });
             _actions._echoEditForwarding->setCheckable(true);
             _actions._echoEditForwarding->setChecked(UsdLayerEditor::echoEditForwarding());
+
+            auto configureEditForwardingAction = optionMenu->addAction(
+                StringResources::getAsQString(StringResources::kConfigureEditForwarding));
+            QObject::connect(
+                configureEditForwardingAction,
+                &QAction::triggered,
+                this,
+                &LayerEditorWidget::openEditForwardDialog);
         }
 
         // TODO LE-EXTRACT Maya-usd menus (auto-hide session layer / help menu)

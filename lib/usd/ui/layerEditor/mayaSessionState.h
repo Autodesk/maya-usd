@@ -35,6 +35,10 @@
 
 #include <vector>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+class MayaUsdEFFallbackTargetChangedNotice;
+#endif
+
 namespace UsdLayerEditor {
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -126,12 +130,22 @@ protected:
     void mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice);
     void mayaUsdStageResetCBOnIdle(StageEntry const& entry);
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // Bridges the edit-forward host's fallback-target-changed notice to the
+    // shared SessionState Qt signals so the layer editor refreshes its target
+    // highlight and the EF toggle button when forwarding state changes.
+    void usd_efFallbackTargetChanged(const MayaUsdEFFallbackTargetChangedNotice& notice);
+#endif
+
     void loadSelectedStage();
 
     std::vector<MCallbackId> _callbackIds;
     TfNotice::Key            _stageResetNoticeKey;
-    MayaCommandHook          _mayaCommandHook;
-    bool                     _inLoad = false;
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    TfNotice::Key _efFallbackTargetChangedNoticeKey;
+#endif
+    MayaCommandHook _mayaCommandHook;
+    bool            _inLoad = false;
 };
 
 } // namespace UsdLayerEditor
