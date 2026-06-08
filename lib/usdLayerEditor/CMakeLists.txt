@@ -14,12 +14,7 @@
 # limitations under the License.
 #
 
-# Top-level CMakeLists for the shared usd-layer-editor component
-# (DCC-agnostic). Built when BUILD_NEW_LAYER_EDITOR is ON.
+# Top-level CMakeLists for the shared usdLayerEditor component (DCC-agnostic).
 
 add_subdirectory(lib)
 add_subdirectory(python)
-
-if(BUILD_TESTS)
-    add_subdirectory(test)
-endif()

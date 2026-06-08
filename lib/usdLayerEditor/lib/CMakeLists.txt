@@ -14,9 +14,9 @@
 # limitations under the License.
 #
 
-# This CMakeLists is invoked from lib/usdUfe/CMakeLists.txt when
-# BUILD_NEW_LAYER_EDITOR is ON. Qt, UFE, USD and usdUfe are already
-# found/defined by the parent build — do not call find_package here.
+# This CMakeLists is invoked from lib/CMakeLists.txt.
+# Qt, UFE, USD and usdUfe are already found/defined by the parent build —
+# do not call find_package here.
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)

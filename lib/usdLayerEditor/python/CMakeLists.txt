@@ -19,10 +19,9 @@
 # adds an underscore to the package name when creating the Python extension
 # module initialization function (see Pixar's pyModule.h).
 #
-# This CMakeLists is invoked from lib/usdUfe/usd-layer-editor/CMakeLists.txt
-# when BUILD_NEW_LAYER_EDITOR is ON. Python, boost.python, UFE and USD are
-# already found/defined by the parent maya-usd build — do not call
-# find_package here.
+# This CMakeLists is invoked from lib/usdLayerEditor/CMakeLists.txt.
+# Python, boost.python, UFE and USD are already found/defined by the parent
+# maya-usd build — do not call find_package here.
 
 set(PACKAGE_NAME UsdLayerEditor)
 
