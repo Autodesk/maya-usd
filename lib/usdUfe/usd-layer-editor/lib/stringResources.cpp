@@ -18,9 +18,6 @@
 
 #include <QtCore/QString>
 
-// TODO LE-EXTRACT : String resources - Is this enough for maya-usd? Does the maya registration
-// matter?
-
 namespace UsdLayerEditor {
 namespace StringResources {
 

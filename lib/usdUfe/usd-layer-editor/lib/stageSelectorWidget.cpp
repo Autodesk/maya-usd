@@ -327,24 +327,6 @@ void StageSelectorWidget::selectedIndexChanged(int index)
     _internalChange = false;
 }
 
-// TODO LE-EXTRACT Handle maya proxy shape selection changed.
-// static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item)
-//{
-//     Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
-//     if (!hierarchy)
-//         return nullptr;
-//
-//     for (const auto& subItem : hierarchy->children()) {
-//         auto proxyShapePtr = MayaUsd::ufe::getProxyShape(subItem->path());
-//         if (!proxyShapePtr)
-//             continue;
-//
-//         return proxyShapePtr;
-//     }
-//
-//     return nullptr;
-// }
-
 void StageSelectorWidget::selectionChanged()
 {
     // When the stage selection is pinned, don't follow the selection.
@@ -364,27 +346,6 @@ void StageSelectorWidget::selectionChanged()
         return;
     }
     _dropDown->setCurrentIndex(index);
-
-    // TODO LE-EXTRACT Handle maya proxy shape selection changed.
-    // const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
-    // for (const auto& item : ufeSelection) {
-    //    auto proxyShapePtr = MayaUsd::ufe::getProxyShape(item->path());
-    //    if (!proxyShapePtr) {
-    //        proxyShapePtr = getChildProxyShape(item);
-    //        if (!proxyShapePtr) {
-    //            continue;
-    //        }
-    //    }
-
-    //    MFnDagNode        dagNode(proxyShapePtr->thisMObject());
-    //    const std::string id = dagNode.uuid().asString().asChar();
-    //    const int         index = getEntryIndexById(id, _sessionState->allStages());
-    //    if (index == -1)
-    //        continue;
-
-    //    _dropDown->setCurrentIndex(index);
-    //    break;
-    //}
 }
 
 void StageSelectorWidget::stagePinClicked()
