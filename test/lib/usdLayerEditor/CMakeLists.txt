@@ -17,19 +17,15 @@
 # C++ GTest suite for the shared usdLayerEditor component.
 add_subdirectory(cpp)
 
-# Maya-driven interactive Python test that runs the DCC-agnostic
-# layer_editor_test.py suite. Gated on BUILD_NEW_LAYER_EDITOR because it
-# requires the UsdLayerEditorLib Python bindings to be installed.
-if(BUILD_NEW_LAYER_EDITOR)
-    mayaUsd_get_unittest_target(target testMayaUsdSharedLayerEditor.py)
-    mayaUsd_add_test(${target}
-        INTERACTIVE
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        PYTHON_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/testMayaUsdSharedLayerEditor.py
-        ENV
-            "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
-            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-            "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}"
-    )
-    set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
-endif()
+# Maya-driven interactive Python test for the shared usdLayerEditor component.
+mayaUsd_get_unittest_target(target testMayaUsdSharedLayerEditor.py)
+mayaUsd_add_test(${target}
+    INTERACTIVE
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    PYTHON_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/testMayaUsdSharedLayerEditor.py
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}"
+)
+set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
