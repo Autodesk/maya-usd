@@ -34,9 +34,13 @@
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <stringResources.h>
 
+#include <layerLocking.h>
+
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 
 #include <mayaUsdUI/ui/editForwardDialog.h>
+
+#include <usdUfe/ufe/Utils.h>
 
 #include <AdskUsdEditForward/Host.h>
 #include <AdskUsdEditForward/StageRuleProvider.h>
@@ -173,6 +177,23 @@ void registerLayerEditorDCCFunctions()
         dialog->show();
         dialog->raise();
         dialog->activateWindow();
+    };
+    editForwarding.handleEFEditTargetUpdate = [](const UsdStageRefPtr& stage) -> bool {
+        auto controller = MayaUsdEditForwardController::GetForStage(stage);
+        if (!controller || !controller->isForwardingActive())
+            return false; // not forwarding: let normal auto-targeting run
+
+        // If edit forwarding is active and the fallback target is now locked, redirect the
+        // fallback to the session layer so unmatched edits still have a writable destination.
+        // The stage edit target itself is already the session layer in EF mode.
+        auto fallback = controller->fallbackTarget();
+        if (fallback && UsdLayerEditor::isLayerLocked(fallback)) {
+            std::string errMsg;
+            if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
+                controller->setFallbackTarget(stage->GetSessionLayer());
+            }
+        }
+        return true; // forwarding active: skip normal auto-targeting
     };
     setEditForwardingFns(editForwarding);
 #endif

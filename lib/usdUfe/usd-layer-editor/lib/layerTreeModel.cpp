@@ -282,7 +282,7 @@ void LayerTreeModel::setSessionState(SessionState* in_sessionState)
 
     connect(
         in_sessionState,
-        &SessionState::editForwardingFallbackTargetChangedSignal,
+        &SessionState::editForwardingFallbackTargetChanged,
         this,
         &LayerTreeModel::onEFFallbackTargetChanged);
 

@@ -262,9 +262,19 @@ LayerViewMemento::LayerViewMemento(const LayerTreeView& view, const LayerTreeMod
 
 void LayerViewMemento::preserve(const LayerTreeView& view, const LayerTreeModel& model)
 {
+    if (QScrollBar* hsb = view.horizontalScrollBar()) {
+        _horizontalScrollbarPosition = hsb->value();
+    }
+    if (QScrollBar* vsb = view.verticalScrollBar()) {
+        _verticalScrollbarPosition = vsb->value();
+    }
+
+    auto                  selectionModel = view.selectionModel();
     const LayerItemVector items = model.getAllItems();
     if (items.size() == 0)
         return;
+
+    auto currentIndex = selectionModel->currentIndex();
 
     for (const LayerTreeItem* item : items) {
         if (!item)
@@ -275,7 +285,9 @@ void LayerViewMemento::preserve(const LayerTreeView& view, const LayerTreeModel&
             continue;
 
         const ItemId    id = layer->GetIdentifier();
-        const ItemState state = { view.isExpanded(item->index()) };
+        const ItemState state = { view.isExpanded(item->index()),
+                                  selectionModel->isSelected(item->index()),
+                                  item->index() == currentIndex };
 
         _itemsState[id] = state;
     }
@@ -286,6 +298,9 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
     const LayerItemVector items = model.getAllItems();
 
     QtDisableRepaintUpdates disableUpdates(view);
+
+    QItemSelection* selection = nullptr;
+    const auto      selectionModel = view.selectionModel();
 
     for (const LayerTreeItem* item : items) {
         if (!item)
@@ -299,10 +314,38 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
             const auto   state = _itemsState.find(id);
             if (state != _itemsState.end()) {
                 expanded = state->second._expanded;
+                if (state->second._selected) {
+                    if (!selection) {
+                        selection = new QItemSelection();
+                    }
+                    selection->select(item->index(), item->index());
+                }
+                if (state->second._current) {
+                    selectionModel->setCurrentIndex(item->index(), QItemSelectionModel::NoUpdate);
+                }
             }
         }
 
         view.setExpanded(item->index(), expanded);
+    }
+
+    if (selection != nullptr) {
+        selectionModel->select(
+            *selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        delete selection;
+    }
+
+    if (QScrollBar* hsb = view.horizontalScrollBar()) {
+        if (hsb->value() != _horizontalScrollbarPosition) {
+            hsb->setValue(_horizontalScrollbarPosition);
+            hsb->valueChanged(_horizontalScrollbarPosition);
+        }
+    }
+    if (QScrollBar* vsb = view.verticalScrollBar()) {
+        if (vsb->value() != _verticalScrollbarPosition) {
+            vsb->setValue(_verticalScrollbarPosition);
+            vsb->valueChanged(_verticalScrollbarPosition);
+        }
     }
 }
 

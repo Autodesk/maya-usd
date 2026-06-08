@@ -16,6 +16,8 @@
 
 #include "LayerEditorCommands.h"
 
+#include "layerEditorDCCFunctions.h"
+#include "layerLocking.h"
 #include "layerMuting.h"
 #include "utilFileSystem.h"
 #include "utilUI.h"
@@ -111,7 +113,17 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
     if (!stage)
         return;
 
+    // Edit-forwarding integrations manage their own edit target: when forwarding is
+    // active they keep the stage edit target on the session layer and redirect the
+    // (possibly locked) fallback target. In that case skip the normal auto-targeting.
+    if (handleEFEditTargetUpdate(PXR_NS::UsdStageRefPtr(stage)))
+        return;
+
     if (stage->GetEditTarget().GetLayer() == stage->GetSessionLayer())
+        return;
+
+    // If the currently targeted layer isn't locked, we don't need to change it.
+    if (!isLayerLocked(stage->GetEditTarget().GetLayer()))
         return;
 
     // If there are no target-able layers, we set the target to session layer.
@@ -350,19 +362,25 @@ bool MuteLayerCmd::doIt(const SdfLayerHandle& layer)
     if (!stage)
         return false;
     if (_muteIt) {
+        // We prefer not holding to pointers needlessly, but we need to hold on
+        // to the muted layer. OpenUSD lets go of muted layers, so anonymous
+        // layers and any dirty children would be lost if not explicitly held on.
+        // This is done before really muting the layer to ensure no sublayer is
+        // gone after the mute change.
+        addMutedLayer(layer);
+
         // Muting a layer will cause all scene items under the proxy shape
         // to be stale.
         saveSelection();
         stage->MuteLayer(layer->GetIdentifier());
     } else {
         stage->UnmuteLayer(layer->GetIdentifier());
+
+        // We can release the now unmuted layer.
+        removeMutedLayer(layer);
+
         restoreSelection();
     }
-
-    // We prefer not holding to pointers needlessly, but we need to hold on
-    // to the muted layer. OpenUSD lets go of muted layers, so anonymous
-    // layers and any dirty children would be lost if not explicitly held on.
-    addMutedLayer(layer);
 
     updateEditTarget(stage);
 
@@ -376,16 +394,21 @@ bool MuteLayerCmd::undoIt(const SdfLayerHandle& layer)
         return false;
     if (_muteIt) {
         stage->UnmuteLayer(layer->GetIdentifier());
+
+        // We can release the now unmuted layer.
+        removeMutedLayer(layer);
+
         restoreSelection();
     } else {
+        // Hold the layer before re-muting it, mirroring doIt (so no sublayer is
+        // gone after the mute change).
+        addMutedLayer(layer);
+
         // Muting a layer will cause all scene items under the proxy shape
         // to be stale.
         saveSelection();
         stage->MuteLayer(layer->GetIdentifier());
     }
-
-    // We can release the now unmuted layers.
-    removeMutedLayer(layer);
 
     updateEditTarget(stage);
 

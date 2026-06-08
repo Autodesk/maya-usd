@@ -16,8 +16,7 @@
 """Bind the DCC-agnostic UsdLayerEditorTest static hooks to Maya implementations.
 
 Mirrors the 3dsmax setup script (max_layer_editor_test_setup.py) so the same
-shared layer_editor_test.py suite can run in both DCCs. Tasks 7-9 of the
-USD Layer Editor migration plan.
+shared layer_editor_test.py suite can run in both DCCs.
 """
 
 from maya import cmds

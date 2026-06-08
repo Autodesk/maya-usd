@@ -140,7 +140,7 @@ Q_SIGNALS:
     // Emitted by DCC integrations when the EF state of the current stage changes.
     void editForwardingChanged();
     // Emitted by DCC integrations when the EF fallback target layer changes.
-    void editForwardingFallbackTargetChangedSignal();
+    void editForwardingFallbackTargetChanged();
 
 protected:
     StageEntry _currentStageEntry;

@@ -62,6 +62,8 @@ public:
     struct ItemState
     {
         bool _expanded = false;
+        bool _selected = false;
+        bool _current = false;
     };
 
     std::map<ItemId, ItemState> getItemsState() { return _itemsState; }
@@ -69,6 +71,8 @@ public:
 
 private:
     std::map<ItemId, ItemState> _itemsState;
+    int                         _horizontalScrollbarPosition { 0 };
+    int                         _verticalScrollbarPosition { 0 };
 };
 
 /**

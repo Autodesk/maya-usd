@@ -231,6 +231,10 @@ void MayaSessionState::registerNotifications()
 
     TfWeakPtr<MayaSessionState> me(this);
     _stageResetNoticeKey = TfNotice::Register(me, &MayaSessionState::mayaUsdStageReset);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    _efFallbackTargetChangedNoticeKey
+        = TfNotice::Register(me, &MayaSessionState::usd_efFallbackTargetChanged);
+#endif
 
     loadSelectedStage();
 }
@@ -247,6 +251,9 @@ void MayaSessionState::unregisterNotifications()
     _callbackIds.clear();
 
     TfNotice::Revoke(_stageResetNoticeKey);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    TfNotice::Revoke(_efFallbackTargetChangedNoticeKey);
+#endif
 }
 
 void MayaSessionState::refreshCurrentStageEntry()
@@ -537,6 +544,19 @@ PXR_NS::SdfLayerRefPtr MayaSessionState::effectiveTargetLayer() const
         }
     }
     return targetLayer();
+}
+
+void MayaSessionState::usd_efFallbackTargetChanged(
+    const MayaUsdEFFallbackTargetChangedNotice& notice)
+{
+    if (notice.GetStage() != stage())
+        return;
+
+    // The notice fires while the edit-forward host is mutating the stage, so defer the
+    // emit to idle.
+    QTimer::singleShot(0, this, [this]() {
+        Q_EMIT editForwardingFallbackTargetChanged();
+    });
 }
 #endif
 
