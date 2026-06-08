@@ -48,7 +48,9 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-    std::function<void(std::string, std::string)> updateDCCObjectRootLayerFunction;
+    std::function<void(std::string, std::string, const PXR_NS::SdfLayerRefPtr&, bool)>
+        updateDCCObjectRootLayerFunction;
+    std::function<std::vector<PXR_NS::UsdStageCache*>()> getStageCachesFunction;
 }
 
 namespace UsdLayerEditor {
@@ -78,9 +80,15 @@ namespace Serialization {
     };
 
 
-void setUpdateDCCObjectRootLayerFunction(std::function<void(std::string, std::string)> updateFunction)
+void setUpdateDCCObjectRootLayerFunction(
+    std::function<void(std::string, std::string, const PXR_NS::SdfLayerRefPtr&, bool)> updateFunction)
 {
     updateDCCObjectRootLayerFunction = updateFunction;
+}
+
+void setGetStageCachesFunction(std::function<std::vector<PXR_NS::UsdStageCache*>()> getCachesFunction)
+{
+    getStageCachesFunction = getCachesFunction;
 }
 
 class RecursionDetector
@@ -179,6 +187,13 @@ void updateLockedLayers(
     }
 }
 
+std::vector<PXR_NS::UsdStageCache*> getStageCaches()
+{
+    if (getStageCachesFunction)
+        return getStageCachesFunction();
+    return { &PXR_NS::UsdUtilsStageCache::Get() };
+}
+
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
 {
     // Update all known stage caches managed by the Maya USD plugin that contained
@@ -191,18 +206,18 @@ void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::stri
         return;
     }
 
-    // TODO LE-EXTRACT : Maya has multiple stage caches, not just the global one.
-    // for (UsdStageCache& cache : UsdMayaStageCache::GetAllCaches()) {
-    auto&                        cache = pxr::UsdUtilsStageCache::Get();
-    std::vector<UsdStageRefPtr> stages = cache.FindAllMatching(originalLayer);
-    std::vector<UsdStageRefPtr> updatedStages;
-    for (auto& stage : stages) {
-        auto sessionLayer = stage->GetSessionLayer();
-        updatedStages.emplace_back(UsdStage::UsdStage::Open(newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone));
-        cache.Erase(stage);
-    }
-    for (auto& updatedStage : updatedStages) {
-        cache.Insert(updatedStage);
+    for (PXR_NS::UsdStageCache* cache : getStageCaches()) {
+        std::vector<UsdStageRefPtr> stages = cache->FindAllMatching(originalLayer);
+        std::vector<UsdStageRefPtr> updatedStages;
+        for (auto& stage : stages) {
+            auto sessionLayer = stage->GetSessionLayer();
+            updatedStages.emplace_back(
+                UsdStage::Open(newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone));
+            cache->Erase(stage);
+        }
+        for (auto& updatedStage : updatedStages) {
+            cache->Insert(updatedStage);
+        }
     }
 }
 
@@ -435,7 +450,7 @@ bool saveLayerWithFormat(
      // in the maya-usd codebase, they adjust the session layers in this function
      // however, in the max codebase, we do this in the callback function that is
      // provided to the `updateDCCObjectRootLayerFunction()`. 
-     //updateAllCachedStageWithLayer(layer, filePath);
+     updateAllCachedStageWithLayer(layer, filePath);
 
     return true;
 }
@@ -468,7 +483,7 @@ void updateRootLayer(
     bool                          isTargetLayer)
 {
     if (updateDCCObjectRootLayerFunction)
-        updateDCCObjectRootLayerFunction(proxy, layerPath);
+        updateDCCObjectRootLayerFunction(proxy, layerPath, layer, isTargetLayer);
 }
 
  SdfLayerRefPtr saveAnonymousLayer(
@@ -520,8 +535,7 @@ void updateRootLayer(
 
     ensureUSDFileExtension(filePath);
 
-    // TODO LE-EXTRACT: double check how this was used in maya-usd when saying anon root layer
-    //const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
+    const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
 
     if (!saveLayerWithFormat(anonLayer, filePath, formatArg)) {
         TF_ERROR(FailedAnonLayerSave, "Failed to save layer '%s' to '%s'", anonLayer->GetDisplayName(), filePath);
@@ -570,7 +584,8 @@ void updateRootLayer(
         // if ever we support relative paths in the DCC, can return the relative path
         // i.e. "filePath" variable
         if (updateDCCObjectRootLayerFunction)
-            updateDCCObjectRootLayerFunction(parent._objectPath, pathInfo.absolutePath);
+            updateDCCObjectRootLayerFunction(
+                parent._objectPath, pathInfo.absolutePath, newLayer, wasTargetLayer);
     }
 
     updateTargetLayer(parent._objectPath, newLayer);
