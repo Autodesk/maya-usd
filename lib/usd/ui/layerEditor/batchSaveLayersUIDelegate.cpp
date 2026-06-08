@@ -32,10 +32,15 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h> // UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#include <pxr/base/tf/stringUtils.h> // TfStringPrintf
+#include <pxr/usd/usdGeom/tokens.h>
+
+#include <maya/MDistance.h>
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
@@ -75,6 +80,28 @@ void UsdLayerEditor::initialize()
             caches.push_back(&cache);
         return caches;
     });
+
+    UsdLayerEditor::Serialization::setLayerUpAxisAndUnitsFn(
+        [](const PXR_NS::SdfLayerRefPtr& layer) {
+            const PXR_NS::TfToken upAxis
+                = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
+            const double metersPerUnit
+                = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+            layer->SetField(
+                PXR_NS::SdfPath::AbsoluteRootPath(),
+                PXR_NS::UsdGeomTokens->metersPerUnit,
+                metersPerUnit);
+            layer->SetField(
+                PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
+        });
+
+    UsdLayerEditor::FileSystem::setPrepareLayerSaveUILayerFn(
+        [](const std::string& relativeAnchor) -> bool {
+            const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
+                                 "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
+            const std::string commandString = PXR_NS::TfStringPrintf(script, relativeAnchor.c_str());
+            return MGlobal::executePythonCommand(commandString.c_str());
+        });
 
     UsdLayerEditor::FileSystem::setFileWriteAccessFunction(
         [](const std::string& filePath) -> bool {

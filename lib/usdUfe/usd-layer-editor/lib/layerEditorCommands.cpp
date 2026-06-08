@@ -22,6 +22,7 @@
 #include "utilFileSystem.h"
 #include "utilUI.h"
 
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/usd/flattenUtils.h>
 #include <pxr/usd/usd/prim.h>
@@ -130,8 +131,7 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
     std::string errMsg;
     if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
 
-        // TODO LE-EXTRACT Error message when no available edit target.
-        // MPxCommand::displayInfo(errMsg.c_str());
+        TF_RUNTIME_ERROR("%s", errMsg.c_str());
         stage->SetEditTarget(stage->GetSessionLayer());
     }
 }

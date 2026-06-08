@@ -17,6 +17,7 @@
 #include "layerTreeItem.h"
 
 #include "abstractCommandHook.h"
+#include "layerEditorDCCFunctions.h"
 #include "layerLocking.h"
 #include "layerTreeModel.h"
 #include "loadLayersDialog.h"
@@ -27,7 +28,6 @@
 #include "tokens.h"
 #include "utilUI.h"
 #include "utilFileSystem.h"
-#include "utilOptions.h"
 #include "utilQT.h"
 #include "utilSerialization.h"
 #include "warningDialogs.h"
@@ -469,10 +469,7 @@ void LayerTreeItem::saveEdits()
 
     // the layer is already saved on disk.
     // ask the user a confirmation before overwrite it.
-    static const std::string kConfirmExistingFileSave
-        = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
-    const bool showConfirmDgl = Options::optionVarExists(kConfirmExistingFileSave)
-        && Options::optionVarIntValue(kConfirmExistingFileSave) != 0;
+    const bool showConfirmDgl = confirmExistingFileSave();
     if (showConfirmDgl && !isAnonymous()) {
         const std::string titleFormat = StringResources::kSaveLayerWarnTitle.value;
         const std::string msgFormat = StringResources::kSaveLayerWarnMsg.value;

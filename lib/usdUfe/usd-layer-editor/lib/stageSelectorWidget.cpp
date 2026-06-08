@@ -15,9 +15,9 @@
 //
 #include "stageSelectorWidget.h"
 
+#include "layerEditorDCCFunctions.h"
 #include "sessionState.h"
 #include "stringResources.h"
-#include "utilOptions.h"
 #include "utilQT.h"
 
 #include <pxr/pxr.h>
@@ -60,21 +60,9 @@ int getEntryIndexById(
     return getEntryIndexById(entry._id, stages);
 }
 
-bool loadStagePinnedOption()
-{
-    // TODO LE-EXTRACT Save/load pinned stage option.
-    return false;
-    // const std::wstring optionName = PXR_NS::MayaUsdOptionVars->PinLayerEditorStage.GetText();
-    // return OptionsUtils::optionVarExists(optionName)
-    //     && OptionsUtils::optionVarExists(optionName) != 0;
-}
+bool loadStagePinnedOption() { return UsdLayerEditor::getPinLayerEditorStage(); }
 
-void saveStagePinnedOption(bool isPinned)
-{
-    // TODO LE-EXTRACT Save/load pinned stage option.
-    // const std::wstring optionName = PXR_NS::MayaUsdOptionVars->PinLayerEditorStage.GetText();
-    // OptionsUtils::setOptionVarValue(optionName, isPinned ? 1 : 0);
-}
+void saveStagePinnedOption(bool isPinned) { UsdLayerEditor::setPinLayerEditorStage(isPinned); }
 
 //----------------------------------------------------------------------------------------------------------------------
 

@@ -16,11 +16,11 @@
 
 #include "utilSerialization.h"
 
+#include "layerEditorDCCFunctions.h"
 #include "layerLocking.h"
 #include "layerMuting.h"
 #include "tokens.h"
 #include "utilFileSystem.h"
-#include "utilOptions.h"
 
 #include <usdUfe/ufe/Utils.h>
 
@@ -51,6 +51,7 @@ namespace {
     std::function<void(std::string, std::string, const PXR_NS::SdfLayerRefPtr&, bool)>
         updateDCCObjectRootLayerFunction;
     std::function<std::vector<PXR_NS::UsdStageCache*>()> getStageCachesFunction;
+    std::function<void(const PXR_NS::SdfLayerRefPtr&)>    layerUpAxisAndUnitsFn;
 }
 
 namespace UsdLayerEditor {
@@ -89,6 +90,11 @@ void setUpdateDCCObjectRootLayerFunction(
 void setGetStageCachesFunction(std::function<std::vector<PXR_NS::UsdStageCache*>()> getCachesFunction)
 {
     getStageCachesFunction = getCachesFunction;
+}
+
+void setLayerUpAxisAndUnitsFn(std::function<void(const PXR_NS::SdfLayerRefPtr&)> fn)
+{
+    layerUpAxisAndUnitsFn = fn;
 }
 
 class RecursionDetector
@@ -262,14 +268,7 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
 
 std::string usdFormatArgOption()
 {
-    static const std::string kSaveLayerFormatBinaryOption(
-        UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText());
-    bool binary = true;
-    if (Options::optionVarExists(kSaveLayerFormatBinaryOption)) {
-        binary = Options::optionVarIntValue(kSaveLayerFormatBinaryOption) != 0;
-    } else {
-        Options::setOptionVarValue(kSaveLayerFormatBinaryOption, 1);
-    }
+    const bool binary = getSaveLayerFormatBinary();
 #if PXR_VERSION >= 2511
     return binary ? PXR_NS::SdfUsdcFileFormatTokens->Id.GetText()
                   : PXR_NS::SdfUsdaFileFormatTokens->Id.GetText();
@@ -282,18 +281,10 @@ std::string usdFormatArgOption()
 /* static */
 USDUnsavedEditsOption serializeUsdEditsLocationOption()
 {
-    static const std::string kSerializedUsdEditsLocation(
-        UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText());
-
-    bool optVarExists = true;
-    int  saveOption = Options::optionVarIntValue(kSerializedUsdEditsLocation, optVarExists);
-
-    // Default is to save back to .usd files, set it to that if the optionVar doesn't exist yet.
-    // optionVar's are also just ints so make sure the value is a correct one.
-    // If we end up initializing the value then write it back to the optionVar itself.
-    if (!optVarExists || (saveOption < kSaveToUSDFiles || saveOption > kIgnoreUSDEdits)) {
+    int saveOption = getSerializedUsdEditsLocation();
+    if (saveOption < kSaveToUSDFiles || saveOption > kIgnoreUSDEdits) {
         saveOption = kSaveToUSDFiles;
-        Options::setOptionVarValue(kSerializedUsdEditsLocation, saveOption);
+        setSerializedUsdEditsLocation(saveOption);
     }
 
     if (saveOption == kSaveToSceneFile) {
@@ -395,26 +386,10 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
 
  void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
  {
-     if (!layer)
+     if (!layer || !layer->PermissionToEdit())
          return;
-
-     // Don't try to author the metadata on non-editable layers.
-     if (!layer->PermissionToEdit())
-         return;
-
-     //const PXR_NS::TfToken upAxis
-     //    = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
-     //const double metersPerUnit
-     //    = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
-     const PXR_NS::TfToken upAxis = PXR_NS::UsdGeomTokens->z;
-     const double metersPerUnit = 0.1;
-
-     // Note: code similar to what UsdGeomSetStageUpAxis -> UsdStage::SetMetadata end-up doing,
-     // but without having to have a stage. We basically set metadata on the virtual root object
-     // of the layer.
-     layer->SetField(
-         PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->metersPerUnit, metersPerUnit);
-     layer->SetField(PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
+     if (layerUpAxisAndUnitsFn)
+         layerUpAxisAndUnitsFn(layer);
  }
 
 bool saveLayerWithFormat(
@@ -446,10 +421,6 @@ bool saveLayerWithFormat(
          }
      }
 
-     //TODO LE-EXTRACT: MIGHT NEED TO use this with cache updating approach.
-     // in the maya-usd codebase, they adjust the session layers in this function
-     // however, in the max codebase, we do this in the callback function that is
-     // provided to the `updateDCCObjectRootLayerFunction()`. 
      updateAllCachedStageWithLayer(layer, filePath);
 
     return true;
@@ -525,13 +496,11 @@ void updateRootLayer(
         return nullptr;
     }
 
-    // TODO LE-EXTRACT: do a callback for DCCs to be able to provide these to the
-    //      layer-editor -- normally this should be set before saving
     // Only set up-axis and units metadata on the root layer
     // and only if it is anonymous before being saved.
-    //if (stage->GetRootLayer() == anonLayer) {
-    //    setLayerUpAxisAndUnits(anonLayer);
-    //}
+    if (stage->GetRootLayer() == anonLayer) {
+        setLayerUpAxisAndUnits(anonLayer);
+    }
 
     ensureUSDFileExtension(filePath);
 

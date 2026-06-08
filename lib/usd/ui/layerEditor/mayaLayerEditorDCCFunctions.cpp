@@ -16,6 +16,7 @@
 #include "mayaLayerEditorDCCFunctions.h"
 
 #include <layerEditorDCCFunctions.h>
+#include <tokens.h> // UsdLayerEditorOptionVars
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
@@ -147,6 +148,80 @@ void registerLayerEditorDCCFunctions()
         return getBooleanAttributeOnProxyShape(dccObjectPath, "shareStage");
     };
     setDccObjectFns(dccObject);
+
+    SaveOptionFns saveOption;
+    saveOption.requireUsdPathsRelativeToSceneFile = []() {
+        return MGlobal::optionVarExists("mayaUsd_MakePathRelativeToSceneFile")
+            && MGlobal::optionVarIntValue("mayaUsd_MakePathRelativeToSceneFile") != 0;
+    };
+    saveOption.requireUsdPathsRelativeToParentLayer = []() {
+        return MGlobal::optionVarExists("mayaUsd_MakePathRelativeToParentLayer")
+            && MGlobal::optionVarIntValue("mayaUsd_MakePathRelativeToParentLayer") != 0;
+    };
+    saveOption.requireUsdPathsRelativeToEditTargetLayer = []() {
+        return MGlobal::optionVarExists("mayaUsd_MakePathRelativeToEditTargetLayer")
+            && MGlobal::optionVarIntValue("mayaUsd_MakePathRelativeToEditTargetLayer") != 0;
+    };
+    saveOption.wantReferenceCompositionArc = []() {
+        return MGlobal::optionVarExists("mayaUsd_WantReferenceCompositionArc")
+            && MGlobal::optionVarIntValue("mayaUsd_WantReferenceCompositionArc") != 0;
+    };
+    saveOption.wantPrependCompositionArc = []() {
+        return MGlobal::optionVarExists("mayaUsd_WantPrependCompositionArc")
+            && MGlobal::optionVarIntValue("mayaUsd_WantPrependCompositionArc") != 0;
+    };
+    saveOption.wantPayloadLoaded = []() {
+        return MGlobal::optionVarExists("mayaUsd_WantPayloadLoaded")
+            && MGlobal::optionVarIntValue("mayaUsd_WantPayloadLoaded") != 0;
+    };
+    saveOption.getReferencedPrimPath = []() -> std::string {
+        if (!MGlobal::optionVarExists("mayaUsd_ReferencedPrimPath"))
+            return {};
+        return MGlobal::optionVarStringValue("mayaUsd_ReferencedPrimPath").asChar();
+    };
+    saveOption.setRequireUsdPathsRelativeToSceneFile
+        = [](bool v) { MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToSceneFile", v ? 1 : 0); };
+    saveOption.setRequireUsdPathsRelativeToParentLayer
+        = [](bool v) { MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToParentLayer", v ? 1 : 0); };
+    saveOption.confirmExistingFileSave = []() {
+        static const MString k = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
+        return !MGlobal::optionVarExists(k) || MGlobal::optionVarIntValue(k) != 0; // default true
+    };
+    saveOption.getSaveLayerFormatBinary = []() {
+        static const MString k = UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText();
+        return !MGlobal::optionVarExists(k) || MGlobal::optionVarIntValue(k) != 0; // default true
+    };
+    saveOption.setSaveLayerFormatBinary = [](bool v) {
+        static const MString k = UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText();
+        MGlobal::setOptionVarValue(k, v ? 1 : 0);
+    };
+    saveOption.getSerializedUsdEditsLocation = []() -> int {
+        static const MString k = UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText();
+        return MGlobal::optionVarExists(k) ? MGlobal::optionVarIntValue(k) : 1; // kSaveToUSDFiles
+    };
+    saveOption.setSerializedUsdEditsLocation = [](int v) {
+        static const MString k = UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText();
+        MGlobal::setOptionVarValue(k, v);
+    };
+    setSaveOptionFns(saveOption);
+
+    EnvironmentFns environment;
+    environment.getPinLayerEditorStage = []() {
+        static const MString k = UsdLayerEditorOptionVars->PinLayerEditorStage.GetText();
+        return MGlobal::optionVarExists(k) && MGlobal::optionVarIntValue(k) != 0;
+    };
+    environment.setPinLayerEditorStage = [](bool v) {
+        static const MString k = UsdLayerEditorOptionVars->PinLayerEditorStage.GetText();
+        MGlobal::setOptionVarValue(k, v ? 1 : 0);
+    };
+    environment.isInteractiveDCCSession
+        = []() { return MGlobal::mayaState() == MGlobal::kInteractive; };
+    environment.shouldExpandOrCollapseAll = []() {
+        int modifiers = 0;
+        MGlobal::executeCommand("getModifiers", modifiers);
+        return (modifiers % 2) != 0; // magic constant: SHIFT held
+    };
+    setEnvironmentFns(environment);
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
     EditForwardingFns editForwarding;

@@ -84,7 +84,6 @@ add_library(UsdLayerEditorLib SHARED
     usdSyntaxHighlighter.h
     utilFileSystem.cpp
     utilFileSystem.h
-    utilOptions.h
     utilQT.cpp
     utilQT.h
     utilSerialization.cpp

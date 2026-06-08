@@ -15,6 +15,8 @@
 //
 #include "utilFileSystem.h"
 
+#include "layerEditorDCCFunctions.h"
+
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
@@ -30,6 +32,7 @@ namespace {
 std::function<bool(std::string)> writeAccessCheckFunc;
 std::function<std::string()> dccSceneSaveLocationFunc;
 std::function<std::string()> dccWorkspaceSceneSaveLocationFunc;
+std::function<bool(const std::string&)> prepareLayerSaveUILayerFn;
 }
 
 namespace {
@@ -127,56 +130,6 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
     }
 
     return std::make_pair(relativePath.generic_string(), true);
-}
-
-std::string getPathRelativeToProject(const std::string& fileName)
-{
-    return {};
-    // TODO LE-EXTRACT Get path relative to DCC project.
-    // if (fileName.empty())
-    //    return {};
-
-    // const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
-    // if (projectPath.empty())
-    //     return {};
-
-    //// Note: we do *not* use filesystem function to attempt to make the
-    ////       path relative sinceit would succeed as long as both paths
-    ////       are on the same drive. We really only want to know if the
-    ////       project path is the prefix of the file path. Maya will
-    ////       preserve paths entered manually with relative folder ("..")
-    ////       by keping an absolute path with ".." embedded in them,
-    ////       so this works even in this situation.
-    // const auto pos = fileName.rfind(projectPath, 0);
-    // if (pos != 0)
-    //     return {};
-
-    // auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath);
-
-    // if (!relativePathAndSuccess.second)
-    //     return {};
-
-    // return relativePathAndSuccess.first;
-}
-
-std::string makeProjectRelatedPath(const std::string& fileName)
-{
-    return {};
-
-    // TODO LE-EXTRACT Relative patgh to DCC project.
-    /*const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
-    if (projectPath.empty())
-        return {};
-
-    // Attempt to create a relative path relative to the project folder.
-    // If that fails, we cannot create the project-relative path.
-    const auto pathAndSuccess = makePathRelativeTo(fileName, projectPath);
-    if (!pathAndSuccess.second)
-        return {};
-
-    // Make the path absolute but relative to the project folder. That is an absolute
-    // path that starts with the project path.
-    return appendPaths(projectPath, pathAndSuccess.first);*/
 }
 
 std::string
@@ -401,80 +354,42 @@ bool prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneF
 
 bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
 {
-    // TODO LE-EXTRACT Prepare save UI Layer.
-    /*   const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                        "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-
-   const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
-   return MGlobal::executePythonCommand(commandString.c_str());*/
-    return true;
+    if (!prepareLayerSaveUILayerFn)
+        return true;
+    return prepareLayerSaveUILayerFn(relativeAnchor);
 }
 
 bool requireUsdPathsRelativeToDCCSceneFile()
 {
-    // TODO LE-EXTRACT Get option : requireUsdPathsRelativeToMayaSceneFile
-    // static const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE =
-    // "mayaUsd_MakePathRelativeToSceneFile"; return
-    // MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
-    //     && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
-    return true;
+    return UsdLayerEditor::requireUsdPathsRelativeToSceneFile();
 }
 
 bool requireUsdPathsRelativeToParentLayer()
 {
-    // TODO LE-EXTRACT Get option : requireUsdPathsRelativeToParentLayer
-    // static const MString MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE
-    //    = "mayaUsd_MakePathRelativeToParentLayer";
-    // return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE)
-    //    && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE);
-    return true;
+    return UsdLayerEditor::requireUsdPathsRelativeToParentLayer();
 }
 
 bool requireUsdPathsRelativeToEditTargetLayer()
 {
-    // TODO LE-EXTRACT Get option : requireUsdPathsRelativeToEditTargetLayer
-    /*static const MString MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE
-    = "mayaUsd_MakePathRelativeToEditTargetLayer";
-    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE)
-    && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);*/
-    return true;
+    return UsdLayerEditor::requireUsdPathsRelativeToEditTargetLayer();
 }
 
-bool wantReferenceCompositionArc()
+bool wantReferenceCompositionArc() { return UsdLayerEditor::wantReferenceCompositionArc(); }
+
+bool wantPrependCompositionArc() { return UsdLayerEditor::wantPrependCompositionArc(); }
+
+bool wantPayloadLoaded() { return UsdLayerEditor::wantPayloadLoaded(); }
+
+std::string getReferencedPrimPath() { return UsdLayerEditor::getReferencedPrimPath(); }
+
+void setRequireUsdPathsRelativeToDCCSceneFile(bool value)
 {
-    // TODO LE-EXTRACT Get option : wantReferenceCompositionArc
-    // static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_WantReferenceCompositionArc";
-    // return MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC)
-    //     && MGlobal::optionVarIntValue(WANT_REFERENCE_COMPOSITION_ARC);
-    return false;
+    UsdLayerEditor::setRequireUsdPathsRelativeToSceneFile(value);
 }
 
-bool wantPrependCompositionArc()
+void setRequireUsdPathsRelativeToParentLayer(bool value)
 {
-    // TODO LE-EXTRACT Get option : wantPrependCompositionArc
-    /*static const MString WANT_PREPEND_COMPOSITION_ARC = "mayaUsd_WantPrependCompositionArc";
-    return MGlobal::optionVarExists(WANT_PREPEND_COMPOSITION_ARC)
-        && MGlobal::optionVarIntValue(WANT_PREPEND_COMPOSITION_ARC);*/
-    return true;
-}
-
-bool wantPayloadLoaded()
-{
-    // TODO LE-EXTRACT Get option : wantPayloadLoaded
-    // static const MString WANT_PAYLOAD_LOADED = "mayaUsd_WantPayloadLoaded";
-    // return MGlobal::optionVarExists(WANT_PAYLOAD_LOADED)
-    //     && MGlobal::optionVarIntValue(WANT_PAYLOAD_LOADED);
-    return true;
-}
-
-std::string getReferencedPrimPath()
-{
-    // TODO LE-EXTRACT Get option : getReferencedPrimPath
-    // static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_ReferencedPrimPath";
-    //   if (!MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC))
-    //       return {};
-    //   return MGlobal::optionVarStringValue(WANT_REFERENCE_COMPOSITION_ARC).asChar();
-    return {};
+    UsdLayerEditor::setRequireUsdPathsRelativeToParentLayer(value);
 }
 
 std::string getDCCWorkspaceScenesDir()
@@ -638,6 +553,11 @@ void setDCCSceneLocationFunc(std::function<std::string()> fn)
 void setDCCWorkspaceSceneLocationFunc(std::function<std::string()> fn)
 {
     dccWorkspaceSceneSaveLocationFunc = fn;
+}
+
+void setPrepareLayerSaveUILayerFn(std::function<bool(const std::string&)> fn)
+{
+    prepareLayerSaveUILayerFn = fn;
 }
 
 

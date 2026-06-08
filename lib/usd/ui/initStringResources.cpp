@@ -99,7 +99,6 @@ MStatus initStringResources()
     status = registerShared(kSaveStagesAndExport);
     status = registerShared(kSaveXStages);
     status = registerShared(kToSaveTheStageSaveAnonym);
-    status = registerShared(kToSaveStageFilesConfirm);
     status = registerShared(kToSaveTheStageSaveFiles);
     status = registerShared(kToExportTheStageSaveAnonym);
     status = registerShared(kToExportTheStageSaveFiles);

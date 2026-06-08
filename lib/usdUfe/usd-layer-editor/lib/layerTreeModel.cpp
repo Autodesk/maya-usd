@@ -24,7 +24,6 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 #include "tokens.h"
-#include "utilOptions.h"
 #include "utilSerialization.h"
 #include "utilString.h"
 #include "utilUI.h"
@@ -590,10 +589,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         }
     };
 
-    static const std::string kConfirmExistingFileSave
-        = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
-    bool showConfirmDgl = Options::optionVarExists(kConfirmExistingFileSave)
-        && Options::optionVarIntValue(kConfirmExistingFileSave) != 0;
+    bool showConfirmDgl = confirmExistingFileSave();
 
     // if the stage contains anonymous layers, you need to show the confirm dialog
     // so the user can choose where to save the anonymous layers.
