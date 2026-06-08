@@ -31,6 +31,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
@@ -56,14 +57,24 @@ void UsdLayerEditor::initialize()
         []() { return UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir(); });
 
     UsdLayerEditor::Serialization::setUpdateDCCObjectRootLayerFunction(
-        [](const std::string& proxyPath, const std::string& layerPath) {
+        [](const std::string&            proxyPath,
+           const std::string&            layerPath,
+           const PXR_NS::SdfLayerRefPtr& layer,
+           bool                          wasTargetLayer) {
             MayaUsd::utils::setNewProxyPath(
                 MString(proxyPath.c_str()),
                 MString(layerPath.c_str()),
                 MayaUsd::utils::kProxyPathFollowProxyShape,
-                nullptr,
-                false);
+                layer,
+                wasTargetLayer);
         });
+
+    UsdLayerEditor::Serialization::setGetStageCachesFunction([]() {
+        std::vector<PXR_NS::UsdStageCache*> caches;
+        for (PXR_NS::UsdStageCache& cache : UsdMayaStageCache::GetAllCaches())
+            caches.push_back(&cache);
+        return caches;
+    });
 
     UsdLayerEditor::FileSystem::setFileWriteAccessFunction(
         [](const std::string& filePath) -> bool {
