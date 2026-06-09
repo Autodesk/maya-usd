@@ -921,16 +921,21 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
             TF_RUNTIME_ERROR("Cannot find layer: %s", layerIdentifier.c_str());
             return false;
         }
-        if (!foundLayer->PermissionToEdit()) {
-            TF_WARN(
-                "Cannot update layer '%s' because it is locked.",
-                foundLayer->GetDisplayName().c_str());
-            hasProblems = true;
-        }
         layersByStrength.push_back(foundLayer);
     }
 
+    if (layersByStrength.empty()) {
+        TF_RUNTIME_ERROR("No valid layer found to stitch");
+        return false;
+    }
+
     const SdfLayerHandle strongestLayer = layersByStrength[0];
+    if (!strongestLayer->PermissionToEdit()) {
+        TF_WARN(
+            "Cannot merge into layer '%s' because it is locked.",
+            strongestLayer->GetDisplayName().c_str());
+        hasProblems = true;
+    }
 
     std::map<std::string, std::pair<SdfLayerHandle, std::string>> parentInfoByLayer;
     for (const auto& potentialParent : stageLayers) {
@@ -944,45 +949,58 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         }
     }
 
-    // Multiple selected weak layers may share the same parent, so batch removals by parent
-    // to avoid calling SetSubLayerPaths more than once per parent layer.
+    // Filter the layers to be merged, only keeping those that have unlocked parents.
+    //
+    // Keep a map of parent layers to their removed children because multiple
+    // selected weak layers may share the same parent, so batch removals by
+    // parent to avoid calling SetSubLayerPaths more than once per parent layer.
     std::map<std::string, std::vector<std::string>> removalsByParent;
-    for (size_t i = 1; i < layersByStrength.size(); ++i) {
-        const SdfLayerHandle& weakLayer = layersByStrength[i];
-        const std::string     weakLayerId = weakLayer->GetIdentifier();
+    {
+        SdfLayerHandleVector layersToBeMergedAndRemoved;
+        for (size_t i = 1; i < layersByStrength.size(); ++i) {
+            const SdfLayerHandle& weakLayer   = layersByStrength[i];
+            const std::string     weakLayerId = weakLayer->GetIdentifier();
 
-        const auto& it = parentInfoByLayer.find(weakLayerId);
-        if (it == parentInfoByLayer.end()) {
-            TF_WARN("Could not find parent for layer: %s", weakLayer->GetDisplayName().c_str());
-            hasProblems = true;
-            continue;
+            const auto& it = parentInfoByLayer.find(weakLayerId);
+            if (it == parentInfoByLayer.end()) {
+                TF_WARN(
+                    "Could not find parent for layer: %s", weakLayer->GetDisplayName().c_str());
+                hasProblems = true;
+                continue;
+            }
+
+            const SdfLayerHandle& parentLayer = it->second.first;
+            if (!parentLayer->PermissionToEdit()) {
+                TF_WARN(
+                    "Cannot merge layer '%s' because its parent '%s' is locked.",
+                    weakLayer->GetDisplayName().c_str(),
+                    parentLayer->GetDisplayName().c_str());
+                continue;
+            }
+
+            layersToBeMergedAndRemoved.push_back(weakLayer);
+            removalsByParent[parentLayer->GetIdentifier()].push_back(it->second.second);
         }
-
-        const SdfLayerHandle& parentLayer = it->second.first;
-        if (!parentLayer->PermissionToEdit()) {
-            TF_WARN(
-                "Cannot update layer '%s' because its parent '%s' is locked.",
-                weakLayer->GetDisplayName().c_str(),
-                parentLayer->GetDisplayName().c_str());
-            hasProblems = true;
-            continue;
-        }
-
-        removalsByParent[parentLayer->GetIdentifier()].push_back(it->second.second);
+        layersByStrength.swap(layersToBeMergedAndRemoved);
     }
 
     if (hasProblems)
         return false;
 
+    if (layersByStrength.empty()) {
+        TF_RUNTIME_ERROR("No valid layer found to stitch");
+        return false;
+    }
+
     holdOntoSubLayers(strongestLayer);
 
     // Keep a hold of references for all selected layers, needed for undo().
-    for (size_t i = 1; i < layersByStrength.size(); ++i)
-        _subLayersRefs.push_back(layersByStrength[i]);
+    for (auto& layer : layersByStrength)
+        _subLayersRefs.push_back(layer);
 
     UsdUfe::UsdUndoManager::instance().trackLayerStates(strongestLayer);
-    for (size_t i = 1; i < layersByStrength.size(); ++i)
-        UsdUfe::UsdUndoManager::instance().trackLayerStates(layersByStrength[i]);
+    for (auto& layer : layersByStrength)
+        UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
     for (const auto& entry : removalsByParent) {
         auto parentLayer = SdfLayer::Find(entry.first);
         if (parentLayer) {
@@ -994,9 +1012,8 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         UsdUfe::UsdUndoBlock undoBlock(&_undoItem);
 
         std::vector<std::vector<std::string>> movedSubLayers;
-        movedSubLayers.reserve(layersByStrength.size() - 1);
-        for (size_t i = 1; i < layersByStrength.size(); ++i) {
-            const SdfLayerHandle& weakLayer = layersByStrength[i];
+        movedSubLayers.reserve(layersByStrength.size());
+        for (auto& weakLayer : layersByStrength) {
             movedSubLayers.push_back(weakLayer->GetSubLayerPaths());
             UsdUtilsStitchLayers(strongestLayer, weakLayer);
         }
@@ -1009,7 +1026,7 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
 
         // Creates a set of the added subLayers, prevent duplicates.
         std::set<std::string> addedSublayerIds;
-        for (const auto path : strongLayerSubLayers) {
+        for (const auto& path : strongLayerSubLayers) {
             const auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
             if (existingLayer) {
                 addedSublayerIds.insert(existingLayer->GetIdentifier());
@@ -1033,8 +1050,8 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
 
         // Remove any merged weak layers from the sublayer list before setting, to prevent
         // them from being both stitched (merged) and referenced as subLayers.
-        for (size_t i = 1; i < layersByStrength.size(); ++i) {
-            const std::string weakLayerId = layersByStrength[i]->GetIdentifier();
+        for (const auto& weakLayer : layersByStrength) {
+            const std::string weakLayerId = weakLayer->GetIdentifier();
             const auto        it = std::find(
                 strongLayerSubLayers.begin(), strongLayerSubLayers.end(), weakLayerId);
             if (it != strongLayerSubLayers.end())
