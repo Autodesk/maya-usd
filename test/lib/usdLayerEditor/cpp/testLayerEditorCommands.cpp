@@ -823,17 +823,65 @@ TEST_F(StitchLayersCmdTest, Redo_RestitchesLayers)
         static_cast<size_t>(-1));
 }
 
-TEST_F(StitchLayersCmdTest, DoIt_ReturnsFalse_WhenAnyLayerIsLocked)
+TEST_F(StitchLayersCmdTest, DoIt_ReturnsFalse_WhenTargetLayerIsLocked)
 {
-    _weak->SetPermissionToEdit(false);
+    // Locking the merge target (strongest layer) aborts the entire operation.
+    _strong->SetPermissionToEdit(false);
     auto cmd = std::make_shared<StitchLayersCmd>(_stage, identifiers());
-    // Validation collects problems before modifying, so a locked layer aborts the
-    // command (doIt returns false → redo throws) with no changes.
     EXPECT_THROW(cmd->execute(), std::runtime_error);
     EXPECT_NE(
         _stage->GetRootLayer()->GetSubLayerPaths().Find(_weak->GetIdentifier()),
         static_cast<size_t>(-1));
-    _weak->SetPermissionToEdit(true);
+    _strong->SetPermissionToEdit(true);
+}
+
+TEST(StitchLayersCmdPartialMergeTest, DoIt_SkipsWeakWithLockedParent_MergesRest)
+{
+    // Stack: root → layerA → layerB
+    // Lock layerA so layerB's parent is locked.
+    // Expected: layerA merges into root (layerA's parent root is unlocked);
+    //           layerB is skipped (its parent layerA is locked).
+    auto stage  = PXR_NS::UsdStage::CreateInMemory();
+    auto root   = stage->GetRootLayer();
+    auto layerA = PXR_NS::SdfLayer::CreateAnonymous("A");
+    auto layerB = PXR_NS::SdfLayer::CreateAnonymous("B");
+
+    root->InsertSubLayerPath(layerA->GetIdentifier(), 0);
+    layerA->InsertSubLayerPath(layerB->GetIdentifier(), 0);
+
+    PXR_NS::SdfPrimSpec::New(layerA, "FromA", PXR_NS::SdfSpecifierDef);
+    PXR_NS::SdfPrimSpec::New(layerB, "FromB", PXR_NS::SdfSpecifierDef);
+
+    layerA->SetPermissionToEdit(false);
+
+    auto cmd = std::make_shared<StitchLayersCmd>(
+        stage,
+        std::vector<std::string> {
+            root->GetIdentifier(),
+            layerA->GetIdentifier(),
+            layerB->GetIdentifier() });
+
+    // Should succeed (partial merge, not a hard failure).
+    EXPECT_NO_THROW(cmd->execute());
+
+    // layerA's content was merged into root.
+    EXPECT_TRUE(root->GetPrimAtPath(PXR_NS::SdfPath("/FromA")));
+    // layerB was skipped — its content did not reach root.
+    EXPECT_FALSE(root->GetPrimAtPath(PXR_NS::SdfPath("/FromB")));
+    // layerA was removed from root's sublayers.
+    EXPECT_EQ(
+        root->GetSubLayerPaths().Find(layerA->GetIdentifier()),
+        static_cast<size_t>(-1));
+    // layerB is still a sublayer of layerA (unchanged).
+    EXPECT_NE(
+        layerA->GetSubLayerPaths().Find(layerB->GetIdentifier()),
+        static_cast<size_t>(-1));
+    // layerB was adopted by root as a sublayer (inherited from merged layerA).
+    EXPECT_NE(
+        root->GetSubLayerPaths().Find(layerB->GetIdentifier()),
+        static_cast<size_t>(-1));
+
+    layerA->SetPermissionToEdit(true);
 }
 
 // ============================================================================
