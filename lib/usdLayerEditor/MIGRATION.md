@@ -53,6 +53,17 @@ The shared component was physically relocated from `lib/usdUfe/usd-layer-editor/
 
 | Commit | Description | Group | Status | Notes |
 |--------|-------------|-------|--------|-------|
+| c80f6b979 | Merge PR EMSUSD-3465/Adds-Help-Action-Functor | skip | skip | Merge commit |
+| 019b697fc | Merge PR EMSUSD-3785/merge-layers-behavior | skip | skip | Merge commit |
+| df58974aa | EMSUSD-3785 fix MacOS compilation | bug-fix | ported | Folded into StitchLayersCmd::doIt port — macOS `const auto&` fix in strong-layer dedup loop |
+| fb8d05a55 | EMSUSD-3785 fix problems raised in code review | bug-fix | ported | Folded into StitchLayersCmd::doIt port — warning text and `TF_RUNTIME_ERROR` text tweaks |
+| b17ef074c | EMSUSD-3785 fix merging layer with locked parents | bug-fix | ported | StitchLayersCmd::doIt: only abort if strongest layer is locked; skip weak layers with locked parents instead of failing; range-based downstream loops |
+| a945ac9f6 | Merge remote-tracking branch github/dev into EMSUSD-3465 | skip | skip | Merge commit |
+| 56d8cf0f8 | Asset Resolver: Added a help link | maya-only | maya-only | Touches only AssetResolverApplicationHost — no shared layer editor counterpart |
+| d1012a7a7 | Merge PR fix_layer_editor_variable_expression_evaluation | skip | skip | Merge commit |
+| 1b11579b4 | LayerEditor: fix dangling-reference GCC warning | bug-fix | ported | Folded into variable expression port — `const auto` (not ref) for `stageRootLayerStack` |
+| cba7f8261 | Asset Resolver: Added a help link | maya-only | maya-only | Touches only AssetResolverApplicationHost — no shared layer editor counterpart |
+| 067b37210 | LayerEditor: fix variable expression sublayer evaluation | bug-fix | ported | layerTreeItem.cpp populateChildren: use PCP layer stack composed expression variables (single pass) instead of two-pass root/session evaluation |
 | 09e726da | Use a notice for fallback layer changes | bug-fix | ported | Shared: replaced TfNotice (MayaUsdEFFallbackTargetChangedNotice) with `SessionState::editForwardingFallbackTargetChangedSignal` Qt signal; `LayerTreeModel::onEFFallbackTargetChanged()` slot calls `updateTargetLayer(InRebuildModel::No)`. Maya side emits the signal from `MayaUsdEditForwardHost`. |
 | fef072da | Edit Forward Mode In Layer Editor | ef-banner | ported | Shared: removed EF banner (`_editForwardBanner`, TfNotice plumbing, `updateEditForwardBanner`, `onLayerChanged`); added `_toggleEFButton` runtime-guarded by `supportsEditForwarding()`; `openEditForwardDialog()` no-op stub; `updateButtons()` sets `ef_on`/`ef_default` stylesheet; `isEditForwardMode()` + `effectiveTargetLayer()` virtuals on `SessionState`; `kToggleEditForwarding` string (replaces `kEditForwardBanner`); `setEditTarget()` no longer calls `updateTargetLayer()` for EF mode. |
 | dc3f8a01 | Unify lock fallback behavior, add comments | maya-only | maya-only | Only touches `mayaSessionState.cpp` (EF mode lock fallback logic). No shared counterpart. |
