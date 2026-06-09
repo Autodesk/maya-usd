@@ -16,25 +16,14 @@
 
 #include "utilUI.h"
 
-#include <filesystem>
-#include <string>
-
-namespace {
-    std::function<void(std::string)> errorDisplayCallbackFunction;
-}
+#include "layerEditorDCCFunctions.h"
 
 namespace UsdLayerEditor {
 namespace UIUtils {
 
-void setErrorDisplayCallbackFunction(std::function<void(std::string)> errorFunction)
-{
-    errorDisplayCallbackFunction = errorFunction;
-}
-
 void displayError(const std::string& error)
 {
-    if (errorDisplayCallbackFunction)
-        errorDisplayCallbackFunction(error);
+    UsdLayerEditor::displayError(error);
 }
 
 int dpiScale(int pixel) { return pixel; }

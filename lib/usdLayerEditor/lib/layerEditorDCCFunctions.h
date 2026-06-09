@@ -65,6 +65,7 @@ struct ComponentFns
     MoveComponentFn                           moveComponent;
     PreviewComponentSaveFn                    previewComponentSave;
     GetComponentLayersToSaveFn                getComponentLayersToSave;
+    std::function<void(const std::string&)>   displayError; // no-op when unset
 };
 
 struct EditForwardingFns
@@ -144,6 +145,7 @@ moveComponent(const std::string&, const std::string&, const std::string&);
 LayerEditorAPI std::string
 previewComponentSave(const std::string&, const std::string&, const std::string&);
 LayerEditorAPI std::vector<std::string> getComponentLayersToSave(const std::string&);
+LayerEditorAPI void                     displayError(const std::string&);
 
 LayerEditorAPI bool supportsEditForwarding();
 LayerEditorAPI bool echoEditForwarding();

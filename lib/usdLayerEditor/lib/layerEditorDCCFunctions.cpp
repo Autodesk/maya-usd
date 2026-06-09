@@ -97,6 +97,11 @@ std::vector<std::string> getComponentLayersToSave(const std::string& dccObjectPa
         ? registry().component.getComponentLayersToSave(dccObjectPath)
         : std::vector<std::string> {};
 }
+void displayError(const std::string& error)
+{
+    if (registry().component.displayError)
+        registry().component.displayError(error);
+}
 
 // ---- Edit Forwarding ----
 bool supportsEditForwarding()

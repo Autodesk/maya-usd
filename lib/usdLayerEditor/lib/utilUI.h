@@ -19,13 +19,10 @@
 
 #include "layerEditorAPI.h"
 
-#include <functional>
 #include <string>
 
 namespace UsdLayerEditor {
 namespace UIUtils {
-
-LayerEditorAPI void setErrorDisplayCallbackFunction(std::function<void(std::string)> errorFunction);
 
 void displayError(const std::string& error);
 
