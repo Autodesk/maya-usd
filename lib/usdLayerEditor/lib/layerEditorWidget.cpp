@@ -626,6 +626,13 @@ void LayerEditorWidget::selectLayers(const std::vector<std::string>& layerIdenti
     // clear selection first
     selectionModel->clearSelection();
 
+    if (layerIdentifiers.empty()) {
+        // Also clear the current index so getSelectedLayerItems() doesn't
+        // return it via the "currentIndex not in selection" fallback path.
+        selectionModel->setCurrentIndex(QModelIndex(), QItemSelectionModel::NoUpdate);
+        return;
+    }
+
     // apply selection if layer exists in stage
     QItemSelection* selection = nullptr;
     for (const auto& layerId : layerIdentifiers) {

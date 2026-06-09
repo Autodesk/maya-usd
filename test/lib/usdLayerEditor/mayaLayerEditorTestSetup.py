@@ -27,6 +27,12 @@ import mayaUsd_createStageWithNewLayer
 from layer_editor_test import UsdLayerEditorTest
 
 
+# Per-test undo/redo stacks for UsdLayerEditor commands.  resetScene() clears
+# them so each test starts with a clean slate.
+_undo_stack = []
+_redo_stack = []
+
+
 def _newScene():
     """Reset the Maya scene and ensure the mayaUsd plugin is loaded."""
     cmds.file(new=True, force=True)
@@ -43,9 +49,17 @@ def _createProxyFromFile(filePath):
     cmds.createNode('mayaUsdProxyShape', name='stageShape')
     shapeNode = cmds.ls(sl=True, l=True)[0]
     cmds.setAttr('{}.filePath'.format(shapeNode), filePath, type='string')
+    # Force Maya to evaluate the proxy shape so the stage and its full layer
+    # stack are populated before the test accesses them.
+    cmds.refresh(force=True)
     stage = _stageFromShape(shapeNode)
     cmds.select(clear=True)
     cmds.connectAttr('time1.outTime', '{}.time'.format(shapeNode))
+    # Second refresh so UsdStageMap registers the wired proxy shape; without
+    # this, UsdUfe::stagePath(stage) returns an empty path and
+    # usdUfe.getStage(objectPath) returns None inside onRefreshSystemLock
+    # callbacks.
+    cmds.refresh(force=True)
     return shapeNode, stage
 
 
@@ -59,6 +73,9 @@ def createStage(rootFile):
     _newScene()
     if rootFile:
         _shapePath, stage = _createProxyFromFile(rootFile)
+        # Reload from disk so any in-memory modifications from a previous stage
+        # that shared the same SdfLayer (same file path) don't carry over.
+        stage.Reload()
     else:
         shapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         stage = _stageFromShape(shapePath)
@@ -66,31 +83,40 @@ def createStage(rootFile):
 
 
 def resetScene():
+    _undo_stack.clear()
+    _redo_stack.clear()
     _newScene()
 
 
 def undo():
-    cmds.undo()
+    if _undo_stack:
+        cmd = _undo_stack.pop()
+        cmd.undo()
+        _redo_stack.append(cmd)
 
 
 def redo():
-    cmds.redo()
+    if _redo_stack:
+        cmd = _redo_stack.pop()
+        cmd.redo()
+        _undo_stack.append(cmd)
 
 
 def executeCmd(cmd):
-    """Execute a UsdLayerEditor command in Maya.
+    """Execute a UsdLayerEditor command and push it onto the local undo stack.
 
-    UsdLayerEditor's command classes are bound with boost.python while UFE is
-    bound with pybind11, so the commands can't cross into
-    ``ufe.UndoableCommandMgr.executeCmd()``. Wrap a direct ``cmd.execute()``
-    in a Maya undo chunk so the operation participates in MEL undo via
-    whatever MEL/MPx commands the C++ implementation issues.
+    UsdLayerEditor commands are Boost.Python-bound and cannot be passed to
+    ufe.UndoableCommandMgr (pybind11).  Since the commands expose undo()/redo()
+    directly, we manage the stack ourselves rather than going through Maya's MEL
+    undo machinery.
     """
-    cmds.undoInfo(openChunk=True)
-    try:
-        cmd.execute()
-    finally:
-        cmds.undoInfo(closeChunk=True)
+    cmd.execute()
+    _undo_stack.append(cmd)
+    _redo_stack.clear()
+    # Process pending Qt timer events (e.g. async layer-tree model rebuilds)
+    # so the UI is up to date before the test makes assertions.
+    if cmds.window('mayaUsdLayerEditor', exists=True):
+        cmds.refresh(force=True)
 
 
 def openStageLayerEditor(rootFile):
@@ -117,6 +143,19 @@ def openStageLayerEditor(rootFile):
 
 def setup():
     """Install the Maya implementations into ``UsdLayerEditorTest``."""
+    # usdUfe.getStage() expects a path without the |world prefix, but
+    # Ufe::Path::string() (used in C++ callbacks) includes it. Patch getStage
+    # so callbacks that receive objectPath from C++ work correctly in Maya.
+    import usdUfe
+    _orig_getStage = usdUfe.getStage
+
+    def _maya_getStage(objectPath):
+        if objectPath and objectPath.startswith('|world'):
+            objectPath = objectPath[len('|world'):]
+        return _orig_getStage(objectPath)
+
+    usdUfe.getStage = _maya_getStage
+
     UsdLayerEditorTest._createStage = staticmethod(createStage)
     UsdLayerEditorTest._resetScene = staticmethod(resetScene)
     UsdLayerEditorTest._undo = staticmethod(undo)

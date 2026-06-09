@@ -33,7 +33,8 @@ void setErrorDisplayCallbackFunction(std::function<void(std::string)> errorFunct
 
 void displayError(const std::string& error)
 {
-    errorDisplayCallbackFunction(error);
+    if (errorDisplayCallbackFunction)
+        errorDisplayCallbackFunction(error);
 }
 
 int dpiScale(int pixel) { return pixel; }
