@@ -37,7 +37,11 @@
 #include <pxr/usd/sdf/layerUtils.h>
 
 #if PXR_VERSION >= 2308
+#include <pxr/usd/pcp/expressionVariables.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/pcp/primIndex.h>
 #include <pxr/usd/sdf/variableExpression.h>
+#include <pxr/usd/usd/prim.h>
 #endif
 
 #include <algorithm>
@@ -161,32 +165,26 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
 
     for (auto const path : subPaths) {
 #if PXR_VERSION >= 2308
-        // Resolve any variable expressions in the path using the stage's expression variables
+        // Resolve any variable expressions in the path using the stage's expression variables,
+        // composed from root and session layer variables.
         std::string resolvedPath = path;
         if (_stage && SdfVariableExpression::IsExpression(path)) {
-            auto resolveExprVarsFromLayer = [](SdfVariableExpression& varExpr, SdfLayerRefPtr fromLayer, std::string& outPath) {
-                if (fromLayer && fromLayer->HasExpressionVariables()) {
-                    auto expressionVars = fromLayer->GetExpressionVariables();
-                    auto result = varExpr.Evaluate(expressionVars);
-                    if (result.errors.empty() && !result.value.IsEmpty()) {
-                        outPath = result.value.UncheckedGet<std::string>();
-                    }
+            const auto stageRootLayerStack
+                = _stage->GetPseudoRoot().GetPrimIndex().GetRootNode().GetLayerStack();
+
+            if (stageRootLayerStack) {
+                const auto& expressionVars
+                    = stageRootLayerStack->GetExpressionVariables().GetVariables();
+
+                const auto result
+                    = SdfVariableExpression(path).EvaluateTyped<std::string>(expressionVars);
+
+                if (result.errors.empty() && !result.value.IsEmpty()) {
+                    resolvedPath = result.value.UncheckedGet<std::string>();
                 }
-            };
-
-            SdfVariableExpression varExpr(path);
-            // Get the root layer's expression variables for resolution context
-            auto rootLayer = _stage->GetRootLayer();
-            resolveExprVarsFromLayer(varExpr, rootLayer, resolvedPath);
-
-            // Expression variables are composed across session layer and root
-            // layer of a stage. So we do another pass with the session layer
-            // to override/set the resolvedPath in case it is present in the
-            // session layer
-            auto sessionLayer = _stage->GetSessionLayer();
-            resolveExprVarsFromLayer(varExpr, sessionLayer, resolvedPath);
+            }
         }
-        
+
         std::string actualPath = SdfComputeAssetPathRelativeToLayer(_layer, resolvedPath);
         auto        subLayer = SdfLayer::FindOrOpen(actualPath);
 #else
