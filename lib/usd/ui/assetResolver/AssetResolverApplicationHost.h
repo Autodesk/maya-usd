@@ -41,7 +41,7 @@ public:
         const QString&       dir = QString(),
         QFileDialog::Options options = QFileDialog::ShowDirsOnly) const override;
 
-    virtual void showHelp(QWidget* parent = nullptr) const override;
+    void showHelp(QWidget* parent = nullptr) const;
 
 protected:
     AssetResolverApplicationHost(QObject* parent = nullptr);
