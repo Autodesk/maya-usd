@@ -16,7 +16,7 @@
 #include "LayerEditorCommands.h"
 #include "layerLocking.h"
 #include "layerMuting.h"
-#include "utilUI.h"
+#include "layerEditorDCCFunctions.h"
 
 #include <usdUfe/ufe/Utils.h>
 
@@ -179,9 +179,8 @@ class ReplaceSubPathCmdTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        // Register a no-op error display callback so that UIUtils::displayError
-        // does not throw std::bad_function_call when doIt() reports an error.
-        UIUtils::setErrorDisplayCallbackFunction([](std::string) {});
+        // Register a no-op displayError so commands can report errors without crashing.
+        { UsdLayerEditor::ComponentFns c; c.displayError = [](const std::string&){}; UsdLayerEditor::setComponentFns(c); }
 
         _parent = PXR_NS::SdfLayer::CreateAnonymous("parent");
         _layerA = PXR_NS::SdfLayer::CreateAnonymous("A");
@@ -192,7 +191,7 @@ protected:
     void TearDown() override
     {
         // Reset the error display callback to avoid leaking state into other tests.
-        UIUtils::setErrorDisplayCallbackFunction(nullptr);
+        UsdLayerEditor::setComponentFns(UsdLayerEditor::ComponentFns{});
     }
 
     PXR_NS::SdfLayerRefPtr _parent;
@@ -717,7 +716,7 @@ class FlattenLayerCmdTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        UIUtils::setErrorDisplayCallbackFunction([](std::string) {});
+        { UsdLayerEditor::ComponentFns c; c.displayError = [](const std::string&){}; UsdLayerEditor::setComponentFns(c); }
         _root = PXR_NS::SdfLayer::CreateAnonymous("flattenRoot");
         _sub  = PXR_NS::SdfLayer::CreateAnonymous("flattenSub");
         _root->InsertSubLayerPath(_sub->GetIdentifier(), 0);
@@ -725,7 +724,7 @@ protected:
         PXR_NS::SdfPrimSpec::New(_sub, "Foo", PXR_NS::SdfSpecifierDef);
     }
 
-    void TearDown() override { UIUtils::setErrorDisplayCallbackFunction(nullptr); }
+    void TearDown() override { UsdLayerEditor::setComponentFns(UsdLayerEditor::ComponentFns{}); }
 
     PXR_NS::SdfLayerRefPtr _root;
     PXR_NS::SdfLayerRefPtr _sub;
@@ -919,20 +918,20 @@ TEST_F(RefreshSystemLockLayerCmdTest, Redo_ReappliesSystemLock)
 
 TEST_F(InsertSubPathCmdTest, DoIt_ReturnsFalse_WhenIndexOutOfBounds)
 {
-    UIUtils::setErrorDisplayCallbackFunction([](std::string) {});
+    { UsdLayerEditor::ComponentFns c; c.displayError = [](const std::string&){}; UsdLayerEditor::setComponentFns(c); }
     auto cmd = std::make_shared<InsertSubPathCmd>(_stage, _parent, _sub->GetIdentifier(), 99);
     EXPECT_THROW(cmd->execute(), std::runtime_error);
     EXPECT_EQ(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
-    UIUtils::setErrorDisplayCallbackFunction(nullptr);
+    UsdLayerEditor::setComponentFns(UsdLayerEditor::ComponentFns{});
 }
 
 TEST_F(RemoveSubPathCmdTest, DoIt_ReturnsFalse_WhenIndexOutOfBounds)
 {
-    UIUtils::setErrorDisplayCallbackFunction([](std::string) {});
+    { UsdLayerEditor::ComponentFns c; c.displayError = [](const std::string&){}; UsdLayerEditor::setComponentFns(c); }
     auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 99);
     EXPECT_THROW(cmd->execute(), std::runtime_error);
     EXPECT_NE(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
-    UIUtils::setErrorDisplayCallbackFunction(nullptr);
+    UsdLayerEditor::setComponentFns(UsdLayerEditor::ComponentFns{});
 }
 
 TEST_F(MoveSubPathCmdTest, DoIt_ReturnsFalse_WhenSubPathNotFound)
