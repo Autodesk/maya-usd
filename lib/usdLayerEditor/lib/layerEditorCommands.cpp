@@ -123,16 +123,16 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
     if (stage->GetEditTarget().GetLayer() == stage->GetSessionLayer())
         return;
 
-    // If the currently targeted layer isn't locked, we don't need to change it.
-    if (!isLayerLocked(stage->GetEditTarget().GetLayer()))
+    // If the currently targeted layer is still editable (neither user-locked nor
+    // system-locked), we don't need to change the edit target.
+    if (stage->GetEditTarget().GetLayer()->PermissionToEdit())
         return;
 
     // If there are no target-able layers, we set the target to session layer.
     std::string errMsg;
     if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
-
-        TF_RUNTIME_ERROR("%s", errMsg.c_str());
         stage->SetEditTarget(stage->GetSessionLayer());
+        UIUtils::displayError(errMsg);
     }
 }
 
