@@ -150,3 +150,11 @@ QString AssetResolverApplicationHost::getExistingDirectory(
     MString filePath = MGlobal::executeCommandStringResult(commandString);
     return MQtUtil::toQString(filePath);
 }
+
+void AssetResolverApplicationHost::showHelp(QWidget* parent /*= nullptr*/) const
+{
+    MString helpLinkId = "MayaUsdAssetResolver";
+    MString cmd;
+    cmd.format("from mayaUsdUtils import showHelpMayaUSD; showHelpMayaUSD('^1s');", helpLinkId);
+    MGlobal::executePythonCommand(cmd);
+}
