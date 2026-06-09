@@ -17,6 +17,7 @@
 
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
 
 #include <deque>
 
@@ -243,6 +244,12 @@ SdfLayerHandle getStrongerLayer(
     const SdfLayerHandle& layer2,
     bool                  compareSessionLayers)
 {
+    /*
+     * Here, the lack of context binder creates bug cases where some sublayers
+     * are not found during the recursive part of getStrongerLayer.
+    */
+    const ArResolverContextBinder binder(stage->GetPathResolverContext());
+
     if (compareSessionLayers) {
         // Session Layer is the strongest in the stage, so check its hierarchy first
         // when enabled.
