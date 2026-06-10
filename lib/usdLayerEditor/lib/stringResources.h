@@ -34,10 +34,10 @@ struct Resource
     std::string value;
 };
 
-// Retreive a string resource from the given std::wstringResourceId.
+// Retrieve a string resource from the given Resource.
 LayerEditorAPI QString getAsQString(const Resource& strResID);
 
-// create a std::wstringResourceId, must be called before registerAll()
+// Create a Resource; must be called before registerAll()
 LayerEditorAPI Resource create(const char* key, const char* value);
 
 // -------------------------------------------------------------

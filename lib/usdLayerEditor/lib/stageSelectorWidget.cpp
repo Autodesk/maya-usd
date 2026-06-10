@@ -175,7 +175,6 @@ StageSelectorWidget::StageSelectorWidget(SessionState* in_sessionState, QWidget*
 
 StageSelectorWidget::~StageSelectorWidget()
 {
-    // Remove observer - if not observing this is a no-op.
     StageSelectorSelectionObserver::instance()->removeStageSelector(*this);
 }
 

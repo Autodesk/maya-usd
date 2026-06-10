@@ -118,7 +118,6 @@ private:
     using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
     EditTargetBackups _editTargetBackups;
 
-    // we need to hold onto the layer if we dirty it
     PXR_NS::SdfLayerRefPtr _backupLayer;
 };
 
@@ -294,7 +293,6 @@ public:
 class LayerEditorAPI RemoveSubPathCmd : public InsertRemoveSubPathBaseCmd
 {
 public:
-    // Constructor using subpath index.
     RemoveSubPathCmd(
         const pxr::UsdStageRefPtr& stage,
         const pxr::SdfLayerRefPtr& layer,
@@ -303,7 +301,6 @@ public:
     {
     }
 
-    // Constructor using subpath.
     RemoveSubPathCmd(
         const pxr::UsdStageRefPtr& stage,
         const pxr::SdfLayerRefPtr& layer,
