@@ -947,8 +947,7 @@ bool allowedInStrongerLayer(
             return false;
     }
 
-    // This happens when the edit target layer is within the reference.
-    // In this case, we return true to allow it to be edited.
+    // Allow edits when the target layer is non-local, such as in a referenced layer.
     return true;
 }
 
