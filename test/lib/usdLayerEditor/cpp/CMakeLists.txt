@@ -37,6 +37,7 @@ set(LAYER_EDITOR_TEST_SOURCES
     testSharedStage.cpp
     testLayerEditorCommands.cpp
     testEFMode.cpp
+    testDCCFunctions.cpp
 )
 
 # ------------------------------------------------------------------------------

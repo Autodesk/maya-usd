@@ -20,10 +20,18 @@
 #include "layerContentsWidget.h"
 #include "layerTreeItem.h"
 
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QSplitter>
+#include <QtWidgets/QTextEdit>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -99,6 +107,48 @@ TEST_F(LayerContentsWidgetTest, SetLayer_DoesNotCrash)
         treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(item, nullptr);
     EXPECT_NO_THROW(cw->setLayer(item->layer()));
+}
+
+// The array size limit (from the DCC registry) is applied when rendering layer
+// contents: a small limit truncates the displayed array.
+TEST_F(LayerContentsWidgetTest, SetLayer_RespectsArraySizeLimit)
+{
+    auto* cw = findContentsWidget(_widget);
+    ASSERT_NE(cw, nullptr);
+    auto* textEdit = cw->findChild<QTextEdit*>(QString(), Qt::FindChildrenRecursively);
+    ASSERT_NE(textEdit, nullptr);
+
+    // Build a layer with a large array-valued attribute.
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto prim  = stage->DefinePrim(PXR_NS::SdfPath("/Test"));
+    auto attr  = prim.CreateAttribute(
+        PXR_NS::TfToken("arr"), PXR_NS::SdfValueTypeNames->IntArray);
+    PXR_NS::VtIntArray values(100);
+    for (int i = 0; i < 100; ++i)
+        values[i] = i;
+    attr.Set(values);
+    auto layer = stage->GetRootLayer();
+
+    ScopedLayerEditorDCCFunctions guard;
+
+    // Override only the array-size getter, preserving any other environment functions.
+    EnvironmentFns smallEnv = layerEditorDCCFunctions().environment;
+    smallEnv.layerContentsArraySizeLimit = []() -> int64_t { return 2; };
+    setEnvironmentFns(smallEnv);
+    cw->setLayer(layer);
+    QApplication::processEvents();
+    const int smallLen = textEdit->toPlainText().length();
+
+    EnvironmentFns largeEnv = layerEditorDCCFunctions().environment;
+    largeEnv.layerContentsArraySizeLimit = []() -> int64_t { return 1000; };
+    setEnvironmentFns(largeEnv);
+    cw->setLayer(layer);
+    QApplication::processEvents();
+    const int largeLen = textEdit->toPlainText().length();
+
+    EXPECT_LT(smallLen, largeLen)
+        << "a smaller array size limit should truncate the displayed array, "
+           "yielding shorter output";
 }
 
 } // namespace UsdLayerEditor

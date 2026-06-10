@@ -19,16 +19,32 @@
 #include "testFixture.h"
 #endif
 
+#include "stringResources.h"
+
 #include <pxr/usd/usd/stage.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QMainWindow>
+#include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
+
+static QMenu* findMenuByTitle(QMainWindow* win, const QString& title)
+{
+    if (!win || !win->menuBar())
+        return nullptr;
+    for (QAction* top : win->menuBar()->actions()) {
+        if (QMenu* menu = top->menu()) {
+            if (menu->title() == title)
+                return menu;
+        }
+    }
+    return nullptr;
+}
 
 static QAction* findActionInMenuBar(QMainWindow* win, const QString& text)
 {
@@ -164,5 +180,35 @@ TEST_F(LayerEditorTestFixture, StageSelector_RemoveAddStage_RoundtripDoesNotCras
     // No direct removeStage in stub — just verify no crash on the add path.
 }
 #endif
+
+// The Auto-Hide Session Layer action must be the first Option-menu entry,
+// checkable, and followed by a separator then the Display-Layer-Contents action.
+TEST_F(LayerEditorTestFixture, OptionMenu_AutoHideAction_IsFirstAndCheckable)
+{
+    auto* win = qobject_cast<QMainWindow*>(_widget->parent());
+    ASSERT_NE(win, nullptr);
+
+    QMenu* optionMenu
+        = findMenuByTitle(win, StringResources::getAsQString(StringResources::kOption));
+    ASSERT_NE(optionMenu, nullptr) << "Option menu should exist";
+
+    const QList<QAction*> actions = optionMenu->actions();
+    ASSERT_GE(actions.size(), 3);
+
+    const QString autoHideText
+        = StringResources::getAsQString(StringResources::kAutoHideSessionLayer);
+    EXPECT_EQ(actions[0]->text(), autoHideText)
+        << "Auto-Hide should be the first action in the Option menu";
+    EXPECT_TRUE(actions[0]->isCheckable());
+    EXPECT_EQ(actions[0]->isChecked(), _sessionState.autoHideSessionLayer());
+
+    EXPECT_TRUE(actions[1]->isSeparator()) << "a separator should follow the Auto-Hide action";
+
+    QAction* displayContents = findAction(
+        optionMenu, StringResources::getAsQString(StringResources::kDisplayLayerContents));
+    ASSERT_NE(displayContents, nullptr);
+    EXPECT_GE(actions.indexOf(displayContents), 2)
+        << "Display Layer Content should come after Auto-Hide and the separator";
+}
 
 } // namespace UsdLayerEditor
