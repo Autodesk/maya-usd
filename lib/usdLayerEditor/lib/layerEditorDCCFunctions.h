@@ -21,16 +21,20 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
+
+class QWidget;
 
 namespace UsdLayerEditor {
 
 // std::function typedefs use the EXACT signatures of the former base-class overrides.
 using SaveComponentFn    = std::function<void(const PXR_NS::UsdStageRefPtr&, const std::string&)>;
 using ReloadComponentFn  = std::function<void(const std::string&)>;
-using RenameProxyShapeFn = std::function<void(const std::string&, const std::string&)>;
+// Returns the new DCC object path of the renamed proxy (empty if no rename happened).
+using RenameProxyShapeFn = std::function<std::string(const std::string&, const std::string&)>;
 using IsStageAComponentFn  = std::function<bool(const std::string&)>;
 using IsUnsavedComponentFn = std::function<bool(const PXR_NS::UsdStageRefPtr&)>;
 using ShouldDisplayComponentInitialSaveDialogFn
@@ -107,6 +111,9 @@ struct EnvironmentFns
     std::function<void(bool)> setPinLayerEditorStage;
     std::function<bool()>     isInteractiveDCCSession;    // default true
     std::function<bool()>     shouldExpandOrCollapseAll;  // default false
+    std::function<QWidget*()> mainWindowParent;           // default nullptr
+    std::function<int64_t()>  layerContentsArraySizeLimit;       // default 8
+    std::function<int64_t()>  layerContentsTimeSamplesSizeLimit; // default 8
 };
 
 struct LayerEditorDCCFunctions
@@ -133,7 +140,7 @@ LayerEditorAPI const LayerEditorDCCFunctions& layerEditorDCCFunctions();
 // isDccObjectSharedStage which defaults to true).
 LayerEditorAPI void        saveComponent(const PXR_NS::UsdStageRefPtr&, const std::string&);
 LayerEditorAPI void        reloadComponent(const std::string&);
-LayerEditorAPI void        renameProxyShape(const std::string&, const std::string&);
+LayerEditorAPI std::string renameProxyShape(const std::string&, const std::string&);
 LayerEditorAPI bool        isStageAComponent(const std::string&);
 LayerEditorAPI bool        isUnsavedComponent(const PXR_NS::UsdStageRefPtr&);
 LayerEditorAPI bool        shouldDisplayComponentInitialSaveDialog(
@@ -176,6 +183,9 @@ LayerEditorAPI bool        getPinLayerEditorStage();
 LayerEditorAPI void        setPinLayerEditorStage(bool);
 LayerEditorAPI bool        isInteractiveDCCSession();
 LayerEditorAPI bool        shouldExpandOrCollapseAll();
+LayerEditorAPI QWidget*    mainWindowParent();
+LayerEditorAPI int64_t     layerContentsArraySizeLimit();
+LayerEditorAPI int64_t     layerContentsTimeSamplesSizeLimit();
 
 } // namespace UsdLayerEditor
 

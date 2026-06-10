@@ -26,20 +26,23 @@
  */
 namespace UsdLayerEditor {
 
-// create a confirmation dialog, with an optional bullet list of stuff like layer names
+// create a confirmation dialog, with an optional bullet list of stuff like layer names.
+// When parent is null the dialog is parented to the DCC main window (mainWindowParent()).
 bool confirmDialog(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,
     const QString*     okButtonText = nullptr,
-    QMessageBox::Icon  icon = QMessageBox::Icon::NoIcon);
+    QMessageBox::Icon  icon = QMessageBox::Icon::NoIcon,
+    QWidget*           parent = nullptr);
 
 // create a dialog with a single OK button, with an optional bullet list
 void warningDialog(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,
-    QMessageBox::Icon  icon = QMessageBox::Icon::NoIcon);
+    QMessageBox::Icon  icon = QMessageBox::Icon::NoIcon,
+    QWidget*           parent = nullptr);
 
 } // namespace UsdLayerEditor
 

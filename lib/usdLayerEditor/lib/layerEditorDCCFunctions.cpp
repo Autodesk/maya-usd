@@ -44,10 +44,11 @@ void reloadComponent(const std::string& dccObjectPath)
     if (registry().component.reloadComponent)
         registry().component.reloadComponent(dccObjectPath);
 }
-void renameProxyShape(const std::string& oldDccObjectPath, const std::string& newName)
+std::string renameProxyShape(const std::string& oldDccObjectPath, const std::string& newName)
 {
-    if (registry().component.renameProxyShape)
-        registry().component.renameProxyShape(oldDccObjectPath, newName);
+    return registry().component.renameProxyShape
+        ? registry().component.renameProxyShape(oldDccObjectPath, newName)
+        : std::string {};
 }
 bool isStageAComponent(const std::string& dccObjectPath)
 {
@@ -251,6 +252,23 @@ bool shouldExpandOrCollapseAll()
     return registry().environment.shouldExpandOrCollapseAll
         ? registry().environment.shouldExpandOrCollapseAll()
         : false;
+}
+QWidget* mainWindowParent()
+{
+    return registry().environment.mainWindowParent ? registry().environment.mainWindowParent()
+                                                    : nullptr;
+}
+int64_t layerContentsArraySizeLimit()
+{
+    return registry().environment.layerContentsArraySizeLimit
+        ? registry().environment.layerContentsArraySizeLimit()
+        : 8;
+}
+int64_t layerContentsTimeSamplesSizeLimit()
+{
+    return registry().environment.layerContentsTimeSamplesSizeLimit
+        ? registry().environment.layerContentsTimeSamplesSizeLimit()
+        : 8;
 }
 
 } // namespace UsdLayerEditor

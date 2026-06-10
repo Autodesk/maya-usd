@@ -15,6 +15,7 @@
 //
 #include "layerContentsWidget.h"
 
+#include "layerEditorDCCFunctions.h"
 #include "layerTreeModel.h"
 #include "stringResources.h"
 #include "usdSyntaxHighlighter.h"
@@ -336,9 +337,10 @@ bool LayerContentsWidget::exportPseudoLayer(
     PXR_NS::SdfFileFormatConstRefPtr fmt;
     OutputType::ReportParams         params;
 
-    // Note: in the shared component we keep the default array/timeSample size limits.
-    //       DCC integrations can later expose an override mechanism if needed (e.g.
-    //       Maya optionVars overriding params.arraySizeLimit / params.timeSamplesSizeLimit).
+    // DCC integrations can override the array/timeSample display limits (e.g. via
+    // Maya optionVars); absent an override these return the ReportParams defaults.
+    params.arraySizeLimit = UsdLayerEditor::layerContentsArraySizeLimit();
+    params.timeSamplesSizeLimit = UsdLayerEditor::layerContentsTimeSamplesSizeLimit();
 
     fmt = PXR_NS::TfCreateRefPtr(new OutputType::SdfFilterPseudoFileFormat(
         PXR_NS::TfStringPrintf("from @%s@", in_layer->GetIdentifier().c_str())));

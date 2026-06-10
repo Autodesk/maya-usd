@@ -26,9 +26,11 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MDagModifier.h>
+#include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
+#include <maya/MQtUtil.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
@@ -45,8 +47,6 @@
 
 #include <AdskUsdEditForward/Host.h>
 #include <AdskUsdEditForward/StageRuleProvider.h>
-
-#include <maya/MQtUtil.h>
 
 #include <QtCore/QPointer>
 #endif
@@ -98,17 +98,20 @@ void registerLayerEditorDCCFunctions()
         MayaUsd::ComponentUtils::reloadAdskUsdComponent(dccObjectPath);
     };
     component.renameProxyShape
-        = [](const std::string& oldDccObjectPath, const std::string& newName) {
-              if (oldDccObjectPath.empty() || newName.empty())
-                  return;
-              MObject proxyNode;
-              if (PXR_NS::UsdMayaUtil::GetMObjectByName(oldDccObjectPath, proxyNode)
-                  != MStatus::kSuccess)
-                  return;
-              MDagModifier dagMod;
-              if (dagMod.renameNode(proxyNode, newName.c_str()) == MStatus::kSuccess)
-                  dagMod.doIt();
-          };
+        = [](const std::string& oldDccObjectPath, const std::string& newName) -> std::string {
+        if (oldDccObjectPath.empty() || newName.empty())
+            return {};
+        MObject proxyNode;
+        if (PXR_NS::UsdMayaUtil::GetMObjectByName(oldDccObjectPath, proxyNode) != MStatus::kSuccess)
+            return {};
+        MDagModifier dagMod;
+        if (dagMod.renameNode(proxyNode, newName.c_str()) != MStatus::kSuccess || dagMod.doIt() != MStatus::kSuccess)
+            return {};
+        MDagPath newPath;
+        if (MDagPath::getAPathTo(proxyNode, newPath) != MStatus::kSuccess)
+            return {};
+        return newPath.fullPathName().asUTF8();
+    };
     component.isStageAComponent = [](const std::string& dccObjectPath) {
         if (dccObjectPath.empty())
             return false;
@@ -223,6 +226,17 @@ void registerLayerEditorDCCFunctions()
         int modifiers = 0;
         MGlobal::executeCommand("getModifiers", modifiers);
         return (modifiers % 2) != 0; // magic constant: SHIFT held
+    };
+    environment.mainWindowParent = []() -> QWidget* { return MQtUtil::mainWindow(); };
+    environment.layerContentsArraySizeLimit = []() -> int64_t {
+        const MString k
+            = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsArraySizeLimit);
+        return MGlobal::optionVarExists(k) ? MGlobal::optionVarIntValue(k) : 8;
+    };
+    environment.layerContentsTimeSamplesSizeLimit = []() -> int64_t {
+        const MString k
+            = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsTimeSamplesSizeLimit);
+        return MGlobal::optionVarExists(k) ? MGlobal::optionVarIntValue(k) : 8;
     };
     setEnvironmentFns(environment);
 

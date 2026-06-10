@@ -860,16 +860,17 @@ void SaveLayersDialog::onSaveAll()
             if (newRootLayer && _sessionState) {
                 // Rename the DCC-side proxy/object so its name matches the
                 // component's new name. The hook is a no-op for DCCs that
-                // don't have a renamable proxy concept.
-                UsdLayerEditor::renameProxyShape(dccObjectPath, componentName);
+                // don't have a renamable proxy concept; it returns the new DCC
+                // object path so we can relocate the stage entry exactly.
+                std::string newDccObjectPath
+                    = UsdLayerEditor::renameProxyShape(dccObjectPath, componentName);
 
-                // After the rename, the session state should point at the
-                // (now-renamed) stage entry. Try to relocate it among the
-                // session's known stages by matching on the new name.
+                // After the rename, relocate the (now-renamed) stage entry by
+                // matching its DCC object path exactly. If no rename happened
+                // (empty path), the current stage entry is left untouched.
                 auto entries = _sessionState->allStages();
                 for (const auto& entry : entries) {
-                    if (!entry._dccObjectPath.empty()
-                        && entry._dccObjectPath.find(componentName) != std::string::npos) {
+                    if (!newDccObjectPath.empty() && entry._dccObjectPath == newDccObjectPath) {
                         _sessionState->setStageEntry(entry);
                         break;
                     }
@@ -985,7 +986,8 @@ bool SaveLayersDialog::okToSave()
             StringResources::getAsQString(StringResources::kSaveAnonymousIdenticalFilesTitle),
             QString::fromStdString(errorMsg),
             &identicalFiles,
-            QMessageBox::Icon::Critical);
+            QMessageBox::Icon::Critical,
+            this);
 
         return false;
     }
@@ -998,7 +1000,8 @@ bool SaveLayersDialog::okToSave()
             QString::fromStdString(confirmMsg),
             &existingFiles,
             nullptr,
-            QMessageBox::Icon::Warning));
+            QMessageBox::Icon::Warning,
+            this));
     }
 
     return true;

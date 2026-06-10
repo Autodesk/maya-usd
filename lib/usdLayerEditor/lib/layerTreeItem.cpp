@@ -506,6 +506,16 @@ void LayerTreeItem::saveEditsNoPrompt()
 // helper to save anon layers called by saveEdits()
 void LayerTreeItem::saveAnonymousLayer()
 {
+    // Special case for components created by the component creator. Only the
+    // component creator knows how to save a component properly; delegate to the
+    // stage save. The predicate is false for DCCs without component support.
+    if (SessionState* ss = parentModel()->sessionState()) {
+        if (UsdLayerEditor::isStageAComponent(ss->stageEntry()._dccObjectPath)) {
+            parentModel()->saveStage(nullptr);
+            return;
+        }
+    }
+
      SessionState* sessionState = parentModel()->sessionState();
 
     // the path we have is an absolute path
