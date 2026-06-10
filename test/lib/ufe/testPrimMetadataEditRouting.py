@@ -2,10 +2,9 @@
 
 import os
 import unittest
-from contextlib import contextmanager
 
 from maya import cmds, standalone
-from pxr import Sdf, Usd, Tf, Kind
+from pxr import Sdf, Usd
 import ufe
 
 import mayaUsd.lib
@@ -371,72 +370,6 @@ class PrimMetadataEditRoutingTestCase(unittest.TestCase):
             lambda item: usdUfe.SetKindCommand(primFromSceneItem(item), 'group'),
             lambda spec: self.assertEqual(spec.kind, 'group'),
         )
-
-    @unittest.skipUnless(
-        Usd.GetVersion() >= (0, 23, 8),
-        'Variable expressions in sublayers requires OpenUSD version 23.08 and above')
-    def testEditRestrictionWithExpressionVariableSubLayer(self):
-        '''
-        Authoring metadata in weaker layer(s) is not permitted when stronger
-        opinion(s) exist, even when sublayer paths are expression based.
-        '''
-        # author a layer stack using stage expression variables.
-        psPathStr, strongLayer, varLayer, weakLayer = usdUtils.createStageWithExpressionVariableSubLayer()
-
-        stage = mayaUsd.ufe.getStage(psPathStr)
-        rootLayer = stage.GetRootLayer()
-
-        prim = stage.DefinePrim('/Xf', 'Xform')
-
-        @contextmanager
-        def temporaryKindInLayer(layer, kind):
-            primSpec = Sdf.CreatePrimInLayer(layer, prim.GetPath())
-            oldKind = primSpec.kind
-            primSpec.kind = kind
-
-            yield
-
-            if oldKind:
-                primSpec.kind = oldKind
-            else:
-                primSpec.ClearKind()
-
-        def verifyRestriction(targetLayer, kind, expectedAllowed):
-            with Usd.EditContext(stage, stage.GetEditTargetForLocalLayer(targetLayer)):
-                ufeCmd = usdUfe.SetKindCommand(prim, kind)
-                try:
-                    ufeCmd.execute()
-                except Tf.ErrorException:
-                    didRaise = True
-                else:
-                    didRaise = False
-                    ufeCmd.undo()
-
-            self.assertNotEqual(didRaise, expectedAllowed)
-
-        with temporaryKindInLayer(weakLayer, Kind.Tokens.model):
-            verifyRestriction(weakLayer, Kind.Tokens.group, expectedAllowed=True)
-            verifyRestriction(varLayer, Kind.Tokens.group, expectedAllowed=True)
-            verifyRestriction(strongLayer, Kind.Tokens.group, expectedAllowed=True)
-            verifyRestriction(rootLayer, Kind.Tokens.group, expectedAllowed=True)
-
-        with temporaryKindInLayer(varLayer, Kind.Tokens.model):
-            verifyRestriction(weakLayer, Kind.Tokens.group, expectedAllowed=False)
-            verifyRestriction(varLayer, Kind.Tokens.group, expectedAllowed=True)
-            verifyRestriction(strongLayer, Kind.Tokens.group, expectedAllowed=True)
-            verifyRestriction(rootLayer, Kind.Tokens.group, expectedAllowed=True)
-
-        with temporaryKindInLayer(strongLayer, Kind.Tokens.model):
-            verifyRestriction(weakLayer, Kind.Tokens.group, expectedAllowed=False)
-            verifyRestriction(varLayer, Kind.Tokens.group, expectedAllowed=False)
-            verifyRestriction(strongLayer, Kind.Tokens.group, expectedAllowed=True)
-            verifyRestriction(rootLayer, Kind.Tokens.group, expectedAllowed=True)
-
-        with temporaryKindInLayer(rootLayer, Kind.Tokens.model):
-            verifyRestriction(weakLayer, Kind.Tokens.group, expectedAllowed=False)
-            verifyRestriction(varLayer, Kind.Tokens.group, expectedAllowed=False)
-            verifyRestriction(strongLayer, Kind.Tokens.group, expectedAllowed=False)
-            verifyRestriction(rootLayer, Kind.Tokens.group, expectedAllowed=True)
 
     def testEditRouterForAddReference(self):
         '''

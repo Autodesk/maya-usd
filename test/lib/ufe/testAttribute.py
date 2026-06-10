@@ -23,8 +23,9 @@ import mayaUtils
 import ufeUtils
 import testUtils
 import usdUtils
+import usdUfe
 
-from pxr import Usd, UsdGeom, Vt, Gf, UsdLux, UsdUI, Sdr
+from pxr import Usd, UsdGeom, Vt, Gf, UsdLux, UsdUI, Sdr, Tf, Kind, Sdf
 from pxr import UsdShade
 
 from maya import cmds
@@ -1953,6 +1954,70 @@ class AttributeTestCase(unittest.TestCase):
             verifyRestriction(strongLayer, editAllowed=False)
             verifyRestriction(varLayer, editAllowed=False)
             verifyRestriction(weakLayer, editAllowed=False)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 23, 8), 'Variable expressions in sublayers requires OpenUSD version 23.08 and above')
+    def testPrimMetadataBlockingWithExpressionVariableSubLayer(self):
+        '''
+        Authoring metadata in weaker layer(s) is not permitted when stronger
+        opinion(s) exist, even when sublayer paths are expression based.
+        '''
+        # author a layer stack using stage expression variables.
+        psPathStr, strongLayer, varLayer, weakLayer = usdUtils.createStageWithExpressionVariableSubLayer()
+
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+
+        prim = stage.DefinePrim('/Xf', 'Xform')
+
+        @contextmanager
+        def temporaryKindInLayer(layer, kind):
+            primSpec = Sdf.CreatePrimInLayer(layer, prim.GetPath())
+            oldKind = primSpec.kind
+            primSpec.kind = kind
+
+            yield
+
+            if oldKind:
+                primSpec.kind = oldKind
+            else:
+                primSpec.ClearKind()
+
+        def verifyRestriction(targetLayer, kind, editAllowed):
+            with Usd.EditContext(stage, stage.GetEditTargetForLocalLayer(targetLayer)):
+                ufeCmd = usdUfe.SetKindCommand(prim, kind)
+                try:
+                    ufeCmd.execute()
+                except Tf.ErrorException:
+                    didRaise = True
+                else:
+                    didRaise = False
+                    ufeCmd.undo()
+
+            self.assertNotEqual(didRaise, editAllowed)
+
+        with temporaryKindInLayer(weakLayer, Kind.Tokens.model):
+            verifyRestriction(weakLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(varLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(strongLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(rootLayer, Kind.Tokens.group, editAllowed=True)
+
+        with temporaryKindInLayer(varLayer, Kind.Tokens.model):
+            verifyRestriction(weakLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(varLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(strongLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(rootLayer, Kind.Tokens.group, editAllowed=True)
+
+        with temporaryKindInLayer(strongLayer, Kind.Tokens.model):
+            verifyRestriction(weakLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(varLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(strongLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(rootLayer, Kind.Tokens.group, editAllowed=True)
+
+        with temporaryKindInLayer(rootLayer, Kind.Tokens.model):
+            verifyRestriction(weakLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(varLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(strongLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(rootLayer, Kind.Tokens.group, editAllowed=True)
 
     def testTransformationAttributeBlocking(self):
         '''Authoring transformation attribute(s) in weaker layer(s) are not permitted if there exist opinion(s) in stronger layer(s).'''
