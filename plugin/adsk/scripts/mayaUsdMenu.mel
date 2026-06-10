@@ -186,6 +186,18 @@ proc initRuntimeCommands() {
         }
     }
 
+    if (`exists mayaUsdCompositionEditor`) {
+        if (!`runTimeCommand -exists mayaUsdOpenCompositionEditor`) {
+            runTimeCommand -default true -plugin "mayaUsdPlugin"
+                -label      `getMayaUsdString("kMenuCompositionEditor")`
+                -annotation `getMayaUsdString("kMenuCompositionEditorAnn")`
+                -category   "Menu items.Common.Windows.General Editors"
+                -command    "mayaUsdCompositionEditor"
+                -image      "USD_generic.png"
+                mayaUsdOpenCompositionEditor;
+        }
+    }
+
     //
     // runTimeCommand for selection kind mode
     //
@@ -503,6 +515,14 @@ global proc mayaUsdMenu_windowMenuCallback() {
             -enableCommandRepeat false
             -runTimeCommand mayaUsdOpenUsdLayerEditor
             wmUsdLayerEditorMenuitem`;
+
+        if (`runTimeCommand -exists mayaUsdOpenCompositionEditor`) {
+            menuItem
+                -enableCommandRepeat false
+                -runTimeCommand mayaUsdOpenCompositionEditor
+                -version $mayaVersion
+                wmUsdCompositionEditorMenuitem;
+        }
 
         // Reset parent back to the main Windows menu
         setParent -menu ..;

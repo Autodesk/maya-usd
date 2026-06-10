@@ -86,6 +86,9 @@
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+#include <mayaUsdUI/ui/CompositionEditorCmd.h>
+#endif
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -397,6 +400,14 @@ MStatus initializePlugin(MObject obj)
         status.perror(err);
     }
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    status = MayaUsd::CompositionEditorCmd::initialize(plugin);
+    if (!status) {
+        MString err("registerCommand");
+        err += MayaUsd::CompositionEditorCmd::name;
+        status.perror(err);
+    }
+#endif
 #endif
 
     status = PxrMayaUsdPreviewSurfacePlugin::initialize(
@@ -495,6 +506,15 @@ MStatus uninitializePlugin(MObject obj)
         status.perror(err);
     }
 #endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
+
+#if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    status = MayaUsd::CompositionEditorCmd::finalize(plugin);
+    if (!status) {
+        MString err("deregisterCommand ");
+        err += MayaUsd::CompositionEditorCmd::name;
+        status.perror(err);
+    }
+#endif
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,

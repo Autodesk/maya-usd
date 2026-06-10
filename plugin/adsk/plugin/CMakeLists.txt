@@ -55,6 +55,7 @@ target_compile_definitions(${TARGET_NAME}
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:WANT_ADSK_USD_ASSET_RESOLVER_BUILD>
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:BOOST_NS=PXR_NS::pxr_boost>
+        $<$<BOOL:${AdskUsdDebugTools_FOUND}>:WANT_ADSK_USD_DEBUG_TOOLS_BUILD>
         $<$<BOOL:${MAYA_HAS_USD_SETTINGS_NODES}>:MAYA_HAS_USD_SETTINGS_NODES>
 )
 
@@ -88,6 +89,7 @@ target_include_directories(${TARGET_NAME}
     PRIVATE
         ${UFE_INCLUDE_DIR}
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR}>
+        $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_INCLUDE_DIR}>
 )
 
 # -----------------------------------------------------------------------------
@@ -98,6 +100,8 @@ target_link_libraries(${TARGET_NAME}
         ${UFE_LIBRARY}
         basePxrUsdPreviewSurface
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_LIBRARY}>
+        $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_CORE_LIBRARY}>
+        $<$<AND:$<BOOL:${Qt_FOUND}>,$<BOOL:${AdskUsdDebugTools_FOUND}>>:${ADSK_USD_DEBUG_TOOLS_UI_LIBRARY}>
 )
 
 if (Qt_FOUND)
