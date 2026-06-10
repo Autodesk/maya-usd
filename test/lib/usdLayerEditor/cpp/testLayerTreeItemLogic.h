@@ -353,4 +353,56 @@ TEST_F(LayerTreeItemTest, IsIdenticalItem_DifferentLayerReturnsFalse)
 }
 #endif
 
+// ── saveAnonymousLayer early-out (D10) ───────────────────────────────────────
+
+// A non-component stage's anonymous layer goes through the generic save path
+// (SessionState::saveLayerUI), which the stub records via _saveLayerCallCount.
+TEST_F(LayerTreeItemTest, SaveAnonymousLayer_NonComponentStage_UsesGenericPath)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    ComponentFns                  comp;
+    comp.displayError = [](const std::string&) {};
+    comp.isStageAComponent = [](const std::string&) { return false; };
+    setComponentFns(comp);
+
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isAnonymous());
+
+    _sessionState._saveLayerCallCount = 0;
+    item->saveEditsNoPrompt();
+    QApplication::processEvents();
+
+    EXPECT_EQ(_sessionState._saveLayerCallCount, 1)
+        << "non-component anonymous layer should use the generic saveLayerUI path";
+}
+
+// A component stage's anonymous layer must NOT take the generic save path; the
+// early-out delegates to LayerTreeModel::saveStage (which shows a modal
+// SaveLayersDialog, dismissed here). _saveLayerCallCount staying 0 proves the
+// generic path was skipped -- it would be 1 if the early-out were missing.
+TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    ComponentFns                  comp;
+    comp.displayError = [](const std::string&) {};
+    comp.isStageAComponent = [](const std::string&) { return true; };
+    setComponentFns(comp);
+
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    ASSERT_TRUE(item->isAnonymous());
+
+    // saveStage shows a modal SaveLayersDialog; schedule its dismissal so exec() returns.
+    TestUtils::dismissNextModal(100);
+
+    _sessionState._saveLayerCallCount = 0;
+    item->saveEditsNoPrompt();
+    QApplication::processEvents();
+
+    EXPECT_EQ(_sessionState._saveLayerCallCount, 0)
+        << "component stage should delegate to saveStage, skipping the generic "
+           "anonymous-save path";
+}
+
 } // namespace UsdLayerEditor
