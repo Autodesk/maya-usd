@@ -23,6 +23,7 @@
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
 #include <maya/MArgParser.h>
+#include <maya/MFn.h>
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 #include <maya/MMessage.h>
@@ -137,11 +138,11 @@ RenderSetupWindow::~RenderSetupWindow()
     }
 }
 
-void RenderSetupWindow::processNodeAdded(MObject& node)
+void RenderSetupWindow::processNodeAdded(MObject& /*node*/)
 {
     QTimer::singleShot(0, this, &RenderSetupWindow::refreshStages);
 }
-void RenderSetupWindow::processNodeRemoved(MObject& node)
+void RenderSetupWindow::processNodeRemoved(MObject& /*node*/)
 {
     QTimer::singleShot(0, this, &RenderSetupWindow::refreshStages);
 }
