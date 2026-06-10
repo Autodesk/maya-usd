@@ -96,6 +96,15 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
 
         auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
 
+        _actions._autoHide = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
+        QObject::connect(
+            _actions._autoHide, &QAction::toggled, ss, &SessionState::setAutoHideSessionLayer);
+        _actions._autoHide->setCheckable(true);
+        _actions._autoHide->setChecked(ss->autoHideSessionLayer());
+
+        optionMenu->addSeparator();
+
         _actions._displayLayerContents = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kDisplayLayerContents));
         QObject::connect(
@@ -140,13 +149,6 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
                 this,
                 &LayerEditorWidget::openEditForwardDialog);
         }
-
-        auto action = optionMenu->addAction(
-            StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
-        QObject::connect(
-            action, &QAction::toggled, ss, &SessionState::setAutoHideSessionLayer);
-        action->setCheckable(true);
-        action->setChecked(ss->autoHideSessionLayer());
 
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
         helpMenu->addAction(

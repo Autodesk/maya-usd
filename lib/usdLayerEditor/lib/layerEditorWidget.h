@@ -85,6 +85,7 @@ protected:
     void setupDefaultMenu(QMainWindow* in_parent);
     struct
     {
+        QAction* _autoHide { nullptr };
         QAction* _displayLayerContents { nullptr };
         QAction* _displayLayerExpandAllValues { nullptr };
         QAction* _echoEditForwarding { nullptr };

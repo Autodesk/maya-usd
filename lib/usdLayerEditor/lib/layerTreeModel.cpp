@@ -325,6 +325,8 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     auto sessionLayer = _sessionState->stage()->GetSessionLayer();
     bool showSessionLayer = true;
     if (_sessionState->autoHideSessionLayer()) {
+        // Use the effective target so that in EF mode the decision follows the fallback
+        // target rather than the session layer (which is always the stage edit target there).
         showSessionLayer
             = sessionLayer->IsDirty() || sessionLayer == _sessionState->effectiveTargetLayer();
     }
