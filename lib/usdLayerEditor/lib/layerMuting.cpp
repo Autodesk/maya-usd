@@ -23,7 +23,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 
 namespace {
-// The set of muted layers.
+// Held references to muted layers. A muted layer is no longer referenced by
+// the stage, so without this set it would be freed by USD.
 //
 // Kept in a function to avoid problem with the order of construction
 // of global variables in C++.

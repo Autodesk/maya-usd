@@ -478,9 +478,7 @@ void LayerEditorWidget::updateButtons()
         // Special case for components created by the component creator. Non-local layers,
         // non-active layers, and non-dirty but to be renamed layers, can be impacted when
         // saving a component. Only the component creator knows how to save a component
-        // properly, we need to ask it what layers will be impacted. The hook returns an
-        // empty vector for DCCs without component support; that case falls through to the
-        // normal counting below.
+        // properly, we need to ask it what layers will be impacted.
         if (UsdLayerEditor::isStageAComponent(_sessionState.stageEntry()._dccObjectPath)) {
             const auto layerIds = UsdLayerEditor::getComponentLayersToSave(
                 _sessionState.stageEntry()._dccObjectPath);

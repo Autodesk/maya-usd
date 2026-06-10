@@ -185,10 +185,10 @@ LayerEditorAPI bool pathAppendPath(std::string& a, const std::string& b);
 /**
  * Appends `b` to the path `a` and returns a path (by appending two input paths).
  *
- * @param a         A string that respresents the first path
- * @param b         A string that respresents the second path
+ * @param a         A string that represents the first path
+ * @param b         A string that represents the second path
  *
- * @return         the two paths joined by a seperator
+ * @return         the two paths joined by a separator
  */
 LayerEditorAPI std::string appendPaths(const std::string& a, const std::string& b);
 

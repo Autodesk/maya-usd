@@ -80,10 +80,6 @@ public:
     virtual void                    setAutoHideSessionLayer(bool hide);
     virtual bool                    autoObserveUfeSelection() const { return true; }
 
-    // Layer-contents display options. Default implementations store the value
-    // in protected members; DCC integrations (e.g. MayaSessionState) override
-    // these setters to persist the value in their preference store (optionVar
-    // etc.). The default getters return the cached value.
     virtual bool displayLayerContents() const { return _displayLayerContents; }
     virtual void setDisplayLayerContents(bool show);
     virtual bool displayLayerExpandAllValues() const { return _displayLayerExpandAllValues; }

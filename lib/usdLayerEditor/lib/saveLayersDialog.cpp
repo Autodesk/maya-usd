@@ -457,20 +457,12 @@ SaveLayersDialog::SaveLayersDialog(
 
     // For each stage collect the layers to save and identify component stages.
     for (const auto& info : infos) {
-        // Resolve the DCC object path for this stage. Prefer the explicit
-        // dccObjectPath set on the info (Maya side fills this in); fall back
-        // to the UFE-derived stage path for callers that haven't been
-        // updated yet.
         std::string dccObjectPath = info.dccObjectPath;
         if (dccObjectPath.empty()) {
             dccObjectPath = UsdUfe::stagePath(info.stage).string();
         }
 
-        // Check if this stage is a component stage. The check is routed through
-        // the DCC-functions registry, which returns false by default so DCCs
-        // without component support simply skip this branch. The accessor is a
-        // free function that reads the registry directly, so it works even in
-        // this bulk-save constructor where no SessionState is attached.
+        // Check if this stage is a component stage
         const bool isComponent
             = UsdLayerEditor::shouldDisplayComponentInitialSaveDialog(info.stage, dccObjectPath);
         if (isComponent) {
@@ -516,9 +508,7 @@ SaveLayersDialog::SaveLayersDialog(
         msg = String::format(StringResources::kSaveName.value, stageName.c_str());
         dialogTitle = QString::fromStdString(msg);
 
-        // Check if this stage is an unsaved component stage. Routed through
-        // SessionState so DCCs without component support fall straight into
-        // the normal getLayersToSave path.
+        // Check if this stage is an unsaved component stage.
         if (UsdLayerEditor::shouldDisplayComponentInitialSaveDialog(
                 stageEntry._stage, stageEntry._dccObjectPath)) {
             StageSavingInfo info;
@@ -852,11 +842,7 @@ void SaveLayersDialog::onSaveAll()
     _problemLayers.clear();
     _emptyLayers.clear();
 
-    // Save component stages first. The actual DCC-specific work (moving the
-    // component on disk, renaming the proxy/object in the DCC, transferring
-    // the session layer content, locking the new root layer) is routed
-    // through SessionState / AbstractCommandHook virtuals so that DCCs
-    // without component-creator support simply skip this branch.
+    // Save component stages first
     for (auto* componentWidget : _componentSaveWidgets) {
         std::string saveLocation = componentWidget->folderLocation().toStdString();
         std::string componentName = componentWidget->componentName().toStdString();

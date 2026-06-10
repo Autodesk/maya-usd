@@ -28,9 +28,6 @@ class QString;
 
 namespace UsdLayerEditor {
 
-/**
- * Initializes the qt utilities.
- */
 LayerEditorAPI void initializeQtUtils();
 
 /**
@@ -95,8 +92,6 @@ private:
 };
 
 /**
- * @brief Validator that only accepts strings that are also valid Tf identifiers.
- *
  * Used by the component-save widget to gate component-name entry to a USD-safe
  * identifier.
  */

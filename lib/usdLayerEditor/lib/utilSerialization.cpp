@@ -295,60 +295,6 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
         return kSaveToUSDFiles;
     }
 } // namespace MAYAUSD_NS_DEF
-//
-// bool isProxyShapePathRelative(MayaUsdProxyShapeBase& proxyShape)
-//{
-//     MStatus           status;
-//     MFnDependencyNode depNode(proxyShape.thisMObject(), &status);
-//     if (!status)
-//         return false;
-//
-//     MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
-//     return filePathRelativePlug.asBool();
-// }
-//
-// bool isProxyPathModeRelative(ProxyPathMode proxyPathMode, const MString& proxyNodeName)
-//{
-//     if (kProxyPathRelative == proxyPathMode)
-//         return true;
-//
-//     if (kProxyPathAbsolute == proxyPathMode)
-//         return false;
-//
-//     if (kProxyPathFollowProxyShape == proxyPathMode) {
-//         // Note: if we fail to find the proxy shape, we will fallback on
-//         //       using the options var preference instead.
-//         MayaUsdProxyShapeBase* proxyShape
-//             = UsdMayaUtil::GetProxyShapeByProxyName(proxyNodeName.asChar());
-//         if (proxyShape) {
-//             return isProxyShapePathRelative(*proxyShape);
-//         }
-//     }
-//
-//     return UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
-// }
-//
-// void setNewProxyPath(
-//     const MString&        proxyNodeName,
-//     const MString&        newRootLayerPath,
-//     ProxyPathMode         proxyPathMode,
-//     const SdfLayerRefPtr& layer,
-//     bool                  isTargetLayer)
-//{
-//     const bool  needRelativePath = isProxyPathModeRelative(proxyPathMode, proxyNodeName);
-//     const char* filePathCmd = "setAttr -type \"string\" ^1s.filePath \"^2s\"; "
-//                               "setAttr ^1s.filePathRelative ^3s; ";
-//
-//     MString script;
-//     script.format(filePathCmd, proxyNodeName, newRootLayerPath, needRelativePath ? "1" : "0");
-//     MGlobal::executeCommand(
-//         script,
-//         /*display*/ true,
-//         /*undo*/ false);
-//
-//     if (isTargetLayer)
-//         updateTargetLayer(proxyNodeName.asChar(), layer);
-// }
 
  static bool isCompatibleWithSave(
      SdfLayerRefPtr     layer,
