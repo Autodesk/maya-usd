@@ -4,6 +4,7 @@
       "Info": {
         "UsdMaya": {
           "JobContextPlugin": {},
+          "ExportChaserPlugin": {},
           "SchemaApiAdaptor": {
             "providesTranslator": [
               "shape"
