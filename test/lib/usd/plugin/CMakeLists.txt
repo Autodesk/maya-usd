@@ -181,6 +181,12 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
+# -----------------------------------------------------------------------------
+# Plug Plug-in file
+# -----------------------------------------------------------------------------
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/infoImportChaser_plugInfo.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/infoImportChaser/plugInfo.json"
+)
 
 # -----------------------------------------------------------------------------
 # Plug Plug-ins
