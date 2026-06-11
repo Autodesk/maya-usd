@@ -264,6 +264,13 @@ public:
         bool*          drawProxyPurpose,
         bool*          drawGuidePurpose);
 
+    /// Returns true if the Maya DAG path already accounts for the USD root
+    /// prim's world transform. When true, the rendering delegate shouldn't
+    /// multiply by GetLocalToWorldTransform(rootPrim), as that would double the
+    /// transforms already present in the Maya DAG.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool isRootPrimTransformInDagPath() const { return false; }
+
     MAYAUSD_CORE_PUBLIC
     MStatus
     preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode) override;

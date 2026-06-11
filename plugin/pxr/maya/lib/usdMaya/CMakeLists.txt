@@ -82,6 +82,7 @@ pxr_test_scripts(
         testenv/testUsdMayaModelKindProcessor.py
         testenv/testUsdMayaReferenceAssemblyEdits.py
         testenv/testUsdReferenceAssemblyChangeRepresentations.py
+        testenv/testUsdReferenceAssemblyExpandedTransforms.py
         testenv/testUsdReferenceAssemblySelection.py
 )
 
@@ -241,6 +242,18 @@ pxr_register_test(testUsdReferenceAssemblyChangeRepresentations
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdReferenceAssemblyChangeRepresentations"
     TESTENV testUsdReferenceAssemblyChangeRepresentations
+    ENV ${TEST_ENV}
+    WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdReferenceAssemblyChangeRepresentationsTest
+    DEST testUsdReferenceAssemblyExpandedTransforms
+)
+pxr_register_test(testUsdReferenceAssemblyExpandedTransforms
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
+    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdReferenceAssemblyExpandedTransforms"
+    TESTENV testUsdReferenceAssemblyExpandedTransforms
     ENV ${TEST_ENV}
     WIN_DLL_PATH "${PXR_USD_LOCATION}/plugin/usd;${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin;${TEST_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
