@@ -82,13 +82,27 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         ufeItem = ufe.Hierarchy.createItem(ufePath)
         return usdUtils.getPrimFromSceneItem(ufeItem)
 
-    @unittest.skipIf(getMaterialXVersion() == [1, 39, 5], 'EMSUSD-3799: Temporarily disable to investigate image diff in MaterialX 1.39.5')
     def testUVStreamManagement(self):
         """Test that a scene without primvar readers renders correctly if it
            uses indexed UV streams"""
         cmds.file(force=True, new=True)
         cmds.move(2, -2, 1.5, 'persp')
-        self._StartTest('MtlxUVStreamTest')
+        if getMaterialXVersion() >= [1, 39, 5]:
+            # EMSUSD-3799 - Investigate failing test "testUVStreamManagement" with MatX 1.39.5
+            #
+            # Primary cause: ramptb fix in MaterialX 1.39.5
+            # The material uses ND_ramptb_color3 for ramp1, wired into mix1 as the foreground color:
+            #
+            # MaterialX 1.39.5 fixed inverted top/bottom ordering for ramptb (and splittb, ramp4)
+            # in GLSL (MaterialX PR 2721).
+            #
+            # In 1.39.4, valuet and valueb were effectively swapped in generated shaders.
+            # That directly changes mix1's foreground color and therefore base_color across most of the sphere.
+            #
+            # Thus updated the baseline image to fix the test in MatX 1.39.5.
+            self._StartTest('MtlxUVStreamTest', suffix='_1.39.5')
+        else:
+            self._StartTest('MtlxUVStreamTest')
 
     def testMayaSurfaces(self):
         cmds.file(force=True, new=True)
