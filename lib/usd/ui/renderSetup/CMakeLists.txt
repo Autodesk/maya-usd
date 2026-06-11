@@ -17,12 +17,12 @@
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        editForwardDialog.cpp
+        renderSetupWindowCmd.cpp
 )
 
 mayaUsd_promoteHeaderList(
     HEADERS
-        editForwardDialog.h
+        renderSetupWindowCmd.h
     BASEDIR
         ${PROJECT_NAME}/ui
 )

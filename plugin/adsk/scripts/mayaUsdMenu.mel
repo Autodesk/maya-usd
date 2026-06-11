@@ -21,6 +21,8 @@ global string $gMayaUsdWindowsUsdToolsSubMenu = "";
 global string $gMayaUsdOpenUsdLayerEditorMenuItem = "";
 global string $gMayaUsdSelectMenuDivider = "";
 global string $gMayaUsdSelectModeSubMenu = "";
+global string $gMayaUsdOpenUsdCompositionEditorMenuItem = "";
+global string $gMayaUsdOpenUsdRenderSetupMenuItem = "";
 
 ///////////////////////////////////////////////////////////////////////////////
 // findDividerByLabel
@@ -195,6 +197,17 @@ proc initRuntimeCommands() {
                 -command    "mayaUsdCompositionEditor"
                 -image      "USD_generic.png"
                 mayaUsdOpenCompositionEditor;
+        }
+    }
+
+    if (`exists mayaUsdRenderSetupWindow`) {
+        if (!`runTimeCommand -exists mayaUsdOpenUsdRenderSetup`) {
+            runTimeCommand -default true -plugin "mayaUsdPlugin"
+                -label 		`getMayaUsdString("kMenuUSDRenderSetup")`
+                -annotation `getMayaUsdString("kMenuUSDRenderSetupAnn")`
+                -category   "Menu items.Common.Windows.General Editors"
+                -command 	"mayaUsdRenderSetupWindow"
+                mayaUsdOpenUsdRenderSetup;
         }
     }
 
@@ -510,18 +523,30 @@ global proc mayaUsdMenu_windowMenuCallback() {
         // Set parent to the USD Tools submenu and add Layer Editor menu item
         setParent -menu $gMayaUsdWindowsUsdToolsSubMenu;
 
-        global string $gMayaUsdOpenUsdLayerEditorMenuItem;
-        $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
-            -enableCommandRepeat false
-            -runTimeCommand mayaUsdOpenUsdLayerEditor
-            wmUsdLayerEditorMenuitem`;
+        if (`runTimeCommand -exists mayaUsdOpenUsdLayerEditor`) {
+            global string $gMayaUsdOpenUsdLayerEditorMenuItem;
+            $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
+                -enableCommandRepeat false
+                -runTimeCommand mayaUsdOpenUsdLayerEditor
+                wmUsdLayerEditorMenuitem`;
+        }
 
         if (`runTimeCommand -exists mayaUsdOpenCompositionEditor`) {
-            menuItem
+            global string $gMayaUsdOpenUsdCompositionEditorMenuItem;
+            $gMayaUsdOpenUsdCompositionEditorMenuItem = `menuItem
                 -enableCommandRepeat false
                 -runTimeCommand mayaUsdOpenCompositionEditor
                 -version $mayaVersion
-                wmUsdCompositionEditorMenuitem;
+                wmUsdCompositionEditorMenuitem`;
+        }
+
+        if (`runTimeCommand -exists mayaUsdOpenUsdRenderSetup`) {
+            global string $gMayaUsdOpenUsdRenderSetupMenuItem;
+            $gMayaUsdOpenUsdRenderSetupMenuItem = `menuItem
+                -enableCommandRepeat false
+                -runTimeCommand mayaUsdOpenUsdRenderSetup
+                -version $mayaVersion
+                wmUsdRenderSetupMenuItem`;
         }
 
         // Reset parent back to the main Windows menu
@@ -614,6 +639,16 @@ proc termCreateMenu() {
     if ($gMayaUsdOpenUsdLayerEditorMenuItem != "") {
         deleteUI -mi $gMayaUsdOpenUsdLayerEditorMenuItem;
         $gMayaUsdOpenUsdLayerEditorMenuItem = "";
+    }
+    global string $gMayaUsdOpenUsdCompositionEditorMenuItem;
+    if ($gMayaUsdOpenUsdCompositionEditorMenuItem != "") {
+        deleteUI -mi $gMayaUsdOpenUsdCompositionEditorMenuItem;
+        $gMayaUsdOpenUsdCompositionEditorMenuItem = "";
+    }
+    global string $gMayaUsdOpenUsdRenderSetupMenuItem;
+    if ($gMayaUsdOpenUsdRenderSetupMenuItem != "") {
+        deleteUI -mi $gMayaUsdOpenUsdRenderSetupMenuItem;
+        $gMayaUsdOpenUsdRenderSetupMenuItem = "";
     }
     global string $gMayaUsdWindowsUsdToolsSubMenu;
     if ($gMayaUsdWindowsUsdToolsSubMenu != "") {

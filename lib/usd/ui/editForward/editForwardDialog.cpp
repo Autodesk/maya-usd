@@ -20,6 +20,8 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
 
+// This is added to prevent multiple definitions of the MApiVersion string.
+#define MNoVersionString
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MMessage.h>

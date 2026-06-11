@@ -19,6 +19,8 @@
 
 #include <pxr/usd/usd/prim.h>
 
+// This is added to prevent multiple definitions of the MApiVersion string.
+#define MNoVersionString
 #include <maya/MArgParser.h>
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>

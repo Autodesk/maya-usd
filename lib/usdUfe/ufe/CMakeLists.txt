@@ -221,7 +221,6 @@ set(HEADERS
     UsdUndoClearDefaultPrimCommand.h
     UsdUndoableCommand.h
     Utils.h
-    trf/Utils.h
 )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
