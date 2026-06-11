@@ -275,6 +275,7 @@ if(BUILD_MAYAUSD_LIBRARY)
     find_package(AdskUsdAssetResolver)
     find_package(AdskUsdDebugTools)
     find_package(AdskUsdEditForward)
+    find_package(AdskUsdRenderSetup)
 endif()
 
 #------------------------------------------------------------------------------

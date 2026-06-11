@@ -78,7 +78,7 @@ if (AdskUsdEditForward_FOUND)
                 "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
                 "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
         )
-        set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+        set_property(TEST ${target} APPEND PROPERTY LABELS SharedComponents)
     endforeach()
 else()
     # If MAYAUSD_FORCE_EF_TEST is set to 1, fail the build when edit forwarding is not found
@@ -103,12 +103,29 @@ if (AdskUsdAssetResolver_FOUND)
                 "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
                 "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
         )
-        set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+        set_property(TEST ${target} APPEND PROPERTY LABELS SharedComponents)
     endforeach()
 else()
     # If MAYAUSD_FORCE_AR_TEST is set to 1, fail the build when Asset Resolver is not found
     if (DEFINED ENV{MAYAUSD_FORCE_AR_TEST} AND "$ENV{MAYAUSD_FORCE_AR_TEST}" STREQUAL "1")
         message(FATAL_ERROR "MAYAUSD_FORCE_AR_TEST is set to 1 but AdskUsdAssetResolver was not found. ")
+    endif()
+endif()
+
+if (AdskUsdRenderSetup_FOUND)
+    mayaUsd_get_unittest_target(target testUsdRenderSetup.py)
+    mayaUsd_add_test(${target}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        PYTHON_MODULE ${target}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+    )
+    # Add a ctest label to test for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS SharedComponents)
+else()
+    # If MAYAUSD_FORCE_RS_TEST is set to 1, fail the build when Render Setup is not found
+    if (DEFINED ENV{MAYAUSD_FORCE_RS_TEST} AND "$ENV{MAYAUSD_FORCE_RS_TEST}" STREQUAL "1")
+        message(FATAL_ERROR "MAYAUSD_FORCE_RS_TEST is set to 1 but AdskUsdRenderSetup was not found. ")
     endif()
 endif()
 
@@ -122,7 +139,7 @@ if (AdskUsdDebugTools_FOUND)
         ENV
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
-    set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+    set_property(TEST ${target} APPEND PROPERTY LABELS SharedComponents)
 else()
     if (DEFINED ENV{MAYAUSD_FORCE_DT_TEST} AND "$ENV{MAYAUSD_FORCE_DT_TEST}" STREQUAL "1")
         message(FATAL_ERROR "MAYAUSD_FORCE_DT_TEST is set to 1 but AdskUsdDebugTools was not found. ")
