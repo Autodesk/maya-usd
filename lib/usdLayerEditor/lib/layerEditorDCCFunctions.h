@@ -58,6 +58,7 @@ using OpenEditForwardDialogFn  = std::function<void(const PXR_NS::UsdStageRefPtr
 // Returns true if edit forwarding is active and has handled the stage's edit
 // target (the caller then skips the normal auto-targeting); false otherwise.
 using HandleEFEditTargetUpdateFn = std::function<bool(const PXR_NS::UsdStageRefPtr&)>;
+using IsEditForwardDialogOpenFn = std::function<bool()>;
 
 using IsDccObjectStageIncomingFn = std::function<bool(const std::string&)>;
 using IsDccObjectSharedStageFn   = std::function<bool(const std::string&)>;
@@ -87,6 +88,7 @@ struct EditForwardingFns
     SetEchoEditForwardingFn          setEchoEditForwarding;
     OpenEditForwardDialogFn          openEditForwardDialog;
     HandleEFEditTargetUpdateFn handleEFEditTargetUpdate;
+    IsEditForwardDialogOpenFn isEditForwardDialogOpen; // default false when unset
 };
 
 struct DccObjectFns
@@ -175,6 +177,7 @@ LayerEditorAPI bool echoEditForwarding();
 LayerEditorAPI void setEchoEditForwarding(bool);
 LayerEditorAPI void openEditForwardDialog(const PXR_NS::UsdStageRefPtr&);
 LayerEditorAPI bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr&);
+LayerEditorAPI bool isEditForwardDialogOpen();
 
 LayerEditorAPI bool isDccObjectStageIncoming(const std::string&);
 LayerEditorAPI bool isDccObjectSharedStage(const std::string&);

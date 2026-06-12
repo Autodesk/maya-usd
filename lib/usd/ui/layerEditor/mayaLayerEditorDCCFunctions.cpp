@@ -84,6 +84,12 @@ bool getBooleanAttributeOnProxyShape(
 
 } // namespace
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+namespace {
+QPointer<UsdEditForwardConfig::EditForwardDialog> g_editForwardDialog;
+} // namespace
+#endif
+
 namespace UsdLayerEditor {
 
 void registerLayerEditorDCCFunctions()
@@ -280,17 +286,18 @@ void registerLayerEditorDCCFunctions()
     };
     editForwarding.openEditForwardDialog = [](const UsdStageRefPtr& stage) {
         // Reuse a single dialog instance; QPointer auto-nulls if it is destroyed.
-        static QPointer<UsdEditForwardConfig::EditForwardDialog> dialog;
-        if (!dialog) {
-            dialog = new UsdEditForwardConfig::EditForwardDialog(
+        if (!g_editForwardDialog) {
+            g_editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
                 StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
                 MQtUtil::mainWindow());
         }
-        dialog->setActiveStage(stage);
-        dialog->show();
-        dialog->raise();
-        dialog->activateWindow();
+        g_editForwardDialog->setActiveStage(stage);
+        g_editForwardDialog->show();
+        g_editForwardDialog->raise();
+        g_editForwardDialog->activateWindow();
     };
+    editForwarding.isEditForwardDialogOpen
+        = []() { return g_editForwardDialog && g_editForwardDialog->isVisible(); };
     editForwarding.handleEFEditTargetUpdate = [](const UsdStageRefPtr& stage) -> bool {
         auto controller = MayaUsdEditForwardController::GetForStage(stage);
         if (!controller || !controller->isForwardingActive())
