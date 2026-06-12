@@ -30,6 +30,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <memory>
+#include <string>
 
 namespace UsdLayerEditor {
 
@@ -61,11 +62,22 @@ protected:
     bool _efSupported   { false };
     bool _sharedStage   { false };
     bool _stageIncoming { false };
+
+    bool        _isComponent { false };
+    bool        _isUnsavedComponent { false };
+    std::string _moveComponentResult; // non-empty => move "succeeds"
+    int         _saveComponentCalls { 0 };
+    int         _reloadComponentCalls { 0 };
+    int         _transferSessionCalls { 0 };
+    int         _setProxyRootPathCalls { 0 };
+
     ScopedLayerEditorDCCFunctions _scopedDCCFunctions;
 
     void setEditForwardingSupported(bool supported) { _efSupported = supported; }
     void setSharedStage(bool shared) { _sharedStage = shared; }
     void setStageIncoming(bool incoming) { _stageIncoming = incoming; }
+    void setIsComponent(bool v) { _isComponent = v; }
+    void setIsUnsavedComponent(bool v) { _isUnsavedComponent = v; }
 };
 
 // Find a named action in a menu (searches recursively into submenus).
