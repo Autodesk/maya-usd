@@ -320,6 +320,18 @@ bool LayerTreeItem::isMuted() const
     return isInvalidLayer() || !_stage ? false : _stage->IsLayerMuted(_layer->GetIdentifier());
 }
 
+bool LayerTreeItem::isAnonymous() const
+{
+    if (LayerTreeModel* model = parentModel()) {
+        if (SessionState* ss = model->sessionState()) {
+            if (UsdLayerEditor::isStageAComponent(ss->stageEntry()._dccObjectPath)) {
+                return UsdLayerEditor::isUnsavedComponent(ss->stage());
+            }
+        }
+    }
+    return _layer ? _layer->IsAnonymous() : false;
+}
+
 bool LayerTreeItem::appearsMuted() const
 {
     if (isMuted()) {
