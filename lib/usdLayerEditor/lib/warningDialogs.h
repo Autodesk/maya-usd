@@ -16,9 +16,13 @@
 #ifndef WARNINGDIALOGS_H
 #define WARNINGDIALOGS_H
 
+#include "layerEditorAPI.h"
+
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtWidgets/QMessageBox>
+
+#include <functional>
 
 /**
  * @brief Helpers to easily pop a properly formatted and sized message box
@@ -43,6 +47,13 @@ void warningDialog(
     const QStringList* bulletList = nullptr,
     QMessageBox::Icon  icon = QMessageBox::Icon::NoIcon,
     QWidget*           parent = nullptr);
+
+// Test seam: when a handler is installed, confirmDialog/warningDialog return its
+// result instead of showing a blocking modal QMessageBox (headless tests would
+// otherwise hang). Production never installs one, so behavior is unchanged.
+// Returns the previously-installed handler.
+using ModalDialogTestHandler = std::function<bool(const QString& title, const QString& message)>;
+LayerEditorAPI ModalDialogTestHandler setModalDialogTestHandler(ModalDialogTestHandler handler);
 
 } // namespace UsdLayerEditor
 

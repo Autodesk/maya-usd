@@ -35,9 +35,23 @@ QString getLayerBulletList(const QStringList* in_list)
     return text;
 }
 
+// Test-only override; unset in production. See setModalDialogTestHandler.
+UsdLayerEditor::ModalDialogTestHandler& modalDialogTestHandler()
+{
+    static UsdLayerEditor::ModalDialogTestHandler handler;
+    return handler;
+}
+
 } // namespace
 
 namespace UsdLayerEditor {
+
+ModalDialogTestHandler setModalDialogTestHandler(ModalDialogTestHandler handler)
+{
+    auto previous = modalDialogTestHandler();
+    modalDialogTestHandler() = std::move(handler);
+    return previous;
+}
 
 bool confirmDialog_internal(
     bool               okCancel,
@@ -48,6 +62,9 @@ bool confirmDialog_internal(
     QMessageBox::Icon  icon,
     QWidget*           parent)
 {
+    if (auto& testHandler = modalDialogTestHandler())
+        return testHandler(title, message);
+
     if (!parent)
         parent = mainWindowParent();
     QMessageBox msgBox(parent);

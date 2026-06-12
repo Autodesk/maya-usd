@@ -17,8 +17,11 @@
 #include "testFixture.h"
 
 #include "layerEditorDCCFunctions.h"
+#include "saveLayersDialog.h"
+#include "warningDialogs.h"
 
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QDialog>
 #include <QtWidgets/QMainWindow>
 
 namespace UsdLayerEditor {
@@ -60,6 +63,24 @@ void LayerEditorTestFixture::SetUp()
         setComponentFns(component);
     }
 
+    // Headless tests must not pop the overwrite-confirm / save-layers dialog.
+    // Defaulting this to false makes save paths take the non-interactive branch.
+    {
+        SaveOptionFns saveOption;
+        saveOption.confirmExistingFileSave = [this]() { return _confirmExistingFileSave; };
+        setSaveOptionFns(saveOption);
+    }
+
+    // Suppress blocking modal dialogs (confirmDialog/warningDialog) in headless
+    // tests; record how many would have shown and answer with _modalDialogAnswer.
+    setModalDialogTestHandler([this](const QString&, const QString&) {
+        ++_modalDialogCount;
+        return _modalDialogAnswer;
+    });
+
+    // The bulk save-layers dialog is modal too; never show it in headless tests.
+    SaveLayersDialog::setExecTestHandler([]() { return QDialog::Rejected; });
+
     _mainWindow = new QMainWindow();
     _window     = std::make_unique<StubLayerEditorWindow>(_sessionState, _mainWindow);
     _widget     = _window->widget();
@@ -74,6 +95,8 @@ void LayerEditorTestFixture::SetUp()
 
 void LayerEditorTestFixture::TearDown()
 {
+    setModalDialogTestHandler(nullptr);
+    SaveLayersDialog::setExecTestHandler(nullptr);
     _widget = nullptr;
     _window.reset();
     delete _mainWindow;
