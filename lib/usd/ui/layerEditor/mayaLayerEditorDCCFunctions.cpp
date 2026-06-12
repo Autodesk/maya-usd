@@ -169,7 +169,7 @@ void registerLayerEditorDCCFunctions()
             MString(rootLayerPath.c_str()),
             MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
             rootLayer,
-            /*wasTargetLayer=*/false);
+            /*isTargetLayer=*/false);
     };
     setComponentFns(component);
 
