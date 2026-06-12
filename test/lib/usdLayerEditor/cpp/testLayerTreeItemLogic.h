@@ -387,6 +387,9 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
     ComponentFns                  comp;
     comp.displayError = [](const std::string&) {};
     comp.isStageAComponent = [](const std::string&) { return true; };
+    // isAnonymous() now reflects unsaved-component state for component stages;
+    // an unsaved component reports anonymous, which the save early-out requires.
+    comp.isUnsavedComponent = [](const PXR_NS::UsdStageRefPtr&) { return true; };
     setComponentFns(comp);
 
     auto* item = itemAt(treeModel(), firstSublayerIndex());
@@ -403,6 +406,30 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
     EXPECT_EQ(_sessionState._saveLayerCallCount, 0)
         << "component stage should delegate to saveStage, skipping the generic "
            "anonymous-save path";
+}
+
+// ── isAnonymous component override (match OLD editor) ─────────────────────────
+
+TEST_F(LayerTreeItemTest, IsAnonymous_FalseForSavedComponent)
+{
+    setIsComponent(true);
+    setIsUnsavedComponent(false);
+
+    LayerTreeItem* root = itemAt(treeModel(), rootLayerIndex());
+    ASSERT_NE(root, nullptr);
+    // Root layer is anonymous (in-memory stage); the component override must
+    // make a SAVED component report not-anonymous, flipping the layer flag.
+    EXPECT_FALSE(root->isAnonymous());
+}
+
+TEST_F(LayerTreeItemTest, IsAnonymous_TrueForUnsavedComponent)
+{
+    setIsComponent(true);
+    setIsUnsavedComponent(true);
+
+    LayerTreeItem* root = itemAt(treeModel(), rootLayerIndex());
+    ASSERT_NE(root, nullptr);
+    EXPECT_TRUE(root->isAnonymous());
 }
 
 } // namespace UsdLayerEditor
