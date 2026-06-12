@@ -59,7 +59,7 @@ void UsdLayerEditor::initialize()
         []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); });
 
     UsdLayerEditor::FileSystem::setDCCWorkspaceSceneLocationFunc(
-        []() { return UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir(); });
+        []() { return std::string(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar()); });
 
     UsdLayerEditor::Serialization::setUpdateDCCObjectRootLayerFunction(
         [](const std::string&            proxyPath,
