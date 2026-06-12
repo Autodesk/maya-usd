@@ -187,18 +187,18 @@ public:
     bool isIdenticalItem(const LayerTreeItem* other) const;
 
     // menu callbacks
-    void removeSubLayer();
-    void saveEdits();
-    void saveEditsNoPrompt();
-    void discardEdits();
-    void mergeWithSublayers();
+    void removeSubLayer(QWidget* in_parent);
+    void saveEdits(QWidget* in_parent);
+    void saveEditsNoPrompt(QWidget* in_parent);
+    void discardEdits(QWidget* in_parent);
+    void mergeWithSublayers(QWidget* in_parent);
 
     // there are two addAnonymousSubLayer , because the menu needs all method to be void
-    void                   addAnonymousSublayer();
-    PXR_NS::SdfLayerRefPtr addAnonymousSublayerAndReturn();
+    void                   addAnonymousSublayer(QWidget* in_parent);
+    PXR_NS::SdfLayerRefPtr addAnonymousSublayerAndReturn(QWidget* in_parent);
     void                   loadSubLayers(QWidget* in_parent);
-    void                   printLayer();
-    void                   clearLayer();
+    void                   printLayer(QWidget* in_parent);
+    void                   clearLayer(QWidget* in_parent);
 
     // delegate Action API for command buttons
     void getActionButton(LayerActionType actionType, LayerActionInfo& out_info) const;
@@ -225,7 +225,7 @@ protected:
 protected:
     void populateChildren(RecursionDetector* in_recursionDetector);
     // helper to save anon layers called by saveEdits()
-    void saveAnonymousLayer();
+    void saveAnonymousLayer(QWidget* in_parent);
 
 private:
     bool sublayerOfShared() const;

@@ -21,6 +21,7 @@
 #include <string>
 
 class QString;
+class QWidget;
 namespace UsdLayerEditor {
 
 class LayerTreeItem;
@@ -31,6 +32,7 @@ class LayerTreeItem;
 // used for Load Layers
 // in corner cases the parent layer is null, we assume its safe to add
 bool checkIfPathIsSafeToAdd(
+    QWidget*           in_parent,
     const QString&     in_errorTitle,
     LayerTreeItem*     in_parentItem,
     const std::string& in_pathToAdd);

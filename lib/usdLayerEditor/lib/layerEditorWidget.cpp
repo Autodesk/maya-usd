@@ -548,12 +548,12 @@ void LayerEditorWidget::onNewLayerButtonClicked()
     }
 
     if (addToRoot) {
-        layerTreeItem->addAnonymousSublayer();
+        layerTreeItem->addAnonymousSublayer(_treeView);
     } else {
         auto        parentItem = layerTreeItem->parentLayerItem();
         int         rowToInsert = layerTreeItem->row();
         // add a sibling to the selection
-        pxr::SdfLayerRefPtr newLayer = parentItem->addAnonymousSublayerAndReturn();
+        pxr::SdfLayerRefPtr newLayer = parentItem->addAnonymousSublayerAndReturn(_treeView);
 
         // move it to the right place, if it's not top
         if (rowToInsert > 0 && newLayer) {
