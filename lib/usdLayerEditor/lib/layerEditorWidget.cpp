@@ -554,21 +554,21 @@ void LayerEditorWidget::onNewLayerButtonClicked()
     if (addToRoot) {
         layerTreeItem->addAnonymousSublayer(_treeView);
     } else {
-        auto        parentItem = layerTreeItem->parentLayerItem();
-        int         rowToInsert = layerTreeItem->row();
-        // add a sibling to the selection
-        pxr::SdfLayerRefPtr newLayer = parentItem->addAnonymousSublayerAndReturn(_treeView);
+        // Single undo bracket spanning the add + reorder (matches the old editor).
+        UndoContext         context(_sessionState.commandHook(), "Add Anonymous Layer");
+        auto                parentItem = layerTreeItem->parentLayerItem();
+        int                 rowToInsert = layerTreeItem->row();
+        pxr::SdfLayerRefPtr newLayer = context.hook()->addAnonymousSubLayer(
+            parentItem->layer(), model->findNameForNewAnonymousLayer());
 
         // move it to the right place, if it's not top
         if (rowToInsert > 0 && newLayer) {
-            // create a UndoContext, which will create a composite command including
-            // the following 2 operations.
-            UndoContext context(_sessionState.commandHook(), "Reorder Newly Added Layer");
             context.hook()->removeSubLayerPath(parentItem->layer(), newLayer->GetIdentifier());
             context.hook()->insertSubLayerPath(
                 parentItem->layer(), newLayer->GetIdentifier(), rowToInsert);
-            model->selectUsdLayerOnIdle(newLayer);
         }
+        if (newLayer)
+            model->selectUsdLayerOnIdle(newLayer);
     }
 }
 
