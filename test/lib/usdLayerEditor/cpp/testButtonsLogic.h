@@ -244,4 +244,11 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_Click_WithSublayerSelectionAddsSib
         << "addAnonymousSubLayer should be called on the parent when adding a sibling";
 }
 
+TEST_F(LayerEditorTestFixture, ToolbarButtons_HaveObjectNames)
+{
+    EXPECT_TRUE(_widget->findChild<QPushButton*>("LayerEditorAddLayerButton"));
+    EXPECT_TRUE(_widget->findChild<QPushButton*>("LayerEditorImportLayerButton"));
+    EXPECT_TRUE(_widget->findChild<QPushButton*>("LayerEditorSaveAllButton"));
+}
+
 } // namespace UsdLayerEditor
