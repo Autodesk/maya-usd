@@ -451,6 +451,15 @@ void LayerTreeItem::removeSubLayer(QWidget* in_parent)
 
 void LayerTreeItem::saveEdits(QWidget* in_parent)
 {
+    if (LayerTreeModel* model = parentModel()) {
+        if (SessionState* ss = model->sessionState()) {
+            if (UsdLayerEditor::isStageAComponent(ss->stageEntry()._dccObjectPath)) {
+                model->saveStage(in_parent);
+                return;
+            }
+        }
+    }
+
     bool shouldSaveEdits = true;
 
     // if the current layer contains anonymous layer(s),

@@ -432,4 +432,24 @@ TEST_F(LayerTreeItemTest, IsAnonymous_TrueForUnsavedComponent)
     EXPECT_TRUE(root->isAnonymous());
 }
 
+TEST_F(LayerTreeItemTest, SaveEdits_ComponentRoutesToSaveStageSkippingOverwriteConfirm)
+{
+    // A component reports non-anonymous when saved, which would normally make
+    // saveEdits show its overwrite-confirm dialog. The component early-exit must
+    // route straight to saveStage (the component creator owns the save flow)
+    // before that confirm is ever shown -- matching the old editor.
+    setIsComponent(true);
+    setIsUnsavedComponent(false);
+    _confirmExistingFileSave = true;
+    _modalDialogCount = 0;
+
+    LayerTreeItem* root = itemAt(treeModel(), rootLayerIndex());
+    ASSERT_NE(root, nullptr);
+
+    root->saveEdits(nullptr);
+
+    EXPECT_EQ(_modalDialogCount, 0)
+        << "component saveEdits must route to saveStage before the overwrite-confirm dialog";
+}
+
 } // namespace UsdLayerEditor
