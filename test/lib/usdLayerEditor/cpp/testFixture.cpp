@@ -36,6 +36,30 @@ void LayerEditorTestFixture::SetUp()
     dcc.isDccObjectSharedStage = [this](const std::string&) { return _sharedStage; };
     setDccObjectFns(dcc);
 
+    {
+        ComponentFns component;
+        component.isStageAComponent = [this](const std::string&) { return _isComponent; };
+        component.isUnsavedComponent
+            = [this](const PXR_NS::UsdStageRefPtr&) { return _isUnsavedComponent; };
+        component.shouldDisplayComponentInitialSaveDialog
+            = [](const PXR_NS::UsdStageRefPtr&, const std::string&) { return false; };
+        component.saveComponent
+            = [this](const PXR_NS::UsdStageRefPtr&, const std::string&) { ++_saveComponentCalls; };
+        component.reloadComponent = [this](const std::string&) { ++_reloadComponentCalls; };
+        component.moveComponent = [this](const std::string&, const std::string&, const std::string&) {
+            return _moveComponentResult;
+        };
+        component.renameProxyShape
+            = [](const std::string&, const std::string& name) { return std::string("|") + name; };
+        component.transferSessionLayer
+            = [this](const std::string&, const std::string&) { ++_transferSessionCalls; };
+        component.setProxyRootLayerPath
+            = [this](const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&) {
+                  ++_setProxyRootPathCalls;
+              };
+        setComponentFns(component);
+    }
+
     _mainWindow = new QMainWindow();
     _window     = std::make_unique<StubLayerEditorWindow>(_sessionState, _mainWindow);
     _widget     = _window->widget();
