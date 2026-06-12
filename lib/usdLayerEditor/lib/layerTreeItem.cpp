@@ -442,7 +442,7 @@ void LayerTreeItem::getActionButton(LayerActionType actionType, LayerActionInfo&
     }
 }
 
-void LayerTreeItem::removeSubLayer(QWidget* in_parent)
+void LayerTreeItem::removeSubLayer(QWidget* /*in_parent*/)
 {
     if (isSublayer()) { // can't remove session or root layer
         commandHook()->removeSubLayerPath(parentLayerItem()->layer(), subLayerPath());
@@ -636,7 +636,7 @@ void LayerTreeItem::addAnonymousSublayer(QWidget* in_parent)
     addAnonymousSublayerAndReturn(in_parent);
 }
 
-PXR_NS::SdfLayerRefPtr LayerTreeItem::addAnonymousSublayerAndReturn(QWidget* in_parent)
+PXR_NS::SdfLayerRefPtr LayerTreeItem::addAnonymousSublayerAndReturn(QWidget* /*in_parent*/)
 {
     UndoContext context(commandHook(), "Add Anonymous Layer");
     auto model = parentModel();
@@ -668,16 +668,16 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
     }
 }
 
-void LayerTreeItem::printLayer(QWidget* in_parent)
+void LayerTreeItem::printLayer(QWidget* /*in_parent*/)
 {
     if (!isInvalidLayer()) {
         parentModel()->sessionState()->printLayer(layer());
     }
 }
 
-void LayerTreeItem::clearLayer(QWidget* in_parent) { commandHook()->clearLayer(layer()); }
+void LayerTreeItem::clearLayer(QWidget* /*in_parent*/) { commandHook()->clearLayer(layer()); }
 
-void LayerTreeItem::mergeWithSublayers(QWidget* in_parent)
+void LayerTreeItem::mergeWithSublayers(QWidget* /*in_parent*/)
 {
     if (!_layer || isInvalidLayer() || !hasSubLayers() || isLocked())
         return;
