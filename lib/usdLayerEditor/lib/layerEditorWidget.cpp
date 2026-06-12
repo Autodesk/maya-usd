@@ -375,6 +375,13 @@ void LayerEditorWidget::setupLayout()
         this,
         &LayerEditorWidget::updateButtonsOnIdle);
 
+    if (UsdLayerEditor::supportsEditForwarding()) {
+        connect(&_sessionState, &SessionState::currentStageChangedSignal, this, [this]() {
+            if (UsdLayerEditor::isEditForwardDialogOpen())
+                UsdLayerEditor::openEditForwardDialog(_sessionState.stage());
+        });
+    }
+
     auto mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(DPIScale(4), DPIScale(4), DPIScale(4), DPIScale(4));
