@@ -871,38 +871,47 @@ void SaveLayersDialog::onSaveAll()
         std::string componentName = componentWidget->componentName().toStdString();
         std::string dccObjectPath = componentWidget->dccObjectPath();
 
-        std::string newRootPath;
-        if (_sessionState) {
-            newRootPath = UsdLayerEditor::moveComponent(saveLocation, componentName, dccObjectPath);
-        }
+        // SLD-4: move/save the component unconditionally (OLD did not gate this on
+        // session state; bulk save has no session state but must still save).
+        std::string newRootPath
+            = UsdLayerEditor::moveComponent(saveLocation, componentName, dccObjectPath);
+
         if (!newRootPath.empty()) {
             _newPaths.append(QString::fromStdString(componentName));
             _newPaths.append(QString::fromStdString(newRootPath));
 
             auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
-            if (newRootLayer && _sessionState) {
-                // Rename the DCC-side proxy/object so its name matches the
-                // component's new name. The hook is a no-op for DCCs that
-                // don't have a renamable proxy concept; it returns the new DCC
-                // object path so we can relocate the stage entry exactly.
+            if (newRootLayer) {
+                const std::string oldDccObjectPath = dccObjectPath;
+
+                // Rename the DCC-side proxy to match the component's new name.
                 std::string newDccObjectPath
                     = UsdLayerEditor::renameProxyShape(dccObjectPath, componentName);
+                const std::string effectivePath
+                    = newDccObjectPath.empty() ? dccObjectPath : newDccObjectPath;
 
-                // After the rename, relocate the (now-renamed) stage entry by
-                // matching its DCC object path exactly. If no rename happened
-                // (empty path), the current stage entry is left untouched.
-                auto entries = _sessionState->allStages();
-                for (const auto& entry : entries) {
-                    if (!newDccObjectPath.empty() && entry._dccObjectPath == newDccObjectPath) {
-                        _sessionState->setStageEntry(entry);
-                        break;
+                // SLD-3: rewrite the proxy's root .filePath to the new root layer
+                // (renameProxyShape only renames the DAG node, not .filePath).
+                UsdLayerEditor::setProxyRootLayerPath(effectivePath, newRootPath, newRootLayer);
+
+                // SLD-2: transfer in-memory session-layer opinions to the new stage.
+                UsdLayerEditor::transferSessionLayer(oldDccObjectPath, effectivePath);
+
+                // Relocate the stage entry + lock the new root (needs session state).
+                if (_sessionState) {
+                    auto entries = _sessionState->allStages();
+                    for (const auto& entry : entries) {
+                        if (entry._dccObjectPath == effectivePath) {
+                            _sessionState->setStageEntry(entry);
+                            break;
+                        }
                     }
+                    lockLayer(
+                        _sessionState->stageEntry()._dccObjectPath,
+                        newRootLayer,
+                        LayerLockType::LayerLock_Locked,
+                        true);
                 }
-
-                // Lock the newly-saved root layer. The shared lockLayer
-                // helper is DCC-agnostic.
-                std::string lockShapePath = _sessionState->stageEntry()._dccObjectPath;
-                lockLayer(lockShapePath, newRootLayer, LayerLockType::LayerLock_Locked, true);
             }
         } else {
             _problemLayers.append(QString::fromStdString(componentName));
