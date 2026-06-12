@@ -529,6 +529,29 @@ SaveLayersDialog::SaveLayersDialog(
 
 SaveLayersDialog ::~SaveLayersDialog() { QApplication::restoreOverrideCursor(); }
 
+namespace {
+// Test-only override; unset in production. See setExecTestHandler.
+SaveLayersDialog::ExecTestHandler& execTestHandler()
+{
+    static SaveLayersDialog::ExecTestHandler handler;
+    return handler;
+}
+} // namespace
+
+SaveLayersDialog::ExecTestHandler SaveLayersDialog::setExecTestHandler(ExecTestHandler handler)
+{
+    auto previous = execTestHandler();
+    execTestHandler() = std::move(handler);
+    return previous;
+}
+
+int SaveLayersDialog::exec()
+{
+    if (auto& handler = execTestHandler())
+        return handler();
+    return QDialog::exec();
+}
+
 void SaveLayersDialog::getLayersToSave(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            objectPath,

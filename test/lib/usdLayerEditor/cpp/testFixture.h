@@ -71,6 +71,13 @@ protected:
     int         _transferSessionCalls { 0 };
     int         _setProxyRootPathCalls { 0 };
 
+    // Modal dialogs (confirmDialog/warningDialog) are suppressed during tests via
+    // a handler installed in SetUp; this counts how many would have been shown,
+    // and _modalDialogAnswer is the value the suppressed dialog returns.
+    int  _modalDialogCount { 0 };
+    bool _modalDialogAnswer { true };
+    bool _confirmExistingFileSave { false };
+
     ScopedLayerEditorDCCFunctions _scopedDCCFunctions;
 
     void setEditForwardingSupported(bool supported) { _efSupported = supported; }

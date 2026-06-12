@@ -71,6 +71,13 @@
 
      void quietlyUncheckAllAsRelative();
 
+     // Test seam: when a handler is installed, exec() returns its result without
+     // showing the (blocking) dialog. Production never installs one. Returns the
+     // previously-installed handler.
+     using ExecTestHandler = std::function<int()>;
+     static ExecTestHandler setExecTestHandler(ExecTestHandler handler);
+     int                    exec() override;
+
  protected:
      void onSaveAll();
      void onCancel();
