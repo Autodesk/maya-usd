@@ -370,7 +370,7 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_NonComponentStage_UsesGenericPath)
     ASSERT_TRUE(item->isAnonymous());
 
     _sessionState._saveLayerCallCount = 0;
-    item->saveEditsNoPrompt();
+    item->saveEditsNoPrompt(nullptr);
     QApplication::processEvents();
 
     EXPECT_EQ(_sessionState._saveLayerCallCount, 1)
@@ -397,7 +397,7 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
     TestUtils::dismissNextModal(100);
 
     _sessionState._saveLayerCallCount = 0;
-    item->saveEditsNoPrompt();
+    item->saveEditsNoPrompt(nullptr);
     QApplication::processEvents();
 
     EXPECT_EQ(_sessionState._saveLayerCallCount, 0)

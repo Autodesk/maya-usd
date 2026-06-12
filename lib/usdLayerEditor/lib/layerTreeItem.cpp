@@ -430,14 +430,14 @@ void LayerTreeItem::getActionButton(LayerActionType actionType, LayerActionInfo&
     }
 }
 
-void LayerTreeItem::removeSubLayer()
+void LayerTreeItem::removeSubLayer(QWidget* in_parent)
 {
     if (isSublayer()) { // can't remove session or root layer
         commandHook()->removeSubLayerPath(parentLayerItem()->layer(), subLayerPath());
     }
 }
 
-void LayerTreeItem::saveEdits()
+void LayerTreeItem::saveEdits(QWidget* in_parent)
 {
     bool shouldSaveEdits = true;
 
@@ -460,7 +460,11 @@ void LayerTreeItem::saveEdits()
         }
 
         warningDialog(
-            QString::fromStdString(title), QString::fromStdString(msg), &anonymLayerNames);
+            QString::fromStdString(title),
+            QString::fromStdString(msg),
+            &anonymLayerNames,
+            QMessageBox::Icon::NoIcon,
+            in_parent);
 
         return;
     }
@@ -481,19 +485,21 @@ void LayerTreeItem::saveEdits()
             QString::fromStdString(title),
             QString::fromStdString(msg),
             nullptr /*bulletList*/,
-            &okButtonText);
+            &okButtonText,
+            QMessageBox::Icon::NoIcon,
+            in_parent);
     }
 
     if (shouldSaveEdits) {
-        saveEditsNoPrompt();
+        saveEditsNoPrompt(in_parent);
     }
 }
 
-void LayerTreeItem::saveEditsNoPrompt()
+void LayerTreeItem::saveEditsNoPrompt(QWidget* in_parent)
 {
     if (isAnonymous()) {
         if (!isSessionLayer())
-            saveAnonymousLayer();
+            saveAnonymousLayer(in_parent);
     } else {
         if (!Serialization::saveLayerWithFormat(layer())) {
             std::string layerName(layer()->GetDisplayName().c_str());
@@ -504,7 +510,7 @@ void LayerTreeItem::saveEditsNoPrompt()
 }
 
 // helper to save anon layers called by saveEdits()
-void LayerTreeItem::saveAnonymousLayer()
+void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 {
     // Special case for components created by the component creator. Only the
     // component creator knows how to save a component properly; delegate to the
@@ -520,14 +526,14 @@ void LayerTreeItem::saveAnonymousLayer()
 
     // the path we have is an absolute path
      std::string fileName;
-     if (!sessionState->saveLayerUI(nullptr, &fileName, parentLayer()))
+     if (!sessionState->saveLayerUI(in_parent, &fileName, parentLayer()))
          return;
 
      Serialization::ensureUSDFileExtension(fileName);
 
      const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
 
-     if (!checkIfPathIsSafeToAdd(dialogTitle, parentLayerItem(), fileName))
+     if (!checkIfPathIsSafeToAdd(in_parent, dialogTitle, parentLayerItem(), fileName))
          return;
 
      Serialization::PathInfo pathInfo;
@@ -546,7 +552,7 @@ void LayerTreeItem::saveAnonymousLayer()
      SdfLayerRefPtr newLayer = Serialization::saveAnonymousLayer(
          sessionState->stage(), layer(), pathInfo, layerParent, formatTag, &errMsg);
      if (!newLayer) {
-         warningDialog(dialogTitle, errMsg.c_str());
+         warningDialog(dialogTitle, errMsg.c_str(), nullptr, QMessageBox::Icon::NoIcon, in_parent);
          return;
      }
 
@@ -560,7 +566,7 @@ void LayerTreeItem::saveAnonymousLayer()
          model->selectUsdLayerOnIdle(newLayer);
 }
 
-void LayerTreeItem::discardEdits()
+void LayerTreeItem::discardEdits(QWidget* in_parent)
 {
     if (isAnonymous() || !isDirty()) {
         // according to MAYA-104336, we don't prompt for confirmation for anonymous layers
@@ -579,19 +585,20 @@ void LayerTreeItem::discardEdits()
                 QString::fromStdString(title),
                 QString::fromStdString(desc),
                 nullptr,
-                &buttonText
-                )) {
+                &buttonText,
+                QMessageBox::Icon::NoIcon,
+                in_parent)) {
             commandHook()->discardEdits(layer());
         }
     }
 }
 
-void LayerTreeItem::addAnonymousSublayer()
+void LayerTreeItem::addAnonymousSublayer(QWidget* in_parent)
 {
-    addAnonymousSublayerAndReturn();
+    addAnonymousSublayerAndReturn(in_parent);
 }
 
-PXR_NS::SdfLayerRefPtr LayerTreeItem::addAnonymousSublayerAndReturn()
+PXR_NS::SdfLayerRefPtr LayerTreeItem::addAnonymousSublayerAndReturn(QWidget* in_parent)
 {
     UndoContext context(commandHook(), "Add Anonymous Layer");
     auto model = parentModel();
@@ -623,16 +630,16 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
     }
 }
 
-void LayerTreeItem::printLayer()
+void LayerTreeItem::printLayer(QWidget* in_parent)
 {
     if (!isInvalidLayer()) {
         parentModel()->sessionState()->printLayer(layer());
     }
 }
 
-void LayerTreeItem::clearLayer() { commandHook()->clearLayer(layer()); }
+void LayerTreeItem::clearLayer(QWidget* in_parent) { commandHook()->clearLayer(layer()); }
 
-void LayerTreeItem::mergeWithSublayers()
+void LayerTreeItem::mergeWithSublayers(QWidget* in_parent)
 {
     if (!_layer || isInvalidLayer() || !hasSubLayers() || isLocked())
         return;

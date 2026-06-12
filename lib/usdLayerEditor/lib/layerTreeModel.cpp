@@ -570,7 +570,7 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
-    auto saveAllLayers = [this]() {
+    auto saveAllLayers = [this, in_parent]() {
         // Special case for components created by the component creator. Only
         // the component creator knows how to save a component properly. The
         // hook is a no-op for DCCs without component support.
@@ -585,7 +585,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         for (auto layer : layers) {
             if (!layer->isSystemLocked()) {
                 if (!layer->isAnonymous()) {
-                    layer->saveEditsNoPrompt();
+                    layer->saveEditsNoPrompt(in_parent);
                 }
             }
         }
