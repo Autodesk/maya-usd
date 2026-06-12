@@ -17,6 +17,8 @@
 
 #include <layerEditorDCCFunctions.h>
 
+#include <pxr/usd/sdf/layer.h>
+
 #include <gtest/gtest.h>
 
 #include <QtWidgets/QWidget>
@@ -63,25 +65,34 @@ TEST(LayerEditorDCCFunctions, LayerContentsLimits_ReturnRegisteredValues)
     EXPECT_EQ(layerContentsTimeSamplesSizeLimit(), 5);
 }
 
+TEST(LayerEditorDCCFunctions, CaptureSessionLayer_NullByDefault)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    setComponentFns(ComponentFns {});
+    EXPECT_FALSE(captureSessionLayer("|x"));
+}
+
 TEST(LayerEditorDCCFunctions, TransferSessionLayer_NoOpByDefault)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setComponentFns(ComponentFns {}); // all unset
-    transferSessionLayer("|old", "|new"); // must not crash when unset
+    setComponentFns(ComponentFns {});
+    transferSessionLayer(PXR_NS::SdfLayerRefPtr {}, "|x"); // must not crash
     SUCCEED();
 }
 
 TEST(LayerEditorDCCFunctions, TransferSessionLayer_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
-    std::string seenOld, seenNew;
-    ComponentFns fns;
+    PXR_NS::SdfLayerRefPtr seenSrc;
+    std::string            seenDst;
+    ComponentFns           fns;
     fns.transferSessionLayer
-        = [&](const std::string& o, const std::string& n) { seenOld = o; seenNew = n; };
+        = [&](const PXR_NS::SdfLayerRefPtr& src, const std::string& dst) { seenSrc = src; seenDst = dst; };
     setComponentFns(fns);
-    transferSessionLayer("|oldProxy", "|newProxy");
-    EXPECT_EQ(seenOld, "|oldProxy");
-    EXPECT_EQ(seenNew, "|newProxy");
+    auto layer = PXR_NS::SdfLayer::CreateAnonymous("xfer");
+    transferSessionLayer(layer, "|newProxy");
+    EXPECT_EQ(seenSrc, layer);
+    EXPECT_EQ(seenDst, "|newProxy");
 }
 
 TEST(LayerEditorDCCFunctions, SetProxyRootLayerPath_DispatchesWhenRegistered)

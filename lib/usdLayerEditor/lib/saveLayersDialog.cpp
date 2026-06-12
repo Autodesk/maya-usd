@@ -882,7 +882,9 @@ void SaveLayersDialog::onSaveAll()
 
             auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
             if (newRootLayer) {
-                const std::string oldDccObjectPath = dccObjectPath;
+                // Capture the component's session layer BEFORE the rename/repath, which
+                // recreates the stage with an empty session layer (matches the old editor).
+                auto oldSessionLayer = UsdLayerEditor::captureSessionLayer(dccObjectPath);
 
                 // Rename the DCC-side proxy to match the component's new name.
                 std::string newDccObjectPath
@@ -894,8 +896,8 @@ void SaveLayersDialog::onSaveAll()
                 // (renameProxyShape only renames the DAG node, not .filePath).
                 UsdLayerEditor::setProxyRootLayerPath(effectivePath, newRootPath, newRootLayer);
 
-                // SLD-2: transfer in-memory session-layer opinions to the new stage.
-                UsdLayerEditor::transferSessionLayer(oldDccObjectPath, effectivePath);
+                // SLD-2: transfer the captured session-layer opinions onto the new stage.
+                UsdLayerEditor::transferSessionLayer(oldSessionLayer, effectivePath);
 
                 // Relocate the stage entry + lock the new root (needs session state).
                 if (_sessionState) {

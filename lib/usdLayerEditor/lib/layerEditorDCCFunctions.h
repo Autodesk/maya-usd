@@ -46,7 +46,8 @@ using MoveComponentFn
 using PreviewComponentSaveFn
     = std::function<std::string(const std::string&, const std::string&, const std::string&)>;
 using GetComponentLayersToSaveFn = std::function<std::vector<std::string>(const std::string&)>;
-using TransferSessionLayerFn = std::function<void(const std::string&, const std::string&)>;
+using CaptureSessionLayerFn  = std::function<PXR_NS::SdfLayerRefPtr(const std::string&)>;
+using TransferSessionLayerFn = std::function<void(const PXR_NS::SdfLayerRefPtr&, const std::string&)>;
 using SetProxyRootLayerPathFn
     = std::function<void(const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&)>;
 
@@ -74,6 +75,7 @@ struct ComponentFns
     PreviewComponentSaveFn                    previewComponentSave;
     GetComponentLayersToSaveFn                getComponentLayersToSave;
     std::function<void(const std::string&)>   displayError; // no-op when unset
+    CaptureSessionLayerFn                     captureSessionLayer;   // returns null when unset
     TransferSessionLayerFn                    transferSessionLayer;  // no-op when unset
     SetProxyRootLayerPathFn                   setProxyRootLayerPath; // no-op when unset
 };
@@ -159,8 +161,10 @@ LayerEditorAPI std::string
 previewComponentSave(const std::string&, const std::string&, const std::string&);
 LayerEditorAPI std::vector<std::string> getComponentLayersToSave(const std::string&);
 LayerEditorAPI void                     displayError(const std::string&);
-LayerEditorAPI void
-transferSessionLayer(const std::string& oldDccObjectPath, const std::string& newDccObjectPath);
+LayerEditorAPI PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath);
+LayerEditorAPI void transferSessionLayer(
+    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
+    const std::string&            dstDccObjectPath);
 LayerEditorAPI void setProxyRootLayerPath(
     const std::string&            dccObjectPath,
     const std::string&            rootLayerPath,
