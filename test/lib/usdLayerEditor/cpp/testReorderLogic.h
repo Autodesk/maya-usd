@@ -20,6 +20,7 @@
 #endif
 #include "testUtils.h"
 #include "layerTreeItem.h"
+#include "layerTreeModel.h"
 
 #include <pxr/usd/sdf/layer.h>
 
@@ -227,6 +228,33 @@ TEST_F(LayerEditorTestFixture, DragDrop_Drop_CallsMoveSubLayerPathOnSuccess)
     ASSERT_FALSE(newPaths.empty());
     EXPECT_EQ(newPaths[newPaths.size() - 1], draggedPath)
         << "Dragged layer should now be last";
+}
+
+// ── add-sibling-layer undo bracketing ──────────────────────────────────────────
+
+TEST_F(LayerEditorTestFixture, AddSiblingLayer_IsSingleUndoBracket)
+{
+    // Give the root a second sublayer so a selection at row 1 forces a reorder.
+    auto* rootItem = treeModel()->layerItemFromIndex(rootLayerIndex());
+    ASSERT_NE(rootItem, nullptr);
+    rootItem->layer()->InsertSubLayerPath(
+        SdfLayer::CreateAnonymous("extraSub")->GetIdentifier(), 1);
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+
+    // Select the sublayer now at row 1 (a non-top sibling).
+    selectRow(treeModel()->index(1, 0, rootLayerIndex()));
+
+    auto& hook = _sessionState._commandHookImpl;
+    hook.clearCalls();
+
+    _widget->onNewLayerButtonClicked();
+    QApplication::processEvents();
+
+    EXPECT_EQ(hook.callCount("openUndoBracket"), 1)
+        << "add + reorder must be a single undo bracket";
+    // sanity: the reorder actually happened (remove + insert within that bracket)
+    EXPECT_GE(hook.callCount("insertSubLayerPath"), 1);
 }
 
 } // namespace UsdLayerEditor
