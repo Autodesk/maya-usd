@@ -813,6 +813,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
     setLayout(topLayout);
     setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
+    resize(DPIScale(700), sizeHint().height());
     setSizeGripEnabled(true);
     QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
 }
