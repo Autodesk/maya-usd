@@ -518,7 +518,9 @@ void LayerTreeModel::autoHideSessionLayerChanged() { rebuildModelOnIdle(); }
 
 void LayerTreeModel::onEFFallbackTargetChanged()
 {
-    updateTargetLayer(InRebuildModel::No);
+    // Dispatch asynchronously (matches the old editor) to avoid re-entrant model
+    // updates while the edit-forwarding fallback-target change is still settling.
+    QTimer::singleShot(0, this, [this]() { updateTargetLayer(InRebuildModel::No); });
 }
 
 LayerTreeItem* LayerTreeModel::layerItemFromIndex(const QModelIndex& index) const
