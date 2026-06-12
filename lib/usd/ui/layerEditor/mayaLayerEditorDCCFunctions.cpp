@@ -144,6 +144,23 @@ void registerLayerEditorDCCFunctions()
     component.getComponentLayersToSave = [](const std::string& dccObjectPath) {
         return MayaUsd::ComponentUtils::getAdskUsdComponentLayersToSave(dccObjectPath);
     };
+    component.transferSessionLayer
+        = [](const std::string& oldDccObjectPath, const std::string& newDccObjectPath) {
+              auto oldStage = UsdMayaUtil::GetStageByProxyName(oldDccObjectPath);
+              auto newStage = UsdMayaUtil::GetStageByProxyName(newDccObjectPath);
+              if (oldStage && newStage)
+                  newStage->GetSessionLayer()->TransferContent(oldStage->GetSessionLayer());
+          };
+    component.setProxyRootLayerPath = [](const std::string&            dccObjectPath,
+                                         const std::string&            rootLayerPath,
+                                         const PXR_NS::SdfLayerRefPtr& rootLayer) {
+        MayaUsd::utils::setNewProxyPath(
+            MString(dccObjectPath.c_str()),
+            MString(rootLayerPath.c_str()),
+            MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
+            rootLayer,
+            /*wasTargetLayer=*/false);
+    };
     setComponentFns(component);
 
     DccObjectFns dccObject;

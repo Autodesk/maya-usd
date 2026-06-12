@@ -62,3 +62,40 @@ TEST(LayerEditorDCCFunctions, LayerContentsLimits_ReturnRegisteredValues)
     EXPECT_EQ(layerContentsArraySizeLimit(), 3);
     EXPECT_EQ(layerContentsTimeSamplesSizeLimit(), 5);
 }
+
+TEST(LayerEditorDCCFunctions, TransferSessionLayer_NoOpByDefault)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    setComponentFns(ComponentFns {}); // all unset
+    transferSessionLayer("|old", "|new"); // must not crash when unset
+    SUCCEED();
+}
+
+TEST(LayerEditorDCCFunctions, TransferSessionLayer_DispatchesWhenRegistered)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    std::string seenOld, seenNew;
+    ComponentFns fns;
+    fns.transferSessionLayer
+        = [&](const std::string& o, const std::string& n) { seenOld = o; seenNew = n; };
+    setComponentFns(fns);
+    transferSessionLayer("|oldProxy", "|newProxy");
+    EXPECT_EQ(seenOld, "|oldProxy");
+    EXPECT_EQ(seenNew, "|newProxy");
+}
+
+TEST(LayerEditorDCCFunctions, SetProxyRootLayerPath_DispatchesWhenRegistered)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    std::string seenObj, seenPath;
+    ComponentFns fns;
+    fns.setProxyRootLayerPath
+        = [&](const std::string& obj, const std::string& path, const PXR_NS::SdfLayerRefPtr&) {
+              seenObj = obj;
+              seenPath = path;
+          };
+    setComponentFns(fns);
+    setProxyRootLayerPath("|proxy", "/tmp/new.usd", nullptr);
+    EXPECT_EQ(seenObj, "|proxy");
+    EXPECT_EQ(seenPath, "/tmp/new.usd");
+}

@@ -19,6 +19,7 @@
 #include "layerEditorAPI.h"
 
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <cstdint>
@@ -45,6 +46,9 @@ using MoveComponentFn
 using PreviewComponentSaveFn
     = std::function<std::string(const std::string&, const std::string&, const std::string&)>;
 using GetComponentLayersToSaveFn = std::function<std::vector<std::string>(const std::string&)>;
+using TransferSessionLayerFn = std::function<void(const std::string&, const std::string&)>;
+using SetProxyRootLayerPathFn
+    = std::function<void(const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&)>;
 
 using SupportsEditForwardingFn = std::function<bool()>;
 using EchoEditForwardingFn     = std::function<bool()>;
@@ -70,6 +74,8 @@ struct ComponentFns
     PreviewComponentSaveFn                    previewComponentSave;
     GetComponentLayersToSaveFn                getComponentLayersToSave;
     std::function<void(const std::string&)>   displayError; // no-op when unset
+    TransferSessionLayerFn                    transferSessionLayer;  // no-op when unset
+    SetProxyRootLayerPathFn                   setProxyRootLayerPath; // no-op when unset
 };
 
 struct EditForwardingFns
@@ -153,6 +159,12 @@ LayerEditorAPI std::string
 previewComponentSave(const std::string&, const std::string&, const std::string&);
 LayerEditorAPI std::vector<std::string> getComponentLayersToSave(const std::string&);
 LayerEditorAPI void                     displayError(const std::string&);
+LayerEditorAPI void
+transferSessionLayer(const std::string& oldDccObjectPath, const std::string& newDccObjectPath);
+LayerEditorAPI void setProxyRootLayerPath(
+    const std::string&            dccObjectPath,
+    const std::string&            rootLayerPath,
+    const PXR_NS::SdfLayerRefPtr& rootLayer);
 
 LayerEditorAPI bool supportsEditForwarding();
 LayerEditorAPI bool echoEditForwarding();
