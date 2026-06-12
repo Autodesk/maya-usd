@@ -54,8 +54,10 @@ void LayerEditorTestFixture::SetUp()
         };
         component.renameProxyShape
             = [](const std::string&, const std::string& name) { return std::string("|") + name; };
+        component.captureSessionLayer
+            = [](const std::string&) { return PXR_NS::SdfLayerRefPtr {}; };
         component.transferSessionLayer
-            = [this](const std::string&, const std::string&) { ++_transferSessionCalls; };
+            = [this](const PXR_NS::SdfLayerRefPtr&, const std::string&) { ++_transferSessionCalls; };
         component.setProxyRootLayerPath
             = [this](const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&) {
                   ++_setProxyRootPathCalls;

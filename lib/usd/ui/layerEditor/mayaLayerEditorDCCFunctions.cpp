@@ -144,12 +144,16 @@ void registerLayerEditorDCCFunctions()
     component.getComponentLayersToSave = [](const std::string& dccObjectPath) {
         return MayaUsd::ComponentUtils::getAdskUsdComponentLayersToSave(dccObjectPath);
     };
+    component.captureSessionLayer
+        = [](const std::string& dccObjectPath) -> PXR_NS::SdfLayerRefPtr {
+        auto stage = UsdMayaUtil::GetStageByProxyName(dccObjectPath);
+        return stage ? PXR_NS::SdfLayerRefPtr(stage->GetSessionLayer()) : PXR_NS::SdfLayerRefPtr {};
+    };
     component.transferSessionLayer
-        = [](const std::string& oldDccObjectPath, const std::string& newDccObjectPath) {
-              auto oldStage = UsdMayaUtil::GetStageByProxyName(oldDccObjectPath);
-              auto newStage = UsdMayaUtil::GetStageByProxyName(newDccObjectPath);
-              if (oldStage && newStage)
-                  newStage->GetSessionLayer()->TransferContent(oldStage->GetSessionLayer());
+        = [](const PXR_NS::SdfLayerRefPtr& sourceSessionLayer, const std::string& dstDccObjectPath) {
+              auto newStage = UsdMayaUtil::GetStageByProxyName(dstDccObjectPath);
+              if (sourceSessionLayer && newStage)
+                  newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
           };
     component.setProxyRootLayerPath = [](const std::string&            dccObjectPath,
                                          const std::string&            rootLayerPath,

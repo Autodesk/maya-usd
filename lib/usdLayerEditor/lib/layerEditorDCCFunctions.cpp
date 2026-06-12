@@ -103,10 +103,18 @@ void displayError(const std::string& error)
     if (registry().component.displayError)
         registry().component.displayError(error);
 }
-void transferSessionLayer(const std::string& oldDccObjectPath, const std::string& newDccObjectPath)
+PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath)
+{
+    return registry().component.captureSessionLayer
+        ? registry().component.captureSessionLayer(dccObjectPath)
+        : PXR_NS::SdfLayerRefPtr {};
+}
+void transferSessionLayer(
+    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
+    const std::string&            dstDccObjectPath)
 {
     if (registry().component.transferSessionLayer)
-        registry().component.transferSessionLayer(oldDccObjectPath, newDccObjectPath);
+        registry().component.transferSessionLayer(sourceSessionLayer, dstDccObjectPath);
 }
 void setProxyRootLayerPath(
     const std::string&            dccObjectPath,
