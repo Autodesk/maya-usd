@@ -589,10 +589,12 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 
 void LayerTreeItem::discardEdits(QWidget* in_parent)
 {
+    bool confirmed = false;
+
     if (isAnonymous() || !isDirty()) {
         // according to MAYA-104336, we don't prompt for confirmation for anonymous layers
         // according to EMSUSD-964, we don't prompt for confirmation if the layer is not dirty
-        commandHook()->discardEdits(layer());
+        confirmed = true;
     } else {
         std::string title
             = String::format(StringResources::kReloadTitle.value, text().toStdString());
@@ -602,16 +604,31 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
 
         const QString buttonText = QString::fromStdString(StringResources::kReloadButtonText.value);
 
-        if (confirmDialog(
-                QString::fromStdString(title),
-                QString::fromStdString(desc),
-                nullptr,
-                &buttonText,
-                QMessageBox::Icon::NoIcon,
-                in_parent)) {
-            commandHook()->discardEdits(layer());
+        confirmed = confirmDialog(
+            QString::fromStdString(title),
+            QString::fromStdString(desc),
+            nullptr,
+            &buttonText,
+            QMessageBox::Icon::NoIcon,
+            in_parent);
+    }
+
+    if (!confirmed)
+        return;
+
+    // Special case for components created by the component creator. Only the component
+    // creator knows how to reload a component properly. Matches the old editor: the
+    // revert confirmation above is shown first, then the component is reloaded as a unit.
+    if (LayerTreeModel* model = parentModel()) {
+        if (SessionState* ss = model->sessionState()) {
+            if (UsdLayerEditor::isStageAComponent(ss->stageEntry()._dccObjectPath)) {
+                model->reloadComponent(in_parent);
+                return;
+            }
         }
     }
+
+    commandHook()->discardEdits(layer());
 }
 
 void LayerTreeItem::addAnonymousSublayer(QWidget* in_parent)

@@ -452,4 +452,26 @@ TEST_F(LayerTreeItemTest, SaveEdits_ComponentRoutesToSaveStageSkippingOverwriteC
         << "component saveEdits must route to saveStage before the overwrite-confirm dialog";
 }
 
+TEST_F(LayerTreeItemTest, DiscardEdits_ComponentStageConfirmsThenReloadsComponent)
+{
+    // A saved component (isUnsavedComponent=false) reports non-anonymous, so a dirty
+    // one must prompt for confirmation FIRST and then reload as a unit -- matching the
+    // old editor, which checks the component only after the revert confirmation.
+    setIsComponent(true);
+    setIsUnsavedComponent(false);
+    _reloadComponentCalls = 0;
+    _modalDialogCount = 0;
+
+    LayerTreeItem* root = itemAt(treeModel(), rootLayerIndex());
+    ASSERT_NE(root, nullptr);
+    root->layer()->SetComment("make dirty"); // force the confirmation path
+
+    root->discardEdits(nullptr);
+
+    EXPECT_EQ(_modalDialogCount, 1)
+        << "a dirty saved component must be confirmed before reloading";
+    EXPECT_EQ(_reloadComponentCalls, 1)
+        << "after confirmation, discardEdits on a component must route through reloadComponent";
+}
+
 } // namespace UsdLayerEditor
