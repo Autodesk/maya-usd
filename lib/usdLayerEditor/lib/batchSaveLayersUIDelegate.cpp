@@ -22,8 +22,6 @@
 #include "utilQT.h"
 #include "utilSerialization.h"
 
-#include <usdUfe/ufe/Utils.h>
-
 UsdLayerEditor::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
     const std::vector<StageSavingInfo>& infos,
     bool                                isExporting)
@@ -40,8 +38,7 @@ UsdLayerEditor::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
 
             for (const auto& info : infos) {
                 Serialization::StageLayersToSave StageLayersToSave;
-                const auto dccObjectPath = UsdUfe::stagePath(info.stage).string();
-                Serialization::getLayersToSaveFromDCCObject(dccObjectPath, StageLayersToSave);
+                Serialization::getLayersToSaveFromDCCObject(info.dccObjectPath, StageLayersToSave);
                 if (!StageLayersToSave._anonLayers.empty()) {
                     atLeastOneAnonToSave = true;
                     atLeastOneLayerToSave = true;
