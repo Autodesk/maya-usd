@@ -15,6 +15,7 @@
 #pragma once
 #define LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 
+#include "scopedLayerEditorDCCFunctions.h"
 #include "stubCommandHook.h"
 #include "stubLayerEditorWindow.h"
 #include "stubSessionState.h"
@@ -54,6 +55,27 @@ protected:
     std::unique_ptr<OldEditorStubLayerEditorWindow>  _window;
     QMainWindow*                                     _mainWindow { nullptr };
     LayerEditorWidget*                               _widget { nullptr };
+
+    bool        _efSupported   { false };
+    bool        _sharedStage   { false };
+    bool        _stageIncoming { false };
+
+    bool        _isComponent        { false };
+    bool        _isUnsavedComponent { false };
+    std::string _moveComponentResult;
+    int         _saveComponentCalls      { 0 };
+    int         _reloadComponentCalls    { 0 };
+    int         _transferSessionCalls    { 0 };
+    int         _setProxyRootPathCalls   { 0 };
+
+    int  _modalDialogCount  { 0 };
+    bool _modalDialogAnswer { true };
+    bool _confirmExistingFileSave { false };
+
+    ScopedLayerEditorDCCFunctions _scopedDCCFunctions;
+
+    void setIsComponent(bool v)        { _isComponent = v; }
+    void setIsUnsavedComponent(bool v) { _isUnsavedComponent = v; }
 };
 
 // Find a named action in a menu (searches recursively into submenus).
