@@ -492,8 +492,11 @@ void LayerTreeModel::usd_efFallbackTargetChanged(MayaUsdEFFallbackTargetChangedN
         return;
     if (!_sessionState || notice.GetStage() != _sessionState->stage())
         return;
-    QTimer::singleShot(
-        0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
+    QTimer::singleShot(0, dynamic_cast<QObject*>(this), [this]() {
+        // Emit a data change so that the EF toggle button refreshes in the widget.
+        Q_EMIT dataChanged(index(0, 0), index(0, 0));
+        updateTargetLayer(InRebuildModel::No);
+    });
 }
 #endif
 

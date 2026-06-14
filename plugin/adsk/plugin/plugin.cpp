@@ -86,7 +86,13 @@
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+#include <mayaUsdUI/ui/CompositionEditorCmd.h>
 #endif
+#if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+#include <mayaUsdUI/ui/renderSetupWindowCmd.h>
+#endif
+#endif // WANT_QT_BUILD
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include "adskMaterialCommands.h"
@@ -384,12 +390,7 @@ MStatus initializePlugin(MObject obj)
     }
 
 #if defined(WANT_QT_BUILD)
-    status = MayaUsd::USDImportDialogCmd::initialize(plugin);
-    if (!status) {
-        MString err("registerCommand");
-        err += MayaUsd::USDImportDialogCmd::name;
-        status.perror(err);
-    }
+    registerCommandCheck<MayaUsd::USDImportDialogCmd>(plugin);
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     status = MayaUsd::AssetResolverDialogCmd::initialize(plugin);
     if (!status) {
@@ -398,7 +399,23 @@ MStatus initializePlugin(MObject obj)
         status.perror(err);
     }
 #endif
+#if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+    status = MayaUsd::RenderSetupWindowCmd::initialize(plugin);
+    if (!status) {
+        MString err("registerCommand");
+        err += MayaUsd::RenderSetupWindowCmd::commandName;
+        status.perror(err);
+    }
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    status = MayaUsd::CompositionEditorCmd::initialize(plugin);
+    if (!status) {
+        MString err("registerCommand");
+        err += MayaUsd::CompositionEditorCmd::name;
+        status.perror(err);
+    }
+#endif
+#endif // WANT_QT_BUILD
 
     status = PxrMayaUsdPreviewSurfacePlugin::initialize(
         plugin,
@@ -459,7 +476,7 @@ MStatus initializePlugin(MObject obj)
     PrimUpdaterManager::getInstance();
 #endif
 
-#ifdef WANT_ADSK_USD_ASSET_RESOLVER_BUILD
+#if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     // Initialize USD preferences and apply them to the Asset Resolver
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
@@ -491,6 +508,7 @@ MStatus uninitializePlugin(MObject obj)
 
     MayaUsd::LayerEditorCommand::unregisterBackupStagesProvider();
 
+#if defined(WANT_QT_BUILD)
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     MayaUsd::AssetResolverProjectChangeTracker::stopTracking();
     status = MayaUsd::AssetResolverDialogCmd::finalize(plugin);
@@ -500,6 +518,25 @@ MStatus uninitializePlugin(MObject obj)
         status.perror(err);
     }
 #endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
+
+#if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+    status = MayaUsd::RenderSetupWindowCmd::finalize(plugin);
+    if (!status) {
+        MString err("deregisterCommand ");
+        err += MayaUsd::RenderSetupWindowCmd::commandName;
+        status.perror(err);
+    }
+#endif
+
+#if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    status = MayaUsd::CompositionEditorCmd::finalize(plugin);
+    if (!status) {
+        MString err("deregisterCommand ");
+        err += MayaUsd::CompositionEditorCmd::name;
+        status.perror(err);
+    }
+#endif
+#endif // WANT_QT_BUILD
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,
@@ -518,12 +555,7 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDListJobContextsCommand>(plugin);
 
 #if defined(WANT_QT_BUILD)
-    status = MayaUsd::USDImportDialogCmd::finalize(plugin);
-    if (!status) {
-        MString err("deregisterCommand");
-        err += MayaUsd::USDImportDialogCmd::name;
-        status.perror(err);
-    }
+    deregisterCommandCheck<MayaUsd::USDImportDialogCmd>(plugin);
 #endif
 
     status = plugin.deregisterFileTranslator("USD Import");

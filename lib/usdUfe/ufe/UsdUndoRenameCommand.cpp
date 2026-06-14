@@ -17,7 +17,6 @@
 
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
-#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/layers.h>
