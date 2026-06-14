@@ -538,7 +538,7 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
     // stage save. The predicate is false for DCCs without component support.
     if (SessionState* ss = parentModel()->sessionState()) {
         if (UsdLayerEditor::isStageAComponent(ss->stageEntry()._dccObjectPath)) {
-            parentModel()->saveStage(nullptr);
+            parentModel()->saveStage(in_parent);
             return;
         }
     }
