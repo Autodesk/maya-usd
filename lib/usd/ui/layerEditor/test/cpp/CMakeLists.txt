@@ -20,7 +20,7 @@ set(CMAKE_AUTORCC ON)
 # *Logic.h headers and testUtils.h live in the new editor's test/cpp dir and are
 # shared between old and new test suites.
 set(NEW_LE_TEST_CPP
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../usdUfe/usd-layer-editor/test/cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../test/lib/usdLayerEditor/cpp)
 
 # ── Sources ────────────────────────────────────────────────────────────────────
 set(OLD_LE_OWN_SOURCES
