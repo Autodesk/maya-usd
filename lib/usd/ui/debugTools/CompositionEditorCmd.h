@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2026 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef MAYAUSDUI_USD_IMPORT_DIALOG_CMD_H
-#define MAYAUSDUI_USD_IMPORT_DIALOG_CMD_H
+#ifndef MAYAUSDUI_USD_DEBUGTOOLS_COMPOSITION_EDITOR_CMD_H
+#define MAYAUSDUI_USD_DEBUGTOOLS_COMPOSITION_EDITOR_CMD_H
 
 #include <mayaUsd/mayaUsd.h>
 #include <mayaUsdUI/ui/api.h>
@@ -24,21 +24,21 @@
 
 namespace MAYAUSD_NS_DEF {
 
-class MAYAUSD_UI_PUBLIC USDImportDialogCmd : public MPxCommand
+class MAYAUSD_UI_PUBLIC CompositionEditorCmd : public MPxCommand
 {
 public:
-    USDImportDialogCmd() = default;
-    ~USDImportDialogCmd() override = default;
+    CompositionEditorCmd() = default;
+    ~CompositionEditorCmd() override = default;
 
-    static const MString commandName;
+    static MStatus initialize(MFnPlugin&);
+    static MStatus finalize(MFnPlugin&);
+
+    static const MString name;
 
     static void*   creator();
     static MSyntax createSyntax();
 
     MStatus doIt(const MArgList& args) override;
-
-private:
-    MStatus applyToProxy(const MString& proxyPath);
 };
 
 } // namespace MAYAUSD_NS_DEF

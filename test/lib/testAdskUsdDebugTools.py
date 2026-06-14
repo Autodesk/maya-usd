@@ -1,4 +1,4 @@
-
+#!/usr/bin/env mayapy
 #
 # Copyright 2026 Autodesk
 #
@@ -15,14 +15,20 @@
 # limitations under the License.
 #
 
-target_sources(${PROJECT_NAME}
-    PRIVATE
-        editForwardDialog.cpp
-)
+import unittest
 
-mayaUsd_promoteHeaderList(
-    HEADERS
-        editForwardDialog.h
-    BASEDIR
-        ${PROJECT_NAME}/ui
-)
+
+class testAdskUsdDebugTools(unittest.TestCase):
+    """
+    Verify that the Autodesk USD Debug Tools component is installed and loadable.
+    """
+
+    def testDebugToolsLoaded(self):
+        try:
+            import AdskUsdDebug
+        except Exception as e:
+            self.fail(f"Autodesk USD Debug Tools module not available or failed to load. {e}")
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

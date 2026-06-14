@@ -1,4 +1,3 @@
-
 #
 # Copyright 2026 Autodesk
 #
@@ -17,12 +16,26 @@
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        editForwardDialog.cpp
+        CompositionEditorCmd.cpp
+)
+
+# -----------------------------------------------------------------------------
+# promoted headers
+# -----------------------------------------------------------------------------
+set(HEADERS
+    CompositionEditorCmd.h
 )
 
 mayaUsd_promoteHeaderList(
     HEADERS
-        editForwardDialog.h
+        ${HEADERS}
     BASEDIR
         ${PROJECT_NAME}/ui
+)
+
+# -----------------------------------------------------------------------------
+# install
+# -----------------------------------------------------------------------------
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui
 )

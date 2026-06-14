@@ -33,7 +33,7 @@ if (AdskUsdComponentCreator_FOUND)
                 "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}/../AdskUsdComponentCreator"
                 "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
         )
-        set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+        set_property(TEST ${target} APPEND PROPERTY LABELS SharedComponents)
     endforeach()
 else()
     # If MAYAUSD_FORCE_CC_TEST is set to 1, fail the build when component creator is not found
