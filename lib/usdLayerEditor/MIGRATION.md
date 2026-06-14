@@ -6,7 +6,7 @@ Resume point for porting maya-usd layer editor commits into the shared component
 
 The shared component was physically relocated from `lib/usdUfe/usd-layer-editor/` to `lib/usdLayerEditor/` (a sibling of `usdUfe` under `lib/`), and its tests were moved from the old `test/` subdirectory inside the library tree to `test/lib/usdLayerEditor/`. The CMake wiring was updated accordingly: `lib/CMakeLists.txt` now drives the subdirectory directly, the old `add_subdirectory(usd-layer-editor)` in `lib/usdUfe/CMakeLists.txt` was removed, and `test/lib/CMakeLists.txt` routes to `test/lib/usdLayerEditor/`. No source files were modified — this was a pure structural rename.
 
-## Current state (as of 2026-06-08)
+## Current state (as of 2026-06-14)
 
 - `UsdLayerEditorLib` builds and **`mayaUsdUI` always uses it** in production. The `BUILD_NEW_LAYER_EDITOR` switch was removed (see `docs/superpowers/specs/2026-06-04-always-build-both-editors-design.md`); `MAYAUSD_USE_SHARED_LAYER_EDITOR` is always defined. The legacy widget sources now compile only into the `mayaUsdOldLayerEditorTests` parity target.
 - The bridge is therefore **live**, not deferred — the earlier "deferred (Tasks 5-6)" note predates the always-build-both change and is obsolete.
@@ -53,6 +53,25 @@ The shared component was physically relocated from `lib/usdUfe/usd-layer-editor/
 
 | Commit | Description | Group | Status | Notes |
 |--------|-------------|-------|--------|-------|
+| fbf306120 | Merge PR EMSUSD-3799/fix_failing_testUVStreamManagement | skip | skip | Merge commit |
+| f51ff88bd | Merge PR EMSUSD-3774/fix_failing_testShaderNodeDef | skip | skip | Merge commit |
+| 39879c02a | EMSUSD-3774 fix shader node metadata test failure | bug-fix | maya-only | SdrShaderPropertyMetadata Python fix — not layer editor |
+| f1033cb87 | EMSUSD-3799 fix UV stream management test failure | bug-fix | maya-only | UV stream test fix — not layer editor |
+| 10941c0c7 | Merge PR fix_installation_of_ufe_utils_header | skip | skip | Merge commit |
+| ced5ce1c6 | Merge PR EMSUSD-3771/initial_integration_of_render_setup | skip | skip | Merge commit |
+| ec7656de5 | EMSUSD-3771 Copilot review comments (render setup) | bug-fix | maya-only | Render setup integration — not layer editor |
+| cac50e921 | EMSUSD-3771 Integrating Render Setup into Maya USD | bug-fix | maya-only | New AdskUsdRenderSetup component — not layer editor |
+| 334cae950 | Merge PR deboisj/fix_ef_button_refresh | skip | skip | Merge commit |
+| 4316f017a | Merge PR barbalt/EMSUSD-3457-composition-view | skip | skip | Merge commit |
+| 522e25538 | clang (layerTreeModel.cpp EF area) | skip | skip | Formatting for old editor only; shared editor has different code |
+| b9298f954 | Update button when EF rule changes | bug-fix | ported | Shared onEFFallbackTargetChanged: added Q_EMIT dataChanged(index(0,0), index(0,0)) before updateTargetLayer so EF toggle button repaints on EF-rule change |
+| e882f4c68 | UsdUfe: Fix installation of Utils.h | bug-fix | maya-only | lib/usdUfe/ufe/CMakeLists.txt — not layer editor |
+| 434ea9c12 | EMSUSD-3457 Use proper scale; cmake version; fix command | bug-fix | maya-only | Composition view debugTools cmake — not layer editor |
+| 39ebcb92c | EMSUSD-3457 Remove include | bug-fix | maya-only | Composition view plugin.cpp — not layer editor |
+| f1072ba8e | Merge branch into barbalt/EMSUSD-3457-composition-view | skip | skip | Merge commit |
+| 477b4ed65 | EMSUSD-3457 Fix linkage; remove probe | bug-fix | maya-only | Composition view plugin CMakeLists — not layer editor |
+| f055e99be | Merge dev into barbalt/EMSUSD-3457-composition-view | skip | skip | Merge commit |
+| b336e0156 | EMSUSD-3457 Add Composition Tool | bug-fix | maya-only | New debugTools composition view; test/lib/CMakeLists.txt adds testAdskUsdDebugTools — not layer editor |
 | c80f6b979 | Merge PR EMSUSD-3465/Adds-Help-Action-Functor | skip | skip | Merge commit |
 | 019b697fc | Merge PR EMSUSD-3785/merge-layers-behavior | skip | skip | Merge commit |
 | df58974aa | EMSUSD-3785 fix MacOS compilation | bug-fix | ported | Folded into StitchLayersCmd::doIt port — macOS `const auto&` fix in strong-layer dedup loop |
