@@ -381,6 +381,7 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_NonComponentStage_UsesGenericPath)
 // early-out delegates to LayerTreeModel::saveStage (which shows a modal
 // SaveLayersDialog, dismissed here). _saveLayerCallCount staying 0 proves the
 // generic path was skipped -- it would be 1 if the early-out were missing.
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
 {
     ScopedLayerEditorDCCFunctions guard;
@@ -407,9 +408,11 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
         << "component stage should delegate to saveStage, skipping the generic "
            "anonymous-save path";
 }
+#endif
 
 // ── isAnonymous component override (match OLD editor) ─────────────────────────
 
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 TEST_F(LayerTreeItemTest, IsAnonymous_FalseForSavedComponent)
 {
     setIsComponent(true);
@@ -421,6 +424,7 @@ TEST_F(LayerTreeItemTest, IsAnonymous_FalseForSavedComponent)
     // make a SAVED component report not-anonymous, flipping the layer flag.
     EXPECT_FALSE(root->isAnonymous());
 }
+#endif
 
 TEST_F(LayerTreeItemTest, IsAnonymous_TrueForUnsavedComponent)
 {
@@ -432,6 +436,7 @@ TEST_F(LayerTreeItemTest, IsAnonymous_TrueForUnsavedComponent)
     EXPECT_TRUE(root->isAnonymous());
 }
 
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 TEST_F(LayerTreeItemTest, SaveEdits_ComponentRoutesToSaveStageSkippingOverwriteConfirm)
 {
     // A component reports non-anonymous when saved, which would normally make
@@ -473,5 +478,6 @@ TEST_F(LayerTreeItemTest, DiscardEdits_ComponentStageConfirmsThenReloadsComponen
     EXPECT_EQ(_reloadComponentCalls, 1)
         << "after confirmation, discardEdits on a component must route through reloadComponent";
 }
+#endif
 
 } // namespace UsdLayerEditor

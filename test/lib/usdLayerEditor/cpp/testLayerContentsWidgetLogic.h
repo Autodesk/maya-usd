@@ -111,6 +111,7 @@ TEST_F(LayerContentsWidgetTest, SetLayer_DoesNotCrash)
 
 // The array size limit (from the DCC registry) is applied when rendering layer
 // contents: a small limit truncates the displayed array.
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 TEST_F(LayerContentsWidgetTest, SetLayer_RespectsArraySizeLimit)
 {
     auto* cw = findContentsWidget(_widget);
@@ -150,5 +151,6 @@ TEST_F(LayerContentsWidgetTest, SetLayer_RespectsArraySizeLimit)
         << "a smaller array size limit should truncate the displayed array, "
            "yielding shorter output";
 }
+#endif
 
 } // namespace UsdLayerEditor

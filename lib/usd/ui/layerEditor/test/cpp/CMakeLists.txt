@@ -22,6 +22,11 @@ set(CMAKE_AUTORCC ON)
 set(NEW_LE_TEST_CPP
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../test/lib/usdLayerEditor/cpp)
 
+# layerEditorDCCFunctions.h lives in the shared lib; the *Logic.h headers use
+# ScopedLayerEditorDCCFunctions which includes it transitively.
+set(NEW_LE_LIB
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../lib/usdLayerEditor/lib)
+
 # ── Sources ────────────────────────────────────────────────────────────────────
 set(OLD_LE_OWN_SOURCES
     stubCommandHook.cpp
@@ -42,6 +47,12 @@ set(OLD_LE_OWN_SOURCES
     testReorder.cpp
     testSaveLayersDialog.cpp
     testSharedStage.cpp
+)
+
+# layerEditorDCCFunctions is compiled directly (not via UsdLayerEditorLib link)
+# to keep the registry self-contained inside this test DLL, avoiding ODR issues.
+set(DCC_FN_SOURCES
+    ${NEW_LE_LIB}/layerEditorDCCFunctions.cpp
 )
 
 # Legacy widget sources compiled directly into this test DLL. This gives the
@@ -80,6 +91,7 @@ set(TARGET_NAME mayaUsdOldLayerEditorTests)
 
 add_library(${TARGET_NAME} SHARED
     ${OLD_LE_OWN_SOURCES}
+    ${DCC_FN_SOURCES}
     ${LEGACY_SOURCES}
 )
 
@@ -102,12 +114,14 @@ target_compile_definitions(${TARGET_NAME}
 # Include path order is critical:
 #   1. OLD editor test dir FIRST — shim headers shadow new editor versions.
 #   2. NEW editor test dir SECOND — *Logic.h headers and testUtils.h.
-#   3. OLD editor lib sources — layerTreeItem.h, layerTreeModel.h, etc.
+#   3. OLD editor lib THIRD — abstractCommandHook.h etc. must shadow the new lib versions.
+#   4. NEW editor lib LAST — layerEditorDCCFunctions.h, only resolved if not found above.
 target_include_directories(${TARGET_NAME}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${NEW_LE_TEST_CPP}
         ${CMAKE_CURRENT_SOURCE_DIR}/../../
+        ${NEW_LE_LIB}
 )
 
 target_link_libraries(${TARGET_NAME}
