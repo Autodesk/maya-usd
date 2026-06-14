@@ -520,7 +520,11 @@ void LayerTreeModel::onEFFallbackTargetChanged()
 {
     // Dispatch asynchronously (matches the old editor) to avoid re-entrant model
     // updates while the edit-forwarding fallback-target change is still settling.
-    QTimer::singleShot(0, this, [this]() { updateTargetLayer(InRebuildModel::No); });
+    QTimer::singleShot(0, this, [this]() {
+        // Emit dataChanged so the EF toggle button repaints when the EF rule changes.
+        Q_EMIT dataChanged(index(0, 0), index(0, 0));
+        updateTargetLayer(InRebuildModel::No);
+    });
 }
 
 LayerTreeItem* LayerTreeModel::layerItemFromIndex(const QModelIndex& index) const
