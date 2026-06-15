@@ -44,7 +44,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
-#include <filesystem>
+#include <ghc/fs_std.hpp>
 
 void UsdLayerEditor::initialize()
 {
@@ -105,12 +105,11 @@ void UsdLayerEditor::initialize()
 
     UsdLayerEditor::FileSystem::setFileWriteAccessFunction(
         [](const std::string& filePath) -> bool {
-            namespace fs = std::filesystem;
-            const fs::path p(filePath);
-            if (!fs::exists(p))
+            const fs::filesystem::path p(filePath);
+            if (!fs::filesystem::exists(p))
                 return true;
-            const auto perms = fs::status(p).permissions();
-            return (perms & fs::perms::owner_write) != fs::perms::none;
+            const auto perms = fs::filesystem::status(p).permissions();
+            return (perms & fs::filesystem::perms::owner_write) != fs::filesystem::perms::none;
         });
 #else
     if (nullptr == UsdLayerEditor::utils) {
