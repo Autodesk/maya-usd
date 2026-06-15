@@ -137,13 +137,13 @@ public:
         auto* collector = new JsonResultCollector();
         ::testing::UnitTest::GetInstance()->listeners().Append(collector);
 
-        (void)RUN_ALL_TESTS();
+        int testResult = RUN_ALL_TESTS();
 
         // GTest owns listeners after Append(); Release() transfers ownership back.
         ::testing::UnitTest::GetInstance()->listeners().Release(collector);
         setResult(MString(collector->toJson().c_str()));
         delete collector;
-        return MS::kSuccess;
+        return testResult == 0 ? MS::kSuccess : MS::kFailure;
     }
 };
 
