@@ -167,23 +167,9 @@ USDUFE_PUBLIC
 StageDirtyState isStageDirty(const PXR_NS::UsdStage& stage);
 
 /**
- * Get which of the two given layers is the strongest under the given root layer hierarchy.
+ * Get which of the two given layers is the strongest in the stage layer stack.
  *
- * @param root The root layer that will determine which is stronger.
- * @param layer1 one of the layers to be compared.
- * @param layer2 one of the layers to be compared.
- */
-
-USDUFE_PUBLIC
-PXR_NS::SdfLayerHandle getStrongerLayer(
-    const PXR_NS::SdfLayerHandle& root,
-    const PXR_NS::SdfLayerHandle& layer1,
-    const PXR_NS::SdfLayerHandle& layer2);
-
-/**
- * Get which of the two given layers is the strongest under the given stage root layer hierarchy.
- *
- * @param stage The stage with the root layer that will determine which is stronger.
+ * @param stage The stage that will determine which is stronger.
  * @param layer1 one of the layers to be compared.
  * @param layer2 one of the layers to be compared.
  * @param compareSessionLayers if true, also search the session layer. False by default.
