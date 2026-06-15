@@ -1026,7 +1026,7 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
 
         // Creates a set of the added subLayers, prevent duplicates.
         std::set<std::string> addedSublayerIds;
-        for (const auto& path : strongLayerSubLayers) {
+        for (const auto path : strongLayerSubLayers) {
             const auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
             if (existingLayer) {
                 addedSublayerIds.insert(existingLayer->GetIdentifier());
