@@ -17,7 +17,7 @@
 #include "ufeCommandHook.h"
 
 #include "abstractCommandHook.h"
-#include "layerEditorCommands.h"
+#include "LayerEditorCommands.h"
 #include "sessionState.h"
 
 #include <pxr/base/tf/diagnosticHelper.h>
