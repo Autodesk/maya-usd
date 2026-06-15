@@ -31,7 +31,7 @@
 
 #include <gtest/gtest.h>
 
-#include <filesystem>
+#include <ghc/fs_std.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -901,12 +901,12 @@ protected:
         forgetLockedLayers();
         forgetSystemLockedLayers();
 
-        namespace fs = std::filesystem;
+        namespace fss = fs::filesystem;
         std::error_code ec;
-        _filePath = (fs::temp_directory_path() / "le_systemlock_test.usda").generic_string();
+        _filePath = (fss::temp_directory_path() / "le_systemlock_test.usda").generic_string();
         // Clear any leftover from a previous run (restore write first so remove succeeds).
-        fs::permissions(_filePath, fs::perms::owner_write, fs::perm_options::add, ec);
-        fs::remove(_filePath, ec);
+        fss::permissions(_filePath, fss::perms::owner_write, fss::perm_options::add, ec);
+        fss::remove(_filePath, ec);
 
         _stage     = PXR_NS::UsdStage::CreateInMemory();
         _fileLayer = PXR_NS::SdfLayer::CreateNew(_filePath);
@@ -914,18 +914,18 @@ protected:
         _stage->GetRootLayer()->InsertSubLayerPath(_fileLayer->GetIdentifier(), 0);
 
         // Make the file read-only so checkWriteAccess() reports no write access.
-        fs::permissions(
+        fss::permissions(
             _filePath,
-            fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write,
-            fs::perm_options::remove);
+            fss::perms::owner_write | fss::perms::group_write | fss::perms::others_write,
+            fss::perm_options::remove);
     }
 
     void TearDown() override
     {
-        namespace fs = std::filesystem;
+        namespace fss = fs::filesystem;
         std::error_code ec;
-        fs::permissions(_filePath, fs::perms::owner_write, fs::perm_options::add, ec);
-        fs::remove(_filePath, ec);
+        fss::permissions(_filePath, fss::perms::owner_write, fss::perm_options::add, ec);
+        fss::remove(_filePath, ec);
         forgetSystemLockedLayers();
         forgetLockedLayers();
     }

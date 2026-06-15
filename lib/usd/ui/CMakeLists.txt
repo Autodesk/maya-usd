@@ -41,9 +41,11 @@ endif()
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${PROJECT_NAME} 
+target_sources(${PROJECT_NAME}
     PRIVATE
         initStringResources.cpp
+        mayaLayerEditorDCCFunctions.cpp
+        mayaLayerEditorDCCFunctions.h
 )
 
 # -----------------------------------------------------------------------------
