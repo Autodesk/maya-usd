@@ -65,6 +65,7 @@ std::string getProxyShapeName(const std::string& proxyShapePath)
     }
 }
 
+#if !defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 bool getBooleanAttributeOnProxyShape(
     const std::string& proxyShapePath,
     const std::string& attributeName)
@@ -86,6 +87,7 @@ bool getBooleanAttributeOnProxyShape(
 
     return false;
 }
+#endif
 
 } // namespace
 
