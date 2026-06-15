@@ -340,7 +340,8 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         // Also read the legacy Maya-specific token written by proxyShapeBase.
         auto mayaLayers = CustomLayerData::getStringArray(
             rootLayer, UsdLayerEditorMetadata->MayaReferencedLayers);
-        layers.insert(layers.end(), mayaLayers.begin(), mayaLayers.end());
+        for (const auto& l : mayaLayers)
+            layers.push_back(l);
         std::vector<std::string> layerIds;
         std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
         sharedLayers = Layers::getAllSublayers(layerIds, true);
