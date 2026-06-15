@@ -43,8 +43,8 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QBoxLayout>
 #include <QtWidgets/QGridLayout>
+#include <ghc/fs_std.hpp>
 #include <string>
-#include <filesystem>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -147,8 +147,8 @@ protected:
     void postUpdate();
 
 public:
-    std::filesystem::path _absolutePath;
-    std::filesystem::path _relativeAnchor;
+    fs::filesystem::path _absolutePath;
+    fs::filesystem::path _relativeAnchor;
 
     SaveLayersDialog* _parent { nullptr };
     LayerInfo         _layerInfo;
@@ -252,7 +252,7 @@ void SaveLayerPathRow::setPathToSaveAs(const std::string& absolutePath, bool sav
             relativeAnchor = FileSystem::getDCCSceneFileDir();
             if (relativeAnchor.empty()) {
                 relativeAnchor
-                    = std::filesystem::path(absolutePath).remove_filename().generic_string();
+                    = fs::filesystem::path(absolutePath).remove_filename().generic_string();
             }
         }
     }
@@ -330,7 +330,7 @@ void SaveLayerPathRow::onTextChanged(const QString& text)
         return;
     }
 
-    std::filesystem::path inputPath(text.toStdString());
+    fs::filesystem::path inputPath(text.toStdString());
     if (inputPath.is_absolute()) {
         _relativeAnchor.clear();
         _absolutePath = inputPath;
@@ -366,10 +366,10 @@ void SaveLayerPathRow::postUpdate()
         auto entry = dynamic_cast<SaveLayerPathRow*>(w);
         if (entry && (entry->_layerInfo.parent._layerParent == _layerInfo.layer)
             && entry->needToSaveAsRelative()) {
-            std::filesystem::path relativeAnchor
+            fs::filesystem::path relativeAnchor
                 = FileSystem::getDir(getAbsolutePath().toStdString());
-            std::filesystem::path relatievPath = entry->_pathEdit->text().toStdString();
-            std::filesystem::path absolutePath = (relativeAnchor / relatievPath).lexically_normal();
+            fs::filesystem::path relatievPath = entry->_pathEdit->text().toStdString();
+            fs::filesystem::path absolutePath = (relativeAnchor / relatievPath).lexically_normal();
             entry->setPathToSaveAs(absolutePath.generic_string(), true);
         }
     });
@@ -965,10 +965,10 @@ bool SaveLayersDialog::okToSave()
     // Block overwriting of components. The target folder must be empty.
     // Otherwise, log an error and abort.
     for (auto* componentWidget : _componentSaveWidgets) {
-        std::filesystem::path location { componentWidget->folderLocation().toStdString() };
+        fs::filesystem::path location { componentWidget->folderLocation().toStdString() };
         location.append(componentWidget->componentName().toStdString());
 
-        if (std::filesystem::exists(location) && !std::filesystem::is_empty(location)) {
+        if (fs::filesystem::exists(location) && !fs::filesystem::is_empty(location)) {
             TF_RUNTIME_ERROR(
                 "Cannot save %s with the given name since a non-empty folder with the same "
                 "name is already in that location. Use a unique name or save to a different "

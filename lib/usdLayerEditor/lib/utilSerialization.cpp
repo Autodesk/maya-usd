@@ -42,7 +42,7 @@
 
 #include <ufe/pathString.h>
 
-#include <filesystem>
+#include <ghc/fs_std.hpp>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -467,7 +467,7 @@ void updateRootLayer(
                 = FileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
         } else if (isSubLayer) {
             filePath = FileSystem::getPathRelativeToLayerFile(filePath, parentLayer);
-            if (std::filesystem::path(filePath).is_absolute()) {
+            if (fs::filesystem::path(filePath).is_absolute()) {
                 FileSystem::markPathAsPostponedRelative(parentLayer, filePath);
             }
         } else {

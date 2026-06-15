@@ -16,15 +16,17 @@
 #ifndef MAYA_LAYER_EDITOR_DCC_FUNCTIONS_H
 #define MAYA_LAYER_EDITOR_DCC_FUNCTIONS_H
 
+#include <mayaUsdUI/ui/api.h>
+
 namespace UsdLayerEditor {
 
 // Populates the shared layer-editor DCC-functions registry with the Maya
 // implementations (Component Creator, Edit Forwarding, DCC object/stage
 // queries). Call once at Maya plugin initialization.
-void registerLayerEditorDCCFunctions();
+MAYAUSD_UI_PUBLIC void registerLayerEditorDCCFunctions();
 
 // Clears the registry back to defaults. Call at plugin unload.
-void deregisterLayerEditorDCCFunctions();
+MAYAUSD_UI_PUBLIC void deregisterLayerEditorDCCFunctions();
 
 } // namespace UsdLayerEditor
 
