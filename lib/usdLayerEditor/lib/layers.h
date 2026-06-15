@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_LAYERS_H
 #define USDLAYEREDITOR__LAYERS_H
 
-#include "LayerEditorAPI.h"
+#include "layerEditorAPI.h"
 
 #include <usdUfe/utils/layers.h>
 
