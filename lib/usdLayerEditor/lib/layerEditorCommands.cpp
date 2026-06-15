@@ -22,7 +22,7 @@
 #include "utilFileSystem.h"
 #include "utilUI.h"
 
-#include <filesystem>
+#include <ghc/fs_std.hpp>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/pcp/layerStack.h>
@@ -44,7 +44,6 @@
 #include <ufe/observableSelection.h>
 
 #include <algorithm>
-#include <filesystem>
 #include <set>
 #include <unordered_map>
 #include <utility>
@@ -690,15 +689,14 @@ bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
         }
 
         // Reparent relative file paths
-        namespace fs = std::filesystem;
-        fs::path filePath(_subPath);
-        bool     needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_subPath)
+        fs::filesystem::path filePath(_subPath);
+        bool                 needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_subPath)
             && filePath.is_relative() && !layer->GetRealPath().empty()
             && !_newParent->GetRealPath().empty();
 
         if (needsRepathing) {
-            auto        oldLayerDir = fs::path(layer->GetRealPath()).remove_filename();
-            auto        newLayerDir = fs::path(_newParent->GetRealPath()).remove_filename();
+            auto        oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
+            auto        newLayerDir = fs::filesystem::path(_newParent->GetRealPath()).remove_filename();
             std::string absolutePath
                 = (oldLayerDir / filePath).lexically_normal().generic_string();
             auto result = FileSystem::makePathRelativeTo(
