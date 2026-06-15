@@ -137,7 +137,7 @@ public:
         auto* collector = new JsonResultCollector();
         ::testing::UnitTest::GetInstance()->listeners().Append(collector);
 
-        RUN_ALL_TESTS();
+        (void)RUN_ALL_TESTS();
 
         // GTest owns listeners after Append(); Release() transfers ownership back.
         ::testing::UnitTest::GetInstance()->listeners().Release(collector);

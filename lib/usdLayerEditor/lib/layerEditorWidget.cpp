@@ -56,6 +56,10 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+// Q_INIT_RESOURCE must be called from global scope; calling it inside a namespace
+// makes the linker look for a namespaced symbol that Qt's rcc never generates.
+static void initLayerEditorResources() { Q_INIT_RESOURCE(resources); }
+
 namespace UsdLayerEditor {
 LayerEditorWidget::~LayerEditorWidget()
 {
@@ -68,7 +72,7 @@ LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow*
     , _sessionState(in_sessionState)
 {
     // Force link the resources - needed to prevent the compiler to cull out the icons from the lib.
-    Q_INIT_RESOURCE(resources);
+    initLayerEditorResources();
 
     setupLayout();
     setupDefaultMenu(in_parent);
