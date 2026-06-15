@@ -92,8 +92,8 @@ public:
     // in this case, the stage needs to be re-created on the new file
     void rootLayerPathChanged(std::string const& in_path) override;
 
-    void refreshCurrentStageEntry();
-    void refreshStageEntry(std::string const& proxyShapePath);
+    void refreshCurrentStageEntry() override;
+    void refreshStageEntry(std::string const& proxyShapePath) override;
 
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     std::string proxyShapePath() { return _currentStageEntry._dccObjectPath; }
