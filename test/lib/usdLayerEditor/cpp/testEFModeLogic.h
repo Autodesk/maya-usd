@@ -80,10 +80,13 @@ TEST_F(LayerEditorTestFixture, EFMode_ToggleButton_HasCorrectObjectName)
 }
 
 // Test 221 — isEditForwardMode() default must be false.
+// Guarded: old editor only exposes isEditForwardMode() under WANT_ADSK_USD_EDIT_FORWARD_BUILD.
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 TEST_F(LayerEditorTestFixture, EFMode_IsEditForwardMode_FalseByDefault)
 {
     EXPECT_FALSE(_sessionState.isEditForwardMode());
 }
+#endif
 
 // Test 222 — effectiveTargetLayer() must equal targetLayer() when EF is off.
 TEST_F(LayerEditorTestFixture, EFMode_EffectiveTargetLayer_EqualsTargetLayerByDefault)
@@ -96,6 +99,8 @@ TEST_F(LayerEditorTestFixture, EFMode_EffectiveTargetLayer_EqualsTargetLayerByDe
 // ── Tests using LayerEditorWithEFFixture (EF support enabled) ─────────────
 
 // Test 223 — the button tooltip must match the kToggleEditForwarding string resource.
+// Guarded: kToggleEditForwarding only exists under WANT_ADSK_USD_EDIT_FORWARD_BUILD.
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
 {
     QPushButton* btn = findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
@@ -105,6 +110,7 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
     EXPECT_EQ(btn->toolTip(),
               StringResources::getAsQString(StringResources::kToggleEditForwarding));
 }
+#endif
 
 // Test 225 — updateButtons() sets the button stylesheet to reflect EF active state.
 // The icon switches between ef_default (off) and ef_on (on) via background-image.
