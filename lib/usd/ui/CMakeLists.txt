@@ -45,7 +45,6 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         initStringResources.cpp
         mayaLayerEditorDCCFunctions.cpp
-        mayaLayerEditorDCCFunctions.h
 )
 
 # -----------------------------------------------------------------------------
@@ -130,6 +129,7 @@ endif()
 set(HEADERS
     api.h
     initStringResources.h
+    mayaLayerEditorDCCFunctions.h
 )
 
 mayaUsd_promoteHeaderList( 
