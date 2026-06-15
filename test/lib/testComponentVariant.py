@@ -156,21 +156,20 @@ class ComponentVariantTestCase(unittest.TestCase):
             self.verifyChildren(varyingItem, [ufeSpherePathStr])
         self.verifyColor(stage, usdVaryingPathStr + '.' + colorAttributeName, (0.1, 0.8, 0.1))
 
-        # Undo: sphere is back.
+        # Undo: cube is left as a cube but color is back.
         cmds.undo()
 
-        if ccSupportsIndependentVariantSwitching:
-            self.verifyChildren(varyingItem, [ufeSpherePathStr])
-        else:
-            self.verifyChildren(varyingItem, [ufeCubePathStr])
+        self.verifyChildren(varyingItem, [ufeCubePathStr])
         self.verifyColor(stage, usdVaryingPathStr + '.' + colorAttributeName, (0.8, 0.1, 0.1))
 
-        # Redo: cube is back.
+        # Redo: cube color changes are back.
         cmds.redo()
 
         if ccSupportsIndependentVariantSwitching:
             self.verifyChildren(varyingItem, [ufeCubePathStr])
         else:
+            # the EF does not correctly forward the variant switch
+            # when it happens on a component sub-prim.
             self.verifyChildren(varyingItem, [ufeSpherePathStr])
 
         self.verifyColor(stage, usdVaryingPathStr + '.' + colorAttributeName, (0.1, 0.8, 0.1))
