@@ -143,12 +143,12 @@ void OldEditorStubCommandHook::clearCalls()
     _calls.clear();
 }
 
-bool OldEditorStubCommandHook::hasCall(std::string_view method) const
+bool OldEditorStubCommandHook::hasCall(const std::string& method) const
 {
     return callCount(method) > 0;
 }
 
-int OldEditorStubCommandHook::callCount(std::string_view method) const
+int OldEditorStubCommandHook::callCount(const std::string& method) const
 {
     int count = 0;
     for (const auto& call : _calls) {
