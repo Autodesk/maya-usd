@@ -221,7 +221,6 @@ void updatePathList(
     for (auto proxy : list) {
         typename TypePolicy::value_type item = proxy;
         std::filesystem::path           filePath(item.GetAssetPath());
-        filePath = filePath;
 
         auto it = layerEntry->second.paths.find(filePath);
         if (it == layerEntry->second.paths.end()) {
@@ -323,7 +322,6 @@ void updatePostponedRelativePaths(
         }
 
         std::filesystem::path filePath(subLayer->GetRealPath());
-        filePath = filePath;
 
         auto it = layerEntry->second.paths.find(filePath);
         if (it == layerEntry->second.paths.end()) {
