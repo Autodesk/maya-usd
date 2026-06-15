@@ -22,6 +22,8 @@
 #include "utilFileSystem.h"
 #include "utilUI.h"
 
+#include <filesystem>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/usd/flattenUtils.h>
