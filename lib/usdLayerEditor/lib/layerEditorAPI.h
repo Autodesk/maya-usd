@@ -14,8 +14,12 @@
 // limitations under the License.
 //
 
-#ifdef LAYEREDITOR_EXPORTS
-#define LayerEditorAPI __declspec(dllexport)
+#ifdef _WIN32
+#    ifdef LAYEREDITOR_EXPORTS
+#        define LayerEditorAPI __declspec(dllexport)
+#    else
+#        define LayerEditorAPI __declspec(dllimport)
+#    endif
 #else
-#define LayerEditorAPI __declspec(dllimport)
+#    define LayerEditorAPI
 #endif
