@@ -18,7 +18,6 @@
 #include "abstractCommandHook.h"
 
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace UsdLayerEditor {
@@ -52,8 +51,8 @@ public:
     void     selectPrimsWithSpec(UsdLayer layer) override;
 
     void               clearCalls();
-    bool               hasCall(std::string_view method) const;
-    int                callCount(std::string_view method) const;
+    bool               hasCall(const std::string& method) const;
+    int                callCount(const std::string& method) const;
     const CommandCall& lastCall() const;
 
     std::vector<CommandCall> _calls;

@@ -143,12 +143,12 @@ void StubCommandHook::clearCalls()
     _calls.clear();
 }
 
-bool StubCommandHook::hasCall(std::string_view method) const
+bool StubCommandHook::hasCall(const std::string& method) const
 {
     return callCount(method) > 0;
 }
 
-int StubCommandHook::callCount(std::string_view method) const
+int StubCommandHook::callCount(const std::string& method) const
 {
     int count = 0;
     for (const auto& call : _calls) {
