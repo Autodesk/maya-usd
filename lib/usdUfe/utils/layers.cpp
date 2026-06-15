@@ -203,9 +203,10 @@ bool isSessionLayer(const SdfLayerHandle& layer, const std::set<SdfLayerRefPtr>&
 }
 
 SdfLayerHandle getStrongerLayer(
-    const SdfLayerHandle& root,
+    const UsdStagePtr&    stage,
     const SdfLayerHandle& layer1,
-    const SdfLayerHandle& layer2)
+    const SdfLayerHandle& layer2,
+    bool                  compareSessionLayers)
 {
     if (layer1 == layer2)
         return layer1;
@@ -216,48 +217,14 @@ SdfLayerHandle getStrongerLayer(
     if (!layer2)
         return layer1;
 
-    if (root == layer1)
-        return layer1;
-
-    if (root == layer2)
-        return layer2;
-
-    for (auto path : root->GetSubLayerPaths()) {
-        SdfLayerRefPtr subLayer = SdfLayer::FindRelativeToLayer(root, path);
-        if (!subLayer)
-            continue;
-
-        SdfLayerHandle stronger = getStrongerLayer(subLayer, layer1, layer2);
-        if (!stronger)
-            continue;
-
-        return stronger;
+    for (const auto& layer : stage->GetLayerStack(compareSessionLayers)) {
+        if (layer == layer1)
+            return layer1;
+        if (layer == layer2)
+            return layer2;
     }
 
     return SdfLayerHandle();
-}
-
-SdfLayerHandle getStrongerLayer(
-    const UsdStagePtr&    stage,
-    const SdfLayerHandle& layer1,
-    const SdfLayerHandle& layer2,
-    bool                  compareSessionLayers)
-{
-    if (compareSessionLayers) {
-        // Session Layer is the strongest in the stage, so check its hierarchy first
-        // when enabled.
-        auto strongerLayer = getStrongerLayer(stage->GetSessionLayer(), layer1, layer2);
-        if (strongerLayer == layer1) {
-            return layer1;
-        } else if (strongerLayer == layer2) {
-            return layer2;
-        }
-    }
-
-    // Only verify the stage's general layer hierarchy. Do not check the session
-    // layer hierarchy because we don't want to let opinions that are owned by
-    // the application interfere with the user commands.
-    return getStrongerLayer(stage->GetRootLayer(), layer1, layer2);
 }
 
 SdfPrimSpecHandleVector
