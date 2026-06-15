@@ -21,6 +21,9 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <set>
+#include <string>
+
 namespace UsdLayerEditor {
 
 using LayerNameMap = std::map<std::string, std::string>;
@@ -52,11 +55,21 @@ LayerEditorAPI void loadLayerMuteState(
 // So we need to hold on to muted layers. We do this in a private global list
 // of muted layers. That list gets cleared when a new Maya scene is created.
 
-LayerEditorAPI void addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+LayerEditorAPI bool addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
-LayerEditorAPI void removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+LayerEditorAPI bool removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 LayerEditorAPI void forgetMutedLayers();
+
+/*! Set of layer reference pointers.
+ */
+using LayerRefSet = std::set<PXR_NS::SdfLayerRefPtr>;
+
+/*! Returns layers held due to muting layer \p mutedIdentifier in a USD stage,
+ * includes the muted root (if dirty/anonymous) and all recorded descendants
+ * in its sublayer hierarchy.
+ */
+LayerEditorAPI const LayerRefSet& getMutedLayers(const std::string& mutedIdentifier);
 
 } // namespace UsdLayerEditor
 
