@@ -16,7 +16,7 @@
 
 #include "batchSaveLayersUIDelegate.h"
 
-#include "mayaLayerEditorDCCFunctions.h"
+#include "../mayaLayerEditorDCCFunctions.h"
 #include "mayaQtUtils.h"
 
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
