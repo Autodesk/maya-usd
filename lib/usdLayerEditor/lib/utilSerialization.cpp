@@ -428,17 +428,17 @@ void updateRootLayer(
     std::string                       filePath(pathInfo.absolutePath);
 
     if (!anonLayer) {
-        TF_ERROR(NoAnonLayerProvided, "No layer provided to save to '%s'", filePath);
+        TF_ERROR(NoAnonLayerProvided, "No layer provided to save to '%s'", filePath.c_str());
         return nullptr;
     }
 
     if (!anonLayer->IsAnonymous()) {
-        TF_ERROR(CannotSaveNonAnonLayer, "Cannot save non-anonymous layer '%s' under a different file name", anonLayer->GetDisplayName());
+        TF_ERROR(CannotSaveNonAnonLayer, "Cannot save non-anonymous layer '%s' under a different file name", anonLayer->GetDisplayName().c_str());
         return nullptr;
     }
 
     if (isLayerSystemLocked(anonLayer)) {
-        TF_ERROR(CannotSaveAnonLayerWhenSysLocked, "Cannot save layer '%s' when system-locked", anonLayer->GetDisplayName());
+        TF_ERROR(CannotSaveAnonLayerWhenSysLocked, "Cannot save layer '%s' when system-locked", anonLayer->GetDisplayName().c_str());
         return nullptr;
     }
 
@@ -453,7 +453,7 @@ void updateRootLayer(
     const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
 
     if (!saveLayerWithFormat(anonLayer, filePath, formatArg)) {
-        TF_ERROR(FailedAnonLayerSave, "Failed to save layer '%s' to '%s'", anonLayer->GetDisplayName(), filePath);
+        TF_ERROR(FailedAnonLayerSave, "Failed to save layer '%s' to '%s'", anonLayer->GetDisplayName().c_str(), filePath.c_str());
         return nullptr;
     }
 
@@ -488,7 +488,7 @@ void updateRootLayer(
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(pathInfo.absolutePath);
 
     if (!newLayer) {
-        TF_ERROR(FailedAnonLayerReload, "Failed to reload layer '%s' from '%s'", anonLayer->GetDisplayName(), filePath);
+        TF_ERROR(FailedAnonLayerReload, "Failed to reload layer '%s' from '%s'", anonLayer->GetDisplayName().c_str(), filePath.c_str());
         return nullptr;
     }
 
