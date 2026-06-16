@@ -376,6 +376,41 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
         self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 23, 8), 'Variable expressions in sublayers requires OpenUSD version 23.08 and above')
+    def testDeleteRestrictionWithExpressionVariableSubLayer(self):
+        '''
+        Test delete restriction - we don't allow removal of a prim from a weaker
+        layer when the prim is in the stronger layer.
+        With sub layer paths using expression variables.
+        '''
+        psPathStr, _, varLayer, weakLayer = usdUtils.createStageWithExpressionVariableSubLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+
+        stage.SetEditTarget(varLayer)
+        stage.DefinePrim('/A', 'Xform')
+        self.assertTrue(stage.GetPrimAtPath('/A'))
+
+        ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
+
+        # not allowed from the weaker layer.
+        stage.SetEditTarget(weakLayer)
+        cmds.delete(psPathStr + ',/A')
+
+        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
+        self.assertTrue(stage.GetPrimAtPath('/A'))
+        self.assertFalse(weakLayer.GetPrimAtPath('/A'))
+
+        # allowed from the layer that owns the prim spec.
+        ufeObs.reset()
+
+        stage.SetEditTarget(varLayer)
+        cmds.delete(psPathStr + ',/A')
+
+        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
+        self.assertFalse(stage.GetPrimAtPath('/A'))
+        self.assertFalse(varLayer.GetPrimAtPath('/A'))
+
     def testDeleteRestrictionHierarchyWithChildrenInSessionLayer(self):
         '''Test delete restriction - we *do* allow removal of a prim with child/children defined in the session layer'''
 

@@ -31,7 +31,6 @@ from pxr import Usd, Sdf, Vt, Gf
 
 import unittest
 
-
 class ComponentVariantTestCase(unittest.TestCase):
     '''
     Verify switching component variants on a USD scene.
@@ -146,34 +145,33 @@ class ComponentVariantTestCase(unittest.TestCase):
         # Continuous forwarding happens on the next idle.
         cmds.flushIdleQueue()
         
-        # TODO FIXME BUG: currently, the EF does not correctly forward the variant switch
-        #                 when it happens on a component sub-prim. Currently, all existing
-        #                 variant selections are overwritten by the last one. The correct
-        #                 behavior should be that the two variant selections are independent
-        #                 and can be switched separately, and that both of them are correctly
-        #                 forwarded. Change the test to verify the correct behavior once the
-        #                 bug is fixed.
-        # self.verifyChildren(varyingItem, [ufeCubePathStr])
-        self.verifyChildren(varyingItem, [ufeSpherePathStr])
+        import AdskUsdComponentCreator as cc
+        ccSupportsIndependentVariantSwitching = cc.__version_info__ >= (0, 4, 3)
+
+        if ccSupportsIndependentVariantSwitching:
+            self.verifyChildren(varyingItem, [ufeCubePathStr])
+        else:
+            # the EF does not correctly forward the variant switch
+            # when it happens on a component sub-prim.
+            self.verifyChildren(varyingItem, [ufeSpherePathStr])
         self.verifyColor(stage, usdVaryingPathStr + '.' + colorAttributeName, (0.1, 0.8, 0.1))
 
-        # Undo: sphere is back.
+        # Undo: cube is left as a cube but color is back.
         cmds.undo()
 
         self.verifyChildren(varyingItem, [ufeCubePathStr])
         self.verifyColor(stage, usdVaryingPathStr + '.' + colorAttributeName, (0.8, 0.1, 0.1))
 
-        # Redo: cube is back.
+        # Redo: cube color changes are back.
         cmds.redo()
 
-        # TODO FIXME BUG: currently, the EF does not correctly forward the variant switch
-        #                 when it happens on a component sub-prim. Currently, all existing
-        #                 variant selections are overwritten by the last one. The correct
-        #                 behavior should be that the two variant selections are independent
-        #                 and can be switched separately, and that both of them are correctly
-        #                 forwarded. Change the test to verify the correct behavior once the
-        #                 bug is fixed.
-        self.verifyChildren(varyingItem, [ufeSpherePathStr])
+        if ccSupportsIndependentVariantSwitching:
+            self.verifyChildren(varyingItem, [ufeCubePathStr])
+        else:
+            # the EF does not correctly forward the variant switch
+            # when it happens on a component sub-prim.
+            self.verifyChildren(varyingItem, [ufeSpherePathStr])
+
         self.verifyColor(stage, usdVaryingPathStr + '.' + colorAttributeName, (0.1, 0.8, 0.1))
 
 
