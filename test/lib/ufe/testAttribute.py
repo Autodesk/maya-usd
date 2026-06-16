@@ -16,13 +16,16 @@
 # limitations under the License.
 #
 
+from contextlib import contextmanager
+
 import fixturesUtils
 import mayaUtils
 import ufeUtils
 import testUtils
 import usdUtils
+import usdUfe
 
-from pxr import Usd, UsdGeom, Vt, Gf, UsdLux, UsdUI, Sdr
+from pxr import Usd, UsdGeom, Vt, Gf, UsdLux, UsdUI, Sdr, Tf, Kind, Sdf
 from pxr import UsdShade
 
 from maya import cmds
@@ -1870,6 +1873,151 @@ class AttributeTestCase(unittest.TestCase):
 
         # axisAttrUsd is not allowed to change since there is an opinion in a stronger layer
         self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(axisAttrUsd))
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 23, 8), 'Variable expressions in sublayers requires OpenUSD version 23.08 and above')
+    def testAttributeBlockingWithExpressionVariableSubLayer(self):
+        '''
+        Authoring attribute(s) in weaker layer(s) are not permitted if there exist opinion(s)
+        in stronger layer(s), even when sublayer paths are expression based.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr, strongLayer, varLayer, weakLayer = usdUtils.createStageWithExpressionVariableSubLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+
+        contextOps = ufe.ContextOps.contextOps(
+            ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr))
+        )
+
+        # create a prim. This creates the primSpec in the strong layer.
+        cmds.mayaUsdEditTarget(psPathStr, edit=True, editTarget=weakLayer.identifier)
+        contextOps.doOp(['Add New Prim', 'Capsule'])
+
+        capsulePrim = stage.GetPrimAtPath('/Capsule1')
+        self.assertTrue(capsulePrim)
+
+        radiusAttrUsd = capsulePrim.GetAttribute('radius')
+        self.assertTrue(radiusAttrUsd)
+
+        @contextmanager
+        def temporaryRadiusValueInLayer(layer, radius):
+            with Usd.EditContext(stage, stage.GetEditTargetForLocalLayer(layer)):
+                radiusAttrUsd.Set(radius)
+                yield
+                radiusAttrUsd.Clear()
+                self.assertFalse(radiusAttrUsd.HasAuthoredValue())
+
+        def verifyRestriction(subLayer, editAllowed):
+            with Usd.EditContext(stage, stage.GetEditTargetForLocalLayer(subLayer)):
+                self.assertEqual(mayaUsdUfe.isAttributeEditAllowed(radiusAttrUsd), editAllowed)
+
+        # authoring new attribute edit is expected to be allowed anywhere.
+        for layer in stage.GetLayerStack():
+            verifyRestriction(layer, editAllowed=True)
+
+        # author a value in the weaker layer.
+        with temporaryRadiusValueInLayer(weakLayer, 20):
+            # we can author in this layer and all stronger layers.
+            verifyRestriction(stage.GetSessionLayer(), editAllowed=True)
+            verifyRestriction(rootLayer, editAllowed=True)
+            verifyRestriction(strongLayer, editAllowed=True)
+            verifyRestriction(varLayer, editAllowed=True)
+            verifyRestriction(weakLayer, editAllowed=True)
+
+        # author a value in the variable layer.
+        with temporaryRadiusValueInLayer(varLayer, 20):
+            # we can author in this layer and all stronger layers.
+            verifyRestriction(stage.GetSessionLayer(), editAllowed=True)
+            verifyRestriction(rootLayer, editAllowed=True)
+            verifyRestriction(strongLayer, editAllowed=True)
+            verifyRestriction(varLayer, editAllowed=True)
+            # we can not author in all weaker layers.
+            verifyRestriction(weakLayer, editAllowed=False)
+
+        # author a value in the strong layer.
+        with temporaryRadiusValueInLayer(strongLayer, 20):
+            # we can author in this layer and all stronger layers.
+            verifyRestriction(stage.GetSessionLayer(), editAllowed=True)
+            verifyRestriction(rootLayer, editAllowed=True)
+            verifyRestriction(strongLayer, editAllowed=True)
+            # we can not author in all weaker layers.
+            verifyRestriction(varLayer, editAllowed=False)
+            verifyRestriction(weakLayer, editAllowed=False)
+
+        # author a value in the root layer.
+        with temporaryRadiusValueInLayer(rootLayer, 20):
+            # we can author in this layer and all stronger layers.
+            verifyRestriction(stage.GetSessionLayer(), editAllowed=True)
+            verifyRestriction(rootLayer, editAllowed=True)
+            # we can not author in all weaker layers.
+            verifyRestriction(strongLayer, editAllowed=False)
+            verifyRestriction(varLayer, editAllowed=False)
+            verifyRestriction(weakLayer, editAllowed=False)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 23, 8), 'Variable expressions in sublayers requires OpenUSD version 23.08 and above')
+    def testPrimMetadataBlockingWithExpressionVariableSubLayer(self):
+        '''
+        Authoring metadata in weaker layer(s) is not permitted when stronger
+        opinion(s) exist, even when sublayer paths are expression based.
+        '''
+        # author a layer stack using stage expression variables.
+        psPathStr, strongLayer, varLayer, weakLayer = usdUtils.createStageWithExpressionVariableSubLayer()
+
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+
+        prim = stage.DefinePrim('/Xf', 'Xform')
+
+        @contextmanager
+        def temporaryKindInLayer(layer, kind):
+            primSpec = Sdf.CreatePrimInLayer(layer, prim.GetPath())
+            oldKind = primSpec.kind
+            primSpec.kind = kind
+
+            yield
+
+            if oldKind:
+                primSpec.kind = oldKind
+            else:
+                primSpec.ClearKind()
+
+        def verifyRestriction(targetLayer, kind, editAllowed):
+            with Usd.EditContext(stage, stage.GetEditTargetForLocalLayer(targetLayer)):
+                ufeCmd = usdUfe.SetKindCommand(prim, kind)
+                try:
+                    ufeCmd.execute()
+                except Tf.ErrorException:
+                    didRaise = True
+                else:
+                    didRaise = False
+                    ufeCmd.undo()
+
+            self.assertNotEqual(didRaise, editAllowed)
+
+        with temporaryKindInLayer(weakLayer, Kind.Tokens.model):
+            verifyRestriction(weakLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(varLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(strongLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(rootLayer, Kind.Tokens.group, editAllowed=True)
+
+        with temporaryKindInLayer(varLayer, Kind.Tokens.model):
+            verifyRestriction(weakLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(varLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(strongLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(rootLayer, Kind.Tokens.group, editAllowed=True)
+
+        with temporaryKindInLayer(strongLayer, Kind.Tokens.model):
+            verifyRestriction(weakLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(varLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(strongLayer, Kind.Tokens.group, editAllowed=True)
+            verifyRestriction(rootLayer, Kind.Tokens.group, editAllowed=True)
+
+        with temporaryKindInLayer(rootLayer, Kind.Tokens.model):
+            verifyRestriction(weakLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(varLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(strongLayer, Kind.Tokens.group, editAllowed=False)
+            verifyRestriction(rootLayer, Kind.Tokens.group, editAllowed=True)
 
     def testTransformationAttributeBlocking(self):
         '''Authoring transformation attribute(s) in weaker layer(s) are not permitted if there exist opinion(s) in stronger layer(s).'''

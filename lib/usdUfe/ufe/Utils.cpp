@@ -922,10 +922,11 @@ Ufe::Attribute::Ptr attrFromUfeAttrInfo(const Ufe::AttributeInfo& attrInfo)
 namespace {
 
 bool allowedInStrongerLayer(
-    const UsdPrim&                          prim,
-    const SdfPrimSpecHandleVector&          primStack,
-    const std::set<PXR_NS::SdfLayerRefPtr>& sessionLayers,
-    bool                                    allowStronger)
+    const UsdPrim&                       prim,
+    const SdfPrimSpecHandleVector&       primStack,
+    SdfLayerHandleVector::const_iterator stageLayersBegin,
+    SdfLayerHandleVector::const_iterator stageLayersEnd,
+    bool                                 allowStronger)
 {
     // If the flag to allow edits in a stronger layer if off, then it is not allowed.
     if (!allowStronger)
@@ -936,19 +937,18 @@ bool allowedInStrongerLayer(
     auto targetLayer = stage->GetEditTarget().GetLayer();
     auto topLayer = primStack.front()->GetLayer();
 
-    const SdfLayerHandle searchRoot = isSessionLayer(targetLayer, sessionLayers)
-        ? stage->GetSessionLayer()
-        : stage->GetRootLayer();
-
-    auto strongerLayer = getStrongerLayer(searchRoot, targetLayer, topLayer);
-
-    // This happens when the edit target layer is within the reference.
-    // In this cae, we return true to allow it to be edited.
-    if (!strongerLayer) {
+    if (targetLayer == topLayer)
         return true;
+
+    for (auto it = stageLayersBegin; it != stageLayersEnd; ++it) {
+        if (*it == targetLayer)
+            return true;
+        if (*it == topLayer)
+            return false;
     }
 
-    return strongerLayer == targetLayer;
+    // Allow edits when the target layer is non-local, such as in a referenced layer.
+    return true;
 }
 
 } // namespace
@@ -1049,11 +1049,30 @@ void applyCommandRestriction(
     }
 
     const auto stage = prim.GetStage();
-    auto       targetLayer = stage->GetEditTarget().GetLayer();
+    const auto targetLayer = stage->GetEditTarget().GetLayer();
+    const auto stageLayers = stage->GetLayerStack();
 
-    const bool includeTopLayer = true;
-    const auto sessionLayers = getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
-    const bool isTargetingSession = isSessionLayer(targetLayer, sessionLayers);
+    // session layers are always stronger/first in the stage layers stack.
+    const auto sessionLayersEnd
+        = std::find(stageLayers.begin(), stageLayers.end(), stage->GetRootLayer());
+
+    if (!TF_VERIFY(sessionLayersEnd != stageLayers.end())) {
+        throw std::runtime_error(
+            "Cannot apply command restriction: root layer was not found in the stage layer stack.");
+    }
+    auto isInSessionStack = [&stageLayers, &sessionLayersEnd](const SdfLayerHandle& layer) {
+        return std::find(stageLayers.begin(), sessionLayersEnd, layer) != sessionLayersEnd;
+    };
+
+    // Only take session layer opinions into consideration when the target itself
+    // is a session layer or a sub-layer of session.
+    //
+    // We isolate session / non-session this way because these opinions are owned
+    // by the application and we don't want to block the user commands and user
+    // data due to them.
+    const bool isTargetingSession = isInSessionStack(targetLayer);
+    const auto restrictedLayersBegin = isTargetingSession ? stageLayers.begin() : sessionLayersEnd;
+    const auto restrictedLayersEnd = isTargetingSession ? sessionLayersEnd : stageLayers.end();
 
     auto        primSpec = getPrimSpecAtEditTarget(prim);
     auto        primStack = prim.GetPrimStack();
@@ -1069,14 +1088,9 @@ void applyCommandRestriction(
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) {
-        // Only take session layers opinions into consideration when the target itself
-        // is a session layer (top a sub-layer of session).
-        //
-        // We isolate session / non-session this way because these opinions
-        // are owned by the application and we don't want to block the user
-        // commands and user data due to them.
+        // Ignore session or non-session opinions outside the layer stack selected above.
         const auto layer = spec->GetLayer();
-        if (isSessionLayer(layer, sessionLayers) != isTargetingSession)
+        if (isInSessionStack(layer) != isTargetingSession)
             continue;
 
         const auto& layerName = layer->GetDisplayName();
@@ -1120,7 +1134,8 @@ void applyCommandRestriction(
     UsdPrimCompositionQuery query(prim);
     for (const auto& compQueryArc : query.GetCompositionArcs()) {
         if (!primSpec && PcpArcTypeVariant == compQueryArc.GetArcType()) {
-            if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
+            if (allowedInStrongerLayer(
+                    prim, primStack, restrictedLayersBegin, restrictedLayersEnd, allowStronger))
                 return;
             std::string err = TfStringPrintf(
                 "Cannot %s [%s] because it is defined inside the variant composition arc %s",
@@ -1132,7 +1147,8 @@ void applyCommandRestriction(
     }
 
     if (!layerDisplayName.empty()) {
-        if (allowedInStrongerLayer(prim, primStack, sessionLayers, allowStronger))
+        if (allowedInStrongerLayer(
+                prim, primStack, restrictedLayersBegin, restrictedLayersEnd, allowStronger))
             return;
         std::string formattedInstructions
             = TfStringPrintf(instructions.c_str(), layerDisplayName.c_str());
