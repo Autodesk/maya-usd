@@ -440,9 +440,10 @@ void LayerEditorCommand::registerBackupStagesProvider()
     UsdLayerEditor::BackupLayerBaseCmd::setStagesProvider(
         []() { return MayaUsd::ufe::ProxyShapeHandler::getAllStages(); });
 
-    // Provide a filesystem-based write-access checker so RefreshSystemLockLayerCmd
-    // can run even when the layer editor UI has never been opened (which would
-    // otherwise register this function via batchSaveLayersUIDelegate).
+    // Set checkWriteAccess even in headless builds where registerLayerEditorDCCFunctions()
+    // is never called (e.g. when the layer editor UI has never been opened), so that
+    // RefreshSystemLockLayerCmd can still run. Read-modify-write preserves any other
+    // fields already registered.
     auto fileSystemFns = UsdLayerEditor::layerEditorDCCFunctions().fileSystem;
     fileSystemFns.checkWriteAccess = [](const std::string& filePath) -> bool {
         const fs::filesystem::path p(filePath);
