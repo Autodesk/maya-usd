@@ -27,20 +27,12 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
-#include <mayaUsd/utils/stageCache.h>
-#include <mayaUsd/utils/util.h> // UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
-#include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
-#include <pxr/base/tf/stringUtils.h> // TfStringPrintf
-#include <pxr/usd/usdGeom/tokens.h>
-
-#include <maya/MDistance.h>
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
-
-#include <ghc/fs_std.hpp>
 
 void UsdLayerEditor::initialize()
 {
@@ -49,60 +41,6 @@ void UsdLayerEditor::initialize()
     if (nullptr == UsdLayerEditor::getQtUtils()) {
         UsdLayerEditor::setQtUtils(new MayaQtUtils());
     }
-
-    UsdLayerEditor::FileSystemFns fileSystem;
-    fileSystem.getDCCSceneDir
-        = []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); };
-    fileSystem.getDCCWorkspaceScenesDir
-        = []() { return std::string(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar()); };
-
-    UsdLayerEditor::SerializationFns serialization;
-    serialization.updateDCCObjectRootLayer
-        = [](const std::string&            proxyPath,
-             const std::string&            layerPath,
-             const PXR_NS::SdfLayerRefPtr& layer,
-             bool                          wasTargetLayer) {
-              MayaUsd::utils::setNewProxyPath(
-                  MString(proxyPath.c_str()),
-                  MString(layerPath.c_str()),
-                  MayaUsd::utils::kProxyPathFollowProxyShape,
-                  layer,
-                  wasTargetLayer);
-          };
-    serialization.getStageCaches = []() {
-        std::vector<PXR_NS::UsdStageCache*> caches;
-        for (PXR_NS::UsdStageCache& cache : UsdMayaStageCache::GetAllCaches())
-            caches.push_back(&cache);
-        return caches;
-    };
-    serialization.setLayerUpAxisAndUnits = [](const PXR_NS::SdfLayerRefPtr& layer) {
-        const PXR_NS::TfToken upAxis
-            = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
-        const double metersPerUnit
-            = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
-        layer->SetField(
-            PXR_NS::SdfPath::AbsoluteRootPath(),
-            PXR_NS::UsdGeomTokens->metersPerUnit,
-            metersPerUnit);
-        layer->SetField(
-            PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
-    };
-    UsdLayerEditor::setSerializationFns(serialization);
-
-    fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) -> bool {
-        const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                             "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-        const std::string commandString = PXR_NS::TfStringPrintf(script, relativeAnchor.c_str());
-        return MGlobal::executePythonCommand(commandString.c_str());
-    };
-    fileSystem.checkWriteAccess = [](const std::string& filePath) -> bool {
-        const fs::filesystem::path p(filePath);
-        if (!fs::filesystem::exists(p))
-            return true;
-        const auto perms = fs::filesystem::status(p).permissions();
-        return (perms & fs::filesystem::perms::owner_write) != fs::filesystem::perms::none;
-    };
-    UsdLayerEditor::setFileSystemFns(fileSystem);
 }
 
 namespace {
