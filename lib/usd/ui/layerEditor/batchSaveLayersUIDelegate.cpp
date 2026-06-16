@@ -27,7 +27,6 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
-#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
