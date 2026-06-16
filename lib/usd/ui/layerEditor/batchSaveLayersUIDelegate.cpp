@@ -20,9 +20,7 @@
 #include "mayaQtUtils.h"
 
 #include <batchSaveLayersUIDelegate.h>
-#include <layerEditorDCCFunctions.h>
 #include <saveLayersDialog.h>
-#include <utilFileSystem.h>
 #include <utilQT.h>
 
 #include <mayaUsd/base/tokens.h>
