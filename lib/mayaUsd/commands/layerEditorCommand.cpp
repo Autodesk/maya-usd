@@ -17,6 +17,7 @@
 #include "layerEditorCommand.h"
 
 #include <LayerEditorCommands.h>
+#include <layerEditorDCCFunctions.h>
 #include <utilFileSystem.h>
 
 #include <mayaUsd/ufe/Global.h>
@@ -443,15 +444,15 @@ void LayerEditorCommand::registerBackupStagesProvider()
     // Provide a filesystem-based write-access checker so RefreshSystemLockLayerCmd
     // can run even when the layer editor UI has never been opened (which would
     // otherwise register this function via batchSaveLayersUIDelegate).
-    UsdLayerEditor::FileSystem::setFileWriteAccessFunction(
-        [](const std::string& filePath) -> bool {
-            const fs::filesystem::path p(filePath);
-            if (!fs::filesystem::exists(p))
-                return true;
-            const auto perms = fs::filesystem::status(p).permissions();
-            return (perms & fs::filesystem::perms::owner_write)
-                != fs::filesystem::perms::none;
-        });
+    auto fileSystemFns = UsdLayerEditor::layerEditorDCCFunctions().fileSystem;
+    fileSystemFns.checkWriteAccess = [](const std::string& filePath) -> bool {
+        const fs::filesystem::path p(filePath);
+        if (!fs::filesystem::exists(p))
+            return true;
+        const auto perms = fs::filesystem::status(p).permissions();
+        return (perms & fs::filesystem::perms::owner_write) != fs::filesystem::perms::none;
+    };
+    UsdLayerEditor::setFileSystemFns(fileSystemFns);
 }
 
 void LayerEditorCommand::unregisterBackupStagesProvider()

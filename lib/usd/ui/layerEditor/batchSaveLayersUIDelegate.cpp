@@ -20,6 +20,7 @@
 #include "mayaQtUtils.h"
 
 #include <batchSaveLayersUIDelegate.h>
+#include <layerEditorDCCFunctions.h>
 #include <saveLayersDialog.h>
 #include <utilFileSystem.h>
 #include <utilQT.h>
@@ -50,11 +51,11 @@ void UsdLayerEditor::initialize()
         UsdLayerEditor::setQtUtils(new MayaQtUtils());
     }
 
-    UsdLayerEditor::FileSystem::setDCCSceneLocationFunc(
-        []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); });
-
-    UsdLayerEditor::FileSystem::setDCCWorkspaceSceneLocationFunc(
-        []() { return std::string(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar()); });
+    UsdLayerEditor::FileSystemFns fileSystem;
+    fileSystem.getDCCSceneDir
+        = []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); };
+    fileSystem.getDCCWorkspaceScenesDir
+        = []() { return std::string(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar()); };
 
     UsdLayerEditor::Serialization::setUpdateDCCObjectRootLayerFunction(
         [](const std::string&            proxyPath,
@@ -90,22 +91,20 @@ void UsdLayerEditor::initialize()
                 PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
         });
 
-    UsdLayerEditor::FileSystem::setPrepareLayerSaveUILayerFn(
-        [](const std::string& relativeAnchor) -> bool {
-            const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                                 "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-            const std::string commandString = PXR_NS::TfStringPrintf(script, relativeAnchor.c_str());
-            return MGlobal::executePythonCommand(commandString.c_str());
-        });
-
-    UsdLayerEditor::FileSystem::setFileWriteAccessFunction(
-        [](const std::string& filePath) -> bool {
-            const fs::filesystem::path p(filePath);
-            if (!fs::filesystem::exists(p))
-                return true;
-            const auto perms = fs::filesystem::status(p).permissions();
-            return (perms & fs::filesystem::perms::owner_write) != fs::filesystem::perms::none;
-        });
+    fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) -> bool {
+        const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
+                             "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
+        const std::string commandString = PXR_NS::TfStringPrintf(script, relativeAnchor.c_str());
+        return MGlobal::executePythonCommand(commandString.c_str());
+    };
+    fileSystem.checkWriteAccess = [](const std::string& filePath) -> bool {
+        const fs::filesystem::path p(filePath);
+        if (!fs::filesystem::exists(p))
+            return true;
+        const auto perms = fs::filesystem::status(p).permissions();
+        return (perms & fs::filesystem::perms::owner_write) != fs::filesystem::perms::none;
+    };
+    UsdLayerEditor::setFileSystemFns(fileSystem);
 }
 
 namespace {
