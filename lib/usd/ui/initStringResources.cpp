@@ -15,19 +15,13 @@
 //
 #include "initStringResources.h"
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <stringResources.h>
 
 #include <maya/MString.h>
 #include <maya/MStringResource.h>
 #include <maya/MStringResourceId.h>
-#else
-#include "layerEditor/stringResources.h"
-#endif
 
 namespace MAYAUSD_NS_DEF {
-
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 
 namespace {
 
@@ -131,11 +125,5 @@ MStatus initStringResources()
 
     return status;
 }
-
-#else
-
-MStatus initStringResources() { return UsdLayerEditor::StringResources::registerAll(); }
-
-#endif
 
 } // namespace MAYAUSD_NS_DEF

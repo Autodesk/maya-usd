@@ -19,11 +19,7 @@
 
 #include "mayaCommandHook.h"
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <sessionState.h>
-#else
-#include "sessionState.h"
-#endif
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
@@ -71,9 +67,7 @@ public:
 
     AbstractCommandHook*    commandHook() override;
     std::vector<StageEntry> allStages() const override;
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     std::vector<StageEntry> selectedStages() const override;
-#endif
     // path to default load layer dialogs to
     std::string defaultLoadPath() const override;
     // ui that returns a list of paths to load
@@ -95,11 +89,7 @@ public:
     void refreshCurrentStageEntry() override;
     void refreshStageEntry(std::string const& proxyShapePath) override;
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     std::string proxyShapePath() { return _currentStageEntry._dccObjectPath; }
-#else
-    std::string proxyShapePath() { return _currentStageEntry._proxyShapePath; }
-#endif
 
 Q_SIGNALS:
     void clearUIOnSceneResetSignal();

@@ -16,13 +16,8 @@
 
 #include "mayaSessionState.h"
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <saveLayersDialog.h>
 #include <stringResources.h>
-#else
-#include "saveLayersDialog.h"
-#include "stringResources.h"
-#endif
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
@@ -109,11 +104,7 @@ void MayaSessionState::setStageEntry(StageEntry const& inEntry)
     }
 
     if (!_inLoad)
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
         MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._dccObjectPath);
-#else
-        MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._proxyShapePath);
-#endif
 }
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
@@ -147,11 +138,7 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
         out_stageEntry->_id = dagNode.uuid().asString().asChar();
         out_stageEntry->_stage = stage;
         out_stageEntry->_displayName = niceName.toStdString();
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
         out_stageEntry->_dccObjectPath = shapePath.asChar();
-#else
-        out_stageEntry->_proxyShapePath = shapePath.asChar();
-#endif
         return true;
     }
     return false;
@@ -258,22 +245,14 @@ void MayaSessionState::unregisterNotifications()
 
 void MayaSessionState::refreshCurrentStageEntry()
 {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     refreshStageEntry(_currentStageEntry._dccObjectPath);
-#else
-    refreshStageEntry(_currentStageEntry._proxyShapePath);
-#endif
 }
 
 void MayaSessionState::refreshStageEntry(std::string const& proxyShapePath)
 {
     StageEntry entry;
     if (getStageEntry(&entry, proxyShapePath.c_str())) {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
         if (entry._dccObjectPath == _currentStageEntry._dccObjectPath) {
-#else
-        if (entry._proxyShapePath == _currentStageEntry._proxyShapePath) {
-#endif
             QTimer::singleShot(0, this, [this, entry]() {
                 mayaUsdStageResetCBOnIdle(entry);
                 setStageEntry(entry);
@@ -406,7 +385,6 @@ bool MayaSessionState::saveLayerUI(
     std::string*                  out_filePath,
     const PXR_NS::SdfLayerRefPtr& parentLayer) const
 {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     // Shared SaveLayersDialog takes a parent-layer file path (not an SdfLayer).
     std::string parentLayerPath;
     if (parentLayer) {
@@ -415,9 +393,6 @@ bool MayaSessionState::saveLayerUI(
             parentLayerPath = parentLayer->GetIdentifier();
     }
     return SaveLayersDialog::saveLayerFilePathUI(*out_filePath, parentLayerPath);
-#else
-    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath, parentLayer);
-#endif
 }
 
 std::vector<std::string>
@@ -500,11 +475,7 @@ std::string MayaSessionState::defaultLoadPath() const
 // in this case, the stage needs to be re-created on the new file
 void MayaSessionState::rootLayerPathChanged(std::string const& in_path)
 {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     const std::string& proxyPath = _currentStageEntry._dccObjectPath;
-#else
-    const std::string& proxyPath = _currentStageEntry._proxyShapePath;
-#endif
     if (!proxyPath.empty()) {
         MString proxyShape(proxyPath.c_str());
         MString newValue(in_path.c_str());
@@ -578,28 +549,14 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
 {
     MString result, temp;
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-    // The shared StringResources does not provide a getAsMString helper; the
-    // Resource struct carries the raw format string as a std::string.
     temp.format(
         MString(StringResources::kUsdLayerIdentifier.value.c_str()),
         layer->GetIdentifier().c_str());
-#else
-    temp.format(
-        StringResources::getAsMString(StringResources::kUsdLayerIdentifier),
-        layer->GetIdentifier().c_str());
-#endif
     result += temp;
     result += "\n";
     if (layer->GetRealPath() != layer->GetIdentifier()) {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
         temp.format(
             MString(StringResources::kRealPath.value.c_str()), layer->GetRealPath().c_str());
-#else
-        temp.format(
-            StringResources::getAsMString(StringResources::kRealPath),
-            layer->GetRealPath().c_str());
-#endif
         result += temp;
         result += "\n";
     }
@@ -609,7 +566,6 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
     MGlobal::displayInfo(result);
 }
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 // -----------------------------------------------------------------------------
 // Shared-API overrides
 // -----------------------------------------------------------------------------
@@ -662,7 +618,5 @@ std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
     }
     return result;
 }
-
-#endif // MAYAUSD_USE_SHARED_LAYER_EDITOR
 
 } // namespace UsdLayerEditor

@@ -18,11 +18,7 @@
 
 #include "mayaSessionState.h"
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <abstractCommandHook.h>
-#else
-#include "abstractCommandHook.h"
-#endif
 
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/layerLocking.h>
@@ -64,30 +60,6 @@ std::string getProxyShapeName(const std::string& proxyShapePath)
         return proxyShapePath;
     }
 }
-
-#if !defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-bool getBooleanAttributeOnProxyShape(
-    const std::string& proxyShapePath,
-    const std::string& attributeName)
-{
-    if (proxyShapePath.empty()) {
-        return false;
-    }
-
-    MObject mobj;
-    MStatus status = PXR_NS::UsdMayaUtil::GetMObjectByName(getProxyShapeName(proxyShapePath), mobj);
-    if (status == MStatus::kSuccess) {
-        MFnDependencyNode fn;
-        fn.setObject(mobj);
-        bool attribute;
-        if (PXR_NS::UsdMayaUtil::getPlugValue(fn, attributeName.c_str(), &attribute)) {
-            return attribute;
-        }
-    }
-
-    return false;
-}
-#endif
 
 } // namespace
 
@@ -225,17 +197,10 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
 }
 
 // lock, system-lock or unlock the given layer
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 void MayaCommandHook::lockLayer(
     UsdLayer      usdLayer,
     LayerLockType lockState,
     bool          includeSubLayers)
-#else
-void MayaCommandHook::lockLayer(
-    UsdLayer               usdLayer,
-    MayaUsd::LayerLockType lockState,
-    bool                   includeSubLayers)
-#endif
 {
     // Per design, we refuse to change the lock state of system-locked
     // layers through the UI.
@@ -323,18 +288,6 @@ void MayaCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)
 
     MayaUsd::UfeSelectionUndoItem::select("selectPrimsWithSpec", sn);
 }
-
-#if !defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-bool MayaCommandHook::isProxyShapeStageIncoming(const std::string& proxyShapePath)
-{
-    return getBooleanAttributeOnProxyShape(proxyShapePath, "stageIncoming");
-}
-
-bool MayaCommandHook::isProxyShapeSharedStage(const std::string& proxyShapePath)
-{
-    return getBooleanAttributeOnProxyShape(proxyShapePath, "shareStage");
-}
-#endif
 
 std::string MayaCommandHook::executeMel(const std::string& commandString, bool undoable)
 {

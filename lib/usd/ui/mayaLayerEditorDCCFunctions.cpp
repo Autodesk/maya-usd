@@ -94,7 +94,6 @@ namespace UsdLayerEditor {
 
 void registerLayerEditorDCCFunctions()
 {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     ComponentFns component;
     component.saveComponent
         = [](const PXR_NS::UsdStageRefPtr& /*stage*/, const std::string& dccObjectPath) {
@@ -317,7 +316,6 @@ void registerLayerEditorDCCFunctions()
     };
     setEditForwardingFns(editForwarding);
 #endif
-#endif // MAYAUSD_USE_SHARED_LAYER_EDITOR
 }
 
 void deregisterLayerEditorDCCFunctions()
