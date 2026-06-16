@@ -21,6 +21,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/stageCache.h>
 
 #include <cstdint>
 #include <functional>
@@ -126,6 +127,22 @@ struct EnvironmentFns
     std::function<int64_t()>  layerContentsTimeSamplesSizeLimit; // default 8
 };
 
+struct FileSystemFns
+{
+    std::function<std::string()>            getDCCSceneDir;
+    std::function<std::string()>            getDCCWorkspaceScenesDir;
+    std::function<bool(const std::string&)> prepareLayerSaveUILayer;
+    std::function<bool(const std::string&)> checkWriteAccess;
+};
+
+struct SerializationFns
+{
+    std::function<std::vector<PXR_NS::UsdStageCache*>()>             getStageCaches;
+    std::function<void(const PXR_NS::SdfLayerRefPtr&)>               setLayerUpAxisAndUnits;
+    std::function<void(const std::string&, const std::string&,
+                       const PXR_NS::SdfLayerRefPtr&, bool)>         updateDCCObjectRootLayer;
+};
+
 struct LayerEditorDCCFunctions
 {
     ComponentFns      component;
@@ -133,6 +150,8 @@ struct LayerEditorDCCFunctions
     DccObjectFns      dccObject;
     SaveOptionFns     saveOption;
     EnvironmentFns    environment;
+    FileSystemFns     fileSystem;
+    SerializationFns  serialization;
 };
 
 // Registration API — per-group setters (play cleanly with #ifdef guards), plus a
@@ -142,6 +161,8 @@ LayerEditorAPI void setEditForwardingFns(const EditForwardingFns&);
 LayerEditorAPI void setDccObjectFns(const DccObjectFns&);
 LayerEditorAPI void setSaveOptionFns(const SaveOptionFns&);
 LayerEditorAPI void setEnvironmentFns(const EnvironmentFns&);
+LayerEditorAPI void setFileSystemFns(const FileSystemFns&);
+LayerEditorAPI void setSerializationFns(const SerializationFns&);
 LayerEditorAPI void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
 LayerEditorAPI const LayerEditorDCCFunctions& layerEditorDCCFunctions();
 
@@ -205,6 +226,21 @@ LayerEditorAPI bool        shouldExpandOrCollapseAll();
 LayerEditorAPI QWidget*    mainWindowParent();
 LayerEditorAPI int64_t     layerContentsArraySizeLimit();
 LayerEditorAPI int64_t     layerContentsTimeSamplesSizeLimit();
+
+// FileSystemFns
+LayerEditorAPI std::string getDCCSceneDir();
+LayerEditorAPI std::string getDCCWorkspaceScenesDir();
+LayerEditorAPI bool        prepareLayerSaveUILayer(const std::string& relativeAnchor);
+LayerEditorAPI bool        checkWriteAccess(const std::string& filePath);
+
+// SerializationFns
+LayerEditorAPI std::vector<PXR_NS::UsdStageCache*> getStageCaches();
+LayerEditorAPI void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
+LayerEditorAPI void updateDCCObjectRootLayer(
+    const std::string&            dccObjectPath,
+    const std::string&            layerPath,
+    const PXR_NS::SdfLayerRefPtr& layer,
+    bool                          wasTargetLayer);
 
 } // namespace UsdLayerEditor
 

@@ -15,6 +15,8 @@
 //
 #include "layerEditorDCCFunctions.h"
 
+#include <pxr/usd/usdUtils/stageCache.h>
+
 namespace UsdLayerEditor {
 
 namespace {
@@ -30,6 +32,8 @@ void setEditForwardingFns(const EditForwardingFns& fns) { registry().editForward
 void setDccObjectFns(const DccObjectFns& fns) { registry().dccObject = fns; }
 void setSaveOptionFns(const SaveOptionFns& fns) { registry().saveOption = fns; }
 void setEnvironmentFns(const EnvironmentFns& fns) { registry().environment = fns; }
+void setFileSystemFns(const FileSystemFns& fns)    { registry().fileSystem = fns; }
+void setSerializationFns(const SerializationFns& fns) { registry().serialization = fns; }
 void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions& fns) { registry() = fns; }
 const LayerEditorDCCFunctions& layerEditorDCCFunctions() { return registry(); }
 
@@ -296,6 +300,55 @@ int64_t layerContentsTimeSamplesSizeLimit()
     return registry().environment.layerContentsTimeSamplesSizeLimit
         ? registry().environment.layerContentsTimeSamplesSizeLimit()
         : 8;
+}
+
+// ---- FileSystem ----
+std::string getDCCSceneDir()
+{
+    return registry().fileSystem.getDCCSceneDir
+        ? registry().fileSystem.getDCCSceneDir()
+        : std::string {};
+}
+std::string getDCCWorkspaceScenesDir()
+{
+    return registry().fileSystem.getDCCWorkspaceScenesDir
+        ? registry().fileSystem.getDCCWorkspaceScenesDir()
+        : std::string {};
+}
+bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
+{
+    return registry().fileSystem.prepareLayerSaveUILayer
+        ? registry().fileSystem.prepareLayerSaveUILayer(relativeAnchor)
+        : true;
+}
+bool checkWriteAccess(const std::string& filePath)
+{
+    return registry().fileSystem.checkWriteAccess
+        ? registry().fileSystem.checkWriteAccess(filePath)
+        : false;
+}
+
+// ---- Serialization ----
+std::vector<PXR_NS::UsdStageCache*> getStageCaches()
+{
+    return registry().serialization.getStageCaches
+        ? registry().serialization.getStageCaches()
+        : std::vector<PXR_NS::UsdStageCache*> { &PXR_NS::UsdUtilsStageCache::Get() };
+}
+void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    if (registry().serialization.setLayerUpAxisAndUnits)
+        registry().serialization.setLayerUpAxisAndUnits(layer);
+}
+void updateDCCObjectRootLayer(
+    const std::string&            dccObjectPath,
+    const std::string&            layerPath,
+    const PXR_NS::SdfLayerRefPtr& layer,
+    bool                          wasTargetLayer)
+{
+    if (registry().serialization.updateDCCObjectRootLayer)
+        registry().serialization.updateDCCObjectRootLayer(
+            dccObjectPath, layerPath, layer, wasTargetLayer);
 }
 
 } // namespace UsdLayerEditor
