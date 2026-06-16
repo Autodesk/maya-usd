@@ -38,21 +38,12 @@
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
 #endif
-#include <pxr/usd/usdUtils/stageCache.h>
-
 #include <ufe/pathString.h>
 
 #include <ghc/fs_std.hpp>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-namespace {
-    std::function<void(std::string, std::string, const PXR_NS::SdfLayerRefPtr&, bool)>
-        updateDCCObjectRootLayerFunction;
-    std::function<std::vector<PXR_NS::UsdStageCache*>()> getStageCachesFunction;
-    std::function<void(const PXR_NS::SdfLayerRefPtr&)>    layerUpAxisAndUnitsFn;
-}
 
 namespace UsdLayerEditor {
 namespace Serialization {
@@ -80,22 +71,6 @@ namespace Serialization {
             FailedAnonLayerReload, "Anonymous layer reload has failed.");
     };
 
-
-void setUpdateDCCObjectRootLayerFunction(
-    std::function<void(std::string, std::string, const PXR_NS::SdfLayerRefPtr&, bool)> updateFunction)
-{
-    updateDCCObjectRootLayerFunction = updateFunction;
-}
-
-void setGetStageCachesFunction(std::function<std::vector<PXR_NS::UsdStageCache*>()> getCachesFunction)
-{
-    getStageCachesFunction = getCachesFunction;
-}
-
-void setLayerUpAxisAndUnitsFn(std::function<void(const PXR_NS::SdfLayerRefPtr&)> fn)
-{
-    layerUpAxisAndUnitsFn = fn;
-}
 
 class RecursionDetector
 {
@@ -195,9 +170,7 @@ void updateLockedLayers(
 
 std::vector<PXR_NS::UsdStageCache*> getStageCaches()
 {
-    if (getStageCachesFunction)
-        return getStageCachesFunction();
-    return { &PXR_NS::UsdUtilsStageCache::Get() };
+    return UsdLayerEditor::getStageCaches();
 }
 
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
@@ -334,8 +307,7 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
  {
      if (!layer || !layer->PermissionToEdit())
          return;
-     if (layerUpAxisAndUnitsFn)
-         layerUpAxisAndUnitsFn(layer);
+     UsdLayerEditor::setLayerUpAxisAndUnits(layer);
  }
 
 bool saveLayerWithFormat(
@@ -399,8 +371,7 @@ void updateRootLayer(
     const SdfLayerRefPtr& layer,
     bool                          isTargetLayer)
 {
-    if (updateDCCObjectRootLayerFunction)
-        updateDCCObjectRootLayerFunction(proxy, layerPath, layer, isTargetLayer);
+    UsdLayerEditor::updateDCCObjectRootLayer(proxy, layerPath, layer, isTargetLayer);
 }
 
  SdfLayerRefPtr saveAnonymousLayer(
@@ -498,9 +469,8 @@ void updateRootLayer(
     } else if (!parent._objectPath.empty()) {
         // if ever we support relative paths in the DCC, can return the relative path
         // i.e. "filePath" variable
-        if (updateDCCObjectRootLayerFunction)
-            updateDCCObjectRootLayerFunction(
-                parent._objectPath, pathInfo.absolutePath, newLayer, wasTargetLayer);
+        UsdLayerEditor::updateDCCObjectRootLayer(
+            parent._objectPath, pathInfo.absolutePath, newLayer, wasTargetLayer);
     }
 
     updateTargetLayer(parent._objectPath, newLayer);

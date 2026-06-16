@@ -24,7 +24,6 @@
 #include <saveLayersDialog.h>
 #include <utilFileSystem.h>
 #include <utilQT.h>
-#include <utilSerialization.h>
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
@@ -57,39 +56,38 @@ void UsdLayerEditor::initialize()
     fileSystem.getDCCWorkspaceScenesDir
         = []() { return std::string(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar()); };
 
-    UsdLayerEditor::Serialization::setUpdateDCCObjectRootLayerFunction(
-        [](const std::string&            proxyPath,
-           const std::string&            layerPath,
-           const PXR_NS::SdfLayerRefPtr& layer,
-           bool                          wasTargetLayer) {
-            MayaUsd::utils::setNewProxyPath(
-                MString(proxyPath.c_str()),
-                MString(layerPath.c_str()),
-                MayaUsd::utils::kProxyPathFollowProxyShape,
-                layer,
-                wasTargetLayer);
-        });
-
-    UsdLayerEditor::Serialization::setGetStageCachesFunction([]() {
+    UsdLayerEditor::SerializationFns serialization;
+    serialization.updateDCCObjectRootLayer
+        = [](const std::string&            proxyPath,
+             const std::string&            layerPath,
+             const PXR_NS::SdfLayerRefPtr& layer,
+             bool                          wasTargetLayer) {
+              MayaUsd::utils::setNewProxyPath(
+                  MString(proxyPath.c_str()),
+                  MString(layerPath.c_str()),
+                  MayaUsd::utils::kProxyPathFollowProxyShape,
+                  layer,
+                  wasTargetLayer);
+          };
+    serialization.getStageCaches = []() {
         std::vector<PXR_NS::UsdStageCache*> caches;
         for (PXR_NS::UsdStageCache& cache : UsdMayaStageCache::GetAllCaches())
             caches.push_back(&cache);
         return caches;
-    });
-
-    UsdLayerEditor::Serialization::setLayerUpAxisAndUnitsFn(
-        [](const PXR_NS::SdfLayerRefPtr& layer) {
-            const PXR_NS::TfToken upAxis
-                = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
-            const double metersPerUnit
-                = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
-            layer->SetField(
-                PXR_NS::SdfPath::AbsoluteRootPath(),
-                PXR_NS::UsdGeomTokens->metersPerUnit,
-                metersPerUnit);
-            layer->SetField(
-                PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
-        });
+    };
+    serialization.setLayerUpAxisAndUnits = [](const PXR_NS::SdfLayerRefPtr& layer) {
+        const PXR_NS::TfToken upAxis
+            = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
+        const double metersPerUnit
+            = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
+        layer->SetField(
+            PXR_NS::SdfPath::AbsoluteRootPath(),
+            PXR_NS::UsdGeomTokens->metersPerUnit,
+            metersPerUnit);
+        layer->SetField(
+            PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
+    };
+    UsdLayerEditor::setSerializationFns(serialization);
 
     fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) -> bool {
         const char* script = "import mayaUsd_USDRootFileRelative as murel\n"

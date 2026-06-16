@@ -25,7 +25,6 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCache.h>
 
-#include <functional>
 #include <vector>
 
 // General utility functions used when serializing Usd edits during a save operation
@@ -189,25 +188,6 @@ void getLayersToSaveFromStage(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            objectPath,
     StageLayersToSave&            layersInfo);
-
-/*! \brief Sets a function to be called to save the layer lock state in a DCC Stage object
- * attribute.
- */
-LayerEditorAPI void setUpdateDCCObjectRootLayerFunction(
-    std::function<void(std::string, std::string, const PXR_NS::SdfLayerRefPtr&, bool)> saveFunction);
-
-/*! \brief Sets a function returning the DCC's stage caches to refresh when an
- *  anonymous layer is saved to disk. When unset, only the global
- *  UsdUtilsStageCache is used.
- */
-LayerEditorAPI void
-setGetStageCachesFunction(std::function<std::vector<PXR_NS::UsdStageCache*>()> getCachesFunction);
-
-/*! \brief Sets a function that authors up-axis and units metadata on an
- *  anonymous root layer before it is saved. No-op when unset.
- */
-LayerEditorAPI void
-setLayerUpAxisAndUnitsFn(std::function<void(const PXR_NS::SdfLayerRefPtr&)> fn);
 
 } // namespace Serialization
 } // namespace UsdLayerEditor
