@@ -25,6 +25,9 @@ class testAdskUsdDebugTools(unittest.TestCase):
 
     def testDebugToolsLoaded(self):
         try:
+            # Import the USD Python bindings first so the boost.python to/from-Python
+            # converters for USD types (e.g. SdfPath) are registered.
+            from pxr import Usd, Sdf
             import AdskUsdDebug
         except Exception as e:
             self.fail(f"Autodesk USD Debug Tools module not available or failed to load. {e}")
