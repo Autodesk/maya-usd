@@ -31,7 +31,6 @@
 #include <pxr/usd/sdr/shaderProperty.h>
 
 #include <map>
-#include <sstream>
 #include <vector>
 
 namespace USDUFE_NS_DEF {
@@ -64,13 +63,7 @@ Ufe::Value getUsdShaderMetaData(const USD_SHADER& shader, const PXR_NS::TfToken&
     const auto& metadata = shader.GetMetadataObject();
     if (metadata.HasItem(key)) {
         auto vtValue = metadata.GetItemValue(key);
-#ifdef UFE_SCENEITEM_HAS_METADATA
         return vtValueToUfeValue(vtValue);
-#else
-        std::stringstream ss;
-        ss << vtValue;
-        return Ufe::Value(ss.str());
-#endif
     }
 #else
 #if PXR_VERSION >= 2505
