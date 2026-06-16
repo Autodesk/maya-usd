@@ -16,7 +16,11 @@
 #include "CompositionEditorCmd.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/MayaUsdUndoBlock.h>
 
+#include <usdUfe/undo/UsdUndoManager.h>
+
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
 
 #include <maya/MArgParser.h>
@@ -40,6 +44,9 @@
 #include <UsdDebugUI/ApplicationHost.h>
 #include <UsdDebugUI/CompositionEditorWidget.h>
 
+#include <algorithm>
+#include <string>
+
 namespace MAYAUSD_NS_DEF {
 
 const MString CompositionEditorCmd::name("mayaUsdCompositionEditor");
@@ -52,6 +59,31 @@ constexpr auto kReloadFlag = "-rl";
 constexpr auto kReloadFlagLong = "-reload";
 
 const MString WORKSPACE_CONTROL_NAME = "mayaUsdCompositionEditor";
+
+// RAII guard that opens a named Maya undo chunk
+class UndoChunkContext
+{
+private:
+    // Maya's undo chunk names cannot contain spaces (the name is split at the
+    // first space), so replace them with underscores before quoting.
+    MString cleanChunkName(const std::string& label)
+    {
+        std::string name = label.empty() ? "USD Composition Edit" : label;
+        std::replace(name.begin(), name.end(), ' ', '_');
+        return MString("\"") + name.c_str() + "\"";
+    }
+
+public:
+    explicit UndoChunkContext(const std::string& label)
+    {
+        MGlobal::executeCommand(
+            MString("undoInfo -openChunk -chunkName ") + cleanChunkName(label), false, false);
+    }
+    ~UndoChunkContext() { MGlobal::executeCommand("undoInfo -closeChunk", false, false); }
+
+    UndoChunkContext(const UndoChunkContext&) = delete;
+    UndoChunkContext& operator=(const UndoChunkContext&) = delete;
+};
 
 QPointer<Adsk::UsdDebug::CompositionEditorWidget> g_compositionEditorWidget;
 Ufe::Observer::Ptr                                g_selectionObserver;
@@ -116,6 +148,26 @@ public:
             return QApplication::palette().color(QPalette::Disabled, QPalette::WindowText);
         }
         return QColor();
+    }
+
+    bool executeInCmd(
+        const std::string&           editLabel,
+        const std::string&           layerId,
+        const std::function<bool()>& edit) override
+    {
+        if (!edit) {
+            return false;
+        }
+
+        // Ensure the layer being edited has a UsdUndoStateDelegate so the inverse
+        // of the edit is recorded
+        if (PXR_NS::SdfLayerHandle layer = PXR_NS::SdfLayer::Find(layerId)) {
+            UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
+        }
+
+        UndoChunkContext undoChunk(editLabel);
+        MayaUsdUndoBlock undoBlock;
+        return edit();
     }
 
 protected:
