@@ -24,8 +24,6 @@
 namespace UsdLayerEditor {
 namespace FileSystem {
 
-typedef std::function<bool(const std::string&)> WriteAccessCheckFn;
-
 /*! \brief returns the resolved filesystem path for the file identified by the given path
  */
 LayerEditorAPI std::string resolvePath(const std::string& filePath);
@@ -216,24 +214,11 @@ LayerEditorAPI void pathRemoveExtension(std::string& filePath);
 LayerEditorAPI std::string pathFindExtension(std::string& filePath);
 
 /**
- * Sets a function to check write access to a passed file.
- * @param checkFileWriteAccess The write access check function.
- */
-LayerEditorAPI void setFileWriteAccessFunction(WriteAccessCheckFn checkFileWriteAccess);
-
-/**
- * Checks a file for write access by calling the function set via setFileWriteAccessFunction().
- * If no function is set, returns false and raises a coding error.
+ * Checks a file for write access via the DCC registry.
  * @param filePath The file to check for write access.
  * @return True if the file can be written to, false otherwise.
  */
 LayerEditorAPI bool checkWriteAccess(const std::string& filePath);
-
-LayerEditorAPI void setDCCSceneLocationFunc(std::function<std::string()> fn);
-
-LayerEditorAPI void setDCCWorkspaceSceneLocationFunc(std::function<std::string()> fn);
-
-LayerEditorAPI void setPrepareLayerSaveUILayerFn(std::function<bool(const std::string&)> fn);
 
 // Backup a file and restore it if not committed.
 class FileBackup

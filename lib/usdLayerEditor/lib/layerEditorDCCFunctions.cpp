@@ -32,7 +32,7 @@ void setEditForwardingFns(const EditForwardingFns& fns) { registry().editForward
 void setDccObjectFns(const DccObjectFns& fns) { registry().dccObject = fns; }
 void setSaveOptionFns(const SaveOptionFns& fns) { registry().saveOption = fns; }
 void setEnvironmentFns(const EnvironmentFns& fns) { registry().environment = fns; }
-void setFileSystemFns(const FileSystemFns& fns)    { registry().fileSystem = fns; }
+void setFileSystemFns(const FileSystemFns& fns) { registry().fileSystem = fns; }
 void setSerializationFns(const SerializationFns& fns) { registry().serialization = fns; }
 void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions& fns) { registry() = fns; }
 const LayerEditorDCCFunctions& layerEditorDCCFunctions() { return registry(); }

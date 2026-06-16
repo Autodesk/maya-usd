@@ -129,18 +129,18 @@ struct EnvironmentFns
 
 struct FileSystemFns
 {
-    std::function<std::string()>            getDCCSceneDir;
-    std::function<std::string()>            getDCCWorkspaceScenesDir;
-    std::function<bool(const std::string&)> prepareLayerSaveUILayer;
-    std::function<bool(const std::string&)> checkWriteAccess;
+    std::function<std::string()>            getDCCSceneDir;              // default: ""
+    std::function<std::string()>            getDCCWorkspaceScenesDir;    // default: ""
+    std::function<bool(const std::string&)> prepareLayerSaveUILayer;     // default: true
+    std::function<bool(const std::string&)> checkWriteAccess;            // default: false
 };
 
 struct SerializationFns
 {
-    std::function<std::vector<PXR_NS::UsdStageCache*>()>             getStageCaches;
-    std::function<void(const PXR_NS::SdfLayerRefPtr&)>               setLayerUpAxisAndUnits;
+    std::function<std::vector<PXR_NS::UsdStageCache*>()>      getStageCaches;           // default: {&UsdUtilsStageCache::Get()}
+    std::function<void(const PXR_NS::SdfLayerRefPtr&)>        setLayerUpAxisAndUnits;   // default: no-op
     std::function<void(const std::string&, const std::string&,
-                       const PXR_NS::SdfLayerRefPtr&, bool)>         updateDCCObjectRootLayer;
+                       const PXR_NS::SdfLayerRefPtr&, bool)>  updateDCCObjectRootLayer; // default: no-op
 };
 
 struct LayerEditorDCCFunctions

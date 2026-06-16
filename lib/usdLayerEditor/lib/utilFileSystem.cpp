@@ -29,13 +29,6 @@
 #include <random>
 
 namespace {
-std::function<bool(std::string)> writeAccessCheckFunc;
-std::function<std::string()> dccSceneSaveLocationFunc;
-std::function<std::string()> dccWorkspaceSceneSaveLocationFunc;
-std::function<bool(const std::string&)> prepareLayerSaveUILayerFn;
-}
-
-namespace {
 PXR_NAMESPACE_USING_DIRECTIVE
 
 std::string generateUniqueName()
@@ -93,9 +86,7 @@ std::string getDir(const std::string& fullFilePath)
 
 std::string getDCCSceneFileDir()
 {
-    if (!dccSceneSaveLocationFunc)
-        return {};
-    return dccSceneSaveLocationFunc();
+    return UsdLayerEditor::getDCCSceneDir();
 }
 
 std::string getLayerFileDir(const PXR_NS::SdfLayerHandle& layer)
@@ -352,9 +343,7 @@ bool prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneF
 
 bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
 {
-    if (!prepareLayerSaveUILayerFn)
-        return true;
-    return prepareLayerSaveUILayerFn(relativeAnchor);
+    return UsdLayerEditor::prepareLayerSaveUILayer(relativeAnchor);
 }
 
 bool requireUsdPathsRelativeToDCCSceneFile()
@@ -392,9 +381,7 @@ void setRequireUsdPathsRelativeToParentLayer(bool value)
 
 std::string getDCCWorkspaceScenesDir()
 {
-    if (!dccWorkspaceSceneSaveLocationFunc)
-        return {};
-    return dccWorkspaceSceneSaveLocationFunc();
+    return UsdLayerEditor::getDCCWorkspaceScenesDir();
 }
 
 std::string
@@ -529,35 +516,10 @@ std::string pathFindExtension(std::string& filePath)
     return ext.string();
 }
 
-void setFileWriteAccessFunction(WriteAccessCheckFn checkFileWriteAccess)
-{
-    writeAccessCheckFunc = checkFileWriteAccess;
-}
-
 bool checkWriteAccess(const std::string& filePath)
 {
-    if (writeAccessCheckFunc) {
-        return writeAccessCheckFunc(filePath);
-    }
-    TF_CODING_ERROR("No implementation provided for FileSystem::checkWriteAccess()");
-    return false;
+    return UsdLayerEditor::checkWriteAccess(filePath);
 }
-
-void setDCCSceneLocationFunc(std::function<std::string()> fn)
-{
-    dccSceneSaveLocationFunc = fn;
-}
-
-void setDCCWorkspaceSceneLocationFunc(std::function<std::string()> fn)
-{
-    dccWorkspaceSceneSaveLocationFunc = fn;
-}
-
-void setPrepareLayerSaveUILayerFn(std::function<bool(const std::string&)> fn)
-{
-    prepareLayerSaveUILayerFn = fn;
-}
-
 
 FileBackup::FileBackup(const std::string& filename)
     : _filename(filename)
