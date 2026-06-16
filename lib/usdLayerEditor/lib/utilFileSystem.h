@@ -1,0 +1,270 @@
+//
+// Copyright 2019 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#include "layerEditorAPI.h"
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
+
+#include <string>
+
+namespace UsdLayerEditor {
+namespace FileSystem {
+
+typedef std::function<bool(const std::string&)> WriteAccessCheckFn;
+
+/*! \brief returns the resolved filesystem path for the file identified by the given path
+ */
+LayerEditorAPI std::string resolvePath(const std::string& filePath);
+
+/*! \brief returns the path to the
+ */
+LayerEditorAPI std::string getDir(const std::string& fullFilePath);
+
+/*! \brief Takes in two absolute file paths and computes a relative path of the first one
+           to second one.
+
+    \return A pair with the path and a boolean that indicates if the attempt to make the
+            file name relative to the valid anchor path failed.
+
+           If the anchor relative-to-directory is empty, then the original file name
+           is returned but no failure is returned. If the caller needs to detect
+           this as a failure case, they can verify that the relative-to directory
+           name is empty themselves before calling this function.
+
+           The rationale for this is that, for example, we don't want to flag as
+           an error when the user tries to make a path relative to the scene when
+           the scene has not yet been saved.
+
+           If the second path is not absolute or is not reachable from the first,
+           then the returned path will still be absolute.
+ */
+LayerEditorAPI std::pair<std::string, bool>
+               makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir);
+
+/*! \brief returns relative path of a layer file to its parent layer's directory
+ */
+LayerEditorAPI std::string
+getPathRelativeToDirectory(const std::string& fileName, const std::string& relativeToDir);
+
+/*! \brief returns the path of a file relative to the DCC scene project folder.
+           Returns an empty string if the path is not relative to the project.
+ */
+LayerEditorAPI std::string getPathRelativeToProject(const std::string& fileName);
+
+/*! \brief returns the absolute path of a file but relative to the DCC scene project folder.
+           Returns an empty string if the path cannot be made relative to the project.
+ */
+LayerEditorAPI std::string makeProjectRelatedPath(const std::string& fileName);
+
+/*! \brief returns parent directory of opened DCC scene file
+ */
+LayerEditorAPI std::string getDCCSceneFileDir();
+
+/*! \brief returns parent directory of the given layer.
+ */
+LayerEditorAPI std::string getLayerFileDir(const PXR_NS::SdfLayerHandle& layer);
+
+// TODO LE-EXTRACT Does the concept of workspace exist outside of maya / should the terminology be
+// different?
+/*! \brief returns the DCC workspace file rule entry for scenes
+ */
+LayerEditorAPI std::string getDCCWorkspaceScenesDir();
+
+/*! \brief takes in an absolute file path and returns the path relative to dcc scene file.
+When there is no scene file, the absolute (input) path will be returned.
+ */
+LayerEditorAPI std::string getPathRelativeToDCCSceneFile(const std::string& fileName);
+
+/*! \brief takes in an absolute file path and returns the path relative to a USD layer.
+           When there is no layer or the layer has never been saved, then the absolute
+           (input) path will be returned.
+ */
+LayerEditorAPI std::string
+getPathRelativeToLayerFile(const std::string& fileName, const PXR_NS::SdfLayerHandle& layer);
+
+/*! \brief Marks a certain file path inside the layer to be made relative in a postponed fashion.
+The marked file paths will be turned into relative paths upon calling updatePostponedRelativePaths.
+ */
+LayerEditorAPI void
+markPathAsPostponedRelative(const PXR_NS::SdfLayerHandle& layer, const std::string& contentPath);
+
+/*! \brief Unmarks file path which was marked through the call to markPathAsPostponedRelative.
+ */
+LayerEditorAPI void
+unmarkPathAsPostponedRelative(const PXR_NS::SdfLayerHandle& layer, const std::string& contentPath);
+
+/*! \brief Turns the file paths marked through the call 'markPathAsPostponedRelative' to relative.
+ */
+LayerEditorAPI void
+updatePostponedRelativePaths(const PXR_NS::SdfLayerHandle& layer, const std::string& layerFileName);
+
+/*! \brief returns the flag specifying whether USD file paths should be saved as relative to Maya
+ * scene file
+ */
+LayerEditorAPI bool requireUsdPathsRelativeToDCCSceneFile();
+
+/*! \brief returns true if the USD file should be added as a reference, false for as a payload.
+ */
+LayerEditorAPI bool wantReferenceCompositionArc();
+
+/*! \brief returns true if the USD the reference or payload should be prepend, else append.
+ */
+LayerEditorAPI bool wantPrependCompositionArc();
+
+/*! \brief returns true if the USD payload should be immediately loaded.
+ */
+LayerEditorAPI bool wantPayloadLoaded();
+
+/*! \brief returns the prim path referenced by the USD reference or payload.
+ */
+LayerEditorAPI std::string getReferencedPrimPath();
+
+/*! \brief prepares the UI used to save layers, so that the UI can potentially make the
+           selected file name relative to the given directory.
+ */
+LayerEditorAPI bool prepareLayerSaveUILayer(const std::string& relativeAnchor);
+
+/*! \brief prepares the UI used to save layers with the given layer file path, so that the UI
+           can potentially make the selected file name relative to that layer. If the layer is
+           null, the UI can either use the scene file or not make the file relative.
+ */
+LayerEditorAPI bool
+prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneFileForRoot);
+
+/*! \brief returns the flag specifying whether USD file paths should be saved
+ *         as relative to the given parent layer.
+ */
+LayerEditorAPI bool requireUsdPathsRelativeToParentLayer();
+
+/*! \brief returns the flag specifying whether USD file paths should be saved
+ *         as relative to the current edit target layer.
+ */
+LayerEditorAPI bool requireUsdPathsRelativeToEditTargetLayer();
+
+/*! \brief returns a unique file name
+ */
+LayerEditorAPI std::string
+getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext);
+
+/*! \brief returns a unique file name, make sure it does not exist on disk.
+ */
+LayerEditorAPI std::string ensureUniqueFileName(const std::string& filename);
+
+/*! \brief returns the position of the numbered suffix.
+           Returns the end of the string position if no such suffix is present.
+ */
+LayerEditorAPI size_t getNumberSuffixPosition(const std::string& text);
+
+/*! \brief returns the numbered suffix.
+           Returns the an empty string if no such suffix is present.
+ */
+LayerEditorAPI std::string getNumberSuffix(const std::string& text);
+
+/*! \brief returns a new text with the numbered suffix increased by one.
+           Returns the text with 1 appended if no such suffix is present.
+ */
+LayerEditorAPI std::string increaseNumberSuffix(const std::string& text);
+
+/**
+ * Appends `b` to the directory path `a` in-place and inserts directory separators as necessary.
+ *
+ * @param a         A valid path to a directory on disk. This should be a string
+ *                  with a buffer large enough to hold the combined contents of itself and the
+ *                  contents of `b`, including the null-terminator.
+ * @param b         A string to append as a directory component to `a`.
+ *
+ * @return          ``true`` if the operation succeeded, ``false`` if an error occurred.
+ */
+LayerEditorAPI bool pathAppendPath(std::string& a, const std::string& b);
+
+/**
+ * Appends `b` to the path `a` and returns a path (by appending two input paths).
+ *
+ * @param a         A string that respresents the first path
+ * @param b         A string that respresents the second path
+ *
+ * @return         the two paths joined by a seperator
+ */
+LayerEditorAPI std::string appendPaths(const std::string& a, const std::string& b);
+
+/**
+ * Writes data to a file path on disk.
+ *
+ * @param filePath      A pointer to the file path to write to on disk.
+ * @param buffer        A pointer to the buffer containing the data to write to the file.
+ * @param size          The number of bytes to write.
+ *
+ * @return              The number of bytes written to disk.
+ */
+LayerEditorAPI size_t writeToFilePath(const char* filePath, const void* buffer, const size_t size);
+
+/**
+ * Removes the path portion of a fully-qualified path and file, in-place.
+ *
+ * @param filePath      A pointer to the null-terminated ANSI file path to remove the path component
+ * for.
+ */
+LayerEditorAPI void pathStripPath(std::string& filePath);
+
+LayerEditorAPI void pathRemoveExtension(std::string& filePath);
+
+LayerEditorAPI std::string pathFindExtension(std::string& filePath);
+
+/**
+ * Sets a function to check write access to a passed file.
+ * @param checkFileWriteAccess The write access check function.
+ */
+LayerEditorAPI void setFileWriteAccessFunction(WriteAccessCheckFn checkFileWriteAccess);
+
+/**
+ * Checks a file for write access by calling the function set via setFileWriteAccessFunction().
+ * If no function is set, returns false and raises a coding error.
+ * @param filePath The file to check for write access.
+ * @return True if the file can be written to, false otherwise.
+ */
+LayerEditorAPI bool checkWriteAccess(const std::string& filePath);
+
+LayerEditorAPI void setDCCSceneLocationFunc(std::function<std::string()> fn);
+
+LayerEditorAPI void setDCCWorkspaceSceneLocationFunc(std::function<std::string()> fn);
+
+// Backup a file and restore it if not committed.
+class FileBackup
+{
+public:
+    FileBackup(const std::string& filename);
+    ~FileBackup();
+
+    // Once committed, the backup will not be put back into the original file.
+    void commit();
+
+    // Force restoration of the original file if successfully backed-up, even if committed.
+    void restore();
+
+    // Return the backup file name.
+    std::string getBackupFilename() const;
+
+public:
+    void backup();
+
+    std::string _filename;
+    bool        _backed = false;
+    bool        _commited = false;
+};
+
+} // namespace FileSystem
+} // namespace UsdLayerEditor
