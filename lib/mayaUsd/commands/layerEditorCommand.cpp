@@ -18,7 +18,6 @@
 
 #include <LayerEditorCommands.h>
 #include <layerEditorDCCFunctions.h>
-#include <utilFileSystem.h>
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
