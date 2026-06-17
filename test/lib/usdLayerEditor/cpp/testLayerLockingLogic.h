@@ -22,6 +22,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
@@ -133,5 +135,64 @@ TEST_F(LayerLockingTest, ForgetSystemLockedLayers_ClearsSystemLockedList)
     forgetSystemLockedLayers();
     EXPECT_FALSE(isLayerSystemLocked(_layer));
 }
+
+// ── getLockedLayersIdentifiers + loadLayerLockState (new editor only) ────────
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+
+TEST_F(LayerLockingTest, GetLockedLayersIdentifiers_EmptyWhenNoneAdded)
+{
+    std::vector<std::string> ids = getLockedLayersIdentifiers();
+    EXPECT_TRUE(ids.empty());
+}
+
+TEST_F(LayerLockingTest, GetLockedLayersIdentifiers_ContainsIdentifierAfterLock)
+{
+    lockLayer("", _layer, LayerLock_Locked, false);
+    auto ids = getLockedLayersIdentifiers();
+    auto it = std::find(ids.begin(), ids.end(), _layer->GetIdentifier());
+    EXPECT_NE(it, ids.end());
+}
+
+TEST_F(LayerLockingTest, GetLockedLayersIdentifiers_EmptyAfterForget)
+{
+    lockLayer("", _layer, LayerLock_Locked, false);
+    forgetLockedLayers();
+    EXPECT_TRUE(getLockedLayersIdentifiers().empty());
+}
+
+TEST_F(LayerLockingTest, LoadLayerLockState_LocksListedLayer)
+{
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
+    std::vector<std::string> locked = { _layer->GetIdentifier() };
+    LayerNameMap             nameMap;
+    loadLayerLockState(locked, nameMap, *stage);
+    EXPECT_TRUE(isLayerLocked(_layer));
+}
+
+TEST_F(LayerLockingTest, LoadLayerLockState_EmptyListLocksNothing)
+{
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
+    std::vector<std::string> locked;
+    LayerNameMap             nameMap;
+    loadLayerLockState(locked, nameMap, *stage);
+    EXPECT_FALSE(isLayerLocked(_layer));
+}
+
+TEST_F(LayerLockingTest, LoadLayerLockState_NameMapRemapsIdentifier)
+{
+    auto              stage    = PXR_NS::UsdStage::CreateInMemory();
+    auto              newLayer = SdfLayer::CreateAnonymous("remap_lock");
+    stage->GetRootLayer()->InsertSubLayerPath(newLayer->GetIdentifier(), 0);
+    const std::string        oldId   = "anon:old-lock-id";
+    const std::string        newId   = newLayer->GetIdentifier();
+    LayerNameMap             nameMap { { oldId, newId } };
+    std::vector<std::string> locked  = { oldId };
+    loadLayerLockState(locked, nameMap, *stage);
+    EXPECT_TRUE(isLayerLocked(newLayer));
+}
+
+#endif // LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 
 } // namespace UsdLayerEditor

@@ -221,7 +221,7 @@ LayerEditorAPI std::string pathFindExtension(std::string& filePath);
 LayerEditorAPI bool checkWriteAccess(const std::string& filePath);
 
 // Backup a file and restore it if not committed.
-class FileBackup
+class LayerEditorAPI FileBackup
 {
 public:
     FileBackup(const std::string& filename);

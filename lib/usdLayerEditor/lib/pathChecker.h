@@ -16,6 +16,8 @@
 #ifndef USDLAYEREDITOR_PATHCHECKER_H
 #define USDLAYEREDITOR_PATHCHECKER_H
 
+#include "layerEditorAPI.h"
+
 #include <pxr/usd/sdf/layer.h>
 
 #include <string>
@@ -31,7 +33,7 @@ class LayerTreeItem;
 // bad paths are always allowed, because they could be custom URIs or future paths
 // used for Load Layers
 // in corner cases the parent layer is null, we assume its safe to add
-bool checkIfPathIsSafeToAdd(
+LayerEditorAPI bool checkIfPathIsSafeToAdd(
     QWidget*           in_parent,
     const QString&     in_errorTitle,
     LayerTreeItem*     in_parentItem,

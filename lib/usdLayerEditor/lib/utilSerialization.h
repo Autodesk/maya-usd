@@ -165,14 +165,14 @@ std::string getSceneFolder();
  *         different relative paths, so we cannot interrogate it about
  *         what its path is.
  */
- void updateSubLayer(
+ LayerEditorAPI void updateSubLayer(
     const PXR_NS::SdfLayerRefPtr& parentLayer,
     const PXR_NS::SdfLayerRefPtr& oldSubLayer,
     const std::string&    newSubLayerPath);
 
 /*! \brief Ensures that the filepath contains a valid USD extension.
  */
- void ensureUSDFileExtension(std::string& filePath);
+ LayerEditorAPI void ensureUSDFileExtension(std::string& filePath);
 
 /*! \brief Check the sublayer stack of the stage looking for any anonymous
     layers that will need to be saved.

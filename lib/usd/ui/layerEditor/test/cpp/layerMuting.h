@@ -21,4 +21,6 @@ namespace UsdLayerEditor {
 using MayaUsd::addMutedLayer;
 using MayaUsd::removeMutedLayer;
 using MayaUsd::forgetMutedLayers;
+using MayaUsd::getMutedLayers;
+using MayaUsd::LayerRefSet;
 } // namespace UsdLayerEditor

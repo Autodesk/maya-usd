@@ -325,6 +325,47 @@ TEST_F(LayerTreeItemTest, ActionButtons_LockAppliesToRootAndSublayer)
     EXPECT_TRUE(IsLayerActionAllowed(it->second, LayerMasks_SubLayer));
 }
 
+// ── depth ─────────────────────────────────────────────────────────────────────
+
+TEST_F(LayerTreeItemTest, Depth_IsZeroForSessionLayerItem)
+{
+    auto* item = itemAt(treeModel(), sessionLayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_EQ(item->depth(), 0);
+}
+
+TEST_F(LayerTreeItemTest, Depth_IsZeroForRootLayerItem)
+{
+    auto* item = itemAt(treeModel(), rootLayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_EQ(item->depth(), 0);
+}
+
+TEST_F(LayerTreeItemTest, Depth_IsOneForFirstSublayer)
+{
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_EQ(item->depth(), 1);
+}
+
+// ── childrenVector ────────────────────────────────────────────────────────────
+
+TEST_F(LayerTreeItemTest, ChildrenVector_RootItemHasOneSublayer)
+{
+    // The stub stage was created with one anonymous sublayer on the root.
+    auto* item = itemAt(treeModel(), rootLayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_EQ(item->childrenVector().size(), 1u);
+}
+
+TEST_F(LayerTreeItemTest, ChildrenVector_EmptyForLeafSublayer)
+{
+    // The single sublayer has no children of its own.
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_TRUE(item->childrenVector().empty());
+}
+
 // ── isIdenticalItem ────────────────────────────────────────────────────────────
 
 #ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED

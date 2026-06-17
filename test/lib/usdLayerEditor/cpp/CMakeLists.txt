@@ -38,6 +38,11 @@ set(LAYER_EDITOR_TEST_SOURCES
     testLayerEditorCommands.cpp
     testEFMode.cpp
     testDCCFunctions.cpp
+    testFileSystemUtils.cpp
+    testPathChecker.cpp
+    testSerializationUtils.cpp
+    testLayerTreeItemDelegate.cpp
+    testComponentSaveWidget.cpp
 )
 
 # ------------------------------------------------------------------------------

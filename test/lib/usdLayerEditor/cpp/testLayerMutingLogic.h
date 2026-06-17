@@ -99,4 +99,66 @@ TEST_F(LayerMutingTest, AddMutedLayer_PreservesLayerReference)
     EXPECT_FALSE(identifier.empty());
 }
 
+// ── loadLayerMuteState (new editor only) ─────────────────────────────────────
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+
+TEST_F(LayerMutingTest, LoadLayerMuteState_MutesListedLayer)
+{
+    // loadLayerMuteState should mute a layer whose identifier appears in the list.
+    std::vector<std::string> muted = { _layer->GetIdentifier() };
+    LayerNameMap             nameMap;
+    loadLayerMuteState(muted, nameMap, *_stage);
+    EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+}
+
+TEST_F(LayerMutingTest, LoadLayerMuteState_EmptyListMutesNothing)
+{
+    std::vector<std::string> muted;
+    LayerNameMap             nameMap;
+    loadLayerMuteState(muted, nameMap, *_stage);
+    EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
+}
+
+TEST_F(LayerMutingTest, LoadLayerMuteState_NameMapRemapsIdentifier)
+{
+    // When an anonymous layer is saved and reloaded its identifier changes.
+    // The nameMap allows mapping the old identifier to the new one.
+    auto            newLayer = SdfLayer::CreateAnonymous("remapped");
+    _stage->GetRootLayer()->InsertSubLayerPath(newLayer->GetIdentifier(), 1);
+    const std::string  oldId = "anon:old-identifier";
+    const std::string  newId = newLayer->GetIdentifier();
+    LayerNameMap       nameMap { { oldId, newId } };
+    std::vector<std::string> muted = { oldId };
+    loadLayerMuteState(muted, nameMap, *_stage);
+    EXPECT_TRUE(_stage->IsLayerMuted(newId));
+}
+
+#endif // LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+
+// ── getMutedLayers ────────────────────────────────────────────────────────────
+
+TEST_F(LayerMutingTest, GetMutedLayers_ReturnsEmptyForUnknownIdentifier)
+{
+    // No layer has been added — querying any identifier must return an empty set.
+    const LayerRefSet& result = getMutedLayers("anon:does-not-exist");
+    EXPECT_TRUE(result.empty());
+}
+
+TEST_F(LayerMutingTest, GetMutedLayers_ReturnsHeldLayerAfterAdd)
+{
+    // After addMutedLayer the layer must appear in the held set.
+    addMutedLayer(_layer);
+    const LayerRefSet& result = getMutedLayers(_layer->GetIdentifier());
+    EXPECT_FALSE(result.empty());
+    EXPECT_NE(result.find(_layer), result.end());
+}
+
+TEST_F(LayerMutingTest, GetMutedLayers_ReturnsEmptyAfterRemove)
+{
+    addMutedLayer(_layer);
+    removeMutedLayer(_layer);
+    const LayerRefSet& result = getMutedLayers(_layer->GetIdentifier());
+    EXPECT_TRUE(result.empty());
+}
+
 } // namespace UsdLayerEditor
