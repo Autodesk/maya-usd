@@ -115,7 +115,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     static TfRefPtr<MDataHandleHolder> New(const MPlug& plug);
     MAYAUSD_CORE_PUBLIC
-    MDataHandle GetDataHandle() { return _dataHandle; }
+    const MDataHandle& GetDataHandle() const { return _dataHandle; }
+    MAYAUSD_CORE_PUBLIC
+    MDataHandle& GetDataHandle() { return _dataHandle; }
 
 private:
     MDataHandleHolder(const MPlug& plug, MDataHandle dataHandle);
