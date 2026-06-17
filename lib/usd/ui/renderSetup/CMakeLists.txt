@@ -17,11 +17,14 @@
 
 target_sources(${PROJECT_NAME}
     PRIVATE
+        MayaEditCommitter.cpp
+        MayaEditCommitter.h
         renderSetupWindowCmd.cpp
 )
 
 mayaUsd_promoteHeaderList(
     HEADERS
+        MayaEditCommitter.h
         renderSetupWindowCmd.h
     BASEDIR
         ${PROJECT_NAME}/ui
