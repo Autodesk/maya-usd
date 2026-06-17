@@ -22,6 +22,7 @@
 #include "layerTreeModel.h"
 
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QMimeData>
@@ -230,6 +231,96 @@ TEST_F(LayerTreeModelTest, RootLayerIndex_ItemIsRootLayer)
     auto* item = itemAt(treeModel(), rootLayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_TRUE(item->isRootLayer());
+}
+
+// ── invalid layer item ─────────────────────────────────────────────────────────
+
+TEST_F(LayerTreeModelTest, Flags_InvalidLayerItem_ReturnsOnlySelectableAndEnabled)
+{
+    const std::string fakePath = "/nonexistent/flags_invalid.usda";
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(fakePath, 0);
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+
+    QModelIndex invalidIdx = treeModel()->index(0, 0, rootLayerIndex());
+    auto*       invalid    = itemAt(treeModel(), invalidIdx);
+    ASSERT_NE(invalid, nullptr);
+    ASSERT_TRUE(invalid->isInvalidLayer());
+
+    Qt::ItemFlags flags = treeModel()->flags(invalidIdx);
+    EXPECT_TRUE(flags & Qt::ItemIsSelectable);
+    EXPECT_TRUE(flags & Qt::ItemIsEnabled);
+    EXPECT_FALSE(flags & Qt::ItemIsDragEnabled);
+    EXPECT_FALSE(flags & Qt::ItemIsDropEnabled);
+}
+
+TEST_F(LayerTreeModelTest, MimeData_InvalidLayerItem_UsesSubLayerPath)
+{
+    const std::string fakePath = "/nonexistent/mime_invalid.usda";
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(fakePath, 0);
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+
+    QModelIndex invalidIdx = treeModel()->index(0, 0, rootLayerIndex());
+    auto*       invalid    = itemAt(treeModel(), invalidIdx);
+    ASSERT_NE(invalid, nullptr);
+    ASSERT_TRUE(invalid->isInvalidLayer());
+
+    QModelIndexList             indexes = { invalidIdx };
+    std::unique_ptr<QMimeData>  mime(treeModel()->mimeData(indexes));
+    ASSERT_NE(mime, nullptr);
+    EXPECT_TRUE(mime->hasFormat("text/plain"));
+    QString data = QString::fromUtf8(mime->data("text/plain"));
+    EXPECT_EQ(data, QString::fromStdString(fakePath));
+}
+
+// ── dropMimeData ───────────────────────────────────────────────────────────────
+
+TEST_F(LayerTreeModelTest, DropMimeData_WrongMimeFormat_ReturnsFalse)
+{
+    auto mimeData = std::make_unique<QMimeData>();
+    mimeData->setHtml("<b>wrong format</b>");
+    EXPECT_FALSE(treeModel()->dropMimeData(
+        mimeData.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
+}
+
+// ── selectUsdLayerOnIdle ───────────────────────────────────────────────────────
+
+TEST_F(LayerTreeModelTest, SelectUsdLayerOnIdle_EmitsSelectSignalForExistingLayer)
+{
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    auto layer = item->layer();
+
+    QModelIndex receivedIndex;
+    QObject::connect(
+        treeModel(), &LayerTreeModel::selectLayerSignal,
+        [&receivedIndex](const QModelIndex& idx) { receivedIndex = idx; });
+
+    treeModel()->selectUsdLayerOnIdle(layer);
+    QApplication::processEvents();
+
+    EXPECT_TRUE(receivedIndex.isValid());
+}
+
+// ── USD notice: usd_editTargetChanged ─────────────────────────────────────────
+
+TEST_F(LayerTreeModelTest, UsdEditTargetChanged_UpdatesTargetLayerOnIdle)
+{
+    auto* subItem = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(subItem, nullptr);
+    auto sublayerRef = subItem->layer();
+    ASSERT_FALSE(subItem->isTargetLayer());
+
+    // Directly change the USD stage's edit target to fire
+    // UsdNotice::StageEditTargetChanged, bypassing the stub command hook.
+    _sessionState.stage()->SetEditTarget(UsdEditTarget(sublayerRef));
+    QApplication::processEvents();
+
+    // Re-fetch in case model rebuilt during event processing.
+    subItem = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(subItem, nullptr);
+    EXPECT_TRUE(subItem->isTargetLayer());
 }
 
 } // namespace UsdLayerEditor

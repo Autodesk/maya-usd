@@ -521,4 +521,45 @@ TEST_F(LayerTreeItemTest, DiscardEdits_ComponentStageConfirmsThenReloadsComponen
 }
 #endif
 
+// ── type() ───────────────────────────────────────────────────────────────────
+
+TEST_F(LayerTreeItemTest, Type_ReturnsUserType)
+{
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(item, nullptr);
+    EXPECT_EQ(item->type(), QStandardItem::UserType);
+}
+
+// ── invalid layer (unresolvable sublayer path) ────────────────────────────────
+
+TEST_F(LayerTreeItemTest, FetchData_InvalidLayer_DisplayNameIsSubLayerPath)
+{
+    // Insert a path that cannot be resolved to exercise the invalid-layer
+    // branch of fetchData() where _displayName is set from _subLayerPath.
+    const std::string fakePath = "/nonexistent/fake_display_test.usda";
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(fakePath, 0);
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+
+    auto* invalid = itemAt(treeModel(), treeModel()->index(0, 0, rootLayerIndex()));
+    ASSERT_NE(invalid, nullptr);
+    ASSERT_TRUE(invalid->isInvalidLayer());
+    EXPECT_EQ(invalid->displayName(), fakePath);
+}
+
+TEST_F(LayerTreeItemTest, HasSubLayers_ReturnsFalse_ForInvalidLayer)
+{
+    // An invalid layer item has _layer == nullptr so hasSubLayers() must return false
+    // via the early-out guard, not the GetNumSubLayerPaths() path.
+    const std::string fakePath = "/nonexistent/fake_has_sublayers.usda";
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(fakePath, 0);
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+
+    auto* invalid = itemAt(treeModel(), treeModel()->index(0, 0, rootLayerIndex()));
+    ASSERT_NE(invalid, nullptr);
+    ASSERT_TRUE(invalid->isInvalidLayer());
+    EXPECT_FALSE(invalid->hasSubLayers());
+}
+
 } // namespace UsdLayerEditor
