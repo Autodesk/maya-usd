@@ -49,6 +49,8 @@ set(LAYER_EDITOR_TEST_SOURCES
     testSessionState.cpp
     testWidgetManager.cpp
     testLayerEditorWidget.cpp
+    testLayerEditorWindow.cpp
+    testStageSelectorWidget.cpp
 )
 
 # ------------------------------------------------------------------------------
