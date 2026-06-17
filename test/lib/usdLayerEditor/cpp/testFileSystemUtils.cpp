@@ -21,6 +21,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <fstream>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -267,6 +268,112 @@ TEST(FileSystemUtils, FileBackup_CommitPreventsRestore)
     if (backupExists) std::remove(backup.c_str());
     EXPECT_FALSE(origExists);
     EXPECT_TRUE(backupExists);
+}
+
+// ── writeToFilePath ───────────────────────────────────────────────────────────
+
+TEST(FileSystemUtils, WriteToFilePath_WritesContentAndReturnsSize)
+{
+    const std::string path = tempPath("le_write_test.bin");
+    std::remove(path.c_str());
+    const char data[] = "hello usd";
+    const size_t dataSize = sizeof(data) - 1;
+    size_t written = writeToFilePath(path.c_str(), data, dataSize);
+    EXPECT_EQ(written, dataSize);
+
+    // Verify content was written to disk.
+    std::ifstream in(path, std::ios::binary);
+    ASSERT_TRUE(in.is_open());
+    std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    EXPECT_EQ(content, std::string(data, dataSize));
+    in.close();
+    std::remove(path.c_str());
+}
+
+TEST(FileSystemUtils, WriteToFilePath_ZeroForBadPath)
+{
+    size_t written = writeToFilePath("", "x", 1);
+    EXPECT_EQ(written, 0u);
+}
+
+// ── pathAppendPath ────────────────────────────────────────────────────────────
+
+TEST(FileSystemUtils, PathAppendPath_ReturnsTrueAndAppends)
+{
+    namespace fss = fs::filesystem;
+    std::string dir = fss::temp_directory_path().string();
+    bool ok = pathAppendPath(dir, "sub_file.usd");
+    EXPECT_TRUE(ok);
+    EXPECT_NE(dir.find("sub_file.usd"), std::string::npos);
+}
+
+TEST(FileSystemUtils, PathAppendPath_ReturnsFalseForNonExistentPath)
+{
+    std::string notADir = "/does/not/exist/at/all";
+    bool ok = pathAppendPath(notADir, "file.usd");
+    EXPECT_FALSE(ok);
+}
+
+// ── getPathRelativeToDirectory ────────────────────────────────────────────────
+
+TEST(FileSystemUtils, GetPathRelativeToDirectory_ReturnsFilename)
+{
+    namespace fss = fs::filesystem;
+    const std::string dir  = fss::temp_directory_path().generic_string();
+    const std::string file = (fss::temp_directory_path() / "rel_test.usd").generic_string();
+    EXPECT_EQ(getPathRelativeToDirectory(file, dir), "rel_test.usd");
+}
+
+TEST(FileSystemUtils, GetPathRelativeToDirectory_EmptyDirReturnsFile)
+{
+    namespace fss = fs::filesystem;
+    const std::string file = (fss::temp_directory_path() / "abs.usd").generic_string();
+    EXPECT_EQ(getPathRelativeToDirectory(file, ""), file);
+}
+
+// ── getPathRelativeToLayerFile ────────────────────────────────────────────────
+
+TEST(FileSystemUtils, GetPathRelativeToLayerFile_NullLayerReturnsFileName)
+{
+    const std::string file = "/some/file.usd";
+    EXPECT_EQ(getPathRelativeToLayerFile(file, SdfLayerHandle()), file);
+}
+
+TEST(FileSystemUtils, GetPathRelativeToLayerFile_AnonymousLayerReturnsFileName)
+{
+    auto layer = SdfLayer::CreateAnonymous("anon_rel");
+    const std::string file = "/some/file.usd";
+    EXPECT_EQ(getPathRelativeToLayerFile(file, layer), file);
+}
+
+// ── getUniqueFileName ─────────────────────────────────────────────────────────
+
+TEST(FileSystemUtils, GetUniqueFileName_ReturnsNonEmptyString)
+{
+    namespace fss = fs::filesystem;
+    const std::string dir = fss::temp_directory_path().string();
+    std::string name = getUniqueFileName(dir, "layer", "usd");
+    EXPECT_FALSE(name.empty());
+    EXPECT_NE(name.find("layer"), std::string::npos);
+}
+
+// ── ensureUniqueFileName ──────────────────────────────────────────────────────
+
+TEST(FileSystemUtils, EnsureUniqueFileName_ReturnsSamePathIfNotExists)
+{
+    const std::string path = tempPath("le_unique_nonexist_99999.usd");
+    std::remove(path.c_str());
+    EXPECT_EQ(ensureUniqueFileName(path), path);
+}
+
+TEST(FileSystemUtils, EnsureUniqueFileName_ReturnsNewNameIfExists)
+{
+    const std::string path = tempPath("le_unique_exist.usd");
+    if (FILE* f = std::fopen(path.c_str(), "w")) { std::fclose(f); }
+    std::string unique = ensureUniqueFileName(path);
+    std::remove(path.c_str());
+    std::remove(unique.c_str());
+    EXPECT_NE(unique, path);
 }
 
 } // namespace FileSystem

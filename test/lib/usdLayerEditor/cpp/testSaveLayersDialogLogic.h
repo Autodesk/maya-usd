@@ -106,7 +106,7 @@ TEST_F(SaveLayersDialogTest, LayersNotSaved_IsEmptyInitially)
     EXPECT_TRUE(dlg.layersNotSaved().isEmpty());
 }
 
-TEST_F(SaveLayersDialogTest, SaveLayersDialog_ExportingFlagChangesTitle)
+TEST_F(SaveLayersDialogTest, SessionStateConstructor_ExportingFlag_DoesNotCrash)
 {
     SaveLayersDialog exportDlg(&_sessionState, _mainWindow, /*isExporting=*/true);
     SaveLayersDialog saveDlg(&_sessionState, _mainWindow, /*isExporting=*/false);
@@ -136,5 +136,168 @@ TEST_F(SaveLayersDialogTest, ForEachEntry_DoesNotCrashWithNoLayers)
     int count = 0;
     EXPECT_NO_THROW(dlg.forEachEntry([&count](QWidget*) { ++count; }));
 }
+
+// The session-state constructor for the new editor finds the stub's two anonymous
+// sublayers, so forEachEntry sees them as entries.
+TEST_F(SaveLayersDialogTest, ForEachEntry_CountsAnonLayerRows)
+{
+    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    int count = 0;
+    dlg.forEachEntry([&count](QWidget*) { ++count; });
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+    // New editor always discovers the stub's two anonymous sublayers.
+    EXPECT_GE(count, 1);
+#else
+    // Old editor: proxy-based discovery finds nothing; count is 0.
+    (void)count;
+#endif
+}
+
+// buildTooltipForLayer with a null layer must return an empty string without crashing.
+TEST_F(SaveLayersDialogTest, BuildTooltipForLayer_NullLayer_ReturnsEmpty)
+{
+    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    PXR_NS::SdfLayerRefPtr nullLayer;
+    EXPECT_EQ(dlg.buildTooltipForLayer(nullLayer), QString());
+}
+
+// buildTooltipForLayer with a layer that is in the stageLayerMap returns a non-empty tooltip.
+TEST_F(SaveLayersDialogTest, BuildTooltipForLayer_KnownLayer_ReturnsNonEmptyTooltip)
+{
+    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    // The stub's current stage has one anonymous sublayer in the stageLayerMap.
+    const auto& stageMap = dlg.stageLayers();
+    if (stageMap.empty()) {
+        GTEST_SKIP() << "no layers in stage map (old editor or empty stage)";
+    }
+    auto layer = stageMap.begin()->first;
+    QString tooltip = dlg.buildTooltipForLayer(layer);
+    EXPECT_FALSE(tooltip.isEmpty());
+}
+
+// findEntry with a layer that is in the rows returns non-null.
+TEST_F(SaveLayersDialogTest, FindEntry_KnownLayer_ReturnsWidget)
+{
+    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    const auto& stageMap = dlg.stageLayers();
+    int rowCount = 0;
+    dlg.forEachEntry([&rowCount](QWidget*) { ++rowCount; });
+    if (rowCount == 0) {
+        GTEST_SKIP() << "no row entries (old editor or empty stage)";
+    }
+    // Find the first layer that has a row entry.
+    QWidget* found = nullptr;
+    for (auto& kv : stageMap) {
+        found = dlg.findEntry(kv.first);
+        if (found) break;
+    }
+    EXPECT_NE(found, nullptr);
+}
+
+// findEntry with a layer not in the dialog returns nullptr.
+TEST_F(SaveLayersDialogTest, FindEntry_UnknownLayer_ReturnsNull)
+{
+    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    auto unknownLayer = PXR_NS::SdfLayer::CreateAnonymous("unknown");
+    EXPECT_EQ(dlg.findEntry(unknownLayer), nullptr);
+}
+
+// sessionState() accessor returns a non-null pointer matching what was passed in.
+TEST_F(SaveLayersDialogTest, SessionState_Accessor_ReturnsSessionState)
+{
+    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    EXPECT_NE(dlg.sessionState(), nullptr);
+}
+
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+// ── New-editor-only tests ────────────────────────────────────────────────────
+// These depend on UsdLayerEditor::StageSavingInfo and setExecTestHandler, which
+// are only present in the new editor's SaveLayersDialog.
+
+// Bulk constructor: construct from a vector of StageSavingInfo.
+TEST_F(SaveLayersDialogTest, BulkConstructor_SingleStage_DoesNotCrash)
+{
+    auto stage = TestUtils::makeStageWithSublayer("bulk_sub");
+    StageSavingInfo info;
+    info.stage         = stage;
+    info.stageName     = "bulk_stage";
+    info.dccObjectPath = "bulk_stage";
+    EXPECT_NO_THROW({
+        SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/false);
+    });
+}
+
+TEST_F(SaveLayersDialogTest, BulkConstructor_EmptyInfos_DoesNotCrash)
+{
+    EXPECT_NO_THROW({
+        SaveLayersDialog dlg(_mainWindow, {}, /*isExporting=*/false);
+    });
+}
+
+TEST_F(SaveLayersDialogTest, BulkConstructor_MultipleStages_DoesNotCrash)
+{
+    std::vector<StageSavingInfo> infos;
+    for (int i = 0; i < 3; ++i) {
+        auto stage = TestUtils::makeStageWithSublayer("msub_" + std::to_string(i));
+        StageSavingInfo info;
+        info.stage         = stage;
+        info.stageName     = "multi_stage_" + std::to_string(i);
+        info.dccObjectPath = info.stageName;
+        infos.push_back(info);
+    }
+    EXPECT_NO_THROW({
+        SaveLayersDialog dlg(_mainWindow, infos, /*isExporting=*/false);
+    });
+}
+
+TEST_F(SaveLayersDialogTest, BulkConstructor_ExportingFlag_DoesNotCrash)
+{
+    auto stage = TestUtils::makeStageWithSublayer("exp_sub");
+    StageSavingInfo info;
+    info.stage         = stage;
+    info.stageName     = "exp_stage";
+    info.dccObjectPath = "exp_stage";
+    EXPECT_NO_THROW({
+        SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/true);
+    });
+}
+
+TEST_F(SaveLayersDialogTest, BulkConstructor_ComponentsOnly_DoesNotCrash)
+{
+    auto stage = TestUtils::makeStageWithSublayer("comp_sub");
+    StageSavingInfo info;
+    info.stage         = stage;
+    info.stageName     = "comp_stage";
+    info.dccObjectPath = "comp_stage";
+    EXPECT_NO_THROW({
+        SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/false, /*componentsOnly=*/true);
+    });
+}
+
+// exec() test handler returns a pre-set value without showing the dialog.
+TEST_F(SaveLayersDialogTest, ExecTestHandler_ReturnsInjectedResult)
+{
+    // Install a handler that returns Accepted; capture the previous one to restore.
+    auto prev = SaveLayersDialog::setExecTestHandler([]() { return QDialog::Accepted; });
+    {
+        SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+        EXPECT_EQ(dlg.exec(), QDialog::Accepted);
+    }
+    SaveLayersDialog::setExecTestHandler(std::move(prev));
+}
+
+// Bulk constructor: sessionState() is null (no session state provided).
+TEST_F(SaveLayersDialogTest, BulkConstructor_SessionState_IsNull)
+{
+    auto stage = TestUtils::makeStageWithSublayer("ns_sub");
+    StageSavingInfo info;
+    info.stage         = stage;
+    info.stageName     = "ns_stage";
+    info.dccObjectPath = "ns_stage";
+    SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/false);
+    EXPECT_EQ(dlg.sessionState(), nullptr);
+}
+
+#endif // !LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 
 } // namespace UsdLayerEditor

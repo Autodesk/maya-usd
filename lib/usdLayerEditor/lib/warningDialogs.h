@@ -32,7 +32,7 @@ namespace UsdLayerEditor {
 
 // create a confirmation dialog, with an optional bullet list of stuff like layer names.
 // When parent is null the dialog is parented to the DCC main window (mainWindowParent()).
-bool confirmDialog(
+LayerEditorAPI bool confirmDialog(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,
@@ -41,7 +41,7 @@ bool confirmDialog(
     QWidget*           parent = nullptr);
 
 // create a dialog with a single OK button, with an optional bullet list
-void warningDialog(
+LayerEditorAPI void warningDialog(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,

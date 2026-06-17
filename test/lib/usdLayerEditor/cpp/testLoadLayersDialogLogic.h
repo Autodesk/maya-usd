@@ -122,4 +122,137 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_PathEditIsEnabled)
     EXPECT_TRUE(lineEdits.first()->isEnabled());
 }
 
+TEST_F(LoadLayersDialogTest, LoadLayersDialog_FindDirectoryToUse_WithNonEmptyPath)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    LoadLayersDialog dlg(rootItem, _mainWindow);
+    // Passing a file path: should strip the filename and return the directory.
+    std::string result = dlg.findDirectoryToUse("/tmp/some/file.usd");
+    EXPECT_EQ(result, "/tmp/some");
+}
+
+TEST_F(LoadLayersDialogTest, LoadLayersDialog_FindDirectoryToUse_WithEmptyPath)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    LoadLayersDialog dlg(rootItem, _mainWindow);
+    // Empty path: walks up parent items. Stub uses anonymous layers, so it
+    // falls through to getDCCWorkspaceScenesDir() (which may return "").
+    // The key requirement is just that it doesn't crash.
+    EXPECT_NO_THROW(dlg.findDirectoryToUse(""));
+}
+
+TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnAddRow_IncreasesRowCount)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    LoadLayersDialog dlg(rootItem, _mainWindow);
+    int beforeCount = dlg.findChildren<QLineEdit*>().size();
+    // onAddRow() is public (connected by LayerPathRow). Call it directly.
+    dlg.onAddRow();
+    QApplication::processEvents();
+    int afterCount = dlg.findChildren<QLineEdit*>().size();
+    EXPECT_GT(afterCount, beforeCount);
+}
+
+TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnAddRow_MultipleTimesDoesNotCrash)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    LoadLayersDialog dlg(rootItem, _mainWindow);
+    EXPECT_NO_THROW({
+        dlg.onAddRow();
+        dlg.onAddRow();
+        dlg.onAddRow();
+        QApplication::processEvents();
+    });
+}
+
+TEST_F(LoadLayersDialogTest, LoadLayersDialog_PathsToLoad_EmptyBeforeOk)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    LoadLayersDialog dlg(rootItem, _mainWindow);
+    EXPECT_TRUE(dlg.pathsToLoad().empty());
+}
+
+// Trigger onOk() with all-empty row text: all rows are skipped, accept() is
+// called, and pathsToLoad() stays empty.
+TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithEmptyPaths_AcceptsAndPathsEmpty)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    LoadLayersDialog dlg(rootItem, _mainWindow);
+    // Find and click the OK/Load button.
+    QPushButton* okBtn = nullptr;
+    for (auto* btn : dlg.findChildren<QPushButton*>()) {
+        if (btn->text().contains("Load", Qt::CaseInsensitive) ||
+            btn->text().contains("OK", Qt::CaseInsensitive)) {
+            okBtn = btn;
+            break;
+        }
+    }
+    ASSERT_NE(okBtn, nullptr);
+    TestUtils::dismissNextModal(50); // guard against exec() being called
+    okBtn->click();
+    QApplication::processEvents();
+    EXPECT_TRUE(dlg.pathsToLoad().empty());
+}
+
+// Trigger onOk() with a non-existent path: checkIfPathIsSafeToAdd returns true
+// for paths that cannot be opened (no such layer in the stack). The path is
+// added to pathsToLoad() and accept() is called.
+TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithNonExistentPath_AddsToPathList)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    LoadLayersDialog dlg(rootItem, _mainWindow);
+    // Set text in the first (non-inserter) line edit.
+    auto lineEdits = dlg.findChildren<QLineEdit*>();
+    ASSERT_GE(lineEdits.size(), 1);
+    lineEdits.first()->setText("/nonexistent/layer_test.usd");
+    QApplication::processEvents();
+    // Click the OK button without dismissal since it calls accept() directly.
+    QPushButton* okBtn = nullptr;
+    for (auto* btn : dlg.findChildren<QPushButton*>()) {
+        if (btn->text().contains("Load", Qt::CaseInsensitive) ||
+            btn->text().contains("OK", Qt::CaseInsensitive)) {
+            okBtn = btn;
+            break;
+        }
+    }
+    ASSERT_NE(okBtn, nullptr);
+    okBtn->click();
+    QApplication::processEvents();
+    EXPECT_GE(dlg.pathsToLoad().size(), 1u);
+}
+
+// Trigger onOk() with a cancel: clicking cancel leaves pathsToLoad() empty.
+TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnCancel_LeavesPathsEmpty)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    LoadLayersDialog dlg(rootItem, _mainWindow);
+    QPushButton* cancelBtn = nullptr;
+    for (auto* btn : dlg.findChildren<QPushButton*>()) {
+        if (btn->text().contains("Cancel", Qt::CaseInsensitive)) {
+            cancelBtn = btn;
+            break;
+        }
+    }
+    ASSERT_NE(cancelBtn, nullptr);
+    cancelBtn->click();
+    QApplication::processEvents();
+    EXPECT_TRUE(dlg.pathsToLoad().empty());
+}
+
 } // namespace UsdLayerEditor

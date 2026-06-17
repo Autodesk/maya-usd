@@ -15,7 +15,10 @@
 #include "testFixture.h"
 #include "componentSaveWidget.h"
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QString>
+#include <QtGui/QKeyEvent>
+#include <QtWidgets/QLineEdit>
 
 #include <gtest/gtest.h>
 
@@ -131,6 +134,66 @@ TEST_F(ComponentSaveWidgetTest, SetOriginalHeight_RoundTrips)
     auto w = makeWidget();
     w->setOriginalHeight(200);
     EXPECT_EQ(w->originalHeight(), 200);
+}
+
+// ── keyPressEvent ─────────────────────────────────────────────────────────────
+
+TEST_F(ComponentSaveWidgetTest, KeyPressEscape_DoesNotCrash)
+{
+    auto w = makeWidget();
+    w->show();
+    QCoreApplication::processEvents();
+    QKeyEvent esc(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+    EXPECT_NO_THROW(QCoreApplication::sendEvent(w.get(), &esc));
+}
+
+TEST_F(ComponentSaveWidgetTest, KeyPressReturn_NoFocus_DoesNotCrash)
+{
+    auto w = makeWidget();
+    w->show();
+    QCoreApplication::processEvents();
+    QKeyEvent enter(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+    EXPECT_NO_THROW(QCoreApplication::sendEvent(w.get(), &enter));
+}
+
+TEST_F(ComponentSaveWidgetTest, KeyPressReturn_WithNameFocus_NotExpanded_DoesNotCrash)
+{
+    // When _nameEdit has focus and tree is not expanded, Enter is passed to parent.
+    auto w = makeWidget();
+    w->show();
+    QCoreApplication::processEvents();
+    // Give focus to the name edit (first QLineEdit child)
+    auto* nameEdit = w->findChild<QLineEdit*>();
+    if (nameEdit) {
+        nameEdit->setFocus();
+        QCoreApplication::processEvents();
+    }
+    QKeyEvent enter(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+    EXPECT_NO_THROW(QCoreApplication::sendEvent(w.get(), &enter));
+}
+
+// ── onShowMore / toggleExpandedState ─────────────────────────────────────────
+
+TEST_F(ComponentSaveWidgetTest, OnShowMore_Expand_DoesNotCrash)
+{
+    auto w = makeWidget();
+    w->show();
+    QCoreApplication::processEvents();
+    ASSERT_FALSE(w->isExpanded());
+    // onShowMore is a private slot — invoke via the meta-object system.
+    EXPECT_NO_THROW(QMetaObject::invokeMethod(w.get(), "onShowMore", Qt::DirectConnection));
+    EXPECT_TRUE(w->isExpanded());
+}
+
+TEST_F(ComponentSaveWidgetTest, OnShowMore_CollapseAfterExpand_DoesNotCrash)
+{
+    auto w = makeWidget();
+    w->show();
+    QCoreApplication::processEvents();
+    QMetaObject::invokeMethod(w.get(), "onShowMore", Qt::DirectConnection);
+    ASSERT_TRUE(w->isExpanded());
+    EXPECT_NO_THROW(QMetaObject::invokeMethod(w.get(), "onShowMore", Qt::DirectConnection));
+    EXPECT_FALSE(w->isExpanded());
 }
 
 } // namespace UsdLayerEditor

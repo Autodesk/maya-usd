@@ -43,6 +43,12 @@ set(LAYER_EDITOR_TEST_SOURCES
     testSerializationUtils.cpp
     testLayerTreeItemDelegate.cpp
     testComponentSaveWidget.cpp
+    testLayerLogicUtils.cpp
+    testUsdSyntaxHighlighter.cpp
+    testLayerTreeViewMouse.cpp
+    testSessionState.cpp
+    testWidgetManager.cpp
+    testLayerEditorWidget.cpp
 )
 
 # ------------------------------------------------------------------------------
