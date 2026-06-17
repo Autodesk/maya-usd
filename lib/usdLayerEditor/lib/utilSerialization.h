@@ -31,15 +31,15 @@
 namespace UsdLayerEditor {
 namespace Serialization {
 
- std::string generateUniqueFileName(const std::string& basename);
+ LayerEditorAPI std::string generateUniqueFileName(const std::string& basename);
 
- std::string
+ LayerEditorAPI std::string
  generateUniqueLayerFileName(const std::string& basename, const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Queries the optionVar that decides what the internal format
     of a .usd file should be, either "usdc" or "usda".
  */
- std::string usdFormatArgOption();
+ LayerEditorAPI std::string usdFormatArgOption();
 
  enum USDUnsavedEditsOption
 {
@@ -128,7 +128,7 @@ struct StageLayersToSave
     file (for the root layer) or its parent layer (for sub-layers). We assume the
     caller voluntarily made the path relative.
  */
-bool saveLayerWithFormat(
+LayerEditorAPI bool saveLayerWithFormat(
     pxr::SdfLayerRefPtr layer,
     const std::string&  requestedFilePath = "",
     const std::string&  requestedFormatArg = "");
@@ -184,7 +184,7 @@ void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSa
     is already known (e.g. from SessionState::stageEntry()) to avoid path format
     mismatches between DCC object paths and the UFE stage map.
  */
-void getLayersToSaveFromStage(
+LayerEditorAPI void getLayersToSaveFromStage(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            objectPath,
     StageLayersToSave&            layersInfo);

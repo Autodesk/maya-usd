@@ -15,6 +15,7 @@
 #include "utilSerialization.h"
 
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <gtest/gtest.h>
 
@@ -118,6 +119,64 @@ TEST(SerializationUtils, UpdateSubLayer_NewParentHasNoSubLayerBecomesNoOp)
     // sublayer was never added to parent → Replace finds nothing → no crash, no change
     EXPECT_NO_THROW(updateSubLayer(parent, sublayer, "/new/layer.usd"));
     EXPECT_TRUE(parent->GetSubLayerPaths().empty());
+}
+
+// ── generateUniqueFileName ────────────────────────────────────────────────────
+
+TEST(SerializationUtils, GenerateUniqueFileName_ReturnsNonEmptyString)
+{
+    std::string result = generateUniqueFileName("test");
+    EXPECT_FALSE(result.empty());
+}
+
+// ── generateUniqueLayerFileName ───────────────────────────────────────────────
+
+TEST(SerializationUtils, GenerateUniqueLayerFileName_WithLayer_ReturnsNonEmptyString)
+{
+    auto        layer  = SdfLayer::CreateAnonymous("sublayer0");
+    std::string result = generateUniqueLayerFileName("scene", layer);
+    EXPECT_FALSE(result.empty());
+}
+
+// ── usdFormatArgOption ────────────────────────────────────────────────────────
+
+TEST(SerializationUtils, UsdFormatArgOption_ReturnsUsdcOrUsda)
+{
+    std::string fmt = usdFormatArgOption();
+    EXPECT_TRUE(fmt == "usdc" || fmt == "usda")
+        << "usdFormatArgOption returned unexpected format: " << fmt;
+}
+
+// ── getLayersToSaveFromStage ──────────────────────────────────────────────────
+
+TEST(SerializationUtils, GetLayersToSaveFromStage_NullStage_DoesNotCrash)
+{
+    StageLayersToSave info;
+    EXPECT_NO_THROW(getLayersToSaveFromStage(nullptr, "obj", info));
+    EXPECT_TRUE(info._anonLayers.empty());
+    EXPECT_TRUE(info._dirtyFileBackedLayers.empty());
+}
+
+TEST(SerializationUtils, GetLayersToSaveFromStage_ValidStage_PopulatesAnonLayers)
+{
+    auto stage    = PXR_NS::UsdStage::CreateInMemory();
+    auto sublayer = SdfLayer::CreateAnonymous("sublayer_to_save");
+    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
+
+    StageLayersToSave info;
+    getLayersToSaveFromStage(stage, "test_obj", info);
+
+    // Root layer is anonymous and at least one anonymous sublayer was added.
+    EXPECT_GE(info._anonLayers.size(), 1u);
+}
+
+// ── saveLayerWithFormat ───────────────────────────────────────────────────────
+
+TEST(SerializationUtils, SaveLayerWithFormat_NonexistentPath_ReturnsFalse)
+{
+    auto layer = SdfLayer::CreateAnonymous("save_test");
+    // Export to a path whose parent directory does not exist must fail.
+    EXPECT_FALSE(saveLayerWithFormat(layer, "/nonexistent_dir/fake_save_test.usda", "usda"));
 }
 
 } // namespace Serialization
