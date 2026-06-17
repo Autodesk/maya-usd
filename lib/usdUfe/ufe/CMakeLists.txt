@@ -49,6 +49,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoVisibleCommand.cpp
         UsdUndoSetDefaultPrimCommand.cpp
         UsdUndoClearDefaultPrimCommand.cpp
+        UsdLabeledEditUndoableCommand.cpp
         UsdUndoableCommand.cpp
         Utils.cpp
 )
@@ -219,6 +220,7 @@ set(HEADERS
     UsdUndoVisibleCommand.h
     UsdUndoSetDefaultPrimCommand.h
     UsdUndoClearDefaultPrimCommand.h
+    UsdLabeledEditUndoableCommand.h
     UsdUndoableCommand.h
     Utils.h
 )
