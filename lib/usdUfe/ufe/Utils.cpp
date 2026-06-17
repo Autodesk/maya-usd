@@ -62,7 +62,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
-#ifdef UFE_SCENEITEM_HAS_METADATA
+#ifdef UFE_V3_FEATURES_AVAILABLE
 constexpr auto kErrorMsgInvalidValueType = "Unexpected Ufe::Value type";
 #endif
 
@@ -1686,7 +1686,7 @@ PXR_NS::VtValue convertUfeVectorToUsd(const Ufe::Value& ufeValue)
 }
 #endif
 
-#ifdef UFE_SCENEITEM_HAS_METADATA
+#ifdef UFE_V3_FEATURES_AVAILABLE
 PXR_NS::VtValue ufeValueToVtValue(const Ufe::Value& ufeValue)
 {
     PXR_NS::VtValue usdValue;
