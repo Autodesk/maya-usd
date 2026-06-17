@@ -30,7 +30,7 @@ namespace UsdLayerEditor {
  * @brief Drop down list that allows selecting a stage. Owned by the LayerEditorWidget
  *
  */
-class StageSelectorWidget : public QWidget
+class LayerEditorAPI StageSelectorWidget : public QWidget
 {
     Q_OBJECT
 public:

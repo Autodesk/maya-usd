@@ -79,45 +79,44 @@ private:
  * @brief Implements the Qt TreeView for USD layers. This widget is owned by the LayerEditorWidget.
  *
  */
-class LayerTreeView
+class LayerEditorAPI LayerTreeView
     : public QTreeView
     , public PXR_NS::TfWeakBase
 {
     Q_OBJECT
 public:
     typedef QTreeView PARENT_CLASS;
-    LayerEditorAPI    LayerTreeView(SessionState* in_sessionState, QWidget* in_parent);
-    LayerEditorAPI ~LayerTreeView() override;
+    LayerTreeView(SessionState* in_sessionState, QWidget* in_parent);
+    ~LayerTreeView() override;
 
     // get properly typed item
-    LayerEditorAPI LayerTreeItem* layerItemFromIndex(const QModelIndex& index) const;
+    LayerTreeItem* layerItemFromIndex(const QModelIndex& index) const;
 
     // QTreeWidget-like method that returns the current item when one is selected
-    LayerEditorAPI LayerTreeItem* currentLayerItem() const
+    LayerTreeItem* currentLayerItem() const
     {
         auto index = currentIndex();
         return index.isValid() ? layerItemFromIndex(index) : nullptr;
     }
 
     // returns array of selected item, including the current item
-    LayerEditorAPI LayerItemVector getSelectedLayerItems() const;
+    LayerItemVector getSelectedLayerItems() const;
 
     // return property typed model
-    LayerEditorAPI LayerTreeModel* layerTreeModel() const;
+    LayerTreeModel* layerTreeModel() const;
 
     // calls a given method on all items in the selection, with the given string as the undo chunk
     // name
-    LayerEditorAPI void callMethodOnSelection(const QString& undoName, simpleLayerMethod method);
+    void callMethodOnSelection(const QString& undoName, simpleLayerMethod method);
 
     // Override the layer tree styled item delegate.
-    LayerEditorAPI void setCustomLayerItemDelegate(LayerTreeItemDelegate*);
+    void setCustomLayerItemDelegate(LayerTreeItemDelegate*);
 
     // menu callbacks
-    LayerEditorAPI void onAddParentLayer(const QString& undoName) const;
-    LayerEditorAPI void onMuteLayer(const QString& undoName) const;
-    LayerEditorAPI void onLockLayer(const QString& undoName) const;
-    LayerEditorAPI void
-    onLockLayerAndSublayers(const QString& undoName, bool includeSublayers) const;
+    void onAddParentLayer(const QString& undoName) const;
+    void onMuteLayer(const QString& undoName) const;
+    void onLockLayer(const QString& undoName) const;
+    void onLockLayerAndSublayers(const QString& undoName, bool includeSublayers) const;
 
     // QWidgets overrides
     void paintEvent(QPaintEvent* event) override;
@@ -128,26 +127,26 @@ public:
     void leaveEvent(QEvent* event) override;
 
 protected:
-    LayerEditorAPI void updateMouseCursor();
+    void updateMouseCursor();
 
     // slot:
-    LayerEditorAPI void onModelAboutToBeReset();
-    LayerEditorAPI void onModelReset();
-    LayerEditorAPI void onItemDoubleClicked(const QModelIndex& index);
-    LayerEditorAPI void onExpanded(const QModelIndex& index);
-    LayerEditorAPI void onCollapsed(const QModelIndex& index);
-    LayerEditorAPI void onMuteLayerButtonPushed();
-    LayerEditorAPI void onLockLayerButtonPushed();
+    void onModelAboutToBeReset();
+    void onModelReset();
+    void onItemDoubleClicked(const QModelIndex& index);
+    void onExpanded(const QModelIndex& index);
+    void onCollapsed(const QModelIndex& index);
+    void onMuteLayerButtonPushed();
+    void onLockLayerButtonPushed();
 
     // Notice listener method for layer muting changes.
-    LayerEditorAPI void onLayerMutingChanged(const pxr::UsdNotice::LayerMutingChanged& notice);
+    void onLayerMutingChanged(const pxr::UsdNotice::LayerMutingChanged& notice);
 
-    LayerEditorAPI bool shouldExpandOrCollapseAll() const;
-    LayerEditorAPI void expandChildren(const QModelIndex& index);
-    LayerEditorAPI void collapseChildren(const QModelIndex& index);
+    bool shouldExpandOrCollapseAll() const;
+    void expandChildren(const QModelIndex& index);
+    void collapseChildren(const QModelIndex& index);
 
     // delayed signal to select a layer on idle
-    LayerEditorAPI void selectLayerRequest(const QModelIndex& index);
+    void selectLayerRequest(const QModelIndex& index);
 
     // Updates the _cachedModelState using stage data from the session
     void updateFromSessionState();

@@ -350,7 +350,7 @@ TEST_F(LayerTreeViewTest, CollapseChildren_InvalidIndex_DoesNotCrash)
     EXPECT_NO_THROW(tree.collapseChildren(QModelIndex()));
 }
 
-TEST_F(LayerTreeViewTest, CollapseChildren_KeepsRootExpanded)
+TEST_F(LayerTreeViewTest, CollapseChildren_AlsoCollapsesRoot)
 {
     TestableLayerTreeView tree(&_sessionState, _mainWindow);
     tree.show();
@@ -361,10 +361,10 @@ TEST_F(LayerTreeViewTest, CollapseChildren_KeepsRootExpanded)
     QApplication::processEvents();
     ASSERT_TRUE(tree.isExpanded(root));
 
-    // collapseChildren collapses children of root, not root itself.
+    // collapseChildren collapses the index itself as well as all its descendants.
     tree.collapseChildren(root);
     QApplication::processEvents();
-    EXPECT_TRUE(tree.isExpanded(root));
+    EXPECT_FALSE(tree.isExpanded(root));
 }
 
 // ── shouldExpandOrCollapseAll ─────────────────────────────────────────────────

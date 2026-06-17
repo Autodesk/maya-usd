@@ -27,6 +27,15 @@
 
 namespace UsdLayerEditor {
 
+// Exposes protected onCancel / onSaveAll for direct invocation in headless tests.
+class TestableSaveLayersDialog : public SaveLayersDialog
+{
+public:
+    using SaveLayersDialog::SaveLayersDialog;
+    void callOnCancel() { onCancel(); }
+    void callOnSaveAll() { onSaveAll(); }
+};
+
 class SaveLayersDialogTest : public LayerEditorTestFixture {};
 
 TEST_F(SaveLayersDialogTest, SaveLayersDialog_ConstructsFromSessionState)
@@ -299,5 +308,27 @@ TEST_F(SaveLayersDialogTest, BulkConstructor_SessionState_IsNull)
 }
 
 #endif // !LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+
+// ── onCancel() coverage ───────────────────────────────────────────────────
+
+TEST_F(SaveLayersDialogTest, OnCancel_SetsResultToRejected)
+{
+    TestableSaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    dlg.callOnCancel();
+    EXPECT_EQ(dlg.result(), QDialog::Rejected);
+}
+
+// ── onSaveAll() + okToSave() coverage ────────────────────────────────────
+// Rows always have auto-generated paths, so onSaveAll() takes the non-empty
+// path branch and calls saveAnonymousLayer (which throws on a stub DCC path).
+// Test that calling onSaveAll() directly doesn't crash when there are no rows.
+
+TEST_F(SaveLayersDialogTest, OnSaveAll_NoRows_DoesNotCrash)
+{
+    // Construct with an empty StageSavingInfo list so there are no rows.
+    TestableSaveLayersDialog dlg(_mainWindow, {}, /*isExporting=*/false);
+    EXPECT_NO_THROW(dlg.callOnSaveAll());
+    EXPECT_TRUE(dlg.layersNotSaved().isEmpty());
+}
 
 } // namespace UsdLayerEditor

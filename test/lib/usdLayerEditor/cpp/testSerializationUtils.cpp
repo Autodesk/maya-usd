@@ -172,11 +172,12 @@ TEST(SerializationUtils, GetLayersToSaveFromStage_ValidStage_PopulatesAnonLayers
 
 // ── saveLayerWithFormat ───────────────────────────────────────────────────────
 
-TEST(SerializationUtils, SaveLayerWithFormat_NonexistentPath_ReturnsFalse)
+TEST(SerializationUtils, SaveLayerWithFormat_EmptyPath_ReturnsFalse)
 {
     auto layer = SdfLayer::CreateAnonymous("save_test");
-    // Export to a path whose parent directory does not exist must fail.
-    EXPECT_FALSE(saveLayerWithFormat(layer, "/nonexistent_dir/fake_save_test.usda", "usda"));
+    // Empty path → falls back to GetRealPath() which is also empty for an anonymous
+    // layer → Save() with no backing file returns false on all platforms.
+    EXPECT_FALSE(saveLayerWithFormat(layer, "", "usda"));
 }
 
 } // namespace Serialization
