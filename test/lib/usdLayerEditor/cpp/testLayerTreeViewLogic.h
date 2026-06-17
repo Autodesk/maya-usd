@@ -298,7 +298,7 @@ TEST_F(LayerTreeViewTest, LayerTreeModel_ReturnsNonNull)
     EXPECT_NE(layerTree()->layerTreeModel(), nullptr);
 }
 
-TEST_F(LayerTreeViewTest, LayerTreeModel_MatchesTeeModel)
+TEST_F(LayerTreeViewTest, LayerTreeModel_MatchesTreeModel)
 {
     EXPECT_EQ(layerTree()->layerTreeModel(), treeModel());
 }
