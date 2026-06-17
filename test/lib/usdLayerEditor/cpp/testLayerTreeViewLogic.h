@@ -281,4 +281,117 @@ TEST_F(LayerTreeViewSharedTest, DoubleClick_SkipsWhenSystemLocked)
     TestUtils::unlockLayerDirect(item->layer());
 }
 
+// ── layerItemFromIndex / layerTreeModel ───────────────────────────────────────
+
+TEST_F(LayerTreeViewTest, LayerItemFromIndex_ValidIndex_ReturnsNonNull)
+{
+    EXPECT_NE(layerTree()->layerItemFromIndex(rootLayerIndex()), nullptr);
+}
+
+TEST_F(LayerTreeViewTest, LayerItemFromIndex_InvalidIndex_ReturnsNull)
+{
+    EXPECT_EQ(layerTree()->layerItemFromIndex(QModelIndex()), nullptr);
+}
+
+TEST_F(LayerTreeViewTest, LayerTreeModel_ReturnsNonNull)
+{
+    EXPECT_NE(layerTree()->layerTreeModel(), nullptr);
+}
+
+TEST_F(LayerTreeViewTest, LayerTreeModel_MatchesTeeModel)
+{
+    EXPECT_EQ(layerTree()->layerTreeModel(), treeModel());
+}
+
+// ── getSelectedLayerItems empty case ─────────────────────────────────────────
+
+TEST_F(LayerTreeViewTest, GetSelectedLayerItems_EmptyByDefault)
+{
+    layerTree()->clearSelection();
+    layerTree()->setCurrentIndex(QModelIndex());
+    auto items = layerTree()->getSelectedLayerItems();
+    EXPECT_TRUE(items.empty());
+}
+
+// ── expand / collapse children ────────────────────────────────────────────────
+// expandChildren/collapseChildren/shouldExpandOrCollapseAll are protected, so
+// we subclass LayerTreeView to expose them for tests.
+
+class TestableLayerTreeView : public LayerTreeView
+{
+public:
+    explicit TestableLayerTreeView(SessionState* s, QWidget* parent = nullptr)
+        : LayerTreeView(s, parent) {}
+
+    using LayerTreeView::expandChildren;
+    using LayerTreeView::collapseChildren;
+    using LayerTreeView::shouldExpandOrCollapseAll;
+};
+
+TEST_F(LayerTreeViewTest, ExpandChildren_RootLayer_DoesNotCrash)
+{
+    TestableLayerTreeView tree(&_sessionState, _mainWindow);
+    tree.show();
+    QApplication::processEvents();
+    EXPECT_NO_THROW(tree.expandChildren(tree.layerTreeModel()->rootLayerIndex()));
+}
+
+TEST_F(LayerTreeViewTest, CollapseChildren_RootLayer_DoesNotCrash)
+{
+    TestableLayerTreeView tree(&_sessionState, _mainWindow);
+    tree.show();
+    QApplication::processEvents();
+    EXPECT_NO_THROW(tree.collapseChildren(tree.layerTreeModel()->rootLayerIndex()));
+}
+
+TEST_F(LayerTreeViewTest, CollapseChildren_InvalidIndex_DoesNotCrash)
+{
+    TestableLayerTreeView tree(&_sessionState, _mainWindow);
+    EXPECT_NO_THROW(tree.collapseChildren(QModelIndex()));
+}
+
+TEST_F(LayerTreeViewTest, CollapseChildren_KeepsRootExpanded)
+{
+    TestableLayerTreeView tree(&_sessionState, _mainWindow);
+    tree.show();
+    QApplication::processEvents();
+
+    QModelIndex root = tree.layerTreeModel()->rootLayerIndex();
+    tree.expand(root);
+    QApplication::processEvents();
+    ASSERT_TRUE(tree.isExpanded(root));
+
+    // collapseChildren collapses children of root, not root itself.
+    tree.collapseChildren(root);
+    QApplication::processEvents();
+    EXPECT_TRUE(tree.isExpanded(root));
+}
+
+// ── shouldExpandOrCollapseAll ─────────────────────────────────────────────────
+
+TEST_F(LayerTreeViewTest, ShouldExpandOrCollapseAll_ReturnsBool)
+{
+    TestableLayerTreeView tree(&_sessionState, _mainWindow);
+    // Just verify it returns without crashing; the default stub setting is false.
+    bool result = tree.shouldExpandOrCollapseAll();
+    (void)result;
+}
+
+// ── callMethodOnSelection ─────────────────────────────────────────────────────
+
+TEST_F(LayerTreeViewTest, CallMethodOnSelection_WithNoSelection_DoesNotCrash)
+{
+    layerTree()->clearSelection();
+    layerTree()->setCurrentIndex(QModelIndex());
+    EXPECT_NO_THROW(
+        layerTree()->callMethodOnSelection("test", &LayerTreeItem::printLayer));
+}
+
+TEST_F(LayerTreeViewTest, CallMethodOnSelection_WithSelection_DoesNotCrash)
+{
+    selectRow(firstSublayerIndex());
+    EXPECT_NO_THROW(
+        layerTree()->callMethodOnSelection("test", &LayerTreeItem::printLayer));
+}
+
 } // namespace UsdLayerEditor
