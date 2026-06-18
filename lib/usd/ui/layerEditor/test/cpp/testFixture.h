@@ -71,6 +71,11 @@ protected:
     int  _modalDialogCount  { 0 };
     bool _modalDialogAnswer { true };
     bool _confirmExistingFileSave { false };
+    // Real Maya proxy shape DAG paths, e.g. "|leTestXform0|leTestProxy0".
+    // Set in SetUp, cleared in TearDown.
+    std::string _proxyShapePaths[2];
+    // Temp .usda files backing the proxy shapes — deleted in TearDown.
+    std::string _tempStagePaths[2];
 
     ScopedLayerEditorDCCFunctions _scopedDCCFunctions;
 
