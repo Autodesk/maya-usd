@@ -20,6 +20,13 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMainWindow>
 
+#include <maya/MDagPath.h>
+#include <maya/MGlobal.h>
+#include <maya/MSelectionList.h>
+#include <maya/MString.h>
+
+#include <ghc/fs_std.hpp>
+
 namespace UsdLayerEditor {
 
 void LayerEditorTestFixture::SetUp()
@@ -71,6 +78,38 @@ void LayerEditorTestFixture::SetUp()
         return _modalDialogAnswer;
     });
 
+    // Create one real mayaUsdProxyShape per stub stage so Maya DAG lookups
+    // succeed. Use generic_string() so forward slashes reach MEL on Windows
+    // (backslashes are escape characters in MEL string literals).
+    {
+        namespace fss = fs::filesystem;
+        const auto stages = _sessionState.allStages();
+        for (int i = 0; i < 2; ++i) {
+            _tempStagePaths[i] = (fss::temp_directory_path()
+                / ("le_test_stage_" + std::to_string(i) + ".usda")).generic_string();
+            stages[i]._stage->GetRootLayer()->Export(_tempStagePaths[i]);
+
+            const std::string xformName = "leTestXform" + std::to_string(i);
+            const std::string shapeName = "leTestProxy" + std::to_string(i);
+            MGlobal::executeCommand(
+                MString("createNode transform -n \"") + xformName.c_str() + "\"");
+            MGlobal::executeCommand(
+                MString("createNode mayaUsdProxyShape -n \"") + shapeName.c_str()
+                + "\" -p " + xformName.c_str());
+            MGlobal::executeCommand(
+                MString("setAttr \"") + shapeName.c_str() + ".filePath\" -type \"string\" \""
+                + _tempStagePaths[i].c_str() + "\"");
+
+            MSelectionList sel;
+            sel.add(MString(shapeName.c_str()));
+            MDagPath dagPath;
+            sel.getDagPath(0, dagPath);
+            _proxyShapePaths[i] = dagPath.fullPathName().asChar();
+
+            _sessionState.setProxyShapePath(i, _proxyShapePaths[i]);
+        }
+    }
+
     _mainWindow = new QMainWindow();
     _window     = std::make_unique<OldEditorStubLayerEditorWindow>(_sessionState, _mainWindow);
     _widget     = _window->widget();
@@ -90,6 +129,24 @@ void LayerEditorTestFixture::TearDown()
     _window.reset();
     delete _mainWindow;
     _mainWindow = nullptr;
+
+    // Delete real proxy shape nodes and temp stage files created in SetUp.
+    {
+        namespace fss = fs::filesystem;
+        for (int i = 0; i < 2; ++i) {
+            if (!_proxyShapePaths[i].empty()) {
+                const std::string xformPath = "|leTestXform" + std::to_string(i);
+                MGlobal::executeCommand(
+                    MString("delete \"") + xformPath.c_str() + "\"");
+                _proxyShapePaths[i].clear();
+            }
+            if (!_tempStagePaths[i].empty()) {
+                std::error_code ec;
+                fss::remove(_tempStagePaths[i], ec);
+                _tempStagePaths[i].clear();
+            }
+        }
+    }
 }
 
 LayerTreeView* LayerEditorTestFixture::layerTree()
