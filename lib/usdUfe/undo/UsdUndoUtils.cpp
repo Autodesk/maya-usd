@@ -18,11 +18,9 @@
 
 #include <usdUfe/undo/UsdUndoManager.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace USDUFE_NS_DEF {
 
-void trackStagesEditTargets(const std::vector<UsdStageRefPtr>& stages)
+void trackStagesEditTargets(const std::vector<PXR_NS::UsdStageRefPtr>& stages)
 {
     for (const auto& stage : stages) {
         if (!stage) {

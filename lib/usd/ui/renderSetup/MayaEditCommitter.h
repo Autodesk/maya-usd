@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef MAYAUSD_UI_RENDERSETUP_MAYAEDITCOMMITTER_H
-#define MAYAUSD_UI_RENDERSETUP_MAYAEDITCOMMITTER_H
+#ifndef MAYAUSDUI_USD_RENDERSETUP_MAYAEDITCOMMITTER_H
+#define MAYAUSDUI_USD_RENDERSETUP_MAYAEDITCOMMITTER_H
 
 #include <pxr/usd/usd/stage.h>
 
@@ -43,13 +43,13 @@ public:
     void setStages(const std::vector<Adsk::HostStage>& stages);
 
     void commit(const std::string& undoLabel, std::function<void()> doEdit) override;
-    bool isLocalEditInFlight() const override { return m_inFlightCount > 0; }
+    bool isLocalEditInFlight() const override { return _inFlightCount > 0; }
 
 private:
-    std::vector<PXR_NS::UsdStageRefPtr> m_stages;
-    int                                 m_inFlightCount { 0 };
+    std::vector<PXR_NS::UsdStageRefPtr> _stages;
+    int                                 _inFlightCount { 0 };
 };
 
 } // namespace MayaUsdRenderSetup
 
-#endif // MAYAUSD_UI_RENDERSETUP_MAYAEDITCOMMITTER_H
+#endif // MAYAUSDUI_USD_RENDERSETUP_MAYAEDITCOMMITTER_H
