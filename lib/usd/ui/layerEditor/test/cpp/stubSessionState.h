@@ -54,6 +54,11 @@ public:
     // so we just update the flag. Test 225 is guarded to new editor only.
     void setIsEditForwardMode(bool v) { _isEFModeActive = v; }
 
+    // Patches _stages[index]._proxyShapePath and refreshes the base-class
+    // active entry if it matches.  Called by LayerEditorTestFixture::SetUp
+    // after real Maya proxy shape nodes are created.
+    void setProxyShapePath(int index, const std::string& path);
+
     // Used by LayerEditorWithEFFixture; has no effect on old editor widget since
     // it uses a compile-time #ifdef guard rather than a runtime check.
     bool _supportsEditForwarding { false };

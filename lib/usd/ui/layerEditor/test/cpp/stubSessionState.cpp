@@ -96,4 +96,14 @@ OldEditorStubSessionState::makeEntry(PXR_NS::UsdStageRefPtr stage, const std::st
     return e;
 }
 
+void OldEditorStubSessionState::setProxyShapePath(int index, const std::string& path)
+{
+    if (index < 0 || index >= static_cast<int>(_stages.size()))
+        return;
+    _stages[index]._proxyShapePath = path;
+    // Refresh the base-class active entry copy when this index is the current stage.
+    if (stageEntry()._id == _stages[index]._id)
+        SessionState::setStageEntry(_stages[index]);
+}
+
 } // namespace UsdLayerEditor
