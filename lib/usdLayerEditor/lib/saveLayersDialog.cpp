@@ -1089,4 +1089,18 @@ bool SaveLayersDialog::saveLayerFilePathUI(
     return true;
 }
 
+/*static*/
+bool SaveLayersDialog::saveLayerFilePathUI(
+    std::string&          out_filePath,
+    const SdfLayerRefPtr& parentLayer)
+{
+    std::string parentLayerPath;
+    if (parentLayer) {
+        parentLayerPath = parentLayer->GetRealPath();
+        if (parentLayerPath.empty())
+            parentLayerPath = parentLayer->GetIdentifier();
+    }
+    return saveLayerFilePathUI(out_filePath, parentLayerPath);
+}
+
 } // namespace UsdLayerEditor

@@ -64,6 +64,8 @@
      // As output returns the path.
      static bool
      saveLayerFilePathUI(std::string& out_filePath, const std::string& parentLayer);
+     static bool
+     saveLayerFilePathUI(std::string& out_filePath, const SdfLayerRefPtr& parentLayer);
 
      QWidget* findEntry(SdfLayerRefPtr key);
 

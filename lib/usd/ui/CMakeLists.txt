@@ -43,7 +43,6 @@ endif()
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME}
     PRIVATE
-        initStringResources.cpp
         mayaLayerEditorQtFunctions.cpp
 )
 
@@ -128,7 +127,6 @@ endif()
 # -----------------------------------------------------------------------------
 set(HEADERS
     api.h
-    initStringResources.h
     mayaLayerEditorQtFunctions.h
 )
 

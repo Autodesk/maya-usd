@@ -78,7 +78,6 @@
 
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
-#include <mayaUsdUI/ui/initStringResources.h>
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
 #include <mayaUsdUI/ui/AssetResolverDialogCmd.h>
 #include <mayaUsdUI/ui/AssetResolverProjectChangeTracker.h>
@@ -148,9 +147,6 @@ template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
 MStatus registerStringResources()
 {
     MStatus status { MStatus::MStatusCode::kSuccess };
-#if defined(WANT_QT_BUILD)
-    status = MayaUsd::initStringResources();
-#endif
     return status;
 }
 

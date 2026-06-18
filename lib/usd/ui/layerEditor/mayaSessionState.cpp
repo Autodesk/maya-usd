@@ -385,14 +385,7 @@ bool MayaSessionState::saveLayerUI(
     std::string*                  out_filePath,
     const PXR_NS::SdfLayerRefPtr& parentLayer) const
 {
-    // Shared SaveLayersDialog takes a parent-layer file path (not an SdfLayer).
-    std::string parentLayerPath;
-    if (parentLayer) {
-        parentLayerPath = parentLayer->GetRealPath();
-        if (parentLayerPath.empty())
-            parentLayerPath = parentLayer->GetIdentifier();
-    }
-    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath, parentLayerPath);
+    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath, parentLayer);
 }
 
 std::vector<std::string>
@@ -565,10 +558,6 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
     result += text.c_str();
     MGlobal::displayInfo(result);
 }
-
-// -----------------------------------------------------------------------------
-// Shared-API overrides
-// -----------------------------------------------------------------------------
 
 std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
 {

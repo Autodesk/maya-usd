@@ -18,8 +18,6 @@
 
 #include <mayaUsd/listeners/notice.h>
 
-// Muted layers are held by the shared UsdLayerEditor store so that the layer
-// editor command and the Maya serialization agree on a single registry.
 #include <layerMuting.h>
 
 #include <pxr/base/tf/weakBase.h>

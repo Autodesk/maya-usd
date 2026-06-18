@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-# When using the shared usd-layer-editor component, only the Maya-specific
-# wiring files build here. All shared sources are provided by UsdLayerEditorLib.
 target_sources(${PROJECT_NAME}
     PRIVATE
         batchSaveLayersUIDelegate.cpp
