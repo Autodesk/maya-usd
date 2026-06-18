@@ -35,12 +35,16 @@ namespace UsdLayerEditor {
 class ComponentSaveWidgetTest : public LayerEditorTestFixture
 {
 protected:
-    std::unique_ptr<ComponentSaveWidget> makeWidget(const std::string& dccPath = "proxy|shape")
+    std::unique_ptr<ComponentSaveWidget> makeWidget(const std::string& dccPath = {})
     {
 #ifdef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
-        return std::make_unique<ComponentSaveWidget>(_mainWindow, dccPath);
+        // Old editor: use the real Maya proxy shape path created by the fixture.
+        const std::string& path = dccPath.empty() ? _proxyShapePaths[0] : dccPath;
+        return std::make_unique<ComponentSaveWidget>(_mainWindow, path);
 #else
-        return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, dccPath);
+        // New editor: unchanged.
+        const std::string path = dccPath.empty() ? "proxy|shape" : dccPath;
+        return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, path);
 #endif
     }
 };
