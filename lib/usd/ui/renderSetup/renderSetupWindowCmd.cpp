@@ -15,7 +15,7 @@
 //
 #include "renderSetupWindowCmd.h"
 
-#include "MayaEditCommitter.h"
+#include "mayaEditCommitter.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdSceneSettingsManager.h>

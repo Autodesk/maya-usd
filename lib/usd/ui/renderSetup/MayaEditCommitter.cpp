@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#include "MayaEditCommitter.h"
+#include "mayaEditCommitter.h"
+
+#include "../undoChunkUtils.h"
 
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 
@@ -22,41 +24,7 @@
 
 #include <pxr/usd/sdf/changeBlock.h>
 
-#include <maya/MGlobal.h>
-#include <maya/MString.h>
-
-#include <QtCore/QString>
 #include <QtCore/QTimer>
-
-namespace {
-
-// Maya does not support spaces in undo chunk names. Backslash and double-quote
-// are escaped so the label is safe to embed in a MEL double-quoted string.
-MString cleanChunkName(const std::string& label)
-{
-    QString name = QString::fromStdString(label);
-    name.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
-    name.replace(QLatin1Char('"'), QLatin1String("\\\""));
-    name.replace(QLatin1Char(' '), QLatin1Char('_'));
-    return MString(("\"" + name.toStdString() + "\"").c_str());
-}
-
-void openUndoChunk(const std::string& label)
-{
-    if (label.empty()) {
-        MGlobal::executeCommand("undoInfo -openChunk", false, false);
-    } else {
-        MGlobal::executeCommand(
-            MString("undoInfo -openChunk -chunkName ") + cleanChunkName(label), false, false);
-    }
-}
-
-struct UndoChunkGuard
-{
-    ~UndoChunkGuard() { MGlobal::executeCommand("undoInfo -closeChunk", false, false); }
-};
-
-} // namespace
 
 namespace MayaUsdRenderSetup {
 
@@ -67,37 +35,36 @@ MayaEditCommitter::MayaEditCommitter(QObject* parent)
 
 void MayaEditCommitter::setStages(const std::vector<Adsk::HostStage>& stages)
 {
-    m_stages.clear();
-    m_stages.reserve(stages.size());
+    _stages.clear();
+    _stages.reserve(stages.size());
     for (const auto& hostStage : stages) {
         if (hostStage.stage) {
-            m_stages.push_back(hostStage.stage);
+            _stages.push_back(hostStage.stage);
         }
     }
 }
 
 void MayaEditCommitter::commit(const std::string& undoLabel, std::function<void()> doEdit)
 {
-    if (!doEdit || m_stages.empty()) {
+    if (!doEdit || _stages.empty()) {
         return;
     }
 
-    ++m_inFlightCount;
+    ++_inFlightCount;
     // Schedule the decrement before doEdit() so it fires even if doEdit() throws.
     // The one-event-loop-cycle delay keeps isLocalEditInFlight() true through the
     // USD-notice burst that follows the edit, so the notice bridge treats the
     // resulting refresh as self-originated and skips re-entrancy.
     QTimer::singleShot(0, this, [this]() {
-        if (m_inFlightCount > 0) {
-            --m_inFlightCount;
+        if (_inFlightCount > 0) {
+            --_inFlightCount;
         }
     });
 
-    UsdUfe::trackStagesEditTargets(m_stages);
+    UsdUfe::trackStagesEditTargets(_stages);
 
-    openUndoChunk(undoLabel);
-    const UndoChunkGuard      undoChunkGuard;
-    MayaUsd::MayaUsdUndoBlock block;
+    const MayaUsdUI::UndoChunkGuard undoChunkGuard(undoLabel);
+    MayaUsd::MayaUsdUndoBlock       block;
     {
         PXR_NS::SdfChangeBlock changeBlock;
         doEdit();
