@@ -14,4 +14,4 @@
 // limitations under the License.
 //
 #include "testFixture.h"
-#include "testUsdSyntaxHighlighterLogic.h"
+#include "testLayerEditorWidgetLogic.h"

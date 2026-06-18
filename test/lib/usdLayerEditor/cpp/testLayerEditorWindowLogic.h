@@ -16,7 +16,6 @@
 
 #ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 #include "testFixture.h"
-#endif
 #include "abstractLayerEditorWindow.h"
 #include "layerEditorWidget.h"
 #include "layerEditorWindow.h"
@@ -177,3 +176,4 @@ TEST_F(LayerEditorWindowTest, StitchLayers_LessThanTwoItems_DoesNotCrash)
 }
 
 } // namespace UsdLayerEditor
+#endif

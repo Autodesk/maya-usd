@@ -34,19 +34,28 @@ set(OLD_LE_OWN_SOURCES
     testFixture.cpp
     pluginMain.cpp
     testButtons.cpp
-    testEFMode.cpp
+    testComponentSaveWidget.cpp
     testContextMenu.cpp
+    testEFMode.cpp
     testLayerContentsWidget.cpp
+    testLayerEditorWidget.cpp
+    testLayerEditorWindow.cpp
     testLayerLocking.cpp
     testLayerMuting.cpp
     testLayerTreeItem.cpp
+    testLayerTreeItemDelegate.cpp
     testLayerTreeModel.cpp
     testLayerTreeView.cpp
+    testLayerTreeViewMouse.cpp
     testLoadLayersDialog.cpp
     testMenusAndStage.cpp
+    testPathChecker.cpp
     testReorder.cpp
     testSaveLayersDialog.cpp
+    testSessionState.cpp
     testSharedStage.cpp
+    testStageSelectorWidget.cpp
+    testUsdSyntaxHighlighter.cpp
 )
 
 # layerEditorDCCFunctions is compiled directly (not via UsdLayerEditorLib link)
