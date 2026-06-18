@@ -35,16 +35,22 @@ namespace UsdLayerEditor {
 class ComponentSaveWidgetTest : public LayerEditorTestFixture
 {
 protected:
-    std::unique_ptr<ComponentSaveWidget> makeWidget(const std::string& dccPath = {})
+    // No-arg: uses the default path for each editor build.
+    std::unique_ptr<ComponentSaveWidget> makeWidget()
     {
 #ifdef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
-        // Old editor: use the real Maya proxy shape path created by the fixture.
-        const std::string& path = dccPath.empty() ? _proxyShapePaths[0] : dccPath;
-        return std::make_unique<ComponentSaveWidget>(_mainWindow, path);
+        return std::make_unique<ComponentSaveWidget>(_mainWindow, _proxyShapePaths[0]);
 #else
-        // New editor: unchanged.
-        const std::string path = dccPath.empty() ? "proxy|shape" : dccPath;
-        return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, path);
+        return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, "proxy|shape");
+#endif
+    }
+    // Explicit path: passes dccPath as-is (including empty string).
+    std::unique_ptr<ComponentSaveWidget> makeWidget(const std::string& dccPath)
+    {
+#ifdef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
+        return std::make_unique<ComponentSaveWidget>(_mainWindow, dccPath);
+#else
+        return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, dccPath);
 #endif
     }
 };
