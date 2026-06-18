@@ -143,7 +143,12 @@ public:
         ::testing::UnitTest::GetInstance()->listeners().Release(collector);
         setResult(MString(collector->toJson().c_str()));
         delete collector;
-        return testResult == 0 ? MS::kSuccess : MS::kFailure;
+        // Always return kSuccess so the Python runner receives the JSON result
+        // via setResult() and can report per-test failures via self.fail().
+        // CTest still fails because the Python unittest calls self.fail() when
+        // the JSON contains failing entries.
+        (void)testResult;
+        return MS::kSuccess;
     }
 };
 
