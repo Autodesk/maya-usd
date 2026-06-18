@@ -638,18 +638,6 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
         return;
     }
 
-    getLayersToSaveFromStage(stage, proxyPath, layersInfo);
-}
-
-void getLayersToSaveFromStage(
-    const PXR_NS::UsdStageRefPtr& stage,
-    const std::string&            proxyPath,
-    StageLayersToSave&            layersInfo)
-{
-    if (!stage) {
-        return;
-    }
-
     auto root = stage->GetRootLayer();
     populateChildren(
         proxyPath, stage, root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
