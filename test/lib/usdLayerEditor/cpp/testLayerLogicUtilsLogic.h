@@ -70,6 +70,9 @@ TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
 }
 
 // ── Layers ────────────────────────────────────────────────────────────────────
+// Layers:: functions live in UsdLayerEditorLib which the old editor test binary
+// does not link (ODR conflict risk with LEGACY_SOURCES). Guard until a shim exists.
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 
 TEST(LayersTest, GetLocalTargetLayerAsString_ReturnsSubLayerIdentifier)
 {
@@ -122,6 +125,8 @@ TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
     Layers::LayerNameMap nameMap;
     EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, "anon:nonexistent"));
 }
+
+#endif // !LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 
 // ── warningDialogs ────────────────────────────────────────────────────────────
 // Old editor's confirmDialog/warningDialog take QWidget* as first arg; new
