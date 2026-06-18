@@ -124,6 +124,9 @@ TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
 }
 
 // ── warningDialogs ────────────────────────────────────────────────────────────
+// Old editor's confirmDialog/warningDialog take QWidget* as first arg; new
+// editor's signatures are (const QString&, const QString&, ...) — guard these.
+#ifndef LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 
 TEST(WarningDialogsTest, ConfirmDialog_HandlerReturnsTrueReturnsTrue)
 {
@@ -173,5 +176,7 @@ TEST(WarningDialogsTest, SetModalDialogTestHandler_ReturnsPrevious)
     EXPECT_TRUE(static_cast<bool>(prev2));        // prev2 should be h1
     setModalDialogTestHandler(orig);              // restore original
 }
+
+#endif // !LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 
 } // namespace UsdLayerEditor
