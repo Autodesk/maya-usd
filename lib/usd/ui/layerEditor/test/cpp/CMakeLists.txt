@@ -40,6 +40,7 @@ set(OLD_LE_OWN_SOURCES
     testLayerContentsWidget.cpp
     testLayerEditorWidget.cpp
     testLayerEditorWindow.cpp
+    testLayerLogicUtils.cpp
     testLayerLocking.cpp
     testLayerMuting.cpp
     testLayerTreeItem.cpp
