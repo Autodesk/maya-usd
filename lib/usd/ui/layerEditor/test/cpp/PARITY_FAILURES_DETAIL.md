@@ -244,6 +244,50 @@ whichever editor is active during the transition period.
 
 ---
 
+## Failure 4 — `LayerEditorTestFixture.Widget_GetSelectedLayers_NothingSelected_ReturnsEmpty`
+## Failure 5 — `LayerEditorTestFixture.Widget_SelectLayers_Empty_ClearsSelection`
+
+These two failures share the same root cause and are documented together.
+
+### What they check
+
+**Failure 4:** After calling `_widget->selectLayers({})` (with an empty list), `getSelectedLayers()` must return an empty vector.
+
+**Failure 5:** After `selectLayers({})`, the tree view's `selectionModel()->currentIndex()` must be invalid (no current item).
+
+### Why the old editor fails
+
+`LayerEditorWidget::selectLayers()` (old editor, `lib/usd/ui/layerEditor/layerEditorWidget.cpp`) clears the Qt selection model's selected rows but does **not** also clear `currentIndex`. The `getSelectedLayerItems()` helper falls back to the current index when `selectedRows()` is empty:
+
+```cpp
+// Old editor — simplified:
+auto selected = layerTree()->selectionModel()->selectedRows();
+if (selected.isEmpty())
+    selected = { layerTree()->selectionModel()->currentIndex() };  // ← fallback
+```
+
+Since `currentIndex` is still valid after `selectLayers({})`, `getSelectedLayerItems()` returns the current item, so `getSelectedLayers()` is non-empty.
+
+The new editor's `selectLayers({})` explicitly clears both selected rows **and** `currentIndex`:
+
+```cpp
+// New editor:
+selectionModel->clearSelection();
+selectionModel->clearCurrentIndex();  // ← extra step
+```
+
+### Production impact
+
+None in typical usage — `selectLayers({})` is only called explicitly from code. In production the widget always has a real selection. The gap only surfaces in the test environment where the initial current index is set during fixture construction.
+
+### Fix path
+
+Add `selectionModel()->clearCurrentIndex()` to `layerEditorWidget.cpp` in the `selectLayers({})` branch (when `in_layerIds` is empty). This is a one-line patch to the old editor.
+
+**Note:** Per the agreed review policy (2026-06-18), no changes to tests or the old editor are made until this report is reviewed.
+
+---
+
 ## Summary
 
 | Failure | Category | Production impact | Fix path |
@@ -251,3 +295,5 @@ whichever editor is active during the transition period.
 | `Rebuild_SkipsReset` | Missing optimization | None — old behavior is correct, just fires extra signals | Back-port `isIdenticalItem` skip to old editor, or accept divergence |
 | `AllAsRelative_ToggleDoesNotCrash` | Architectural coupling to Maya proxy shape | None in production (real proxy always present) — only affects testability | Add `getLayersToSaveFromStage` fallback to old editor's dialog, or accept skip |
 | `IsReadOnly_TrueForReferencedLayer` | Token rename not back-ported | **Real** — files written by new editor lose read-only protection in old editor | Old editor should also read `"adskSharedLayers"`, or a migration step renames the key in USD files |
+| `Widget_GetSelectedLayers_NothingSelected_ReturnsEmpty` | `selectLayers({})` doesn't clear `currentIndex` | None in production | Add `clearCurrentIndex()` to old editor's `selectLayers` empty-list branch |
+| `Widget_SelectLayers_Empty_ClearsSelection` | Same as above | None in production | Same fix |

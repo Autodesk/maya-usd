@@ -67,7 +67,16 @@ ctest -L MayaUsdOldLEParity
 | `testSaveLayersDialogLogic.h` | 12 | 12 | |
 | `testSharedStageLogic.h` | 22 | 22 | 4 `ReferencedLayersFixture` excluded; 4 `MayaReferencedLayersFixture` added |
 | `testLayerEditorCommands.cpp` | 31 | — | New-editor-only: undo-able command classes |
-| **Total** | **224** | **185** | |
+| `testLayerEditorWidgetLogic.h` | 12 | 10 | 2 fail: `selectLayers({})` doesn't clear currentIndex in old editor |
+| `testStageSelectorWidgetLogic.h` | 11 | 11 | |
+| `testSessionStateLogic.h` | 9 | 4 | 5 excluded: `displayLayerExpandAllValues` typo, `displayLayerHideIndices` missing, `_dccObjectPath` rename, `StubSessionState` → `OldEditorStubSessionState` |
+| `testLayerTreeItemDelegateLogic.h` | 13 | 13 | |
+| `testLayerTreeViewMouseLogic.h` | 5 | 5 | |
+| `testPathCheckerLogic.h` | 5 | 3 | 2 excluded: `PathCheckerFileTestBase` uses `addStage()` missing in old editor |
+| `testUsdSyntaxHighlighterLogic.h` | 5 | 5 | |
+| `testComponentSaveWidgetLogic.h` | 18 | 16 | 2 excluded: `dccObjectPath()` method missing in old editor |
+| `testLayerEditorWindowLogic.h` | 16 | 0 | All excluded: `AbstractLayerEditorCreator`/`LayerEditorWindow` are new-editor-only |
+| **Total** | **314** | **267** | |
 
 ### Why 39 tests are absent from the parity suite
 
@@ -94,9 +103,10 @@ Both editors read this token; the new editor reads it via `UsdLayerEditorMetadat
 
 ---
 
-## Current Results: 184 pass, 1 fail
+## Current Results: 265 pass, 2 fail
 
-Last run: 2026-06-04, Maya 2027 interactive, `BUILD_NEW_LAYER_EDITOR=OFF`.
+Last run: 2026-06-18, Maya 2027 interactive, `BUILD_NEW_LAYER_EDITOR=OFF`.
+Old-editor suite expanded from 185 → 267 tests by sharing 9 new logic headers.
 
 ### Remaining Failure — `SaveLayersDialogTest.AllAsRelative_ToggleDoesNotCrash`
 
