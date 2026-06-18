@@ -20,6 +20,8 @@
 
 #include <usdUfe/undo/UsdUndoUtils.h>
 
+#include <pxr/usd/sdf/changeBlock.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
@@ -96,7 +98,10 @@ void MayaEditCommitter::commit(const std::string& undoLabel, std::function<void(
     openUndoChunk(undoLabel);
     const UndoChunkGuard      undoChunkGuard;
     MayaUsd::MayaUsdUndoBlock block;
-    doEdit();
+    {
+        PXR_NS::SdfChangeBlock changeBlock;
+        doEdit();
+    }
 }
 
 } // namespace MayaUsdRenderSetup
