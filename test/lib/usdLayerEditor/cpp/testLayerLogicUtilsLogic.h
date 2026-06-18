@@ -73,7 +73,7 @@ TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
 
 TEST(LayersTest, GetLocalTargetLayerAsString_ReturnsSubLayerIdentifier)
 {
-    auto stage    = UsdStage::CreateInMemory();
+    auto stage    = PXR_NS::UsdStage::CreateInMemory();
     auto sublayer = SdfLayer::CreateAnonymous("tgt_str");
     stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
     stage->SetEditTarget(UsdEditTarget(sublayer));
@@ -82,13 +82,13 @@ TEST(LayersTest, GetLocalTargetLayerAsString_ReturnsSubLayerIdentifier)
 
 TEST(LayersTest, GetLocalTargetLayerAsString_RootLayerIsLocal)
 {
-    auto stage = UsdStage::CreateInMemory();
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
     EXPECT_EQ(Layers::getLocalTargetLayerAsString(stage), stage->GetRootLayer()->GetIdentifier());
 }
 
 TEST(LayersTest, GetLocalTargetLayerFromString_FindsByIdentifier)
 {
-    auto stage    = UsdStage::CreateInMemory();
+    auto stage    = PXR_NS::UsdStage::CreateInMemory();
     auto sublayer = SdfLayer::CreateAnonymous("find_by_id");
     stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
     Layers::LayerNameMap nameMap;
@@ -99,14 +99,14 @@ TEST(LayersTest, GetLocalTargetLayerFromString_FindsByIdentifier)
 
 TEST(LayersTest, GetLocalTargetLayerFromString_EmptyIdentifierReturnsNull)
 {
-    auto stage = UsdStage::CreateInMemory();
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
     Layers::LayerNameMap nameMap;
     EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, ""));
 }
 
 TEST(LayersTest, GetLocalTargetLayerFromString_NameMapRemapsIdentifier)
 {
-    auto stage    = UsdStage::CreateInMemory();
+    auto stage    = PXR_NS::UsdStage::CreateInMemory();
     auto layer    = SdfLayer::CreateAnonymous("remap_target");
     stage->GetRootLayer()->InsertSubLayerPath(layer->GetIdentifier(), 0);
     const std::string    oldId   = "anon:old-target-id";
@@ -118,7 +118,7 @@ TEST(LayersTest, GetLocalTargetLayerFromString_NameMapRemapsIdentifier)
 
 TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
 {
-    auto stage = UsdStage::CreateInMemory();
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
     Layers::LayerNameMap nameMap;
     EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, "anon:nonexistent"));
 }
