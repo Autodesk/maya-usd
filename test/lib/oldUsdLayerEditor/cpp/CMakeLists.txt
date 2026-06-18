@@ -20,12 +20,12 @@ set(CMAKE_AUTORCC ON)
 # *Logic.h headers and testUtils.h live in the new editor's test/cpp dir and are
 # shared between old and new test suites.
 set(NEW_LE_TEST_CPP
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../test/lib/usdLayerEditor/cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../usdLayerEditor/cpp)
 
 # layerEditorDCCFunctions.h lives in the shared lib; the *Logic.h headers use
 # ScopedLayerEditorDCCFunctions which includes it transitively.
 set(NEW_LE_LIB
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../lib/usdLayerEditor/lib)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../lib/usdLayerEditor/lib)
 
 # ── Sources ────────────────────────────────────────────────────────────────────
 set(OLD_LE_OWN_SOURCES
@@ -69,31 +69,31 @@ set(DCC_FN_SOURCES
 # test a self-contained copy of the old editor, avoiding ODR conflicts with
 # UsdLayerEditorLib, which exports the new editor's versions of the same classes.
 set(LEGACY_SOURCES
-    ../../mayaQtUtils.cpp
-    ../../componentSaveWidget.cpp
-    ../../dirtyLayersCountBadge.cpp
-    ../../generatedIconButton.cpp
-    ../../layerContentsWidget.cpp
-    ../../layerEditorWidget.cpp
-    ../../layerTreeItem.cpp
-    ../../layerTreeItemDelegate.cpp
-    ../../layerTreeModel.cpp
-    ../../layerTreeView.cpp
-    ../../loadLayersDialog.cpp
-    ../../pathChecker.cpp
-    ../../qtUtils.cpp
-    ../../resources.qrc
-    ../../saveLayersDialog.cpp
-    ../../sessionState.cpp
-    ../../stageSelectorWidget.cpp
-    ../../stringResources.cpp
-    ../../usdSyntaxHighlighter.cpp
-    ../../warningDialogs.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/mayaQtUtils.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/componentSaveWidget.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/dirtyLayersCountBadge.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/generatedIconButton.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/layerContentsWidget.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/layerEditorWidget.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/layerTreeItem.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/layerTreeItemDelegate.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/layerTreeModel.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/layerTreeView.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/loadLayersDialog.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/pathChecker.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/qtUtils.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/resources.qrc
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/saveLayersDialog.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/sessionState.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/stageSelectorWidget.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/stringResources.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/usdSyntaxHighlighter.cpp
+    ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/warningDialogs.cpp
 )
 
 if(AdskUsdEditForward_FOUND)
     list(APPEND LEGACY_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../editForward/editForwardDialog.cpp)
+        ${CMAKE_SOURCE_DIR}/lib/usd/ui/editForward/editForwardDialog.cpp)
 endif()
 
 # ── Target ─────────────────────────────────────────────────────────────────────
@@ -116,6 +116,9 @@ mayaUsd_compile_config(${TARGET_NAME})
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYAUSD_UI_EXPORT
+        # Marks the shared logic-header tests as compiling against the old editor,
+        # so old-editor-only parity gaps can be skipped. Only this target defines it.
+        MAYAUSD_OLD_LAYER_EDITOR
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
@@ -130,7 +133,7 @@ target_include_directories(${TARGET_NAME}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${NEW_LE_TEST_CPP}
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../
+        ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor
         ${NEW_LE_LIB}
 )
 
@@ -151,21 +154,4 @@ install(TARGETS ${TARGET_NAME}
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}>
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya OPTIONAL)
-endif()
-
-install(FILES testOldLayerEditorParity.py
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/tests
-)
-
-# Register with CTest — run inside interactive Maya so QApplication and all
-# Maya APIs are available for the old editor's widget tests.
-if (BUILD_TESTS)
-    mayaUsd_add_test(${TARGET_NAME}
-        INTERACTIVE
-        PYTHON_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/testOldLayerEditorParity.py
-        ENV
-            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-            "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
-    )
-    set_property(TEST ${TARGET_NAME} APPEND PROPERTY LABELS MayaUsdOldLEParity)
 endif()

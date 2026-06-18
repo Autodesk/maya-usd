@@ -13,21 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYA_LAYER_EDITOR_DCC_FUNCTIONS_H
-#define MAYA_LAYER_EDITOR_DCC_FUNCTIONS_H
+#ifndef MAYA_LAYER_EDITOR_QT_FUNCTIONS_H
+#define MAYA_LAYER_EDITOR_QT_FUNCTIONS_H
 
 #include <mayaUsdUI/ui/api.h>
 
 namespace UsdLayerEditor {
 
-// Populates the shared layer-editor DCC-functions registry with the Maya
-// implementations (Component Creator, Edit Forwarding, DCC object/stage
-// queries). Call once at Maya plugin initialization.
-MAYAUSD_UI_PUBLIC void registerLayerEditorDCCFunctions();
-
-// Clears the registry back to defaults. Call at plugin unload.
-MAYAUSD_UI_PUBLIC void deregisterLayerEditorDCCFunctions();
+// Adds the Qt-dependent layer-editor DCC functions (the main window parent and
+// the Edit Forwarding dialog) on top of the registrations done by
+// registerLayerEditorDCCFunctions(). Call once at Maya plugin initialization in
+// Qt builds, after registerLayerEditorDCCFunctions().
+MAYAUSD_UI_PUBLIC void registerLayerEditorQtFunctions();
 
 } // namespace UsdLayerEditor
 
-#endif // MAYA_LAYER_EDITOR_DCC_FUNCTIONS_H
+#endif // MAYA_LAYER_EDITOR_QT_FUNCTIONS_H

@@ -94,14 +94,19 @@ const char kRefreshSystemLockFlagL[] = "refreshSystemLock";
 const char kStitchLayersFlag[] = "sl";
 const char kStitchLayersFlagL[] = "stitchLayers";
 
-// Tracks index offsets when multiple insert/remove sublayer operations are batched
-// in a single command invocation. Removal shifts subsequent indexes down by 1;
-// insertion shifts them up by 1.
+// We assume the indexes given to the command are the original indexes
+// of the layers. Since each command is executed individually and in
+// order, each one may affect the index of subsequent commands. We
+// records adjustements that must be applied to indexes in the map.
+// Removal of a layer creates a negative adjustment, insertion of a
+// layer creates a positive adjustment.
 class IndexAdjustments
 {
 public:
     IndexAdjustments() = default;
 
+    // Convenience method that retrieve the adjusted index and adds
+    // the insertion index adjustment.
     int insertionAdjustment(int originalIndex)
     {
         const int adjustedIndex = getAdjustedIndex(originalIndex);
@@ -109,6 +114,8 @@ public:
         return adjustedIndex;
     }
 
+    // Convenience method that retrieve the adjusted index and adds
+    // the removal index adjustment.
     int removalAdjustment(int originalIndex)
     {
         const int adjustedIndex = getAdjustedIndex(originalIndex);
@@ -117,11 +124,17 @@ public:
     }
 
 private:
+    // Insertion and removal additional adjustment.
+    // Must be called with the original index as provided by the user.
     void addInsertionAdjustment(int index) { _indexAdjustments[index] += 1; }
     void addRemovalAdjustment(int index) { _indexAdjustments[index] -= 1; }
 
+    // Calculate the adjusted index from the user-supplied index that
+    // need to be used by the command to account for previous commands.
     int getAdjustedIndex(int index) const
     {
+        // Apply all adjustment that were done on indexes lower or
+        // equal to the input index.
         int adjustedIndex = index;
         for (const auto& indexAndAdjustement : _indexAdjustments) {
             if (indexAndAdjustement.first > index)
@@ -329,7 +342,9 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
         if (argParser.isFlagSet(kLockLayerFlag)) {
             int lockValue = 0;
-            // 0 = Unlocked, 1 = Locked, 2 = SystemLocked
+            // 0 = Unlocked
+            // 1 = Locked
+            // 2 = SystemLocked
             argParser.getFlagArgument(kLockLayerFlag, 0, lockValue);
             bool includeSublayers = false;
             argParser.getFlagArgument(kLockLayerFlag, 1, includeSublayers);
@@ -439,20 +454,6 @@ void LayerEditorCommand::registerBackupStagesProvider()
 {
     UsdLayerEditor::BackupLayerBaseCmd::setStagesProvider(
         []() { return MayaUsd::ufe::ProxyShapeHandler::getAllStages(); });
-
-    // Set checkWriteAccess even in headless builds where registerLayerEditorDCCFunctions()
-    // is never called (e.g. when the layer editor UI has never been opened), so that
-    // RefreshSystemLockLayerCmd can still run. Read-modify-write preserves any other
-    // fields already registered.
-    auto fileSystemFns = UsdLayerEditor::layerEditorDCCFunctions().fileSystem;
-    fileSystemFns.checkWriteAccess = [](const std::string& filePath) -> bool {
-        const fs::filesystem::path p(filePath);
-        if (!fs::filesystem::exists(p))
-            return true;
-        const auto perms = fs::filesystem::status(p).permissions();
-        return (perms & fs::filesystem::perms::owner_write) != fs::filesystem::perms::none;
-    };
-    UsdLayerEditor::setFileSystemFns(fileSystemFns);
 }
 
 void LayerEditorCommand::unregisterBackupStagesProvider()

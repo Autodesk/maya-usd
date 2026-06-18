@@ -44,7 +44,7 @@ endif()
 target_sources(${PROJECT_NAME}
     PRIVATE
         initStringResources.cpp
-        mayaLayerEditorDCCFunctions.cpp
+        mayaLayerEditorQtFunctions.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -129,7 +129,7 @@ endif()
 set(HEADERS
     api.h
     initStringResources.h
-    mayaLayerEditorDCCFunctions.h
+    mayaLayerEditorQtFunctions.h
 )
 
 mayaUsd_promoteHeaderList( 
@@ -167,5 +167,4 @@ install(FILES ${HEADERS}
 if (BUILD_TESTS)
     # A simple executable used to test the import dialog.
     add_subdirectory(importDialogDemo)
-    add_subdirectory(layerEditor/test/cpp)
 endif()

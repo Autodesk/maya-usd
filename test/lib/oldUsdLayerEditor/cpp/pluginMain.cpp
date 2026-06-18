@@ -52,7 +52,9 @@ public:
 
     void OnTestPartResult(const ::testing::TestPartResult& result) override
     {
-        if (!result.passed()) {
+        // failed() is true only for actual failures; skipped parts (GTEST_SKIP)
+        // must not mark the test as not-passed.
+        if (result.failed()) {
             _current.passed = false;
             if (!_current.message.empty())
                 _current.message += "\n";

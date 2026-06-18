@@ -33,6 +33,7 @@
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/commands/layerEditorWindowCommand.h>
+#include <mayaUsd/commands/mayaLayerEditorDCCFunctions.h>
 #include <mayaUsd/commands/schemaCommand.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
@@ -103,7 +104,7 @@
 
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/batchSaveLayersUIDelegate.h>
-#include <mayaUsdUI/ui/mayaLayerEditorDCCFunctions.h>
+#include <mayaUsdUI/ui/mayaLayerEditorQtFunctions.h>
 #endif
 
 #if defined(MAYAUSD_VERSION)
@@ -459,6 +460,11 @@ MStatus initializePlugin(MObject obj)
     }
 
     MayaUsd::LayerManager::addSupportForNodeType(MayaUsd::ProxyShape::typeId);
+
+    // Register the Qt-free layer-editor DCC functions unconditionally so they are
+    // available in headless/batch sessions. In Qt builds, initialize() then adds
+    // the UI-dependent functions on top.
+    UsdLayerEditor::registerLayerEditorDCCFunctions();
 #if defined(WANT_QT_BUILD)
     UsdLayerEditor::initialize();
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
@@ -507,6 +513,7 @@ MStatus uninitializePlugin(MObject obj)
     MStatus   status;
 
     MayaUsd::LayerEditorCommand::unregisterBackupStagesProvider();
+    UsdLayerEditor::deregisterLayerEditorDCCFunctions();
 
 #if defined(WANT_QT_BUILD)
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
@@ -662,7 +669,6 @@ MStatus uninitializePlugin(MObject obj)
     MayaUsd::LayerManager::removeSupportForNodeType(MayaUsd::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
     MayaUsd::LayerManager::SetBatchSaveDelegate(nullptr);
-    UsdLayerEditor::deregisterLayerEditorDCCFunctions();
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();

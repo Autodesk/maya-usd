@@ -35,27 +35,17 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
-#include <maya/MQtUtil.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
 #include <ghc/fs_std.hpp>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-#include <stringResources.h>
-
 #include <layerLocking.h>
 
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 
-#include <mayaUsdUI/ui/editForwardDialog.h>
-
 #include <usdUfe/ufe/Utils.h>
-
-#include <AdskUsdEditForward/Host.h>
-#include <AdskUsdEditForward/StageRuleProvider.h>
-
-#include <QtCore/QPointer>
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -90,12 +80,6 @@ bool getBooleanAttributeOnProxyShape(
 }
 
 } // namespace
-
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-namespace {
-QPointer<UsdEditForwardConfig::EditForwardDialog> g_editForwardDialog;
-} // namespace
-#endif
 
 namespace UsdLayerEditor {
 
@@ -260,7 +244,6 @@ void registerLayerEditorDCCFunctions()
         MGlobal::executeCommand("getModifiers", modifiers);
         return (modifiers % 2) != 0; // magic constant: SHIFT held
     };
-    environment.mainWindowParent = []() -> QWidget* { return MQtUtil::mainWindow(); };
     environment.layerContentsArraySizeLimit = []() -> int64_t {
         const MString k
             = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsArraySizeLimit);
@@ -290,20 +273,6 @@ void registerLayerEditorDCCFunctions()
             host->SetWantsEcho(echo);
         }
     };
-    editForwarding.openEditForwardDialog = [](const UsdStageRefPtr& stage) {
-        // Reuse a single dialog instance; QPointer auto-nulls if it is destroyed.
-        if (!g_editForwardDialog) {
-            g_editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
-                StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
-                MQtUtil::mainWindow());
-        }
-        g_editForwardDialog->setActiveStage(stage);
-        g_editForwardDialog->show();
-        g_editForwardDialog->raise();
-        g_editForwardDialog->activateWindow();
-    };
-    editForwarding.isEditForwardDialogOpen
-        = []() { return g_editForwardDialog && g_editForwardDialog->isVisible(); };
     editForwarding.handleEFEditTargetUpdate = [](const UsdStageRefPtr& stage) -> bool {
         auto controller = MayaUsdEditForwardController::GetForStage(stage);
         if (!controller || !controller->isForwardingActive())
