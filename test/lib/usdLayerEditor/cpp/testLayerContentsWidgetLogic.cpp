@@ -96,17 +96,6 @@ TEST_F(LayerContentsWidgetTest, SetLayer_WithNullLayer_IsEmpty)
     EXPECT_TRUE(cw->isEmpty());
 }
 
-TEST_F(LayerContentsWidgetTest, SetLayer_DoesNotCrash)
-{
-    // displayLayerContents option controls widget visibility.
-    auto* cw = findContentsWidget(_widget);
-    ASSERT_NE(cw, nullptr);
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(item, nullptr);
-    EXPECT_NO_THROW(cw->setLayer(item->layer()));
-}
-
 // The array size limit (from the DCC registry) is applied when rendering layer
 // contents: a small limit truncates the displayed array.
 #ifndef MAYAUSD_OLD_LAYER_EDITOR

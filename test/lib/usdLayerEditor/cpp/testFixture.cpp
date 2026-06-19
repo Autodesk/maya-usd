@@ -20,6 +20,7 @@
 #include "saveLayersDialog.h"
 #include "warningDialogs.h"
 
+#include <QtCore/QDir>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QMainWindow>
@@ -63,6 +64,14 @@ void LayerEditorTestFixture::SetUp()
                   ++_setProxyRootPathCalls;
               };
         setComponentFns(component);
+    }
+
+    // Direct any generated save paths to the system temp dir so test-run artifacts
+    // are never created inside the source tree.
+    {
+        FileSystemFns fns;
+        fns.getDCCSceneDir = []() { return QDir::tempPath().toStdString(); };
+        setFileSystemFns(fns);
     }
 
     // Headless tests must not pop the overwrite-confirm / save-layers dialog.

@@ -20,7 +20,11 @@
 #include "layerLocking.h"
 #include "layerTreeItem.h"
 
+#include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtWidgets/QApplication>
+
+#include <pxr/usd/usd/stage.h>
 
 namespace UsdLayerEditor {
 
@@ -31,10 +35,16 @@ namespace UsdLayerEditor {
 
 TEST_F(LayerEditorTestFixture, ContextMenu_AddAnonymousSublayer_CallsHook)
 {
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
     selectRow(firstSublayerIndex());
+    _sessionState._commandHookImpl.clearCalls();
     _window->addAnonymousSublayer();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("addAnonymousSubLayer"));
+    ASSERT_TRUE(_sessionState._commandHookImpl.hasCall("addAnonymousSubLayer"));
+    EXPECT_EQ(_sessionState._commandHookImpl.lastCall().args[0], item->layer()->GetIdentifier())
+        << "addAnonymousSubLayer should target the selected layer";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_MuteLayer_CallsHook)
@@ -151,11 +161,14 @@ TEST_F(LayerEditorTestFixture, ContextMenu_SaveEdits_DoesNotCrash)
 {
     selectRow(firstSublayerIndex());
     _sessionState._saveLayerCallCount = 0;
-    // saveEdits on an anonymous layer — must not crash regardless of path taken.
+    // saveEdits on an anonymous layer routes through the save-layer UI hook
+    // (SessionState::saveLayerUI), not the command hook. The stub cancels the
+    // dialog, so the only observable effect is that the hook was invoked.
     EXPECT_NO_THROW({
         _window->saveEdits();
         QApplication::processEvents();
     });
+    EXPECT_GT(_sessionState._saveLayerCallCount, 0);
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenNoSublayers)
@@ -266,15 +279,15 @@ TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsSystemLocked)
     auto* item = dynamic_cast<LayerTreeItem*>(
         treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
+    // System-lock only — SetPermissionToEdit(false) would also block setEditTarget via
+    // isLocked(), but this test is specifically verifying the isSystemLocked() predicate.
     addSystemLockedLayer(item->layer());
-    item->layer()->SetPermissionToEdit(false);
 
     _sessionState._commandHookImpl.clearCalls();
     treeModel()->setEditTarget(item);
     EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
 
     removeSystemLockedLayer(item->layer());
-    TestUtils::unlockLayerDirect(item->layer());
 }
 
 TEST_F(LayerEditorTestFixture, SetEditTarget_AllowedForNormalSublayer)
@@ -285,6 +298,82 @@ TEST_F(LayerEditorTestFixture, SetEditTarget_AllowedForNormalSublayer)
     _sessionState._commandHookImpl.clearCalls();
     treeModel()->setEditTarget(item);
     EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
+}
+
+// ── discardEdits confirm path ─────────────────────────────────────────────────
+// The confirm dialog fires only for layers that are both non-anonymous AND dirty.
+// This fixture injects such a layer into the stage after widget construction.
+
+class DiscardConfirmFixture : public LayerEditorTestFixture
+{
+protected:
+    QString                  _filePath;
+    PXR_NS::SdfLayerRefPtr   _fileLayer;
+
+    void SetUp() override
+    {
+        LayerEditorTestFixture::SetUp();
+
+        _filePath = QDir::tempPath() + "/le_discard_confirm_test.usda";
+        QFile::remove(_filePath);
+        _fileLayer = PXR_NS::SdfLayer::CreateNew(_filePath.toStdString());
+        _fileLayer->SetComment("dirty content"); // non-anonymous + dirty → triggers confirm
+        _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(
+            _fileLayer->GetIdentifier(), 0);
+        QApplication::processEvents();
+    }
+
+    void TearDown() override
+    {
+        LayerEditorTestFixture::TearDown();
+        QFile::remove(_filePath);
+    }
+
+    // The injected file layer becomes the new index-0 child of root.
+    QModelIndex fileLayerIndex()
+    {
+        return treeModel()->index(0, 0, rootLayerIndex());
+    }
+};
+
+// When the user confirms (answer = true), discardEdits runs and the hook is called.
+TEST_F(DiscardConfirmFixture, ContextMenu_DiscardEdits_ConfirmAccepted_CallsHook)
+{
+    selectRow(fileLayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(fileLayerIndex()));
+    ASSERT_NE(item, nullptr);
+    ASSERT_FALSE(item->isAnonymous()) << "file layer must be non-anonymous to trigger confirm";
+
+    _modalDialogAnswer = true;
+    _modalDialogCount  = 0;
+    _sessionState._commandHookImpl.clearCalls();
+    _window->discardEdits();
+    QApplication::processEvents();
+
+    EXPECT_GT(_modalDialogCount, 0) << "confirm dialog should have been shown";
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("discardEdits"))
+        << "discardEdits should be called when the user confirms";
+}
+
+// When the user cancels (answer = false), discardEdits is NOT called.
+TEST_F(DiscardConfirmFixture, ContextMenu_DiscardEdits_ConfirmRejected_DoesNotCallHook)
+{
+    selectRow(fileLayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(fileLayerIndex()));
+    ASSERT_NE(item, nullptr);
+    ASSERT_FALSE(item->isAnonymous()) << "file layer must be non-anonymous to trigger confirm";
+
+    _modalDialogAnswer = false;
+    _modalDialogCount  = 0;
+    _sessionState._commandHookImpl.clearCalls();
+    _window->discardEdits();
+    QApplication::processEvents();
+
+    EXPECT_GT(_modalDialogCount, 0) << "confirm dialog should have been shown";
+    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("discardEdits"))
+        << "discardEdits should NOT be called when the user cancels";
 }
 
 } // namespace UsdLayerEditor

@@ -17,7 +17,7 @@
 # C++ GTest suite for the shared usdLayerEditor component.
 add_subdirectory(cpp)
 
-# Maya-driven interactive Python test for the shared usdLayerEditor component.
+# Maya-driven interactive Python test for the shared usdLayerEditor commands as UFE commands
 mayaUsd_get_unittest_target(target testMayaUsdSharedLayerEditor.py)
 mayaUsd_add_test(${target}
     INTERACTIVE

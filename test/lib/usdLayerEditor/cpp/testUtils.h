@@ -20,10 +20,27 @@
 
 #include <QtCore/QTimer>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QPushButton>
 #include <QtWidgets/QWidget>
 
 namespace UsdLayerEditor {
 namespace TestUtils {
+
+// Find a QPushButton by case-insensitive substring of its tooltip.
+inline QPushButton* findButtonByTooltip(QWidget* root, const QString& tooltip)
+{
+    for (auto* btn : root->findChildren<QPushButton*>()) {
+        if (btn->toolTip().contains(tooltip, Qt::CaseInsensitive))
+            return btn;
+    }
+    return nullptr;
+}
+
+// Find a QPushButton by its Qt object name.
+inline QPushButton* findButtonByObjectName(QWidget* root, const QString& name)
+{
+    return root->findChild<QPushButton*>(name);
+}
 
 // Stage with one anonymous sublayer already inserted at index 0.
 inline PXR_NS::UsdStageRefPtr makeStageWithSublayer(const std::string& sublayerName = "sub")

@@ -66,6 +66,8 @@ TEST(LayerEditorDCCFunctions, LayerContentsLimits_ReturnRegisteredValues)
     EXPECT_EQ(layerContentsTimeSamplesSizeLimit(), 5);
 }
 
+// captureSessionLayer grabs a proxy's current session layer so its opinions can be
+// transferred onto the recreated stage after a rename/repath; returns null when unset.
 TEST(LayerEditorDCCFunctions, CaptureSessionLayer_NullByDefault)
 {
     ScopedLayerEditorDCCFunctions guard;

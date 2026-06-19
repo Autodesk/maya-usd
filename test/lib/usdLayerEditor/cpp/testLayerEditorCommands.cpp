@@ -46,11 +46,6 @@ Ufe::Path stubStagePathAccessor(PXR_NS::UsdStageWeakPtr /*stage*/)
 
 } // namespace
 
-TEST(LayerEditorCommandsSmokeTest, HeaderIncludesCompile)
-{
-    SUCCEED();
-}
-
 class UpdateEditTargetTest : public ::testing::Test
 {
 protected:
@@ -138,20 +133,18 @@ protected:
     PXR_NS::SdfLayerRefPtr _layerB;
 };
 
-// Clearing A removes B from the graph (it was A's sublayer).
-// Without the provider the in-memory stage is not in the global cache → backup is skipped.
-// USD retains the stale edit target reference (B) throughout — no reset, no restore.
 TEST_F(BackupEditTargetsTest, WithoutProvider_EditTargetNotRestoredOnUndo)
 {
     // _stage is NOT in UsdUtilsStageCache — backupEditTargets won't find it.
     auto cmd = std::make_shared<ClearLayerCmd>(_layerA);
     cmd->execute();
     // B is gone from the graph; USD retains the stale edit target reference.
+    // Without the provider, no reset to root occurred during execute (unlike WithProvider).
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _layerB);
     // Undo: restores A's content (B is back) but the edit target was never backed up.
     cmd->undo();
     // Without the provider, no backup/restore cycle occurred; USD simply kept the stale
     // edit target pointing at B throughout (never reset, never restored via backup).
-    // This confirms backupEditTargets was a no-op for this stage.
     EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _layerB);
 }
 

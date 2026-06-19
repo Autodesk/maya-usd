@@ -51,7 +51,7 @@ public:
 #endif
 
     // No-op setter: old editor SessionState has no editForwardingChanged signal,
-    // so we just update the flag. Test 225 is guarded to new editor only.
+    // so we just update the flag. The EF-active styling test is guarded to new editor only.
     void setIsEditForwardMode(bool v) { _isEFModeActive = v; }
 
     // Patches _stages[index]._proxyShapePath and refreshes the base-class

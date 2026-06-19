@@ -47,17 +47,17 @@ TEST(FileSystemUtils, GetDir_ReturnsEmptyForFilenameOnly)
 
 TEST(FileSystemUtils, AppendPaths_JoinsWithSeparator)
 {
-    std::string result = appendPaths("foo", "bar.usd");
-    EXPECT_FALSE(result.empty());
-    EXPECT_NE(result.find("foo"), std::string::npos);
-    EXPECT_NE(result.find("bar.usd"), std::string::npos);
+    namespace fss = fs::filesystem;
+    // appendPaths uses native separators, so build the expected value the same way.
+    const std::string expected = (fss::path("foo") / "bar.usd").string();
+    EXPECT_EQ(appendPaths("foo", "bar.usd"), expected);
 }
 
 TEST(FileSystemUtils, AppendPaths_AbsoluteBasePreserved)
 {
-    std::string result = appendPaths("/root/dir", "layer.usd");
-    EXPECT_NE(result.find("/root/dir"), std::string::npos);
-    EXPECT_NE(result.find("layer.usd"), std::string::npos);
+    namespace fss = fs::filesystem;
+    const std::string expected = (fss::path("/root/dir") / "layer.usd").string();
+    EXPECT_EQ(appendPaths("/root/dir", "layer.usd"), expected);
 }
 
 // --- pathStripPath ------------------------------------------------------------

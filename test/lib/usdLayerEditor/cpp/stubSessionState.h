@@ -64,6 +64,9 @@ public:
     // Test helpers
     void addStage(PXR_NS::UsdStageRefPtr stage);
     void removeStage(const std::string& id);
+    // Replace the current stage with a custom one (e.g. a file-backed stage for save tests).
+    void switchToCustomStage(PXR_NS::UsdStageRefPtr stage, const std::string& id = "custom_stage");
+
 
     // Call counters
     mutable int _saveLayerCallCount { 0 };

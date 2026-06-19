@@ -115,6 +115,13 @@ void StubSessionState::removeStage(const std::string& id)
     Q_EMIT stageListChangedSignal();
 }
 
+void StubSessionState::switchToCustomStage(PXR_NS::UsdStageRefPtr stage, const std::string& id)
+{
+    auto entry = makeEntry(stage, id);
+    _stages.push_back(entry);
+    setStageEntry(entry);
+}
+
 SessionState::StageEntry
 StubSessionState::makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id)
 {

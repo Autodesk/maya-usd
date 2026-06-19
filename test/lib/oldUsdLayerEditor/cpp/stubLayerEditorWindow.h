@@ -51,6 +51,8 @@ public:
 
     bool hasCurrentLayerItem() override { return treeView()->currentLayerItem() != nullptr; }
 
+// Collapses the many identical query overrides below: each delegates one bool
+// query to the current tree item, returning false when there is no selection.
 #define ITEM_QUERY(method)                      \
     auto item = treeView()->currentLayerItem(); \
     return item ? item->method() : false
@@ -75,7 +77,7 @@ public:
 
     std::string proxyShapeName(const bool /*fullPath*/ = false) const override
     {
-        return "stub_panel";
+        return "stubProxyShape";
     }
 
     // --- action methods ---
