@@ -15,10 +15,9 @@
 //
 #include "CompositionEditorCmd.h"
 
-#include "../undoChunkUtils.h"
-
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
+#include <mayaUsdUI/ui/undoChunkUtils.h>
 
 #include <usdUfe/undo/UsdUndoManager.h>
 
