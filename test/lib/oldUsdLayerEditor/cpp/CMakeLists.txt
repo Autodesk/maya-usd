@@ -22,12 +22,7 @@ set(CMAKE_AUTORCC ON)
 set(NEW_LE_TEST_CPP
     ${CMAKE_CURRENT_SOURCE_DIR}/../../usdLayerEditor/cpp)
 
-# layerEditorDCCFunctions.h lives in the shared lib; the *Logic.cpp sources use
-# ScopedLayerEditorDCCFunctions which includes it transitively.
-set(NEW_LE_LIB
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../lib/usdLayerEditor/lib)
-
-# ── Sources ────────────────────────────────────────────────────────────────────
+# Sources
 set(OLD_LE_OWN_SOURCES
     stubCommandHook.cpp
     stubSessionState.cpp
@@ -65,12 +60,6 @@ set(OLD_LE_SHARED_LOGIC_SOURCES
     ${NEW_LE_TEST_CPP}/testUsdSyntaxHighlighterLogic.cpp
 )
 
-# layerEditorDCCFunctions is compiled directly (not via UsdLayerEditorLib link)
-# to keep the registry self-contained inside this test DLL, avoiding ODR issues.
-set(DCC_FN_SOURCES
-    ${NEW_LE_LIB}/layerEditorDCCFunctions.cpp
-)
-
 # Legacy widget sources compiled directly into this test DLL. This gives the
 # test a self-contained copy of the old editor, avoiding ODR conflicts with
 # UsdLayerEditorLib, which exports the new editor's versions of the same classes.
@@ -97,18 +86,20 @@ set(LEGACY_SOURCES
     ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/warningDialogs.cpp
 )
 
+# The legacy layerEditorWidget.cpp above opens the edit-forward dialog, so its
+# definition must be compiled in when edit-forward is available; exercised by
+# the shared testEFModeLogic.cpp cases.
 if(AdskUsdEditForward_FOUND)
     list(APPEND LEGACY_SOURCES
         ${CMAKE_SOURCE_DIR}/lib/usd/ui/editForward/editForwardDialog.cpp)
 endif()
 
-# ── Target ─────────────────────────────────────────────────────────────────────
+# Target
 set(TARGET_NAME mayaUsdOldLayerEditorTests)
 
 add_library(${TARGET_NAME} SHARED
     ${OLD_LE_OWN_SOURCES}
     ${OLD_LE_SHARED_LOGIC_SOURCES}
-    ${DCC_FN_SOURCES}
     ${LEGACY_SOURCES}
 )
 
@@ -134,14 +125,12 @@ target_compile_definitions(${TARGET_NAME}
 # Include path order is critical:
 #   1. OLD editor test dir FIRST — shim headers shadow new editor versions.
 #   2. NEW editor test dir SECOND — *Logic.h headers and testUtils.h.
-#   3. OLD editor lib THIRD — abstractCommandHook.h etc. must shadow the new lib versions.
-#   4. NEW editor lib LAST — layerEditorDCCFunctions.h, only resolved if not found above.
+#   3. OLD editor lib LAST — abstractCommandHook.h etc. must shadow the new lib versions.
 target_include_directories(${TARGET_NAME}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${NEW_LE_TEST_CPP}
         ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor
-        ${NEW_LE_LIB}
 )
 
 target_link_libraries(${TARGET_NAME}

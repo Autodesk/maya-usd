@@ -18,7 +18,9 @@
 
 #include "mayaLayerEditorUi.h"
 
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <layerEditorDCCFunctions.h>
+#endif
 
 #include <maya/MQtUtil.h>
 

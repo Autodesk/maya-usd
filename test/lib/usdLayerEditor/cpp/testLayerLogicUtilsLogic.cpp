@@ -15,7 +15,11 @@
 // limitations under the License.
 //
 #include "customLayerData.h"
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+// Layers:: utilities live in UsdLayerEditorLib, which the old editor test binary
+// does not link; only the guarded LayersTest cases below use them.
 #include "layers.h"
+#endif
 #include "warningDialogs.h"
 
 #include <pxr/base/tf/token.h>

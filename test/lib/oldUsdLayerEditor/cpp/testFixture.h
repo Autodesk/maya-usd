@@ -14,7 +14,6 @@
 //
 #pragma once
 
-#include "scopedLayerEditorDCCFunctions.h"
 #include "stubCommandHook.h"
 #include "stubLayerEditorWindow.h"
 #include "stubSessionState.h"
@@ -49,34 +48,25 @@ protected:
     void setSharedStage(bool shared) { _sessionState._commandHookImpl._isSharedStage = shared; }
     void setStageIncoming(bool incoming) { _sessionState._commandHookImpl._isStageIncoming = incoming; }
 
-    // Members — names must match new editor's testFixture.h exactly
+    // Members mirror the new editor's testFixture.h, named identically so the
+    // shared *Logic.cpp sources compile unchanged. Only those the old editor
+    // actually exercises are kept; members feeding the new editor's DCC registry
+    // are referenced solely by MAYAUSD_OLD_LAYER_EDITOR-guarded test code.
     OldEditorStubSessionState                        _sessionState;
     std::unique_ptr<OldEditorStubLayerEditorWindow>  _window;
     QMainWindow*                                     _mainWindow { nullptr };
     LayerEditorWidget*                               _widget { nullptr };
 
-    bool        _efSupported   { false };
-    bool        _sharedStage   { false };
-    bool        _stageIncoming { false };
-
-    bool        _isComponent        { false };
-    bool        _isUnsavedComponent { false };
-    std::string _moveComponentResult;
-    int         _saveComponentCalls      { 0 };
-    int         _reloadComponentCalls    { 0 };
-    int         _transferSessionCalls    { 0 };
-    int         _setProxyRootPathCalls   { 0 };
+    bool _isComponent        { false };
+    bool _isUnsavedComponent { false };
 
     int  _modalDialogCount  { 0 };
     bool _modalDialogAnswer { true };
-    bool _confirmExistingFileSave { false };
     // Real Maya proxy shape DAG paths, e.g. "|leTestXform0|leTestProxy0".
     // Set in SetUp, cleared in TearDown.
     std::string _proxyShapePaths[2];
     // Temp .usda files backing the proxy shapes — deleted in TearDown.
     std::string _tempStagePaths[2];
-
-    ScopedLayerEditorDCCFunctions _scopedDCCFunctions;
 
     void setIsComponent(bool v)        { _isComponent = v; }
     void setIsUnsavedComponent(bool v) { _isUnsavedComponent = v; }

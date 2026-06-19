@@ -15,7 +15,7 @@
 #
 
 # Old layer editor parity test suite. Temporary — deleted when the old editor
-# is retired. See cpp/PARITY_STATUS.md for test coverage details.
+# is retired.
 
 add_subdirectory(cpp)
 
@@ -27,8 +27,6 @@ mayaUsd_add_test(${target}
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
 )
-set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsdOldLEParity)
-
 install(FILES testOldLayerEditorParity.py
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/tests
 )

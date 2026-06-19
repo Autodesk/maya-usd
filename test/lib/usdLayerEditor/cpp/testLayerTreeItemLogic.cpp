@@ -398,11 +398,16 @@ TEST_F(LayerTreeItemTest, IsIdenticalItem_DifferentLayerReturnsFalse)
 // (SessionState::saveLayerUI), which the stub records via _saveLayerCallCount.
 TEST_F(LayerTreeItemTest, SaveAnonymousLayer_NonComponentStage_UsesGenericPath)
 {
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+    // Configures the new editor's component early-out to treat the stage as a
+    // non-component. The old editor has no such early-out and ignores the DCC
+    // registry, so this setup is omitted there (and the registry isn't linked).
     ScopedLayerEditorDCCFunctions guard;
     ComponentFns                  comp;
     comp.displayError = [](const std::string&) {};
     comp.isStageAComponent = [](const std::string&) { return false; };
     setComponentFns(comp);
+#endif
 
     auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
