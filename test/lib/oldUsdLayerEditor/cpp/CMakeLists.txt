@@ -17,12 +17,12 @@
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-# *Logic.h headers and testUtils.h live in the new editor's test/cpp dir and are
-# shared between old and new test suites.
+# *Logic.cpp test sources and testUtils.h live in the new editor's test/cpp dir
+# and are shared between old and new test suites.
 set(NEW_LE_TEST_CPP
     ${CMAKE_CURRENT_SOURCE_DIR}/../../usdLayerEditor/cpp)
 
-# layerEditorDCCFunctions.h lives in the shared lib; the *Logic.h headers use
+# layerEditorDCCFunctions.h lives in the shared lib; the *Logic.cpp sources use
 # ScopedLayerEditorDCCFunctions which includes it transitively.
 set(NEW_LE_LIB
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../lib/usdLayerEditor/lib)
@@ -33,30 +33,36 @@ set(OLD_LE_OWN_SOURCES
     stubSessionState.cpp
     testFixture.cpp
     pluginMain.cpp
-    testButtons.cpp
-    testComponentSaveWidget.cpp
-    testContextMenu.cpp
-    testEFMode.cpp
-    testLayerContentsWidget.cpp
-    testLayerEditorWidget.cpp
-    testLayerEditorWindow.cpp
-    testLayerLogicUtils.cpp
-    testLayerLocking.cpp
-    testLayerMuting.cpp
-    testLayerTreeItem.cpp
-    testLayerTreeItemDelegate.cpp
-    testLayerTreeModel.cpp
-    testLayerTreeView.cpp
-    testLayerTreeViewMouse.cpp
-    testLoadLayersDialog.cpp
-    testMenusAndStage.cpp
-    testPathChecker.cpp
-    testReorder.cpp
-    testSaveLayersDialog.cpp
-    testSessionState.cpp
-    testSharedStage.cpp
-    testStageSelectorWidget.cpp
-    testUsdSyntaxHighlighter.cpp
+)
+
+# Shared test logic compiled directly from the new editor's test dir. Include
+# path order (old test dir first) makes `#include "testFixture.h"` resolve to
+# the old fixture, which selects the old-editor code paths.
+set(OLD_LE_SHARED_LOGIC_SOURCES
+    ${NEW_LE_TEST_CPP}/testButtonsLogic.cpp
+    ${NEW_LE_TEST_CPP}/testComponentSaveWidgetLogic.cpp
+    ${NEW_LE_TEST_CPP}/testContextMenuLogic.cpp
+    ${NEW_LE_TEST_CPP}/testEFModeLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerContentsWidgetLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerEditorWidgetLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerEditorWindowLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerLogicUtilsLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerLockingLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerMutingLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeItemLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeItemDelegateLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeModelLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeViewLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeViewMouseLogic.cpp
+    ${NEW_LE_TEST_CPP}/testLoadLayersDialogLogic.cpp
+    ${NEW_LE_TEST_CPP}/testMenusAndStageLogic.cpp
+    ${NEW_LE_TEST_CPP}/testPathCheckerLogic.cpp
+    ${NEW_LE_TEST_CPP}/testReorderLogic.cpp
+    ${NEW_LE_TEST_CPP}/testSaveLayersDialogLogic.cpp
+    ${NEW_LE_TEST_CPP}/testSessionStateLogic.cpp
+    ${NEW_LE_TEST_CPP}/testSharedStageLogic.cpp
+    ${NEW_LE_TEST_CPP}/testStageSelectorWidgetLogic.cpp
+    ${NEW_LE_TEST_CPP}/testUsdSyntaxHighlighterLogic.cpp
 )
 
 # layerEditorDCCFunctions is compiled directly (not via UsdLayerEditorLib link)
@@ -101,6 +107,7 @@ set(TARGET_NAME mayaUsdOldLayerEditorTests)
 
 add_library(${TARGET_NAME} SHARED
     ${OLD_LE_OWN_SOURCES}
+    ${OLD_LE_SHARED_LOGIC_SOURCES}
     ${DCC_FN_SOURCES}
     ${LEGACY_SOURCES}
 )

@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 #pragma once
-#define LAYER_EDITOR_TEST_FIXTURE_INCLUDED
 
 #include "scopedLayerEditorDCCFunctions.h"
 #include "stubCommandHook.h"
