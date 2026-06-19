@@ -16,7 +16,6 @@
 
 #include "batchSaveLayersUIDelegate.h"
 
-#include "../mayaLayerEditorQtFunctions.h"
 #include "mayaQtUtils.h"
 
 #include <batchSaveLayersUIDelegate.h>
@@ -30,15 +29,6 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
-
-void UsdLayerEditor::initialize()
-{
-    UsdLayerEditor::registerLayerEditorQtFunctions();
-
-    if (nullptr == UsdLayerEditor::getQtUtils()) {
-        UsdLayerEditor::setQtUtils(new MayaQtUtils());
-    }
-}
 
 namespace {
 

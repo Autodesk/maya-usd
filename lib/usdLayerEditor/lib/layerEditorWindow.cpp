@@ -244,8 +244,8 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
     const auto isLocked           = layerIsLocked();
     const auto isSystemLocked     = layerIsSystemLocked();
     const auto isSublayer         = isSubLayer();
-    const auto isSessionLyr       = isSessionLayer();
-    const auto isAnonymousLyr     = isAnonymousLayer();
+    const auto isSession          = isSessionLayer();
+    const auto isAnonymous        = isAnonymousLayer();
     const auto appearsLocked      = layerAppearsLocked();
     const auto appearsSystemLocked = layerAppearsSystemLocked();
     const auto appearsMuted       = layerAppearsMuted();
@@ -264,17 +264,17 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
     }
 
     // Save / Reload — not shown for session layer
-    if (!isSessionLyr) {
-        QString label  = isAnonymousLyr ? QObject::tr("Save As...") : QObject::tr("Save Edits");
+    if (!isSession) {
+        QString label  = isAnonymous ? QObject::tr("Save As...") : QObject::tr("Save Edits");
         bool    enable = singleSelect && needsSaving && !isSystemLocked;
-        if (isAnonymousLyr)
+        if (isAnonymous)
             enable = enable && !appearsLocked && !appearsSystemLocked;
         auto action = menu->addAction(label);
         action->setEnabled(enable);
         QObject::connect(action, &QAction::triggered, [this]() { saveEdits(); });
     }
 
-    if (!isAnonymousLyr) {
+    if (!isAnonymous) {
         auto action = menu->addAction(QObject::tr("Reload"));
         QObject::connect(action, &QAction::triggered, [this]() { discardEdits(); });
     }
@@ -327,7 +327,7 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
         QObject::connect(action, &QAction::triggered, [this]() { muteLayer(); });
     }
 
-    if (!isSessionLyr) {
+    if (!isSession) {
         {
             QString label  = isLocked ? QObject::tr("Unlock") : QObject::tr("Lock");
             auto    action = menu->addAction(label);
@@ -359,7 +359,7 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
     // DCC-specific extensions (e.g. "Select Incoming Node" in Maya)
     addDCCContextMenuItems(menu);
 
-    if (isSublayer || !isAnonymousLyr) {
+    if (isSublayer || !isAnonymous) {
         menu->addSeparator();
     }
 

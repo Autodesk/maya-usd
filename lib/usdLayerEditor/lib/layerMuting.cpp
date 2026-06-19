@@ -25,14 +25,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 
 namespace {
-// Held references to muted layers. A muted layer is no longer referenced by
-// the stage, so without this map it would be freed by USD.
-//
-// Keyed by the identifier of the muted layer, each entry holds that layer
-// (if dirty/anonymous) and all of its dirty/anonymous descendants. Keying by
-// the muted root lets serialization retrieve exactly the layers held due to a
-// given muted layer.
-//
 // Kept in a function to avoid problem with the order of construction
 // of global variables in C++.
 using MutedLayers = std::unordered_map<std::string, LayerRefSet>;

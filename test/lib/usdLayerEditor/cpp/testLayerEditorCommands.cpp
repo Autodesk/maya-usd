@@ -33,8 +33,6 @@
 
 #include <ghc/fs_std.hpp>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace UsdLayerEditor {
 
 namespace {

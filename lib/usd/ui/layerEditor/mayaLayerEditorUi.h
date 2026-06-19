@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2026 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,28 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef BATCH_SAVE_LAYERS_UI_H
-#define BATCH_SAVE_LAYERS_UI_H
 
-#include <mayaUsd/mayaUsd.h>
-#include <mayaUsd/nodes/layerManager.h>
+#ifndef MAYALAYEREDITORUI_H
+#define MAYALAYEREDITORUI_H
+
 #include <mayaUsdUI/ui/api.h>
-
-#include <pxr/pxr.h>
-#include <pxr/usd/usd/common.h>
-
-#include <maya/MDagPathArray.h>
-
-#include <vector>
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-MAYAUSD_UI_PUBLIC
-MayaUsd::BatchSaveResult
-batchSaveLayersUIDelegate(const std::vector<MayaUsd::StageSavingInfo>& infos, bool isExporting);
+// Registers the Qt-dependent layer-editor DCC functions (main window parent,
+// Edit Forwarding dialog) and installs MayaQtUtils as the Qt utils provider.
+// Call once at Maya plugin initialization, after registerLayerEditorDCCFunctions().
+MAYAUSD_UI_PUBLIC void initializeUi();
 
 } // namespace UsdLayerEditor
 
-#endif // BATCH_SAVE_LAYERS_UI_H
+#endif // MAYALAYEREDITORUI_H

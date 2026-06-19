@@ -27,6 +27,7 @@ target_sources(${PROJECT_NAME}
         mayaSessionState.h
         mayaQtUtils.cpp
         mayaQtUtils.h
+        mayaLayerEditorUi.h
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE UsdLayerEditorLib)
 target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDITOR=1)
@@ -47,6 +48,7 @@ endif()
 # -----------------------------------------------------------------------------
 set(HEADERS
     batchSaveLayersUIDelegate.h
+    mayaLayerEditorUi.h
 )
 
 mayaUsd_promoteHeaderList( 

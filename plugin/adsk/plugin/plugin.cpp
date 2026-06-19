@@ -103,7 +103,7 @@
 
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/batchSaveLayersUIDelegate.h>
-#include <mayaUsdUI/ui/mayaLayerEditorQtFunctions.h>
+#include <mayaUsdUI/ui/mayaLayerEditorUi.h>
 #endif
 
 #if defined(MAYAUSD_VERSION)
@@ -462,7 +462,7 @@ MStatus initializePlugin(MObject obj)
     // the UI-dependent functions on top.
     UsdLayerEditor::registerLayerEditorDCCFunctions();
 #if defined(WANT_QT_BUILD)
-    UsdLayerEditor::initialize();
+    UsdLayerEditor::initializeUi();
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
 #endif
 

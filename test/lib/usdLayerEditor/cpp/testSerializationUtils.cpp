@@ -21,13 +21,11 @@
 
 #include <string>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace UsdLayerEditor {
 namespace Serialization {
 
 namespace {
-bool sublayerPathsContain(const SdfLayerRefPtr& layer, const std::string& path)
+bool sublayerPathsContain(const PXR_NS::SdfLayerRefPtr& layer, const std::string& path)
 {
     for (const auto& p : layer->GetSubLayerPaths()) {
         if (p == path)
@@ -37,7 +35,7 @@ bool sublayerPathsContain(const SdfLayerRefPtr& layer, const std::string& path)
 }
 } // namespace
 
-// ── ensureUSDFileExtension ────────────────────────────────────────────────────
+// --- ensureUSDFileExtension ---------------------------------------------------
 
 TEST(SerializationUtils, EnsureUSDFileExtension_AppendsUsdWhenNoExtension)
 {
@@ -81,24 +79,24 @@ TEST(SerializationUtils, EnsureUSDFileExtension_AppendsUsdForForeignExtension)
     EXPECT_EQ(path, "myfile.txt.usd");
 }
 
-// ── updateSubLayer ────────────────────────────────────────────────────────────
+// --- updateSubLayer -----------------------------------------------------------
 
 TEST(SerializationUtils, UpdateSubLayer_NoOpForNullParent)
 {
-    auto sublayer = SdfLayer::CreateAnonymous("sub_noparent");
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sub_noparent");
     EXPECT_NO_THROW(updateSubLayer(nullptr, sublayer, "/new/path.usd"));
 }
 
 TEST(SerializationUtils, UpdateSubLayer_NoOpForNullOldLayer)
 {
-    auto parent = SdfLayer::CreateAnonymous("parent_nosub");
+    auto parent = PXR_NS::SdfLayer::CreateAnonymous("parent_nosub");
     EXPECT_NO_THROW(updateSubLayer(parent, nullptr, "/new/path.usd"));
 }
 
 TEST(SerializationUtils, UpdateSubLayer_ReplacesIdentifierInParent)
 {
-    auto parent   = SdfLayer::CreateAnonymous("parent_upd");
-    auto sublayer = SdfLayer::CreateAnonymous("sub_upd");
+    auto parent   = PXR_NS::SdfLayer::CreateAnonymous("parent_upd");
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sub_upd");
 
     parent->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
     ASSERT_TRUE(sublayerPathsContain(parent, sublayer->GetIdentifier()))
@@ -114,14 +112,14 @@ TEST(SerializationUtils, UpdateSubLayer_ReplacesIdentifierInParent)
 
 TEST(SerializationUtils, UpdateSubLayer_NewParentHasNoSubLayerBecomesNoOp)
 {
-    auto parent   = SdfLayer::CreateAnonymous("parent_empty");
-    auto sublayer = SdfLayer::CreateAnonymous("sub_notadded");
+    auto parent   = PXR_NS::SdfLayer::CreateAnonymous("parent_empty");
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sub_notadded");
     // sublayer was never added to parent → Replace finds nothing → no crash, no change
     EXPECT_NO_THROW(updateSubLayer(parent, sublayer, "/new/layer.usd"));
     EXPECT_TRUE(parent->GetSubLayerPaths().empty());
 }
 
-// ── generateUniqueFileName ────────────────────────────────────────────────────
+// --- generateUniqueFileName ---------------------------------------------------
 
 TEST(SerializationUtils, GenerateUniqueFileName_ReturnsNonEmptyString)
 {
@@ -129,16 +127,16 @@ TEST(SerializationUtils, GenerateUniqueFileName_ReturnsNonEmptyString)
     EXPECT_FALSE(result.empty());
 }
 
-// ── generateUniqueLayerFileName ───────────────────────────────────────────────
+// --- generateUniqueLayerFileName ----------------------------------------------
 
 TEST(SerializationUtils, GenerateUniqueLayerFileName_WithLayer_ReturnsNonEmptyString)
 {
-    auto        layer  = SdfLayer::CreateAnonymous("sublayer0");
+    auto        layer  = PXR_NS::SdfLayer::CreateAnonymous("sublayer0");
     std::string result = generateUniqueLayerFileName("scene", layer);
     EXPECT_FALSE(result.empty());
 }
 
-// ── usdFormatArgOption ────────────────────────────────────────────────────────
+// --- usdFormatArgOption -------------------------------------------------------
 
 TEST(SerializationUtils, UsdFormatArgOption_ReturnsUsdcOrUsda)
 {
@@ -147,7 +145,7 @@ TEST(SerializationUtils, UsdFormatArgOption_ReturnsUsdcOrUsda)
         << "usdFormatArgOption returned unexpected format: " << fmt;
 }
 
-// ── getLayersToSaveFromStage ──────────────────────────────────────────────────
+// --- getLayersToSaveFromStage -------------------------------------------------
 
 TEST(SerializationUtils, GetLayersToSaveFromStage_NullStage_DoesNotCrash)
 {
@@ -160,7 +158,7 @@ TEST(SerializationUtils, GetLayersToSaveFromStage_NullStage_DoesNotCrash)
 TEST(SerializationUtils, GetLayersToSaveFromStage_ValidStage_PopulatesAnonLayers)
 {
     auto stage    = PXR_NS::UsdStage::CreateInMemory();
-    auto sublayer = SdfLayer::CreateAnonymous("sublayer_to_save");
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sublayer_to_save");
     stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
 
     StageLayersToSave info;
@@ -170,11 +168,11 @@ TEST(SerializationUtils, GetLayersToSaveFromStage_ValidStage_PopulatesAnonLayers
     EXPECT_GE(info._anonLayers.size(), 1u);
 }
 
-// ── saveLayerWithFormat ───────────────────────────────────────────────────────
+// --- saveLayerWithFormat ------------------------------------------------------
 
 TEST(SerializationUtils, SaveLayerWithFormat_EmptyPath_ReturnsFalse)
 {
-    auto layer = SdfLayer::CreateAnonymous("save_test");
+    auto layer = PXR_NS::SdfLayer::CreateAnonymous("save_test");
     // Empty path → falls back to GetRealPath() which is also empty for an anonymous
     // layer → Save() with no backing file returns false on all platforms.
     EXPECT_FALSE(saveLayerWithFormat(layer, "", "usda"));

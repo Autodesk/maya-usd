@@ -24,12 +24,10 @@
 #include <fstream>
 #include <string>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace UsdLayerEditor {
 namespace FileSystem {
 
-// ── getDir ────────────────────────────────────────────────────────────────────
+// --- getDir -------------------------------------------------------------------
 
 TEST(FileSystemUtils, GetDir_ReturnsParentDirectory)
 {
@@ -45,7 +43,7 @@ TEST(FileSystemUtils, GetDir_ReturnsEmptyForFilenameOnly)
     EXPECT_EQ(getDir("baz.usd"), "");
 }
 
-// ── appendPaths ───────────────────────────────────────────────────────────────
+// --- appendPaths --------------------------------------------------------------
 
 TEST(FileSystemUtils, AppendPaths_JoinsWithSeparator)
 {
@@ -62,7 +60,7 @@ TEST(FileSystemUtils, AppendPaths_AbsoluteBasePreserved)
     EXPECT_NE(result.find("layer.usd"), std::string::npos);
 }
 
-// ── pathStripPath ─────────────────────────────────────────────────────────────
+// --- pathStripPath ------------------------------------------------------------
 
 TEST(FileSystemUtils, PathStripPath_RemovesDirectory)
 {
@@ -79,7 +77,7 @@ TEST(FileSystemUtils, PathStripPath_FilenameAloneUnchanged)
     EXPECT_EQ(path, "baz.usd");
 }
 
-// ── pathRemoveExtension ───────────────────────────────────────────────────────
+// --- pathRemoveExtension ------------------------------------------------------
 
 TEST(FileSystemUtils, PathRemoveExtension_StripsExtension)
 {
@@ -100,7 +98,7 @@ TEST(FileSystemUtils, PathRemoveExtension_NoOpWhenNoExtension)
     EXPECT_EQ(path, expected);
 }
 
-// ── pathFindExtension ─────────────────────────────────────────────────────────
+// --- pathFindExtension --------------------------------------------------------
 
 TEST(FileSystemUtils, PathFindExtension_IncludesDot)
 {
@@ -114,7 +112,7 @@ TEST(FileSystemUtils, PathFindExtension_ReturnsEmptyForNoExtension)
     EXPECT_EQ(pathFindExtension(path), "");
 }
 
-// ── getNumberSuffixPosition ───────────────────────────────────────────────────
+// --- getNumberSuffixPosition --------------------------------------------------
 
 TEST(FileSystemUtils, GetNumberSuffixPosition_LocatesTrailingDigit)
 {
@@ -138,7 +136,7 @@ TEST(FileSystemUtils, GetNumberSuffixPosition_SingleCharSuffix)
     EXPECT_EQ(getNumberSuffixPosition("a9"), 1u);
 }
 
-// ── getNumberSuffix ───────────────────────────────────────────────────────────
+// --- getNumberSuffix ----------------------------------------------------------
 
 TEST(FileSystemUtils, GetNumberSuffix_ExtractsTrailingDigits)
 {
@@ -150,7 +148,7 @@ TEST(FileSystemUtils, GetNumberSuffix_ReturnsEmptyWhenNoDigits)
     EXPECT_EQ(getNumberSuffix("layer"), "");
 }
 
-// ── increaseNumberSuffix ──────────────────────────────────────────────────────
+// --- increaseNumberSuffix -----------------------------------------------------
 
 TEST(FileSystemUtils, IncreaseNumberSuffix_IncrementsTrailingDigit)
 {
@@ -167,7 +165,7 @@ TEST(FileSystemUtils, IncreaseNumberSuffix_AppendsOneWhenNoSuffix)
     EXPECT_EQ(increaseNumberSuffix("layer"), "layer1");
 }
 
-// ── makePathRelativeTo ────────────────────────────────────────────────────────
+// --- makePathRelativeTo -------------------------------------------------------
 
 TEST(FileSystemUtils, MakePathRelativeTo_ReturnsTrueAndRelativePath)
 {
@@ -189,21 +187,21 @@ TEST(FileSystemUtils, MakePathRelativeTo_EmptyAnchorReturnsOriginal)
     EXPECT_EQ(path, file);
 }
 
-// ── getLayerFileDir ───────────────────────────────────────────────────────────
+// --- getLayerFileDir ----------------------------------------------------------
 
 TEST(FileSystemUtils, GetLayerFileDir_ReturnsEmptyForNullLayer)
 {
-    EXPECT_EQ(getLayerFileDir(SdfLayerHandle()), "");
+    EXPECT_EQ(getLayerFileDir(PXR_NS::SdfLayerHandle()), "");
 }
 
 TEST(FileSystemUtils, GetLayerFileDir_ReturnsEmptyForAnonymousLayer)
 {
-    auto layer = SdfLayer::CreateAnonymous("fileDir_test");
+    auto layer = PXR_NS::SdfLayer::CreateAnonymous("fileDir_test");
     // Anonymous layers have no real path, so dir is empty.
     EXPECT_EQ(getLayerFileDir(layer), "");
 }
 
-// ── FileBackup ────────────────────────────────────────────────────────────────
+// --- FileBackup ---------------------------------------------------------------
 
 namespace {
 std::string tempPath(const char* filename)
@@ -270,7 +268,7 @@ TEST(FileSystemUtils, FileBackup_CommitPreventsRestore)
     EXPECT_TRUE(backupExists);
 }
 
-// ── writeToFilePath ───────────────────────────────────────────────────────────
+// --- writeToFilePath ----------------------------------------------------------
 
 TEST(FileSystemUtils, WriteToFilePath_WritesContentAndReturnsSize)
 {
@@ -296,7 +294,7 @@ TEST(FileSystemUtils, WriteToFilePath_ZeroForBadPath)
     EXPECT_EQ(written, 0u);
 }
 
-// ── pathAppendPath ────────────────────────────────────────────────────────────
+// --- pathAppendPath -----------------------------------------------------------
 
 TEST(FileSystemUtils, PathAppendPath_ReturnsTrueAndAppends)
 {
@@ -314,7 +312,7 @@ TEST(FileSystemUtils, PathAppendPath_ReturnsFalseForNonExistentPath)
     EXPECT_FALSE(ok);
 }
 
-// ── getPathRelativeToDirectory ────────────────────────────────────────────────
+// --- getPathRelativeToDirectory -----------------------------------------------
 
 TEST(FileSystemUtils, GetPathRelativeToDirectory_ReturnsFilename)
 {
@@ -331,22 +329,22 @@ TEST(FileSystemUtils, GetPathRelativeToDirectory_EmptyDirReturnsFile)
     EXPECT_EQ(getPathRelativeToDirectory(file, ""), file);
 }
 
-// ── getPathRelativeToLayerFile ────────────────────────────────────────────────
+// --- getPathRelativeToLayerFile -----------------------------------------------
 
 TEST(FileSystemUtils, GetPathRelativeToLayerFile_NullLayerReturnsFileName)
 {
     const std::string file = "/some/file.usd";
-    EXPECT_EQ(getPathRelativeToLayerFile(file, SdfLayerHandle()), file);
+    EXPECT_EQ(getPathRelativeToLayerFile(file, PXR_NS::SdfLayerHandle()), file);
 }
 
 TEST(FileSystemUtils, GetPathRelativeToLayerFile_AnonymousLayerReturnsFileName)
 {
-    auto layer = SdfLayer::CreateAnonymous("anon_rel");
+    auto layer = PXR_NS::SdfLayer::CreateAnonymous("anon_rel");
     const std::string file = "/some/file.usd";
     EXPECT_EQ(getPathRelativeToLayerFile(file, layer), file);
 }
 
-// ── getUniqueFileName ─────────────────────────────────────────────────────────
+// --- getUniqueFileName --------------------------------------------------------
 
 TEST(FileSystemUtils, GetUniqueFileName_ReturnsNonEmptyString)
 {
@@ -357,7 +355,7 @@ TEST(FileSystemUtils, GetUniqueFileName_ReturnsNonEmptyString)
     EXPECT_NE(name.find("layer"), std::string::npos);
 }
 
-// ── ensureUniqueFileName ──────────────────────────────────────────────────────
+// --- ensureUniqueFileName -----------------------------------------------------
 
 TEST(FileSystemUtils, EnsureUniqueFileName_ReturnsSamePathIfNotExists)
 {

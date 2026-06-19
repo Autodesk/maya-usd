@@ -16,9 +16,58 @@
 
 #include "mayaQtUtils.h"
 
+#include "mayaLayerEditorUi.h"
+
+#include <layerEditorDCCFunctions.h>
+
 #include <maya/MQtUtil.h>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <stringResources.h>
+
+#include <mayaUsdUI/ui/editForwardDialog.h>
+
+#include <pxr/usd/usd/stage.h>
+
+#include <QtCore/QPointer>
+
+namespace {
+QPointer<UsdEditForwardConfig::EditForwardDialog> g_editForwardDialog;
+} // namespace
+#endif
+
 namespace UsdLayerEditor {
+
+void initializeUi()
+{
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    auto environment = layerEditorDCCFunctions().environment;
+    environment.mainWindowParent = []() -> QWidget* { return MQtUtil::mainWindow(); };
+    setEnvironmentFns(environment);
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    auto editForwarding = layerEditorDCCFunctions().editForwarding;
+    editForwarding.openEditForwardDialog = [](const PXR_NS::UsdStageRefPtr& stage) {
+        if (!g_editForwardDialog) {
+            g_editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
+                StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
+                MQtUtil::mainWindow());
+        }
+        g_editForwardDialog->setActiveStage(stage);
+        g_editForwardDialog->show();
+        g_editForwardDialog->raise();
+        g_editForwardDialog->activateWindow();
+    };
+    editForwarding.isEditForwardDialogOpen
+        = []() { return g_editForwardDialog && g_editForwardDialog->isVisible(); };
+    setEditForwardingFns(editForwarding);
+#endif
+
+    if (nullptr == getQtUtils()) {
+        setQtUtils(new MayaQtUtils());
+    }
+#endif
+}
 
 double MayaQtUtils::dpiScale() { return MQtUtil::dpiScale(1.0f); }
 
