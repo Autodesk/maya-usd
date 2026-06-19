@@ -717,7 +717,7 @@ void MayaUsdRPrim::_ProcessDisplayLayerModes(
     }
 
     if (useRGBColors.asBool()) {
-        auto          colorRGBHolder = UsdMayaUtil::GetPlugDataHandle(colorRGB);
+        const auto    colorRGBHolder = UsdMayaUtil::GetPlugDataHandle(colorRGB);
         const float3& rgbColor = colorRGBHolder->GetDataHandle().asFloat3();
         displayLayerModes._wireframeColorIndex = -1;
         displayLayerModes._wireframeColorRGBA
