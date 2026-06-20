@@ -45,6 +45,8 @@ protected:
 
 // Shared stage backed by a real file: root layer is non-anonymous and initially
 // clean, so the Save button starts disabled and only enables when dirty.
+// Not compiled for the old editor: switchToCustomStage is new-editor-only API.
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
 class SaveStageCleanNonAnonFixture : public LayerEditorTestFixture
 {
 protected:
@@ -69,6 +71,7 @@ protected:
         QFile::remove(_stagePath);
     }
 };
+#endif
 
 // Clicking "Add a New Layer" with nothing selected inserts an anonymous sublayer at the root.
 TEST_F(LayerEditorTestFixture, NewLayerButton_Click_CallsAddAnonymousSubLayer)
@@ -81,10 +84,9 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_Click_CallsAddAnonymousSubLayer)
     btn->click();
     QApplication::processEvents();
 
-    ASSERT_TRUE(_sessionState._commandHookImpl.hasCall("addAnonymousSubLayer"))
-        << "addAnonymousSubLayer should have been called";
-    EXPECT_EQ(_sessionState._commandHookImpl.lastCall().args[0],
-              _sessionState.stage()->GetRootLayer()->GetIdentifier())
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("addAnonymousSubLayer");
+    ASSERT_NE(call, nullptr) << "addAnonymousSubLayer should have been called";
+    EXPECT_EQ(call->args[0], _sessionState.stage()->GetRootLayer()->GetIdentifier())
         << "addAnonymousSubLayer should target the root layer when nothing is selected";
 }
 
@@ -173,10 +175,9 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_Click_NoSelection_AddsToRoot)
     btn->click();
     QApplication::processEvents();
 
-    ASSERT_TRUE(_sessionState._commandHookImpl.hasCall("addAnonymousSubLayer"))
-        << "addAnonymousSubLayer should be called on root layer when nothing is selected";
-    EXPECT_EQ(_sessionState._commandHookImpl.lastCall().args[0],
-              _sessionState.stage()->GetRootLayer()->GetIdentifier())
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("addAnonymousSubLayer");
+    ASSERT_NE(call, nullptr) << "addAnonymousSubLayer should be called on root layer when nothing is selected";
+    EXPECT_EQ(call->args[0], _sessionState.stage()->GetRootLayer()->GetIdentifier())
         << "parent should be the root layer when there is no selection";
 }
 
@@ -264,11 +265,10 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_Click_WithSublayerSelectionAddsSib
     btn->click();
     QApplication::processEvents();
 
-    ASSERT_TRUE(_sessionState._commandHookImpl.hasCall("addAnonymousSubLayer"))
-        << "addAnonymousSubLayer should be called on the parent when adding a sibling";
     // Adding a sibling means inserting into the selected layer's parent (root).
-    EXPECT_EQ(_sessionState._commandHookImpl.lastCall().args[0],
-              _sessionState.stage()->GetRootLayer()->GetIdentifier())
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("addAnonymousSubLayer");
+    ASSERT_NE(call, nullptr) << "addAnonymousSubLayer should be called on the parent when adding a sibling";
+    EXPECT_EQ(call->args[0], _sessionState.stage()->GetRootLayer()->GetIdentifier())
         << "parent should be the root layer when a direct sublayer of root is selected";
 }
 
@@ -284,6 +284,7 @@ TEST_F(LayerEditorTestFixture, ToolbarButtons_HaveObjectNames)
 // With a file-backed (non-anonymous), clean stage the Save button starts disabled.
 // Making the stage dirty must enable it — the transition proves the button actually
 // tracks needsSaving() rather than being permanently enabled by isAnonymous().
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(SaveStageCleanNonAnonFixture, SaveStageButton_DisabledInitially_EnabledWhenDirty)
 {
     QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Save all edits in the Layer Stack");
@@ -298,6 +299,7 @@ TEST_F(SaveStageCleanNonAnonFixture, SaveStageButton_DisabledInitially_EnabledWh
 
     EXPECT_TRUE(btn->isEnabled()) << "Save Stage button should be enabled after stage becomes dirty";
 }
+#endif
 
 // ── New Layer button: disabled → enabled transition ───────────────────────────
 

@@ -134,9 +134,6 @@ void registerLayerEditorDCCFunctions()
         return MayaUsd::ComponentUtils::previewSaveAdskUsdComponent(
             saveLocation, componentName, dccObjectPath);
     };
-    component.displayError = [](const std::string& error) {
-        MGlobal::displayError(error.c_str());
-    };
     component.getComponentLayersToSave = [](const std::string& dccObjectPath) {
         return MayaUsd::ComponentUtils::getAdskUsdComponentLayersToSave(dccObjectPath);
     };
@@ -253,6 +250,9 @@ void registerLayerEditorDCCFunctions()
         const MString k
             = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsTimeSamplesSizeLimit);
         return MGlobal::optionVarExists(k) ? MGlobal::optionVarIntValue(k) : 8;
+    };
+    environment.displayError = [](const std::string& error) {
+        MGlobal::displayError(error.c_str());
     };
     setEnvironmentFns(environment);
 

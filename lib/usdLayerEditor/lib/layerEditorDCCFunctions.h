@@ -76,7 +76,6 @@ struct ComponentFns
     MoveComponentFn                           moveComponent;
     PreviewComponentSaveFn                    previewComponentSave;
     GetComponentLayersToSaveFn                getComponentLayersToSave;
-    std::function<void(const std::string&)>   displayError; // no-op when unset
     CaptureSessionLayerFn                     captureSessionLayer;   // returns null when unset
     TransferSessionLayerFn                    transferSessionLayer;  // no-op when unset
     SetProxyRootLayerPathFn                   setProxyRootLayerPath; // no-op when unset
@@ -125,6 +124,7 @@ struct EnvironmentFns
     std::function<QWidget*()> mainWindowParent;           // default nullptr
     std::function<int64_t()>  layerContentsArraySizeLimit;       // default 8
     std::function<int64_t()>  layerContentsTimeSamplesSizeLimit; // default 8
+    std::function<void(const std::string&)> displayError;          // no-op when unset
 };
 
 struct FileSystemFns
@@ -183,7 +183,6 @@ moveComponent(const std::string&, const std::string&, const std::string&);
 LayerEditorAPI std::string
 previewComponentSave(const std::string&, const std::string&, const std::string&);
 LayerEditorAPI std::vector<std::string> getComponentLayersToSave(const std::string&);
-LayerEditorAPI void                     displayError(const std::string&);
 LayerEditorAPI PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath);
 LayerEditorAPI void transferSessionLayer(
     const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
@@ -226,6 +225,7 @@ LayerEditorAPI bool        shouldExpandOrCollapseAll();
 LayerEditorAPI QWidget*    mainWindowParent();
 LayerEditorAPI int64_t     layerContentsArraySizeLimit();
 LayerEditorAPI int64_t     layerContentsTimeSamplesSizeLimit();
+LayerEditorAPI void        displayError(const std::string&);
 
 // FileSystemFns
 LayerEditorAPI std::string getDCCSceneDir();

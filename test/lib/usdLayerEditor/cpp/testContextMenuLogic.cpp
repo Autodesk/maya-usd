@@ -42,8 +42,9 @@ TEST_F(LayerEditorTestFixture, ContextMenu_AddAnonymousSublayer_CallsHook)
     _sessionState._commandHookImpl.clearCalls();
     _window->addAnonymousSublayer();
     QApplication::processEvents();
-    ASSERT_TRUE(_sessionState._commandHookImpl.hasCall("addAnonymousSubLayer"));
-    EXPECT_EQ(_sessionState._commandHookImpl.lastCall().args[0], item->layer()->GetIdentifier())
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("addAnonymousSubLayer");
+    ASSERT_NE(call, nullptr) << "addAnonymousSubLayer should have been called";
+    EXPECT_EQ(call->args[0], item->layer()->GetIdentifier())
         << "addAnonymousSubLayer should target the selected layer";
 }
 

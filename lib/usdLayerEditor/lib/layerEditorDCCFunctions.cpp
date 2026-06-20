@@ -104,8 +104,8 @@ std::vector<std::string> getComponentLayersToSave(const std::string& dccObjectPa
 }
 void displayError(const std::string& error)
 {
-    if (registry().component.displayError)
-        registry().component.displayError(error);
+    if (registry().environment.displayError)
+        registry().environment.displayError(error);
 }
 PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath)
 {

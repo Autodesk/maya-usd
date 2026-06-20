@@ -54,6 +54,14 @@ public:
     bool               hasCall(const std::string& method) const;
     int                callCount(const std::string& method) const;
     const CommandCall& lastCall() const;
+    // Returns a pointer to the last call with the given name, or nullptr if none.
+    const CommandCall* lastCallOf(const std::string& method) const
+    {
+        for (auto it = _calls.rbegin(); it != _calls.rend(); ++it)
+            if (it->name == method)
+                return &*it;
+        return nullptr;
+    }
 
     std::vector<CommandCall> _calls;
 

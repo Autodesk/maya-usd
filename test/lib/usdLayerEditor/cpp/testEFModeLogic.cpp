@@ -107,8 +107,8 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
 
 // updateButtons() sets the button stylesheet to reflect EF active state.
 // The icon switches between ef_default (off) and ef_on (on) via background-image.
-// Runs for both editors when EF is compiled in (WANT_ADSK_USD_EDIT_FORWARD_BUILD).
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+// New editor only: the old editor lacks the editForwardingChanged→updateButtons connection.
+#if defined(WANT_ADSK_USD_EDIT_FORWARD_BUILD) && !defined(MAYAUSD_OLD_LAYER_EDITOR)
 TEST_F(LayerEditorWithEFFixture, EFMode_Button_IconReflectsActiveState)
 {
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");

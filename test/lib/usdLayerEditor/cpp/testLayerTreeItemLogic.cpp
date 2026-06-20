@@ -404,7 +404,6 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_NonComponentStage_UsesGenericPath)
     // registry, so this setup is omitted there (and the registry isn't linked).
     ScopedLayerEditorDCCFunctions guard;
     ComponentFns                  comp;
-    comp.displayError = [](const std::string&) {};
     comp.isStageAComponent = [](const std::string&) { return false; };
     setComponentFns(comp);
 #endif
@@ -430,7 +429,6 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
 {
     ScopedLayerEditorDCCFunctions guard;
     ComponentFns                  comp;
-    comp.displayError = [](const std::string&) {};
     comp.isStageAComponent = [](const std::string&) { return true; };
     // isAnonymous() now reflects unsaved-component state for component stages;
     // an unsaved component reports anonymous, which the save early-out requires.

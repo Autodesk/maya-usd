@@ -170,19 +170,10 @@ class ReplaceSubPathCmdTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        // Register a no-op displayError so commands can report errors without crashing.
-        { UsdLayerEditor::ComponentFns c; c.displayError = [](const std::string&){}; UsdLayerEditor::setComponentFns(c); }
-
         _parent = PXR_NS::SdfLayer::CreateAnonymous("parent");
         _layerA = PXR_NS::SdfLayer::CreateAnonymous("A");
         _layerB = PXR_NS::SdfLayer::CreateAnonymous("B");
         _parent->InsertSubLayerPath(_layerA->GetIdentifier(), 0);
-    }
-
-    void TearDown() override
-    {
-        // Reset the error display callback to avoid leaking state into other tests.
-        UsdLayerEditor::setComponentFns(UsdLayerEditor::ComponentFns{});
     }
 
     PXR_NS::SdfLayerRefPtr _parent;
@@ -213,7 +204,7 @@ TEST_F(ReplaceSubPathCmdTest, UndoIt_RestoresOldPath)
     EXPECT_EQ(paths.Find(_layerB->GetIdentifier()), static_cast<size_t>(-1));
 
     cmd->redo();
-    // Re-fetch the proxy: the one captured above does not reflect the redo's mutation.
+    // Re-fetch: the SdfListProxy reference above may be stale after redo.
     const auto& pathsAfterRedo = _parent->GetSubLayerPaths();
     EXPECT_EQ(pathsAfterRedo.Find(_layerA->GetIdentifier()), static_cast<size_t>(-1));
     EXPECT_NE(pathsAfterRedo.Find(_layerB->GetIdentifier()), static_cast<size_t>(-1));
@@ -231,9 +222,7 @@ TEST_F(ReplaceSubPathCmdTest, DoIt_ReturnsFalse_WhenOldPathNotFound)
     EXPECT_NE(paths.Find(_layerA->GetIdentifier()), static_cast<size_t>(-1));
 }
 
-// ============================================================================
-// Task 5: DiscardEditCmd and ClearLayerCmd
-// ============================================================================
+// DiscardEditCmd and ClearLayerCmd
 
 class BackupLayerCmdTest : public ::testing::Test
 {
@@ -293,9 +282,7 @@ TEST_F(BackupLayerCmdTest, ClearLayerCmd_Undo_RestoresContent)
     EXPECT_TRUE(_layer->GetComment().empty());
 }
 
-// ============================================================================
-// Task 6: MuteLayerCmd
-// ============================================================================
+// MuteLayerCmd
 
 class MuteLayerCmdTest : public ::testing::Test
 {
@@ -378,9 +365,28 @@ TEST_F(MuteLayerCmdTest, MuteUnmuteUndoRedo_PreservesDirtyLayerContent)
     EXPECT_TRUE(_layer->GetPrimAtPath(fooPath)) << "content must survive a re-mute on redo";
 }
 
-// ============================================================================
-// Task 7: LockLayerCmd
-// ============================================================================
+// MuteLayerCmd must hold a strong ref to the layer before muting so OpenUSD (which drops
+// muted layers) cannot destroy it. This test releases the only external ref before execute.
+TEST_F(MuteLayerCmdTest, HoldsLayer_KeepsLayerAliveWhenNoExternalRefRemains)
+{
+    auto ephemeral = PXR_NS::SdfLayer::CreateAnonymous("ephemeral");
+    const std::string ephemeralId = ephemeral->GetIdentifier();
+    _stage->GetRootLayer()->InsertSubLayerPath(ephemeralId, 0);
+    PXR_NS::SdfPrimSpec::New(ephemeral, "Bar", PXR_NS::SdfSpecifierDef);
+
+    auto cmd = std::make_shared<MuteLayerCmd>(_stage, ephemeral, /*muteIt=*/true);
+    ephemeral = PXR_NS::SdfLayerRefPtr{}; // drop the only external ref
+
+    cmd->execute();
+
+    // If the cmd holds the layer, SdfLayer::Find returns non-null.
+    auto recovered = PXR_NS::SdfLayer::Find(ephemeralId);
+    ASSERT_NE(recovered, nullptr) << "cmd must keep the layer alive after the external ref is dropped";
+    EXPECT_TRUE(recovered->GetPrimAtPath(PXR_NS::SdfPath("/Bar")))
+        << "layer content must survive when the only external ref is dropped before mute";
+}
+
+// LockLayerCmd
 
 class LockLayerCmdTest : public ::testing::Test
 {
@@ -434,9 +440,23 @@ TEST_F(LockLayerCmdTest, SkipSystemLocked_DoesNotLockSystemLockedSublayers)
     EXPECT_FALSE(isLayerLocked(sublayer)); // must not have been changed to plain locked
 }
 
-// ============================================================================
-// Task 8: InsertSubPathCmd, RemoveSubPathCmd, AddAnonSubLayerCmd
-// ============================================================================
+TEST_F(LockLayerCmdTest, SkipSystemLocked_False_LocksSystemLockedSublayers)
+{
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sub");
+    _layer->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
+    lockLayer("", sublayer, LayerLock_SystemLocked, /*updateDCCAttr=*/false);
+
+    auto cmd = std::make_shared<LockLayerCmd>(
+        _stage, _layer, LayerLock_Locked,
+        /*includeSubLayers=*/true, /*skipSystemLocked=*/false);
+    cmd->execute();
+
+    EXPECT_TRUE(isLayerLocked(_layer));
+    EXPECT_TRUE(isLayerLocked(sublayer));
+    EXPECT_FALSE(isLayerSystemLocked(sublayer));
+}
+
+// InsertSubPathCmd, RemoveSubPathCmd, AddAnonSubLayerCmd
 
 class InsertSubPathCmdTest : public ::testing::Test
 {
@@ -526,7 +546,6 @@ protected:
 TEST_F(AddAnonSubLayerCmdTest, DoIt_InsertsAnonLayer)
 {
     auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);
-    cmd->_anonName = "myLayer";
     cmd->execute();
     EXPECT_EQ(_parent->GetNumSubLayerPaths(), static_cast<size_t>(1));
 }
@@ -534,7 +553,6 @@ TEST_F(AddAnonSubLayerCmdTest, DoIt_InsertsAnonLayer)
 TEST_F(AddAnonSubLayerCmdTest, DoIt_ReturnsNonEmptyIdentifier)
 {
     auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);
-    cmd->_anonName = "myLayer";
     cmd->execute();
     EXPECT_FALSE(cmd->addedLayer().empty());
 }
@@ -542,7 +560,6 @@ TEST_F(AddAnonSubLayerCmdTest, DoIt_ReturnsNonEmptyIdentifier)
 TEST_F(AddAnonSubLayerCmdTest, Undo_RemovesAnonLayer)
 {
     auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);
-    cmd->_anonName = "myLayer";
     cmd->execute();
     cmd->undo();
     EXPECT_EQ(_parent->GetNumSubLayerPaths(), static_cast<size_t>(0));
@@ -571,6 +588,10 @@ protected:
 
 TEST_F(MoveSubPathCmdTest, DoIt_SameParent_ReordersSubLayer)
 {
+    // Before: [A, B, C]
+    ASSERT_EQ(_parent->GetSubLayerPaths()[0], _subA->GetIdentifier());
+    ASSERT_EQ(_parent->GetSubLayerPaths()[1], _subB->GetIdentifier());
+    ASSERT_EQ(_parent->GetSubLayerPaths()[2], _subC->GetIdentifier());
     // Move A from index 0 to index 2 → expect [B, C, A]
     auto cmd = std::make_shared<MoveSubPathCmd>(_parent, _parent, _subA->GetIdentifier(), 2);
     cmd->execute();
@@ -580,6 +601,10 @@ TEST_F(MoveSubPathCmdTest, DoIt_SameParent_ReordersSubLayer)
 
 TEST_F(MoveSubPathCmdTest, Undo_SameParent_RestoresOriginalOrder)
 {
+    // Before: [A, B, C]
+    ASSERT_EQ(_parent->GetSubLayerPaths()[0], _subA->GetIdentifier());
+    ASSERT_EQ(_parent->GetSubLayerPaths()[1], _subB->GetIdentifier());
+    ASSERT_EQ(_parent->GetSubLayerPaths()[2], _subC->GetIdentifier());
     auto cmd = std::make_shared<MoveSubPathCmd>(_parent, _parent, _subA->GetIdentifier(), 2);
     cmd->execute();
     cmd->undo();
@@ -594,6 +619,9 @@ TEST_F(MoveSubPathCmdTest, Undo_SameParent_RestoresOriginalOrder)
 TEST_F(MoveSubPathCmdTest, DoIt_CrossParent_MovesSubLayerToNewParent)
 {
     auto newParent = PXR_NS::SdfLayer::CreateAnonymous("newParent");
+    // Before: subA is in parent, not in newParent
+    ASSERT_NE(_parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    ASSERT_EQ(newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
     auto cmd = std::make_shared<MoveSubPathCmd>(
         _parent, newParent, _subA->GetIdentifier(), 0);
     cmd->execute();
@@ -606,6 +634,9 @@ TEST_F(MoveSubPathCmdTest, DoIt_CrossParent_MovesSubLayerToNewParent)
 TEST_F(MoveSubPathCmdTest, Undo_CrossParent_RestoresSubLayerToOriginalParent)
 {
     auto newParent = PXR_NS::SdfLayer::CreateAnonymous("newParent");
+    // Before: subA is in parent, not in newParent
+    ASSERT_NE(_parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    ASSERT_EQ(newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
     auto cmd = std::make_shared<MoveSubPathCmd>(
         _parent, newParent, _subA->GetIdentifier(), 0);
     cmd->execute();
@@ -636,9 +667,7 @@ TEST(RefreshSystemLockCallbackContextTest, AddCallbackContext_StoresEntry)
         std::string("/myShape"));
 }
 
-// ============================================================================
-// Task A-special: AddAnonSubLayerCmd redo reuses the same identifier
-// ============================================================================
+// AddAnonSubLayerCmd: redo reuses the same identifier
 
 TEST_F(AddAnonSubLayerCmdTest, Redo_ReusesSameIdentifier)
 {
@@ -655,9 +684,7 @@ TEST_F(AddAnonSubLayerCmdTest, Redo_ReusesSameIdentifier)
     EXPECT_EQ(_parent->GetSubLayerPaths()[0], id2);
 }
 
-// ============================================================================
-// Task B: SetEditTargetCmd
-// ============================================================================
+// SetEditTargetCmd
 
 class SetEditTargetCmdTest : public ::testing::Test
 {
@@ -698,24 +725,19 @@ TEST_F(SetEditTargetCmdTest, Redo_ReappliesTarget)
     EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _sub);
 }
 
-// ============================================================================
-// Task C: FlattenLayerCmd
-// ============================================================================
+// FlattenLayerCmd
 
 class FlattenLayerCmdTest : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
-        { UsdLayerEditor::ComponentFns c; c.displayError = [](const std::string&){}; UsdLayerEditor::setComponentFns(c); }
         _root = PXR_NS::SdfLayer::CreateAnonymous("flattenRoot");
         _sub  = PXR_NS::SdfLayer::CreateAnonymous("flattenSub");
         _root->InsertSubLayerPath(_sub->GetIdentifier(), 0);
         // Define a prim only in the sublayer; flattening must inline it into _root.
         PXR_NS::SdfPrimSpec::New(_sub, "Foo", PXR_NS::SdfSpecifierDef);
     }
-
-    void TearDown() override { UsdLayerEditor::setComponentFns(UsdLayerEditor::ComponentFns{}); }
 
     PXR_NS::SdfLayerRefPtr _root;
     PXR_NS::SdfLayerRefPtr _sub;
@@ -746,9 +768,7 @@ TEST_F(FlattenLayerCmdTest, Redo_ReflattensContent)
     EXPECT_TRUE(_root->GetPrimAtPath(PXR_NS::SdfPath("/Foo")));
 }
 
-// ============================================================================
-// Task D: StitchLayersCmd
-// ============================================================================
+// StitchLayersCmd
 
 class StitchLayersCmdTest : public ::testing::Test
 {
@@ -875,9 +895,7 @@ TEST(StitchLayersCmdPartialMergeTest, DoIt_SkipsWeakWithLockedParent_MergesRest)
     layerA->SetPermissionToEdit(true);
 }
 
-// ============================================================================
-// Task E: RefreshSystemLockLayerCmd (needs a real read-only file on disk)
-// ============================================================================
+// RefreshSystemLockLayerCmd (needs a real read-only file on disk)
 
 class RefreshSystemLockLayerCmdTest : public ::testing::Test
 {
@@ -951,26 +969,20 @@ TEST_F(RefreshSystemLockLayerCmdTest, Redo_ReappliesSystemLock)
     EXPECT_TRUE(isLayerSystemLocked(_fileLayer));
 }
 
-// ============================================================================
-// Task F: error paths
-// ============================================================================
+// error paths
 
 TEST_F(InsertSubPathCmdTest, DoIt_ReturnsFalse_WhenIndexOutOfBounds)
 {
-    { UsdLayerEditor::ComponentFns c; c.displayError = [](const std::string&){}; UsdLayerEditor::setComponentFns(c); }
     auto cmd = std::make_shared<InsertSubPathCmd>(_stage, _parent, _sub->GetIdentifier(), 99);
     EXPECT_THROW(cmd->execute(), std::runtime_error);
     EXPECT_EQ(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
-    UsdLayerEditor::setComponentFns(UsdLayerEditor::ComponentFns{});
 }
 
 TEST_F(RemoveSubPathCmdTest, DoIt_ReturnsFalse_WhenIndexOutOfBounds)
 {
-    { UsdLayerEditor::ComponentFns c; c.displayError = [](const std::string&){}; UsdLayerEditor::setComponentFns(c); }
     auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 99);
     EXPECT_THROW(cmd->execute(), std::runtime_error);
     EXPECT_NE(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
-    UsdLayerEditor::setComponentFns(UsdLayerEditor::ComponentFns{});
 }
 
 TEST_F(MoveSubPathCmdTest, DoIt_ReturnsFalse_WhenSubPathNotFound)
@@ -1000,9 +1012,7 @@ TEST_F(MoveSubPathCmdTest, DoIt_ReturnsFalse_WhenSubPathExistsInNewParent)
     EXPECT_THROW(cmd->execute(), std::runtime_error);
 }
 
-// ============================================================================
-// Task G: RemoveSubPathCmd edit-target redirect (documented crash-fix)
-// ============================================================================
+// RemoveSubPathCmd: edit-target redirect
 
 TEST_F(RemoveSubPathCmdTest, DoIt_RetargetsToRootWhenRemovingEditTargetLayer)
 {
