@@ -16,7 +16,6 @@ with scope("config") as c:
 requires = []
 
 private_build_requires = [
-    # "vulkanSDK",
     "PyOpenGL",
     "Jinja2",
     "PySide6",
@@ -24,7 +23,7 @@ private_build_requires = [
 ]
 
 variants = [
-    ["maya-2026.3", "usd-25.08", "python-3.11.9"],  # Maya 2026: undefined symbol _PyModule_add issue
+    ["maya-2026.3", "usd-25.11", "python-3.11.9"],  # Maya 2026: undefined symbol _PyModule_add issue
 ]
 
 

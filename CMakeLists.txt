@@ -17,6 +17,31 @@ cmake_minimum_required(VERSION 3.13...3.17)
 
 project(maya-usd)
 
+#####################################################
+# REZ
+#####################################################
+set(MAYA_DEVKIT_LOCATION $ENV{MAYA_DEVKIT_LOCATION})
+set(HH_PYTHON_VERSION 3.9)  # Rocky 9 default
+if(DEFINED ENV{REZ_PYTHON_ROOT})
+    if($ENV{REZ_PYTHON_MAJOR_VERSION} EQUAL "3")
+        if($ENV{REZ_PYTHON_MINOR_VERSION} EQUAL "7")
+            set(HH_PYTHON_VERSION 3.7)
+        elseif($ENV{REZ_PYTHON_MINOR_VERSION} EQUAL "9")
+            set(HH_PYTHON_VERSION 3.9)
+        elseif($ENV{REZ_PYTHON_MINOR_VERSION} EQUAL "10")
+            set(HH_PYTHON_VERSION 3.10)
+        elseif($ENV{REZ_PYTHON_MINOR_VERSION} EQUAL "11")
+            set(HH_PYTHON_VERSION 3.11)
+        elseif($ENV{REZ_PYTHON_MINOR_VERSION} EQUAL "12")
+            set(HH_PYTHON_VERSION 3.12)
+        endif()
+    endif()
+endif()
+if(DEFINED ENV{REZ_VULKANSDK_ROOT})
+    find_package(Vulkan REQUIRED)  # Marcelo: create Vulkan::Vulkan target since USD is using it
+endif()
+#####################################################
+
 #------------------------------------------------------------------------------
 # options
 #------------------------------------------------------------------------------
@@ -24,19 +49,19 @@ option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_MAYAUSDAPI_LIBRARY "Build the mayaUsdAPI subset library that provides a stable versioned interface to mayaUsd for external plugins." ON)
 option(BUILD_LOOKDEVXUSD_LIBRARY "Build LookdevXUsd library using LookdevXUfe." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
-option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
-option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
+option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." OFF)  # Marcelo: was ON
+option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." OFF)  # Marcelo: was ON
 option(BUILD_HDMAYA "Build the legacy Maya-To-Hydra plugin and scene delegate." OFF)
-option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)
-option(BUILD_TESTS "Build tests." ON)
+option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." OFF)  # Marcelo: was ON
+option(BUILD_TESTS "Build tests." OFF)  # Marcelo: was ON
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
-option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
+option(BUILD_WITH_PYTHON_3 "Build with python 3." ON)  # Marcelo: was OFF
 if(APPLE)
     option(BUILD_UB2 "Build Universal Binary 2 (UB2) Intel64+arm64" ON) # Min Maya supported is 2024 which is UB2
     option(BUILD_ARM64 "Build arm64 only" OFF)                          # Either arm or UB2 can be built, but not both.
 endif()
-set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
+set(BUILD_WITH_PYTHON_3_VERSION ${HH_PYTHON_VERSION} CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX." ON)
 option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
 
