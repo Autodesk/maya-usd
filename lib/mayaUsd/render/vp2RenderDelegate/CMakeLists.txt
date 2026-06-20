@@ -1,13 +1,14 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${PROJECT_NAME} 
+target_sources(${PROJECT_NAME}
     PRIVATE
         basisCurves.cpp
         bboxGeom.cpp
         debugCodes.cpp
         drawItem.cpp
         extComputation.cpp
+        holdoutDepthPass.cpp
         instancer.cpp
         material.cpp
         mayaPrimCommon.cpp
@@ -26,6 +27,7 @@ target_sources(${PROJECT_NAME}
 set(HEADERS
     proxyRenderDelegate.h
     colorManagementPreferences.h
+    holdoutDepthPass.h
 )
 
 # -----------------------------------------------------------------------------
