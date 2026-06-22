@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoManager.cpp
         UsdUndoStateDelegate.cpp
         UsdUndoableItem.cpp
+        UsdUndoUtils.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -17,6 +18,7 @@ set(HEADERS
     UsdUndoManager.h
     UsdUndoStateDelegate.h
     UsdUndoableItem.h
+    UsdUndoUtils.h
 )
 
 # -----------------------------------------------------------------------------

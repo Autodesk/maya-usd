@@ -124,6 +124,7 @@ public:
 
 Q_SIGNALS:
     void selectLayerSignal(const QModelIndex&);
+    void selectedLayerDataChangedSignal();
 
 protected:
     // slots
@@ -149,8 +150,9 @@ protected:
 
     mutable int _lastAskedAnonLayerNameSinceRebuild = 0;
 
-    void rebuildModelOnIdle();
+    void rebuildModelOnIdle(bool dataChanged = false);
     bool _rebuildOnIdlePending = false;
+    bool _selectedLayerDataChanged = false;
     void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);

@@ -15,6 +15,8 @@
 //
 #include "renderSetupWindowCmd.h"
 
+#include "mayaEditCommitter.h"
+
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdSceneSettingsManager.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -88,12 +90,17 @@ public:
     static void onSceneChangedCB(void* clientData);
 
 private:
-    void applyStages() { _tree->setStages(_hostStages); }
+    void applyStages()
+    {
+        _editCommitter->setStages(_hostStages);
+        _tree->setStages(_hostStages);
+    }
 
 private:
-    Adsk::RenderSetupWidget*     _tree;
-    std::vector<Adsk::HostStage> _hostStages;
-    std::vector<MCallbackId>     _sceneCallbackIds;
+    Adsk::RenderSetupWidget*               _tree;
+    MayaUsdRenderSetup::MayaEditCommitter* _editCommitter { nullptr };
+    std::vector<Adsk::HostStage>           _hostStages;
+    std::vector<MCallbackId>               _sceneCallbackIds;
 };
 
 RenderSetupWindow::RenderSetupWindow(QWidget* parent)
@@ -101,6 +108,8 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
 {
     // Create the render setup widget and set it as the central widget of the window.
     _tree = new Adsk::RenderSetupWidget(this);
+    _editCommitter = new MayaUsdRenderSetup::MayaEditCommitter(nullptr);
+    _tree->setEditCommitter(std::unique_ptr<Adsk::IEditCommitter>(_editCommitter));
     setCentralWidget(_tree);
     _tree->show();
 
