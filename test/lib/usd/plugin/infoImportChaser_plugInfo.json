@@ -1,0 +1,16 @@
+{
+  "Plugins": [
+    {
+      "Info": {
+        "UsdMaya": {
+          "ImportChaserPlugin": {
+            "mayaPlugin": "usdTestInfoImportChaser"
+          }
+        }
+      },
+      "Name": "usdTestInfoImportChaser",
+      "LibraryPath": "@CMAKE_CURRENT_BINARY_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@usdTestInfoImportChaser@CMAKE_SHARED_LIBRARY_SUFFIX@",
+      "Type": "library"
+    }
+  ]
+}

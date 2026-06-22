@@ -80,7 +80,9 @@ bool UsdMayaImportChaserRegistry::RegisterFactory(const char* name, FactoryFn fn
 UsdMayaImportChaserRefPtr
 UsdMayaImportChaserRegistry::Create(const char* name, const FactoryContext& context) const
 {
+    UsdMaya_RegistryHelper::LoadImportChaserPlugins();
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaImportChaserRegistry>();
+
     if (UsdMayaImportChaserRegistry::FactoryFn fn = _factoryImportRegistry[name]) {
         return TfCreateRefPtr(fn(context));
     } else {
