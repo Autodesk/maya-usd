@@ -1,96 +1,104 @@
 //-
 // holdoutRenderOverrideSpike.cpp
 //
-// PURPOSE (throwaway spike, increment 2):
-//   Increment 1 proved the physics: a custom MUserRenderOperation can write
-//   DEPTH while masking ALL color via raw glColorMask, and that depth occludes
-//   a later scene render sharing the same depth target. (Confirmed: teal
-//   rectangle punched through the scene.)
+// PURPOSE (throwaway spike, increment 5 -- full path inside stock VP2):
+//   Proven so far:
+//     1. depth-write-with-color-masked survives a custom pass (raw glColorMask)
+//     2. a world-space 3D cube via the live camera occludes correctly
+//     3. depth written from a kBeginSceneRenderSemantic notification on stock
+//        VP2 PERSISTS into the opaque draw (rectangle punched through sphere)
+//     4. BUT getMatrix(kViewProjMtx) at that hook returns a placeholder (camera
+//        not loaded yet) -- it logged as an identity+depth-remap, not a camera.
 //
-//   This increment proves the TRANSFORM WIRING: instead of a hardcoded
-//   screen-space quad, we draw a real 3D box positioned in world space, using
-//   the camera's actual view-projection matrix pulled from the MDrawContext.
-//   The box is drawn depth-only (color masked) with proper depth testing.
+//   This increment closes the loop: bring back the real 3D cube, but source
+//   its MVP from M3dView (active 3D view) -- which derives the camera from the
+//   DAG and does NOT depend on the frame context being warm -- and stamp it
+//   depth-only from the beginSceneRender notification.
 //
-//   This is the prerequisite for drawing real prim geometry: we confirm that
-//   geometry placed in the scene via the live camera matrices stamps depth in
-//   the correct place, so occlusion is perspective-correct and world-anchored.
+//   M3dView convention is Maya row-vector (same as increment 2's working
+//   path): clip = world * modelView * projection. So:
+//       mvp = model * modelView * projection
+//   uploaded row-major with transpose = GL_FALSE for the column-major shader.
 //
-// HOW TO TEST:
-//   Create any object near the world origin (a default poly sphere is ideal),
-//   load the plugin, choose "Holdout Depth Spike" in the viewport Renderer
-//   menu, then ORBIT the camera.
-//
-// HOW TO READ THE RESULT:
-//   * A teal box-silhouette hole that occludes the object behind it AND tracks
-//     the scene in 3D as you orbit (its shape/size change with view angle like
-//     a real cube, perspective-correct, locked to world space) -> SUCCESS.
-//     Transform wiring is correct; ready to feed real prim geometry.
-//   * A hole that ignores the camera (flat, screen-locked, wrong place, or
-//     inside-out) -> the view-projection / matrix convention is wrong.
-//   * Geometry that should be IN FRONT of the box getting occluded, or vice
-//     versa -> depth ordering wrong.
+// HOW TO READ THE RESULT (stock Viewport 2.0, sphere at origin):
+//   * A correct, perspective cube-silhouette holdout: invisible occluder that
+//     bites the sphere, world-anchored, tracking as you orbit -> the ENTIRE
+//     render path is proven inside stock VP2. Only thing left: swap the
+//     hardcoded cube for the holdout prim's real geometry + transform.
+//   * Cube misplaced / smeared / inside-out -> M3dView matrix convention is
+//     off; the one-time matrix log tells us how to correct it.
 //
 // GL-only by design (Linux / OpenGL Core Profile).
 //+
+
+// Include ORDER matters: the GL loader / pxr headers must come BEFORE the Maya
+// headers. This mirrors lib/mayaUsd/render/px_vp20/utils.cpp, which includes
+// both garch and <maya/M3dView.h> in this order. M3dView.h is the legacy GL
+// viewport header and drags in system GL; if garch is included after it, the
+// transitive <pxr/pxr.h> that defines PXR_NAMESPACE_USING_DIRECTIVE gets
+// skipped and the macro fails to expand. (Increments 1-4 didn't hit this
+// because none of them included M3dView.h.)
+#include <pxr/imaging/garch/glApi.h>
 
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 #include <maya/MStatus.h>
 #include <maya/MMatrix.h>
+#include <maya/M3dView.h>
 #include <maya/MViewport2Renderer.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
+#include <maya/MStringArray.h>
 
-// Modern GL entry points, loaded exactly like the rest of maya-usd does it.
-#include <pxr/imaging/garch/glApi.h>
+#include <set>
+#include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-const MString kOverrideName("holdoutSpike");
-const MString kOverrideUIName("Holdout Depth Spike");
+const MString kNotificationName("holdoutSpike_DepthStamp");
 
-// Vertex shader: real 3D positions transformed by the camera's view-projection
-// (combined with a model matrix that stands in for a prim's world transform).
 const char* kVertexSrc =
     "#version 330\n"
     "layout(location = 0) in vec3 position;\n"
     "uniform mat4 mvp;\n"
     "void main() { gl_Position = mvp * vec4(position, 1.0); }\n";
 
-// Bright magenta: only visible if color masking is (unexpectedly) ignored.
 const char* kFragmentSrc =
     "#version 330\n"
     "out vec4 fragColor;\n"
     "void main() { fragColor = vec4(1.0, 0.0, 1.0, 1.0); }\n";
 
-// A cube spanning [-1, 1] on each axis, centered at the world origin.
-// 36 vertices (6 faces x 2 triangles x 3 verts). Winding is irrelevant: we do
-// not cull and only care about depth, so the nearest surface wins per pixel.
+// Cube spanning [-1, 1] on each axis, centered at the world origin.
 const GLfloat kCubeVerts[] = {
-    // -Z
     -1, -1, -1,   1,  1, -1,   1, -1, -1,
     -1, -1, -1,  -1,  1, -1,   1,  1, -1,
-    // +Z
     -1, -1,  1,   1, -1,  1,   1,  1,  1,
     -1, -1,  1,   1,  1,  1,  -1,  1,  1,
-    // -X
     -1, -1, -1,  -1, -1,  1,  -1,  1,  1,
     -1, -1, -1,  -1,  1,  1,  -1,  1, -1,
-    // +X
      1, -1, -1,   1,  1, -1,   1,  1,  1,
      1, -1, -1,   1,  1,  1,   1, -1,  1,
-    // -Y
     -1, -1, -1,   1, -1, -1,   1, -1,  1,
     -1, -1, -1,   1, -1,  1,  -1, -1,  1,
-    // +Y
     -1,  1, -1,  -1,  1,  1,   1,  1,  1,
     -1,  1, -1,   1,  1,  1,   1,  1, -1,
 };
 const GLsizei kCubeVertCount = 36;
+
+struct GLState {
+    bool   initialized = false;
+    GLuint program = 0;
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLint  mvpLoc = -1;
+};
+GLState gGL;
+
+std::set<std::string> gLoggedPasses;
+bool gLoggedMatrix = false;
 
 GLuint compileShader(GLenum type, const char* src)
 {
@@ -109,223 +117,154 @@ GLuint compileShader(GLenum type, const char* src)
     return shader;
 }
 
-//============================================================================
-// Operation 1: the depth-only pass -- now drawing a world-space 3D box.
-//============================================================================
-class HoldoutDepthOp : public MHWRender::MUserRenderOperation
+bool ensureGLResources()
 {
-public:
-    HoldoutDepthOp(const MString& name)
-        : MHWRender::MUserRenderOperation(name)
-    {
+    if (gGL.initialized)
+        return gGL.program != 0;
+    gGL.initialized = true;
+
+    GarchGLApiLoad();
+
+    GLuint vs = compileShader(GL_VERTEX_SHADER, kVertexSrc);
+    GLuint fs = compileShader(GL_FRAGMENT_SHADER, kFragmentSrc);
+    if (!vs || !fs)
+        return false;
+
+    gGL.program = glCreateProgram();
+    glAttachShader(gGL.program, vs);
+    glAttachShader(gGL.program, fs);
+    glLinkProgram(gGL.program);
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    GLint linked = GL_FALSE;
+    glGetProgramiv(gGL.program, GL_LINK_STATUS, &linked);
+    if (!linked) {
+        char log[1024] = { 0 };
+        glGetProgramInfoLog(gGL.program, sizeof(log), nullptr, log);
+        MGlobal::displayError(MString("[holdoutSpike] program link failed: ") + log);
+        glDeleteProgram(gGL.program);
+        gGL.program = 0;
+        return false;
     }
 
-    ~HoldoutDepthOp() override = default;
+    gGL.mvpLoc = glGetUniformLocation(gGL.program, "mvp");
 
-    MStatus execute(const MHWRender::MDrawContext& drawContext) override
-    {
-        if (!ensureGLResources())
-            return MS::kFailure;
+    glGenVertexArrays(1, &gGL.vao);
+    glBindVertexArray(gGL.vao);
+    glGenBuffers(1, &gGL.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, gGL.vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(kCubeVerts), kCubeVerts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    return true;
+}
 
-        // --- save the GL state we are about to disturb -----------------
-        GLint     prevProgram = 0, prevVao = 0, prevDepthFunc = GL_LESS;
-        GLboolean prevDepthTest = glIsEnabled(GL_DEPTH_TEST);
-        GLboolean prevDepthMask = GL_TRUE;
-        GLboolean prevColorMask[4] = { GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE };
-        glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
-        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVao);
-        glGetIntegerv(GL_DEPTH_FUNC, &prevDepthFunc);
-        glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
-        glGetBooleanv(GL_COLOR_WRITEMASK, prevColorMask);
-
-        // --- (a) establish the shared buffers (this op runs first) -----
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glDepthMask(GL_TRUE);
-        glClearColor(0.10f, 0.15f, 0.20f, 1.0f); // teal -> the "hole" color
-        glClearDepth(1.0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // --- (b) compute MVP from the live camera ----------------------
-        // Maya uses row-vector convention: clip_row = world_row * viewProj.
-        // The model matrix is a stand-in for a prim's world transform; here
-        // identity (the cube verts are already authored around the origin).
-        MStatus mstat;
-        MMatrix viewProj = drawContext.getMatrix(
-            MHWRender::MFrameContext::kViewProjMtx, &mstat);
-        if (!mstat) {
-            MGlobal::displayError("[holdoutSpike] failed to get viewProj matrix.");
-            return MS::kFailure;
-        }
-        MMatrix model;                  // identity == prim-world stand-in
-        MMatrix mvp = model * viewProj; // row-vector compose
-
-        // Row-major fill + transpose=GL_FALSE uploads the column-vector
-        // equivalent (mvp^T), which is what the column-major shader expects.
-        GLfloat mvpData[16];
-        for (int r = 0; r < 4; ++r)
-            for (int c = 0; c < 4; ++c)
-                mvpData[r * 4 + c] = static_cast<GLfloat>(mvp(r, c));
-
-        // --- (c) THE PASS: write depth (real ordering), mask all color --
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);                          // true depth ordering
-        glDepthMask(GL_TRUE);                          // depth write ON
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // color write OFF
-
-        glUseProgram(mProgram);
-        glUniformMatrix4fv(mMvpLoc, 1, GL_FALSE, mvpData);
-        glBindVertexArray(mVao);
-        glDrawArrays(GL_TRIANGLES, 0, kCubeVertCount);
-        glBindVertexArray(0);
-        glUseProgram(0);
-
-        // --- restore state so the beauty scene render starts clean -----
-        glColorMask(prevColorMask[0], prevColorMask[1], prevColorMask[2], prevColorMask[3]);
-        glDepthMask(prevDepthMask);
-        glDepthFunc(prevDepthFunc);
-        if (prevDepthTest)
-            glEnable(GL_DEPTH_TEST);
-        else
-            glDisable(GL_DEPTH_TEST);
-        glUseProgram(static_cast<GLuint>(prevProgram));
-        glBindVertexArray(static_cast<GLuint>(prevVao));
-
-        return MS::kSuccess;
-    }
-
-private:
-    // Built lazily on first execute (live GL context). Intentionally not
-    // deleted -- this is a spike; objects are reclaimed on plugin unload.
-    bool ensureGLResources()
-    {
-        if (mInitialized)
-            return mProgram != 0;
-        mInitialized = true;
-
-        GarchGLApiLoad();
-
-        GLuint vs = compileShader(GL_VERTEX_SHADER, kVertexSrc);
-        GLuint fs = compileShader(GL_FRAGMENT_SHADER, kFragmentSrc);
-        if (!vs || !fs)
-            return false;
-
-        mProgram = glCreateProgram();
-        glAttachShader(mProgram, vs);
-        glAttachShader(mProgram, fs);
-        glLinkProgram(mProgram);
-        glDeleteShader(vs);
-        glDeleteShader(fs);
-
-        GLint linked = GL_FALSE;
-        glGetProgramiv(mProgram, GL_LINK_STATUS, &linked);
-        if (!linked) {
-            char log[1024] = { 0 };
-            glGetProgramInfoLog(mProgram, sizeof(log), nullptr, log);
-            MGlobal::displayError(MString("[holdoutSpike] program link failed: ") + log);
-            glDeleteProgram(mProgram);
-            mProgram = 0;
-            return false;
-        }
-
-        mMvpLoc = glGetUniformLocation(mProgram, "mvp");
-
-        // VAO + VBO for the cube (position attribute at location 0).
-        glGenVertexArrays(1, &mVao);
-        glBindVertexArray(mVao);
-        glGenBuffers(1, &mVbo);
-        glBindBuffer(GL_ARRAY_BUFFER, mVbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(kCubeVerts), kCubeVerts, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-        return true;
-    }
-
-    bool   mInitialized = false;
-    GLuint mProgram = 0;
-    GLuint mVao = 0;
-    GLuint mVbo = 0;
-    GLint  mMvpLoc = -1;
-};
-
-//============================================================================
-// Operation 2: the beauty scene render -- draws everything, does NOT clear,
-// so it depth-tests against the depth our user op just stamped.
-//============================================================================
-class BeautySceneRender : public MHWRender::MSceneRender
+void logMatrixOnce(const char* label, const MMatrix& m)
 {
-public:
-    BeautySceneRender(const MString& name)
-        : MHWRender::MSceneRender(name)
-    {
+    for (int r = 0; r < 4; ++r) {
+        MString row("[holdoutSpike] ");
+        row += label; row += " row "; row += r; row += ": ";
+        for (int c = 0; c < 4; ++c) { row += m(r, c); row += "  "; }
+        MGlobal::displayInfo(row);
     }
-
-    MHWRender::MClearOperation& clearOperation() override
-    {
-        mClearOperation.setMask(
-            static_cast<unsigned int>(MHWRender::MClearOperation::kClearNone));
-        return mClearOperation;
-    }
-};
+}
 
 //============================================================================
-// The override: [ depth-only user op ] -> [ beauty scene ] -> [ present ]
+// Pre-scene-render notification: real 3D cube, MVP from M3dView.
 //============================================================================
-class HoldoutSpikeOverride : public MHWRender::MRenderOverride
+void holdoutDepthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
 {
-public:
-    HoldoutSpikeOverride(const MString& name)
-        : MHWRender::MRenderOverride(name)
-    {
-        mOps[0] = new HoldoutDepthOp("holdoutSpike_DepthOnly");
-        mOps[1] = new BeautySceneRender("holdoutSpike_Beauty");
-        mOps[2] = new MHWRender::MPresentTarget("holdoutSpike_Present");
+    if (!ensureGLResources())
+        return;
+
+    // --- log the pass (once per distinct pass) -------------------------
+    const MHWRender::MPassContext& pass = context.getPassContext();
+    const MString                  passId = pass.passIdentifier();
+    MStringArray                   sems = pass.passSemantics();
+    MString semJoined;
+    for (unsigned int i = 0; i < sems.length(); ++i) {
+        if (i) semJoined += ",";
+        semJoined += sems[i];
+    }
+    std::string key = std::string(passId.asChar()) + "|" + semJoined.asChar();
+    if (gLoggedPasses.find(key) == gLoggedPasses.end()) {
+        gLoggedPasses.insert(key);
+        MGlobal::displayInfo(
+            MString("[holdoutSpike] callback fired -- pass id='") + passId
+            + "' semantics='" + semJoined + "'");
     }
 
-    ~HoldoutSpikeOverride() override
-    {
-        for (auto*& op : mOps) {
-            delete op;
-            op = nullptr;
-        }
+    // --- camera from M3dView (DAG-derived, not the cold frame context) -
+    MStatus mstat;
+    M3dView view = M3dView::active3dView(&mstat);
+    if (!mstat) {
+        MGlobal::displayError("[holdoutSpike] active3dView() failed.");
+        return;
+    }
+    MMatrix modelView, projection;
+    if (view.modelViewMatrix(modelView) != MS::kSuccess ||
+        view.projectionMatrix(projection) != MS::kSuccess) {
+        MGlobal::displayError("[holdoutSpike] failed to read M3dView matrices.");
+        return;
     }
 
-    MHWRender::DrawAPI supportedDrawAPIs() const override
-    {
-        // GL only: the depth pass uses raw OpenGL. (Linux / Core Profile.)
-        return static_cast<MHWRender::DrawAPI>(
-            MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile);
+    MMatrix model;                                  // identity == prim stand-in
+    MMatrix mvp = model * modelView * projection;   // row-vector compose
+
+    if (!gLoggedMatrix) {
+        gLoggedMatrix = true;
+        logMatrixOnce("modelView", modelView);
+        logMatrixOnce("projection", projection);
+        logMatrixOnce("mvp", mvp);
     }
 
-    MString uiName() const override { return kOverrideUIName; }
+    GLfloat mvpData[16];
+    for (int r = 0; r < 4; ++r)
+        for (int c = 0; c < 4; ++c)
+            mvpData[r * 4 + c] = static_cast<GLfloat>(mvp(r, c));
 
-    bool startOperationIterator() override
-    {
-        mCurrentOp = 0;
-        return true;
-    }
+    // --- save the GL state we touch ------------------------------------
+    GLint     prevProgram = 0, prevVao = 0, prevDepthFunc = GL_LESS;
+    GLint     prevViewport[4] = { 0, 0, 0, 0 };
+    GLboolean prevDepthTest = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean prevDepthMask = GL_TRUE;
+    GLboolean prevColorMask[4] = { GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE };
+    glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVao);
+    glGetIntegerv(GL_DEPTH_FUNC, &prevDepthFunc);
+    glGetIntegerv(GL_VIEWPORT, prevViewport);
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
+    glGetBooleanv(GL_COLOR_WRITEMASK, prevColorMask);
 
-    MHWRender::MRenderOperation* renderOperation() override
-    {
-        if (mCurrentOp >= 0 && mCurrentOp < kNumOps)
-            return mOps[mCurrentOp];
-        return nullptr;
-    }
+    int vx = 0, vy = 0, vw = 0, vh = 0;
+    if (context.getViewportDimensions(vx, vy, vw, vh) == MS::kSuccess && vw > 0 && vh > 0)
+        glViewport(vx, vy, vw, vh);
 
-    bool nextRenderOperation() override
-    {
-        ++mCurrentOp;
-        return mCurrentOp < kNumOps;
-    }
+    // --- stamp: write depth (true ordering), mask all color ------------
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-private:
-    static const int             kNumOps = 3;
-    MHWRender::MRenderOperation*  mOps[kNumOps] = { nullptr, nullptr, nullptr };
-    int                          mCurrentOp = 0;
-};
+    glUseProgram(gGL.program);
+    glUniformMatrix4fv(gGL.mvpLoc, 1, GL_FALSE, mvpData);
+    glBindVertexArray(gGL.vao);
+    glDrawArrays(GL_TRIANGLES, 0, kCubeVertCount);
+    glBindVertexArray(0);
+    glUseProgram(0);
 
-HoldoutSpikeOverride* gOverride = nullptr;
+    // --- restore -------------------------------------------------------
+    glColorMask(prevColorMask[0], prevColorMask[1], prevColorMask[2], prevColorMask[3]);
+    glDepthMask(prevDepthMask);
+    glDepthFunc(prevDepthFunc);
+    if (prevDepthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
+    glUseProgram(static_cast<GLuint>(prevProgram));
+    glBindVertexArray(static_cast<GLuint>(prevVao));
+}
 
 } // anonymous namespace
 
@@ -334,7 +273,7 @@ HoldoutSpikeOverride* gOverride = nullptr;
 //============================================================================
 MStatus initializePlugin(MObject obj)
 {
-    MFnPlugin plugin(obj, "HoldoutSpike", "0.2", "Any");
+    MFnPlugin plugin(obj, "HoldoutSpike", "0.5", "Any");
 
     MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
     if (!renderer) {
@@ -342,14 +281,19 @@ MStatus initializePlugin(MObject obj)
         return MS::kFailure;
     }
 
-    if (!gOverride) {
-        gOverride = new HoldoutSpikeOverride(kOverrideName);
-        renderer->registerOverride(gOverride);
+    MStatus status = renderer->addNotification(
+        holdoutDepthNotify,
+        kNotificationName,
+        MHWRender::MPassContext::kBeginSceneRenderSemantic,
+        nullptr);
+    if (!status) {
+        MGlobal::displayError("[holdoutSpike] addNotification failed.");
+        return status;
     }
 
     MGlobal::displayInfo(
-        "[holdoutSpike] Registered. Pick 'Holdout Depth Spike' in the "
-        "viewport Renderer menu, then orbit the camera.");
+        "[holdoutSpike] Full-path test registered on Viewport 2.0. "
+        "Use the normal 'Viewport 2.0' renderer; sphere at origin; orbit.");
     return MS::kSuccess;
 }
 
@@ -358,10 +302,10 @@ MStatus uninitializePlugin(MObject obj)
     MFnPlugin plugin(obj);
 
     MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
-    if (renderer && gOverride) {
-        renderer->deregisterOverride(gOverride);
-        delete gOverride;
-        gOverride = nullptr;
+    if (renderer) {
+        renderer->removeNotification(
+            kNotificationName,
+            MHWRender::MPassContext::kBeginSceneRenderSemantic);
     }
     return MS::kSuccess;
 }
