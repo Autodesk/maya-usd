@@ -21,6 +21,7 @@
 #include "material.h"
 #include "renderDelegate.h"
 #include "tokens.h"
+#include "holdoutDepthPass.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
@@ -60,6 +61,9 @@ namespace {
 //! Required primvars when there is no material binding.
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals };
+
+//! Primvar name used to mark a prim as a holdout/matte object.
+const TfToken kMayaHoldoutToken("maya:holdout", TfToken::Immortal);
 
 // Proper support for selection highlighting on/off switch in
 // MRenderItem starts only beyond Maya 2024.1
@@ -950,6 +954,19 @@ void HdVP2Mesh::Sync(
             _meshSharedData->_allRequiredPrimvars.push_back(HdTokens->points);
 
         _UpdatePrimvarSources(delegate, *dirtyBits, _meshSharedData->_allRequiredPrimvars);
+
+        // Holdout detection: a constant primvar named "maya:holdout".
+        {
+            const VtValue holdoutVal = delegate->Get(id, kMayaHoldoutToken);
+            bool          isHoldout = false;
+            if (holdoutVal.IsHolding<bool>())
+                isHoldout = holdoutVal.UncheckedGet<bool>();
+            else if (holdoutVal.IsHolding<int>())
+                isHoldout = (holdoutVal.UncheckedGet<int>() != 0);
+            else if (holdoutVal.IsHolding<float>())
+                isHoldout = (holdoutVal.UncheckedGet<float>() != 0.0f);
+            _meshSharedData->_isHoldout = isHoldout;
+        }
 
         // update the type of vertex layout to use (shared/unshared)
         bool requireUnsharedVertexLayout
@@ -2172,7 +2189,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         || (itemDirtyBits
             & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
                | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent
-               | DirtySelectionHighlight))) {
+               | HdChangeTracker::DirtyPrimvar | DirtySelectionHighlight))) {
         bool enable = drawItem->GetVisible() && !_points(_meshSharedData->_primvarInfo).empty()
             && !instancerWithNoInstances;
 
@@ -2191,6 +2208,11 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
 
         enable = enable && drawScene.DrawRenderTag(_meshSharedData->_renderTag);
+
+        // Holdout: this prim contributes depth via the holdout depth pass, not
+        // color. Disable its beauty draw so it becomes an invisible occluder.
+        if (_meshSharedData->_isHoldout)
+            enable = false;
 
         if (drawItemData._enabled != enable) {
             drawItemData._enabled = enable;
@@ -2241,6 +2263,8 @@ void HdVP2Mesh::_UpdateDrawItem(
         indexBuffer = const_cast<MHWRender::MIndexBuffer*>(sharedBBoxGeom.GetIndexBuffer());
     }
 
+    const bool isHoldout = _meshSharedData->_isHoldout;
+
     // We can get an empty stateToCommit when viewport draw modes change. In this case every
     // rprim is marked dirty to give any stale render items a chance to update. If there are
     // no stale render items then stateToCommit can be empty!
@@ -2251,6 +2275,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                                                            primvars,
                                                            indexBuffer,
                                                            isBBoxItem,
+                                                           isHoldout,
                                                            &sharedBBoxGeom]() {
             // This code executes serially, once per mesh updated. Keep
             // performance in mind while modifying this code.
@@ -2435,6 +2460,28 @@ void HdVP2Mesh::_UpdateDrawItem(
                 drawScene.setUfeIdentifiers(*renderItem, stateToCommit._ufeIdentifiers);
             }
 #endif
+            // [holdout] publish shaded (triangle) hull items for the pre-scene
+            // depth stamp. No bbox, no instanced draw -- minimal increment.
+            const bool publishable = !isBBoxItem
+                && renderItem->primitive() == MHWRender::MGeometry::kTriangles
+                && !drawItemData._usingInstancedDraw && indexBuffer;
+            if (isHoldout && publishable) {
+                auto                      ptIt = primvarInfo->find(HdTokens->points);
+                MHWRender::MVertexBuffer* posBuf
+                    = (ptIt != primvarInfo->end() && ptIt->second) ? ptIt->second->_buffer.get()
+                                                                   : nullptr;
+                if (posBuf) {
+                    const MMatrix world = stateToCommit._worldMatrix
+                        ? *stateToCommit._worldMatrix
+                        : drawItemData._worldMatrix;
+                    HdVP2HoldoutDepthPass::Publish(
+                        renderItem, posBuf, indexBuffer, indexBuffer->size(), world);
+                } else {
+                    HdVP2HoldoutDepthPass::Unpublish(renderItem);
+                }
+            } else {
+                HdVP2HoldoutDepthPass::Unpublish(renderItem);
+            }
         });
     }
 

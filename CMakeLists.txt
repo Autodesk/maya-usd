@@ -383,9 +383,6 @@ if (BUILD_ADSK_PLUGIN)
     add_subdirectory(plugin/adsk)
 endif()
 
-add_subdirectory(plugin/holdoutSpike)
-configure_file("modules/holdout.mod.template" ${PROJECT_BINARY_DIR}/holdout.mod)
-install(FILES ${PROJECT_BINARY_DIR}/holdout.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 #------------------------------------------------------------------------------
 # install
