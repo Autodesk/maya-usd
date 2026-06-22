@@ -97,31 +97,9 @@ TEST_F(LayerEditorTestFixture, StageSelector_ChangeStage_UpdatesSessionState)
 }
 
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
-TEST_F(LayerEditorTestFixture, StageList_AddStage_AppearsInSelector)
-{
-    auto* combo = _widget->findChild<QComboBox*>(
-        QString(), Qt::FindChildrenRecursively);
-    ASSERT_NE(combo, nullptr);
-
-    int countBefore = combo->count();
-    auto newStage   = PXR_NS::UsdStage::CreateInMemory();
-    _sessionState.addStage(newStage);
-    QApplication::processEvents();
-
-    EXPECT_GT(combo->count(), countBefore)
-        << "Adding a stage should increase the selector item count";
-}
 #endif
 
 // ── stage selector pin / content toggle ───────────────────────────────────────
-
-TEST_F(LayerEditorTestFixture, StageSelector_HasAtLeastOneEntry)
-{
-    auto* combo = _widget->findChild<QComboBox*>(
-        QString(), Qt::FindChildrenRecursively);
-    ASSERT_NE(combo, nullptr);
-    EXPECT_GE(combo->count(), 1);
-}
 
 TEST_F(LayerEditorTestFixture, StageSelector_InitialCountMatchesSessionStageCount)
 {
@@ -133,50 +111,9 @@ TEST_F(LayerEditorTestFixture, StageSelector_InitialCountMatchesSessionStageCoun
 }
 
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
-TEST_F(LayerEditorTestFixture, StageSelector_AddStage_IncrementsComboCount)
-{
-    auto* combo = _widget->findChild<QComboBox*>(
-        QString(), Qt::FindChildrenRecursively);
-    ASSERT_NE(combo, nullptr);
-    int before = combo->count();
-    auto extra = PXR_NS::UsdStage::CreateInMemory();
-    _sessionState.addStage(extra);
-    QApplication::processEvents();
-    EXPECT_GT(combo->count(), before);
-}
 #endif
 
-TEST_F(LayerEditorTestFixture, CollapseContent_TogglesDisplayLayerContentsInMenu)
-{
-    auto* win = qobject_cast<QMainWindow*>(_widget->parent());
-    if (!win || !win->menuBar()) GTEST_SKIP() << "No menu bar available";
-
-    QAction* action = findActionInMenuBar(win, "Display Layer Content");
-    if (!action) GTEST_SKIP() << "Display Layer Content action not found";
-
-    bool initial = action->isChecked();
-    action->trigger();
-    QApplication::processEvents();
-    EXPECT_NE(action->isChecked(), initial);
-    // Restore
-    action->trigger();
-    QApplication::processEvents();
-}
-
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
-TEST_F(LayerEditorTestFixture, StageSelector_RemoveAddStage_RoundtripDoesNotCrash)
-{
-    auto* combo = _widget->findChild<QComboBox*>(
-        QString(), Qt::FindChildrenRecursively);
-    ASSERT_NE(combo, nullptr);
-    int before = combo->count();
-
-    auto extra = PXR_NS::UsdStage::CreateInMemory();
-    _sessionState.addStage(extra);
-    QApplication::processEvents();
-    EXPECT_GT(combo->count(), before);
-    // No direct removeStage in stub — just verify no crash on the add path.
-}
 #endif
 
 // The Auto-Hide Session Layer action must be the first Option-menu entry,

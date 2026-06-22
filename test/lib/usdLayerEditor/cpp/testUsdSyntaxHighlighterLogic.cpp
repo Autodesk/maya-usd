@@ -51,24 +51,6 @@ TEST(UsdSyntaxHighlighterTest, HighlightBlock_EmptyTextDoesNotCrash)
     EXPECT_NO_THROW(doc.setPlainText(""));
 }
 
-TEST(UsdSyntaxHighlighterTest, HighlightBlock_NumericLiteralHandled)
-{
-    QTextDocument        doc;
-    UsdSyntaxHighlighter hl(&doc);
-    EXPECT_NO_THROW(doc.setPlainText("float3 pos = (1.0, 2.0, 3.0)\n"));
-}
-
-TEST(UsdSyntaxHighlighterTest, HighlightBlock_KeywordsHandled)
-{
-    QTextDocument        doc;
-    UsdSyntaxHighlighter hl(&doc);
-    EXPECT_NO_THROW(doc.setPlainText(
-        "over \"Prim\" (\n"
-        "    prepend references = @layer.usda@\n"
-        "    variants = {string modelingVariant = \"Sphere\"}\n"
-        ")\n"));
-}
-
 // Tests the MAYAUSD_USD_SYNTAX_HIGHLIGHTING_CONFIG env var path.
 // loadConfigFromJson() checks this env var first; setting it before construction
 // makes the highlighter load rules from the provided file.

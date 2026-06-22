@@ -88,13 +88,6 @@ TEST_F(SharedStageFixture, NeedsSaving_FalseForSessionLayer)
     EXPECT_FALSE(session->needsSaving());
 }
 
-TEST_F(SharedStageFixture, GetAllNeedsSavingLayers_NonEmpty)
-{
-    // At least one layer (the anonymous sublayer) needs saving on a shared stage.
-    auto layers = treeModel()->getAllNeedsSavingLayers();
-    EXPECT_FALSE(layers.empty());
-}
-
 TEST_F(SharedStageFixture, SaveButton_VisibleOnSharedStage)
 {
     QPushButton* btn = findBtn(_widget, "Save all edits");
@@ -173,11 +166,6 @@ TEST_F(ReferencedLayersFixture, IsReadOnly_FalseForNonReferencedRootLayer)
     ASSERT_NE(root, nullptr);
     EXPECT_FALSE(root->isReadOnly());
 }
-
-TEST_F(ReferencedLayersFixture, GetAllNeedsSavingLayers_EmptyOnNonSharedStage)
-{
-    EXPECT_TRUE(treeModel()->getAllNeedsSavingLayers().empty());
-}
 #endif // MAYAUSD_OLD_LAYER_EDITOR
 
 // ── MayaReferencedLayersFixture ───────────────────────────────────────────────
@@ -219,11 +207,6 @@ TEST_F(MayaReferencedLayersFixture, IsReadOnly_FalseForNonMayaReferencedRootLaye
     auto* root = itemAt(treeModel(), rootLayerIndex());
     ASSERT_NE(root, nullptr);
     EXPECT_FALSE(root->isReadOnly());
-}
-
-TEST_F(MayaReferencedLayersFixture, GetAllNeedsSavingLayers_EmptyOnNonSharedStage)
-{
-    EXPECT_TRUE(treeModel()->getAllNeedsSavingLayers().empty());
 }
 
 // ── IncomingStageFixture ──────────────────────────────────────────────────────

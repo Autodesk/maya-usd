@@ -38,46 +38,79 @@ TEST_F(LayerEditorTestFixture, ContextMenu_AddAnonymousSublayer_CallsHook)
     auto* item = dynamic_cast<LayerTreeItem*>(
         treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
+    // Capture the identifier before the action: addAnonymousSublayer triggers a
+    // model rebuild on processEvents() that destroys this item, so it must not be
+    // dereferenced afterward.
+    const std::string layerId = item->layer()->GetIdentifier();
     selectRow(firstSublayerIndex());
     _sessionState._commandHookImpl.clearCalls();
     _window->addAnonymousSublayer();
     QApplication::processEvents();
     const auto* call = _sessionState._commandHookImpl.lastCallOf("addAnonymousSubLayer");
     ASSERT_NE(call, nullptr) << "addAnonymousSubLayer should have been called";
-    EXPECT_EQ(call->args[0], item->layer()->GetIdentifier())
+    EXPECT_EQ(call->args[0], layerId)
         << "addAnonymousSubLayer should target the selected layer";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_MuteLayer_CallsHook)
 {
     selectRow(firstSublayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const std::string layerId = item->layer()->GetIdentifier();
+    _sessionState._commandHookImpl.clearCalls();
     _window->muteLayer();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("muteSubLayer"));
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("muteSubLayer");
+    ASSERT_NE(call, nullptr) << "muteSubLayer should have been called";
+    EXPECT_EQ(call->args[0], layerId) << "muteSubLayer should target the selected layer";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_LockLayer_CallsHook)
 {
     selectRow(firstSublayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const std::string layerId = item->layer()->GetIdentifier();
+    _sessionState._commandHookImpl.clearCalls();
     _window->lockLayer();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("lockLayer"));
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("lockLayer");
+    ASSERT_NE(call, nullptr) << "lockLayer should have been called";
+    EXPECT_EQ(call->args[0], layerId) << "lockLayer should target the selected layer";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_RemoveLayer_CallsHook)
 {
     selectRow(firstSublayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const std::string layerId = item->layer()->GetIdentifier();
+    _sessionState._commandHookImpl.clearCalls();
     _window->removeSubLayer();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("removeSubLayerPath"));
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("removeSubLayerPath");
+    ASSERT_NE(call, nullptr) << "removeSubLayerPath should have been called";
+    // args = { parentIdentifier, removedSubLayerPath }; the removed path is the sublayer.
+    EXPECT_EQ(call->args[1], layerId) << "removeSubLayerPath should target the selected sublayer";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_CallsHook)
 {
     selectRow(firstSublayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const std::string layerId = item->layer()->GetIdentifier();
+    _sessionState._commandHookImpl.clearCalls();
     _window->discardEdits();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("discardEdits"));
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("discardEdits");
+    ASSERT_NE(call, nullptr) << "discardEdits should have been called";
+    EXPECT_EQ(call->args[0], layerId) << "discardEdits should target the selected layer";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_PrintLayer_CallsSessionState)
@@ -91,9 +124,16 @@ TEST_F(LayerEditorTestFixture, ContextMenu_PrintLayer_CallsSessionState)
 TEST_F(LayerEditorTestFixture, ContextMenu_SelectPrimsWithSpec_CallsHook)
 {
     selectRow(firstSublayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const std::string layerId = item->layer()->GetIdentifier();
+    _sessionState._commandHookImpl.clearCalls();
     _window->selectPrimsWithSpec();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("selectPrimsWithSpec"));
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("selectPrimsWithSpec");
+    ASSERT_NE(call, nullptr) << "selectPrimsWithSpec should have been called";
+    EXPECT_EQ(call->args[0], layerId) << "selectPrimsWithSpec should target the selected layer";
 }
 
 // ------------------------------------------------------------------
@@ -153,9 +193,16 @@ TEST_F(LayerEditorTestFixture, ContextMenu_UnlockedLayer_IsNotLocked)
 TEST_F(LayerEditorTestFixture, ContextMenu_ClearLayer_CallsHook)
 {
     selectRow(firstSublayerIndex());
+    auto* item = dynamic_cast<LayerTreeItem*>(
+        treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const std::string layerId = item->layer()->GetIdentifier();
+    _sessionState._commandHookImpl.clearCalls();
     _window->clearLayer();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("clearLayer"));
+    const auto* call = _sessionState._commandHookImpl.lastCallOf("clearLayer");
+    ASSERT_NE(call, nullptr) << "clearLayer should have been called";
+    EXPECT_EQ(call->args[0], layerId) << "clearLayer should target the selected layer";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_SaveEdits_DoesNotCrash)
@@ -224,24 +271,13 @@ TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_SkipsConfirmForAnonymous
     ASSERT_NE(item, nullptr);
     ASSERT_TRUE(item->isAnonymous());
 
+    _modalDialogCount = 0;
     _sessionState._commandHookImpl.clearCalls();
     _window->discardEdits();
     QApplication::processEvents();
     EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("discardEdits"));
-}
-
-TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_SkipsConfirmForCleanLayer)
-{
-    selectRow(firstSublayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
-    ASSERT_NE(item, nullptr);
-    ASSERT_FALSE(item->isDirty());
-
-    _sessionState._commandHookImpl.clearCalls();
-    _window->discardEdits();
-    QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("discardEdits"));
+    EXPECT_EQ(_modalDialogCount, 0)
+        << "anonymous layer should discard without a confirm dialog";
 }
 
 // ── setEditTarget guards (via model) ──────────────────────────────────────────

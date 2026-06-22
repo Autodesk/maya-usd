@@ -63,14 +63,6 @@ TEST(AbstractLayerEditorCreatorTest, InstanceNullAfterDestruction)
     EXPECT_EQ(AbstractLayerEditorCreator::instance(), nullptr);
 }
 
-TEST(AbstractLayerEditorCreatorTest, InstanceReturnsSamePtrEachCall)
-{
-    if (AbstractLayerEditorCreator::instance() != nullptr)
-        GTEST_SKIP() << "Another creator already registered; skipping.";
-    TestCreator creator;
-    EXPECT_EQ(AbstractLayerEditorCreator::instance(), AbstractLayerEditorCreator::instance());
-}
-
 // ── LayerEditorWindow delegation methods ─────────────────────────────────
 
 // Concrete subclass satisfying LayerEditorWindow's pure virtuals.
@@ -109,70 +101,17 @@ TEST_F(LayerEditorWindowTest, SelectionLength_EmptySelection_ReturnsZero)
     EXPECT_EQ(w->selectionLength(), 0);
 }
 
-TEST_F(LayerEditorWindowTest, IsInvalidLayer_NoSelection_ReturnsFalse)
+// With no selection, every layer-state query must report the false/empty default.
+TEST_F(LayerEditorWindowTest, AllQueries_NoSelection_ReturnFalse)
 {
     auto w = makeWindow();
     EXPECT_FALSE(w->isInvalidLayer());
-}
-
-TEST_F(LayerEditorWindowTest, IsSessionLayer_NoSelection_ReturnsFalse)
-{
-    auto w = makeWindow();
     EXPECT_FALSE(w->isSessionLayer());
-}
-
-TEST_F(LayerEditorWindowTest, IsAnonymousLayer_NoSelection_ReturnsFalse)
-{
-    auto w = makeWindow();
     EXPECT_FALSE(w->isAnonymousLayer());
-}
-
-TEST_F(LayerEditorWindowTest, IsSubLayer_NoSelection_ReturnsFalse)
-{
-    auto w = makeWindow();
     EXPECT_FALSE(w->isSubLayer());
-}
-
-TEST_F(LayerEditorWindowTest, LayerHasSubLayers_NoSelection_ReturnsFalse)
-{
-    auto w = makeWindow();
     EXPECT_FALSE(w->layerHasSubLayers());
-}
-
-TEST_F(LayerEditorWindowTest, LayerIsMuted_NoSelection_ReturnsFalse)
-{
-    auto w = makeWindow();
     EXPECT_FALSE(w->layerIsMuted());
-}
-
-TEST_F(LayerEditorWindowTest, LayerIsLocked_NoSelection_ReturnsFalse)
-{
-    auto w = makeWindow();
     EXPECT_FALSE(w->layerIsLocked());
-}
-
-TEST_F(LayerEditorWindowTest, SaveEdits_NoSelection_DoesNotCrash)
-{
-    auto w = makeWindow();
-    EXPECT_NO_THROW(w->saveEdits());
-}
-
-TEST_F(LayerEditorWindowTest, ClearLayer_NoSelection_DoesNotCrash)
-{
-    auto w = makeWindow();
-    EXPECT_NO_THROW(w->clearLayer());
-}
-
-TEST_F(LayerEditorWindowTest, UpdateLayerModel_DoesNotCrash)
-{
-    auto w = makeWindow();
-    EXPECT_NO_THROW(w->updateLayerModel());
-}
-
-TEST_F(LayerEditorWindowTest, StitchLayers_LessThanTwoItems_DoesNotCrash)
-{
-    auto w = makeWindow();
-    EXPECT_NO_THROW(w->stitchLayers());
 }
 
 } // namespace UsdLayerEditor

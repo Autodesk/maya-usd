@@ -88,16 +88,4 @@ TEST_F(LayerEditorTestFixture, WidgetManager_SelectLayers_ValidId_SelectsLayer)
     EXPECT_EQ(selected[0], rootId);
 }
 
-// Calling setWidget again with a second live widget hits the TF_WARN path.
-// We just verify it does not crash or corrupt state.
-TEST_F(LayerEditorTestFixture, WidgetManager_SetWidget_OverrideDoesNotCrash)
-{
-    auto* mgr = LayerEditorWidgetManager::getInstance();
-    // Pass the same widget again — the guard branch fires but state is unchanged.
-    mgr->setWidget(_widget);
-    auto layers = mgr->getSelectedLayers();
-    // Should still return valid results.
-    SUCCEED();
-}
-
 } // namespace UsdLayerEditor

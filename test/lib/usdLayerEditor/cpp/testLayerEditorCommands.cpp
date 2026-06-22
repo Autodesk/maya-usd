@@ -550,13 +550,6 @@ TEST_F(AddAnonSubLayerCmdTest, DoIt_InsertsAnonLayer)
     EXPECT_EQ(_parent->GetNumSubLayerPaths(), static_cast<size_t>(1));
 }
 
-TEST_F(AddAnonSubLayerCmdTest, DoIt_ReturnsNonEmptyIdentifier)
-{
-    auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);
-    cmd->execute();
-    EXPECT_FALSE(cmd->addedLayer().empty());
-}
-
 TEST_F(AddAnonSubLayerCmdTest, Undo_RemovesAnonLayer)
 {
     auto cmd = std::make_shared<AddAnonSubLayerCmd>(_stage, _parent);

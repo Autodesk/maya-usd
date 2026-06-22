@@ -94,15 +94,6 @@ TEST_F(LayerTreeModelTest, Rebuild_AlwaysShowsSessionLayerWhenAutoHideFalse)
     EXPECT_TRUE(first->isSessionLayer());
 }
 
-TEST_F(LayerTreeModelTest, Rebuild_ClearsAndRepopulatesRows)
-{
-    int rowsBefore = treeModel()->rowCount();
-    treeModel()->forceRefresh();
-    QApplication::processEvents();
-    // Row count should be consistent after rebuild.
-    EXPECT_EQ(treeModel()->rowCount(), rowsBefore);
-}
-
 TEST_F(LayerTreeModelTest, RebuildOnIdle_DeduplicatesScheduling)
 {
     // Calling forceRefresh twice before processing events should

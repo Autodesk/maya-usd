@@ -16,11 +16,17 @@
 
 #include <testFixture.h>
 
+#include "generatedIconButton.h"
 #include "layerContentsWidget.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QEvent>
 #include <QtCore/QTimer>
+#include <QtGui/QIcon>
+#include <QtGui/QImage>
+#include <QtGui/QPixmap>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QSplitter>
 
@@ -141,28 +147,34 @@ TEST_F(LayerEditorTestFixture, Widget_ShowDisplayLayerContents_False_HidesWidget
     EXPECT_FALSE(cw->isVisible());
 }
 
-// Toggling back and forth does not crash.
-TEST_F(LayerEditorTestFixture, Widget_ShowDisplayLayerContents_Toggle_DoesNotCrash)
+// Showing then hiding leaves the contents widget hidden.
+TEST_F(LayerEditorTestFixture, Widget_ShowDisplayLayerContents_HideAfterShow_HidesWidget)
 {
-    _widget->showDisplayLayerContents(false);
-    QApplication::processEvents();
     _widget->showDisplayLayerContents(true);
     QApplication::processEvents();
-    SUCCEED();
+    _widget->showDisplayLayerContents(false);
+    QApplication::processEvents();
+
+    auto* cw = contentsWidget(_widget);
+    ASSERT_NE(cw, nullptr);
+    EXPECT_FALSE(cw->isVisible());
 }
 
 // ── onSplitterMoved ───────────────────────────────────────────────────────────
 
-// Calling onSplitterMoved with index==1 and a valid splitter width does not crash.
-TEST_F(LayerEditorTestFixture, Widget_OnSplitterMoved_ValidIndex_DoesNotCrash)
+// index==1 with the pane open drives the layer-contents update branch.
+TEST_F(LayerEditorTestFixture, Widget_OnSplitterMoved_ContentsIndex_DoesNotCrash)
 {
+    _widget->showDisplayLayerContents(true);
+    QApplication::processEvents();
+
     // index 1 is the layer-contents pane; pos=200 means the pane is open.
     _widget->onSplitterMoved(200, 1);
     QApplication::processEvents();
     SUCCEED();
 }
 
-// onSplitterMoved with index != 1 is a no-op (does not crash).
+// index != 1 is a no-op early-return branch.
 TEST_F(LayerEditorTestFixture, Widget_OnSplitterMoved_OtherIndex_DoesNotCrash)
 {
     _widget->onSplitterMoved(100, 0);
@@ -172,7 +184,7 @@ TEST_F(LayerEditorTestFixture, Widget_OnSplitterMoved_OtherIndex_DoesNotCrash)
 
 // ── onLazyUpdateLayerContents / timerEvent ───────────────────────────────────
 
-// Calling onLazyUpdateLayerContents() and then processing events does not crash.
+// Scheduling the lazy update and processing events exercises the timer path.
 TEST_F(LayerEditorTestFixture, Widget_OnLazyUpdateLayerContents_DoesNotCrash)
 {
     _widget->showDisplayLayerContents(true);
@@ -191,6 +203,47 @@ TEST_F(LayerEditorTestFixture, Widget_UpdateButtonsOnIdle_DoesNotCrash)
     _widget->updateButtonsOnIdle();
     QApplication::processEvents();
     SUCCEED();
+}
+
+// ── onSaveStageButtonClicked ──────────────────────────────────────────────────
+// Drives saveStage(); the bulk save dialog is suppressed by the fixture's exec
+// test handler, so this exercises the save path without showing UI.
+TEST_F(LayerEditorTestFixture, Widget_OnSaveStageButtonClicked_DoesNotCrash)
+{
+    EXPECT_NO_THROW(_widget->onSaveStageButtonClicked());
+    QApplication::processEvents();
+}
+
+// ── GeneratedIconButton paint states ──────────────────────────────────────────
+// paint() picks base / hover / disabled pixmaps; rendering in each state must
+// produce visibly different output.
+TEST_F(LayerEditorTestFixture, GeneratedIconButton_PaintReflectsEnabledAndHoverState)
+{
+    QPixmap iconPixmap(16, 16);
+    iconPixmap.fill(QColor(100, 100, 100));
+    GeneratedIconButton button(_mainWindow, QIcon(iconPixmap), 16);
+    button.resize(16, 16);
+
+    auto renderToImage = [&button]() {
+        QPixmap target(button.size());
+        target.fill(Qt::transparent);
+        button.render(&target);
+        return target.toImage();
+    };
+
+    QImage base = renderToImage();
+
+    // Enter event sets the hover state; paint must use the (brighter) hover pixmap.
+    QEvent enterEvent(QEvent::Enter);
+    QCoreApplication::sendEvent(&button, &enterEvent);
+    QImage hover = renderToImage();
+
+    // Disabled: paint must use the (more transparent) disabled pixmap.
+    button.setEnabled(false);
+    QImage disabled = renderToImage();
+
+    EXPECT_NE(base, hover);
+    EXPECT_NE(base, disabled);
 }
 
 } // namespace UsdLayerEditor

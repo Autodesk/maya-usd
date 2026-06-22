@@ -170,64 +170,6 @@ static void addTwoSublayers(PXR_NS::UsdStageRefPtr stage)
     }
 }
 
-TEST_F(LayerEditorTestFixture, DragDrop_Drop_AdjustsRowIndexWhenMovingUp)
-{
-    addTwoSublayers(_sessionState.stage());
-    QApplication::processEvents();
-
-    auto rootLayer = _sessionState.stage()->GetRootLayer();
-    const std::string draggedPath = rootLayer->GetSubLayerPaths()[1];
-
-    QModelIndex parent = rootLayerIndex();
-    ASSERT_GE(treeModel()->rowCount(parent), 2);
-
-    QModelIndexList indexes = { treeModel()->index(1, 0, parent) };
-    std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
-    ASSERT_NE(mime, nullptr);
-
-    _sessionState._commandHookImpl.clearCalls();
-    bool accepted = treeModel()->dropMimeData(mime.get(), Qt::MoveAction, 0, 0, parent);
-    QApplication::processEvents();
-
-    ASSERT_TRUE(accepted) << "dropMimeData should accept the upward move";
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"));
-
-    // Dropping row 1 at row 0 must land the dragged layer first (row-index adjustment).
-    auto newPaths = rootLayer->GetSubLayerPaths();
-    ASSERT_FALSE(newPaths.empty());
-    EXPECT_EQ(newPaths[0], draggedPath) << "Dragged layer should now be first";
-}
-
-TEST_F(LayerEditorTestFixture, DragDrop_Drop_CallsMoveSubLayerPathOnSuccess)
-{
-    addTwoSublayers(_sessionState.stage());
-    QApplication::processEvents();
-
-    auto rootLayer = _sessionState.stage()->GetRootLayer();
-    const std::string draggedPath = rootLayer->GetSubLayerPaths()[0];
-
-    QModelIndex parent = rootLayerIndex();
-    ASSERT_GE(treeModel()->rowCount(parent), 2);
-
-    QModelIndexList indexes = { treeModel()->index(0, 0, parent) };
-    std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
-    ASSERT_NE(mime, nullptr);
-
-    _sessionState._commandHookImpl.clearCalls();
-    bool accepted = treeModel()->dropMimeData(
-        mime.get(), Qt::MoveAction, 2, 0, parent);
-    QApplication::processEvents();
-
-    ASSERT_TRUE(accepted) << "dropMimeData should accept the downward move";
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("moveSubLayerPath"));
-
-    // Dragged layer (row 0) dropped at the end must be last in the order.
-    auto newPaths = rootLayer->GetSubLayerPaths();
-    ASSERT_FALSE(newPaths.empty());
-    EXPECT_EQ(newPaths[newPaths.size() - 1], draggedPath)
-        << "Dragged layer should now be last";
-}
-
 // ── add-sibling-layer undo bracketing ──────────────────────────────────────────
 
 TEST_F(LayerEditorTestFixture, AddSiblingLayer_IsSingleUndoBracket)

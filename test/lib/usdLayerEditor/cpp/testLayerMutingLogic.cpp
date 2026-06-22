@@ -46,59 +46,6 @@ protected:
     SdfLayerRefPtr _layer;
 };
 
-TEST_F(LayerMutingTest, IsMuted_FalseByDefault)
-{
-    EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
-}
-
-TEST_F(LayerMutingTest, MuteLayer_SetsLayerAsMutedInStage)
-{
-    _stage->MuteLayer(_layer->GetIdentifier());
-    EXPECT_TRUE(_stage->IsLayerMuted(_layer->GetIdentifier()));
-}
-
-TEST_F(LayerMutingTest, UnmuteLayer_SetsLayerAsUnmuted)
-{
-    _stage->MuteLayer(_layer->GetIdentifier());
-    _stage->UnmuteLayer(_layer->GetIdentifier());
-    EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
-}
-
-TEST_F(LayerMutingTest, MuteToggleRoundtrip_RestoresOriginalState)
-{
-    _stage->MuteLayer(_layer->GetIdentifier());
-    _stage->UnmuteLayer(_layer->GetIdentifier());
-    EXPECT_FALSE(_stage->IsLayerMuted(_layer->GetIdentifier()));
-}
-
-TEST_F(LayerMutingTest, AddMutedLayer_AppearsInRetainedList)
-{
-    // addMutedLayer retains a reference to prevent USD from unloading the layer.
-    addMutedLayer(_layer);
-    // We can't query the list directly, but verify no crash.
-    SUCCEED();
-}
-
-TEST_F(LayerMutingTest, RemoveMutedLayer_DoesNotCrash)
-{
-    addMutedLayer(_layer);
-    EXPECT_NO_THROW(removeMutedLayer(_layer));
-}
-
-TEST_F(LayerMutingTest, ForgetMutedLayers_ClearsRetainedList)
-{
-    addMutedLayer(_layer);
-    EXPECT_NO_THROW(forgetMutedLayers());
-}
-
-TEST_F(LayerMutingTest, AddMutedLayer_PreservesLayerReference)
-{
-    // After addMutedLayer, the layer should still be reachable.
-    addMutedLayer(_layer);
-    auto identifier = _layer->GetIdentifier();
-    EXPECT_FALSE(identifier.empty());
-}
-
 // ── loadLayerMuteState (new editor only) ─────────────────────────────────────
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
 

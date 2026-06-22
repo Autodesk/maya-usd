@@ -58,6 +58,10 @@ void sendMouseMove(QWidget* widget, const QPoint& pos)
 
 } // namespace
 
+// These drive the LayerTreeView mouse/paint event handlers (and the action-button
+// GeneratedIconButton paint path via repaint). The action-button hit state is only
+// reachable through real delegate hit-testing, so these guard the handlers against
+// segfaults rather than asserting a selection outcome.
 class LayerTreeViewMouseTest : public LayerEditorTestFixture { };
 
 TEST_F(LayerTreeViewMouseTest, MousePress_OnValidItem_DoesNotCrash)

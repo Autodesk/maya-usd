@@ -18,6 +18,7 @@
 #include "stageSelectorWidget.h"
 
 #include <QtCore/QCoreApplication>
+#include <QtWidgets/QComboBox>
 
 #include <gtest/gtest.h>
 
@@ -31,10 +32,7 @@ class TestableStageSelectorWidget : public StageSelectorWidget
 public:
     using StageSelectorWidget::StageSelectorWidget;
 
-    void testUpdateFromSessionState()
-    {
-        updateFromSessionState();
-    }
+    void testUpdateFromSessionState() { updateFromSessionState(); }
     void testUpdateFromSessionStateWithEntry(SessionState::StageEntry const& entry)
     {
         updateFromSessionState(entry);
@@ -45,6 +43,9 @@ public:
     void testStageRenamed(SessionState::StageEntry const& entry) { stageRenamed(entry); }
     void testStageReset(SessionState::StageEntry const& entry) { stageReset(entry); }
     void testStagePinClicked() { stagePinClicked(); }
+    void testCollapseContentClicked() { collapseContentClicked(); }
+
+    QComboBox* dropDown() { return findChild<QComboBox*>(); }
 };
 
 class StageSelectorWidgetTest : public LayerEditorTestFixture
@@ -65,17 +66,22 @@ TEST_F(StageSelectorWidgetTest, Construction_DoesNotCrash)
 
 // ── updateFromSessionState ────────────────────────────────────────────────
 
-TEST_F(StageSelectorWidgetTest, UpdateFromSessionState_DefaultEntry_DoesNotCrash)
-{
-    auto w = makeWidget();
-    EXPECT_NO_THROW(w->testUpdateFromSessionState());
-}
-
-TEST_F(StageSelectorWidgetTest, UpdateFromSessionState_Twice_DoesNotCrash)
+// The combo mirrors the session's stage list.
+TEST_F(StageSelectorWidgetTest, UpdateFromSessionState_PopulatesComboFromStageList)
 {
     auto w = makeWidget();
     w->testUpdateFromSessionState();
-    EXPECT_NO_THROW(w->testUpdateFromSessionState());
+    ASSERT_NE(w->dropDown(), nullptr);
+    EXPECT_EQ(w->dropDown()->count(), static_cast<int>(_sessionState.allStages().size()));
+}
+
+TEST_F(StageSelectorWidgetTest, UpdateFromSessionState_Twice_KeepsComboCount)
+{
+    auto w = makeWidget();
+    w->testUpdateFromSessionState();
+    w->testUpdateFromSessionState();
+    ASSERT_NE(w->dropDown(), nullptr);
+    EXPECT_EQ(w->dropDown()->count(), static_cast<int>(_sessionState.allStages().size()));
 }
 
 // ── sessionStageChanged ───────────────────────────────────────────────────
@@ -108,6 +114,17 @@ TEST_F(StageSelectorWidgetTest, UpdateContentButton_DoesNotCrash)
     EXPECT_NO_THROW(w->testUpdateContentButton());
 }
 
+// ── collapseContentClicked ────────────────────────────────────────────────
+
+// Clicking the collapse button toggles the session's display-layer-contents flag.
+TEST_F(StageSelectorWidgetTest, CollapseContentClicked_TogglesDisplayLayerContents)
+{
+    auto       w       = makeWidget();
+    const bool initial = _sessionState.displayLayerContents();
+    w->testCollapseContentClicked();
+    EXPECT_EQ(_sessionState.displayLayerContents(), !initial);
+}
+
 // ── stagePinClicked ───────────────────────────────────────────────────────
 
 TEST_F(StageSelectorWidgetTest, StagePinClicked_TogglesWithoutCrash)
@@ -119,11 +136,19 @@ TEST_F(StageSelectorWidgetTest, StagePinClicked_TogglesWithoutCrash)
 
 // ── stageRenamed / stageReset ─────────────────────────────────────────────
 
-TEST_F(StageSelectorWidgetTest, StageRenamed_DefaultEntry_DoesNotCrash)
+// Renaming a stage updates the matching combo entry's text.
+TEST_F(StageSelectorWidgetTest, StageRenamed_UpdatesComboItemText)
 {
     auto w = makeWidget();
-    SessionState::StageEntry entry;
-    EXPECT_NO_THROW(w->testStageRenamed(entry));
+    w->testUpdateFromSessionState();
+    ASSERT_NE(w->dropDown(), nullptr);
+    ASSERT_GT(w->dropDown()->count(), 0);
+
+    SessionState::StageEntry renamed = _sessionState.allStages()[0];
+    renamed._displayName             = "RenamedStage";
+    w->testStageRenamed(renamed);
+
+    EXPECT_EQ(w->dropDown()->itemText(0), QString("RenamedStage"));
 }
 
 TEST_F(StageSelectorWidgetTest, StageReset_DefaultEntry_DoesNotCrash)

@@ -57,20 +57,6 @@ TEST_F(LayerTreeItemDelegateTest, OnModelReset_ClearsState)
     EXPECT_FALSE(delegate()->isTargetPressed());
 }
 
-TEST_F(LayerTreeItemDelegateTest, ClearPressedTarget_SetsNotPressed)
-{
-    ASSERT_NE(delegate(), nullptr);
-    delegate()->clearPressedTarget();
-    EXPECT_FALSE(delegate()->isTargetPressed());
-}
-
-TEST_F(LayerTreeItemDelegateTest, ClearLastHitAction_EmptiesAction)
-{
-    ASSERT_NE(delegate(), nullptr);
-    delegate()->clearLastHitAction();
-    EXPECT_TRUE(delegate()->lastHitAction().isEmpty());
-}
-
 // ── editorEvent — non-mouse event ────────────────────────────────────────────
 
 TEST_F(LayerTreeItemDelegateTest, EditorEvent_InvalidIndex_ReturnsFalse)
@@ -96,16 +82,6 @@ TEST_F(LayerTreeItemDelegateTest, EditorEvent_UnhandledEventType_ReturnsFalse)
 // ── editorEvent — mouse move ──────────────────────────────────────────────────
 // MouseMove only calls _treeView->update(); no dynamic_cast to QMouseEvent.
 
-TEST_F(LayerTreeItemDelegateTest, EditorEvent_MouseMove_DoesNotCrash)
-{
-    ASSERT_NE(delegate(), nullptr);
-    QModelIndex          idx = firstSublayerIndex();
-    ASSERT_TRUE(idx.isValid());
-    QStyleOptionViewItem opt = styleOptionFor(idx);
-    QEvent               ev(QEvent::MouseMove);
-    EXPECT_NO_THROW(delegate()->editorEvent(&ev, treeModel(), opt, idx));
-}
-
 TEST_F(LayerTreeItemDelegateTest, EditorEvent_MouseMove_ReturnsFalse)
 {
     ASSERT_NE(delegate(), nullptr);
@@ -118,106 +94,38 @@ TEST_F(LayerTreeItemDelegateTest, EditorEvent_MouseMove_ReturnsFalse)
 
 // ── paint() — force full paint pipeline ──────────────────────────────────────
 
-TEST_F(LayerTreeItemDelegateTest, Paint_SessionLayerItem_DoesNotCrash)
+// One smoke test exercising every item-state branch of paint(); a paint
+// regression in any state (session/root/sublayer/selected/locked/muted) trips it.
+TEST_F(LayerTreeItemDelegateTest, Paint_AllItemStates_DoesNotCrash)
 {
     ASSERT_NE(delegate(), nullptr);
-    QModelIndex idx = sessionLayerIndex();
-    ASSERT_TRUE(idx.isValid());
 
-    QStyleOptionViewItem opt;
-    opt.rect  = QRect(0, 0, 400, 22);
-    opt.state = QStyle::State_Enabled;
+    auto paintIndex = [&](const QModelIndex& idx, QStyle::State state) {
+        ASSERT_TRUE(idx.isValid());
+        QStyleOptionViewItem opt;
+        opt.rect  = QRect(0, 0, 400, 22);
+        opt.state = state;
+        QPixmap  pm(400, 22);
+        QPainter p(&pm);
+        EXPECT_NO_THROW(delegate()->paint(&p, opt, idx));
+        p.end();
+    };
 
-    QPixmap  pm(400, 22);
-    QPainter p(&pm);
-    EXPECT_NO_THROW(delegate()->paint(&p, opt, idx));
-    p.end();
-}
+    paintIndex(sessionLayerIndex(), QStyle::State_Enabled);
+    paintIndex(rootLayerIndex(), QStyle::State_Enabled);
+    paintIndex(firstSublayerIndex(), QStyle::State_Enabled);
+    paintIndex(firstSublayerIndex(), QStyle::State_Enabled | QStyle::State_Selected);
 
-TEST_F(LayerTreeItemDelegateTest, Paint_RootLayerItem_DoesNotCrash)
-{
-    ASSERT_NE(delegate(), nullptr);
-    QModelIndex idx = rootLayerIndex();
-    ASSERT_TRUE(idx.isValid());
-
-    QStyleOptionViewItem opt;
-    opt.rect  = QRect(0, 0, 400, 22);
-    opt.state = QStyle::State_Enabled;
-
-    QPixmap  pm(400, 22);
-    QPainter p(&pm);
-    EXPECT_NO_THROW(delegate()->paint(&p, opt, idx));
-    p.end();
-}
-
-TEST_F(LayerTreeItemDelegateTest, Paint_SublayerItem_DoesNotCrash)
-{
-    ASSERT_NE(delegate(), nullptr);
-    QModelIndex idx = firstSublayerIndex();
-    ASSERT_TRUE(idx.isValid());
-
-    QStyleOptionViewItem opt;
-    opt.rect  = QRect(0, 0, 400, 22);
-    opt.state = QStyle::State_Enabled;
-
-    QPixmap  pm(400, 22);
-    QPainter p(&pm);
-    EXPECT_NO_THROW(delegate()->paint(&p, opt, idx));
-    p.end();
-}
-
-TEST_F(LayerTreeItemDelegateTest, Paint_LockedSublayer_DoesNotCrash)
-{
     auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
+
     lockLayer("", item->layer(), LayerLock_Locked, false);
-
-    QModelIndex          idx = firstSublayerIndex();
-    QStyleOptionViewItem opt;
-    opt.rect  = QRect(0, 0, 400, 22);
-    opt.state = QStyle::State_Enabled;
-
-    QPixmap  pm(400, 22);
-    QPainter p(&pm);
-    EXPECT_NO_THROW(delegate()->paint(&p, opt, idx));
-    p.end();
-
+    paintIndex(firstSublayerIndex(), QStyle::State_Enabled);
     lockLayer("", item->layer(), LayerLock_Unlocked, false);
-}
 
-TEST_F(LayerTreeItemDelegateTest, Paint_MutedSublayer_DoesNotCrash)
-{
-    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
-    ASSERT_NE(item, nullptr);
     addMutedLayer(item->layer());
-
-    QModelIndex          idx = firstSublayerIndex();
-    QStyleOptionViewItem opt;
-    opt.rect  = QRect(0, 0, 400, 22);
-    opt.state = QStyle::State_Enabled;
-
-    QPixmap  pm(400, 22);
-    QPainter p(&pm);
-    EXPECT_NO_THROW(delegate()->paint(&p, opt, idx));
-    p.end();
-
+    paintIndex(firstSublayerIndex(), QStyle::State_Enabled);
     removeMutedLayer(item->layer());
-}
-
-TEST_F(LayerTreeItemDelegateTest, Paint_SelectedItem_DoesNotCrash)
-{
-    ASSERT_NE(delegate(), nullptr);
-    QModelIndex idx = firstSublayerIndex();
-    ASSERT_TRUE(idx.isValid());
-
-    QStyleOptionViewItem opt;
-    opt.rect  = QRect(0, 0, 400, 22);
-    opt.state = QStyle::State_Enabled | QStyle::State_Selected;
-
-    QPixmap  pm(400, 22);
-    QPainter p(&pm);
-    EXPECT_NO_THROW(delegate()->paint(&p, opt, idx));
-    p.end();
 }
 
 } // namespace UsdLayerEditor

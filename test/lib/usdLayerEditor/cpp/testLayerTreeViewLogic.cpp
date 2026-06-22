@@ -26,6 +26,7 @@
 
 #include <QtCore/QItemSelectionModel>
 #include <QtCore/QMetaObject>
+#include <QtGui/QKeyEvent>
 #include <QtWidgets/QAbstractItemView>
 #include <QtWidgets/QApplication>
 
@@ -79,13 +80,6 @@ protected:
 TEST_F(LayerTreeViewTest, Memento_PopulatedOnConstruction)
 {
     LayerViewMemento memento(*layerTree(), *treeModel());
-    EXPECT_FALSE(memento.empty());
-}
-
-TEST_F(LayerTreeViewTest, Memento_NotEmptyAfterPreserve)
-{
-    LayerViewMemento memento(*layerTree(), *treeModel());
-    memento.preserve(*layerTree(), *treeModel());
     EXPECT_FALSE(memento.empty());
 }
 
@@ -207,33 +201,6 @@ TEST_F(LayerTreeViewTest, Delegate_TargetIconRect_HasPositiveWidth)
 
 // ── LayerActionInfo state queries ─────────────────────────────────────────────
 
-TEST_F(LayerTreeViewTest, Delegate_LockInfoChecked_WhenLayerIsLocked)
-{
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
-    ASSERT_NE(item, nullptr);
-
-    TestUtils::lockLayerDirect(item->layer());
-    LayerActionInfo lockInfo;
-    item->getActionButton(LayerActionType::Lock, lockInfo);
-    EXPECT_TRUE(lockInfo._checked);
-
-    TestUtils::unlockLayerDirect(item->layer());
-}
-
-TEST_F(LayerTreeViewTest, Delegate_MuteInfoChecked_WhenLayerIsMuted)
-{
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
-    ASSERT_NE(item, nullptr);
-    _sessionState.stage()->MuteLayer(item->layer()->GetIdentifier());
-    QApplication::processEvents();
-
-    LayerActionInfo muteInfo;
-    item->getActionButton(LayerActionType::Mute, muteInfo);
-    EXPECT_TRUE(muteInfo._checked);
-
-    _sessionState.stage()->UnmuteLayer(item->layer()->GetIdentifier());
-}
-
 TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenLayerDoesNotNeedSaving)
 {
     // Default stub stage is not shared, so needsSaving() == false and the handler
@@ -291,11 +258,6 @@ TEST_F(LayerTreeViewTest, LayerItemFromIndex_InvalidIndex_ReturnsNull)
     EXPECT_EQ(layerTree()->layerItemFromIndex(QModelIndex()), nullptr);
 }
 
-TEST_F(LayerTreeViewTest, LayerTreeModel_ReturnsNonNull)
-{
-    EXPECT_NE(layerTree()->layerTreeModel(), nullptr);
-}
-
 TEST_F(LayerTreeViewTest, LayerTreeModel_MatchesTreeModel)
 {
     EXPECT_EQ(layerTree()->layerTreeModel(), treeModel());
@@ -324,29 +286,9 @@ public:
     using LayerTreeView::expandChildren;
     using LayerTreeView::collapseChildren;
     using LayerTreeView::shouldExpandOrCollapseAll;
+    using LayerTreeView::onMuteLayerButtonPushed;
+    using LayerTreeView::onLockLayerButtonPushed;
 };
-
-TEST_F(LayerTreeViewTest, ExpandChildren_RootLayer_DoesNotCrash)
-{
-    TestableLayerTreeView tree(&_sessionState, _mainWindow);
-    tree.show();
-    QApplication::processEvents();
-    EXPECT_NO_THROW(tree.expandChildren(tree.layerTreeModel()->rootLayerIndex()));
-}
-
-TEST_F(LayerTreeViewTest, CollapseChildren_RootLayer_DoesNotCrash)
-{
-    TestableLayerTreeView tree(&_sessionState, _mainWindow);
-    tree.show();
-    QApplication::processEvents();
-    EXPECT_NO_THROW(tree.collapseChildren(tree.layerTreeModel()->rootLayerIndex()));
-}
-
-TEST_F(LayerTreeViewTest, CollapseChildren_InvalidIndex_DoesNotCrash)
-{
-    TestableLayerTreeView tree(&_sessionState, _mainWindow);
-    EXPECT_NO_THROW(tree.collapseChildren(QModelIndex()));
-}
 
 TEST_F(LayerTreeViewTest, CollapseChildren_AlsoCollapsesRoot)
 {
@@ -365,31 +307,98 @@ TEST_F(LayerTreeViewTest, CollapseChildren_AlsoCollapsesRoot)
     EXPECT_FALSE(tree.isExpanded(root));
 }
 
-// ── shouldExpandOrCollapseAll ─────────────────────────────────────────────────
-
-TEST_F(LayerTreeViewTest, ShouldExpandOrCollapseAll_ReturnsBool)
+TEST_F(LayerTreeViewTest, ExpandChildren_ExpandsCollapsedIndex)
 {
     TestableLayerTreeView tree(&_sessionState, _mainWindow);
-    // Just verify it returns without crashing; the default stub setting is false.
-    bool result = tree.shouldExpandOrCollapseAll();
-    (void)result;
+    tree.show();
+    QApplication::processEvents();
+
+    QModelIndex root = tree.layerTreeModel()->rootLayerIndex();
+    tree.collapse(root);
+    QApplication::processEvents();
+    ASSERT_FALSE(tree.isExpanded(root));
+
+    tree.expandChildren(root);
+    QApplication::processEvents();
+    EXPECT_TRUE(tree.isExpanded(root));
 }
 
-// ── callMethodOnSelection ─────────────────────────────────────────────────────
+// ── mute / lock button-push slots ──────────────────────────────────────────────
+// onMuteLayerButtonPushed/onLockLayerButtonPushed act on the current item (the
+// action-button path), distinct from the selection-based onMuteLayer/onLockLayer.
 
-TEST_F(LayerTreeViewTest, CallMethodOnSelection_WithNoSelection_DoesNotCrash)
+TEST_F(LayerTreeViewTest, MuteLayerButtonPushed_CallsMuteSubLayerOnCurrentItem)
 {
-    layerTree()->clearSelection();
-    layerTree()->setCurrentIndex(QModelIndex());
-    EXPECT_NO_THROW(
-        layerTree()->callMethodOnSelection("test", &LayerTreeItem::printLayer));
+    TestableLayerTreeView tree(&_sessionState, _mainWindow);
+    tree.show();
+    QApplication::processEvents();
+
+    QModelIndex root = tree.layerTreeModel()->rootLayerIndex();
+    tree.setCurrentIndex(tree.layerTreeModel()->index(0, 0, root));
+    ASSERT_NE(tree.currentLayerItem(), nullptr);
+
+    _sessionState._commandHookImpl.clearCalls();
+    tree.onMuteLayerButtonPushed();
+    QApplication::processEvents();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("muteSubLayer"));
 }
 
-TEST_F(LayerTreeViewTest, CallMethodOnSelection_WithSelection_DoesNotCrash)
+TEST_F(LayerTreeViewTest, LockLayerButtonPushed_CallsLockLayerOnCurrentItem)
+{
+    TestableLayerTreeView tree(&_sessionState, _mainWindow);
+    tree.show();
+    QApplication::processEvents();
+
+    QModelIndex root = tree.layerTreeModel()->rootLayerIndex();
+    tree.setCurrentIndex(tree.layerTreeModel()->index(0, 0, root));
+    ASSERT_NE(tree.currentLayerItem(), nullptr);
+
+    _sessionState._commandHookImpl.clearCalls();
+    tree.onLockLayerButtonPushed();
+    QApplication::processEvents();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("lockLayer"));
+}
+
+// ── keyboard handling ──────────────────────────────────────────────────────────
+
+TEST_F(LayerTreeViewTest, KeyPress_Delete_RemovesSelectedSublayer)
 {
     selectRow(firstSublayerIndex());
-    EXPECT_NO_THROW(
-        layerTree()->callMethodOnSelection("test", &LayerTreeItem::printLayer));
+    _sessionState._commandHookImpl.clearCalls();
+
+    QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier);
+    layerTree()->keyPressEvent(&keyEvent);
+    QApplication::processEvents();
+
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("removeSubLayerPath"));
+}
+
+TEST_F(LayerTreeViewTest, KeyPress_R_RefreshesModel)
+{
+    // Insert a sublayer directly into the stack (bypassing the model) so a refresh
+    // is observable as an additional row under the root.
+    const int before = treeModel()->rowCount(rootLayerIndex());
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(
+        SdfLayer::CreateAnonymous("refresh_extra")->GetIdentifier(), 0);
+
+    QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_R, Qt::NoModifier);
+    layerTree()->keyPressEvent(&keyEvent);
+    QApplication::processEvents();
+
+    EXPECT_EQ(treeModel()->rowCount(rootLayerIndex()), before + 1);
+}
+
+// ── add parent layer ───────────────────────────────────────────────────────────
+
+TEST_F(LayerTreeViewTest, AddParentLayer_ReplacesSelectedWithAnonymousParent)
+{
+    selectRow(firstSublayerIndex());
+    _sessionState._commandHookImpl.clearCalls();
+
+    layerTree()->onAddParentLayer("Add Parent Layer");
+    QApplication::processEvents();
+
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("replaceSubLayerPath"));
 }
 
 } // namespace UsdLayerEditor

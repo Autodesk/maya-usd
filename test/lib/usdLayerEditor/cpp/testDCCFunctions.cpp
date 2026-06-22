@@ -75,14 +75,6 @@ TEST(LayerEditorDCCFunctions, CaptureSessionLayer_NullByDefault)
     EXPECT_FALSE(captureSessionLayer("|x"));
 }
 
-TEST(LayerEditorDCCFunctions, TransferSessionLayer_NoOpByDefault)
-{
-    ScopedLayerEditorDCCFunctions guard;
-    setComponentFns(ComponentFns {});
-    transferSessionLayer(PXR_NS::SdfLayerRefPtr {}, "|x"); // must not crash
-    SUCCEED();
-}
-
 TEST(LayerEditorDCCFunctions, TransferSessionLayer_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
@@ -215,15 +207,6 @@ TEST(LayerEditorDCCFunctions, GetStageCaches_ReturnsRegisteredCaches)
     EXPECT_EQ(caches[0], &extra);
 }
 
-TEST(LayerEditorDCCFunctions, SetLayerUpAxisAndUnits_NoOpByDefault)
-{
-    ScopedLayerEditorDCCFunctions guard;
-    setSerializationFns(SerializationFns{});
-    auto layer = PXR_NS::SdfLayer::CreateAnonymous("upaxis");
-    setLayerUpAxisAndUnits(layer); // must not crash
-    SUCCEED();
-}
-
 TEST(LayerEditorDCCFunctions, SetLayerUpAxisAndUnits_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
@@ -234,14 +217,6 @@ TEST(LayerEditorDCCFunctions, SetLayerUpAxisAndUnits_DispatchesWhenRegistered)
     auto layer = PXR_NS::SdfLayer::CreateAnonymous("upaxis");
     setLayerUpAxisAndUnits(layer);
     EXPECT_EQ(seenLayer, layer);
-}
-
-TEST(LayerEditorDCCFunctions, UpdateDCCObjectRootLayer_NoOpByDefault)
-{
-    ScopedLayerEditorDCCFunctions guard;
-    setSerializationFns(SerializationFns{});
-    updateDCCObjectRootLayer("|proxy", "/tmp/new.usd", nullptr, true); // must not crash
-    SUCCEED();
 }
 
 TEST(LayerEditorDCCFunctions, UpdateDCCObjectRootLayer_DispatchesWhenRegistered)

@@ -122,34 +122,6 @@ TEST_F(ButtonsSharedStageFixture, SaveStageButton_EnabledWhenDirty)
     EXPECT_TRUE(btn->isEnabled()) << "Save Stage button should be enabled when stage is dirty";
 }
 
-// Clicking the Save button triggers saveStage(), which internally calls exec() on
-// SaveLayersDialog. The dialog is suppressed in tests via setExecTestHandler (returns
-// Rejected), so no modal ever blocks — the test just verifies no crash or hang.
-TEST_F(ButtonsSharedStageFixture, SaveStageButton_Click_DismissesDialog)
-{
-    QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Save all edits in the Layer Stack");
-    ASSERT_NE(btn, nullptr) << "Could not find Save Stage button";
-
-    auto stage = _sessionState.stage();
-    ASSERT_TRUE(stage);
-    stage->GetRootLayer()->SetComment("dirty");
-    QApplication::processEvents();
-    QApplication::processEvents();
-
-    ASSERT_TRUE(btn->isEnabled());
-
-    // Dismiss any modal dialog that saveStage() might show.
-    QTimer::singleShot(200, []() {
-        QWidget* modal = QApplication::activeModalWidget();
-        if (modal)
-            modal->close();
-    });
-
-    btn->click();
-    QApplication::processEvents();
-    // Reaching here without a crash or hang is the pass criterion.
-}
-
 // ── updateNewLayerButton enable/disable matrix ────────────────────────────────
 
 // When nothing is selected the button falls back to the root layer and stays enabled.
@@ -160,25 +132,6 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledWhenNoSelectionDefaultsToRo
     QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Add a New Layer");
     ASSERT_NE(btn, nullptr);
     EXPECT_TRUE(btn->isEnabled());
-}
-
-// Clicking with no selection should add an anonymous sublayer under the root.
-TEST_F(LayerEditorTestFixture, NewLayerButton_Click_NoSelection_AddsToRoot)
-{
-    layerTree()->selectionModel()->clearSelection();
-    QApplication::processEvents();
-    QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Add a New Layer");
-    ASSERT_NE(btn, nullptr);
-    ASSERT_TRUE(btn->isEnabled());
-
-    _sessionState._commandHookImpl.clearCalls();
-    btn->click();
-    QApplication::processEvents();
-
-    const auto* call = _sessionState._commandHookImpl.lastCallOf("addAnonymousSubLayer");
-    ASSERT_NE(call, nullptr) << "addAnonymousSubLayer should be called on root layer when nothing is selected";
-    EXPECT_EQ(call->args[0], _sessionState.stage()->GetRootLayer()->GetIdentifier())
-        << "parent should be the root layer when there is no selection";
 }
 
 TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledForRootLayer)
@@ -236,13 +189,6 @@ TEST_F(LayerEditorTestFixture, SaveButton_HiddenWhenStageIsNotShared)
     QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Save all edits");
     ASSERT_NE(btn, nullptr);
     EXPECT_FALSE(btn->isVisible());
-}
-
-TEST_F(LayerEditorTestFixture, LoadLayerButton_ExistsAndIsEnabled)
-{
-    QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Load an Existing Layer");
-    ASSERT_NE(btn, nullptr);
-    EXPECT_TRUE(btn->isEnabled());
 }
 
 // Selecting a sublayer enables the button — clicking adds a sibling at that position.

@@ -55,12 +55,6 @@ protected:
 
 // ── construction ──────────────────────────────────────────────────────────────
 
-TEST_F(ComponentSaveWidgetTest, Construction_DoesNotCrash)
-{
-    // Exercises ComponentSaveWidget() + setupUI() (~120 lines of uncovered code).
-    EXPECT_NO_THROW(makeWidget());
-}
-
 // ── dccObjectPath ─────────────────────────────────────────────────────────────
 
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
@@ -68,12 +62,6 @@ TEST_F(ComponentSaveWidgetTest, DccObjectPath_ReturnsConstructorValue)
 {
     auto w = makeWidget("my|proxy|shape");
     EXPECT_EQ(w->dccObjectPath(), "my|proxy|shape");
-}
-
-TEST_F(ComponentSaveWidgetTest, DccObjectPath_EmptyStringRoundTrips)
-{
-    auto w = makeWidget("");
-    EXPECT_EQ(w->dccObjectPath(), "");
 }
 #endif
 
@@ -84,13 +72,6 @@ TEST_F(ComponentSaveWidgetTest, SetComponentName_RoundTrips)
     auto w = makeWidget();
     w->setComponentName("MyComponent");
     EXPECT_EQ(w->componentName(), "MyComponent");
-}
-
-TEST_F(ComponentSaveWidgetTest, SetComponentName_EmptyString)
-{
-    auto w = makeWidget();
-    w->setComponentName("");
-    EXPECT_EQ(w->componentName(), "");
 }
 
 TEST_F(ComponentSaveWidgetTest, SetComponentName_OverwritesPreviousValue)
@@ -108,13 +89,6 @@ TEST_F(ComponentSaveWidgetTest, SetFolderLocation_RoundTrips)
     auto w = makeWidget();
     w->setFolderLocation("/tmp/my_folder");
     EXPECT_EQ(w->folderLocation(), "/tmp/my_folder");
-}
-
-TEST_F(ComponentSaveWidgetTest, SetFolderLocation_EmptyString)
-{
-    auto w = makeWidget();
-    w->setFolderLocation("");
-    EXPECT_EQ(w->folderLocation(), "");
 }
 
 // ── compact mode ──────────────────────────────────────────────────────────────
@@ -156,40 +130,6 @@ TEST_F(ComponentSaveWidgetTest, SetOriginalHeight_RoundTrips)
 }
 
 // ── keyPressEvent ─────────────────────────────────────────────────────────────
-
-TEST_F(ComponentSaveWidgetTest, KeyPressEscape_DoesNotCrash)
-{
-    auto w = makeWidget();
-    w->show();
-    QCoreApplication::processEvents();
-    QKeyEvent esc(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
-    EXPECT_NO_THROW(QCoreApplication::sendEvent(w.get(), &esc));
-}
-
-TEST_F(ComponentSaveWidgetTest, KeyPressReturn_NoFocus_DoesNotCrash)
-{
-    auto w = makeWidget();
-    w->show();
-    QCoreApplication::processEvents();
-    QKeyEvent enter(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
-    EXPECT_NO_THROW(QCoreApplication::sendEvent(w.get(), &enter));
-}
-
-TEST_F(ComponentSaveWidgetTest, KeyPressReturn_WithNameFocus_NotExpanded_DoesNotCrash)
-{
-    // When _nameEdit has focus and tree is not expanded, Enter is passed to parent.
-    auto w = makeWidget();
-    w->show();
-    QCoreApplication::processEvents();
-    // Give focus to the name edit (first QLineEdit child)
-    auto* nameEdit = w->findChild<QLineEdit*>();
-    if (nameEdit) {
-        nameEdit->setFocus();
-        QCoreApplication::processEvents();
-    }
-    QKeyEvent enter(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
-    EXPECT_NO_THROW(QCoreApplication::sendEvent(w.get(), &enter));
-}
 
 // ── onShowMore / toggleExpandedState ─────────────────────────────────────────
 

@@ -32,17 +32,10 @@ public:
     using SaveLayersDialog::SaveLayersDialog;
     void callOnCancel() { onCancel(); }
     void callOnSaveAll() { onSaveAll(); }
+    void callOnAllAsRelativeChanged() { onAllAsRelativeChanged(); }
 };
 
 class SaveLayersDialogTest : public LayerEditorTestFixture {};
-
-TEST_F(SaveLayersDialogTest, SaveLayersDialog_ConstructsFromSessionState)
-{
-    // Construction must not crash.
-    EXPECT_NO_THROW({
-        SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    });
-}
 
 TEST_F(SaveLayersDialogTest, SaveLayersDialog_HasSaveAllButton)
 {
@@ -78,70 +71,6 @@ TEST_F(SaveLayersDialogTest, SaveLayersDialog_AllAsRelativeCheckboxExists)
     // Old editor: proxy-based discovery finds no anonymous layers for the stub path.
     (void)cb;
 #endif
-}
-
-TEST_F(SaveLayersDialogTest, QuietlyUncheckAllAsRelative_DoesNotCrash)
-{
-    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    EXPECT_NO_THROW(dlg.quietlyUncheckAllAsRelative());
-}
-
-// Note: exec() + modal dismissal never clicks "Save All", so okToSave() is not
-// exercised — this only guards against a crash while showing/closing the dialog.
-TEST_F(SaveLayersDialogTest, ExecThenDismiss_DoesNotCrash)
-{
-    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    TestUtils::dismissNextModal(100);
-    EXPECT_NO_THROW(dlg.exec());
-}
-
-TEST_F(SaveLayersDialogTest, LayersSavedToPairs_IsEmptyInitially)
-{
-    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    EXPECT_TRUE(dlg.layersSavedToPairs().isEmpty());
-}
-
-TEST_F(SaveLayersDialogTest, LayersWithErrorPairs_IsEmptyInitially)
-{
-    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    EXPECT_TRUE(dlg.layersWithErrorPairs().isEmpty());
-}
-
-TEST_F(SaveLayersDialogTest, LayersNotSaved_IsEmptyInitially)
-{
-    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    EXPECT_TRUE(dlg.layersNotSaved().isEmpty());
-}
-
-TEST_F(SaveLayersDialogTest, SessionStateConstructor_ExportingFlag_DoesNotCrash)
-{
-    SaveLayersDialog exportDlg(&_sessionState, _mainWindow, /*isExporting=*/true);
-    SaveLayersDialog saveDlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    // Both must construct without crashing.
-    SUCCEED();
-}
-
-TEST_F(SaveLayersDialogTest, AllAsRelative_ToggleDoesNotCrash)
-{
-    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-    ASSERT_NE(cb, nullptr) << "new editor always finds the stub's anonymous layers";
-#else
-    if (!cb) GTEST_SKIP() << "old editor: no anonymous layers discovered for stub proxy path";
-#endif
-    cb->setChecked(true);
-    QApplication::processEvents();
-    cb->setChecked(false);
-    QApplication::processEvents();
-    SUCCEED();
-}
-
-TEST_F(SaveLayersDialogTest, ForEachEntry_DoesNotCrashWithNoLayers)
-{
-    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    int count = 0;
-    EXPECT_NO_THROW(dlg.forEachEntry([&count](QWidget*) { ++count; }));
 }
 
 // The session-state constructor for the new editor finds the stub's two anonymous
@@ -221,66 +150,6 @@ TEST_F(SaveLayersDialogTest, SessionState_Accessor_ReturnsSessionState)
 // These depend on UsdLayerEditor::StageSavingInfo and setExecTestHandler, which
 // are only present in the new editor's SaveLayersDialog.
 
-// Bulk constructor: construct from a vector of StageSavingInfo.
-TEST_F(SaveLayersDialogTest, BulkConstructor_SingleStage_DoesNotCrash)
-{
-    auto stage = TestUtils::makeStageWithSublayer("bulk_sub");
-    StageSavingInfo info;
-    info.stage         = stage;
-    info.stageName     = "bulk_stage";
-    info.dccObjectPath = "bulk_stage";
-    EXPECT_NO_THROW({
-        SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/false);
-    });
-}
-
-TEST_F(SaveLayersDialogTest, BulkConstructor_EmptyInfos_DoesNotCrash)
-{
-    EXPECT_NO_THROW({
-        SaveLayersDialog dlg(_mainWindow, {}, /*isExporting=*/false);
-    });
-}
-
-TEST_F(SaveLayersDialogTest, BulkConstructor_MultipleStages_DoesNotCrash)
-{
-    std::vector<StageSavingInfo> infos;
-    for (int i = 0; i < 3; ++i) {
-        auto stage = TestUtils::makeStageWithSublayer("msub_" + std::to_string(i));
-        StageSavingInfo info;
-        info.stage         = stage;
-        info.stageName     = "multi_stage_" + std::to_string(i);
-        info.dccObjectPath = info.stageName;
-        infos.push_back(info);
-    }
-    EXPECT_NO_THROW({
-        SaveLayersDialog dlg(_mainWindow, infos, /*isExporting=*/false);
-    });
-}
-
-TEST_F(SaveLayersDialogTest, BulkConstructor_ExportingFlag_DoesNotCrash)
-{
-    auto stage = TestUtils::makeStageWithSublayer("exp_sub");
-    StageSavingInfo info;
-    info.stage         = stage;
-    info.stageName     = "exp_stage";
-    info.dccObjectPath = "exp_stage";
-    EXPECT_NO_THROW({
-        SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/true);
-    });
-}
-
-TEST_F(SaveLayersDialogTest, BulkConstructor_ComponentsOnly_DoesNotCrash)
-{
-    auto stage = TestUtils::makeStageWithSublayer("comp_sub");
-    StageSavingInfo info;
-    info.stage         = stage;
-    info.stageName     = "comp_stage";
-    info.dccObjectPath = "comp_stage";
-    EXPECT_NO_THROW({
-        SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/false, /*componentsOnly=*/true);
-    });
-}
-
 // exec() test handler returns a pre-set value without showing the dialog.
 TEST_F(SaveLayersDialogTest, ExecTestHandler_ReturnsInjectedResult)
 {
@@ -327,6 +196,34 @@ TEST_F(SaveLayersDialogTest, OnSaveAll_NoRows_DoesNotCrash)
     TestableSaveLayersDialog dlg(_mainWindow, {}, /*isExporting=*/false);
     EXPECT_NO_THROW(dlg.callOnSaveAll());
     EXPECT_TRUE(dlg.layersNotSaved().isEmpty());
+}
+
+// ── all-as-relative checkbox ──────────────────────────────────────────────
+
+// quietlyUncheckAllAsRelative clears the checkbox without re-triggering the
+// per-entry callback.
+TEST_F(SaveLayersDialogTest, QuietlyUncheckAllAsRelative_UnchecksCheckbox)
+{
+    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
+    if (!cb) {
+        GTEST_SKIP() << "no all-as-relative checkbox (old editor or no anonymous layers)";
+    }
+    cb->setCheckState(Qt::Checked);
+    dlg.quietlyUncheckAllAsRelative();
+    EXPECT_EQ(cb->checkState(), Qt::Unchecked);
+}
+
+// onAllAsRelativeChanged propagates the checkbox state to every layer row.
+TEST_F(SaveLayersDialogTest, OnAllAsRelativeChanged_AppliesToEntries)
+{
+    TestableSaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
+    if (!cb) {
+        GTEST_SKIP() << "no all-as-relative checkbox (old editor or no anonymous layers)";
+    }
+    cb->setCheckState(Qt::Checked);
+    EXPECT_NO_THROW(dlg.callOnAllAsRelativeChanged());
 }
 
 } // namespace UsdLayerEditor

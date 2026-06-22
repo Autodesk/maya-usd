@@ -164,18 +164,6 @@ TEST(WarningDialogsTest, WarningDialog_HandlerIsCalled)
     EXPECT_EQ(count, 1);
 }
 
-TEST(WarningDialogsTest, ConfirmDialog_WithBulletList_HandlerCalled)
-{
-    int count = 0;
-    auto prev = setModalDialogTestHandler([&](const QString&, const QString&) {
-        ++count; return true;
-    });
-    QStringList bullets = { "layer1.usd", "layer2.usd" };
-    confirmDialog("Title", "Msg", &bullets);
-    setModalDialogTestHandler(prev);
-    EXPECT_EQ(count, 1);
-}
-
 TEST(WarningDialogsTest, SetModalDialogTestHandler_ReturnsPrevious)
 {
     ModalDialogTestHandler h1 = [](const QString&, const QString&) { return true; };

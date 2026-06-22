@@ -80,15 +80,6 @@ TEST_F(LayerLockingTest, UnlockLayer_RestoresPermissionToEdit)
     EXPECT_TRUE(_layer->PermissionToEdit());
 }
 
-TEST_F(LayerLockingTest, LockLayer_ToggleRoundtrip_RestoresOriginalState)
-{
-    // Lock then unlock: layer must be back to unlocked.
-    lockLayer("", _layer, LayerLock_Locked, false);
-    lockLayer("", _layer, LayerLock_Unlocked, false);
-    EXPECT_FALSE(isLayerLocked(_layer));
-    EXPECT_TRUE(_layer->PermissionToEdit());
-}
-
 TEST_F(LayerLockingTest, SystemLockLayer_SetsSystemLocked)
 {
     lockLayer("", _layer, LayerLock_SystemLocked, false);

@@ -135,4 +135,16 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_IconReflectsActiveState)
 }
 #endif
 
+// With EF support enabled before construction, the new editor creates the EF toggle
+// button and the EF option-menu items — both gated purely at runtime on
+// supportsEditForwarding(), with no compile-time guard. This is unguarded (unlike the
+// tooltip/icon tests above, which reference EF-build-only string resources).
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+TEST_F(LayerEditorWithEFFixture, EFMode_ToggleButton_CreatedWhenSupported)
+{
+    QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
+    EXPECT_NE(btn, nullptr) << "EF toggle button should be created when EF is supported";
+}
+#endif
+
 } // namespace UsdLayerEditor

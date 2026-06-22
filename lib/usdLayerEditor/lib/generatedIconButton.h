@@ -17,6 +17,8 @@
 #ifndef USDLAYEREDITOR_GENERATEDICONBUTTON_H
 #define USDLAYEREDITOR_GENERATEDICONBUTTON_H
 
+#include "layerEditorAPI.h"
+
 #include <QtGui/QPixmap>
 #include <QtWidgets/QAbstractButton>
 
@@ -27,7 +29,7 @@ namespace UsdLayerEditor {
  *
  */
 
-class GeneratedIconButton : public QAbstractButton
+class LayerEditorAPI GeneratedIconButton : public QAbstractButton
 {
 public:
     GeneratedIconButton(QWidget* in_parent, const QIcon& in_icon, int in_size = -1);

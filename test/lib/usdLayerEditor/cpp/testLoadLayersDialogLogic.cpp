@@ -30,26 +30,6 @@ namespace UsdLayerEditor {
 
 class LoadLayersDialogTest : public LayerEditorTestFixture {};
 
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_ConstructsWithoutCrash)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    EXPECT_NO_THROW({
-        LoadLayersDialog dlg(rootItem, _mainWindow);
-    });
-}
-
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasAtLeastOneLineEdit)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    LoadLayersDialog dlg(rootItem, _mainWindow);
-    auto lineEdits = dlg.findChildren<QLineEdit*>();
-    EXPECT_GE(lineEdits.size(), 1);
-}
-
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasOkAndCancelButtons)
 {
     auto* rootItem = dynamic_cast<LayerTreeItem*>(
@@ -80,46 +60,6 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_StartsWithEmptyPath)
     EXPECT_TRUE(lineEdits.first()->text().isEmpty());
 }
 
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasScrollArea)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    LoadLayersDialog dlg(rootItem, _mainWindow);
-    auto* scroll = dlg.findChild<QScrollArea*>(QString(), Qt::FindChildrenRecursively);
-    EXPECT_NE(scroll, nullptr);
-}
-
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_ExecDismissedByTimerDoesNotHang)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    LoadLayersDialog dlg(rootItem, _mainWindow);
-    TestUtils::dismissNextModal(100);
-    EXPECT_NO_THROW(dlg.exec());
-}
-
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_AddRowButtonExists)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    LoadLayersDialog dlg(rootItem, _mainWindow);
-    EXPECT_GE(dlg.findChildren<QPushButton*>().size(), 1);
-}
-
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_PathEditIsEnabled)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    LoadLayersDialog dlg(rootItem, _mainWindow);
-    auto lineEdits = dlg.findChildren<QLineEdit*>();
-    ASSERT_GE(lineEdits.size(), 1);
-    EXPECT_TRUE(lineEdits.first()->isEnabled());
-}
-
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_FindDirectoryToUse_WithNonEmptyPath)
 {
     auto* rootItem = dynamic_cast<LayerTreeItem*>(
@@ -129,18 +69,6 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_FindDirectoryToUse_WithNonEmptyPat
     // Passing a file path: should strip the filename and return the directory.
     std::string result = dlg.findDirectoryToUse("/tmp/some/file.usd");
     EXPECT_EQ(result, "/tmp/some");
-}
-
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_FindDirectoryToUse_WithEmptyPath)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    LoadLayersDialog dlg(rootItem, _mainWindow);
-    // Empty path: walks up parent items. Stub uses anonymous layers, so it
-    // falls through to getDCCWorkspaceScenesDir() (which may return "").
-    // The key requirement is just that it doesn't crash.
-    EXPECT_NO_THROW(dlg.findDirectoryToUse(""));
 }
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnAddRow_IncreasesRowCount)
@@ -155,29 +83,6 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnAddRow_IncreasesRowCount)
     QApplication::processEvents();
     int afterCount = dlg.findChildren<QLineEdit*>().size();
     EXPECT_GT(afterCount, beforeCount);
-}
-
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnAddRow_MultipleTimesDoesNotCrash)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    LoadLayersDialog dlg(rootItem, _mainWindow);
-    EXPECT_NO_THROW({
-        dlg.onAddRow();
-        dlg.onAddRow();
-        dlg.onAddRow();
-        QApplication::processEvents();
-    });
-}
-
-TEST_F(LoadLayersDialogTest, LoadLayersDialog_PathsToLoad_EmptyBeforeOk)
-{
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
-    ASSERT_NE(rootItem, nullptr);
-    LoadLayersDialog dlg(rootItem, _mainWindow);
-    EXPECT_TRUE(dlg.pathsToLoad().empty());
 }
 
 // Trigger onOk() with all-empty row text: all rows are skipped, accept() is
