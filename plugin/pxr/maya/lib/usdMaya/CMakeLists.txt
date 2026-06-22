@@ -53,11 +53,11 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PYMODULE_FILES
         __init__.py
+        AEpxrUsdProxyShapeTemplate.py
         AEpxrUsdReferenceAssemblyTemplate.py
         userExportedAttributesUI.py
 
     RESOURCE_FILES
-        AEpxrUsdProxyShapeTemplate.mel
         out_pxrUsdProxyShape.xpm
         out_pxrUsdReferenceAssembly.xpm
         usdMaya.mel
