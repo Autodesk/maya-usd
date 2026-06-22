@@ -17,7 +17,7 @@
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-# *Logic.cpp test sources and testUtils.h live in the new editor's test/cpp dir
+# *.cpp test sources and testUtils.h live in the new editor's test/cpp dir
 # and are shared between old and new test suites.
 set(NEW_LE_TEST_CPP
     ${CMAKE_CURRENT_SOURCE_DIR}/../../usdLayerEditor/cpp)
@@ -34,30 +34,30 @@ set(OLD_LE_OWN_SOURCES
 # path order (old test dir first) makes `#include "testFixture.h"` resolve to
 # the old fixture, which selects the old-editor code paths.
 set(OLD_LE_SHARED_LOGIC_SOURCES
-    ${NEW_LE_TEST_CPP}/testButtonsLogic.cpp
-    ${NEW_LE_TEST_CPP}/testComponentSaveWidgetLogic.cpp
-    ${NEW_LE_TEST_CPP}/testContextMenuLogic.cpp
-    ${NEW_LE_TEST_CPP}/testEFModeLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerContentsWidgetLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerEditorWidgetLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerEditorWindowLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerLogicUtilsLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerLockingLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerMutingLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerTreeItemLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerTreeItemDelegateLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerTreeModelLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerTreeViewLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLayerTreeViewMouseLogic.cpp
-    ${NEW_LE_TEST_CPP}/testLoadLayersDialogLogic.cpp
-    ${NEW_LE_TEST_CPP}/testMenusAndStageLogic.cpp
-    ${NEW_LE_TEST_CPP}/testPathCheckerLogic.cpp
-    ${NEW_LE_TEST_CPP}/testReorderLogic.cpp
-    ${NEW_LE_TEST_CPP}/testSaveLayersDialogLogic.cpp
-    ${NEW_LE_TEST_CPP}/testSessionStateLogic.cpp
-    ${NEW_LE_TEST_CPP}/testSharedStageLogic.cpp
-    ${NEW_LE_TEST_CPP}/testStageSelectorWidgetLogic.cpp
-    ${NEW_LE_TEST_CPP}/testUsdSyntaxHighlighterLogic.cpp
+    ${NEW_LE_TEST_CPP}/testButtons.cpp
+    ${NEW_LE_TEST_CPP}/testComponentSaveWidget.cpp
+    ${NEW_LE_TEST_CPP}/testContextMenu.cpp
+    ${NEW_LE_TEST_CPP}/testEFMode.cpp
+    ${NEW_LE_TEST_CPP}/testLayerContentsWidget.cpp
+    ${NEW_LE_TEST_CPP}/testLayerEditorWidget.cpp
+    ${NEW_LE_TEST_CPP}/testLayerEditorWindow.cpp
+    ${NEW_LE_TEST_CPP}/testLayerLogicUtils.cpp
+    ${NEW_LE_TEST_CPP}/testLayerLocking.cpp
+    ${NEW_LE_TEST_CPP}/testLayerMuting.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeItem.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeItemDelegate.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeModel.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeView.cpp
+    ${NEW_LE_TEST_CPP}/testLayerTreeViewMouse.cpp
+    ${NEW_LE_TEST_CPP}/testLoadLayersDialog.cpp
+    ${NEW_LE_TEST_CPP}/testMenusAndStage.cpp
+    ${NEW_LE_TEST_CPP}/testPathChecker.cpp
+    ${NEW_LE_TEST_CPP}/testReorder.cpp
+    ${NEW_LE_TEST_CPP}/testSaveLayersDialog.cpp
+    ${NEW_LE_TEST_CPP}/testSessionState.cpp
+    ${NEW_LE_TEST_CPP}/testSharedStage.cpp
+    ${NEW_LE_TEST_CPP}/testStageSelectorWidget.cpp
+    ${NEW_LE_TEST_CPP}/testUsdSyntaxHighlighter.cpp
 )
 
 # Legacy widget sources compiled directly into this test DLL. This gives the
@@ -88,7 +88,7 @@ set(LEGACY_SOURCES
 
 # The legacy layerEditorWidget.cpp above opens the edit-forward dialog, so its
 # definition must be compiled in when edit-forward is available; exercised by
-# the shared testEFModeLogic.cpp cases.
+# the shared testEFMode.cpp cases.
 if(AdskUsdEditForward_FOUND)
     list(APPEND LEGACY_SOURCES
         ${CMAKE_SOURCE_DIR}/lib/usd/ui/editForward/editForwardDialog.cpp)

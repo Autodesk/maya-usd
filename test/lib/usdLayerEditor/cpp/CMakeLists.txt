@@ -22,35 +22,35 @@ set(LAYER_EDITOR_TEST_SOURCES
     stubCommandHook.cpp
     stubSessionState.cpp
     testFixture.cpp
-    testButtonsLogic.cpp
-    testContextMenuLogic.cpp
-    testReorderLogic.cpp
-    testMenusAndStageLogic.cpp
-    testLayerTreeItemLogic.cpp
-    testLayerTreeModelLogic.cpp
-    testLayerTreeViewLogic.cpp
-    testLayerContentsWidgetLogic.cpp
-    testSaveLayersDialogLogic.cpp
-    testLoadLayersDialogLogic.cpp
-    testLayerLockingLogic.cpp
-    testLayerMutingLogic.cpp
-    testSharedStageLogic.cpp
+    testButtons.cpp
+    testContextMenu.cpp
+    testReorder.cpp
+    testMenusAndStage.cpp
+    testLayerTreeItem.cpp
+    testLayerTreeModel.cpp
+    testLayerTreeView.cpp
+    testLayerContentsWidget.cpp
+    testSaveLayersDialog.cpp
+    testLoadLayersDialog.cpp
+    testLayerLocking.cpp
+    testLayerMuting.cpp
+    testSharedStage.cpp
     testLayerEditorCommands.cpp
-    testEFModeLogic.cpp
+    testEFMode.cpp
     testDCCFunctions.cpp
     testFileSystemUtils.cpp
-    testPathCheckerLogic.cpp
+    testPathChecker.cpp
     testSerializationUtils.cpp
-    testLayerTreeItemDelegateLogic.cpp
-    testComponentSaveWidgetLogic.cpp
-    testLayerLogicUtilsLogic.cpp
-    testUsdSyntaxHighlighterLogic.cpp
-    testLayerTreeViewMouseLogic.cpp
-    testSessionStateLogic.cpp
-    testWidgetManagerLogic.cpp
-    testLayerEditorWidgetLogic.cpp
-    testLayerEditorWindowLogic.cpp
-    testStageSelectorWidgetLogic.cpp
+    testLayerTreeItemDelegate.cpp
+    testComponentSaveWidget.cpp
+    testLayerLogicUtils.cpp
+    testUsdSyntaxHighlighter.cpp
+    testLayerTreeViewMouse.cpp
+    testSessionState.cpp
+    testWidgetManager.cpp
+    testLayerEditorWidget.cpp
+    testLayerEditorWindow.cpp
+    testStageSelectorWidget.cpp
 )
 
 # ------------------------------------------------------------------------------

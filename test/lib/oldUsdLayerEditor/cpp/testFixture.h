@@ -49,7 +49,7 @@ protected:
     void setStageIncoming(bool incoming) { _sessionState._commandHookImpl._isStageIncoming = incoming; }
 
     // Members mirror the new editor's testFixture.h, named identically so the
-    // shared *Logic.cpp sources compile unchanged. Only those the old editor
+    // shared test sources compile unchanged. Only those the old editor
     // actually exercises are kept; members feeding the new editor's DCC registry
     // are referenced solely by MAYAUSD_OLD_LAYER_EDITOR-guarded test code.
     OldEditorStubSessionState                        _sessionState;
