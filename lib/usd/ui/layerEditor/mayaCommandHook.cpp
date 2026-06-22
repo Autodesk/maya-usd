@@ -16,7 +16,6 @@
 
 #include "mayaCommandHook.h"
 
-#include "../undoChunkUtils.h"
 #include "abstractCommandHook.h"
 #include "mayaSessionState.h"
 
@@ -24,6 +23,7 @@
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsdUI/ui/undoChunkUtils.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>

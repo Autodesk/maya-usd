@@ -16,9 +16,8 @@
 
 #include "mayaEditCommitter.h"
 
-#include "../undoChunkUtils.h"
-
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
+#include <mayaUsdUI/ui/undoChunkUtils.h>
 
 #include <usdUfe/undo/UsdUndoUtils.h>
 
