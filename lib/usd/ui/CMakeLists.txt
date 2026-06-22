@@ -128,6 +128,7 @@ endif()
 set(HEADERS
     api.h
     initStringResources.h
+    undoChunkUtils.h
 )
 
 mayaUsd_promoteHeaderList( 
