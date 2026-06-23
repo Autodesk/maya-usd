@@ -25,8 +25,7 @@ namespace UsdLayerEditor {
 // queries, save options, file system, serialization, and the non-UI parts of
 // Edit Forwarding). Safe to call in headless/batch sessions. Call once at Maya
 // plugin initialization, before any layer-editor command runs. In Qt builds,
-// registerLayerEditorQtFunctions() adds the remaining UI-dependent functions on
-// top of these.
+// initializeUi() adds the remaining UI-dependent functions on top of these.
 MAYAUSD_CORE_PUBLIC void registerLayerEditorDCCFunctions();
 
 // Clears the registry back to defaults. Call at plugin unload.

@@ -254,6 +254,9 @@ std::string usdFormatArgOption()
 /* static */
 USDUnsavedEditsOption serializeUsdEditsLocationOption()
 {
+    // Default is to save back to .usd files, set it to that if the optionVar doesn't exist yet.
+    // optionVar's are also just ints so make sure the value is a correct one.
+    // If we end up initializing the value then write it back to the optionVar itself.
     int saveOption = getSerializedUsdEditsLocation();
     if (saveOption < kSaveToUSDFiles || saveOption > kIgnoreUSDEdits) {
         saveOption = kSaveToUSDFiles;

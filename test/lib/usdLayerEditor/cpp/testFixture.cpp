@@ -38,6 +38,15 @@ void LayerEditorTestFixture::SetUp()
     DccObjectFns dcc;
     dcc.isDccObjectStageIncoming = [this](const std::string&) { return _stageIncoming; };
     dcc.isDccObjectSharedStage = [this](const std::string&) { return _sharedStage; };
+    dcc.renameObject
+        = [](const std::string&, const std::string& name) { return std::string("|") + name; };
+    dcc.captureSessionLayer = [](const std::string&) { return PXR_NS::SdfLayerRefPtr {}; };
+    dcc.transferSessionLayer
+        = [this](const PXR_NS::SdfLayerRefPtr&, const std::string&) { ++_transferSessionCalls; };
+    dcc.setDccObjectRootLayerPath
+        = [this](const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&) {
+              ++_setProxyRootPathCalls;
+          };
     setDccObjectFns(dcc);
 
     {
@@ -53,16 +62,6 @@ void LayerEditorTestFixture::SetUp()
         component.moveComponent = [this](const std::string&, const std::string&, const std::string&) {
             return _moveComponentResult;
         };
-        component.renameProxyShape
-            = [](const std::string&, const std::string& name) { return std::string("|") + name; };
-        component.captureSessionLayer
-            = [](const std::string&) { return PXR_NS::SdfLayerRefPtr {}; };
-        component.transferSessionLayer
-            = [this](const PXR_NS::SdfLayerRefPtr&, const std::string&) { ++_transferSessionCalls; };
-        component.setProxyRootLayerPath
-            = [this](const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&) {
-                  ++_setProxyRootPathCalls;
-              };
         setComponentFns(component);
     }
 

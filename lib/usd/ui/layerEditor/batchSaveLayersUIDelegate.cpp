@@ -32,8 +32,9 @@
 
 namespace {
 
-// Adapt Maya's StageSavingInfo (carrying an MDagPath) to the shared
-// StageSavingInfo (carrying a dccObjectPath string + stageName).
+// Adapt Maya's StageSavingInfo (carrying an MDagPath) to the shared,
+// DCC-agnostic UsdLayerEditor::StageSavingInfo (carrying a dccObjectPath
+// string + stageName).
 std::vector<UsdLayerEditor::StageSavingInfo>
 toSharedInfos(const std::vector<MayaUsd::StageSavingInfo>& mayaInfos)
 {

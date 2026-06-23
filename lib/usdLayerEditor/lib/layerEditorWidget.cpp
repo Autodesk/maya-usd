@@ -379,6 +379,7 @@ void LayerEditorWidget::setupLayout()
         this,
         &LayerEditorWidget::updateButtonsOnIdle);
 
+    // Follow the Layer editor selection in the EF config dialog.
     if (UsdLayerEditor::supportsEditForwarding()) {
         connect(&_sessionState, &SessionState::currentStageChangedSignal, this, [this]() {
             if (UsdLayerEditor::isEditForwardDialogOpen())
@@ -565,7 +566,7 @@ void LayerEditorWidget::onNewLayerButtonClicked()
     if (addToRoot) {
         layerTreeItem->addAnonymousSublayer(_treeView);
     } else {
-        // Single undo bracket spanning the add + reorder (matches the old editor).
+        // Single undo bracket spanning the add + reorder.
         UndoContext         context(_sessionState.commandHook(), "Add Anonymous Layer");
         auto                parentItem = layerTreeItem->parentLayerItem();
         int                 rowToInsert = layerTreeItem->row();

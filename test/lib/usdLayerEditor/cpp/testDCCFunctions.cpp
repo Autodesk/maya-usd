@@ -18,6 +18,7 @@
 #include <layerEditorDCCFunctions.h>
 
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdUtils/stageCache.h>
 
 #include <gtest/gtest.h>
@@ -71,7 +72,7 @@ TEST(LayerEditorDCCFunctions, LayerContentsLimits_ReturnRegisteredValues)
 TEST(LayerEditorDCCFunctions, CaptureSessionLayer_NullByDefault)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setComponentFns(ComponentFns {});
+    setDccObjectFns(DccObjectFns {});
     EXPECT_FALSE(captureSessionLayer("|x"));
 }
 
@@ -80,28 +81,28 @@ TEST(LayerEditorDCCFunctions, TransferSessionLayer_DispatchesWhenRegistered)
     ScopedLayerEditorDCCFunctions guard;
     PXR_NS::SdfLayerRefPtr seenSrc;
     std::string            seenDst;
-    ComponentFns           fns;
+    DccObjectFns           fns;
     fns.transferSessionLayer
         = [&](const PXR_NS::SdfLayerRefPtr& src, const std::string& dst) { seenSrc = src; seenDst = dst; };
-    setComponentFns(fns);
+    setDccObjectFns(fns);
     auto layer = PXR_NS::SdfLayer::CreateAnonymous("xfer");
     transferSessionLayer(layer, "|newProxy");
     EXPECT_EQ(seenSrc, layer);
     EXPECT_EQ(seenDst, "|newProxy");
 }
 
-TEST(LayerEditorDCCFunctions, SetProxyRootLayerPath_DispatchesWhenRegistered)
+TEST(LayerEditorDCCFunctions, SetDccObjectRootLayerPath_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
     std::string seenObj, seenPath;
-    ComponentFns fns;
-    fns.setProxyRootLayerPath
+    DccObjectFns fns;
+    fns.setDccObjectRootLayerPath
         = [&](const std::string& obj, const std::string& path, const PXR_NS::SdfLayerRefPtr&) {
               seenObj = obj;
               seenPath = path;
           };
-    setComponentFns(fns);
-    setProxyRootLayerPath("|proxy", "/tmp/new.usd", nullptr);
+    setDccObjectFns(fns);
+    setDccObjectRootLayerPath("|proxy", "/tmp/new.usd", nullptr);
     EXPECT_EQ(seenObj, "|proxy");
     EXPECT_EQ(seenPath, "/tmp/new.usd");
 }
@@ -205,6 +206,18 @@ TEST(LayerEditorDCCFunctions, GetStageCaches_ReturnsRegisteredCaches)
     auto caches = getStageCaches();
     ASSERT_EQ(caches.size(), 1u);
     EXPECT_EQ(caches[0], &extra);
+}
+
+TEST(LayerEditorDCCFunctions, GetAllStages_ReturnsRegisteredStages)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    auto             stage = PXR_NS::UsdStage::CreateInMemory();
+    SerializationFns fns;
+    fns.getAllStages = [&]() { return std::vector<PXR_NS::UsdStageRefPtr> { stage }; };
+    setSerializationFns(fns);
+    auto stages = getAllStages();
+    ASSERT_EQ(stages.size(), 1u);
+    EXPECT_EQ(stages[0], stage);
 }
 
 TEST(LayerEditorDCCFunctions, SetLayerUpAxisAndUnits_DispatchesWhenRegistered)

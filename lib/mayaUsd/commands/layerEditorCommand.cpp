@@ -20,7 +20,6 @@
 #include <layerEditorDCCFunctions.h>
 
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/utils/layerLocking.h>
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
@@ -272,8 +271,10 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             for (unsigned i = 0; i < count; i++) {
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kReplaceSubPathFlag, i, listOfArgs);
+                auto oldPath = listOfArgs.asString(0).asUTF8();
+                auto newPath = listOfArgs.asString(1).asUTF8();
                 _subCommands.push_back(std::make_shared<UsdLayerEditor::ReplaceSubPathCmd>(
-                    layer, listOfArgs.asString(0).asUTF8(), listOfArgs.asString(1).asUTF8()));
+                    layer, oldPath, newPath));
             }
         }
 
@@ -317,6 +318,8 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             for (unsigned i = 0; i < count; i++) {
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kAddAnonSublayerFlag, i, listOfArgs);
+                // AddAnonSubLayer only inserts into the parent layer; it never uses the stage,
+                // and no proxy shape is supplied with this flag, so pass an empty stage.
                 auto cmd = std::make_shared<UsdLayerEditor::AddAnonSubLayerCmd>(
                     UsdStageRefPtr {}, layer);
                 cmd->_anonName = listOfArgs.asString(0).asUTF8();
@@ -395,7 +398,8 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 argParser.getFlagArgumentList(kStitchLayersFlag, i, listOfArgs);
                 if (i == 0)
                     proxyShapeName = listOfArgs.asString(0);
-                layerIdentifiers.push_back(listOfArgs.asString(1).asChar());
+                const std::string layerIdentifier = listOfArgs.asString(1).asChar();
+                layerIdentifiers.push_back(layerIdentifier);
             }
             const UsdPrim prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
@@ -448,17 +452,6 @@ MStatus LayerEditorCommand::undoIt()
     for (auto it = _subCommands.rbegin(); it != _subCommands.rend(); ++it)
         (*it)->undo();
     return MS::kSuccess;
-}
-
-void LayerEditorCommand::registerBackupStagesProvider()
-{
-    UsdLayerEditor::BackupLayerBaseCmd::setStagesProvider(
-        []() { return MayaUsd::ufe::ProxyShapeHandler::getAllStages(); });
-}
-
-void LayerEditorCommand::unregisterBackupStagesProvider()
-{
-    UsdLayerEditor::BackupLayerBaseCmd::setStagesProvider(nullptr);
 }
 
 } // namespace MAYAUSD_NS_DEF

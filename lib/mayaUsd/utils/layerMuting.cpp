@@ -22,6 +22,8 @@
 
 #include <pxr/base/tf/weakBase.h>
 
+#include <memory>
+
 namespace MAYAUSD_NS_DEF {
 
 namespace {
@@ -45,15 +47,18 @@ struct SceneResetListener : public PXR_NS::TfWeakBase
 
 // The muted layers live in the DCC-agnostic UsdLayerEditor store, which has no
 // notion of a Maya scene. This Maya-side listener clears that store on scene
-// reset. Registered on first use to avoid global construction-order issues.
-void ensureSceneResetListener()
-{
-    // Note: C++ guarantees correct multi-thread protection for static
-    //       variables initialization in functions.
-    static SceneResetListener onSceneResetListener;
-}
+// reset. Registered deterministically at plugin init.
+std::unique_ptr<SceneResetListener> sSceneResetListener;
 
 } // namespace
+
+void registerLayerMutingSceneResetListener()
+{
+    if (!sSceneResetListener)
+        sSceneResetListener = std::make_unique<SceneResetListener>();
+}
+
+void unregisterLayerMutingSceneResetListener() { sSceneResetListener.reset(); }
 
 MStatus copyLayerMutingToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape)
 {
@@ -65,8 +70,6 @@ MStatus copyLayerMutingFromAttribute(
     const LayerNameMap&          nameMap,
     PXR_NS::UsdStage&            stage)
 {
-    ensureSceneResetListener();
-
     const std::vector<std::string> muted = proxyShape.getMutedLayers();
     UsdLayerEditor::loadLayerMuteState(muted, nameMap, stage);
     return MS::kSuccess;
@@ -74,7 +77,6 @@ MStatus copyLayerMutingFromAttribute(
 
 bool addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
 {
-    ensureSceneResetListener();
     return UsdLayerEditor::addMutedLayer(layer);
 }
 

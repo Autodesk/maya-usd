@@ -70,7 +70,7 @@ protected:
 
     void TearDown() override
     {
-        BaseCmd::setAutoRetargetDisabledChecker(nullptr);
+        setEditForwardingFns(EditForwardingFns {});
         forgetLockedLayers();
     }
 
@@ -93,10 +93,13 @@ TEST_F(UpdateEditTargetTest, WhenNoModifiableLayers_EditTargetChangesToSessionLa
     EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _stage->GetSessionLayer());
 }
 
-// When the checker returns true, updateEditTarget should be suppressed entirely.
-TEST_F(UpdateEditTargetTest, WhenCheckerDisablesAutoRetarget_EditTargetUnchanged)
+// When edit forwarding handles the edit-target update, updateEditTarget should
+// skip the normal auto-targeting and leave the edit target unchanged.
+TEST_F(UpdateEditTargetTest, WhenEditForwardingActive_EditTargetUnchanged)
 {
-    BaseCmd::setAutoRetargetDisabledChecker([] { return true; });
+    EditForwardingFns ef;
+    ef.handleEFEditTargetUpdate = [](const PXR_NS::UsdStageRefPtr&) { return true; };
+    setEditForwardingFns(ef);
 
     lockLayer("", _stage->GetRootLayer(), LayerLock_Locked, false);
     lockLayer("", _subLayer,              LayerLock_Locked, false);
@@ -125,7 +128,7 @@ protected:
 
     void TearDown() override
     {
-        BackupLayerBaseCmd::setStagesProvider(nullptr);
+        setSerializationFns(SerializationFns {});
     }
 
     PXR_NS::UsdStageRefPtr _stage;
@@ -151,9 +154,9 @@ TEST_F(BackupEditTargetsTest, WithoutProvider_EditTargetNotRestoredOnUndo)
 // With the provider registered, backupEditTargets finds _stage → saves B → restores on undo.
 TEST_F(BackupEditTargetsTest, WithProvider_EditTargetRestoredOnUndo)
 {
-    BackupLayerBaseCmd::setStagesProvider([this]() -> std::vector<PXR_NS::UsdStageRefPtr> {
-        return { _stage };
-    });
+    SerializationFns fns;
+    fns.getAllStages = [this]() -> std::vector<PXR_NS::UsdStageRefPtr> { return { _stage }; };
+    setSerializationFns(fns);
 
     auto cmd = std::make_shared<ClearLayerCmd>(_layerA);
     cmd->execute();
@@ -229,9 +232,9 @@ class BackupLayerCmdTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        BackupLayerBaseCmd::setStagesProvider([this]() -> std::vector<PXR_NS::UsdStageRefPtr> {
-            return { _stage };
-        });
+        SerializationFns fns;
+        fns.getAllStages = [this]() -> std::vector<PXR_NS::UsdStageRefPtr> { return { _stage }; };
+        setSerializationFns(fns);
         _stage  = PXR_NS::UsdStage::CreateInMemory();
         _layer  = PXR_NS::SdfLayer::CreateAnonymous("target");
         _stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
@@ -241,7 +244,7 @@ protected:
 
     void TearDown() override
     {
-        BackupLayerBaseCmd::setStagesProvider(nullptr);
+        setSerializationFns(SerializationFns {});
     }
 
     PXR_NS::UsdStageRefPtr _stage;
@@ -652,12 +655,10 @@ TEST(RefreshSystemLockCallbackContextTest, AddCallbackContext_StoresEntry)
     auto rootLayer = stage->GetRootLayer();
     auto cmd = std::make_shared<RefreshSystemLockLayerCmd>(stage, rootLayer, false);
     cmd->addCallbackContext("proxyShapePath", PXR_NS::VtValue(std::string("/myShape")));
-    ASSERT_NE(
-        cmd->_extraCallbackContext.find("proxyShapePath"),
-        cmd->_extraCallbackContext.end());
-    EXPECT_EQ(
-        cmd->_extraCallbackContext["proxyShapePath"].UncheckedGet<std::string>(),
-        std::string("/myShape"));
+    const auto& context = cmd->extraCallbackContext();
+    const auto  it = context.find("proxyShapePath");
+    ASSERT_NE(it, context.end());
+    EXPECT_EQ(it->second.UncheckedGet<std::string>(), std::string("/myShape"));
 }
 
 // AddAnonSubLayerCmd: redo reuses the same identifier

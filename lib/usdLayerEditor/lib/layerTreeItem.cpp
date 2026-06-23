@@ -617,8 +617,8 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
         return;
 
     // Special case for components created by the component creator. Only the component
-    // creator knows how to reload a component properly. Matches the old editor: the
-    // revert confirmation above is shown first, then the component is reloaded as a unit.
+    // creator knows how to reload a component properly. The revert confirmation above
+    // is shown first, then the component is reloaded as a unit.
     if (LayerTreeModel* model = parentModel()) {
         if (SessionState* ss = model->sessionState()) {
             if (UsdLayerEditor::isStageAComponent(ss->stageEntry()._dccObjectPath)) {

@@ -47,6 +47,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 #include <mayaUsd/utils/util.h>
 
@@ -457,18 +458,16 @@ MStatus initializePlugin(MObject obj)
 
     MayaUsd::LayerManager::addSupportForNodeType(MayaUsd::ProxyShape::typeId);
 
-    // Register the Qt-free layer-editor DCC functions unconditionally so they are
-    // available in headless/batch sessions. In Qt builds, initialize() then adds
-    // the UI-dependent functions on top.
+    // Register the Qt-free layer-editor DCC functions unconditionally for headless/batch sessions; Qt builds layer the UI-dependent functions on top.
     UsdLayerEditor::registerLayerEditorDCCFunctions();
 #if defined(WANT_QT_BUILD)
+    // Add the Qt/UI-dependent layer-editor functions.
     UsdLayerEditor::initializeUi();
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
 #endif
 
-    MayaUsd::LayerEditorCommand::registerBackupStagesProvider();
-
     UsdMayaSceneResetNotice::InstallListener();
+    MayaUsd::registerLayerMutingSceneResetListener();
     UsdMayaBeforeSceneResetNotice::InstallListener();
     UsdMayaExitNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
@@ -508,7 +507,7 @@ MStatus uninitializePlugin(MObject obj)
     MFnPlugin plugin(obj);
     MStatus   status;
 
-    MayaUsd::LayerEditorCommand::unregisterBackupStagesProvider();
+    MayaUsd::unregisterLayerMutingSceneResetListener();
     UsdLayerEditor::deregisterLayerEditorDCCFunctions();
 
 #if defined(WANT_QT_BUILD)

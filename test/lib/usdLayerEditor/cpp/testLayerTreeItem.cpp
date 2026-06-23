@@ -452,7 +452,7 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
 }
 #endif
 
-// ── isAnonymous component override (match OLD editor) ─────────────────────────
+// ── isAnonymous component override ─────────────────────────
 
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerTreeItemTest, IsAnonymous_FalseForSavedComponent)

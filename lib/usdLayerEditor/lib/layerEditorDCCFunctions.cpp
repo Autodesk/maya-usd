@@ -48,12 +48,6 @@ void reloadComponent(const std::string& dccObjectPath)
     if (registry().component.reloadComponent)
         registry().component.reloadComponent(dccObjectPath);
 }
-std::string renameProxyShape(const std::string& oldDccObjectPath, const std::string& newName)
-{
-    return registry().component.renameProxyShape
-        ? registry().component.renameProxyShape(oldDccObjectPath, newName)
-        : std::string {};
-}
 bool isStageAComponent(const std::string& dccObjectPath)
 {
     return registry().component.isStageAComponent
@@ -73,10 +67,6 @@ bool shouldDisplayComponentInitialSaveDialog(
     return registry().component.shouldDisplayComponentInitialSaveDialog
         ? registry().component.shouldDisplayComponentInitialSaveDialog(stage, dccObjectPath)
         : false;
-}
-std::string sceneFolder()
-{
-    return registry().component.sceneFolder ? registry().component.sceneFolder() : std::string {};
 }
 std::string moveComponent(
     const std::string& saveLocation,
@@ -106,27 +96,6 @@ void displayError(const std::string& error)
 {
     if (registry().environment.displayError)
         registry().environment.displayError(error);
-}
-PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath)
-{
-    return registry().component.captureSessionLayer
-        ? registry().component.captureSessionLayer(dccObjectPath)
-        : PXR_NS::SdfLayerRefPtr {};
-}
-void transferSessionLayer(
-    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
-    const std::string&            dstDccObjectPath)
-{
-    if (registry().component.transferSessionLayer)
-        registry().component.transferSessionLayer(sourceSessionLayer, dstDccObjectPath);
-}
-void setProxyRootLayerPath(
-    const std::string&            dccObjectPath,
-    const std::string&            rootLayerPath,
-    const PXR_NS::SdfLayerRefPtr& rootLayer)
-{
-    if (registry().component.setProxyRootLayerPath)
-        registry().component.setProxyRootLayerPath(dccObjectPath, rootLayerPath, rootLayer);
 }
 
 // ---- Edit Forwarding ----
@@ -177,6 +146,33 @@ bool isDccObjectSharedStage(const std::string& dccObjectPath)
     return registry().dccObject.isDccObjectSharedStage
         ? registry().dccObject.isDccObjectSharedStage(dccObjectPath)
         : true; // matches the former AbstractCommandHook default
+}
+std::string renameObject(const std::string& oldDccObjectPath, const std::string& newName)
+{
+    return registry().dccObject.renameObject
+        ? registry().dccObject.renameObject(oldDccObjectPath, newName)
+        : std::string {};
+}
+PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath)
+{
+    return registry().dccObject.captureSessionLayer
+        ? registry().dccObject.captureSessionLayer(dccObjectPath)
+        : PXR_NS::SdfLayerRefPtr {};
+}
+void transferSessionLayer(
+    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
+    const std::string&            dstDccObjectPath)
+{
+    if (registry().dccObject.transferSessionLayer)
+        registry().dccObject.transferSessionLayer(sourceSessionLayer, dstDccObjectPath);
+}
+void setDccObjectRootLayerPath(
+    const std::string&            dccObjectPath,
+    const std::string&            rootLayerPath,
+    const PXR_NS::SdfLayerRefPtr& rootLayer)
+{
+    if (registry().dccObject.setDccObjectRootLayerPath)
+        registry().dccObject.setDccObjectRootLayerPath(dccObjectPath, rootLayerPath, rootLayer);
 }
 
 // ---- SaveOption ----
@@ -315,6 +311,11 @@ std::string getDCCWorkspaceScenesDir()
         ? registry().fileSystem.getDCCWorkspaceScenesDir()
         : std::string {};
 }
+std::string sceneFolder()
+{
+    return registry().fileSystem.sceneFolder ? registry().fileSystem.sceneFolder()
+                                             : std::string {};
+}
 bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
 {
     return registry().fileSystem.prepareLayerSaveUILayer
@@ -334,6 +335,12 @@ std::vector<PXR_NS::UsdStageCache*> getStageCaches()
     return registry().serialization.getStageCaches
         ? registry().serialization.getStageCaches()
         : std::vector<PXR_NS::UsdStageCache*> { &PXR_NS::UsdUtilsStageCache::Get() };
+}
+std::vector<PXR_NS::UsdStageRefPtr> getAllStages()
+{
+    return registry().serialization.getAllStages
+        ? registry().serialization.getAllStages()
+        : PXR_NS::UsdUtilsStageCache::Get().GetAllStages();
 }
 void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer)
 {

@@ -872,8 +872,8 @@ void SaveLayersDialog::onSaveAll()
         std::string componentName = componentWidget->componentName().toStdString();
         std::string dccObjectPath = componentWidget->dccObjectPath();
 
-        // SLD-4: move/save the component unconditionally (OLD did not gate this on
-        // session state; bulk save has no session state but must still save).
+        // Move/save the component unconditionally; bulk save has no session state but
+        // must still save.
         std::string newRootPath
             = UsdLayerEditor::moveComponent(saveLocation, componentName, dccObjectPath);
 
@@ -884,20 +884,20 @@ void SaveLayersDialog::onSaveAll()
             auto newRootLayer = SdfLayer::FindOrOpen(newRootPath);
             if (newRootLayer) {
                 // Capture the component's session layer BEFORE the rename/repath, which
-                // recreates the stage with an empty session layer (matches the old editor).
+                // recreates the stage with an empty session layer.
                 auto oldSessionLayer = UsdLayerEditor::captureSessionLayer(dccObjectPath);
 
                 // Rename the DCC-side proxy to match the component's new name.
                 std::string newDccObjectPath
-                    = UsdLayerEditor::renameProxyShape(dccObjectPath, componentName);
+                    = UsdLayerEditor::renameObject(dccObjectPath, componentName);
                 const std::string effectivePath
                     = newDccObjectPath.empty() ? dccObjectPath : newDccObjectPath;
 
-                // SLD-3: rewrite the proxy's root .filePath to the new root layer
-                // (renameProxyShape only renames the DAG node, not .filePath).
-                UsdLayerEditor::setProxyRootLayerPath(effectivePath, newRootPath, newRootLayer);
+                // Rewrite the proxy's root .filePath to the new root layer
+                // (renameObject only renames the DAG node, not .filePath).
+                UsdLayerEditor::setDccObjectRootLayerPath(effectivePath, newRootPath, newRootLayer);
 
-                // SLD-2: transfer the captured session-layer opinions onto the new stage.
+                // Transfer the captured session-layer opinions onto the new stage.
                 UsdLayerEditor::transferSessionLayer(oldSessionLayer, effectivePath);
 
                 // Relocate the stage entry + lock the new root (needs session state).

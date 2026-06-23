@@ -64,10 +64,6 @@ public:
     virtual bool doIt(const pxr::SdfLayerHandle& layer) = 0;
     virtual bool undoIt(const pxr::SdfLayerHandle& layer) = 0;
 
-    // Register a DCC-specific checker that suppresses auto edit-target changes.
-    // Pass nullptr to restore default behaviour (auto-retarget enabled).
-    static void setAutoRetargetDisabledChecker(std::function<bool()> checker);
-
 protected:
     CmdId               _cmdId;
     std::string         _cmdResult; // set if the command returns something
@@ -94,12 +90,6 @@ public:
 
     bool undoIt(const pxr::SdfLayerHandle& layer) override;
 
-    // Register a DCC-specific provider for the full list of active stages.
-    // Used by backupEditTargets() to find stages not in the global USD cache.
-    // Pass nullptr to restore the default (global UsdUtilsStageCache only).
-    static void setStagesProvider(
-        std::function<std::vector<pxr::UsdStageRefPtr>()> provider);
-
 protected:
     // Backup and restore edit targets of stages that were targeting the sub-layers
     // of the cleared layer to support undo and redo.
@@ -118,6 +108,7 @@ private:
     using EditTargetBackups = std::map<PXR_NS::UsdStagePtr, PXR_NS::UsdEditTarget>;
     EditTargetBackups _editTargetBackups;
 
+    // we need to hold onto the layer if we dirty it
     PXR_NS::SdfLayerRefPtr _backupLayer;
 };
 
@@ -383,14 +374,15 @@ public:
     std::string commandString() const override { return "Refresh System Lock"; }
 
     // Adds a DCC-specific entry (e.g. "proxyShapePath") to the context sent with
-    // the onRefreshSystemLock UI callback. Public for testability.
+    // the onRefreshSystemLock UI callback.
     void addCallbackContext(const std::string& key, const pxr::VtValue& value);
 
-    // public for testability (same pattern as AddAnonSubLayerCmd::_anonName)
-    pxr::VtDictionary _extraCallbackContext;
+    const pxr::VtDictionary& extraCallbackContext() const { return _extraCallbackContext; }
 
 private:
     std::string _quote(const std::string& string);
+
+    pxr::VtDictionary _extraCallbackContext;
 
     // Checks if the file layer or its sublayers are accessible on disk, and adds the layer
     // to _layers along with the _lockCommands to update the system-lock status.

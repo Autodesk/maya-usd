@@ -141,7 +141,14 @@ LayerEditorAPI bool requireUsdPathsRelativeToParentLayer();
  */
 LayerEditorAPI bool requireUsdPathsRelativeToEditTargetLayer();
 
+/*! \brief sets the flag specifying whether USD file paths should be saved as relative to Maya
+ * scene file
+ */
 LayerEditorAPI void setRequireUsdPathsRelativeToDCCSceneFile(bool value);
+
+/*! \brief sets the flag specifying whether USD file paths should be saved
+ *         as relative to the given parent layer.
+ */
 LayerEditorAPI void setRequireUsdPathsRelativeToParentLayer(bool value);
 
 /*! \brief returns a unique file name

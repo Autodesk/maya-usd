@@ -180,9 +180,7 @@ std::string getSceneFolder();
 void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo);
 
 /*! \brief Same as getLayersToSaveFromDCCObject but accepts the stage directly,
-    bypassing the UFE path-based stage lookup. Use this overload when the stage
-    is already known (e.g. from SessionState::stageEntry()) to avoid path format
-    mismatches between DCC object paths and the UFE stage map.
+    bypassing the UFE path-based stage lookup.
  */
 LayerEditorAPI void getLayersToSaveFromStage(
     const PXR_NS::UsdStageRefPtr& stage,

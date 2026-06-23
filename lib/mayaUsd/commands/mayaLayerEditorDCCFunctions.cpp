@@ -19,6 +19,7 @@
 #include <tokens.h> // UsdLayerEditorOptionVars
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
@@ -50,37 +51,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-// Local copy of the proxy-shape boolean attribute reader (the original lives in
-// an anonymous namespace in mayaCommandHook.cpp and is not reachable here).
-std::string proxyShapeName(const std::string& proxyShapePath)
-{
-    std::size_t found = proxyShapePath.find_last_of("|");
-    return (std::string::npos != found) ? proxyShapePath.substr(found + 1) : proxyShapePath;
-}
-
-bool getBooleanAttributeOnProxyShape(
-    const std::string& proxyShapePath,
-    const std::string& attributeName)
-{
-    if (proxyShapePath.empty())
-        return false;
-
-    MObject mobj;
-    MStatus status = PXR_NS::UsdMayaUtil::GetMObjectByName(proxyShapeName(proxyShapePath), mobj);
-    if (status == MStatus::kSuccess) {
-        MFnDependencyNode fn;
-        fn.setObject(mobj);
-        bool attribute;
-        if (PXR_NS::UsdMayaUtil::getPlugValue(fn, attributeName.c_str(), &attribute))
-            return attribute;
-    }
-    return false;
-}
-
-} // namespace
-
 namespace UsdLayerEditor {
 
 void registerLayerEditorDCCFunctions()
@@ -92,21 +62,6 @@ void registerLayerEditorDCCFunctions()
           };
     component.reloadComponent = [](const std::string& dccObjectPath) {
         MayaUsd::ComponentUtils::reloadAdskUsdComponent(dccObjectPath);
-    };
-    component.renameProxyShape
-        = [](const std::string& oldDccObjectPath, const std::string& newName) -> std::string {
-        if (oldDccObjectPath.empty() || newName.empty())
-            return {};
-        MObject proxyNode;
-        if (PXR_NS::UsdMayaUtil::GetMObjectByName(oldDccObjectPath, proxyNode) != MStatus::kSuccess)
-            return {};
-        MDagModifier dagMod;
-        if (dagMod.renameNode(proxyNode, newName.c_str()) != MStatus::kSuccess || dagMod.doIt() != MStatus::kSuccess)
-            return {};
-        MDagPath newPath;
-        if (MDagPath::getAPathTo(proxyNode, newPath) != MStatus::kSuccess)
-            return {};
-        return newPath.fullPathName().asUTF8();
     };
     component.isStageAComponent = [](const std::string& dccObjectPath) {
         if (dccObjectPath.empty())
@@ -121,7 +76,6 @@ void registerLayerEditorDCCFunctions()
               return MayaUsd::ComponentUtils::shouldDisplayComponentInitialSaveDialog(
                   stage, dccObjectPath);
           };
-    component.sceneFolder = []() { return MayaUsd::utils::getSceneFolder(); };
     component.moveComponent = [](const std::string& saveLocation,
                                  const std::string& componentName,
                                  const std::string& dccObjectPath) {
@@ -137,35 +91,50 @@ void registerLayerEditorDCCFunctions()
     component.getComponentLayersToSave = [](const std::string& dccObjectPath) {
         return MayaUsd::ComponentUtils::getAdskUsdComponentLayersToSave(dccObjectPath);
     };
-    component.captureSessionLayer
+    setComponentFns(component);
+
+    DccObjectFns dccObject;
+    dccObject.isDccObjectStageIncoming = [](const std::string& dccObjectPath) {
+        return UsdMayaUtil::GetBooleanAttributeOnProxyShape(dccObjectPath, "stageIncoming");
+    };
+    dccObject.isDccObjectSharedStage = [](const std::string& dccObjectPath) {
+        return UsdMayaUtil::GetBooleanAttributeOnProxyShape(dccObjectPath, "shareStage");
+    };
+    dccObject.renameObject
+        = [](const std::string& oldDccObjectPath, const std::string& newName) -> std::string {
+        if (oldDccObjectPath.empty() || newName.empty())
+            return {};
+        MObject proxyNode;
+        if (PXR_NS::UsdMayaUtil::GetMObjectByName(oldDccObjectPath, proxyNode) != MStatus::kSuccess)
+            return {};
+        MDagModifier dagMod;
+        if (dagMod.renameNode(proxyNode, newName.c_str()) != MStatus::kSuccess || dagMod.doIt() != MStatus::kSuccess)
+            return {};
+        MDagPath newPath;
+        if (MDagPath::getAPathTo(proxyNode, newPath) != MStatus::kSuccess)
+            return {};
+        return newPath.fullPathName().asUTF8();
+    };
+    dccObject.captureSessionLayer
         = [](const std::string& dccObjectPath) -> PXR_NS::SdfLayerRefPtr {
         auto stage = UsdMayaUtil::GetStageByProxyName(dccObjectPath);
         return stage ? PXR_NS::SdfLayerRefPtr(stage->GetSessionLayer()) : PXR_NS::SdfLayerRefPtr {};
     };
-    component.transferSessionLayer
+    dccObject.transferSessionLayer
         = [](const PXR_NS::SdfLayerRefPtr& sourceSessionLayer, const std::string& dstDccObjectPath) {
               auto newStage = UsdMayaUtil::GetStageByProxyName(dstDccObjectPath);
               if (sourceSessionLayer && newStage)
                   newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
           };
-    component.setProxyRootLayerPath = [](const std::string&            dccObjectPath,
-                                         const std::string&            rootLayerPath,
-                                         const PXR_NS::SdfLayerRefPtr& rootLayer) {
+    dccObject.setDccObjectRootLayerPath = [](const std::string&            dccObjectPath,
+                                             const std::string&            rootLayerPath,
+                                             const PXR_NS::SdfLayerRefPtr& rootLayer) {
         MayaUsd::utils::setNewProxyPath(
             MString(dccObjectPath.c_str()),
             MString(rootLayerPath.c_str()),
             MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
             rootLayer,
             /*isTargetLayer=*/false);
-    };
-    setComponentFns(component);
-
-    DccObjectFns dccObject;
-    dccObject.isDccObjectStageIncoming = [](const std::string& dccObjectPath) {
-        return getBooleanAttributeOnProxyShape(dccObjectPath, "stageIncoming");
-    };
-    dccObject.isDccObjectSharedStage = [](const std::string& dccObjectPath) {
-        return getBooleanAttributeOnProxyShape(dccObjectPath, "shareStage");
     };
     setDccObjectFns(dccObject);
 
@@ -298,6 +267,7 @@ void registerLayerEditorDCCFunctions()
         = []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); };
     fileSystem.getDCCWorkspaceScenesDir
         = []() { return std::string(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar()); };
+    fileSystem.sceneFolder = []() { return MayaUsd::utils::getSceneFolder(); };
     fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) -> bool {
         const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
                              "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
@@ -320,6 +290,7 @@ void registerLayerEditorDCCFunctions()
             caches.push_back(&cache);
         return caches;
     };
+    serialization.getAllStages = []() { return MayaUsd::ufe::ProxyShapeHandler::getAllStages(); };
     serialization.setLayerUpAxisAndUnits = [](const PXR_NS::SdfLayerRefPtr& layer) {
         const PXR_NS::TfToken upAxis
             = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;

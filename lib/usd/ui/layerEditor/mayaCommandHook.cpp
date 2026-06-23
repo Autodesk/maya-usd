@@ -51,16 +51,6 @@ std::string quote(const std::string& string) { return STR(" \"") + string + STR(
 // maya doesn't support spaces in undo chunk names...
 MString cleanChunkName(QString name) { return quote(name.replace(" ", "_").toStdString()).c_str(); }
 
-std::string getProxyShapeName(const std::string& proxyShapePath)
-{
-    std::size_t found = proxyShapePath.find_last_of("|");
-    if (std::string::npos != found) {
-        return proxyShapePath.substr(found + 1);
-    } else {
-        return proxyShapePath;
-    }
-}
-
 } // namespace
 
 namespace UsdLayerEditor {
@@ -223,7 +213,7 @@ void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubL
         return;
 
     MObject mobj;
-    if (PXR_NS::UsdMayaUtil::GetMObjectByName(getProxyShapeName(shapePath), mobj)
+    if (PXR_NS::UsdMayaUtil::GetMObjectByName(PXR_NS::UsdMayaUtil::GetProxyShapeName(shapePath), mobj)
         != MStatus::kSuccess)
         return;
 

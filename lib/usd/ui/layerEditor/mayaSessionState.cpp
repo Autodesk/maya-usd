@@ -567,11 +567,11 @@ std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
     if (!ufeGlobalSelection)
         return result;
 
-    const std::vector<StageEntry> all = allStages();
-    auto                          findEntryById = [&](const std::string& id) -> const StageEntry* {
-        for (const auto& e : all) {
-            if (e._id == id)
-                return &e;
+    const std::vector<StageEntry> allEntries = allStages();
+    auto findEntryById = [&](const std::string& stageId) -> const StageEntry* {
+        for (const auto& candidateEntry : allEntries) {
+            if (candidateEntry._id == stageId)
+                return &candidateEntry;
         }
         return nullptr;
     };
@@ -584,8 +584,8 @@ std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
             continue;
 
         MFnDagNode        dagNode(proxyShapePtr->thisMObject());
-        const std::string id = dagNode.uuid().asString().asChar();
-        if (const StageEntry* entry = findEntryById(id)) {
+        const std::string stageId = dagNode.uuid().asString().asChar();
+        if (const StageEntry* entry = findEntryById(stageId)) {
             result.push_back(*entry);
         }
     }

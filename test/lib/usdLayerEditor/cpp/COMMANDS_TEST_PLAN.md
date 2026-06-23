@@ -71,8 +71,8 @@ prim (`SdfCreatePrimInLayer(sub, SdfPath("/Foo"))`), `rootLayer->InsertSubLayerP
 - `Undo_RestoresPreFlattenContent`: undo; assert `/Foo` no longer inline in rootLayer
   (`restoreLayer` transfers the pre-flatten backup, which had no `/Foo`).
 - `Redo_ReflattensContent`: redo; `/Foo` inline again.
-- *(Note: requires `setStagesProvider` like `BackupLayerCmdTest` if edit-target backup matters; the
-  flatten itself does not.)*
+- *(Note: requires a `SerializationFns` stub with `getAllStages` like `BackupLayerCmdTest` if
+  edit-target backup matters; the flatten itself does not.)*
 
 ### Task D — `StitchLayersCmd` (new fixture `StitchLayersCmdTest`)
 `doIt` (cpp 855+) sorts by strength, validates locks, `UsdUtilsStitchLayers(strongest, weak)`,

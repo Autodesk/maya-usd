@@ -35,8 +35,6 @@ namespace UsdLayerEditor {
 // std::function typedefs use the EXACT signatures of the former base-class overrides.
 using SaveComponentFn    = std::function<void(const PXR_NS::UsdStageRefPtr&, const std::string&)>;
 using ReloadComponentFn  = std::function<void(const std::string&)>;
-// Returns the new DCC object path of the renamed proxy (empty if no rename happened).
-using RenameProxyShapeFn = std::function<std::string(const std::string&, const std::string&)>;
 using IsStageAComponentFn  = std::function<bool(const std::string&)>;
 using IsUnsavedComponentFn = std::function<bool(const PXR_NS::UsdStageRefPtr&)>;
 using ShouldDisplayComponentInitialSaveDialogFn
@@ -49,7 +47,7 @@ using PreviewComponentSaveFn
 using GetComponentLayersToSaveFn = std::function<std::vector<std::string>(const std::string&)>;
 using CaptureSessionLayerFn  = std::function<PXR_NS::SdfLayerRefPtr(const std::string&)>;
 using TransferSessionLayerFn = std::function<void(const PXR_NS::SdfLayerRefPtr&, const std::string&)>;
-using SetProxyRootLayerPathFn
+using SetDccObjectRootLayerPathFn
     = std::function<void(const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&)>;
 
 using SupportsEditForwardingFn = std::function<bool()>;
@@ -63,22 +61,19 @@ using IsEditForwardDialogOpenFn = std::function<bool()>;
 
 using IsDccObjectStageIncomingFn = std::function<bool(const std::string&)>;
 using IsDccObjectSharedStageFn   = std::function<bool(const std::string&)>;
+// Returns the new DCC object path of the renamed object (empty if no rename happened).
+using RenameObjectFn = std::function<std::string(const std::string&, const std::string&)>;
 
 struct ComponentFns
 {
     SaveComponentFn                           saveComponent;
     ReloadComponentFn                         reloadComponent;
-    RenameProxyShapeFn                        renameProxyShape;
     IsStageAComponentFn                       isStageAComponent;
     IsUnsavedComponentFn                      isUnsavedComponent;
     ShouldDisplayComponentInitialSaveDialogFn shouldDisplayComponentInitialSaveDialog;
-    SceneFolderFn                             sceneFolder;
     MoveComponentFn                           moveComponent;
     PreviewComponentSaveFn                    previewComponentSave;
     GetComponentLayersToSaveFn                getComponentLayersToSave;
-    CaptureSessionLayerFn                     captureSessionLayer;   // returns null when unset
-    TransferSessionLayerFn                    transferSessionLayer;  // no-op when unset
-    SetProxyRootLayerPathFn                   setProxyRootLayerPath; // no-op when unset
 };
 
 struct EditForwardingFns
@@ -95,6 +90,10 @@ struct DccObjectFns
 {
     IsDccObjectStageIncomingFn isDccObjectStageIncoming;
     IsDccObjectSharedStageFn   isDccObjectSharedStage;
+    RenameObjectFn             renameObject;
+    CaptureSessionLayerFn      captureSessionLayer;      // returns null when unset
+    TransferSessionLayerFn     transferSessionLayer;     // no-op when unset
+    SetDccObjectRootLayerPathFn setDccObjectRootLayerPath; // no-op when unset
 };
 
 struct SaveOptionFns
@@ -131,6 +130,7 @@ struct FileSystemFns
 {
     std::function<std::string()>            getDCCSceneDir;              // default: ""
     std::function<std::string()>            getDCCWorkspaceScenesDir;    // default: ""
+    SceneFolderFn                           sceneFolder;                 // default: ""
     std::function<bool(const std::string&)> prepareLayerSaveUILayer;     // default: true
     std::function<bool(const std::string&)> checkWriteAccess;            // default: false
 };
@@ -138,6 +138,7 @@ struct FileSystemFns
 struct SerializationFns
 {
     std::function<std::vector<PXR_NS::UsdStageCache*>()>      getStageCaches;           // default: {&UsdUtilsStageCache::Get()}
+    std::function<std::vector<PXR_NS::UsdStageRefPtr>()>      getAllStages;             // default: UsdUtilsStageCache::Get().GetAllStages()
     std::function<void(const PXR_NS::SdfLayerRefPtr&)>        setLayerUpAxisAndUnits;   // default: no-op
     std::function<void(const std::string&, const std::string&,
                        const PXR_NS::SdfLayerRefPtr&, bool)>  updateDCCObjectRootLayer; // default: no-op
@@ -171,7 +172,6 @@ LayerEditorAPI const LayerEditorDCCFunctions& layerEditorDCCFunctions();
 // isDccObjectSharedStage which defaults to true).
 LayerEditorAPI void        saveComponent(const PXR_NS::UsdStageRefPtr&, const std::string&);
 LayerEditorAPI void        reloadComponent(const std::string&);
-LayerEditorAPI std::string renameProxyShape(const std::string&, const std::string&);
 LayerEditorAPI bool        isStageAComponent(const std::string&);
 LayerEditorAPI bool        isUnsavedComponent(const PXR_NS::UsdStageRefPtr&);
 LayerEditorAPI bool        shouldDisplayComponentInitialSaveDialog(
@@ -187,7 +187,10 @@ LayerEditorAPI PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dcc
 LayerEditorAPI void transferSessionLayer(
     const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
     const std::string&            dstDccObjectPath);
-LayerEditorAPI void setProxyRootLayerPath(
+// Forces absolute-path mode and sets the layer as a non-target layer.
+// (Distinct from SerializationFns::updateDCCObjectRootLayer, which follows the
+// proxy/option-var path-mode preference and a caller-supplied wasTargetLayer.)
+LayerEditorAPI void setDccObjectRootLayerPath(
     const std::string&            dccObjectPath,
     const std::string&            rootLayerPath,
     const PXR_NS::SdfLayerRefPtr& rootLayer);
@@ -201,6 +204,7 @@ LayerEditorAPI bool isEditForwardDialogOpen();
 
 LayerEditorAPI bool isDccObjectStageIncoming(const std::string&);
 LayerEditorAPI bool isDccObjectSharedStage(const std::string&);
+LayerEditorAPI std::string renameObject(const std::string&, const std::string&);
 
 // SaveOptionFns
 LayerEditorAPI bool        requireUsdPathsRelativeToSceneFile();
@@ -235,7 +239,11 @@ LayerEditorAPI bool        checkWriteAccess(const std::string& filePath);
 
 // SerializationFns
 LayerEditorAPI std::vector<PXR_NS::UsdStageCache*> getStageCaches();
+LayerEditorAPI std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
 LayerEditorAPI void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
+// Follows the proxy/option-var path-mode preference and the caller-supplied
+// wasTargetLayer. (Distinct from setDccObjectRootLayerPath, which forces
+// absolute-path mode and a non-target layer.)
 LayerEditorAPI void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,
     const std::string&            layerPath,
