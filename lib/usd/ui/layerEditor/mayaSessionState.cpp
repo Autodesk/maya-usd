@@ -567,9 +567,6 @@ std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
     if (!ufeGlobalSelection)
         return result;
 
-    // Find the proxy shapes corresponding to UFE selected items. If a selected
-    // item is not a proxy shape itself, also peek at its hierarchy children
-    // for a contained proxy shape (matches legacy stageSelectorWidget behavior).
     const std::vector<StageEntry> all = allStages();
     auto                          findEntryById = [&](const std::string& id) -> const StageEntry* {
         for (const auto& e : all) {
@@ -580,22 +577,9 @@ std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
     };
 
     const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
-    const bool            rebuildCacheIfNeeded = false;
     for (const auto& item : ufeSelection) {
         PXR_NS::MayaUsdProxyShapeBase* proxyShapePtr
-            = MayaUsd::ufe::getProxyShape(item->path(), rebuildCacheIfNeeded);
-        if (!proxyShapePtr) {
-            // Walk the immediate children to find an embedded proxy shape.
-            if (auto hierarchy = Ufe::Hierarchy::hierarchy(item)) {
-                for (const auto& subItem : hierarchy->children()) {
-                    auto p = MayaUsd::ufe::getProxyShape(subItem->path(), rebuildCacheIfNeeded);
-                    if (p) {
-                        proxyShapePtr = p;
-                        break;
-                    }
-                }
-            }
-        }
+            = MayaUsd::ufe::getProxyShapeFromItemOrChildren(item);
         if (!proxyShapePtr)
             continue;
 
