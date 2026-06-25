@@ -93,6 +93,22 @@ TEST_F(UpdateEditTargetTest, WhenNoModifiableLayers_EditTargetChangesToSessionLa
     EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _stage->GetSessionLayer());
 }
 
+// Muting the layer that is currently the edit target does NOT reassign the edit
+// target: muting does not revoke edit permission, so updateEditTarget() (which only
+// retargets when the current target is locked) leaves the now-muted layer as the
+// edit target. This documents current behavior.
+TEST_F(UpdateEditTargetTest, UpdateEditTarget_MutingEditTargetLayer_LeavesTargetUnchanged)
+{
+    _stage->SetEditTarget(_subLayer);
+    ASSERT_EQ(_stage->GetEditTarget().GetLayer(), _subLayer);
+
+    auto cmd = std::make_shared<MuteLayerCmd>(_stage, _subLayer, /*muteIt=*/true);
+    cmd->execute();
+
+    EXPECT_TRUE(_stage->IsLayerMuted(_subLayer->GetIdentifier()));
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _subLayer);
+}
+
 // When edit forwarding handles the edit-target update, updateEditTarget should
 // skip the normal auto-targeting and leave the edit target unchanged.
 TEST_F(UpdateEditTargetTest, WhenEditForwardingActive_EditTargetUnchanged)

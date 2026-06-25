@@ -31,13 +31,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-namespace {
-LayerTreeItem* itemAt(LayerTreeModel* model, const QModelIndex& idx)
-{
-    return dynamic_cast<LayerTreeItem*>(model->itemFromIndex(idx));
-}
-} // namespace
-
 class PathCheckerTest : public LayerEditorTestFixture { };
 
 // ── checkIfPathIsSafeToAdd ────────────────────────────────────────────────────
@@ -52,7 +45,7 @@ TEST_F(PathCheckerTest, NonExistentPathIsSafe)
 {
     // A path that can't be opened by FindOrOpen is assumed safe
     // (could be a custom URI or future path).
-    auto* parentItem = itemAt(treeModel(), rootLayerIndex());
+    auto* parentItem = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(parentItem, nullptr);
     EXPECT_TRUE(checkIfPathIsSafeToAdd(
         nullptr, QString("test"), parentItem, "/does/not/exist/layer.usda"));
@@ -62,8 +55,8 @@ TEST_F(PathCheckerTest, DuplicatePathInStackIsFalse)
 {
     // The fixture root layer already has the first sublayer in its stack.
     // Trying to add the same identifier again must be rejected.
-    auto* parentItem    = itemAt(treeModel(), rootLayerIndex());
-    auto* sublayerItem  = itemAt(treeModel(), firstSublayerIndex());
+    auto* parentItem    = treeModel()->layerItemFromIndex(rootLayerIndex());
+    auto* sublayerItem  = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(parentItem,   nullptr);
     ASSERT_NE(sublayerItem, nullptr);
 
@@ -152,7 +145,7 @@ TEST_F(PathCheckerAliasTest, AliasPathRejected)
     // A's stack stores B as "./pc_test_b.usda"; proxy.Find(_pathB) == -1.
     // FindOrOpen(_pathB) returns the same handle, so the handle-comparison
     // loop sets foundLayerInStack=true and the function returns false.
-    auto* parentItem = itemAt(treeModel(), rootLayerIndex());
+    auto* parentItem = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(parentItem, nullptr);
 
     EXPECT_FALSE(checkIfPathIsSafeToAdd(nullptr, QString("test"), parentItem, _pathB));
@@ -184,7 +177,7 @@ TEST_F(PathCheckerCycleTest, CycleDetected)
     // FindOrOpen(_pathB) succeeds; the handle-comparison loop finds nothing
     // (foundLayerInStack=false).  checkPathRecursive walks B's children,
     // encounters A which is in parentHandles, and returns false.
-    auto* parentItem = itemAt(treeModel(), rootLayerIndex());
+    auto* parentItem = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(parentItem, nullptr);
 
     EXPECT_FALSE(checkIfPathIsSafeToAdd(nullptr, QString("test"), parentItem, _pathB));

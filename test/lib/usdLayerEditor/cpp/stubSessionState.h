@@ -53,13 +53,7 @@ public:
     bool autoHideSessionLayer()     const override { return false; }
     bool isEditForwardMode()        const override { return _isEFModeActive; }
 
-    void setIsEditForwardMode(bool v)
-    {
-        _isEFModeActive = v;
-        Q_EMIT editForwardingChanged();
-    }
-
-    bool _isEFModeActive { false };
+    void setIsEditForwardMode(bool v);
 
     // Test helpers
     void addStage(PXR_NS::UsdStageRefPtr stage);
@@ -79,6 +73,7 @@ public:
     StubCommandHook _commandHookImpl;
 
 private:
+    bool                    _isEFModeActive { false };
     std::vector<StageEntry> _stages;
     StageEntry              makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id);
 };

@@ -59,6 +59,11 @@ public:
     // after real Maya proxy shape nodes are created.
     void setProxyShapePath(int index, const std::string& path);
 
+    // Pushes a new stage entry and makes it the active one. Mirrors the new
+    // editor's StubSessionState so shared tests can switch the editor's stage
+    // without a compile-time editor guard.
+    void switchToCustomStage(PXR_NS::UsdStageRefPtr stage, const std::string& id = "custom_stage");
+
     // Used by LayerEditorWithEFFixture; has no effect on old editor widget since
     // it uses a compile-time #ifdef guard rather than a runtime check.
     bool _supportsEditForwarding { false };

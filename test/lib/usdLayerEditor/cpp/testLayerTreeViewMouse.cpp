@@ -104,10 +104,4 @@ TEST_F(LayerTreeViewMouseTest, MouseClick_RootLayerItem_DoesNotCrash)
     EXPECT_NO_THROW(sendMouseRelease(layerTree()->viewport(), pos));
 }
 
-TEST_F(LayerTreeViewMouseTest, Repaint_DoesNotCrash)
-{
-    ASSERT_NE(layerTree(), nullptr);
-    EXPECT_NO_THROW(layerTree()->viewport()->repaint());
-}
-
 } // namespace UsdLayerEditor

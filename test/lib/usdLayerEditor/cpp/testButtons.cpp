@@ -45,8 +45,6 @@ protected:
 
 // Shared stage backed by a real file: root layer is non-anonymous and initially
 // clean, so the Save button starts disabled and only enables when dirty.
-// Not compiled for the old editor: switchToCustomStage is new-editor-only API.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 class SaveStageCleanNonAnonFixture : public LayerEditorTestFixture
 {
 protected:
@@ -71,7 +69,6 @@ protected:
         QFile::remove(_stagePath);
     }
 };
-#endif
 
 // Clicking "Add a New Layer" with nothing selected inserts an anonymous sublayer at the root.
 TEST_F(LayerEditorTestFixture, NewLayerButton_Click_CallsAddAnonymousSubLayer)
@@ -191,7 +188,8 @@ TEST_F(LayerEditorTestFixture, SaveButton_HiddenWhenStageIsNotShared)
     EXPECT_FALSE(btn->isVisible());
 }
 
-// Selecting a sublayer enables the button — clicking adds a sibling at that position.
+// Selecting a sublayer enables the button (the click behaviour is covered by
+// NewLayerButton_Click_WithSublayerSelectionAddsSibling).
 TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledForSublayerSelection)
 {
     selectRow(firstSublayerIndex());
@@ -230,7 +228,6 @@ TEST_F(LayerEditorTestFixture, ToolbarButtons_HaveObjectNames)
 // With a file-backed (non-anonymous), clean stage the Save button starts disabled.
 // Making the stage dirty must enable it — the transition proves the button actually
 // tracks needsSaving() rather than being permanently enabled by isAnonymous().
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(SaveStageCleanNonAnonFixture, SaveStageButton_DisabledInitially_EnabledWhenDirty)
 {
     QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Save all edits in the Layer Stack");
@@ -245,9 +242,6 @@ TEST_F(SaveStageCleanNonAnonFixture, SaveStageButton_DisabledInitially_EnabledWh
 
     EXPECT_TRUE(btn->isEnabled()) << "Save Stage button should be enabled after stage becomes dirty";
 }
-#endif
-
-// ── New Layer button: disabled → enabled transition ───────────────────────────
 
 // Selecting a locked layer disables the button; switching to an unlocked layer
 // must re-enable it, demonstrating the disabled→enabled path.

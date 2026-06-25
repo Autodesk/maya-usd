@@ -31,22 +31,6 @@
 
 namespace UsdLayerEditor {
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-static LayerTreeItem* itemAt(LayerTreeModel* m, const QModelIndex& idx)
-{
-    return dynamic_cast<LayerTreeItem*>(m->itemFromIndex(idx));
-}
-
-static QPushButton* findBtn(QWidget* root, const QString& tooltipSubstr)
-{
-    for (auto* btn : root->findChildren<QPushButton*>()) {
-        if (btn->toolTip().contains(tooltipSubstr, Qt::CaseInsensitive))
-            return btn;
-    }
-    return nullptr;
-}
-
 // ── SharedStageFixture ────────────────────────────────────────────────────────
 // isDccObjectSharedStage() = true — exercises the "owned stage" path where the
 // layer editor is responsible for saving layers.
@@ -65,7 +49,7 @@ protected:
 TEST_F(SharedStageFixture, NeedsSaving_TrueForAnonymousLayer)
 {
     // Anonymous layers on a shared stage must be saved by the layer editor.
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     ASSERT_TRUE(item->isAnonymous());
     EXPECT_TRUE(item->needsSaving());
@@ -74,7 +58,7 @@ TEST_F(SharedStageFixture, NeedsSaving_TrueForAnonymousLayer)
 TEST_F(SharedStageFixture, NeedsSaving_TrueForDirtyRootLayer)
 {
     _sessionState.stage()->GetRootLayer()->SetComment("make dirty");
-    auto* root = itemAt(treeModel(), rootLayerIndex());
+    auto* root = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(root, nullptr);
     EXPECT_TRUE(root->needsSaving());
 }
@@ -82,7 +66,7 @@ TEST_F(SharedStageFixture, NeedsSaving_TrueForDirtyRootLayer)
 TEST_F(SharedStageFixture, NeedsSaving_FalseForSessionLayer)
 {
     // Session layers are Maya-managed — never counted as needing saving here.
-    auto* session = itemAt(treeModel(), sessionLayerIndex());
+    auto* session = treeModel()->layerItemFromIndex(sessionLayerIndex());
     ASSERT_NE(session, nullptr);
     session->layer()->SetComment("mark dirty");
     EXPECT_FALSE(session->needsSaving());
@@ -90,7 +74,7 @@ TEST_F(SharedStageFixture, NeedsSaving_FalseForSessionLayer)
 
 TEST_F(SharedStageFixture, SaveButton_VisibleOnSharedStage)
 {
-    QPushButton* btn = findBtn(_widget, "Save all edits");
+    QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Save all edits");
     ASSERT_NE(btn, nullptr);
     EXPECT_TRUE(btn->isVisible());
 }
@@ -98,7 +82,7 @@ TEST_F(SharedStageFixture, SaveButton_VisibleOnSharedStage)
 TEST_F(SharedStageFixture, SaveButton_EnabledWhenLayersNeedSaving)
 {
     // The stub stage has an anonymous sublayer, so count >= 1 → button enabled.
-    QPushButton* btn = findBtn(_widget, "Save all edits");
+    QPushButton* btn = TestUtils::findButtonByTooltip(_widget, "Save all edits");
     ASSERT_NE(btn, nullptr);
     EXPECT_TRUE(btn->isVisible());
     EXPECT_TRUE(btn->isEnabled());
@@ -111,7 +95,7 @@ TEST_F(SharedStageFixture, NeedsSaving_FalseAfterSwitchingToNonSharedStage)
     treeModel()->forceRefresh();
     QApplication::processEvents();
 
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_FALSE(item->needsSaving());
 }
@@ -148,21 +132,21 @@ protected:
 
 TEST_F(ReferencedLayersFixture, IsReadOnly_TrueForReferencedLayer)
 {
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_TRUE(item->isReadOnly());
 }
 
 TEST_F(ReferencedLayersFixture, NeedsSaving_FalseForReferencedLayerOnNonSharedStage)
 {
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_FALSE(item->needsSaving());
 }
 
 TEST_F(ReferencedLayersFixture, IsReadOnly_FalseForNonReferencedRootLayer)
 {
-    auto* root = itemAt(treeModel(), rootLayerIndex());
+    auto* root = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(root, nullptr);
     EXPECT_FALSE(root->isReadOnly());
 }
@@ -190,21 +174,21 @@ protected:
 TEST_F(MayaReferencedLayersFixture, IsReadOnly_TrueForMayaReferencedLayer)
 {
     // A sublayer stamped with the legacy "mayaSharedLayers" token must be read-only.
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_TRUE(item->isReadOnly());
 }
 
 TEST_F(MayaReferencedLayersFixture, NeedsSaving_FalseForMayaReferencedLayerOnNonSharedStage)
 {
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_FALSE(item->needsSaving());
 }
 
 TEST_F(MayaReferencedLayersFixture, IsReadOnly_FalseForNonMayaReferencedRootLayer)
 {
-    auto* root = itemAt(treeModel(), rootLayerIndex());
+    auto* root = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(root, nullptr);
     EXPECT_FALSE(root->isReadOnly());
 }
@@ -227,14 +211,14 @@ protected:
 
 TEST_F(IncomingStageFixture, IsIncoming_TrueForRootLayer)
 {
-    auto* root = itemAt(treeModel(), rootLayerIndex());
+    auto* root = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(root, nullptr);
     EXPECT_TRUE(root->isIncoming());
 }
 
 TEST_F(IncomingStageFixture, IsIncoming_TrueForSublayer)
 {
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_TRUE(item->isIncoming());
 }
@@ -242,7 +226,7 @@ TEST_F(IncomingStageFixture, IsIncoming_TrueForSublayer)
 TEST_F(IncomingStageFixture, IsIncoming_FalseForSessionLayer)
 {
     // Session layers are never listed in the incoming set.
-    auto* session = itemAt(treeModel(), sessionLayerIndex());
+    auto* session = treeModel()->layerItemFromIndex(sessionLayerIndex());
     ASSERT_NE(session, nullptr);
     EXPECT_FALSE(session->isIncoming());
 }
@@ -250,7 +234,7 @@ TEST_F(IncomingStageFixture, IsIncoming_FalseForSessionLayer)
 TEST_F(IncomingStageFixture, NeedsSaving_TrueForAnonymousLayerOnIncomingStage)
 {
     // Incoming flag does not suppress saving; shared-stage flag drives that.
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_TRUE(item->needsSaving());
 }

@@ -85,7 +85,7 @@ TEST_F(SaveLayersDialogTest, ForEachEntry_CountsAnonLayerRows)
     EXPECT_GE(count, 1);
 #else
     // Old editor: proxy-based discovery finds nothing; count is 0.
-    (void)count;
+    EXPECT_EQ(count, 0);
 #endif
 }
 
@@ -115,19 +115,26 @@ TEST_F(SaveLayersDialogTest, BuildTooltipForLayer_KnownLayer_ReturnsNonEmptyTool
 TEST_F(SaveLayersDialogTest, FindEntry_KnownLayer_ReturnsWidget)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+    // New editor: the stub's anonymous sublayers produce row entries, so at least
+    // one stage layer resolves to a non-null widget.
     const auto& stageMap = dlg.stageLayers();
-    int rowCount = 0;
-    dlg.forEachEntry([&rowCount](QWidget*) { ++rowCount; });
-    if (rowCount == 0) {
-        GTEST_SKIP() << "no row entries (old editor or empty stage)";
-    }
-    // Find the first layer that has a row entry.
-    QWidget* found = nullptr;
+    QWidget*    found = nullptr;
     for (auto& kv : stageMap) {
         found = dlg.findEntry(kv.first);
-        if (found) break;
+        if (found)
+            break;
     }
     EXPECT_NE(found, nullptr);
+#else
+    // Old editor: proxy-based discovery yields no rows, so findEntry returns null
+    // for any layer.
+    int rowCount = 0;
+    dlg.forEachEntry([&rowCount](QWidget*) { ++rowCount; });
+    EXPECT_EQ(rowCount, 0);
+    auto someLayer = PXR_NS::SdfLayer::CreateAnonymous("find_entry_old_editor");
+    EXPECT_EQ(dlg.findEntry(someLayer), nullptr);
+#endif
 }
 
 // findEntry with a layer not in the dialog returns nullptr.
@@ -202,28 +209,32 @@ TEST_F(SaveLayersDialogTest, OnSaveAll_NoRows_DoesNotCrash)
 
 // quietlyUncheckAllAsRelative clears the checkbox without re-triggering the
 // per-entry callback.
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(SaveLayersDialogTest, QuietlyUncheckAllAsRelative_UnchecksCheckbox)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
     auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
-    if (!cb) {
-        GTEST_SKIP() << "no all-as-relative checkbox (old editor or no anonymous layers)";
-    }
+    ASSERT_NE(cb, nullptr);
     cb->setCheckState(Qt::Checked);
     dlg.quietlyUncheckAllAsRelative();
     EXPECT_EQ(cb->checkState(), Qt::Unchecked);
 }
+#endif
 
 // onAllAsRelativeChanged propagates the checkbox state to every layer row.
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(SaveLayersDialogTest, OnAllAsRelativeChanged_AppliesToEntries)
 {
     TestableSaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
     auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
-    if (!cb) {
-        GTEST_SKIP() << "no all-as-relative checkbox (old editor or no anonymous layers)";
-    }
+    ASSERT_NE(cb, nullptr);
+    // SaveLayerPathRow's save-as-relative state has no public getter (the row type is
+    // defined only in the .cpp), so exercise both transitions and assert neither throws.
     cb->setCheckState(Qt::Checked);
     EXPECT_NO_THROW(dlg.callOnAllAsRelativeChanged());
+    cb->setCheckState(Qt::Unchecked);
+    EXPECT_NO_THROW(dlg.callOnAllAsRelativeChanged());
 }
+#endif
 
 } // namespace UsdLayerEditor

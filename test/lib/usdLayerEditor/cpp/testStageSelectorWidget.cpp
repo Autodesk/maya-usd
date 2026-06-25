@@ -19,6 +19,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QPushButton>
 
 #include <gtest/gtest.h>
 
@@ -57,13 +58,6 @@ protected:
     }
 };
 
-// ── construction ──────────────────────────────────────────────────────────
-
-TEST_F(StageSelectorWidgetTest, Construction_DoesNotCrash)
-{
-    EXPECT_NO_THROW(makeWidget());
-}
-
 // ── updateFromSessionState ────────────────────────────────────────────────
 
 // The combo mirrors the session's stage list.
@@ -86,10 +80,19 @@ TEST_F(StageSelectorWidgetTest, UpdateFromSessionState_Twice_KeepsComboCount)
 
 // ── sessionStageChanged ───────────────────────────────────────────────────
 
-TEST_F(StageSelectorWidgetTest, SessionStageChanged_DoesNotCrash)
+// An externally-driven session stage change moves the combo to the matching entry.
+TEST_F(StageSelectorWidgetTest, SessionStageChanged_SelectsMatchingComboEntry)
 {
     auto w = makeWidget();
-    EXPECT_NO_THROW(w->testSessionStageChanged());
+    w->testUpdateFromSessionState();
+    ASSERT_NE(w->dropDown(), nullptr);
+    ASSERT_GT(w->dropDown()->count(), 1);
+
+    const auto& stages = _sessionState.allStages();
+    _sessionState.setStageEntry(stages[1]);
+    w->testSessionStageChanged();
+
+    EXPECT_EQ(w->dropDown()->currentIndex(), 1);
 }
 
 // ── selectedIndexChanged ──────────────────────────────────────────────────
@@ -100,17 +103,29 @@ TEST_F(StageSelectorWidgetTest, SelectedIndexChanged_IndexMinusOne_DoesNotCrash)
     EXPECT_NO_THROW(w->testSelectedIndexChanged(-1));
 }
 
-TEST_F(StageSelectorWidgetTest, SelectedIndexChanged_IndexZero_DoesNotCrash)
+// Selecting a combo entry pushes that entry to the session state.
+TEST_F(StageSelectorWidgetTest, SelectedIndexChanged_SetsSessionStageToSelectedEntry)
 {
     auto w = makeWidget();
-    EXPECT_NO_THROW(w->testSelectedIndexChanged(0));
+    w->testUpdateFromSessionState();
+    ASSERT_NE(w->dropDown(), nullptr);
+    ASSERT_GT(w->dropDown()->count(), 0);
+
+    w->dropDown()->setCurrentIndex(0);
+    w->testSelectedIndexChanged(0);
+
+    EXPECT_EQ(_sessionState.stageEntry(), _sessionState.allStages()[0]);
 }
 
 // ── updateContentButton ───────────────────────────────────────────────────
 
-TEST_F(StageSelectorWidgetTest, UpdateContentButton_DoesNotCrash)
+// The collapse-content button exists and refreshing its icon does not crash.
+// (updateContentButton early-returns when the button is null, so a present
+// button is what makes this path observable.)
+TEST_F(StageSelectorWidgetTest, UpdateContentButton_ButtonPresent)
 {
     auto w = makeWidget();
+    EXPECT_FALSE(w->findChildren<QPushButton*>().isEmpty());
     EXPECT_NO_THROW(w->testUpdateContentButton());
 }
 
@@ -127,6 +142,10 @@ TEST_F(StageSelectorWidgetTest, CollapseContentClicked_TogglesDisplayLayerConten
 
 // ── stagePinClicked ───────────────────────────────────────────────────────
 
+// Clicking the pin button toggles whether the combo follows the UFE selection.
+// The actual selection-following depends on DCC global selection state that isn't
+// available in this headless test (and the old editor reads Maya UFE selection),
+// so we only assert the toggle does not crash.
 TEST_F(StageSelectorWidgetTest, StagePinClicked_TogglesWithoutCrash)
 {
     auto w = makeWidget();

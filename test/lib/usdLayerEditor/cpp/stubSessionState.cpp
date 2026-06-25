@@ -74,9 +74,8 @@ bool StubSessionState::saveLayerUI(
     const PXR_NS::SdfLayerRefPtr& /*parentLayer*/) const
 {
     ++_saveLayerCallCount;
-    // Simulates user cancelling the save dialog. Returning false prevents
-    // saveAnonymousLayer() from calling Ufe::PathString::path() with a stub path
-    // that has no valid UFE representation, which would throw in a test environment.
+    // Simulates the user cancelling the save dialog; returning false keeps tests off the
+    // saveAnonymousLayer() path, which needs a real UFE path.
     return false;
 }
 
@@ -97,6 +96,12 @@ void StubSessionState::setupCreateMenu(QMenu* menu)
 
 void StubSessionState::rootLayerPathChanged(std::string const& /*path*/) { }
 
+void StubSessionState::setIsEditForwardMode(bool v)
+{
+    _isEFModeActive = v;
+    Q_EMIT editForwardingChanged();
+}
+
 void StubSessionState::addStage(PXR_NS::UsdStageRefPtr stage)
 {
     auto entry = makeEntry(stage, "added_stage_" + std::to_string(_stages.size()));
@@ -110,7 +115,7 @@ void StubSessionState::removeStage(const std::string& id)
         std::remove_if(
             _stages.begin(),
             _stages.end(),
-            [&id](const StageEntry& e) { return e._id == id; }),
+            [&id](const StageEntry& entry) { return entry._id == id; }),
         _stages.end());
     Q_EMIT stageListChangedSignal();
 }
@@ -125,12 +130,12 @@ void StubSessionState::switchToCustomStage(PXR_NS::UsdStageRefPtr stage, const s
 SessionState::StageEntry
 StubSessionState::makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id)
 {
-    StageEntry e;
-    e._id            = id;
-    e._stage         = stage;
-    e._displayName   = id;
-    e._dccObjectPath = id;
-    return e;
+    StageEntry entry;
+    entry._id            = id;
+    entry._stage         = stage;
+    entry._displayName   = id;
+    entry._dccObjectPath = id;
+    return entry;
 }
 
 } // namespace UsdLayerEditor

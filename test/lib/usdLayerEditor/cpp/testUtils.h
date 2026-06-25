@@ -15,13 +15,18 @@
 //
 #pragma once
 
+#include "layerContentsWidget.h"
+
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QTimer>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QMenu>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QWidget>
+
+#include <initializer_list>
 
 namespace UsdLayerEditor {
 namespace TestUtils {
@@ -40,6 +45,30 @@ inline QPushButton* findButtonByTooltip(QWidget* root, const QString& tooltip)
 inline QPushButton* findButtonByObjectName(QWidget* root, const QString& name)
 {
     return root->findChild<QPushButton*>(name);
+}
+
+// Find a QPushButton whose visible text contains any of the given substrings
+// (case-insensitive). Useful for dialog buttons identified by label.
+inline QPushButton* findButtonByText(QWidget* root, std::initializer_list<QString> texts)
+{
+    for (auto* btn : root->findChildren<QPushButton*>()) {
+        for (const auto& text : texts) {
+            if (btn->text().contains(text, Qt::CaseInsensitive))
+                return btn;
+        }
+    }
+    return nullptr;
+}
+
+inline QPushButton* findButtonByText(QWidget* root, const QString& text)
+{
+    return findButtonByText(root, { text });
+}
+
+// Locate the LayerContentsWidget inside a LayerEditorWidget hierarchy.
+inline LayerContentsWidget* findContentsWidget(QWidget* root)
+{
+    return root->findChild<LayerContentsWidget*>(QString(), Qt::FindChildrenRecursively);
 }
 
 // Stage with one anonymous sublayer already inserted at index 0.
@@ -77,6 +106,23 @@ inline void dismissNextModal(int ms = 200)
         if (modal)
             modal->close();
     });
+}
+
+// Find a named action in a menu (searches recursively into submenus).
+inline QAction* findAction(QMenu* menu, const QString& text)
+{
+    if (!menu)
+        return nullptr;
+    for (QAction* action : menu->actions()) {
+        if (action->text() == text)
+            return action;
+        if (action->menu()) {
+            QAction* found = findAction(action->menu(), text);
+            if (found)
+                return found;
+        }
+    }
+    return nullptr;
 }
 
 } // namespace TestUtils

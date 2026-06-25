@@ -30,11 +30,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-static LayerTreeItem* itemAt(LayerTreeModel* m, const QModelIndex& idx)
-{
-    return dynamic_cast<LayerTreeItem*>(m->itemFromIndex(idx));
-}
-
 class LayerTreeModelTest : public LayerEditorTestFixture {};
 
 // ── flags / MIME ───────────────────────────────────────────────────────────────
@@ -67,13 +62,21 @@ TEST_F(LayerTreeModelTest, MimeTypes_ReturnsTextPlain)
 
 TEST_F(LayerTreeModelTest, MimeData_SerializesIdentifiersWithSemicolon)
 {
-    QModelIndexList indexes = { firstSublayerIndex() };
+    // Two indices so the ';' separator between serialized identifiers is exercised.
+    QModelIndexList indexes = { firstSublayerIndex(), rootLayerIndex() };
     std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
     ASSERT_NE(mime, nullptr);
     EXPECT_TRUE(mime->hasFormat("text/plain"));
     QString data = QString::fromUtf8(mime->data("text/plain"));
-    auto*   item = itemAt(treeModel(), firstSublayerIndex());
-    EXPECT_TRUE(data.contains(QString::fromStdString(item->layer()->GetIdentifier())));
+
+    auto* subItem  = treeModel()->layerItemFromIndex(firstSublayerIndex());
+    auto* rootItem = treeModel()->layerItemFromIndex(rootLayerIndex());
+    ASSERT_NE(subItem, nullptr);
+    ASSERT_NE(rootItem, nullptr);
+
+    EXPECT_TRUE(data.contains(';'));
+    EXPECT_TRUE(data.contains(QString::fromStdString(subItem->layer()->GetIdentifier())));
+    EXPECT_TRUE(data.contains(QString::fromStdString(rootItem->layer()->GetIdentifier())));
 }
 
 TEST_F(LayerTreeModelTest, CanDrop_ReturnsFalseForNullMimeData)
@@ -89,7 +92,7 @@ TEST_F(LayerTreeModelTest, Rebuild_AlwaysShowsSessionLayerWhenAutoHideFalse)
     // Session layer must always be the first top-level item.
     treeModel()->forceRefresh();
     QApplication::processEvents();
-    auto* first = itemAt(treeModel(), treeModel()->index(0, 0));
+    auto* first = treeModel()->layerItemFromIndex(treeModel()->index(0, 0));
     ASSERT_NE(first, nullptr);
     EXPECT_TRUE(first->isSessionLayer());
 }
@@ -106,7 +109,7 @@ TEST_F(LayerTreeModelTest, RebuildOnIdle_DeduplicatesScheduling)
     QApplication::processEvents();
     // The guard deduplicates the two explicit calls to one rebuild. However, rebuilding
     // the model resets _rebuildOnIdlePending before endResetModel(), so a USD notice fired
-    // during item construction can schedule a second rebuild. This mirrors old-editor behavior.
+    // during item construction can schedule a second rebuild.
     EXPECT_LE(resetCount, 2);
 }
 
@@ -171,7 +174,7 @@ TEST_F(LayerTreeModelTest, FindNameForNewAnonymousLayer_DoesNotCollideWithExisti
 
 TEST_F(LayerTreeModelTest, SetEditTarget_CallsHookForAccessibleLayer)
 {
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     _sessionState._commandHookImpl.clearCalls();
     treeModel()->setEditTarget(item);
@@ -180,7 +183,7 @@ TEST_F(LayerTreeModelTest, SetEditTarget_CallsHookForAccessibleLayer)
 
 TEST_F(LayerTreeModelTest, SetEditTarget_BlockedWhenLayerIsLocked)
 {
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     TestUtils::lockLayerDirect(item->layer());
     _sessionState._commandHookImpl.clearCalls();
@@ -191,7 +194,7 @@ TEST_F(LayerTreeModelTest, SetEditTarget_BlockedWhenLayerIsLocked)
 
 TEST_F(LayerTreeModelTest, SetEditTarget_BlockedWhenLayerIsMuted)
 {
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     const std::string layerId = item->layer()->GetIdentifier();
     _sessionState.stage()->MuteLayer(layerId);
@@ -199,7 +202,7 @@ TEST_F(LayerTreeModelTest, SetEditTarget_BlockedWhenLayerIsMuted)
 
     // Muting fired a LayersDidChange notice that rebuilt the model and deleted the
     // original item, so re-fetch it before use to avoid a dangling pointer.
-    item = itemAt(treeModel(), firstSublayerIndex());
+    item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
 
     _sessionState._commandHookImpl.clearCalls();
@@ -217,7 +220,7 @@ TEST_F(LayerTreeModelTest, RootLayerIndex_IsValid)
 
 TEST_F(LayerTreeModelTest, RootLayerIndex_ItemIsRootLayer)
 {
-    auto* item = itemAt(treeModel(), rootLayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(item, nullptr);
     EXPECT_TRUE(item->isRootLayer());
 }
@@ -232,7 +235,7 @@ TEST_F(LayerTreeModelTest, Flags_InvalidLayerItem_ReturnsOnlySelectableAndEnable
     QApplication::processEvents();
 
     QModelIndex invalidIdx = treeModel()->index(0, 0, rootLayerIndex());
-    auto*       invalid    = itemAt(treeModel(), invalidIdx);
+    auto*       invalid    = treeModel()->layerItemFromIndex(invalidIdx);
     ASSERT_NE(invalid, nullptr);
     ASSERT_TRUE(invalid->isInvalidLayer());
 
@@ -251,7 +254,7 @@ TEST_F(LayerTreeModelTest, MimeData_InvalidLayerItem_UsesSubLayerPath)
     QApplication::processEvents();
 
     QModelIndex invalidIdx = treeModel()->index(0, 0, rootLayerIndex());
-    auto*       invalid    = itemAt(treeModel(), invalidIdx);
+    auto*       invalid    = treeModel()->layerItemFromIndex(invalidIdx);
     ASSERT_NE(invalid, nullptr);
     ASSERT_TRUE(invalid->isInvalidLayer());
 
@@ -277,7 +280,7 @@ TEST_F(LayerTreeModelTest, DropMimeData_WrongMimeFormat_ReturnsFalse)
 
 TEST_F(LayerTreeModelTest, SelectUsdLayerOnIdle_EmitsSelectSignalForExistingLayer)
 {
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     auto layer = item->layer();
 
@@ -296,7 +299,7 @@ TEST_F(LayerTreeModelTest, SelectUsdLayerOnIdle_EmitsSelectSignalForExistingLaye
 
 TEST_F(LayerTreeModelTest, UsdEditTargetChanged_UpdatesTargetLayerOnIdle)
 {
-    auto* subItem = itemAt(treeModel(), firstSublayerIndex());
+    auto* subItem = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(subItem, nullptr);
     auto sublayerRef = subItem->layer();
     ASSERT_FALSE(subItem->isTargetLayer());
@@ -307,7 +310,7 @@ TEST_F(LayerTreeModelTest, UsdEditTargetChanged_UpdatesTargetLayerOnIdle)
     QApplication::processEvents();
 
     // Re-fetch in case model rebuilt during event processing.
-    subItem = itemAt(treeModel(), firstSublayerIndex());
+    subItem = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(subItem, nullptr);
     EXPECT_TRUE(subItem->isTargetLayer());
 }

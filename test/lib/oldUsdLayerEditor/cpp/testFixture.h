@@ -49,9 +49,7 @@ protected:
     void setStageIncoming(bool incoming) { _sessionState._commandHookImpl._isStageIncoming = incoming; }
 
     // Members mirror the new editor's testFixture.h, named identically so the
-    // shared test sources compile unchanged. Only those the old editor
-    // actually exercises are kept; members feeding the new editor's DCC registry
-    // are referenced solely by MAYAUSD_OLD_LAYER_EDITOR-guarded test code.
+    // shared test sources compile unchanged.
     OldEditorStubSessionState                        _sessionState;
     std::unique_ptr<OldEditorStubLayerEditorWindow>  _window;
     QMainWindow*                                     _mainWindow { nullptr };
@@ -71,8 +69,5 @@ protected:
     void setIsComponent(bool v)        { _isComponent = v; }
     void setIsUnsavedComponent(bool v) { _isUnsavedComponent = v; }
 };
-
-// Find a named action in a menu (searches recursively into submenus).
-QAction* findAction(QMenu* menu, const QString& text);
 
 } // namespace UsdLayerEditor

@@ -175,8 +175,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_LockedLayer_IsLocked)
     _window->lockLayer();
     QApplication::processEvents();
 
-    // Re-select the row so the window refreshes its current item.
-    selectRow(firstSublayerIndex());
+    // Verify the lock state is reflected without a manual re-select of the row.
     EXPECT_TRUE(_window->layerIsLocked())
         << "Layer should report locked after lockLayer()";
 }
@@ -263,6 +262,8 @@ TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_CallsFlattenWhenLa
     EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("flattenLayer"));
 }
 
+// Discarding edits on an anonymous layer intentionally skips the confirm dialog
+// (MAYA-104336): there is no on-disk content to lose.
 TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_SkipsConfirmForAnonymousLayer)
 {
     selectRow(firstSublayerIndex());

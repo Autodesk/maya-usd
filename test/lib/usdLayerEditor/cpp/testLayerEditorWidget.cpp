@@ -15,6 +15,7 @@
 #pragma once
 
 #include <testFixture.h>
+#include "testUtils.h"
 
 #include "generatedIconButton.h"
 #include "layerContentsWidget.h"
@@ -33,12 +34,6 @@
 #include <gtest/gtest.h>
 
 namespace UsdLayerEditor {
-
-// Helper: find LayerContentsWidget inside the LayerEditorWidget.
-static LayerContentsWidget* contentsWidget(QWidget* root)
-{
-    return root->findChild<LayerContentsWidget*>(QString(), Qt::FindChildrenRecursively);
-}
 
 // ── getSelectedLayers / selectLayers ─────────────────────────────────────────
 
@@ -131,7 +126,7 @@ TEST_F(LayerEditorTestFixture, Widget_ShowDisplayLayerContents_True_MakesWidgetV
     _widget->showDisplayLayerContents(true);
     QApplication::processEvents();
 
-    auto* cw = contentsWidget(_widget);
+    auto* cw = TestUtils::findContentsWidget(_widget);
     ASSERT_NE(cw, nullptr);
     EXPECT_TRUE(cw->isVisible());
 }
@@ -142,7 +137,7 @@ TEST_F(LayerEditorTestFixture, Widget_ShowDisplayLayerContents_False_HidesWidget
     _widget->showDisplayLayerContents(false);
     QApplication::processEvents();
 
-    auto* cw = contentsWidget(_widget);
+    auto* cw = TestUtils::findContentsWidget(_widget);
     ASSERT_NE(cw, nullptr);
     EXPECT_FALSE(cw->isVisible());
 }
@@ -155,7 +150,7 @@ TEST_F(LayerEditorTestFixture, Widget_ShowDisplayLayerContents_HideAfterShow_Hid
     _widget->showDisplayLayerContents(false);
     QApplication::processEvents();
 
-    auto* cw = contentsWidget(_widget);
+    auto* cw = TestUtils::findContentsWidget(_widget);
     ASSERT_NE(cw, nullptr);
     EXPECT_FALSE(cw->isVisible());
 }
@@ -174,12 +169,26 @@ TEST_F(LayerEditorTestFixture, Widget_OnSplitterMoved_ContentsIndex_DoesNotCrash
     SUCCEED();
 }
 
-// index != 1 is a no-op early-return branch.
+// index != 1 is a no-op early-return branch: contents visibility and splitter
+// sizes must be unchanged.
 TEST_F(LayerEditorTestFixture, Widget_OnSplitterMoved_OtherIndex_DoesNotCrash)
 {
+    _widget->showDisplayLayerContents(true);
+    QApplication::processEvents();
+
+    auto* cw = TestUtils::findContentsWidget(_widget);
+    ASSERT_NE(cw, nullptr);
+    auto* splitter = _widget->findChild<QSplitter*>();
+    ASSERT_NE(splitter, nullptr);
+
+    const bool        visibleBefore = cw->isVisible();
+    const QList<int>  sizesBefore   = splitter->sizes();
+
     _widget->onSplitterMoved(100, 0);
     QApplication::processEvents();
-    SUCCEED();
+
+    EXPECT_EQ(cw->isVisible(), visibleBefore);
+    EXPECT_EQ(splitter->sizes(), sizesBefore);
 }
 
 // ── onLazyUpdateLayerContents / timerEvent ───────────────────────────────────
@@ -193,16 +202,25 @@ TEST_F(LayerEditorTestFixture, Widget_OnLazyUpdateLayerContents_DoesNotCrash)
 
     _widget->onLazyUpdateLayerContents();
     QApplication::processEvents();
-    SUCCEED();
+
+    EXPECT_NE(TestUtils::findContentsWidget(_widget), nullptr);
 }
 
 // ── updateButtonsOnIdle ───────────────────────────────────────────────────────
 
+// With the (unlocked, unmuted, valid) root selected, the add-layer button is
+// enabled. Running the idle update must not crash or disturb that state.
 TEST_F(LayerEditorTestFixture, Widget_UpdateButtonsOnIdle_DoesNotCrash)
 {
+    selectRow(rootLayerIndex());
+
     _widget->updateButtonsOnIdle();
     QApplication::processEvents();
-    SUCCEED();
+
+    auto* addButton
+        = TestUtils::findButtonByObjectName(_widget, "LayerEditorAddLayerButton");
+    ASSERT_NE(addButton, nullptr);
+    EXPECT_TRUE(addButton->isEnabled());
 }
 
 // ── onSaveStageButtonClicked ──────────────────────────────────────────────────
@@ -213,8 +231,14 @@ TEST_F(LayerEditorTestFixture, Widget_UpdateButtonsOnIdle_DoesNotCrash)
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerEditorTestFixture, Widget_OnSaveStageButtonClicked_DoesNotCrash)
 {
+    // The stub stage has an anonymous sublayer, so saveStage routes through the
+    // SaveLayersDialog (suppressed here, returns Rejected) rather than the generic
+    // per-layer save path. _saveLayerCallCount staying 0 confirms the anonymous
+    // layers were deferred to the dialog and not silently saved.
+    _sessionState._saveLayerCallCount = 0;
     EXPECT_NO_THROW(_widget->onSaveStageButtonClicked());
     QApplication::processEvents();
+    EXPECT_EQ(_sessionState._saveLayerCallCount, 0);
 }
 #endif
 

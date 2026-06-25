@@ -72,11 +72,11 @@ public:
         std::ostringstream os;
         os << "[";
         for (size_t i = 0; i < _results.size(); ++i) {
-            const auto& r = _results[i];
+            const auto& result = _results[i];
             if (i > 0) os << ",";
-            os << "{\"name\":\"" << escape(r.name) << "\","
-               << "\"passed\":" << (r.passed ? "true" : "false") << ","
-               << "\"message\":\"" << escape(r.message) << "\"}";
+            os << "{\"name\":\"" << escape(result.name) << "\","
+               << "\"passed\":" << (result.passed ? "true" : "false") << ","
+               << "\"message\":\"" << escape(result.message) << "\"}";
         }
         os << "]";
         return os.str();
@@ -100,14 +100,14 @@ private:
     {
         std::string out;
         out.reserve(s.size());
-        for (char c : s) {
-            switch (c) {
+        for (char ch : s) {
+            switch (ch) {
                 case '"':  out += "\\\""; break;
                 case '\\': out += "\\\\"; break;
                 case '\n': out += "\\n";  break;
                 case '\r': out += "\\r";  break;
                 case '\t': out += "\\t";  break;
-                default:   out += c;
+                default:   out += ch;
             }
         }
         return out;
@@ -116,6 +116,7 @@ private:
 
 // ── MPxCommand ────────────────────────────────────────────────────────────────
 
+// MPxCommand 'mayaUsd_runLayerEditorTests' — runs all layer editor tests and returns results as JSON.
 class RunLayerEditorTestsCmd : public MPxCommand
 {
 public:
@@ -124,14 +125,16 @@ public:
 
     MStatus doIt(const MArgList&) override
     {
-        // InitGoogleTest may only be called once per process — guard on first call.
+        // InitGoogleTest may only be called once per process. Another plugin in the
+        // same process may have already initialized it, so detect that instead of
+        // relying solely on our own flag, and only remove the default printer once.
         static bool sInitialized = false;
-        if (!sInitialized) {
+        auto&       listeners    = ::testing::UnitTest::GetInstance()->listeners();
+        if (!sInitialized && listeners.default_result_printer() != nullptr) {
             int   argc    = 0;
             char* argv[1] = { nullptr };
             ::testing::InitGoogleTest(&argc, argv);
             // Remove default stdout printer so GTest output doesn't pollute Maya's output window.
-            auto& listeners = ::testing::UnitTest::GetInstance()->listeners();
             delete listeners.Release(listeners.default_result_printer());
             sInitialized = true;
         }

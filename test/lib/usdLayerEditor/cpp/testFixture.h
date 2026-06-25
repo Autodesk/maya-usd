@@ -87,7 +87,4 @@ protected:
     void setIsUnsavedComponent(bool v) { _isUnsavedComponent = v; }
 };
 
-// Find a named action in a menu (searches recursively into submenus).
-QAction* findAction(QMenu* menu, const QString& text);
-
 } // namespace UsdLayerEditor

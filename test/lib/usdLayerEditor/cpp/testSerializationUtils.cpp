@@ -14,11 +14,17 @@
 //
 #include "utilSerialization.h"
 
+#include "layerEditorDCCFunctions.h"
+#include "scopedLayerEditorDCCFunctions.h"
+
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <ghc/fs_std.hpp>
+
 #include <gtest/gtest.h>
 
+#include <cstdio>
 #include <string>
 
 namespace UsdLayerEditor {
@@ -85,12 +91,14 @@ TEST(SerializationUtils, UpdateSubLayer_NoOpForNullParent)
 {
     auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sub_noparent");
     EXPECT_NO_THROW(updateSubLayer(nullptr, sublayer, "/new/path.usd"));
+    EXPECT_TRUE(sublayer->GetSubLayerPaths().empty());
 }
 
 TEST(SerializationUtils, UpdateSubLayer_NoOpForNullOldLayer)
 {
     auto parent = PXR_NS::SdfLayer::CreateAnonymous("parent_nosub");
     EXPECT_NO_THROW(updateSubLayer(parent, nullptr, "/new/path.usd"));
+    EXPECT_TRUE(parent->GetSubLayerPaths().empty());
 }
 
 TEST(SerializationUtils, UpdateSubLayer_ReplacesIdentifierInParent)
@@ -123,26 +131,64 @@ TEST(SerializationUtils, UpdateSubLayer_NewParentHasNoSubLayerBecomesNoOp)
 
 TEST(SerializationUtils, GenerateUniqueFileName_ReturnsNonEmptyString)
 {
-    std::string result = generateUniqueFileName("test");
-    EXPECT_FALSE(result.empty());
+    std::string first  = generateUniqueFileName("test");
+    std::string second = generateUniqueFileName("test");
+    EXPECT_FALSE(first.empty());
+    // A random suffix is appended, so successive calls never collide.
+    EXPECT_NE(first, second);
+    EXPECT_NE(first.find("test"), std::string::npos);
+    EXPECT_EQ(first.substr(first.size() - 4), ".usd");
 }
 
 // --- generateUniqueLayerFileName ----------------------------------------------
 
-TEST(SerializationUtils, GenerateUniqueLayerFileName_WithLayer_ReturnsNonEmptyString)
+TEST(SerializationUtils, GenerateUniqueLayerFileName_WithLayer_AvoidsExistingFile)
 {
-    auto        layer  = PXR_NS::SdfLayer::CreateAnonymous("sublayer0");
-    std::string result = generateUniqueLayerFileName("scene", layer);
-    EXPECT_FALSE(result.empty());
+    namespace fss = fs::filesystem;
+
+    // Point the scene folder at a dedicated temp dir we control, restored on scope exit.
+    const fss::path sceneDir = fss::temp_directory_path() / "le_unique_layer_name_test";
+    fss::create_directories(sceneDir);
+
+    ScopedLayerEditorDCCFunctions guard;
+    FileSystemFns                 fns;
+    fns.getDCCSceneDir = [dir = sceneDir.generic_string()]() { return dir; };
+    setFileSystemFns(fns);
+
+    auto layer = PXR_NS::SdfLayer::CreateAnonymous("sublayer0");
+
+    // First call yields the deterministic candidate; pre-create it to force a conflict.
+    const std::string firstCandidate = generateUniqueLayerFileName("scene", layer);
+    ASSERT_FALSE(firstCandidate.empty());
+    if (FILE* f = std::fopen(firstCandidate.c_str(), "w")) {
+        std::fclose(f);
+    }
+
+    const std::string result = generateUniqueLayerFileName("scene", layer);
+    EXPECT_NE(result, firstCandidate);
+    EXPECT_FALSE(fss::exists(fss::path(result)));
+
+    fss::remove(fss::path(firstCandidate));
+    fss::remove_all(sceneDir);
 }
 
 // --- usdFormatArgOption -------------------------------------------------------
 
-TEST(SerializationUtils, UsdFormatArgOption_ReturnsUsdcOrUsda)
+TEST(SerializationUtils, UsdFormatArgOption_DefaultsToUsdc)
 {
-    std::string fmt = usdFormatArgOption();
-    EXPECT_TRUE(fmt == "usdc" || fmt == "usda")
-        << "usdFormatArgOption returned unexpected format: " << fmt;
+    // No DCC handler installed: getSaveLayerFormatBinary defaults to true → binary → usdc.
+    ScopedLayerEditorDCCFunctions guard;
+    setSaveOptionFns(SaveOptionFns{});
+    EXPECT_EQ(usdFormatArgOption(), "usdc");
+}
+
+TEST(SerializationUtils, UsdFormatArgOption_NonBinaryReturnsUsda)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    SaveOptionFns                 fns;
+    fns.getSaveLayerFormatBinary = []() { return false; };
+    setSaveOptionFns(fns);
+    EXPECT_EQ(usdFormatArgOption(), "usda");
 }
 
 // --- getLayersToSaveFromStage -------------------------------------------------

@@ -124,7 +124,7 @@ target_compile_definitions(${TARGET_NAME}
 
 # Include path order is critical:
 #   1. OLD editor test dir FIRST — shim headers shadow new editor versions.
-#   2. NEW editor test dir SECOND — *Logic.h headers and testUtils.h.
+#   2. NEW editor test dir SECOND — shared test .cpp sources and testUtils.h.
 #   3. OLD editor lib LAST — abstractCommandHook.h etc. must shadow the new lib versions.
 target_include_directories(${TARGET_NAME}
     PRIVATE

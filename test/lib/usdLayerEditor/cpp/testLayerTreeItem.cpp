@@ -82,6 +82,31 @@ TEST_F(LayerTreeItemTest, AppearsMuted_TrueWhenSelfIsMuted)
     stage->UnmuteLayer(item->layer()->GetIdentifier());
 }
 
+TEST_F(LayerTreeItemTest, AppearsMuted_TrueWhenParentIsMuted)
+{
+    // The stage root cannot be muted, so build root -> sublayer -> subSub and
+    // mute the (mutable) sublayer to verify appearsMuted() propagates to its child.
+    auto* sublayerItem = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(sublayerItem, nullptr);
+    auto sublayer = sublayerItem->layer(); // keep alive across model rebuilds
+    auto subSub   = PXR_NS::SdfLayer::CreateAnonymous("subSub");
+    sublayer->InsertSubLayerPath(subSub->GetIdentifier(), 0);
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+
+    auto stage = _sessionState.stage();
+    stage->MuteLayer(sublayer->GetIdentifier());
+    QApplication::processEvents();
+
+    // Re-fetch after mutations; the muted sublayer keeps its authored child.
+    auto* child = itemAt(treeModel(), treeModel()->index(0, 0, firstSublayerIndex()));
+    ASSERT_NE(child, nullptr);
+    EXPECT_EQ(child->layer(), subSub);
+    EXPECT_TRUE(child->appearsMuted());
+
+    stage->UnmuteLayer(sublayer->GetIdentifier());
+}
+
 // ── isReadOnly ────────────────────────────────────────────────────────────────
 
 TEST_F(LayerTreeItemTest, IsReadOnly_FalseForNormalSublayer)
@@ -90,6 +115,10 @@ TEST_F(LayerTreeItemTest, IsReadOnly_FalseForNormalSublayer)
     ASSERT_NE(item, nullptr);
     EXPECT_FALSE(item->isReadOnly());
 }
+
+// IsReadOnly_TrueForSharedSublayer is covered in testSharedStage.cpp:
+// ReferencedLayersFixture.IsReadOnly_TrueForReferencedLayer and
+// MayaReferencedLayersFixture.IsReadOnly_TrueForMayaReferencedLayer.
 
 // ── isDirty / needsSaving ─────────────────────────────────────────────────────
 
@@ -255,6 +284,14 @@ TEST_F(LayerTreeItemTest, IsTargetLayer_TrueForCurrentEditTarget)
     EXPECT_TRUE(root->isTargetLayer());
 }
 
+TEST_F(LayerTreeItemTest, IsTargetLayer_FalseForNonTargetLayer)
+{
+    // Root layer is the default edit target, so the sublayer is not the target.
+    auto* sub = itemAt(treeModel(), firstSublayerIndex());
+    ASSERT_NE(sub, nullptr);
+    EXPECT_FALSE(sub->isTargetLayer());
+}
+
 TEST_F(LayerTreeItemTest, HasSubLayers_TrueWhenSublayersExist)
 {
     // StubSessionState creates a root layer with one sublayer.
@@ -392,7 +429,7 @@ TEST_F(LayerTreeItemTest, IsIdenticalItem_DifferentLayerReturnsFalse)
 }
 #endif
 
-// ── saveAnonymousLayer early-out (D10) ───────────────────────────────────────
+// ── saveAnonymousLayer early-out ───────────────────────────────────────
 
 // A non-component stage's anonymous layer goes through the generic save path
 // (SessionState::saveLayerUI), which the stub records via _saveLayerCallCount.

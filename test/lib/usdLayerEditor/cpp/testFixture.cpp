@@ -147,20 +147,4 @@ void LayerEditorTestFixture::selectRow(const QModelIndex& index)
     QApplication::processEvents();
 }
 
-QAction* findAction(QMenu* menu, const QString& text)
-{
-    if (!menu)
-        return nullptr;
-    for (QAction* action : menu->actions()) {
-        if (action->text() == text)
-            return action;
-        if (action->menu()) {
-            QAction* found = findAction(action->menu(), text);
-            if (found)
-                return found;
-        }
-    }
-    return nullptr;
-}
-
 } // namespace UsdLayerEditor

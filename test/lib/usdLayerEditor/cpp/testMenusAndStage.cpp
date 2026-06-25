@@ -18,6 +18,7 @@
 #include <testFixture.h>
 
 #include "stringResources.h"
+#include "testUtils.h"
 
 #include <pxr/usd/usd/stage.h>
 
@@ -50,7 +51,7 @@ static QAction* findActionInMenuBar(QMainWindow* win, const QString& text)
         return nullptr;
     for (QAction* top : win->menuBar()->actions()) {
         if (QMenu* menu = top->menu()) {
-            QAction* found = findAction(menu, text);
+            QAction* found = TestUtils::findAction(menu, text);
             if (found)
                 return found;
         }
@@ -139,7 +140,7 @@ TEST_F(LayerEditorTestFixture, OptionMenu_AutoHideAction_IsFirstAndCheckable)
 
     EXPECT_TRUE(actions[1]->isSeparator()) << "a separator should follow the Auto-Hide action";
 
-    QAction* displayContents = findAction(
+    QAction* displayContents = TestUtils::findAction(
         optionMenu, StringResources::getAsQString(StringResources::kDisplayLayerContents));
     ASSERT_NE(displayContents, nullptr);
     EXPECT_GE(actions.indexOf(displayContents), 2)

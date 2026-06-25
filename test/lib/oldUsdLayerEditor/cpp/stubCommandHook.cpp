@@ -163,4 +163,12 @@ const CommandCall& OldEditorStubCommandHook::lastCall() const
     return _calls.back();
 }
 
+const CommandCall* OldEditorStubCommandHook::lastCallOf(const std::string& method) const
+{
+    for (auto it = _calls.rbegin(); it != _calls.rend(); ++it)
+        if (it->name == method)
+            return &*it;
+    return nullptr;
+}
+
 } // namespace UsdLayerEditor

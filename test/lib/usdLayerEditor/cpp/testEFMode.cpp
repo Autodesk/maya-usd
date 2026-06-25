@@ -60,18 +60,6 @@ TEST_F(LayerEditorTestFixture, EFMode_ToggleButton_AbsentWhenNotSupported)
 #endif
 }
 
-// when the button is present its objectName must match the constant
-// used by automation. Skipped in the new editor when supportsEditForwarding()
-// is false (button not created). Always runs in old editor when EF is compiled in.
-TEST_F(LayerEditorTestFixture, EFMode_ToggleButton_HasCorrectObjectName)
-{
-    QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
-    if (!btn) {
-        GTEST_SKIP() << "EF toggle button absent";
-    }
-    EXPECT_EQ(btn->objectName(), QString("LayerEditorToggleEFButton"));
-}
-
 // isEditForwardMode() default must be false.
 // Guarded: old editor only exposes isEditForwardMode() under WANT_ADSK_USD_EDIT_FORWARD_BUILD.
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
@@ -97,9 +85,7 @@ TEST_F(LayerEditorTestFixture, EFMode_EffectiveTargetLayer_EqualsTargetLayerByDe
 TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
 {
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
-    if (!btn) {
-        GTEST_SKIP() << "EF toggle button absent";
-    }
+    ASSERT_NE(btn, nullptr);
     EXPECT_EQ(btn->toolTip(),
               StringResources::getAsQString(StringResources::kToggleEditForwarding));
 }
@@ -112,9 +98,7 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
 TEST_F(LayerEditorWithEFFixture, EFMode_Button_IconReflectsActiveState)
 {
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
-    if (!btn) {
-        GTEST_SKIP() << "EF toggle button absent (stub does not create it for this editor)";
-    }
+    ASSERT_NE(btn, nullptr);
 
     // Initial state: EF off → stylesheet must reference ef_default.
     QApplication::processEvents();

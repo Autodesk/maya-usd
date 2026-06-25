@@ -37,25 +37,16 @@ public:
     PanelNamesList             getAllPanelNames() const override { return {}; }
 };
 
-TEST(AbstractLayerEditorCreatorTest, InstanceNullBeforeAnyCreation)
-{
-    if (AbstractLayerEditorCreator::instance() != nullptr)
-        GTEST_SKIP() << "Another creator already registered; skipping.";
-    EXPECT_EQ(AbstractLayerEditorCreator::instance(), nullptr);
-}
-
 TEST(AbstractLayerEditorCreatorTest, InstanceNonNullAfterConstruction)
 {
-    if (AbstractLayerEditorCreator::instance() != nullptr)
-        GTEST_SKIP() << "Another creator already registered; skipping.";
+    ASSERT_EQ(AbstractLayerEditorCreator::instance(), nullptr);
     TestCreator creator;
     EXPECT_EQ(AbstractLayerEditorCreator::instance(), &creator);
 }
 
 TEST(AbstractLayerEditorCreatorTest, InstanceNullAfterDestruction)
 {
-    if (AbstractLayerEditorCreator::instance() != nullptr)
-        GTEST_SKIP() << "Another creator already registered; skipping.";
+    ASSERT_EQ(AbstractLayerEditorCreator::instance(), nullptr);
     {
         TestCreator creator;
         ASSERT_NE(AbstractLayerEditorCreator::instance(), nullptr);

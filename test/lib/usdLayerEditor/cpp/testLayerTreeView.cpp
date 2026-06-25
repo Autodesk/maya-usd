@@ -30,6 +30,8 @@
 #include <QtWidgets/QAbstractItemView>
 #include <QtWidgets/QApplication>
 
+#include <algorithm>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
@@ -44,11 +46,6 @@ public:
     using LayerTreeItemDelegate::getTargetIconRect;
     using LayerTreeItemDelegate::getAdjustedItemRect;
 };
-
-static LayerTreeItem* itemAt(LayerTreeModel* m, const QModelIndex& idx)
-{
-    return dynamic_cast<LayerTreeItem*>(m->itemFromIndex(idx));
-}
 
 class LayerTreeViewTest : public LayerEditorTestFixture
 {
@@ -93,7 +90,7 @@ TEST_F(LayerTreeViewTest, Memento_PreservesExpandedStateByIdentifier)
     memento.preserve(*layerTree(), *treeModel());
 
     auto state = memento.getItemsState();
-    auto* root  = itemAt(treeModel(), rootLayerIndex());
+    auto* root  = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(root, nullptr);
 
     auto it = state.find(root->layer()->GetIdentifier());
@@ -123,16 +120,34 @@ TEST_F(LayerTreeViewTest, Memento_RestoredAfterModelReset)
 
 TEST_F(LayerTreeViewTest, Memento_RestoreHandlesMissingItemsGracefully)
 {
+    // Collapse the root so a restore that re-expands it is observable.
+    layerTree()->collapse(rootLayerIndex());
+    QApplication::processEvents();
+    ASSERT_FALSE(layerTree()->isExpanded(rootLayerIndex()));
+
     LayerViewMemento memento(*layerTree(), *treeModel());
     memento.preserve(*layerTree(), *treeModel());
 
-    // Add a fake entry that doesn't exist in the tree.
+    auto* root = treeModel()->layerItemFromIndex(rootLayerIndex());
+    ASSERT_NE(root, nullptr);
+    const std::string rootId = root->layer()->GetIdentifier();
+
     auto state = memento.getItemsState();
+    // Set a real layer's expanded state so a successful restore is verifiable.
+    state[rootId]._expanded = true;
+    // Plus a fake entry that doesn't exist in the tree.
     state["anon:nonexistent_layer_xyz"] = { true };
     memento.setItemsState(state);
 
+    const int rowsBefore = treeModel()->rowCount(rootLayerIndex());
+
     // Restore must not crash even when an identifier is not found.
     EXPECT_NO_THROW(memento.restore(*layerTree(), *treeModel()));
+
+    // The real layer's expanded state was applied.
+    EXPECT_TRUE(layerTree()->isExpanded(rootLayerIndex()));
+    // The bogus entry created no row.
+    EXPECT_EQ(treeModel()->rowCount(rootLayerIndex()), rowsBefore);
 }
 
 // ── selection helpers ─────────────────────────────────────────────────────────
@@ -142,6 +157,24 @@ TEST_F(LayerTreeViewTest, GetSelectedLayerItems_ReturnsAllSelected)
     selectRow(firstSublayerIndex());
     auto items = layerTree()->getSelectedLayerItems();
     EXPECT_EQ(items.size(), 1u);
+}
+
+TEST_F(LayerTreeViewTest, GetSelectedLayerItems_ReturnsAllSelectedForMultiSelection)
+{
+    selectRow(firstSublayerIndex());
+    layerTree()->selectionModel()->select(
+        rootLayerIndex(), QItemSelectionModel::Select | QItemSelectionModel::Rows);
+    QApplication::processEvents();
+
+    auto* sub  = treeModel()->layerItemFromIndex(firstSublayerIndex());
+    auto* root = treeModel()->layerItemFromIndex(rootLayerIndex());
+    ASSERT_NE(sub, nullptr);
+    ASSERT_NE(root, nullptr);
+
+    auto items = layerTree()->getSelectedLayerItems();
+    ASSERT_EQ(items.size(), 2u);
+    EXPECT_NE(std::find(items.begin(), items.end(), sub), items.end());
+    EXPECT_NE(std::find(items.begin(), items.end(), root), items.end());
 }
 
 TEST_F(LayerTreeViewTest, CurrentLayerItem_ReturnsNullForInvalidIndex)
@@ -164,20 +197,38 @@ TEST_F(LayerTreeViewTest, CurrentLayerItem_ReturnsItemForValidIndex)
 
 TEST_F(LayerTreeViewTest, MuteAction_CallsMuteSubLayerOnSelectedItem)
 {
+    auto* selected = treeModel()->layerItemFromIndex(firstSublayerIndex());
+    ASSERT_NE(selected, nullptr);
+    const std::string selectedId = selected->layer()->GetIdentifier();
+
     selectRow(firstSublayerIndex());
     _sessionState._commandHookImpl.clearCalls();
     _window->muteLayer();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("muteSubLayer"));
+
+    const CommandCall* call = _sessionState._commandHookImpl.lastCallOf("muteSubLayer");
+    ASSERT_NE(call, nullptr);
+    ASSERT_FALSE(call->args.empty());
+    EXPECT_EQ(call->args[0], selectedId)
+        << "muteSubLayer must act on the selected layer";
 }
 
 TEST_F(LayerTreeViewTest, LockAction_CallsLockLayerOnSelectedItem)
 {
+    auto* selected = treeModel()->layerItemFromIndex(firstSublayerIndex());
+    ASSERT_NE(selected, nullptr);
+    const std::string selectedId = selected->layer()->GetIdentifier();
+
     selectRow(firstSublayerIndex());
     _sessionState._commandHookImpl.clearCalls();
     _window->lockLayer();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("lockLayer"));
+
+    const CommandCall* call = _sessionState._commandHookImpl.lastCallOf("lockLayer");
+    ASSERT_NE(call, nullptr);
+    ASSERT_FALSE(call->args.empty());
+    EXPECT_EQ(call->args[0], selectedId)
+        << "lockLayer must act on the selected layer";
 }
 
 // ── delegate geometry (via TestableDelegateWrapper) ───────────────────────────
@@ -205,7 +256,7 @@ TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenLayerDoesNotNeedSaving)
 {
     // Default stub stage is not shared, so needsSaving() == false and the handler
     // must return before attempting any save.
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     ASSERT_FALSE(item->needsSaving());
 
@@ -225,7 +276,7 @@ TEST_F(LayerTreeViewSharedTest, DoubleClick_SkipsWhenSystemLocked)
 {
     // On a shared stage the anonymous sublayer needs saving, so the handler reaches
     // the system-lock guard — which must still skip the save.
-    auto* item = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     ASSERT_TRUE(item->needsSaving()) << "Anonymous layer on a shared stage should need saving";
 
@@ -336,11 +387,17 @@ TEST_F(LayerTreeViewTest, MuteLayerButtonPushed_CallsMuteSubLayerOnCurrentItem)
     QModelIndex root = tree.layerTreeModel()->rootLayerIndex();
     tree.setCurrentIndex(tree.layerTreeModel()->index(0, 0, root));
     ASSERT_NE(tree.currentLayerItem(), nullptr);
+    const std::string currentId = tree.currentLayerItem()->layer()->GetIdentifier();
 
     _sessionState._commandHookImpl.clearCalls();
     tree.onMuteLayerButtonPushed();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("muteSubLayer"));
+
+    const CommandCall* call = _sessionState._commandHookImpl.lastCallOf("muteSubLayer");
+    ASSERT_NE(call, nullptr);
+    ASSERT_FALSE(call->args.empty());
+    EXPECT_EQ(call->args[0], currentId)
+        << "muteSubLayer must act on the current item";
 }
 
 TEST_F(LayerTreeViewTest, LockLayerButtonPushed_CallsLockLayerOnCurrentItem)
@@ -352,11 +409,17 @@ TEST_F(LayerTreeViewTest, LockLayerButtonPushed_CallsLockLayerOnCurrentItem)
     QModelIndex root = tree.layerTreeModel()->rootLayerIndex();
     tree.setCurrentIndex(tree.layerTreeModel()->index(0, 0, root));
     ASSERT_NE(tree.currentLayerItem(), nullptr);
+    const std::string currentId = tree.currentLayerItem()->layer()->GetIdentifier();
 
     _sessionState._commandHookImpl.clearCalls();
     tree.onLockLayerButtonPushed();
     QApplication::processEvents();
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("lockLayer"));
+
+    const CommandCall* call = _sessionState._commandHookImpl.lastCallOf("lockLayer");
+    ASSERT_NE(call, nullptr);
+    ASSERT_FALSE(call->args.empty());
+    EXPECT_EQ(call->args[0], currentId)
+        << "lockLayer must act on the current item";
 }
 
 // ── keyboard handling ──────────────────────────────────────────────────────────
@@ -380,6 +443,9 @@ TEST_F(LayerTreeViewTest, KeyPress_R_RefreshesModel)
     const int before = treeModel()->rowCount(rootLayerIndex());
     _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(
         SdfLayer::CreateAnonymous("refresh_extra")->GetIdentifier(), 0);
+
+    // Without event processing the model has not yet rebuilt, so the new row is absent.
+    EXPECT_EQ(treeModel()->rowCount(rootLayerIndex()), before);
 
     QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_R, Qt::NoModifier);
     layerTree()->keyPressEvent(&keyEvent);

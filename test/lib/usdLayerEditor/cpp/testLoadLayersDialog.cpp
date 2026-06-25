@@ -36,16 +36,10 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasOkAndCancelButtons)
         treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
-    bool hasOk = false, hasCancel = false;
-    for (auto* btn : dlg.findChildren<QPushButton*>()) {
-        if (btn->text().contains("OK", Qt::CaseInsensitive) ||
-            btn->text().contains("Load", Qt::CaseInsensitive))
-            hasOk = true;
-        if (btn->text().contains("Cancel", Qt::CaseInsensitive))
-            hasCancel = true;
-    }
-    EXPECT_TRUE(hasOk)     << "LoadLayersDialog should have an OK/Load button";
-    EXPECT_TRUE(hasCancel) << "LoadLayersDialog should have a Cancel button";
+    EXPECT_NE(TestUtils::findButtonByText(&dlg, { "Load", "OK" }), nullptr)
+        << "LoadLayersDialog should have an OK/Load button";
+    EXPECT_NE(TestUtils::findButtonByText(&dlg, "Cancel"), nullptr)
+        << "LoadLayersDialog should have a Cancel button";
 }
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_StartsWithEmptyPath)
@@ -94,14 +88,7 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithEmptyPaths_AcceptsAndPath
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     // Find and click the OK/Load button.
-    QPushButton* okBtn = nullptr;
-    for (auto* btn : dlg.findChildren<QPushButton*>()) {
-        if (btn->text().contains("Load", Qt::CaseInsensitive) ||
-            btn->text().contains("OK", Qt::CaseInsensitive)) {
-            okBtn = btn;
-            break;
-        }
-    }
+    QPushButton* okBtn = TestUtils::findButtonByText(&dlg, { "Load", "OK" });
     ASSERT_NE(okBtn, nullptr);
     TestUtils::dismissNextModal(50); // guard against exec() being called
     okBtn->click();
@@ -110,7 +97,7 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithEmptyPaths_AcceptsAndPath
 }
 
 // Trigger onOk() with a non-existent path: checkIfPathIsSafeToAdd returns true
-// for paths that cannot be opened (no such layer in the stack). The path is
+// for paths that cannot be opened (no such layer on disk). The path is
 // added to pathsToLoad() and accept() is called.
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithNonExistentPath_AddsToPathList)
 {
@@ -124,14 +111,7 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithNonExistentPath_AddsToPat
     lineEdits.first()->setText("/nonexistent/layer_test.usd");
     QApplication::processEvents();
     // Click the OK button without dismissal since it calls accept() directly.
-    QPushButton* okBtn = nullptr;
-    for (auto* btn : dlg.findChildren<QPushButton*>()) {
-        if (btn->text().contains("Load", Qt::CaseInsensitive) ||
-            btn->text().contains("OK", Qt::CaseInsensitive)) {
-            okBtn = btn;
-            break;
-        }
-    }
+    QPushButton* okBtn = TestUtils::findButtonByText(&dlg, { "Load", "OK" });
     ASSERT_NE(okBtn, nullptr);
     okBtn->click();
     QApplication::processEvents();
@@ -145,13 +125,7 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnCancel_LeavesPathsEmpty)
         treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
-    QPushButton* cancelBtn = nullptr;
-    for (auto* btn : dlg.findChildren<QPushButton*>()) {
-        if (btn->text().contains("Cancel", Qt::CaseInsensitive)) {
-            cancelBtn = btn;
-            break;
-        }
-    }
+    QPushButton* cancelBtn = TestUtils::findButtonByText(&dlg, "Cancel");
     ASSERT_NE(cancelBtn, nullptr);
     cancelBtn->click();
     QApplication::processEvents();

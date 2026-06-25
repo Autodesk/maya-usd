@@ -35,9 +35,7 @@ void LayerEditorTestFixture::SetUp()
         return _modalDialogAnswer;
     });
 
-    // Create one real mayaUsdProxyShape per stub stage so Maya DAG lookups
-    // succeed. Use generic_string() so forward slashes reach MEL on Windows
-    // (backslashes are escape characters in MEL string literals).
+    // Create one real mayaUsdProxyShape per stub stage so Maya DAG lookups succeed.
     {
         namespace fss = fs::filesystem;
         const auto stages = _sessionState.allStages();
@@ -138,19 +136,6 @@ void LayerEditorTestFixture::selectRow(const QModelIndex& index)
         index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     layerTree()->setCurrentIndex(index);
     QApplication::processEvents();
-}
-
-QAction* findAction(QMenu* menu, const QString& text)
-{
-    if (!menu) return nullptr;
-    for (QAction* action : menu->actions()) {
-        if (action->text() == text) return action;
-        if (action->menu()) {
-            QAction* found = findAction(action->menu(), text);
-            if (found) return found;
-        }
-    }
-    return nullptr;
 }
 
 } // namespace UsdLayerEditor

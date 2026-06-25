@@ -25,6 +25,7 @@ namespace UsdLayerEditor {
 OldEditorStubSessionState::OldEditorStubSessionState()
     : _commandHookImpl(this)
 {
+    // Create a couple of test stages to populate the layer editor.
     for (int i = 0; i < 2; ++i) {
         auto stage    = PXR_NS::UsdStage::CreateInMemory();
         auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sublayer" + std::to_string(i));
@@ -65,9 +66,7 @@ bool OldEditorStubSessionState::saveLayerUI(
     const PXR_NS::SdfLayerRefPtr& /*parentLayer*/) const
 {
     ++_saveLayerCallCount;
-    // Simulates user cancelling the save dialog. Returning false prevents
-    // saveAnonymousLayer() from calling Ufe::PathString::path() with a stub path
-    // that has no valid UFE representation, which would throw in a test environment.
+    // Simulates user cancelling the save dialog.
     return false;
 }
 
@@ -88,12 +87,21 @@ void OldEditorStubSessionState::rootLayerPathChanged(std::string const& /*path*/
 SessionState::StageEntry
 OldEditorStubSessionState::makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id)
 {
-    StageEntry e;
-    e._id             = id;
-    e._stage          = stage;
-    e._displayName    = id;
-    e._proxyShapePath = id;
-    return e;
+    StageEntry entry;
+    entry._id             = id;
+    entry._stage          = stage;
+    entry._displayName    = id;
+    entry._proxyShapePath = id;
+    return entry;
+}
+
+void OldEditorStubSessionState::switchToCustomStage(
+    PXR_NS::UsdStageRefPtr stage,
+    const std::string&     id)
+{
+    auto entry = makeEntry(stage, id);
+    _stages.push_back(entry);
+    setStageEntry(entry);
 }
 
 void OldEditorStubSessionState::setProxyShapePath(int index, const std::string& path)
