@@ -18,7 +18,6 @@
 #include "mayaEditCommitter.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/nodes/usdSceneSettingsManager.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
 
@@ -34,23 +33,29 @@
 #include <maya/MSceneMessage.h>
 #include <maya/MSyntax.h>
 
+#include <AdskUsdRenderSetup/RenderSetupWidget.h>
 #include <QtCore/QPointer>
 #include <QtCore/QTimer>
 #include <QtGui/QAction>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QVBoxLayout>
-#include <RenderSetup/RenderSetupWidget.h>
 
 #include <algorithm>
 #include <vector>
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <mayaUsd/nodes/usdSceneSettingsManager.h>
+#endif
 
 namespace MAYAUSD_NS_DEF {
 
 class RenderSetupWindow;
 
-const MString     RenderSetupWindowCmd::commandName("mayaUsdRenderSetupWindow");
+const MString RenderSetupWindowCmd::commandName("mayaUsdRenderSetupWindow");
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
 const std::string kUSDRenderSettingsNodeName("UsdDefaultRenderSettings");
+#endif
 
 namespace {
 constexpr auto kReloadFlag = "-rl";
