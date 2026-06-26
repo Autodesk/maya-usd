@@ -47,7 +47,7 @@ struct SceneResetListener : public PXR_NS::TfWeakBase
 
 // The muted layers live in the DCC-agnostic UsdLayerEditor store, which has no
 // notion of a Maya scene. This Maya-side listener clears that store on scene
-// reset. Registered deterministically at plugin init.
+// reset.
 std::unique_ptr<SceneResetListener> sSceneResetListener;
 
 } // namespace

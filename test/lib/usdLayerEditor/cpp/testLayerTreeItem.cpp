@@ -116,10 +116,6 @@ TEST_F(LayerTreeItemTest, IsReadOnly_FalseForNormalSublayer)
     EXPECT_FALSE(item->isReadOnly());
 }
 
-// IsReadOnly_TrueForSharedSublayer is covered in testSharedStage.cpp:
-// ReferencedLayersFixture.IsReadOnly_TrueForReferencedLayer and
-// MayaReferencedLayersFixture.IsReadOnly_TrueForMayaReferencedLayer.
-
 // ── isDirty / needsSaving ─────────────────────────────────────────────────────
 
 TEST_F(LayerTreeItemTest, IsDirty_FalseForCleanLayer)

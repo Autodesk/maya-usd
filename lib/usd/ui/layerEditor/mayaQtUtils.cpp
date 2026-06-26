@@ -47,10 +47,8 @@ namespace UsdLayerEditor {
 void initializeUi()
 {
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-    // The read-modify-write below copies each group, adds the UI-only function, and writes it back,
-    // so it relies on registerLayerEditorDCCFunctions() having already populated the registry. If it
-    // has not, the copies are empty and the non-UI functions are silently lost. isInteractiveDCCSession
-    // is always set by registerLayerEditorDCCFunctions(), so use it as the "registry populated" sentinel.
+    // The read-modify-write below assumes registerLayerEditorDCCFunctions() already ran; otherwise it
+    // writes back empty groups. isInteractiveDCCSession is always set there, so use it as the sentinel.
     TF_VERIFY(
         layerEditorDCCFunctions().environment.isInteractiveDCCSession,
         "initializeUi() must be called after registerLayerEditorDCCFunctions().");

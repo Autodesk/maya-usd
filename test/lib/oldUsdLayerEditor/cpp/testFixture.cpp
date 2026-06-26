@@ -36,8 +36,7 @@ void LayerEditorTestFixture::SetUp()
     });
 
     // Back one real mayaUsdProxyShape per stub stage with the SAME in-memory stage (via the stage
-    // cache) so proxy-based discovery sees the identical layers the new editor reads directly from
-    // the stage. This keeps both suites' stage setup — and therefore their assertions — identical.
+    // cache) so proxy-based discovery sees the identical layers.
     {
         const auto stages = _sessionState.allStages();
         for (int i = 0; i < 2; ++i) {

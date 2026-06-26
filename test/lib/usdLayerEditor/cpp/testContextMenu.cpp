@@ -175,7 +175,6 @@ TEST_F(LayerEditorTestFixture, ContextMenu_LockedLayer_IsLocked)
     _window->lockLayer();
     QApplication::processEvents();
 
-    // Verify the lock state is reflected without a manual re-select of the row.
     EXPECT_TRUE(_window->layerIsLocked())
         << "Layer should report locked after lockLayer()";
 }

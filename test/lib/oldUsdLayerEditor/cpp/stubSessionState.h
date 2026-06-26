@@ -60,8 +60,7 @@ public:
     void setProxyShapePath(int index, const std::string& path);
 
     // Pushes a new stage entry and makes it the active one. Mirrors the new
-    // editor's StubSessionState so shared tests can switch the editor's stage
-    // without a compile-time editor guard.
+    // editor's StubSessionState.
     void switchToCustomStage(PXR_NS::UsdStageRefPtr stage, const std::string& id = "custom_stage");
 
     // Used by LayerEditorWithEFFixture; has no effect on old editor widget since

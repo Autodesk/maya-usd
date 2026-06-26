@@ -74,9 +74,10 @@ TEST_F(LayerTreeModelTest, MimeData_SerializesIdentifiersWithSemicolon)
     ASSERT_NE(subItem, nullptr);
     ASSERT_NE(rootItem, nullptr);
 
-    EXPECT_TRUE(data.contains(';'));
-    EXPECT_TRUE(data.contains(QString::fromStdString(subItem->layer()->GetIdentifier())));
-    EXPECT_TRUE(data.contains(QString::fromStdString(rootItem->layer()->GetIdentifier())));
+    // Identifiers are joined in index order, separated by ';'.
+    const QString expected = QString::fromStdString(subItem->layer()->GetIdentifier()) + ';'
+        + QString::fromStdString(rootItem->layer()->GetIdentifier());
+    EXPECT_EQ(data, expected);
 }
 
 TEST_F(LayerTreeModelTest, CanDrop_ReturnsFalseForNullMimeData)

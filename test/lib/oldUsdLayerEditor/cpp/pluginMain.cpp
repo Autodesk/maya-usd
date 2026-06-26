@@ -96,11 +96,11 @@ private:
     TestResult              _current;
     std::vector<TestResult> _results;
 
-    static std::string escape(const std::string& s)
+    static std::string escape(const std::string& str)
     {
         std::string out;
-        out.reserve(s.size());
-        for (char ch : s) {
+        out.reserve(str.size());
+        for (char ch : str) {
             switch (ch) {
                 case '"':  out += "\\\""; break;
                 case '\\': out += "\\\\"; break;

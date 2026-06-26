@@ -125,7 +125,7 @@ TEST_F(StageSelectorWidgetTest, SelectedIndexChanged_SetsSessionStageToSelectedE
 TEST_F(StageSelectorWidgetTest, UpdateContentButton_ButtonPresent)
 {
     auto w = makeWidget();
-    EXPECT_FALSE(w->findChildren<QPushButton*>().isEmpty());
+    EXPECT_NE(w->findChild<QPushButton*>("collapseContentButton"), nullptr);
     EXPECT_NO_THROW(w->testUpdateContentButton());
 }
 
