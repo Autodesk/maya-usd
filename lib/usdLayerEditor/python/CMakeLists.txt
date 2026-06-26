@@ -61,8 +61,8 @@ mayaUsd_compile_config(${PYTHON_TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_link_libraries(${PYTHON_TARGET_NAME}
     PRIVATE
-        UsdLayerEditorLib
-        # UsdLayerEditorLib's public headers (layerEditorWidgetManager.h) expose
+        usdLayerEditor
+        # usdLayerEditor's public headers (layerEditorWidgetManager.h) expose
         # Qt types (QPointer), so the binding TU also needs Qt::Core headers.
         Qt::Core
 )
@@ -77,7 +77,7 @@ set_python_module_property(${PYTHON_TARGET_NAME})
 # -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "lib/python/${PACKAGE_NAME}")
-    # back to <prefix>/lib so we can find UsdLayerEditorLib and usdUfe
+    # back to <prefix>/lib so we can find usdLayerEditor and usdUfe
     mayaUsd_add_rpath(rpath "../../..")
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../../../../Maya.app/Contents/MacOS")

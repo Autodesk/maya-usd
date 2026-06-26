@@ -16,7 +16,7 @@
 //
 #include "customLayerData.h"
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
-// Layers:: utilities live in UsdLayerEditorLib, which the old editor test binary
+// Layers:: utilities live in usdLayerEditor, which the old editor test binary
 // does not link; only the guarded LayersTest cases below use them.
 #include "layers.h"
 #endif
@@ -74,7 +74,7 @@ TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
 }
 
 // ── Layers ────────────────────────────────────────────────────────────────────
-// Layers:: functions live in UsdLayerEditorLib which the old editor test binary
+// Layers:: functions live in usdLayerEditor which the old editor test binary
 // does not link (ODR conflict risk with LEGACY_SOURCES). Guard until a shim exists.
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
 

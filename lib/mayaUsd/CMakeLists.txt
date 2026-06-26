@@ -272,7 +272,7 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE UsdLayerEditorLib Qt::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE usdLayerEditor Qt::Core)
 target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDITOR=1)
 
 # -----------------------------------------------------------------------------
@@ -281,7 +281,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDIT
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "lib")
     # Search libmayaUsd's own directory so it can resolve sibling libraries it
-    # links privately (e.g. UsdLayerEditorLib). DT_RUNPATH is non-transitive, so
+    # links privately (e.g. usdLayerEditor). DT_RUNPATH is non-transitive, so
     # such siblings are not found via the loading module's rpath.
     mayaUsd_add_rpath(rpath ".")
     if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)

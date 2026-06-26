@@ -54,42 +54,42 @@ set(LAYER_EDITOR_TEST_SOURCES
 )
 
 # ------------------------------------------------------------------------------
-# UsdLayerEditorNewTests
-# Links UsdLayerEditorLib (the DCC-agnostic shared component).
+# usdLayerEditorTests
+# Links usdLayerEditor (the DCC-agnostic shared component).
 # ------------------------------------------------------------------------------
 set(NEW_LE_DIR ${CMAKE_SOURCE_DIR}/lib/usdLayerEditor/lib)
 
-add_executable(UsdLayerEditorNewTests
+add_executable(usdLayerEditorTests
     ${LAYER_EDITOR_TEST_SOURCES}
 )
 
-mayaUsd_compile_config(UsdLayerEditorNewTests)
+mayaUsd_compile_config(usdLayerEditorTests)
 
-target_compile_definitions(UsdLayerEditorNewTests
+target_compile_definitions(usdLayerEditorTests
     PRIVATE
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
-target_include_directories(UsdLayerEditorNewTests
+target_include_directories(usdLayerEditorTests
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${NEW_LE_DIR}
         ${UFE_INCLUDE_DIR}
 )
 
-target_link_libraries(UsdLayerEditorNewTests
+target_link_libraries(usdLayerEditorTests
     PRIVATE
-        UsdLayerEditorLib
+        usdLayerEditor
         GTest::GTest
         Qt::Core Qt::Gui Qt::Widgets
         sdf tf usd
         ${UFE_LIBRARY}
 )
 
-mayaUsd_add_test(UsdLayerEditorNewTests
-    COMMAND $<TARGET_FILE:UsdLayerEditorNewTests>
+mayaUsd_add_test(usdLayerEditorTests
+    COMMAND $<TARGET_FILE:usdLayerEditorTests>
     ENV
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )

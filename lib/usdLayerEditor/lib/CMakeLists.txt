@@ -18,7 +18,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-add_library(UsdLayerEditorLib SHARED
+add_library(usdLayerEditor SHARED
     abstractCommandHook.h
     abstractLayerEditorWindow.h
     batchSaveLayersUIDelegate.cpp
@@ -99,7 +99,7 @@ else()
     set_target_properties(Qt::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
 endif()
 
-target_compile_definitions(UsdLayerEditorLib
+target_compile_definitions(usdLayerEditor
     PRIVATE
         LAYEREDITOR_EXPORTS
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
@@ -107,15 +107,15 @@ target_compile_definitions(UsdLayerEditorLib
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
-mayaUsd_compile_config(UsdLayerEditorLib)
+mayaUsd_compile_config(usdLayerEditor)
 
-target_include_directories(UsdLayerEditorLib
+target_include_directories(usdLayerEditor
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${UFE_INCLUDE_DIR}
 )
 
-target_link_libraries(UsdLayerEditorLib
+target_link_libraries(usdLayerEditor
     PUBLIC
         usdUfe
         ${UFE_LIBRARY}
@@ -136,10 +136,10 @@ if(IS_MACOSX OR IS_LINUX)
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    mayaUsd_install_rpath(rpath UsdLayerEditorLib)
+    mayaUsd_install_rpath(rpath usdLayerEditor)
 endif()
 
-install(TARGETS UsdLayerEditorLib
+install(TARGETS usdLayerEditor
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
@@ -153,7 +153,7 @@ install(FILES "usdSyntaxConfig.json"
 )
 
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:UsdLayerEditorLib>
+    install(FILES $<TARGET_PDB_FILE:usdLayerEditor>
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
     )
 endif()

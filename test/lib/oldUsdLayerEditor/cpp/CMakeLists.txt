@@ -62,7 +62,7 @@ set(OLD_LE_SHARED_LOGIC_SOURCES
 
 # Legacy widget sources compiled directly into this test DLL. This gives the
 # test a self-contained copy of the old editor, avoiding ODR conflicts with
-# UsdLayerEditorLib, which exports the new editor's versions of the same classes.
+# usdLayerEditor, which exports the new editor's versions of the same classes.
 set(LEGACY_SOURCES
     ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/mayaQtUtils.cpp
     ${CMAKE_SOURCE_DIR}/lib/usd/ui/layerEditor/componentSaveWidget.cpp
