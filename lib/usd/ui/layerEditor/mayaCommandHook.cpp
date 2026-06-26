@@ -24,6 +24,7 @@
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsdUI/ui/undoChunkUtils.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
@@ -48,9 +49,6 @@ namespace {
 
 std::string quote(const std::string& string) { return STR(" \"") + string + STR("\""); }
 
-// maya doesn't support spaces in undo chunk names...
-MString cleanChunkName(QString name) { return quote(name.replace(" ", "_").toStdString()).c_str(); }
-
 } // namespace
 
 namespace UsdLayerEditor {
@@ -72,7 +70,9 @@ void MayaCommandHook::setEditTarget(UsdLayer usdLayer)
 void MayaCommandHook::openUndoBracket(const QString& name)
 {
     MGlobal::executeCommand(
-        MString("undoInfo -openChunk -chunkName ") + cleanChunkName(name), false, false);
+        MString("undoInfo -openChunk -chunkName ") + MayaUsdUI::cleanChunkName(name.toStdString()),
+        false,
+        false);
 }
 
 // closes a complex undo operation in the host app. Please use UndoContext class to safely
