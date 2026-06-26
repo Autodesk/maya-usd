@@ -21,6 +21,8 @@ import unittest
 import maya.cmds as cmds
 import maya.mel as mel
 
+from mayaUsd.lib import UsdDefaultRenderSettings
+
 class VerifyUsdRenderSetupTestCase(unittest.TestCase):
     """ Test the Usd Render Setup. """
 
@@ -33,3 +35,19 @@ class VerifyUsdRenderSetupTestCase(unittest.TestCase):
     def testWindowCommandExists(self):
         # Verify that the render setup window command exists, which indicates that the render setup UI is available.
         self.assertTrue(mel.eval('exists mayaUsdRenderSetupWindow'))
+
+    def testPythonBindings(self):
+        # Verify that we can load the python bindings and call at least one method.
+        try:
+            import AdskUsdRenderSetup as rs
+        except ImportError as e:
+            self.fail(f"Failed to import my_module: {e}")
+
+        self.assertEqual(rs.__name__, 'AdskUsdRenderSetup')
+        self.assertTrue(rs.__version_info__ >= (0, 0, 1))
+
+        stage = UsdDefaultRenderSettings.getUsdStage()
+        self.assertIsNotNone(rs.GetAllRenderSettingsPaths(stage))
+
+        prim = rs.GetActiveRenderSettings(stage)
+        self.assertTrue(prim)

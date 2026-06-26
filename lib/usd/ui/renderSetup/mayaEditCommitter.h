@@ -19,9 +19,9 @@
 
 #include <pxr/usd/usd/stage.h>
 
+#include <AdskUsdRenderSetup/HostStage.h>
+#include <AdskUsdRenderSetup/IEditCommitter.h>
 #include <QtCore/QObject>
-#include <RenderSetup/HostStage.h>
-#include <RenderSetup/IEditCommitter.h>
 
 #include <functional>
 #include <string>

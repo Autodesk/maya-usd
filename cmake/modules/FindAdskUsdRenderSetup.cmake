@@ -13,7 +13,7 @@ message(STATUS "Finding Autodesk USD Render Setup")
 
 find_path(ADSK_USD_RENDER_SETUP_INCLUDE_DIR
     NAMES
-        RenderSetup/RenderSetupVersion.h
+        AdskUsdRenderSetup/AdskUsdRenderSetupVersion.h
     HINTS
         $ENV{ADSK_USD_RENDER_SETUP_ROOT_DIR}
         ${ADSK_USD_RENDER_SETUP_ROOT_DIR}
@@ -29,7 +29,7 @@ find_path(ADSK_USD_RENDER_SETUP_INCLUDE_DIR
 
 find_library(ADSK_USD_RENDER_SETUP_LIBRARY
     NAMES
-        RenderSetup
+        AdskUsdRenderSetup
     HINTS
         $ENV{ADSK_USD_RENDER_SETUP_ROOT_DIR}
         ${ADSK_USD_RENDER_SETUP_ROOT_DIR}
@@ -44,9 +44,10 @@ find_library(ADSK_USD_RENDER_SETUP_LIBRARY
 # Render Setup version
 
 if(ADSK_USD_RENDER_SETUP_INCLUDE_DIR)
+    set(adsk_rs_version_header "${ADSK_USD_RENDER_SETUP_INCLUDE_DIR}/AdskUsdRenderSetup/AdskUsdRenderSetupVersion.h")
     file(
         STRINGS
-        ${ADSK_USD_RENDER_SETUP_INCLUDE_DIR}/RenderSetup/RenderSetupVersion.h
+        ${adsk_rs_version_header}
         ADSK_USD_RENDER_SETUP_VERSION
         REGEX "define RENDER_SETUP_VERSION .*")
     if(ADSK_USD_RENDER_SETUP_VERSION)
