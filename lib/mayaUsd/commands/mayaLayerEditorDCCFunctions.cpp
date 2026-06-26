@@ -115,27 +115,6 @@ void registerLayerEditorDCCFunctions()
             return {};
         return newPath.fullPathName().asUTF8();
     };
-    dccObject.captureSessionLayer
-        = [](const std::string& dccObjectPath) -> PXR_NS::SdfLayerRefPtr {
-        auto stage = UsdMayaUtil::GetStageByProxyName(dccObjectPath);
-        return stage ? PXR_NS::SdfLayerRefPtr(stage->GetSessionLayer()) : PXR_NS::SdfLayerRefPtr {};
-    };
-    dccObject.transferSessionLayer
-        = [](const PXR_NS::SdfLayerRefPtr& sourceSessionLayer, const std::string& dstDccObjectPath) {
-              auto newStage = UsdMayaUtil::GetStageByProxyName(dstDccObjectPath);
-              if (sourceSessionLayer && newStage)
-                  newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
-          };
-    dccObject.setDccObjectRootLayerPath = [](const std::string&            dccObjectPath,
-                                             const std::string&            rootLayerPath,
-                                             const PXR_NS::SdfLayerRefPtr& rootLayer) {
-        MayaUsd::utils::setNewProxyPath(
-            MString(dccObjectPath.c_str()),
-            MString(rootLayerPath.c_str()),
-            MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute,
-            rootLayer,
-            /*isTargetLayer=*/false);
-    };
     setDccObjectFns(dccObject);
 
     SaveOptionFns saveOption;
@@ -307,13 +286,29 @@ void registerLayerEditorDCCFunctions()
         = [](const std::string&            proxyPath,
              const std::string&            layerPath,
              const PXR_NS::SdfLayerRefPtr& layer,
-             bool                          wasTargetLayer) {
+             bool                          wasTargetLayer,
+             DccObjectRootLayerPathMode    pathMode) {
+              const MayaUsd::utils::ProxyPathMode proxyPathMode
+                  = (pathMode == DccObjectRootLayerPathMode::ForceAbsolute)
+                  ? MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute
+                  : MayaUsd::utils::kProxyPathFollowProxyShape;
               MayaUsd::utils::setNewProxyPath(
                   MString(proxyPath.c_str()),
                   MString(layerPath.c_str()),
-                  MayaUsd::utils::kProxyPathFollowProxyShape,
+                  proxyPathMode,
                   layer,
                   wasTargetLayer);
+          };
+    serialization.captureSessionLayer
+        = [](const std::string& dccObjectPath) -> PXR_NS::SdfLayerRefPtr {
+        auto stage = UsdMayaUtil::GetStageByProxyName(dccObjectPath);
+        return stage ? PXR_NS::SdfLayerRefPtr(stage->GetSessionLayer()) : PXR_NS::SdfLayerRefPtr {};
+    };
+    serialization.transferSessionLayer
+        = [](const PXR_NS::SdfLayerRefPtr& sourceSessionLayer, const std::string& dstDccObjectPath) {
+              auto newStage = UsdMayaUtil::GetStageByProxyName(dstDccObjectPath);
+              if (sourceSessionLayer && newStage)
+                  newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
           };
     setSerializationFns(serialization);
 }

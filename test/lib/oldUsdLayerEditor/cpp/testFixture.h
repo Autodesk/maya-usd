@@ -22,6 +22,8 @@
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 
+#include <pxr/usd/usd/stageCache.h>
+
 #include <gtest/gtest.h>
 
 #include <QtCore/QModelIndex>
@@ -63,8 +65,9 @@ protected:
     // Real Maya proxy shape DAG paths, e.g. "|leTestXform0|leTestProxy0".
     // Set in SetUp, cleared in TearDown.
     std::string _proxyShapePaths[2];
-    // Temp .usda files backing the proxy shapes — deleted in TearDown.
-    std::string _tempStagePaths[2];
+    // Stage-cache ids backing the proxy shapes with the stub's in-memory stages —
+    // erased in TearDown.
+    PXR_NS::UsdStageCache::Id _stageCacheIds[2];
 
     void setIsComponent(bool v)        { _isComponent = v; }
     void setIsUnsavedComponent(bool v) { _isUnsavedComponent = v; }

@@ -92,11 +92,6 @@ std::vector<std::string> getComponentLayersToSave(const std::string& dccObjectPa
         ? registry().component.getComponentLayersToSave(dccObjectPath)
         : std::vector<std::string> {};
 }
-void displayError(const std::string& error)
-{
-    if (registry().environment.displayError)
-        registry().environment.displayError(error);
-}
 
 // ---- Edit Forwarding ----
 bool supportsEditForwarding()
@@ -152,27 +147,6 @@ std::string renameObject(const std::string& oldDccObjectPath, const std::string&
     return registry().dccObject.renameObject
         ? registry().dccObject.renameObject(oldDccObjectPath, newName)
         : std::string {};
-}
-PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath)
-{
-    return registry().dccObject.captureSessionLayer
-        ? registry().dccObject.captureSessionLayer(dccObjectPath)
-        : PXR_NS::SdfLayerRefPtr {};
-}
-void transferSessionLayer(
-    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
-    const std::string&            dstDccObjectPath)
-{
-    if (registry().dccObject.transferSessionLayer)
-        registry().dccObject.transferSessionLayer(sourceSessionLayer, dstDccObjectPath);
-}
-void setDccObjectRootLayerPath(
-    const std::string&            dccObjectPath,
-    const std::string&            rootLayerPath,
-    const PXR_NS::SdfLayerRefPtr& rootLayer)
-{
-    if (registry().dccObject.setDccObjectRootLayerPath)
-        registry().dccObject.setDccObjectRootLayerPath(dccObjectPath, rootLayerPath, rootLayer);
 }
 
 // ---- SaveOption ----
@@ -297,6 +271,11 @@ int64_t layerContentsTimeSamplesSizeLimit()
         ? registry().environment.layerContentsTimeSamplesSizeLimit()
         : 8;
 }
+void displayError(const std::string& error)
+{
+    if (registry().environment.displayError)
+        registry().environment.displayError(error);
+}
 
 // ---- FileSystem ----
 std::string getDCCSceneDir()
@@ -351,11 +330,25 @@ void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,
     const std::string&            layerPath,
     const PXR_NS::SdfLayerRefPtr& layer,
-    bool                          wasTargetLayer)
+    bool                          wasTargetLayer,
+    DccObjectRootLayerPathMode    pathMode)
 {
     if (registry().serialization.updateDCCObjectRootLayer)
         registry().serialization.updateDCCObjectRootLayer(
-            dccObjectPath, layerPath, layer, wasTargetLayer);
+            dccObjectPath, layerPath, layer, wasTargetLayer, pathMode);
+}
+PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath)
+{
+    return registry().serialization.captureSessionLayer
+        ? registry().serialization.captureSessionLayer(dccObjectPath)
+        : PXR_NS::SdfLayerRefPtr {};
+}
+void transferSessionLayer(
+    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
+    const std::string&            dstDccObjectPath)
+{
+    if (registry().serialization.transferSessionLayer)
+        registry().serialization.transferSessionLayer(sourceSessionLayer, dstDccObjectPath);
 }
 
 } // namespace UsdLayerEditor

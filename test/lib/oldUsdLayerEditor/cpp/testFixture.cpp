@@ -19,12 +19,12 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMainWindow>
 
+#include <pxr/usd/usdUtils/stageCache.h>
+
 #include <maya/MDagPath.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
-
-#include <ghc/fs_std.hpp>
 
 namespace UsdLayerEditor {
 
@@ -35,14 +35,13 @@ void LayerEditorTestFixture::SetUp()
         return _modalDialogAnswer;
     });
 
-    // Create one real mayaUsdProxyShape per stub stage so Maya DAG lookups succeed.
+    // Back one real mayaUsdProxyShape per stub stage with the SAME in-memory stage (via the stage
+    // cache) so proxy-based discovery sees the identical layers the new editor reads directly from
+    // the stage. This keeps both suites' stage setup — and therefore their assertions — identical.
     {
-        namespace fss = fs::filesystem;
         const auto stages = _sessionState.allStages();
         for (int i = 0; i < 2; ++i) {
-            _tempStagePaths[i] = (fss::temp_directory_path()
-                / ("le_test_stage_" + std::to_string(i) + ".usda")).generic_string();
-            stages[i]._stage->GetRootLayer()->Export(_tempStagePaths[i]);
+            _stageCacheIds[i] = PXR_NS::UsdUtilsStageCache::Get().Insert(stages[i]._stage);
 
             const std::string xformName = "leTestXform" + std::to_string(i);
             const std::string shapeName = "leTestProxy" + std::to_string(i);
@@ -52,8 +51,8 @@ void LayerEditorTestFixture::SetUp()
                 MString("createNode mayaUsdProxyShape -n \"") + shapeName.c_str()
                 + "\" -p " + xformName.c_str());
             MGlobal::executeCommand(
-                MString("setAttr \"") + shapeName.c_str() + ".filePath\" -type \"string\" \""
-                + _tempStagePaths[i].c_str() + "\"");
+                MString("setAttr \"") + shapeName.c_str() + ".stageCacheId\" "
+                + std::to_string(_stageCacheIds[i].ToLongInt()).c_str());
 
             MSelectionList sel;
             sel.add(MString(shapeName.c_str()));
@@ -85,9 +84,8 @@ void LayerEditorTestFixture::TearDown()
     delete _mainWindow;
     _mainWindow = nullptr;
 
-    // Delete real proxy shape nodes and temp stage files created in SetUp.
+    // Delete real proxy shape nodes and erase the stage-cache entries created in SetUp.
     {
-        namespace fss = fs::filesystem;
         for (int i = 0; i < 2; ++i) {
             if (!_proxyShapePaths[i].empty()) {
                 const std::string xformPath = "|leTestXform" + std::to_string(i);
@@ -95,10 +93,9 @@ void LayerEditorTestFixture::TearDown()
                     MString("delete \"") + xformPath.c_str() + "\"");
                 _proxyShapePaths[i].clear();
             }
-            if (!_tempStagePaths[i].empty()) {
-                std::error_code ec;
-                fss::remove(_tempStagePaths[i], ec);
-                _tempStagePaths[i].clear();
+            if (_stageCacheIds[i].IsValid()) {
+                PXR_NS::UsdUtilsStageCache::Get().Erase(_stageCacheIds[i]);
+                _stageCacheIds[i] = PXR_NS::UsdStageCache::Id();
             }
         }
     }

@@ -47,8 +47,13 @@ using PreviewComponentSaveFn
 using GetComponentLayersToSaveFn = std::function<std::vector<std::string>(const std::string&)>;
 using CaptureSessionLayerFn  = std::function<PXR_NS::SdfLayerRefPtr(const std::string&)>;
 using TransferSessionLayerFn = std::function<void(const PXR_NS::SdfLayerRefPtr&, const std::string&)>;
-using SetDccObjectRootLayerPathFn
-    = std::function<void(const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&)>;
+
+// How updateDCCObjectRootLayer should resolve the root-layer path written back to the DCC object.
+enum class DccObjectRootLayerPathMode
+{
+    FollowPreference, // honor the proxy / option-var relative-vs-absolute path-mode preference
+    ForceAbsolute,    // ignore the preference and write an absolute root-layer path
+};
 
 using SupportsEditForwardingFn = std::function<bool()>;
 using EchoEditForwardingFn     = std::function<bool()>;
@@ -91,57 +96,61 @@ struct DccObjectFns
     IsDccObjectStageIncomingFn isDccObjectStageIncoming;
     IsDccObjectSharedStageFn   isDccObjectSharedStage;
     RenameObjectFn             renameObject;
-    CaptureSessionLayerFn      captureSessionLayer;      // returns null when unset
-    TransferSessionLayerFn     transferSessionLayer;     // no-op when unset
-    SetDccObjectRootLayerPathFn setDccObjectRootLayerPath; // no-op when unset
 };
 
 struct SaveOptionFns
 {
-    std::function<bool()>        requireUsdPathsRelativeToSceneFile;        // default true
-    std::function<bool()>        requireUsdPathsRelativeToParentLayer;      // default true
-    std::function<bool()>        requireUsdPathsRelativeToEditTargetLayer;  // default true
-    std::function<bool()>        wantReferenceCompositionArc;               // default false
-    std::function<bool()>        wantPrependCompositionArc;                 // default true
-    std::function<bool()>        wantPayloadLoaded;                         // default true
-    std::function<std::string()> getReferencedPrimPath;                     // default ""
+    std::function<bool()>        requireUsdPathsRelativeToSceneFile;
+    std::function<bool()>        requireUsdPathsRelativeToParentLayer;
+    std::function<bool()>        requireUsdPathsRelativeToEditTargetLayer;
+    std::function<bool()>        wantReferenceCompositionArc;
+    std::function<bool()>        wantPrependCompositionArc;
+    std::function<bool()>        wantPayloadLoaded;
+    std::function<std::string()> getReferencedPrimPath;
     std::function<void(bool)>    setRequireUsdPathsRelativeToSceneFile;
     std::function<void(bool)>    setRequireUsdPathsRelativeToParentLayer;
-    std::function<bool()>        confirmExistingFileSave;                   // default true
-    std::function<bool()>        getSaveLayerFormatBinary;                  // default true
+    std::function<bool()>        confirmExistingFileSave;
+    std::function<bool()>        getSaveLayerFormatBinary;
     std::function<void(bool)>    setSaveLayerFormatBinary;
-    std::function<int()>         getSerializedUsdEditsLocation;             // default 1 (kSaveToUSDFiles)
+    std::function<int()>         getSerializedUsdEditsLocation;
     std::function<void(int)>     setSerializedUsdEditsLocation;
 };
 
 struct EnvironmentFns
 {
-    std::function<bool()>     getPinLayerEditorStage;     // default false
-    std::function<void(bool)> setPinLayerEditorStage;
-    std::function<bool()>     isInteractiveDCCSession;    // default true
-    std::function<bool()>     shouldExpandOrCollapseAll;  // default false
-    std::function<QWidget*()> mainWindowParent;           // default nullptr
-    std::function<int64_t()>  layerContentsArraySizeLimit;       // default 8
-    std::function<int64_t()>  layerContentsTimeSamplesSizeLimit; // default 8
-    std::function<void(const std::string&)> displayError;          // no-op when unset
+    std::function<bool()>                    getPinLayerEditorStage;
+    std::function<void(bool)>                setPinLayerEditorStage;
+    std::function<bool()>                    isInteractiveDCCSession;
+    std::function<bool()>                    shouldExpandOrCollapseAll;
+    std::function<QWidget*()>                mainWindowParent;
+    std::function<int64_t()>                 layerContentsArraySizeLimit;
+    std::function<int64_t()>                 layerContentsTimeSamplesSizeLimit;
+    std::function<void(const std::string&)>  displayError;
 };
 
 struct FileSystemFns
 {
-    std::function<std::string()>            getDCCSceneDir;              // default: ""
-    std::function<std::string()>            getDCCWorkspaceScenesDir;    // default: ""
-    SceneFolderFn                           sceneFolder;                 // default: ""
-    std::function<bool(const std::string&)> prepareLayerSaveUILayer;     // default: true
-    std::function<bool(const std::string&)> checkWriteAccess;            // default: false
+    std::function<std::string()>            getDCCSceneDir;
+    std::function<std::string()>            getDCCWorkspaceScenesDir;
+    SceneFolderFn                           sceneFolder;
+    std::function<bool(const std::string&)> prepareLayerSaveUILayer;
+    std::function<bool(const std::string&)> checkWriteAccess;
 };
 
 struct SerializationFns
 {
-    std::function<std::vector<PXR_NS::UsdStageCache*>()>      getStageCaches;           // default: {&UsdUtilsStageCache::Get()}
-    std::function<std::vector<PXR_NS::UsdStageRefPtr>()>      getAllStages;             // default: UsdUtilsStageCache::Get().GetAllStages()
-    std::function<void(const PXR_NS::SdfLayerRefPtr&)>        setLayerUpAxisAndUnits;   // default: no-op
-    std::function<void(const std::string&, const std::string&,
-                       const PXR_NS::SdfLayerRefPtr&, bool)>  updateDCCObjectRootLayer; // default: no-op
+    std::function<std::vector<PXR_NS::UsdStageCache*>()> getStageCaches;
+    std::function<std::vector<PXR_NS::UsdStageRefPtr>()> getAllStages;
+    std::function<void(const PXR_NS::SdfLayerRefPtr&)>   setLayerUpAxisAndUnits;
+    std::function<void(
+        const std::string&,
+        const std::string&,
+        const PXR_NS::SdfLayerRefPtr&,
+        bool,
+        DccObjectRootLayerPathMode)>
+                           updateDCCObjectRootLayer;
+    CaptureSessionLayerFn  captureSessionLayer;
+    TransferSessionLayerFn transferSessionLayer;
 };
 
 struct LayerEditorDCCFunctions
@@ -183,17 +192,6 @@ moveComponent(const std::string&, const std::string&, const std::string&);
 LayerEditorAPI std::string
 previewComponentSave(const std::string&, const std::string&, const std::string&);
 LayerEditorAPI std::vector<std::string> getComponentLayersToSave(const std::string&);
-LayerEditorAPI PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath);
-LayerEditorAPI void transferSessionLayer(
-    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
-    const std::string&            dstDccObjectPath);
-// Forces absolute-path mode and sets the layer as a non-target layer.
-// (Distinct from SerializationFns::updateDCCObjectRootLayer, which follows the
-// proxy/option-var path-mode preference and a caller-supplied wasTargetLayer.)
-LayerEditorAPI void setDccObjectRootLayerPath(
-    const std::string&            dccObjectPath,
-    const std::string&            rootLayerPath,
-    const PXR_NS::SdfLayerRefPtr& rootLayer);
 
 LayerEditorAPI bool supportsEditForwarding();
 LayerEditorAPI bool echoEditForwarding();
@@ -241,14 +239,19 @@ LayerEditorAPI bool        checkWriteAccess(const std::string& filePath);
 LayerEditorAPI std::vector<PXR_NS::UsdStageCache*> getStageCaches();
 LayerEditorAPI std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
 LayerEditorAPI void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
-// Follows the proxy/option-var path-mode preference and the caller-supplied
-// wasTargetLayer. (Distinct from setDccObjectRootLayerPath, which forces
-// absolute-path mode and a non-target layer.)
+// Writes the saved root-layer path back onto the DCC object. pathMode selects whether to honor the
+// proxy/option-var relative-vs-absolute preference (FollowPreference, the normal save flow) or to
+// force an absolute path (ForceAbsolute, used after a component move repaths the root).
 LayerEditorAPI void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,
     const std::string&            layerPath,
     const PXR_NS::SdfLayerRefPtr& layer,
-    bool                          wasTargetLayer);
+    bool                          wasTargetLayer,
+    DccObjectRootLayerPathMode    pathMode = DccObjectRootLayerPathMode::FollowPreference);
+LayerEditorAPI PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath);
+LayerEditorAPI void transferSessionLayer(
+    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
+    const std::string&            dstDccObjectPath);
 
 } // namespace UsdLayerEditor
 

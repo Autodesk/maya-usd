@@ -72,7 +72,7 @@ TEST(LayerEditorDCCFunctions, LayerContentsLimits_ReturnRegisteredValues)
 TEST(LayerEditorDCCFunctions, CaptureSessionLayer_NullByDefault)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setDccObjectFns(DccObjectFns {});
+    setSerializationFns(SerializationFns {});
     EXPECT_FALSE(captureSessionLayer("|x"));
 }
 
@@ -81,30 +81,14 @@ TEST(LayerEditorDCCFunctions, TransferSessionLayer_DispatchesWhenRegistered)
     ScopedLayerEditorDCCFunctions guard;
     PXR_NS::SdfLayerRefPtr seenSrc;
     std::string            seenDst;
-    DccObjectFns           fns;
+    SerializationFns       fns;
     fns.transferSessionLayer
         = [&](const PXR_NS::SdfLayerRefPtr& src, const std::string& dst) { seenSrc = src; seenDst = dst; };
-    setDccObjectFns(fns);
+    setSerializationFns(fns);
     auto layer = PXR_NS::SdfLayer::CreateAnonymous("xfer");
     transferSessionLayer(layer, "|newProxy");
     EXPECT_EQ(seenSrc, layer);
     EXPECT_EQ(seenDst, "|newProxy");
-}
-
-TEST(LayerEditorDCCFunctions, SetDccObjectRootLayerPath_DispatchesWhenRegistered)
-{
-    ScopedLayerEditorDCCFunctions guard;
-    std::string seenObj, seenPath;
-    DccObjectFns fns;
-    fns.setDccObjectRootLayerPath
-        = [&](const std::string& obj, const std::string& path, const PXR_NS::SdfLayerRefPtr&) {
-              seenObj = obj;
-              seenPath = path;
-          };
-    setDccObjectFns(fns);
-    setDccObjectRootLayerPath("|proxy", "/tmp/new.usd", nullptr);
-    EXPECT_EQ(seenObj, "|proxy");
-    EXPECT_EQ(seenPath, "/tmp/new.usd");
 }
 
 // ── FileSystemFns ──────────────────────────────────────────────────────────
@@ -237,19 +221,27 @@ TEST(LayerEditorDCCFunctions, UpdateDCCObjectRootLayer_DispatchesWhenRegistered)
     ScopedLayerEditorDCCFunctions guard;
     std::string seenProxy, seenPath;
     bool        seenTarget = false;
+    DccObjectRootLayerPathMode seenMode = DccObjectRootLayerPathMode::ForceAbsolute;
     SerializationFns fns;
     fns.updateDCCObjectRootLayer
         = [&](const std::string& proxy,
               const std::string& path,
               const PXR_NS::SdfLayerRefPtr&,
-              bool isTarget) {
+              bool                       isTarget,
+              DccObjectRootLayerPathMode mode) {
               seenProxy  = proxy;
               seenPath   = path;
               seenTarget = isTarget;
+              seenMode   = mode;
           };
     setSerializationFns(fns);
     updateDCCObjectRootLayer("|proxy", "/tmp/new.usd", nullptr, true);
     EXPECT_EQ(seenProxy, "|proxy");
     EXPECT_EQ(seenPath, "/tmp/new.usd");
     EXPECT_TRUE(seenTarget);
+    EXPECT_EQ(seenMode, DccObjectRootLayerPathMode::FollowPreference); // default when omitted
+
+    updateDCCObjectRootLayer(
+        "|proxy", "/tmp/new.usd", nullptr, false, DccObjectRootLayerPathMode::ForceAbsolute);
+    EXPECT_EQ(seenMode, DccObjectRootLayerPathMode::ForceAbsolute);
 }

@@ -20,6 +20,10 @@
 
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <layerEditorDCCFunctions.h>
+
+#include <pxr/base/tf/diagnostic.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 #endif
 
 #include <maya/MQtUtil.h>
@@ -43,6 +47,14 @@ namespace UsdLayerEditor {
 void initializeUi()
 {
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    // The read-modify-write below copies each group, adds the UI-only function, and writes it back,
+    // so it relies on registerLayerEditorDCCFunctions() having already populated the registry. If it
+    // has not, the copies are empty and the non-UI functions are silently lost. isInteractiveDCCSession
+    // is always set by registerLayerEditorDCCFunctions(), so use it as the "registry populated" sentinel.
+    TF_VERIFY(
+        layerEditorDCCFunctions().environment.isInteractiveDCCSession,
+        "initializeUi() must be called after registerLayerEditorDCCFunctions().");
+
     auto environment = layerEditorDCCFunctions().environment;
     environment.mainWindowParent = []() -> QWidget* { return MQtUtil::mainWindow(); };
     setEnvironmentFns(environment);

@@ -894,8 +894,14 @@ void SaveLayersDialog::onSaveAll()
                     = newDccObjectPath.empty() ? dccObjectPath : newDccObjectPath;
 
                 // Rewrite the proxy's root .filePath to the new root layer
-                // (renameObject only renames the DAG node, not .filePath).
-                UsdLayerEditor::setDccObjectRootLayerPath(effectivePath, newRootPath, newRootLayer);
+                // (renameObject only renames the DAG node, not .filePath). The move repaths the
+                // root, so force an absolute path; the new root is not the edit target.
+                UsdLayerEditor::updateDCCObjectRootLayer(
+                    effectivePath,
+                    newRootPath,
+                    newRootLayer,
+                    /*wasTargetLayer=*/false,
+                    DccObjectRootLayerPathMode::ForceAbsolute);
 
                 // Transfer the captured session-layer opinions onto the new stage.
                 UsdLayerEditor::transferSessionLayer(oldSessionLayer, effectivePath);

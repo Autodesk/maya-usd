@@ -87,6 +87,10 @@ public:
     virtual bool displayLayerHideIndices() const { return _displayLayerHideIndices; }
     virtual void setDisplayLayerHideIndices(bool hide);
 
+    // Edit-forwarding state lives here, on the SessionState, rather than in the
+    // layerEditorDCCFunctions registry because it depends on this instance's current stage. The
+    // rule: stage/instance-dependent state is a SessionState virtual; stateless DCC capabilities
+    // (e.g. supportsEditForwarding, handleEFEditTargetUpdate) live in the registry.
     virtual bool                   isEditForwardMode() const { return false; }
     virtual PXR_NS::SdfLayerRefPtr  effectiveTargetLayer() const;
 
@@ -148,4 +152,4 @@ protected:
 
 } // namespace UsdLayerEditor
 
-#endif // SESSIONSTATE_H
+#endif // USDLAYEREDITOR_SESSIONSTATE_H

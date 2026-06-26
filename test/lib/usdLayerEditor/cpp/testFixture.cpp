@@ -40,14 +40,22 @@ void LayerEditorTestFixture::SetUp()
     dcc.isDccObjectSharedStage = [this](const std::string&) { return _sharedStage; };
     dcc.renameObject
         = [](const std::string&, const std::string& name) { return std::string("|") + name; };
-    dcc.captureSessionLayer = [](const std::string&) { return PXR_NS::SdfLayerRefPtr {}; };
-    dcc.transferSessionLayer
-        = [this](const PXR_NS::SdfLayerRefPtr&, const std::string&) { ++_transferSessionCalls; };
-    dcc.setDccObjectRootLayerPath
-        = [this](const std::string&, const std::string&, const PXR_NS::SdfLayerRefPtr&) {
-              ++_setProxyRootPathCalls;
-          };
     setDccObjectFns(dcc);
+
+    SerializationFns serialization;
+    serialization.captureSessionLayer = [](const std::string&) { return PXR_NS::SdfLayerRefPtr {}; };
+    serialization.transferSessionLayer
+        = [this](const PXR_NS::SdfLayerRefPtr&, const std::string&) { ++_transferSessionCalls; };
+    serialization.updateDCCObjectRootLayer = [this](
+                                                 const std::string&,
+                                                 const std::string&,
+                                                 const PXR_NS::SdfLayerRefPtr&,
+                                                 bool,
+                                                 DccObjectRootLayerPathMode mode) {
+        if (mode == DccObjectRootLayerPathMode::ForceAbsolute)
+            ++_setProxyRootPathCalls;
+    };
+    setSerializationFns(serialization);
 
     {
         ComponentFns component;
