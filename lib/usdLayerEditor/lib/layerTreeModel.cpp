@@ -285,11 +285,12 @@ void LayerTreeModel::setSessionState(SessionState* in_sessionState)
         this,
         &LayerTreeModel::onEFFallbackTargetChanged);
 
-    rebuildModelOnIdle();
+    rebuildModelOnIdle(true);
 }
 
-void LayerTreeModel::rebuildModelOnIdle()
+void LayerTreeModel::rebuildModelOnIdle(bool dataChanged)
 {
+    _selectedLayerDataChanged |= dataChanged;
     if (!_rebuildOnIdlePending) {
         _rebuildOnIdlePending = true;
 
@@ -312,6 +313,11 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
 {
     _rebuildOnIdlePending = false;
     _lastAskedAnonLayerNameSinceRebuild = 0;
+
+    if (_selectedLayerDataChanged) {
+        Q_EMIT selectedLayerDataChangedSignal();
+        _selectedLayerDataChanged = false;
+    }
 
     if (!_sessionState->isValid()) {
         if (rowCount() > 0) {
@@ -477,7 +483,7 @@ void LayerTreeModel::usd_layerChanged(SdfNotice::LayersDidChangeSentPerLayer con
 {
     // experienced crashes in python prototype  For now, rebuild everything
     if (!_blockUsdNotices)
-        rebuildModelOnIdle();
+        rebuildModelOnIdle(true);
 }
 
 // notification from USD

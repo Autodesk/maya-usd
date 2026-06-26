@@ -21,6 +21,7 @@
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editTarget.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QMimeData>
@@ -314,6 +315,42 @@ TEST_F(LayerTreeModelTest, UsdEditTargetChanged_UpdatesTargetLayerOnIdle)
     subItem = treeModel()->layerItemFromIndex(firstSublayerIndex());
     ASSERT_NE(subItem, nullptr);
     EXPECT_TRUE(subItem->isTargetLayer());
+}
+
+// ── selectedLayerDataChangedSignal (EMSUSD-3823) ───────────────────────────────
+
+TEST_F(LayerTreeModelTest, SelectedLayerDataChanged_EmittedOnLayerDataChange)
+{
+    // setSessionState schedules a data-changed rebuild; flush it before counting.
+    QApplication::processEvents();
+
+    int dataChangedCount = 0;
+    QObject::connect(treeModel(), &LayerTreeModel::selectedLayerDataChangedSignal,
+        [&dataChangedCount]() { ++dataChangedCount; });
+
+    // Author data into a layer without altering the layer tree structure: this is
+    // the case the model-rebuild optimization stopped refreshing the contents for.
+    _sessionState.stage()->DefinePrim(SdfPath("/testDataChange"));
+    QApplication::processEvents();
+
+    EXPECT_GE(dataChangedCount, 1)
+        << "selectedLayerDataChangedSignal should fire when layer data changes";
+}
+
+TEST_F(LayerTreeModelTest, SelectedLayerDataChanged_NotEmittedOnPlainRefresh)
+{
+    QApplication::processEvents(); // settle the initial build
+
+    int dataChangedCount = 0;
+    QObject::connect(treeModel(), &LayerTreeModel::selectedLayerDataChangedSignal,
+        [&dataChangedCount]() { ++dataChangedCount; });
+
+    // forceRefresh() rebuilds without flagging a layer-data change.
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+
+    EXPECT_EQ(dataChangedCount, 0)
+        << "selectedLayerDataChangedSignal should not fire for a non-data-change rebuild";
 }
 
 } // namespace UsdLayerEditor

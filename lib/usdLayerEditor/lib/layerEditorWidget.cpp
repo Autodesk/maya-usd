@@ -225,6 +225,13 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         this,
         &LayerEditorWidget::onLazyUpdateLayerContents);
 
+    // update layer contents widget on selected layer data change
+    connect(
+        _treeView->layerTreeModel(),
+        &LayerTreeModel::selectedLayerDataChangedSignal,
+        this,
+        &LayerEditorWidget::onLazyUpdateLayerContents);
+
     _buttons._loadLayer = addHIGButton(
         ":/UsdLayerEditor/LE_import_layer",
         StringResources::getAsQString(StringResources::kLoadExistingLayer),

@@ -6,7 +6,7 @@ Resume point for porting maya-usd layer editor commits into the shared component
 
 The shared component was physically relocated from `lib/usdUfe/usd-layer-editor/` to `lib/usdLayerEditor/` (a sibling of `usdUfe` under `lib/`), and its tests were moved from the old `test/` subdirectory inside the library tree to `test/lib/usdLayerEditor/`. The CMake wiring was updated accordingly: `lib/CMakeLists.txt` now drives the subdirectory directly, the old `add_subdirectory(usd-layer-editor)` in `lib/usdUfe/CMakeLists.txt` was removed, and `test/lib/CMakeLists.txt` routes to `test/lib/usdLayerEditor/`. No source files were modified — this was a pure structural rename.
 
-## Current state (as of 2026-06-14)
+## Current state (as of 2026-06-25)
 
 - `UsdLayerEditorLib` builds and **`mayaUsdUI` always uses it** in production. The `BUILD_NEW_LAYER_EDITOR` switch was removed (see `docs/superpowers/specs/2026-06-04-always-build-both-editors-design.md`); `MAYAUSD_USE_SHARED_LAYER_EDITOR` is always defined. The legacy widget sources now compile only into the `mayaUsdOldLayerEditorTests` parity target.
 - The bridge is therefore **live**, not deferred — the earlier "deferred (Tasks 5-6)" note predates the always-build-both change and is obsolete.
@@ -54,6 +54,21 @@ The shared component was physically relocated from `lib/usdUfe/usd-layer-editor/
 
 | Commit | Description | Group | Status | Notes |
 |--------|-------------|-------|--------|-------|
+| 398a58c211 | Merge PR EMSUSD-3823/layer-display-refresh | skip | skip | Merge commit |
+| ba67195633 | Merge PR EMSUSD-3762 | skip | skip | Merge commit |
+| b159855445 | Fix relative include path | maya-only | maya-only | renderSetup + mayaCommandHook include path; no shared-LE code |
+| 6c5eefeb02 | Merge PR automatic_loading_of_chaser_plugins | skip | skip | Merge commit |
+| 6ae9dc89f5 | EMSUSD-3823 fix layer content refresh | layer-contents | ported | Ported `selectedLayerDataChangedSignal` to shared `layerTreeModel`/`layerEditorWidget`: `rebuildModelOnIdle(true)` flags layer-data changes, `rebuildModel` emits the signal, widget refreshes contents on it. GTest added in `testLayerTreeModel.cpp` |
+| 088dacb611 | Files first letter to lowercase | maya-only | maya-only | renderSetup file renames; no shared-LE code |
+| e5db3c1aee | Fix header | maya-only | maya-only | renderSetup CompositionEditorCmd header; no shared-LE code |
+| a50ae43e56 | Review changes: cmakes/filenames/UndoChunkUtils | maya-only | maya-only | renderSetup cmake/filename/UndoChunkUtils refactor; no shared-LE code |
+| 4a94862eb3 | Remove ambiguous tests | skip | skip | renderSetup test removal |
+| c70d9d1ac5 | SdfUndo block | maya-only | maya-only | renderSetup undo; no shared-LE code |
+| 32f93a06e5 | Undo/redo support for the RenderSetup | maya-only | maya-only | renderSetup undo/redo (+ new usdUfe `UsdLabeledEditUndoableCommand`); no shared-LE code |
+| 29d980d06f | doc: Import/ExportChaser plugins loading | skip | skip | Doc only |
+| 12d3cc06b7 | unit-tests: ExportChaser auto-load | maya-only | maya-only | Maya fileio test |
+| ee361ab417 | unit-tests: ImportChaser auto-load | maya-only | maya-only | Maya fileio test |
+| 2bdf9f8688 | fileio: auto-load Import/ExportChaser plugins | maya-only | maya-only | fileio registryHelper; no shared-LE code |
 | fbf306120 | Merge PR EMSUSD-3799/fix_failing_testUVStreamManagement | skip | skip | Merge commit |
 | f51ff88bd | Merge PR EMSUSD-3774/fix_failing_testShaderNodeDef | skip | skip | Merge commit |
 | 39879c02a | EMSUSD-3774 fix shader node metadata test failure | bug-fix | maya-only | SdrShaderPropertyMetadata Python fix — not layer editor |
