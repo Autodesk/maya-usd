@@ -534,6 +534,23 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     }
     glViewport(vx, vy, vw, vh);
 
+    // filmFit is horizontal (the pipeline forces it): the horizontal projection
+    // scale is aspect-independent and correct, but the vertical scale (element
+    // 1,1) follows the render aspect. Under playblast the M3dView still reports
+    // the interactive panel's aspect, so the holdout mesh would project
+    // vertically compressed into the (wider) output. Rebuild (1,1) from the
+    // actual render dims so the mesh matches the output. This is a no-op
+    // interactively, where panel aspect == render aspect.
+    MMatrix renderProjection = projection;
+    if (vh != 0 && projection(0, 0) != 0.0) {
+        double pm[4][4];
+        for (int r = 0; r < 4; ++r)
+            for (int c = 0; c < 4; ++c)
+                pm[r][c] = projection(r, c);
+        pm[1][1] = pm[0][0] * static_cast<double>(vw) / static_cast<double>(vh);
+        renderProjection = MMatrix(pm);
+    }
+
     // Combined begin-scene stamp: write the holdout's DEPTH (so the scene
     // occludes CG behind it) and -- where a plate exists -- its plate COLOR in
     // screen space. The scene then draws on top: the background plane and any CG
@@ -553,14 +570,18 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
 
     glUseProgram(gMatteProgram);
     glUniform1i(gMatteSamplerLoc, 0);
-    // Vertical band half-extent in NDC, from the projection (carries filmFit,
-    // aperture and cameraScale): Gy = (proj11/proj00) / gateAspect. The plate is
-    // anamorphic 'To Size' so it stretches to the gate aspect.
+    // Vertical band half-extent in NDC. The plate fills the frame width and has
+    // the gate display aspect, so the band fraction is just aFrame/gateAspect.
+    // Derive aFrame from the render-target dims (correct under playblast) rather
+    // than proj11/proj00: during playblast the M3dView projection can still carry
+    // the interactive panel's aspect, which sized the band wrongly. (proj00/proj11
+    // are kept only for the diagnostic.)
     const double p00 = projection(0, 0);
     const double p11 = projection(1, 1);
     float        bandHalf = 1.0f;
-    if (p00 != 0.0 && gateAspect > 1e-6f)
-        bandHalf = static_cast<float>((p11 / p00) / static_cast<double>(gateAspect));
+    if (vh != 0 && gateAspect > 1e-6f)
+        bandHalf = static_cast<float>((static_cast<double>(vw) / static_cast<double>(vh))
+                                      / static_cast<double>(gateAspect));
 
     // Horizontal anamorphic squeeze. The plate is unsqueezed by its pixel aspect
     // ratio and covers the gate, so the visible horizontal fraction of the stored
@@ -601,7 +622,7 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         if (e.posHandle == 0 || e.idxHandle == 0 || e.indexCount == 0)
             continue;
 
-        const MMatrix mvp = e.world * modelView * projection; // row-vector compose
+        const MMatrix mvp = e.world * modelView * renderProjection; // row-vector compose
         GLfloat       m[16];
         for (int r = 0; r < 4; ++r)
             for (int c = 0; c < 4; ++c)
