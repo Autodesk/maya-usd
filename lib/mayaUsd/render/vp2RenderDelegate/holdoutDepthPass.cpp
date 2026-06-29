@@ -108,9 +108,10 @@ GLint  gMatteDebugLoc { -1 };
 const int kMatteDebugMode = 0;
 
 std::unordered_map<std::string, MHWRender::MTexture*> gTextureCache;
-// Plates are loaded per resolved frame (image planes use frame extension), so
-// cap the cache to bound memory; cleared wholesale when exceeded.
-const size_t kMaxCachedPlates = 8;
+// Plates are loaded per resolved frame (image planes use frame extension) as
+// linear float (~4 bytes/channel), so cap the cache to bound memory; cleared
+// wholesale when exceeded.
+const size_t kMaxCachedPlates = 4;
 
 // Vertex: transform holdout geometry by mvp (same convention as the depth pass).
 const char* kMatteVertexSrc = "#version 330\n"
@@ -254,6 +255,7 @@ GLuint acquirePlateGLTexture(
     }
 
     MString    plateFile;
+    MString    ipNodeName;
     bool       foundPlane = false;
     MObject    imagePlaneObj;
 
@@ -296,6 +298,7 @@ GLuint acquirePlateGLTexture(
 
     if (foundPlane) {
         MFnDependencyNode ipFn(imagePlaneObj);
+        ipNodeName = ipFn.name();
         MPlug             p = ipFn.findPlug("imageName", false, &st);
         if (st == MS::kSuccess)
             p.getValue(plateFile);
@@ -381,37 +384,59 @@ GLuint acquirePlateGLTexture(
         tex = it->second;
 
     if (!tex) {
-        MImage img;
-        if (img.readFromFile(plateFile) != MS::kSuccess) {
-            static bool sWarned = false;
-            if (!sWarned) {
-                sWarned = true;
-                MGlobal::displayWarning(
-                    MString("[holdoutDepthPass] could not read image: '") + plateFile
-                    + "' -- a sequence path likely needs frame resolution.");
-            }
-            return 0;
-        }
-        unsigned int w = 0, h = 0;
-        img.getSize(w, h);
-
         MHWRender::MRenderer*       renderer = MHWRender::MRenderer::theRenderer();
         MHWRender::MTextureManager* texMgr = renderer ? renderer->getTextureManager() : nullptr;
-        if (!texMgr || w == 0 || h == 0)
+        if (!texMgr)
             return 0;
 
-        MHWRender::MTextureDescription desc;
-        desc.setToDefault2DTexture();
-        desc.fWidth = w;
-        desc.fHeight = h;
-        desc.fDepth = 1;
-        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
-        desc.fBytesPerRow = w * 4;
-        desc.fBytesPerSlice = w * h * 4;
+        // Load via the texture manager's file path API: it decodes EXR as float
+        // (no 8-bit clamp, unlike MImage::readFromFile here) and ingests it
+        // through the image plane's color management (input colorSpace ->
+        // rendering space), matching how Maya brings in the native plate.
+        tex = texMgr->acquireTexture(
+            plateFile, ipNodeName, /*mipmapLevels*/ 0, /*useExposureControl*/ false);
 
-        tex = texMgr->acquireTexture(plateFile, desc, img.pixels());
-        if (!tex)
-            return 0;
+        if (!tex) {
+            // Fallback: CPU decode (8-bit) so we at least show something, and
+            // make the limitation visible.
+            MImage img;
+            if (img.readFromFile(plateFile) != MS::kSuccess) {
+                static bool sWarned = false;
+                if (!sWarned) {
+                    sWarned = true;
+                    MGlobal::displayWarning(
+                        MString("[holdoutDepthPass] could not read image: '") + plateFile + "'");
+                }
+                return 0;
+            }
+            unsigned int w = 0, h = 0;
+            img.getSize(w, h);
+            if (w == 0 || h == 0)
+                return 0;
+
+            MHWRender::MTextureDescription desc;
+            desc.setToDefault2DTexture();
+            desc.fWidth = w;
+            desc.fHeight = h;
+            desc.fDepth = 1;
+            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+            desc.fBytesPerRow = w * 4;
+            desc.fBytesPerSlice = w * h * 4;
+            tex = texMgr->acquireTexture(plateFile, desc, img.pixels());
+            if (!tex)
+                return 0;
+        }
+
+        static bool sLoggedFmt = false;
+        if (!sLoggedFmt) {
+            sLoggedFmt = true;
+            MHWRender::MTextureDescription ld;
+            tex->textureDescription(ld);
+            MGlobal::displayInfo(
+                MString("[holdoutDepthPass] PLATE load ") + ld.fWidth + "x" + ld.fHeight
+                + " texFormat=" + static_cast<int>(ld.fFormat) + " (16/19/22=float-ish, 1/2=8-bit)");
+        }
+
         // Bound memory: per-frame loads accumulate, so clear when over the cap.
         if (gTextureCache.size() >= kMaxCachedPlates) {
             for (auto& kv : gTextureCache) {
