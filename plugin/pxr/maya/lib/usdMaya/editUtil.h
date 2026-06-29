@@ -47,7 +47,8 @@ public:
     {
         OP_TRANSLATE,
         OP_ROTATE,
-        OP_SCALE
+        OP_SCALE,
+        OP_VARIANT_SELECT
     };
 
     /// Whether the edit affects one component or all components.
@@ -70,6 +71,9 @@ public:
         EditOp  op;
         EditSet set;
         VtValue value;
+
+        /// For OP_VARIANT_SELECT edits, the name of the variant set.
+        std::string variantSetName;
     };
 
     /// \}

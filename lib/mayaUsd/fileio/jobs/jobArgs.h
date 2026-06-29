@@ -123,6 +123,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (remapUVSetsTo) \
     (stripNamespaces) \
     (hideSourceData) \
+    (copyAndRepathMaterials) \
     (verbose) \
     (staticSingleSample) \
     (geomSidedness)   \
@@ -289,6 +290,7 @@ struct UsdMayaJobExportArgs
     const bool preserveUVSetNames;
     const bool stripNamespaces;
     const bool hideSourceData;
+    const bool copyAndRepathMaterials;
     // Export root prims using their worldspace transform instead of local transform.
     const bool worldspace;
     // Write default values at default time.

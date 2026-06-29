@@ -264,6 +264,19 @@ public:
         bool*          drawProxyPurpose,
         bool*          drawGuidePurpose);
 
+    /// Returns true if the Maya DAG path already accounts for the USD root
+    /// prim's world transform. When true, the rendering delegate shouldn't
+    /// multiply by GetLocalToWorldTransform(rootPrim), as that would double the
+    /// transforms already present in the Maya DAG.
+    ///
+    /// Defaults to false, which is correct for proxy shapes that reference a USD
+    /// stage without replicating prim transforms into the Maya DAG hierarchy.
+    /// Override to return true only when your plugin expands assembly/subcomponent
+    /// prims as Maya DAG nodes whose transforms already reflect the root prim
+    /// (e.g., Pixar's scene assembly workflow).
+    MAYAUSD_CORE_PUBLIC
+    virtual bool isRootPrimTransformInDagPath() const { return false; }
+
     MAYAUSD_CORE_PUBLIC
     MStatus
     preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode) override;

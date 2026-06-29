@@ -248,6 +248,8 @@ __mayaUSDStringResources = {
     "kExportWorldspaceLbl": "Worldspace Roots",
     "kHideSourceDataAnn": "Hide the Maya nodes that are used as the source data.",
     "kHideSourceDataLbl": "Hide Source Data",
+    "kCopyAndRepathMaterialsAnn": "<b>Copy and Repath</b><br>Copies texture and material files to the export location and repaths references to the copied files.",
+    "kCopyAndRepathMaterialsLbl": "Copy and Repath",
     "kExportRootPrimAnn": "Name the root/parent prim for your exported data.",
     "kExportRootPrimLbl": "Create Root Prim:",
     "kExportRootPrimPht": "USD Prim Name",

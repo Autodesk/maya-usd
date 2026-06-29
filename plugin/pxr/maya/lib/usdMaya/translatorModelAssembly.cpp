@@ -241,7 +241,9 @@ bool UsdMayaTranslatorModelAssembly::Create(
         if (needsLoadAndUnload) {
             prim.Load();
         }
+
         UsdMayaEditUtil::ApplyEditsToProxy(assemblyEdits, prim, &failedEdits);
+
         // restore it to its original unloaded state.
         if (needsLoadAndUnload) {
             prim.Unload();
@@ -519,7 +521,9 @@ bool UsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     MStatus status;
 
-    // Create a transform node for the proxy node under its parent node.
+    // Apply the prim's xformOps to the Maya transform so that nested child
+    // collapse points inherit correct positioning from the DAG. The
+    // skipRootPrimTransform flag below prevents the adapter from doubling it.
     MObject transformObj;
     if (!UsdMayaTranslatorUtil::CreateTransformNode(
             prim, parentNode, args, context, &status, &transformObj)) {
@@ -557,16 +561,39 @@ bool UsdMayaTranslatorModelAssembly::ReadAsProxy(
     status = dagMod.newPlugValueString(primPathPlug, primPath.GetText());
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    // XXX: For now, the proxy shape only support modelingVariant with the
-    // 'variantKey' attribute. Eventually, it should support any/all
-    // variantSets.
-    const std::map<std::string, std::string>::const_iterator varSetIter
-        = variantSetSelections.find(_tokens->modelingVariant.GetString());
-    if (varSetIter != variantSetSelections.end()) {
-        const std::string modelingVariantSelection = varSetIter->second;
-        MPlug variantKeyPlug = depNodeFn.findPlug(_tokens->variantKey.GetText(), true, &status);
+    // Create usdVariantSet_* dynamic attributes for all variant sets.
+    // These persist in the Maya file and drive live viewport updates
+    // via UsdMayaProxyShape::_ApplyVariantSelections().
+    for (const auto& varSelPair : variantSetSelections) {
+        const std::string& varSetName = varSelPair.first;
+        const std::string& selection = varSelPair.second;
+
+        std::string variantSetPlugName = TfStringPrintf(
+            "%s%s", UsdMayaVariantSetTokens->PlugNamePrefix.GetText(), varSetName.c_str());
+        MPlug varSetPlug = depNodeFn.findPlug(variantSetPlugName.c_str(), true, &status);
+        if (status != MStatus::kSuccess) {
+            MFnTypedAttribute typedAttrFn;
+            MObject           attrObj = typedAttrFn.create(
+                variantSetPlugName.c_str(),
+                variantSetPlugName.c_str(),
+                MFnData::kString,
+                MObject::kNullObj,
+                &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            typedAttrFn.setInternal(true);
+            status = depNodeFn.addAttribute(attrObj);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            varSetPlug = depNodeFn.findPlug(variantSetPlugName.c_str(), true, &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+        status = dagMod.newPlugValueString(varSetPlug, selection.c_str());
         CHECK_MSTATUS_AND_RETURN(status, false);
-        status = dagMod.newPlugValueString(variantKeyPlug, modelingVariantSelection.c_str());
+    }
+
+    // Signal that the DAG already provides this prim's world transform.
+    MPlug skipRootXformPlug = depNodeFn.findPlug("skipRootPrimTransform", true, &status);
+    if (status == MS::kSuccess) {
+        status = dagMod.newPlugValueBool(skipRootXformPlug, true);
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 

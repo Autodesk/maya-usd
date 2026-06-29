@@ -15,6 +15,7 @@
 //
 #include "usdMaya/editUtil.h"
 
+#include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
 
 #include <mayaUsd/utils/util.h>
@@ -23,6 +24,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
@@ -118,24 +120,45 @@ static bool _GetEditFromTokenizedString(
 
     // Figure out what operation we're doing from the attribute name.
     const auto* opSetPair = TfMapLookupPtr(_attrToOpMap, mayaAttrName);
-    if (!opSetPair) {
-        return false;
+    if (opSetPair) {
+        *outEditPath = usdPath;
+        outEdit->op = opSetPair->first;
+        outEdit->set = opSetPair->second;
+
+        if (outEdit->set == UsdMayaEditUtil::SET_ALL) {
+            outEdit->value = GfVec3d(
+                atof(tokenizedEditString[numEditTokens - 3u].c_str()),
+                atof(tokenizedEditString[numEditTokens - 2u].c_str()),
+                atof(tokenizedEditString[numEditTokens - 1u].c_str()));
+        } else {
+            outEdit->value = atof(tokenizedEditString[2u].c_str());
+        }
+
+        return true;
     }
 
-    *outEditPath = usdPath;
-    outEdit->op = opSetPair->first;
-    outEdit->set = opSetPair->second;
+    // Check for variant selection edit: usdVariantSet_<variantSetName>
+    const std::string& variantPrefix = UsdMayaVariantSetTokens->PlugNamePrefix.GetString();
+    if (TfStringStartsWith(mayaAttrName, variantPrefix)) {
+        outEdit->op = UsdMayaEditUtil::OP_VARIANT_SELECT;
+        outEdit->set = UsdMayaEditUtil::SET_ALL;
+        outEdit->variantSetName = mayaAttrName.substr(variantPrefix.size());
+        outEdit->value
+            = VtValue(TfStringReplace(tokenizedEditString[numEditTokens - 1u], "\"", ""));
 
-    if (outEdit->set == UsdMayaEditUtil::SET_ALL) {
-        outEdit->value = GfVec3d(
-            atof(tokenizedEditString[numEditTokens - 3u].c_str()),
-            atof(tokenizedEditString[numEditTokens - 2u].c_str()),
-            atof(tokenizedEditString[numEditTokens - 1u].c_str()));
-    } else {
-        outEdit->value = atof(tokenizedEditString[2u].c_str());
+        // Remove the final path element if it corresponds to a Proxy shape node.
+        const std::string& proxySuffix
+            = UsdMayaProxyShapeTokens->MayaProxyShapeNameSuffix.GetString();
+        if (TfStringEndsWith(usdPath.GetName(), proxySuffix)) {
+            *outEditPath = usdPath.GetParentPath();
+        } else {
+            *outEditPath = usdPath;
+        }
+
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 /* static */
@@ -240,6 +263,38 @@ void UsdMayaEditUtil::ApplyEditsToProxy(
         const SdfPath editPath
             = itr->first.IsAbsolutePath() ? itr->first : proxyRootPrimPath.AppendPath(itr->first);
 
+        // Separate transform edits from variant edits for this path.
+        AssemblyEditVec xformEdits;
+        AssemblyEditVec variantEdits;
+        TF_FOR_ALL(assemEdit, itr->second)
+        {
+            if (assemEdit->op == OP_VARIANT_SELECT) {
+                variantEdits.push_back(*assemEdit);
+            } else {
+                xformEdits.push_back(*assemEdit);
+            }
+        }
+
+        // Apply variant selection edits.
+        if (!variantEdits.empty()) {
+            UsdPrim varPrim = stage->GetPrimAtPath(editPath);
+            if (varPrim) {
+                for (const auto& varEdit : variantEdits) {
+                    UsdVariantSet varSet = varPrim.GetVariantSet(varEdit.variantSetName);
+                    varSet.SetVariantSelection(varEdit.value.Get<std::string>());
+                }
+            } else if (failedEdits) {
+                for (const auto& varEdit : variantEdits) {
+                    failedEdits->push_back(varEdit.editString);
+                }
+            }
+        }
+
+        // Apply transform edits.
+        if (xformEdits.empty()) {
+            continue;
+        }
+
         // The UsdGeomXformCommonAPI will populate the data without us having
         // to know exactly how the data is set.
         GfVec3d                              translation;
@@ -254,16 +309,19 @@ void UsdMayaEditUtil::ApplyEditsToProxy(
                 &translation, &rotation, &scale, &pivot, &rotOrder, UsdTimeCode::Default())) {
             // We failed either to get the xformCommonAPI or to get its
             // transform data, so mark all edits as failed.
-            TF_FOR_ALL(assemEdit, itr->second) { failedEdits->push_back(assemEdit->editString); }
+            if (failedEdits) {
+                for (const auto& edit : xformEdits) {
+                    failedEdits->push_back(edit.editString);
+                }
+            }
             continue;
         }
 
-        // Apply all edits for the particular path in order.
-        TF_FOR_ALL(assemEdit, itr->second)
-        {
-            if (assemEdit->set == SET_ALL) {
-                const GfVec3d& toSet = assemEdit->value.Get<GfVec3d>();
-                switch (assemEdit->op) {
+        // Apply all transform edits for the particular path in order.
+        for (const auto& assemEdit : xformEdits) {
+            if (assemEdit.set == SET_ALL) {
+                const GfVec3d& toSet = assemEdit.value.Get<GfVec3d>();
+                switch (assemEdit.op) {
                 default:
                 case OP_TRANSLATE: translation = toSet; break;
                 case OP_ROTATE: rotation = GfVec3f(toSet); break;
@@ -271,12 +329,12 @@ void UsdMayaEditUtil::ApplyEditsToProxy(
                 }
             } else {
                 // We're taking advantage of the enum values for EditSet here...
-                const double toSet = assemEdit->value.Get<double>();
-                switch (assemEdit->op) {
+                const double toSet = assemEdit.value.Get<double>();
+                switch (assemEdit.op) {
                 default:
-                case OP_TRANSLATE: translation[assemEdit->set] = toSet; break;
-                case OP_ROTATE: rotation[assemEdit->set] = toSet; break;
-                case OP_SCALE: scale[assemEdit->set] = toSet; break;
+                case OP_TRANSLATE: translation[assemEdit.set] = toSet; break;
+                case OP_ROTATE: rotation[assemEdit.set] = toSet; break;
+                case OP_SCALE: scale[assemEdit.set] = toSet; break;
                 }
             }
         }
@@ -324,7 +382,11 @@ void UsdMayaEditUtil::ApplyEditsToProxy(
 
         if (!xformCommonAPI.SetXformVectors(
                 translation, rotation, scale, pivot, rotOrder, UsdTimeCode::Default())) {
-            TF_FOR_ALL(assemEdit, itr->second) { failedEdits->push_back(assemEdit->editString); }
+            if (failedEdits) {
+                for (const auto& edit : xformEdits) {
+                    failedEdits->push_back(edit.editString);
+                }
+            }
             continue;
         }
     }
