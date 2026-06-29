@@ -57,7 +57,12 @@ void Publish(
     MHWRender::MIndexBuffer*      indexBuffer,
     unsigned int                 indexCount,
     const MMatrix&               worldMatrix,
-    const MDagPath&              proxyDagPath);
+    const MDagPath&              proxyDagPath,
+    bool                         visible);
+
+//! Update a published holdout's prim visibility. Cheap; safe to call on every
+//! visibility change (no-op if the item is not currently published).
+void SetVisible(const MHWRender::MRenderItem* key, bool visible);
 
 //! Remove a render item from the registry. Call when the draw item is
 //! destroyed so we never hold a dangling buffer pointer.

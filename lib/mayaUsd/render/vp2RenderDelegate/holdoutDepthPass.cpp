@@ -64,6 +64,9 @@ struct Entry
     // Owning proxy shape; used to skip holdouts whose proxy node is hidden in
     // Maya (hiding the proxy does not re-Sync the prims, so we check at draw).
     MDagPath     proxyDagPath;
+    // USD prim visibility, pushed from Sync. A visibility-only change does not
+    // run the geometry commit, so we keep the entry and gate drawing on this.
+    bool         visible { true };
 };
 
 std::mutex                                               gMutex;
@@ -625,6 +628,11 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         if (e.posHandle == 0 || e.idxHandle == 0 || e.indexCount == 0)
             continue;
 
+        // Skip if the holdout prim itself is hidden (USD visibility), pushed from
+        // Sync; a visibility-only change does not run the geometry commit.
+        if (!e.visible)
+            continue;
+
         // Skip if the owning proxy node is hidden in Maya (visibility, parent
         // visibility, display layer, etc.). Hiding the proxy does not re-Sync the
         // prims, so the entry stays published; we gate it here at draw time.
@@ -717,7 +725,8 @@ void Publish(
     MHWRender::MIndexBuffer*      indexBuffer,
     unsigned int                 indexCount,
     const MMatrix&                worldMatrix,
-    const MDagPath&               proxyDagPath)
+    const MDagPath&               proxyDagPath,
+    bool                          visible)
 {
     if (!key || !positionBuffer || !indexBuffer)
         return;
@@ -735,6 +744,7 @@ void Publish(
     e.indexCount = indexCount;
     e.world = worldMatrix;
     e.proxyDagPath = proxyDagPath;
+    e.visible = visible;
 
     std::lock_guard<std::mutex> lock(gMutex);
     gRegistry[key] = e;
@@ -754,6 +764,16 @@ void Unpublish(const MHWRender::MRenderItem* key)
 {
     std::lock_guard<std::mutex> lock(gMutex);
     gRegistry.erase(key);
+}
+
+void SetVisible(const MHWRender::MRenderItem* key, bool visible)
+{
+    // Lightweight visibility toggle used on DirtyVisibility, when the geometry
+    // commit (and thus Publish/Unpublish) does not run. No-op if not published.
+    std::lock_guard<std::mutex> lock(gMutex);
+    auto                        it = gRegistry.find(key);
+    if (it != gRegistry.end())
+        it->second.visible = visible;
 }
 
 } // namespace HdVP2HoldoutDepthPass

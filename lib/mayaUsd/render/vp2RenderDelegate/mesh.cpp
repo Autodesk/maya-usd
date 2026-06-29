@@ -2212,8 +2212,10 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         // Holdout: this prim contributes depth via the holdout depth pass, not
         // color. Disable its beauty draw so it becomes an invisible occluder.
-        if (_meshSharedData->_isHoldout)
+        if (_meshSharedData->_isHoldout) {
             enable = false;
+            HdVP2HoldoutDepthPass::SetVisible(renderItem, drawItem->GetVisible());
+        }
 
         if (drawItemData._enabled != enable) {
             drawItemData._enabled = enable;
@@ -2473,8 +2475,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             // so the gate re-evaluates and Unpublishes/Republishes on toggle.
             const bool publishable = !isBBoxItem
                 && renderItem->primitive() == MHWRender::MGeometry::kTriangles
-                && !drawItemData._usingInstancedDraw && indexBuffer
-                && holdoutVisible;
+                && !drawItemData._usingInstancedDraw && indexBuffer;
             if (isHoldout && publishable) {
                 auto                      ptIt = primvarInfo->find(HdTokens->points);
                 MHWRender::MVertexBuffer* posBuf
@@ -2486,7 +2487,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                         : drawItemData._worldMatrix;
                     HdVP2HoldoutDepthPass::Publish(
                         renderItem, posBuf, indexBuffer, indexBuffer->size(), world,
-                        holdoutProxyPath);
+                        holdoutProxyPath, holdoutVisible);
                 } else {
                     HdVP2HoldoutDepthPass::Unpublish(renderItem);
                 }
