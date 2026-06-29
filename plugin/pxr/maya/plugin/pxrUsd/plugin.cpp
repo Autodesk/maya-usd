@@ -105,6 +105,11 @@ MStatus initializePlugin(MObject obj)
     status = MGlobal::executePythonCommand(attribEditorCmd);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    MString proxyShapeAECmd("from pxr.UsdMaya import AEpxrUsdProxyShapeTemplate\n"
+                            "AEpxrUsdProxyShapeTemplate.addMelFunctionStubs()");
+    status = MGlobal::executePythonCommand(proxyShapeAECmd);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
     status = plugin.registerCommand(
         "usdExport", PxrMayaUSDExportCommand::creator, PxrMayaUSDExportCommand::createSyntax);
     if (!status) {
