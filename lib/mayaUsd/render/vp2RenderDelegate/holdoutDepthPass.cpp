@@ -144,7 +144,7 @@ const char* kMatteFragmentSrc = "#version 330\n"
                                 "    float ndcy = sy * 2.0 - 1.0;\n"
                                 "    float v = (ndcy / bandHalf + 1.0) * 0.5;\n"
                                 "    if (debugMode == 2) { fragColor = vec4(clamp(u,0.0,1.0), clamp(v,0.0,1.0), 0.0, 1.0); return; }\n"
-                                "    vec2 uv = clamp(vec2(u, v), 0.0, 1.0);\n"
+                                "    vec2 uv = clamp(vec2(u, 1.0 - v), 0.0, 1.0);\n"
                                 "    fragColor = texture(plate, uv);\n"
                                 "}\n";
 
