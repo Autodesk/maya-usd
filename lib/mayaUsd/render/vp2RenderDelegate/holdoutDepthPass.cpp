@@ -19,6 +19,7 @@
 // system GL); otherwise the transitive pxr/pxr.h gets skipped. Mirrors the
 // include order in px_vp20/utils.cpp.
 #include <pxr/imaging/garch/glApi.h>
+#include <pxr/base/tf/getenv.h>
 
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
@@ -85,12 +86,9 @@ GLuint compileShader(GLenum type, const char* src)
 }
 
 //============================================================================
-// Plate-blit proof: at kEndSceneRender, load the active camera's image-plane
-// image ourselves via MTextureManager and blit it FULL-SCREEN. This proves the
-// load-and-sample foundation for the holdout matte. It deliberately ignores
-// stencil masking and image-plane placement -- it will cover the whole viewport
-// with the (likely stretched / maybe vertically flipped) plate. Seeing the
-// footage at all is the success condition.
+// Plate matte: load the camera's image-plane footage via MTextureManager and
+// sample it where the holdout geometry is stamped, so the holdout reveals the
+// plate. (Sampled in screen space for now; placement + color management TODO.)
 //============================================================================
 
 bool   gMatteInit { false };
@@ -170,18 +168,10 @@ bool ensureMatteGL()
 // and return the GL texture name. 0 on failure.
 GLuint acquirePlateGLTexture(M3dView& view)
 {
-    static int sDiag = 0;
-    const bool diag = (sDiag < 40);
-    if (diag)
-        ++sDiag;
-
     MStatus  st;
     MDagPath camPath;
-    if (view.getCamera(camPath) != MS::kSuccess) {
-        if (diag)
-            MGlobal::displayInfo("[holdoutDepthPass] blit: getCamera failed.");
+    if (view.getCamera(camPath) != MS::kSuccess)
         return 0;
-    }
     camPath.extendToShape(); // camera transform -> camera shape (no-op if shape)
 
     MString    plateFile;
@@ -232,13 +222,6 @@ GLuint acquirePlateGLTexture(M3dView& view)
             p.getValue(plateFile);
     }
 
-    if (diag) {
-        MGlobal::displayInfo(
-            MString("[holdoutDepthPass] blit fire: camera='") + camPath.partialPathName()
-            + "' children=" + (int)nChildren + " imagePlaneFound=" + (foundPlane ? 1 : 0)
-            + " imageName='" + plateFile + "'");
-    }
-
     if (plateFile.length() == 0)
         return 0;
 
@@ -282,39 +265,12 @@ GLuint acquirePlateGLTexture(M3dView& view)
         return 0;
     gTextureCache[key] = tex;
 
-    MGlobal::displayInfo(
-        MString("[holdoutDepthPass] plate loaded: '") + plateFile + "' (" + (int)w + "x"
-        + (int)h + ")");
-
     const GLuint* th = static_cast<const GLuint*>(tex->resourceHandle());
     return th ? *th : 0;
 }
 
 void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
 {
-    // TEMP DIAGNOSTIC: log every fire (capped) with the pass identifier and
-    // semantics, so we can see how many scene-render passes occur per refresh
-    // and in what order -- specifically whether image planes draw in a separate
-    // pass relative to this beginSceneRender hook.
-    {
-        static int sFireLog = 0;
-        if (sFireLog < 80) {
-            ++sFireLog;
-            const MHWRender::MPassContext& passCtx = context.getPassContext();
-            const MString                  passId = passCtx.passIdentifier();
-            const MStringArray             sems = passCtx.passSemantics();
-            MString                        semJoined;
-            for (unsigned int i = 0; i < sems.length(); ++i) {
-                if (i)
-                    semJoined += ",";
-                semJoined += sems[i];
-            }
-            MGlobal::displayInfo(
-                MString("[holdoutDepthPass] fire #") + sFireLog + " passId='" + passId
-                + "' semantics='" + semJoined + "'");
-        }
-    }
-
     // Snapshot the registry under lock, then draw without holding it.
     std::vector<Entry> entries;
     {
@@ -322,14 +278,6 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         entries.reserve(gRegistry.size());
         for (const auto& kv : gRegistry)
             entries.push_back(kv.second);
-    }
-    {
-        static int sLastCount = -1;
-        if (static_cast<int>(entries.size()) != sLastCount) {
-            sLastCount = static_cast<int>(entries.size());
-            MGlobal::displayInfo(
-                MString("[holdoutDepthPass] callback fired; entries=") + sLastCount);
-        }
     }
     if (entries.empty())
         return;
@@ -362,6 +310,14 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     // background in its silhouette.
     const GLuint texName = acquirePlateGLTexture(view);
     const bool   havePlate = (texName != 0);
+
+    // Policy for viewports with no plate (e.g. persp): by default the holdout
+    // still occludes CG (revealing the viewport background in its silhouette).
+    // Set MAYAUSD_HOLDOUT_OCCLUDE_WITHOUT_PLATE=0 to make it inert there.
+    static const bool sOccludeWithoutPlate
+        = TfGetenvBool("MAYAUSD_HOLDOUT_OCCLUDE_WITHOUT_PLATE", true);
+    if (!havePlate && !sOccludeWithoutPlate)
+        return;
 
     // --- save the GL state we touch ------------------------------------
     GLint     prevProgram = 0, prevVao = 0, prevArrayBuf = 0, prevDepthFunc = GL_LESS;
@@ -410,18 +366,9 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     glUniform1i(gMatteDebugLoc, kMatteDebugSolid ? 1 : 0);
     glBindVertexArray(gVao);
 
-    static bool sLoggedDraw = false;
     for (const Entry& e : entries) {
         if (e.posHandle == 0 || e.idxHandle == 0 || e.indexCount == 0)
             continue;
-
-        if (!sLoggedDraw) {
-            sLoggedDraw = true;
-            MGlobal::displayInfo(
-                MString("[holdoutDepthPass] draw inputs: posHandle=") + (int)e.posHandle
-                + " idxHandle=" + (int)e.idxHandle + " indexCount=" + (int)e.indexCount
-                + " havePlate=" + (int)havePlate + " vw=" + vw + " vh=" + vh);
-        }
 
         const MMatrix mvp = e.world * modelView * projection; // row-vector compose
         GLfloat       m[16];
