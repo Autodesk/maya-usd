@@ -39,7 +39,9 @@
 #include <maya/MTextureManager.h>
 #include <maya/MViewport2Renderer.h>
 
+#include <cstdlib>
 #include <mutex>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -96,13 +98,19 @@ GLuint gMatteProgram { 0 };
 GLint  gMatteMvpLoc { -1 };
 GLint  gMatteSamplerLoc { -1 };
 GLint  gMatteViewportLoc { -1 };
+GLint  gMatteOriginLoc { -1 };
+GLint  gMatteBandLoc { -1 };
+GLint  gMatteHScaleLoc { -1 };
 GLint  gMatteDebugLoc { -1 };
 
-// Diagnostic: when true, the matte paints solid red instead of the plate, to
-// test the depth masking independent of texture sampling.
-const bool kMatteDebugSolid = false;
+// Debug: 0 = plate, 1 = solid red (depth-mask test), 2 = UV visualization
+// (red = U, green = V) to see the plate-mapping directly.
+const int kMatteDebugMode = 0;
 
 std::unordered_map<std::string, MHWRender::MTexture*> gTextureCache;
+// Plates are loaded per resolved frame (image planes use frame extension), so
+// cap the cache to bound memory; cleared wholesale when exceeded.
+const size_t kMaxCachedPlates = 8;
 
 // Vertex: transform holdout geometry by mvp (same convention as the depth pass).
 const char* kMatteVertexSrc = "#version 330\n"
@@ -117,11 +125,25 @@ const char* kMatteFragmentSrc = "#version 330\n"
                                 "out vec4 fragColor;\n"
                                 "uniform sampler2D plate;\n"
                                 "uniform vec2 viewportSize;\n"
+                                "uniform vec2 viewportOrigin;\n" // glViewport (vx, vy)
+                                "uniform float bandHalf;\n" // plate NDC y half-extent
+                                "uniform float hscale;\n"   // horizontal sample scale (anamorphic)
                                 "uniform int debugMode;\n"
                                 "void main() {\n"
                                 "    if (debugMode == 1) { fragColor = vec4(1.0, 0.0, 0.0, 1.0); return; }\n"
-                                "    vec2 uv = vec2(gl_FragCoord.x / viewportSize.x,\n"
-                                "                   1.0 - gl_FragCoord.y / viewportSize.y);\n"
+                                "    // gl_FragCoord is in window coords spanning [origin, origin+size];\n"
+                                "    // make it panel-relative so an offset (non-maximized) panel maps right.\n"
+                                "    float sx = (gl_FragCoord.x - viewportOrigin.x) / viewportSize.x;\n"
+                                "    float sy = (gl_FragCoord.y - viewportOrigin.y) / viewportSize.y;\n"
+                                "    // Anamorphic 'To Size': plate is stretched to the film gate, so it\n"
+                                "    // fills the frame width and spans an NDC vertical band of +/-bandHalf\n"
+                                "    // (derived from the projection so cameraScale/overscan are included).\n"
+                                "    // hscale samples the center fraction horizontally to undo the squeeze.\n"
+                                "    float u = 0.5 + (sx - 0.5) * hscale;\n"
+                                "    float ndcy = sy * 2.0 - 1.0;\n"
+                                "    float v = (ndcy / bandHalf + 1.0) * 0.5;\n"
+                                "    if (debugMode == 2) { fragColor = vec4(clamp(u,0.0,1.0), clamp(v,0.0,1.0), 0.0, 1.0); return; }\n"
+                                "    vec2 uv = clamp(vec2(u, v), 0.0, 1.0);\n"
                                 "    fragColor = texture(plate, uv);\n"
                                 "}\n";
 
@@ -159,6 +181,9 @@ bool ensureMatteGL()
     gMatteMvpLoc = glGetUniformLocation(gMatteProgram, "mvp");
     gMatteSamplerLoc = glGetUniformLocation(gMatteProgram, "plate");
     gMatteViewportLoc = glGetUniformLocation(gMatteProgram, "viewportSize");
+    gMatteOriginLoc = glGetUniformLocation(gMatteProgram, "viewportOrigin");
+    gMatteBandLoc = glGetUniformLocation(gMatteProgram, "bandHalf");
+    gMatteHScaleLoc = glGetUniformLocation(gMatteProgram, "hscale");
     gMatteDebugLoc = glGetUniformLocation(gMatteProgram, "debugMode");
     glGenVertexArrays(1, &gVao); // core profile requires a VAO; attribs set per draw
     return true;
@@ -166,13 +191,67 @@ bool ensureMatteGL()
 
 // Find the active camera's first image plane, load its image (cached by path),
 // and return the GL texture name. 0 on failure.
-GLuint acquirePlateGLTexture(M3dView& view)
+// Replace the trailing numeric field of a file name (the frame number, e.g.
+// the "1001" in ".../shot.1001.exr") with 'frame', preserving zero-padding.
+// Scans backward from the end, skipping any extension, and stops at the file
+// name boundary so directory digits are never touched.
+std::string substituteFrame(const std::string& path, int frame)
 {
+    size_t digitBeg = std::string::npos, digitEnd = std::string::npos;
+    bool   inRun = false;
+    for (size_t i = path.size(); i-- > 0;) {
+        const char c = path[i];
+        if (c == '/' || c == '\\')
+            break;
+        if (c >= '0' && c <= '9') {
+            if (!inRun) {
+                digitEnd = i + 1;
+                inRun = true;
+            }
+            digitBeg = i;
+        } else if (inRun) {
+            break;
+        }
+    }
+    if (!inRun)
+        return path; // no frame field
+
+    const size_t width = digitEnd - digitBeg;
+    std::string  num = std::to_string(frame);
+    if (num.size() < width)
+        num = std::string(width - num.size(), '0') + num;
+    return path.substr(0, digitBeg) + num + path.substr(digitEnd);
+}
+
+GLuint acquirePlateGLTexture(
+    M3dView& view,
+    int&     outW,
+    int&     outH,
+    float&   outGateAspect,
+    float&   outPixelAspect)
+{
+    outW = 0;
+    outH = 0;
+    outGateAspect = 1.0f;
+    outPixelAspect = 1.0f;
     MStatus  st;
     MDagPath camPath;
     if (view.getCamera(camPath) != MS::kSuccess)
         return 0;
     camPath.extendToShape(); // camera transform -> camera shape (no-op if shape)
+
+    {
+        MFnDependencyNode camN(camPath.node());
+        double            ha = 0.0, va = 0.0;
+        MPlug             hp = camN.findPlug("horizontalFilmAperture", false);
+        MPlug             vp = camN.findPlug("verticalFilmAperture", false);
+        if (!hp.isNull())
+            hp.getValue(ha);
+        if (!vp.isNull())
+            vp.getValue(va);
+        if (va > 1e-6)
+            outGateAspect = static_cast<float>(ha / va);
+    }
 
     MString    plateFile;
     bool       foundPlane = false;
@@ -220,50 +299,134 @@ GLuint acquirePlateGLTexture(M3dView& view)
         MPlug             p = ipFn.findPlug("imageName", false, &st);
         if (st == MS::kSuccess)
             p.getValue(plateFile);
+
+        // Pixel aspect ratio stamped by the load pipeline (square = 1.0).
+        // Anamorphic plates are squeezed; PAR is needed to unsqueeze horizontally.
+        MStatus parSt;
+        MPlug   parPlug = ipFn.findPlug("hh_image_par", false, &parSt);
+        if (parSt == MS::kSuccess && !parPlug.isNull()) {
+            double par = 0.0;
+            if (parPlug.getValue(par) == MS::kSuccess && par > 1e-6)
+                outPixelAspect = static_cast<float>(par);
+        }
+
+        // Resolve the sequence frame. The plane uses frame extension driven by
+        // the time node, so imageName holds only the base frame; replace its
+        // frame number with the current frameExtension (evaluated at draw time).
+        bool  useFrameExt = false;
+        MPlug ufePlug = ipFn.findPlug("useFrameExtension", false);
+        if (!ufePlug.isNull())
+            ufePlug.getValue(useFrameExt);
+        if (useFrameExt && plateFile.length() > 0) {
+            int   frameExt = 0;
+            MPlug fePlug = ipFn.findPlug("frameExtension", false);
+            if (!fePlug.isNull() && fePlug.getValue(frameExt) == MS::kSuccess && frameExt > 0)
+                plateFile = MString(substituteFrame(plateFile.asChar(), frameExt).c_str());
+        }
+
+        static bool sLoggedPlane = false;
+        if (!sLoggedPlane) {
+            sLoggedPlane = true;
+            auto dbl = [&](const char* n) {
+                double v = 0.0;
+                MPlug  pp = ipFn.findPlug(n, false);
+                if (!pp.isNull())
+                    pp.getValue(v);
+                return v;
+            };
+            auto integ = [&](const char* n) {
+                int   v = 0;
+                MPlug pp = ipFn.findPlug(n, false);
+                if (!pp.isNull())
+                    pp.getValue(v);
+                return v;
+            };
+            MFnDependencyNode camN(camPath.node());
+            auto              cdbl = [&](const char* n) {
+                double v = 0.0;
+                MPlug  pp = camN.findPlug(n, false);
+                if (!pp.isNull())
+                    pp.getValue(v);
+                return v;
+            };
+            auto cinteg = [&](const char* n) {
+                int   v = 0;
+                MPlug pp = camN.findPlug(n, false);
+                if (!pp.isNull())
+                    pp.getValue(v);
+                return v;
+            };
+            MGlobal::displayInfo(
+                MString("[holdoutDepthPass] PLANE fit=") + integ("fit") + " size=("
+                + dbl("sizeX") + "," + dbl("sizeY") + ") offset=(" + dbl("offsetX") + ","
+                + dbl("offsetY") + ") depth=" + dbl("depth") + " maintainRatio="
+                + integ("maintainRatio") + " coverage=(" + integ("coverageX") + ","
+                + integ("coverageY") + ") covOrigin=(" + integ("coverageOriginX") + ","
+                + integ("coverageOriginY") + ")");
+            MGlobal::displayInfo(
+                MString("[holdoutDepthPass] CAM hAperture=") + cdbl("horizontalFilmAperture")
+                + " vAperture=" + cdbl("verticalFilmAperture") + " focal=" + cdbl("focalLength")
+                + " filmFit=" + cinteg("filmFit") + " ortho=" + cdbl("orthographic")
+                + " orthoWidth=" + cdbl("orthographicWidth"));
+        }
     }
 
     if (plateFile.length() == 0)
         return 0;
 
-    const std::string key(plateFile.asChar());
-    auto              it = gTextureCache.find(key);
-    if (it != gTextureCache.end() && it->second) {
-        const GLuint* th = static_cast<const GLuint*>(it->second->resourceHandle());
-        return th ? *th : 0;
-    }
+    const std::string    key(plateFile.asChar());
+    MHWRender::MTexture* tex = nullptr;
+    auto                 it = gTextureCache.find(key);
+    if (it != gTextureCache.end())
+        tex = it->second;
 
-    MImage img;
-    if (img.readFromFile(plateFile) != MS::kSuccess) {
-        static bool sWarned = false;
-        if (!sWarned) {
-            sWarned = true;
-            MGlobal::displayWarning(
-                MString("[holdoutDepthPass] could not read image: '") + plateFile
-                + "' -- a sequence path likely needs frame resolution.");
+    if (!tex) {
+        MImage img;
+        if (img.readFromFile(plateFile) != MS::kSuccess) {
+            static bool sWarned = false;
+            if (!sWarned) {
+                sWarned = true;
+                MGlobal::displayWarning(
+                    MString("[holdoutDepthPass] could not read image: '") + plateFile
+                    + "' -- a sequence path likely needs frame resolution.");
+            }
+            return 0;
         }
-        return 0;
+        unsigned int w = 0, h = 0;
+        img.getSize(w, h);
+
+        MHWRender::MRenderer*       renderer = MHWRender::MRenderer::theRenderer();
+        MHWRender::MTextureManager* texMgr = renderer ? renderer->getTextureManager() : nullptr;
+        if (!texMgr || w == 0 || h == 0)
+            return 0;
+
+        MHWRender::MTextureDescription desc;
+        desc.setToDefault2DTexture();
+        desc.fWidth = w;
+        desc.fHeight = h;
+        desc.fDepth = 1;
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        desc.fBytesPerRow = w * 4;
+        desc.fBytesPerSlice = w * h * 4;
+
+        tex = texMgr->acquireTexture(plateFile, desc, img.pixels());
+        if (!tex)
+            return 0;
+        // Bound memory: per-frame loads accumulate, so clear when over the cap.
+        if (gTextureCache.size() >= kMaxCachedPlates) {
+            for (auto& kv : gTextureCache) {
+                if (kv.second)
+                    texMgr->releaseTexture(kv.second);
+            }
+            gTextureCache.clear();
+        }
+        gTextureCache[key] = tex;
     }
-    unsigned int w = 0, h = 0;
-    img.getSize(w, h);
 
-    MHWRender::MRenderer*       renderer = MHWRender::MRenderer::theRenderer();
-    MHWRender::MTextureManager* texMgr = renderer ? renderer->getTextureManager() : nullptr;
-    if (!texMgr || w == 0 || h == 0)
-        return 0;
-
-    MHWRender::MTextureDescription desc;
-    desc.setToDefault2DTexture();
-    desc.fWidth = w;
-    desc.fHeight = h;
-    desc.fDepth = 1;
-    desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
-    desc.fBytesPerRow = w * 4;
-    desc.fBytesPerSlice = w * h * 4;
-
-    MHWRender::MTexture* tex = texMgr->acquireTexture(plateFile, desc, img.pixels());
-    if (!tex)
-        return 0;
-    gTextureCache[key] = tex;
+    MHWRender::MTextureDescription d;
+    tex->textureDescription(d);
+    outW = static_cast<int>(d.fWidth);
+    outH = static_cast<int>(d.fHeight);
 
     const GLuint* th = static_cast<const GLuint*>(tex->resourceHandle());
     return th ? *th : 0;
@@ -308,8 +471,11 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     // Plate texture for this view; 0 (e.g. persp view with no image plane) ->
     // depth-only stamp so the holdout still occludes CG, revealing the viewport
     // background in its silhouette.
-    const GLuint texName = acquirePlateGLTexture(view);
-    const bool   havePlate = (texName != 0);
+    int          imgW = 0, imgH = 0;
+    float        gateAspect = 1.0f;
+    float        pixelAspect = 1.0f;
+    const GLuint texName = acquirePlateGLTexture(view, imgW, imgH, gateAspect, pixelAspect);
+    const bool   havePlate = (texName != 0 && imgW > 0 && imgH > 0);
 
     // Policy for viewports with no plate (e.g. persp): by default the holdout
     // still occludes CG (revealing the viewport background in its silhouette).
@@ -362,8 +528,48 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
 
     glUseProgram(gMatteProgram);
     glUniform1i(gMatteSamplerLoc, 0);
+    // Vertical band half-extent in NDC, from the projection (carries filmFit,
+    // aperture and cameraScale): Gy = (proj11/proj00) / gateAspect. The plate is
+    // anamorphic 'To Size' so it stretches to the gate aspect.
+    const double p00 = projection(0, 0);
+    const double p11 = projection(1, 1);
+    float        bandHalf = 1.0f;
+    if (p00 != 0.0 && gateAspect > 1e-6f)
+        bandHalf = static_cast<float>((p11 / p00) / static_cast<double>(gateAspect));
+
+    // Horizontal anamorphic squeeze. The plate is unsqueezed by its pixel aspect
+    // ratio and covers the gate, so the visible horizontal fraction of the stored
+    // image is gateAspect / (imageAspect * PAR). Sampling that center fraction
+    // magnifies the content to match the native image plane.
+    const float imageAspect = (imgH > 0) ? static_cast<float>(imgW) / static_cast<float>(imgH) : 1.0f;
+    float       hscale = 1.0f;
+    if (imageAspect > 1e-6f && pixelAspect > 1e-6f)
+        hscale = gateAspect / (imageAspect * pixelAspect);
+    // Optional manual override for debugging (live via os.environ).
+    if (const char* hs = std::getenv("MAYAUSD_HOLDOUT_HSCALE")) {
+        const float v = static_cast<float>(std::atof(hs));
+        if (v > 0.0f)
+            hscale = v;
+    }
+
     glUniform2f(gMatteViewportLoc, static_cast<float>(vw), static_cast<float>(vh));
-    glUniform1i(gMatteDebugLoc, kMatteDebugSolid ? 1 : 0);
+    glUniform2f(gMatteOriginLoc, static_cast<float>(vx), static_cast<float>(vy));
+    glUniform1f(gMatteBandLoc, bandHalf);
+    glUniform1f(gMatteHScaleLoc, hscale);
+    glUniform1i(gMatteDebugLoc, kMatteDebugMode);
+
+    if (havePlate) {
+        static bool sLoggedAspect = false;
+        if (!sLoggedAspect) {
+            sLoggedAspect = true;
+            MGlobal::displayInfo(
+                MString("[holdoutDepthPass] BAND vw=") + vw + " vh=" + vh + " vx=" + vx + " vy="
+                + vy + " glVP=(" + prevViewport[0] + "," + prevViewport[1] + "," + prevViewport[2]
+                + "," + prevViewport[3] + ") gateAspect=" + gateAspect + " proj00=" + p00
+                + " proj11=" + p11 + " bandHalf=" + bandHalf + " PAR=" + pixelAspect
+                + " imageAspect=" + imageAspect + " hscale=" + hscale);
+        }
+    }
     glBindVertexArray(gVao);
 
     for (const Entry& e : entries) {
@@ -476,14 +682,6 @@ void Publish(
     std::lock_guard<std::mutex> lock(gMutex);
     gRegistry[key] = e;
 
-    static bool sFirstPublish = true;
-    if (sFirstPublish) {
-        sFirstPublish = false;
-        MGlobal::displayInfo(
-            MString("[holdoutDepthPass] first Publish; posHandle=") + (int)e.posHandle
-            + " idxHandle=" + (int)e.idxHandle + " indexCount=" + (int)e.indexCount
-            + " registry size=" + (int)gRegistry.size());
-    }
     if (e.posHandle == 0 || e.idxHandle == 0) {
         static bool sWarnedHandle = false;
         if (!sWarnedHandle) {
