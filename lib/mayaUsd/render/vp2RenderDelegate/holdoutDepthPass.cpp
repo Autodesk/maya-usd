@@ -21,13 +21,21 @@
 #include <pxr/imaging/garch/glApi.h>
 
 #include <maya/M3dView.h>
+#include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
 #include <maya/MHWGeometry.h>
+#include <maya/MImage.h>
 #include <maya/MMatrix.h>
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+#include <maya/MStringArray.h>
+#include <maya/MTextureManager.h>
 #include <maya/MViewport2Renderer.h>
 
 #include <mutex>
@@ -57,20 +65,7 @@ std::unordered_map<const MHWRender::MRenderItem*, Entry> gRegistry;
 bool                                                     gRegistered { false };
 
 // GL resources, built lazily on the live context during the first callback.
-bool   gGLInit { false };
-GLuint gProgram { 0 };
 GLuint gVao { 0 };
-GLint  gMvpLoc { -1 };
-
-const char* kVertexSrc = "#version 330\n"
-                         "layout(location = 0) in vec3 position;\n"
-                         "uniform mat4 mvp;\n"
-                         "void main() { gl_Position = mvp * vec4(position, 1.0); }\n";
-
-// Magenta: masked out in normal operation; only visible if color masking fails.
-const char* kFragmentSrc = "#version 330\n"
-                           "out vec4 fragColor;\n"
-                           "void main() { fragColor = vec4(1.0, 0.0, 1.0, 1.0); }\n";
 
 GLuint compileShader(GLenum type, const char* src)
 {
@@ -89,44 +84,244 @@ GLuint compileShader(GLenum type, const char* src)
     return shader;
 }
 
-bool ensureGL()
+//============================================================================
+// Plate-blit proof: at kEndSceneRender, load the active camera's image-plane
+// image ourselves via MTextureManager and blit it FULL-SCREEN. This proves the
+// load-and-sample foundation for the holdout matte. It deliberately ignores
+// stencil masking and image-plane placement -- it will cover the whole viewport
+// with the (likely stretched / maybe vertically flipped) plate. Seeing the
+// footage at all is the success condition.
+//============================================================================
+
+bool   gMatteInit { false };
+GLuint gMatteProgram { 0 };
+GLint  gMatteMvpLoc { -1 };
+GLint  gMatteSamplerLoc { -1 };
+GLint  gMatteViewportLoc { -1 };
+GLint  gMatteDebugLoc { -1 };
+
+// Diagnostic: when true, the matte paints solid red instead of the plate, to
+// test the depth masking independent of texture sampling.
+const bool kMatteDebugSolid = true;
+
+std::unordered_map<std::string, MHWRender::MTexture*> gTextureCache;
+
+// Vertex: transform holdout geometry by mvp (same convention as the depth pass).
+const char* kMatteVertexSrc = "#version 330\n"
+                              "layout(location = 0) in vec3 position;\n"
+                              "uniform mat4 mvp;\n"
+                              "void main() { gl_Position = mvp * vec4(position, 1.0); }\n";
+
+// Fragment: sample the plate in SCREEN space, so it reads like a flat backdrop
+// revealed through the holdout silhouette (not projected onto the 3D surface).
+// gl_FragCoord is bottom-left origin; the plate is top-down, hence the V flip.
+const char* kMatteFragmentSrc = "#version 330\n"
+                                "out vec4 fragColor;\n"
+                                "uniform sampler2D plate;\n"
+                                "uniform vec2 viewportSize;\n"
+                                "uniform int debugMode;\n"
+                                "void main() {\n"
+                                "    if (debugMode == 1) { fragColor = vec4(1.0, 0.0, 0.0, 1.0); return; }\n"
+                                "    vec2 uv = vec2(gl_FragCoord.x / viewportSize.x,\n"
+                                "                   1.0 - gl_FragCoord.y / viewportSize.y);\n"
+                                "    fragColor = texture(plate, uv);\n"
+                                "}\n";
+
+bool ensureMatteGL()
 {
-    if (gGLInit)
-        return gProgram != 0;
-    gGLInit = true;
+    if (gMatteInit)
+        return gMatteProgram != 0;
+    gMatteInit = true;
 
     GarchGLApiLoad();
 
-    GLuint vs = compileShader(GL_VERTEX_SHADER, kVertexSrc);
-    GLuint fs = compileShader(GL_FRAGMENT_SHADER, kFragmentSrc);
+    GLuint vs = compileShader(GL_VERTEX_SHADER, kMatteVertexSrc);
+    GLuint fs = compileShader(GL_FRAGMENT_SHADER, kMatteFragmentSrc);
     if (!vs || !fs)
         return false;
 
-    gProgram = glCreateProgram();
-    glAttachShader(gProgram, vs);
-    glAttachShader(gProgram, fs);
-    glLinkProgram(gProgram);
+    gMatteProgram = glCreateProgram();
+    glAttachShader(gMatteProgram, vs);
+    glAttachShader(gMatteProgram, fs);
+    glLinkProgram(gMatteProgram);
     glDeleteShader(vs);
     glDeleteShader(fs);
 
     GLint linked = GL_FALSE;
-    glGetProgramiv(gProgram, GL_LINK_STATUS, &linked);
+    glGetProgramiv(gMatteProgram, GL_LINK_STATUS, &linked);
     if (!linked) {
         char log[1024] = { 0 };
-        glGetProgramInfoLog(gProgram, sizeof(log), nullptr, log);
-        MGlobal::displayError(MString("[holdoutDepthPass] program link failed: ") + log);
-        glDeleteProgram(gProgram);
-        gProgram = 0;
+        glGetProgramInfoLog(gMatteProgram, sizeof(log), nullptr, log);
+        MGlobal::displayError(MString("[holdoutDepthPass] matte link failed: ") + log);
+        glDeleteProgram(gMatteProgram);
+        gMatteProgram = 0;
         return false;
     }
 
-    gMvpLoc = glGetUniformLocation(gProgram, "mvp");
-    glGenVertexArrays(1, &gVao); // required by core profile; attribs set per draw
+    gMatteMvpLoc = glGetUniformLocation(gMatteProgram, "mvp");
+    gMatteSamplerLoc = glGetUniformLocation(gMatteProgram, "plate");
+    gMatteViewportLoc = glGetUniformLocation(gMatteProgram, "viewportSize");
+    gMatteDebugLoc = glGetUniformLocation(gMatteProgram, "debugMode");
+    glGenVertexArrays(1, &gVao); // core profile requires a VAO; attribs set per draw
     return true;
+}
+
+// Find the active camera's first image plane, load its image (cached by path),
+// and return the GL texture name. 0 on failure.
+GLuint acquirePlateGLTexture()
+{
+    static int sDiag = 0;
+    const bool diag = (sDiag < 40);
+    if (diag)
+        ++sDiag;
+
+    MStatus st;
+    M3dView view = M3dView::active3dView(&st);
+    if (!st) {
+        if (diag)
+            MGlobal::displayInfo("[holdoutDepthPass] blit: no active 3d view.");
+        return 0;
+    }
+
+    MDagPath camPath;
+    if (view.getCamera(camPath) != MS::kSuccess) {
+        if (diag)
+            MGlobal::displayInfo("[holdoutDepthPass] blit: getCamera failed.");
+        return 0;
+    }
+    camPath.extendToShape(); // camera transform -> camera shape (no-op if shape)
+
+    MString    plateFile;
+    bool       foundPlane = false;
+    MObject    imagePlaneObj;
+
+    // Primary: image planes are connected to the camera shape's "imagePlane"
+    // array plug (imagePlaneShape.message -> cameraShape.imagePlane[n]); they
+    // are usually NOT DAG children. Walk that plug to the source node.
+    {
+        MFnDependencyNode camDepFn(camPath.node());
+        MPlug             ipArray = camDepFn.findPlug("imagePlane", false, &st);
+        if (st == MS::kSuccess && !ipArray.isNull()) {
+            const unsigned int numEl = ipArray.numElements();
+            for (unsigned int e = 0; e < numEl; ++e) {
+                MPlug         elem = ipArray.elementByPhysicalIndex(e, &st);
+                MPlugArray    srcs;
+                if (elem.connectedTo(srcs, true, false) && srcs.length() > 0) {
+                    MObject node = srcs[0].node();
+                    if (node.hasFn(MFn::kImagePlane)) {
+                        imagePlaneObj = node;
+                        foundPlane = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback: some rigs DO parent the image plane under the camera shape.
+    MFnDagNode         camFn(camPath);
+    const unsigned int nChildren = camFn.childCount();
+    if (!foundPlane) {
+        for (unsigned int i = 0; i < nChildren; ++i) {
+            MObject child = camFn.child(i);
+            if (child.hasFn(MFn::kImagePlane)) {
+                imagePlaneObj = child;
+                foundPlane = true;
+                break;
+            }
+        }
+    }
+
+    if (foundPlane) {
+        MFnDependencyNode ipFn(imagePlaneObj);
+        MPlug             p = ipFn.findPlug("imageName", false, &st);
+        if (st == MS::kSuccess)
+            p.getValue(plateFile);
+    }
+
+    if (diag) {
+        MGlobal::displayInfo(
+            MString("[holdoutDepthPass] blit fire: camera='") + camPath.partialPathName()
+            + "' children=" + (int)nChildren + " imagePlaneFound=" + (foundPlane ? 1 : 0)
+            + " imageName='" + plateFile + "'");
+    }
+
+    if (plateFile.length() == 0)
+        return 0;
+
+    const std::string key(plateFile.asChar());
+    auto              it = gTextureCache.find(key);
+    if (it != gTextureCache.end() && it->second) {
+        const GLuint* th = static_cast<const GLuint*>(it->second->resourceHandle());
+        return th ? *th : 0;
+    }
+
+    MImage img;
+    if (img.readFromFile(plateFile) != MS::kSuccess) {
+        static bool sWarned = false;
+        if (!sWarned) {
+            sWarned = true;
+            MGlobal::displayWarning(
+                MString("[holdoutDepthPass] could not read image: '") + plateFile
+                + "' -- a sequence path likely needs frame resolution.");
+        }
+        return 0;
+    }
+    unsigned int w = 0, h = 0;
+    img.getSize(w, h);
+
+    MHWRender::MRenderer*       renderer = MHWRender::MRenderer::theRenderer();
+    MHWRender::MTextureManager* texMgr = renderer ? renderer->getTextureManager() : nullptr;
+    if (!texMgr || w == 0 || h == 0)
+        return 0;
+
+    MHWRender::MTextureDescription desc;
+    desc.setToDefault2DTexture();
+    desc.fWidth = w;
+    desc.fHeight = h;
+    desc.fDepth = 1;
+    desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+    desc.fBytesPerRow = w * 4;
+    desc.fBytesPerSlice = w * h * 4;
+
+    MHWRender::MTexture* tex = texMgr->acquireTexture(plateFile, desc, img.pixels());
+    if (!tex)
+        return 0;
+    gTextureCache[key] = tex;
+
+    MGlobal::displayInfo(
+        MString("[holdoutDepthPass] plate loaded: '") + plateFile + "' (" + (int)w + "x"
+        + (int)h + ")");
+
+    const GLuint* th = static_cast<const GLuint*>(tex->resourceHandle());
+    return th ? *th : 0;
 }
 
 void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
 {
+    // TEMP DIAGNOSTIC: log every fire (capped) with the pass identifier and
+    // semantics, so we can see how many scene-render passes occur per refresh
+    // and in what order -- specifically whether image planes draw in a separate
+    // pass relative to this beginSceneRender hook.
+    {
+        static int sFireLog = 0;
+        if (sFireLog < 80) {
+            ++sFireLog;
+            const MHWRender::MPassContext& passCtx = context.getPassContext();
+            const MString                  passId = passCtx.passIdentifier();
+            const MStringArray             sems = passCtx.passSemantics();
+            MString                        semJoined;
+            for (unsigned int i = 0; i < sems.length(); ++i) {
+                if (i)
+                    semJoined += ",";
+                semJoined += sems[i];
+            }
+            MGlobal::displayInfo(
+                MString("[holdoutDepthPass] fire #") + sFireLog + " passId='" + passId
+                + "' semantics='" + semJoined + "'");
+        }
+    }
+
     // Snapshot the registry under lock, then draw without holding it.
     std::vector<Entry> entries;
     {
@@ -146,7 +341,7 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     if (entries.empty())
         return;
 
-    if (!ensureGL())
+    if (!ensureMatteGL())
         return;
 
     // Camera from M3dView (DAG-derived; valid even though the frame context's
@@ -160,9 +355,15 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         || view.projectionMatrix(projection) != MS::kSuccess)
         return;
 
+    // Plate texture for this view; 0 (e.g. persp view with no image plane) ->
+    // depth-only stamp so the holdout still occludes CG, revealing the viewport
+    // background in its silhouette.
+    const GLuint texName = acquirePlateGLTexture();
+    const bool   havePlate = (texName != 0);
+
     // --- save the GL state we touch ------------------------------------
     GLint     prevProgram = 0, prevVao = 0, prevArrayBuf = 0, prevDepthFunc = GL_LESS;
-    GLint     prevViewport[4] = { 0, 0, 0, 0 };
+    GLint     prevActiveTex = GL_TEXTURE0, prevTex2D = 0, prevViewport[4] = { 0, 0, 0, 0 };
     GLboolean prevDepthTest = glIsEnabled(GL_DEPTH_TEST);
     GLboolean prevDepthMask = GL_TRUE;
     GLboolean prevColorMask[4] = { GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE };
@@ -170,34 +371,41 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &prevVao);
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &prevArrayBuf);
     glGetIntegerv(GL_DEPTH_FUNC, &prevDepthFunc);
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &prevActiveTex);
     glGetIntegerv(GL_VIEWPORT, prevViewport);
     glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
     glGetBooleanv(GL_COLOR_WRITEMASK, prevColorMask);
 
     int vx = 0, vy = 0, vw = 0, vh = 0;
-    if (context.getViewportDimensions(vx, vy, vw, vh) == MS::kSuccess && vw > 0 && vh > 0)
-        glViewport(vx, vy, vw, vh);
-
-    // TEMP DIAGNOSTIC: when true, draw the stamped geometry in MAGENTA with
-    // color writes ON and depth ignored, to positively confirm we are sourcing
-    // the right buffers + transform. Set to false for the real depth-only
-    // holdout stamp. (Holdout has no *visible* effect until the beauty-pass
-    // exclusion increment, because the prim still draws normally in beauty;
-    // this toggle lets us verify sourcing right now.)
-    static const bool kDiagnosticShowColor = false;
-
-    glEnable(GL_DEPTH_TEST);
-    if (kDiagnosticShowColor) {
-        glDepthFunc(GL_ALWAYS);
-        glDepthMask(GL_FALSE);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    } else {
-        glDepthFunc(GL_LESS);
-        glDepthMask(GL_TRUE);
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    if (context.getViewportDimensions(vx, vy, vw, vh) != MS::kSuccess || vw <= 0 || vh <= 0) {
+        vx = prevViewport[0];
+        vy = prevViewport[1];
+        vw = prevViewport[2];
+        vh = prevViewport[3];
     }
+    glViewport(vx, vy, vw, vh);
 
-    glUseProgram(gProgram);
+    // Combined begin-scene stamp: write the holdout's DEPTH (so the scene
+    // occludes CG behind it) and -- where a plate exists -- its plate COLOR in
+    // screen space. The scene then draws on top: the background plane and any CG
+    // behind the holdout fail the depth test and leave the plate intact, while
+    // CG in front draws over it. The masking is done by WRITING at begin-scene
+    // (depth persists into the scene draw) rather than testing at end-scene
+    // (where the scene depth is already gone).
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+    glColorMask(havePlate, havePlate, havePlate, havePlate);
+
+    glActiveTexture(GL_TEXTURE0);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &prevTex2D);
+    if (havePlate)
+        glBindTexture(GL_TEXTURE_2D, texName);
+
+    glUseProgram(gMatteProgram);
+    glUniform1i(gMatteSamplerLoc, 0);
+    glUniform2f(gMatteViewportLoc, static_cast<float>(vw), static_cast<float>(vh));
+    glUniform1i(gMatteDebugLoc, kMatteDebugSolid ? 1 : 0);
     glBindVertexArray(gVao);
 
     static bool sLoggedDraw = false;
@@ -207,37 +415,18 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
 
         if (!sLoggedDraw) {
             sLoggedDraw = true;
-            MString msg("[holdoutDepthPass] draw inputs: posHandle=");
-            msg += (int)e.posHandle;
-            msg += " idxHandle=";
-            msg += (int)e.idxHandle;
-            msg += " indexCount=";
-            msg += (int)e.indexCount;
-            msg += " worldTranslate=(";
-            msg += e.world(3, 0);
-            msg += ", ";
-            msg += e.world(3, 1);
-            msg += ", ";
-            msg += e.world(3, 2);
-            msg += ")";
-            MGlobal::displayInfo(msg);
+            MGlobal::displayInfo(
+                MString("[holdoutDepthPass] draw inputs: posHandle=") + (int)e.posHandle
+                + " idxHandle=" + (int)e.idxHandle + " indexCount=" + (int)e.indexCount
+                + " havePlate=" + (int)havePlate + " vw=" + vw + " vh=" + vh);
         }
 
-        MMatrix mvp;
-        if (kDiagnosticShowColor) {
-            // Shift the diagnostic geometry +3 in world X so the prim's own
-            // beauty draw doesn't overpaint it.
-            const double tv[4][4]
-                = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 3, 0, 0, 1 } };
-            mvp = e.world * MMatrix(tv) * modelView * projection;
-        } else {
-            mvp = e.world * modelView * projection; // row-vector compose
-        }
-        GLfloat m[16];
+        const MMatrix mvp = e.world * modelView * projection; // row-vector compose
+        GLfloat       m[16];
         for (int r = 0; r < 4; ++r)
             for (int c = 0; c < 4; ++c)
                 m[r * 4 + c] = static_cast<GLfloat>(mvp(r, c));
-        glUniformMatrix4fv(gMvpLoc, 1, GL_FALSE, m);
+        glUniformMatrix4fv(gMatteMvpLoc, 1, GL_FALSE, m);
 
         glBindBuffer(GL_ARRAY_BUFFER, e.posHandle);
         glEnableVertexAttribArray(0);
@@ -254,10 +443,6 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         }
     }
 
-    glBindVertexArray(0);
-    glUseProgram(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
     // --- restore -------------------------------------------------------
     glColorMask(prevColorMask[0], prevColorMask[1], prevColorMask[2], prevColorMask[3]);
     glDepthMask(prevDepthMask);
@@ -268,6 +453,8 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         glDisable(GL_DEPTH_TEST);
     glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
     glBindBuffer(GL_ARRAY_BUFFER, static_cast<GLuint>(prevArrayBuf));
+    glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(prevTex2D));
+    glActiveTexture(static_cast<GLuint>(prevActiveTex));
     glUseProgram(static_cast<GLuint>(prevProgram));
     glBindVertexArray(static_cast<GLuint>(prevVao));
 }
@@ -300,7 +487,15 @@ void Deregister()
     if (MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer()) {
         renderer->removeNotification(
             kNotificationName, MHWRender::MPassContext::kBeginSceneRenderSemantic);
+
+        if (MHWRender::MTextureManager* texMgr = renderer->getTextureManager()) {
+            for (auto& kv : gTextureCache) {
+                if (kv.second)
+                    texMgr->releaseTexture(kv.second);
+            }
+        }
     }
+    gTextureCache.clear();
     gRegistered = false;
     std::lock_guard<std::mutex> lock(gMutex);
     gRegistry.clear();
