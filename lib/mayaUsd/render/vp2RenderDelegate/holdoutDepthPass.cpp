@@ -102,7 +102,7 @@ GLint  gMatteDebugLoc { -1 };
 
 // Diagnostic: when true, the matte paints solid red instead of the plate, to
 // test the depth masking independent of texture sampling.
-const bool kMatteDebugSolid = true;
+const bool kMatteDebugSolid = false;
 
 std::unordered_map<std::string, MHWRender::MTexture*> gTextureCache;
 
@@ -168,21 +168,14 @@ bool ensureMatteGL()
 
 // Find the active camera's first image plane, load its image (cached by path),
 // and return the GL texture name. 0 on failure.
-GLuint acquirePlateGLTexture()
+GLuint acquirePlateGLTexture(M3dView& view)
 {
     static int sDiag = 0;
     const bool diag = (sDiag < 40);
     if (diag)
         ++sDiag;
 
-    MStatus st;
-    M3dView view = M3dView::active3dView(&st);
-    if (!st) {
-        if (diag)
-            MGlobal::displayInfo("[holdoutDepthPass] blit: no active 3d view.");
-        return 0;
-    }
-
+    MStatus  st;
     MDagPath camPath;
     if (view.getCamera(camPath) != MS::kSuccess) {
         if (diag)
@@ -344,12 +337,21 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     if (!ensureMatteGL())
         return;
 
-    // Camera from M3dView (DAG-derived; valid even though the frame context's
-    // matrices are not yet warm at beginSceneRender).
+    // Resolve the view for the panel being DRAWN (not the focused/active one),
+    // so each viewport stamps with its own camera and plate. Fall back to the
+    // active view for non-3d-viewport destinations (e.g. some playblast paths).
     MStatus st;
-    M3dView view = M3dView::active3dView(&st);
-    if (!st)
-        return;
+    M3dView view;
+    MString panelName;
+    bool    gotView = false;
+    if (context.renderingDestination(panelName) == MHWRender::MFrameContext::k3dViewport)
+        gotView = (M3dView::getM3dViewFromModelPanel(panelName, view) == MS::kSuccess);
+    if (!gotView) {
+        view = M3dView::active3dView(&st);
+        if (!st)
+            return;
+    }
+
     MMatrix modelView, projection;
     if (view.modelViewMatrix(modelView) != MS::kSuccess
         || view.projectionMatrix(projection) != MS::kSuccess)
@@ -358,7 +360,7 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     // Plate texture for this view; 0 (e.g. persp view with no image plane) ->
     // depth-only stamp so the holdout still occludes CG, revealing the viewport
     // background in its silhouette.
-    const GLuint texName = acquirePlateGLTexture();
+    const GLuint texName = acquirePlateGLTexture(view);
     const bool   havePlate = (texName != 0);
 
     // --- save the GL state we touch ------------------------------------
