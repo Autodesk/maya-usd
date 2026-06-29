@@ -61,6 +61,9 @@ struct Entry
     GLuint       idxHandle { 0 };
     unsigned int indexCount { 0 };
     MMatrix      world;
+    // Owning proxy shape; used to skip holdouts whose proxy node is hidden in
+    // Maya (hiding the proxy does not re-Sync the prims, so we check at draw).
+    MDagPath     proxyDagPath;
 };
 
 std::mutex                                               gMutex;
@@ -622,6 +625,12 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         if (e.posHandle == 0 || e.idxHandle == 0 || e.indexCount == 0)
             continue;
 
+        // Skip if the owning proxy node is hidden in Maya (visibility, parent
+        // visibility, display layer, etc.). Hiding the proxy does not re-Sync the
+        // prims, so the entry stays published; we gate it here at draw time.
+        if (e.proxyDagPath.isValid() && !e.proxyDagPath.isVisible())
+            continue;
+
         const MMatrix mvp = e.world * modelView * renderProjection; // row-vector compose
         GLfloat       m[16];
         for (int r = 0; r < 4; ++r)
@@ -707,7 +716,8 @@ void Publish(
     MHWRender::MVertexBuffer*     positionBuffer,
     MHWRender::MIndexBuffer*      indexBuffer,
     unsigned int                 indexCount,
-    const MMatrix&                worldMatrix)
+    const MMatrix&                worldMatrix,
+    const MDagPath&               proxyDagPath)
 {
     if (!key || !positionBuffer || !indexBuffer)
         return;
@@ -724,6 +734,7 @@ void Publish(
     e.idxHandle = ih ? *ih : 0;
     e.indexCount = indexCount;
     e.world = worldMatrix;
+    e.proxyDagPath = proxyDagPath;
 
     std::lock_guard<std::mutex> lock(gMutex);
     gRegistry[key] = e;

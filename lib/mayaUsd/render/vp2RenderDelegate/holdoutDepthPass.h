@@ -18,6 +18,7 @@
 
 #include <pxr/pxr.h>
 
+#include <maya/MDagPath.h>
 #include <maya/MMatrix.h>
 
 namespace MHWRender {
@@ -55,7 +56,8 @@ void Publish(
     MHWRender::MVertexBuffer*     positionBuffer,
     MHWRender::MIndexBuffer*      indexBuffer,
     unsigned int                 indexCount,
-    const MMatrix&               worldMatrix);
+    const MMatrix&               worldMatrix,
+    const MDagPath&              proxyDagPath);
 
 //! Remove a render item from the registry. Call when the draw item is
 //! destroyed so we never hold a dangling buffer pointer.

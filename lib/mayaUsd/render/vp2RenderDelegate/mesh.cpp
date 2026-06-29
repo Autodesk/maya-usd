@@ -50,6 +50,7 @@
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
+#include <maya/MDagPath.h>
 
 #include <numeric>
 #include <type_traits>
@@ -2263,7 +2264,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         indexBuffer = const_cast<MHWRender::MIndexBuffer*>(sharedBBoxGeom.GetIndexBuffer());
     }
 
-    const bool isHoldout = _meshSharedData->_isHoldout;
+    const bool     isHoldout = _meshSharedData->_isHoldout;
+    const bool     holdoutVisible = drawItem->GetVisible();
+    const MDagPath holdoutProxyPath = drawScene.GetProxyShapeDagPath();
 
     // We can get an empty stateToCommit when viewport draw modes change. In this case every
     // rprim is marked dirty to give any stale render items a chance to update. If there are
@@ -2276,6 +2279,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                                                            indexBuffer,
                                                            isBBoxItem,
                                                            isHoldout,
+                                                           holdoutVisible,
+                                                           holdoutProxyPath,
                                                            &sharedBBoxGeom]() {
             // This code executes serially, once per mesh updated. Keep
             // performance in mind while modifying this code.
@@ -2462,9 +2467,14 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
             // [holdout] publish shaded (triangle) hull items for the pre-scene
             // depth stamp. No bbox, no instanced draw -- minimal increment.
+            // Gate on prim visibility too: a hidden holdout (USD visibility =
+            // "invisible", possibly inherited) must stop participating. A
+            // visibility change raises DirtyVisibility, which re-Syncs this item,
+            // so the gate re-evaluates and Unpublishes/Republishes on toggle.
             const bool publishable = !isBBoxItem
                 && renderItem->primitive() == MHWRender::MGeometry::kTriangles
-                && !drawItemData._usingInstancedDraw && indexBuffer;
+                && !drawItemData._usingInstancedDraw && indexBuffer
+                && holdoutVisible;
             if (isHoldout && publishable) {
                 auto                      ptIt = primvarInfo->find(HdTokens->points);
                 MHWRender::MVertexBuffer* posBuf
@@ -2475,7 +2485,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                         ? *stateToCommit._worldMatrix
                         : drawItemData._worldMatrix;
                     HdVP2HoldoutDepthPass::Publish(
-                        renderItem, posBuf, indexBuffer, indexBuffer->size(), world);
+                        renderItem, posBuf, indexBuffer, indexBuffer->size(), world,
+                        holdoutProxyPath);
                 } else {
                     HdVP2HoldoutDepthPass::Unpublish(renderItem);
                 }
