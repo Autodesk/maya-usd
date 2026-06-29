@@ -332,52 +332,6 @@ GLuint acquirePlateGLTexture(
             if (!fePlug.isNull() && fePlug.getValue(frameExt) == MS::kSuccess && frameExt > 0)
                 plateFile = MString(substituteFrame(plateFile.asChar(), frameExt).c_str());
         }
-
-        static bool sLoggedPlane = false;
-        if (!sLoggedPlane) {
-            sLoggedPlane = true;
-            auto dbl = [&](const char* n) {
-                double v = 0.0;
-                MPlug  pp = ipFn.findPlug(n, false);
-                if (!pp.isNull())
-                    pp.getValue(v);
-                return v;
-            };
-            auto integ = [&](const char* n) {
-                int   v = 0;
-                MPlug pp = ipFn.findPlug(n, false);
-                if (!pp.isNull())
-                    pp.getValue(v);
-                return v;
-            };
-            MFnDependencyNode camN(camPath.node());
-            auto              cdbl = [&](const char* n) {
-                double v = 0.0;
-                MPlug  pp = camN.findPlug(n, false);
-                if (!pp.isNull())
-                    pp.getValue(v);
-                return v;
-            };
-            auto cinteg = [&](const char* n) {
-                int   v = 0;
-                MPlug pp = camN.findPlug(n, false);
-                if (!pp.isNull())
-                    pp.getValue(v);
-                return v;
-            };
-            MGlobal::displayInfo(
-                MString("[holdoutDepthPass] PLANE fit=") + integ("fit") + " size=("
-                + dbl("sizeX") + "," + dbl("sizeY") + ") offset=(" + dbl("offsetX") + ","
-                + dbl("offsetY") + ") depth=" + dbl("depth") + " maintainRatio="
-                + integ("maintainRatio") + " coverage=(" + integ("coverageX") + ","
-                + integ("coverageY") + ") covOrigin=(" + integ("coverageOriginX") + ","
-                + integ("coverageOriginY") + ")");
-            MGlobal::displayInfo(
-                MString("[holdoutDepthPass] CAM hAperture=") + cdbl("horizontalFilmAperture")
-                + " vAperture=" + cdbl("verticalFilmAperture") + " focal=" + cdbl("focalLength")
-                + " filmFit=" + cinteg("filmFit") + " ortho=" + cdbl("orthographic")
-                + " orthoWidth=" + cdbl("orthographicWidth"));
-        }
     }
 
     if (plateFile.length() == 0)
@@ -431,16 +385,6 @@ GLuint acquirePlateGLTexture(
             tex = texMgr->acquireTexture(plateFile, desc, img.pixels());
             if (!tex)
                 return 0;
-        }
-
-        static bool sLoggedFmt = false;
-        if (!sLoggedFmt) {
-            sLoggedFmt = true;
-            MHWRender::MTextureDescription ld;
-            tex->textureDescription(ld);
-            MGlobal::displayInfo(
-                MString("[holdoutDepthPass] PLATE load ") + ld.fWidth + "x" + ld.fHeight
-                + " texFormat=" + static_cast<int>(ld.fFormat) + " (16/19/22=float-ish, 1/2=8-bit)");
         }
 
         // Bound memory: per-frame loads accumulate, so clear when over the cap.
@@ -580,11 +524,8 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     // the gate display aspect, so the band fraction is just aFrame/gateAspect.
     // Derive aFrame from the render-target dims (correct under playblast) rather
     // than proj11/proj00: during playblast the M3dView projection can still carry
-    // the interactive panel's aspect, which sized the band wrongly. (proj00/proj11
-    // are kept only for the diagnostic.)
-    const double p00 = projection(0, 0);
-    const double p11 = projection(1, 1);
-    float        bandHalf = 1.0f;
+    // the interactive panel's aspect, which would size the band wrongly.
+    float bandHalf = 1.0f;
     if (vh != 0 && gateAspect > 1e-6f)
         bandHalf = static_cast<float>((static_cast<double>(vw) / static_cast<double>(vh))
                                       / static_cast<double>(gateAspect));
@@ -610,18 +551,6 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     glUniform1f(gMatteHScaleLoc, hscale);
     glUniform1i(gMatteDebugLoc, kMatteDebugMode);
 
-    if (havePlate) {
-        static bool sLoggedAspect = false;
-        if (!sLoggedAspect) {
-            sLoggedAspect = true;
-            MGlobal::displayInfo(
-                MString("[holdoutDepthPass] BAND vw=") + vw + " vh=" + vh + " vx=" + vx + " vy="
-                + vy + " glVP=(" + prevViewport[0] + "," + prevViewport[1] + "," + prevViewport[2]
-                + "," + prevViewport[3] + ") gateAspect=" + gateAspect + " proj00=" + p00
-                + " proj11=" + p11 + " bandHalf=" + bandHalf + " PAR=" + pixelAspect
-                + " imageAspect=" + imageAspect + " hscale=" + hscale);
-        }
-    }
     glBindVertexArray(gVao);
 
     for (const Entry& e : entries) {
@@ -692,9 +621,7 @@ void Register()
         MHWRender::MPassContext::kBeginSceneRenderSemantic,
         nullptr);
     gRegistered = (status == MS::kSuccess);
-    if (gRegistered)
-        MGlobal::displayInfo("[holdoutDepthPass] notification registered.");
-    else
+    if (!gRegistered)
         MGlobal::displayError("[holdoutDepthPass] addNotification failed.");
 }
 
