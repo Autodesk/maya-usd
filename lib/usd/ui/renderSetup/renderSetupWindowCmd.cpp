@@ -18,7 +18,6 @@
 #include "mayaEditCommitter.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/nodes/usdSceneSettingsManager.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
 
