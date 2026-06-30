@@ -35,12 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 //! opaque scene draw, it stamps the DEPTH of every registered prim's geometry
 //! into the shared depth buffer with all color channels masked. Registered
 //! prims therefore occlude scene geometry behind them without contributing any
-//! color -- a holdout -- folded into stock VP2 with no renderer selection.
-//!
-//! This increment proves drawing REAL prim geometry depth-only from the render
-//! delegate's existing GPU buffers. Holdout detection and beauty-pass exclusion
-//! are deliberately not here yet: mesh.cpp currently publishes every shaded
-//! (triangle) render item.
+//! color -- a holdout.
 namespace HdVP2HoldoutDepthPass {
 
 //! Register/deregister the VP2 pre-scene-render notification. Call from the
@@ -55,10 +50,10 @@ void Publish(
     const MHWRender::MRenderItem* key,
     MHWRender::MVertexBuffer*     positionBuffer,
     MHWRender::MIndexBuffer*      indexBuffer,
-    unsigned int                 indexCount,
-    const MMatrix&               worldMatrix,
-    const MDagPath&              proxyDagPath,
-    bool                         visible);
+    unsigned int                  indexCount,
+    const MMatrix&                worldMatrix,
+    const MDagPath&               proxyDagPath,
+    bool                          visible);
 
 //! Update a published holdout's prim visibility. Cheap; safe to call on every
 //! visibility change (no-op if the item is not currently published).

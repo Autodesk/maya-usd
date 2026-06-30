@@ -96,7 +96,7 @@ GLuint compileShader(GLenum type, const char* src)
 //============================================================================
 // Plate matte: load the camera's image-plane footage via MTextureManager and
 // sample it where the holdout geometry is stamped, so the holdout reveals the
-// plate. (Sampled in screen space for now; placement + color management TODO.)
+// plate.
 //============================================================================
 
 bool   gMatteInit { false };
@@ -309,10 +309,10 @@ GLuint acquirePlateGLTexture(
         if (st == MS::kSuccess)
             p.getValue(plateFile);
 
-        // Pixel aspect ratio stamped by the load pipeline (square = 1.0).
+        // Pixel aspect ratio stamped by user/pipeline (square = 1.0).
         // Anamorphic plates are squeezed; PAR is needed to unsqueeze horizontally.
         MStatus parSt;
-        MPlug   parPlug = ipFn.findPlug("hh_image_par", false, &parSt);
+        MPlug   parPlug = ipFn.findPlug("image_par", false, &parSt);
         if (parSt == MS::kSuccess && !parPlug.isNull()) {
             double par = 0.0;
             if (parPlug.getValue(par) == MS::kSuccess && par > 1e-6)
@@ -484,7 +484,7 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     }
     glViewport(vx, vy, vw, vh);
 
-    // filmFit is horizontal (the pipeline forces it): the horizontal projection
+    // filmFit is horizontal: the horizontal projection
     // scale is aspect-independent and correct, but the vertical scale (element
     // 1,1) follows the render aspect. Under playblast the M3dView still reports
     // the interactive panel's aspect, so the holdout mesh would project
@@ -650,7 +650,7 @@ void Publish(
     const MHWRender::MRenderItem* key,
     MHWRender::MVertexBuffer*     positionBuffer,
     MHWRender::MIndexBuffer*      indexBuffer,
-    unsigned int                 indexCount,
+    unsigned int                  indexCount,
     const MMatrix&                worldMatrix,
     const MDagPath&               proxyDagPath,
     bool                          visible)
@@ -661,7 +661,7 @@ void Publish(
     // Read the GL resource handles NOW, at commit time, while the buffers are
     // guaranteed alive. The render callback later uses only these cached ints,
     // never calling resourceHandle() on a buffer that may have been freed --
-    // that was the scene-clear crash inside OGSMayaVertexBuffer.
+    // that is to fix the crash when clearing Maya scene (OGSMayaVertexBuffer).
     const GLuint* ph = static_cast<const GLuint*>(positionBuffer->resourceHandle());
     const GLuint* ih = static_cast<const GLuint*>(indexBuffer->resourceHandle());
 
