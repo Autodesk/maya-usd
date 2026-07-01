@@ -515,8 +515,13 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
 
     glActiveTexture(GL_TEXTURE0);
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &prevTex2D);
-    if (havePlate)
+    if (havePlate) {
+        // TODO: sub-pixel horizontal plate offset is a screen-space resample-phase
+        // artifact (confirmed: mesh raster correct via red test, tex dims native,
+        // NEAREST masks it); real fix is projective plate placement per the file
+        // TODO, not a coordinate tweak.
         glBindTexture(GL_TEXTURE_2D, texName);
+    }
 
     glUseProgram(gMatteProgram);
     glUniform1i(gMatteSamplerLoc, 0);
