@@ -113,7 +113,7 @@ else()
 endif()
 
 if (AdskUsdRenderSetup_FOUND)
-    mayaUsd_get_unittest_target(target testUsdRenderSetup.py)
+    mayaUsd_get_unittest_target(target testAdskUsdRenderSetup.py)
     mayaUsd_add_test(${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_MODULE ${target}

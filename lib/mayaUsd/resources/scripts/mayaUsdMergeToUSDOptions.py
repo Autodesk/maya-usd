@@ -283,4 +283,5 @@ def getDefaultMergeToUSDOptionsDict():
         "stripNamespaces":          0,
         "worldspace":               0,
         "hideSourceData":           0,
+        "copyAndRepathMaterials":   0,
     }
