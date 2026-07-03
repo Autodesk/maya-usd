@@ -20,12 +20,19 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
     def setUpClass(cls):
         fixturesUtils.readOnlySetUpClass(__file__, initializeStandalone=False)
 
+    @classmethod
+    def tearDownClass(cls):
+        cls._resetDefaultTemplate()
+        return super().tearDownClass()
+
     def setUp(self):
         self._setUpCC()
         # Clear the variant editor state so there is no lingering component from a
         # previous test.
         #from usd_component_creator_plugin import update_variant_editor_window
         #update_variant_editor_window(None, force_update=True)
+        self._resetDefaultTemplate()
+        return super().setUp()
 
     def _createInitialComponent(self, node_name='pCube1'):
         """Create a polyCube, build a single-node component, and return (proxy, desc)."""
@@ -181,6 +188,109 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
             AdskUsdComponentCreator.ComponentAPI.IsVariantTarget(
                 updated_desc, [updated_vs, updated_default_var_desc]))
 
+    def testAddWithPurpose(self):
+        """add_to_component_from_nodes with purpose specified."""
+        from usd_component_creator_plugin import add_to_component_from_nodes
+        proxy, desc = self._createInitialComponent('pCube1')
+        self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
+        first_vs = next(iter(desc.GetVariantSets().values()))
+
+        cmds.polyCube(name='pCube2')
+        path2 = cmds.ls('pCube2', long=True)[0]
+
+        before = self._snapshotProxyShapes()
+
+        # Add pCube2 to the existing default variant (not a new one)
+        result = add_to_component_from_nodes(
+            [path2],
+            [(first_vs.name, first_vs.default_variant)],
+            is_replacing=False,
+            component_desc=desc,
+            purpose='guide')
+        self.assertTrue(result, "add_to_component_from_nodes should return True on success")
+
+        new_proxy = self._findNewProxyShape(before)
+        self.assertIsNone(new_proxy, "No new proxy shape should be created when adding to an existing component")
+
+        stage = mayaUsd.ufe.getStage(proxy)
+
+        cube_path = Sdf.Path('/root/geo/pCube1')
+        cube_prim = stage.GetPrimAtPath(cube_path)        
+        self.assertTrue(cube_prim.IsValid(), f"{cube_path} should be a valid prim")
+
+        purposed_path = Sdf.Path('/root/geo/guide/pCube2')
+        purposed_prim = stage.GetPrimAtPath(purposed_path)        
+        self.assertTrue(purposed_prim.IsValid(), f"{purposed_path} should be a valid prim after add_to_component_from_nodes with purpose")
+
+    def testAddWithPurposeCollidingName(self):
+        """add_to_component_from_nodes with purpose specified."""
+        from usd_component_creator_plugin import add_to_component_from_nodes
+        proxy, desc = self._createInitialComponent('pCube1')
+        self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
+        first_vs = next(iter(desc.GetVariantSets().values()))
+
+        cmds.setAttr('pCube1.translateX', 22.2)
+        before = self._snapshotProxyShapes()
+
+        # Add pCube1 to the existing default variant (not a new one) under a purpose.
+        # Because it will be placed under the purpose scope, its name will *not* conflict
+        # with the existing pCube1
+        result = add_to_component_from_nodes(
+            ['pCube1'],
+            [(first_vs.name, first_vs.default_variant)],
+            is_replacing=False,
+            component_desc=desc,
+            purpose='guide')
+        self.assertTrue(result, "add_to_component_from_nodes should return True on success")
+        new_proxy = self._findNewProxyShape(before)
+        self.assertIsNone(new_proxy, "No new proxy shape should be created when adding to an existing component")
+
+        stage = mayaUsd.ufe.getStage(proxy)
+
+        cube_path = Sdf.Path('/root/geo/pCube1')
+        cube_prim = stage.GetPrimAtPath(cube_path)        
+        self.assertTrue(cube_prim.IsValid(), f"{cube_path} should be a valid prim")
+
+        purposed_path = Sdf.Path('/root/geo/guide/pCube1')
+        purposed_prim = stage.GetPrimAtPath(purposed_path)        
+        self.assertTrue(purposed_prim.IsValid(), f"{purposed_path} should be a valid prim after add_to_component_from_nodes with purpose")
+        translateAttr = purposed_prim.GetAttribute('xformOp:translate')
+        self.assertTrue(translateAttr)
+        self.assertAlmostEqual(translateAttr.Get()[0], 22.2)
+
+    def testAddWithCustomPurposeScopeName(self):
+        """add_to_component_from_nodes with purpose specified and custom purpose scope names."""
+        from usd_component_creator_plugin import add_to_component_from_nodes
+        self._setCustomPurposeTemplate()
+        proxy, desc = self._createInitialComponent('pCube1')
+        self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
+        first_vs = next(iter(desc.GetVariantSets().values()))
+
+        cmds.polyCube(name='pCube2')
+        path2 = cmds.ls('pCube2', long=True)[0]
+
+        before = self._snapshotProxyShapes()
+
+        # Add pCube2 to the existing default variant (not a new one)
+        result = add_to_component_from_nodes(
+            [path2],
+            [(first_vs.name, first_vs.default_variant)],
+            is_replacing=False,
+            component_desc=desc,
+            purpose='guide')
+        self.assertTrue(result, "add_to_component_from_nodes should return True on success")
+        new_proxy = self._findNewProxyShape(before)
+        self.assertIsNone(new_proxy, "No new proxy shape should be created when adding to an existing component")
+
+        stage = mayaUsd.ufe.getStage(proxy)
+
+        cube_path = Sdf.Path('/root/geo/pCube1')
+        cube_prim = stage.GetPrimAtPath(cube_path)        
+        self.assertTrue(cube_prim.IsValid(), f"{cube_path} should be a valid prim")
+
+        purposed_path = Sdf.Path('/root/geo/gui/pCube2')
+        purposed_prim = stage.GetPrimAtPath(purposed_path)        
+        self.assertTrue(purposed_prim.IsValid(), f"{purposed_path} should be a valid prim after add_to_component_from_nodes with purpose")
 
 
 if __name__ == '__main__':
