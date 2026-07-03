@@ -49,8 +49,12 @@ namespace {
 int comboIndexById(const QComboBox* dropDown, const std::string& id)
 {
     for (int i = 0, count = dropDown->count(); i < count; ++i) {
-        const auto entry = dropDown->itemData(i).value<UsdLayerEditor::SessionState::StageEntry>();
-        if (entry._id == id) {
+        // Bind itemData() to a named QVariant so value<>() uses the const-lvalue
+        // overload. Calling value<>() directly on the returned rvalue selects the
+        // move overload, which move-constructs StageEntry and trips a spurious
+        // -Werror=array-bounds under GCC.
+        const QVariant data = dropDown->itemData(i);
+        if (data.value<UsdLayerEditor::SessionState::StageEntry>()._id == id) {
             return i;
         }
     }
