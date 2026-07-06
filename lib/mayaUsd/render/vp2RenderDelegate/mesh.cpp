@@ -959,7 +959,7 @@ void HdVP2Mesh::Sync(
         // Holdout detection: a constant primvar named "maya:holdout".
         {
             const VtValue holdoutVal = delegate->Get(id, kMayaHoldoutToken);
-            bool          isHoldout = false;
+            bool           isHoldout = false;
             if (holdoutVal.IsHolding<bool>())
                 isHoldout = holdoutVal.UncheckedGet<bool>();
             else if (holdoutVal.IsHolding<int>())

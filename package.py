@@ -1,6 +1,6 @@
 name = "maya_usd"
 
-version = "0.36.0.hh.1.0.0"
+version = "0.36.0.hh.1.1.0.beta"
 
 authors = [
     "Autodesk",
@@ -37,6 +37,7 @@ def post_commands():
     # NOTE: We prepend (so Maya finds it first) here (post_commands) so the Maya's
     # package (hh_rez_maya) looses the race.
     env.MAYA_MODULE_PATH.prepend("{root}")
+    env.MAYAUSD_HOLDOUT_ENABLE = "1"
 
 
 uuid = "repository.maya-usd"
