@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_PROXYSHAPEHIERARCHY_H
-#define MAYAUSD_PROXYSHAPEHIERARCHY_H
+#ifndef MAYAUSD_GATEWAYHIERARCHY_H
+#define MAYAUSD_GATEWAYHIERARCHY_H
 
 #include <mayaUsd/base/api.h>
 
@@ -30,22 +30,23 @@ namespace ufe {
 
 //! \brief USD gateway node hierarchy interface.
 /*!
-    This class defines a hierarchy interface for a single kind of Maya node,
-    the USD gateway node.  This node is special in that its parent is a Maya
-    node, but its children are children of the USD root prim.
+    This class defines a hierarchy interface for any Maya node that acts as a
+    gateway to a USD stage (e.g. a proxy shape, or a DG node such as
+    UsdDefaultRenderSettings).  Such a node is special in that its parent is a
+    Maya node, but its children are children of the USD root prim.
  */
-class MAYAUSD_CORE_PUBLIC ProxyShapeHierarchy : public Ufe::Hierarchy
+class MAYAUSD_CORE_PUBLIC GatewayHierarchy : public Ufe::Hierarchy
 {
 public:
-    typedef std::shared_ptr<ProxyShapeHierarchy> Ptr;
+    typedef std::shared_ptr<GatewayHierarchy> Ptr;
 
-    ProxyShapeHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
+    GatewayHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeHierarchy);
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(GatewayHierarchy);
 
-    //! Create a ProxyShapeHierarchy from a UFE hierarchy handler.
-    static ProxyShapeHierarchy::Ptr create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
-    static ProxyShapeHierarchy::Ptr
+    //! Create a GatewayHierarchy from a UFE hierarchy handler.
+    static GatewayHierarchy::Ptr create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
+    static GatewayHierarchy::Ptr
     create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler, const Ufe::SceneItem::Ptr& item);
 
     void setItem(const Ufe::SceneItem::Ptr& item);
@@ -93,9 +94,9 @@ private:
 
     // The root prim is initialized on first use and therefore mutable.
     mutable PXR_NS::UsdPrim _usdRootPrim;
-}; // ProxyShapeHierarchy
+}; // GatewayHierarchy
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 
-#endif // MAYAUSD_PROXYSHAPEHIERARCHY_H
+#endif // MAYAUSD_GATEWAYHIERARCHY_H

@@ -29,6 +29,10 @@
 #include <string>
 #include <vector>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+class MayaUsdEFFallbackTargetChangedNotice;
+#endif
+
 namespace UsdLayerEditor {
 
 class LayerTreeItem;
@@ -120,6 +124,7 @@ public:
 
 Q_SIGNALS:
     void selectLayerSignal(const QModelIndex&);
+    void selectedLayerDataChangedSignal();
 
 protected:
     // slots
@@ -132,6 +137,9 @@ protected:
     void registerUsdNotifications(bool in_register);
     void usd_layerChanged(PXR_NS::SdfNotice::LayersDidChangeSentPerLayer const& notice);
     void usd_editTargetChanged(PXR_NS::UsdNotice::StageEditTargetChanged const& notice);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    void usd_efFallbackTargetChanged(MayaUsdEFFallbackTargetChangedNotice const& notice);
+#endif
     void usd_layerDirtinessChanged(
         PXR_NS::SdfNotice::LayerDirtinessChanged const& notice,
         const PXR_NS::TfWeakPtr<PXR_NS::SdfLayer>&      layer);
@@ -142,8 +150,9 @@ protected:
 
     mutable int _lastAskedAnonLayerNameSinceRebuild = 0;
 
-    void rebuildModelOnIdle();
+    void rebuildModelOnIdle(bool dataChanged = false);
     bool _rebuildOnIdlePending = false;
+    bool _selectedLayerDataChanged = false;
     void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);

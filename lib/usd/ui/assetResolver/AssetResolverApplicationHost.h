@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <AssetResolverWidgets/ApplicationHost.h>
+#include <AssetResolverExtensions/ApplicationHost.h>
 
 class AssetResolverApplicationHost : public Adsk::ApplicationHost
 {
@@ -40,6 +40,8 @@ public:
         const QString&       caption = QString(),
         const QString&       dir = QString(),
         QFileDialog::Options options = QFileDialog::ShowDirsOnly) const override;
+
+    virtual void showHelp(QWidget* parent = nullptr) const override;
 
 protected:
     AssetResolverApplicationHost(QObject* parent = nullptr);

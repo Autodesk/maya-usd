@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_PROXYSHAPEHIERARCHYHANDLER_H
-#define MAYAUSD_PROXYSHAPEHIERARCHYHANDLER_H
+#ifndef MAYAUSD_GATEWAYHIERARCHYHANDLER_H
+#define MAYAUSD_GATEWAYHIERARCHYHANDLER_H
 
 #include <mayaUsd/base/api.h>
 
@@ -25,30 +25,31 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief Maya run-time hierarchy handler with support for USD gateway node.
+//! \brief Maya run-time hierarchy handler with support for USD gateway nodes.
 /*!
     This hierarchy handler is NOT a USD run-time hierarchy handler: it is a
     Maya run-time hierarchy handler.  It decorates the standard Maya run-time
     hierarchy handler and replaces it, providing special behavior only if the
-    requested hierarchy interface is for the Maya to USD gateway node.  In that
-    case, it returns a special ProxyShapeHierarchy interface object, which
-    knows how to handle USD children of the Maya ProxyShapeHierarchy node.
+    requested hierarchy interface is for a Maya-to-USD gateway node (such as a
+    proxy shape, or a DG node like UsdDefaultRenderSettings).  In that case, it
+    returns a special GatewayHierarchy interface object, which knows how to
+    expose the USD children of the gateway node.
 
     For all other Maya nodes, this hierarchy handler simply delegates the work
     to the standard Maya hierarchy handler it decorates, which returns a
     standard Maya hierarchy interface object.
  */
-class MAYAUSD_CORE_PUBLIC ProxyShapeHierarchyHandler : public Ufe::HierarchyHandler
+class MAYAUSD_CORE_PUBLIC GatewayHierarchyHandler : public Ufe::HierarchyHandler
 {
 public:
-    typedef std::shared_ptr<ProxyShapeHierarchyHandler> Ptr;
+    typedef std::shared_ptr<GatewayHierarchyHandler> Ptr;
 
-    ProxyShapeHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
+    GatewayHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(ProxyShapeHierarchyHandler);
+    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(GatewayHierarchyHandler);
 
-    //! Create a ProxyShapeHierarchyHandler from a UFE hierarchy handler.
-    static ProxyShapeHierarchyHandler::Ptr
+    //! Create a GatewayHierarchyHandler from a UFE hierarchy handler.
+    static GatewayHierarchyHandler::Ptr
     create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
 
     // Ufe::HierarchyHandler overrides
@@ -59,9 +60,9 @@ public:
 private:
     Ufe::HierarchyHandler::Ptr _mayaHierarchyHandler;
 
-}; // ProxyShapeHierarchyHandler
+}; // GatewayHierarchyHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 
-#endif // MAYAUSD_PROXYSHAPEHIERARCHYHANDLER_H
+#endif // MAYAUSD_GATEWAYHIERARCHYHANDLER_H

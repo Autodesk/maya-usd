@@ -764,6 +764,31 @@ class RenameTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.rename("banana")
 
+    def testRenameNonLocalPrim(self):
+        '''
+        Verify that a prim in a reference cannot be renamed.
+        '''
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('cubeRef', 'cube-root.usda')
+        shapeNode, stage = mayaUtils.createProxyFromFile(testFile)
+
+        cubePath = ufe.PathString.path(shapeNode + ',/RootPrim/PrimWithRef/CubeMesh')
+        cubeItem = ufe.Hierarchy.createItem(cubePath)
+        self.assertIsNotNone(cubeItem)
+        ufe.GlobalSelection.get().append(cubeItem)
+
+        sessionLayer = stage.GetSessionLayer()
+        self.assertIsNotNone(sessionLayer)
+        stage.SetEditTarget(sessionLayer)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), sessionLayer)
+        
+        with self.assertRaises(RuntimeError):
+            try:
+                cmds.rename("banana")
+            except RuntimeError as e:
+                self.assertIn("Failed to rename prim", str(e))
+                raise
+
     def testRenameUniqueName(self):
         # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()

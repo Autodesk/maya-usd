@@ -91,7 +91,7 @@ proc string usdFileSaveOptions_AddRadioButtons(int $standaloneDialog)
     text -label "" USDSaveOptions2GBWarning;
     if ($saveOption == 2) {
         string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
-        text -edit -label `getMayaUsdString($warningKey)` USDSaveOptions2GBWarning;
+        text -edit -align "left" -label `getMayaUsdString($warningKey)` USDSaveOptions2GBWarning;
     }
 
     if ($standaloneDialog)
@@ -171,9 +171,9 @@ global proc USDSaveOptionsRadioButtonCB(int $standaloneDialog, int $opt)
     // Add or remove the warning text.
     if ($opt == 2) {
         string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
-        text -edit -label `getMayaUsdString($warningKey)` USDSaveOptions2GBWarning;
+        text -edit -align "left" -label `getMayaUsdString($warningKey)` USDSaveOptions2GBWarning;
     } else {
-        text -edit -label "" USDSaveOptions2GBWarning;
+        text -edit -align "left" -label "" USDSaveOptions2GBWarning;
     }
 
     // When we came from the non-standalone dialog, we immediately save the optionVar.

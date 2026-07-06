@@ -33,7 +33,8 @@ option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
 option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
 if(APPLE)
-    option(BUILD_UB2 "Build Universal Binary 2 (UB2) Intel64+arm64" OFF)
+    option(BUILD_UB2 "Build Universal Binary 2 (UB2) Intel64+arm64" ON) # Min Maya supported is 2024 which is UB2
+    option(BUILD_ARM64 "Build arm64 only" OFF)                          # Either arm or UB2 can be built, but not both.
 endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX." ON)
@@ -84,14 +85,28 @@ set(MAYAUSD_CUT_ID "DEVBLD" CACHE STRING "MayaUsd cut-id corresponding to this b
 # Avoid noisy install messages
 set(CMAKE_INSTALL_MESSAGE "NEVER")
 
+#------------------------------------------------------------------------------
+# Apple architectures and deployment targets
+#------------------------------------------------------------------------------
 if(APPLE)
+    # If both BUILD_UB2 and BUILD_ARM64 were specified, throw error.
+    if(BUILD_UB2 AND BUILD_ARM64)
+        message(FATAL_ERROR "BUILD_UB2 and BUILD_ARM64 are mutually exclusive, specify either one or neither.")
+    endif()
+
     if(BUILD_UB2)
         message(STATUS "Building with Universal Binary 2")
         set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
-        set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0)
+        set(DEFAULT_OSX_DEPLOYMENT_TARGET 11.0)
+    elseif(BUILD_ARM64)
+        set(CMAKE_OSX_ARCHITECTURES "arm64")
+        set(DEFAULT_OSX_DEPLOYMENT_TARGET 14.0)
     else()
         set(CMAKE_OSX_ARCHITECTURES "x86_64")
-        set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14)
+        set(DEFAULT_OSX_DEPLOYMENT_TARGET 10.14)
+    endif()
+    if(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET ${DEFAULT_OSX_DEPLOYMENT_TARGET})
     endif()
 endif()
 
@@ -115,8 +130,13 @@ if (BUILD_MAYAUSD_LIBRARY)
     find_package(Maya 2022 REQUIRED)
 endif()
 
-if(APPLE AND BUILD_UB2 AND NOT MAYA_MACOSX_BUILT_WITH_UB2)
-    message(WARNING  "Maya was NOT built with Universal Binary 2")
+if(Maya_FOUND AND APPLE)
+    if(BUILD_ARM64 AND NOT (MAYA_MACOSX_BUILT_WITH_ARM64 OR MAYA_MACOSX_BUILT_WITH_UB2))
+        # When forcing arm64 only build, Maya can be either arm64 or UB2.
+        message(FATAL_ERROR "Building MayaUsd with arm64, but Maya was NOT built with arm64 (or UB2)")
+    elseif(BUILD_UB2 AND NOT MAYA_MACOSX_BUILT_WITH_UB2)
+        message(FATAL_ERROR "Building MayaUsd with UB2, but Maya was NOT built with UB2")
+    endif()
 endif()
 
 if (BUILD_MAYAUSD_LIBRARY)
@@ -253,7 +273,9 @@ endif()
 if(BUILD_MAYAUSD_LIBRARY)
     find_package(AdskUsdComponentCreator)
     find_package(AdskUsdAssetResolver)
+    find_package(AdskUsdDebugTools)
     find_package(AdskUsdEditForward)
+    find_package(AdskUsdRenderSetup)
 endif()
 
 #------------------------------------------------------------------------------
@@ -275,13 +297,6 @@ if (USD_VERSION VERSION_LESS "0.23.11")
         message(WARNING "Disabling Ufe clipboard support since it requires USD v23.11 and C++17")
         set(UFE_CLIPBOARD_SUPPORT FALSE)
     endif()
-endif()
-
-#------------------------------------------------------------------------------
-# gulrak filesystem
-#------------------------------------------------------------------------------
-if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
-    include(cmake/gulrak.cmake)
 endif()
 
 #------------------------------------------------------------------------------
@@ -309,6 +324,7 @@ endif()
 # lib
 #------------------------------------------------------------------------------
 add_subdirectory(lib)
+add_subdirectory(include)
 
 #------------------------------------------------------------------------------
 # tutorials
@@ -351,53 +367,7 @@ else()
     set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
 endif()
 
-
 #------------------------------------------------------------------------------
 # Maya module files
 #------------------------------------------------------------------------------
-if (BUILD_ADSK_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/mayaUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
-    else()
-        configure_file("modules/mayaUSD.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-if (BUILD_HDMAYA)
-    configure_file("modules/mtoh.mod.template" ${PROJECT_BINARY_DIR}/mtoh.mod)
-    install(FILES ${PROJECT_BINARY_DIR}/mtoh.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-if (BUILD_PXR_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/pxrUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
-    else()
-        configure_file("modules/pxrUSD.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/pxrUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-if (BUILD_AL_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/alUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
-    else()
-        configure_file("modules/alUSD.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/alUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-
-#------------------------------------------------------------------------------
-# Special file for handling boost vs pxr::boost
-#------------------------------------------------------------------------------
-set(TOP_HEADERS
-    cxx17_legacy_support.h
-    pxr_python.h
-)
-
-mayaUsd_promoteHeaderList(HEADERS ${TOP_HEADERS} BASEDIR "NONE")
-
-install(FILES ${TOP_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
-)
+add_subdirectory(modules)

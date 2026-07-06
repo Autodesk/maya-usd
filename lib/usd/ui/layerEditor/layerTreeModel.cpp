@@ -30,6 +30,10 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+#endif
+
 #include <pxr/base/tf/notice.h>
 
 #include <maya/MDagModifier.h>
@@ -82,6 +86,9 @@ void LayerTreeModel::registerUsdNotifications(bool in_register)
         _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_editTargetChanged));
         _noticeKeys.push_back(TfNotice::Register(
             me, &LayerTreeModel::usd_layerDirtinessChanged, TfWeakPtr<SdfLayer>(nullptr)));
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        _noticeKeys.push_back(TfNotice::Register(me, &LayerTreeModel::usd_efFallbackTargetChanged));
+#endif
 
     } else {
         TfNotice::Revoke(&_noticeKeys);
@@ -243,6 +250,9 @@ void LayerTreeModel::setEditTarget(LayerTreeItem* item)
         && !item->isSystemLocked()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
+        // In edit-forward mode this routes to the controller's fallback target rather than
+        // SdfLayer::SetEditTarget(); the controller fires MayaUsdEFFallbackTargetChangedNotice,
+        // which LayerTreeModel observes to refresh the target-layer display.
     }
 }
 
@@ -284,11 +294,12 @@ void LayerTreeModel::setSessionState(SessionState* in_sessionState)
         this,
         &LayerTreeModel::autoHideSessionLayerChanged);
 
-    rebuildModelOnIdle();
+    rebuildModelOnIdle(true);
 }
 
-void LayerTreeModel::rebuildModelOnIdle()
+void LayerTreeModel::rebuildModelOnIdle(bool dataChanged)
 {
+    _selectedLayerDataChanged |= dataChanged;
     if (!_rebuildOnIdlePending) {
         _rebuildOnIdlePending = true;
         QTimer::singleShot(0, this, [this]() {
@@ -303,6 +314,93 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     _rebuildOnIdlePending = false;
     _lastAskedAnonLayerNameSinceRebuild = 0;
 
+    if (_selectedLayerDataChanged) {
+        Q_EMIT selectedLayerDataChangedSignal();
+        _selectedLayerDataChanged = false;
+    }
+
+    if (!_sessionState->isValid()) {
+        if (rowCount() > 0) {
+            // Note: clear() calls beginResetModel and endResetModel for us.
+            clear();
+        }
+        return;
+    }
+
+    auto rootLayer = _sessionState->stage()->GetRootLayer();
+    auto sessionLayer = _sessionState->stage()->GetSessionLayer();
+    bool showSessionLayer = true;
+    if (_sessionState->autoHideSessionLayer()) {
+        // Use the effective target so that in EF mode the decision follows the fallback
+        // target rather than the session layer (which is always the stage edit target there).
+        showSessionLayer
+            = sessionLayer->IsDirty() || sessionLayer == _sessionState->effectiveTargetLayer();
+    }
+
+    std::set<std::string> sharedLayers;
+    auto                  sharedStage = _sessionState->commandHook()->isProxyShapeSharedStage(
+        _sessionState->stageEntry()._proxyShapePath);
+    if (!sharedStage) {
+        auto layers = MayaUsd::CustomLayerData::getStringArray(
+            rootLayer, MayaUsdMetadata->ReferencedLayers);
+        std::vector<std::string> layerIds;
+        std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
+        sharedLayers = MayaUsd::getAllSublayers(layerIds, true);
+    }
+
+    std::set<std::string> incomingLayers;
+    if (_sessionState->commandHook()->isProxyShapeStageIncoming(
+            _sessionState->stageEntry()._proxyShapePath)) {
+        if (!sharedStage) {
+            incomingLayers = sharedLayers;
+        } else {
+            std::vector<std::string> layerIds;
+            layerIds.push_back(rootLayer->GetIdentifier());
+            incomingLayers = MayaUsd::getAllSublayers(layerIds, true);
+        }
+    }
+
+    LayerTreeItem* oldSessionItem = nullptr;
+    LayerTreeItem* oldRootItem = nullptr;
+
+    if (rowCount() > 0) {
+        if (rowCount() > 1) {
+            oldSessionItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(0));
+            oldRootItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(1));
+        } else {
+            oldRootItem = dynamic_cast<LayerTreeItem*>(invisibleRootItem()->child(0));
+        }
+    }
+
+    std::unique_ptr<LayerTreeItem> newSessionItem;
+    if (showSessionLayer) {
+        newSessionItem = std::make_unique<LayerTreeItem>(
+            sessionLayer,
+            _sessionState->stage(),
+            LayerType::SessionLayer,
+            "",
+            &incomingLayers,
+            sharedStage,
+            &sharedLayers);
+    }
+
+    std::unique_ptr<LayerTreeItem> newRootItem = std::make_unique<LayerTreeItem>(
+        rootLayer,
+        _sessionState->stage(),
+        LayerType::RootLayer,
+        "",
+        &incomingLayers,
+        sharedStage,
+        &sharedLayers);
+
+    const bool rootIdentical = newRootItem->isIdenticalItem(oldRootItem);
+    const bool sessionIdentical = (!newSessionItem && !oldSessionItem)
+        || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
+
+    if (!refreshLockState && rootIdentical && sessionIdentical) {
+        return;
+    }
+
     beginResetModel();
 
     //  Note: do *not* call clear() here! Unfortunately, clear() itself calls,
@@ -312,64 +410,17 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     if (rowCount() > 0)
         removeRows(0, rowCount());
 
-    if (_sessionState->isValid()) {
-        auto rootLayer = _sessionState->stage()->GetRootLayer();
-        bool showSessionLayer = true;
-        auto sessionLayer = _sessionState->stage()->GetSessionLayer();
-        if (_sessionState->autoHideSessionLayer()) {
-            showSessionLayer
-                = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
-        }
+    if (newSessionItem) {
+        appendRow(newSessionItem.release());
+    }
 
-        std::set<std::string> sharedLayers;
-        auto                  sharedStage = _sessionState->commandHook()->isProxyShapeSharedStage(
-            _sessionState->stageEntry()._proxyShapePath);
-        if (!sharedStage) {
-            auto layers = MayaUsd::CustomLayerData::getStringArray(
-                rootLayer, MayaUsdMetadata->ReferencedLayers);
-            std::vector<std::string> layerIds;
-            std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
-            sharedLayers = MayaUsd::getAllSublayers(layerIds, true);
-        }
+    appendRow(newRootItem.release());
 
-        std::set<std::string> incomingLayers;
-        if (_sessionState->commandHook()->isProxyShapeStageIncoming(
-                _sessionState->stageEntry()._proxyShapePath)) {
-            if (!sharedStage) {
-                incomingLayers = sharedLayers;
-            } else {
-                std::vector<std::string> layerIds;
-                layerIds.push_back(rootLayer->GetIdentifier());
-                incomingLayers = MayaUsd::getAllSublayers(layerIds, true);
-            }
-        }
+    updateTargetLayer(InRebuildModel::Yes);
 
-        if (showSessionLayer) {
-            appendRow(new LayerTreeItem(
-                sessionLayer,
-                _sessionState->stage(),
-                LayerType::SessionLayer,
-                "",
-                &incomingLayers,
-                sharedStage,
-                &sharedLayers));
-        }
-
-        appendRow(new LayerTreeItem(
-            rootLayer,
-            _sessionState->stage(),
-            LayerType::RootLayer,
-            "",
-            &incomingLayers,
-            sharedStage,
-            &sharedLayers));
-
-        updateTargetLayer(InRebuildModel::Yes);
-
-        if (refreshLockState) {
-            bool refreshSubLayers = true;
-            _sessionState->commandHook()->refreshLayerSystemLock(rootLayer, refreshSubLayers);
-        }
+    if (refreshLockState) {
+        bool refreshSubLayers = true;
+        _sessionState->commandHook()->refreshLayerSystemLock(rootLayer, refreshSubLayers);
     }
 
     endResetModel();
@@ -391,7 +442,10 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
         return;
     }
 
-    auto editTarget = _sessionState->targetLayer();
+    // In Edit Forwarding mode the stage edit target is pinned to the session layer;
+    // effectiveTargetLayer() returns the fallback target in that case, and the stage edit
+    // target otherwise. The auto-hide logic below is target-source agnostic and works for both.
+    auto editTarget = _sessionState->effectiveTargetLayer();
     auto root = invisibleRootItem();
 
     // if session layer is in auto-hide handle case where it is the target
@@ -424,17 +478,33 @@ void LayerTreeModel::usd_layerChanged(SdfNotice::LayersDidChangeSentPerLayer con
 {
     // experienced crashes in python prototype  For now, rebuild everything
     if (!_blockUsdNotices)
-        rebuildModelOnIdle();
+        rebuildModelOnIdle(true);
 }
 
 // notification from USD
 void LayerTreeModel::usd_editTargetChanged(UsdNotice::StageEditTargetChanged const& notice)
 {
-    if (!_blockUsdNotices) {
-        QTimer::singleShot(
-            0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
-    }
+    if (_blockUsdNotices)
+        return;
+
+    QTimer::singleShot(
+        0, dynamic_cast<QObject*>(this), [this]() { updateTargetLayer(InRebuildModel::No); });
 }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+void LayerTreeModel::usd_efFallbackTargetChanged(MayaUsdEFFallbackTargetChangedNotice const& notice)
+{
+    if (_blockUsdNotices)
+        return;
+    if (!_sessionState || notice.GetStage() != _sessionState->stage())
+        return;
+    QTimer::singleShot(0, dynamic_cast<QObject*>(this), [this]() {
+        // Emit a data change so that the EF toggle button refreshes in the widget.
+        Q_EMIT dataChanged(index(0, 0), index(0, 0));
+        updateTargetLayer(InRebuildModel::No);
+    });
+}
+#endif
 
 // notification from USD
 void LayerTreeModel::usd_layerDirtinessChanged(
@@ -445,6 +515,11 @@ void LayerTreeModel::usd_layerDirtinessChanged(
         auto layerItem = findUSDLayerItem(layer);
         if (layerItem) {
             layerItem->fetchData(RebuildChildren::No);
+        } else if (rowCount() > 0) {
+            // A non-local layer would not be visible in the tree - but in some cases
+            // (components) we still want to signal a data change - so that the save button
+            // refreshes.
+            Q_EMIT dataChanged(index(0, 0), index(0, 0));
         }
     }
 }

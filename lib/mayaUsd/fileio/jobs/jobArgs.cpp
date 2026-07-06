@@ -52,7 +52,7 @@
 #include <maya/MNodeClass.h>
 #include <maya/MTypeId.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <cstdlib>
 #include <mutex>
@@ -765,6 +765,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , preserveUVSetNames(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->preserveUVSetNames))
     , stripNamespaces(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->stripNamespaces))
     , hideSourceData(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->hideSourceData))
+    , copyAndRepathMaterials(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->copyAndRepathMaterials))
     , worldspace(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->worldspace))
     , writeDefaults(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->writeDefaults))
     , parentScope(extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->parentScope))
@@ -936,6 +938,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
     out << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
         << "worldspace: " << TfStringify(exportArgs.worldspace) << std::endl
         << "hideSourceData: " << TfStringify(exportArgs.hideSourceData) << std::endl
+        << "copyAndRepathMaterials: " << TfStringify(exportArgs.copyAndRepathMaterials) << std::endl
         << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
         << "staticSingleSample: " << TfStringify(exportArgs.staticSingleSample) << std::endl
         << "geomSidedness: " << TfStringify(exportArgs.geomSidedness) << std::endl
@@ -1228,6 +1231,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->jobContext] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->hideSourceData] = false;
+        d[UsdMayaJobExportArgsTokens->copyAndRepathMaterials] = false;
         d[UsdMayaJobExportArgsTokens->worldspace] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
@@ -1336,6 +1340,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->jobContext] = _stringVector;
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = _boolean;
         d[UsdMayaJobExportArgsTokens->hideSourceData] = _boolean;
+        d[UsdMayaJobExportArgsTokens->copyAndRepathMaterials] = _boolean;
         d[UsdMayaJobExportArgsTokens->worldspace] = _boolean;
         d[UsdMayaJobExportArgsTokens->verbose] = _boolean;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = _boolean;
@@ -1651,7 +1656,7 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const VtDi
             return "";
         }
         if (currentMayaWorkspacePath.length() == 0
-            || !ghc::filesystem::is_directory(currentMayaWorkspacePath.asChar())) {
+            || !fs::filesystem::is_directory(currentMayaWorkspacePath.asChar())) {
             TF_RUNTIME_ERROR(
                 "Could not automatically determine a path to write out USDZ texture imports. "
                 "Please specify a location using the -importUSDZTexturesFilePath argument, or "
@@ -1685,7 +1690,7 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const VtDi
         importTexturesRootDirPath.assign(pathArg);
     }
 
-    if (!ghc::filesystem::is_directory(importTexturesRootDirPath)) {
+    if (!fs::filesystem::is_directory(importTexturesRootDirPath)) {
         TF_RUNTIME_ERROR(
             "The directory specified for USDZ texture imports: %s is not valid.",
             importTexturesRootDirPath.c_str());

@@ -150,6 +150,31 @@ def createSimpleXformScene():
             aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
             bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem)
 
+
+def createStageWithExpressionVariableSubLayer():
+    '''
+    Create a simple scene with subLayers, one is using an expression variable.
+    Sublayers are returned in strength order.
+    '''
+    psPathStr, _, _ = createSimpleStage()
+
+    strongLayer = Sdf.Layer.CreateAnonymous('strong.usda')
+    varLayer = Sdf.Layer.CreateAnonymous('variable.usda')
+    weakLayer = Sdf.Layer.CreateAnonymous('weak.usda')
+
+    stage = mayaUsd.ufe.getStage(psPathStr)
+
+    stage.GetSessionLayer().expressionVariables = {
+        'VAR': varLayer.identifier,
+    }
+    stage.GetRootLayer().subLayerPaths = [
+        strongLayer.identifier,
+        '`${VAR}`',
+        weakLayer.identifier,
+    ]
+    return (psPathStr, strongLayer, varLayer, weakLayer)
+
+
 def createDuoXformSceneInCurrentLayer(psPathStr, ps):
     '''Create a simple scene in the current stage and layer with a trivial hierarchy:
 
@@ -268,5 +293,4 @@ def filterUsdStr(usdSceneStr):
     nonBlankLines = filter(None, [l.strip() for l in usdSceneStr.splitlines()])
     finalLines = [l for l in nonBlankLines if not l.startswith('#')]
     return '\n'.join(finalLines)
-
 

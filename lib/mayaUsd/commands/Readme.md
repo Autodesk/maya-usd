@@ -87,18 +87,27 @@ pipeline-specific operations and/or early prototyping of features that might
 otherwise not make sense to be part of the mainline codebase.
 
 Chasers are registered with a particular name and can be passed argument
-name/value pairs in an invocation of `mayaUSDImport`. There is no "plugin
-discovery" method here – the developer/user is responsible for making sure the
-chaser is registered via a call to the convenience macro
-`USDMAYA_DEFINE_IMPORT_CHASER_FACTORY(name, ctx)`, where `name` is the name of
-the chaser being created. Unlike export chasers, import chasers also have the
-ability to define `Undo` and `Redo` methods in order to allow the
+name/value pairs in an invocation of `mayaUSDImport`. The chaser is registered
+via a call to the convenience macro `USDMAYA_DEFINE_IMPORT_CHASER_FACTORY(name,
+ctx)`, where `name` is the name of the chaser being created. Import chaser
+plugins can be discovered and loaded automatically by declaring the
+`UsdMaya:ImportChaserPlugin` metadata in their `plugInfo.json`:
+
+```json
+"Info": {
+  "UsdMaya": {
+    "ImportChaserPlugin": {}
+  }
+}
+```
+
+Unlike export chasers, import chasers also have the ability to define `Undo` and
+`Redo` methods in order to allow the
 `mayaUSDImport` command to remain compliant with the Maya undo stack. It's not
 necessary to compile your chaser plugin together with `mayaUsdPlugin` in order
 to work; you can create a completely separate maya DLL that contains the
 business logic of your chaser code, and just call the aforementioned
-`USDMAYA_DEFINE_IMPORT_CHASER_FACTORY` to register it, as long as the
-`mayaUsdPlugin` DLL is loaded first.
+`USDMAYA_DEFINE_IMPORT_CHASER_FACTORY` to register it.
 
 A sample import chaser, `infoImportChaser.cpp`, is provided to give an example
 of how to write an import chaser. All it does is read any custom layer data in
@@ -203,6 +212,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-selection`                     | `-sl`      | noarg            | false               | When set, only selected nodes (and their descendants) will be exported                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `-stripNamespaces`               | `-sn`      | bool             | false               | Remove namespaces during export. By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `-hideSourceData`                | `-hsd`     | bool             | false               | Hide the Maya nodes that were used as the source.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `-copyAndRepathMaterials`        | `-crm`     | bool             | false               | Copy and repath materials.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `-worldspace`                    | `-wsp`     | bool             | false               | Export all root prim using their full worldspace transform instead of their local transform                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `-staticSingleSample`            | `-sss`     | bool             | false               | Converts animated values with a single time sample to be static instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `-geomSidedness`                 | `-gs`      | string           | derived             | Determines how geometry sidedness is defined. Valid values are: `derived` - Value is taken from the shapes doubleSided attribute, `single` - Export single sided, `double` - Export double sided                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -399,9 +409,17 @@ implement prim post-processing that executes immediately after prims
 are written (and/or after animation is written to a prim in time-based
 exports). Chasers are registered with a particular name and can be
 passed argument name/value pairs in an invocation of a concrete
-`MayaUSDExportCommand` command. There is no "plugin discovery" method
-here – the developer/user is responsible for making sure the chaser is
-registered.
+`MayaUSDExportCommand` command. Export chaser plugins can be discovered
+and loaded automatically by declaring the `UsdMaya:ExportChaserPlugin`
+metadata in their `plugInfo.json`:
+
+```json
+"Info": {
+  "UsdMaya": {
+    "ExportChaserPlugin": {}
+  }
+}
+```
 
 For example the pxr plug-in provides one such chaser plugin called
 `AlembicChaser` to try to make integrating USD into Alembic-heavy

@@ -49,7 +49,7 @@ find_library(ADSK_USD_ASSET_RESOLVER_LIBRARY
 )
 find_library(ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY
     NAMES
-        AssetResolverWidgets
+        AssetResolverExtensions
     HINTS
         $ENV{ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
         ${ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
@@ -87,6 +87,8 @@ find_package_handle_standard_args(AdskUsdAssetResolver
         ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR
         ADSK_USD_ASSET_RESOLVER_LIBRARY
         ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY
+    VERSION_VAR
+        ADSK_USD_ASSET_RESOLVER_VERSION
 )
 
 # Report to the user where the package was found.

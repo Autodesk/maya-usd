@@ -20,8 +20,7 @@
 #include "layerTreeItem.h"
 #include "layerTreeView.h"
 
-#include <pxr/base/tf/notice.h>
-#include <pxr/usd/sdf/notice.h>
+#include <pxr/base/tf/weakBase.h>
 
 #include <QtCore/QBasicTimer>
 #include <QtCore/QPointer>
@@ -31,6 +30,12 @@ class QLabel;
 class QMainWindow;
 class QLayout;
 class QPushButton;
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+namespace UsdEditForwardConfig {
+class EditForwardDialog;
+}
+#endif
 
 namespace UsdLayerEditor {
 class DirtyLayersCountBadge;
@@ -79,6 +84,9 @@ protected:
         QPushButton*           _loadLayer { nullptr };
         QPushButton*           _saveStageButton { nullptr };
         DirtyLayersCountBadge* _dirtyCountBadge { nullptr };
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        QPushButton* _toggleEFButton { nullptr };
+#endif
     } _buttons;
 
     void setupDefaultMenu(QMainWindow* in_parent);
@@ -87,6 +95,9 @@ protected:
         QAction* _autoHide { nullptr };
         QAction* _displayLayerContents { nullptr };
         QAction* _displayLayerExpandAllValues { nullptr };
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        QAction* _echoEditForwarding { nullptr };
+#endif
     } _actions;
     void updateNewLayerButton();
     void updateButtons();
@@ -95,21 +106,20 @@ protected:
 
     void timerEvent(QTimerEvent* event) override;
     void updateLayerContentsWidget();
+    void updateTreeContainerStyle(bool focused);
+    void updateTreeContainerBorder(QWidget* previous, QWidget* now);
 
 private:
+    QPointer<QFrame>              _treeContainer;
     QPointer<LayerTreeView>       _treeView;
     QPointer<LayerContentsWidget> _layerContents;
     QBasicTimer                   _layerContentsTimer;
 
-    QLabel*               _editForwardBanner { nullptr };
-    PXR_NS::TfNotice::Key _layerChangedKey;
-
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    QPointer<UsdEditForwardConfig::EditForwardDialog> _editForwardDialog;
+    void                                              openEditForwardDialog();
+#endif
     bool _updateButtonsOnIdle = false; // true if request to update on idle is pending
-
-private Q_SLOTS:
-    void updateEditForwardBanner();
-
-    void onLayerChanged(PXR_NS::SdfNotice::LayersDidChangeSentPerLayer const& notice);
 };
 
 } // namespace UsdLayerEditor

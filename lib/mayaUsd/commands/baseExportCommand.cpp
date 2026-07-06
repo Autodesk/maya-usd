@@ -136,6 +136,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->hideSourceData.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kCopyAndRepathMaterialsFlag,
+        UsdMayaJobExportArgsTokens->copyAndRepathMaterials.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kEulerFilterFlag, UsdMayaJobExportArgsTokens->eulerFilter.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
         kDefaultMeshSchemeFlag,

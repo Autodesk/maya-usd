@@ -51,7 +51,7 @@
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -277,8 +277,8 @@ MString getUniqueRefNodeName(
         uniqueRefNodeName = namespaceFromPrim(prim);
 
         if (uniqueRefNodeName.length() == 0) {
-            MString               filePath = refDependNode.fileName(false, false, false);
-            ghc::filesystem::path fsFilePath(filePath.asWChar());
+            MString              filePath = refDependNode.fileName(false, false, false);
+            fs::filesystem::path fsFilePath(filePath.asWChar());
             fsFilePath.replace_extension(""); // Remove the extension
             uniqueRefNodeName += fsFilePath.filename().wstring().c_str();
         }
@@ -468,9 +468,11 @@ static MObject findConnectedMayaReference(MObject& parent)
 
 static bool isSameFileName(const MString& found, const MString& expected)
 {
-    const auto expectedPath = ghc::filesystem::path(expected.asChar());
-    auto       foundPath = ghc::filesystem::path(found.asChar());
-    if (foundPath == expectedPath)
+    const auto expectedPath = fs::filesystem::path(expected.asChar());
+    auto       foundPath = fs::filesystem::path(found.asChar());
+    // fs::equivalent() Handles case-insensitivity on Windows automatically
+    std::error_code ec; // Avoid throwing since we might be comparing non-existing files
+    if ((foundPath == expectedPath) || fs::filesystem::equivalent(foundPath, expectedPath, ec))
         return true;
 
     // If the expected file is not absolute, we might not get an exact match
@@ -486,7 +488,7 @@ static bool isSameFileName(const MString& found, const MString& expected)
 
     const size_t offsetToChop = foundStr.size() - expectedStr.size();
     foundStr = foundPath.string().substr(offsetToChop);
-    return ghc::filesystem::path(foundStr) == ghc::filesystem::path(expectedStr);
+    return fs::filesystem::path(foundStr) == fs::filesystem::path(expectedStr);
 }
 
 static MObject findExistingMayaReference(

@@ -21,6 +21,8 @@ global string $gMayaUsdWindowsUsdToolsSubMenu = "";
 global string $gMayaUsdOpenUsdLayerEditorMenuItem = "";
 global string $gMayaUsdSelectMenuDivider = "";
 global string $gMayaUsdSelectModeSubMenu = "";
+global string $gMayaUsdOpenUsdCompositionEditorMenuItem = "";
+global string $gMayaUsdOpenUsdRenderSetupMenuItem = "";
 
 ///////////////////////////////////////////////////////////////////////////////
 // findDividerByLabel
@@ -183,6 +185,29 @@ proc initRuntimeCommands() {
                 -command 	"mayaUsdLayerEditorWindow mayaUsdLayerEditor"
                 -image		"USD_generic.png"
                 mayaUsdOpenUsdLayerEditor;
+        }
+    }
+
+    if (`exists mayaUsdCompositionEditor`) {
+        if (!`runTimeCommand -exists mayaUsdOpenCompositionEditor`) {
+            runTimeCommand -default true -plugin "mayaUsdPlugin"
+                -label      `getMayaUsdString("kMenuCompositionEditor")`
+                -annotation `getMayaUsdString("kMenuCompositionEditorAnn")`
+                -category   "Menu items.Common.Windows.General Editors"
+                -command    "mayaUsdCompositionEditor"
+                -image      "USD_generic.png"
+                mayaUsdOpenCompositionEditor;
+        }
+    }
+
+    if (`exists mayaUsdRenderSetupWindow`) {
+        if (!`runTimeCommand -exists mayaUsdOpenUsdRenderSetup`) {
+            runTimeCommand -default true -plugin "mayaUsdPlugin"
+                -label 		`getMayaUsdString("kMenuUSDRenderSetup")`
+                -annotation `getMayaUsdString("kMenuUSDRenderSetupAnn")`
+                -category   "Menu items.Common.Windows.General Editors"
+                -command 	"mayaUsdRenderSetupWindow"
+                mayaUsdOpenUsdRenderSetup;
         }
     }
 
@@ -498,11 +523,31 @@ global proc mayaUsdMenu_windowMenuCallback() {
         // Set parent to the USD Tools submenu and add Layer Editor menu item
         setParent -menu $gMayaUsdWindowsUsdToolsSubMenu;
 
-        global string $gMayaUsdOpenUsdLayerEditorMenuItem;
-        $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
-            -enableCommandRepeat false
-            -runTimeCommand mayaUsdOpenUsdLayerEditor
-            wmUsdLayerEditorMenuitem`;
+        if (`runTimeCommand -exists mayaUsdOpenUsdLayerEditor`) {
+            global string $gMayaUsdOpenUsdLayerEditorMenuItem;
+            $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
+                -enableCommandRepeat false
+                -runTimeCommand mayaUsdOpenUsdLayerEditor
+                wmUsdLayerEditorMenuitem`;
+        }
+
+        if (`runTimeCommand -exists mayaUsdOpenCompositionEditor`) {
+            global string $gMayaUsdOpenUsdCompositionEditorMenuItem;
+            $gMayaUsdOpenUsdCompositionEditorMenuItem = `menuItem
+                -enableCommandRepeat false
+                -runTimeCommand mayaUsdOpenCompositionEditor
+                -version $mayaVersion
+                wmUsdCompositionEditorMenuitem`;
+        }
+
+        if (`runTimeCommand -exists mayaUsdOpenUsdRenderSetup`) {
+            global string $gMayaUsdOpenUsdRenderSetupMenuItem;
+            $gMayaUsdOpenUsdRenderSetupMenuItem = `menuItem
+                -enableCommandRepeat false
+                -runTimeCommand mayaUsdOpenUsdRenderSetup
+                -version $mayaVersion
+                wmUsdRenderSetupMenuItem`;
+        }
 
         // Reset parent back to the main Windows menu
         setParent -menu ..;
@@ -594,6 +639,16 @@ proc termCreateMenu() {
     if ($gMayaUsdOpenUsdLayerEditorMenuItem != "") {
         deleteUI -mi $gMayaUsdOpenUsdLayerEditorMenuItem;
         $gMayaUsdOpenUsdLayerEditorMenuItem = "";
+    }
+    global string $gMayaUsdOpenUsdCompositionEditorMenuItem;
+    if ($gMayaUsdOpenUsdCompositionEditorMenuItem != "") {
+        deleteUI -mi $gMayaUsdOpenUsdCompositionEditorMenuItem;
+        $gMayaUsdOpenUsdCompositionEditorMenuItem = "";
+    }
+    global string $gMayaUsdOpenUsdRenderSetupMenuItem;
+    if ($gMayaUsdOpenUsdRenderSetupMenuItem != "") {
+        deleteUI -mi $gMayaUsdOpenUsdRenderSetupMenuItem;
+        $gMayaUsdOpenUsdRenderSetupMenuItem = "";
     }
     global string $gMayaUsdWindowsUsdToolsSubMenu;
     if ($gMayaUsdWindowsUsdToolsSubMenu != "") {
@@ -809,6 +864,37 @@ global proc mayaUsdMenu_duplicateAsUsdDataOptions(string $obj)
     python("import mayaUsdDuplicateAsUsdDataOptions; mayaUsdDuplicateAsUsdDataOptions.showDuplicateAsUsdDataOptions()");
 }
 
+// USD Layer Editor and USD Path Editor at the top of the outliner menu, for the DAG
+// stage transform parent of the proxy shape. The stage shape itself is handled by UFE
+// ContextOps (MayaUsdContextOps). USD prims under the stage are handled by UFE as well.
+proc mayaUsdMenu_addStageGatewayContextMenuItems(string $proxyShape)
+{
+    if (size($proxyShape) == 0 || !`objExists $proxyShape`) {
+        return;
+    }
+    string $shapePath = `longNameOf $proxyShape`;
+    string $insertAfter = "";
+
+    if (`exists mayaUsdLayerEditorWindow`) {
+        string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapePath + "\" mayaUsdLayerEditor";
+        string $layerEditorLabel = `getMayaUsdString("kContextMenuLayerEditor")`;
+        menuItem -divider true -insertAfter "";
+        $insertAfter = `menuItem -enableCommandRepeat false
+            -label $layerEditorLabel
+            -insertAfter ""
+            -command $command openUsdLayerEditor`;
+    }
+
+    if (`exists assetResolverDialog`) {
+        string $command = "assetResolverDialog -tab \"paths\" -proxyShape \"" + $shapePath + "\"";
+        string $pathEditorLabel = `getMayaUsdString("kContextMenuPathEditor")`;
+        menuItem -enableCommandRepeat false
+            -label $pathEditorLabel
+            -insertAfter $insertAfter
+            -command $command;
+    }
+}
+
 proc notifyUsdContextMenuLoaded(string $mayaUsdMenu, string $nodeName)
 {
     // Trigger usdUfe UI callback so other plugins can add their own menus.
@@ -951,20 +1037,16 @@ global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
 
     if ((size($nodeName) != 0) && `objExists $nodeName`) {
         int $isProxyNode = 0;
+
         if (`nodeType $nodeName` == "transform") {
             string $shapes[] = `listRelatives -shapes -fullPath $nodeName`;
             if (`size($shapes)` > 0) {
                 string $shapeNode = $shapes[0];
                 if (isMayaUsdProxyShape($shapeNode)) {
                     $isProxyNode = 1;
-                    if (`exists mayaUsdLayerEditorWindow`) {
-                        string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapeNode + "\" mayaUsdLayerEditor";
-                        menuItem -divider true -insertAfter "";
-                        menuItem -enableCommandRepeat false
-                            -label `getMayaUsdString("kContextMenuLayerEditor")`
-                            -insertAfter ""
-                            -command $command openUsdLayerEditor;
-                    }
+                    // DAG stage transform parent: add USD Layer Editor + USD Path Editor at the top.
+                    // The stage shape itself is handled by UFE ContextOps (MayaUsdContextOps).
+                    mayaUsdMenu_addStageGatewayContextMenuItems($shapeNode);
                 }
             }
         }
@@ -1038,10 +1120,10 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
         return; // that's all we can support on invalid layers
     }
 
+
     int $isSessionLayer = `mayaUsdLayerEditorWindow -q -isSessionLayer $panelName`;
     int $isAnonymousLayer = `mayaUsdLayerEditorWindow -q -isAnonymousLayer $panelName`;
     int $needsSaving = `mayaUsdLayerEditorWindow -q -layerNeedsSaving $panelName`;
-    int $singleSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` == 1;
     int $appearsMuted = `mayaUsdLayerEditorWindow -q -layerAppearsMuted $panelName`;
     int $isSubLayer = `mayaUsdLayerEditorWindow -q -isSubLayer $panelName`;
     int $isMuted = `mayaUsdLayerEditorWindow -q -layerIsMuted $panelName`;
@@ -1053,6 +1135,12 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     int $isIncoming = `mayaUsdLayerEditorWindow -q -isIncomingLayer $panelName`;
     int $hasSublayers = `mayaUsdLayerEditorWindow -q -layerHasSubLayers $panelName`;
     string $proxyShape = `mayaUsdLayerEditorWindow -q -proxyShape $panelName`;
+
+    int $selectedCount = `mayaUsdLayerEditorWindow -q -selectionLength $panelName`;
+    int $singleSelect = ($selectedCount == 1);
+    int $multiSelect = ($selectedCount > 1);
+    int $hasSessionInSel = `python("import mayaUsd_layerUtils; mayaUsd_layerUtils.isSessionInLayerEditorSelection('" + $panelName + "')")`;
+    int $hasNonSessionInSel = `python("import mayaUsd_layerUtils; mayaUsd_layerUtils.isNonSessionInLayerEditorSelection('" + $panelName + "')")`;
 
     string $label;
     int $enabled;
@@ -1096,8 +1184,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     $enabled = $singleSelect && !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
     menuItem -label $label -enable $enabled -c $cmd;
 
-    int $multiSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` > 1;
-    if ($multiSelect && !$singleSelect) {
+    if ($multiSelect && !($hasSessionInSel && $hasNonSessionInSel)) {
         $label = getMayaUsdString("kMenuStitchLayers");
         $cmd = makeCommand($panelName, "stitchLayers");
         $enabled = !$isReadOnly && !$isLocked && !$appearsSystemLocked && !$appearsMuted;

@@ -25,11 +25,18 @@
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+
+#include <AdskUsdEditForward/Host.h>
+#endif
+
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
+#include <maya/MItDag.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPxNode.h>
 #include <maya/MSceneMessage.h>
@@ -48,6 +55,10 @@ namespace {
 MString PROXY_NODE_TYPE = "mayaUsdProxyShapeBase";
 MString AUTO_HIDE_OPTION_VAR
     = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorAutoHideSessionLayer);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+MString ECHO_EDIT_FORWARDING_OPTION_VAR
+    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding);
+#endif
 MString DISPLAY_LAYER_CONTENTS_OPTION_VAR
     = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorDisplayLayerContents);
 MString DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR
@@ -62,6 +73,11 @@ MayaSessionState::MayaSessionState()
     if (MGlobal::optionVarExists(AUTO_HIDE_OPTION_VAR)) {
         _autoHideSessionLayer = MGlobal::optionVarIntValue(AUTO_HIDE_OPTION_VAR) != 0;
     }
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    if (MGlobal::optionVarExists(ECHO_EDIT_FORWARDING_OPTION_VAR)) {
+        _echoEditForwarding = MGlobal::optionVarIntValue(ECHO_EDIT_FORWARDING_OPTION_VAR) != 0;
+    }
+#endif
     if (MGlobal::optionVarExists(DISPLAY_LAYER_CONTENTS_OPTION_VAR)) {
         _displayLayerContents = MGlobal::optionVarIntValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR) != 0;
     }
@@ -133,12 +149,31 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
 std::vector<SessionState::StageEntry> MayaSessionState::allStages() const
 {
     std::vector<StageEntry> stages;
-    MStringArray            shapes;
-    MGlobal::executeCommand(
-        MString("ls -long -type ") + PROXY_NODE_TYPE, shapes, /*display*/ false, /*undo*/ false);
-    StageEntry entry;
-    for (unsigned i = 0; i < shapes.length(); ++i) {
-        if (getStageEntry(&entry, shapes[i])) {
+
+    // Iterate through all shape DAG nodes to find proxy shape nodes
+    MItDag dagIterator(MItDag::kDepthFirst, MFn::kPluginShape);
+    for (; !dagIterator.isDone(); dagIterator.next()) {
+        MObject    mobj = dagIterator.currentItem();
+        MFnDagNode fnDagNode(mobj);
+
+        const PXR_NS::MayaUsdProxyShapeBase* proxyShape
+            = dynamic_cast<const PXR_NS::MayaUsdProxyShapeBase*>(fnDagNode.userNode());
+        if (!proxyShape)
+            continue;
+
+        // Check if this node is a proxy shape by type name
+        MDagPath dagPath;
+        dagIterator.getPath(dagPath);
+
+        // Avoid instances of the same shape by only looking at the first instance (instance number
+        // 0)
+        if (dagPath.instanceNumber() != 0) {
+            continue;
+        }
+
+        MString    shapePath = dagPath.fullPathName();
+        StageEntry entry;
+        if (getStageEntry(&entry, shapePath)) {
             stages.push_back(entry);
         }
     }
@@ -442,6 +477,43 @@ void MayaSessionState::setAutoHideSessionLayer(bool hideIt)
     MGlobal::setOptionVarValue(AUTO_HIDE_OPTION_VAR, value);
     PARENT_CLASS::setAutoHideSessionLayer(hideIt);
 }
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+void MayaSessionState::setEchoEditForwarding(bool echo)
+{
+    MGlobal::setOptionVarValue(ECHO_EDIT_FORWARDING_OPTION_VAR, echo ? 1 : 0);
+    if (auto host = std::dynamic_pointer_cast<MayaUsdEditForwardHost>(
+            AdskUsdEditForward::Host::GetInstance())) {
+        host->SetWantsEcho(echo);
+    }
+    PARENT_CLASS::setEchoEditForwarding(echo);
+}
+
+bool MayaSessionState::isEditForwardMode() const
+{
+    const auto& stage = stageEntry()._stage;
+    if (!stage)
+        return false;
+    auto controller = MayaUsdEditForwardController::GetForStage(stage);
+    return controller && controller->isForwardingActive();
+}
+
+PXR_NS::SdfLayerRefPtr MayaSessionState::effectiveTargetLayer() const
+{
+    const auto& stage = stageEntry()._stage;
+    if (stage) {
+        auto controller = MayaUsdEditForwardController::GetForStage(stage);
+        if (controller && controller->isForwardingActive()) {
+            // In EF mode the stage edit target is pinned to the session layer; the meaningful
+            // target is the fallback. Fall through to the stage edit target if it is not set.
+            if (auto fallback = controller->fallbackTarget())
+                return fallback;
+            MGlobal::displayWarning("Edit forwarding is active but no fallback target is set.");
+        }
+    }
+    return targetLayer();
+}
+#endif
 
 void MayaSessionState::setDisplayLayerContents(bool showIt)
 {

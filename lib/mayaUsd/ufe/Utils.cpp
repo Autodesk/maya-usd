@@ -21,6 +21,11 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <mayaUsd/nodes/usdSceneSettingsManager.h>
+#include <mayaUsd/nodes/usdSettingsNode.h>
+#endif
+
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
@@ -93,10 +98,49 @@ std::unordered_map<std::string, bool> g_GatewayType;
 
 UsdStageWeakPtr getStage(const Ufe::Path& path, bool rebuildCacheIfNeeded)
 {
-    return UsdStageMap::getInstance().stage(path, rebuildCacheIfNeeded);
+    if (auto stage = UsdStageMap::getInstance().stage(path, rebuildCacheIfNeeded)) {
+        return stage;
+    }
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // DG-gateway fallback: when the FIRST segment of \p path is a DG-separator
+    // segment, resolve it through UsdSceneSettingsManager. Any USD path tail in
+    // later segments is the caller's concern (e.g. ufePathToPrim composes the
+    // tail itself). Keeps UsdStageMap free of any settings-node knowledge
+    // while preserving GatewayHierarchy descent
+    // (GatewayHierarchy::getUsdRootPrim -> getStage(settingsNodeUfePath)).
+    //
+    // The first call along this path materializes the stage (running the
+    // populator) and fires UsdSceneSettingsManager's stage observer hook,
+    // which is what wires USD-notice observation through MayaStagesSubject.
+    // Subsequent calls are pure lookups.
+    if (path.nbSegments() >= 1) {
+        const auto& firstSeg = path.getSegments()[0];
+        if (firstSeg.separator() == DGPathSeparator && firstSeg.size() > 0) {
+            return UsdSceneSettingsManager::getStageForNodeName(firstSeg.begin()->string());
+        }
+    }
+#endif
+    return {};
 }
 
-Ufe::Path stagePath(UsdStageWeakPtr stage) { return UsdStageMap::getInstance().path(stage); }
+Ufe::Path stagePath(UsdStageWeakPtr stage)
+{
+    Ufe::Path p = UsdStageMap::getInstance().path(stage);
+    if (!p.empty()) {
+        return p;
+    }
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // Settings-node stages are not tracked by UsdStageMap (by design); fall
+    // back to the manager-backed reverse lookup so StagesSubject::stageChanged
+    // can map a sender stage back to its UFE gateway path and forward UFE
+    // notifications to the Outliner.
+    MObject obj = UsdSceneSettingsManager::nodeForStage(stage);
+    if (!obj.isNull()) {
+        return dgNodeToUfePath(obj);
+    }
+#endif
+    return p;
+}
 
 TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return UsdStageMap::getInstance().allStages(); }
 
@@ -130,9 +174,19 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     // If there is only a single segment in the path, it must point to the
     // proxy shape, otherwise we would not have retrieved a valid stage.
     // The second path segment is the USD path.
-    return (segments.size() == 1u)
-        ? stage->GetPseudoRoot()
-        : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
+    if (segments.size() == 1u) {
+        return stage->GetPseudoRoot();
+    }
+
+    // If the USD path is empty, return the root. UfeSegment::string does not return a leading
+    // separator...!
+    std::string primPathStr = segments[1].string();
+    if (primPathStr.empty()) {
+        return stage->GetPseudoRoot();
+    }
+
+    // Note: we call GetPrimPath in case the path is to a property or relationship, etc.
+    return stage->GetPrimAtPath(SdfPath(primPathStr).GetPrimPath());
 }
 
 std::string uniqueChildNameMayaStandard(
@@ -191,6 +245,11 @@ bool isAGatewayType(const std::string& mayaNodeType)
         return false;
     }
 
+    // Check if this is a UsdSettingsNode type (e.g. render settings).
+    if (isUsdSettingsNode(mayaNodeType)) {
+        return true;
+    }
+
     // If we've seen this node type before, return the cached value.
     auto iter = g_GatewayType.find(mayaNodeType);
     if (iter != std::end(g_GatewayType)) {
@@ -215,11 +274,53 @@ bool isAGatewayType(const std::string& mayaNodeType)
     return isInherited;
 }
 
+bool isUsdSettingsNode(const std::string& mayaNodeType)
+{
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    return mayaNodeType == UsdSettingsNode::typeName.asChar();
+#else
+    return false;
+#endif
+}
+
+bool isReferencedUsdSettingsNode(const std::string& mayaNodeType, const Ufe::Path& ufePath)
+{
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    if (!isUsdSettingsNode(mayaNodeType)) {
+        return false;
+    }
+    if (ufePath.empty()) {
+        return false;
+    }
+    const auto& firstSeg = ufePath.getSegments()[0];
+    if (firstSeg.separator() != DGPathSeparator || firstSeg.size() == 0) {
+        return false;
+    }
+    // The manager tracks every local managed singleton in its instance
+    // cache; anything not in there is either referenced or otherwise
+    // unmanaged and should not be wrapped as a gateway.
+    return UsdSceneSettingsManager::find(firstSeg.begin()->string()).isNull();
+#else
+    return false;
+#endif
+}
+
 Ufe::Path dagPathToUfe(const MDagPath& dagPath)
 {
     // This function can only create UFE Maya scene items with a single
     // segment, as it is only given a Dag path as input.
     return Ufe::Path(dagPathToPathSegment(dagPath));
+}
+
+Ufe::Path dgNodeToUfePath(const MObject& object)
+{
+    if (object.isNull()) {
+        return {};
+    }
+    MFnDependencyNode            depFn(object);
+    Ufe::PathSegment::Components components;
+    components.emplace_back(depFn.name().asChar());
+    return Ufe::Path(Ufe::PathSegment(std::move(components), g_MayaRtid, DGPathSeparator));
 }
 
 Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath)
@@ -277,6 +378,24 @@ MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path, bool rebuildCacheIfN
     MayaUsdProxyShapeBase* result
         = UsdStageMap::getInstance().proxyShapeNode(path, rebuildCacheIfNeeded);
     return result;
+}
+
+MayaUsdProxyShapeBase* getProxyShapeFromItemOrChildren(const Ufe::SceneItem::Ptr& item)
+{
+    const bool rebuildCacheIfNeeded = false;
+    if (auto* proxy = getProxyShape(item->path(), rebuildCacheIfNeeded))
+        return proxy;
+
+    Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
+    if (!hierarchy)
+        return nullptr;
+
+    for (const auto& child : UsdUfe::getHierarchyChildren(hierarchy)) {
+        if (auto* proxy = getProxyShape(child->path(), rebuildCacheIfNeeded))
+            return proxy;
+    }
+
+    return nullptr;
 }
 
 SdfPath getProxyShapePrimPath(const Ufe::Path& path)

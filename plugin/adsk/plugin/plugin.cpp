@@ -86,7 +86,13 @@
 
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+#include <mayaUsdUI/ui/CompositionEditorCmd.h>
 #endif
+#if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+#include <mayaUsdUI/ui/renderSetupWindowCmd.h>
+#endif
+#endif // WANT_QT_BUILD
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include "adskMaterialCommands.h"
@@ -104,6 +110,11 @@
 #define TOSTRING(x)  STRINGIFY(x)
 #else
 #error "MAYAUSD_VERSION is not defined"
+#endif
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <mayaUsd/nodes/usdSceneSettingsManager.h>
+#include <mayaUsd/nodes/usdSettingsNode.h>
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -221,6 +232,31 @@ MStatus initializePlugin(MObject obj)
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // mayaUsdPlugin is the only consumer of UsdSettingsNode / UsdSceneSettingsManager;
+    // register the node type and bring the manager up here, before UFE init runs
+    // (UFE installs the manager's stage observer hook and sweeps live stages).
+    {
+        MStatus settingsStatus = plugin.registerNode(
+            MayaUsd::UsdSettingsNode::typeName,
+            MayaUsd::UsdSettingsNode::typeId,
+            MayaUsd::UsdSettingsNode::creator,
+            MayaUsd::UsdSettingsNode::initialize,
+            MPxNode::kDependNode);
+        // Skip onPluginInitialize() if registerNode failed: the manager would
+        // otherwise try to MDGModifier::createNode() the (un-registered)
+        // UsdSettingsNode type for every registered kind, log an error per kind,
+        // and uninitializePlugin() would target a typeId we never owned.
+        if (settingsStatus == MS::kSuccess) {
+            // kAfterNew does not fire for the default scene at startup, so the
+            // manager handles initial node creation inside onPluginInitialize().
+            MayaUsd::UsdSceneSettingsManager::onPluginInitialize();
+        } else {
+            CHECK_MSTATUS(settingsStatus);
+        }
+    }
+#endif
 
     status = MayaUsd::ufe::initialize();
     if (!status) {
@@ -353,12 +389,7 @@ MStatus initializePlugin(MObject obj)
     }
 
 #if defined(WANT_QT_BUILD)
-    status = MayaUsd::USDImportDialogCmd::initialize(plugin);
-    if (!status) {
-        MString err("registerCommand");
-        err += MayaUsd::USDImportDialogCmd::name;
-        status.perror(err);
-    }
+    registerCommandCheck<MayaUsd::USDImportDialogCmd>(plugin);
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     status = MayaUsd::AssetResolverDialogCmd::initialize(plugin);
     if (!status) {
@@ -367,7 +398,23 @@ MStatus initializePlugin(MObject obj)
         status.perror(err);
     }
 #endif
+#if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+    status = MayaUsd::RenderSetupWindowCmd::initialize(plugin);
+    if (!status) {
+        MString err("registerCommand");
+        err += MayaUsd::RenderSetupWindowCmd::commandName;
+        status.perror(err);
+    }
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    status = MayaUsd::CompositionEditorCmd::initialize(plugin);
+    if (!status) {
+        MString err("registerCommand");
+        err += MayaUsd::CompositionEditorCmd::name;
+        status.perror(err);
+    }
+#endif
+#endif // WANT_QT_BUILD
 
     status = PxrMayaUsdPreviewSurfacePlugin::initialize(
         plugin,
@@ -426,7 +473,7 @@ MStatus initializePlugin(MObject obj)
     PrimUpdaterManager::getInstance();
 #endif
 
-#ifdef WANT_ADSK_USD_ASSET_RESOLVER_BUILD
+#if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     // Initialize USD preferences and apply them to the Asset Resolver
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
@@ -456,6 +503,7 @@ MStatus uninitializePlugin(MObject obj)
     MFnPlugin plugin(obj);
     MStatus   status;
 
+#if defined(WANT_QT_BUILD)
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     MayaUsd::AssetResolverProjectChangeTracker::stopTracking();
     status = MayaUsd::AssetResolverDialogCmd::finalize(plugin);
@@ -465,6 +513,25 @@ MStatus uninitializePlugin(MObject obj)
         status.perror(err);
     }
 #endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
+
+#if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+    status = MayaUsd::RenderSetupWindowCmd::finalize(plugin);
+    if (!status) {
+        MString err("deregisterCommand ");
+        err += MayaUsd::RenderSetupWindowCmd::commandName;
+        status.perror(err);
+    }
+#endif
+
+#if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    status = MayaUsd::CompositionEditorCmd::finalize(plugin);
+    if (!status) {
+        MString err("deregisterCommand ");
+        err += MayaUsd::CompositionEditorCmd::name;
+        status.perror(err);
+    }
+#endif
+#endif // WANT_QT_BUILD
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,
@@ -483,12 +550,7 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDListJobContextsCommand>(plugin);
 
 #if defined(WANT_QT_BUILD)
-    status = MayaUsd::USDImportDialogCmd::finalize(plugin);
-    if (!status) {
-        MString err("deregisterCommand");
-        err += MayaUsd::USDImportDialogCmd::name;
-        status.perror(err);
-    }
+    deregisterCommandCheck<MayaUsd::USDImportDialogCmd>(plugin);
 #endif
 
     status = plugin.deregisterFileTranslator("USD Import");
@@ -552,6 +614,17 @@ MStatus uninitializePlugin(MObject obj)
     status = MHWRender::MDrawRegistry::deregisterGeometryOverrideCreator(
         MayaUsd::GizmoGeometryOverride::dbClassification, kMayaUsdPlugin_registrantId);
     CHECK_MSTATUS(status);
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // Mirror of the initializePlugin block above: tear the manager down before
+    // the underlying node type is deregistered, so any in-flight callbacks see
+    // a consistent state.
+    {
+        MayaUsd::UsdSceneSettingsManager::onPluginFinalize();
+        MStatus settingsStatus = plugin.deregisterNode(MayaUsd::UsdSettingsNode::typeId);
+        CHECK_MSTATUS(settingsStatus);
+    }
+#endif
 
     status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);

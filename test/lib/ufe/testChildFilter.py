@@ -66,7 +66,7 @@ class ChildFilterTestCase(unittest.TestCase):
         self.assertEqual('InactivePrims', cf[0].name)
 
         # Ensure we have the same child filter on the Maya runtime (for the
-        # ProxyShapeHierarchyHandler.
+        # GatewayHierarchyHandler.
         rid = ufe.RunTimeMgr.instance().getId('Maya-DG')
         mayaHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
         mayaCf = mayaHierHndlr.childFilter()

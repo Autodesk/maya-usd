@@ -71,4 +71,15 @@ global proc mayaUsd_pluginUICreation()
     // The CC init code relies on MayaUsd being loaded, including menus which is why we
     // try to initialize it here (last).
     python("import mayaUsd_initializeComponentCreator; mayaUsd_initializeComponentCreator.initializeComponentCreator()");
+
+    // Initialize the Asset Resolver menu items. Wrapped in a Python try/except
+    // so it fails gracefully when the Asset Resolver build is not enabled or
+    // its dependencies are unavailable.
+    string $initAssetResolverMenus =
+        "try:\n"
+        + "    import mayaUsd_AdskAssetResolver\n"
+        + "    mayaUsd_AdskAssetResolver.initialize_menus()\n"
+        + "except Exception:\n"
+        + "    pass\n";
+    python($initAssetResolverMenus);
 }

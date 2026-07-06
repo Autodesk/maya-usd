@@ -149,6 +149,21 @@ class testLayerManagerSerialization(unittest.TestCase):
         self.confirmStageHasTestEdits(
             stage, fileBackedSavedStatus, fileBackedSavedStatus, sessionSavedStatus)
 
+    def testCreateNodeAndSave(self):
+        """
+        Test that creating a node and saving the Maya scene does not crash.
+        """
+        cmds.createNode("mayaUsdLayerManager")
+
+        self._currentTestDir = tempfile.mkdtemp(prefix='testSaveWithoutStage')
+        try:
+            self._tempMayaFile = os.path.join(
+                self._currentTestDir, 'EmptySerializationTest.ma')
+            cmds.file(rename=self._tempMayaFile)
+            cmds.file(save=True, force=True, type='mayaAscii')
+        finally:
+            shutil.rmtree(self._currentTestDir)
+
     def testSaveWithoutStage(self):
         '''
         Verify that when saving a Maya scene, if no stage have been created then
@@ -158,6 +173,11 @@ class testLayerManagerSerialization(unittest.TestCase):
         self._tempMayaFile = os.path.join(
             self._currentTestDir, 'EmptySerializationTest.ma')
         cmds.file(new=True, force=True)
+
+        # Drop the settings singleton(s) so they don't create a plugin
+        # dependency in an otherwise empty scene.
+        fixturesUtils.deleteUsdSettingsSingletons()
+
         cmds.file(rename=self._tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
         cmds.file(new=True, force=True)

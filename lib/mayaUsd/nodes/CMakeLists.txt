@@ -16,6 +16,15 @@ target_sources(${PROJECT_NAME}
         usdPrimProvider.cpp
 )
 
+if(MAYA_HAS_USD_SETTINGS_NODES)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            usdSettingsNode.cpp
+            usdSceneSettingsManager.cpp
+            sceneRenderSettings.cpp
+    )
+endif()
+
 set(HEADERS
     hdImagingShape.h
     layerManager.h
@@ -30,6 +39,14 @@ set(HEADERS
     stageNode.h
     usdPrimProvider.h
 )
+
+if(MAYA_HAS_USD_SETTINGS_NODES)
+    list(APPEND HEADERS
+        usdSettingsNode.h
+        usdSceneSettingsManager.h
+        sceneRenderSettings.h
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers

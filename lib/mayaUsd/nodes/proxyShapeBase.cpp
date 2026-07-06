@@ -108,7 +108,7 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <map>
 #include <string>
@@ -123,7 +123,6 @@ using MayaUsd::ProxyAccessor;
 
 #include <AdskUsdEditForward/Forwarder.h>
 #include <AdskUsdEditForward/Host.h>
-#include <AdskUsdEditForward/StageRuleProvider.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -641,7 +640,7 @@ void beforeSaveCallback(void* clientData)
     MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
 
     // Make proxy shape's file path relative if needed
-    ghc::filesystem::path filePath(filePathPlug.asString().asChar());
+    fs::filesystem::path filePath(filePathPlug.asString().asChar());
     if (filePath.is_absolute() && filePathRelativePlug.asBool()) {
         auto relativePath
             = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(filePath.generic_string());
@@ -979,7 +978,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     "ProxyShapeBase::reloadStage original USD file path is %s\n",
                     fileString.c_str());
 
-            ghc::filesystem::path filestringPath(fileString);
+            fs::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
                 fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
                 TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
@@ -1252,8 +1251,20 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 editTarget = UsdEditTarget(_targetLayer);
             }
         }
+
         if (editTarget.IsValid()) {
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+            // If edit forwarding is active on the stage, we need to set the fallback rule target,
+            // and not directly the stage edit target.
+            auto controller = MayaUsdEditForwardController::GetForStage(finalUsdStage);
+            if (controller && controller->isForwardingActive()) {
+                controller->setFallbackTarget(editTarget.GetLayer());
+            } else {
+                finalUsdStage->SetEditTarget(editTarget);
+            }
+#else
             finalUsdStage->SetEditTarget(editTarget);
+#endif
         }
 
         // Note: muting layer needs to be done after setting edit target layer
@@ -1409,10 +1420,18 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         AdskUsdEditForward::Host::SetInstance(mayaHost);
     });
 
-    std::shared_ptr<AdskUsdEditForward::IRuleProvider> prov
-        = std::make_shared<AdskUsdEditForward::StageRuleProvider>(usdStage);
+    // Setup an edit forward controller which manages edit forwarding and provides the rules,
+    // including a fallback edit forwarding rule that is configured by the layer editor (what is
+    // visually targeted in the editor, when edit forwarding is active, is where edits that are not
+    // handled by other rules are sent).
+    MayaUsdEditForwardController::Ptr controller
+        = MayaUsdEditForwardController::GetForStage(usdStage);
+    if (!controller) {
+        controller = std::make_shared<MayaUsdEditForwardController>(usdStage);
+        MayaUsdEditForwardController::RegisterForStage(usdStage, controller);
+    }
     _forwarder = std::make_shared<AdskUsdEditForward::Forwarder>(
-        usdStage, prov, usdStage->GetSessionLayer());
+        usdStage, controller, usdStage->GetSessionLayer());
 #endif
 
     // Get the primPath
@@ -2336,6 +2355,19 @@ void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
     const PXR_NS::SdfLayerHandle& layer = target.GetLayer();
     if (!layer)
         return;
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // When EF activates it pins the stage edit target to the session layer. That
+    // session-layer pin is not the meaningful "where edits go" target (the fallback
+    // Ef rule target layer is), so we must not let it overwrite the persisted _targetLayer.
+    if (_forwarder && layer == stage->GetSessionLayer()) {
+        if (auto controller = MayaUsdEditForwardController::GetForStage(_forwarder->GetStage())) {
+            if (controller->isForwardingActive()) {
+                return;
+            }
+        }
+    }
+#endif
 
     _targetLayer = layer;
 }

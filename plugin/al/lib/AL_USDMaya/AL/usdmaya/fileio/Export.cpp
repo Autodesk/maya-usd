@@ -405,7 +405,11 @@ UsdPrim Export::exportAssembly(MDagPath path, const SdfPath& usdPath)
 {
     UsdGeomXform mesh = UsdGeomXform::Define(m_impl->stage(), usdPath);
     if (!m_params.m_mergeTransforms)
+#if PXR_VERSION >= 2603
+        mesh.GetPrim().SetMetadata(
+#else
         mesh.GetPrim().SetMetadata<TfToken>(
+#endif
             AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
     return mesh.GetPrim();
 }
@@ -415,7 +419,11 @@ UsdPrim Export::exportPluginLocatorNode(MDagPath path, const SdfPath& usdPath)
 {
     UsdGeomXform mesh = UsdGeomXform::Define(m_impl->stage(), usdPath);
     if (!m_params.m_mergeTransforms)
+#if PXR_VERSION >= 2603
+        mesh.GetPrim().SetMetadata(
+#else
         mesh.GetPrim().SetMetadata<TfToken>(
+#endif
             AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
     return mesh.GetPrim();
 }
@@ -425,7 +433,11 @@ UsdPrim Export::exportPluginShape(MDagPath path, const SdfPath& usdPath)
 {
     UsdGeomXform mesh = UsdGeomXform::Define(m_impl->stage(), usdPath);
     if (!m_params.m_mergeTransforms)
+#if PXR_VERSION >= 2603
+        mesh.GetPrim().SetMetadata(
+#else
         mesh.GetPrim().SetMetadata<TfToken>(
+#endif
             AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
     return mesh.GetPrim();
 }
@@ -593,7 +605,11 @@ SdfPath Export::determineUsdPath(MDagPath path, const SdfPath& usdPath, Referenc
         if (!stage->GetPrimAtPath(masterTransformPath)) {
             auto parentPrim = UsdGeomXform::Define(stage, masterTransformPath);
             if (!m_params.m_mergeTransforms)
+#if PXR_VERSION >= 2603
+                parentPrim.GetPrim().SetMetadata(
+#else
                 parentPrim.GetPrim().SetMetadata<TfToken>(
+#endif
                     AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
         }
         TfToken shapeName(MFnDagNode(path).name().asChar());
@@ -866,7 +882,11 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
                 bool exportKids
                     = exportTransformFunc(transformPath, fnTransform, usdPath, exportInWorldSpace);
                 UsdPrim prim = m_impl->stage()->GetPrimAtPath(usdPath);
+#if PXR_VERSION >= 2603
+                prim.SetMetadata(
+#else
                 prim.SetMetadata<TfToken>(
+#endif
                     AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
                 if (!exportKids) {
                     it.prune();
