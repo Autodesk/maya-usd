@@ -25,6 +25,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 
+#include <QtCore/QTimer>
 #include <QtGui/QColor>
 #include <QtGui/QCursor>
 #include <QtWidgets/QMenu>
@@ -140,7 +141,7 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
         _model->sessionState(),
         &SessionState::stageListChangedSignal,
         this,
-        &LayerTreeView::updateFromSessionState);
+        &LayerTreeView::updateFromSessionStateOnIdle);
 
     auto buttonDefinitions = LayerTreeItem::actionButtonsDefinition();
     auto muteActionIter = buttonDefinitions.find(LayerActionType::Mute);
@@ -349,6 +350,19 @@ void LayerViewMemento::restore(LayerTreeView& view, LayerTreeModel& model)
             vsb->setValue(_verticalScrollbarPosition);
             vsb->valueChanged(_verticalScrollbarPosition);
         }
+    }
+}
+
+// Coalesce a burst of stageListChangedSignal notifications into a single refresh
+// (updateFromSessionState re-scans all stages, so avoid doing it per stage).
+void LayerTreeView::updateFromSessionStateOnIdle()
+{
+    if (!_updateFromSessionStatePending) {
+        _updateFromSessionStatePending = true;
+        QTimer::singleShot(0, this, [this]() {
+            _updateFromSessionStatePending = false;
+            updateFromSessionState();
+        });
     }
 }
 

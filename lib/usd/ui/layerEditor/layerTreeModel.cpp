@@ -297,13 +297,17 @@ void LayerTreeModel::setSessionState(SessionState* in_sessionState)
     rebuildModelOnIdle(true);
 }
 
-void LayerTreeModel::rebuildModelOnIdle(bool dataChanged)
+void LayerTreeModel::rebuildModelOnIdle(bool dataChanged, bool refreshLockState)
 {
+    // Coalesce rebuilds within one event-loop turn into a single rebuild. Accumulate
+    // the strongest request across coalesced callers (data-changed and lock-refresh).
     _selectedLayerDataChanged |= dataChanged;
+    _rebuildOnIdleRefreshLockState = _rebuildOnIdleRefreshLockState || refreshLockState;
     if (!_rebuildOnIdlePending) {
         _rebuildOnIdlePending = true;
         QTimer::singleShot(0, this, [this]() {
-            bool refreshLockState = false;
+            const bool refreshLockState = _rebuildOnIdleRefreshLockState;
+            _rebuildOnIdleRefreshLockState = false;
             this->rebuildModel(refreshLockState);
         });
     }
@@ -527,8 +531,9 @@ void LayerTreeModel::usd_layerDirtinessChanged(
 // called from SessionState::currentStageChangedSignal
 void LayerTreeModel::sessionStageChanged()
 {
-    bool refreshLockState = true;
-    rebuildModel(refreshLockState);
+    // Coalesce: a burst of stage changes collapses into one rebuild instead of
+    // rebuilding synchronously on every change.
+    rebuildModelOnIdle(/*dataChanged*/ false, /*refreshLockState*/ true);
 }
 
 // called from SessionState::autoHideSessionLayerSignal
