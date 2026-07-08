@@ -218,6 +218,11 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
         cube_prim = stage.GetPrimAtPath(cube_path)        
         self.assertTrue(cube_prim.IsValid(), f"{cube_path} should be a valid prim")
 
+        purpose_scope_path = Sdf.Path('/root/geo/guide')
+        purpose_scope = stage.GetPrimAtPath(purpose_scope_path)
+        self.assertTrue(purpose_scope.IsValid(), f"{purpose_scope_path} should be a valid prim after add_to_component_from_nodes with purpose")
+        self.assertEqual(purpose_scope.GetTypeName(), "Scope")
+
         purposed_path = Sdf.Path('/root/geo/guide/pCube2')
         purposed_prim = stage.GetPrimAtPath(purposed_path)        
         self.assertTrue(purposed_prim.IsValid(), f"{purposed_path} should be a valid prim after add_to_component_from_nodes with purpose")
@@ -287,6 +292,11 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
         cube_path = Sdf.Path('/root/geo/pCube1')
         cube_prim = stage.GetPrimAtPath(cube_path)        
         self.assertTrue(cube_prim.IsValid(), f"{cube_path} should be a valid prim")
+
+        purpose_scope_path = Sdf.Path('/root/geo/gui')
+        purpose_scope = stage.GetPrimAtPath(purpose_scope_path)
+        self.assertTrue(purpose_scope.IsValid(), f"{purpose_scope_path} should be a valid prim after add_to_component_from_nodes with purpose")
+        self.assertEqual(purpose_scope.GetTypeName(), "Scope")
 
         purposed_path = Sdf.Path('/root/geo/gui/pCube2')
         purposed_prim = stage.GetPrimAtPath(purposed_path)        
