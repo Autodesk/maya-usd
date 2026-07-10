@@ -39,6 +39,26 @@ class _ComponentCreatorTestBase:
         import AdskUsdComponentCreator
         return AdskUsdComponentCreator.ComponentDescription.CreateFromStageMetadata(stage)
 
+    @classmethod
+    def _setCustomPurposeTemplate(cls):
+        import AdskUsdComponentCreator
+        options = AdskUsdComponentCreator.GetKnownOptions('ASWF Standard (default)')
+        options = options.Clone()
+        options.purpose_scope_names = {
+            'guide' : 'gui',
+            'proxy' : 'prox',
+            'render': 'rend',
+        }
+        options_name = 'test_options'
+        AdskUsdComponentCreator.AddKnownOptions(options_name, options)
+        from usd_component_creator_plugin import save_selected_component_options_name
+        save_selected_component_options_name(options_name)
+
+    @classmethod
+    def _resetDefaultTemplate(cls):
+        from usd_component_creator_plugin import save_selected_component_options_name
+        save_selected_component_options_name('ASWF Standard (default)')
+
     def _createComponent(self):
         """Create a new Adsk USD Component with a `model/default` variant and a
         proxy shape pointing to its root layer.
