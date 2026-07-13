@@ -185,4 +185,53 @@ TEST_F(StageSelectorWidgetTest, SelectionChanged_DoesNotCrash)
     EXPECT_NO_THROW(w->selectionChanged());
 }
 
+// ── EMSUSD-3880: coalescing + comboIndexById ──────────────────────────────
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+
+// A burst of stageListChangedSignal defers to a single idle dropdown rebuild.
+TEST_F(StageSelectorWidgetTest, UpdateFromSessionStateOnIdle_CoalescesBurst)
+{
+    auto w = makeWidget();
+    ASSERT_NE(w->dropDown(), nullptr);
+    const int before = w->dropDown()->count(); // combo populated at construction
+    ASSERT_GT(before, 0);
+
+    // Two new stages arrive in the same event-loop turn (each emits stageListChangedSignal
+    // -> updateFromSessionStateOnIdle).
+    _sessionState.addStage(PXR_NS::UsdStage::CreateInMemory());
+    _sessionState.addStage(PXR_NS::UsdStage::CreateInMemory());
+
+    // Deferred: the dropdown has NOT been rebuilt yet (pre-port it rebuilt per signal).
+    EXPECT_EQ(w->dropDown()->count(), before) << "rebuild should be deferred to idle";
+
+    QCoreApplication::processEvents();
+    // A single coalesced rebuild reflects the full, updated stage list.
+    EXPECT_EQ(w->dropDown()->count(), static_cast<int>(_sessionState.allStages().size()));
+    EXPECT_EQ(w->dropDown()->count(), before + 2);
+}
+
+// comboIndexById resolves the correct combo row by stage id (not by position),
+// across a dropdown populated with more than the initial stages.
+TEST_F(StageSelectorWidgetTest, ComboIndexById_ResolvesByIdAcrossPopulatedCombo)
+{
+    auto w = makeWidget();
+    _sessionState.addStage(PXR_NS::UsdStage::CreateInMemory());
+    _sessionState.addStage(PXR_NS::UsdStage::CreateInMemory());
+    QCoreApplication::processEvents(); // flush the coalesced rebuild
+    ASSERT_NE(w->dropDown(), nullptr);
+
+    const auto& stages = _sessionState.allStages();
+    ASSERT_GE(stages.size(), 4u);
+    const auto target = stages.back(); // a later-added stage
+
+    _sessionState.setStageEntry(target);
+    w->testSessionStageChanged(); // resolves the index via comboIndexById
+
+    const int expectedIndex = w->dropDown()->findData(QVariant::fromValue(target));
+    ASSERT_NE(expectedIndex, -1);
+    EXPECT_EQ(w->dropDown()->currentIndex(), expectedIndex);
+}
+
+#endif // !MAYAUSD_OLD_LAYER_EDITOR
+
 } // namespace UsdLayerEditor

@@ -150,6 +150,9 @@ protected:
 
     // Updates the _cachedModelState using stage data from the session
     void updateFromSessionState();
+    // Coalesced updateFromSessionState (one refresh per event-loop turn).
+    void updateFromSessionStateOnIdle();
+    bool _updateFromSessionStatePending { false };
 
     LayerTreeViewStyle       _treeViewStyle;
     QPointer<LayerTreeModel> _model;

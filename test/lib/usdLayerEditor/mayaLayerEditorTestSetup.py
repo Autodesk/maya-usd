@@ -35,6 +35,11 @@ _redo_stack = []
 
 def _newScene():
     """Reset the Maya scene and ensure the mayaUsd plugin is loaded."""
+    # Close any Layer Editor left open by a previous test so each test starts with a
+    # clean slate. A leaked editor keeps a live model observing stage changes, whose
+    # deferred (idle) system-lock refresh could otherwise fire during an unrelated test.
+    if cmds.window('mayaUsdLayerEditor', exists=True):
+        cmds.deleteUI('mayaUsdLayerEditor', window=True)
     cmds.file(new=True, force=True)
     if not cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True):
         cmds.loadPlugin('mayaUsdPlugin')

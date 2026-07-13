@@ -339,7 +339,31 @@ public:
     using LayerTreeView::shouldExpandOrCollapseAll;
     using LayerTreeView::onMuteLayerButtonPushed;
     using LayerTreeView::onLockLayerButtonPushed;
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+    using LayerTreeView::updateFromSessionStateOnIdle;
+    using LayerTreeView::_updateFromSessionStatePending;
+#endif
 };
+
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+// EMSUSD-3880: multiple stage-list changes within one event-loop turn schedule a
+// single deferred refresh instead of refreshing synchronously per notification.
+TEST_F(LayerTreeViewTest, UpdateFromSessionStateOnIdle_CoalescesBurst)
+{
+    TestableLayerTreeView view(&_sessionState, _mainWindow);
+    view.show();
+    QApplication::processEvents(); // settle construction
+
+    view.updateFromSessionStateOnIdle();
+    view.updateFromSessionStateOnIdle();
+    EXPECT_TRUE(view._updateFromSessionStatePending)
+        << "a refresh should be pending (deferred, not run synchronously)";
+
+    QApplication::processEvents();
+    EXPECT_FALSE(view._updateFromSessionStatePending)
+        << "the single coalesced refresh should have run on idle";
+}
+#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 TEST_F(LayerTreeViewTest, CollapseChildren_AlsoCollapsesRoot)
 {

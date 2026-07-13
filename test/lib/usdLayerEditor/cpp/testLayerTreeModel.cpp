@@ -129,6 +129,36 @@ TEST_F(LayerTreeModelTest, Rebuild_SkipsResetWhenLayersAreIdentical)
     EXPECT_EQ(resetCount, 0) << "modelReset should not fire when layers are identical";
 }
 
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+TEST_F(LayerTreeModelTest, SessionStageChanged_DefersAndCoalescesRebuild)
+{
+    // EMSUSD-3880: sessionStageChanged() used to rebuild synchronously. It now defers to
+    // an idle callback and coalesces a burst of stage changes into a single rebuild.
+    // The path forces refreshLockState=true, so the idle rebuild resets even though the
+    // layer structure is unchanged. Driven through the real currentStageChangedSignal
+    // path via setStageEntry() (sessionStageChanged() is a protected slot).
+    QApplication::processEvents(); // let the initial build settle
+    const auto stages = _sessionState.allStages();
+    ASSERT_GE(stages.size(), 2u);
+
+    int resetCount = 0;
+    QObject::connect(treeModel(), &QAbstractItemModel::modelReset,
+        [&resetCount]() { ++resetCount; });
+
+    // Two stage switches within one event-loop turn, each emitting currentStageChangedSignal.
+    _sessionState.setStageEntry(stages[1]);
+    _sessionState.setStageEntry(stages[0]);
+    // Deferred: pre-port this rebuilt synchronously (resetCount would be >= 1 here).
+    EXPECT_EQ(resetCount, 0) << "sessionStageChanged should defer the rebuild to idle";
+
+    QApplication::processEvents();
+    // Coalesced to a single rebuild; a USD notice fired during item construction may
+    // schedule one extra (mirrors RebuildOnIdle_DeduplicatesScheduling).
+    EXPECT_GE(resetCount, 1) << "the coalesced idle rebuild should run";
+    EXPECT_LE(resetCount, 2);
+}
+#endif // !MAYAUSD_OLD_LAYER_EDITOR
+
 // ── filtering helpers ──────────────────────────────────────────────────────────
 
 TEST_F(LayerTreeModelTest, GetAllNeedsSavingLayers_EmptyWhenNoLayersAreDirtyAndShared)

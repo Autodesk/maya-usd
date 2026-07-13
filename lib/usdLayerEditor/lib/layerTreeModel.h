@@ -144,9 +144,10 @@ protected:
 
     mutable int _lastAskedAnonLayerNameSinceRebuild = 0;
 
-    void rebuildModelOnIdle(bool dataChanged = false);
+    void rebuildModelOnIdle(bool dataChanged = false, bool refreshLockState = false);
     bool _rebuildOnIdlePending = false;
     bool _selectedLayerDataChanged = false;
+    bool _rebuildOnIdleRefreshLockState = false;
     void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);
