@@ -254,21 +254,21 @@ bool shouldExpandOrCollapseAll()
         ? registry().environment.shouldExpandOrCollapseAll()
         : false;
 }
-QWidget* mainWindowParent()
+QWidget* getMainWindowParent()
 {
-    return registry().environment.mainWindowParent ? registry().environment.mainWindowParent()
+    return registry().environment.getMainWindowParent ? registry().environment.getMainWindowParent()
                                                     : nullptr;
 }
-int64_t layerContentsArraySizeLimit()
+int64_t getLayerContentsArraySizeLimit()
 {
-    return registry().environment.layerContentsArraySizeLimit
-        ? registry().environment.layerContentsArraySizeLimit()
+    return registry().environment.getLayerContentsArraySizeLimit
+        ? registry().environment.getLayerContentsArraySizeLimit()
         : 8;
 }
-int64_t layerContentsTimeSamplesSizeLimit()
+int64_t getLayerContentsTimeSamplesSizeLimit()
 {
-    return registry().environment.layerContentsTimeSamplesSizeLimit
-        ? registry().environment.layerContentsTimeSamplesSizeLimit()
+    return registry().environment.getLayerContentsTimeSamplesSizeLimit
+        ? registry().environment.getLayerContentsTimeSamplesSizeLimit()
         : 8;
 }
 void displayError(const std::string& error)

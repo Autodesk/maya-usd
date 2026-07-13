@@ -339,8 +339,8 @@ bool LayerContentsWidget::exportPseudoLayer(
 
     // DCC integrations can override the array/timeSample display limits (e.g. via
     // Maya optionVars); absent an override these return the ReportParams defaults.
-    params.arraySizeLimit = UsdLayerEditor::layerContentsArraySizeLimit();
-    params.timeSamplesSizeLimit = UsdLayerEditor::layerContentsTimeSamplesSizeLimit();
+    params.arraySizeLimit = UsdLayerEditor::getLayerContentsArraySizeLimit();
+    params.timeSamplesSizeLimit = UsdLayerEditor::getLayerContentsTimeSamplesSizeLimit();
 
     fmt = PXR_NS::TfCreateRefPtr(new OutputType::SdfFilterPseudoFileFormat(
         PXR_NS::TfStringPrintf("from @%s@", in_layer->GetIdentifier().c_str())));

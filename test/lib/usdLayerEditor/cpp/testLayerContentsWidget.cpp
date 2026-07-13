@@ -121,14 +121,14 @@ TEST_F(LayerContentsWidgetTest, SetLayer_RespectsArraySizeLimit)
 
     // Override only the array-size getter, preserving any other environment functions.
     EnvironmentFns smallEnv = layerEditorDCCFunctions().environment;
-    smallEnv.layerContentsArraySizeLimit = []() -> int64_t { return 2; };
+    smallEnv.getLayerContentsArraySizeLimit = []() -> int64_t { return 2; };
     setEnvironmentFns(smallEnv);
     cw->setLayer(layer);
     QApplication::processEvents();
     const int smallLen = textEdit->toPlainText().length();
 
     EnvironmentFns largeEnv = layerEditorDCCFunctions().environment;
-    largeEnv.layerContentsArraySizeLimit = []() -> int64_t { return 1000; };
+    largeEnv.getLayerContentsArraySizeLimit = []() -> int64_t { return 1000; };
     setEnvironmentFns(largeEnv);
     cw->setLayer(layer);
     QApplication::processEvents();

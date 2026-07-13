@@ -29,12 +29,12 @@
 
 using namespace UsdLayerEditor;
 
-// mainWindowParent() returns null when unset, the registered widget when set.
+// getMainWindowParent() returns null when unset, the registered widget when set.
 TEST(LayerEditorDCCFunctions, MainWindowParent_DefaultsToNull)
 {
     ScopedLayerEditorDCCFunctions guard;
     setEnvironmentFns(EnvironmentFns {});
-    EXPECT_EQ(mainWindowParent(), nullptr);
+    EXPECT_EQ(getMainWindowParent(), nullptr);
 }
 
 TEST(LayerEditorDCCFunctions, MainWindowParent_ReturnsRegisteredWidget)
@@ -42,9 +42,9 @@ TEST(LayerEditorDCCFunctions, MainWindowParent_ReturnsRegisteredWidget)
     ScopedLayerEditorDCCFunctions guard;
     QWidget        w;
     EnvironmentFns env;
-    env.mainWindowParent = [&w]() { return &w; };
+    env.getMainWindowParent = [&w]() { return &w; };
     setEnvironmentFns(env);
-    EXPECT_EQ(mainWindowParent(), &w);
+    EXPECT_EQ(getMainWindowParent(), &w);
 }
 
 // layer-contents size limits default to 8, return the registered values when set.
@@ -52,19 +52,19 @@ TEST(LayerEditorDCCFunctions, LayerContentsLimits_DefaultToEight)
 {
     ScopedLayerEditorDCCFunctions guard;
     setEnvironmentFns(EnvironmentFns {});
-    EXPECT_EQ(layerContentsArraySizeLimit(), 8);
-    EXPECT_EQ(layerContentsTimeSamplesSizeLimit(), 8);
+    EXPECT_EQ(getLayerContentsArraySizeLimit(), 8);
+    EXPECT_EQ(getLayerContentsTimeSamplesSizeLimit(), 8);
 }
 
 TEST(LayerEditorDCCFunctions, LayerContentsLimits_ReturnRegisteredValues)
 {
     ScopedLayerEditorDCCFunctions guard;
     EnvironmentFns                env;
-    env.layerContentsArraySizeLimit = []() -> int64_t { return 3; };
-    env.layerContentsTimeSamplesSizeLimit = []() -> int64_t { return 5; };
+    env.getLayerContentsArraySizeLimit = []() -> int64_t { return 3; };
+    env.getLayerContentsTimeSamplesSizeLimit = []() -> int64_t { return 5; };
     setEnvironmentFns(env);
-    EXPECT_EQ(layerContentsArraySizeLimit(), 3);
-    EXPECT_EQ(layerContentsTimeSamplesSizeLimit(), 5);
+    EXPECT_EQ(getLayerContentsArraySizeLimit(), 3);
+    EXPECT_EQ(getLayerContentsTimeSamplesSizeLimit(), 5);
 }
 
 // captureSessionLayer grabs a proxy's current session layer so its opinions can be

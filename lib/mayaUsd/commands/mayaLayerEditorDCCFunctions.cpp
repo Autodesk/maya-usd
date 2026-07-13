@@ -197,12 +197,12 @@ void registerLayerEditorDCCFunctions()
         MGlobal::executeCommand("getModifiers", modifiers);
         return (modifiers % 2) != 0; // magic constant: SHIFT held
     };
-    environment.layerContentsArraySizeLimit = []() -> int64_t {
+    environment.getLayerContentsArraySizeLimit = []() -> int64_t {
         const MString k
             = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsArraySizeLimit);
         return optionVarIntOr(k, 8);
     };
-    environment.layerContentsTimeSamplesSizeLimit = []() -> int64_t {
+    environment.getLayerContentsTimeSamplesSizeLimit = []() -> int64_t {
         const MString k
             = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsTimeSamplesSizeLimit);
         return optionVarIntOr(k, 8);

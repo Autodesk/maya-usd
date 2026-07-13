@@ -66,7 +66,7 @@ bool confirmDialog_internal(
         return testHandler(title, message);
 
     if (!parent)
-        parent = mainWindowParent();
+        parent = getMainWindowParent();
     QMessageBox msgBox(parent);
     // there is no title bar text on mac, instead it's bold text
     if (IS_MAC_OS)

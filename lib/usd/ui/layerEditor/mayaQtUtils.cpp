@@ -54,7 +54,7 @@ void initializeUi()
         "initializeUi() must be called after registerLayerEditorDCCFunctions().");
 
     auto environment = layerEditorDCCFunctions().environment;
-    environment.mainWindowParent = []() -> QWidget* { return MQtUtil::mainWindow(); };
+    environment.getMainWindowParent = []() -> QWidget* { return MQtUtil::mainWindow(); };
     setEnvironmentFns(environment);
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
