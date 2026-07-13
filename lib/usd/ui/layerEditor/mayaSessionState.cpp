@@ -24,6 +24,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
@@ -426,6 +427,13 @@ void MayaSessionState::setupCreateMenu(QMenu* in_menu)
     script += "menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;";
     script += "menuItem -runTimeCommand mayaUsdCreateStageFromFile;";
     script += "menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;";
+
+    if (MayaUsd::ComponentUtils::isAdskUsdComponentCreatorAvailable()) {
+        script += "menuItem -divider true;";
+        script += "menuItem -runTimeCommand mayaUsdCreateComponent;";
+        script += "menuItem -runTimeCommand mayaUsdCreateComponentOptions -optionBox true;";
+    }
+
     MGlobal::executeCommand(
         script,
         /*display*/ false,
