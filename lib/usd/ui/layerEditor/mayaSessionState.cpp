@@ -220,7 +220,7 @@ void MayaSessionState::registerNotifications()
     _stageResetNoticeKey = TfNotice::Register(me, &MayaSessionState::mayaUsdStageReset);
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
     _efFallbackTargetChangedNoticeKey
-        = TfNotice::Register(me, &MayaSessionState::usd_efFallbackTargetChanged);
+        = TfNotice::Register(me, &MayaSessionState::efFallbackTargetChanged);
 #endif
 
     loadSelectedStage();
@@ -510,7 +510,7 @@ PXR_NS::SdfLayerRefPtr MayaSessionState::effectiveTargetLayer() const
     return targetLayer();
 }
 
-void MayaSessionState::usd_efFallbackTargetChanged(
+void MayaSessionState::efFallbackTargetChanged(
     const MayaUsdEFFallbackTargetChangedNotice& notice)
 {
     if (notice.GetStage() != stage())

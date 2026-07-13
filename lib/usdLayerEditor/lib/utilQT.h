@@ -28,13 +28,13 @@ class QString;
 
 namespace UsdLayerEditor {
 
-LayerEditorAPI void initializeQtUtils();
+LAYEREDITOR_PUBLIC void initializeQtUtils();
 
 /**
  * @brief QT helpers the layer editor needs to load bitmaps and handle DPI scaling
  *
  */
-class LayerEditorAPI QtUtils
+class LAYEREDITOR_PUBLIC QtUtils
 {
 public:
     virtual double  dpiScale() { return _dpiScale; }
@@ -81,7 +81,7 @@ private:
  * @brief Disable repaint updates for the given widget until the disabler is destroyed.
  *
  */
-class LayerEditorAPI QtDisableRepaintUpdates
+class LAYEREDITOR_PUBLIC QtDisableRepaintUpdates
 {
 public:
     QtDisableRepaintUpdates(QWidget& widget);
@@ -95,7 +95,7 @@ private:
  * Used by the component-save widget to gate component-name entry to a USD-safe
  * identifier.
  */
-class LayerEditorAPI ValidTfIdentifierValidator : public QValidator
+class LAYEREDITOR_PUBLIC ValidTfIdentifierValidator : public QValidator
 {
 public:
     explicit ValidTfIdentifierValidator(QObject* parent = nullptr);
@@ -109,9 +109,9 @@ const bool IS_MAC_OS = true;
 const bool IS_MAC_OS = false;
 #endif
 
-LayerEditorAPI QtUtils* getQtUtils();
+LAYEREDITOR_PUBLIC QtUtils* getQtUtils();
 
-LayerEditorAPI void setQtUtils(QtUtils* qtUtils);
+LAYEREDITOR_PUBLIC void setQtUtils(QtUtils* qtUtils);
 
 template <class T> inline T DPIScale(T pixel)
 {

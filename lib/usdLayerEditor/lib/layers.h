@@ -35,21 +35,21 @@ getAllSublayers(const std::vector<std::string>& parentLayerPaths, bool includePa
 
 //! Return the folder of the layer of the current edit target of the stage, if any.
 //  If the stage is null, the returned path will be empty.
-LayerEditorAPI const std::string getTargetLayerFolder(const PXR_NS::UsdStagePtr& stage);
+LAYEREDITOR_PUBLIC const std::string getTargetLayerFolder(const PXR_NS::UsdStagePtr& stage);
 
 //! Return the folder of the layer of the current edit target of the prim, if any.
 //  If the prim is invalid, the returned path will be empty.
-LayerEditorAPI const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim);
+LAYEREDITOR_PUBLIC const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim);
 
 //! Returns the stage's target layer as a string that can be serialized.
 // If the edit target is not a layer on the local layer stack, an empty string is returned.
-LayerEditorAPI std::string getLocalTargetLayerAsString(const PXR_NS::UsdStagePtr& stage);
+LAYEREDITOR_PUBLIC std::string getLocalTargetLayerAsString(const PXR_NS::UsdStagePtr& stage);
 
 //! Returns a local layer target from the given stage, nameMap and layer identifier.
 // Returns an invalid layer handle if the layer cannot be found (possibly no longer
 // exists) or cannot be used as edit target directly (is no longer on the local layer
 // stack)
-LayerEditorAPI PXR_NS::SdfLayerHandle getLocalTargetLayerFromString(
+LAYEREDITOR_PUBLIC PXR_NS::SdfLayerHandle getLocalTargetLayerFromString(
     const LayerNameMap& nameMap,
     PXR_NS::UsdStage&   stage,
     const std::string&  identifier);

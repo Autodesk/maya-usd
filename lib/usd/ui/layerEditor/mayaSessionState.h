@@ -124,7 +124,7 @@ protected:
     // Bridges the edit-forward host's fallback-target-changed notice to the
     // shared SessionState Qt signals so the layer editor refreshes its target
     // highlight and the EF toggle button when forwarding state changes.
-    void usd_efFallbackTargetChanged(const MayaUsdEFFallbackTargetChangedNotice& notice);
+    void efFallbackTargetChanged(const MayaUsdEFFallbackTargetChangedNotice& notice);
 #endif
 
     void loadSelectedStage();

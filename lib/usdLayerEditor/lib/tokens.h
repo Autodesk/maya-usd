@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((AutoHideSessionLayer, "UsdLayerEditor_AutoHideSessionLayer"))
 // clang-format on
 
-TF_DECLARE_PUBLIC_TOKENS(UsdLayerEditorOptionVars, LayerEditorAPI, USDLAYEREDITOR_OPTIONVAR_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdLayerEditorOptionVars, LAYEREDITOR_PUBLIC, USDLAYEREDITOR_OPTIONVAR_TOKENS);
 
 // Tokens that are used as metadata on layers
 //
@@ -59,7 +59,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdLayerEditorOptionVars, LayerEditorAPI, USDLAYEREDITO
     ((MayaReferencedLayers, "mayaSharedLayers"))
 // clang-format on
 
-TF_DECLARE_PUBLIC_TOKENS(UsdLayerEditorMetadata, LayerEditorAPI, USDLAYEREDITOR_METADATA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdLayerEditorMetadata, LAYEREDITOR_PUBLIC, USDLAYEREDITOR_METADATA_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

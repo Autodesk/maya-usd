@@ -31,15 +31,15 @@
 namespace UsdLayerEditor {
 namespace Serialization {
 
- LayerEditorAPI std::string generateUniqueFileName(const std::string& basename);
+ LAYEREDITOR_PUBLIC std::string generateUniqueFileName(const std::string& basename);
 
- LayerEditorAPI std::string
+ LAYEREDITOR_PUBLIC std::string
  generateUniqueLayerFileName(const std::string& basename, const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Queries the optionVar that decides what the internal format
     of a .usd file should be, either "usdc" or "usda".
  */
- LayerEditorAPI std::string usdFormatArgOption();
+ LAYEREDITOR_PUBLIC std::string usdFormatArgOption();
 
  enum USDUnsavedEditsOption
 {
@@ -128,7 +128,7 @@ struct StageLayersToSave
     file (for the root layer) or its parent layer (for sub-layers). We assume the
     caller voluntarily made the path relative.
  */
-LayerEditorAPI bool saveLayerWithFormat(
+LAYEREDITOR_PUBLIC bool saveLayerWithFormat(
     pxr::SdfLayerRefPtr layer,
     const std::string&  requestedFilePath = "",
     const std::string&  requestedFormatArg = "");
@@ -165,14 +165,14 @@ std::string getSceneFolder();
  *         different relative paths, so we cannot interrogate it about
  *         what its path is.
  */
- LayerEditorAPI void updateSubLayer(
+ LAYEREDITOR_PUBLIC void updateSubLayer(
     const PXR_NS::SdfLayerRefPtr& parentLayer,
     const PXR_NS::SdfLayerRefPtr& oldSubLayer,
     const std::string&    newSubLayerPath);
 
 /*! \brief Ensures that the filepath contains a valid USD extension.
  */
- LayerEditorAPI void ensureUSDFileExtension(std::string& filePath);
+ LAYEREDITOR_PUBLIC void ensureUSDFileExtension(std::string& filePath);
 
 /*! \brief Check the sublayer stack of the stage looking for any anonymous
     layers that will need to be saved.
@@ -182,7 +182,7 @@ void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSa
 /*! \brief Same as getLayersToSaveFromDCCObject but accepts the stage directly,
     bypassing the UFE path-based stage lookup.
  */
-LayerEditorAPI void getLayersToSaveFromStage(
+LAYEREDITOR_PUBLIC void getLayersToSaveFromStage(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            objectPath,
     StageLayersToSave&            layersInfo);

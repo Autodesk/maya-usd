@@ -33,7 +33,7 @@ class LayerTreeItem;
 // bad paths are always allowed, because they could be custom URIs or future paths
 // used for Load Layers
 // in corner cases the parent layer is null, we assume its safe to add
-LayerEditorAPI bool checkIfPathIsSafeToAdd(
+LAYEREDITOR_PUBLIC bool checkIfPathIsSafeToAdd(
     QWidget*           in_parent,
     const QString&     in_errorTitle,
     LayerTreeItem*     in_parentItem,

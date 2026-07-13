@@ -51,6 +51,20 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+
+int optionVarIntOr(const MString& optVar, int defaultValue)
+{
+    return MGlobal::optionVarExists(optVar) ? MGlobal::optionVarIntValue(optVar) : defaultValue;
+}
+
+bool optionVarBoolOr(const MString& optVar, bool defaultValue)
+{
+    return MGlobal::optionVarExists(optVar) ? MGlobal::optionVarIntValue(optVar) != 0 : defaultValue;
+}
+
+} // namespace
+
 namespace UsdLayerEditor {
 
 void registerLayerEditorDCCFunctions()
@@ -119,28 +133,22 @@ void registerLayerEditorDCCFunctions()
 
     SaveOptionFns saveOption;
     saveOption.requireUsdPathsRelativeToSceneFile = []() {
-        return MGlobal::optionVarExists("mayaUsd_MakePathRelativeToSceneFile")
-            && MGlobal::optionVarIntValue("mayaUsd_MakePathRelativeToSceneFile") != 0;
+        return optionVarBoolOr("mayaUsd_MakePathRelativeToSceneFile", false);
     };
     saveOption.requireUsdPathsRelativeToParentLayer = []() {
-        return MGlobal::optionVarExists("mayaUsd_MakePathRelativeToParentLayer")
-            && MGlobal::optionVarIntValue("mayaUsd_MakePathRelativeToParentLayer") != 0;
+        return optionVarBoolOr("mayaUsd_MakePathRelativeToParentLayer", false);
     };
     saveOption.requireUsdPathsRelativeToEditTargetLayer = []() {
-        return MGlobal::optionVarExists("mayaUsd_MakePathRelativeToEditTargetLayer")
-            && MGlobal::optionVarIntValue("mayaUsd_MakePathRelativeToEditTargetLayer") != 0;
+        return optionVarBoolOr("mayaUsd_MakePathRelativeToEditTargetLayer", false);
     };
     saveOption.wantReferenceCompositionArc = []() {
-        return MGlobal::optionVarExists("mayaUsd_WantReferenceCompositionArc")
-            && MGlobal::optionVarIntValue("mayaUsd_WantReferenceCompositionArc") != 0;
+        return optionVarBoolOr("mayaUsd_WantReferenceCompositionArc", false);
     };
     saveOption.wantPrependCompositionArc = []() {
-        return MGlobal::optionVarExists("mayaUsd_WantPrependCompositionArc")
-            && MGlobal::optionVarIntValue("mayaUsd_WantPrependCompositionArc") != 0;
+        return optionVarBoolOr("mayaUsd_WantPrependCompositionArc", false);
     };
     saveOption.wantPayloadLoaded = []() {
-        return MGlobal::optionVarExists("mayaUsd_WantPayloadLoaded")
-            && MGlobal::optionVarIntValue("mayaUsd_WantPayloadLoaded") != 0;
+        return optionVarBoolOr("mayaUsd_WantPayloadLoaded", false);
     };
     saveOption.getReferencedPrimPath = []() -> std::string {
         if (!MGlobal::optionVarExists("mayaUsd_ReferencedPrimPath"))
@@ -153,11 +161,11 @@ void registerLayerEditorDCCFunctions()
         = [](bool v) { MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToParentLayer", v ? 1 : 0); };
     saveOption.confirmExistingFileSave = []() {
         static const MString k = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
-        return !MGlobal::optionVarExists(k) || MGlobal::optionVarIntValue(k) != 0; // default true
+        return optionVarBoolOr(k, true);
     };
     saveOption.getSaveLayerFormatBinary = []() {
         static const MString k = UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText();
-        return !MGlobal::optionVarExists(k) || MGlobal::optionVarIntValue(k) != 0; // default true
+        return optionVarBoolOr(k, true);
     };
     saveOption.setSaveLayerFormatBinary = [](bool v) {
         static const MString k = UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText();
@@ -165,7 +173,7 @@ void registerLayerEditorDCCFunctions()
     };
     saveOption.getSerializedUsdEditsLocation = []() -> int {
         static const MString k = UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText();
-        return MGlobal::optionVarExists(k) ? MGlobal::optionVarIntValue(k) : 1; // kSaveToUSDFiles
+        return optionVarIntOr(k, 1); // kSaveToUSDFiles
     };
     saveOption.setSerializedUsdEditsLocation = [](int v) {
         static const MString k = UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText();
@@ -176,7 +184,7 @@ void registerLayerEditorDCCFunctions()
     EnvironmentFns environment;
     environment.getPinLayerEditorStage = []() {
         static const MString k = UsdLayerEditorOptionVars->PinLayerEditorStage.GetText();
-        return MGlobal::optionVarExists(k) && MGlobal::optionVarIntValue(k) != 0;
+        return optionVarBoolOr(k, false);
     };
     environment.setPinLayerEditorStage = [](bool v) {
         static const MString k = UsdLayerEditorOptionVars->PinLayerEditorStage.GetText();
@@ -192,12 +200,12 @@ void registerLayerEditorDCCFunctions()
     environment.layerContentsArraySizeLimit = []() -> int64_t {
         const MString k
             = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsArraySizeLimit);
-        return MGlobal::optionVarExists(k) ? MGlobal::optionVarIntValue(k) : 8;
+        return optionVarIntOr(k, 8);
     };
     environment.layerContentsTimeSamplesSizeLimit = []() -> int64_t {
         const MString k
             = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsTimeSamplesSizeLimit);
-        return MGlobal::optionVarExists(k) ? MGlobal::optionVarIntValue(k) : 8;
+        return optionVarIntOr(k, 8);
     };
     environment.displayError = [](const std::string& error) {
         MGlobal::displayError(error.c_str());
@@ -210,7 +218,7 @@ void registerLayerEditorDCCFunctions()
     editForwarding.echoEditForwarding = []() {
         const MString optVar
             = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding);
-        return MGlobal::optionVarExists(optVar) && MGlobal::optionVarIntValue(optVar) != 0;
+        return optionVarBoolOr(optVar, false);
     };
     editForwarding.setEchoEditForwarding = [](bool echo) {
         const MString optVar

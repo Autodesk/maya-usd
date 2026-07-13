@@ -28,7 +28,7 @@ class LayerEditorWidget;
  * @brief Lightweight LayerEditorWidget manager class, created to have an minimal interface between dll boundaries
  * (in particular, for the _UsdLayerEditor project's code that creates python bindings for accessing data in the widget)
  **/
-class LayerEditorAPI LayerEditorWidgetManager
+class LAYEREDITOR_PUBLIC LayerEditorWidgetManager
 {
 public:
     ~LayerEditorWidgetManager() = default;

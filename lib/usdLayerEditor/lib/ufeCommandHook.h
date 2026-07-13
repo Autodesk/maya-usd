@@ -29,7 +29,7 @@ namespace UsdLayerEditor {
  * @brief "hook" all the commands of the layer editor through UFE undoable commands.
  *
  */
-class LayerEditorAPI UfeCommandHook
+class LAYEREDITOR_PUBLIC UfeCommandHook
     : public AbstractCommandHook
     , public Ufe::Subject
 {

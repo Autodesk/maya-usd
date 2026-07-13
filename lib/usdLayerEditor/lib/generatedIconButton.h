@@ -29,7 +29,7 @@ namespace UsdLayerEditor {
  *
  */
 
-class LayerEditorAPI GeneratedIconButton : public QAbstractButton
+class LAYEREDITOR_PUBLIC GeneratedIconButton : public QAbstractButton
 {
 public:
     GeneratedIconButton(QWidget* in_parent, const QIcon& in_icon, int in_size = -1);

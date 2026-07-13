@@ -166,90 +166,90 @@ struct LayerEditorDCCFunctions
 
 // Registration API — per-group setters (play cleanly with #ifdef guards), plus a
 // full-struct setter and a getter used by the test RAII helper.
-LayerEditorAPI void setComponentFns(const ComponentFns&);
-LayerEditorAPI void setEditForwardingFns(const EditForwardingFns&);
-LayerEditorAPI void setDccObjectFns(const DccObjectFns&);
-LayerEditorAPI void setSaveOptionFns(const SaveOptionFns&);
-LayerEditorAPI void setEnvironmentFns(const EnvironmentFns&);
-LayerEditorAPI void setFileSystemFns(const FileSystemFns&);
-LayerEditorAPI void setSerializationFns(const SerializationFns&);
-LayerEditorAPI void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
-LayerEditorAPI const LayerEditorDCCFunctions& layerEditorDCCFunctions();
+LAYEREDITOR_PUBLIC void setComponentFns(const ComponentFns&);
+LAYEREDITOR_PUBLIC void setEditForwardingFns(const EditForwardingFns&);
+LAYEREDITOR_PUBLIC void setDccObjectFns(const DccObjectFns&);
+LAYEREDITOR_PUBLIC void setSaveOptionFns(const SaveOptionFns&);
+LAYEREDITOR_PUBLIC void setEnvironmentFns(const EnvironmentFns&);
+LAYEREDITOR_PUBLIC void setFileSystemFns(const FileSystemFns&);
+LAYEREDITOR_PUBLIC void setSerializationFns(const SerializationFns&);
+LAYEREDITOR_PUBLIC void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
+LAYEREDITOR_PUBLIC const LayerEditorDCCFunctions& layerEditorDCCFunctions();
 
 // Accessor free functions — callers never null-check; an unset std::function
 // yields the documented default (false / empty / no-op, except
 // isDccObjectSharedStage which defaults to true).
-LayerEditorAPI void        saveComponent(const PXR_NS::UsdStageRefPtr&, const std::string&);
-LayerEditorAPI void        reloadComponent(const std::string&);
-LayerEditorAPI bool        isStageAComponent(const std::string&);
-LayerEditorAPI bool        isUnsavedComponent(const PXR_NS::UsdStageRefPtr&);
-LayerEditorAPI bool        shouldDisplayComponentInitialSaveDialog(
+LAYEREDITOR_PUBLIC void        saveComponent(const PXR_NS::UsdStageRefPtr&, const std::string&);
+LAYEREDITOR_PUBLIC void        reloadComponent(const std::string&);
+LAYEREDITOR_PUBLIC bool        isStageAComponent(const std::string&);
+LAYEREDITOR_PUBLIC bool        isUnsavedComponent(const PXR_NS::UsdStageRefPtr&);
+LAYEREDITOR_PUBLIC bool        shouldDisplayComponentInitialSaveDialog(
            const PXR_NS::UsdStageRefPtr&,
            const std::string&);
-LayerEditorAPI std::string sceneFolder();
-LayerEditorAPI std::string
+LAYEREDITOR_PUBLIC std::string sceneFolder();
+LAYEREDITOR_PUBLIC std::string
 moveComponent(const std::string&, const std::string&, const std::string&);
-LayerEditorAPI std::string
+LAYEREDITOR_PUBLIC std::string
 previewComponentSave(const std::string&, const std::string&, const std::string&);
-LayerEditorAPI std::vector<std::string> getComponentLayersToSave(const std::string&);
+LAYEREDITOR_PUBLIC std::vector<std::string> getComponentLayersToSave(const std::string&);
 
-LayerEditorAPI bool supportsEditForwarding();
-LayerEditorAPI bool echoEditForwarding();
-LayerEditorAPI void setEchoEditForwarding(bool);
-LayerEditorAPI void openEditForwardDialog(const PXR_NS::UsdStageRefPtr&);
-LayerEditorAPI bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr&);
-LayerEditorAPI bool isEditForwardDialogOpen();
+LAYEREDITOR_PUBLIC bool supportsEditForwarding();
+LAYEREDITOR_PUBLIC bool echoEditForwarding();
+LAYEREDITOR_PUBLIC void setEchoEditForwarding(bool);
+LAYEREDITOR_PUBLIC void openEditForwardDialog(const PXR_NS::UsdStageRefPtr&);
+LAYEREDITOR_PUBLIC bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr&);
+LAYEREDITOR_PUBLIC bool isEditForwardDialogOpen();
 
-LayerEditorAPI bool isDccObjectStageIncoming(const std::string&);
-LayerEditorAPI bool isDccObjectSharedStage(const std::string&);
-LayerEditorAPI std::string renameObject(const std::string&, const std::string&);
+LAYEREDITOR_PUBLIC bool isDccObjectStageIncoming(const std::string&);
+LAYEREDITOR_PUBLIC bool isDccObjectSharedStage(const std::string&);
+LAYEREDITOR_PUBLIC std::string renameObject(const std::string&, const std::string&);
 
 // SaveOptionFns
-LayerEditorAPI bool        requireUsdPathsRelativeToSceneFile();
-LayerEditorAPI bool        requireUsdPathsRelativeToParentLayer();
-LayerEditorAPI bool        requireUsdPathsRelativeToEditTargetLayer();
-LayerEditorAPI bool        wantReferenceCompositionArc();
-LayerEditorAPI bool        wantPrependCompositionArc();
-LayerEditorAPI bool        wantPayloadLoaded();
-LayerEditorAPI std::string getReferencedPrimPath();
-LayerEditorAPI void        setRequireUsdPathsRelativeToSceneFile(bool);
-LayerEditorAPI void        setRequireUsdPathsRelativeToParentLayer(bool);
-LayerEditorAPI bool        confirmExistingFileSave();
-LayerEditorAPI bool        getSaveLayerFormatBinary();
-LayerEditorAPI void        setSaveLayerFormatBinary(bool);
-LayerEditorAPI int         getSerializedUsdEditsLocation();
-LayerEditorAPI void        setSerializedUsdEditsLocation(int);
+LAYEREDITOR_PUBLIC bool        requireUsdPathsRelativeToSceneFile();
+LAYEREDITOR_PUBLIC bool        requireUsdPathsRelativeToParentLayer();
+LAYEREDITOR_PUBLIC bool        requireUsdPathsRelativeToEditTargetLayer();
+LAYEREDITOR_PUBLIC bool        wantReferenceCompositionArc();
+LAYEREDITOR_PUBLIC bool        wantPrependCompositionArc();
+LAYEREDITOR_PUBLIC bool        wantPayloadLoaded();
+LAYEREDITOR_PUBLIC std::string getReferencedPrimPath();
+LAYEREDITOR_PUBLIC void        setRequireUsdPathsRelativeToSceneFile(bool);
+LAYEREDITOR_PUBLIC void        setRequireUsdPathsRelativeToParentLayer(bool);
+LAYEREDITOR_PUBLIC bool        confirmExistingFileSave();
+LAYEREDITOR_PUBLIC bool        getSaveLayerFormatBinary();
+LAYEREDITOR_PUBLIC void        setSaveLayerFormatBinary(bool);
+LAYEREDITOR_PUBLIC int         getSerializedUsdEditsLocation();
+LAYEREDITOR_PUBLIC void        setSerializedUsdEditsLocation(int);
 // EnvironmentFns
-LayerEditorAPI bool        getPinLayerEditorStage();
-LayerEditorAPI void        setPinLayerEditorStage(bool);
-LayerEditorAPI bool        isInteractiveDCCSession();
-LayerEditorAPI bool        shouldExpandOrCollapseAll();
-LayerEditorAPI QWidget*    mainWindowParent();
-LayerEditorAPI int64_t     layerContentsArraySizeLimit();
-LayerEditorAPI int64_t     layerContentsTimeSamplesSizeLimit();
-LayerEditorAPI void        displayError(const std::string&);
+LAYEREDITOR_PUBLIC bool        getPinLayerEditorStage();
+LAYEREDITOR_PUBLIC void        setPinLayerEditorStage(bool);
+LAYEREDITOR_PUBLIC bool        isInteractiveDCCSession();
+LAYEREDITOR_PUBLIC bool        shouldExpandOrCollapseAll();
+LAYEREDITOR_PUBLIC QWidget*    mainWindowParent();
+LAYEREDITOR_PUBLIC int64_t     layerContentsArraySizeLimit();
+LAYEREDITOR_PUBLIC int64_t     layerContentsTimeSamplesSizeLimit();
+LAYEREDITOR_PUBLIC void        displayError(const std::string&);
 
 // FileSystemFns
-LayerEditorAPI std::string getDCCSceneDir();
-LayerEditorAPI std::string getDCCWorkspaceScenesDir();
-LayerEditorAPI bool        prepareLayerSaveUILayer(const std::string& relativeAnchor);
-LayerEditorAPI bool        checkWriteAccess(const std::string& filePath);
+LAYEREDITOR_PUBLIC std::string getDCCSceneDir();
+LAYEREDITOR_PUBLIC std::string getDCCWorkspaceScenesDir();
+LAYEREDITOR_PUBLIC bool        prepareLayerSaveUILayer(const std::string& relativeAnchor);
+LAYEREDITOR_PUBLIC bool        checkWriteAccess(const std::string& filePath);
 
 // SerializationFns
-LayerEditorAPI std::vector<PXR_NS::UsdStageCache*> getStageCaches();
-LayerEditorAPI std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
-LayerEditorAPI void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
+LAYEREDITOR_PUBLIC std::vector<PXR_NS::UsdStageCache*> getStageCaches();
+LAYEREDITOR_PUBLIC std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
+LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
 // Writes the saved root-layer path back onto the DCC object. pathMode selects whether to honor the
 // proxy/option-var relative-vs-absolute preference (FollowPreference, the normal save flow) or to
 // force an absolute path (ForceAbsolute, used after a component move repaths the root).
-LayerEditorAPI void updateDCCObjectRootLayer(
+LAYEREDITOR_PUBLIC void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,
     const std::string&            layerPath,
     const PXR_NS::SdfLayerRefPtr& layer,
     bool                          wasTargetLayer,
     DccObjectRootLayerPathMode    pathMode = DccObjectRootLayerPathMode::FollowPreference);
-LayerEditorAPI PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath);
-LayerEditorAPI void transferSessionLayer(
+LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath);
+LAYEREDITOR_PUBLIC void transferSessionLayer(
     const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
     const std::string&            dstDccObjectPath);
 

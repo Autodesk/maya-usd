@@ -44,7 +44,7 @@ class LayerContentsWidget;
  * This widget is meant to be hosted by a parent QMainWindow, where the menu will be created
  **/
 
-class LayerEditorAPI LayerEditorWidget
+class LAYEREDITOR_PUBLIC LayerEditorWidget
     : public QWidget
     , public PXR_NS::TfWeakBase
 {
@@ -102,6 +102,8 @@ protected:
     void updateTreeContainerStyle(bool focused);
     void updateTreeContainerBorder(QWidget* previous, QWidget* now);
 
+    private:
+
     QPointer<QFrame>              _treeContainer;
     QPointer<LayerTreeView>       _treeView;
     QPointer<LayerContentsWidget> _layerContents;
@@ -109,7 +111,6 @@ protected:
 
     bool _updateButtonsOnIdle = false; // true if request to update on idle is pending
 
-private:
     void openEditForwardDialog();
 };
 

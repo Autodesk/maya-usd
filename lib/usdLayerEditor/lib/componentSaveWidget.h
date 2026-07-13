@@ -45,7 +45,7 @@ class SessionState;
  * The widget is DCC-agnostic. The DCC-specific bits (default save location,
  * preview hierarchy) are routed through SessionState virtuals.
  */
-class LayerEditorAPI ComponentSaveWidget : public QWidget
+class LAYEREDITOR_PUBLIC ComponentSaveWidget : public QWidget
 {
     Q_OBJECT
 

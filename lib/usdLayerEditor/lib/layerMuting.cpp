@@ -25,11 +25,15 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 
 namespace {
-// Kept in a function to avoid problem with the order of construction
-// of global variables in C++.
+
+// Map of muted layers (by their identifiers) to their held layer dependencies (the layer
+// itself and any descendant sublayers)
 using MutedLayers = std::unordered_map<std::string, LayerRefSet>;
+
 MutedLayers& getMutedLayersMap()
 {
+    // Kept in a function to avoid problem with the order of construction
+    // of global variables in C++.
     // Note: C++ guarantees correct multi-thread protection for static
     //       variables initialization in functions.
     static MutedLayers layers;

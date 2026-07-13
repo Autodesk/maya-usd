@@ -66,10 +66,11 @@ public:
     // Returns a pointer to the last call with the given name, or nullptr if none.
     const CommandCall* lastCallOf(const std::string& method) const;
 
-    std::vector<CommandCall> _calls;
-
 protected:
     void executeDelayedCommands() override { }
+
+private:
+    std::vector<CommandCall> _calls;
 };
 
 } // namespace UsdLayerEditor

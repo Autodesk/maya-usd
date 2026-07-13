@@ -48,7 +48,7 @@ typedef void                        (LayerTreeItem::*simpleLayerMethod)(QWidget*
  * Used to save and restore the state when the model is rebuilt.
  *
  */
-class LayerEditorAPI LayerViewMemento
+class LAYEREDITOR_PUBLIC LayerViewMemento
 {
 public:
     LayerViewMemento(const LayerTreeView&, const LayerTreeModel&);
@@ -79,7 +79,7 @@ private:
  * @brief Implements the Qt TreeView for USD layers. This widget is owned by the LayerEditorWidget.
  *
  */
-class LayerEditorAPI LayerTreeView
+class LAYEREDITOR_PUBLIC LayerTreeView
     : public QTreeView
     , public PXR_NS::TfWeakBase
 {

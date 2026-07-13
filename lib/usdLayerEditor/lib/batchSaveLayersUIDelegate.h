@@ -50,7 +50,7 @@ struct StageSavingInfo
     bool           isIncoming = false;
 };
 
-LayerEditorAPI  BatchSaveResult
+LAYEREDITOR_PUBLIC  BatchSaveResult
 batchSaveLayersUIDelegate(const std::vector<StageSavingInfo>& infos, bool isExporting);
 
 } // namespace UsdLayerEditor

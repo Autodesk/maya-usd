@@ -46,7 +46,7 @@ enum class InRebuildModel
  * @brief Implements the Qt data model for the usd layer tree view
  *
  */
-class LayerEditorAPI LayerTreeModel
+class LAYEREDITOR_PUBLIC LayerTreeModel
     : public QStandardItemModel
     , public PXR_NS::TfWeakBase
 {
