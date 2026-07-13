@@ -41,6 +41,8 @@
 #include <ufe/selectionNotification.h>
 
 #include <QtCore/QPointer>
+#include <QtCore/QString>
+#include <QtCore/QVariant>
 #include <QtGui/QPalette>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QWidget>
@@ -124,8 +126,10 @@ public:
         switch (color) {
         case ThemeColors::DisabledForeground:
             return QApplication::palette().color(QPalette::Disabled, QPalette::WindowText);
+        default:
+            // All other roles use the base host's themed defaults.
+            return ApplicationHost::themeColor(color);
         }
-        return QColor();
     }
 
     bool executeInCmd(
@@ -148,8 +152,34 @@ public:
         return edit();
     }
 
+    float uiScale() const override { return static_cast<float>(MQtUtil::dpiScale(1.0f)); }
+
+    QVariant loadPersistentData(const QString& group, const QString& key) const override
+    {
+        const MString varName = optionVarName(group, key);
+        if (!MGlobal::optionVarExists(varName)) {
+            return QVariant();
+        }
+
+        return QVariant(QString::fromUtf8(MGlobal::optionVarStringValue(varName).asChar()));
+    }
+
+    void
+    savePersistentData(const QString& group, const QString& key, const QVariant& value) override
+    {
+        // Store every value as a string optionVar
+        const MString varName = optionVarName(group, key);
+        MGlobal::setOptionVarValue(varName, MString(value.toString().toUtf8().constData()));
+    }
+
 protected:
     MayaCompositionEditorHost() { injectInstance(this); }
+
+    static MString optionVarName(const QString& group, const QString& key)
+    {
+        const QString name = QStringLiteral("mayaUsd_CompositionEditor_%1_%2").arg(group, key);
+        return MString(name.toUtf8().constData());
+    }
 };
 
 bool workspaceControlExists()
@@ -257,7 +287,9 @@ MStatus CompositionEditorCmd::doIt(const MArgList& args)
     // First invocation: create the workspace control wrapper, then create
     // the widget inside it. -retain false + -deleteLater false combined
     // with -uiScript matches the Layer Editor pattern so the widget is
-    // rebuilt on layout save/restore.
+    // rebuilt on layout save/restore. The workspace control persists its own
+    // size across sessions, so -initialWidth/-initialHeight only seed the
+    // first-launch geometry.
     MString createCmd;
     createCmd.format(
         "workspaceControl"

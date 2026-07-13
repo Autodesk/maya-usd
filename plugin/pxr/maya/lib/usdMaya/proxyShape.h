@@ -25,9 +25,11 @@
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MBoundingBox.h>
@@ -50,7 +52,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
 #define PXRUSDMAYA_PROXY_SHAPE_TOKENS \
-    ((MayaTypeName, "pxrUsdProxyShape"))
+    ((MayaTypeName, "pxrUsdProxyShape")) \
+    ((MayaProxyShapeNameSuffix, "Proxy")) \
+    ((SkipRootPrimTransformAttrName, "skipRootPrimTransform"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens, PXRUSDMAYA_API, PXRUSDMAYA_PROXY_SHAPE_TOKENS);
@@ -71,6 +75,8 @@ public:
     static MObject fastPlaybackAttr;
     PXRUSDMAYA_API
     static MObject softSelectableAttr;
+    PXRUSDMAYA_API
+    static MObject skipRootPrimTransformAttr;
 
     /// Delegate function for returning whether object soft select mode is
     /// currently on
@@ -87,6 +93,14 @@ public:
 
     // Virtual function overrides
 
+    PXRUSDMAYA_API
+    MStatus setDependentsDirty(const MPlug& plug, MPlugArray& plugArray) override;
+
+    PXRUSDMAYA_API
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
+
+    PXRUSDMAYA_API
+    bool isRootPrimTransformInDagPath() const override;
     PXRUSDMAYA_API
     bool isBounded() const override;
     PXRUSDMAYA_API
@@ -123,7 +137,10 @@ private:
     ~UsdMayaProxyShape() override;
     UsdMayaProxyShape& operator=(const UsdMayaProxyShape&);
 
-    bool _useFastPlayback;
+    void _ApplyVariantSelections(const UsdStagePtr& stage);
+
+    bool           _useFastPlayback;
+    SdfLayerRefPtr _variantOverrideLayer;
 
     static ObjectSoftSelectEnabledDelegate _sharedObjectSoftSelectEnabledDelegate;
 };
