@@ -49,6 +49,9 @@ protected:
     // slot:
     void updateFromSessionState(
         SessionState::StageEntry const& entryToSelect = SessionState::StageEntry());
+    // Coalesced updateFromSessionState (one dropdown rebuild per event-loop turn).
+    void updateFromSessionStateOnIdle(
+        SessionState::StageEntry const& entryToSelect = SessionState::StageEntry());
     void stageRenamed(SessionState::StageEntry const& renamedEntry);
     void stageReset(SessionState::StageEntry const& entry);
     void sessionStageChanged();
@@ -64,6 +67,10 @@ private:
     QPushButton*  _collapseContent { nullptr };
     bool          _internalChange { false }; // for notifications
     bool          _pinStageSelection { true };
+
+    // Coalescing state for updateFromSessionStateOnIdle().
+    bool                     _updateFromSessionStatePending { false };
+    SessionState::StageEntry _pendingSelectEntry;
 };
 
 } // namespace UsdLayerEditor

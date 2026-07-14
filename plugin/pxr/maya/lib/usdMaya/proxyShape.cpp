@@ -15,6 +15,8 @@
 //
 #include "usdMaya/proxyShape.h"
 
+#include "usdMaya/referenceAssembly.h"
+
 #include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/stageData.h>
@@ -38,10 +40,12 @@
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/bboxCache.h>
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -103,6 +107,7 @@ const MString UsdMayaProxyShape::typeName(UsdMayaProxyShapeTokens->MayaTypeName.
 MObject UsdMayaProxyShape::variantKeyAttr;
 MObject UsdMayaProxyShape::fastPlaybackAttr;
 MObject UsdMayaProxyShape::softSelectableAttr;
+MObject UsdMayaProxyShape::skipRootPrimTransformAttr;
 
 /* static */
 void* UsdMayaProxyShape::creator() { return new UsdMayaProxyShape(); }
@@ -140,6 +145,16 @@ MStatus UsdMayaProxyShape::initialize()
     numericAttrFn.setStorable(false);
     numericAttrFn.setAffectsAppearance(true);
     retValue = addAttribute(softSelectableAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    skipRootPrimTransformAttr = numericAttrFn.create(
+        "skipRootPrimTransform", "srpt", MFnNumericData::kBoolean, 0, &retValue);
+    numericAttrFn.setStorable(true);
+    numericAttrFn.setKeyable(false);
+    numericAttrFn.setHidden(true);
+    numericAttrFn.setAffectsAppearance(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(skipRootPrimTransformAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     //
@@ -202,6 +217,145 @@ SdfLayerRefPtr UsdMayaProxyShape::computeSessionLayer(MDataBlock& dataBlock)
 }
 
 /* virtual */
+MStatus UsdMayaProxyShape::setDependentsDirty(const MPlug& dirtiedPlug, MPlugArray& affectedPlugs)
+{
+    // If a usdVariantSet_* attr changed, dirty the stage so compute re-runs.
+    MString       dirtiedPlugName = dirtiedPlug.partialName();
+    const MString variantSetPrefix(UsdMayaVariantSetTokens->PlugNamePrefix.GetText());
+    if ((dirtiedPlugName.length() > variantSetPrefix.length())
+        && (dirtiedPlugName.substring(0, variantSetPrefix.length() - 1) == variantSetPrefix)) {
+        MObject thisNode = thisMObject();
+        affectedPlugs.append(MPlug(thisNode, inStageDataCachedAttr));
+        affectedPlugs.append(MPlug(thisNode, outStageDataAttr));
+    }
+
+    return ParentClass::setDependentsDirty(dirtiedPlug, affectedPlugs);
+}
+
+/* virtual */
+MStatus UsdMayaProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
+{
+    MStatus status = ParentClass::compute(plug, dataBlock);
+    if (status != MS::kSuccess) {
+        return status;
+    }
+
+    // After base class sets up the stage, apply variant selections.
+    if (plug == outStageDataAttr || plug == inStageDataCachedAttr) {
+        UsdStagePtr stage = getUsdStage();
+        if (stage) {
+            _ApplyVariantSelections(stage);
+        }
+    }
+
+    return status;
+}
+
+void UsdMayaProxyShape::_ApplyVariantSelections(const UsdStagePtr& stage)
+{
+    MStatus           status;
+    MFnDependencyNode depNodeFn(thisMObject(), &status);
+    if (!status) {
+        return;
+    }
+
+    // Collect all usdVariantSet_* attribute values.
+    std::vector<std::pair<std::string, std::string>> variantSelections;
+    for (unsigned int i = 0; i < depNodeFn.attributeCount(); ++i) {
+        MObject attrObj = depNodeFn.attribute(i);
+        if (attrObj.isNull()) {
+            continue;
+        }
+        MPlug attrPlug = depNodeFn.findPlug(attrObj, true);
+        if (attrPlug.isNull()) {
+            continue;
+        }
+
+        const std::string attrName(attrPlug.partialName().asChar());
+        if (!TfStringStartsWith(attrName, UsdMayaVariantSetTokens->PlugNamePrefix)) {
+            continue;
+        }
+        const std::string varSetName
+            = attrName.substr(UsdMayaVariantSetTokens->PlugNamePrefix.GetString().size());
+        MString value;
+        attrPlug.getValue(value);
+        if (value.length() > 0) {
+            variantSelections.emplace_back(varSetName, std::string(value.asChar()));
+        }
+    }
+
+    if (variantSelections.empty()) {
+        // Clear any previously authored variant opinions.
+        if (_variantOverrideLayer) {
+            _variantOverrideLayer->Clear();
+        }
+        return;
+    }
+
+    // Get the prim path for this proxy.
+    MPlug primPathPlug = depNodeFn.findPlug("primPath", true, &status);
+    if (!status) {
+        return;
+    }
+    MString primPathStr;
+    primPathPlug.getValue(primPathStr);
+    const SdfPath primPath(primPathStr.asChar());
+    if (primPath.IsEmpty()) {
+        return;
+    }
+
+    UsdPrim prim = stage->GetPrimAtPath(primPath);
+    if (!prim) {
+        return;
+    }
+
+    // Create or reuse our session sublayer.
+    if (!_variantOverrideLayer) {
+        _variantOverrideLayer = SdfLayer::CreateAnonymous("proxyVariants");
+    }
+
+    // Ensure our layer is in the stage's session sublayer stack.
+    SdfLayerHandle    sessionLayer = stage->GetSessionLayer();
+    const std::string layerId = _variantOverrideLayer->GetIdentifier();
+    bool              found = false;
+    {
+        auto subLayerPaths = sessionLayer->GetSubLayerPaths();
+        for (size_t i = 0; i < subLayerPaths.size(); ++i) {
+            if (subLayerPaths[i] == layerId) {
+                found = true;
+                break;
+            }
+        }
+    }
+    // Clear and re-author variant selections.
+    _variantOverrideLayer->Clear();
+    {
+        UsdEditContext editCtx(stage, _variantOverrideLayer);
+        for (const auto& varSel : variantSelections) {
+            UsdVariantSet varSet = prim.GetVariantSet(varSel.first);
+            varSet.SetVariantSelection(varSel.second);
+        }
+    }
+
+    if (!found) {
+        sessionLayer->InsertSubLayerPath(layerId);
+    }
+}
+
+/* virtual */
+bool UsdMayaProxyShape::isRootPrimTransformInDagPath() const
+{
+    UsdMayaProxyShape* nonConstThis = const_cast<UsdMayaProxyShape*>(this);
+    MDataBlock         dataBlock = nonConstThis->forceCache();
+    MStatus            status;
+    MDataHandle        handle = dataBlock.inputValue(skipRootPrimTransformAttr, &status);
+    if (status == MS::kSuccess) {
+        return handle.asBool();
+    }
+    return false;
+}
+
+/* virtual */
 bool UsdMayaProxyShape::isBounded() const
 {
     return !_useFastPlayback && TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE)
@@ -215,7 +369,43 @@ MBoundingBox UsdMayaProxyShape::boundingBox() const
         return UsdMayaUtil::GetInfiniteBoundingBox();
     }
 
-    return ParentClass::boundingBox();
+    if (!isRootPrimTransformInDagPath()) {
+        return ParentClass::boundingBox();
+    }
+
+    // When isRootPrimTransformInDagPath() is true, the Maya DAG already
+    // provides the full ancestor transform chain. Compute bounds in the
+    // prim's own coordinate frame (untransformed) so that Maya's
+    // inclusiveMatrix can position them correctly without doubling.
+    UsdPrim prim = usdPrim();
+    if (!prim) {
+        return MBoundingBox();
+    }
+
+    const UsdTimeCode      currTime = getTime();
+    const UsdGeomImageable imageablePrim(prim);
+
+    bool drawRenderPurpose = false;
+    bool drawProxyPurpose = true;
+    bool drawGuidePurpose = false;
+    getDrawPurposeToggles(&drawRenderPurpose, &drawProxyPurpose, &drawGuidePurpose);
+
+    const GfBBox3d allBox = imageablePrim.ComputeUntransformedBound(
+        currTime,
+        UsdGeomTokens->default_,
+        drawRenderPurpose ? UsdGeomTokens->render : TfToken(),
+        drawProxyPurpose ? UsdGeomTokens->proxy : TfToken(),
+        drawGuidePurpose ? UsdGeomTokens->guide : TfToken());
+    const GfRange3d boxRange = allBox.ComputeAlignedBox();
+
+    if (!boxRange.IsEmpty()) {
+        const GfVec3d boxMin = boxRange.GetMin();
+        const GfVec3d boxMax = boxRange.GetMax();
+        return MBoundingBox(
+            MPoint(boxMin[0], boxMin[1], boxMin[2]), MPoint(boxMax[0], boxMax[1], boxMax[2]));
+    }
+
+    return MBoundingBox();
 }
 
 /* virtual */
@@ -227,6 +417,15 @@ bool UsdMayaProxyShape::setInternalValueInContext(
     if (plug == fastPlaybackAttr) {
         _useFastPlayback = dataHandle.asBool();
         return true;
+    }
+
+    // For variant set attributes (internalSet=true), accept the value.
+    // setDependentsDirty + compute will handle updating the stage.
+    if (plug.isDynamic()) {
+        const std::string plugName(plug.partialName().asChar());
+        if (TfStringStartsWith(plugName, UsdMayaVariantSetTokens->PlugNamePrefix)) {
+            return MPxSurfaceShape::setInternalValueInContext(plug, dataHandle, ctx);
+        }
     }
 
     return MPxSurfaceShape::setInternalValueInContext(plug, dataHandle, ctx);
