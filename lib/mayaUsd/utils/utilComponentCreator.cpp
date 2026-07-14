@@ -89,7 +89,7 @@ bool isAdskUsdComponent(const std::string& proxyShapePath)
         "    import mayaUsd.ufe\n"
         "    try:\n"
         "        from AdskUsdComponentCreator import ComponentDescription\n"
-        "    except ImportError:\n"
+        "    except:\n"
         "        return -1\n"
         "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
         "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
@@ -113,6 +113,37 @@ bool isAdskUsdComponent(const std::string& proxyShapePath)
     }
 
     return isStageAComponent == 1;
+}
+
+bool isAdskUsdComponentCreatorAvailable()
+{
+    // Availability of the python packages cannot change during a session, so cache it.
+    static int cached = -1;
+    if (cached >= 0) {
+        return cached == 1;
+    }
+
+    MString defineCmd = "def mayausd_is_component_creator_available():\n"
+                        "    try:\n"
+                        "        import AdskUsdComponentCreator\n"
+                        "        import usd_component_creator_plugin\n"
+                        "    except:\n"
+                        "        return 0\n"
+                        "    return 1\n";
+
+    int     available = 0;
+    MStatus success;
+    if (MS::kSuccess == (success = MGlobal::executePythonCommand(defineCmd, false, false))) {
+        success
+            = MGlobal::executePythonCommand("mayausd_is_component_creator_available()", available);
+    }
+    if (success != MS::kSuccess) {
+        // Don't cache a transient failure.
+        return false;
+    }
+
+    cached = (available == 1) ? 1 : 0;
+    return cached == 1;
 }
 
 void saveAdskUsdComponent(const std::string& proxyPath)
@@ -201,7 +232,7 @@ std::string previewSaveAdskUsdComponent(
         "    try:\n"
         "        from AdskUsdComponentCreator import ComponentDescription, "
         "PreviewMoveComponentHierarchy\n"
-        "    except ImportError:\n"
+        "    except:\n"
         "        return None\n"
         "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
         "    component_description = "
@@ -244,7 +275,7 @@ std::string moveAdskUsdComponent(
         "    try:\n"
         "        from AdskUsdComponentCreator import ComponentDescription, MoveComponent\n"
         "        from usd_component_creator_plugin import MayaComponentManager\n"
-        "    except ImportError:\n"
+        "    except:\n"
         "        return ''\n"
         "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
         "    MayaComponentManager.GetInstance().SaveComponent(proxyStage)\n"
@@ -320,7 +351,7 @@ std::string getComponentOptionString(const std::string& proxyPath, const char* o
         "    import mayaUsd.ufe\n"
         "    try:\n"
         "        from AdskUsdComponentCreator import ComponentDescription\n"
-        "    except ImportError:\n"
+        "    except:\n"
         "        return ''\n"
         "    proxyStage = mayaUsd.ufe.getStage('^1s')\n"
         "    component_description = ComponentDescription.CreateFromStageMetadata(proxyStage)\n"
@@ -377,7 +408,7 @@ bool addMayaNodesToComponent(
         " add_to_component_from_nodes\n"
         "        import mayaUsd.ufe, mayaUsd.lib\n"
         "        import maya.OpenMaya as om\n"
-        "    except ImportError as e:\n"
+        "    except:\n"
         "        return 0\n"
         "    export_options = mayaUsd.lib.Util.getDictionaryFromEncodedOptions('^3s')\n"
         "    stage = mayaUsd.ufe.getStage('^1s')\n"
@@ -428,7 +459,7 @@ bool setComponentVariantSelection(
         "    try:\n"
         "        import mayaUsd.ufe\n"
         "        from AdskUsdComponentCreator import ComponentAPI, ComponentDescription\n"
-        "    except ImportError:\n"
+        "    except:\n"
         "        return 0\n"
         "    stage = mayaUsd.ufe.getStage('^1s')\n"
         "    if stage is None:\n"
