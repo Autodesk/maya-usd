@@ -346,8 +346,8 @@ public:
 };
 
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
-// EMSUSD-3880: multiple stage-list changes within one event-loop turn schedule a
-// single deferred refresh instead of refreshing synchronously per notification.
+// Multiple stage-list changes within one event-loop turn schedule a single deferred
+// refresh instead of refreshing synchronously per notification.
 TEST_F(LayerTreeViewTest, UpdateFromSessionStateOnIdle_CoalescesBurst)
 {
     TestableLayerTreeView view(&_sessionState, _mainWindow);

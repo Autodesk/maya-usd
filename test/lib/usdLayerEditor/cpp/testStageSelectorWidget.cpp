@@ -185,7 +185,7 @@ TEST_F(StageSelectorWidgetTest, SelectionChanged_DoesNotCrash)
     EXPECT_NO_THROW(w->selectionChanged());
 }
 
-// ── EMSUSD-3880: coalescing + comboIndexById ──────────────────────────────
+// ── Idle coalescing + comboIndexById dropdown lookup ──────────────────────
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
 
 // A burst of stageListChangedSignal defers to a single idle dropdown rebuild.

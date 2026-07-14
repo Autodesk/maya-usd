@@ -52,6 +52,7 @@ __mayaUSDStringResources = {
     "kHelpOnEditAsMayaDataOptions": "Help on Edit As Maya Data Options",
     "kCreateStageFromFile": "Create Stage from File",
     "kCreateStage": "Create",
+    "kCancel": "Cancel",
     "kDefaultPrim": "Default Prim",
     "kDefaultPrimAnn": "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file. Right-click a root prim in a stage to set it as your default prim. Use the same method to clear a default prim once it has been set.",
     "kExcludePrimPaths": "Exclude Prim Paths:",

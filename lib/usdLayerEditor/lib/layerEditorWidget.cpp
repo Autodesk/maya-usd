@@ -147,11 +147,12 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
 
             auto configureEditForwardingAction = optionMenu->addAction(
                 StringResources::getAsQString(StringResources::kConfigureEditForwarding));
-            QObject::connect(
-                configureEditForwardingAction,
-                &QAction::triggered,
-                this,
-                &LayerEditorWidget::openEditForwardDialog);
+            // The menu lives on the persistent parent window, but this widget is destroyed and
+            // recreated on scene reset. Capture the persistent SessionState so the connection
+            // survives the reset instead of dangling on the deleted widget.
+            QObject::connect(configureEditForwardingAction, &QAction::triggered, [ss]() {
+                UsdLayerEditor::openEditForwardDialog(ss->stage());
+            });
         }
 
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));

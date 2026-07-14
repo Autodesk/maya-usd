@@ -132,8 +132,8 @@ TEST_F(LayerTreeModelTest, Rebuild_SkipsResetWhenLayersAreIdentical)
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerTreeModelTest, SessionStageChanged_DefersAndCoalescesRebuild)
 {
-    // EMSUSD-3880: sessionStageChanged() used to rebuild synchronously. It now defers to
-    // an idle callback and coalesces a burst of stage changes into a single rebuild.
+    // sessionStageChanged() defers to an idle callback and coalesces a burst of stage
+    // changes into a single rebuild rather than rebuilding synchronously per change.
     // The path forces refreshLockState=true, so the idle rebuild resets even though the
     // layer structure is unchanged. Driven through the real currentStageChangedSignal
     // path via setStageEntry() (sessionStageChanged() is a protected slot).
