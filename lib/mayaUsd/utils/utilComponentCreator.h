@@ -34,6 +34,11 @@ namespace ComponentUtils {
 MAYAUSD_CORE_PUBLIC
 bool isAdskUsdComponent(const std::string& proxyPath);
 
+/*! \brief Returns whether the Autodesk USD Component Creator python packages are available.
+ */
+MAYAUSD_CORE_PUBLIC
+bool isAdskUsdComponentCreatorAvailable();
+
 /*! \brief Returns the ids of the USD layers that should be saved for the Autodesk USD Component.
  *
  *  \note Expects \p proxyPath to be a valid component path.
