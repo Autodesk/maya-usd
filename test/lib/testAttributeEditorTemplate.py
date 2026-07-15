@@ -335,8 +335,8 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         self.assertIsNotNone(materialFormLayout, 'Could not find "Material" frameLayout')
 
         # We can now search for the control for the meterial.
-        assignedMaterialControl = self.searchForMayaControl(materialFormLayout, cmds.text, 'Assigned Material')
-        self.assertIsNotNone(assignedMaterialControl, 'Could not find the "Assigned Material" control')
+        assignedMaterialControl = self.searchForMayaControl(materialFormLayout, cmds.text, 'Default')
+        self.assertIsNotNone(assignedMaterialControl, 'Could not find the "Default" control')
         strengthControl = self.searchForMayaControl(materialFormLayout, cmds.optionMenuGrp, 'Strength')
         self.assertIsNotNone(strengthControl, 'Could not find the "Strength" control')
 

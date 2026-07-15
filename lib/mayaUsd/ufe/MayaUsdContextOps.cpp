@@ -914,7 +914,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         return UsdMxUpgradeStageCmd::create(path());
 #endif
     } else if (itemPath[0] == UsdUfe::UnbindMaterialUndoableCommand::commandName) {
-        return std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(_item->path());
+        return std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(_item->path(), true);
 #ifdef UFE_V4_FEATURES_AVAILABLE
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
         // In single context item mode, only assign material to the context item.
@@ -988,13 +988,9 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
             if (usdItem) {
                 auto prim = usdItem->prim();
                 if (prim.HasAPI<UsdShadeMaterialBindingAPI>()) {
-                    UsdShadeMaterialBindingAPI bindingAPI(prim);
-                    auto                       directBinding = bindingAPI.GetDirectBinding();
-                    if (directBinding.GetMaterial()) {
-                        auto cmd = std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(
-                            selItem->path());
-                        cmdList.emplace_back(cmd);
-                    }
+                    auto cmd = std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(
+                        selItem->path(), true);
+                    cmdList.emplace_back(cmd);
                 }
             }
         }

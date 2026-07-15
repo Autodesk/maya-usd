@@ -18,6 +18,7 @@
 #include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
+#include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoReloadRefCommand.h>
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
@@ -26,6 +27,8 @@
 #include <usdUfe/ufe/UsdUndoToggleInstanceableCommand.h>
 
 #include <pxr_python.h>
+
+#include <ufe/pathString.h>
 
 using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
@@ -93,6 +96,49 @@ ClearDefaultPrimCommandInit(const PXR_NS::UsdStageRefPtr& stage)
 UsdUfe::UsdUndoSetDefaultPrimCommand* SetDefaultPrimCommandInit(const PXR_NS::UsdPrim& prim)
 {
     return new UsdUfe::UsdUndoSetDefaultPrimCommand(prim);
+}
+
+UsdUfe::BindMaterialUndoableCommand* BindMaterialCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& matPathStr,
+    const std::string& purpose)
+{
+    return new UsdUfe::BindMaterialUndoableCommand(
+        Ufe::PathString::path(primUfePathStr),
+        PXR_NS::SdfPath(matPathStr),
+        PXR_NS::TfToken(purpose));
+}
+
+UsdUfe::UnbindMaterialUndoableCommand*
+UnbindMaterialCommandInit(const std::string& primUfePathStr, const std::string& purpose)
+{
+    return new UsdUfe::UnbindMaterialUndoableCommand(
+        Ufe::PathString::path(primUfePathStr), PXR_NS::TfToken(purpose));
+}
+
+UsdUfe::UnbindMaterialUndoableCommand*
+UnbindAllMaterialsCommandInit(const std::string& primUfePathStr, bool unassignAll)
+{
+    return new UsdUfe::UnbindMaterialUndoableCommand(
+        Ufe::PathString::path(primUfePathStr), unassignAll);
+}
+
+UsdUfe::SetMaterialBindingStrengthCommand* SetBindingStrengthCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& strength,
+    const std::string& purpose)
+{
+    return new UsdUfe::SetMaterialBindingStrengthCommand(
+        Ufe::PathString::path(primUfePathStr), PXR_NS::TfToken(strength), PXR_NS::TfToken(purpose));
+}
+
+UsdUfe::SetMaterialBindingStrengthCommand* SetBindingStrengthAffectAllPurposesCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& strength,
+    bool               unassignAll)
+{
+    return new UsdUfe::SetMaterialBindingStrengthCommand(
+        Ufe::PathString::path(primUfePathStr), PXR_NS::TfToken(strength), unassignAll);
 }
 
 } // namespace
@@ -230,5 +276,41 @@ void wrapCommands()
 #endif
             .def("undo", &UsdUfe::UsdUndoUnloadPayloadCommand::undo)
             .def("redo", &UsdUfe::UsdUndoUnloadPayloadCommand::redo);
+    }
+    {
+        using This = UsdUfe::BindMaterialUndoableCommand;
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("BindMaterialCommand", no_init)
+            .def("__init__", make_constructor(BindMaterialCommandInit))
+            .def("execute", &This::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &This::commandString)
+#endif
+            .def("undo", &This::undo)
+            .def("redo", &This::redo);
+    }
+    {
+        using This = UsdUfe::UnbindMaterialUndoableCommand;
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("UnbindMaterialCommand", no_init)
+            .def("__init__", make_constructor(UnbindMaterialCommandInit))
+            .def("__init__", make_constructor(UnbindAllMaterialsCommandInit))
+            .def("execute", &This::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &This::commandString)
+#endif
+            .def("undo", &This::undo)
+            .def("redo", &This::redo);
+    }
+    {
+        using This = UsdUfe::SetMaterialBindingStrengthCommand;
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "SetMaterialBindingStrengthCommand", no_init)
+            .def("__init__", make_constructor(SetBindingStrengthCommandInit))
+            .def("__init__", make_constructor(SetBindingStrengthAffectAllPurposesCommandInit))
+            .def("execute", &This::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &This::commandString)
+#endif
+            .def("undo", &This::undo)
+            .def("redo", &This::redo);
     }
 }
