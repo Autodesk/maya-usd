@@ -200,8 +200,17 @@ bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item
 BindMaterialUndoableCommand::BindMaterialUndoableCommand(
     Ufe::Path      primPath,
     const SdfPath& materialPath)
+    : BindMaterialUndoableCommand(primPath, materialPath, TfToken())
+{
+}
+
+BindMaterialUndoableCommand::BindMaterialUndoableCommand(
+    Ufe::Path      primPath,
+    const SdfPath& materialPath,
+    const TfToken& purpose)
     : _primPath(std::move(primPath))
     , _materialPath(materialPath)
+    , _purpose(purpose.IsEmpty() ? UsdShadeTokens->allPurpose : purpose)
 {
     auto prim = ufePathToPrim(_primPath);
     if (!prim.IsValid()) {
@@ -235,21 +244,48 @@ void BindMaterialUndoableCommand::execute()
 
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
-    auto             prim = ufePathToPrim(_primPath);
-    UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
+    auto prim = ufePathToPrim(_primPath);
 
     if (auto subset = UsdGeomSubset(prim)) {
         subset.GetFamilyNameAttr().Set(UsdShadeTokens->materialBind);
     }
 
     auto bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
-    bindingAPI.Bind(material);
+
+    const UsdRelationship directRel = bindingAPI.GetDirectBindingRel(_purpose);
+    const TfToken         strength = directRel
+        ? UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(directRel)
+        : UsdShadeTokens->fallbackStrength;
+
+    UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
+    bindingAPI.Bind(material, strength, _purpose);
 }
 
 const std::string BindMaterialUndoableCommand::commandName("Assign Material");
 
 UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(Ufe::Path primPath)
+    : UnbindMaterialUndoableCommand(primPath, TfToken())
+{
+}
+
+UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(
+    Ufe::Path      primPath,
+    const TfToken& purpose)
     : _primPath(std::move(primPath))
+    , _purpose(purpose.IsEmpty() ? UsdShadeTokens->allPurpose : purpose)
+{
+    validatePrimPath();
+}
+
+UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(Ufe::Path primPath, bool unassignAll)
+    : _primPath(std::move(primPath))
+    , _purpose(UsdShadeTokens->allPurpose)
+    , _unassignAll(unassignAll)
+{
+    validatePrimPath();
+}
+
+void UnbindMaterialUndoableCommand::validatePrimPath() const
 {
     if (_primPath.empty() || !ufePathToPrim(_primPath).IsValid()) {
         std::string err = TfStringPrintf(
@@ -271,11 +307,93 @@ void UnbindMaterialUndoableCommand::execute()
 
     auto prim = ufePathToPrim(_primPath);
     auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
-    if (bindingAPI) {
-        bindingAPI.UnbindDirectBinding();
+    if (!bindingAPI) {
+        return;
+    }
+
+    // Note: UnbindAllBindings() will also unbind collection-based bindings.
+    //       We may need to revisit if that is desired for this command or not.
+    //
+    //       In contrrast, UnbindDirectBinding() will only unbind direct bindings.
+    //       We currently only manage direct bindings, so we may want to revisit
+    //       this if we add collection-based bindings support.
+    if (_unassignAll) {
+        bindingAPI.UnbindAllBindings();
+    } else {
+        bindingAPI.UnbindDirectBinding(_purpose);
     }
 }
+
 const std::string UnbindMaterialUndoableCommand::commandName("Unassign Material");
+
+SetMaterialBindingStrengthCommand::SetMaterialBindingStrengthCommand(
+    Ufe::Path              primPath,
+    const PXR_NS::TfToken& strength,
+    const TfToken&         purpose)
+    : _primPath(std::move(primPath))
+    , _purpose(purpose.IsEmpty() ? UsdShadeTokens->allPurpose : purpose)
+    , _strength(strength)
+{
+    validatePrimPath();
+}
+
+SetMaterialBindingStrengthCommand::SetMaterialBindingStrengthCommand(
+    Ufe::Path              primPath,
+    const PXR_NS::TfToken& strength,
+    bool                   unassignAll)
+    : _primPath(std::move(primPath))
+    , _purpose(UsdShadeTokens->allPurpose)
+    , _strength(strength)
+    , _affectAllPurposes(unassignAll)
+{
+    validatePrimPath();
+}
+
+void SetMaterialBindingStrengthCommand::validatePrimPath() const
+{
+    if (_primPath.empty() || !ufePathToPrim(_primPath).IsValid()) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive path [%s]. Can not set material binding strength.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+}
+
+SetMaterialBindingStrengthCommand::~SetMaterialBindingStrengthCommand() { }
+
+void SetMaterialBindingStrengthCommand::undo() { _undoableItem.undo(); }
+
+void SetMaterialBindingStrengthCommand::redo() { _undoableItem.redo(); }
+
+void SetMaterialBindingStrengthCommand::execute()
+{
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto prim = ufePathToPrim(_primPath);
+    auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
+    if (!bindingAPI) {
+        return;
+    }
+
+    std::vector<TfToken> purposes;
+    if (_affectAllPurposes) {
+        purposes.push_back(UsdShadeTokens->allPurpose);
+        purposes.push_back(UsdShadeTokens->preview);
+        purposes.push_back(UsdShadeTokens->full);
+    } else {
+        purposes.push_back(_purpose);
+    }
+
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship directRel = bindingAPI.GetDirectBindingRel(purpose);
+        if (!directRel)
+            continue;
+
+        UsdShadeMaterialBindingAPI::SetMaterialBindingStrength(directRel, _strength);
+    }
+}
+
+const std::string SetMaterialBindingStrengthCommand::commandName("Set Binding Strength");
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(
