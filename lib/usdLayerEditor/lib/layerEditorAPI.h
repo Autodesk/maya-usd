@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 
-// Qt-free DLL export macro (usdLayerEditorLib)
 #if defined _WIN32 || defined __CYGWIN__
 #    ifdef LAYEREDITOR_EXPORTS
 #        ifdef __GNUC__
@@ -37,7 +36,6 @@
 #    endif
 #endif
 
-// Qt widget DLL export macro (usdLayerEditorUi)
 #if defined _WIN32 || defined __CYGWIN__
 #    ifdef LAYEREDITOR_UI_EXPORTS
 #        ifdef __GNUC__
