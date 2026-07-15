@@ -28,17 +28,18 @@ class QString;
 
 namespace UsdLayerEditor {
 
-LAYEREDITOR_PUBLIC void initializeQtUtils();
+LAYEREDITOR_UI_PUBLIC void initializeQtUtils();
 
 /**
  * @brief QT helpers the layer editor needs to load bitmaps and handle DPI scaling
  *
  */
-class LAYEREDITOR_PUBLIC QtUtils
+class LAYEREDITOR_UI_PUBLIC QtUtils
 {
 public:
-    virtual double  dpiScale() { return _dpiScale; }
-    virtual void    setDpiScale(double dpiScale) { _dpiScale = dpiScale; }
+    virtual double   dpiScale() { return _dpiScale; }
+    virtual void     setDpiScale(double dpiScale) { _dpiScale = dpiScale; }
+    virtual QWidget* mainWindowParent() { return nullptr; }
     virtual QIcon   createIcon(const char* iconName);
     virtual QPixmap createPixmap(QString const& pixmapName, int width = 0, int height = 0);
     virtual QPixmap createPNGResPixmap(QString const& pixmapName, int width = 0, int height = 0);
@@ -81,7 +82,7 @@ private:
  * @brief Disable repaint updates for the given widget until the disabler is destroyed.
  *
  */
-class LAYEREDITOR_PUBLIC QtDisableRepaintUpdates
+class LAYEREDITOR_UI_PUBLIC QtDisableRepaintUpdates
 {
 public:
     QtDisableRepaintUpdates(QWidget& widget);
@@ -95,7 +96,7 @@ private:
  * Used by the component-save widget to gate component-name entry to a USD-safe
  * identifier.
  */
-class LAYEREDITOR_PUBLIC ValidTfIdentifierValidator : public QValidator
+class LAYEREDITOR_UI_PUBLIC ValidTfIdentifierValidator : public QValidator
 {
 public:
     explicit ValidTfIdentifierValidator(QObject* parent = nullptr);
@@ -109,9 +110,9 @@ const bool IS_MAC_OS = true;
 const bool IS_MAC_OS = false;
 #endif
 
-LAYEREDITOR_PUBLIC QtUtils* getQtUtils();
+LAYEREDITOR_UI_PUBLIC QtUtils* getQtUtils();
 
-LAYEREDITOR_PUBLIC void setQtUtils(QtUtils* qtUtils);
+LAYEREDITOR_UI_PUBLIC void setQtUtils(QtUtils* qtUtils);
 
 template <class T> inline T DPIScale(T pixel)
 {

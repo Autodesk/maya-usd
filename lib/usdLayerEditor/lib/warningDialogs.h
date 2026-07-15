@@ -31,8 +31,8 @@
 namespace UsdLayerEditor {
 
 // create a confirmation dialog, with an optional bullet list of stuff like layer names.
-// When parent is null the dialog is parented to the DCC main window (getMainWindowParent()).
-LAYEREDITOR_PUBLIC bool confirmDialog(
+// When parent is null the dialog is parented to the DCC main window (getQtUtils()->mainWindowParent()).
+LAYEREDITOR_UI_PUBLIC bool confirmDialog(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,
@@ -41,7 +41,7 @@ LAYEREDITOR_PUBLIC bool confirmDialog(
     QWidget*           parent = nullptr);
 
 // create a dialog with a single OK button, with an optional bullet list
-LAYEREDITOR_PUBLIC void warningDialog(
+LAYEREDITOR_UI_PUBLIC void warningDialog(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,
@@ -53,7 +53,7 @@ LAYEREDITOR_PUBLIC void warningDialog(
 // otherwise hang). Production never installs one, so behavior is unchanged.
 // Returns the previously-installed handler.
 using ModalDialogTestHandler = std::function<bool(const QString& title, const QString& message)>;
-LAYEREDITOR_PUBLIC ModalDialogTestHandler setModalDialogTestHandler(ModalDialogTestHandler handler);
+LAYEREDITOR_UI_PUBLIC ModalDialogTestHandler setModalDialogTestHandler(ModalDialogTestHandler handler);
 
 } // namespace UsdLayerEditor
 

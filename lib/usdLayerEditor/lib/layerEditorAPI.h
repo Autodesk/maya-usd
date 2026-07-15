@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
+// Qt-free DLL export macro (usdLayerEditorLib)
 #if defined _WIN32 || defined __CYGWIN__
-
 #    ifdef LAYEREDITOR_EXPORTS
 #        ifdef __GNUC__
 #            define LAYEREDITOR_PUBLIC __attribute__((dllexport))
@@ -29,11 +29,33 @@
 #            define LAYEREDITOR_PUBLIC __declspec(dllimport)
 #        endif
 #    endif
-
 #else
 #    if __GNUC__ >= 4
 #        define LAYEREDITOR_PUBLIC __attribute__((visibility("default")))
 #    else
 #        define LAYEREDITOR_PUBLIC
+#    endif
+#endif
+
+// Qt widget DLL export macro (usdLayerEditorUi)
+#if defined _WIN32 || defined __CYGWIN__
+#    ifdef LAYEREDITOR_UI_EXPORTS
+#        ifdef __GNUC__
+#            define LAYEREDITOR_UI_PUBLIC __attribute__((dllexport))
+#        else
+#            define LAYEREDITOR_UI_PUBLIC __declspec(dllexport)
+#        endif
+#    else
+#        ifdef __GNUC__
+#            define LAYEREDITOR_UI_PUBLIC __attribute__((dllimport))
+#        else
+#            define LAYEREDITOR_UI_PUBLIC __declspec(dllimport)
+#        endif
+#    endif
+#else
+#    if __GNUC__ >= 4
+#        define LAYEREDITOR_UI_PUBLIC __attribute__((visibility("default")))
+#    else
+#        define LAYEREDITOR_UI_PUBLIC
 #    endif
 #endif

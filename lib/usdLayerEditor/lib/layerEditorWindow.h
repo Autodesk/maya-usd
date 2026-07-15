@@ -30,7 +30,7 @@ namespace UsdLayerEditor {
 class LayerEditorWidget;
 class LayerTreeView;
 
-class LAYEREDITOR_PUBLIC LayerEditorWindow : public AbstractLayerEditorWindow
+class LAYEREDITOR_UI_PUBLIC LayerEditorWindow : public AbstractLayerEditorWindow
 {
 public:
 

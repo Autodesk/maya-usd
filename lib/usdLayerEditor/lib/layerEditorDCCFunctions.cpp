@@ -254,11 +254,6 @@ bool shouldExpandOrCollapseAll()
         ? registry().environment.shouldExpandOrCollapseAll()
         : false;
 }
-QWidget* getMainWindowParent()
-{
-    return registry().environment.getMainWindowParent ? registry().environment.getMainWindowParent()
-                                                    : nullptr;
-}
 int64_t getLayerContentsArraySizeLimit()
 {
     return registry().environment.getLayerContentsArraySizeLimit

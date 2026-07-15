@@ -26,7 +26,6 @@
 #include "tokens.h"
 #include "utilSerialization.h"
 #include "utilString.h"
-#include "utilUI.h"
 #include "warningDialogs.h"
 
 #include <pxr/base/tf/notice.h>
@@ -647,7 +646,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                      resultMsg += errorMsg + "\n";
                  }
 
-                 UIUtils::displayError(resultMsg);
+                 displayError(resultMsg);
 
                  warningDialog(
                      StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),

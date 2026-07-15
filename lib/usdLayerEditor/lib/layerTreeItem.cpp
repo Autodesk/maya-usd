@@ -26,7 +26,6 @@
 #include "stringResources.h"
 #include "utilString.h"
 #include "tokens.h"
-#include "utilUI.h"
 #include "utilFileSystem.h"
 #include "utilQT.h"
 #include "utilSerialization.h"
@@ -525,7 +524,7 @@ void LayerTreeItem::saveEditsNoPrompt(QWidget* in_parent)
         if (!Serialization::saveLayerWithFormat(layer())) {
             std::string layerName(layer()->GetDisplayName().c_str());
             std::string errMsg = String::format("Could not save layer ^1s.", layerName);
-            UIUtils::displayError(errMsg);
+            displayError(errMsg);
         }
     }
 }

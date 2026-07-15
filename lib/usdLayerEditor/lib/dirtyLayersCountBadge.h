@@ -28,7 +28,7 @@ namespace UsdLayerEditor {
  *
  **/
 
-class LAYEREDITOR_PUBLIC DirtyLayersCountBadge : public QWidget
+class LAYEREDITOR_UI_PUBLIC DirtyLayersCountBadge : public QWidget
 {
     Q_OBJECT
 public:

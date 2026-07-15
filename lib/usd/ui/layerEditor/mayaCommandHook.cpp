@@ -67,10 +67,10 @@ void MayaCommandHook::setEditTarget(UsdLayer usdLayer)
 
 // starts a complex undo operation in the host app. Please use UndoContext class to safely
 // open/close
-void MayaCommandHook::openUndoBracket(const QString& name)
+void MayaCommandHook::openUndoBracket(const std::string& name)
 {
     MGlobal::executeCommand(
-        MString("undoInfo -openChunk -chunkName ") + MayaUsdUI::cleanChunkName(name.toStdString()),
+        MString("undoInfo -openChunk -chunkName ") + MayaUsdUI::cleanChunkName(name),
         false,
         false);
 }

@@ -22,7 +22,7 @@
 #include "layerTreeItemDelegate.h"
 #include "layerTreeModel.h"
 #include "stringResources.h"
-#include "utilUI.h"
+#include "utilQT.h"
 
 #include <QtCore/QTimer>
 #include <QtGui/QColor>
@@ -36,7 +36,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 struct CallMethodParams
 {
     const LayerItemVector* selection;
-    QString                name;
+    std::string            name;
     AbstractCommandHook*   commandHook;
 };
 
@@ -430,7 +430,7 @@ void LayerTreeView::onAddParentLayer(const QString& undoName) const
     CallMethodParams params;
     params.selection = &selection;
     params.commandHook = _model->sessionState()->commandHook();
-    params.name = undoName;
+    params.name = undoName.toStdString();
 
     // we add one new parent to each item in the selection
     // for undo, it's ok to directly create the anon layer with the API
@@ -461,7 +461,7 @@ void LayerTreeView::onMuteLayer(const QString& undoName) const
     CallMethodParams params;
     params.selection = &selection;
     params.commandHook = _model->sessionState()->commandHook();
-    params.name = undoName;
+    params.name = undoName.toStdString();
 
     bool mute = !currentLayerItem()->isMuted();
 
@@ -486,7 +486,7 @@ void LayerTreeView::onLockLayerAndSublayers(const QString& undoName, bool includ
     CallMethodParams params;
     params.selection = &selection;
     params.commandHook = _model->sessionState()->commandHook();
-    params.name = undoName;
+    params.name = undoName.toStdString();
 
     bool isLocked = !currentLayerItem()->isLocked();
 
@@ -504,7 +504,7 @@ void LayerTreeView::callMethodOnSelection(const QString& undoName, simpleLayerMe
     auto             selection = getSelectedLayerItems();
     params.selection = &selection;
     params.commandHook = _model->sessionState()->commandHook();
-    params.name = undoName;
+    params.name = undoName.toStdString();
     doCallMethodOnSelection(params, method, this);
 }
 
@@ -571,8 +571,8 @@ void LayerTreeView::updateMouseCursor()
     pixmapName.remove("_100");
     QPixmap pixmap(pixmapName);
 
-    const int hitX = UIUtils::dpiScale(11);
-    const int hitY = UIUtils::dpiScale(9);
+    const int hitX = static_cast<int>(11 * getQtUtils()->dpiScale());
+    const int hitY = static_cast<int>(9 * getQtUtils()->dpiScale());
 
     setCursor(QCursor(pixmap, hitX, hitY));
 }

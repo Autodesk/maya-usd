@@ -37,7 +37,7 @@ struct LayerActionInfo;
  * Only one instance of this class exists per tree.
  *
  */
-class LAYEREDITOR_PUBLIC LayerTreeItemDelegate : public QStyledItemDelegate
+class LAYEREDITOR_UI_PUBLIC LayerTreeItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:

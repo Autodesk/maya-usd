@@ -45,7 +45,7 @@ public:
     void     lockLayer(UsdLayer layer, LayerLockType lockState, bool includeSubLayers) override;
     void     refreshLayerSystemLock(UsdLayer layer, bool refreshSubLayers = false) override;
     void     stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers) override;
-    void     openUndoBracket(const QString& name) override;
+    void     openUndoBracket(const std::string& name) override;
     void     closeUndoBracket() override;
     void     showLayerEditorHelp() override;
     void     selectPrimsWithSpec(UsdLayer layer) override;

@@ -41,9 +41,9 @@ void UfeCommandHook::setEditTarget(UsdLayer usdLayer)
     AppendOrExecuteCommand(cmd);
 }
 
-void UfeCommandHook::openUndoBracket(const QString& name)
+void UfeCommandHook::openUndoBracket(const std::string& name)
 {
-    compositeCommand = std::make_shared<LayedEditorCommand>(name.toStdString());
+    compositeCommand = std::make_shared<LayedEditorCommand>(name);
 }
 
 void UfeCommandHook::closeUndoBracket()

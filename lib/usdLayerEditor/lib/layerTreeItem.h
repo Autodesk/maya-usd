@@ -84,7 +84,7 @@ struct LayerActionInfo
     int             _order = 0;
 };
 
-LAYEREDITOR_PUBLIC bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag);
+LAYEREDITOR_UI_PUBLIC bool IsLayerActionAllowed(const LayerActionInfo& actionInfo, LayerMasks layerMaskFlag);
 
 using recursionDetection = std::vector<std::string>;
 using LayerItemVector = std::vector<LayerTreeItem*>;
@@ -94,7 +94,7 @@ using LayerActionDefinitions = std::map<LayerActionType, LayerActionInfo>;
  *
  */
 
-class LAYEREDITOR_PUBLIC LayerTreeItem : public QStandardItem
+class LAYEREDITOR_UI_PUBLIC LayerTreeItem : public QStandardItem
 {
 public:
     LayerTreeItem(

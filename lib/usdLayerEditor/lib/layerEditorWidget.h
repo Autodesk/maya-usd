@@ -44,7 +44,7 @@ class LayerContentsWidget;
  * This widget is meant to be hosted by a parent QMainWindow, where the menu will be created
  **/
 
-class LAYEREDITOR_PUBLIC LayerEditorWidget
+class LAYEREDITOR_UI_PUBLIC LayerEditorWidget
     : public QWidget
     , public PXR_NS::TfWeakBase
 {

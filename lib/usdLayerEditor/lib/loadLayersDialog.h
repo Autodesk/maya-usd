@@ -40,7 +40,7 @@ class LayerPathRow;
  * @brief Dialog to load multiple USD sublayers at once onto a parent layer.
  *
  */
-class LAYEREDITOR_PUBLIC LoadLayersDialog : public QDialog
+class LAYEREDITOR_UI_PUBLIC LoadLayersDialog : public QDialog
 {
 public:
     typedef std::list<std::string> PathList;

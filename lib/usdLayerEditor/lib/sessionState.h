@@ -37,7 +37,7 @@ namespace UsdLayerEditor {
  * stage, and app-specific UI
  *
  */
-class LAYEREDITOR_PUBLIC SessionState : public QObject
+class LAYEREDITOR_UI_PUBLIC SessionState : public QObject
 {
     Q_OBJECT
 public:

@@ -28,8 +28,6 @@
 #include <string>
 #include <vector>
 
-class QWidget;
-
 namespace UsdLayerEditor {
 
 // std::function typedefs use the EXACT signatures of the former base-class overrides.
@@ -122,7 +120,6 @@ struct EnvironmentFns
     std::function<void(bool)>                setPinLayerEditorStage;
     std::function<bool()>                    isInteractiveDCCSession;
     std::function<bool()>                    shouldExpandOrCollapseAll;
-    std::function<QWidget*()>                getMainWindowParent;
     std::function<int64_t()>                 getLayerContentsArraySizeLimit;
     std::function<int64_t()>                 getLayerContentsTimeSamplesSizeLimit;
     std::function<void(const std::string&)>  displayError;
@@ -224,7 +221,6 @@ LAYEREDITOR_PUBLIC bool        getPinLayerEditorStage();
 LAYEREDITOR_PUBLIC void        setPinLayerEditorStage(bool);
 LAYEREDITOR_PUBLIC bool        isInteractiveDCCSession();
 LAYEREDITOR_PUBLIC bool        shouldExpandOrCollapseAll();
-LAYEREDITOR_PUBLIC QWidget*    getMainWindowParent();
 LAYEREDITOR_PUBLIC int64_t     getLayerContentsArraySizeLimit();
 LAYEREDITOR_PUBLIC int64_t     getLayerContentsTimeSamplesSizeLimit();
 LAYEREDITOR_PUBLIC void        displayError(const std::string&);

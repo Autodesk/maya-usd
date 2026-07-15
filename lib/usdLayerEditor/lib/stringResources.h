@@ -35,10 +35,10 @@ struct Resource
 };
 
 // Retrieve a string resource from the given Resource.
-LAYEREDITOR_PUBLIC QString getAsQString(const Resource& strResID);
+LAYEREDITOR_UI_PUBLIC QString getAsQString(const Resource& strResID);
 
 // Create a Resource; must be called before registerAll()
-LAYEREDITOR_PUBLIC Resource create(const char* key, const char* value);
+LAYEREDITOR_UI_PUBLIC Resource create(const char* key, const char* value);
 
 // -------------------------------------------------------------
 

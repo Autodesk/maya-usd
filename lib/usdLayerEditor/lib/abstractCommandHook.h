@@ -23,7 +23,6 @@
 
 #include <pxr/usd/usd/stage.h>
 
-#include <QtCore/QString>
 #include <string>
 
 namespace UsdLayerEditor {
@@ -95,7 +94,7 @@ public:
 
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
-    virtual void openUndoBracket(const QString& name) = 0;
+    virtual void openUndoBracket(const std::string& name) = 0;
     // closes a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     virtual void closeUndoBracket() = 0;
@@ -158,7 +157,7 @@ private:
 class UndoContext
 {
 public:
-    UndoContext(AbstractCommandHook* in_parent, const QString& in_name)
+    UndoContext(AbstractCommandHook* in_parent, const std::string& in_name)
         : _parent(in_parent)
     {
         in_parent->openUndoBracket(in_name);

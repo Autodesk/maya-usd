@@ -29,7 +29,7 @@ target_sources(${PROJECT_NAME}
         mayaQtUtils.h
         mayaLayerEditorUi.h
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE usdLayerEditor)
+target_link_libraries(${PROJECT_NAME} PRIVATE usdLayerEditorUi)
 target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDITOR=1)
 
 # -----------------------------------------------------------------------------

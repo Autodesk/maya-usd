@@ -55,7 +55,7 @@ set(LAYER_EDITOR_TEST_SOURCES
 
 # ------------------------------------------------------------------------------
 # usdLayerEditorTests
-# Links usdLayerEditor (the DCC-agnostic shared component).
+# Links usdLayerEditorUi (Qt widget layer; usdLayerEditorLib is transitive).
 # ------------------------------------------------------------------------------
 set(NEW_LE_DIR ${CMAKE_SOURCE_DIR}/lib/usdLayerEditor/lib)
 
@@ -81,7 +81,7 @@ target_include_directories(usdLayerEditorTests
 
 target_link_libraries(usdLayerEditorTests
     PRIVATE
-        usdLayerEditor
+        usdLayerEditorUi
         GTest::GTest
         Qt::Core Qt::Gui Qt::Widgets
         sdf tf usd

@@ -34,7 +34,7 @@ namespace UsdLayerEditor {
  * the USD specification. It highlights keywords, data types, primitives, comments,
  * strings, and numbers using appropriate colors.
  */
-class LAYEREDITOR_PUBLIC UsdSyntaxHighlighter : public QSyntaxHighlighter
+class LAYEREDITOR_UI_PUBLIC UsdSyntaxHighlighter : public QSyntaxHighlighter
 {
     Q_OBJECT
 

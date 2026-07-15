@@ -31,7 +31,7 @@ class AbstractLayerEditorWindow;
  * @brief Abstract class used by layer editor window command to create and get
  * the layer editor windows.
  */
-class LAYEREDITOR_PUBLIC AbstractLayerEditorCreator
+class LAYEREDITOR_UI_PUBLIC AbstractLayerEditorCreator
 {
 public:
     AbstractLayerEditorCreator();
@@ -70,7 +70,7 @@ private:
 /**
  * @brief Abstract class used to implement the layer editor commands
  */
-class LAYEREDITOR_PUBLIC AbstractLayerEditorWindow
+class LAYEREDITOR_UI_PUBLIC AbstractLayerEditorWindow
 {
 public:
     /**

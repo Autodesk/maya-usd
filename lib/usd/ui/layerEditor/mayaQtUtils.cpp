@@ -54,7 +54,6 @@ void initializeUi()
         "initializeUi() must be called after registerLayerEditorDCCFunctions().");
 
     auto environment = layerEditorDCCFunctions().environment;
-    environment.getMainWindowParent = []() -> QWidget* { return MQtUtil::mainWindow(); };
     setEnvironmentFns(environment);
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
@@ -82,6 +81,8 @@ void initializeUi()
 }
 
 double MayaQtUtils::dpiScale() { return MQtUtil::dpiScale(1.0f); }
+
+QWidget* MayaQtUtils::mainWindowParent() { return MQtUtil::mainWindow(); }
 
 QIcon MayaQtUtils::createIcon(const char* iconName)
 {

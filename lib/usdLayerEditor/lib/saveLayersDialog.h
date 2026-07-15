@@ -41,7 +41,7 @@
  class SessionState;
 
 
- class LAYEREDITOR_PUBLIC SaveLayersDialog : public QDialog
+ class LAYEREDITOR_UI_PUBLIC SaveLayersDialog : public QDialog
 {
  public:
      typedef std::unordered_multimap<SdfLayerRefPtr, std::string, TfHash> stageLayerMap;

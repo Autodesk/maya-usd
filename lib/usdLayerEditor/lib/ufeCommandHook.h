@@ -29,7 +29,7 @@ namespace UsdLayerEditor {
  * @brief "hook" all the commands of the layer editor through UFE undoable commands.
  *
  */
-class LAYEREDITOR_PUBLIC UfeCommandHook
+class LAYEREDITOR_UI_PUBLIC UfeCommandHook
     : public AbstractCommandHook
     , public Ufe::Subject
 {
@@ -52,7 +52,7 @@ public:
     void     flattenLayer(UsdLayer usdLayer) override;
     UsdLayer addAnonymousSubLayer(UsdLayer usdLayer, std::string newName) override;
     void     muteSubLayer(UsdLayer usdLayer, bool muteIt) override;
-    void     openUndoBracket(const QString& name) override;
+    void     openUndoBracket(const std::string& name) override;
     void     closeUndoBracket() override;
     void     showLayerEditorHelp() override;
     void     selectPrimsWithSpec(UsdLayer usdLayer) override;

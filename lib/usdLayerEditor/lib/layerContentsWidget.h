@@ -34,7 +34,7 @@ namespace UsdLayerEditor {
  * @brief Widget used to display the contents of a layer. Owned by the LayerEditorWidget
  *
  */
-class LAYEREDITOR_PUBLIC LayerContentsWidget : public QWidget
+class LAYEREDITOR_UI_PUBLIC LayerContentsWidget : public QWidget
 {
     Q_OBJECT
 

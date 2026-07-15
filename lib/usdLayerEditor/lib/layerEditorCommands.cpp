@@ -20,7 +20,6 @@
 #include "layerLocking.h"
 #include "layerMuting.h"
 #include "utilFileSystem.h"
-#include "utilUI.h"
 
 #include <ghc/fs_std.hpp>
 
@@ -114,7 +113,7 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
     std::string errMsg;
     if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
         stage->SetEditTarget(stage->GetSessionLayer());
-        UIUtils::displayError(errMsg);
+        displayError(errMsg);
     }
 }
 
@@ -133,7 +132,7 @@ bool BackupLayerBaseCmd::doIt(const SdfLayerHandle& layer)
         // Create a temp stage to get a PcpLayerStack with this layer as the root.
         PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
         if (!tempStage) {
-            UIUtils::displayError("Failed to open stage for layer");
+            displayError("Failed to open stage for layer");
             return false;
         }
 
@@ -151,13 +150,13 @@ bool BackupLayerBaseCmd::doIt(const SdfLayerHandle& layer)
         }
 
         if (!layerStack) {
-            UIUtils::displayError("Cannot flatten layer: could not determine layer stack");
+            displayError("Cannot flatten layer: could not determine layer stack");
             return false;
         }
 
         PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
         if (!flattenedLayer) {
-            UIUtils::displayError("Failed to flatten layer stack");
+            displayError("Failed to flatten layer stack");
             return false;
         }
 
@@ -584,7 +583,7 @@ bool InsertRemoveSubPathBaseCmd::validateAndReportIndex(
     if (index < 0 || index >= maxIndex) {
         std::string message = std::string("Index ") + std::to_string(index)
             + std::string(" out-of-bound for ") + layer->GetIdentifier();
-        UIUtils::displayError(message.c_str());
+        displayError(message.c_str());
         return false;
     } else {
         return true;
@@ -616,7 +615,7 @@ bool ReplaceSubPathCmd::doIt(const SdfLayerHandle& layer)
     if (proxy.Find(_oldPath) == static_cast<size_t>(-1)) {
         std::string message = std::string("path ") + _oldPath
             + std::string(" not found on layer ") + layer->GetIdentifier();
-        UIUtils::displayError(message.c_str());
+        displayError(message.c_str());
         return false;
     }
     holdOnPathIfDirty(layer, _oldPath);

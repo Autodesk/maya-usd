@@ -50,7 +50,7 @@ namespace Serialization {
 /*! \brief Queries the optionVar that decides which saving option Maya
     should use for Usd edits.
  */
- USDUnsavedEditsOption serializeUsdEditsLocationOption();
+ LAYEREDITOR_PUBLIC USDUnsavedEditsOption serializeUsdEditsLocationOption();
 //
 ///*! \brief Return if the relative-path plug is set to true on the proxy shape.
 // */
@@ -135,12 +135,12 @@ LAYEREDITOR_PUBLIC bool saveLayerWithFormat(
 
 /*! \brief Queries the DCC for the current "scene" folder
  */
-std::string getSceneFolder();
+LAYEREDITOR_PUBLIC std::string getSceneFolder();
 
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
  */
- PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::UsdStageRefPtr stage,
     PXR_NS::SdfLayerRefPtr anonLayer,
     LayerParent            parent,
@@ -151,7 +151,7 @@ std::string getSceneFolder();
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
  */
- PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::UsdStageRefPtr stage,
     PXR_NS::SdfLayerRefPtr anonLayer,
     const PathInfo&        pathInfo,
@@ -177,7 +177,7 @@ std::string getSceneFolder();
 /*! \brief Check the sublayer stack of the stage looking for any anonymous
     layers that will need to be saved.
  */
-void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo);
+LAYEREDITOR_PUBLIC void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo);
 
 /*! \brief Same as getLayersToSaveFromDCCObject but accepts the stage directly,
     bypassing the UFE path-based stage lookup.

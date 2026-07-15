@@ -23,29 +23,9 @@
 
 #include <gtest/gtest.h>
 
-#include <QtWidgets/QWidget>
-
 #include <cstdint>
 
 using namespace UsdLayerEditor;
-
-// getMainWindowParent() returns null when unset, the registered widget when set.
-TEST(LayerEditorDCCFunctions, MainWindowParent_DefaultsToNull)
-{
-    ScopedLayerEditorDCCFunctions guard;
-    setEnvironmentFns(EnvironmentFns {});
-    EXPECT_EQ(getMainWindowParent(), nullptr);
-}
-
-TEST(LayerEditorDCCFunctions, MainWindowParent_ReturnsRegisteredWidget)
-{
-    ScopedLayerEditorDCCFunctions guard;
-    QWidget        w;
-    EnvironmentFns env;
-    env.getMainWindowParent = [&w]() { return &w; };
-    setEnvironmentFns(env);
-    EXPECT_EQ(getMainWindowParent(), &w);
-}
 
 // layer-contents size limits default to 8, return the registered values when set.
 TEST(LayerEditorDCCFunctions, LayerContentsLimits_DefaultToEight)

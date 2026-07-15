@@ -80,7 +80,7 @@ public:
 
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
-    void openUndoBracket(const QString& name) override;
+    void openUndoBracket(const std::string& name) override;
     // closes a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     void closeUndoBracket() override;

@@ -118,9 +118,9 @@ void StubCommandHook::stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& /*
     _calls.push_back({ "stitchLayers", {} });
 }
 
-void StubCommandHook::openUndoBracket(const QString& name)
+void StubCommandHook::openUndoBracket(const std::string& name)
 {
-    _calls.push_back({ "openUndoBracket", { name.toStdString() } });
+    _calls.push_back({ "openUndoBracket", { name } });
 }
 
 void StubCommandHook::closeUndoBracket()
