@@ -47,6 +47,10 @@ public:
     static bool CompatiblePrim(const Ufe::SceneItem::Ptr& item);
 
     BindMaterialUndoableCommand(Ufe::Path primPath, const PXR_NS::SdfPath& materialPath);
+    BindMaterialUndoableCommand(
+        Ufe::Path              primPath,
+        const PXR_NS::SdfPath& materialPath,
+        const PXR_NS::TfToken& purpose);
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(BindMaterialUndoableCommand);
 
@@ -56,8 +60,11 @@ public:
     UFE_V4(std::string commandString() const override { return "BindMaterial"; })
 
 private:
+    static void validatePrimAndMaterial(const PXR_NS::UsdPrim& prim);
+
     Ufe::Path               _primPath;
     PXR_NS::SdfPath         _materialPath;
+    PXR_NS::TfToken         _purpose;
     UsdUfe::UsdUndoableItem _undoableItem;
 };
 
@@ -68,6 +75,8 @@ public:
     static const std::string commandName;
 
     UnbindMaterialUndoableCommand(Ufe::Path primPath);
+    UnbindMaterialUndoableCommand(Ufe::Path primPath, const PXR_NS::TfToken& purpose);
+    UnbindMaterialUndoableCommand(Ufe::Path primPath, bool unassignAll);
     ~UnbindMaterialUndoableCommand() override;
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UnbindMaterialUndoableCommand);
@@ -78,7 +87,44 @@ public:
     UFE_V4(std::string commandString() const override { return "UnbindMaterial"; })
 
 private:
+    void validatePrimPath() const;
+
     Ufe::Path               _primPath;
+    PXR_NS::TfToken         _purpose;
+    bool                    _unassignAll = false;
+    UsdUfe::UsdUndoableItem _undoableItem;
+};
+
+//! \brief SetMaterialBindingStrengthCommand
+class USDUFE_PUBLIC SetMaterialBindingStrengthCommand : public Ufe::UndoableCommand
+{
+public:
+    static const std::string commandName;
+
+    SetMaterialBindingStrengthCommand(
+        Ufe::Path              primPath,
+        const PXR_NS::TfToken& strength,
+        const PXR_NS::TfToken& purpose);
+    SetMaterialBindingStrengthCommand(
+        Ufe::Path              primPath,
+        const PXR_NS::TfToken& strength,
+        bool                   affectAllPurposes);
+    ~SetMaterialBindingStrengthCommand() override;
+
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(SetMaterialBindingStrengthCommand);
+
+    void execute() override;
+    void undo() override;
+    void redo() override;
+    UFE_V4(std::string commandString() const override { return "SetMaterialBindingStrength"; })
+
+private:
+    void validatePrimPath() const;
+
+    Ufe::Path               _primPath;
+    PXR_NS::TfToken         _purpose;
+    PXR_NS::TfToken         _strength;
+    bool                    _affectAllPurposes = false;
     UsdUfe::UsdUndoableItem _undoableItem;
 };
 
