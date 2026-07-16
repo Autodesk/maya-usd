@@ -107,6 +107,8 @@ if(IS_WINDOWS)
     set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".mll")
 elseif(IS_MACOSX)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "" SUFFIX ".bundle")
+elseif(IS_LINUX)
+    set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 endif()
 
 mayaUsd_compile_config(${TARGET_NAME})

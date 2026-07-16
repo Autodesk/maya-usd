@@ -15,6 +15,17 @@
 # limitations under the License.
 #
 
+# lib/usd/ui/layerEditor/ contains pre-migration copies of headers that share
+# names with the shared layer editor (sessionState.h, abstractCommandHook.h,
+# etc.). Qt AUTOMOC injects this directory into the include search path, which
+# would shadow the shared versions. Declare the shared paths explicitly first
+# so they take precedence.
+# Note: this workaround will be removed when the old layer editor is completely deleted.
+target_include_directories(${PROJECT_NAME} BEFORE PRIVATE
+    ${CMAKE_SOURCE_DIR}/lib/usdLayerEditor/ui
+    ${CMAKE_SOURCE_DIR}/lib/usdLayerEditor/lib
+)
+
 target_sources(${PROJECT_NAME}
     PRIVATE
         batchSaveLayersUIDelegate.cpp
@@ -30,7 +41,17 @@ target_sources(${PROJECT_NAME}
         mayaLayerEditorUi.h
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE usdLayerEditorUi)
-target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDITOR=1)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    MAYAUSD_USE_SHARED_LAYER_EDITOR=1
+    # MSVC searches "currently open include files" directories (step 2) before
+    # /I paths (step 3) for quoted includes. When lib/usdLayerEditor/ui/sessionState.h
+    # does #include "abstractCommandHook.h" while lib/usd/ui/layerEditor/mayaSessionState.h
+    # is open in the stack, MSVC finds the old header via step 2. Pre-defining the
+    # old guard silently skips its body; the new version (found first via BEFORE /I paths
+    # for angle-bracket includes) provides the full AbstractCommandHook definition.
+    # Note: this workaround will be removed when the old layer editor is completely deleted.
+    ABSTRACTCOMMANDHOOK_H
+)
 
 # -----------------------------------------------------------------------------
 # MSVC fix: avoid ambiguous qfloat16 arithmetic operators pulled by Qt headers

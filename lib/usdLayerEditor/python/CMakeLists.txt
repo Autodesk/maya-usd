@@ -63,7 +63,7 @@ target_link_libraries(${PYTHON_TARGET_NAME}
     PRIVATE
         usdLayerEditorUi
         # usdLayerEditorUi's public headers (layerEditorWidgetManager.h) expose
-        # Qt types (QPointer), so the binding TU also needs Qt::Core headers.
+        # Qt types (QPointer), so the binding also needs Qt::Core headers.
         Qt::Core
 )
 

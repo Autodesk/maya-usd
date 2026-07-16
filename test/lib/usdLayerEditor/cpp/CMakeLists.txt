@@ -55,7 +55,7 @@ set(LAYER_EDITOR_TEST_SOURCES
 
 # ------------------------------------------------------------------------------
 # usdLayerEditorTests
-# Links usdLayerEditorUi (Qt widget layer; usdLayerEditorLib is transitive).
+# Links usdLayerEditorUi (Qt widget layer; usdLayerEditor is transitive).
 # ------------------------------------------------------------------------------
 set(NEW_LE_DIR ${CMAKE_SOURCE_DIR}/lib/usdLayerEditor/lib)
 

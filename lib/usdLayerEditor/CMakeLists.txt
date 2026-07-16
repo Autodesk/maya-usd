@@ -17,4 +17,5 @@
 # Top-level CMakeLists for the shared usdLayerEditor component (DCC-agnostic).
 
 add_subdirectory(lib)
+add_subdirectory(ui)
 add_subdirectory(python)
