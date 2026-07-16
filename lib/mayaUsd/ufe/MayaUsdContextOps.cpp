@@ -39,9 +39,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/fileFormat.h>
-#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/prim.h>
@@ -238,42 +236,40 @@ bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 }
 
 // Ask SDF for all supported extensions:
-const char* _selectUSDFileScript()
+const char* _selectUSDFileScript(const char* caption = "Add USD Reference/Payload to Prim")
 {
+    // This is an interactive call from the main UI thread. No need for SMP protections.
     static std::string commandString;
 
-    if (commandString.empty()) {
-        // This is an interactive call from the main UI thread. No need for SMP protections.
+    // The goal of the following loop is to build a first file filter that allow any
+    // USD-compatible file format, then a series of file filters, one per particular
+    // file format. So for N different file formats, we will have N+1 filters.
 
-        // The goal of the following loop is to build a first file filter that allow any
-        // USD-compatible file format, then a series of file filters, one per particular
-        // file format. So for N different file formats, we will have N+1 filters.
+    std::vector<std::string> usdUiStrings;
+    std::vector<std::string> usdSelectors;
+    std::vector<std::string> otherUiStrings;
+    std::vector<std::string> otherSelectors;
 
-        std::vector<std::string> usdUiStrings;
-        std::vector<std::string> usdSelectors;
-        std::vector<std::string> otherUiStrings;
-        std::vector<std::string> otherSelectors;
-
-        for (auto&& extension : SdfFileFormat::FindAllFileFormatExtensions()) {
-            // Put USD first
-            if (extension.rfind("usd", 0) == 0) {
-                usdUiStrings.push_back("*." + extension);
-                usdSelectors.push_back("*." + extension);
-            } else {
-                otherUiStrings.push_back("*." + extension);
-                otherSelectors.push_back("*." + extension);
-            }
+    for (auto&& extension : SdfFileFormat::FindAllFileFormatExtensions()) {
+        // Put USD first
+        if (extension.rfind("usd", 0) == 0) {
+            usdUiStrings.push_back("*." + extension);
+            usdSelectors.push_back("*." + extension);
+        } else {
+            otherUiStrings.push_back("*." + extension);
+            otherSelectors.push_back("*." + extension);
         }
+    }
 
-        usdUiStrings.insert(usdUiStrings.end(), otherUiStrings.begin(), otherUiStrings.end());
-        usdSelectors.insert(usdSelectors.end(), otherSelectors.begin(), otherSelectors.end());
+    usdUiStrings.insert(usdUiStrings.end(), otherUiStrings.begin(), otherUiStrings.end());
+    usdSelectors.insert(usdSelectors.end(), otherSelectors.begin(), otherSelectors.end());
 
-        const char* script = R"mel(
+    const char* script = R"mel(
         global proc string SelectUSDFileForAddReference()
         {
             string $result[] = `fileDialog2
                 -fileMode 1
-                -caption "Add USD Reference/Payload to Prim"
+                -caption "%s"
                 -okCaption Reference
                 -fileFilter "USD Files (%s);;%s"
                 -optionsUICreate addUSDReferenceCreateUi
@@ -288,9 +284,11 @@ const char* _selectUSDFileScript()
         SelectUSDFileForAddReference();
         )mel";
 
-        commandString = TfStringPrintf(
-            script, TfStringJoin(usdUiStrings).c_str(), TfStringJoin(usdSelectors, ";;").c_str());
-    }
+    commandString = TfStringPrintf(
+        script,
+        caption,
+        TfStringJoin(usdUiStrings).c_str(),
+        TfStringJoin(usdSelectors, ";;").c_str());
 
     return commandString.c_str();
 }
@@ -791,7 +789,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             if (!_prepareUSDReferenceTargetLayer(prim()))
                 return nullptr;
 
-            MString fileRef = MGlobal::executeCommandStringResult(_selectUSDFileScript());
+            MString fileRef
+                = MGlobal::executeCommandStringResult(_selectUSDFileScript("Add USD Reference"));
             if (fileRef.length() == 0)
                 return nullptr;
 
@@ -802,26 +801,9 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 
             // Derive the new prim name from the referenced filename stem.
             std::string stem = path;
-            const size_t slash = stem.find_last_of("/\\");
-            if (slash != std::string::npos)
-                stem = stem.substr(slash + 1);
-            const size_t dot = stem.find_last_of('.');
-            if (dot != std::string::npos)
-                stem = stem.substr(0, dot);
-            std::string newPrimName = TfMakeValidIdentifier(stem);
-            if (newPrimName.empty())
-                newPrimName = "Reference";
-
-            // Inspect the referenced layer to determine the default prim type.
-            std::string    newPrimType;
-            SdfLayerRefPtr layer = SdfLayer::FindOrOpen(path);
-            if (layer && layer->HasDefaultPrim()) {
-                const std::string defaultPrimName = layer->GetDefaultPrim().GetString();
-                SdfPrimSpecHandle primSpec
-                    = layer->GetPrimAtPath(SdfPath("/" + defaultPrimName));
-                if (primSpec)
-                    newPrimType = primSpec->GetTypeName().GetString();
-            }
+            UsdMayaUtilFileSystem::pathStripPath(stem);
+            UsdMayaUtilFileSystem::pathRemoveExtension(stem);
+            const std::string newPrimName = TfMakeValidIdentifier(stem);
 
             const std::string refPrimPath = UsdMayaUtilFileSystem::getReferencedPrimPath();
             const bool        asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
@@ -829,7 +811,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             const bool        preload = !asRef && UsdMayaUtilFileSystem::wantPayloadLoaded();
 
             return std::make_shared<UsdUfe::UsdUndoAddReferenceToNewPrimCommand>(
-                prim(), newPrimName, newPrimType, path, refPrimPath, prepend, !asRef, preload);
+                prim(), newPrimName, path, refPrimPath, prepend, !asRef, preload);
 
         } else if (itemPath[1] == kAddRefOrPayloadItem) {
             if (!_prepareUSDReferenceTargetLayer(prim()))

@@ -136,6 +136,43 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.assertEqual(originalRootContents, filterUsdStr(self.stage.GetRootLayer().ExportToString()))
 
 
+    def testAddReferenceToNewPrimCommand(self):
+        '''
+        Test the "add reference to a new prim" command: it creates a new child
+        prim under the parent and adds the reference to that new prim. The new
+        prim is a typeless "def" whose type is composed through the reference, so
+        it takes on the referenced default prim's type.
+        '''
+        parentPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        originalRootContents = filterUsdStr(self.stage.GetRootLayer().ExportToString())
+
+        # sphere.usda's default prim ("sphereXform") is an Xform, so the new prim
+        # should compose to an Xform.
+        referencedFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+
+        newPrimPathStr = "|stage1|stageShape1,/A/sphere"
+
+        # Arguments: parentPrim, newPrimName, filePath, primPath, prepend, isPayload, preload
+        cmd = usdUfe.AddReferenceToNewPrimCommand(
+            parentPrim, 'sphere', referencedFile, '', True, False, False)
+
+        cmd.execute()
+        newPrim = mayaUsd.ufe.ufePathToPrim(newPrimPathStr)
+        self.assertTrue(newPrim.IsValid())
+        self.assertTrue(newPrim.HasAuthoredReferences())
+        self.assertEqual(str(newPrim.GetTypeName()), 'Xform')
+
+        cmd.undo()
+        self.assertFalse(mayaUsd.ufe.ufePathToPrim(newPrimPathStr).IsValid())
+        self.assertEqual(originalRootContents, filterUsdStr(self.stage.GetRootLayer().ExportToString()))
+
+        cmd.redo()
+        newPrim = mayaUsd.ufe.ufePathToPrim(newPrimPathStr)
+        self.assertTrue(newPrim.IsValid())
+        self.assertTrue(newPrim.HasAuthoredReferences())
+        self.assertEqual(str(newPrim.GetTypeName()), 'Xform')
+
+
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Delete restriction on delete requires Maya 2023 or greater.')
     def testDeletePrimContainingReference(self):
         '''

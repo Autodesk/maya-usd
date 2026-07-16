@@ -43,7 +43,6 @@ UsdListPosition UsdUndoAddReferenceToNewPrimCommand::getListPosition(bool prepen
 UsdUndoAddReferenceToNewPrimCommand::UsdUndoAddReferenceToNewPrimCommand(
     const UsdPrim&     parentPrim,
     const std::string& newPrimName,
-    const std::string& newPrimType,
     const std::string& filePath,
     const std::string& primPath,
     bool               prepend,
@@ -51,7 +50,6 @@ UsdUndoAddReferenceToNewPrimCommand::UsdUndoAddReferenceToNewPrimCommand(
     bool               preload)
     : _parentPrim(parentPrim)
     , _newPrimName(newPrimName)
-    , _newPrimType(newPrimType)
     , _filePath(filePath)
     , _primPath(primPath)
     , _prepend(prepend)
@@ -72,13 +70,9 @@ void UsdUndoAddReferenceToNewPrimCommand::executeImplementation()
     const std::string uniqueName = UsdUfe::uniqueChildName(_parentPrim, _newPrimName);
     const SdfPath     childPath = _parentPrim.GetPath().AppendChild(TfToken(uniqueName));
 
-    UsdPrim newPrim;
-    if (_newPrimType == "Class") {
-        newPrim = stage->CreateClassPrim(childPath);
-    } else {
-        TfToken typeToken = _newPrimType.empty() ? TfToken() : TfToken(_newPrimType);
-        newPrim = stage->DefinePrim(childPath, typeToken);
-    }
+    // Create a typeless "def". The prim's type is composed through the reference (or payload)
+    // arc added below, so it automatically takes on the referenced default prim's type.
+    UsdPrim newPrim = stage->DefinePrim(childPath);
 
     if (!newPrim.IsValid()) {
         TF_RUNTIME_ERROR(

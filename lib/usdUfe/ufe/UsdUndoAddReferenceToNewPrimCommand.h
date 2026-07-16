@@ -37,7 +37,6 @@ public:
     UsdUndoAddReferenceToNewPrimCommand(
         const PXR_NS::UsdPrim& parentPrim,
         const std::string&     newPrimName,
-        const std::string&     newPrimType,
         const std::string&     filePath,
         const std::string&     primPath,
         bool                   prepend,
@@ -54,7 +53,6 @@ private:
 
     PXR_NS::UsdPrim _parentPrim;
     std::string     _newPrimName;
-    std::string     _newPrimType;
     std::string     _filePath;
     std::string     _primPath;
     bool            _prepend;
