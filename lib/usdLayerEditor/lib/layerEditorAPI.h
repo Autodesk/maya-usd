@@ -14,8 +14,46 @@
 // limitations under the License.
 //
 
-#ifdef LAYEREDITOR_EXPORTS
-#define LayerEditorAPI __declspec(dllexport)
+#if defined _WIN32 || defined __CYGWIN__
+#    ifdef LAYEREDITOR_EXPORTS
+#        ifdef __GNUC__
+#            define LAYEREDITOR_PUBLIC __attribute__((dllexport))
+#        else
+#            define LAYEREDITOR_PUBLIC __declspec(dllexport)
+#        endif
+#    else
+#        ifdef __GNUC__
+#            define LAYEREDITOR_PUBLIC __attribute__((dllimport))
+#        else
+#            define LAYEREDITOR_PUBLIC __declspec(dllimport)
+#        endif
+#    endif
 #else
-#define LayerEditorAPI __declspec(dllimport)
+#    if __GNUC__ >= 4
+#        define LAYEREDITOR_PUBLIC __attribute__((visibility("default")))
+#    else
+#        define LAYEREDITOR_PUBLIC
+#    endif
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__
+#    ifdef LAYEREDITOR_UI_EXPORTS
+#        ifdef __GNUC__
+#            define LAYEREDITOR_UI_PUBLIC __attribute__((dllexport))
+#        else
+#            define LAYEREDITOR_UI_PUBLIC __declspec(dllexport)
+#        endif
+#    else
+#        ifdef __GNUC__
+#            define LAYEREDITOR_UI_PUBLIC __attribute__((dllimport))
+#        else
+#            define LAYEREDITOR_UI_PUBLIC __declspec(dllimport)
+#        endif
+#    endif
+#else
+#    if __GNUC__ >= 4
+#        define LAYEREDITOR_UI_PUBLIC __attribute__((visibility("default")))
+#    else
+#        define LAYEREDITOR_UI_PUBLIC
+#    endif
 #endif

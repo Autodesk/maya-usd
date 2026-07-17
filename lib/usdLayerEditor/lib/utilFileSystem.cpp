@@ -15,6 +15,8 @@
 //
 #include "utilFileSystem.h"
 
+#include "layerEditorDCCFunctions.h"
+
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
@@ -23,14 +25,8 @@
 
 #include <pxr/usd/ar/resolver.h>
 
-#include <filesystem>
+#include <ghc/fs_std.hpp>
 #include <random>
-
-namespace {
-std::function<bool(std::string)> writeAccessCheckFunc;
-std::function<std::string()> dccSceneSaveLocationFunc;
-std::function<std::string()> dccWorkspaceSceneSaveLocationFunc;
-}
 
 namespace {
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -55,7 +51,7 @@ std::string generateUniqueName()
 
 struct PostponedRelativeInfo
 {
-    std::set<std::filesystem::path> paths;
+    std::set<fs::filesystem::path> paths;
     std::set<TfToken>               attrs;
 };
 
@@ -85,12 +81,12 @@ std::string resolvePath(const std::string& filePath)
 
 std::string getDir(const std::string& fullFilePath)
 {
-    return std::filesystem::path(fullFilePath).parent_path().string();
+    return fs::filesystem::path(fullFilePath).parent_path().string();
 }
 
 std::string getDCCSceneFileDir()
 {
-    return dccSceneSaveLocationFunc();
+    return UsdLayerEditor::getDCCSceneDir();
 }
 
 std::string getLayerFileDir(const PXR_NS::SdfLayerHandle& layer)
@@ -108,7 +104,7 @@ std::string getLayerFileDir(const PXR_NS::SdfLayerHandle& layer)
 std::pair<std::string, bool>
 makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir)
 {
-    std::filesystem::path absolutePath(fileName);
+    fs::filesystem::path absolutePath(fileName);
 
     // If the anchor relative-to-directory doesn't exist yet, use the unchanged path,
     // but don't return a failure. The anchor path being empty is not considered
@@ -118,63 +114,13 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
         return std::make_pair(fileName, true);
     }
 
-    std::filesystem::path relativePath = absolutePath.lexically_relative(relativeToDir);
+    fs::filesystem::path relativePath = absolutePath.lexically_relative(relativeToDir);
 
     if (relativePath.empty()) {
         return std::make_pair(fileName, false);
     }
 
     return std::make_pair(relativePath.generic_string(), true);
-}
-
-std::string getPathRelativeToProject(const std::string& fileName)
-{
-    return {};
-    // TODO LE-EXTRACT Get path relative to DCC project.
-    // if (fileName.empty())
-    //    return {};
-
-    // const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
-    // if (projectPath.empty())
-    //     return {};
-
-    //// Note: we do *not* use filesystem function to attempt to make the
-    ////       path relative sinceit would succeed as long as both paths
-    ////       are on the same drive. We really only want to know if the
-    ////       project path is the prefix of the file path. Maya will
-    ////       preserve paths entered manually with relative folder ("..")
-    ////       by keping an absolute path with ".." embedded in them,
-    ////       so this works even in this situation.
-    // const auto pos = fileName.rfind(projectPath, 0);
-    // if (pos != 0)
-    //     return {};
-
-    // auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath);
-
-    // if (!relativePathAndSuccess.second)
-    //     return {};
-
-    // return relativePathAndSuccess.first;
-}
-
-std::string makeProjectRelatedPath(const std::string& fileName)
-{
-    return {};
-
-    // TODO LE-EXTRACT Relative patgh to DCC project.
-    /*const std::string projectPath(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar());
-    if (projectPath.empty())
-        return {};
-
-    // Attempt to create a relative path relative to the project folder.
-    // If that fails, we cannot create the project-relative path.
-    const auto pathAndSuccess = makePathRelativeTo(fileName, projectPath);
-    if (!pathAndSuccess.second)
-        return {};
-
-    // Make the path absolute but relative to the project folder. That is an absolute
-    // path that starts with the project path.
-    return appendPaths(projectPath, pathAndSuccess.first);*/
 }
 
 std::string
@@ -240,7 +186,7 @@ void markPathAsPostponedRelative(
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            contentPath)
 {
-    std::filesystem::path filePath(contentPath);
+    fs::filesystem::path filePath(contentPath);
     auto&                 postponedRelativePaths = getPostponedRelativePaths();
     postponedRelativePaths[layer].paths.insert(filePath);
 }
@@ -252,7 +198,7 @@ void unmarkPathAsPostponedRelative(
     auto& postponedRelativePaths = getPostponedRelativePaths();
     auto  layerEntry = postponedRelativePaths.find(layer);
     if (layerEntry != postponedRelativePaths.end()) {
-        std::filesystem::path filePath(contentPath);
+        fs::filesystem::path filePath(contentPath);
         layerEntry->second.paths.erase(filePath);
     }
 }
@@ -265,8 +211,7 @@ void updatePathList(
 {
     for (auto proxy : list) {
         typename TypePolicy::value_type item = proxy;
-        std::filesystem::path           filePath(item.GetAssetPath());
-        filePath = filePath;
+        fs::filesystem::path           filePath(item.GetAssetPath());
 
         auto it = layerEntry->second.paths.find(filePath);
         if (it == layerEntry->second.paths.end()) {
@@ -328,7 +273,7 @@ void updatePostponedRelativePathsForPrim(
 
             VtValue               filePathValue = attr->GetDefaultValue();
             auto                  filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
-            std::filesystem::path filePath(filePathStr);
+            fs::filesystem::path filePath(filePathStr);
             auto                  it = layerEntry->second.paths.find(filePath);
             if (it == layerEntry->second.paths.end()) {
                 continue;
@@ -356,7 +301,7 @@ void updatePostponedRelativePaths(
         return;
     }
 
-    auto anchorDir = std::filesystem::path(layerFileName).remove_filename();
+    auto anchorDir = fs::filesystem::path(layerFileName).remove_filename();
     auto anchorDirStr = anchorDir.generic_string();
 
     // Update sublayer paths
@@ -367,8 +312,7 @@ void updatePostponedRelativePaths(
             continue;
         }
 
-        std::filesystem::path filePath(subLayer->GetRealPath());
-        filePath = filePath;
+        fs::filesystem::path filePath(subLayer->GetRealPath());
 
         auto it = layerEntry->second.paths.find(filePath);
         if (it == layerEntry->second.paths.end()) {
@@ -399,85 +343,45 @@ bool prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneF
 
 bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
 {
-    // TODO LE-EXTRACT Prepare save UI Layer.
-    /*   const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                        "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-
-   const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
-   return MGlobal::executePythonCommand(commandString.c_str());*/
-    return true;
+    return UsdLayerEditor::prepareLayerSaveUILayer(relativeAnchor);
 }
 
 bool requireUsdPathsRelativeToDCCSceneFile()
 {
-    // TODO LE-EXTRACT Get option : requireUsdPathsRelativeToMayaSceneFile
-    // static const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE =
-    // "mayaUsd_MakePathRelativeToSceneFile"; return
-    // MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
-    //     && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
-    return true;
+    return UsdLayerEditor::requireUsdPathsRelativeToSceneFile();
 }
 
 bool requireUsdPathsRelativeToParentLayer()
 {
-    // TODO LE-EXTRACT Get option : requireUsdPathsRelativeToParentLayer
-    // static const MString MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE
-    //    = "mayaUsd_MakePathRelativeToParentLayer";
-    // return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE)
-    //    && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE);
-    return true;
+    return UsdLayerEditor::requireUsdPathsRelativeToParentLayer();
 }
 
 bool requireUsdPathsRelativeToEditTargetLayer()
 {
-    // TODO LE-EXTRACT Get option : requireUsdPathsRelativeToEditTargetLayer
-    /*static const MString MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE
-    = "mayaUsd_MakePathRelativeToEditTargetLayer";
-    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE)
-    && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);*/
-    return true;
+    return UsdLayerEditor::requireUsdPathsRelativeToEditTargetLayer();
 }
 
-bool wantReferenceCompositionArc()
+bool wantReferenceCompositionArc() { return UsdLayerEditor::wantReferenceCompositionArc(); }
+
+bool wantPrependCompositionArc() { return UsdLayerEditor::wantPrependCompositionArc(); }
+
+bool wantPayloadLoaded() { return UsdLayerEditor::wantPayloadLoaded(); }
+
+std::string getReferencedPrimPath() { return UsdLayerEditor::getReferencedPrimPath(); }
+
+void setRequireUsdPathsRelativeToDCCSceneFile(bool value)
 {
-    // TODO LE-EXTRACT Get option : wantReferenceCompositionArc
-    // static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_WantReferenceCompositionArc";
-    // return MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC)
-    //     && MGlobal::optionVarIntValue(WANT_REFERENCE_COMPOSITION_ARC);
-    return false;
+    UsdLayerEditor::setRequireUsdPathsRelativeToSceneFile(value);
 }
 
-bool wantPrependCompositionArc()
+void setRequireUsdPathsRelativeToParentLayer(bool value)
 {
-    // TODO LE-EXTRACT Get option : wantPrependCompositionArc
-    /*static const MString WANT_PREPEND_COMPOSITION_ARC = "mayaUsd_WantPrependCompositionArc";
-    return MGlobal::optionVarExists(WANT_PREPEND_COMPOSITION_ARC)
-        && MGlobal::optionVarIntValue(WANT_PREPEND_COMPOSITION_ARC);*/
-    return true;
-}
-
-bool wantPayloadLoaded()
-{
-    // TODO LE-EXTRACT Get option : wantPayloadLoaded
-    // static const MString WANT_PAYLOAD_LOADED = "mayaUsd_WantPayloadLoaded";
-    // return MGlobal::optionVarExists(WANT_PAYLOAD_LOADED)
-    //     && MGlobal::optionVarIntValue(WANT_PAYLOAD_LOADED);
-    return true;
-}
-
-std::string getReferencedPrimPath()
-{
-    // TODO LE-EXTRACT Get option : getReferencedPrimPath
-    // static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_ReferencedPrimPath";
-    //   if (!MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC))
-    //       return {};
-    //   return MGlobal::optionVarStringValue(WANT_REFERENCE_COMPOSITION_ARC).asChar();
-    return {};
+    UsdLayerEditor::setRequireUsdPathsRelativeToParentLayer(value);
 }
 
 std::string getDCCWorkspaceScenesDir()
 {
-    return dccWorkspaceSceneSaveLocationFunc();
+    return UsdLayerEditor::getDCCWorkspaceScenesDir();
 }
 
 std::string
@@ -485,7 +389,7 @@ getUniqueFileName(const std::string& dir, const std::string& basename, const std
 {
     const std::string fileNameModel = basename + '-' + generateUniqueName() + '.' + ext;
 
-    std::filesystem::path pathModel(dir);
+    fs::filesystem::path pathModel(dir);
     pathModel.append(fileNameModel);
 
     return pathModel.generic_string();
@@ -495,7 +399,7 @@ std::string ensureUniqueFileName(const std::string& filename)
 {
     std::string uniqueName = filename;
     while (true) {
-        if (!std::filesystem::exists(std::filesystem::path(uniqueName)))
+        if (!fs::filesystem::exists(fs::filesystem::path(uniqueName)))
             return uniqueName;
 
         // Algorithm to generate a unique name:
@@ -503,7 +407,7 @@ std::string ensureUniqueFileName(const std::string& filename)
         //    2. Replace the filename with the filename plus random text
         //    3. Put the extension back.
 
-        std::filesystem::path uniquePath(filename);
+        fs::filesystem::path uniquePath(filename);
 
         const std::string extOnly = uniquePath.extension().generic_string();
         uniquePath = uniquePath.replace_extension();
@@ -548,11 +452,11 @@ std::string increaseNumberSuffix(const std::string& text)
 
 bool pathAppendPath(std::string& a, const std::string& b)
 {
-    if (!std::filesystem::is_directory(a)) {
+    if (!fs::filesystem::is_directory(a)) {
         return false;
     }
-    std::filesystem::path aPath(a);
-    std::filesystem::path bPath(b);
+    fs::filesystem::path aPath(a);
+    fs::filesystem::path bPath(b);
     aPath /= b;
     a.assign(aPath.string());
     return true;
@@ -560,8 +464,8 @@ bool pathAppendPath(std::string& a, const std::string& b)
 
 std::string appendPaths(const std::string& a, const std::string& b)
 {
-    std::filesystem::path aPath(a);
-    std::filesystem::path bPath(b);
+    fs::filesystem::path aPath(a);
+    fs::filesystem::path bPath(b);
     aPath /= b;
 
     return aPath.string();
@@ -587,55 +491,35 @@ size_t writeToFilePath(const char* filePath, const void* buffer, const size_t si
 
 void pathStripPath(std::string& filePath)
 {
-    std::filesystem::path p(filePath);
-    std::filesystem::path filename = p.filename();
+    fs::filesystem::path p(filePath);
+    fs::filesystem::path filename = p.filename();
     filePath.assign(filename.string());
     return;
 }
 
 void pathRemoveExtension(std::string& filePath)
 {
-    std::filesystem::path p(filePath);
-    std::filesystem::path dir = p.parent_path();
-    std::filesystem::path finalPath = dir / p.stem();
+    fs::filesystem::path p(filePath);
+    fs::filesystem::path dir = p.parent_path();
+    fs::filesystem::path finalPath = dir / p.stem();
     filePath.assign(finalPath.string());
     return;
 }
 
 std::string pathFindExtension(std::string& filePath)
 {
-    std::filesystem::path p(filePath);
+    fs::filesystem::path p(filePath);
     if (!p.has_extension()) {
         return std::string();
     }
-    std::filesystem::path ext = p.extension();
+    fs::filesystem::path ext = p.extension();
     return ext.string();
-}
-
-void setFileWriteAccessFunction(WriteAccessCheckFn checkFileWriteAccess)
-{
-    writeAccessCheckFunc = checkFileWriteAccess;
 }
 
 bool checkWriteAccess(const std::string& filePath)
 {
-    if (writeAccessCheckFunc) {
-        return writeAccessCheckFunc(filePath);
-    }
-    TF_CODING_ERROR("No implementation provided for FileSystem::checkWriteAccess()");
-    return false;
+    return UsdLayerEditor::checkWriteAccess(filePath);
 }
-
-void setDCCSceneLocationFunc(std::function<std::string()> fn)
-{
-    dccSceneSaveLocationFunc = fn;
-}
-
-void setDCCWorkspaceSceneLocationFunc(std::function<std::string()> fn)
-{
-    dccWorkspaceSceneSaveLocationFunc = fn;
-}
-
 
 FileBackup::FileBackup(const std::string& filename)
     : _filename(filename)
@@ -664,7 +548,7 @@ std::string FileBackup::getBackupFilename() const
 
 void FileBackup::backup()
 {
-    if (!std::filesystem::exists(std::filesystem::path(_filename)))
+    if (!fs::filesystem::exists(fs::filesystem::path(_filename)))
         return;
 
     const std::string backupFileName = getBackupFilename();

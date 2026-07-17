@@ -20,7 +20,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/mayaUsd.h>
 
-#include <pxr/usd/sdf/layer.h>
+#include <ufe/undoableCommand.h>
 
 #include <maya/MPxCommand.h>
 #include <maya/MString.h>
@@ -30,10 +30,6 @@
 #include <vector>
 
 namespace MAYAUSD_NS_DEF {
-
-namespace Impl {
-class BaseCmd;
-}
 
 class MAYAUSD_CORE_PUBLIC LayerEditorCommand : public MPxCommand
 {
@@ -62,8 +58,8 @@ private:
     bool isEdit() const { return _cmdMode == Mode::Edit; }
     bool isQuery() const { return _cmdMode == Mode::Query; }
 
-    std::string                                 _layerIdentifier;
-    std::vector<std::shared_ptr<Impl::BaseCmd>> _subCommands;
+    std::string                                         _layerIdentifier;
+    std::vector<std::shared_ptr<Ufe::UndoableCommand>>  _subCommands;
 };
 
 } // namespace MAYAUSD_NS_DEF

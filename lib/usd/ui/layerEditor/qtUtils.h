@@ -16,6 +16,8 @@
 #ifndef LAYEREDITOR_QTUTILS_H
 #define LAYEREDITOR_QTUTILS_H
 
+#include <mayaUsdUI/ui/api.h>
+
 class QPushButton;
 class QSize;
 class QString;
@@ -33,8 +35,9 @@ namespace UsdLayerEditor {
 class QtUtils
 {
 public:
-    virtual double  dpiScale() { return 1.0; }
-    virtual QIcon   createIcon(const char* iconName);
+    virtual double   dpiScale() { return 1.0; }
+    virtual QWidget* mainWindowParent() { return nullptr; }
+    virtual QIcon    createIcon(const char* iconName);
     virtual QPixmap createPixmap(QString const& pixmapName, int width = 0, int height = 0);
 
     virtual QPixmap createPNGResPixmap(QString const& pixmapName, int width = 0, int height = 0);
@@ -92,7 +95,7 @@ const bool IS_MAC_OS = true;
 const bool IS_MAC_OS = false;
 #endif
 
-extern QtUtils* utils;
+MAYAUSD_UI_PUBLIC extern QtUtils* utils;
 
 template <class T> inline T DPIScale(T pixel) { return static_cast<T>(pixel * utils->dpiScale()); }
 

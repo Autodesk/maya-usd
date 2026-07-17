@@ -163,6 +163,20 @@ endforeach()
 
 #
 # -----------------------------------------------------------------------------
+# Shared usdLayerEditor component tests (C++ GTests + UFE commands python tests).
+# -----------------------------------------------------------------------------
+add_subdirectory(usdLayerEditor)
+
+#
+# -----------------------------------------------------------------------------
+# Old layer editor parity tests — temporary, deleted when old editor is retired.
+# Reuse the shared layer editor test sources against the old editor; coverage is
+# lesser than the new editor suite.
+# -----------------------------------------------------------------------------
+add_subdirectory(oldUsdLayerEditor)
+
+#
+# -----------------------------------------------------------------------------
 # Special interactive test to be able to start Maya with test configurations.
 # Can be started with VS Code but won't be part of test suites.
 # -----------------------------------------------------------------------------

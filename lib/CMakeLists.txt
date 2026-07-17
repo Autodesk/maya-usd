@@ -1,4 +1,5 @@
 add_subdirectory(usdUfe)
+add_subdirectory(usdLayerEditor)
 if (BUILD_MAYAUSD_LIBRARY)
     add_subdirectory(mayaUsd)
     add_subdirectory(usd)

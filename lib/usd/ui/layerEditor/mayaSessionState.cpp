@@ -16,20 +16,28 @@
 
 #include "mayaSessionState.h"
 
-#include "saveLayersDialog.h"
-#include "stringResources.h"
+#include <saveLayersDialog.h>
+#include <stringResources.h>
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
-
-#include <AdskUsdEditForward/Host.h>
 #endif
+
+#include <ufe/globalSelection.h>
+#include <ufe/hierarchy.h>
+#include <ufe/observableSelection.h>
+#include <ufe/sceneItem.h>
+#include <ufe/selection.h>
 
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
@@ -55,10 +63,6 @@ namespace {
 MString PROXY_NODE_TYPE = "mayaUsdProxyShapeBase";
 MString AUTO_HIDE_OPTION_VAR
     = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorAutoHideSessionLayer);
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-MString ECHO_EDIT_FORWARDING_OPTION_VAR
-    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding);
-#endif
 MString DISPLAY_LAYER_CONTENTS_OPTION_VAR
     = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorDisplayLayerContents);
 MString DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR
@@ -73,11 +77,6 @@ MayaSessionState::MayaSessionState()
     if (MGlobal::optionVarExists(AUTO_HIDE_OPTION_VAR)) {
         _autoHideSessionLayer = MGlobal::optionVarIntValue(AUTO_HIDE_OPTION_VAR) != 0;
     }
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    if (MGlobal::optionVarExists(ECHO_EDIT_FORWARDING_OPTION_VAR)) {
-        _echoEditForwarding = MGlobal::optionVarIntValue(ECHO_EDIT_FORWARDING_OPTION_VAR) != 0;
-    }
-#endif
     if (MGlobal::optionVarExists(DISPLAY_LAYER_CONTENTS_OPTION_VAR)) {
         _displayLayerContents = MGlobal::optionVarIntValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR) != 0;
     }
@@ -106,7 +105,7 @@ void MayaSessionState::setStageEntry(StageEntry const& inEntry)
     }
 
     if (!_inLoad)
-        MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._proxyShapePath);
+        MayaUsd::LayerManager::setSelectedStage(_currentStageEntry._dccObjectPath);
 }
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
@@ -140,7 +139,7 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
         out_stageEntry->_id = dagNode.uuid().asString().asChar();
         out_stageEntry->_stage = stage;
         out_stageEntry->_displayName = niceName.toStdString();
-        out_stageEntry->_proxyShapePath = shapePath.asChar();
+        out_stageEntry->_dccObjectPath = shapePath.asChar();
         return true;
     }
     return false;
@@ -220,6 +219,10 @@ void MayaSessionState::registerNotifications()
 
     TfWeakPtr<MayaSessionState> me(this);
     _stageResetNoticeKey = TfNotice::Register(me, &MayaSessionState::mayaUsdStageReset);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    _efFallbackTargetChangedNoticeKey
+        = TfNotice::Register(me, &MayaSessionState::efFallbackTargetChanged);
+#endif
 
     loadSelectedStage();
 }
@@ -236,18 +239,21 @@ void MayaSessionState::unregisterNotifications()
     _callbackIds.clear();
 
     TfNotice::Revoke(_stageResetNoticeKey);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    TfNotice::Revoke(_efFallbackTargetChangedNoticeKey);
+#endif
 }
 
 void MayaSessionState::refreshCurrentStageEntry()
 {
-    refreshStageEntry(_currentStageEntry._proxyShapePath);
+    refreshStageEntry(_currentStageEntry._dccObjectPath);
 }
 
 void MayaSessionState::refreshStageEntry(std::string const& proxyShapePath)
 {
     StageEntry entry;
     if (getStageEntry(&entry, proxyShapePath.c_str())) {
-        if (entry._proxyShapePath == _currentStageEntry._proxyShapePath) {
+        if (entry._dccObjectPath == _currentStageEntry._dccObjectPath) {
             QTimer::singleShot(0, this, [this, entry]() {
                 mayaUsdStageResetCBOnIdle(entry);
                 setStageEntry(entry);
@@ -426,6 +432,13 @@ void MayaSessionState::setupCreateMenu(QMenu* in_menu)
     script += "menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;";
     script += "menuItem -runTimeCommand mayaUsdCreateStageFromFile;";
     script += "menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;";
+
+    if (MayaUsd::ComponentUtils::isAdskUsdComponentCreatorAvailable()) {
+        script += "menuItem -divider true;";
+        script += "menuItem -runTimeCommand mayaUsdCreateComponent;";
+        script += "menuItem -runTimeCommand mayaUsdCreateComponentOptions -optionBox true;";
+    }
+
     MGlobal::executeCommand(
         script,
         /*display*/ false,
@@ -463,8 +476,9 @@ std::string MayaSessionState::defaultLoadPath() const
 // in this case, the stage needs to be re-created on the new file
 void MayaSessionState::rootLayerPathChanged(std::string const& in_path)
 {
-    if (!_currentStageEntry._proxyShapePath.empty()) {
-        MString proxyShape(_currentStageEntry._proxyShapePath.c_str());
+    const std::string& proxyPath = _currentStageEntry._dccObjectPath;
+    if (!proxyPath.empty()) {
+        MString proxyShape(proxyPath.c_str());
         MString newValue(in_path.c_str());
         MayaUsd::utils::setNewProxyPath(
             proxyShape, newValue, MayaUsd::utils::kProxyPathFollowProxyShape, nullptr, false);
@@ -479,16 +493,6 @@ void MayaSessionState::setAutoHideSessionLayer(bool hideIt)
 }
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-void MayaSessionState::setEchoEditForwarding(bool echo)
-{
-    MGlobal::setOptionVarValue(ECHO_EDIT_FORWARDING_OPTION_VAR, echo ? 1 : 0);
-    if (auto host = std::dynamic_pointer_cast<MayaUsdEditForwardHost>(
-            AdskUsdEditForward::Host::GetInstance())) {
-        host->SetWantsEcho(echo);
-    }
-    PARENT_CLASS::setEchoEditForwarding(echo);
-}
-
 bool MayaSessionState::isEditForwardMode() const
 {
     const auto& stage = stageEntry()._stage;
@@ -513,6 +517,19 @@ PXR_NS::SdfLayerRefPtr MayaSessionState::effectiveTargetLayer() const
     }
     return targetLayer();
 }
+
+void MayaSessionState::efFallbackTargetChanged(
+    const MayaUsdEFFallbackTargetChangedNotice& notice)
+{
+    if (notice.GetStage() != stage())
+        return;
+
+    // The notice fires while the edit-forward host is mutating the stage, so defer the
+    // emit to idle.
+    QTimer::singleShot(0, this, [this]() {
+        Q_EMIT editForwardingFallbackTargetChanged();
+    });
+}
 #endif
 
 void MayaSessionState::setDisplayLayerContents(bool showIt)
@@ -534,14 +551,13 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
     MString result, temp;
 
     temp.format(
-        StringResources::getAsMString(StringResources::kUsdLayerIdentifier),
+        MString(StringResources::kUsdLayerIdentifier.value.c_str()),
         layer->GetIdentifier().c_str());
     result += temp;
     result += "\n";
     if (layer->GetRealPath() != layer->GetIdentifier()) {
         temp.format(
-            StringResources::getAsMString(StringResources::kRealPath),
-            layer->GetRealPath().c_str());
+            MString(StringResources::kRealPath.value.c_str()), layer->GetRealPath().c_str());
         result += temp;
         result += "\n";
     }
@@ -549,6 +565,39 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
     layer->ExportToString(&text);
     result += text.c_str();
     MGlobal::displayInfo(result);
+}
+
+std::vector<SessionState::StageEntry> MayaSessionState::selectedStages() const
+{
+    std::vector<StageEntry> result;
+
+    const Ufe::GlobalSelection::Ptr& ufeGlobalSelection = Ufe::GlobalSelection::get();
+    if (!ufeGlobalSelection)
+        return result;
+
+    const std::vector<StageEntry> allEntries = allStages();
+    auto findEntryById = [&](const std::string& stageId) -> const StageEntry* {
+        for (const auto& candidateEntry : allEntries) {
+            if (candidateEntry._id == stageId)
+                return &candidateEntry;
+        }
+        return nullptr;
+    };
+
+    const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
+    for (const auto& item : ufeSelection) {
+        PXR_NS::MayaUsdProxyShapeBase* proxyShapePtr
+            = MayaUsd::ufe::getProxyShapeFromItemOrChildren(item);
+        if (!proxyShapePtr)
+            continue;
+
+        MFnDagNode        dagNode(proxyShapePtr->thisMObject());
+        const std::string stageId = dagNode.uuid().asString().asChar();
+        if (const StageEntry* entry = findEntryById(stageId)) {
+            result.push_back(*entry);
+        }
+    }
+    return result;
 }
 
 } // namespace UsdLayerEditor

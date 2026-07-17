@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME}
         editTargetCommand.cpp
         layerEditorCommand.cpp
         layerEditorWindowCommand.cpp
+        mayaLayerEditorDCCFunctions.cpp
         schemaCommand.cpp
 )
 
@@ -22,6 +23,7 @@ set(HEADERS
         editTargetCommand.h
         layerEditorCommand.h
         layerEditorWindowCommand.h
+        mayaLayerEditorDCCFunctions.h
         schemaCommand.h
 )
 

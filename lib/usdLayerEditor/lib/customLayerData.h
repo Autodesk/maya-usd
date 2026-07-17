@@ -16,7 +16,7 @@
 #ifndef USDLAYEREDITOR_CUSTOMLAYERDATA_H
 #define USDLAYEREDITOR_CUSTOMLAYERDATA_H
 
-#include "LayerEditorAPI.h"
+#include "layerEditorAPI.h"
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
@@ -35,7 +35,7 @@ namespace CustomLayerData {
  *
  * @return          Returns the string array (empty if not found)
  */
-LayerEditorAPI PXR_NS::VtArray<std::string>
+LAYEREDITOR_PUBLIC PXR_NS::VtArray<std::string>
                getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
 
 /**
@@ -45,7 +45,7 @@ LayerEditorAPI PXR_NS::VtArray<std::string>
  * @param layer     The layer the custom data will be stored in
  * @param token     The key (dictionary) where the data is stored
  */
-LayerEditorAPI void setStringArray(
+LAYEREDITOR_PUBLIC void setStringArray(
     const PXR_NS::VtArray<std::string>& data,
     const PXR_NS::SdfLayerRefPtr&       layer,
     const PXR_NS::TfToken&              token);
@@ -58,7 +58,7 @@ LayerEditorAPI void setStringArray(
  *
  * @return          Returns the string (empty if not found)
  */
-LayerEditorAPI std::string
+LAYEREDITOR_PUBLIC std::string
                getString(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
 
 /**
@@ -68,7 +68,7 @@ LayerEditorAPI std::string
  * @param layer     The layer the custom data will be stored in
  * @param token     The key (dictionary) where the data is stored
  */
-LayerEditorAPI void setString(
+LAYEREDITOR_PUBLIC void setString(
     const std::string&            data,
     const PXR_NS::SdfLayerRefPtr& layer,
     const PXR_NS::TfToken&        token);

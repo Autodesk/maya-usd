@@ -1,0 +1,168 @@
+//
+// Copyright 2020 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#include "pathChecker.h"
+
+#include "layerTreeItem.h"
+#include "stringResources.h"
+#include "utilString.h"
+#include "warningDialogs.h"
+
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/fileFormat.h>
+#include <pxr/usd/sdf/layerUtils.h>
+
+#include <QtCore/QFileInfo>
+#include <QtCore/QString>
+#include <stdio.h>
+
+namespace {
+using namespace UsdLayerEditor;
+
+typedef PXR_NS::SdfLayerRefPtr UsdLayer;
+typedef std::vector<UsdLayer>  UsdLayerVector;
+
+// helper for checkIfPathIsSafeToAdd
+UsdLayerVector getAllParentHandles(LayerTreeItem* parentItem)
+{
+    UsdLayerVector result;
+    while (parentItem != nullptr) {
+        result.push_back(parentItem->layer());
+        parentItem = parentItem->parentLayerItem();
+    }
+    return result;
+}
+
+// helper for checkIfPathIsSafeToAdd
+// logic: we've loaded the layer, now check if it's also somewhere else in the hierachy
+// the path parameter are just for UI display. it's testLayer that's important
+bool checkPathRecursive(
+    QWidget*           in_parent,
+    const QString&     in_errorTitle,
+    UsdLayer           parentLayer,
+    UsdLayerVector     parentHandles,
+    UsdLayer           testLayer,
+    const std::string& pathToCheck,
+    const std::string& topPathToAdd)
+{
+    if (std::find(parentHandles.begin(), parentHandles.end(), testLayer) != parentHandles.end()) {
+        QString message;
+
+        if (pathToCheck != topPathToAdd) {
+            std::string tmp = String::format(
+                StringResources::kErrorCannotAddPathInHierarchyThrough.value,
+                pathToCheck.c_str(),
+                topPathToAdd.c_str());
+            message = QString::fromStdString(tmp);
+        } else {
+            std::string tmp = String::format(
+                StringResources::kErrorCannotAddPathInHierarchy.value, pathToCheck.c_str());
+            message = QString::fromStdString(tmp);
+        }
+        warningDialog(in_errorTitle, message, nullptr, QMessageBox::Icon::NoIcon, in_parent);
+        return false;
+    }
+
+    // now check all children of the testLayer recursivly down for conflicts with any of the parents
+    parentHandles.push_back(testLayer);
+
+    auto proxy = testLayer->GetSubLayerPaths();
+    for (const auto path : proxy) {
+        auto actualpath = PXR_NS::SdfComputeAssetPathRelativeToLayer(testLayer, path);
+
+        auto childLayer = PXR_NS::SdfLayer::FindOrOpen(actualpath);
+        if (childLayer != nullptr) {
+            if (!checkPathRecursive(
+                    in_parent,
+                    in_errorTitle,
+                    testLayer,
+                    parentHandles,
+                    childLayer,
+                    actualpath,
+                    topPathToAdd)) {
+                return false;
+            }
+        }
+    }
+    parentHandles.pop_back();
+
+    return true;
+}
+
+} // namespace
+
+namespace UsdLayerEditor {
+
+bool checkIfPathIsSafeToAdd(
+    QWidget*           in_parent,
+    const QString&     in_errorTitle,
+    LayerTreeItem*     in_parentItem,
+    const std::string& in_pathToAdd)
+{
+    // We can't allow the user to add a sublayer path that is the same as the item or one of its
+    // parent. At this point I think it's safe to go the route of actually loading the layer and
+    // checking if the handles were already loaded
+    if (in_parentItem == nullptr) {
+        return true;
+    }
+
+    auto parentLayer = in_parentItem->layer();
+
+    // first check if the path is already in the stack
+    auto proxy = parentLayer->GetSubLayerPaths();
+    if (proxy.Find(in_pathToAdd) == size_t(-1)) {
+
+        auto pathToAdd = PXR_NS::SdfComputeAssetPathRelativeToLayer(parentLayer, in_pathToAdd);
+
+        // now we're going to check if the layer is already in the stack, through
+        // another path
+        bool foundLayerInStack = false;
+        auto subLayer = PXR_NS::SdfLayer::FindOrOpen(pathToAdd);
+        if (subLayer == nullptr) {
+            return true; // always safe to add a bad path, unless it's already in the stack
+        } else {
+            // check the layer stack again, this time comparing handles
+            for (const auto path : proxy) {
+                std::string actualpath
+                    = PXR_NS::SdfComputeAssetPathRelativeToLayer(parentLayer, path);
+
+                auto childLayer = PXR_NS::SdfLayer::FindOrOpen(actualpath);
+                if (childLayer == subLayer) {
+                    foundLayerInStack = true;
+                    break;
+                }
+            }
+        }
+        if (!foundLayerInStack) {
+            UsdLayerVector parentHandles = getAllParentHandles(in_parentItem);
+            return checkPathRecursive(
+                in_parent,
+                in_errorTitle,
+                parentLayer,
+                parentHandles,
+                subLayer,
+                pathToAdd,
+                pathToAdd);
+        }
+    }
+
+    std::string msg
+        = String::format(StringResources::kErrorCannotAddPathTwice.value, in_pathToAdd.c_str());
+    warningDialog(
+        in_errorTitle, QString::fromStdString(msg), nullptr, QMessageBox::Icon::NoIcon, in_parent);
+    return false;
+}
+
+} // namespace UsdLayerEditor

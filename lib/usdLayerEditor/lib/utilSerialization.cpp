@@ -16,11 +16,11 @@
 
 #include "utilSerialization.h"
 
+#include "layerEditorDCCFunctions.h"
 #include "layerLocking.h"
 #include "layerMuting.h"
 #include "tokens.h"
 #include "utilFileSystem.h"
-#include "utilOptions.h"
 
 #include <usdUfe/ufe/Utils.h>
 
@@ -38,18 +38,12 @@
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
 #endif
-#include <pxr/usd/usdUtils/stageCache.h>
-
 #include <ufe/pathString.h>
 
-#include <filesystem>
+#include <ghc/fs_std.hpp>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-namespace {
-    std::function<void(std::string, std::string)> updateDCCObjectRootLayerFunction;
-}
 
 namespace UsdLayerEditor {
 namespace Serialization {
@@ -77,11 +71,6 @@ namespace Serialization {
             FailedAnonLayerReload, "Anonymous layer reload has failed.");
     };
 
-
-void setUpdateDCCObjectRootLayerFunction(std::function<void(std::string, std::string)> updateFunction)
-{
-    updateDCCObjectRootLayerFunction = updateFunction;
-}
 
 class RecursionDetector
 {
@@ -179,6 +168,11 @@ void updateLockedLayers(
     }
 }
 
+std::vector<PXR_NS::UsdStageCache*> getStageCaches()
+{
+    return UsdLayerEditor::getStageCaches();
+}
+
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
 {
     // Update all known stage caches managed by the Maya USD plugin that contained
@@ -191,18 +185,18 @@ void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::stri
         return;
     }
 
-    // TODO LE-EXTRACT : Maya has multiple stage caches, not just the global one.
-    // for (UsdStageCache& cache : UsdMayaStageCache::GetAllCaches()) {
-    auto&                        cache = pxr::UsdUtilsStageCache::Get();
-    std::vector<UsdStageRefPtr> stages = cache.FindAllMatching(originalLayer);
-    std::vector<UsdStageRefPtr> updatedStages;
-    for (auto& stage : stages) {
-        auto sessionLayer = stage->GetSessionLayer();
-        updatedStages.emplace_back(UsdStage::UsdStage::Open(newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone));
-        bool erased = cache.Erase(stage);
-    }
-    for (auto& updatedStage : updatedStages) {
-        cache.Insert(updatedStage);
+    for (PXR_NS::UsdStageCache* cache : getStageCaches()) {
+        std::vector<UsdStageRefPtr> stages = cache->FindAllMatching(originalLayer);
+        std::vector<UsdStageRefPtr> updatedStages;
+        for (auto& stage : stages) {
+            auto sessionLayer = stage->GetSessionLayer();
+            updatedStages.emplace_back(
+                UsdStage::Open(newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone));
+            cache->Erase(stage);
+        }
+        for (auto& updatedStage : updatedStages) {
+            cache->Insert(updatedStage);
+        }
     }
 }
 
@@ -247,14 +241,7 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
 
 std::string usdFormatArgOption()
 {
-    static const std::string kSaveLayerFormatBinaryOption(
-        UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText());
-    bool binary = true;
-    if (Options::optionVarExists(kSaveLayerFormatBinaryOption)) {
-        binary = Options::optionVarIntValue(kSaveLayerFormatBinaryOption) != 0;
-    } else {
-        Options::setOptionVarValue(kSaveLayerFormatBinaryOption, 1);
-    }
+    const bool binary = getSaveLayerFormatBinary();
 #if PXR_VERSION >= 2511
     return binary ? PXR_NS::SdfUsdcFileFormatTokens->Id.GetText()
                   : PXR_NS::SdfUsdaFileFormatTokens->Id.GetText();
@@ -267,18 +254,13 @@ std::string usdFormatArgOption()
 /* static */
 USDUnsavedEditsOption serializeUsdEditsLocationOption()
 {
-    static const std::string kSerializedUsdEditsLocation(
-        UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText());
-
-    bool optVarExists = true;
-    int  saveOption = Options::optionVarIntValue(kSerializedUsdEditsLocation, optVarExists);
-
     // Default is to save back to .usd files, set it to that if the optionVar doesn't exist yet.
     // optionVar's are also just ints so make sure the value is a correct one.
     // If we end up initializing the value then write it back to the optionVar itself.
-    if (!optVarExists || (saveOption < kSaveToUSDFiles || saveOption > kIgnoreUSDEdits)) {
+    int saveOption = getSerializedUsdEditsLocation();
+    if (saveOption < kSaveToUSDFiles || saveOption > kIgnoreUSDEdits) {
         saveOption = kSaveToUSDFiles;
-        Options::setOptionVarValue(kSerializedUsdEditsLocation, saveOption);
+        setSerializedUsdEditsLocation(saveOption);
     }
 
     if (saveOption == kSaveToSceneFile) {
@@ -289,60 +271,6 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
         return kSaveToUSDFiles;
     }
 } // namespace MAYAUSD_NS_DEF
-//
-// bool isProxyShapePathRelative(MayaUsdProxyShapeBase& proxyShape)
-//{
-//     MStatus           status;
-//     MFnDependencyNode depNode(proxyShape.thisMObject(), &status);
-//     if (!status)
-//         return false;
-//
-//     MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
-//     return filePathRelativePlug.asBool();
-// }
-//
-// bool isProxyPathModeRelative(ProxyPathMode proxyPathMode, const MString& proxyNodeName)
-//{
-//     if (kProxyPathRelative == proxyPathMode)
-//         return true;
-//
-//     if (kProxyPathAbsolute == proxyPathMode)
-//         return false;
-//
-//     if (kProxyPathFollowProxyShape == proxyPathMode) {
-//         // Note: if we fail to find the proxy shape, we will fallback on
-//         //       using the options var preference instead.
-//         MayaUsdProxyShapeBase* proxyShape
-//             = UsdMayaUtil::GetProxyShapeByProxyName(proxyNodeName.asChar());
-//         if (proxyShape) {
-//             return isProxyShapePathRelative(*proxyShape);
-//         }
-//     }
-//
-//     return UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
-// }
-//
-// void setNewProxyPath(
-//     const MString&        proxyNodeName,
-//     const MString&        newRootLayerPath,
-//     ProxyPathMode         proxyPathMode,
-//     const SdfLayerRefPtr& layer,
-//     bool                  isTargetLayer)
-//{
-//     const bool  needRelativePath = isProxyPathModeRelative(proxyPathMode, proxyNodeName);
-//     const char* filePathCmd = "setAttr -type \"string\" ^1s.filePath \"^2s\"; "
-//                               "setAttr ^1s.filePathRelative ^3s; ";
-//
-//     MString script;
-//     script.format(filePathCmd, proxyNodeName, newRootLayerPath, needRelativePath ? "1" : "0");
-//     MGlobal::executeCommand(
-//         script,
-//         /*display*/ true,
-//         /*undo*/ false);
-//
-//     if (isTargetLayer)
-//         updateTargetLayer(proxyNodeName.asChar(), layer);
-// }
 
  static bool isCompatibleWithSave(
      SdfLayerRefPtr     layer,
@@ -380,26 +308,9 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
 
  void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
  {
-     if (!layer)
+     if (!layer || !layer->PermissionToEdit())
          return;
-
-     // Don't try to author the metadata on non-editable layers.
-     if (!layer->PermissionToEdit())
-         return;
-
-     //const PXR_NS::TfToken upAxis
-     //    = MGlobal::isZAxisUp() ? PXR_NS::UsdGeomTokens->z : PXR_NS::UsdGeomTokens->y;
-     //const double metersPerUnit
-     //    = UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(MDistance::internalUnit());
-     const PXR_NS::TfToken upAxis = PXR_NS::UsdGeomTokens->z;
-     const double metersPerUnit = 0.1;
-
-     // Note: code similar to what UsdGeomSetStageUpAxis -> UsdStage::SetMetadata end-up doing,
-     // but without having to have a stage. We basically set metadata on the virtual root object
-     // of the layer.
-     layer->SetField(
-         PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->metersPerUnit, metersPerUnit);
-     layer->SetField(PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
+     UsdLayerEditor::setLayerUpAxisAndUnits(layer);
  }
 
 bool saveLayerWithFormat(
@@ -431,11 +342,7 @@ bool saveLayerWithFormat(
          }
      }
 
-     //TODO LE-EXTRACT: MIGHT NEED TO use this with cache updating approach.
-     // in the maya-usd codebase, they adjust the session layers in this function
-     // however, in the max codebase, we do this in the callback function that is
-     // provided to the `updateDCCObjectRootLayerFunction()`. 
-     //updateAllCachedStageWithLayer(layer, filePath);
+     updateAllCachedStageWithLayer(layer, filePath);
 
     return true;
 }
@@ -467,7 +374,7 @@ void updateRootLayer(
     const SdfLayerRefPtr& layer,
     bool                          isTargetLayer)
 {
-    updateDCCObjectRootLayerFunction(proxy, layerPath);
+    UsdLayerEditor::updateDCCObjectRootLayer(proxy, layerPath, layer, isTargetLayer);
 }
 
  SdfLayerRefPtr saveAnonymousLayer(
@@ -495,35 +402,32 @@ void updateRootLayer(
     std::string                       filePath(pathInfo.absolutePath);
 
     if (!anonLayer) {
-        TF_ERROR(NoAnonLayerProvided, "No layer provided to save to '%s'", filePath);
+        TF_ERROR(NoAnonLayerProvided, "No layer provided to save to '%s'", filePath.c_str());
         return nullptr;
     }
 
     if (!anonLayer->IsAnonymous()) {
-        TF_ERROR(CannotSaveNonAnonLayer, "Cannot save non-anonymous layer '%s' under a different file name", anonLayer->GetDisplayName());
+        TF_ERROR(CannotSaveNonAnonLayer, "Cannot save non-anonymous layer '%s' under a different file name", anonLayer->GetDisplayName().c_str());
         return nullptr;
     }
 
     if (isLayerSystemLocked(anonLayer)) {
-        TF_ERROR(CannotSaveAnonLayerWhenSysLocked, "Cannot save layer '%s' when system-locked", anonLayer->GetDisplayName());
+        TF_ERROR(CannotSaveAnonLayerWhenSysLocked, "Cannot save layer '%s' when system-locked", anonLayer->GetDisplayName().c_str());
         return nullptr;
     }
 
-    // TODO LE-EXTRACT: do a callback for DCCs to be able to provide these to the
-    //      layer-editor -- normally this should be set before saving
     // Only set up-axis and units metadata on the root layer
     // and only if it is anonymous before being saved.
-    //if (stage->GetRootLayer() == anonLayer) {
-    //    setLayerUpAxisAndUnits(anonLayer);
-    //}
+    if (stage->GetRootLayer() == anonLayer) {
+        setLayerUpAxisAndUnits(anonLayer);
+    }
 
     ensureUSDFileExtension(filePath);
 
-    // TODO LE-EXTRACT: double check how this was used in maya-usd when saying anon root layer
-    //const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
+    const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
 
     if (!saveLayerWithFormat(anonLayer, filePath, formatArg)) {
-        TF_ERROR(FailedAnonLayerSave, "Failed to save layer '%s' to '%s'", anonLayer->GetDisplayName(), filePath);
+        TF_ERROR(FailedAnonLayerSave, "Failed to save layer '%s' to '%s'", anonLayer->GetDisplayName().c_str(), filePath.c_str());
         return nullptr;
     }
 
@@ -537,7 +441,7 @@ void updateRootLayer(
                 = FileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
         } else if (isSubLayer) {
             filePath = FileSystem::getPathRelativeToLayerFile(filePath, parentLayer);
-            if (std::filesystem::path(filePath).is_absolute()) {
+            if (fs::filesystem::path(filePath).is_absolute()) {
                 FileSystem::markPathAsPostponedRelative(parentLayer, filePath);
             }
         } else {
@@ -558,7 +462,7 @@ void updateRootLayer(
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(pathInfo.absolutePath);
 
     if (!newLayer) {
-        TF_ERROR(FailedAnonLayerReload, "Failed to reload layer '%s' from '%s'", anonLayer->GetDisplayName(), filePath);
+        TF_ERROR(FailedAnonLayerReload, "Failed to reload layer '%s' from '%s'", anonLayer->GetDisplayName().c_str(), filePath.c_str());
         return nullptr;
     }
 
@@ -568,7 +472,8 @@ void updateRootLayer(
     } else if (!parent._objectPath.empty()) {
         // if ever we support relative paths in the DCC, can return the relative path
         // i.e. "filePath" variable
-        updateDCCObjectRootLayerFunction(parent._objectPath, pathInfo.absolutePath);
+        UsdLayerEditor::updateDCCObjectRootLayer(
+            parent._objectPath, pathInfo.absolutePath, newLayer, wasTargetLayer);
     }
 
     updateTargetLayer(parent._objectPath, newLayer);
@@ -621,9 +526,11 @@ void updateRootLayer(
     }
 }
 
-void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo)
+void getLayersToSaveFromStage(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            objectPath,
+    StageLayersToSave&            layersInfo)
 {
-    auto stage = UsdUfe::getStage(Ufe::PathString::path(objectPath));
     if (!stage) {
         return;
     }
@@ -655,6 +562,15 @@ void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSa
         nullptr,
         layersInfo._anonLayers,
         layersInfo._dirtyFileBackedLayers);
+}
+
+void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo)
+{
+    auto stage = UsdUfe::getStage(Ufe::PathString::path(objectPath));
+    if (!stage) {
+        return;
+    }
+    getLayersToSaveFromStage(stage, objectPath, layersInfo);
 }
 
 } // namespace Serialization

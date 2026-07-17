@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef LAYER_EDITOR_COMMANDS_H
+#define LAYER_EDITOR_COMMANDS_H
 
 #include "abstractCommandHook.h"
 #include "layerEditorAPI.h"
@@ -21,6 +23,11 @@
 
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
+
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
+
+#include <functional>
 
 namespace UsdLayerEditor {
 
@@ -40,7 +47,7 @@ enum class CmdId
     kStitchLayers
 };
 
-class LayerEditorAPI BaseCmd : public Ufe::UndoableCommand
+class LAYEREDITOR_PUBLIC BaseCmd : public Ufe::UndoableCommand
 {
 public:
     BaseCmd(CmdId id, const pxr::SdfLayerRefPtr& layer)
@@ -70,7 +77,7 @@ protected:
     void updateEditTarget(const PXR_NS::UsdStageWeakPtr stage);
 };
 
-class LayerEditorAPI BackupLayerBaseCmd : public BaseCmd
+class LAYEREDITOR_PUBLIC BackupLayerBaseCmd : public BaseCmd
 {
     // commands that need to backup the whole layer for undo
 public:
@@ -105,7 +112,7 @@ private:
     PXR_NS::SdfLayerRefPtr _backupLayer;
 };
 
-class LayerEditorAPI ClearLayerCmd : public BackupLayerBaseCmd
+class LAYEREDITOR_PUBLIC ClearLayerCmd : public BackupLayerBaseCmd
 {
 public:
     ClearLayerCmd(const pxr::SdfLayerRefPtr& layer)
@@ -115,7 +122,7 @@ public:
     std::string commandString() const override { return "Clear USD layer"; }
 };
 
-class LayerEditorAPI FlattenLayerCmd : public BackupLayerBaseCmd
+class LAYEREDITOR_PUBLIC FlattenLayerCmd : public BackupLayerBaseCmd
 {
 public:
     FlattenLayerCmd(const pxr::SdfLayerRefPtr& layer)
@@ -125,7 +132,7 @@ public:
     std::string commandString() const override { return "Merge with Sublayers"; }
 };
 
-class LayerEditorAPI DiscardEditCmd : public BackupLayerBaseCmd
+class LAYEREDITOR_PUBLIC DiscardEditCmd : public BackupLayerBaseCmd
 {
 public:
     DiscardEditCmd(const pxr::SdfLayerRefPtr& layer)
@@ -135,7 +142,7 @@ public:
     std::string commandString() const override { return "Reload USD layer"; }
 };
 
-class LayerEditorAPI SetEditTargetCmd : public Ufe::UndoableCommand
+class LAYEREDITOR_PUBLIC SetEditTargetCmd : public Ufe::UndoableCommand
 {
 
 public:
@@ -157,7 +164,7 @@ private:
     pxr::UsdEditTarget       oldTarget;
 };
 
-class LayerEditorAPI MuteLayerCmd : public BaseCmd
+class LAYEREDITOR_PUBLIC MuteLayerCmd : public BaseCmd
 {
 public:
     MuteLayerCmd(const pxr::UsdStageRefPtr& stage, const pxr::SdfLayerRefPtr& layer, bool muteIt)
@@ -188,7 +195,7 @@ private:
     Ufe::Selection            _savedSn;
 };
 
-class LayerEditorAPI LockLayerCmd : public BaseCmd
+class LAYEREDITOR_PUBLIC LockLayerCmd : public BaseCmd
 {
 public:
     LockLayerCmd(
@@ -198,10 +205,10 @@ public:
         bool                       includeSubLayers = false,
         bool                       skipSystemLockedLayers = false)
         : BaseCmd(CmdId::kLockLayer, layer)
-        , _stage(stage)
+        , _lockType(lockState)
         , _includeSublayers(includeSubLayers)
         , _skipSystemLockedLayers(skipSystemLockedLayers)
-        , _lockType(lockState)
+        , _stage(stage)
     {
     }
 
@@ -229,7 +236,7 @@ private:
     pxr::SdfLayerHandleVector  _layers;
 };
 
-class LayerEditorAPI InsertRemoveSubPathBaseCmd : public BaseCmd
+class LAYEREDITOR_PUBLIC InsertRemoveSubPathBaseCmd : public BaseCmd
 {
 public:
     InsertRemoveSubPathBaseCmd(
@@ -259,7 +266,7 @@ protected:
     int                 _index = -1;
 };
 
-class LayerEditorAPI InsertSubPathCmd : public InsertRemoveSubPathBaseCmd
+class LAYEREDITOR_PUBLIC InsertSubPathCmd : public InsertRemoveSubPathBaseCmd
 {
 public:
     InsertSubPathCmd(
@@ -274,10 +281,9 @@ public:
     std::string commandString() const override { return "Insert USD sublayer"; }
 };
 
-class LayerEditorAPI RemoveSubPathCmd : public InsertRemoveSubPathBaseCmd
+class LAYEREDITOR_PUBLIC RemoveSubPathCmd : public InsertRemoveSubPathBaseCmd
 {
 public:
-    // Constructor using subpath index.
     RemoveSubPathCmd(
         const pxr::UsdStageRefPtr& stage,
         const pxr::SdfLayerRefPtr& layer,
@@ -286,7 +292,6 @@ public:
     {
     }
 
-    // Constructor using subpath.
     RemoveSubPathCmd(
         const pxr::UsdStageRefPtr& stage,
         const pxr::SdfLayerRefPtr& layer,
@@ -298,7 +303,56 @@ public:
     std::string commandString() const override { return "Remove USD sublayer"; }
 };
 
-class LayerEditorAPI RefreshSystemLockLayerCmd : public BaseCmd
+class LAYEREDITOR_PUBLIC ReplaceSubPathCmd : public BaseCmd
+{
+public:
+    ReplaceSubPathCmd(
+        const pxr::SdfLayerRefPtr& layer,
+        const std::string&         oldPath,
+        const std::string&         newPath)
+        : BaseCmd(CmdId::kReplace, layer)
+        , _oldPath(oldPath)
+        , _newPath(newPath)
+    {
+    }
+
+    bool        doIt(const pxr::SdfLayerHandle& layer) override;
+    bool        undoIt(const pxr::SdfLayerHandle& layer) override;
+    std::string commandString() const override { return "Replace USD sublayer path"; }
+
+private:
+    std::string _oldPath;
+    std::string _newPath;
+};
+
+class LAYEREDITOR_PUBLIC MoveSubPathCmd : public BaseCmd
+{
+public:
+    MoveSubPathCmd(
+        const pxr::SdfLayerRefPtr& layer,
+        const pxr::SdfLayerRefPtr& newParentLayer,
+        const std::string&         subPath,
+        int                        newIndex)
+        : BaseCmd(CmdId::kMove, layer)
+        , _newParent(newParentLayer)
+        , _subPath(subPath)
+        , _newIndex(newIndex)
+    {
+    }
+
+    bool        doIt(const pxr::SdfLayerHandle& layer) override;
+    bool        undoIt(const pxr::SdfLayerHandle& layer) override;
+    std::string commandString() const override { return "Move USD sublayer"; }
+
+private:
+    pxr::SdfLayerRefPtr _newParent;
+    std::string         _subPath;
+    std::string         _newPath;
+    int                 _newIndex;
+    int                 _oldIndex { -1 };
+};
+
+class LAYEREDITOR_PUBLIC RefreshSystemLockLayerCmd : public BaseCmd
 {
 public:
     RefreshSystemLockLayerCmd(
@@ -306,8 +360,8 @@ public:
         const pxr::SdfLayerHandle& layer,
         bool                       refreshSubLayers)
         : BaseCmd(CmdId::kRefreshSystemLock, layer)
-        , _stage(stage)
         , _refreshSubLayers(refreshSubLayers)
+        , _stage(stage)
     {
     }
 
@@ -319,8 +373,16 @@ public:
 
     std::string commandString() const override { return "Refresh System Lock"; }
 
+    // Adds a DCC-specific entry (e.g. "proxyShapePath") to the context sent with
+    // the onRefreshSystemLock UI callback.
+    void addCallbackContext(const std::string& key, const pxr::VtValue& value);
+
+    const pxr::VtDictionary& extraCallbackContext() const { return _extraCallbackContext; }
+
 private:
     std::string _quote(const std::string& string);
+
+    pxr::VtDictionary _extraCallbackContext;
 
     // Checks if the file layer or its sublayers are accessible on disk, and adds the layer
     // to _layers along with the _lockCommands to update the system-lock status.
@@ -334,15 +396,15 @@ private:
     pxr::UsdStageWeakPtr                       _stage;
 };
 
-class LayerEditorAPI StitchLayersCmd : public BackupLayerBaseCmd
+class LAYEREDITOR_PUBLIC StitchLayersCmd : public BackupLayerBaseCmd
 {
 public:
     StitchLayersCmd(
         const pxr::UsdStageRefPtr&      stage,
         const std::vector<std::string>& layerIdentifiers)
         : BackupLayerBaseCmd(CmdId::kStitchLayers, pxr::SdfLayerRefPtr())
-        , _stage(stage)
         , _layerIdentifiersByStrength(layerIdentifiers)
+        , _stage(stage)
     {
     }
 
@@ -358,7 +420,7 @@ private:
     pxr::UsdStageRefPtr      _stage;
 };
 
-class LayerEditorAPI AddAnonSubLayerCmd : public InsertRemoveSubPathBaseCmd
+class LAYEREDITOR_PUBLIC AddAnonSubLayerCmd : public InsertRemoveSubPathBaseCmd
 {
 public:
     AddAnonSubLayerCmd(const pxr::UsdStageRefPtr& stage,
@@ -398,3 +460,5 @@ protected:
 };
 
 } // namespace UsdLayerEditor
+
+#endif // LAYER_EDITOR_COMMANDS_H

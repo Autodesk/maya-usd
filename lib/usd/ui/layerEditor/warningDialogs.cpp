@@ -19,6 +19,12 @@
 
 namespace {
 
+UsdLayerEditor::ModalDialogTestHandler& modalDialogTestHandler()
+{
+    static UsdLayerEditor::ModalDialogTestHandler handler;
+    return handler;
+}
+
 // returns a bullet-ed html text for a list of layers tree items
 // used for dialog boxes, or an empty string if none
 QString getLayerBulletList(const QStringList* in_list)
@@ -38,6 +44,14 @@ QString getLayerBulletList(const QStringList* in_list)
 
 namespace UsdLayerEditor {
 
+ModalDialogTestHandler setModalDialogTestHandler(ModalDialogTestHandler handler)
+{
+    auto& current = modalDialogTestHandler();
+    auto  prev    = std::move(current);
+    current       = std::move(handler);
+    return prev;
+}
+
 bool confirmDialog_internal(
     bool               okCancel,
     QWidget*           parent,
@@ -47,6 +61,9 @@ bool confirmDialog_internal(
     const QString*     okButtonText,
     QMessageBox::Icon  icon)
 {
+    if (auto& testHandler = modalDialogTestHandler())
+        return testHandler(title, message);
+
     QMessageBox msgBox(parent);
     // there is no title bar text on mac, instead it's bold text
     if (IS_MAC_OS)

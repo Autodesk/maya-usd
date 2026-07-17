@@ -23,6 +23,7 @@ global string $gMayaUsdSelectMenuDivider = "";
 global string $gMayaUsdSelectModeSubMenu = "";
 global string $gMayaUsdOpenUsdCompositionEditorMenuItem = "";
 global string $gMayaUsdOpenUsdRenderSetupMenuItem = "";
+global int    $gHasComponentCreator = -1;
 
 ///////////////////////////////////////////////////////////////////////////////
 // findDividerByLabel
@@ -145,6 +146,17 @@ proc int mayaUSD_isSelectionKindValid() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// hasComponentCreator
+// return 1 if the Autodesk USD Component Creator python packages are importable
+global proc int hasComponentCreator() {
+    global int $gHasComponentCreator;
+    if ($gHasComponentCreator < 0) {
+        $gHasComponentCreator = `python("res = -1; exec('try:\\n    import AdskUsdComponentCreator\\n    import usd_component_creator_plugin\\n    res = 1;\\nexcept:\\n    res = 0;\\n'); res")`;
+    }
+    return $gHasComponentCreator;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // initRuntimeCommands
 // create all the runtime commands we'll use and the user can map to hotkeys
 proc initRuntimeCommands() {
@@ -174,7 +186,27 @@ proc initRuntimeCommands() {
             -category   "Menu items.Maya USD"
             -command    "mayaUsd_createStageFromFileOptions"
             mayaUsdCreateStageFromFileOptions;
-    }    
+    }
+
+    if (hasComponentCreator()) {
+        if (!`runTimeCommand -exists mayaUsdCreateComponent`) {
+            runTimeCommand -default true -plugin "mayaUsdPlugin"
+                -label      `getMayaUsdString("kMenuComponent")`
+                -annotation `getMayaUsdString("kMenuComponentAnn")`
+                -category   "Menu items.Maya USD"
+                -command    "python(\"import mayaUsd_createComponent; mayaUsd_createComponent.createComponent()\")"
+                -image      "USD_stage.png"
+                mayaUsdCreateComponent;
+        }
+
+        if (!`runTimeCommand -exists mayaUsdCreateComponentOptions`) {
+            runTimeCommand -default true -plugin "mayaUsdPlugin"
+                -annotation `getMayaUsdString("kMenuComponentOptionsAnn")`
+                -category   "Menu items.Maya USD"
+                -command    "python(\"import mayaUsd_createComponent; mayaUsd_createComponent.createComponentOptions()\")"
+                mayaUsdCreateComponentOptions;
+        }
+    }
 
     if (`exists mayaUsdLayerEditorWindow`) {
         if (!`runTimeCommand -exists mayaUsdOpenUsdLayerEditor`) {

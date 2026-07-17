@@ -16,10 +16,14 @@
 
 #include "LayerEditorCommands.h"
 
+#include "layerEditorDCCFunctions.h"
+#include "layerLocking.h"
 #include "layerMuting.h"
 #include "utilFileSystem.h"
-#include "utilUI.h"
 
+#include <ghc/fs_std.hpp>
+
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/usd/flattenUtils.h>
 #include <pxr/usd/usd/prim.h>
@@ -39,7 +43,6 @@
 #include <ufe/observableSelection.h>
 
 #include <algorithm>
-#include <filesystem>
 #include <set>
 #include <unordered_map>
 #include <utility>
@@ -92,16 +95,25 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
     if (!stage)
         return;
 
+    // Edit-forwarding integrations manage their own edit target: when forwarding is
+    // active they keep the stage edit target on the session layer and redirect the
+    // (possibly locked) fallback target. In that case skip the normal auto-targeting.
+    if (handleEFEditTargetUpdate(PXR_NS::UsdStageRefPtr(stage)))
+        return;
+
     if (stage->GetEditTarget().GetLayer() == stage->GetSessionLayer())
+        return;
+
+    // If the currently targeted layer is still editable (neither user-locked nor
+    // system-locked), we don't need to change the edit target.
+    if (stage->GetEditTarget().GetLayer()->PermissionToEdit())
         return;
 
     // If there are no target-able layers, we set the target to session layer.
     std::string errMsg;
     if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
-
-        // TODO LE-EXTRACT Error message when no available edit target.
-        // MPxCommand::displayInfo(errMsg.c_str());
         stage->SetEditTarget(stage->GetSessionLayer());
+        displayError(errMsg);
     }
 }
 
@@ -120,7 +132,7 @@ bool BackupLayerBaseCmd::doIt(const SdfLayerHandle& layer)
         // Create a temp stage to get a PcpLayerStack with this layer as the root.
         PXR_NS::UsdStageRefPtr tempStage = PXR_NS::UsdStage::Open(layer);
         if (!tempStage) {
-            UIUtils::displayError("Failed to open stage for layer");
+            displayError("Failed to open stage for layer");
             return false;
         }
 
@@ -138,13 +150,13 @@ bool BackupLayerBaseCmd::doIt(const SdfLayerHandle& layer)
         }
 
         if (!layerStack) {
-            UIUtils::displayError("Cannot flatten layer: could not determine layer stack");
+            displayError("Cannot flatten layer: could not determine layer stack");
             return false;
         }
 
         PXR_NS::SdfLayerRefPtr flattenedLayer = PXR_NS::UsdFlattenLayerStack(layerStack);
         if (!flattenedLayer) {
-            UIUtils::displayError("Failed to flatten layer stack");
+            displayError("Failed to flatten layer stack");
             return false;
         }
 
@@ -203,8 +215,8 @@ void BackupLayerBaseCmd::backupEditTargets(const SdfLayerHandle& layer)
     if (!layer)
         return;
 
-    // TODO LE-EXTRACT : Maya has multiple caches, not just the global one.
-    const std::vector<UsdStageRefPtr> stages = UsdUtilsStageCache::Get().GetAllStages();
+    const std::vector<UsdStageRefPtr> stages = UsdLayerEditor::getAllStages();
+
     for (const PXR_NS::UsdStageRefPtr& stage : stages) {
         if (!stage)
             continue;
@@ -329,19 +341,25 @@ bool MuteLayerCmd::doIt(const SdfLayerHandle& layer)
     if (!stage)
         return false;
     if (_muteIt) {
+        // We prefer not holding to pointers needlessly, but we need to hold on
+        // to the muted layer. OpenUSD lets go of muted layers, so anonymous
+        // layers and any dirty children would be lost if not explicitly held on.
+        // This is done before really muting the layer to ensure no sublayer is
+        // gone after the mute change.
+        addMutedLayer(layer);
+
         // Muting a layer will cause all scene items under the proxy shape
         // to be stale.
         saveSelection();
         stage->MuteLayer(layer->GetIdentifier());
     } else {
         stage->UnmuteLayer(layer->GetIdentifier());
+
+        // We can release the now unmuted layer.
+        removeMutedLayer(layer);
+
         restoreSelection();
     }
-
-    // We prefer not holding to pointers needlessly, but we need to hold on
-    // to the muted layer. OpenUSD lets go of muted layers, so anonymous
-    // layers and any dirty children would be lost if not explicitly held on.
-    addMutedLayer(layer);
 
     updateEditTarget(stage);
 
@@ -355,16 +373,21 @@ bool MuteLayerCmd::undoIt(const SdfLayerHandle& layer)
         return false;
     if (_muteIt) {
         stage->UnmuteLayer(layer->GetIdentifier());
+
+        // We can release the now unmuted layer.
+        removeMutedLayer(layer);
+
         restoreSelection();
     } else {
+        // Hold the layer before re-muting it, mirroring doIt (so no sublayer is
+        // gone after the mute change).
+        addMutedLayer(layer);
+
         // Muting a layer will cause all scene items under the proxy shape
         // to be stale.
         saveSelection();
         stage->MuteLayer(layer->GetIdentifier());
     }
-
-    // We can release the now unmuted layers.
-    removeMutedLayer(layer);
 
     updateEditTarget(stage);
 
@@ -560,7 +583,7 @@ bool InsertRemoveSubPathBaseCmd::validateAndReportIndex(
     if (index < 0 || index >= maxIndex) {
         std::string message = std::string("Index ") + std::to_string(index)
             + std::string(" out-of-bound for ") + layer->GetIdentifier();
-        UIUtils::displayError(message.c_str());
+        displayError(message.c_str());
         return false;
     } else {
         return true;
@@ -584,6 +607,110 @@ void InsertRemoveSubPathBaseCmd::restoreSelection()
     auto globalSn = Ufe::GlobalSelection::get();
     auto path = UsdUfe::stagePath(_stage);
     globalSn->replaceWith(UsdUfe::recreateDescendants(_savedSn, path));
+}
+
+bool ReplaceSubPathCmd::doIt(const SdfLayerHandle& layer)
+{
+    auto proxy = layer->GetSubLayerPaths();
+    if (proxy.Find(_oldPath) == static_cast<size_t>(-1)) {
+        std::string message = std::string("path ") + _oldPath
+            + std::string(" not found on layer ") + layer->GetIdentifier();
+        displayError(message.c_str());
+        return false;
+    }
+    holdOnPathIfDirty(layer, _oldPath);
+    proxy.Replace(_oldPath, _newPath);
+    return true;
+}
+
+bool ReplaceSubPathCmd::undoIt(const SdfLayerHandle& layer)
+{
+    auto proxy = layer->GetSubLayerPaths();
+    proxy.Replace(_newPath, _oldPath);
+    releaseSubLayers();
+    holdOnPathIfDirty(layer, _newPath);
+    return true;
+}
+
+bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
+{
+    auto proxy = layer->GetSubLayerPaths();
+    auto subPathIndex = proxy.Find(_subPath);
+    if (subPathIndex == size_t(-1)) {
+        TF_RUNTIME_ERROR(
+            "path %s not found on layer %s",
+            _subPath.c_str(),
+            layer->GetIdentifier().c_str());
+        return false;
+    }
+    _oldIndex = static_cast<int>(subPathIndex);
+
+    std::string newPath = _subPath;
+
+    if (layer->GetIdentifier() == _newParent->GetIdentifier()) {
+        // Same-parent reorder: bounds-check against current count (before removal)
+        if (_newIndex > static_cast<int>(layer->GetNumSubLayerPaths()) - 1) {
+            TF_RUNTIME_ERROR(
+                "Index %d out-of-bound for %s",
+                _newIndex,
+                layer->GetIdentifier().c_str());
+            return false;
+        }
+    } else {
+        // Cross-parent move: append is allowed, so bound is GetNumSubLayerPaths()
+        if (_newIndex > static_cast<int>(_newParent->GetNumSubLayerPaths())) {
+            TF_RUNTIME_ERROR(
+                "Index %d out-of-bound for %s",
+                _newIndex,
+                _newParent->GetIdentifier().c_str());
+            return false;
+        }
+
+        // Reparent relative file paths
+        fs::filesystem::path filePath(_subPath);
+        bool                 needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_subPath)
+            && filePath.is_relative() && !layer->GetRealPath().empty()
+            && !_newParent->GetRealPath().empty();
+
+        if (needsRepathing) {
+            auto        oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
+            auto        newLayerDir = fs::filesystem::path(_newParent->GetRealPath()).remove_filename();
+            std::string absolutePath
+                = (oldLayerDir / filePath).lexically_normal().generic_string();
+            auto result = FileSystem::makePathRelativeTo(
+                absolutePath, newLayerDir.lexically_normal().generic_string());
+            if (result.second) {
+                newPath = result.first;
+            } else {
+                newPath = absolutePath;
+                TF_WARN(
+                    "File name (%s) cannot be resolved as relative to layer %s, using "
+                    "absolute path.",
+                    absolutePath.c_str(),
+                    _newParent->GetIdentifier().c_str());
+            }
+        }
+
+        if (_newParent->GetSubLayerPaths().Find(newPath) != size_t(-1)) {
+            TF_RUNTIME_ERROR(
+                "SubPath %s already exists in layer %s",
+                newPath.c_str(),
+                _newParent->GetIdentifier().c_str());
+            return false;
+        }
+    }
+
+    _newPath = newPath;
+    layer->RemoveSubLayerPath(_oldIndex);
+    _newParent->InsertSubLayerPath(_newPath, _newIndex);
+    return true;
+}
+
+bool MoveSubPathCmd::undoIt(const pxr::SdfLayerHandle& layer)
+{
+    _newParent->RemoveSubLayerPath(_newIndex);
+    layer->InsertSubLayerPath(_subPath, _oldIndex);
+    return true;
 }
 
 bool RefreshSystemLockLayerCmd::doIt(const pxr::SdfLayerHandle& layer)
@@ -652,6 +779,12 @@ std::string RefreshSystemLockLayerCmd::_quote(const std::string& string)
     return std::string(" \"") + string + std::string("\"");
 }
 
+void RefreshSystemLockLayerCmd::addCallbackContext(
+    const std::string& key, const pxr::VtValue& value)
+{
+    _extraCallbackContext[key] = value;
+}
+
 void RefreshSystemLockLayerCmd::_refreshLayerSystemLock(const pxr::SdfLayerHandle& usdLayer)
 {
     // Anonymous layers do not need to be checked.
@@ -703,6 +836,9 @@ void RefreshSystemLockLayerCmd::_notifySystemLockIsRefreshed()
 
     PXR_NS::VtDictionary callbackContext;
     callbackContext["objectPath"] = PXR_NS::VtValue(UsdUfe::stagePath(_stage).string().c_str());
+    for (const auto& entry : _extraCallbackContext) {
+        callbackContext[entry.first] = entry.second;
+    }
     PXR_NS::VtDictionary callbackData;
 
     std::vector<std::string> affectedLayers;
@@ -752,6 +888,9 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
             return itA->second < itB->second;
         });
 
+    // Validate and collect all problems before modifying anything.
+    bool hasProblems = false;
+
     SdfLayerHandleVector layersByStrength;
     layersByStrength.reserve(_layerIdentifiersByStrength.size());
     for (const auto& layerIdentifier : _layerIdentifiersByStrength) {
@@ -763,13 +902,18 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         layersByStrength.push_back(foundLayer);
     }
 
+    if (layersByStrength.empty()) {
+        TF_RUNTIME_ERROR("No valid layer found to stitch");
+        return false;
+    }
+
     const SdfLayerHandle strongestLayer = layersByStrength[0];
-
-    holdOntoSubLayers(strongestLayer);
-
-    // Keep a hold of references for all selected layers, needed for undo().
-    for (size_t i = 1; i < layersByStrength.size(); ++i)
-        _subLayersRefs.push_back(layersByStrength[i]);
+    if (!strongestLayer->PermissionToEdit()) {
+        TF_WARN(
+            "Cannot merge into layer '%s' because it is locked.",
+            strongestLayer->GetDisplayName().c_str());
+        hasProblems = true;
+    }
 
     std::map<std::string, std::pair<SdfLayerHandle, std::string>> parentInfoByLayer;
     for (const auto& potentialParent : stageLayers) {
@@ -783,24 +927,58 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         }
     }
 
-    // Multiple selected weak layers may share the same parent, so batch removals by parent
-    // to avoid calling SetSubLayerPaths more than once per parent layer.
+    // Filter the layers to be merged, only keeping those that have unlocked parents.
+    //
+    // Keep a map of parent layers to their removed children because multiple
+    // selected weak layers may share the same parent, so batch removals by
+    // parent to avoid calling SetSubLayerPaths more than once per parent layer.
     std::map<std::string, std::vector<std::string>> removalsByParent;
-    for (size_t i = 1; i < layersByStrength.size(); ++i) {
-        const SdfLayerHandle& weakLayer = layersByStrength[i];
-        const std::string     weakLayerId = weakLayer->GetIdentifier();
+    {
+        SdfLayerHandleVector layersToBeMergedAndRemoved;
+        for (size_t i = 1; i < layersByStrength.size(); ++i) {
+            const SdfLayerHandle& weakLayer   = layersByStrength[i];
+            const std::string     weakLayerId = weakLayer->GetIdentifier();
 
-        const auto& it = parentInfoByLayer.find(weakLayerId);
-        if (it != parentInfoByLayer.end()) {
-            removalsByParent[it->second.first->GetIdentifier()].push_back(it->second.second);
-        } else {
-            TF_WARN("Could not find parent for layer: %s", weakLayerId.c_str());
+            const auto& it = parentInfoByLayer.find(weakLayerId);
+            if (it == parentInfoByLayer.end()) {
+                TF_WARN(
+                    "Could not find parent for layer: %s", weakLayer->GetDisplayName().c_str());
+                hasProblems = true;
+                continue;
+            }
+
+            const SdfLayerHandle& parentLayer = it->second.first;
+            if (!parentLayer->PermissionToEdit()) {
+                TF_WARN(
+                    "Cannot merge layer '%s' because its parent '%s' is locked.",
+                    weakLayer->GetDisplayName().c_str(),
+                    parentLayer->GetDisplayName().c_str());
+                continue;
+            }
+
+            layersToBeMergedAndRemoved.push_back(weakLayer);
+            removalsByParent[parentLayer->GetIdentifier()].push_back(it->second.second);
         }
+        layersByStrength.swap(layersToBeMergedAndRemoved);
     }
 
+    if (hasProblems)
+        return false;
+
+    if (layersByStrength.empty()) {
+        TF_RUNTIME_ERROR("No valid layer found to stitch");
+        return false;
+    }
+
+    holdOntoSubLayers(strongestLayer);
+
+    // Keep a hold of references for all selected layers, needed for undo().
+    for (auto& layer : layersByStrength)
+        _subLayersRefs.push_back(layer);
+
     UsdUfe::UsdUndoManager::instance().trackLayerStates(strongestLayer);
-    for (size_t i = 1; i < layersByStrength.size(); ++i)
-        UsdUfe::UsdUndoManager::instance().trackLayerStates(layersByStrength[i]);
+    for (auto& layer : layersByStrength)
+        UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
     for (const auto& entry : removalsByParent) {
         auto parentLayer = SdfLayer::Find(entry.first);
         if (parentLayer) {
@@ -812,9 +990,8 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         UsdUfe::UsdUndoBlock undoBlock(&_undoItem);
 
         std::vector<std::vector<std::string>> movedSubLayers;
-        movedSubLayers.reserve(layersByStrength.size() - 1);
-        for (size_t i = 1; i < layersByStrength.size(); ++i) {
-            const SdfLayerHandle& weakLayer = layersByStrength[i];
+        movedSubLayers.reserve(layersByStrength.size());
+        for (auto& weakLayer : layersByStrength) {
             movedSubLayers.push_back(weakLayer->GetSubLayerPaths());
             UsdUtilsStitchLayers(strongestLayer, weakLayer);
         }
@@ -851,8 +1028,8 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
 
         // Remove any merged weak layers from the sublayer list before setting, to prevent
         // them from being both stitched (merged) and referenced as subLayers.
-        for (size_t i = 1; i < layersByStrength.size(); ++i) {
-            const std::string weakLayerId = layersByStrength[i]->GetIdentifier();
+        for (const auto& weakLayer : layersByStrength) {
+            const std::string weakLayerId = weakLayer->GetIdentifier();
             const auto        it = std::find(
                 strongLayerSubLayers.begin(), strongLayerSubLayers.end(), weakLayerId);
             if (it != strongLayerSubLayers.end())
@@ -862,24 +1039,19 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
 
         // Removes the selected weak layers from their parents.
+        // All parents were validated as editable before reaching this point.
         for (auto& entry : removalsByParent) {
             const auto parentLayer = SdfLayer::Find(entry.first);
-            if (parentLayer) {
-                auto subLayerPaths = parentLayer->GetSubLayerPaths();
-                for (const auto& pathToRemove : entry.second) {
-                    auto it
-                        = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
-                    if (it != subLayerPaths.end())
-                        subLayerPaths.erase(it);
-                }
-                if (parentLayer && parentLayer->PermissionToEdit()) {
-                    parentLayer->SetSubLayerPaths(subLayerPaths);
-                } else {
-                    TF_WARN(
-                        "Cannot update layer '%s' because it is locked.",
-                        strongestLayer->GetIdentifier().c_str());
-                }
+            if (!parentLayer)
+                continue;
+
+            auto subLayerPaths = parentLayer->GetSubLayerPaths();
+            for (const auto& pathToRemove : entry.second) {
+                auto it = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
+                if (it != subLayerPaths.end())
+                    subLayerPaths.erase(it);
             }
+            parentLayer->SetSubLayerPaths(subLayerPaths);
         }
     }
 

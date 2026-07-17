@@ -202,6 +202,17 @@ MayaUsdProxyShapeBase* GetProxyShapeByProxyName(const std::string& nodeName);
 MAYAUSD_CORE_PUBLIC
 UsdStageRefPtr GetStageByProxyName(const std::string& nodeName);
 
+/// Gets the proxy shape node name from its full DAG path \p proxyShapePath.
+MAYAUSD_CORE_PUBLIC
+std::string GetProxyShapeName(const std::string& proxyShapePath);
+
+/// Reads the boolean attribute \p attributeName from the proxy shape at
+/// \p proxyShapePath, returning false if the proxy or attribute is not found.
+MAYAUSD_CORE_PUBLIC
+bool GetBooleanAttributeOnProxyShape(
+    const std::string& proxyShapePath,
+    const std::string& attributeName);
+
 /// Gets the Maya MPlug for the given \p attrPath.
 /// The attribute path should be specified as "nodeName.attrName" (the format
 /// used by MEL).

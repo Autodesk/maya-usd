@@ -89,7 +89,7 @@ enum LayerLockType
  * layers.
  * @param stage The USD Stage.
  */
-LayerEditorAPI void loadLayerLockState(
+LAYEREDITOR_PUBLIC void loadLayerLockState(
     const std::vector<std::string>& locked,
     const LayerNameMap&             nameMap,
     PXR_NS::UsdStage&               stage);
@@ -97,7 +97,7 @@ LayerEditorAPI void loadLayerLockState(
 /*! \brief Sets the lock status on a layer.
  *         Automatically calls addLockedLayer, addSystemLockedLayer or their remove counterparts.
  */
-LayerEditorAPI void lockLayer(
+LAYEREDITOR_PUBLIC void lockLayer(
     std::string                   dccObjectPath,
     const PXR_NS::SdfLayerRefPtr& layer,
     LayerLockType                 locktype,
@@ -107,47 +107,47 @@ using LockedLayers = std::set<PXR_NS::SdfLayerRefPtr>;
 
 /*! \brief gets the list of locked layers
  */
-LayerEditorAPI LockedLayers& getLockedLayers();
+LAYEREDITOR_PUBLIC LockedLayers& getLockedLayers();
 
 /*! \brief gets the list of locked layers identifiers
  */
-LayerEditorAPI std::vector<std::string> getLockedLayersIdentifiers();
+LAYEREDITOR_PUBLIC std::vector<std::string> getLockedLayersIdentifiers();
 
 /*! \brief gets the list of system-locked layers
  */
-LayerEditorAPI LockedLayers& getSystemLockedLayers();
+LAYEREDITOR_PUBLIC LockedLayers& getSystemLockedLayers();
 
 /*! \brief Adds a layer to the lock list
  */
-LayerEditorAPI void addLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+LAYEREDITOR_PUBLIC void addLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Removes a layer from the lock list
  */
-LayerEditorAPI void removeLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+LAYEREDITOR_PUBLIC void removeLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Checks if a layer is in the lock list.
  */
-LayerEditorAPI bool isLayerLocked(const PXR_NS::SdfLayerRefPtr& layer);
+LAYEREDITOR_PUBLIC bool isLayerLocked(const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Clears the lock list
  */
-LayerEditorAPI void forgetLockedLayers();
+LAYEREDITOR_PUBLIC void forgetLockedLayers();
 
 /*! \brief Adds a layer to the system lock list
  */
-LayerEditorAPI void addSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+LAYEREDITOR_PUBLIC void addSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Removes a layer from the system lock list
  */
-LayerEditorAPI void removeSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+LAYEREDITOR_PUBLIC void removeSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Checks if a layer is in the lock list.
  */
-LayerEditorAPI bool isLayerSystemLocked(const PXR_NS::SdfLayerRefPtr& layer);
+LAYEREDITOR_PUBLIC bool isLayerSystemLocked(const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Clears the lock list
  */
-LayerEditorAPI void forgetSystemLockedLayers();
+LAYEREDITOR_PUBLIC void forgetSystemLockedLayers();
 
 } // namespace UsdLayerEditor
 

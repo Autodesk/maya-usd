@@ -95,17 +95,13 @@ public:
     static void onSceneChangedCB(void* clientData);
 
 private:
-    void applyStages()
-    {
-        _editCommitter->setStages(_hostStages);
-        _tree->setStages(_hostStages);
-    }
+    void applyStages() { _editCommitter->setStages(_hostStages); _tree->setStages(_hostStages); }
 
 private:
     Adsk::RenderSetupWidget*               _tree;
     MayaUsdRenderSetup::MayaEditCommitter* _editCommitter { nullptr };
-    std::vector<Adsk::HostStage>           _hostStages;
-    std::vector<MCallbackId>               _sceneCallbackIds;
+    std::vector<Adsk::HostStage> _hostStages;
+    std::vector<MCallbackId>     _sceneCallbackIds;
 };
 
 RenderSetupWindow::RenderSetupWindow(QWidget* parent)

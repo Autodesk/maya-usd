@@ -23,20 +23,23 @@
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/stageCache.h>
+
+#include <vector>
 
 // General utility functions used when serializing Usd edits during a save operation
 namespace UsdLayerEditor {
 namespace Serialization {
 
- std::string generateUniqueFileName(const std::string& basename);
+ LAYEREDITOR_PUBLIC std::string generateUniqueFileName(const std::string& basename);
 
- std::string
+ LAYEREDITOR_PUBLIC std::string
  generateUniqueLayerFileName(const std::string& basename, const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Queries the optionVar that decides what the internal format
     of a .usd file should be, either "usdc" or "usda".
  */
- std::string usdFormatArgOption();
+ LAYEREDITOR_PUBLIC std::string usdFormatArgOption();
 
  enum USDUnsavedEditsOption
 {
@@ -47,7 +50,7 @@ namespace Serialization {
 /*! \brief Queries the optionVar that decides which saving option Maya
     should use for Usd edits.
  */
- USDUnsavedEditsOption serializeUsdEditsLocationOption();
+ LAYEREDITOR_PUBLIC USDUnsavedEditsOption serializeUsdEditsLocationOption();
 //
 ///*! \brief Return if the relative-path plug is set to true on the proxy shape.
 // */
@@ -125,19 +128,19 @@ struct StageLayersToSave
     file (for the root layer) or its parent layer (for sub-layers). We assume the
     caller voluntarily made the path relative.
  */
-bool saveLayerWithFormat(
+LAYEREDITOR_PUBLIC bool saveLayerWithFormat(
     pxr::SdfLayerRefPtr layer,
     const std::string&  requestedFilePath = "",
     const std::string&  requestedFormatArg = "");
 
 /*! \brief Queries the DCC for the current "scene" folder
  */
-std::string getSceneFolder();
+LAYEREDITOR_PUBLIC std::string getSceneFolder();
 
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
  */
- PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::UsdStageRefPtr stage,
     PXR_NS::SdfLayerRefPtr anonLayer,
     LayerParent            parent,
@@ -148,7 +151,7 @@ std::string getSceneFolder();
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
  */
- PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::UsdStageRefPtr stage,
     PXR_NS::SdfLayerRefPtr anonLayer,
     const PathInfo&        pathInfo,
@@ -162,24 +165,27 @@ std::string getSceneFolder();
  *         different relative paths, so we cannot interrogate it about
  *         what its path is.
  */
- void updateSubLayer(
+ LAYEREDITOR_PUBLIC void updateSubLayer(
     const PXR_NS::SdfLayerRefPtr& parentLayer,
     const PXR_NS::SdfLayerRefPtr& oldSubLayer,
     const std::string&    newSubLayerPath);
 
 /*! \brief Ensures that the filepath contains a valid USD extension.
  */
- void ensureUSDFileExtension(std::string& filePath);
+ LAYEREDITOR_PUBLIC void ensureUSDFileExtension(std::string& filePath);
 
 /*! \brief Check the sublayer stack of the stage looking for any anonymous
     layers that will need to be saved.
  */
-void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo);
+LAYEREDITOR_PUBLIC void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo);
 
-/*! \brief Sets a function to be called to save the layer lock state in a DCC Stage object
- * attribute.
+/*! \brief Same as getLayersToSaveFromDCCObject but accepts the stage directly,
+    bypassing the UFE path-based stage lookup.
  */
-LayerEditorAPI void setUpdateDCCObjectRootLayerFunction(std::function<void(std::string, std::string)> saveFunction);
+LAYEREDITOR_PUBLIC void getLayersToSaveFromStage(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            objectPath,
+    StageLayersToSave&            layersInfo);
 
 } // namespace Serialization
 } // namespace UsdLayerEditor

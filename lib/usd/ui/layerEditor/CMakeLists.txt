@@ -15,27 +15,21 @@
 # limitations under the License.
 #
 
+# lib/usd/ui/layerEditor/ contains pre-migration copies of headers that share
+# names with the shared layer editor (sessionState.h, abstractCommandHook.h,
+# etc.). Qt AUTOMOC injects this directory into the include search path, which
+# would shadow the shared versions. Declare the shared paths explicitly first
+# so they take precedence.
+# Note: this workaround will be removed when the old layer editor is completely deleted.
+target_include_directories(${PROJECT_NAME} BEFORE PRIVATE
+    ${CMAKE_SOURCE_DIR}/lib/usdLayerEditor/ui
+    ${CMAKE_SOURCE_DIR}/lib/usdLayerEditor/lib
+)
+
 target_sources(${PROJECT_NAME}
     PRIVATE
         batchSaveLayersUIDelegate.cpp
-        componentSaveWidget.cpp
-        componentSaveWidget.h
-        dirtyLayersCountBadge.cpp
-        generatedIconButton.cpp
-        layerContentsWidget.cpp
-        layerContentsWidget.h
-        layerEditorWidget.cpp
-        layerEditorWidget.h
-        layerTreeItem.cpp
-        layerTreeItem.h
-        layerTreeItemDelegate.cpp
-        layerTreeItemDelegate.h
-        layerTreeModel.cpp
-        layerTreeModel.h
-        layerTreeView.cpp
-        layerTreeView.h
-        loadLayersDialog.cpp
-        loadLayersDialog.h
+        batchSaveLayersUIDelegate.h
         mayaCommandHook.cpp
         mayaCommandHook.h
         mayaLayerEditorWindow.cpp
@@ -44,23 +38,19 @@ target_sources(${PROJECT_NAME}
         mayaSessionState.h
         mayaQtUtils.cpp
         mayaQtUtils.h
-        pathChecker.cpp
-        pathChecker.h
-        qtUtils.cpp
-        qtUtils.h
-        resources.qrc
-        saveLayersDialog.cpp
-        saveLayersDialog.h
-        sessionState.cpp
-        sessionState.h
-        stageSelectorWidget.cpp
-        stageSelectorWidget.h
-        stringResources.cpp
-        stringResources.h
-        usdSyntaxHighlighter.cpp
-        usdSyntaxHighlighter.h
-        warningDialogs.cpp
-        warningDialogs.h
+        mayaLayerEditorUi.h
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE usdLayerEditorUi)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    MAYAUSD_USE_SHARED_LAYER_EDITOR=1
+    # MSVC searches "currently open include files" directories (step 2) before
+    # /I paths (step 3) for quoted includes. When lib/usdLayerEditor/ui/sessionState.h
+    # does #include "abstractCommandHook.h" while lib/usd/ui/layerEditor/mayaSessionState.h
+    # is open in the stack, MSVC finds the old header via step 2. Pre-defining the
+    # old guard silently skips its body; the new version (found first via BEFORE /I paths
+    # for angle-bracket includes) provides the full AbstractCommandHook definition.
+    # Note: this workaround will be removed when the old layer editor is completely deleted.
+    ABSTRACTCOMMANDHOOK_H
 )
 
 # -----------------------------------------------------------------------------
@@ -79,6 +69,7 @@ endif()
 # -----------------------------------------------------------------------------
 set(HEADERS
     batchSaveLayersUIDelegate.h
+    mayaLayerEditorUi.h
 )
 
 mayaUsd_promoteHeaderList( 

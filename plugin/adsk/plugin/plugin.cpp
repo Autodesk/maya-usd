@@ -33,6 +33,7 @@
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/commands/layerEditorWindowCommand.h>
+#include <mayaUsd/commands/mayaLayerEditorDCCFunctions.h>
 #include <mayaUsd/commands/schemaCommand.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
@@ -46,6 +47,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 #include <mayaUsd/utils/util.h>
 
@@ -77,7 +79,6 @@
 
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
-#include <mayaUsdUI/ui/initStringResources.h>
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
 #include <mayaUsdUI/ui/AssetResolverDialogCmd.h>
 #include <mayaUsdUI/ui/AssetResolverProjectChangeTracker.h>
@@ -103,6 +104,7 @@
 
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/batchSaveLayersUIDelegate.h>
+#include <mayaUsdUI/ui/mayaLayerEditorUi.h>
 #endif
 
 #if defined(MAYAUSD_VERSION)
@@ -146,9 +148,6 @@ template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
 MStatus registerStringResources()
 {
     MStatus status { MStatus::MStatusCode::kSuccess };
-#if defined(WANT_QT_BUILD)
-    status = MayaUsd::initStringResources();
-#endif
     return status;
 }
 
@@ -458,12 +457,17 @@ MStatus initializePlugin(MObject obj)
     }
 
     MayaUsd::LayerManager::addSupportForNodeType(MayaUsd::ProxyShape::typeId);
+
+    // Register the Qt-free layer-editor DCC functions unconditionally for headless/batch sessions; Qt builds layer the UI-dependent functions on top.
+    UsdLayerEditor::registerLayerEditorDCCFunctions();
 #if defined(WANT_QT_BUILD)
-    UsdLayerEditor::initialize();
+    // Add the Qt/UI-dependent layer-editor functions.
+    UsdLayerEditor::initializeUi();
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
 #endif
 
     UsdMayaSceneResetNotice::InstallListener();
+    MayaUsd::registerLayerMutingSceneResetListener();
     UsdMayaBeforeSceneResetNotice::InstallListener();
     UsdMayaExitNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
@@ -502,6 +506,9 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
     MStatus   status;
+
+    MayaUsd::unregisterLayerMutingSceneResetListener();
+    UsdLayerEditor::deregisterLayerEditorDCCFunctions();
 
 #if defined(WANT_QT_BUILD)
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)

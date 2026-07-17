@@ -23,7 +23,6 @@
 
 #include <pxr/usd/usd/stage.h>
 
-#include <QtCore/QString>
 #include <string>
 
 namespace UsdLayerEditor {
@@ -95,7 +94,7 @@ public:
 
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
-    virtual void openUndoBracket(const QString& name) = 0;
+    virtual void openUndoBracket(const std::string& name) = 0;
     // closes a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     virtual void closeUndoBracket() = 0;
@@ -105,14 +104,6 @@ public:
 
     // this method is used to select the prims with spec in a layer
     virtual void selectPrimsWithSpec(UsdLayer usdLayer) = 0;
-
-    // this method is used to check if the stage in the dcc stage object is from
-    // an incoming connection (using instage data or cache id for example)
-    virtual bool isDccObjectStageIncoming(const std::string& dccObjectPath) { return false; };
-
-    // this method is used to check if the dcc stage object is sharing the composition
-    // or has an owned root
-    virtual bool isDccObjectSharedStage(const std::string& dccObjectPath) { return true; };
 
     // Increase the count tracking if command executions are delayed.
     void increaseDelayedCommands() { _delayCount += 1; }
@@ -166,7 +157,7 @@ private:
 class UndoContext
 {
 public:
-    UndoContext(AbstractCommandHook* in_parent, const QString& in_name)
+    UndoContext(AbstractCommandHook* in_parent, const std::string& in_name)
         : _parent(in_parent)
     {
         in_parent->openUndoBracket(in_name);

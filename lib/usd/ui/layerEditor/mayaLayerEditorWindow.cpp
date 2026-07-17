@@ -18,12 +18,14 @@
 
 #include "mayaLayerEditorWindow.h"
 
-#include "layerEditorWidget.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
 #include "mayaQtUtils.h"
 #include "mayaSessionState.h"
-#include "sessionState.h"
+
+#include <layerEditorWidget.h>
+#include <layerTreeModel.h>
+#include <layerTreeView.h>
+#include <sessionState.h>
+#include <utilQT.h>
 
 #include <mayaUsd/utils/query.h>
 
@@ -96,8 +98,8 @@ MayaLayerEditorWindow::MayaLayerEditorWindow(const char* panelName, QWidget* par
 {
     // Normally this will be set from the MayaUsd plugin, but only
     // when building with UFE (for the batch save case).
-    if (!UsdLayerEditor::utils) {
-        UsdLayerEditor::utils = new MayaQtUtils();
+    if (!UsdLayerEditor::getQtUtils()) {
+        UsdLayerEditor::setQtUtils(new MayaQtUtils());
     }
     onCreateUI();
 
@@ -174,13 +176,13 @@ bool MayaLayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers
 std::string MayaLayerEditorWindow::proxyShapeName(const bool fullPath) const
 {
     auto stageEntry = _sessionState.stageEntry();
-    return fullPath ? stageEntry._proxyShapePath : stageEntry._displayName;
+    return fullPath ? stageEntry._dccObjectPath : stageEntry._displayName;
 }
 
 void MayaLayerEditorWindow::removeSubLayer()
 {
     QString name = "Remove";
-    treeView()->callMethodOnSelectionNoDelay(name, &LayerTreeItem::removeSubLayer);
+    treeView()->callMethodOnSelection(name, &LayerTreeItem::removeSubLayer);
 }
 
 void MayaLayerEditorWindow::saveEdits()

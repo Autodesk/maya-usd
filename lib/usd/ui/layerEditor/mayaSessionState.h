@@ -18,7 +18,8 @@
 #define MAYASESSIONSTATE_H
 
 #include "mayaCommandHook.h"
-#include "sessionState.h"
+
+#include <sessionState.h>
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
@@ -29,6 +30,10 @@
 #include <maya/MMessage.h>
 
 #include <vector>
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+class MayaUsdEFFallbackTargetChangedNotice;
+#endif
 
 namespace UsdLayerEditor {
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -54,7 +59,6 @@ public:
     void setStageEntry(StageEntry const& in_entry) override;
     void setAutoHideSessionLayer(bool hide) override;
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    void                   setEchoEditForwarding(bool echo) override;
     bool                   isEditForwardMode() const override;
     PXR_NS::SdfLayerRefPtr effectiveTargetLayer() const override;
 #endif
@@ -63,6 +67,7 @@ public:
 
     AbstractCommandHook*    commandHook() override;
     std::vector<StageEntry> allStages() const override;
+    std::vector<StageEntry> selectedStages() const override;
     // path to default load layer dialogs to
     std::string defaultLoadPath() const override;
     // ui that returns a list of paths to load
@@ -81,10 +86,10 @@ public:
     // in this case, the stage needs to be re-created on the new file
     void rootLayerPathChanged(std::string const& in_path) override;
 
-    void refreshCurrentStageEntry();
-    void refreshStageEntry(std::string const& proxyShapePath);
+    void refreshCurrentStageEntry() override;
+    void refreshStageEntry(std::string const& proxyShapePath) override;
 
-    std::string proxyShapePath() { return _currentStageEntry._proxyShapePath; }
+    std::string proxyShapePath() { return _currentStageEntry._dccObjectPath; }
 
 Q_SIGNALS:
     void clearUIOnSceneResetSignal();
@@ -115,12 +120,22 @@ protected:
     void mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice);
     void mayaUsdStageResetCBOnIdle(StageEntry const& entry);
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // Bridges the edit-forward host's fallback-target-changed notice to the
+    // shared SessionState Qt signals so the layer editor refreshes its target
+    // highlight and the EF toggle button when forwarding state changes.
+    void efFallbackTargetChanged(const MayaUsdEFFallbackTargetChangedNotice& notice);
+#endif
+
     void loadSelectedStage();
 
     std::vector<MCallbackId> _callbackIds;
     TfNotice::Key            _stageResetNoticeKey;
-    MayaCommandHook          _mayaCommandHook;
-    bool                     _inLoad = false;
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    TfNotice::Key _efFallbackTargetChangedNoticeKey;
+#endif
+    MayaCommandHook _mayaCommandHook;
+    bool            _inLoad = false;
 };
 
 } // namespace UsdLayerEditor

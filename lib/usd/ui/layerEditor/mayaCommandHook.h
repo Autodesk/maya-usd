@@ -17,7 +17,9 @@
 #ifndef MAYACOMMANDHOOK_H
 #define MAYACOMMANDHOOK_H
 
-#include "abstractCommandHook.h"
+#include <abstractCommandHook.h>
+
+#include <pxr/usd/usd/stage.h>
 
 #include <vector>
 
@@ -67,8 +69,7 @@ public:
     void muteSubLayer(UsdLayer usdLayer, bool muteIt) override;
 
     // lock, system-lock or unlock the given layer
-    void
-    lockLayer(UsdLayer usdLayer, MayaUsd::LayerLockType lockState, bool includeSubLayers) override;
+    void lockLayer(UsdLayer usdLayer, LayerLockType lockState, bool includeSubLayers) override;
 
     // Checks if the file layer or its sublayers are accessible on disk, and updates the system-lock
     // status.
@@ -79,7 +80,7 @@ public:
 
     // starts a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
-    void openUndoBracket(const QString& name) override;
+    void openUndoBracket(const std::string& name) override;
     // closes a complex undo operation in the host app. Please use UndoContext class to safely
     // open/close
     void closeUndoBracket() override;
@@ -89,14 +90,6 @@ public:
 
     // this method is used to select the prims with spec in a layer
     void selectPrimsWithSpec(UsdLayer usdLayer) override;
-
-    // this method is used to check if the stage in the proxy shape is from
-    // an incoming connection (using instage data or cache id for example)
-    bool isProxyShapeStageIncoming(const std::string& proxyShapePath) override;
-
-    // this method is used to check if the proxy shape is sharing the composition
-    // or has an owned root
-    bool isProxyShapeSharedStage(const std::string& proxyShapePath) override;
 
 protected:
     std::string proxyShapePath();
