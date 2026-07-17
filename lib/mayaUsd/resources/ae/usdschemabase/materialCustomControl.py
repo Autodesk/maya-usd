@@ -258,14 +258,14 @@ class MaterialCustomControl(object):
             self._fillUIForPurpose(purpose, mat, matRel, directBinding)
 
         _, defaultMatRel = matAPI.ComputeBoundMaterial(UsdShade.Tokens.allPurpose)
-        isInherithing = bool(defaultMatRel.GetPrim() != self.prim)
+        isInheriting = bool(defaultMatRel.GetPrim() != self.prim)
 
         defaultDirectBinding = matAPI.GetDirectBinding(UsdShade.Tokens.allPurpose)
-        self._fillStrengthValue(defaultDirectBinding, isInherithing)
+        self._fillStrengthValue(defaultDirectBinding, isInheriting)
 
-    def _fillStrengthValue(self, directBinding, isInherithing):
+    def _fillStrengthValue(self, directBinding, isInheriting):
 
-        if isInherithing:
+        if isInheriting:
             strengthEnabled = False
             strengthVisible = bool(directBinding)
             strengthAnnotation = getMayaUsdLibString('kTooltipInheritedStrength')
@@ -277,11 +277,11 @@ class MaterialCustomControl(object):
 
         if directBinding:
             directRel = directBinding.GetBindingRel()
-            bindingStengthToken = UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(directRel)
+            bindingStrengthToken = UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(directRel)
         else:
-            bindingStengthToken = 'weakerThanDescendants'
+            bindingStrengthToken = 'weakerThanDescendants'
 
-        strength = self.strengthLabels[bindingStengthToken]
+        strength = self.strengthLabels[bindingStrengthToken]
 
         cmds.optionMenuGrp(self.strengthMenu, edit=True,
                            enable=strengthEnabled, visible=strengthVisible,
