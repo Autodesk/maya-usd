@@ -314,7 +314,7 @@ void UnbindMaterialUndoableCommand::execute()
     // Note: UnbindAllBindings() will also unbind collection-based bindings.
     //       We may need to revisit if that is desired for this command or not.
     //
-    //       In contrrast, UnbindDirectBinding() will only unbind direct bindings.
+    //       In contrast, UnbindDirectBinding() will only unbind direct bindings.
     //       We currently only manage direct bindings, so we may want to revisit
     //       this if we add collection-based bindings support.
     if (_unassignAll) {
