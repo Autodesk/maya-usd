@@ -13,28 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef USD_UFE_ADD_REFERENCE_TO_NEW_PRIM_COMMAND
-#define USD_UFE_ADD_REFERENCE_TO_NEW_PRIM_COMMAND
+#ifndef USD_UFE_ADD_REF_OR_PAYLOAD_TO_NEW_PRIM_COMMAND
+#define USD_UFE_ADD_REF_OR_PAYLOAD_TO_NEW_PRIM_COMMAND
 
 #include <usdUfe/base/api.h>
-#include <usdUfe/ufe/UsdUndoableCommand.h>
 
-#include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/undoableCommand.h>
 
+#include <memory>
 #include <string>
 
 namespace USDUFE_NS_DEF {
 
-//! \brief Command that creates a new child prim and adds a reference (or payload) arc to
-//! it in a single atomic undo/redo operation.
-class USDUFE_PUBLIC UsdUndoAddReferenceToNewPrimCommand
-    : public UsdUndoableCommand<Ufe::UndoableCommand>
+//! \brief Command that creates a new child "def" prim and adds a reference or payload arc to
+//! it, as a single undoable operation. The new prim's type is composed through the arc, so it
+//! takes on the referenced default prim's type.
+//!
+//! The work is orchestrated as a composite of the existing UsdUndoAddNewPrimCommand and the
+//! UsdUndoAddReferenceCommand / UsdUndoAddPayloadCommand (plus load/unload) commands.
+class USDUFE_PUBLIC UsdUndoAddRefOrPayloadToNewPrimCommand : public Ufe::UndoableCommand
 {
 public:
-    UsdUndoAddReferenceToNewPrimCommand(
+    UsdUndoAddRefOrPayloadToNewPrimCommand(
         const PXR_NS::UsdPrim& parentPrim,
         const std::string&     newPrimName,
         const std::string&     filePath,
@@ -43,10 +45,11 @@ public:
         bool                   isPayload = false,
         bool                   preload   = false);
 
-    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAddReferenceToNewPrimCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAddRefOrPayloadToNewPrimCommand);
 
-protected:
-    void executeImplementation() override;
+    void execute() override;
+    void undo() override;
+    void redo() override;
 
 private:
     PXR_NS::UsdPrim _parentPrim;
@@ -56,8 +59,10 @@ private:
     bool            _prepend;
     bool            _isPayload;
     bool            _preload;
+
+    std::shared_ptr<Ufe::CompositeUndoableCommand> _compositeCmd;
 };
 
 } // namespace USDUFE_NS_DEF
 
-#endif /* USD_UFE_ADD_REFERENCE_TO_NEW_PRIM_COMMAND */
+#endif /* USD_UFE_ADD_REF_OR_PAYLOAD_TO_NEW_PRIM_COMMAND */

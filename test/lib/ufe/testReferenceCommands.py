@@ -150,10 +150,11 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         # should compose to an Xform.
         referencedFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
 
-        newPrimPathStr = "|stage1|stageShape1,/A/sphere"
+        # The create-prim command appends a numeric suffix, so "sphere" becomes "sphere1".
+        newPrimPathStr = "|stage1|stageShape1,/A/sphere1"
 
         # Arguments: parentPrim, newPrimName, filePath, primPath, prepend, isPayload, preload
-        cmd = usdUfe.AddReferenceToNewPrimCommand(
+        cmd = usdUfe.AddRefOrPayloadToNewPrimCommand(
             parentPrim, 'sphere', referencedFile, '', True, False, False)
 
         cmd.execute()
@@ -171,6 +172,39 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.assertTrue(newPrim.IsValid())
         self.assertTrue(newPrim.HasAuthoredReferences())
         self.assertEqual(str(newPrim.GetTypeName()), 'Xform')
+
+
+    def testAddPayloadToNewPrimCommand(self):
+        '''
+        Test the "add payload to a new prim" variant of the command: it creates a
+        new child prim and adds a payload (instead of a reference) to it.
+        '''
+        parentPrim = mayaUsd.ufe.ufePathToPrim("|stage1|stageShape1,/A")
+        originalRootContents = filterUsdStr(self.stage.GetRootLayer().ExportToString())
+
+        referencedFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+
+        # The create-prim command appends a numeric suffix, so "sphere" becomes "sphere1".
+        newPrimPathStr = "|stage1|stageShape1,/A/sphere1"
+
+        # Arguments: parentPrim, newPrimName, filePath, primPath, prepend, isPayload, preload
+        cmd = usdUfe.AddRefOrPayloadToNewPrimCommand(
+            parentPrim, 'sphere', referencedFile, '', True, True, True)
+
+        cmd.execute()
+        newPrim = mayaUsd.ufe.ufePathToPrim(newPrimPathStr)
+        self.assertTrue(newPrim.IsValid())
+        self.assertTrue(newPrim.HasAuthoredPayloads())
+        self.assertEqual(str(newPrim.GetTypeName()), 'Xform')
+
+        cmd.undo()
+        self.assertFalse(mayaUsd.ufe.ufePathToPrim(newPrimPathStr).IsValid())
+        self.assertEqual(originalRootContents, filterUsdStr(self.stage.GetRootLayer().ExportToString()))
+
+        cmd.redo()
+        newPrim = mayaUsd.ufe.ufePathToPrim(newPrimPathStr)
+        self.assertTrue(newPrim.IsValid())
+        self.assertTrue(newPrim.HasAuthoredPayloads())
 
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Delete restriction on delete requires Maya 2023 or greater.')

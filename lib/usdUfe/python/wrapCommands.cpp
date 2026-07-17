@@ -15,7 +15,7 @@
 //
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
-#include <usdUfe/ufe/UsdUndoAddReferenceToNewPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoAddRefOrPayloadToNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
@@ -49,7 +49,7 @@ AddReferenceCommandInit(const PXR_NS::UsdPrim& prim, const std::string& filePath
     return new UsdUfe::UsdUndoAddReferenceCommand(prim, filePath, prepend);
 }
 
-UsdUfe::UsdUndoAddReferenceToNewPrimCommand* AddReferenceToNewPrimCommandInit(
+UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand* AddRefOrPayloadToNewPrimCommandInit(
     const PXR_NS::UsdPrim& parentPrim,
     const std::string&     newPrimName,
     const std::string&     filePath,
@@ -58,7 +58,7 @@ UsdUfe::UsdUndoAddReferenceToNewPrimCommand* AddReferenceToNewPrimCommandInit(
     bool                   isPayload,
     bool                   preload)
 {
-    return new UsdUfe::UsdUndoAddReferenceToNewPrimCommand(
+    return new UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand(
         parentPrim, newPrimName, filePath, primPath, prepend, isPayload, preload);
 }
 
@@ -169,16 +169,16 @@ void wrapCommands()
             .def("redo", &UsdUfe::UsdUndoAddReferenceCommand::redo);
     }
     {
-        using This = UsdUfe::UsdUndoAddReferenceToNewPrimCommand;
+        using This = UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand;
         class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
-            "AddReferenceToNewPrimCommand", no_init)
-            .def("__init__", make_constructor(AddReferenceToNewPrimCommandInit))
-            .def("execute", &UsdUfe::UsdUndoAddReferenceToNewPrimCommand::execute)
+            "AddRefOrPayloadToNewPrimCommand", no_init)
+            .def("__init__", make_constructor(AddRefOrPayloadToNewPrimCommandInit))
+            .def("execute", &UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand::execute)
 #ifdef UFE_V4_FEATURES_AVAILABLE
-            .def("commandString", &UsdUfe::UsdUndoAddReferenceToNewPrimCommand::commandString)
+            .def("commandString", &UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand::commandString)
 #endif
-            .def("undo", &UsdUfe::UsdUndoAddReferenceToNewPrimCommand::undo)
-            .def("redo", &UsdUfe::UsdUndoAddReferenceToNewPrimCommand::redo);
+            .def("undo", &UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand::undo)
+            .def("redo", &UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand::redo);
     }
     {
         using This = UsdUfe::UsdUndoClearReferencesCommand;

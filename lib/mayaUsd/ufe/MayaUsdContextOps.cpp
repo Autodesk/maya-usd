@@ -28,7 +28,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
-#include <usdUfe/ufe/UsdUndoAddReferenceToNewPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoAddRefOrPayloadToNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
 #include <usdUfe/ufe/UsdUndoMaterialCommands.h>
@@ -810,7 +810,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             const bool        prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
             const bool        preload = !asRef && UsdMayaUtilFileSystem::wantPayloadLoaded();
 
-            return std::make_shared<UsdUfe::UsdUndoAddReferenceToNewPrimCommand>(
+            return std::make_shared<UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand>(
                 prim(), newPrimName, path, refPrimPath, prepend, !asRef, preload);
 
         } else if (itemPath[1] == kAddRefOrPayloadItem) {
