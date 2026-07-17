@@ -204,7 +204,6 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
 
         unbindCmd.undo()
         self.verifyBinding(self.aPrim, self.allPurpose, self.mat1PathStr)
-        self.verifyBinding(self.aPrim, self.allPurpose, self.mat1PathStr)
 
         unbindCmd.redo()
         self.verifyBinding(self.aPrim, self.allPurpose, '')
@@ -318,7 +317,7 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
         given purpose should be a no-op and must not raise.
         '''
         self.assertEqual(
-            self._directBinding(self.aPrim, self.allPurpose).GetMaterialPath().pathString,
+            self._directBinding(self.bPrim, self.allPurpose).GetMaterialPath().pathString,
             '')
 
         strengthCmd = usdUfe.SetMaterialBindingStrengthCommand(
@@ -326,7 +325,7 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
         strengthCmd.execute()
 
         self.assertEqual(
-            self._directBinding(self.aPrim, self.allPurpose).GetMaterialPath().pathString,
+            self._directBinding(self.bPrim, self.allPurpose).GetMaterialPath().pathString,
             '')
 
     def testSetMaterialBindingStrengthInvalidPrim(self):

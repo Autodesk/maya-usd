@@ -347,7 +347,7 @@ void SetMaterialBindingStrengthCommand::validatePrimPath() const
 {
     if (_primPath.empty() || !ufePathToPrim(_primPath).IsValid()) {
         std::string err = TfStringPrintf(
-            "Invalid primitive path [%s]. Can not unbind material.",
+            "Invalid primitive path [%s]. Can not set material binding strength.",
             Ufe::PathString::string(_primPath).c_str());
         throw std::runtime_error(err);
     }
@@ -387,7 +387,7 @@ void SetMaterialBindingStrengthCommand::execute()
     }
 }
 
-const std::string SetMaterialBindingStrengthCommand::commandName("Set Material Biinding S");
+const std::string SetMaterialBindingStrengthCommand::commandName("Set Binding Strength");
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(

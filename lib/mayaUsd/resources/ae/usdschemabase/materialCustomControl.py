@@ -419,7 +419,7 @@ class MaterialCustomControl(object):
             command = lambda *_: mel.eval(melCommand)
         else:
             command = ''
-        cmds.button(purposeUI.fromPrim.button, edit=True, command=command)
+        cmds.symbolButton(purposeUI.fromPrim.button, edit=True, command=command)
 
     def _createUFEPathFromUSDPath(self, usdPath):
         '''
