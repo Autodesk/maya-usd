@@ -26,6 +26,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
@@ -431,6 +432,13 @@ void MayaSessionState::setupCreateMenu(QMenu* in_menu)
     script += "menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;";
     script += "menuItem -runTimeCommand mayaUsdCreateStageFromFile;";
     script += "menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;";
+
+    if (MayaUsd::ComponentUtils::isAdskUsdComponentCreatorAvailable()) {
+        script += "menuItem -divider true;";
+        script += "menuItem -runTimeCommand mayaUsdCreateComponent;";
+        script += "menuItem -runTimeCommand mayaUsdCreateComponentOptions -optionBox true;";
+    }
+
     MGlobal::executeCommand(
         script,
         /*display*/ false,
