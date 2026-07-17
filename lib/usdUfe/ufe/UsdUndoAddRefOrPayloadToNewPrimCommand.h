@@ -43,7 +43,7 @@ public:
         const std::string&     primPath,
         bool                   prepend,
         bool                   isPayload = false,
-        bool                   preload   = false);
+        bool                   preload = false);
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoAddRefOrPayloadToNewPrimCommand);
 

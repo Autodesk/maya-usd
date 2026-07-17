@@ -27,8 +27,8 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
-#include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoAddRefOrPayloadToNewPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
 #include <usdUfe/ufe/UsdUndoMaterialCommands.h>
@@ -110,7 +110,7 @@ static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material
 #endif
 static constexpr char kAddRefOrPayloadLabel[] = "Add to Prim...";
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
-static constexpr char kAddRefToNewPrimItem[]  = "AddReferenceToNewPrim";
+static constexpr char kAddRefToNewPrimItem[] = "AddReferenceToNewPrim";
 static constexpr char kAddRefToNewPrimLabel[] = "Add...";
 const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear...";
 const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPayloads";

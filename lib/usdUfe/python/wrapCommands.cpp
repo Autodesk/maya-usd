@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
-#include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoAddRefOrPayloadToNewPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
