@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
+#include <usdUfe/ufe/UsdUndoAddRefOrPayloadToNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
@@ -46,6 +47,19 @@ UsdUfe::UsdUndoAddReferenceCommand*
 AddReferenceCommandInit(const PXR_NS::UsdPrim& prim, const std::string& filePath, bool prepend)
 {
     return new UsdUfe::UsdUndoAddReferenceCommand(prim, filePath, prepend);
+}
+
+UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand* AddRefOrPayloadToNewPrimCommandInit(
+    const PXR_NS::UsdPrim& parentPrim,
+    const std::string&     newPrimName,
+    const std::string&     filePath,
+    const std::string&     primPath,
+    bool                   prepend,
+    bool                   isPayload,
+    bool                   preload)
+{
+    return new UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand(
+        parentPrim, newPrimName, filePath, primPath, prepend, isPayload, preload);
 }
 
 UsdUfe::UsdUndoClearReferencesCommand* ClearReferencesCommandInit(const PXR_NS::UsdPrim& prim)
@@ -153,6 +167,18 @@ void wrapCommands()
 #endif
             .def("undo", &UsdUfe::UsdUndoAddReferenceCommand::undo)
             .def("redo", &UsdUfe::UsdUndoAddReferenceCommand::redo);
+    }
+    {
+        using This = UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand;
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "AddRefOrPayloadToNewPrimCommand", no_init)
+            .def("__init__", make_constructor(AddRefOrPayloadToNewPrimCommandInit))
+            .def("execute", &UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand::commandString)
+#endif
+            .def("undo", &UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand::undo)
+            .def("redo", &UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand::redo);
     }
     {
         using This = UsdUfe::UsdUndoClearReferencesCommand;
