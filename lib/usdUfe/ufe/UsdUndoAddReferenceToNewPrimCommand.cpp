@@ -15,15 +15,12 @@
 //
 #include "UsdUndoAddReferenceToNewPrimCommand.h"
 
+#include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
+#include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/Utils.h>
-#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/payload.h>
-#include <pxr/usd/sdf/reference.h>
-#include <pxr/usd/usd/payloads.h>
-#include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/stage.h>
 
 namespace USDUFE_NS_DEF {
@@ -33,12 +30,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 USDUFE_VERIFY_CLASS_SETUP(
     UsdUndoableCommand<Ufe::UndoableCommand>,
     UsdUndoAddReferenceToNewPrimCommand);
-
-/* static */
-UsdListPosition UsdUndoAddReferenceToNewPrimCommand::getListPosition(bool prepend)
-{
-    return prepend ? UsdListPositionBackOfPrependList : UsdListPositionBackOfAppendList;
-}
 
 UsdUndoAddReferenceToNewPrimCommand::UsdUndoAddReferenceToNewPrimCommand(
     const UsdPrim&     parentPrim,
@@ -81,14 +72,10 @@ void UsdUndoAddReferenceToNewPrimCommand::executeImplementation()
         return;
     }
 
-    const SdfPath refPrimPath = _primPath.empty() ? SdfPath() : SdfPath(_primPath);
-    const auto    listPos = getListPosition(_prepend);
-
     if (_isPayload) {
-        SdfPayload  payload(_filePath, refPrimPath);
-        UsdPayloads primPayloads = newPrim.GetPayloads();
-        PrimMetadataEditRouterContext ctx(newPrim, SdfFieldKeys->Payload);
-        primPayloads.AddPayload(payload, listPos);
+        UsdUndoAddPayloadCommand payloadCmd(newPrim, _filePath, _primPath, _prepend);
+        payloadCmd.execute();
+
         if (_preload) {
             stage->LoadAndUnload(
                 SdfPathSet { newPrim.GetPath() }, SdfPathSet {}, UsdLoadWithDescendants);
@@ -96,10 +83,8 @@ void UsdUndoAddReferenceToNewPrimCommand::executeImplementation()
             stage->LoadAndUnload(SdfPathSet {}, SdfPathSet { newPrim.GetPath() });
         }
     } else {
-        SdfReference  ref(_filePath, refPrimPath);
-        UsdReferences primRefs = newPrim.GetReferences();
-        PrimMetadataEditRouterContext ctx(newPrim, SdfFieldKeys->References);
-        primRefs.AddReference(ref, listPos);
+        UsdUndoAddReferenceCommand refCmd(newPrim, _filePath, _primPath, _prepend);
+        refCmd.execute();
     }
 }
 

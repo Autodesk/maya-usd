@@ -49,8 +49,6 @@ protected:
     void executeImplementation() override;
 
 private:
-    static PXR_NS::UsdListPosition getListPosition(bool prepend);
-
     PXR_NS::UsdPrim _parentPrim;
     std::string     _newPrimName;
     std::string     _filePath;
