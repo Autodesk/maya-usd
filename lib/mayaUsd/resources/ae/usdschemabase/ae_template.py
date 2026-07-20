@@ -663,16 +663,14 @@ class AETemplate(object):
         addMatSection()        
 
     def createMaterialAttributeSection(self):
-        if not UsdShade.MaterialBindingAPI.CanApply(self.prim):
-            return
-        matAPI = UsdShade.MaterialBindingAPI(self.prim)
-        mat, _ = matAPI.ComputeBoundMaterial()
-        if not mat:
+        if not MaterialCustomControl.hasMaterial(self.prim):
             return
         layoutName = getMayaUsdLibString('kLabelMaterial')
         with ufeAeTemplate.Layout(self, layoutName, collapse=False):
             createdControl = MaterialCustomControl(self.item, self.prim, self.useNiceName)
+            usdNoticeControl = UsdNoticeListener(self.prim, [createdControl])
             self.defineCustom(createdControl)
+            self.defineCustom(usdNoticeControl)
 
     def suppressArrayAttribute(self):
         # Suppress all array attributes.

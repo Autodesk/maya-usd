@@ -256,3 +256,22 @@ def showHelpMayaUSD(contentId):
     finally:
         # Restoring Maya's default helpTable
         cmds.showHelp('helpTable', helpTable=True)    
+
+
+def setUndoLabel(label):
+    '''
+    This function decorator sets the function metadata so that it has
+    a nice label in the Maya undo system and UI.
+
+    Example of using the decorator:
+
+        @setUndoLabel("nice label")
+        def example(c):
+            print(c)
+    '''
+    def wrap(func):
+        nonBreakSpace = '\xa0'
+        func.__module__ = label.replace(' ', nonBreakSpace)
+        func.__name__ = ''
+        return func
+    return wrap
