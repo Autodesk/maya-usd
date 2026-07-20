@@ -139,7 +139,10 @@ class testUsdExportEmptyXforms(unittest.TestCase):
         '''
         Export to USD, either including or excluding empty Xforms.
         '''
-        cmds.usdExport(file=filename, includeEmptyTransforms=includeEmpties, defaultPrim=defaultPrimPath)
+        cmds.usdExport(file=filename, includeEmptyTransforms=includeEmpties,
+                       defaultPrim=defaultPrimPath, legacyMaterialScope=False,
+                       materialsScopeName='mtl',
+                       chaser=["AddPayloadOrRefChaser"])
 
     def _verifyPrims(self, stage, present = [], absent = []):
         '''
