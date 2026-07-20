@@ -15,6 +15,7 @@ set(TEST_SCRIPT_FILES
     testPrimMetadataEditRouting.py
     testGetStage.py
     testGroupCmd.py
+    testMaterialBindingCommands.py
     testMatrices.py
     testMayaPickwalk.py
     testMoveCmd.py
