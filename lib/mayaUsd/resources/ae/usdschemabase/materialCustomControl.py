@@ -29,6 +29,7 @@ import maya.cmds as cmds
 import maya.common.ui as mui
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+from .dragAndDropTextField import DragAndDropTextField
 
 @dataclass(slots=True)
 class MaterialPurposeUI:
@@ -51,7 +52,7 @@ class MaterialCustomControl(object):
         getMayaUsdLibString('kLabelStrongerMaterial')   : 'strongerThanDescendants',
     }
 
-    TextField = collections.namedtuple('TextField', ['layout', 'field', 'button', 'graphMenu'])
+    TextField = collections.namedtuple('TextField', ['layout', 'field', 'gotoButton', 'graphButton','graphMenu'])
 
     @staticmethod
     def hasMaterial(prim):
@@ -100,6 +101,7 @@ class MaterialCustomControl(object):
         for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
             textField = self.materialPurposeUIs[purpose].material.field
             self._connectTextFieldChangeCallback(purpose, textField)
+            self._connectTextFieldImmediateChangeCallback(purpose, textField)
                 
         # Fill the UI.
         self.refresh()
@@ -131,17 +133,8 @@ class MaterialCustomControl(object):
         '''
         purposeName = self._getPurposeForLabels(purpose)
 
-        # Note: icon image taken from LookdevX plugin.
-        hasLookdevX = self._hasLookdevX()
-        graphIcon = 'LookdevX.png' if hasLookdevX else None
-
         purposeUI = self.materialPurposeUIs[purpose]
-        purposeUI.material = self._createTextField(
-            'material',
-            f'kLabel{purposeName}Material',
-            f'kAnn{purposeName}Material',
-            graphIcon,
-            'kAnnShowMaterialInLookdevx', True)
+        purposeUI.material = self._createTextField('material', f'kLabel{purposeName}Material', f'kAnn{purposeName}Material', canGraph=True)
 
     def _createInheritedUI(self, purpose):
         '''
@@ -154,61 +147,84 @@ class MaterialCustomControl(object):
         graphIcon = 'LookdevX.png' if hasLookdevX else None
 
         purposeUI = self.materialPurposeUIs[purpose]
-        purposeUI.inherited = self._createTextField('inherited', f'kLabel{purposeName}InheritedMaterial', image=graphIcon, imageTooltipRes='kAnnShowMaterialInLookdevx', canGraph=True)
+        purposeUI.inherited = self._createTextField('inherited', f'kLabel{purposeName}InheritedMaterial', canGraph=True)
         # Note: inArrow.png icon image taken from Maya resources.
-        purposeUI.fromPrim = self._createTextField('from prim', f'kLabel{purposeName}InheritedFromPrim', image='inArrow.png')
+        purposeUI.fromPrim = self._createTextField('from prim', f'kLabel{purposeName}InheritedFromPrim')
 
-    def _createTextField(self, longName, uiNameRes, uiTooltipRes=None, image=None, imageTooltipRes=None, canGraph=False):
+    def _createTextField(self, longName, uiLabelRes, uiTooltipRes=None, canGraph=False):
         '''
         Create a disabled text field group and an optional image button with the correct label.
         '''
-        uiLabel = getMayaUsdLibString(uiNameRes) if self.useNiceName else longName
+        uiLabel = getMayaUsdLibString(uiLabelRes) if self.useNiceName else longName
         uiTooltip = getMayaUsdLibString(uiTooltipRes) if uiTooltipRes else uiLabel
-        rowLayout = cmds.rowLayout(numberOfColumns=3, adjustableColumn3=2)
+        rowLayout = cmds.rowLayout(numberOfColumns=4, adjustableColumn4=2)
         with mui.LayoutManager(rowLayout):
             cmds.text(label=uiLabel, annotation=uiTooltip)
-            textField = cmds.textField(annotation=uiTooltip, editable=False, enableKeyboardFocus=True)
-            if image:
-                imageTooltip = getMayaUsdLibString(imageTooltipRes) if imageTooltipRes else ''
-                button = cmds.symbolButton(enable=False, image=image, annotation=imageTooltip)
+            textField = DragAndDropTextField(uiTooltip)
+            gotoButton = cmds.symbolButton(enable=False, image='inArrow.png')
+
+            if canGraph:
+                # Note: icon image taken from LookdevX plugin.
+                hasLookdevX = self._hasLookdevX()
+                graphIcon = 'LookdevX.png' if hasLookdevX else None
+
+                graphTooltip = getMayaUsdLibString('kAnnShowMaterialInLookdevx')
+                graphButton = cmds.symbolButton(enable=False, image=graphIcon, annotation=graphTooltip)
+                graphMenu = self._createGraphMenu(graphButton)
             else:
-                button = None
+                graphButton = None
+                graphMenu = None
 
-        if canGraph:
-            graphMenu = self._createGraphMenu(button)
-        else:
-            graphMenu = None
+        return MaterialCustomControl.TextField(rowLayout, textField, gotoButton, graphButton, graphMenu)
 
-        return MaterialCustomControl.TextField(rowLayout, textField, button, graphMenu)
+    def _setMaterialPurposeBinding(self, purpose, value):
+        try:
+            ufePath = ufe.PathString.string(self.item.path())
+            if value:
+                cmd = mayaUsd.ufe.BindMaterialCommand(ufePath, value, purpose)
+            else:
+                cmd = mayaUsd.ufe.UnbindMaterialCommand(ufePath, purpose)
+            ufeCmdWrapper.execute(cmd)
+        except Exception as e:
+            cmds.warning(f'Error executing material command: {e}', noContext=True)
+            self.refresh()
 
     def _connectTextFieldChangeCallback(self, purpose, textField):
+        def callback(value):
+            self._setMaterialPurposeBinding(purpose, value)
 
-        @mayaUsdUtils.setUndoLabel(getMayaUsdLibString('kLabelSetMaterialBindingUndo'))
-        def callback(value, *args, **kwargs):
+        textField.setChangeCallback(callback, getMayaUsdLibString('kLabelSetMaterialBindingUndo'))
+
+    def _connectTextFieldImmediateChangeCallback(self, purpose, textField):
+        def callback(newValue, wasDropped):
+            if not wasDropped:
+                return
+            self._setMaterialPurposeBinding(purpose, newValue)
+
+        def validation(lastValue, newValues):
             try:
-                ufePath = ufe.PathString.string(self.item.path())
-                if value:
-                    cmd = mayaUsd.ufe.BindMaterialCommand(ufePath, value, purpose)
-                else:
-                    cmd = mayaUsd.ufe.UnbindMaterialCommand(ufePath, purpose)
-                ufeCmdWrapper.execute(cmd)
+                for newValue in newValues:
+                    if not newValue:
+                        continue
+                    if newValue[0] not in ['|', '/']:
+                        continue
+                    newValue = newValue.split(',')[-1]
+                    # TODO: validate that it is a material?
+                    return newValue
             except Exception as e:
-                print(f'Error executing material command: {e}')
-                self.refresh()
+                cmds.warning(f'Error validating material path: {e}', noContext=True)
+            return None
 
-        try:
-            cmds.textField(textField, edit=True, changeCommand=callback)
-        except Exception as e:
-            print(f'Error connecting text field change callback: {e}')
+        textField.setImmediateChangeCallback(validation, callback, getMayaUsdLibString('kLabelSetMaterialBindingUndo'))
 
-    def _createGraphMenu(self, button):
+    def _createGraphMenu(self, graphButton):
         '''
         Create a popup menu attached to the given button to graph a material.
         '''
-        if not button:
+        if not graphButton:
             return None
         
-        return cmds.popupMenu(parent=button, button=True)
+        return cmds.popupMenu(parent=graphButton, button=True)
     
     def _createDropDownField(self, longName, uiNameRes, elementsRes):
         '''
@@ -229,7 +245,7 @@ class MaterialCustomControl(object):
                 # Force update of all children in the VP2 delegate.
                 cmds.evalDeferred(lambda: ufe.Scene.notify(ufe.ObjectRename(self.item, self.item.path())))
             except Exception as e:
-                print(f'Error executing material command: {e}')
+                cmds.warning(f'Error executing material command: {e.args[0] if e.args else e}', noContext=True)
                 self.refresh()
 
         uiLabel = getMayaUsdLibString(uiNameRes) if self.useNiceName else longName
@@ -328,27 +344,30 @@ class MaterialCustomControl(object):
             cmds.rowLayout(purposeUI.inherited.layout, edit=True, visible=False)
             cmds.rowLayout(purposeUI.fromPrim.layout, edit=True, visible=False)
 
-        self._fillGraphButton(text, purposeUI.material.button, purposeUI.material.graphMenu)
-        self._fillGraphButton(inherited, purposeUI.inherited.button, purposeUI.inherited.graphMenu)
-        self._fillGotoPrimButton(purposeUI, fromPathStr)
+        self._fillGraphButton(text, purposeUI.material.graphButton, purposeUI.material.graphMenu)
+        self._fillGraphButton(inherited, purposeUI.inherited.graphButton, purposeUI.inherited.graphMenu)
+        
+        self._fillGotoPrimButton(purposeUI.material.gotoButton, text)
+        self._fillGotoPrimButton(purposeUI.inherited.gotoButton, inherited)
+        self._fillGotoPrimButton(purposeUI.fromPrim.gotoButton, fromPathStr)
 
-        cmds.textField(purposeUI.material.field, edit=True, editable=True, text=text, placeholderText=placeholder, annotation=annotation)
-        cmds.textField(purposeUI.inherited.field, edit=True, text=inherited)
-        cmds.textField(purposeUI.fromPrim.field, edit=True, text=fromPathStr)
+        purposeUI.material.field.fillUI(text, placeholder, annotation)
+        purposeUI.inherited.field.fillUI(inherited, editable=False)
+        purposeUI.fromPrim.field.fillUI(fromPathStr, editable=False)
 
-    def _fillGraphButton(self, matPathStr, button, menu):
+    def _fillGraphButton(self, matPathStr, graphButton, menu):
         '''
         Fill the graph button with the correct command.
         '''
         # Note: only show the graph button if LookdevX was loaded when the UI
         #       was created.
-        if not button:
+        if not graphButton:
             return
 
         # Note: only show the graph button if LookdevX is currently loaded.
         hasLookdevX = self._hasLookdevX()
         canGraph = bool(matPathStr and hasLookdevX)
-        cmds.symbolButton(button, edit=True, enable=canGraph, visible=hasLookdevX)
+        cmds.symbolButton(graphButton, edit=True, enable=canGraph, visible=hasLookdevX)
 
         if canGraph:
             ufePathStr = self._createUFEPathFromUSDPath(matPathStr)
@@ -414,20 +433,20 @@ class MaterialCustomControl(object):
             return
         cmds.lookdevXGraph(tabName=tabName, graphObject=ufePathStr)
 
-    def _fillGotoPrimButton(self, purposeUI, fromPath):
+    def _fillGotoPrimButton(self, gotoButton, gotoUsdPath):
         '''
         Fill the goto-prim button with the correct command.
         '''
-        showButton = bool(fromPath)
-        cmds.symbolButton(purposeUI.fromPrim.button, edit=True, enable=showButton, visible=showButton)
+        showButton = bool(gotoUsdPath)
+        cmds.symbolButton(gotoButton, edit=True, enable=showButton, visible=showButton)
 
-        if fromPath:
-            ufePathStr = self._createUFEPathFromUSDPath(fromPath)
+        if gotoUsdPath:
+            ufePathStr = self._createUFEPathFromUSDPath(gotoUsdPath)
             melCommand = 'updateAE "%s"' % ufePathStr
             command = lambda *_: mel.eval(melCommand)
         else:
             command = ''
-        cmds.symbolButton(purposeUI.fromPrim.button, edit=True, command=command)
+        cmds.symbolButton(gotoButton, edit=True, command=command)
 
     def _createUFEPathFromUSDPath(self, usdPath):
         '''
