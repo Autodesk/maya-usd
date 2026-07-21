@@ -191,11 +191,6 @@ bool isDefPrim(const Ufe::SceneItem::Ptr& sceneItem)
 
 void enforceMaterialBindingEditRestriction(const PXR_NS::UsdProperty& property)
 {
-    PXR_NS::UsdPrim prim = property.GetPrim();
-
-    // Edit routing is done by a user-provided implementation that can raise exceptions.
-    // In particular, they can raise an exception to prevent the execution of the associated
-    // command. This is directly relevant for this check of allowed edits.
     UsdUfe::enforceAttributeEditAllowed(property);
 }
 
@@ -267,6 +262,9 @@ void BindMaterialUndoableCommand::execute()
     // All validations were done in the CTOR: proceed.
     auto prim = ufePathToPrim(_primPath);
 
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
     UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
 
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
@@ -332,6 +330,9 @@ void UnbindMaterialUndoableCommand::execute()
 {
     auto prim = ufePathToPrim(_primPath);
 
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
     UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
 
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
@@ -416,6 +417,9 @@ void SetMaterialBindingStrengthCommand::execute()
 {
     auto prim = ufePathToPrim(_primPath);
 
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
     UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
 
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
