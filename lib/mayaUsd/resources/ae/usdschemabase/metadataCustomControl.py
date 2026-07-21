@@ -17,6 +17,7 @@ import maya.cmds as cmds
 
 import mayaUsd.lib as mayaUsdLib
 import mayaUsd.ufe as mayaUsdUfe
+import mayaUsdUtils
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 
 import usdUfe
@@ -135,6 +136,7 @@ class MetadataCustomControl(object):
             v = self.prim.GetMetadata(k) if k != 'customData' else self.prim.GetCustomData()
             cmds.textFieldGrp(self.extraMetadata[k], edit=True, text=str(v))
 
+    @mayaUsdUtils.setUndoLabel(getMayaUsdLibString('kLabelSetKindUndo'))
     def _onKindChanged(self, value):
         with mayaUsdLib.UsdUndoBlock():
             try:
@@ -146,6 +148,7 @@ class MetadataCustomControl(object):
                 cmds.error(str(ex))
 
 
+    @mayaUsdUtils.setUndoLabel(getMayaUsdLibString('kLabelToggleActiveUndo'))
     def _onActiveChanged(self, value):
         with mayaUsdLib.UsdUndoBlock():
             try:
@@ -156,6 +159,7 @@ class MetadataCustomControl(object):
                 cmds.checkBoxGrp(self.active, edit=True, value1=self.prim.IsActive())
                 cmds.error(str(ex))
 
+    @mayaUsdUtils.setUndoLabel(getMayaUsdLibString('kLabelToggleInstanceableUndo'))
     def _onInstanceableChanged(self, value):
         with mayaUsdLib.UsdUndoBlock():
             try:

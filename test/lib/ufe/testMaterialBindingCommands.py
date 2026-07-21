@@ -187,6 +187,22 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
             RuntimeError,
             usdUfe.BindMaterialCommand, self.matPathStr, self.mat2PathStr, '')
 
+    def testBindMaterialCommandRestriction(self):
+        '''
+        Binding a material should fail when there is already a binding
+        opinion authored in a stronger layer (the session layer) than the
+        current edit target (the root layer).
+        '''
+        self.stage.SetEditTarget(self.stage.GetSessionLayer())
+        sessionBindCmd = usdUfe.BindMaterialCommand(self.aPathStr, self.mat1PathStr, '')
+        sessionBindCmd.execute()
+        self.verifyBinding(self.aPrim, self.allPurpose, self.mat1PathStr)
+
+        self.stage.SetEditTarget(self.stage.GetRootLayer())
+        cmd = usdUfe.BindMaterialCommand(self.aPathStr, self.mat2PathStr, '')
+        with self.assertRaises(RuntimeError):
+            cmd.execute()
+
     #####################################################################
     # UnbindMaterialCommand
 
@@ -240,6 +256,22 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
         badPathStr = self.aPathStr + '_NoSuchPrim'
         self.assertRaises(RuntimeError, usdUfe.UnbindMaterialCommand, badPathStr, '')
         self.assertRaises(RuntimeError, usdUfe.UnbindMaterialCommand, badPathStr, True)
+
+    def testUnbindMaterialCommandRestriction(self):
+        '''
+        Unbinding a material should fail when there is already a binding
+        opinion authored in a stronger layer (the session layer) than the
+        current edit target (the root layer).
+        '''
+        self.stage.SetEditTarget(self.stage.GetSessionLayer())
+        sessionBindCmd = usdUfe.BindMaterialCommand(self.aPathStr, self.mat1PathStr, '')
+        sessionBindCmd.execute()
+        self.verifyBinding(self.aPrim, self.allPurpose, self.mat1PathStr)
+
+        self.stage.SetEditTarget(self.stage.GetRootLayer())
+        cmd = usdUfe.UnbindMaterialCommand(self.aPathStr, '')
+        with self.assertRaises(RuntimeError):
+            cmd.execute()
 
     #####################################################################
     # SetMaterialBindingStrengthCommand
@@ -342,6 +374,26 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
             RuntimeError,
             usdUfe.SetMaterialBindingStrengthCommand,
             badPathStr, UsdShade.Tokens.strongerThanDescendants, True)
+
+    def testSetMaterialBindingStrengthRestriction(self):
+        '''
+        Setting the binding strength should fail when there is already a
+        strength opinion authored in a stronger layer (the session layer)
+        than the current edit target (the root layer).
+        '''
+        self.stage.SetEditTarget(self.stage.GetSessionLayer())
+        sessionBindCmd = usdUfe.BindMaterialCommand(self.aPathStr, self.mat1PathStr, '')
+        sessionBindCmd.execute()
+
+        directRel = self._directBinding(self.aPrim, self.allPurpose).GetBindingRel()
+        UsdShade.MaterialBindingAPI.SetMaterialBindingStrength(
+            directRel, UsdShade.Tokens.strongerThanDescendants)
+
+        self.stage.SetEditTarget(self.stage.GetRootLayer())
+        cmd = usdUfe.SetMaterialBindingStrengthCommand(
+            self.aPathStr, UsdShade.Tokens.strongerThanDescendants, '')
+        with self.assertRaises(RuntimeError):
+            cmd.execute()
 
 
 if __name__ == '__main__':
