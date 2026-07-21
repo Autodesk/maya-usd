@@ -18,6 +18,9 @@
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/Utils.h>
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -186,6 +189,22 @@ bool isDefPrim(const Ufe::SceneItem::Ptr& sceneItem)
 }
 #endif
 
+void enforceMaterialBindingEditRestriction(const PXR_NS::UsdProperty& property)
+{
+    UsdUfe::enforceAttributeEditAllowed(property);
+}
+
+void enforceMaterialStrengthEditRestriction(const PXR_NS::UsdProperty& property)
+{
+    PXR_NS::UsdPrim prim = property.GetPrim();
+
+    std::string errMsg;
+    if (!UsdUfe::isPropertyMetadataEditAllowed(
+            prim, property.GetName(), UsdShadeTokens->bindMaterialAs, TfToken(), &errMsg)) {
+        throw std::runtime_error(errMsg);
+    }
+}
+
 } // namespace
 
 bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
@@ -241,10 +260,14 @@ void BindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
 void BindMaterialUndoableCommand::execute()
 {
     // All validations were done in the CTOR: proceed.
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
 
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
-
-    auto prim = ufePathToPrim(_primPath);
 
     if (auto subset = UsdGeomSubset(prim)) {
         subset.GetFamilyNameAttr().Set(UsdShadeTokens->materialBind);
@@ -256,6 +279,8 @@ void BindMaterialUndoableCommand::execute()
     const TfToken         strength = directRel
         ? UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(directRel)
         : UsdShadeTokens->fallbackStrength;
+
+    enforceMaterialBindingEditRestriction(directRel);
 
     UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
     bindingAPI.Bind(material, strength, _purpose);
@@ -303,24 +328,47 @@ void UnbindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
 
 void UnbindMaterialUndoableCommand::execute()
 {
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
+
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
-    auto prim = ufePathToPrim(_primPath);
     auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
     if (!bindingAPI) {
         return;
     }
 
-    // Note: UnbindAllBindings() will also unbind collection-based bindings.
-    //       We may need to revisit if that is desired for this command or not.
+    std::vector<TfToken> purposes;
+    if (_unassignAll) {
+        purposes.push_back(UsdShadeTokens->allPurpose);
+        purposes.push_back(UsdShadeTokens->preview);
+        purposes.push_back(UsdShadeTokens->full);
+    } else {
+        purposes.push_back(_purpose);
+    }
+
+    // Enforce editing restrictions before doing any work.
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship directRel = bindingAPI.GetDirectBindingRel(purpose);
+        if (!directRel)
+            continue;
+        enforceMaterialBindingEditRestriction(directRel);
+    }
+
+    // Note: UnbindDirectBinding() only unbind direct bindings.
+    //       Collection-based bindings are not affected.
     //
-    //       In contrast, UnbindDirectBinding() will only unbind direct bindings.
     //       We currently only manage direct bindings, so we may want to revisit
     //       this if we add collection-based bindings support.
-    if (_unassignAll) {
-        bindingAPI.UnbindAllBindings();
-    } else {
-        bindingAPI.UnbindDirectBinding(_purpose);
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship directRel = bindingAPI.GetDirectBindingRel(purpose);
+        if (!directRel)
+            continue;
+        bindingAPI.UnbindDirectBinding(purpose);
     }
 }
 
@@ -367,9 +415,15 @@ void SetMaterialBindingStrengthCommand::redo() { _undoableItem.redo(); }
 
 void SetMaterialBindingStrengthCommand::execute()
 {
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
+
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
-    auto prim = ufePathToPrim(_primPath);
     auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
     if (!bindingAPI) {
         return;
@@ -382,6 +436,14 @@ void SetMaterialBindingStrengthCommand::execute()
         purposes.push_back(UsdShadeTokens->full);
     } else {
         purposes.push_back(_purpose);
+    }
+
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship directRel = bindingAPI.GetDirectBindingRel(purpose);
+        if (!directRel)
+            continue;
+
+        enforceMaterialStrengthEditRestriction(directRel);
     }
 
     for (const TfToken& purpose : purposes) {
