@@ -1890,8 +1890,24 @@ VtDictionary UsdMayaUtil::GetDictionaryFromArgDatabase(
             double val = 0.0;
             argData.getFlagArgument(key.c_str(), 0, val);
             args[key] = val;
+        } else if (guideValue.IsHolding<std::vector<double>>()) {
+            // Multi-use flag with a single double argument per use, e.g. -frameSample.
+            unsigned int count = argData.numberOfFlagUses(key.c_str());
+            if (!TF_VERIFY(count > 0)) {
+                // There should be at least one use if isFlagSet() = true.
+                continue;
+            }
+
+            std::vector<double> val;
+            val.reserve(count);
+            for (unsigned int i = 0; i < count; ++i) {
+                MArgList argList;
+                argData.getFlagArgumentList(key.c_str(), i, argList);
+                val.push_back(argList.asDouble(0));
+            }
+            args[key] = val;
         } else if (guideValue.IsHolding<std::vector<VtValue>>()) {
-            unsigned int count = argData.numberOfFlagUses(entry.first.c_str());
+            unsigned int count = argData.numberOfFlagUses(key.c_str());
             if (!TF_VERIFY(count > 0)) {
                 // There should be at least one use if isFlagSet() = true.
                 continue;
