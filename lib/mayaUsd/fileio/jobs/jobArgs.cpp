@@ -1047,7 +1047,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
                     userArgVals.emplace_back(filteredType);
                 }
                 userArgs[UsdMayaJobExportArgsTokens->filterTypes] = userArgVals;
-            } else if (argName == "frameSample") {
+            } else if ((argName == "frameSample") || (argName == "extraTimes")) {
                 std::vector<double> samples;
                 MStringArray        samplesStrings;
                 argValue.split(' ', samplesStrings);
@@ -1144,7 +1144,12 @@ void UsdMayaJobExportArgs::GetDictionaryTimeSamples(
         timeInterval = GfInterval();
     }
 
-    timeSamples = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
+    const std::vector<double> extraTimes = exportAnimation
+        ? extractVector<double>(userArgs, UsdMayaJobExportArgsTokens->extraTimes)
+        : std::vector<double>();
+
+    timeSamples
+        = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride, extraTimes);
 }
 
 /* static */
@@ -1161,6 +1166,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->endTime] = 1.0;
         d[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
         d[UsdMayaJobExportArgsTokens->frameSample] = std::vector<double>();
+        d[UsdMayaJobExportArgsTokens->extraTimes] = std::vector<double>();
         d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = std::vector<VtValue>();
@@ -1279,6 +1285,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->endTime] = _double;
         d[UsdMayaJobExportArgsTokens->frameStride] = _double;
         d[UsdMayaJobExportArgsTokens->frameSample] = _doubleVector;
+        d[UsdMayaJobExportArgsTokens->extraTimes] = _doubleVector;
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
         d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = _stringPairVector;
