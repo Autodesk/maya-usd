@@ -115,8 +115,9 @@ const int kMatteDebugMode = 0;
 
 std::unordered_map<std::string, MHWRender::MTexture*> gTextureCache;
 // Plates are loaded per resolved frame (image planes use frame extension) as
-// linear float (~4 bytes/channel), so cap the cache to bound memory; cleared
-// wholesale when exceeded.
+// linear float (~4 bytes/channel, ~4x an 8-bit plate), so keep the cache small
+// to bound GPU memory; cleared wholesale when exceeded. Playback moves forward,
+// so extra cached frames rarely pay off. Drop to 2 or 1 for the leanest footprint.
 const size_t kMaxCachedPlates = 4;
 
 // Vertex: transform holdout geometry by mvp (same convention as the depth pass).
