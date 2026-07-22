@@ -13,6 +13,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportDefaultPrim.py
     testUsdExportDisplayColor.py
     testUsdExportEulerFilter.py
+    testUsdExportExtraFrames.py
     testUsdExportFileFormat.py
     testUsdExportFilterTypes.py
     testUsdExportFrameOffset.py
