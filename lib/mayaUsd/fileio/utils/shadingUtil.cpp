@@ -36,7 +36,7 @@
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <regex>
 #include <string>
@@ -266,8 +266,8 @@ void UsdMayaShadingUtil::ResolveUsdTextureFileName(
     }
 
     if (makeAbsolute) {
-        std::error_code       ec;
-        ghc::filesystem::path absolutePath = ghc::filesystem::absolute(fileTextureName, ec);
+        std::error_code      ec;
+        fs::filesystem::path absolutePath = fs::filesystem::absolute(fileTextureName, ec);
         if (!ec && !absolutePath.empty()) {
             fileTextureName = absolutePath.generic_string();
         }
@@ -276,11 +276,11 @@ void UsdMayaShadingUtil::ResolveUsdTextureFileName(
         //       extension and don't make the path relative if it is an extension-package.
         TfToken fileExt(TfGetExtension(usdFileName));
         if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-            ghc::filesystem::path usdDir(usdFileName);
+            fs::filesystem::path usdDir(usdFileName);
             usdDir = usdDir.parent_path();
-            std::error_code       ec;
-            ghc::filesystem::path relativePath
-                = ghc::filesystem::relative(fileTextureName, usdDir, ec);
+            std::error_code      ec;
+            fs::filesystem::path relativePath
+                = fs::filesystem::relative(fileTextureName, usdDir, ec);
             if (!ec && !relativePath.empty()) {
                 fileTextureName = relativePath.generic_string();
             }

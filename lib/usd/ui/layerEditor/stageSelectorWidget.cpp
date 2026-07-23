@@ -345,6 +345,9 @@ void StageSelectorWidget::selectionChanged()
     if (!ufeGlobalSelection)
         return;
 
+    std::vector<SessionState::StageEntry> allStages;
+    bool                                  allStagesFilled = false;
+
     // We will set the currently selected stage to be the stage of the first item
     // that is a USD item. So if multiple stages are selected, the first one wins.
     const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
@@ -358,9 +361,14 @@ void StageSelectorWidget::selectionChanged()
             }
         }
 
+        if (!allStagesFilled) {
+            allStages = _sessionState->allStages();
+            allStagesFilled = true;
+        }
+
         MFnDagNode        dagNode(proxyShapePtr->thisMObject());
         const std::string id = dagNode.uuid().asString().asChar();
-        const int         index = getEntryIndexById(id, _sessionState->allStages());
+        const int         index = getEntryIndexById(id, allStages);
         if (index == -1)
             continue;
 

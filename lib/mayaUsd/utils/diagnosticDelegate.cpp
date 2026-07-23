@@ -24,7 +24,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -263,7 +263,7 @@ private:
                 TfDiagnosticMgr::GetCodeName(item->GetDiagnosticCode()).c_str(),
                 item->GetContext().GetFunction(),
                 item->GetContext().GetLine(),
-                ghc::filesystem::path(item->GetContext().GetFile())
+                fs::filesystem::path(item->GetContext().GetFile())
                     .relative_path()
                     .string()
                     .c_str());

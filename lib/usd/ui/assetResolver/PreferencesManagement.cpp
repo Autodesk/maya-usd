@@ -15,8 +15,11 @@
 //
 #include "PreferencesManagement.h"
 
+#include "AssetResolverApplicationHost.h"
 #include "AssetResolverUtils.h"
-#include "PreferencesApplicationHost.h"
+
+#include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/stringUtils.h>
 
@@ -24,8 +27,8 @@
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
-#include <AssetResolverPreferences/AssetResolverSettings.h>
-#include <AssetResolverPreferences/AssetResolverSettingsManagement.h>
+#include <AssetResolverExtensions/Settings/AssetResolverSettings.h>
+#include <AssetResolverExtensions/Settings/AssetResolverSettingsManagement.h>
 
 #include <algorithm>
 
@@ -33,11 +36,16 @@ namespace MAYAUSD_NS_DEF {
 namespace PreferencesManagement {
 
 // Option variable names
-static const MString OPT_VAR_USE_PROJECT_TOKENS = "mayaUsd_AdskAssetResolverIncludeMayaToken";
-static const MString OPT_VAR_MAPPING_FILE = "mayaUsd_AdskAssetResolverMappingFile";
-static const MString OPT_VAR_USER_SEARCH_PATHS = "mayaUsd_AdskAssetResolverUserSearchPaths";
-static const MString OPT_VAR_USER_PATHS_FIRST = "mayaUsd_AdskAssetResolverUserPathsFirst";
-static const MString OPT_VAR_USER_PATHS_ONLY = "mayaUsd_AdskAssetResolverUserPathsOnly";
+static const MString OPT_VAR_USE_PROJECT_TOKENS
+    = UsdMayaUtil::convert(MayaUsdOptionVars->IncludeMayaTokenInAR);
+static const MString OPT_VAR_MAPPING_FILE
+    = UsdMayaUtil::convert(MayaUsdOptionVars->AdskAssetResolverMappingFile);
+static const MString OPT_VAR_USER_SEARCH_PATHS
+    = UsdMayaUtil::convert(MayaUsdOptionVars->AdskAssetResolverUserSearchPaths);
+static const MString OPT_VAR_USER_PATHS_FIRST
+    = UsdMayaUtil::convert(MayaUsdOptionVars->AdskAssetResolverUserPathsFirst);
+static const MString OPT_VAR_USER_PATHS_ONLY
+    = UsdMayaUtil::convert(MayaUsdOptionVars->AdskAssetResolverUserPathsOnly);
 
 pxr::VtDictionary LoadUsdPreferences()
 {
@@ -90,7 +98,7 @@ void SaveUsdPreferences(const Adsk::AssetResolverSettings& options)
 void InitializeUsdPreferences()
 {
     // Add ApplicationHost for the USD Preferences dialog
-    PreferencesApplicationHost::CreateInstance(MQtUtil::mainWindow());
+    AssetResolverApplicationHost::CreateInstance(MQtUtil::mainWindow());
 
     // Load USD Preference options to ensure the Adsk Asset Resolver works as configured
     Adsk::AssetResolverSettings::GetInstance().SetSettings(LoadUsdPreferences());

@@ -101,21 +101,23 @@ public:
 protected:
     std::string proxyShapePath();
 
-    std::string executeMel(const std::string& commandString);
-    void        executePython(const std::string& commandString);
+    std::string executeMel(const std::string& commandString, bool undoable = true);
+    void        executePython(const std::string& commandString, bool undoable = true);
 
     void executeDelayedCommands() override;
 
     struct DelayedCommand
     {
-        DelayedCommand(const std::string& cmd, bool isP)
+        DelayedCommand(const std::string& cmd, bool isP, bool allowUndo = true)
             : command(cmd)
             , isPython(isP)
+            , isUndoable(allowUndo)
         {
         }
 
         std::string command;
         bool        isPython { false };
+        bool        isUndoable { true };
     };
 
     std::vector<DelayedCommand> _delayedCommands;

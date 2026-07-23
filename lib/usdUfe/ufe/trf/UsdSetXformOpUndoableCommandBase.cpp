@@ -39,6 +39,7 @@ UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
     , _canUpdateValue(true)
     , _opCreated(false)
 {
+    // TfDebug::Enable(USDUFE_UNDOCMD);
 }
 
 UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
@@ -50,7 +51,7 @@ UsdSetXformOpUndoableCommandBase::UsdSetXformOpUndoableCommandBase(
 
 void UsdSetXformOpUndoableCommandBase::execute()
 {
-    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Executing command\n");
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Executing %s command\n", commandString().c_str());
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
@@ -71,12 +72,22 @@ void UsdSetXformOpUndoableCommandBase::undo()
     if (!_isPrepared)
         return;
 
-    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Undoing command\n");
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Undoing %s command\n", commandString().c_str());
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    _valueUndo.undo();
-    _opCreationUndo.undo();
+    {
+        // Restore the initial value.
+        //
+        // Note: the command does not use a UsdUndoBlock when setting values, so we
+        //        must manually tell the edit-forwarding do do its work, but only
+        //        for the value setting, not for the op creation/removal, which use
+        //        an UsdUndoBlock.
+        NoUsdUndoBlockGuard guard(true);
+        setValue(_initialOpValue, _writeTime);
+    }
+
+    removeOpIfNeeded();
     _canUpdateValue = false;
 }
 
@@ -92,12 +103,23 @@ void UsdSetXformOpUndoableCommandBase::redo()
         return;
     }
 
-    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Redoing command\n");
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Redoing %s command\n", commandString().c_str());
 
     OperationEditRouterContext editContext(EditRoutingTokens->RouteTransform, getPrim());
 
-    _opCreationUndo.redo();
-    _valueUndo.redo();
+    recreateOpIfNeeded();
+
+    {
+        // Set the new value.
+        //
+        // Note: the command does not use a UsdUndoBlock when setting values, so we
+        //        must manually tell the edit-forwarding do do its work, but only
+        //        for the value setting, not for the op creation/removal, which use
+        //        an UsdUndoBlock.
+        NoUsdUndoBlockGuard guard(true);
+        setValue(_newOpValue, _writeTime);
+    }
+
     _canUpdateValue = true;
 }
 
@@ -130,9 +152,16 @@ void UsdSetXformOpUndoableCommandBase::prepareAndSet(const VtValue& v)
         return;
 
     prepareOpIfNeeded();
-    _valueUndo.undo();
-    UsdUndoBlock undoBlock(&_valueUndo);
-    setValue(v, _writeTime);
+    {
+        // Set the new value.
+        //
+        // Note: the command does not use a UsdUndoBlock when setting values, so we
+        //        must manually tell the edit-forwarding do do its work, but only
+        //        for the value setting, not for the op creation/removal, which use
+        //        an UsdUndoBlock.
+        NoUsdUndoBlockGuard guard(true);
+        setValue(v, _writeTime);
+    }
 }
 
 void UsdSetXformOpUndoableCommandBase::prepareOpIfNeeded()

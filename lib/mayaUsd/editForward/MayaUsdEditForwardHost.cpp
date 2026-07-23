@@ -17,14 +17,19 @@
 
 #include "MayaUsdEditForwardCommand.h"
 
+#include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/util.h>
+
 #include <usdUfe/base/debugCodes.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
-#include <usdUfe/ufe/trf/Utils.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoManager.h>
 
 #include <maya/MGlobal.h>
 #include <ufe/undoableCommandMgr.h>
+
+#include <AdskUsdEditForward/Record.h>
 
 namespace {
 
@@ -36,15 +41,36 @@ bool forwardingOpenedUndoChunk = false;
 
 } // namespace
 
+MayaUsdEditForwardHost::MayaUsdEditForwardHost()
+{
+    const MString optionVar
+        = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding);
+    if (MGlobal::optionVarExists(optionVar)) {
+        _wantsEcho = MGlobal::optionVarIntValue(optionVar) != 0;
+    }
+}
+
 void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool immediate)
 {
+    // If requested to be run immediately, likely an explicit request to forward edits,
+    // we can just create an undoable command and run it (no need to consider the UndoBlock
+    // context etc. below, that is only relevant when reacting to changes in the scene).
+    if (immediate) {
+        if (callback) {
+            auto cmd = MayaUsd::MayaUsdEditForwardCommand::create(callback);
+            Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
+        }
+        return;
+    }
+
     // If we are not inside a USD undoable command, do not forward. We would not know how to.
     // This could be a script editing USD data, or an interactive edit (slider drag from
     // attribute editor).
     static MayaUsd::MayaUsdEditForwardCommand::Callbacks callbacks;
     const bool forwardEditsWithoutUsdUndoBlock = UsdUfe::NoUsdUndoBlockGuard::wantsForwarding();
     if (!forwardEditsWithoutUsdUndoBlock && !IsInUsdUndoBlock()) {
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "No forwarding: not in set command and not in undo block\n");
+        TF_DEBUG_INFO_MSG(
+            USDUFE_UNDOCMD, "No forwarding: not in set command and not in undo block\n");
         return;
     }
 
@@ -58,7 +84,7 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
     // before it gets added to the stack.
     if (IsInUsdUndoBlock()) {
         if (!forwardingOpenedUndoChunk) {
-            TF_DEBUG_MSG(USDUFE_UNDOCMD, "In undo block, opening undo chunk for forwarding\n");
+            TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "In undo block, opening undo chunk for forwarding\n");
             forwardingOpenedUndoChunk = true;
             MGlobal::executeCommand("undoInfo -openChunk");
         }
@@ -74,13 +100,13 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
             idleTaskQueued = false;
 
             if (forwardingOpenedUndoChunk) {
-                TF_DEBUG_MSG(USDUFE_UNDOCMD, "In undo block, forwarding using command\n");
+                TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "In undo block, forwarding using command\n");
                 auto cmd = MayaUsd::MayaUsdEditForwardCommand::create(std::move(callbacksCopy));
                 Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
                 forwardingOpenedUndoChunk = false;
                 MGlobal::executeCommand("undoInfo -closeChunk");
             } else {
-                TF_DEBUG_MSG(USDUFE_UNDOCMD, "No undo block, forwarding directly\n");
+                TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "No undo block, forwarding directly\n");
                 for (const auto& cb : callbacksCopy) {
                     if (cb) {
                         cb();
@@ -90,15 +116,8 @@ void MayaUsdEditForwardHost::ExecuteInCmd(std::function<void()> callback, bool i
         });
     }
 
-    if (immediate) {
-        if (callback) {
-            auto cmd = MayaUsd::MayaUsdEditForwardCommand::create(callback);
-            Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
-        }
-    } else {
-        if (callback) {
-            callbacks.push_back(callback);
-        }
+    if (callback) {
+        callbacks.push_back(callback);
     }
 }
 
@@ -112,7 +131,7 @@ bool MayaUsdEditForwardHost::IsEditForwardingPaused() const
     // does not use a UsdUndoBlock in its execute, set, undo and redo functions.
     // IOW, even undo and redo need to forwarded.
     if (UsdUfe::NoUsdUndoBlockGuard::wantsForwarding()) {
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Forwarding is not paused: in transform set()\n");
+        TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Forwarding is not paused: in transform set()\n");
         return false;
     }
 
@@ -120,11 +139,11 @@ bool MayaUsdEditForwardHost::IsEditForwardingPaused() const
     // This is because the UsdUndoBlock will correctly restore the data
     // and thus will not need to be forwarded.
     if (MGlobal::isUndoing() || MGlobal::isRedoing()) {
-        TF_DEBUG_MSG(USDUFE_UNDOCMD, "Forwarding is paused: in undo/redo, \n");
+        TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Forwarding is paused: in undo/redo, \n");
         return true;
     }
 
-    TF_DEBUG_MSG(USDUFE_UNDOCMD, "Forwarding is not paused\n");
+    TF_DEBUG_INFO_MSG(USDUFE_UNDOCMD, "Forwarding is not paused\n");
     return false;
 }
 
@@ -133,4 +152,13 @@ void MayaUsdEditForwardHost::PauseEditForwarding(bool pause) { _paused = pause; 
 void MayaUsdEditForwardHost::TrackLayerStates(const pxr::SdfLayerHandle& layer)
 {
     UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
+}
+
+bool MayaUsdEditForwardHost::WantsEcho() const { return _wantsEcho; }
+
+void MayaUsdEditForwardHost::SetWantsEcho(bool echo) { _wantsEcho = echo; }
+
+void MayaUsdEditForwardHost::Echo(const AdskUsdEditForward::Record& record)
+{
+    MGlobal::displayInfo(("[Edit Forwarding] " + record.ToString()).c_str());
 }

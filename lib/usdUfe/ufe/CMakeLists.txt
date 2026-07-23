@@ -37,6 +37,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoDuplicateSelectionCommand.cpp
         UsdUndoInsertChildCommand.cpp
         UsdUndoLongDurationCommand.cpp
+        UsdUndoMaterialCommands.cpp
         UsdUndoPayloadCommand.cpp
         UsdUndoReloadRefCommand.cpp
         UsdUndoRenameCommand.cpp
@@ -64,6 +65,10 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         PRIVATE
             UsdConnections.cpp
             UsdConnectionHandler.cpp
+            UsdMaterial.cpp
+            UsdMaterialHandler.cpp
+            UsdUINodeGraphNode.cpp
+            UsdUINodeGraphNodeHandler.cpp
             UsdShaderAttributeDef.cpp
             UsdShaderAttributeHolder.cpp
             UsdShaderNodeDef.cpp
@@ -110,6 +115,14 @@ if (UFE_CLIPBOARD_SUPPORT)
     )
 endif()
 
+
+if (UFE_MATERIAL_HAS_HASMATERIAL)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_MATERIAL_HAS_HASMATERIAL=1
+    )
+endif()
+
 if (UFE_ATTRIBUTES_GET_ENUMS)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
@@ -142,6 +155,20 @@ if (UFE_HAS_COLOR_MANAGEMENT_HANDLER)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         UFE_HAS_COLOR_MANAGEMENT_HANDLER=1
+    )
+endif()
+
+if (UFE_UINODEGRAPHNODE_HAS_SIZE)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_UINODEGRAPHNODE_HAS_SIZE=1
+    )
+endif()
+
+if (UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR=1
     )
 endif()
 
@@ -180,6 +207,7 @@ set(HEADERS
     UsdUndoDuplicateSelectionCommand.h
     UsdUndoInsertChildCommand.h
     UsdUndoLongDurationCommand.h
+    UsdUndoMaterialCommands.h
     UsdUndoPayloadCommand.h
     UsdUndoReloadRefCommand.h
     UsdUndoRenameCommand.h
@@ -221,6 +249,10 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         UsdConnections.h
         UsdConnectionHandler.h
+        UsdMaterial.h
+        UsdMaterialHandler.h
+        UsdUINodeGraphNode.h
+        UsdUINodeGraphNodeHandler.h
         UsdShaderAttributeDef.h
         UsdShaderAttributeHolder.h
         UsdShaderNodeDef.h

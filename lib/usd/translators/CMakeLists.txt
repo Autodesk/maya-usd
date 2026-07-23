@@ -101,7 +101,6 @@ target_link_libraries(${TARGET_NAME}
         mayaUsd
         mayaUsd_Schemas
         basePxrUsdPreviewSurface
-        ghc_filesystem
 )
 
 # -----------------------------------------------------------------------------

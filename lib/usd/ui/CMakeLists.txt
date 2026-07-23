@@ -73,7 +73,7 @@ target_link_libraries(${PROJECT_NAME}
 		Qt::Gui
 		Qt::Widgets
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_LIBRARY}>
-        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_PREFERENCES_LIBRARY}>
+        $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------

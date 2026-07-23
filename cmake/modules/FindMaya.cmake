@@ -464,6 +464,12 @@ if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230200)
     message(STATUS "Maya has UFE gizmo drawing")
 endif()
 
+set(MAYA_HAS_USD_SETTINGS_NODES FALSE CACHE INTERNAL "usdSettingsNodes")
+if (MAYA_API_VERSION VERSION_GREATER 20270100)
+    set(MAYA_HAS_USD_SETTINGS_NODES TRUE CACHE INTERNAL "usdSettingsNodes")
+    message(STATUS "Maya has USD settings nodes support")
+endif()
+
 set(MAYA_LINUX_BUILT_WITH_CXX11_ABI FALSE CACHE INTERNAL "MayaLinuxBuiltWithCxx11ABI")
 if(IS_LINUX AND MAYA_Foundation_LIBRARY)
     # Determine if Maya (on Linux) was built using the new CXX11 ABI.

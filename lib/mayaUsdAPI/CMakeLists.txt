@@ -44,6 +44,17 @@ set(HEADERS
     utils.h
 )
 
+# Requires UsdSettingsNode, only available on supported Maya versions.
+if(MAYA_HAS_USD_SETTINGS_NODES)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            sceneRenderSettings.cpp
+    )
+    list(APPEND HEADERS
+        sceneRenderSettings.h
+    )
+endif()
+
 if (UFE_CLIPBOARD_SUPPORT)
     target_sources(${PROJECT_NAME}
         PRIVATE

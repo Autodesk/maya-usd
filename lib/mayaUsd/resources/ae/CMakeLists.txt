@@ -32,8 +32,16 @@ foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
         ${_SUBDIR}/imageCustomControl.py
         ${_SUBDIR}/materialCustomControl.py
         ${_SUBDIR}/metadataCustomControl.py
+        ${_SUBDIR}/relationshipCustomControl.py
         ${_SUBDIR}/observers.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
+    )
+
+    install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}/layouts)
+    install(FILES
+        ${_SUBDIR}/layouts/renderSettingsLayout.py
+        ${_SUBDIR}/layouts/shaderLayout.py
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}/layouts
     )
 endforeach()
 

@@ -203,6 +203,11 @@ class testDiagnosticDelegate(unittest.TestCase):
     def testZZZBatching_DelegateRemoved(self):
         """Tests removing the diagnostic delegate when the batch context is
         still open."""
+        # The plugin gets unloaded inside the batch context below; clear the
+        # settings singleton(s) first so the undo queue does not pin the
+        # plugin's data types.
+        fixturesUtils.deleteUsdSettingsSingletons()
+
         self._StartRecording()
         with mayaUsdLib.DiagnosticBatchContext():
             Tf.Warn("this warning won't be lost")

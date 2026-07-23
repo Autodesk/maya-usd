@@ -238,13 +238,22 @@ void MayaCommandHook::lockLayer(
 
 void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLayers /*= false*/)
 {
+    const std::string shapePath = proxyShapePath();
+    if (shapePath.empty())
+        return;
+
+    MObject mobj;
+    if (PXR_NS::UsdMayaUtil::GetMObjectByName(getProxyShapeName(shapePath), mobj)
+        != MStatus::kSuccess)
+        return;
+
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -refreshSystemLock ";
-    cmd += quote(proxyShapePath());
+    cmd += quote(shapePath);
     cmd += " ";
     cmd += std::to_string(refreshSubLayers);
     cmd += quote(usdLayer->GetIdentifier());
-    executeMel(cmd);
+    executeMel(cmd, false);
 }
 
 void MayaCommandHook::stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers)
@@ -310,10 +319,10 @@ bool MayaCommandHook::isProxyShapeSharedStage(const std::string& proxyShapePath)
     return getBooleanAttributeOnProxyShape(proxyShapePath, "shareStage");
 }
 
-std::string MayaCommandHook::executeMel(const std::string& commandString)
+std::string MayaCommandHook::executeMel(const std::string& commandString, bool undoable)
 {
     if (areCommandsDelayed()) {
-        _delayedCommands.push_back({ commandString, false });
+        _delayedCommands.push_back({ commandString, false, undoable });
     } else {
         // executes maya command with display and undo set to true so that it logs
         MStringArray result;
@@ -321,19 +330,19 @@ std::string MayaCommandHook::executeMel(const std::string& commandString)
             MString(commandString.c_str()),
             result,
             /*display*/ true,
-            /*undo*/ true);
+            /*undo*/ undoable);
         if (result.length() > 0)
             return result[0].asChar();
     }
     return "";
 }
 
-void MayaCommandHook::executePython(const std::string& commandString)
+void MayaCommandHook::executePython(const std::string& commandString, bool undoable)
 {
     if (areCommandsDelayed()) {
-        _delayedCommands.push_back({ commandString, true });
+        _delayedCommands.push_back({ commandString, true, undoable });
     } else {
-        MGlobal::executePythonCommand(commandString.c_str());
+        MGlobal::executePythonCommand(commandString.c_str(), /*display*/ false, undoable);
     }
 }
 
@@ -349,9 +358,9 @@ void MayaCommandHook::executeDelayedCommands()
 
     for (const auto& cmd : cmds) {
         if (cmd.isPython) {
-            executePython(cmd.command);
+            executePython(cmd.command, cmd.isUndoable);
         } else {
-            executeMel(cmd.command);
+            executeMel(cmd.command, cmd.isUndoable);
         }
     }
 }

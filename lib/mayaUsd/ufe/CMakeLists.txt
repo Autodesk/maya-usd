@@ -3,6 +3,8 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        GatewayHierarchy.cpp
+        GatewayHierarchyHandler.cpp
         Global.cpp
         MayaStagesSubject.cpp
         MayaUsdContextOps.cpp
@@ -15,12 +17,9 @@ target_sources(${PROJECT_NAME}
         MayaUsdUndoRenameCommand.cpp
         ProxyShapeContextOpsHandler.cpp
         ProxyShapeHandler.cpp
-        ProxyShapeHierarchy.cpp
-        ProxyShapeHierarchyHandler.cpp
         UsdStageMap.cpp
         UsdUIUfeObserver.cpp
         UsdUndoDuplicateCommand.cpp
-        UsdUndoMaterialCommands.cpp
         Utils.cpp
         moduleDeps.cpp
 )
@@ -72,26 +71,6 @@ if (UFE_LIGHTS2_SUPPORT)
     )
 endif()
 
-if (UFE_MATERIALS_SUPPORT)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            UsdMaterial.cpp
-            UsdMaterialHandler.cpp
-    )
-
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_MATERIALS_SUPPORT=1
-    )
-
-    if (UFE_MATERIAL_HAS_HASMATERIAL)
-        target_compile_definitions(${PROJECT_NAME}
-        PRIVATE
-            UFE_MATERIAL_HAS_HASMATERIAL=1
-        )
-    endif()
-endif()
-
 if (UFE_SCENE_SEGMENT_SUPPORT)
     target_sources(${PROJECT_NAME}
     PRIVATE
@@ -101,20 +80,6 @@ if (UFE_SCENE_SEGMENT_SUPPORT)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         UFE_SCENE_SEGMENT_SUPPORT=1
-    )
-endif()
-
-if (UFE_UINODEGRAPHNODE_HAS_SIZE)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_UINODEGRAPHNODE_HAS_SIZE=1
-    )
-endif()
-
-if (UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        UFE_UINODEGRAPHNODE_HAS_DISPLAYCOLOR=1
     )
 endif()
 
@@ -206,13 +171,13 @@ endif()
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            UsdUINodeGraphNode.cpp
-            UsdUINodeGraphNodeHandler.cpp
             UsdUndoCreateStageWithNewLayerCommand.cpp
     )
 endif()
 
 set(HEADERS
+    GatewayHierarchy.h
+    GatewayHierarchyHandler.h
     Global.h
     MayaStagesSubject.h
     MayaUsdContextOps.h
@@ -225,12 +190,9 @@ set(HEADERS
     MayaUsdUndoRenameCommand.h
     ProxyShapeContextOpsHandler.h
     ProxyShapeHandler.h
-    ProxyShapeHierarchy.h
-    ProxyShapeHierarchyHandler.h
     UsdStageMap.h
     UsdUIUfeObserver.h
     UsdUndoDuplicateCommand.h
-    UsdUndoMaterialCommands.h
     Utils.h
 )
 
@@ -260,13 +222,6 @@ if (UFE_LIGHTS2_SUPPORT)
     list(APPEND HEADERS
         UsdLight2.h
         UsdLight2Handler.h
-    )
-endif()
-
-if (UFE_MATERIALS_SUPPORT)
-    list(APPEND HEADERS
-        UsdMaterial.h
-        UsdMaterialHandler.h
     )
 endif()
 
@@ -304,8 +259,6 @@ endif()
        
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     list(APPEND HEADERS
-        UsdUINodeGraphNode.h
-        UsdUINodeGraphNodeHandler.h
         UsdUndoCreateStageWithNewLayerCommand.h
     )
 endif()

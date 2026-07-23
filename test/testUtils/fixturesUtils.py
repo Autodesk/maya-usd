@@ -73,6 +73,36 @@ def setUpClass(modulePathName, suffix='', initializeStandalone=True,
 
     return testDir
 
+def deleteUsdSettingsSingletons():
+    '''
+    Delete every UsdDefaultSettings singleton in the current scene with undo
+    flushed off, so the undo queue does not hold references to plugin data
+    types. Safe no-op if the type is not registered (e.g. older Maya without
+    UsdSettingsNode support).
+
+    Tests that unload the mayaUsd plugin or save an "empty" Maya scene must
+    call this first; otherwise the locked singleton creates a plugin
+    dependency or pins the type registration.
+    '''
+    try:
+        import maya.cmds as cmds
+        srsNodes = cmds.ls(type='UsdDefaultSettings')
+    except Exception:
+        # Type not registered in this Maya version: nothing to clean up.
+        return
+
+    if not srsNodes:
+        return
+
+    cmds.undoInfo(stateWithoutFlush=False)
+    try:
+        for node in srsNodes:
+            cmds.lockNode(node, lock=False)
+            cmds.delete(node)
+    finally:
+        cmds.undoInfo(stateWithoutFlush=True)
+
+
 def tearDownClass(unloadPlugin=True, pluginName=_defaultPluginName):
     '''
     Test class teardown.
@@ -87,6 +117,7 @@ def tearDownClass(unloadPlugin=True, pluginName=_defaultPluginName):
     
     if unloadPlugin:
         import maya.cmds as cmds
+        deleteUsdSettingsSingletons()
         cmds.unloadPlugin(pluginName, force=True)
 
     # Exit into the main test directory

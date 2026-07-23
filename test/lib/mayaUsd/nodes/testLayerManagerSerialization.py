@@ -149,6 +149,21 @@ class testLayerManagerSerialization(unittest.TestCase):
         self.confirmStageHasTestEdits(
             stage, fileBackedSavedStatus, fileBackedSavedStatus, sessionSavedStatus)
 
+    def testCreateNodeAndSave(self):
+        """
+        Test that creating a node and saving the Maya scene does not crash.
+        """
+        cmds.createNode("mayaUsdLayerManager")
+
+        self._currentTestDir = tempfile.mkdtemp(prefix='testSaveWithoutStage')
+        try:
+            self._tempMayaFile = os.path.join(
+                self._currentTestDir, 'EmptySerializationTest.ma')
+            cmds.file(rename=self._tempMayaFile)
+            cmds.file(save=True, force=True, type='mayaAscii')
+        finally:
+            shutil.rmtree(self._currentTestDir)
+
     def testSaveWithoutStage(self):
         '''
         Verify that when saving a Maya scene, if no stage have been created then
@@ -158,6 +173,11 @@ class testLayerManagerSerialization(unittest.TestCase):
         self._tempMayaFile = os.path.join(
             self._currentTestDir, 'EmptySerializationTest.ma')
         cmds.file(new=True, force=True)
+
+        # Drop the settings singleton(s) so they don't create a plugin
+        # dependency in an otherwise empty scene.
+        fixturesUtils.deleteUsdSettingsSingletons()
+
         cmds.file(rename=self._tempMayaFile)
         cmds.file(save=True, force=True, type='mayaAscii')
         cmds.file(new=True, force=True)
@@ -173,7 +193,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         self.copyTestFilesAndMakeEdits()
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
 
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
@@ -196,7 +216,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         self.copyTestFilesAndMakeEdits()
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 1))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 1))
 
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
@@ -219,7 +239,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         '''
         self.copyTestFilesAndMakeEdits()
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 3))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 3))
 
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
@@ -260,7 +280,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         self.confirmStageHasTestEdits(stage, True, not muteRootSubLayer, not muteSessionLayer)
 
         # Save and reopen the maya file.
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', serializedUsdEditsLocation))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, serializedUsdEditsLocation))
 
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
@@ -319,7 +339,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         stage.DefinePrim(newSessionsPrimPath, "xform")
         self.assertTrue(stage.GetPrimAtPath(newSessionsPrimPath).IsValid())
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 2))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
 
         cmds.file(save=True, force=True, type='mayaAscii')
         cmds.file(new=True, force=True)
@@ -351,7 +371,7 @@ class testLayerManagerSerialization(unittest.TestCase):
         stage.DefinePrim(newSessionsPrimPath, "xform")
         self.assertTrue(stage.GetPrimAtPath(newSessionsPrimPath).IsValid())
 
-        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 1))
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 1))
 
         msg = ("Session Layer before: " + stage.GetSessionLayer().identifier)
         stage = None

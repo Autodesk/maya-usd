@@ -109,6 +109,7 @@ protected:
 
     template <class V>
     Ufe::SetVector3dUndoableCommand::Ptr setVector3dCmd(
+        const char*            opName,
         const V&               v,
         const PXR_NS::TfToken& attrName,
         const PXR_NS::TfToken& opSuffix = PXR_NS::TfToken());
@@ -121,7 +122,7 @@ protected:
 
 private:
     Ufe::TranslateUndoableCommand::Ptr
-    pivotCmd(const PXR_NS::TfToken& pvtOpSuffix, double x, double y, double z);
+    pivotCmd(const char* opName, const PXR_NS::TfToken& pvtOpSuffix, double x, double y, double z);
 }; // UsdTransform3dMayaXformStack
 
 //! \brief Factory to create a UsdTransform3dMayaXformStack interface object.

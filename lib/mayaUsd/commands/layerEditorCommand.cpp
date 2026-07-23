@@ -48,7 +48,7 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -227,7 +227,9 @@ public:
             }
 
             layer->InsertSubLayerPath(_subPath, _index);
-            TF_VERIFY(layer->GetSubLayerPaths()[_index] == _subPath);
+            TF_VERIFY(
+                (static_cast<size_t>(_index) < layer->GetSubLayerPaths().size())
+                && layer->GetSubLayerPaths()[_index] == _subPath);
         } else {
             TF_VERIFY(_cmdId == CmdId::kRemove);
             if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths())) {
@@ -466,17 +468,17 @@ public:
             }
 
             // See if the path should be reparented
-            ghc::filesystem::path filePath(_path);
-            bool                  needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_path);
+            fs::filesystem::path filePath(_path);
+            bool                 needsRepathing = !SdfLayer::IsAnonymousLayerIdentifier(_path);
             needsRepathing &= filePath.is_relative();
             needsRepathing &= !layer->GetRealPath().empty();
             needsRepathing &= !newParentLayer->GetRealPath().empty();
 
             // Reparent the path if needed
             if (needsRepathing) {
-                auto oldLayerDir = ghc::filesystem::path(layer->GetRealPath()).remove_filename();
+                auto oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
                 auto newLayerDir
-                    = ghc::filesystem::path(newParentLayer->GetRealPath()).remove_filename();
+                    = fs::filesystem::path(newParentLayer->GetRealPath()).remove_filename();
 
                 std::string absolutePath
                     = (oldLayerDir / filePath).lexically_normal().generic_string();
@@ -825,47 +827,58 @@ public:
         const SdfLayerHandleVector stageLayers = stage->GetLayerStack();
 
         // Sort the selected layers by their strength (strongest first).
-        std::unordered_map<std::string, size_t> layerStrengthMap;
-        layerStrengthMap.reserve(stageLayers.size());
-        for (size_t i = 0; i < stageLayers.size(); ++i)
-            layerStrengthMap[stageLayers[i]->GetIdentifier()] = i;
+        {
+            std::unordered_map<std::string, size_t> layerStrengthMap;
+            layerStrengthMap.reserve(stageLayers.size());
+            for (size_t i = 0; i < stageLayers.size(); ++i)
+                layerStrengthMap[stageLayers[i]->GetIdentifier()] = i;
 
-        std::sort(
-            _layerIdentifiersByStrength.begin(),
-            _layerIdentifiersByStrength.end(),
-            [&layerStrengthMap](const std::string& a, const std::string& b) {
-                const auto itA = layerStrengthMap.find(a);
-                const auto itB = layerStrengthMap.find(b);
-                if (itA == layerStrengthMap.end()) {
-                    TF_WARN("Layer '%s' not found in stage layer stack", a.c_str());
+            std::sort(
+                _layerIdentifiersByStrength.begin(),
+                _layerIdentifiersByStrength.end(),
+                [&layerStrengthMap](const std::string& a, const std::string& b) {
+                    const auto itA = layerStrengthMap.find(a);
+                    const auto itB = layerStrengthMap.find(b);
+                    if (itA == layerStrengthMap.end()) {
+                        TF_WARN("Layer '%s' not found in stage layer stack", a.c_str());
+                        return false;
+                    }
+                    if (itB == layerStrengthMap.end()) {
+                        TF_WARN("Layer '%s' not found in stage layer stack", b.c_str());
+                        return true;
+                    }
+                    return itA->second < itB->second;
+                });
+        }
+
+        // We will analyze locked layers before doing any modification,
+        // report all problem and abort the command if any layer is locked.
+        bool hasProblems = false;
+
+        // Convert the list of layer identifier to a list of layer handles.
+        SdfLayerHandleVector layersByStrength;
+        {
+            layersByStrength.reserve(_layerIdentifiersByStrength.size());
+            for (const auto& layerIdentifier : _layerIdentifiersByStrength) {
+                auto layer = SdfLayer::FindOrOpen(layerIdentifier);
+                if (!layer) {
+                    TF_RUNTIME_ERROR("Cannot find layer: %s", layerIdentifier.c_str());
                     return false;
                 }
-                if (itB == layerStrengthMap.end()) {
-                    TF_WARN("Layer '%s' not found in stage layer stack", b.c_str());
-                    return true;
+                if (!layer->PermissionToEdit()) {
+                    TF_WARN(
+                        "Cannot update layer '%s' because it is locked.",
+                        layer->GetDisplayName().c_str());
+                    hasProblems = true;
                 }
-                return itA->second < itB->second;
-            });
-
-        SdfLayerHandleVector layersByStrength;
-        layersByStrength.reserve(_layerIdentifiersByStrength.size());
-        for (const auto& layerIdentifier : _layerIdentifiersByStrength) {
-            auto layer = SdfLayer::FindOrOpen(layerIdentifier);
-            if (!layer) {
-                TF_RUNTIME_ERROR("Cannot find layer: %s", layerIdentifier.c_str());
-                return false;
+                layersByStrength.push_back(layer);
             }
-            layersByStrength.push_back(layer);
         }
 
         const SdfLayerHandle strongestLayer = layersByStrength[0];
 
-        holdOntoSubLayers(strongestLayer);
-
-        // Keep a hold of references for all selected layers, needed for undo().
-        for (size_t i = 1; i < layersByStrength.size(); ++i)
-            _subLayersRefs.push_back(layersByStrength[i]);
-
+        // Create a map from layer identifier to its parent layer and subLayerPath,
+        // to be used for stitching and removals.
         std::map<std::string, std::pair<SdfLayerHandle, std::string>> parentInfoByLayer;
         for (const auto& potentialParent : stageLayers) {
             const std::vector<std::string>& subLayerPaths = potentialParent->GetSubLayerPaths();
@@ -881,17 +894,44 @@ public:
         // Multiple selected weak layers may share the same parent, so batch removals by parent
         // to avoid calling SetSubLayerPaths more than once per parent layer.
         std::map<std::string, std::vector<std::string>> removalsByParent;
-        for (size_t i = 1; i < layersByStrength.size(); ++i) {
-            const SdfLayerHandle& weakLayer = layersByStrength[i];
-            const std::string     weakLayerId = weakLayer->GetIdentifier();
+        {
+            for (size_t i = 1; i < layersByStrength.size(); ++i) {
+                const SdfLayerHandle& weakLayer = layersByStrength[i];
+                const std::string     weakLayerId = weakLayer->GetIdentifier();
 
-            const auto& it = parentInfoByLayer.find(weakLayerId);
-            if (it != parentInfoByLayer.end()) {
-                removalsByParent[it->second.first->GetIdentifier()].push_back(it->second.second);
-            } else {
-                TF_WARN("Could not find parent for layer: %s", weakLayerId.c_str());
+                const auto& it = parentInfoByLayer.find(weakLayerId);
+                if (it == parentInfoByLayer.end()) {
+                    TF_WARN(
+                        "Could not find parent for layer: %s", weakLayer->GetDisplayName().c_str());
+                    hasProblems = true;
+                    continue;
+                }
+
+                SdfLayerHandle parenttLayer = it->second.first;
+                if (!parenttLayer->PermissionToEdit()) {
+                    TF_WARN(
+                        "Cannot update layer '%s' because its parent '%s' is locked.",
+                        weakLayer->GetDisplayName().c_str(),
+                        parenttLayer->GetDisplayName().c_str());
+                    hasProblems = true;
+                    continue;
+                }
+
+                auto parentLayerId = parenttLayer->GetIdentifier();
+                auto removeLayerPath = it->second.second;
+                removalsByParent[parentLayerId].push_back(removeLayerPath);
             }
         }
+
+        if (hasProblems) {
+            return false;
+        }
+
+        holdOntoSubLayers(strongestLayer);
+
+        // Keep a hold of references for all selected layers, needed for undo().
+        for (size_t i = 1; i < layersByStrength.size(); ++i)
+            _subLayersRefs.push_back(layersByStrength[i]);
 
         UsdUfe::UsdUndoManager::instance().trackLayerStates(strongestLayer);
         for (size_t i = 1; i < layersByStrength.size(); ++i)
@@ -911,7 +951,6 @@ public:
             for (size_t i = 1; i < layersByStrength.size(); ++i) {
                 const SdfLayerHandle& weakLayer = layersByStrength[i];
                 movedSubLayers.push_back(weakLayer->GetSubLayerPaths());
-                weakLayer->SetSubLayerPaths({});
                 UsdUtilsStitchLayers(strongestLayer, weakLayer);
             }
 
@@ -921,6 +960,7 @@ public:
             // preserved.
             auto strongLayerSubLayers = strongestLayer->GetSubLayerPaths();
 
+            // Creates a set of the added subLayers, prevent duplicates.
             std::set<std::string> addedSublayerIds;
             for (const auto path : strongLayerSubLayers) {
                 const auto existingLayer = SdfLayer::FindRelativeToLayer(strongestLayer, path);
@@ -929,6 +969,8 @@ public:
                 }
             }
 
+            // Adds any moved sub layers to the strong layers sub layers to prevent layers from
+            // being lost when the weak layer is deleted.
             for (const auto& subLayerList : movedSubLayers) {
                 for (const auto& subLayerPath : subLayerList) {
                     const auto subLayer
@@ -942,36 +984,31 @@ public:
                 }
             }
 
-            strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
-
-            // Remove any selected weak layers from the strongest layer's sublayer list to prevent
+            // Remove any merged weak layers from the sublayer list before setting, to prevent
             // them from being both stitched (merged) and referenced as subLayers.
-            auto dedupedSubLayers = strongestLayer->GetSubLayerPaths();
-            bool anyRemoved = false;
             for (size_t i = 1; i < layersByStrength.size(); ++i) {
                 const std::string weakLayerId = layersByStrength[i]->GetIdentifier();
-                const auto        it
-                    = std::find(dedupedSubLayers.begin(), dedupedSubLayers.end(), weakLayerId);
-                if (it != dedupedSubLayers.end()) {
-                    dedupedSubLayers.erase(it);
-                    anyRemoved = true;
-                }
+                const auto        it = std::find(
+                    strongLayerSubLayers.begin(), strongLayerSubLayers.end(), weakLayerId);
+                if (it != strongLayerSubLayers.end())
+                    strongLayerSubLayers.erase(it);
             }
-            if (anyRemoved)
-                strongestLayer->SetSubLayerPaths(dedupedSubLayers);
 
+            strongestLayer->SetSubLayerPaths(strongLayerSubLayers);
+
+            // Removes the selected weak layers from their parents.
             for (auto& entry : removalsByParent) {
                 const auto parentLayer = SdfLayer::Find(entry.first);
-                if (parentLayer) {
-                    auto subLayerPaths = parentLayer->GetSubLayerPaths();
-                    for (const auto& pathToRemove : entry.second) {
-                        auto it
-                            = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
-                        if (it != subLayerPaths.end())
-                            subLayerPaths.erase(it);
-                    }
-                    parentLayer->SetSubLayerPaths(subLayerPaths);
+                if (!parentLayer)
+                    continue;
+
+                auto subLayerPaths = parentLayer->GetSubLayerPaths();
+                for (const auto& pathToRemove : entry.second) {
+                    auto it = std::find(subLayerPaths.begin(), subLayerPaths.end(), pathToRemove);
+                    if (it != subLayerPaths.end())
+                        subLayerPaths.erase(it);
                 }
+                parentLayer->SetSubLayerPaths(subLayerPaths);
             }
         }
 

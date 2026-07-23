@@ -51,9 +51,14 @@ public:
     ~MayaSessionState();
 
     // API implementation
-    void                    setStageEntry(StageEntry const& in_entry) override;
-    void                    setAutoHideSessionLayer(bool hide) override;
-    void                    setDisplayLayerContents(bool show) override;
+    void setStageEntry(StageEntry const& in_entry) override;
+    void setAutoHideSessionLayer(bool hide) override;
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    void setEchoEditForwarding(bool echo) override;
+#endif
+    void setDisplayLayerContents(bool show) override;
+    void setDisplayLayerExpandAllValues(bool expand) override;
+
     AbstractCommandHook*    commandHook() override;
     std::vector<StageEntry> allStages() const override;
     // path to default load layer dialogs to

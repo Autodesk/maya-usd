@@ -239,6 +239,17 @@ void UsdUndoRenameCommand::renameHelper(
     // the renamed scene item is a "sibling" of its original name.
     ufeDstItem = createSiblingSceneItem(srcPath, newName);
 
+    // Verify the destination item is valid: the rename could have failed
+    // if there were any issues with the underlying layers.
+    if (!ufeDstItem || !ufeDstItem->prim().IsValid()) {
+        const std::string error = TfStringPrintf(
+            "Failed to rename prim \"%s\" to \"%s\"",
+            srcPath.string().c_str(),
+            dstPath.string().c_str());
+        TF_WARN("%s.", error.c_str());
+        throw std::runtime_error(error);
+    }
+
     // update stage's default prim
     if (ufeSrcItem->prim().GetPath() == defaultPrimPath) {
         stage->SetDefaultPrim(ufeDstItem->prim());
