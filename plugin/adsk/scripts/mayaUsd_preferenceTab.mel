@@ -31,7 +31,7 @@ global proc mayaUsd_PrefSaveMayaSceneFilesChanged()
 	if (`text -exists usdPrefSaveOptions2GBWarning`) {
 		string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
 		string $t = ($saveOption == 2) ? `getMayaUsdString($warningKey)` : "";
-		text -e -label $t usdPrefSaveOptions2GBWarning;
+		text -e -align "left" -label $t usdPrefSaveOptions2GBWarning;
 	}
 	if (`checkBoxGrp -exists usdPrefSaveAskMe`) {
 		int $v = `checkBoxGrp -q -v1 usdPrefSaveAskMe`;
@@ -120,7 +120,8 @@ global proc mayaUsd_PrefUntexturedModeChanged()
 // Add this proc at the end of the file or with the other global procs
 global proc mayaUsd_AssetResolverButtonPressed(string $parent)
 {
-	string $result = `assetResolverDialog -parentWindow $parent`;
+	// Opens the Asset Resolver dialog's settings tab.
+	assetResolverDialog -tab "globalSettings";
 }
 
 global proc mayaUsd_PrefInitOptionVars(int $forceFactoryDefault)
@@ -360,7 +361,7 @@ global proc mayaUsd_PrefUpdate()
 
 		string $warningKey = `mayaUsd_IsComponentCreatorLoaded` ? "kSaveOption2GBWarningComponents" : "kSaveOption2GBWarning";
 		string $t = ($saveOption == 2) ? `getMayaUsdString($warningKey)` : "";
-		text -e -label $t usdPrefSaveOptions2GBWarning;
+		text -e -align "left" -label $t usdPrefSaveOptions2GBWarning;
 	}
 
 	if (`optionVar -exists mayaUsd_SerializedUsdEditsLocationPrompt`) {

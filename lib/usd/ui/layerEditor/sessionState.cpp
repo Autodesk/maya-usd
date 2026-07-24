@@ -23,10 +23,20 @@ void SessionState::setAutoHideSessionLayer(bool hideIt)
     Q_EMIT autoHideSessionLayerSignal(_autoHideSessionLayer);
 }
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+void SessionState::setEchoEditForwarding(bool echo) { _echoEditForwarding = echo; }
+#endif
+
 void SessionState::setDisplayLayerContents(bool showIt)
 {
     _displayLayerContents = showIt;
     Q_EMIT showDisplayLayerContents(showIt);
+}
+
+void SessionState::setDisplayLayerExpandAllValues(bool expand)
+{
+    _displayLayerExpandAllValues = expand;
+    Q_EMIT showDisplayLayerContents(_displayLayerContents);
 }
 
 void SessionState::setStageEntry(StageEntry const& in_entry)

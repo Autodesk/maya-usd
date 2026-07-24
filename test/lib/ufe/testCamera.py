@@ -249,15 +249,15 @@ class CameraTestCase(unittest.TestCase):
         usdAttr = usdCamera.GetAttribute('projection')
         projection = usdAttr.Get()
 
-        self.assertEqual(ufe.Camera.Perspective, ufeCamera.projection())
+        self.assertEqual(ufe.Camera.Projection.Perspective, ufeCamera.projection())
 
         # set the projection offset using UFE
-        ufeCamera.projection(ufe.Camera.Orthographic)
-        self.assertAlmostEqual(ufe.Camera.Orthographic, ufeCamera.projection())
+        ufeCamera.projection(ufe.Camera.Projection.Orthographic)
+        self.assertEqual(ufe.Camera.Projection.Orthographic, ufeCamera.projection())
 
         # set the projection offset using USD
         usdAttr.Set("perspective")
-        self.assertAlmostEqual(ufe.Camera.Perspective, ufeCamera.projection())
+        self.assertEqual(ufe.Camera.Projection.Perspective, ufeCamera.projection())
         
     def _TestRenderable(self, ufeCamera, usdCamera):
         cam = UsdGeom.Imageable(usdCamera)

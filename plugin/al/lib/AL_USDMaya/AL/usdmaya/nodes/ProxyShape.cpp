@@ -64,7 +64,7 @@
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 namespace AL {
 namespace usdmaya {
@@ -1295,7 +1295,7 @@ void ProxyShape::loadStage()
                 }
             }
         } else {
-            ghc::filesystem::path filestringPath(fileString);
+            fs::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
                 fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
                 TF_DEBUG(ALUSDMAYA_TRANSLATORS)

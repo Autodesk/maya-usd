@@ -108,7 +108,7 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 
-#include <ghc/filesystem.hpp>
+#include <ghc/fs_std.hpp>
 
 #include <map>
 #include <string>
@@ -508,7 +508,7 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     numericAttrFn.setCached(true);
     numericAttrFn.setReadable(true);
-    numericAttrFn.setStorable(true);
+    numericAttrFn.setStorable(false);
     numericAttrFn.setHidden(true);
     retValue = addAttribute(recomputeLayersAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -641,7 +641,7 @@ void beforeSaveCallback(void* clientData)
     MPlug filePathRelativePlug = depNode.findPlug(MayaUsdProxyShapeBase::filePathRelativeAttr);
 
     // Make proxy shape's file path relative if needed
-    ghc::filesystem::path filePath(filePathPlug.asString().asChar());
+    fs::filesystem::path filePath(filePathPlug.asString().asChar());
     if (filePath.is_absolute() && filePathRelativePlug.asBool()) {
         auto relativePath
             = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(filePath.generic_string());
@@ -979,7 +979,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     "ProxyShapeBase::reloadStage original USD file path is %s\n",
                     fileString.c_str());
 
-            ghc::filesystem::path filestringPath(fileString);
+            fs::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
                 fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
                 TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
@@ -1819,7 +1819,8 @@ MStatus MayaUsdProxyShapeBase::preEvaluation(
             || evaluationNode.dirtyPlugExists(loadPayloadsAttr)
             || evaluationNode.dirtyPlugExists(shareStageAttr)
             || evaluationNode.dirtyPlugExists(inStageDataAttr)
-            || evaluationNode.dirtyPlugExists(stageCacheIdAttr)) {
+            || evaluationNode.dirtyPlugExists(stageCacheIdAttr)
+            || evaluationNode.dirtyPlugExists(recomputeLayersAttr)) {
             _IncreaseUsdStageVersion();
             MayaUsdProxyStageInvalidateNotice(*this).Send();
         }
@@ -1872,7 +1873,8 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
         plug == outStageDataAttr ||
         // All the plugs that affect outStageDataAttr
         plug == filePathAttr || plug == primPathAttr || plug == loadPayloadsAttr
-        || plug == shareStageAttr || plug == inStageDataAttr || plug == stageCacheIdAttr) {
+        || plug == shareStageAttr || plug == inStageDataAttr || plug == stageCacheIdAttr
+        || plug == recomputeLayersAttr) {
         _IncreaseUsdStageVersion();
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }

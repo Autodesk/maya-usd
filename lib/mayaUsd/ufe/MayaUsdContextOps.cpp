@@ -20,7 +20,6 @@
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/UsdUndoMaterialCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
@@ -31,6 +30,7 @@
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
+#include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoReloadRefCommand.h>
 
@@ -75,6 +75,10 @@ namespace {
 #ifdef WANT_QT_BUILD
 static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
 static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor";
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
+static constexpr char kAssetResolverDialogItem[] = "Asset Resolver Dialog";
+static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor";
+#endif
 #endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -399,7 +403,7 @@ void assignExistingMaterialItems(
 
 inline bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
 {
-    return MayaUsd::ufe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem);
+    return UsdUfe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem);
 }
 
 bool selectionSupportsShading()
@@ -511,6 +515,14 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         // Top-level item - USD Layer editor (for all context op types).
         // Only available when building with Qt enabled.
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
+        // Top-level item - USD Path Editor (Asset Resolver dialog).
+        // Only shown on the stage root (gateway type), since the dialog
+        // operates at the stage / resolver level rather than on a specific prim.
+        if (_isAGatewayType) {
+            items.emplace_back(kAssetResolverDialogItem, kAssetResolverDialogLabel);
+        }
+#endif
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -584,12 +596,12 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                         materialSeparatorsAdded = true;
                     }
                     items.emplace_back(
-                        UnbindMaterialUndoableCommand::commandName,
-                        UnbindMaterialUndoableCommand::commandName);
+                        UsdUfe::UnbindMaterialUndoableCommand::commandName,
+                        UsdUfe::UnbindMaterialUndoableCommand::commandName);
                 }
             }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-            if (UsdUndoAddNewMaterialCommand::CompatiblePrim(_item)) {
+            if (UsdUfe::UsdUndoAddNewMaterialCommand::CompatiblePrim(_item)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
                     materialSeparatorsAdded = true;
@@ -603,7 +615,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         // Add the items from our base class here
         items.insert(items.end(), baseItems.begin(), baseItems.end());
 
-        if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
+        if (itemPath[0] == UsdUfe::BindMaterialUndoableCommand::commandName) {
             if (_item) {
                 auto prim = _item->prim();
                 if (prim) {
@@ -696,7 +708,8 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
         }
 #endif
         items.emplace_back(
-            UnbindMaterialUndoableCommand::commandName, UnbindMaterialUndoableCommand::commandName);
+            UsdUfe::UnbindMaterialUndoableCommand::commandName,
+            UsdUfe::UnbindMaterialUndoableCommand::commandName);
     } // top-level items
     else {
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -743,16 +756,28 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     // When building without Qt there is no LayerEditor
     if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.
-        auto ufePath = ufe::stagePath(prim().GetStage());
-        auto noWorld = ufePath.popHead().string();
-        auto dagPath = UsdMayaUtil::nameToDagPath(noWorld);
-        auto shapePath = dagPath.fullPathName();
+        auto       ufePath = ufe::stagePath(prim().GetStage());
+        const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
+        auto       shapePath = dagPath.fullPathName();
 
         MString script;
         script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
         MGlobal::executeCommand(script);
         return nullptr;
     }
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
+    if (itemPath[0] == kAssetResolverDialogItem) {
+        // Passing the selected stage to the asset resolver dialog
+        auto       ufePath = ufe::stagePath(prim().GetStage());
+        const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
+        auto       shapePath = dagPath.fullPathName();
+        // Open the Asset Resolver dialog (paths tab).
+        MString script;
+        script.format("assetResolverDialog -tab \"paths\" -proxyShape \"^1s\"", shapePath);
+        MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ false);
+        return nullptr;
+    }
+#endif
 #endif
 
     if (itemPath.size() == 2u && itemPath[0] == kUSDReferenceItem) {
@@ -862,8 +887,9 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             script, /* display = */ false, /* undoable = */ true);
     }
 #endif
-    else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
-        return std::make_shared<BindMaterialUndoableCommand>(_item->path(), SdfPath(itemPath[1]));
+    else if (itemPath[0] == UsdUfe::BindMaterialUndoableCommand::commandName) {
+        return std::make_shared<UsdUfe::BindMaterialUndoableCommand>(
+            _item->path(), SdfPath(itemPath[1]));
     } else if (itemPath[0] == kBindMaterialToSelectionItem) {
         std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
         if (auto globalSn = Ufe::GlobalSelection::get()) {
@@ -872,7 +898,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
                     if (!compositeCmd) {
                         compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
                     }
-                    compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
+                    compositeCmd->append(std::make_shared<UsdUfe::BindMaterialUndoableCommand>(
                         selItem->path(), _item->prim().GetPath()));
                 }
             }
@@ -887,19 +913,20 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath[0] == UsdMxUpgradeStageCmd::kCommandString) {
         return UsdMxUpgradeStageCmd::create(path());
 #endif
-    } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
-        return std::make_shared<UnbindMaterialUndoableCommand>(_item->path());
+    } else if (itemPath[0] == UsdUfe::UnbindMaterialUndoableCommand::commandName) {
+        return std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(_item->path());
 #ifdef UFE_V4_FEATURES_AVAILABLE
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
         // In single context item mode, only assign material to the context item.
         return std::make_shared<InsertChildAndSelectCommand>(
-            UsdUndoAssignNewMaterialCommand::create(_item, itemPath[2]));
+            UsdUfe::UsdUndoAssignNewMaterialCommand::create(_item, itemPath[2]));
     } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
         return std::make_shared<InsertChildAndSelectCommand>(
-            UsdUndoAddNewMaterialCommand::create(_item, itemPath[2]));
+            UsdUfe::UsdUndoAddNewMaterialCommand::create(_item, itemPath[2]));
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
         // In single context item mode, only assign material to the context item.
-        return std::make_shared<BindMaterialUndoableCommand>(_item->path(), SdfPath(itemPath[2]));
+        return std::make_shared<UsdUfe::BindMaterialUndoableCommand>(
+            _item->path(), SdfPath(itemPath[2]));
 #endif
     }
     return nullptr;
@@ -936,14 +963,14 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
         // In the bulk edit mode, we only apply the action to the selected
         // items (not adding the item RMB if its outside the selection).
         return std::make_shared<InsertChildAndSelectCommand>(
-            UsdUndoAssignNewMaterialCommand::create(_bulkItems, itemPath[2]));
+            UsdUfe::UsdUndoAssignNewMaterialCommand::create(_bulkItems, itemPath[2]));
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
         for (auto& selItem : _bulkItems) {
             // The BindMaterialUndoableCommand will throw if given a prim type
             // it cannot handle. Don't let any exception escape here.
             try {
                 if (sceneItemSupportsShading(selItem)) {
-                    cmdList.emplace_back(std::make_shared<BindMaterialUndoableCommand>(
+                    cmdList.emplace_back(std::make_shared<UsdUfe::BindMaterialUndoableCommand>(
                         selItem->path(), SdfPath(itemPath[2])));
                 }
             } catch (std::exception&) {
@@ -954,7 +981,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
     }
 #endif
 
-    if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
+    if (itemPath[0] == UsdUfe::UnbindMaterialUndoableCommand::commandName) {
         for (auto& selItem : _bulkItems) {
             // Only execute this menu item on items that have a direct binding relationship.
             auto usdItem = downcast(selItem);
@@ -964,7 +991,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
                     UsdShadeMaterialBindingAPI bindingAPI(prim);
                     auto                       directBinding = bindingAPI.GetDirectBinding();
                     if (directBinding.GetMaterial()) {
-                        auto cmd = std::make_shared<UnbindMaterialUndoableCommand>(selItem->path());
+                        auto cmd = std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(
+                            selItem->path());
                         cmdList.emplace_back(cmd);
                     }
                 }

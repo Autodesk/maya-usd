@@ -1746,12 +1746,19 @@ std::vector<Ufe::Path> PrimUpdaterManager::duplicate(
     }
     // Copy from DG to USD
     else if (srcProxyShape == nullptr && dstProxyShape) {
-        MDagPath dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(Ufe::PathString::string(srcPath));
-        if (!dagPath.isValid()) {
-            return {};
+        const std::string srcName = Ufe::PathString::string(srcPath);
+        MDagPath          dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(srcName);
+        if (dagPath.isValid()) {
+            return duplicateToUsd(dagPath.node(), dstPath, userArgs);
         }
 
-        return duplicateToUsd(dagPath.node(), dstPath, userArgs);
+        // Fallback for DG nodes (e.g. shaders) that have no DAG path.
+        MObject dgNode;
+        if (UsdMayaUtil::GetMObjectByName(srcName, dgNode) == MS::kSuccess && !dgNode.isNull()) {
+            return duplicateToUsd(dgNode, dstPath, userArgs);
+        }
+
+        return {};
     }
 
     // Copy operations to the same data model not supported here.

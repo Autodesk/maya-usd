@@ -19,16 +19,24 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+
+#include <AdskUsdEditForward/Host.h>
+#endif
 
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
+#include <maya/MItDag.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPxNode.h>
 #include <maya/MSceneMessage.h>
@@ -45,8 +53,16 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 MString PROXY_NODE_TYPE = "mayaUsdProxyShapeBase";
-MString AUTO_HIDE_OPTION_VAR = "MayaUSDLayerEditor_AutoHideSessionLayer";
-MString DISPLAY_LAYER_CONTENTS_OPTION_VAR = "MayaUSDLayerEditor_DisplayLayerContents";
+MString AUTO_HIDE_OPTION_VAR
+    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorAutoHideSessionLayer);
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+MString ECHO_EDIT_FORWARDING_OPTION_VAR
+    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorEchoEditForwarding);
+#endif
+MString DISPLAY_LAYER_CONTENTS_OPTION_VAR
+    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorDisplayLayerContents);
+MString DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR
+    = UsdMayaUtil::convert(MayaUsdOptionVars->LayerEditorExpandAllValues);
 } // namespace
 
 namespace UsdLayerEditor {
@@ -57,8 +73,17 @@ MayaSessionState::MayaSessionState()
     if (MGlobal::optionVarExists(AUTO_HIDE_OPTION_VAR)) {
         _autoHideSessionLayer = MGlobal::optionVarIntValue(AUTO_HIDE_OPTION_VAR) != 0;
     }
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    if (MGlobal::optionVarExists(ECHO_EDIT_FORWARDING_OPTION_VAR)) {
+        _echoEditForwarding = MGlobal::optionVarIntValue(ECHO_EDIT_FORWARDING_OPTION_VAR) != 0;
+    }
+#endif
     if (MGlobal::optionVarExists(DISPLAY_LAYER_CONTENTS_OPTION_VAR)) {
         _displayLayerContents = MGlobal::optionVarIntValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR) != 0;
+    }
+    if (MGlobal::optionVarExists(DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR)) {
+        _displayLayerExpandAllValues
+            = MGlobal::optionVarIntValue(DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR) != 0;
     }
 
     registerNotifications();
@@ -124,12 +149,31 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
 std::vector<SessionState::StageEntry> MayaSessionState::allStages() const
 {
     std::vector<StageEntry> stages;
-    MStringArray            shapes;
-    MGlobal::executeCommand(
-        MString("ls -long -type ") + PROXY_NODE_TYPE, shapes, /*display*/ false, /*undo*/ false);
-    StageEntry entry;
-    for (unsigned i = 0; i < shapes.length(); ++i) {
-        if (getStageEntry(&entry, shapes[i])) {
+
+    // Iterate through all shape DAG nodes to find proxy shape nodes
+    MItDag dagIterator(MItDag::kDepthFirst, MFn::kPluginShape);
+    for (; !dagIterator.isDone(); dagIterator.next()) {
+        MObject    mobj = dagIterator.currentItem();
+        MFnDagNode fnDagNode(mobj);
+
+        const PXR_NS::MayaUsdProxyShapeBase* proxyShape
+            = dynamic_cast<const PXR_NS::MayaUsdProxyShapeBase*>(fnDagNode.userNode());
+        if (!proxyShape)
+            continue;
+
+        // Check if this node is a proxy shape by type name
+        MDagPath dagPath;
+        dagIterator.getPath(dagPath);
+
+        // Avoid instances of the same shape by only looking at the first instance (instance number
+        // 0)
+        if (dagPath.instanceNumber() != 0) {
+            continue;
+        }
+
+        MString    shapePath = dagPath.fullPathName();
+        StageEntry entry;
+        if (getStageEntry(&entry, shapePath)) {
             stages.push_back(entry);
         }
     }
@@ -434,11 +478,30 @@ void MayaSessionState::setAutoHideSessionLayer(bool hideIt)
     PARENT_CLASS::setAutoHideSessionLayer(hideIt);
 }
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+void MayaSessionState::setEchoEditForwarding(bool echo)
+{
+    MGlobal::setOptionVarValue(ECHO_EDIT_FORWARDING_OPTION_VAR, echo ? 1 : 0);
+    if (auto host = std::dynamic_pointer_cast<MayaUsdEditForwardHost>(
+            AdskUsdEditForward::Host::GetInstance())) {
+        host->SetWantsEcho(echo);
+    }
+    PARENT_CLASS::setEchoEditForwarding(echo);
+}
+#endif
+
 void MayaSessionState::setDisplayLayerContents(bool showIt)
 {
     int value = showIt ? 1 : 0;
     MGlobal::setOptionVarValue(DISPLAY_LAYER_CONTENTS_OPTION_VAR, value);
     PARENT_CLASS::setDisplayLayerContents(showIt);
+}
+
+void MayaSessionState::setDisplayLayerExpandAllValues(bool expand)
+{
+    int value = expand ? 1 : 0;
+    MGlobal::setOptionVarValue(DISPLAY_LAYER_EXPAND_ALL_VALUES_OPTION_VAR, value);
+    PARENT_CLASS::setDisplayLayerExpandAllValues(expand);
 }
 
 void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const

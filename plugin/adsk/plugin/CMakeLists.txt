@@ -55,6 +55,7 @@ target_compile_definitions(${TARGET_NAME}
 		$<$<BOOL:${Qt_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:WANT_ADSK_USD_ASSET_RESOLVER_BUILD>
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:BOOST_NS=PXR_NS::pxr_boost>
+        $<$<BOOL:${MAYA_HAS_USD_SETTINGS_NODES}>:MAYA_HAS_USD_SETTINGS_NODES>
 )
 
 if(DEFINED MAYAUSD_VERSION)

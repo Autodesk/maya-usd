@@ -29,6 +29,7 @@
 #include "mayaUsdInfoCommand.h"
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/commands/layerEditorWindowCommand.h>
@@ -46,6 +47,7 @@
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -102,6 +104,11 @@
 #define TOSTRING(x)  STRINGIFY(x)
 #else
 #error "MAYAUSD_VERSION is not defined"
+#endif
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <mayaUsd/nodes/usdSceneSettingsManager.h>
+#include <mayaUsd/nodes/usdSettingsNode.h>
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -219,6 +226,31 @@ MStatus initializePlugin(MObject obj)
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // mayaUsdPlugin is the only consumer of UsdSettingsNode / UsdSceneSettingsManager;
+    // register the node type and bring the manager up here, before UFE init runs
+    // (UFE installs the manager's stage observer hook and sweeps live stages).
+    {
+        MStatus settingsStatus = plugin.registerNode(
+            MayaUsd::UsdSettingsNode::typeName,
+            MayaUsd::UsdSettingsNode::typeId,
+            MayaUsd::UsdSettingsNode::creator,
+            MayaUsd::UsdSettingsNode::initialize,
+            MPxNode::kDependNode);
+        // Skip onPluginInitialize() if registerNode failed: the manager would
+        // otherwise try to MDGModifier::createNode() the (un-registered)
+        // UsdSettingsNode type for every registered kind, log an error per kind,
+        // and uninitializePlugin() would target a typeId we never owned.
+        if (settingsStatus == MS::kSuccess) {
+            // kAfterNew does not fire for the default scene at startup, so the
+            // manager handles initial node creation inside onPluginInitialize().
+            MayaUsd::UsdSceneSettingsManager::onPluginInitialize();
+        } else {
+            CHECK_MSTATUS(settingsStatus);
+        }
+    }
+#endif
 
     status = MayaUsd::ufe::initialize();
     if (!status) {
@@ -434,7 +466,7 @@ MStatus initializePlugin(MObject obj)
 
         // Load Maya project tokens to AdskAssetResolver if the preference is enabled
         // This needs to be done after InitializeUsdPreferences()
-        static const MString IncludeMayaTokenInAR = "mayaUsd_AdskAssetResolverIncludeMayaToken";
+        auto IncludeMayaTokenInAR = UsdMayaUtil::convert(MayaUsdOptionVars->IncludeMayaTokenInAR);
         if (MGlobal::optionVarExists(IncludeMayaTokenInAR)
             && MGlobal::optionVarIntValue(IncludeMayaTokenInAR)) {
             MayaUsd::AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver();
@@ -550,6 +582,17 @@ MStatus uninitializePlugin(MObject obj)
     status = MHWRender::MDrawRegistry::deregisterGeometryOverrideCreator(
         MayaUsd::GizmoGeometryOverride::dbClassification, kMayaUsdPlugin_registrantId);
     CHECK_MSTATUS(status);
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // Mirror of the initializePlugin block above: tear the manager down before
+    // the underlying node type is deregistered, so any in-flight callbacks see
+    // a consistent state.
+    {
+        MayaUsd::UsdSceneSettingsManager::onPluginFinalize();
+        MStatus settingsStatus = plugin.deregisterNode(MayaUsd::UsdSettingsNode::typeId);
+        CHECK_MSTATUS(settingsStatus);
+    }
+#endif
 
     status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);

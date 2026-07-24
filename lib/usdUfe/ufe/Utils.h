@@ -568,11 +568,14 @@ bool setComponentVariantSelection(
 //! Validate that an namespace operation can be done on a component prim.
 //! \param prim The prim to validate the operation on.
 //! \param operationName The name of the operation (e.g., "reparent", "delete") for error messages.
+//! \param isDestination If true, the scope root itself is also considered valid (use for reparent
+//!                      destinations, where the scope root is a valid parent).
 //! \throws std::runtime_error if the operation cannot be performed on the prim.
 USDUFE_PUBLIC
 void validateComponentNamespaceOperation(
     const PXR_NS::UsdPrim& prim,
-    const std::string&     operationName);
+    const std::string&     operationName,
+    bool                   isDestination = false);
 
 //! RAII guard to pause/unpause edit forwarding.
 class USDUFE_PUBLIC EditForwardingGuard
@@ -662,6 +665,35 @@ void removeSessionLeftOvers(
 //!       Yes, that means no-filter actually means filter everything out.
 USDUFE_PUBLIC
 PXR_NS::Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childFilter);
+
+//! Guard to set and reset a flag indicating that we are in a command
+//! that does not use a UsdUndoBlock but still wants edit-forwarding.
+class USDUFE_PUBLIC NoUsdUndoBlockGuard
+{
+public:
+    NoUsdUndoBlockGuard(bool noUsdUndoBlock)
+        : _noUsdUndoBlock(noUsdUndoBlock)
+    {
+        if (_noUsdUndoBlock)
+            _getGuardedFlag()++;
+    }
+    ~NoUsdUndoBlockGuard()
+    {
+        if (_noUsdUndoBlock)
+            _getGuardedFlag()--;
+    }
+
+    static bool wantsForwarding() { return _getGuardedFlag() > 0; }
+
+private:
+    static int& _getGuardedFlag()
+    {
+        static int flag = 0;
+        return flag;
+    }
+
+    bool _noUsdUndoBlock;
+};
 
 } // namespace USDUFE_NS_DEF
 

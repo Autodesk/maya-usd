@@ -128,7 +128,9 @@ target_link_libraries(${PROJECT_NAME}
         usdGeom
         usdImaging
         usdShade
+        usdUI
         usdUtils
+        usdMtlx
         vt
         ${UFE_LIBRARY}
 )

@@ -1150,6 +1150,45 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         cmds.undo()
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, weakLayerId)
 
+    def testStitchLayersWithLockedParentLayer(self):
+        """ Test stitching fails when one selected layer is under a locked parent layer """
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerId = rootLayer.identifier
+
+        layer1Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+        layer2Id = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer2")[0]
+        layer3Id = cmds.mayaUsdLayerEditor(layer2Id, edit=True, addAnonymous="Layer3")[0]
+
+        rootLayer.subLayerPaths.clear()
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, layer1Id])
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[1, layer2Id])
+
+        layer1 = Sdf.Layer.Find(layer1Id)
+        layer2 = Sdf.Layer.Find(layer2Id)
+        layer3 = Sdf.Layer.Find(layer3Id)
+
+        with Sdf.ChangeBlock():
+            prim = Sdf.CreatePrimInLayer(layer3, '/Cube')
+            prim.SetInfo('typeName', 'Cube')
+
+        self.assertIsNotNone(layer3.GetPrimAtPath('/Cube'))
+        self.assertIsNone(layer1.GetPrimAtPath('/Cube'))
+
+        cmds.mayaUsdLayerEditor(layer2Id, edit=True, lockLayer=(1, 0, shapePath))
+        self.assertFalse(layer2.permissionToEdit)
+
+
+        with self.assertRaises(RuntimeError):
+            cmds.mayaUsdLayerEditor(
+                rootLayerId, edit=True,
+                stitchLayers=((shapePath, layer1Id), (shapePath, layer3Id))
+            )
+
+        self.assertIsNotNone(layer3.GetPrimAtPath('/Cube'))
+        self.assertIsNone(layer1.GetPrimAtPath('/Cube'))
+
     def testStitchLayersPartialSelection(self):
         """ Test stitching only some layers while leaving others untouched """
 

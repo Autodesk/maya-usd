@@ -278,13 +278,6 @@ if (USD_VERSION VERSION_LESS "0.23.11")
 endif()
 
 #------------------------------------------------------------------------------
-# gulrak filesystem
-#------------------------------------------------------------------------------
-if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
-    include(cmake/gulrak.cmake)
-endif()
-
-#------------------------------------------------------------------------------
 # test
 #------------------------------------------------------------------------------
 if (BUILD_TESTS)
@@ -309,6 +302,7 @@ endif()
 # lib
 #------------------------------------------------------------------------------
 add_subdirectory(lib)
+add_subdirectory(include)
 
 #------------------------------------------------------------------------------
 # tutorials
@@ -351,53 +345,7 @@ else()
     set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
 endif()
 
-
 #------------------------------------------------------------------------------
 # Maya module files
 #------------------------------------------------------------------------------
-if (BUILD_ADSK_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/mayaUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
-    else()
-        configure_file("modules/mayaUSD.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-if (BUILD_HDMAYA)
-    configure_file("modules/mtoh.mod.template" ${PROJECT_BINARY_DIR}/mtoh.mod)
-    install(FILES ${PROJECT_BINARY_DIR}/mtoh.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-if (BUILD_PXR_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/pxrUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
-    else()
-        configure_file("modules/pxrUSD.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/pxrUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-if (BUILD_AL_PLUGIN)
-    if (IS_WINDOWS)
-        configure_file("modules/alUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
-    else()
-        configure_file("modules/alUSD.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
-    endif()
-    install(FILES ${PROJECT_BINARY_DIR}/alUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
-endif()
-
-
-#------------------------------------------------------------------------------
-# Special file for handling boost vs pxr::boost
-#------------------------------------------------------------------------------
-set(TOP_HEADERS
-    cxx17_legacy_support.h
-    pxr_python.h
-)
-
-mayaUsd_promoteHeaderList(HEADERS ${TOP_HEADERS} BASEDIR "NONE")
-
-install(FILES ${TOP_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
-)
+add_subdirectory(modules)
