@@ -238,7 +238,7 @@ MIntArray getMayaFaceVertexAssignmentIds(
 bool isPrimitiveLeftHanded(const UsdGeomMesh& mesh)
 {
     TfToken orientation;
-    if (!mesh.GetOrientationAttr().Get(&orientation)) {
+    if (!mesh.GetOrientationAttr().Get(&orientation, UsdTimeCode::EarliestTime())) {
         return false;
     }
 
@@ -255,7 +255,7 @@ bool assignUVSetPrimvarToMesh(
     const TfToken& primvarName = primvar.GetPrimvarName();
 
     VtVec2fArray uvValues;
-    if (!primvar.Get(&uvValues) || uvValues.empty()) {
+    if (!primvar.Get(&uvValues, UsdTimeCode::EarliestTime()) || uvValues.empty()) {
         TF_WARN(
             "Could not read UV values from primvar '%s' on mesh: %s",
             primvarName.GetText(),
@@ -329,7 +329,7 @@ bool assignUVSetPrimvarToMesh(
     }
 
     VtIntArray assignmentIndices;
-    if (primvar.GetIndices(&assignmentIndices)) {
+    if (primvar.GetIndices(&assignmentIndices, UsdTimeCode::EarliestTime())) {
         if (unauthoredValuesIndex >= 0) {
             // Since the unauthored value was removed above, we need to fix up
             // the assignment indices to replace any index equal to the
@@ -419,7 +419,7 @@ bool assignColorSetPrimvarToMesh(
 
     if (typeName == SdfValueTypeNames->FloatArray) {
         colorRep = MFnMesh::kAlpha;
-        if (!primvar.Get(&alphaArray) || alphaArray.empty()) {
+        if (!primvar.Get(&alphaArray, UsdTimeCode::EarliestTime()) || alphaArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = alphaArray.size();
@@ -427,7 +427,7 @@ bool assignColorSetPrimvarToMesh(
     } else if (
         typeName == SdfValueTypeNames->Float3Array || typeName == SdfValueTypeNames->Color3fArray) {
         colorRep = MFnMesh::kRGB;
-        if (!primvar.Get(&rgbArray) || rgbArray.empty()) {
+        if (!primvar.Get(&rgbArray, UsdTimeCode::EarliestTime()) || rgbArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = rgbArray.size();
@@ -435,7 +435,7 @@ bool assignColorSetPrimvarToMesh(
     } else if (
         typeName == SdfValueTypeNames->Float4Array || typeName == SdfValueTypeNames->Color4fArray) {
         colorRep = MFnMesh::kRGBA;
-        if (!primvar.Get(&rgbaArray) || rgbaArray.empty()) {
+        if (!primvar.Get(&rgbaArray, UsdTimeCode::EarliestTime()) || rgbaArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = rgbaArray.size();
@@ -460,7 +460,7 @@ bool assignColorSetPrimvarToMesh(
 
     VtIntArray assignmentIndices;
     int        unauthoredValuesIndex = -1;
-    if (primvar.GetIndices(&assignmentIndices)) {
+    if (primvar.GetIndices(&assignmentIndices, UsdTimeCode::EarliestTime())) {
         // The primvar IS indexed, so the indices array is what determines the
         // number of color values.
         numValues = assignmentIndices.size();
@@ -613,7 +613,7 @@ bool assignConstantPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn)
     }
 
     VtValue primvarData;
-    primvar.Get(&primvarData);
+    primvar.Get(&primvarData, UsdTimeCode::EarliestTime());
 
     MStatus status { MS::kSuccess };
     MPlug   plug = meshFn.findPlug(
@@ -769,7 +769,7 @@ void UsdMayaMeshReadUtils::assignInvisibleFaces(const UsdGeomMesh& mesh, const M
 
     // Set Holes
     VtIntArray holeIndices;
-    mesh.GetHoleIndicesAttr().Get(&holeIndices); // not animatable
+    mesh.GetHoleIndicesAttr().Get(&holeIndices, UsdTimeCode::EarliestTime()); // not animatable
     if (!holeIndices.empty()) {
         MUintArray mayaHoleIndices;
         mayaHoleIndices.setLength(holeIndices.size());
@@ -813,8 +813,10 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
     // Vert Creasing
     VtIntArray   subdCornerIndices;
     VtFloatArray subdCornerSharpnesses;
-    mesh.GetCornerIndicesAttr().Get(&subdCornerIndices);         // not animatable
-    mesh.GetCornerSharpnessesAttr().Get(&subdCornerSharpnesses); // not animatable
+    mesh.GetCornerIndicesAttr().Get(
+        &subdCornerIndices, UsdTimeCode::EarliestTime()); // not animatable
+    mesh.GetCornerSharpnessesAttr().Get(
+        &subdCornerSharpnesses, UsdTimeCode::EarliestTime()); // not animatable
     if (!subdCornerIndices.empty()) {
         if (subdCornerIndices.size() == subdCornerSharpnesses.size()) {
             statusOK.clear();
@@ -875,9 +877,9 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
     VtIntArray   subdCreaseLengths;
     VtIntArray   subdCreaseIndices;
     VtFloatArray subdCreaseSharpnesses;
-    mesh.GetCreaseLengthsAttr().Get(&subdCreaseLengths);
-    mesh.GetCreaseIndicesAttr().Get(&subdCreaseIndices);
-    mesh.GetCreaseSharpnessesAttr().Get(&subdCreaseSharpnesses);
+    mesh.GetCreaseLengthsAttr().Get(&subdCreaseLengths, UsdTimeCode::EarliestTime());
+    mesh.GetCreaseIndicesAttr().Get(&subdCreaseIndices, UsdTimeCode::EarliestTime());
+    mesh.GetCreaseSharpnessesAttr().Get(&subdCreaseSharpnesses, UsdTimeCode::EarliestTime());
     if (!subdCreaseLengths.empty()) {
         if (subdCreaseLengths.size() == subdCreaseSharpnesses.size()) {
             MUintArray   mayaCreaseEdgeIds;
@@ -1060,7 +1062,7 @@ MStatus UsdMayaMeshReadUtils::getComponentTags(
         // Get the indices out of the subset
         VtIntArray   faceIndices;
         UsdAttribute indicesAttribute = ss.GetIndicesAttr();
-        indicesAttribute.Get(&faceIndices);
+        indicesAttribute.Get(&faceIndices, UsdTimeCode::EarliestTime());
 
         MFnSingleIndexedComponent compFn;
         MObject                   faceComp = compFn.create(MFn::kMeshPolygonComponent, &status);
@@ -1079,7 +1081,7 @@ MStatus UsdMayaMeshReadUtils::getComponentTags(
         JsObject subsetRoundtripData;
 
         TfToken familyName;
-        ss.GetFamilyNameAttr().Get(&familyName);
+        ss.GetFamilyNameAttr().Get(&familyName, UsdTimeCode::EarliestTime());
         if (familyName != UsdMayaGeomSubsetTokens->ComponentTagFamilyName) {
             subsetRoundtripData[ss.GetFamilyNameAttr().GetBaseName()]
                 = JsValue(familyName.GetString());
