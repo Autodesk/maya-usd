@@ -81,6 +81,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportInstances.py
     testUsdImportLight.py
     testUsdImportMayaReference.py
+    testUsdImportAlembicReference.py
     testUsdImportMesh.py
     testUsdImportPointCache.py
     testUsdImportPreviewSurface.py
