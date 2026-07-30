@@ -53,6 +53,7 @@ class HdRenderIndex;
 class HdRprimCollection;
 class UsdImagingDelegate;
 class MayaUsdProxyShapeBase;
+class MayaUsdRenderPassPublisher;
 class HdxTaskController;
 
 /*! \brief  Enumerations for selection status
@@ -313,6 +314,9 @@ private:
             0
         }; //!< Last version of exluded prims used during render index populate
         size_t _usdStageVersion { 0 }; //!< Last version of stage used during render index populate
+        size_t _activeRenderPassVersion {
+            0
+        }; //!< Last version of the active render pass published to the scene index chain
         bool   _drawRenderPurpose {
             false
         }; //!< Should the render delegate draw rprims with the "render" purpose
@@ -332,6 +336,8 @@ private:
         void                         UsdStageUpdated();
         bool                         IsExcludePrimsUpToDate() const;
         void                         ExcludePrimsUpdated();
+        bool                         IsActiveRenderPassUpToDate() const;
+        void                         ActiveRenderPassUpdated();
         void                         UpdatePurpose(
                                     bool* drawRenderPurposeChanged,
                                     bool* drawProxyPurposeChanged,
@@ -355,6 +361,8 @@ private:
                          //!< really need it, but there doesn't seem to be a way to get
                          //!< synchronization running without it)
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
+    std::unique_ptr<MayaUsdRenderPassPublisher>
+        _renderPassPublisher; //!< Feeds the active USD render pass to the filtering scene index
     const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
     std::map<TfToken, uint64_t>         _combinedDisplayStyles;
     bool                                _needTexturedMaterials = false;

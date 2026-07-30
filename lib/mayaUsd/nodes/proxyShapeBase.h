@@ -104,6 +104,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject excludePrimPathsAttr;
     MAYAUSD_CORE_PUBLIC
+    static MObject activeRenderPassAttr;
+    MAYAUSD_CORE_PUBLIC
     static MObject loadPayloadsAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject shareStageAttr;
@@ -226,6 +228,11 @@ public:
     virtual SdfPathVector getExcludePrimPaths() const;
     MAYAUSD_CORE_PUBLIC
     size_t getExcludePrimPathsVersion() const;
+
+    MAYAUSD_CORE_PUBLIC
+    virtual SdfPath getActiveRenderPass() const;
+    MAYAUSD_CORE_PUBLIC
+    size_t getActiveRenderPassVersion() const;
 
     MAYAUSD_CORE_PUBLIC
     int getComplexity() const;
@@ -399,6 +406,9 @@ protected:
     void _IncreaseExcludePrimPathsVersion() { _excludePrimPathsVersion++; }
 
     MAYAUSD_CORE_PUBLIC
+    void _IncreaseActiveRenderPassVersion() { _activeRenderPassVersion++; }
+
+    MAYAUSD_CORE_PUBLIC
     void _IncreaseUsdStageVersion() { _UsdStageVersion++; }
 
     MAYAUSD_CORE_PUBLIC
@@ -445,6 +455,7 @@ private:
 
     SdfPath       _GetPrimPath(MDataBlock dataBlock) const;
     SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
+    SdfPath       _GetActiveRenderPass(MDataBlock dataBlock) const;
     int           _GetComplexity(MDataBlock dataBlock) const;
     UsdTimeCode   _GetTime(MDataBlock dataBlock) const;
 
@@ -468,6 +479,7 @@ private:
 
     std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
     size_t                              _excludePrimPathsVersion { 1 };
+    size_t                              _activeRenderPassVersion { 1 };
     size_t                              _UsdStageVersion { 1 };
 
     // Notification counters:

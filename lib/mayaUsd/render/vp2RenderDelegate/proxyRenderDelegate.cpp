@@ -15,10 +15,12 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include "debugCodes.h"
 #include "drawItem.h"
 #include "material.h"
 #include "mayaPrimCommon.h"
 #include "renderDelegate.h"
+#include "renderPassPublisher.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
@@ -623,6 +625,8 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
 
     _sceneDelegate.reset();
     _taskController.reset();
+    // Holds refs into the render index's scene index chain, so it must go first.
+    _renderPassPublisher.reset();
     _renderIndex.reset();
     _renderDelegate.reset();
 
@@ -688,6 +692,10 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
+
+        // Interpose the render pass filter now, while the scene is still empty:
+        // the scene delegate is not populated until _Populate() later in update().
+        _renderPassPublisher = MayaUsdRenderPassPublisher::Attach(*_renderIndex);
 
         // Sync the _changeVersions so that we don't trigger a needlessly large update them on the
         // first frame.
@@ -884,6 +892,26 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
             "SetRefineLevelFallback");
 
         _sceneDelegate->SetRefineLevelFallback(refineLevel);
+    }
+
+    if (!_proxyShapeData->IsActiveRenderPassUpToDate() && !_renderPassPublisher) {
+        TF_DEBUG(HDVP2_DEBUG_RENDER_PASS)
+            .Msg(
+                "Active render pass changed to <%s> but there is no publisher; ignoring.\n",
+                _proxyShapeData->ProxyShape()->getActiveRenderPass().GetText());
+    }
+
+    if (_renderPassPublisher && !_proxyShapeData->IsActiveRenderPassUpToDate()) {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L1,
+            "PublishActiveRenderPass");
+
+        _renderPassPublisher->Publish(
+            _proxyShapeData->UsdStage(),
+            _proxyShapeData->ProxyShape()->getActiveRenderPass(),
+            _sceneDelegate->GetDelegateID());
+        _proxyShapeData->ActiveRenderPassUpdated();
     }
 }
 
@@ -2326,6 +2354,14 @@ inline bool ProxyRenderDelegate::ProxyShapeData::IsExcludePrimsUpToDate() const
 inline void ProxyRenderDelegate::ProxyShapeData::ExcludePrimsUpdated()
 {
     _excludePrimsVersion = _proxyShape->getExcludePrimPathsVersion();
+}
+inline bool ProxyRenderDelegate::ProxyShapeData::IsActiveRenderPassUpToDate() const
+{
+    return _proxyShape->getActiveRenderPassVersion() == _activeRenderPassVersion;
+}
+inline void ProxyRenderDelegate::ProxyShapeData::ActiveRenderPassUpdated()
+{
+    _activeRenderPassVersion = _proxyShape->getActiveRenderPassVersion();
 }
 inline void ProxyRenderDelegate::ProxyShapeData::UpdatePurpose(
     bool* drawRenderPurposeChanged,

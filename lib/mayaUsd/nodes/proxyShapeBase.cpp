@@ -155,6 +155,7 @@ MObject MayaUsdProxyShapeBase::filePathAttr;
 MObject MayaUsdProxyShapeBase::filePathRelativeAttr;
 MObject MayaUsdProxyShapeBase::primPathAttr;
 MObject MayaUsdProxyShapeBase::excludePrimPathsAttr;
+MObject MayaUsdProxyShapeBase::activeRenderPassAttr;
 MObject MayaUsdProxyShapeBase::loadPayloadsAttr;
 MObject MayaUsdProxyShapeBase::shareStageAttr;
 MObject MayaUsdProxyShapeBase::timeAttr;
@@ -295,6 +296,14 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(excludePrimPathsAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    activeRenderPassAttr = typedAttrFn.create(
+        "activeRenderPass", "arp", MFnData::kString, MObject::kNullObj, &retValue);
+    typedAttrFn.setInternal(true);
+    typedAttrFn.setAffectsAppearance(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(activeRenderPassAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     loadPayloadsAttr
@@ -1830,6 +1839,8 @@ MStatus MayaUsdProxyShapeBase::preEvaluation(
     if (context.isNormal()) {
         if (evaluationNode.dirtyPlugExists(excludePrimPathsAttr)) {
             _IncreaseExcludePrimPathsVersion();
+        } else if (evaluationNode.dirtyPlugExists(activeRenderPassAttr)) {
+            _IncreaseActiveRenderPassVersion();
         } else if (
             evaluationNode.dirtyPlugExists(outStageDataAttr) ||
             // All the plugs that affect outStageDataAttr
@@ -1888,6 +1899,8 @@ MStatus MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray&
 
     if (plug == excludePrimPathsAttr) {
         _IncreaseExcludePrimPathsVersion();
+    } else if (plug == activeRenderPassAttr) {
+        _IncreaseActiveRenderPassVersion();
     } else if (
         plug == outStageDataAttr ||
         // All the plugs that affect outStageDataAttr
@@ -2134,6 +2147,33 @@ SdfPathVector MayaUsdProxyShapeBase::getExcludePrimPaths() const
 size_t MayaUsdProxyShapeBase::getExcludePrimPathsVersion() const
 {
     return _excludePrimPathsVersion;
+}
+
+SdfPath MayaUsdProxyShapeBase::getActiveRenderPass() const
+{
+    return _GetActiveRenderPass(const_cast<MayaUsdProxyShapeBase*>(this)->forceCache());
+}
+
+size_t MayaUsdProxyShapeBase::getActiveRenderPassVersion() const
+{
+    return _activeRenderPassVersion;
+}
+
+SdfPath MayaUsdProxyShapeBase::_GetActiveRenderPass(MDataBlock dataBlock) const
+{
+    MStatus       status = MS::kFailure;
+    const MString passPathStr = dataBlock.inputValue(activeRenderPassAttr, &status).asString();
+    if (!status || passPathStr.length() == 0) {
+        return SdfPath::EmptyPath();
+    }
+
+    const std::string trimmed = TfStringTrim(passPathStr.asChar());
+    if (trimmed.empty() || !SdfPath::IsValidPathString(trimmed)) {
+        return SdfPath::EmptyPath();
+    }
+
+    const SdfPath path(trimmed);
+    return path.IsAbsoluteRootOrPrimPath() ? path : SdfPath::EmptyPath();
 }
 
 SdfPath MayaUsdProxyShapeBase::_GetPrimPath(MDataBlock dataBlock) const

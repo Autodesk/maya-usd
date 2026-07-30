@@ -18,6 +18,8 @@ target_sources(${PROJECT_NAME}
         colorManagementPreferences.cpp
         renderDelegate.cpp
         renderParam.cpp
+        renderPassPublisher.cpp
+        renderPassSceneIndex.cpp
         sampler.cpp
         shader.cpp
         tokens.cpp
