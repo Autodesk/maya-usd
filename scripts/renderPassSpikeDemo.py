@@ -24,14 +24,22 @@ Run inside Maya:
     import renderPassSpikeDemo
     renderPassSpikeDemo.show()
 
-The scene is nine cubes in three groups of three, laid out left to right:
+The scene is twelve cubes in four groups of three, laid out left to right:
 
-    RED (x=-4)        GREEN (x=0)       BLUE (x=+4)
+    RED (x=-4)   GREEN (x=0)   BLUE (x=+4)   SHADED (x=+8)
 
-Each pass below states what should disappear. Because prune and renderVisibility
-look identical on screen, the passes are arranged so that each one leaves a
-different set of groups standing -- if the wrong group vanishes, or nothing
-does, the filter is misbehaving.
+The first three carry only displayColor. SHADED has a real UsdPreviewSurface
+bound, which is what makes it useful: the matte flag colour has to beat a bound
+material, and a prim with no material would not prove that.
+
+Each pass states what should happen. Because prune and renderVisibility look
+identical on screen, the passes are arranged so each leaves a different set of
+groups standing -- if the wrong group vanishes, or nothing does, the filter is
+misbehaving.
+
+For matte, the case that matters is switching *away* from a matte pass: turning
+prims magenta only proves half the path. If they stay magenta after selecting
+NoFilter, the invalidation is broken.
 """
 
 import os
@@ -39,7 +47,7 @@ import tempfile
 
 from maya import cmds
 
-from pxr import Gf, Sdf, Usd, UsdGeom, UsdRender
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdRender, UsdShade
 
 WINDOW_NAME = 'renderPassSpikeDemoWindow'
 
@@ -49,16 +57,28 @@ GROUPS = [
     ('BlueGroup', 4.0, (0.1, 0.3, 1.0)),
 ]
 
-# (pass name, prune expression, renderVisibility expression, what you should see)
+# (pass name, prune expr, renderVisibility expr, matte expr, what you should see)
 PASSES = [
-    ('NoFilter', '', '', 'Control: all nine cubes visible.'),
-    ('PruneRed', '/World/RedGroup//', '', 'RED gone (pruned). Green + blue remain.'),
-    ('HideBlue', '', '/World/RedGroup// + /World/GreenGroup//',
+    ('NoFilter', '', '', '', 'Control: all nine cubes visible, none magenta.'),
+    ('PruneRed', '/World/RedGroup//', '', '', 'RED gone (pruned). Green + blue remain.'),
+    ('HideBlue', '', '/World/RedGroup// + /World/GreenGroup//', '',
      'BLUE gone (made invisible). Red + green remain.'),
-    ('OnlyGreen', '', '/World/GreenGroup//',
+    ('OnlyGreen', '', '/World/GreenGroup//', '',
      'Only GREEN remains; red and blue are made invisible.'),
-    ('PruneRedHideBlue', '/World/RedGroup//', '/World/RedGroup// + /World/GreenGroup//',
+    ('PruneRedHideBlue', '/World/RedGroup//', '/World/RedGroup// + /World/GreenGroup//', '',
      'Only GREEN remains: red is pruned, blue is made invisible.'),
+
+    # Matte cases. The shaded group carries a real UsdPreviewSurface, so it is the
+    # one that proves the flag colour beats a bound material rather than only
+    # showing up on unshaded prims.
+    ('MatteGreen', '', '', '/World/GreenGroup//',
+     'All nine visible; GREEN turns MAGENTA. Others keep their colour.'),
+    ('MatteShaded', '', '', '/World/ShadedGroup//',
+     'The SHADED (grey, lit) group turns MAGENTA -- proves matte beats a material.'),
+    ('MatteAll', '', '', '/World//',
+     'Every cube turns MAGENTA, shaded group included.'),
+    ('MatteGreenPruneRed', '/World/RedGroup//', '', '/World/GreenGroup//',
+     'RED gone, GREEN magenta, blue and shaded unchanged.'),
 ]
 
 
@@ -73,19 +93,39 @@ def _addCubeGroup(stage, name, xOffset, color):
         cube.CreateDisplayColorAttr([Gf.Vec3f(*color)])
 
 
-def _addRenderPass(stage, name, pruneExpr, renderVisExpr):
+def _addShadedGroup(stage, name, xOffset):
+    """A group with a real UsdPreviewSurface bound, so matte can be shown beating it."""
+    material = UsdShade.Material.Define(stage, '/World/Materials/{}Mat'.format(name))
+    shader = UsdShade.Shader.Define(stage, '/World/Materials/{}Mat/Surface'.format(name))
+    shader.CreateIdAttr('UsdPreviewSurface')
+    shader.CreateInput('diffuseColor', Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(0.55, 0.55, 0.6))
+    shader.CreateInput('roughness', Sdf.ValueTypeNames.Float).Set(0.4)
+    shader.CreateInput('metallic', Sdf.ValueTypeNames.Float).Set(0.0)
+    material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
+
+    group = UsdGeom.Xform.Define(stage, '/World/{}'.format(name))
+    group.AddTranslateOp().Set(Gf.Vec3d(xOffset, 0.0, 0.0))
+
+    for i in range(3):
+        cube = UsdGeom.Cube.Define(stage, '/World/{}/Cube_{}'.format(name, i + 1))
+        cube.CreateSizeAttr(1.5)
+        UsdGeom.Xformable(cube.GetPrim()).AddTranslateOp().Set(Gf.Vec3d(0.0, i * 2.0, 0.0))
+        UsdShade.MaterialBindingAPI.Apply(cube.GetPrim()).Bind(material)
+
+
+def _addRenderPass(stage, name, pruneExpr, renderVisExpr, matteExpr):
     renderPass = UsdRender.Pass.Define(stage, '/Render/Passes/{}'.format(name))
     prim = renderPass.GetPrim()
 
     # Only the membershipExpression form of a collection is carried by
     # HdCollectionSchema, so includes/excludes would be ignored by the filter.
-    if pruneExpr:
-        collection = Usd.CollectionAPI.Apply(prim, 'prune')
-        collection.CreateMembershipExpressionAttr(Sdf.PathExpression(pruneExpr))
-
-    if renderVisExpr:
-        collection = Usd.CollectionAPI.Apply(prim, 'renderVisibility')
-        collection.CreateMembershipExpressionAttr(Sdf.PathExpression(renderVisExpr))
+    for collectionName, expr in (
+            ('prune', pruneExpr),
+            ('renderVisibility', renderVisExpr),
+            ('matte', matteExpr)):
+        if expr:
+            collection = Usd.CollectionAPI.Apply(prim, collectionName)
+            collection.CreateMembershipExpressionAttr(Sdf.PathExpression(expr))
 
 
 def buildStage(filePath=None):
@@ -101,11 +141,12 @@ def buildStage(filePath=None):
 
     for name, xOffset, color in GROUPS:
         _addCubeGroup(stage, name, xOffset, color)
+    _addShadedGroup(stage, 'ShadedGroup', 8.0)
 
     UsdGeom.Scope.Define(stage, '/Render')
     UsdGeom.Scope.Define(stage, '/Render/Passes')
-    for name, pruneExpr, renderVisExpr, _ in PASSES:
-        _addRenderPass(stage, name, pruneExpr, renderVisExpr)
+    for name, pruneExpr, renderVisExpr, matteExpr, _ in PASSES:
+        _addRenderPass(stage, name, pruneExpr, renderVisExpr, matteExpr)
 
     stage.GetRootLayer().Export(filePath)
     return filePath
@@ -130,7 +171,7 @@ def _setActivePass(shapeNode, passName, statusField):
     passPath = '/Render/Passes/{}'.format(passName) if passName else ''
     cmds.setAttr('{}.activeRenderPass'.format(shapeNode), passPath, type='string')
 
-    expected = next((p[3] for p in PASSES if p[0] == passName), '')
+    expected = next((p[4] for p in PASSES if p[0] == passName), '')
     cmds.text(statusField, edit=True, label='{}  --  {}'.format(passPath or '(none)', expected))
     cmds.refresh(force=True)
 
@@ -151,7 +192,7 @@ def _showWindow(shapeNode):
         label='No active pass (clear)',
         command=lambda *_: _setActivePass(shapeNode, '', statusField))
 
-    for name, _, _, expected in PASSES:
+    for name, _, _, _, expected in PASSES:
         cmds.button(
             label='{} -- {}'.format(name, expected),
             align='left',
@@ -178,8 +219,11 @@ def checkReprefix():
               'Python. The C++ side still uses it; this check just cannot verify it here.')
         return True
 
-    for name, pruneExpr, renderVisExpr, _ in PASSES:
-        for label, exprStr in (('prune', pruneExpr), ('renderVisibility', renderVisExpr)):
+    for name, pruneExpr, renderVisExpr, matteExpr, _ in PASSES:
+        for label, exprStr in (
+                ('prune', pruneExpr),
+                ('renderVisibility', renderVisExpr),
+                ('matte', matteExpr)):
             if not exprStr:
                 continue
             rebased = Sdf.PathExpression(exprStr).ReplacePrefix(Sdf.Path.absoluteRootPath, prefix)

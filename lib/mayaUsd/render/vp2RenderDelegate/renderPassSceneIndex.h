@@ -24,9 +24,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_REF_PTRS(MayaUsdRenderPassSceneIndex);
 
 /// Applies the active render pass named in the HdSceneGlobalsSchema: prims
-/// matching the pass's "prune" collection are removed from the scene, and
+/// matching the pass's "prune" collection are removed from the scene,
 /// renderable prims outside its "renderVisibility" collection are made
-/// invisible.
+/// invisible, and geometry matching its "matte" collection is flagged with a
+/// constant HdVP2Tokens->mattePrimvar for HdVP2Mesh to shade distinctly.
 ///
 /// \note Like the hdPrman original, this assumes the active render pass is a
 ///       UsdRenderPass for the purposes of collection naming conventions.
@@ -64,11 +65,16 @@ private:
         // Retained so old and new state can be compared.
         SdfPathExpression renderVisExpr;
         SdfPathExpression pruneExpr;
+        SdfPathExpression matteExpr;
 
         std::optional<HdCollectionExpressionEvaluator> renderVisEval;
         std::optional<HdCollectionExpressionEvaluator> pruneEval;
+        std::optional<HdCollectionExpressionEvaluator> matteEval;
 
         bool DoesOverrideVis(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
+        // Note the inverted polarity relative to renderVisibility: a prim that
+        // matches the matte collection *is* matte.
+        bool DoesOverrideMatte(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
         bool DoesPrune(const SdfPath& primPath) const;
     };
 

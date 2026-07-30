@@ -4,7 +4,7 @@
 **Branch:** intended for `deboisj/render_pass_spike`.
 
 Type a `UsdRenderPass` prim path into a proxy shape's new `activeRenderPass` attribute and the
-pass's `prune` and `renderVisibility` collections filter what VP2 draws.
+pass's `prune`, `renderVisibility` and `matte` collections change what VP2 draws.
 
 Try it:
 
@@ -36,8 +36,9 @@ Four moving parts:
 
 | Part | Job |
 |---|---|
-| `renderPassSceneIndex.{h,cpp}` | The filter. Drops pruned prims from `GetPrim`/`GetChildPrimPaths`; overlays `visibility=0` on prims outside `renderVisibility`. |
+| `renderPassSceneIndex.{h,cpp}` | The filter. Drops pruned prims from `GetPrim`/`GetChildPrimPaths`; overlays `visibility=0` on prims outside `renderVisibility`; overlays a constant `mayaUsd:matte` primvar on prims inside `matte`. |
 | `renderPassPublisher.{h,cpp}` | `Attach()` splices the filter into the render index. `Publish()` reads the pass's collections off the USD stage and feeds them in. |
+| `mesh.{h,cpp}` | Reads the matte flag and overrides the shader with a flat unlit colour. |
 | `proxyShapeBase.{h,cpp}` | The `activeRenderPass` / `arp` string attribute and its version counter. |
 | `proxyRenderDelegate.{h,cpp}` | Calls `Attach()` after render index creation; re-publishes when the version changes. |
 
@@ -81,13 +82,26 @@ the novel, upstreamable artifact because USD ships none in `hdsi`. hdPrman has h
 and it writes standard `HdVisibilitySchema`, not renderer-specific data. Nothing here is novel
 enough to upstream.
 
-Dropped: `cameraVisibility` and `matte`. Arnold implements both by writing `primvars:arnold:*`;
-there's no renderer-neutral Hydra schema and no VP2 concept to map them onto.
+Dropped: `cameraVisibility`. Arnold implements it by writing `primvars:arnold:visibility:camera`;
+there is no renderer-neutral Hydra schema and no VP2 concept to map it onto.
+
+`matte` is supported, but not the way Arnold does it. Arnold writes `primvars:arnold:matte` and
+lets the renderer produce a zero-alpha holdout. VP2 has no such concept and no alpha channel, so
+instead the filter flags matte geometry with a constant `mayaUsd:matte` primvar and `HdVP2Mesh`
+shades it flat magenta. **This is an authoring aid, not a render preview** — it shows which prims
+the pass mattes, and deliberately makes no claim about the final image. See
+[`specs/2026-07-30-render-pass-matte-design.md`](specs/2026-07-30-render-pass-matte-design.md).
 
 ## Caveats
 
 - **Only `membershipExpression` collections work.** `HdCollectionSchema` carries nothing else, so
   `includes`/`excludes` are ignored. Same limitation as hdPrman's filter.
+- **Matte applies to meshes only.** `basisCurves` and `points` silently ignore it; the override
+  lives in `HdVP2Mesh::_UpdateDrawItem` and would have to be repeated in each.
+- **Adding a collection means touching three places.** The publisher must read it from USD, the
+  filter must compile and apply it, and (for matte) VP2 must act on it. Missing the publisher is
+  what broke matte on the first attempt, and it fails silently: a pass whose only collection is
+  unpublished ends up with no data source at all and is treated as no active pass.
 - **`prune` and `renderVisibility` look identical on screen but aren't.** Prune destroys and
   rebuilds rprims on every pass edit and removes prims from viewport selection entirely;
   `renderVisibility` is just a dirty bit. The demo passes are arranged so each removes a *different*

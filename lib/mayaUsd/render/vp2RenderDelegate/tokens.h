@@ -33,7 +33,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDVP2_TOKENS \
     (displayColorAndOpacity) \
     (glslfx) \
-    (mtlx)
+    (mtlx) \
+    /* Constant primvar written by MayaUsdRenderPassSceneIndex to flag prims in */ \
+    /* the active render pass's matte collection. */ \
+    ((mattePrimvar, "mayaUsd:matte"))
 
 // clang-format on
 

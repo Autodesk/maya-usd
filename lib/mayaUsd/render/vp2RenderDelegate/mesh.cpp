@@ -61,6 +61,11 @@ namespace {
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals };
 
+//! Flat colour used to flag prims in the active render pass's matte collection.
+//! Deliberately not a holdout preview: the viewport has no alpha channel, so this
+//! reads as "these prims are matted", not as what the render will look like.
+const MColor kMatteColor(1.0f, 0.0f, 1.0f, 1.0f);
+
 // Proper support for selection highlighting on/off switch in
 // MRenderItem starts only beyond Maya 2024.1
 #if MAYA_API_VERSION > 20240100
@@ -889,6 +894,14 @@ void HdVP2Mesh::Sync(
 #else
         SetMaterialId(materialId);
 #endif
+    }
+
+    if (*dirtyBits & HdChangeTracker::DirtyPrimvar) {
+        // Read straight from the delegate: _UpdatePrimvarSources only keeps
+        // primvars listed in _allRequiredPrimvars, which is derived from material
+        // and repr needs and so will never contain this one.
+        const VtValue matte = delegate->Get(id, HdVP2Tokens->mattePrimvar);
+        _isMatte = matte.IsHolding<bool>() && matte.UncheckedGet<bool>();
     }
 
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
@@ -1855,6 +1868,18 @@ void HdVP2Mesh::_UpdateDrawItem(
                 stateToCommit._shader = shader;
                 stateToCommit._isTransparent = renderItemData._transparent;
                 drawItemData._fallbackColorDirty = false;
+            }
+        }
+
+        // Applied last so it wins over both the bound material and the fallback
+        // shader. Clearing matte dirties the material binding, which re-runs the
+        // selection above and restores the original shader.
+        if (_isMatte) {
+            MHWRender::MShaderInstance* shader = _delegate->Get3dSolidShader(kMatteColor);
+            if (shader != nullptr && shader != drawItemData._shader) {
+                drawItemData._shader = shader;
+                stateToCommit._shader = shader;
+                stateToCommit._isTransparent = false;
             }
         }
     }

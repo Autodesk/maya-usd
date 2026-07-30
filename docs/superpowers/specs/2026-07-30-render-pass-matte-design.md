@@ -1,7 +1,7 @@
 # Design — USD render pass `matte` in the Maya viewport
 
 **Date:** 2026-07-30
-**Status:** design, approved in outline. Not implemented.
+**Status:** implemented and verified by hand in Maya.
 **Builds on:** [`../2026-07-30-render-pass-viewport-filter-overview.md`](../2026-07-30-render-pass-viewport-filter-overview.md)
 
 ## Goal

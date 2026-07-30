@@ -10,12 +10,15 @@
 #include "renderPassSceneIndex.h"
 
 #include "debugCodes.h"
+#include "tokens.h"
 
 #include <pxr/base/trace/trace.h>
 #include <pxr/imaging/hd/collectionSchema.h>
 #include <pxr/imaging/hd/collectionsSchema.h>
 #include <pxr/imaging/hd/dataSourceLocator.h>
+#include <pxr/imaging/hd/materialBindingsSchema.h>
 #include <pxr/imaging/hd/overlayContainerDataSource.h>
+#include <pxr/imaging/hd/primvarsSchema.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneGlobalsSchema.h>
 #include <pxr/imaging/hd/sceneIndexPrimView.h>
@@ -32,6 +35,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (renderVisibility)
     (prune)
+    (matte)
 );
 // clang-format on
 
@@ -85,6 +89,14 @@ bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideVis(
         && !renderVisEval->Match(primPath) && _IsVisible(prim.dataSource);
 }
 
+bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideMatte(
+    const SdfPath&          primPath,
+    const HdSceneIndexPrim& prim) const
+{
+    // Unlike renderVisibility, matching the collection is what makes a prim matte.
+    return matteEval && _IsGeometryType(prim.primType) && matteEval->Match(primPath);
+}
+
 bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesPrune(const SdfPath& primPath) const
 {
     return pruneEval && pruneEval->Match(primPath);
@@ -109,6 +121,22 @@ HdSceneIndexPrim MayaUsdRenderPassSceneIndex::GetPrim(const SdfPath& primPath) c
                 .SetVisibility(HdRetainedTypedSampledDataSource<bool>::New(false))
                 .Build());
         prim.dataSource = HdOverlayContainerDataSource::New(invisDs, prim.dataSource);
+    }
+
+    // Geometry in the pass's matte collection is flagged for HdVP2Mesh, which
+    // shades it with a flat colour. Carried as a constant primvar because that
+    // is the only channel scene index emulation forwards to the render delegate.
+    if (_activeRenderPass.DoesOverrideMatte(primPath, prim)) {
+        static const HdContainerDataSourceHandle matteDs = HdRetainedContainerDataSource::New(
+            HdPrimvarsSchema::GetSchemaToken(),
+            HdRetainedContainerDataSource::New(
+                HdVP2Tokens->mattePrimvar,
+                HdPrimvarSchema::Builder()
+                    .SetPrimvarValue(HdRetainedTypedSampledDataSource<bool>::New(true))
+                    .SetInterpolation(HdPrimvarSchema::BuildInterpolationDataSource(
+                        HdPrimvarSchemaTokens->constant))
+                    .Build()));
+        prim.dataSource = HdOverlayContainerDataSource::New(matteDs, prim.dataSource);
     }
 
     return prim;
@@ -312,18 +340,23 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
                 &state.renderVisEval);
             _CompileCollection(
                 collections, _tokens->prune, inputSceneIndex, &state.pruneExpr, &state.pruneEval);
+            _CompileCollection(
+                collections, _tokens->matte, inputSceneIndex, &state.matteExpr, &state.matteEval);
         }
     }
 
     const bool visExprDidChange = state.renderVisExpr != priorState.renderVisExpr;
+    const bool matteExprDidChange = state.matteExpr != priorState.matteExpr;
+    const bool visOrMatteExprDidChange = visExprDidChange || matteExprDidChange;
 
     TF_DEBUG(HDVP2_DEBUG_RENDER_PASS)
         .Msg(
-            "  prune '%s', renderVisibility '%s'\n",
+            "  prune '%s', renderVisibility '%s', matte '%s'\n",
             state.pruneExpr.GetText().c_str(),
-            state.renderVisExpr.GetText().c_str());
+            state.renderVisExpr.GetText().c_str(),
+            state.matteExpr.GetText().c_str());
 
-    if (state.pruneExpr == priorState.pruneExpr && !visExprDidChange) {
+    if (state.pruneExpr == priorState.pruneExpr && !visOrMatteExprDidChange) {
         // No patterns changed; nothing to invalidate.
         TF_DEBUG(HDVP2_DEBUG_RENDER_PASS).Msg("  no expression changed; nothing to invalidate\n");
         return;
@@ -341,10 +374,26 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
         } else if (state.DoesPrune(path)) {
             // Newly pruned, so remove it.
             removedEntries->push_back({ path });
-        } else if (visExprDidChange) {
+        } else if (visOrMatteExprDidChange) {
             const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
-            if (priorState.DoesOverrideVis(path, prim) != state.DoesOverrideVis(path, prim)) {
-                dirtyEntries->push_back({ path, HdVisibilitySchema::GetDefaultLocator() });
+            const bool             visibilityDidChange
+                = priorState.DoesOverrideVis(path, prim) != state.DoesOverrideVis(path, prim);
+            const bool matteDidChange
+                = priorState.DoesOverrideMatte(path, prim) != state.DoesOverrideMatte(path, prim);
+
+            if (visibilityDidChange || matteDidChange) {
+                HdDataSourceLocatorSet locators;
+                if (visibilityDidChange) {
+                    locators.insert(HdVisibilitySchema::GetDefaultLocator());
+                }
+                if (matteDidChange) {
+                    locators.insert(HdPrimvarsSchema::GetDefaultLocator());
+                    // HdVP2Mesh only reconsiders its shader when DirtyMaterialId is
+                    // set, and clearing matte has to restore the material's shader,
+                    // so the binding is dirtied even though it did not change.
+                    locators.insert(HdMaterialBindingsSchema::GetDefaultLocator());
+                }
+                dirtyEntries->push_back({ path, locators });
             }
         }
         ++visited;
@@ -352,7 +401,8 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
 
     TF_DEBUG(HDVP2_DEBUG_RENDER_PASS)
         .Msg(
-            "  visited %zu prims: %zu removed (pruned), %zu re-added, %zu visibility-dirtied\n",
+            "  visited %zu prims: %zu removed (pruned), %zu re-added, %zu dirtied "
+            "(visibility and/or matte)\n",
             visited,
             removedEntries->size(),
             addedEntries->size(),
