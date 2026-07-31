@@ -43,6 +43,7 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/render/vp2RenderDelegate/shadowOnlyShader.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
@@ -379,6 +380,21 @@ MStatus initializePlugin(MObject obj)
         MayaUsd::GizmoGeometryOverride::Creator);
     CHECK_MSTATUS(status);
 
+    // Backs the render pass cameraVisibility emulation; see shadowOnlyShader.h.
+    {
+        const MString shadowOnlyClassification(MayaUsd::ShadowOnlyShader::classification);
+        status = plugin.registerNode(
+            MayaUsd::ShadowOnlyShader::typeName,
+            MayaUsd::ShadowOnlyShader::typeId,
+            MayaUsd::ShadowOnlyShader::nodeCreator,
+            MayaUsd::ShadowOnlyShader::nodeInitialize,
+            MPxNode::kDependNode,
+            &shadowOnlyClassification);
+        CHECK_MSTATUS(status);
+        status = MayaUsd::ShadowOnlyShader::registerOverride();
+        CHECK_MSTATUS(status);
+    }
+
     registerCommandCheck<MayaUsd::ADSKMayaUSDListJobContextsCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDListShadingModesCommand>(plugin);
 
@@ -584,6 +600,11 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDGetMaterialsInStageCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDMaterialBindingsCommand>(plugin);
 #endif
+
+    status = MayaUsd::ShadowOnlyShader::deregisterOverride();
+    CHECK_MSTATUS(status);
+    status = plugin.deregisterNode(MayaUsd::ShadowOnlyShader::typeId);
+    CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(MayaUsd::ProxyShapeListener::typeId);
     CHECK_MSTATUS(status);

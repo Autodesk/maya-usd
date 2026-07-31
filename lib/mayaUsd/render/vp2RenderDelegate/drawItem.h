@@ -88,6 +88,10 @@ public:
         bool _shadedSelectedInstances { false };
 #endif
 
+        //! Whether the render item exists only to keep casting shadows while the
+        //! prim is hidden from camera by a render pass's cameraVisibility collection.
+        bool _shadowOnly { false };
+
         //! Primitive type of the render item
         MHWRender::MGeometry::Primitive _primitiveType {
             MHWRender::MGeometry::kInvalidPrimitive

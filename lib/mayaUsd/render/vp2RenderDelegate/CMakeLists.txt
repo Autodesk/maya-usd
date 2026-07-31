@@ -20,6 +20,7 @@ target_sources(${PROJECT_NAME}
         renderParam.cpp
         renderPassPublisher.cpp
         renderPassSceneIndex.cpp
+        shadowOnlyShader.cpp
         sampler.cpp
         shader.cpp
         tokens.cpp
@@ -28,6 +29,7 @@ target_sources(${PROJECT_NAME}
 set(HEADERS
     proxyRenderDelegate.h
     colorManagementPreferences.h
+    shadowOnlyShader.h
 )
 
 # -----------------------------------------------------------------------------

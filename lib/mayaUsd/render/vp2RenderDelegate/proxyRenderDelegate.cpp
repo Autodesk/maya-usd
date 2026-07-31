@@ -21,6 +21,7 @@
 #include "mayaPrimCommon.h"
 #include "renderDelegate.h"
 #include "renderPassPublisher.h"
+#include "shadowOnlyShader.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
@@ -696,6 +697,10 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         // Interpose the render pass filter now, while the scene is still empty:
         // the scene delegate is not populated until _Populate() later in update().
         _renderPassPublisher = MayaUsdRenderPassPublisher::Attach(*_renderIndex);
+
+        // Render items are built on worker threads during Hydra sync and cannot
+        // create DG nodes, so the shadow-only shader node is made here instead.
+        MayaUsd::ShadowOnlyShader::ensureSharedNode();
 
         // Sync the _changeVersions so that we don't trigger a needlessly large update them on the
         // first frame.

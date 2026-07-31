@@ -36,6 +36,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (renderVisibility)
     (prune)
     (matte)
+    (cameraVisibility)
 );
 // clang-format on
 
@@ -89,6 +90,16 @@ bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideVis(
         && !renderVisEval->Match(primPath) && _IsVisible(prim.dataSource);
 }
 
+bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideCameraVis(
+    const SdfPath&          primPath,
+    const HdSceneIndexPrim& prim) const
+{
+    // Arnold additionally checks a pre-existing camera-visibility primvar here.
+    // VP2 has no such state to respect, so membership alone decides.
+    return cameraVisEval && _ShouldApplyPassVisibility(prim.primType)
+        && !cameraVisEval->Match(primPath);
+}
+
 bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideMatte(
     const SdfPath&          primPath,
     const HdSceneIndexPrim& prim) const
@@ -137,6 +148,25 @@ HdSceneIndexPrim MayaUsdRenderPassSceneIndex::GetPrim(const SdfPath& primPath) c
                         HdPrimvarSchemaTokens->constant))
                     .Build()));
         prim.dataSource = HdOverlayContainerDataSource::New(matteDs, prim.dataSource);
+    }
+
+    // Geometry outside the pass's cameraVisibility collection is flagged for
+    // HdVP2Mesh, which drops it from the beauty pass while leaving a
+    // shadow-casting render item enabled. Deliberately not HdVisibilitySchema:
+    // Hydra visibility gates every render item on the rprim, which would take
+    // the shadow item with it.
+    if (_activeRenderPass.DoesOverrideCameraVis(primPath, prim)) {
+        static const HdContainerDataSourceHandle cameraInvisDs
+            = HdRetainedContainerDataSource::New(
+                HdPrimvarsSchema::GetSchemaToken(),
+                HdRetainedContainerDataSource::New(
+                    HdVP2Tokens->cameraInvisiblePrimvar,
+                    HdPrimvarSchema::Builder()
+                        .SetPrimvarValue(HdRetainedTypedSampledDataSource<bool>::New(true))
+                        .SetInterpolation(HdPrimvarSchema::BuildInterpolationDataSource(
+                            HdPrimvarSchemaTokens->constant))
+                        .Build()));
+        prim.dataSource = HdOverlayContainerDataSource::New(cameraInvisDs, prim.dataSource);
     }
 
     return prim;
@@ -342,21 +372,30 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
                 collections, _tokens->prune, inputSceneIndex, &state.pruneExpr, &state.pruneEval);
             _CompileCollection(
                 collections, _tokens->matte, inputSceneIndex, &state.matteExpr, &state.matteEval);
+            _CompileCollection(
+                collections,
+                _tokens->cameraVisibility,
+                inputSceneIndex,
+                &state.cameraVisExpr,
+                &state.cameraVisEval);
         }
     }
 
     const bool visExprDidChange = state.renderVisExpr != priorState.renderVisExpr;
     const bool matteExprDidChange = state.matteExpr != priorState.matteExpr;
-    const bool visOrMatteExprDidChange = visExprDidChange || matteExprDidChange;
+    const bool cameraVisExprDidChange = state.cameraVisExpr != priorState.cameraVisExpr;
+    const bool perPrimExprDidChange
+        = visExprDidChange || matteExprDidChange || cameraVisExprDidChange;
 
     TF_DEBUG(HDVP2_DEBUG_RENDER_PASS)
         .Msg(
-            "  prune '%s', renderVisibility '%s', matte '%s'\n",
+            "  prune '%s', renderVisibility '%s', matte '%s', cameraVisibility '%s'\n",
             state.pruneExpr.GetText().c_str(),
             state.renderVisExpr.GetText().c_str(),
-            state.matteExpr.GetText().c_str());
+            state.matteExpr.GetText().c_str(),
+            state.cameraVisExpr.GetText().c_str());
 
-    if (state.pruneExpr == priorState.pruneExpr && !visOrMatteExprDidChange) {
+    if (state.pruneExpr == priorState.pruneExpr && !perPrimExprDidChange) {
         // No patterns changed; nothing to invalidate.
         TF_DEBUG(HDVP2_DEBUG_RENDER_PASS).Msg("  no expression changed; nothing to invalidate\n");
         return;
@@ -374,14 +413,16 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
         } else if (state.DoesPrune(path)) {
             // Newly pruned, so remove it.
             removedEntries->push_back({ path });
-        } else if (visOrMatteExprDidChange) {
+        } else if (perPrimExprDidChange) {
             const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
             const bool             visibilityDidChange
                 = priorState.DoesOverrideVis(path, prim) != state.DoesOverrideVis(path, prim);
             const bool matteDidChange
                 = priorState.DoesOverrideMatte(path, prim) != state.DoesOverrideMatte(path, prim);
+            const bool cameraVisDidChange = priorState.DoesOverrideCameraVis(path, prim)
+                != state.DoesOverrideCameraVis(path, prim);
 
-            if (visibilityDidChange || matteDidChange) {
+            if (visibilityDidChange || matteDidChange || cameraVisDidChange) {
                 HdDataSourceLocatorSet locators;
                 if (visibilityDidChange) {
                     locators.insert(HdVisibilitySchema::GetDefaultLocator());
@@ -392,6 +433,13 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
                     // set, and clearing matte has to restore the material's shader,
                     // so the binding is dirtied even though it did not change.
                     locators.insert(HdMaterialBindingsSchema::GetDefaultLocator());
+                }
+                if (cameraVisDidChange) {
+                    locators.insert(HdPrimvarsSchema::GetDefaultLocator());
+                    // HdVP2Mesh decides which render items are enabled in a block
+                    // keyed off DirtyVisibility, not DirtyPrimvar, so the flag alone
+                    // would never take effect. Visibility itself is unchanged.
+                    locators.insert(HdVisibilitySchema::GetDefaultLocator());
                 }
                 dirtyEntries->push_back({ path, locators });
             }

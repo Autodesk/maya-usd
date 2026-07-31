@@ -1,7 +1,8 @@
 # Design — USD render pass `cameraVisibility` in the Maya viewport
 
 **Date:** 2026-07-30
-**Status:** design. Not implemented. **Rests on an unverified assumption — see Phase 0.**
+**Status:** implemented and verified in Maya. **The Phase 0 assumption below was FALSE** — the
+working mechanism is different; see [What actually worked](#what-actually-worked).
 **Builds on:** [`../2026-07-30-render-pass-viewport-filter-overview.md`](../2026-07-30-render-pass-viewport-filter-overview.md)
 
 ## Goal
@@ -44,6 +45,43 @@ the fallback is to treat `cameraVisibility` as an authoring aid (a second flag c
 `matte`).
 
 Build and run this before any of the plumbing below.
+
+## What actually worked
+
+**Phase 0 came back negative, and so did four more attempts.** Recorded here so nobody repeats them:
+
+| Attempt | Result |
+|---|---|
+| `drawMode(0)` | cubes hidden, **shadow also gone** |
+| `drawMode(kBoundingBox)` | cubes hidden, **shadow also gone** |
+| `drawMode(kShaded\|kTextured)` | cubes visible, shadow present — the control that proved the item, its geometry and `castsShadows(true)` were all fine |
+| shape-level `primaryVisibility` | **VP2 ignores it entirely** — it is a batch-render stat, not a viewport flag (`holdOut` likewise) |
+| alpha-blended transparent shader | shadow gone; VP2 excludes transparent items from the shadow map |
+
+The rule those establish: **an item must actually be drawn in the current display mode to enter the
+shadow pass.** Every `drawMode`-based idea is therefore self-defeating, because invisible and
+shadow-casting are the same bit.
+
+**The mechanism that works is `MPxShaderOverride::handlesDraw()`** — the one pass-aware API in VP2.
+Its documented contract is that returning `false` declines the pass and hands it back to Maya
+(`MPxShaderOverride.h:167-176`), and `MPassContext::passSemantics()` identifies shadow passes via
+`kShadowPassSemantic` / `kPointLightShadowPassSemantic` (`MDrawContext.h:259-316`). So the item keeps
+a normal `kShaded|kTextured` draw mode — it *is* drawn, hence in the shadow pass — and the override
+declines shadow passes while claiming every other one and drawing nothing.
+
+`handlesDraw()` is only consulted for shaders that come from a shading node, and maya-usd assigns
+`MShaderInstance` directly, so this required a node type: `ShadowOnlyShader` (`shadowOnlyShader.h`,
+type id `0x580000A7`), registered from `plugin.cpp`, attached with `MRenderItem::setShaderFromNode2`.
+
+Two threading constraints, both of which crashed Maya before being fixed:
+
+- Render items are built on TBB worker threads during Hydra sync, so the node cannot be created
+  there. `ensureSharedNode()` runs from `ProxyRenderDelegate::_InitRenderDelegate` on the main thread.
+- `setShaderFromNode2` links to a DG node, so it is deferred to the commit phase via
+  `EnqueueCommit`.
+
+Supersede the `setDrawMode` row in the table below with `kShaded|kTextured`; everything else in the
+VP2 side section still holds.
 
 ## Filter side
 

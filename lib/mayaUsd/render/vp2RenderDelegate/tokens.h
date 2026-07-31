@@ -34,9 +34,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (displayColorAndOpacity) \
     (glslfx) \
     (mtlx) \
-    /* Constant primvar written by MayaUsdRenderPassSceneIndex to flag prims in */ \
-    /* the active render pass's matte collection. */ \
-    ((mattePrimvar, "mayaUsd:matte"))
+    /* Constant primvars written by MayaUsdRenderPassSceneIndex to flag prims */ \
+    /* against the active render pass's collections. */ \
+    ((mattePrimvar, "mayaUsd:matte")) \
+    ((cameraInvisiblePrimvar, "mayaUsd:cameraInvisible"))
 
 // clang-format on
 

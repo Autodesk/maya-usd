@@ -20,6 +20,7 @@
 #include "instancer.h"
 #include "material.h"
 #include "renderDelegate.h"
+#include "shadowOnlyShader.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
@@ -65,6 +66,10 @@ const TfTokenVector sFallbackShaderPrimvars
 //! Deliberately not a holdout preview: the viewport has no alpha channel, so this
 //! reads as "these prims are matted", not as what the render will look like.
 const MColor kMatteColor(1.0f, 0.0f, 1.0f, 1.0f);
+
+//! Loud colour used only if the shadow-only shader node is unavailable, so that
+//! the failure is visible rather than silent.
+const MColor kShadowOnlyOpaqueColor(0.0f, 1.0f, 1.0f, 1.0f);
 
 // Proper support for selection highlighting on/off switch in
 // MRenderItem starts only beyond Maya 2024.1
@@ -902,6 +907,10 @@ void HdVP2Mesh::Sync(
         // and repr needs and so will never contain this one.
         const VtValue matte = delegate->Get(id, HdVP2Tokens->mattePrimvar);
         _isMatte = matte.IsHolding<bool>() && matte.UncheckedGet<bool>();
+
+        const VtValue cameraInvisible = delegate->Get(id, HdVP2Tokens->cameraInvisiblePrimvar);
+        _isCameraInvisible
+            = cameraInvisible.IsHolding<bool>() && cameraInvisible.UncheckedGet<bool>();
     }
 
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
@@ -1459,6 +1468,12 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
         _CreateSmoothHullRenderItem(
             drawItem.GetDrawItemName(), drawItem, reprToken, subSceneContainer, nullptr);
 
+        // Stays disabled unless a render pass hides this prim from camera.
+        MString shadowOnlyName = drawItem.GetDrawItemName();
+        shadowOnlyName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
+        shadowOnlyName += "shadowOnly";
+        _CreateShadowOnlyRenderItem(shadowOnlyName, drawItem, subSceneContainer);
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
             _CreateShadedSelectedInstancesItem(
@@ -1882,6 +1897,15 @@ void HdVP2Mesh::_UpdateDrawItem(
                 stateToCommit._isTransparent = false;
             }
         }
+
+        // The shadow-only item's shader comes from a shading node so that its
+        // MPxShaderOverride runs; leave it alone rather than letting the material
+        // or fallback path above replace it with an MShaderInstance.
+        if (drawItemData._shadowOnly) {
+            drawItemData._shader = nullptr;
+            stateToCommit._shader = nullptr;
+            stateToCommit._isTransparent = false;
+        }
     }
 
     // Local bounds
@@ -2216,6 +2240,20 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
 
         enable = enable && drawScene.DrawRenderTag(_meshSharedData->_renderTag);
+
+        // cameraVisibility swaps which of the two items is live: the beauty item
+        // when the prim is camera-visible, the shadow-only item when it is not.
+        if (drawItemData._shadowOnly) {
+            enable = enable && _isCameraInvisible;
+            TF_DEBUG(HDVP2_DEBUG_RENDER_PASS)
+                .Msg(
+                    "shadow-only item '%s': cameraInvisible=%d -> enable=%d\n",
+                    drawItemData._renderItemName.asChar(),
+                    static_cast<int>(_isCameraInvisible),
+                    static_cast<int>(enable));
+        } else {
+            enable = enable && !_isCameraInvisible;
+        }
 
         if (drawItemData._enabled != enable) {
             drawItemData._enabled = enable;
@@ -2801,6 +2839,60 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
 
 /*! \brief  Create render item to support selection highlight for smoothHull repr.
  */
+/*! \brief  Create a render item that only ever feeds the shadow map.
+
+    Used to emulate cameraVisibility: the prim is dropped from the beauty pass
+    but keeps casting shadows. A drawMode matching no display mode is the only
+    lever VP2 offers for "not drawn to camera"; whether Maya's shadow pass
+    honours items in that state is the assumption this rests on.
+*/
+HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateShadowOnlyRenderItem(
+    const MString&      name,
+    HdVP2DrawItem&      drawItem,
+    MSubSceneContainer& subSceneContainer) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kTriangles);
+
+    // The item must be genuinely drawable to enter the shadow pass -- drawMode(0)
+    // and kBoundingBox were both confirmed to drop it. So it keeps a normal
+    // shaded draw mode and is instead suppressed per-pass by the shader override
+    // attached below, which declines shadow passes and swallows the rest.
+    renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
+        MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
+    renderItem->castsShadows(true);
+    // Never seen, so shading it would be wasted work.
+    renderItem->receivesShadows(false);
+    renderItem->setExcludedFromPostEffects(true);
+    // Hidden from camera should also mean not pickable.
+    renderItem->setSelectionMask(MSelectionMask());
+    // setShaderFromNode2 rather than setShader: MPxShaderOverride is only
+    // consulted for shaders that come from a shading node, and that override is
+    // the whole mechanism here. If the node is unavailable the item falls back to
+    // a plain shader and will simply be visible, which is an obvious failure.
+    // This runs on a TBB worker thread during Hydra sync, and setShaderFromNode2
+    // links to a DG node, so defer it to the commit phase on the main thread.
+    // ProxyRenderDelegate::_InitRenderDelegate has already created the node.
+    auto* const    param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    const MDagPath proxyDagPath = param->GetDrawScene().GetProxyShapeDagPath();
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem, proxyDagPath]() {
+        const MObject shadowOnlyNode = MayaUsd::ShadowOnlyShader::getSharedNode();
+        if (!shadowOnlyNode.isNull()) {
+            renderItem->setShaderFromNode2(shadowOnlyNode, proxyDagPath);
+        } else {
+            TF_WARN("Shadow-only shader node unavailable; cameraVisibility will not work.");
+        }
+    });
+    _InitRenderItemCommon(renderItem);
+
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+
+    HdVP2DrawItem::RenderItemData& renderItemData
+        = _AddRenderItem(drawItem, renderItem, subSceneContainer, nullptr);
+    renderItemData._shadowOnly = true;
+    return renderItemData;
+}
+
 MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MString& name) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(

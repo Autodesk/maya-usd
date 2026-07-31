@@ -195,6 +195,10 @@ private:
         const TfToken&      reprToken,
         MSubSceneContainer& subSceneContainer,
         const HdGeomSubset* geomSubset) const;
+    HdVP2DrawItem::RenderItemData& _CreateShadowOnlyRenderItem(
+        const MString&      name,
+        HdVP2DrawItem&      drawItem,
+        MSubSceneContainer& subSceneContainer) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
 
     void _ResetRenderingTopology();
@@ -231,6 +235,10 @@ private:
     //! Prim is in the active render pass's matte collection, flagged by
     //! MayaUsdRenderPassSceneIndex via HdVP2Tokens->mattePrimvar.
     bool _isMatte { false };
+
+    //! Prim is outside the active render pass's cameraVisibility collection, so it
+    //! is dropped from the beauty pass but keeps a shadow-casting render item.
+    bool _isCameraInvisible { false };
 
     static size_t _gpuNormalsComputeThreshold;
 };

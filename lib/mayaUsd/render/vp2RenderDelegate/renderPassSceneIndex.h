@@ -66,12 +66,17 @@ private:
         SdfPathExpression renderVisExpr;
         SdfPathExpression pruneExpr;
         SdfPathExpression matteExpr;
+        SdfPathExpression cameraVisExpr;
 
         std::optional<HdCollectionExpressionEvaluator> renderVisEval;
         std::optional<HdCollectionExpressionEvaluator> pruneEval;
         std::optional<HdCollectionExpressionEvaluator> matteEval;
+        std::optional<HdCollectionExpressionEvaluator> cameraVisEval;
 
         bool DoesOverrideVis(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
+        // Same polarity as renderVisibility: a prim that does *not* match is the
+        // one hidden from camera.
+        bool DoesOverrideCameraVis(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
         // Note the inverted polarity relative to renderVisibility: a prim that
         // matches the matte collection *is* matte.
         bool DoesOverrideMatte(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;

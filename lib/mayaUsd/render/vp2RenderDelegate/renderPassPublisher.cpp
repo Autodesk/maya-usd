@@ -34,6 +34,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (renderVisibility)
     (prune)
     (matte)
+    (cameraVisibility)
 );
 // clang-format on
 
@@ -103,7 +104,8 @@ HdContainerDataSourceHandle
 _BuildPassDataSource(
     const SdfPathExpression& pruneExpr,
     const SdfPathExpression& renderVisExpr,
-    const SdfPathExpression& matteExpr)
+    const SdfPathExpression& matteExpr,
+    const SdfPathExpression& cameraVisExpr)
 {
     TfTokenVector                     names;
     std::vector<HdDataSourceBaseHandle> values;
@@ -122,6 +124,7 @@ _BuildPassDataSource(
     addCollection(_tokens->prune, pruneExpr);
     addCollection(_tokens->renderVisibility, renderVisExpr);
     addCollection(_tokens->matte, matteExpr);
+    addCollection(_tokens->cameraVisibility, cameraVisExpr);
 
     if (names.empty()) {
         return nullptr;
@@ -166,7 +169,8 @@ void MayaUsdRenderPassPublisher::Publish(
             passDataSource = _BuildPassDataSource(
                 _ReadCollection(passPrim, _tokens->prune, delegateId),
                 _ReadCollection(passPrim, _tokens->renderVisibility, delegateId),
-                _ReadCollection(passPrim, _tokens->matte, delegateId));
+                _ReadCollection(passPrim, _tokens->matte, delegateId),
+                _ReadCollection(passPrim, _tokens->cameraVisibility, delegateId));
         } else {
             TF_DEBUG(HDVP2_DEBUG_RENDER_PASS)
                 .Msg("  no prim at <%s> on the stage\n", passPath.GetText());

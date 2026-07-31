@@ -15,8 +15,8 @@
 #
 """Demo helper for the USD render pass viewport filter spike.
 
-Authors a USD stage with three colour-coded groups and a set of render passes
-that filter them in different ways, loads it into a new proxy shape, and opens a
+Authors a USD stage, loads it into a new proxy shape, creates a shadow-casting
+light, configures the viewport for shaded display with shadows, and opens a
 window for switching the proxy shape's activeRenderPass attribute.
 
 Run inside Maya:
@@ -24,22 +24,31 @@ Run inside Maya:
     import renderPassSpikeDemo
     renderPassSpikeDemo.show()
 
-The scene is twelve cubes in four groups of three, laid out left to right:
+Scene: twelve cubes in four groups of three on a ground plane.
 
     RED (x=-4)   GREEN (x=0)   BLUE (x=+4)   SHADED (x=+8)
 
 The first three carry only displayColor. SHADED has a real UsdPreviewSurface
 bound, which is what makes it useful: the matte flag colour has to beat a bound
-material, and a prim with no material would not prove that.
+material, and a prim with no material would not prove that. The ground plane
+exists to catch shadows.
 
-Each pass states what should happen. Because prune and renderVisibility look
-identical on screen, the passes are arranged so each leaves a different set of
-groups standing -- if the wrong group vanishes, or nothing does, the filter is
-misbehaving.
+What each collection should look like:
 
-For matte, the case that matters is switching *away* from a matte pass: turning
-prims magenta only proves half the path. If they stay magenta after selecting
-NoFilter, the invalidation is broken.
+  prune             geometry disappears, and leaves the Hydra scene entirely
+  renderVisibility  geometry disappears, shadow disappears with it
+  matte             geometry turns flat magenta
+  cameraVisibility  geometry disappears BUT ITS SHADOW REMAINS
+
+The cameraVisibility cases are only meaningful with shadows on, which is why
+show() sets the viewport up rather than leaving it to you. Compare CamHideRed
+against VisHideRed: both hide the red cubes, and only the renderVisibility one
+should also lose the shadow. If they look identical, cameraVisibility is not
+working even though the viewport looks plausible.
+
+For every collection, the case that matters is switching *away* from a pass.
+Making something disappear or turn magenta only proves half the path; if it
+does not come back on NoFilter, the invalidation is broken.
 """
 
 import os
@@ -57,29 +66,55 @@ GROUPS = [
     ('BlueGroup', 4.0, (0.1, 0.3, 1.0)),
 ]
 
-# (pass name, prune expr, renderVisibility expr, matte expr, what you should see)
-PASSES = [
-    ('NoFilter', '', '', '', 'Control: all nine cubes visible, none magenta.'),
-    ('PruneRed', '/World/RedGroup//', '', '', 'RED gone (pruned). Green + blue remain.'),
-    ('HideBlue', '', '/World/RedGroup// + /World/GreenGroup//', '',
-     'BLUE gone (made invisible). Red + green remain.'),
-    ('OnlyGreen', '', '/World/GreenGroup//', '',
-     'Only GREEN remains; red and blue are made invisible.'),
-    ('PruneRedHideBlue', '/World/RedGroup//', '/World/RedGroup// + /World/GreenGroup//', '',
-     'Only GREEN remains: red is pruned, blue is made invisible.'),
+_ALL = ['/World/RedGroup//', '/World/GreenGroup//', '/World/BlueGroup//',
+        '/World/ShadedGroup//', '/World/Ground']
 
-    # Matte cases. The shaded group carries a real UsdPreviewSurface, so it is the
-    # one that proves the flag colour beats a bound material rather than only
-    # showing up on unshaded prims.
-    ('MatteGreen', '', '', '/World/GreenGroup//',
-     'All nine visible; GREEN turns MAGENTA. Others keep their colour.'),
-    ('MatteShaded', '', '', '/World/ShadedGroup//',
-     'The SHADED (grey, lit) group turns MAGENTA -- proves matte beats a material.'),
-    ('MatteAll', '', '', '/World//',
-     'Every cube turns MAGENTA, shaded group included.'),
-    ('MatteGreenPruneRed', '/World/RedGroup//', '', '/World/GreenGroup//',
-     'RED gone, GREEN magenta, blue and shaded unchanged.'),
+
+def _allExcept(*excluded):
+    """Build an include-style expression covering everything but `excluded`."""
+    return ' + '.join(p for p in _ALL if p not in excluded)
+
+
+# Each pass is a dict so cases can be added without re-threading a tuple.
+# Keys: name, prune, renderVisibility, matte, cameraVisibility, expect.
+PASSES = [
+    dict(name='NoFilter',
+         expect='Control: all twelve cubes visible, none magenta.'),
+
+    dict(name='PruneRed', prune='/World/RedGroup//',
+         expect='RED gone (pruned), shadow gone too.'),
+
+    dict(name='OnlyGreen', renderVisibility='/World/GreenGroup// + /World/Ground',
+         expect='Only GREEN remains; red, blue and shaded made invisible.'),
+
+    # Matte
+    dict(name='MatteGreen', matte='/World/GreenGroup//',
+         expect='All visible; GREEN turns MAGENTA.'),
+
+    dict(name='MatteShaded', matte='/World/ShadedGroup//',
+         expect='SHADED (grey, lit) turns MAGENTA -- proves matte beats a material.'),
+
+    dict(name='MatteAll', matte='/World//',
+         expect='Every cube turns MAGENTA, shaded group included.'),
+
+    # cameraVisibility. Polarity matches renderVisibility: prims NOT matching
+    # the collection are the ones hidden from camera.
+    dict(name='CamHideRed', cameraVisibility=_allExcept('/World/RedGroup//'),
+         expect='RED gone BUT ITS SHADOW REMAINS on the ground.'),
+
+    dict(name='VisHideRed', renderVisibility=_allExcept('/World/RedGroup//'),
+         expect='A/B control: RED gone AND its shadow gone. Compare with CamHideRed.'),
+
+    dict(name='CamHideShaded', cameraVisibility=_allExcept('/World/ShadedGroup//'),
+         expect='SHADED gone, its shadow remains.'),
+
+    dict(name='CamHideRedMatteGreen',
+         cameraVisibility=_allExcept('/World/RedGroup//'),
+         matte='/World/GreenGroup//',
+         expect='RED gone (shadow remains), GREEN magenta.'),
 ]
+
+COLLECTIONS = ('prune', 'renderVisibility', 'matte', 'cameraVisibility')
 
 
 def _addCubeGroup(stage, name, xOffset, color):
@@ -113,16 +148,31 @@ def _addShadedGroup(stage, name, xOffset):
         UsdShade.MaterialBindingAPI.Apply(cube.GetPrim()).Bind(material)
 
 
-def _addRenderPass(stage, name, pruneExpr, renderVisExpr, matteExpr):
-    renderPass = UsdRender.Pass.Define(stage, '/Render/Passes/{}'.format(name))
+def _addGround(stage):
+    """A quad for shadows to land on. Without it the cameraVisibility cases prove nothing."""
+    extent = 24.0
+    mesh = UsdGeom.Mesh.Define(stage, '/World/Ground')
+    mesh.CreatePointsAttr([
+        Gf.Vec3f(-extent, 0.0, -extent), Gf.Vec3f(extent, 0.0, -extent),
+        Gf.Vec3f(extent, 0.0, extent), Gf.Vec3f(-extent, 0.0, extent)])
+    mesh.CreateFaceVertexCountsAttr([4])
+    mesh.CreateFaceVertexIndicesAttr([0, 1, 2, 3])
+    mesh.CreateNormalsAttr([Gf.Vec3f(0.0, 1.0, 0.0)] * 4)
+    mesh.SetNormalsInterpolation(UsdGeom.Tokens.vertex)
+    mesh.CreateSubdivisionSchemeAttr(UsdGeom.Tokens.none)
+    mesh.CreateExtentAttr([Gf.Vec3f(-extent, 0.0, -extent), Gf.Vec3f(extent, 0.0, extent)])
+    mesh.CreateDisplayColorAttr([Gf.Vec3f(0.4, 0.4, 0.42)])
+    UsdGeom.Xformable(mesh.GetPrim()).AddTranslateOp().Set(Gf.Vec3d(2.0, -1.0, 0.0))
+
+
+def _addRenderPass(stage, spec):
+    renderPass = UsdRender.Pass.Define(stage, '/Render/Passes/{}'.format(spec['name']))
     prim = renderPass.GetPrim()
 
     # Only the membershipExpression form of a collection is carried by
     # HdCollectionSchema, so includes/excludes would be ignored by the filter.
-    for collectionName, expr in (
-            ('prune', pruneExpr),
-            ('renderVisibility', renderVisExpr),
-            ('matte', matteExpr)):
+    for collectionName in COLLECTIONS:
+        expr = spec.get(collectionName, '')
         if expr:
             collection = Usd.CollectionAPI.Apply(prim, collectionName)
             collection.CreateMembershipExpressionAttr(Sdf.PathExpression(expr))
@@ -142,14 +192,44 @@ def buildStage(filePath=None):
     for name, xOffset, color in GROUPS:
         _addCubeGroup(stage, name, xOffset, color)
     _addShadedGroup(stage, 'ShadedGroup', 8.0)
+    _addGround(stage)
 
     UsdGeom.Scope.Define(stage, '/Render')
     UsdGeom.Scope.Define(stage, '/Render/Passes')
-    for name, pruneExpr, renderVisExpr, matteExpr, _ in PASSES:
-        _addRenderPass(stage, name, pruneExpr, renderVisExpr, matteExpr)
+    for spec in PASSES:
+        _addRenderPass(stage, spec)
 
     stage.GetRootLayer().Export(filePath)
     return filePath
+
+
+def createLight():
+    """A directional light with depth map shadows, angled to throw shadows sideways."""
+    lightShape = cmds.directionalLight(intensity=1.4)
+    lightTransform = cmds.listRelatives(lightShape, parent=True, fullPath=True)[0]
+    cmds.setAttr('{}.rotateX'.format(lightTransform), -40.0)
+    cmds.setAttr('{}.rotateY'.format(lightTransform), -30.0)
+    cmds.setAttr('{}.useDepthMapShadows'.format(lightShape), 1)
+    cmds.setAttr('{}.dmapResolution'.format(lightShape), 2048)
+    cmds.setAttr('{}.dmapFilterSize'.format(lightShape), 2)
+    return lightShape
+
+
+def setupViewport():
+    """Put every model panel into shaded mode with lighting and shadows on."""
+    panels = cmds.getPanel(type='modelPanel') or []
+    for panel in panels:
+        try:
+            cmds.modelEditor(
+                panel, edit=True,
+                displayAppearance='smoothShaded',
+                displayLights='all',
+                shadows=True,
+                wireframeOnShaded=False)
+        except RuntimeError:
+            # Some panels are not editable in every session state; skip them.
+            pass
+    return panels
 
 
 def createProxy(filePath):
@@ -171,7 +251,7 @@ def _setActivePass(shapeNode, passName, statusField):
     passPath = '/Render/Passes/{}'.format(passName) if passName else ''
     cmds.setAttr('{}.activeRenderPass'.format(shapeNode), passPath, type='string')
 
-    expected = next((p[4] for p in PASSES if p[0] == passName), '')
+    expected = next((p['expect'] for p in PASSES if p['name'] == passName), '')
     cmds.text(statusField, edit=True, label='{}  --  {}'.format(passPath or '(none)', expected))
     cmds.refresh(force=True)
 
@@ -180,7 +260,7 @@ def _showWindow(shapeNode):
     if cmds.window(WINDOW_NAME, exists=True):
         cmds.deleteUI(WINDOW_NAME)
 
-    cmds.window(WINDOW_NAME, title='Render Pass Spike', widthHeight=(520, 260))
+    cmds.window(WINDOW_NAME, title='Render Pass Spike', widthHeight=(640, 420))
     cmds.columnLayout(adjustableColumn=True, rowSpacing=6, columnOffset=('both', 10))
 
     cmds.text(label='Proxy shape: {}'.format(shapeNode), align='left')
@@ -192,11 +272,11 @@ def _showWindow(shapeNode):
         label='No active pass (clear)',
         command=lambda *_: _setActivePass(shapeNode, '', statusField))
 
-    for name, _, _, _, expected in PASSES:
+    for spec in PASSES:
         cmds.button(
-            label='{} -- {}'.format(name, expected),
+            label='{} -- {}'.format(spec['name'], spec['expect']),
             align='left',
-            command=lambda *_, n=name: _setActivePass(shapeNode, n, statusField))
+            command=lambda *_, n=spec['name']: _setActivePass(shapeNode, n, statusField))
 
     cmds.showWindow(WINDOW_NAME)
 
@@ -219,11 +299,9 @@ def checkReprefix():
               'Python. The C++ side still uses it; this check just cannot verify it here.')
         return True
 
-    for name, pruneExpr, renderVisExpr, matteExpr, _ in PASSES:
-        for label, exprStr in (
-                ('prune', pruneExpr),
-                ('renderVisibility', renderVisExpr),
-                ('matte', matteExpr)):
+    for spec in PASSES:
+        for collectionName in COLLECTIONS:
+            exprStr = spec.get(collectionName, '')
             if not exprStr:
                 continue
             rebased = Sdf.PathExpression(exprStr).ReplacePrefix(Sdf.Path.absoluteRootPath, prefix)
@@ -232,7 +310,8 @@ def checkReprefix():
             status = 'OK ' if matched == expected else 'BAD'
             if matched != expected:
                 ok = False
-            print('  {} {}/{}: {!r} -> {!r}'.format(status, name, label, exprStr, str(rebased)))
+            print('  {} {}/{}: {!r} -> {!r}'.format(
+                status, spec['name'], collectionName, exprStr, str(rebased)))
 
     print('Reprefix check: {}'.format('PASSED' if ok else 'FAILED -- expressions will match '
                                       'nothing and no filtering will be visible'))
@@ -250,13 +329,21 @@ def enableDebugOutput(enable=True):
 
 
 def show(filePath=None, debug=True):
-    """Author the stage, load it into a new proxy shape, and open the UI."""
+    """Author the stage, load it, light it, set up shadows, and open the UI."""
     enableDebugOutput(debug)
     checkReprefix()
+
     usdFile = buildStage(filePath)
     shapeNode = createProxy(usdFile)
+    createLight()
+    setupViewport()
+    cmds.viewFit(all=True)
+
     _showWindow(shapeNode)
     print('Render pass spike demo stage: {}'.format(usdFile))
+    print('Shadows are enabled in all model panels. If you see no shadows at all, '
+          'the cameraVisibility cases cannot be judged.')
     return shapeNode
-    
+
+
 show()
