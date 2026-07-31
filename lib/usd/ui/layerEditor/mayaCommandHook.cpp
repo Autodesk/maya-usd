@@ -39,13 +39,35 @@
 #include <QtCore/QStringList>
 
 #include <cassert>
+#include <iomanip>
+#include <sstream>
 #include <string>
 
 #define STR(x) std::string(x)
 
 namespace {
 
-std::string quote(const std::string& string) { return STR(" \"") + string + STR("\""); }
+std::string quoteForCommand(const std::string& string)
+{
+    std::ostringstream oss;
+    oss << " " << std::quoted(string);
+    return oss.str();
+}
+
+std::string quoteLayerIdentifierForCommand(const PXR_NS::SdfLayerRefPtr& usdLayer)
+{
+    if (!usdLayer) {
+        return "";
+    }
+
+    return quoteForCommand(usdLayer->GetIdentifier());
+}
+
+std::string quoteFilePathForCommand(const std::string& path)
+{
+    // Note: C++ std::quoted() already handles backslashes.
+    return quoteForCommand(path);
+}
 
 std::string getProxyShapeName(const std::string& proxyShapePath)
 {
@@ -90,8 +112,8 @@ std::string MayaCommandHook::proxyShapePath()
 void MayaCommandHook::setEditTarget(UsdLayer usdLayer)
 {
     std::string cmd;
-    cmd = STR("mayaUsdEditTarget -edit -editTarget ") + quote(usdLayer->GetIdentifier());
-    cmd += " " + quote(proxyShapePath());
+    cmd = STR("mayaUsdEditTarget -edit -editTarget ") + quoteLayerIdentifierForCommand(usdLayer);
+    cmd += quoteForCommand(proxyShapePath());
     executeMel(cmd);
 }
 
@@ -118,8 +140,8 @@ void MayaCommandHook::insertSubLayerPath(UsdLayer usdLayer, Path path, int index
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -insertSubPath ";
     cmd += std::to_string(index);
-    cmd += quote(path);
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteFilePathForCommand(path);
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd);
 }
 
@@ -131,8 +153,8 @@ void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -removeSubPath ";
     cmd += std::to_string(index);
-    cmd += quote(proxyShapePath());
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteForCommand(proxyShapePath());
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd);
 }
 
@@ -144,10 +166,10 @@ void MayaCommandHook::moveSubLayerPath(
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -moveSubPath ";
-    cmd += quote(path);
-    cmd += quote(newParentUsdLayer->GetIdentifier());
-    cmd += std::to_string(index);
-    cmd += quote(oldParentUsdLayer->GetIdentifier());
+    cmd += quoteFilePathForCommand(path);
+    cmd += quoteLayerIdentifierForCommand(newParentUsdLayer);
+    cmd += " " + std::to_string(index);
+    cmd += quoteLayerIdentifierForCommand(oldParentUsdLayer);
     executeMel(cmd);
 }
 
@@ -156,9 +178,9 @@ void MayaCommandHook::replaceSubLayerPath(UsdLayer usdLayer, Path oldPath, Path 
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -replaceSubPath ";
-    cmd += quote(oldPath);
-    cmd += quote(newPath);
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteFilePathForCommand(oldPath);
+    cmd += quoteFilePathForCommand(newPath);
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd);
 }
 
@@ -167,7 +189,7 @@ void MayaCommandHook::discardEdits(UsdLayer usdLayer)
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -discardEdits ";
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd);
 
     refreshLayerSystemLock(usdLayer);
@@ -178,7 +200,7 @@ void MayaCommandHook::clearLayer(UsdLayer usdLayer)
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -clear ";
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd);
 }
 
@@ -187,7 +209,7 @@ void MayaCommandHook::flattenLayer(UsdLayer usdLayer)
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -flatten ";
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd);
 }
 
@@ -196,8 +218,8 @@ UsdLayer MayaCommandHook::addAnonymousSubLayer(UsdLayer usdLayer, std::string ne
 {
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -addAnonymous ";
-    cmd += quote(newName);
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteFilePathForCommand(newName);
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     std::string result = executeMel(cmd);
     if (result.size() > 0)
         return PXR_NS::SdfLayer::FindOrOpen(result);
@@ -211,8 +233,8 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -muteLayer ";
     cmd += muteIt ? "1" : "0";
-    cmd += quote(proxyShapePath());
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteForCommand(proxyShapePath());
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd);
 }
 
@@ -231,8 +253,8 @@ void MayaCommandHook::lockLayer(
     cmd = "mayaUsdLayerEditor -edit -skipSystemLocked -lockLayer ";
     cmd += std::to_string(lockState);
     cmd += includeSubLayers ? " 1" : " 0";
-    cmd += quote(proxyShapePath());
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteForCommand(proxyShapePath());
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd);
 }
 
@@ -249,10 +271,9 @@ void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubL
 
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -refreshSystemLock ";
-    cmd += quote(shapePath);
-    cmd += " ";
-    cmd += std::to_string(refreshSubLayers);
-    cmd += quote(usdLayer->GetIdentifier());
+    cmd += quoteForCommand(shapePath);
+    cmd += refreshSubLayers ? " 1" : " 0";
+    cmd += quoteLayerIdentifierForCommand(usdLayer);
     executeMel(cmd, false);
 }
 
@@ -268,15 +289,13 @@ void MayaCommandHook::stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& la
         if (!layer)
             continue;
 
-        cmd += "-stitchLayers ";
-        cmd += quote(proxyShape);
-        cmd += " ";
-        cmd += quote(layer->GetIdentifier());
-        cmd += " ";
+        cmd += " -stitchLayers";
+        cmd += quoteForCommand(proxyShape);
+        cmd += quoteLayerIdentifierForCommand(layer);
     }
 
     // Target layer isn't actually used, but needed for the command syntax.
-    cmd += quote(layers[0]->GetIdentifier());
+    cmd += quoteLayerIdentifierForCommand(layers[0]);
     executeMel(cmd);
 }
 
