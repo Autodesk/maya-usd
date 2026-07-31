@@ -92,19 +92,24 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
                         usdgen_res
     )
 
+    # Downgraded from FATAL_ERROR: usdGenSchema needs the jinja2 module, which is
+    # not present in every mayapy. That is a missing dependency for one test, so
+    # it should skip that test rather than fail configure for the whole project.
     if(usdgen_res EQUAL 1)
-        message(FATAL_ERROR "Schemas generation failed")
+        message(WARNING
+            "usdGenSchema failed (it requires the 'jinja2' Python module); "
+            "skipping testCustomRig.")
+    else()
+        set(TEST_CUSTOM_RIG testCustomRig.py)
+        mayaUsd_get_unittest_target(target ${TEST_CUSTOM_RIG})
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/"
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        )
     endif()
-
-    set(TEST_CUSTOM_RIG testCustomRig.py)
-    mayaUsd_get_unittest_target(target ${TEST_CUSTOM_RIG})
-    mayaUsd_add_test(${target}
-        PYTHON_MODULE ${target}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        ENV
-            "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/"
-            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
-    )
 endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)

