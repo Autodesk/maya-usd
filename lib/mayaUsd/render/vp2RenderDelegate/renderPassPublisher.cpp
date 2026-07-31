@@ -16,6 +16,7 @@
 #include "renderPassPublisher.h"
 
 #include "debugCodes.h"
+#include "tokens.h"
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/imaging/hd/collectionSchema.h>
@@ -146,7 +147,16 @@ MayaUsdRenderPassPublisher::MayaUsdRenderPassPublisher(const HdSceneIndexBaseRef
     merging->AddInputScene(_retained, SdfPath::AbsoluteRootPath());
 
     _sceneGlobals = HdsiSceneGlobalsSceneIndex::New(merging);
-    _filter = MayaUsdRenderPassSceneIndex::New(_sceneGlobals);
+
+    // The two collections with no renderer-neutral meaning: name the primvars
+    // HdVP2Mesh reads. Leaving a name empty would disable that collection.
+    MayaUsdRenderPassSceneIndex::Config config;
+    config.matte.name = HdVP2Tokens->mattePrimvar;
+    config.matte.value = true;
+    config.cameraVisibility.name = HdVP2Tokens->cameraVisibilityPrimvar;
+    config.cameraVisibility.value = false;
+
+    _filter = MayaUsdRenderPassSceneIndex::New(_sceneGlobals, config);
     _terminal = _filter;
 }
 

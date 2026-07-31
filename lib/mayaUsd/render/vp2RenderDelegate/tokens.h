@@ -35,9 +35,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     (glslfx) \
     (mtlx) \
     /* Constant primvars written by MayaUsdRenderPassSceneIndex to flag prims */ \
-    /* against the active render pass's collections. */ \
+    /* against the active render pass's collections. Semantics match Arnold's */ \
+    /* arnold:matte and arnold:visibility:camera, differing only in namespace: */ \
+    /* matte is set true on matte prims, cameraVisibility is set false on prims */ \
+    /* hidden from camera. Absent means no opinion. */ \
     ((mattePrimvar, "mayaUsd:matte")) \
-    ((cameraInvisiblePrimvar, "mayaUsd:cameraInvisible"))
+    ((cameraVisibilityPrimvar, "mayaUsd:cameraVisibility"))
 
 // clang-format on
 

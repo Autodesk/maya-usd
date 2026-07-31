@@ -4,18 +4,18 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-// This is a modified version of the hdPrman render pass scene index, reduced to
-// the "prune" and "renderVisibility" collections.
+// Derived from the hdPrman render pass scene index. See the header for why this
+// file is kept renderer-neutral.
 //
 #include "renderPassSceneIndex.h"
 
+// The one non-neutral dependency. On extraction, swap for the hosting library's
+// own debug code; everything else here is pure Hydra.
 #include "debugCodes.h"
-#include "tokens.h"
 
 #include <pxr/base/trace/trace.h>
 #include <pxr/imaging/hd/collectionSchema.h>
 #include <pxr/imaging/hd/collectionsSchema.h>
-#include <pxr/imaging/hd/dataSourceLocator.h>
 #include <pxr/imaging/hd/materialBindingsSchema.h>
 #include <pxr/imaging/hd/overlayContainerDataSource.h>
 #include <pxr/imaging/hd/primvarsSchema.h>
@@ -40,23 +40,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-/* static */
-MayaUsdRenderPassSceneIndexRefPtr
-MayaUsdRenderPassSceneIndex::New(const HdSceneIndexBaseRefPtr& inputSceneIndex)
-{
-    return TfCreateRefPtr(new MayaUsdRenderPassSceneIndex(inputSceneIndex));
-}
+namespace {
 
-MayaUsdRenderPassSceneIndex::MayaUsdRenderPassSceneIndex(
-    const HdSceneIndexBaseRefPtr& inputSceneIndex)
-    : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
-{
-    SetDisplayName("MayaUsd: render passes");
-}
-
-MayaUsdRenderPassSceneIndex::~MayaUsdRenderPassSceneIndex() = default;
-
-static bool _IsGeometryType(const TfToken& primType)
+bool _IsGeometryType(const TfToken& primType)
 {
     // Gprim types beyond those covered by HdPrimTypeIsGprim().
     static const TfTokenVector extraGeomTypes
@@ -65,14 +51,14 @@ static bool _IsGeometryType(const TfToken& primType)
         || std::find(extraGeomTypes.begin(), extraGeomTypes.end(), primType) != extraGeomTypes.end();
 }
 
-// Returns true if the renderVisibility rules apply to this prim type.
-static bool _ShouldApplyPassVisibility(const TfToken& primType)
+// The prim types the visibility collections apply to.
+bool _ShouldApplyPassVisibility(const TfToken& primType)
 {
     return _IsGeometryType(primType) || HdPrimTypeIsLight(primType)
         || primType == HdPrimTypeTokens->lightFilter;
 }
 
-static bool _IsVisible(const HdContainerDataSourceHandle& primSource)
+bool _IsVisible(const HdContainerDataSourceHandle& primSource)
 {
     if (const HdVisibilitySchema visSchema = HdVisibilitySchema::GetFromParent(primSource)) {
         if (const HdBoolDataSourceHandle visDs = visSchema.GetVisibility()) {
@@ -80,6 +66,125 @@ static bool _IsVisible(const HdContainerDataSourceHandle& primSource)
         }
     }
     return true;
+}
+
+HdContainerDataSourceHandle
+_MakeFlagPrimvar(const MayaUsdRenderPassSceneIndex::FlagPrimvar& flag)
+{
+    if (flag.name.IsEmpty()) {
+        return nullptr;
+    }
+    return HdRetainedContainerDataSource::New(
+        HdPrimvarsSchema::GetSchemaToken(),
+        HdRetainedContainerDataSource::New(
+            flag.name,
+            HdPrimvarSchema::Builder()
+                .SetPrimvarValue(HdRetainedTypedSampledDataSource<bool>::New(flag.value))
+                .SetInterpolation(
+                    HdPrimvarSchema::BuildInterpolationDataSource(HdPrimvarSchemaTokens->constant))
+                .Build()));
+}
+
+void _CompileCollection(
+    HdCollectionsSchema&                            collections,
+    const TfToken&                                  collectionName,
+    const HdSceneIndexBaseRefPtr&                   sceneIndex,
+    SdfPathExpression*                              expr,
+    std::optional<HdCollectionExpressionEvaluator>* eval)
+{
+    if (HdCollectionSchema collection = collections.GetCollection(collectionName)) {
+        if (HdPathExpressionDataSourceHandle pathExprDs = collection.GetMembershipExpression()) {
+            *expr = pathExprDs->GetTypedValue(0.0);
+            if (!expr->IsEmpty()) {
+                *eval = HdCollectionExpressionEvaluator(sceneIndex, *expr);
+            }
+        }
+    }
+}
+
+// Scan an entry vector for anything that could affect the active pass.
+template <typename ENTRIES>
+bool _EntryCouldAffectPass(const ENTRIES& entries, const SdfPath& activeRenderPassPath)
+{
+    for (const auto& entry : entries) {
+        // The prim at the root path holds the HdSceneGlobalsSchema; the prim at
+        // the render pass path controls its behaviour.
+        if (entry.primPath.IsAbsoluteRootPath() || entry.primPath == activeRenderPassPath) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Returns true if any pruning was applied, putting survivors in *postPruneEntries.
+template <typename ENTRIES>
+bool _PruneEntries(
+    std::optional<HdCollectionExpressionEvaluator>& pruneEval,
+    const ENTRIES&                                  entries,
+    ENTRIES*                                        postPruneEntries)
+{
+    if (!pruneEval) {
+        return false;
+    }
+    bool foundEntryToPrune = false;
+    for (const auto& entry : entries) {
+        if (pruneEval->Match(entry.primPath)) {
+            foundEntryToPrune = true;
+            break;
+        }
+    }
+    if (!foundEntryToPrune) {
+        return false;
+    }
+    for (const auto& entry : entries) {
+        if (!pruneEval->Match(entry.primPath)) {
+            postPruneEntries->push_back(entry);
+        }
+    }
+    return true;
+}
+
+// Deliberately a superset rather than a per-collection setting. Renderers gate
+// their work on different dirty bits -- VP2 only reconsiders a shader on
+// DirtyMaterialId and only re-evaluates render item enablement on
+// DirtyVisibility -- and under-invalidating has been the recurring failure here,
+// always showing up when *clearing* a collection rather than applying it.
+// Over-invalidating only costs a redundant re-fetch on a user-driven pass switch.
+HdDataSourceLocatorSet _FlagDirtyLocators()
+{
+    HdDataSourceLocatorSet locators;
+    locators.insert(HdPrimvarsSchema::GetDefaultLocator());
+    locators.insert(HdMaterialBindingsSchema::GetDefaultLocator());
+    locators.insert(HdVisibilitySchema::GetDefaultLocator());
+    return locators;
+}
+
+} // namespace
+
+/* static */
+MayaUsdRenderPassSceneIndexRefPtr MayaUsdRenderPassSceneIndex::New(
+    const HdSceneIndexBaseRefPtr& inputSceneIndex,
+    const Config&                 config)
+{
+    return TfCreateRefPtr(new MayaUsdRenderPassSceneIndex(inputSceneIndex, config));
+}
+
+MayaUsdRenderPassSceneIndex::MayaUsdRenderPassSceneIndex(
+    const HdSceneIndexBaseRefPtr& inputSceneIndex,
+    const Config&                 config)
+    : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
+    , _config(config)
+    , _matteDs(_MakeFlagPrimvar(config.matte))
+    , _cameraInvisibleDs(_MakeFlagPrimvar(config.cameraVisibility))
+{
+    SetDisplayName("MayaUsd: render passes");
+}
+
+MayaUsdRenderPassSceneIndex::~MayaUsdRenderPassSceneIndex() = default;
+
+bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesPrune(const SdfPath& primPath) const
+{
+    return pruneEval && pruneEval->Match(primPath);
 }
 
 bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideVis(
@@ -90,41 +195,35 @@ bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideVis(
         && !renderVisEval->Match(primPath) && _IsVisible(prim.dataSource);
 }
 
-bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideCameraVis(
-    const SdfPath&          primPath,
-    const HdSceneIndexPrim& prim) const
-{
-    // Arnold additionally checks a pre-existing camera-visibility primvar here.
-    // VP2 has no such state to respect, so membership alone decides.
-    return cameraVisEval && _ShouldApplyPassVisibility(prim.primType)
-        && !cameraVisEval->Match(primPath);
-}
-
 bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideMatte(
     const SdfPath&          primPath,
     const HdSceneIndexPrim& prim) const
 {
-    // Unlike renderVisibility, matching the collection is what makes a prim matte.
     return matteEval && _IsGeometryType(prim.primType) && matteEval->Match(primPath);
 }
 
-bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesPrune(const SdfPath& primPath) const
+bool MayaUsdRenderPassSceneIndex::_RenderPassState::DoesOverrideCameraVis(
+    const SdfPath&          primPath,
+    const HdSceneIndexPrim& prim) const
 {
-    return pruneEval && pruneEval->Match(primPath);
+    // Arnold additionally skips prims already flagged camera-invisible, since it
+    // overrides an existing parameter. There is no such prior state here.
+    return cameraVisEval && _ShouldApplyPassVisibility(prim.primType)
+        && !cameraVisEval->Match(primPath);
 }
 
 HdSceneIndexPrim MayaUsdRenderPassSceneIndex::GetPrim(const SdfPath& primPath) const
 {
-    // Pruning is also applied in GetChildPrimPaths(); doing it here as well
-    // keeps a prim pruned even if a downstream scene index asks for it by path.
+    // Pruning is also applied in GetChildPrimPaths(); doing it here as well keeps
+    // a prim pruned even if a downstream scene index asks for it by path.
     if (_activeRenderPass.DoesPrune(primPath)) {
         return HdSceneIndexPrim();
     }
 
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
-    // Renderable prims that are visible upstream but excluded from the pass's
-    // renderVisibility collection get their visibility overridden to 0.
+    // Renderable prims visible upstream but outside the renderVisibility
+    // collection have their visibility overridden to 0.
     if (_activeRenderPass.DoesOverrideVis(primPath, prim)) {
         static const HdContainerDataSourceHandle invisDs = HdRetainedContainerDataSource::New(
             HdVisibilitySchema::GetSchemaToken(),
@@ -134,39 +233,15 @@ HdSceneIndexPrim MayaUsdRenderPassSceneIndex::GetPrim(const SdfPath& primPath) c
         prim.dataSource = HdOverlayContainerDataSource::New(invisDs, prim.dataSource);
     }
 
-    // Geometry in the pass's matte collection is flagged for HdVP2Mesh, which
-    // shades it with a flat colour. Carried as a constant primvar because that
-    // is the only channel scene index emulation forwards to the render delegate.
-    if (_activeRenderPass.DoesOverrideMatte(primPath, prim)) {
-        static const HdContainerDataSourceHandle matteDs = HdRetainedContainerDataSource::New(
-            HdPrimvarsSchema::GetSchemaToken(),
-            HdRetainedContainerDataSource::New(
-                HdVP2Tokens->mattePrimvar,
-                HdPrimvarSchema::Builder()
-                    .SetPrimvarValue(HdRetainedTypedSampledDataSource<bool>::New(true))
-                    .SetInterpolation(HdPrimvarSchema::BuildInterpolationDataSource(
-                        HdPrimvarSchemaTokens->constant))
-                    .Build()));
-        prim.dataSource = HdOverlayContainerDataSource::New(matteDs, prim.dataSource);
+    if (_matteDs && _activeRenderPass.DoesOverrideMatte(primPath, prim)) {
+        prim.dataSource = HdOverlayContainerDataSource::New(_matteDs, prim.dataSource);
     }
 
-    // Geometry outside the pass's cameraVisibility collection is flagged for
-    // HdVP2Mesh, which drops it from the beauty pass while leaving a
-    // shadow-casting render item enabled. Deliberately not HdVisibilitySchema:
-    // Hydra visibility gates every render item on the rprim, which would take
-    // the shadow item with it.
-    if (_activeRenderPass.DoesOverrideCameraVis(primPath, prim)) {
-        static const HdContainerDataSourceHandle cameraInvisDs
-            = HdRetainedContainerDataSource::New(
-                HdPrimvarsSchema::GetSchemaToken(),
-                HdRetainedContainerDataSource::New(
-                    HdVP2Tokens->cameraInvisiblePrimvar,
-                    HdPrimvarSchema::Builder()
-                        .SetPrimvarValue(HdRetainedTypedSampledDataSource<bool>::New(true))
-                        .SetInterpolation(HdPrimvarSchema::BuildInterpolationDataSource(
-                            HdPrimvarSchemaTokens->constant))
-                        .Build()));
-        prim.dataSource = HdOverlayContainerDataSource::New(cameraInvisDs, prim.dataSource);
+    // Deliberately not HdVisibilitySchema: Hydra visibility gates every render
+    // item on the rprim, which for VP2 would disable the shadow-casting item
+    // along with the beauty one.
+    if (_cameraInvisibleDs && _activeRenderPass.DoesOverrideCameraVis(primPath, prim)) {
+        prim.dataSource = HdOverlayContainerDataSource::New(_cameraInvisibleDs, prim.dataSource);
     }
 
     return prim;
@@ -202,49 +277,6 @@ General notes on change processing and invalidation:
   must be notified about the effects.
 
 */
-
-// Helper to scan an entry vector for an entry that could affect the active pass.
-template <typename ENTRIES>
-inline static bool _EntryCouldAffectPass(const ENTRIES& entries, const SdfPath& activeRenderPassPath)
-{
-    for (const auto& entry : entries) {
-        // The prim at the root path contains the HdSceneGlobalsSchema.
-        // The prim at the render pass path controls its behavior.
-        if (entry.primPath.IsAbsoluteRootPath() || entry.primPath == activeRenderPassPath) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// Helper to apply pruning to an entry list. Returns true if any pruning was
-// applied, putting surviving entries into *postPruneEntries.
-template <typename ENTRIES>
-inline static bool _PruneEntries(
-    std::optional<HdCollectionExpressionEvaluator>& pruneEval,
-    const ENTRIES&                                  entries,
-    ENTRIES*                                        postPruneEntries)
-{
-    if (!pruneEval) {
-        return false;
-    }
-    bool foundEntryToPrune = false;
-    for (const auto& entry : entries) {
-        if (pruneEval->Match(entry.primPath)) {
-            foundEntryToPrune = true;
-            break;
-        }
-    }
-    if (!foundEntryToPrune) {
-        return false;
-    }
-    for (const auto& entry : entries) {
-        if (!pruneEval->Match(entry.primPath)) {
-            postPruneEntries->push_back(entry);
-        }
-    }
-    return true;
-}
 
 void MayaUsdRenderPassSceneIndex::_PrimsAdded(
     const HdSceneIndexBase& /* sender */,
@@ -309,24 +341,6 @@ void MayaUsdRenderPassSceneIndex::_PrimsDirtied(
     _SendPrimsDirtied(extraDirtyEntries);
 }
 
-// Helper method to compile a collection evaluator.
-static void _CompileCollection(
-    HdCollectionsSchema&                            collections,
-    const TfToken&                                  collectionName,
-    const HdSceneIndexBaseRefPtr&                   sceneIndex,
-    SdfPathExpression*                              expr,
-    std::optional<HdCollectionExpressionEvaluator>* eval)
-{
-    if (HdCollectionSchema collection = collections.GetCollection(collectionName)) {
-        if (HdPathExpressionDataSourceHandle pathExprDs = collection.GetMembershipExpression()) {
-            *expr = pathExprDs->GetTypedValue(0.0);
-            if (!expr->IsEmpty()) {
-                *eval = HdCollectionExpressionEvaluator(sceneIndex, *expr);
-            }
-        }
-    }
-}
-
 void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
     HdSceneIndexObserver::AddedPrimEntries*   addedEntries,
     HdSceneIndexObserver::DirtiedPrimEntries* dirtyEntries,
@@ -348,6 +362,7 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
         // Avoid further work if no render pass was or is active.
         return;
     }
+
     TF_DEBUG(HDVP2_DEBUG_RENDER_PASS)
         .Msg(
             "Filter: active pass <%s> (was <%s>)\n",
@@ -363,21 +378,29 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
         if (HdCollectionsSchema collections
             = HdCollectionsSchema::GetFromParent(passPrim.dataSource)) {
             _CompileCollection(
+                collections, _tokens->prune, inputSceneIndex, &state.pruneExpr, &state.pruneEval);
+            _CompileCollection(
                 collections,
                 _tokens->renderVisibility,
                 inputSceneIndex,
                 &state.renderVisExpr,
                 &state.renderVisEval);
-            _CompileCollection(
-                collections, _tokens->prune, inputSceneIndex, &state.pruneExpr, &state.pruneEval);
-            _CompileCollection(
-                collections, _tokens->matte, inputSceneIndex, &state.matteExpr, &state.matteEval);
-            _CompileCollection(
-                collections,
-                _tokens->cameraVisibility,
-                inputSceneIndex,
-                &state.cameraVisExpr,
-                &state.cameraVisEval);
+            if (_matteDs) {
+                _CompileCollection(
+                    collections,
+                    _tokens->matte,
+                    inputSceneIndex,
+                    &state.matteExpr,
+                    &state.matteEval);
+            }
+            if (_cameraInvisibleDs) {
+                _CompileCollection(
+                    collections,
+                    _tokens->cameraVisibility,
+                    inputSceneIndex,
+                    &state.cameraVisExpr,
+                    &state.cameraVisEval);
+            }
         }
     }
 
@@ -401,9 +424,12 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
         return;
     }
 
+    static const HdDataSourceLocatorSet flagLocators = _FlagDirtyLocators();
+
     // Generate change entries for affected prims, considering all upstream prims.
     size_t visited = 0;
     for (const SdfPath& path : HdSceneIndexPrimView(_GetInputSceneIndex())) {
+        ++visited;
         if (priorState.DoesPrune(path)) {
             if (!state.DoesPrune(path)) {
                 // No longer pruned, so add it back.
@@ -415,42 +441,32 @@ void MayaUsdRenderPassSceneIndex::_UpdateActiveRenderPassState(
             removedEntries->push_back({ path });
         } else if (perPrimExprDidChange) {
             const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
-            const bool             visibilityDidChange
-                = priorState.DoesOverrideVis(path, prim) != state.DoesOverrideVis(path, prim);
-            const bool matteDidChange
-                = priorState.DoesOverrideMatte(path, prim) != state.DoesOverrideMatte(path, prim);
-            const bool cameraVisDidChange = priorState.DoesOverrideCameraVis(path, prim)
-                != state.DoesOverrideCameraVis(path, prim);
+            HdDataSourceLocatorSet locators;
 
-            if (visibilityDidChange || matteDidChange || cameraVisDidChange) {
-                HdDataSourceLocatorSet locators;
-                if (visibilityDidChange) {
-                    locators.insert(HdVisibilitySchema::GetDefaultLocator());
-                }
-                if (matteDidChange) {
-                    locators.insert(HdPrimvarsSchema::GetDefaultLocator());
-                    // HdVP2Mesh only reconsiders its shader when DirtyMaterialId is
-                    // set, and clearing matte has to restore the material's shader,
-                    // so the binding is dirtied even though it did not change.
-                    locators.insert(HdMaterialBindingsSchema::GetDefaultLocator());
-                }
-                if (cameraVisDidChange) {
-                    locators.insert(HdPrimvarsSchema::GetDefaultLocator());
-                    // HdVP2Mesh decides which render items are enabled in a block
-                    // keyed off DirtyVisibility, not DirtyPrimvar, so the flag alone
-                    // would never take effect. Visibility itself is unchanged.
-                    locators.insert(HdVisibilitySchema::GetDefaultLocator());
-                }
+            if (visExprDidChange
+                && priorState.DoesOverrideVis(path, prim) != state.DoesOverrideVis(path, prim)) {
+                locators.insert(HdVisibilitySchema::GetDefaultLocator());
+            }
+            if (matteExprDidChange
+                && priorState.DoesOverrideMatte(path, prim)
+                    != state.DoesOverrideMatte(path, prim)) {
+                locators.insert(flagLocators);
+            }
+            if (cameraVisExprDidChange
+                && priorState.DoesOverrideCameraVis(path, prim)
+                    != state.DoesOverrideCameraVis(path, prim)) {
+                locators.insert(flagLocators);
+            }
+
+            if (!locators.IsEmpty()) {
                 dirtyEntries->push_back({ path, locators });
             }
         }
-        ++visited;
     }
 
     TF_DEBUG(HDVP2_DEBUG_RENDER_PASS)
         .Msg(
-            "  visited %zu prims: %zu removed (pruned), %zu re-added, %zu dirtied "
-            "(visibility and/or matte)\n",
+            "  visited %zu prims: %zu removed (pruned), %zu re-added, %zu dirtied\n",
             visited,
             removedEntries->size(),
             addedEntries->size(),

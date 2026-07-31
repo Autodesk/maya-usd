@@ -39,6 +39,8 @@ What each collection should look like:
   renderVisibility  geometry disappears, shadow disappears with it
   matte             geometry turns flat magenta
   cameraVisibility  geometry disappears BUT ITS SHADOW REMAINS
+  camera            nothing on switching; use the Look through pass camera
+                    button, which resolves renderSource -> settings -> camera
 
 The cameraVisibility cases are only meaningful with shadows on, which is why
 show() sets the viewport up rather than leaving it to you. Compare CamHideRed
@@ -55,6 +57,8 @@ import os
 import tempfile
 
 from maya import cmds
+
+from mayaUsd import lib as mayaUsdLib
 
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdRender, UsdShade
 
@@ -112,9 +116,28 @@ PASSES = [
          cameraVisibility=_allExcept('/World/RedGroup//'),
          matte='/World/GreenGroup//',
          expect='RED gone (shadow remains), GREEN magenta.'),
+
+    # These author renderSource -> UsdRenderSettings, which is where the camera
+    # lives. Switching to them changes nothing on its own by design; the
+    # Look through pass camera button is the only thing that moves the viewport.
+    dict(name='CamShotRed', camera='/Cameras/PassCamRed',
+         expect='Look through pass camera frames the RED group.'),
+
+    dict(name='CamShotShaded', camera='/Cameras/PassCamShaded',
+         expect='Look through pass camera frames the SHADED group.'),
+
+    dict(name='CamShotWide', camera='/Cameras/PassCamWide',
+         expect='Look through pass camera frames the whole set.'),
 ]
 
 COLLECTIONS = ('prune', 'renderVisibility', 'matte', 'cameraVisibility')
+
+# (name, eye, look-at target)
+CAMERAS = [
+    ('PassCamRed', (-4.0, 6.0, 16.0), (-4.0, 2.0, 0.0)),
+    ('PassCamShaded', (8.0, 6.0, 16.0), (8.0, 2.0, 0.0)),
+    ('PassCamWide', (2.0, 14.0, 34.0), (0.0, 2.0, 0.0)),
+]
 
 
 def _addCubeGroup(stage, name, xOffset, color):
@@ -165,6 +188,16 @@ def _addGround(stage):
     UsdGeom.Xformable(mesh.GetPrim()).AddTranslateOp().Set(Gf.Vec3d(2.0, -1.0, 0.0))
 
 
+def _addCameras(stage):
+    for name, eye, target in CAMERAS:
+        camera = UsdGeom.Camera.Define(stage, '/Cameras/{}'.format(name))
+        camera.CreateFocalLengthAttr(35.0)
+        # USD cameras look down -Z, so the transform is the inverse of the view.
+        view = Gf.Matrix4d().SetLookAt(
+            Gf.Vec3d(*eye), Gf.Vec3d(*target), Gf.Vec3d(0.0, 1.0, 0.0))
+        UsdGeom.Xformable(camera.GetPrim()).AddTransformOp().Set(view.GetInverse())
+
+
 def _addRenderPass(stage, spec):
     renderPass = UsdRender.Pass.Define(stage, '/Render/Passes/{}'.format(spec['name']))
     prim = renderPass.GetPrim()
@@ -176,6 +209,16 @@ def _addRenderPass(stage, spec):
         if expr:
             collection = Usd.CollectionAPI.Apply(prim, collectionName)
             collection.CreateMembershipExpressionAttr(Sdf.PathExpression(expr))
+
+    # The camera lives on a RenderSettings prim reached through renderSource,
+    # not on the pass itself.
+    camera = spec.get('camera', '')
+    if not camera:
+        return
+
+    settings = UsdRender.Settings.Define(stage, '/Render/Settings/{}'.format(spec['name']))
+    settings.CreateCameraRel().SetTargets([Sdf.Path(camera)])
+    renderPass.CreateRenderSourceRel().SetTargets([settings.GetPrim().GetPath()])
 
 
 def buildStage(filePath=None):
@@ -193,6 +236,7 @@ def buildStage(filePath=None):
         _addCubeGroup(stage, name, xOffset, color)
     _addShadedGroup(stage, 'ShadedGroup', 8.0)
     _addGround(stage)
+    _addCameras(stage)
 
     UsdGeom.Scope.Define(stage, '/Render')
     UsdGeom.Scope.Define(stage, '/Render/Passes')
@@ -256,6 +300,49 @@ def _setActivePass(shapeNode, passName, statusField):
     cmds.refresh(force=True)
 
 
+def lookThroughPassCamera(shapeNode, statusField=None):
+    """Look through the active pass's camera. Explicit only, never automatic.
+
+    Needs no C++: ProxyShapeCameraHandler already exposes USD cameras to UFE and
+    cmds.lookThru accepts a UFE path of the form "<shape dag path>,<prim path>".
+    """
+    def report(message):
+        if statusField:
+            cmds.text(statusField, edit=True, label=message)
+        print(message)
+
+    passPath = cmds.getAttr('{}.activeRenderPass'.format(shapeNode))
+    if not passPath:
+        report('No active render pass.')
+        return None
+
+    stage = mayaUsdLib.GetPrim(shapeNode).GetStage()
+    renderPass = UsdRender.Pass(stage.GetPrimAtPath(passPath))
+    if not renderPass:
+        report('No render pass at {}.'.format(passPath))
+        return None
+
+    sources = renderPass.GetRenderSourceRel().GetTargets()
+    if not sources:
+        report('{} has no renderSource, so no camera.'.format(passPath))
+        return None
+
+    settings = UsdRender.Settings(stage.GetPrimAtPath(sources[0]))
+    cameras = settings.GetCameraRel().GetTargets() if settings else []
+    if not cameras:
+        report('{} resolves no camera.'.format(passPath))
+        return None
+
+    if not UsdGeom.Camera(stage.GetPrimAtPath(cameras[0])):
+        report('{} is not a UsdGeomCamera.'.format(cameras[0]))
+        return None
+
+    ufePath = '{},{}'.format(shapeNode, cameras[0])
+    cmds.lookThru(ufePath)
+    report('Looking through {}'.format(ufePath))
+    return ufePath
+
+
 def _showWindow(shapeNode):
     if cmds.window(WINDOW_NAME, exists=True):
         cmds.deleteUI(WINDOW_NAME)
@@ -271,6 +358,12 @@ def _showWindow(shapeNode):
     cmds.button(
         label='No active pass (clear)',
         command=lambda *_: _setActivePass(shapeNode, '', statusField))
+
+    cmds.button(
+        label='Look through pass camera',
+        command=lambda *_: lookThroughPassCamera(shapeNode, statusField))
+
+    cmds.separator(height=8, style='in')
 
     for spec in PASSES:
         cmds.button(

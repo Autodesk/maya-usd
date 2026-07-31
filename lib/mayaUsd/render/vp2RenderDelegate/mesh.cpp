@@ -908,9 +908,11 @@ void HdVP2Mesh::Sync(
         const VtValue matte = delegate->Get(id, HdVP2Tokens->mattePrimvar);
         _isMatte = matte.IsHolding<bool>() && matte.UncheckedGet<bool>();
 
-        const VtValue cameraInvisible = delegate->Get(id, HdVP2Tokens->cameraInvisiblePrimvar);
+        // Matches Arnold: the primvar states camera visibility, so only an
+        // explicit false hides the prim. Absent means no opinion.
+        const VtValue cameraVisibility = delegate->Get(id, HdVP2Tokens->cameraVisibilityPrimvar);
         _isCameraInvisible
-            = cameraInvisible.IsHolding<bool>() && cameraInvisible.UncheckedGet<bool>();
+            = cameraVisibility.IsHolding<bool>() && !cameraVisibility.UncheckedGet<bool>();
     }
 
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36

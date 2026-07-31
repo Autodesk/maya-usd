@@ -4,10 +4,14 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-// This is a modified version of the hdPrman render pass scene index, reduced to
-// the "prune" and "renderVisibility" collections. The "cameraVisibility" and
-// "matte" collections were dropped because VP2 has no renderer-neutral concept
-// to map them onto.
+// Derived from the hdPrman render pass scene index, by way of arnold-usd's
+// plugins/scene_index/renderPassSIP.cpp, which is itself a modified copy of it.
+//
+// Kept renderer-neutral so it can be lifted into a shared library
+// (hydra-viewport-toolbox, or ideally OpenUSD's hdsi alongside the prune-only
+// HdsiRenderPassPruneSceneIndex). The only Maya-specific thing left in the .cpp
+// is the debugCodes.h include; everything a renderer needs to vary is in Config,
+// supplied by the caller.
 //
 #ifndef MAYAUSD_VP2_RENDER_PASS_SCENE_INDEX_H
 #define MAYAUSD_VP2_RENDER_PASS_SCENE_INDEX_H
@@ -23,25 +27,55 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(MayaUsdRenderPassSceneIndex);
 
-/// Applies the active render pass named in the HdSceneGlobalsSchema: prims
-/// matching the pass's "prune" collection are removed from the scene,
-/// renderable prims outside its "renderVisibility" collection are made
-/// invisible, and geometry matching its "matte" collection is flagged with a
-/// constant HdVP2Tokens->mattePrimvar for HdVP2Mesh to shade distinctly.
+/// Applies the active render pass named in the HdSceneGlobalsSchema.
 ///
-/// \note Like the hdPrman original, this assumes the active render pass is a
-///       UsdRenderPass for the purposes of collection naming conventions.
+/// UsdRenderPass defines a fixed set of four collections, all handled here:
 ///
+///   prune             prims are removed from the scene
+///   renderVisibility  prims outside the collection get visibility=0
+///   matte             prims inside the collection are flagged
+///   cameraVisibility  prims outside the collection are flagged
+///
+/// prune and renderVisibility need no renderer-specific interpretation and are
+/// always applied. matte and cameraVisibility have no renderer-neutral meaning,
+/// so the renderer says which primvar to flag them with; leaving a name empty
+/// disables that collection.
+///
+/// \note Assumes the active render pass is a UsdRenderPass, for collection
+///       naming conventions.
 class MayaUsdRenderPassSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-    static MayaUsdRenderPassSceneIndexRefPtr New(const HdSceneIndexBaseRefPtr& inputSceneIndex);
+    /// A constant bool primvar written on affected prims. Constant primvars are
+    /// the only channel scene index emulation forwards to a render delegate,
+    /// which is why the flags are carried this way.
+    struct FlagPrimvar
+    {
+        /// Empty disables the collection entirely.
+        TfToken name;
+
+        /// The value written on affected prims. matte is set true; camera
+        /// visibility is set false, since the primvar states whether the prim is
+        /// visible to camera rather than whether it is hidden. Both match
+        /// Arnold's arnold:matte and arnold:visibility:camera, so only the
+        /// namespace differs between renderers.
+        bool value = true;
+    };
+
+    struct Config
+    {
+        FlagPrimvar matte;
+        FlagPrimvar cameraVisibility;
+    };
+
+    static MayaUsdRenderPassSceneIndexRefPtr
+    New(const HdSceneIndexBaseRefPtr& inputSceneIndex, const Config& config);
 
     HdSceneIndexPrim GetPrim(const SdfPath& primPath) const override;
     SdfPathVector    GetChildPrimPaths(const SdfPath& primPath) const override;
 
 protected:
-    MayaUsdRenderPassSceneIndex(const HdSceneIndexBaseRefPtr& inputSceneIndex);
+    MayaUsdRenderPassSceneIndex(const HdSceneIndexBaseRefPtr& inputSceneIndex, const Config&);
     ~MayaUsdRenderPassSceneIndex() override;
 
     void _PrimsAdded(
@@ -55,32 +89,26 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries& entries) override;
 
 private:
-    /// State derived from the active render pass. An empty renderPassPath means
-    /// no pass is active. Evaluators are set sparsely, matching the presence of
-    /// each collection on the pass prim.
+    /// Expressions are retained so old and new state can be compared.
     struct _RenderPassState
     {
-        SdfPath renderPassPath;
-
-        // Retained so old and new state can be compared.
-        SdfPathExpression renderVisExpr;
+        SdfPath           renderPassPath;
         SdfPathExpression pruneExpr;
+        SdfPathExpression renderVisExpr;
         SdfPathExpression matteExpr;
         SdfPathExpression cameraVisExpr;
 
-        std::optional<HdCollectionExpressionEvaluator> renderVisEval;
         std::optional<HdCollectionExpressionEvaluator> pruneEval;
+        std::optional<HdCollectionExpressionEvaluator> renderVisEval;
         std::optional<HdCollectionExpressionEvaluator> matteEval;
         std::optional<HdCollectionExpressionEvaluator> cameraVisEval;
 
-        bool DoesOverrideVis(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
-        // Same polarity as renderVisibility: a prim that does *not* match is the
-        // one hidden from camera.
-        bool DoesOverrideCameraVis(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
-        // Note the inverted polarity relative to renderVisibility: a prim that
-        // matches the matte collection *is* matte.
-        bool DoesOverrideMatte(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
         bool DoesPrune(const SdfPath& primPath) const;
+        bool DoesOverrideVis(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
+        // Matching the collection is what makes a prim matte, the opposite
+        // polarity to the two visibility collections where *not* matching hides.
+        bool DoesOverrideMatte(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
+        bool DoesOverrideCameraVis(const SdfPath& primPath, const HdSceneIndexPrim& prim) const;
     };
 
     void _UpdateActiveRenderPassState(
@@ -88,7 +116,10 @@ private:
         HdSceneIndexObserver::DirtiedPrimEntries* dirtyEntries,
         HdSceneIndexObserver::RemovedPrimEntries* removedEntries);
 
-    _RenderPassState _activeRenderPass;
+    const Config                _config;
+    HdContainerDataSourceHandle _matteDs;
+    HdContainerDataSourceHandle _cameraInvisibleDs;
+    _RenderPassState            _activeRenderPass;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

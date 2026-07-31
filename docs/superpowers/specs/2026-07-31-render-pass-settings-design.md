@@ -1,37 +1,45 @@
-# Design — render pass `includedPurposes` and camera in the viewport
+# Design — render pass camera in the viewport
 
 **Date:** 2026-07-31
-**Status:** design. Not implemented.
+**Status:** camera implemented in the demo script (Python only, no C++).
+**`includedPurposes` was considered and declined — see below.**
 **Builds on:** [`../2026-07-31-render-pass-summary.md`](../2026-07-31-render-pass-summary.md)
 
 ## Goal
 
-Support the two remaining `UsdRenderPass` properties that mean something in a viewport:
+Look through the camera a `UsdRenderPass` renders from.
 
-- **`includedPurposes`** — the pass decides which USD purposes draw.
-- **`camera`** — look through the camera the pass renders from.
+## Not doing: `includedPurposes`
 
-Both live on the `UsdRenderSettings` reached through the pass's `renderSource` relationship, not on
+Originally specced here alongside the camera, and **dropped as unwanted for the viewport.** The
+design is left below for the record rather than deleted, since the analysis stands if anyone
+revisits it.
+
+Two things worth keeping from it either way. First, `includedPurposes` defaults to
+`["default", "render"]`, so a naive implementation would silently switch proxy and guide off for any
+pass authoring a `renderSource` — any future attempt should gate on `HasAuthoredValue()`. Second,
+`HdRenderTagTokens->geometry` currently returns unconditional `true` in `DrawRenderTag`, so
+supporting the `default` purpose would mean changing existing behaviour, not just adding to it.
+
+Both lived on the `UsdRenderSettings` reached through the pass's `renderSource` relationship, not on
 the pass itself. Everything else on the schema is either pipeline metadata (`passType`, `command`,
 `fileName`, `inputPasses`), meaningless to VP2 (`disableMotionBlur`, `disableDepthOfField`,
 `instantaneousShutter`), about AOVs (`products`), or likely to fight Maya's own settings
 (`renderingColorSpace`).
 
-## Shared prerequisite: follow `renderSource`
+## Prerequisite: follow `renderSource`
 
-`MayaUsdRenderPassPublisher::Publish` currently reads collections off the pass prim and nothing
-else. Both features need it to also resolve `renderSource` to a `UsdRenderSettings` prim on the same
-stage.
+The camera is not on the pass prim; it is on a `UsdRenderSettings` reached through `renderSource`,
+so resolving it means reading a second prim.
 
-- If `fileName` is authored the settings live in an external file. **Out of scope** — log and ignore.
-- If `renderSource` is absent or unresolvable, both features are simply inactive.
-- Neither feature is per-prim, so **neither belongs in the scene index.** They are global pass state
-  and live in the publisher / proxy shape layer. `MayaUsdRenderPassSceneIndex` is untouched.
+- If `fileName` is authored the settings live in an external file. **Out of scope** — report and
+  ignore.
+- If `renderSource` is absent or unresolvable, the feature is simply inactive.
+- This is global pass state, not per-prim, so **it does not belong in the scene index.**
+  `MayaUsdRenderPassSceneIndex` and `MayaUsdRenderPassPublisher` are both untouched — the demo
+  script resolves it directly off the stage.
 
-Our demo asset authors no `renderSource`, so it needs a `RenderSettings` prim before any of this is
-testable.
-
-## 1. `includedPurposes`
+## DECLINED — `includedPurposes` (kept for the record)
 
 **Decision: the pass overrides while active; clearing it restores the user's toggles.** That matches
 what a render pass means and is consistent with `prune` and `renderVisibility`, which already
@@ -73,7 +81,7 @@ mechanism, which matters given how often that has been the failure point in this
 | `proxy` | `HdRenderTagTokens->proxy` |
 | `guide` | `HdRenderTagTokens->guide` |
 
-## 2. Look through the pass camera
+## Look through the pass camera
 
 **Decision: explicit action, never automatic.** Moving someone's viewport as a side effect of
 setting an attribute is hostile and has no obvious undo. An explicit command also stays sensible
@@ -101,22 +109,21 @@ prim missing, or target is not a `UsdGeomCamera`.
 
 ## Verification
 
-Manual, matching the rest of the spike. The demo asset gains a `RenderSettings` prim and a couple of
-`UsdGeomCamera`s, plus passes that vary purposes and camera.
+Manual, matching the rest of the spike. The demo asset gains three `UsdGeomCamera`s under
+`/Cameras` and three passes that author `renderSource` to a `RenderSettings` prim naming one.
 
-1. **Purposes apply** — a pass with `includedPurposes = ["default"]` hides render/proxy/guide
-   geometry. Needs prims tagged with non-default purposes, which the demo does not have yet.
-2. **Clearing restores** — switching to `NoFilter` brings back exactly the user's toggle state, not
-   a default. This is the check that matters; every previous feature here failed on the *clear*
-   path, not the apply path.
-3. **Unauthored purposes are left alone** — a pass whose `renderSource` never authors
-   `includedPurposes` must not disturb the toggles.
-4. **Camera** — the command frames the pass camera; a pass without one reports and does nothing.
+1. **Camera** — `CamShotRed` / `CamShotShaded` / `CamShotWide` plus the Look through pass camera
+   button frame the expected group.
+2. **Switching a pass moves nothing on its own** — the viewport only changes when the button is
+   pressed. This is the design decision, so it is worth confirming rather than assuming.
+3. **Graceful failure** — a pass with no `renderSource`, or one resolving no camera, reports and
+   does nothing.
 
 ## Scope
 
-Out: `fileName` external settings, `materialBindingPurposes`, `renderingColorSpace`, `resolution` /
-`dataWindowNDC` gate overlays, `products` / AOVs, and any automatic camera following.
+Out: `includedPurposes` (declined), `fileName` external settings, `materialBindingPurposes`,
+`renderingColorSpace`, `resolution` / `dataWindowNDC` gate overlays, `products` / AOVs, and any
+automatic camera following.
 
 `materialBindingPurposes` (`full` vs `preview`) is the most plausible next one, but it reaches into
 VP2's material resolution rather than reusing an existing toggle, so it is a different size of job.
