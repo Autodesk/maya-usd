@@ -289,7 +289,7 @@ void MayaCommandHook::stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& la
         if (!layer)
             continue;
 
-        cmd += "-stitchLayers ";
+        cmd += " -stitchLayers";
         cmd += quoteForCommand(proxyShape);
         cmd += quoteLayerIdentifierForCommand(layer);
     }
