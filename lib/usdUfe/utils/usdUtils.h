@@ -53,9 +53,6 @@ bool cleanReferencedPath(const UsdPrim& deletedPrim);
 USDUFE_PUBLIC
 bool isInternalReference(const SdfReference&);
 
-PXR_NS::VtValue
-vtValueFromString(const PXR_NS::SdfValueTypeName& typeName, const std::string& strValue);
-
 //! Check if the src and dst attributes are connected.
 //! \return True, if they are connected.
 USDUFE_PUBLIC

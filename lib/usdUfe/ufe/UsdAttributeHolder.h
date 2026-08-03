@@ -46,15 +46,16 @@ public:
     {
         return isRelationship() ? usdRelationship().IsValid() : false;
     }
-    virtual bool        isValid() const { return isValidAttribute() || isValidRelationship(); }
-    virtual std::string isEditAllowedMsg() const;
-    virtual bool        isEditAllowed() const { return isEditAllowedMsg().empty(); }
-    virtual std::string defaultValue() const;
-    virtual std::string nativeType() const;
-    virtual bool        get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
-    virtual bool        set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
-    virtual bool        isDefault();
-    virtual void        reset();
+    virtual bool            isValid() const { return isValidAttribute() || isValidRelationship(); }
+    virtual std::string     isEditAllowedMsg() const;
+    virtual bool            isEditAllowed() const { return isEditAllowedMsg().empty(); }
+    virtual PXR_NS::VtValue defaultValue() const;
+    virtual std::string     defaultValueAsString() const;
+    virtual std::string     nativeType() const;
+    virtual bool            get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
+    virtual bool            set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
+    virtual bool            isDefault();
+    virtual void            reset();
 
     virtual bool        hasValue() const;
     virtual std::string name() const;
