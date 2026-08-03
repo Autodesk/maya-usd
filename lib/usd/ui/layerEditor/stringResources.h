@@ -55,8 +55,8 @@ const auto kDisplayLayerContentsEmpty    { create("kDisplayLayerContentsEmpty", 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 const auto kToggleEditForwarding         { create("kToggleEditForwarding", "Toggle Edit Forwarding") };
 const auto kEchoEditForwarding           { create("kEchoEditForwarding", "Echo Edit Forwarding in Script Editor") };
-const auto kConfigureEditForwarding      { create("kConfigureEditForwarding", "Configure Edit Forwarding...") };
-const auto kConfigureEditForwardingTitle { create("kConfigureEditForwardingTitle", "Configure Edit Forwarding") };
+const auto kConfigureEditForwarding      { create("kConfigureEditForwarding", "Edit Forwarding Configuration") };
+const auto kConfigureEditForwardingTitle { create("kConfigureEditForwardingTitle", "USD Edit Forwarding Configuration") };
 #endif
 const auto kDisplayLayerExpandAllValues  { create("kDisplayLayerExpandAllValues", "Expand All Values") };
 const auto kDisplayLayerExpandAllValuesTooltip { create("kDisplayLayerExpandAllValuesTooltip",
