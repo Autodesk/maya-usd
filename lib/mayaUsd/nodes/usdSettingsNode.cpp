@@ -36,6 +36,7 @@ const MString UsdSettingsNode::typeName("UsdDefaultSettings");
 MObject UsdSettingsNode::serializedRootLayerAttr;
 MObject UsdSettingsNode::serializedSessionLayerAttr;
 MObject UsdSettingsNode::activeSettingsPathAttr;
+MObject UsdSettingsNode::currentRendererAttr;
 
 /* static */
 void* UsdSettingsNode::creator() { return new UsdSettingsNode(); }
@@ -84,6 +85,18 @@ MStatus UsdSettingsNode::initialize()
     status = addAttribute(activeSettingsPathAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    // Hydra renderer plugin name persisted on the node to select which Hydra
+    // backend is used for USD rendering. Hidden/internal: reads/writes go
+    // through the typed accessors.
+    currentRendererAttr = typedAttrFn.create(
+        "currentRenderer", "crn", MFnData::kString, defaultStringDataObj, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    typedAttrFn.setStorable(true);
+    typedAttrFn.setHidden(true);
+    typedAttrFn.setInternal(true);
+    status = addAttribute(currentRendererAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
     return status;
 }
 
@@ -116,6 +129,19 @@ bool UsdSettingsNode::setActiveSettingsPath(const std::string& ufePath)
 {
     MPlug   plug(thisMObject(), activeSettingsPathAttr);
     MStatus status = plug.setString(MString(ufePath.c_str()));
+    return status == MS::kSuccess;
+}
+
+std::string UsdSettingsNode::currentRenderer() const
+{
+    MPlug plug(thisMObject(), currentRendererAttr);
+    return plug.asString().asChar();
+}
+
+bool UsdSettingsNode::setCurrentRenderer(const std::string& rendererName)
+{
+    MPlug   plug(thisMObject(), currentRendererAttr);
+    MStatus status = plug.setString(MString(rendererName.c_str()));
     return status == MS::kSuccess;
 }
 

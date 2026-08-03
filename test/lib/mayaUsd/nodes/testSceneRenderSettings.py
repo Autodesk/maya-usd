@@ -416,6 +416,64 @@ class testSceneRenderSettings(unittest.TestCase):
             defaultPath)
 
     # ------------------------------------------------------------------
+    # Hydra renderer selection (currentRenderer)
+    # ------------------------------------------------------------------
+
+    def testCurrentRendererDefault(self):
+        '''Default currentRenderer is empty; no Hydra renderer is chosen yet.'''
+        nodeName = UsdDefaultRenderSettings.find()
+        self.assertEqual(UsdDefaultRenderSettings.getCurrentRenderer(), '')
+        self.assertEqual(
+            cmds.getAttr(nodeName + '.currentRenderer'), '')
+
+    def testCurrentRendererSetter(self):
+        '''Writing through the helper updates every read path.'''
+        rendererName = 'HdStormRendererPlugin'
+        self.assertTrue(
+            UsdDefaultRenderSettings.setCurrentRenderer(rendererName))
+
+        self.assertEqual(
+            UsdDefaultRenderSettings.getCurrentRenderer(), rendererName)
+        nodeName = UsdDefaultRenderSettings.find()
+        self.assertEqual(
+            cmds.getAttr(nodeName + '.currentRenderer'), rendererName)
+
+    def testCurrentRendererRoundTrip(self):
+        '''A custom currentRenderer survives a save/open cycle.'''
+        rendererName = 'SomeCustomRenderer'
+        self.assertTrue(
+            UsdDefaultRenderSettings.setCurrentRenderer(rendererName))
+
+        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        try:
+            tmpFile = os.path.join(tmpDir, 'currentRendererRoundTrip.ma')
+            cmds.file(rename=tmpFile)
+            cmds.file(save=True, type='mayaAscii')
+            cmds.file(new=True, force=True)
+            cmds.file(tmpFile, open=True, force=True)
+
+            self.assertEqual(
+                UsdDefaultRenderSettings.getCurrentRenderer(),
+                rendererName)
+        finally:
+            cmds.file(new=True, force=True)
+            shutil.rmtree(tmpDir, ignore_errors=True)
+
+    def testCurrentRendererResetOnFileNew(self):
+        '''File > New restores the empty default value.'''
+        self.assertEqual(UsdDefaultRenderSettings.getCurrentRenderer(), '')
+
+        rendererName = 'TemporaryRenderer'
+        self.assertTrue(
+            UsdDefaultRenderSettings.setCurrentRenderer(rendererName))
+        self.assertEqual(
+            UsdDefaultRenderSettings.getCurrentRenderer(), rendererName)
+
+        cmds.file(new=True, force=True)
+
+        self.assertEqual(UsdDefaultRenderSettings.getCurrentRenderer(), '')
+
+    # ------------------------------------------------------------------
     # Locked-node invariant
     # ------------------------------------------------------------------
 
