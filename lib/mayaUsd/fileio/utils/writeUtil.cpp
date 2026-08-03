@@ -1361,4 +1361,34 @@ bool UsdMayaWriteUtil::SetScaledAttribute(
     return SetAttribute(attr, ScaleMatrices(value, scale), time, valueWriter);
 }
 
+// static
+bool UsdMayaWriteUtil::SetScaledAttribute(
+    const UsdAttribute&        attr,
+    GfMatrix4d*                value,
+    const double               scale,
+    const UsdTimeCode          time,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    if (scale != 1.0) {
+        *value = ScaleMatrix(*value, scale);
+    }
+    return SetAttribute(attr, value, time, valueWriter);
+}
+
+// static
+bool UsdMayaWriteUtil::SetScaledAttribute(
+    const UsdAttribute&        attr,
+    VtMatrix4dArray*           value,
+    const double               scale,
+    const UsdTimeCode          time,
+    FlexibleSparseValueWriter* valueWriter)
+{
+    if (scale != 1.0) {
+        for (GfMatrix4d& matrix : *value) {
+            matrix.SetTranslateOnly(matrix.ExtractTranslation() * scale);
+        }
+    }
+    return SetAttribute(attr, value, time, valueWriter);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
