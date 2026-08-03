@@ -751,7 +751,12 @@ void LayerEditorWidget::openEditForwardDialog()
             (_editForwardDialog->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
     }
 
-    _editForwardDialog->show();
+    // Only show() a dialog that is actually hidden. Showing a saveWindowPref
+    // window re-applies its stored position, which would move an already-open
+    // dialog away from where the user last dragged it.
+    if (!_editForwardDialog->isVisible()) {
+        _editForwardDialog->show();
+    }
     _editForwardDialog->raise();
     _editForwardDialog->activateWindow();
 }

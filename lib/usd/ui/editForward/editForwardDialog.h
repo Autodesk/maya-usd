@@ -23,6 +23,7 @@
 #include <maya/MMessage.h>
 #include <ufe/observer.h>
 
+#include <QtCore/QSize>
 #include <QtWidgets/QDialog>
 
 #include <memory>
@@ -45,6 +46,11 @@ public:
 
     void handleSelectionChanged();
     void setActiveStage(PXR_NS::UsdStageRefPtr const& stage);
+
+    // Default size, used only when no geometry has been restored or set by the
+    // user. Deliberately not a resize() in the constructor, which would
+    // override the position and size Maya restores via saveWindowPref.
+    QSize sizeHint() const override;
 
 private:
     void refreshStages();
