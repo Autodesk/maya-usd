@@ -17,6 +17,10 @@ if (AdskUsdComponentCreator_FOUND)
         testComponentCreatorAddPrimInComponent.py
     )
 
+    set(COMPONENT_CREATOR_BATCH_TEST_SCRIPT_FILES
+        testComponentCreatorSave.py
+    )
+
     foreach(script ${COMPONENT_CREATOR_TEST_SCRIPT_FILES})
         mayaUsd_get_unittest_target(target ${script})
         mayaUsd_add_test(${target}
@@ -30,6 +34,20 @@ if (AdskUsdComponentCreator_FOUND)
                 # This can be removed once we integrate the update CC which removed the Maya plugin
                 # and we initialize the CC directly from MayaUsd. Having this MAYA_MODULE_PATH is
                 # okay after the CC update since this path won't exist and therefore will be ignored.
+                "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}/../AdskUsdComponentCreator"
+                "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
+        )
+        set_property(TEST ${target} APPEND PROPERTY LABELS SharedComponents)
+    endforeach()
+
+    foreach(script ${COMPONENT_CREATOR_BATCH_TEST_SCRIPT_FILES})
+        mayaUsd_get_unittest_target(target ${script})
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME=1"
+                "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
                 "MAYA_MODULE_PATH=${CMAKE_INSTALL_PREFIX}/../AdskUsdComponentCreator"
                 "PXR_OVERRIDE_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
         )
