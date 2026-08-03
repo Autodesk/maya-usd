@@ -733,22 +733,27 @@ void LayerEditorWidget::onSplitterMoved(int pos, int index)
 void LayerEditorWidget::openEditForwardDialog()
 {
     auto* ss = &_sessionState;
-    if (_editForwardDialog) {
-        _editForwardDialog->show();
-        _editForwardDialog->raise();
-        _editForwardDialog->activateWindow();
-        return;
+    if (!_editForwardDialog) {
+        _editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
+            StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
+            MQtUtil::mainWindow());
+        // While the layer editor is open, follow its current stage.
+        QObject::connect(ss, &SessionState::currentStageChangedSignal, this, [this, ss]() {
+            if (_editForwardDialog) {
+                _editForwardDialog->setActiveStage(ss->stage());
+            }
+        });
     }
-    _editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
-        StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
-        MQtUtil::mainWindow());
-    // While the layer editor is open, follow its current stage.
-    QObject::connect(ss, &SessionState::currentStageChangedSignal, this, [this, ss]() {
-        if (_editForwardDialog) {
-            _editForwardDialog->setActiveStage(ss->stage());
-        }
-    });
+
+    // If the dialog was previously minimized, restore it before showing.
+    if (_editForwardDialog->isMinimized()) {
+        _editForwardDialog->setWindowState(
+            (_editForwardDialog->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+    }
+
     _editForwardDialog->show();
+    _editForwardDialog->raise();
+    _editForwardDialog->activateWindow();
 }
 
 #endif // WANT_ADSK_USD_EDIT_FORWARD_BUILD
