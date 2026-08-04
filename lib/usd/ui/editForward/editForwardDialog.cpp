@@ -89,7 +89,7 @@ EditForwardDialog::EditForwardDialog(const QString& title, QWidget* parent)
 
     // Tell Maya to treat this as a Maya-managed window. This is the same
     // mechanism Maya uses internally to keep its own dialogs from going behind
-    // the main window. 
+    // the main window.
     // Per Maya dev guidance these two calls should be applied alone, without
     // combining with any other Qt window flags.
     setWindowFlags(Qt::Window);
