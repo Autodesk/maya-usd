@@ -534,9 +534,11 @@ void LayerEditorWidget::updateButtons()
         _buttons._toggleEFButton->setStyleSheet(
             QString("QPushButton { padding: %1px; background-image: url(%2); "
                     "background-position: center center; background-repeat: no-repeat; "
-                    "border: 0px; background-origin: content; }")
+                    "border: 0px; background-origin: content; }"
+                    "QPushButton::hover { background-image: url(%3); }")
                 .arg(DPIScale(4))
-                .arg(QtUtils::getDPIPixmapName(baseName)));
+                .arg(QtUtils::getDPIPixmapName(baseName))
+                .arg(QtUtils::getDPIPixmapName(QString(baseName) + "_hover")));
     }
 #endif
 }
