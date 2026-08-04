@@ -23,6 +23,7 @@
 #include <maya/MMessage.h>
 #include <ufe/observer.h>
 
+#include <QtCore/QSize>
 #include <QtWidgets/QDialog>
 
 #include <memory>
@@ -45,6 +46,8 @@ public:
 
     void handleSelectionChanged();
     void setActiveStage(PXR_NS::UsdStageRefPtr const& stage);
+
+    QSize sizeHint() const override;
 
 private:
     void refreshStages();

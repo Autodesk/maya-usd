@@ -36,6 +36,7 @@
 #include <AdskUsdEditForwardUi/StageEntry.h>
 #include <QtCore/QPointer>
 #include <QtCore/QTimer>
+#include <QtCore/QVariant>
 #include <QtWidgets/QVBoxLayout>
 
 #include <vector>
@@ -79,12 +80,20 @@ struct SelectionObserver : Ufe::Observer
 } // namespace
 
 EditForwardDialog::EditForwardDialog(const QString& title, QWidget* parent)
-    : QDialog(parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
+    : QDialog(parent)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setWindowTitle(title);
-    resize(
-        static_cast<int>(MQtUtil::dpiScale(1250.0f)), static_cast<int>(MQtUtil::dpiScale(1000.0f)));
+    // Maya keys saved window preferences off the object name.
+    setObjectName("EditForwardConfigDialog");
+
+    // Tell Maya to treat this as a Maya-managed window. This is the same
+    // mechanism Maya uses internally to keep its own dialogs from going behind
+    // the main window.
+    // Per Maya dev guidance these two calls should be applied alone, without
+    // combining with any other Qt window flags.
+    setWindowFlags(Qt::Window);
+    setProperty("saveWindowPref", QVariant::fromValue(true));
 
     _forwardWidget = new AdskUsdEditForwardUi::ForwardWidget(this);
     _forwardWidget->setSourceLayerDefault(
@@ -125,6 +134,12 @@ EditForwardDialog::~EditForwardDialog()
     if (ufeSelection && _selectionObserver) {
         ufeSelection->removeObserver(_selectionObserver);
     }
+}
+
+QSize EditForwardDialog::sizeHint() const
+{
+    return QSize(
+        static_cast<int>(MQtUtil::dpiScale(1250.0f)), static_cast<int>(MQtUtil::dpiScale(1000.0f)));
 }
 
 void EditForwardDialog::processNodeAdded(MObject& /*node*/)

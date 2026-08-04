@@ -178,8 +178,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
     _buttons._toggleEFButton = new QPushButton();
     _buttons._toggleEFButton->setFlat(true);
     _buttons._toggleEFButton->setFixedSize(buttonSize, buttonSize);
-    _buttons._toggleEFButton->setToolTip(
-        StringResources::getAsQString(StringResources::kToggleEditForwarding));
+    // Tooltip reflects the current edit forwarding state; set by updateButtons().
     _buttons._toggleEFButton->setObjectName("LayerEditorToggleEFButton");
     toolbar->addWidget(_buttons._toggleEFButton, 0, buttonAlignment);
     connect(
@@ -524,9 +523,13 @@ void LayerEditorWidget::updateButtons()
     _updateButtonsOnIdle = false;
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    // Update the EF toolbar button icon to reflect the current edit forwarding active state.
+    // Update the EF toolbar button icon and tooltip to reflect the current edit forwarding
+    // active state.
     if (_buttons._toggleEFButton) {
         const bool efActive = _sessionState.isEditForwardMode();
+        _buttons._toggleEFButton->setToolTip(StringResources::getAsQString(
+            efActive ? StringResources::kEditForwardingTooltipEnabled
+                     : StringResources::kEditForwardingTooltipDisabled));
         const auto baseName = efActive ? ":/UsdLayerEditor/ef_on" : ":/UsdLayerEditor/ef_default";
         _buttons._toggleEFButton->setStyleSheet(
             QString("QPushButton { padding: %1px; background-image: url(%2); "
@@ -733,22 +736,32 @@ void LayerEditorWidget::onSplitterMoved(int pos, int index)
 void LayerEditorWidget::openEditForwardDialog()
 {
     auto* ss = &_sessionState;
-    if (_editForwardDialog) {
-        _editForwardDialog->show();
-        _editForwardDialog->raise();
-        _editForwardDialog->activateWindow();
-        return;
+    if (!_editForwardDialog) {
+        _editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
+            StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
+            MQtUtil::mainWindow());
+        // While the layer editor is open, follow its current stage.
+        QObject::connect(ss, &SessionState::currentStageChangedSignal, this, [this, ss]() {
+            if (_editForwardDialog) {
+                _editForwardDialog->setActiveStage(ss->stage());
+            }
+        });
     }
-    _editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
-        StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
-        MQtUtil::mainWindow());
-    // While the layer editor is open, follow its current stage.
-    QObject::connect(ss, &SessionState::currentStageChangedSignal, this, [this, ss]() {
-        if (_editForwardDialog) {
-            _editForwardDialog->setActiveStage(ss->stage());
-        }
-    });
-    _editForwardDialog->show();
+
+    // If the dialog was previously minimized, restore it before showing.
+    if (_editForwardDialog->isMinimized()) {
+        _editForwardDialog->setWindowState(
+            (_editForwardDialog->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+    }
+
+    // Only show() a dialog that is actually hidden. Showing a saveWindowPref
+    // window re-applies its stored position, which would move an already-open
+    // dialog away from where the user last dragged it.
+    if (!_editForwardDialog->isVisible()) {
+        _editForwardDialog->show();
+    }
+    _editForwardDialog->raise();
+    _editForwardDialog->activateWindow();
 }
 
 #endif // WANT_ADSK_USD_EDIT_FORWARD_BUILD
