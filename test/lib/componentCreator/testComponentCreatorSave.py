@@ -17,8 +17,6 @@ class SaveToComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
     """
     Tests for usd_component_creator_plugin.create_component.add_to_component_from_nodes
     and then saving and reloading.
-
-    The reloading part is tested after in the test SaveToComponentFollowupTestCase.
     """
 
     _tempFolder = None
@@ -179,7 +177,6 @@ class SaveToComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
 
             geoPrim = stage.GetPrimAtPath(Sdf.Path('/root/geo'))
             for child in geoPrim.GetChildren():
-                print(f'Child: {child.GetName()}')
                 if child.GetTypeName() == 'Mesh':
                     self.assertEqual(expected_cube_name, child.GetName(), f"The variant {variant.GetName()} should have a cube named {expected_cube_name}")
                     found_cubes.add(child.GetName())

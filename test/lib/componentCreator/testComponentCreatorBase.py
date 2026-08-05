@@ -29,12 +29,6 @@ class _ComponentCreatorTestBase:
         new = self._snapshotProxyShapes() - before
         return list(new)[0] if new else None
 
-    def _openVariantEditor(self, component_description):
-        from usd_component_creator_plugin import open_variant_editor_window
-        from AdskVariantEditor import ComponentData
-        compData = ComponentData(component_description) if component_description else None
-        open_variant_editor_window(None)
-
     def _getActiveDesc(self):
         """Return the ComponentDescription currently shown in the variant editor, or None."""
         from usd_component_creator_plugin import get_variant_editor_component_description
