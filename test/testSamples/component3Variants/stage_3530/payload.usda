@@ -1,0 +1,30 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+    subLayers = [
+        @./bind/bind.usda@,
+        @./mtl/mtl.usda@,
+        @./geo/geo.usda@
+    ]
+)
+
+def Xform "root" (
+    variants = {
+        string variant_set_1 = "pPlane1"
+    }
+    append variantSets = "variant_set_1"
+)
+{
+    variantSet "variant_set_1" = {
+        "pPlane1" {
+
+        }
+        "pPlane2" {
+
+        }
+        "pPlane3" {
+
+        }
+    }
+}
+
