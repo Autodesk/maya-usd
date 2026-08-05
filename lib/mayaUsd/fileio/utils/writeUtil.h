@@ -336,12 +336,12 @@ struct UsdMayaWriteUtil
         const UsdTimeCode          time = UsdTimeCode::Default(),
         FlexibleSparseValueWriter* valueWriter = nullptr)
     {
-        if (scale == 1.0) {
-            return SetAttribute(attr, value, time, valueWriter);
+        if (scale != 1.0) {
+            T scaledValue(value * scale);
+            return valueWriter ? valueWriter->SetAttribute(attr, VtValue(scaledValue), time)
+                               : attr.Set(scaledValue, time);
         }
-        T scaledValue(value * scale);
-        return valueWriter ? valueWriter->SetAttribute(attr, VtValue(scaledValue), time)
-                           : attr.Set(scaledValue, time);
+        return SetAttribute(attr, value, time, valueWriter);
     }
 
     MAYAUSD_CORE_PUBLIC
