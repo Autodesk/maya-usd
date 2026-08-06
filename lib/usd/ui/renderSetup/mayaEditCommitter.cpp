@@ -23,8 +23,6 @@
 
 #include <pxr/usd/sdf/changeBlock.h>
 
-#include <QtCore/QTimer>
-
 namespace MayaUsdRenderSetup {
 
 MayaEditCommitter::MayaEditCommitter(QObject* parent)
@@ -32,7 +30,7 @@ MayaEditCommitter::MayaEditCommitter(QObject* parent)
 {
 }
 
-void MayaEditCommitter::setStages(const std::vector<Adsk::HostStage>& stages)
+void MayaEditCommitter::setStages(const std::vector<AdskUsdRenderSetup::HostStage>& stages)
 {
     _stages.clear();
     _stages.reserve(stages.size());
@@ -48,17 +46,6 @@ void MayaEditCommitter::commit(const std::string& undoLabel, std::function<void(
     if (!doEdit || _stages.empty()) {
         return;
     }
-
-    ++_inFlightCount;
-    // Schedule the decrement before doEdit() so it fires even if doEdit() throws.
-    // The one-event-loop-cycle delay keeps isLocalEditInFlight() true through the
-    // USD-notice burst that follows the edit, so the notice bridge treats the
-    // resulting refresh as self-originated and skips re-entrancy.
-    QTimer::singleShot(0, this, [this]() {
-        if (_inFlightCount > 0) {
-            --_inFlightCount;
-        }
-    });
 
     UsdUfe::trackStagesEditTargets(_stages);
 
