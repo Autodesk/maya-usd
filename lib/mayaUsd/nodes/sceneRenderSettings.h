@@ -48,6 +48,14 @@ MAYAUSD_CORE_PUBLIC std::string getActiveSettingPath();
 //! if the singleton node is unavailable or the plug write fails.
 MAYAUSD_CORE_PUBLIC bool setActiveSettingPath(const std::string& ufePath);
 
+//! Hydra renderer plugin name that drives USD Hydra rendering for the scene,
+//! or an empty string when none has been chosen.
+MAYAUSD_CORE_PUBLIC std::string getCurrentRenderer();
+
+//! Author the Hydra renderer plugin name on the render-settings singleton.
+//! Returns false if the singleton node is unavailable or the plug write fails.
+MAYAUSD_CORE_PUBLIC bool setCurrentRenderer(const std::string& rendererName);
+
 //! Name of the custom string attribute that records the UFE path of a camera
 //! that does not live on the same stage as the render-settings prim
 //! (e.g. a Maya native camera shape, or a camera in another USD stage).
