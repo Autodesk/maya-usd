@@ -61,6 +61,7 @@ public:
     static MObject serializedRootLayerAttr;
     static MObject serializedSessionLayerAttr;
     static MObject activeSettingsPathAttr;
+    static MObject currentRendererAttr;
 
     static void*   creator();
     static MStatus initialize();
@@ -84,6 +85,13 @@ public:
     //! Author the UFE path string of the currently active settings prim. Returns
     //! false on plug-write failure.
     bool setActiveSettingsPath(const std::string& ufePath);
+
+    //! Hydra renderer plugin name that drives USD Hydra rendering for the
+    //! scene, or an empty string when no renderer has been chosen.
+    std::string currentRenderer() const;
+
+    //! Author the Hydra renderer plugin name. Returns false on plug-write failure.
+    bool setCurrentRenderer(const std::string& rendererName);
 
     // Serialization (called by UsdSceneSettingsManager scene callbacks)
     void serializeToAttributes();

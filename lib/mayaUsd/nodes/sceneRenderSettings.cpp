@@ -170,6 +170,26 @@ bool setActiveSettingPath(const std::string& ufePath)
     return node->setActiveSettingsPath(ufePath);
 }
 
+std::string getCurrentRenderer()
+{
+    MayaUsd::UsdSettingsNode* node
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+    if (!node) {
+        return {};
+    }
+    return node->currentRenderer();
+}
+
+bool setCurrentRenderer(const std::string& rendererName)
+{
+    MayaUsd::UsdSettingsNode* node
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+    if (!node) {
+        return false;
+    }
+    return node->setCurrentRenderer(rendererName);
+}
+
 const PXR_NS::TfToken& externalCameraAttrName() { return kExternalCameraAttrName; }
 
 bool setRenderSettingsCamera(
