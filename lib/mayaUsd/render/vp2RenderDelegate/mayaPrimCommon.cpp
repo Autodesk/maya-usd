@@ -31,6 +31,7 @@
 #endif
 
 #include <algorithm>
+#include <cstring>
 #include <limits>
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
