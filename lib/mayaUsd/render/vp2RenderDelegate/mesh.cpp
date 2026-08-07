@@ -1072,15 +1072,7 @@ void HdVP2Mesh::Sync(
 
     _PrepareSharedVertexBuffers(delegate, *dirtyBits, reprToken);
 
-#if PXR_VERSION > 2111
-    const TfToken& renderTag = GetRenderTag();
-#else
-    const TfToken& renderTag = delegate->GetRenderTag(id);
-#endif
-
-    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, *this, _reprs, renderTag);
-
-    *dirtyBits = HdChangeTracker::Clean;
+    _SyncEndCommon(*this, delegate, dirtyBits, reprToken, _sharedData, _reprs);
 
     // Draw item update is controlled by its own dirty bits.
     _UpdateRepr(delegate, reprToken);
@@ -1130,11 +1122,6 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
         // Unlike basis curves, we always request refineLevel when topology is
         // dirty
         bits |= HdChangeTracker::DirtySubdivTags | HdChangeTracker::DirtyDisplayStyle;
-    }
-
-    // This support UsdSkel affecting the points position when th etransform is dirty.
-    if (bits & HdChangeTracker::DirtyTransform && _pointsFromSkel) {
-        bits |= HdChangeTracker::DirtyPoints;
     }
 
     // A change of material means that the Quadrangulate state may have
@@ -2593,8 +2580,6 @@ void HdVP2Mesh::_UpdatePrimvarSources(
         _rprimId.asChar(),
         "HdVP2Mesh::_UpdatePrimvarSources");
 
-    const SdfPath& id = GetId();
-
     ErasePrimvarInfoFunc erasePrimvarInfo
         = [this](const TfToken& name) { _meshSharedData->_primvarInfo.erase(name); };
 
@@ -2640,69 +2625,7 @@ void HdVP2Mesh::_UpdatePrimvarSources(
     // At this point we've searched the primvars for the required primvars.
     // check to see if there are any HdExtComputation which should replace
     // primvar data or fill in for a missing primvar.
-    HdExtComputationPrimvarDescriptorVector compPrimvars
-        = sceneDelegate->GetExtComputationPrimvarDescriptors(id, HdInterpolationVertex);
-    const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
-    bool                 pointsAreComputed = false;
-    for (const auto& primvarName : requiredPrimvars) {
-#if !defined(HD_API_VERSION) || HD_API_VERSION < 49
-        using HdStExtCompCpuComputation = HdExtCompCpuComputation;
-        using HdStExtCompCpuComputationSharedPtr = HdExtCompCpuComputationSharedPtr;
-#endif
-
-        // The compPrimvars are a description of the link between the compute system and
-        // what we need to draw.
-        auto result
-            = std::find_if(compPrimvars.begin(), compPrimvars.end(), [&](const auto& compPrimvar) {
-                  return compPrimvar.name == primvarName;
-              });
-        // if there is no compute for the given required primvar then we're done!
-        if (result == compPrimvars.end())
-            continue;
-        HdExtComputationPrimvarDescriptor compPrimvar = *result;
-        // Create the HdStExtCompCpuComputation objects necessary to resolve the computation
-        HdExtComputation const* sourceComp
-            = static_cast<HdExtComputation const*>(renderIndex.GetSprim(
-                HdPrimTypeTokens->extComputation, compPrimvar.sourceComputationId));
-        if (!sourceComp || sourceComp->GetElementCount() <= 0)
-            continue;
-
-        // This compPrimvar is telling me that the primvar with "name" comes from compute.
-        // The compPrimvar has the Id of the compute the data comes from, and the output
-        // of the compute which contains the data
-        HdStExtCompCpuComputationSharedPtr cpuComputation;
-        HdBufferSourceSharedPtrVector      sources;
-        // There is a possible data race calling CreateComputation, see
-        // https://github.com/PixarAnimationStudios/USD/issues/1742
-        cpuComputation
-            = HdStExtCompCpuComputation::CreateComputation(sceneDelegate, *sourceComp, &sources);
-
-        // Immediately resolve the computation so we can fill _meshSharedData._primvarInfo
-        for (HdBufferSourceSharedPtr& source : sources) {
-            source->Resolve();
-        }
-
-        // Pull the result out of the compute and save it into our local primvar info.
-        size_t outputIndex
-            = cpuComputation->GetOutputIndex(compPrimvar.sourceComputationOutputName);
-        // INVALID_OUTPUT_INDEX is declared static in USD, can't access here so re-declare
-        constexpr size_t INVALID_OUTPUT_INDEX = std::numeric_limits<size_t>::max();
-        if (INVALID_OUTPUT_INDEX != outputIndex) {
-            updatePrimvarInfo(
-                primvarName, cpuComputation->GetOutputByIndex(outputIndex), HdInterpolationVertex);
-        }
-
-        // Records that points primvar is computed.
-        if (primvarName == HdTokens->points) {
-            pointsAreComputed = true;
-        }
-    }
-
-    // When points are computed then we will have to propagate that fact to the function
-    // _PropagateDirtyBits() so that it can mark points dirty when the transform change.
-    // This support UsdSkel affecting the points position and properly making the render
-    // delegate dirty.
-    _pointsFromSkel = pointsAreComputed;
+    _UpdateComputedPrimvarSourcesGeneric(sceneDelegate, requiredPrimvars, *this, updatePrimvarInfo);
 }
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT

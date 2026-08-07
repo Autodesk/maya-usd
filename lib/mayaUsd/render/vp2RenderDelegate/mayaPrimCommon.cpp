@@ -21,7 +21,17 @@
 #include "renderDelegate.h"
 #include "tokens.h"
 
+#include <pxr/imaging/hd/extComputation.h>
+#include <pxr/imaging/hd/version.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#if !defined(HD_API_VERSION) || HD_API_VERSION < 49
+#include <pxr/imaging/hd/extCompCpuComputation.h>
+#else
+#include <pxr/imaging/hdSt/extCompCpuComputation.h>
+#endif
+
+#include <algorithm>
+#include <limits>
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <mayaUsd/utils/util.h>
@@ -405,6 +415,12 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
 void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const
 {
+    // This supports UsdSkel affecting the points position when the transform is dirty.
+    // Done before the propagation below so the draw items see the added DirtyPoints too.
+    if (bits & HdChangeTracker::DirtyTransform && _pointsFromSkel) {
+        bits |= HdChangeTracker::DirtyPoints;
+    }
+
     if (bits & HdChangeTracker::AllDirty) {
         // RPrim is dirty, propagate dirty bits to all draw items.
         RenderItemFunc setDirtyBitsToItem = [bits](HdVP2DrawItem::RenderItemData& renderItemData) {
@@ -679,6 +695,84 @@ void MayaUsdRPrim::_UpdatePrimvarSourcesGeneric(
     }
 }
 
+void MayaUsdRPrim::_UpdateComputedPrimvarSourcesGeneric(
+    HdSceneDelegate*       sceneDelegate,
+    const TfTokenVector&   requiredPrimvars,
+    HdRprim&               refThis,
+    UpdatePrimvarInfoFunc& updatePrimvarInfo)
+{
+#if !defined(HD_API_VERSION) || HD_API_VERSION < 49
+    using HdStExtCompCpuComputation = HdExtCompCpuComputation;
+    using HdStExtCompCpuComputationSharedPtr = HdExtCompCpuComputationSharedPtr;
+#endif
+
+    // Recomputed from scratch on every call, so that a prim which stops being skinned
+    // (its binding removed, say) goes back to reading the authored points.
+    _pointsFromSkel = false;
+
+    const SdfPath& id = refThis.GetId();
+
+    // The compPrimvars are a description of the link between the compute system and
+    // what we need to draw.
+    HdExtComputationPrimvarDescriptorVector compPrimvars
+        = sceneDelegate->GetExtComputationPrimvarDescriptors(id, HdInterpolationVertex);
+    if (compPrimvars.empty()) {
+        return;
+    }
+
+    const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
+
+    for (const auto& primvarName : requiredPrimvars) {
+        auto result
+            = std::find_if(compPrimvars.begin(), compPrimvars.end(), [&](const auto& compPrimvar) {
+                  return compPrimvar.name == primvarName;
+              });
+        // if there is no compute for the given required primvar then we're done!
+        if (result == compPrimvars.end())
+            continue;
+        HdExtComputationPrimvarDescriptor compPrimvar = *result;
+
+        // The compPrimvar has the Id of the compute the data comes from, and the output
+        // of the compute which contains the data.
+        HdExtComputation const* sourceComp
+            = static_cast<HdExtComputation const*>(renderIndex.GetSprim(
+                HdPrimTypeTokens->extComputation, compPrimvar.sourceComputationId));
+        if (!sourceComp || sourceComp->GetElementCount() <= 0)
+            continue;
+
+        // Create the HdStExtCompCpuComputation objects necessary to resolve the computation.
+        HdStExtCompCpuComputationSharedPtr cpuComputation;
+        HdBufferSourceSharedPtrVector      sources;
+        // There is a possible data race calling CreateComputation, see
+        // https://github.com/PixarAnimationStudios/USD/issues/1742
+        cpuComputation
+            = HdStExtCompCpuComputation::CreateComputation(sceneDelegate, *sourceComp, &sources);
+
+        // Immediately resolve the computation so we can fill in the primvar info.
+        for (HdBufferSourceSharedPtr& source : sources) {
+            source->Resolve();
+        }
+
+        // Pull the result out of the compute and save it into the local primvar info.
+        size_t outputIndex
+            = cpuComputation->GetOutputIndex(compPrimvar.sourceComputationOutputName);
+        // INVALID_OUTPUT_INDEX is declared static in USD, can't access here so re-declare
+        constexpr size_t INVALID_OUTPUT_INDEX = std::numeric_limits<size_t>::max();
+        if (INVALID_OUTPUT_INDEX == outputIndex) {
+            // Don't make the points dirty
+            continue;
+        }
+
+        updatePrimvarInfo(
+            primvarName, cpuComputation->GetOutputByIndex(outputIndex), HdInterpolationVertex);
+
+        // Record that the points are coming from the computation.
+        if (primvarName == HdTokens->points) {
+            _pointsFromSkel = true;
+        }
+    }
+}
+
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 void MayaUsdRPrim::_ProcessDisplayLayerModes(
     const MObject&     displayLayerObj,
@@ -836,6 +930,64 @@ void MayaUsdRPrim::_SyncDisplayLayerModesInstanced(SdfPath const& id, unsigned i
     } else {
         _displayLayerModesInstanced.clear();
     }
+}
+
+void MayaUsdRPrim::_SyncEndCommon(
+    HdRprim&           refThis,
+    HdSceneDelegate*   delegate,
+    HdDirtyBits*       dirtyBits,
+    TfToken const&     reprToken,
+    HdRprimSharedData& sharedData,
+    ReprVector const&  reprs)
+{
+#if PXR_VERSION > 2111
+    const TfToken& renderTag = refThis.GetRenderTag();
+#else
+    const TfToken& renderTag = delegate->GetRenderTag(refThis.GetId());
+#endif
+
+    _SyncSharedData(sharedData, delegate, dirtyBits, reprToken, refThis, reprs, renderTag);
+
+    *dirtyBits = HdChangeTracker::Clean;
+}
+
+void MayaUsdRPrim::_RequirePrimvar(TfTokenVector& requiredPrimvars, const TfToken& primvar)
+{
+    if (std::find(requiredPrimvars.cbegin(), requiredPrimvars.cend(), primvar)
+        == requiredPrimvars.cend()) {
+        requiredPrimvars.push_back(primvar);
+    }
+}
+
+void MayaUsdRPrim::_CommitPositionsBuffer(
+    MHWRender::MVertexBuffer* positionsBuffer,
+    const VtVec3fArray&       points) const
+{
+    if (!positionsBuffer) {
+        return;
+    }
+
+    const size_t numVertices = points.size();
+
+    void* bufferData = positionsBuffer->acquire(numVertices, true);
+    if (!bufferData) {
+        return;
+    }
+
+    memcpy(bufferData, points.cdata(), sizeof(GfVec3f) * numVertices);
+
+    // Capture class member for lambda
+    const MString& rprimId = _rprimId;
+
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit([positionsBuffer, bufferData, rprimId]() {
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            rprimId.asChar(),
+            "CommitPositions");
+
+        positionsBuffer->commit(bufferData);
+    });
 }
 
 void MayaUsdRPrim::_SyncSharedData(
