@@ -1369,6 +1369,10 @@ bool UsdMayaWriteUtil::SetScaledAttribute(
     const UsdTimeCode          time,
     FlexibleSparseValueWriter* valueWriter)
 {
+    if (!value) {
+        return false;
+    }
+
     if (scale != 1.0) {
         *value = ScaleMatrix(*value, scale);
     }
@@ -1383,6 +1387,10 @@ bool UsdMayaWriteUtil::SetScaledAttribute(
     const UsdTimeCode          time,
     FlexibleSparseValueWriter* valueWriter)
 {
+    if (!value) {
+        return false;
+    }
+
     if (scale != 1.0) {
         for (GfMatrix4d& matrix : *value) {
             matrix.SetTranslateOnly(matrix.ExtractTranslation() * scale);
