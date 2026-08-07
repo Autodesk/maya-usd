@@ -3,8 +3,19 @@
 **Status:** working spike, all four collections verified by hand in Maya. No automated tests.
 **Branch:** `deboisj/render_pass_spike`
 
-Type a `UsdRenderPass` prim path into the proxy shape's new `activeRenderPass` attribute and its
-`prune`, `renderVisibility`, `matte` and `cameraVisibility` collections change what VP2 draws.
+Point the scene's active settings path at a `UsdRenderPass` prim and its `prune`,
+`renderVisibility`, `matte` and `cameraVisibility` collections change what VP2 draws.
+
+```python
+from mayaUsd.lib import UsdDefaultRenderSettings
+UsdDefaultRenderSettings.setActiveRenderSettingsPath('|stage1|stageShape1,/Render/Passes/Beauty')
+```
+
+The active pass is **scene-wide**, not per proxy shape: it is a UFE path
+(`"<proxy shape>,<prim path>"`) on the `UsdDefaultRenderSettings` singleton. Each proxy shape
+filters only when the gateway segment names it, so at most one stage is ever filtered. Reusing the
+render-*settings* path for a render *pass* is deliberate — the singleton is just a scene-wide string
+slot and nothing validates the prim type.
 
 ```python
 import sys; sys.path.append(r'D:\repos\ecg-maya-usd\maya-usd\scripts')
@@ -30,7 +41,8 @@ UsdImagingDelegate ─► emulation ─┐
 | `renderPassPublisher.{h,cpp}` | `Attach()` splices the filter in; `Publish()` reads the pass's collections off the USD stage and feeds them in. |
 | `mesh.{h,cpp}`, `drawItem.h` | Consumes the `matte` and `cameraVisibility` flags. |
 | `shadowOnlyShader.{h,cpp}` | Shading node + `MPxShaderOverride` backing `cameraVisibility`. |
-| `proxyShapeBase.{h,cpp}` | The `activeRenderPass` / `arp` attribute and version counter. |
+| `proxyShapeBase.{h,cpp}` | `getActiveRenderPass()` — resolves the scene-wide path, empty unless this shape owns it. |
+| `usdSettingsNode.{h,cpp}` | `activeSettingsPath` plug; `setDependentsDirty` bumps the version counter and schedules a viewport refresh. |
 
 ## The four collections
 

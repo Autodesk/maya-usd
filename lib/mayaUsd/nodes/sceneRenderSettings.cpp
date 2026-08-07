@@ -170,6 +170,11 @@ bool setActiveSettingPath(const std::string& ufePath)
     return node->setActiveSettingsPath(ufePath);
 }
 
+size_t getActiveSettingPathVersion()
+{
+    return MayaUsd::UsdSettingsNode::activeSettingsPathVersion();
+}
+
 const PXR_NS::TfToken& externalCameraAttrName() { return kExternalCameraAttrName; }
 
 bool setRenderSettingsCamera(

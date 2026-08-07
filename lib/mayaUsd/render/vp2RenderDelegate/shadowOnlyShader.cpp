@@ -17,6 +17,8 @@
 
 #include "debugCodes.h"
 
+#include <mayaUsd/utils/blockSceneModificationContext.h>
+
 #include <pxr/base/tf/debug.h>
 
 #include <maya/MDGModifier.h>
@@ -146,6 +148,12 @@ MStatus ShadowOnlyShader::ensureSharedNode()
         return MS::kSuccess;
     }
 
+    // This node is an implementation detail of cameraVisibility, created lazily
+    // from the draw path. Without this the mere act of drawing a USD stage would
+    // flag the Maya scene as having unsaved changes. Same reasoning as
+    // PxrMayaHdImagingShape; see hdImagingShape.cpp.
+    const MayaUsd::utils::BlockSceneModificationContext blockModContext;
+
     MStatus       status;
     MDGModifier   modifier;
     const MObject node = modifier.createNode(typeId, &status);
@@ -160,7 +168,12 @@ MStatus ShadowOnlyShader::ensureSharedNode()
         return status;
     }
 
-    MFnDependencyNode(node).setName("mayaUsdShadowOnlyShader1");
+    MFnDependencyNode depNodeFn(node);
+    depNodeFn.setName("mayaUsdShadowOnlyShader1");
+    // Never write it to the scene file: it is recreated on demand, and a saved
+    // copy would reload as an unknown node wherever the plugin is not loaded.
+    CHECK_MSTATUS(depNodeFn.setDoNotWrite(true));
+
     _sharedNode = MObjectHandle(node);
 
     TF_DEBUG(HDVP2_DEBUG_RENDER_PASS).Msg("ShadowOnlyShader: created the shared node\n");

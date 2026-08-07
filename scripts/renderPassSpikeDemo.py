@@ -17,7 +17,11 @@
 
 Authors a USD stage, loads it into a new proxy shape, creates a shadow-casting
 light, configures the viewport for shaded display with shadows, and opens a
-window for switching the proxy shape's activeRenderPass attribute.
+window for switching the scene's active render pass.
+
+The active pass is scene-wide, held on the UsdDefaultRenderSettings singleton as
+a UFE path ("<proxy shape>,<prim path>"). Each proxy shape filters only when the
+gateway segment of that path names it, so at most one stage is ever filtered.
 
 Run inside Maya:
 
@@ -59,6 +63,7 @@ import tempfile
 from maya import cmds
 
 from mayaUsd import lib as mayaUsdLib
+from mayaUsd.lib import UsdDefaultRenderSettings
 
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdRender, UsdShade
 
@@ -291,9 +296,24 @@ def createProxy(filePath):
     return shapeNode
 
 
+def _activePassPath(shapeNode):
+    """USD path of the active render pass, if this proxy shape owns it."""
+    activePath = UsdDefaultRenderSettings.getActiveRenderSettingsPath()
+    prefix = '{},'.format(shapeNode)
+    return activePath[len(prefix):] if activePath.startswith(prefix) else ''
+
+
 def _setActivePass(shapeNode, passName, statusField):
     passPath = '/Render/Passes/{}'.format(passName) if passName else ''
-    cmds.setAttr('{}.activeRenderPass'.format(shapeNode), passPath, type='string')
+    # Scene-wide, not per proxy shape: the UFE path names the owning shape.
+    ok = UsdDefaultRenderSettings.setActiveRenderSettingsPath(
+        '{},{}'.format(shapeNode, passPath) if passPath else '')
+    if not ok:
+        # Returns False when the singleton is missing, which looks exactly like
+        # a filter that ran and matched nothing.
+        cmds.text(statusField, edit=True,
+                  label='FAILED to set active pass -- no UsdDefaultRenderSettings node.')
+        return
 
     expected = next((p['expect'] for p in PASSES if p['name'] == passName), '')
     cmds.text(statusField, edit=True, label='{}  --  {}'.format(passPath or '(none)', expected))
@@ -311,9 +331,9 @@ def lookThroughPassCamera(shapeNode, statusField=None):
             cmds.text(statusField, edit=True, label=message)
         print(message)
 
-    passPath = cmds.getAttr('{}.activeRenderPass'.format(shapeNode))
+    passPath = _activePassPath(shapeNode)
     if not passPath:
-        report('No active render pass.')
+        report('No active render pass on {}.'.format(shapeNode))
         return None
 
     stage = mayaUsdLib.GetPrim(shapeNode).GetStage()

@@ -48,6 +48,10 @@ MAYAUSD_CORE_PUBLIC std::string getActiveSettingPath();
 //! if the singleton node is unavailable or the plug write fails.
 MAYAUSD_CORE_PUBLIC bool setActiveSettingPath(const std::string& ufePath);
 
+//! Monotonic counter bumped every time the active settings path changes.
+//! Cheap enough to poll per frame, unlike getActiveSettingPath().
+MAYAUSD_CORE_PUBLIC size_t getActiveSettingPathVersion();
+
 //! Name of the custom string attribute that records the UFE path of a camera
 //! that does not live on the same stage as the render-settings prim
 //! (e.g. a Maya native camera shape, or a camera in another USD stage).

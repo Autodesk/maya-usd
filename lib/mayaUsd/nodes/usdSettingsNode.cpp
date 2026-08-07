@@ -22,11 +22,23 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <maya/M3dView.h>
 #include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MPlug.h>
+
+#include <atomic>
+
+namespace {
+
+// Shared by every settings node rather than tracked per instance, so clients
+// can poll it without first looking the node up, and so it survives the node
+// being destroyed and recreated by File > New.
+std::atomic<size_t> sActiveSettingsPathVersion { 1 };
+
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 
@@ -90,6 +102,21 @@ MStatus UsdSettingsNode::initialize()
 UsdSettingsNode::UsdSettingsNode()
     : MPxNode()
 {
+}
+
+/* static */
+size_t UsdSettingsNode::activeSettingsPathVersion() { return sActiveSettingsPathVersion; }
+
+MStatus UsdSettingsNode::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
+{
+    if (plug == activeSettingsPathAttr) {
+        ++sActiveSettingsPathVersion;
+        // The node is a pure DG node with no render items of its own, so nothing
+        // else would prompt the viewport to pick the new value up.
+        M3dView::scheduleRefreshAllViews();
+    }
+
+    return MPxNode::setDependentsDirty(plug, plugArray);
 }
 
 PXR_NS::UsdTimeCode UsdSettingsNode::getTime() const { return PXR_NS::UsdTimeCode::Default(); }

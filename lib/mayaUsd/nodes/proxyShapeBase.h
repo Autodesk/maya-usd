@@ -104,8 +104,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject excludePrimPathsAttr;
     MAYAUSD_CORE_PUBLIC
-    static MObject activeRenderPassAttr;
-    MAYAUSD_CORE_PUBLIC
     static MObject loadPayloadsAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject shareStageAttr;
@@ -229,6 +227,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     size_t getExcludePrimPathsVersion() const;
 
+    //! Scene-wide active render pass, but only when this proxy shape owns it.
+    //! Returns an empty path when the scene's active settings path names a prim
+    //! on another stage, or is not a path into a USD stage at all.
     MAYAUSD_CORE_PUBLIC
     virtual SdfPath getActiveRenderPass() const;
     MAYAUSD_CORE_PUBLIC
@@ -406,9 +407,6 @@ protected:
     void _IncreaseExcludePrimPathsVersion() { _excludePrimPathsVersion++; }
 
     MAYAUSD_CORE_PUBLIC
-    void _IncreaseActiveRenderPassVersion() { _activeRenderPassVersion++; }
-
-    MAYAUSD_CORE_PUBLIC
     void _IncreaseUsdStageVersion() { _UsdStageVersion++; }
 
     MAYAUSD_CORE_PUBLIC
@@ -455,7 +453,6 @@ private:
 
     SdfPath       _GetPrimPath(MDataBlock dataBlock) const;
     SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
-    SdfPath       _GetActiveRenderPass(MDataBlock dataBlock) const;
     int           _GetComplexity(MDataBlock dataBlock) const;
     UsdTimeCode   _GetTime(MDataBlock dataBlock) const;
 
@@ -479,7 +476,6 @@ private:
 
     std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
     size_t                              _excludePrimPathsVersion { 1 };
-    size_t                              _activeRenderPassVersion { 1 };
     size_t                              _UsdStageVersion { 1 };
 
     // Notification counters:

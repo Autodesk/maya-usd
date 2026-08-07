@@ -71,6 +71,15 @@ const MColor kMatteColor(1.0f, 0.0f, 1.0f, 1.0f);
 //! the failure is visible rather than silent.
 const MColor kShadowOnlyOpaqueColor(0.0f, 1.0f, 1.0f, 1.0f);
 
+//! Name of the shadow-only companion to the beauty render item called baseName.
+MString _ShadowOnlyRenderItemName(const MString& baseName)
+{
+    MString name = baseName;
+    name += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
+    name += "shadowOnly";
+    return name;
+}
+
 // Proper support for selection highlighting on/off switch in
 // MRenderItem starts only beyond Maya 2024.1
 #if MAYA_API_VERSION > 20240100
@@ -1438,6 +1447,12 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
         _CreateSmoothHullRenderItem(
             renderItemName, drawItem, reprToken, subSceneContainer, &geomSubset);
 
+        // One per subset, not just for the leftover faces: cameraVisibility
+        // disables every beauty item on the mesh, so a subset without its own
+        // shadow-only counterpart would lose its shadow too.
+        _CreateShadowOnlyRenderItem(
+            _ShadowOnlyRenderItemName(renderItemName), drawItem, subSceneContainer, &geomSubset);
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
             _CreateShadedSelectedInstancesItem(
@@ -1471,10 +1486,11 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
             drawItem.GetDrawItemName(), drawItem, reprToken, subSceneContainer, nullptr);
 
         // Stays disabled unless a render pass hides this prim from camera.
-        MString shadowOnlyName = drawItem.GetDrawItemName();
-        shadowOnlyName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
-        shadowOnlyName += "shadowOnly";
-        _CreateShadowOnlyRenderItem(shadowOnlyName, drawItem, subSceneContainer);
+        _CreateShadowOnlyRenderItem(
+            _ShadowOnlyRenderItemName(drawItem.GetDrawItemName()),
+            drawItem,
+            subSceneContainer,
+            nullptr);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
@@ -2851,7 +2867,8 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
 HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateShadowOnlyRenderItem(
     const MString&      name,
     HdVP2DrawItem&      drawItem,
-    MSubSceneContainer& subSceneContainer) const
+    MSubSceneContainer& subSceneContainer,
+    const HdGeomSubset* geomSubset) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kTriangles);
@@ -2890,7 +2907,7 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateShadowOnlyRenderItem(
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 
     HdVP2DrawItem::RenderItemData& renderItemData
-        = _AddRenderItem(drawItem, renderItem, subSceneContainer, nullptr);
+        = _AddRenderItem(drawItem, renderItem, subSceneContainer, geomSubset);
     renderItemData._shadowOnly = true;
     return renderItemData;
 }

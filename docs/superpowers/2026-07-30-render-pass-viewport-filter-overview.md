@@ -6,6 +6,10 @@
 Type a `UsdRenderPass` prim path into a proxy shape's new `activeRenderPass` attribute and the
 pass's `prune`, `renderVisibility` and `matte` collections change what VP2 draws.
 
+> **Superseded:** `activeRenderPass` has since been removed. The active pass is now scene-wide, set
+> via `UsdDefaultRenderSettings.setActiveRenderSettingsPath()`. See
+> [the summary](2026-07-31-render-pass-summary.md); the rest of this document still applies.
+
 Try it:
 
 ```python

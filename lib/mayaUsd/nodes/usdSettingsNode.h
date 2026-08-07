@@ -25,6 +25,7 @@
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MPlugArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
@@ -64,6 +65,13 @@ public:
 
     static void*   creator();
     static MStatus initialize();
+
+    //! Monotonic counter bumped whenever any settings node's activeSettingsPath
+    //! plug is dirtied. Lets clients on a per-frame path poll for changes without
+    //! reading the plug through activeSettingsPath(), which materializes the stage.
+    static size_t activeSettingsPathVersion();
+
+    MStatus setDependentsDirty(const MPlug& plug, MPlugArray& plugArray) override;
 
     // ProxyStageProvider interface
     PXR_NS::UsdTimeCode    getTime() const override;

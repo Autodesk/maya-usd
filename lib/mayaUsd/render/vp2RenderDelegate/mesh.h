@@ -198,7 +198,8 @@ private:
     HdVP2DrawItem::RenderItemData& _CreateShadowOnlyRenderItem(
         const MString&      name,
         HdVP2DrawItem&      drawItem,
-        MSubSceneContainer& subSceneContainer) const;
+        MSubSceneContainer& subSceneContainer,
+        const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
 
     void _ResetRenderingTopology();
