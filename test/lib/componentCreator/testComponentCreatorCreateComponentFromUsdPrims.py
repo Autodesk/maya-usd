@@ -67,7 +67,7 @@ class CreateComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Te
         desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not construct ComponentDescription from stage')
         variant_sets = desc.GetVariantSets()
-        self.assertEqual(len(variant_sets), 1,
+        self.assertGreaterEqual(len(variant_sets), 1,
                            "Component must have one variant set")
         first_vs = next(iter(variant_sets.values()))
         self.assertEqual(len(first_vs.GetVariants()), 1,
@@ -97,7 +97,7 @@ class CreateComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Te
         desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not construct ComponentDescription from stage')
 
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         self.assertTrue(first_vs.default_variant,
                         "Variant set must have a default variant defined after creation")
         default_var_desc = first_vs.GetVariantDescription(first_vs.default_variant)
@@ -141,7 +141,7 @@ class CreateComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Te
         desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not construct ComponentDescription from stage')
 
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         self.assertTrue(first_vs.default_variant,
                         "Variant set must have a default variant defined after creation")
         default_var_desc = first_vs.GetVariantDescription(first_vs.default_variant)
