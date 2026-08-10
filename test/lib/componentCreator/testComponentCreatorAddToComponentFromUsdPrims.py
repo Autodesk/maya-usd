@@ -67,7 +67,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
         from usd_component_creator_plugin import add_to_component_from_usd_prims
         proxy, desc, proxyShape = self._createInitialComponent('pCube1')
         self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
 
         path2 = Sdf.Path('/pCube2')
         self._input_stage.DefinePrim(path2, 'Cube')
@@ -88,7 +88,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
         from usd_component_creator_plugin import add_to_component_from_usd_prims
         proxy, desc, proxyShape = self._createInitialComponent('pCube1')
         self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
 
         path2 = Sdf.Path('/pCube2')
         self._input_stage.DefinePrim(path2, 'Cube')
@@ -120,7 +120,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
         from usd_component_creator_plugin import add_to_component_from_usd_prims
         proxy, desc, proxyShape = self._createInitialComponent('pCube1')
         self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
 
         path2 = Sdf.Path('/pCube1')
         prim2 = self._input_stage.DefinePrim(path2, 'Cube')
@@ -162,7 +162,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
         self._setCustomPurposeTemplate()
         proxy, desc, proxyShape = self._createInitialComponent('pCube1')
         self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
 
         path2 = Sdf.Path('/pCube2')
         self._input_stage.DefinePrim(path2, 'Cube')
@@ -199,7 +199,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
         from usd_component_creator_plugin import add_to_component_from_usd_prims
         proxy, desc, proxyShape = self._createInitialComponent('pCube1')
         self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         original_default = first_vs.default_variant
         self.assertTrue(original_default, "There must be a default variant before the add")
 
@@ -215,7 +215,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
 
         updated_desc = self._getActiveDesc()
         self.assertIsNotNone(updated_desc, 'Could not get updated ComponentDescription')
-        updated_vs = next(iter(updated_desc.GetVariantSets().values()))
+        updated_vs = self._findVariantSetByName(updated_desc, 'variant_set_1')
         self.assertEqual(updated_vs.default_variant, original_default,
                          "default_variant must not change after add_to_component_from_usd_prims "
                          "(is_default_variant=False)")
@@ -245,7 +245,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
         desc = self._getActiveDesc()
         self.assertIsNotNone(desc, 'Could not get ComponentDescription after multi-variant create')
 
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         original_default = first_vs.default_variant
         self.assertTrue(original_default, "There must be a default variant")
 
@@ -265,7 +265,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
 
         updated_desc = self._getActiveDesc()
         self.assertIsNotNone(updated_desc, 'Could not get updated ComponentDescription')
-        updated_vs = next(iter(updated_desc.GetVariantSets().values()))
+        updated_vs = self._findVariantSetByName(updated_desc, 'variant_set_1')
         self.assertEqual(updated_vs.default_variant, original_default,
                          "default_variant must not change when adding to a non-default variant "
                          "(is_default_variant=False)")
@@ -276,7 +276,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
         from usd_component_creator_plugin import add_to_component_from_usd_prims
         proxy, desc, proxyShape = self._createInitialComponent('pCube1')
         self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         default_name = first_vs.default_variant
         self.assertTrue(default_name)
         default_var_desc = first_vs.GetVariantDescription(default_name)
@@ -305,7 +305,7 @@ class AddToComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase, unittest.Tes
             updated_desc = self._getDescFromStage(stage)
         self.assertIsNotNone(updated_desc, 'Could not obtain updated ComponentDescription')
 
-        updated_vs = next(iter(updated_desc.GetVariantSets().values()))
+        updated_vs = self._findVariantSetByName(updated_desc, 'variant_set_1')
         updated_default_var_desc = updated_vs.GetVariantDescription(default_name)
         self.assertIsNotNone(updated_default_var_desc)
         # Check target did not change
