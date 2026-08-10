@@ -16,6 +16,7 @@
 #include "renderSetupWindowCmd.h"
 
 #include "mayaEditCommitter.h"
+#include "mayaRenderSetupHost.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -102,21 +103,24 @@ private:
     }
 
 private:
-    Adsk::RenderSetupWidget*               _tree;
-    MayaUsdRenderSetup::MayaEditCommitter* _editCommitter { nullptr };
-    std::vector<Adsk::HostStage>           _hostStages;
-    std::vector<MCallbackId>               _sceneCallbackIds;
+    AdskUsdRenderSetup::RenderSetupWidget*     _tree;
+    MayaUsdRenderSetup::MayaEditCommitter*     _editCommitter { nullptr };
+    std::vector<AdskUsdRenderSetup::HostStage> _hostStages;
+    std::vector<MCallbackId>                   _sceneCallbackIds;
 };
 
 RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     : PARENT_CLASS(parent)
 {
     // Create the render setup widget and set it as the central widget of the window.
-    _tree = new Adsk::RenderSetupWidget(this);
+    _tree = new AdskUsdRenderSetup::RenderSetupWidget(this);
     _editCommitter = new MayaUsdRenderSetup::MayaEditCommitter(nullptr);
-    _tree->setEditCommitter(std::unique_ptr<Adsk::IEditCommitter>(_editCommitter));
+    _tree->setEditCommitter(std::unique_ptr<AdskUsdRenderSetup::IEditCommitter>(_editCommitter));
     setCentralWidget(_tree);
     _tree->show();
+
+    static MayaUsdRenderSetup::MayaRenderSetupHost s_renderSetupHost;
+    AdskUsdRenderSetup::Host::setHost(&s_renderSetupHost);
 
     auto* viewMenu = menuBar()->addMenu(tr("View"));
     auto* hierarchyAction = viewMenu->addAction(tr("Display USD Hierarchy"));
@@ -124,8 +128,8 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     hierarchyAction->setChecked(false);
     connect(hierarchyAction, &QAction::toggled, [this](bool checked) {
         _tree->setLayoutMode(
-            checked ? Adsk::RenderTreeModel::LayoutMode::Hierarchy
-                    : Adsk::RenderTreeModel::LayoutMode::Flat);
+            checked ? AdskUsdRenderSetup::RenderTreeModel::LayoutMode::Hierarchy
+                    : AdskUsdRenderSetup::RenderTreeModel::LayoutMode::Flat);
     });
 
     layout()->setContentsMargins(0, 0, 0, 0);
@@ -189,7 +193,7 @@ void RenderSetupWindow::refreshStages()
 
     // Add all the USD stages and sort them alphabetically by display name.
     for (const auto& stage : MayaUsd::ufe::getAllStages()) {
-        Adsk::HostStage hostStage;
+        AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = stage;
         hostStage.displayName = MayaUsd::ufe::stagePath(stage).back().string();
         _hostStages.push_back(hostStage);
@@ -202,7 +206,7 @@ void RenderSetupWindow::refreshStages()
     // Add default setting stage (from DG node) but put it first in the vector.
     auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderSettingsNodeName);
     if (defaultStage) {
-        Adsk::HostStage hostStage;
+        AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
         hostStage.displayName = kUSDRenderSettingsNodeName;
         _hostStages.insert(_hostStages.begin(), hostStage);
