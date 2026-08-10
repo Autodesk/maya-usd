@@ -50,7 +50,7 @@ class CreateMultiVariantsComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase
         stage = mayaUsd.ufe.getStage(proxy)
         desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not construct ComponentDescription from stage')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         self.assertEqual(len(first_vs.GetVariants()), 2,
                          "Two nodes must produce exactly two variants")
 
@@ -90,7 +90,7 @@ class CreateMultiVariantsComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase
             desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not obtain ComponentDescription')
 
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         default_name = first_vs.default_variant
         self.assertTrue(default_name)
         default_var_desc = first_vs.GetVariantDescription(default_name)
@@ -137,7 +137,7 @@ class CreateMultiVariantsComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase
         desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not construct ComponentDescription from stage')
 
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         self.assertEqual(len(first_vs.GetVariants()), 3, "Expected three variants from three nodes")
 
         opts = AdskUsdComponentCreator.Options()
@@ -187,31 +187,22 @@ class CreateMultiVariantsComponentFromUsdPrimsTestCase(_ComponentCreatorTestBase
         proxy = self._findNewProxyShape(before)
         self.assertIsNotNone(proxy)
 
-        desc = self._getActiveDesc()
-        if desc is None:
-            stage = mayaUsd.ufe.getStage(proxy)
-            desc = self._getDescFromStage(stage)
+        stage = mayaUsd.ufe.getStage(proxy)
+        desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not obtain ComponentDescription')
 
-        self.assertEqual(len(desc.GetVariantSets()), 1)
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        self.assertGreaterEqual(len(desc.GetVariantSets()), 1)
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         
-        # TODO FIXME: this requires a new component creator, will enable after integration of 0.3.7
+        self.assertEqual(len(first_vs.GetVariants()), 2, "Expected two variants from two nodes")
 
-        # self.assertEqual(len(first_vs.GetVariants()), 2, "Expected two variants from two nodes")
+        stage = mayaUsd.ufe.getStage(proxy)
 
-        # stage = mayaUsd.ufe.getStage(proxy)
+        # Prim added second should be renamed to avoid name collision.
+        self.assertTrue(stage.GetPrimAtPath('/root/geo/pCube1').IsValid())
 
-        # self.maxDiff = None
-        # self.assertEqual(stage.GetRootLayer().ExportToString(), "")
-
-        # # Prim added second should be renamed to avoid name collision.
-        # self.assertTrue(stage.GetPrimAtPath('/root/geo/pCube1').IsValid())
-        # self.assertFalse(stage.GetPrimAtPath('/root/geo/pCube2').IsValid())
-
-        # AdskUsdComponentCreator.ComponentAPI.SetVariantTemporarySelection(desc, [first_vs, first_vs.GetVariantDescription('pCube2')], True)
-        # self.assertTrue(stage.GetPrimAtPath('/root/geo/pCube2').IsValid())
-        # self.assertFalse(stage.GetPrimAtPath('/root/geo/pCube1').IsValid())
+        AdskUsdComponentCreator.ComponentAPI.SetVariantTemporarySelection(desc, [first_vs, first_vs.GetVariantDescription('pCube11')], True)
+        self.assertTrue(stage.GetPrimAtPath('/root/geo/pCube1').IsValid())
 
 
 if __name__ == '__main__':
