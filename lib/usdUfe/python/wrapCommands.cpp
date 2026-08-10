@@ -155,6 +155,73 @@ UsdUfe::SetMaterialBindingStrengthCommand* SetBindingStrengthAffectAllPurposesCo
         Ufe::PathString::path(primUfePathStr), PXR_NS::TfToken(strength), unassignAll);
 }
 
+UsdUfe::SetMaterialBindingStrengthCommand* SetCollectionBindingStrengthCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& strength,
+    const std::string& purpose,
+    const std::string& bindingName)
+{
+    return new UsdUfe::SetMaterialBindingStrengthCommand(
+        Ufe::PathString::path(primUfePathStr),
+        PXR_NS::TfToken(strength),
+        PXR_NS::TfToken(purpose),
+        PXR_NS::TfToken(bindingName));
+}
+
+UsdUfe::SetMaterialBindingStrengthCommand* SetCollectionBindingStrengthAffectAllPurposesCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& strength,
+    bool               unassignAll,
+    const std::string& bindingName)
+{
+    return new UsdUfe::SetMaterialBindingStrengthCommand(
+        Ufe::PathString::path(primUfePathStr),
+        PXR_NS::TfToken(strength),
+        unassignAll,
+        PXR_NS::TfToken(bindingName));
+}
+
+UsdUfe::CreateCollectionMaterialBindingUndoableCommand* CreateCollectionMaterialBindingCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& bindingName)
+{
+    return new UsdUfe::CreateCollectionMaterialBindingUndoableCommand(
+        Ufe::PathString::path(primUfePathStr), PXR_NS::TfToken(bindingName));
+}
+
+UsdUfe::BindCollectionMaterialUndoableCommand* BindCollectionMaterialCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& matPathStr,
+    const std::string& bindingName,
+    const std::string& purpose)
+{
+    return new UsdUfe::BindCollectionMaterialUndoableCommand(
+        Ufe::PathString::path(primUfePathStr),
+        PXR_NS::SdfPath(matPathStr),
+        PXR_NS::TfToken(bindingName),
+        PXR_NS::TfToken(purpose));
+}
+
+UsdUfe::UnbindCollectionMaterialUndoableCommand* UnbindCollectionMaterialCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& bindingName,
+    const std::string& purpose)
+{
+    return new UsdUfe::UnbindCollectionMaterialUndoableCommand(
+        Ufe::PathString::path(primUfePathStr),
+        PXR_NS::TfToken(bindingName),
+        PXR_NS::TfToken(purpose));
+}
+
+UsdUfe::UnbindCollectionMaterialUndoableCommand* UnbindAllCollectionMaterialCommandInit(
+    const std::string& primUfePathStr,
+    const std::string& bindingName,
+    bool               unassignAll)
+{
+    return new UsdUfe::UnbindCollectionMaterialUndoableCommand(
+        Ufe::PathString::path(primUfePathStr), PXR_NS::TfToken(bindingName), unassignAll);
+}
+
 } // namespace
 
 void wrapCommands()
@@ -332,6 +399,47 @@ void wrapCommands()
             "SetMaterialBindingStrengthCommand", no_init)
             .def("__init__", make_constructor(SetBindingStrengthCommandInit))
             .def("__init__", make_constructor(SetBindingStrengthAffectAllPurposesCommandInit))
+            .def("__init__", make_constructor(SetCollectionBindingStrengthCommandInit))
+            .def(
+                "__init__",
+                make_constructor(SetCollectionBindingStrengthAffectAllPurposesCommandInit))
+            .def("execute", &This::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &This::commandString)
+#endif
+            .def("undo", &This::undo)
+            .def("redo", &This::redo);
+    }
+    {
+        using This = UsdUfe::CreateCollectionMaterialBindingUndoableCommand;
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "CreateCollectionMaterialBindingCommand", no_init)
+            .def("__init__", make_constructor(CreateCollectionMaterialBindingCommandInit))
+            .def("execute", &This::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &This::commandString)
+#endif
+            .def("undo", &This::undo)
+            .def("redo", &This::redo);
+    }
+    {
+        using This = UsdUfe::BindCollectionMaterialUndoableCommand;
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "BindCollectionMaterialCommand", no_init)
+            .def("__init__", make_constructor(BindCollectionMaterialCommandInit))
+            .def("execute", &This::execute)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            .def("commandString", &This::commandString)
+#endif
+            .def("undo", &This::undo)
+            .def("redo", &This::redo);
+    }
+    {
+        using This = UsdUfe::UnbindCollectionMaterialUndoableCommand;
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "UnbindCollectionMaterialCommand", no_init)
+            .def("__init__", make_constructor(UnbindCollectionMaterialCommandInit))
+            .def("__init__", make_constructor(UnbindAllCollectionMaterialCommandInit))
             .def("execute", &This::execute)
 #ifdef UFE_V4_FEATURES_AVAILABLE
             .def("commandString", &This::commandString)
