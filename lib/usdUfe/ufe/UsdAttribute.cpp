@@ -117,7 +117,7 @@ getUsdAttributeValueAsString(const UsdUfe::UsdAttribute& attr, const PXR_NS::Usd
 #else
         !attr.hasValue())
 #endif
-        return attr.defaultValue();
+        return attr.defaultValueAsString();
 
     PXR_NS::VtValue v;
     if (attr.get(v, time)) {
@@ -149,9 +149,8 @@ U getUsdAttributeVectorAsUfe(const UsdUfe::UsdAttribute& attr, const PXR_NS::Usd
 #else
         !attr.hasValue()) {
 #endif
-        if (!attr.defaultValue().empty()) {
-            vt = UsdUfe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
-        } else {
+        vt = attr.defaultValue();
+        if (!vt.IsHolding<T>()) {
             return U();
         }
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
@@ -185,9 +184,8 @@ U getUsdAttributeColorAsUfe(const UsdUfe::UsdAttribute& attr, const PXR_NS::UsdT
 #else
         !attr.hasValue()) {
 #endif
-        if (!attr.defaultValue().empty()) {
-            vt = UsdUfe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
-        } else {
+        vt = attr.defaultValue();
+        if (!vt.IsHolding<T>()) {
             return U();
         }
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
@@ -216,9 +214,8 @@ U getUsdAttributeMatrixAsUfe(const UsdUfe::UsdAttribute& attr, const PXR_NS::Usd
 {
     VtValue vt;
     if (!attr.isValid() || !attr._hasValue()) {
-        if (!attr.defaultValue().empty()) {
-            vt = UsdUfe::vtValueFromString(attr.usdAttributeType(), attr.defaultValue());
-        } else {
+        vt = attr.defaultValue();
+        if (!vt.IsHolding<T>()) {
             return U();
         }
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
@@ -419,7 +416,12 @@ UsdAttribute::UsdAttribute(UsdAttributeHolder::UPtr&& attrHolder)
 
 std::string UsdAttribute::isEditAllowedMsg() const { return _attrHolder->isEditAllowedMsg(); }
 
-std::string UsdAttribute::defaultValue() const { return _attrHolder->defaultValue(); }
+PXR_NS::VtValue UsdAttribute::defaultValue() const { return _attrHolder->defaultValue(); }
+
+std::string UsdAttribute::defaultValueAsString() const
+{
+    return _attrHolder->defaultValueAsString();
+}
 
 std::string UsdAttribute::nativeType() const { return _attrHolder->nativeType(); }
 
