@@ -605,6 +605,19 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 }
             }
         }
+
+        // Render layers are registry-owned, so an inactive one has no tree item and the
+        // walk above cannot reach it. Anonymous ones are handled by SaveLayersDialog, so
+        // only the dirty file-backed ones are left here. Layers saved above are no longer
+        // dirty, which is what keeps this from saving them twice.
+        MayaUsd::utils::StageLayersToSave layersToSave;
+        MayaUsd::utils::getLayersToSaveFromProxy(
+            _sessionState->stageEntry()._proxyShapePath, layersToSave);
+        for (const auto& layer : layersToSave._dirtyFileBackedLayers) {
+            if (layer->IsDirty() && layer->PermissionToSave()) {
+                MayaUsd::utils::saveLayerWithFormat(layer);
+            }
+        }
     };
 
     static const MString kConfirmExistingFileSave
