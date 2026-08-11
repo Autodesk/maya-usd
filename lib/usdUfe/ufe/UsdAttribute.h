@@ -122,14 +122,15 @@ public:
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdAttribute);
 
-    inline bool isAuthored() const { return _attrHolder->isAuthored(); }
-    inline bool isValid() const { return _attrHolder->isValid(); }
-    std::string isEditAllowedMsg() const;
-    inline bool isEditAllowed() const { return isEditAllowedMsg().empty(); }
-    std::string defaultValue() const;
-    std::string nativeType() const;
-    bool        get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
-    bool        set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
+    inline bool     isAuthored() const { return _attrHolder->isAuthored(); }
+    inline bool     isValid() const { return _attrHolder->isValid(); }
+    std::string     isEditAllowedMsg() const;
+    inline bool     isEditAllowed() const { return isEditAllowedMsg().empty(); }
+    PXR_NS::VtValue defaultValue() const;
+    std::string     defaultValueAsString() const;
+    std::string     nativeType() const;
+    bool            get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
+    bool            set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
 
 #ifdef UFE_DEFAULT_VALUE_SUPPORT
     bool _isDefault() const;

@@ -336,8 +336,12 @@ struct UsdMayaWriteUtil
         const UsdTimeCode          time = UsdTimeCode::Default(),
         FlexibleSparseValueWriter* valueWriter = nullptr)
     {
-        return valueWriter ? valueWriter->SetAttribute(attr, VtValue(T(value * scale)), time)
-                           : attr.Set(value, time);
+        if (scale != 1.0) {
+            T scaledValue(value * scale);
+            return valueWriter ? valueWriter->SetAttribute(attr, VtValue(scaledValue), time)
+                               : attr.Set(scaledValue, time);
+        }
+        return SetAttribute(attr, value, time, valueWriter);
     }
 
     MAYAUSD_CORE_PUBLIC
@@ -358,6 +362,28 @@ struct UsdMayaWriteUtil
     static bool SetScaledAttribute(
         const UsdAttribute&        attr,
         const VtMatrix4dArray&     value,
+        const double               scale,
+        const UsdTimeCode          time = UsdTimeCode::Default(),
+        FlexibleSparseValueWriter* valueWriter = nullptr);
+
+    /// \overload
+    /// Matrix values passed by pointer must scale like the matrix overloads
+    /// above (translation only). Without these overloads, resolution selects
+    /// the generic pointer template below, which multiplies every matrix
+    /// component by the scale, including the rotation block and the
+    /// homogeneous corner.
+    MAYAUSD_CORE_PUBLIC
+    static bool SetScaledAttribute(
+        const UsdAttribute&        attr,
+        GfMatrix4d*                value,
+        const double               scale,
+        const UsdTimeCode          time = UsdTimeCode::Default(),
+        FlexibleSparseValueWriter* valueWriter = nullptr);
+
+    MAYAUSD_CORE_PUBLIC
+    static bool SetScaledAttribute(
+        const UsdAttribute&        attr,
+        VtMatrix4dArray*           value,
         const double               scale,
         const UsdTimeCode          time = UsdTimeCode::Default(),
         FlexibleSparseValueWriter* valueWriter = nullptr);

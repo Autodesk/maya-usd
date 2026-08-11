@@ -39,6 +39,8 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -140,7 +142,8 @@ void HdVP2Points::Sync(
 #endif
 
     const SdfPath& id = GetId();
-    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
+    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)
+        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
         TfTokenVector requiredPrimvars;
@@ -149,6 +152,12 @@ void HdVP2Points::Sync(
         } else {
             requiredPrimvars.push_back(HdTokens->widths);
         }
+
+        // Points are always required. They are normally read straight from the scene
+        // delegate below, but they may instead be the output of an HdExtComputation
+        // (that is how UsdSkel supplies skinned points), which _UpdatePrimvarSources
+        // resolves into the primvar source map.
+        _RequirePrimvar(requiredPrimvars, HdTokens->points);
 
         _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
     }
@@ -160,43 +169,13 @@ void HdVP2Points::Sync(
     // Prepare position buffer. It is shared among all draw items so it should
     // be updated only once when it gets dirty.
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
-        const VtValue value = delegate->Get(id, HdTokens->points);
-        _pointsSharedData._points = value.Get<VtVec3fArray>();
+        _pointsSharedData._points
+            = _ResolvePoints(delegate, id, _pointsSharedData._primvarSourceMap).Get<VtVec3fArray>();
 
-        const size_t numVertices = _pointsSharedData._points.size();
-
-        void* bufferData = _pointsSharedData._positionsBuffer->acquire(numVertices, true);
-        if (bufferData) {
-            const size_t numBytes = sizeof(GfVec3f) * numVertices;
-            memcpy(bufferData, _pointsSharedData._points.cdata(), numBytes);
-
-            // Capture class member for lambda
-            MHWRender::MVertexBuffer* const positionsBuffer
-                = _pointsSharedData._positionsBuffer.get();
-            const MString& rprimId = _rprimId;
-
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [positionsBuffer, bufferData, rprimId]() {
-                    MProfilingScope profilingScope(
-                        HdVP2RenderDelegate::sProfilerCategory,
-                        MProfiler::kColorC_L2,
-                        rprimId.asChar(),
-                        "CommitPositions");
-
-                    positionsBuffer->commit(bufferData);
-                });
-        }
+        _CommitPositionsBuffer(_pointsSharedData._positionsBuffer.get(), _pointsSharedData._points);
     }
 
-#if PXR_VERSION > 2111
-    const TfToken& renderTag = GetRenderTag();
-#else
-    const TfToken& renderTag = delegate->GetRenderTag(id);
-#endif
-
-    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, *this, _reprs, renderTag);
-
-    *dirtyBits = HdChangeTracker::Clean;
+    _SyncEndCommon(*this, delegate, dirtyBits, reprToken, _sharedData, _reprs);
 
     // Draw item update is controlled by its own dirty bits.
     _UpdateRepr(delegate, reprToken);
@@ -1053,6 +1032,11 @@ void HdVP2Points::_UpdatePrimvarSources(
 
     _UpdatePrimvarSourcesGeneric(
         sceneDelegate, dirtyBits, requiredPrimvars, *this, updatePrimvarInfo, erasePrimvarInfo);
+
+    // At this point we've searched the primvars for the required primvars. Check to see if
+    // there are any HdExtComputation which should replace primvar data or fill in for a
+    // missing primvar. This is what makes UsdSkel-skinned points deform.
+    _UpdateComputedPrimvarSourcesGeneric(sceneDelegate, requiredPrimvars, *this, updatePrimvarInfo);
 }
 
 /*! \brief  Create render item for smoothHull repr.
