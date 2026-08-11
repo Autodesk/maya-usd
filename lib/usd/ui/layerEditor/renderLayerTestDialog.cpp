@@ -35,11 +35,14 @@
 #include <AdskUsdRenderSetup/RenderLayerManager.h>
 #include <AdskUsdRenderSetup/RenderSetupUtils.h>
 
+#include <QtCore/QTimer>
+#include <QtGui/QFont>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QStyle>
 #include <QtWidgets/QVBoxLayout>
 
 #include <set>
@@ -78,7 +81,9 @@ RenderLayerTestDialog::RenderLayerTestDialog(QWidget* in_parent)
     mainLayout->addWidget(createLayerButton);
 
     mainLayout->addWidget(new QLabel(
-        "Render layers   [A]ctive  [T]racked   -   double-click to activate / deactivate", this));
+        "Render layers   -   check = active, disk = tracked   -   double-click to activate / "
+        "deactivate",
+        this));
 
     _layerList = new QListWidget(this);
     mainLayout->addWidget(_layerList);
@@ -91,6 +96,42 @@ RenderLayerTestDialog::RenderLayerTestDialog(QWidget* in_parent)
     connect(refreshButton, &QPushButton::clicked, this, [this]() { refreshLayers(); });
     connect(_layerList, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
         toggleActiveRenderLayer(item);
+    });
+
+    _dirtinessNoticeKey = PXR_NS::TfNotice::Register(
+        PXR_NS::TfCreateWeakPtr(this), &RenderLayerTestDialog::onLayerDirtinessChanged);
+}
+
+RenderLayerTestDialog::~RenderLayerTestDialog()
+{
+    PXR_NS::TfNotice::Revoke(_dirtinessNoticeKey);
+}
+
+void RenderLayerTestDialog::onLayerDirtinessChanged(
+    const PXR_NS::SdfNotice::LayerDirtinessChanged&)
+{
+    refreshLayersOnIdle();
+}
+
+void RenderLayerTestDialog::refreshLayersOnIdle()
+{
+    // Dirtiness changes arrive in bursts and are delivered during USD's own notification,
+    // so rebuild once on the event loop rather than inside the notice.
+    if (_refreshPending) {
+        return;
+    }
+    _refreshPending = true;
+
+    QTimer::singleShot(0, this, [this]() {
+        _refreshPending = false;
+        if (!isVisible()) {
+            return;
+        }
+        // An automatic refresh should stay silent, so skip rather than let stage() warn.
+        if (MayaUsd::ufe::ProxyShapeHandler::getAllStages().empty()) {
+            return;
+        }
+        refreshLayers();
     });
 }
 
@@ -198,23 +239,78 @@ void RenderLayerTestDialog::refreshLayers()
     for (const auto& info : manager.getRenderLayers(theStage)) {
         // "tracked" means the manager retains the handle because the layer is anonymous
         // or dirty, which is exactly the set the save flow has to ask about.
-        QString flags;
-        flags += (info.name == activeName) ? QLatin1Char('A') : QLatin1Char('-');
-        flags += (trackedNames.count(info.name) > 0) ? QLatin1Char('T') : QLatin1Char('-');
+        // "tracked" means the manager retains the handle because the layer is anonymous
+        // or dirty, which is exactly the set the save flow has to ask about.
+        const bool isActive = (info.name == activeName);
+        const bool isTracked = (trackedNames.count(info.name) > 0);
 
         const QString renderPass = info.renderPassPath.IsEmpty()
             ? QStringLiteral("<none>")
             : QString::fromStdString(info.renderPassPath.GetString());
 
-        auto* item = new QListWidgetItem(QStringLiteral("[%1] %2  |  %3  |  pass: %4")
-                                             .arg(flags)
-                                             .arg(QString::fromStdString(info.name))
-                                             .arg(QString::fromStdString(info.identifier))
-                                             .arg(renderPass));
-        // The visible text is decorated, so carry the registry key for the double-click.
+        auto* item = new QListWidgetItem();
+        // The row is a widget, so carry the registry key for the double-click.
         item->setData(Qt::UserRole, QString::fromStdString(info.name));
+        item->setToolTip(QStringLiteral("%1\n%2")
+                             .arg(isActive ? "Active" : "Not active")
+                             .arg(isTracked ? "Tracked (anonymous or dirty)" : "Not tracked"));
+
+        auto* row = createLayerRow(
+            isActive,
+            isTracked,
+            QStringLiteral("%1  |  %2  |  pass: %3")
+                .arg(QString::fromStdString(info.name))
+                .arg(QString::fromStdString(info.identifier))
+                .arg(renderPass));
+
+        item->setSizeHint(row->sizeHint());
         _layerList->addItem(item);
+        _layerList->setItemWidget(item, row);
     }
+}
+
+QWidget* RenderLayerTestDialog::createLayerRow(
+    bool           isActive,
+    bool           isTracked,
+    const QString& description)
+{
+    const int iconSize = 16;
+
+    auto* row = new QWidget();
+    // Without this the row widget swallows the clicks and the view never emits
+    // itemDoubleClicked.
+    row->setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    auto* rowLayout = new QHBoxLayout(row);
+    rowLayout->setContentsMargins(4, 2, 4, 2);
+    rowLayout->setSpacing(6);
+
+    // An off state still gets a fixed-size label so the description stays aligned.
+    auto addIcon = [&](bool on, QStyle::StandardPixmap pixmap) {
+        auto* iconLabel = new QLabel(row);
+        iconLabel->setFixedSize(iconSize, iconSize);
+        if (on) {
+            iconLabel->setPixmap(style()->standardIcon(pixmap).pixmap(iconSize, iconSize));
+        }
+        rowLayout->addWidget(iconLabel);
+    };
+
+    addIcon(isActive, QStyle::SP_DialogApplyButton);
+    addIcon(isTracked, QStyle::SP_DialogSaveButton);
+
+    auto* descriptionLabel = new QLabel(description, row);
+    // Maya specifies its fonts in pixels, and pointSize() reports -1 for those. Adding to
+    // it would ask for a 1 point font, which renders as an unreadable row of marks.
+    QFont font = descriptionLabel->font();
+    if (font.pointSize() > 0) {
+        font.setPointSize(font.pointSize() + 2);
+    } else if (font.pixelSize() > 0) {
+        font.setPixelSize(font.pixelSize() + 3);
+    }
+    descriptionLabel->setFont(font);
+    rowLayout->addWidget(descriptionLabel, 1);
+
+    return row;
 }
 
 void RenderLayerTestDialog::toggleActiveRenderLayer(QListWidgetItem* in_item)
@@ -237,6 +333,17 @@ void RenderLayerTestDialog::toggleActiveRenderLayer(QListWidgetItem* in_item)
     // toggles it off.
     const bool alreadyActive = active && active->name == name;
     manager.setActiveRenderLayer(theStage, alreadyActive ? std::string() : name);
+
+    // Target whatever is now active so edits land in the render layer. Only the active
+    // layer is composed into the stack, which is what makes it a legal edit target;
+    // deactivating puts the target back on the root layer.
+    if (const auto nowActive = manager.getActiveRenderLayer(theStage)) {
+        if (auto activeLayer = PXR_NS::SdfLayer::Find(nowActive->identifier)) {
+            theStage->SetEditTarget(activeLayer);
+        }
+    } else {
+        theStage->SetEditTarget(theStage->GetRootLayer());
+    }
 
     refreshLayers();
 }
