@@ -275,17 +275,33 @@ bool stageHasDirtyLayer(const UsdStage& stage)
     });
 }
 
-SdfLayerHandleSet getSaveCandidateLayers(const UsdStage& stage)
+SdfLayerHandleSet getSaveCandidateLayers(const UsdStageRefPtr& stage)
 {
-    SdfLayerHandleVector usedLayers = stage.GetUsedLayers(true);
+    SdfLayerHandleVector usedLayers = stage->GetUsedLayers(true);
     SdfLayerHandleSet    candidateLayers(
         std::make_move_iterator(usedLayers.begin()), std::make_move_iterator(usedLayers.end()));
 
     // We also consider diry muted layers, held by maya-usd.
-    for (const auto& stageMutedLayerId : stage.GetMutedLayers()) {
+    for (const auto& stageMutedLayerId : stage->GetMutedLayers()) {
         const auto& mutedLayers = MayaUsd::getMutedLayers(stageMutedLayerId);
         candidateLayers.insert(mutedLayers.begin(), mutedLayers.end());
     }
+
+    // Render layers are owned by the root layer's registry rather than by composition, so
+    // an inactive one is absent from GetUsedLayers - the same reason muted layers are
+    // added above. The proxy path is unused here because only the layers are kept, and
+    // the set discards the active render layer that composition already contributed.
+    if (auto* provider = MayaUsd::utils::getRenderLayerSaveProvider()) {
+        MayaUsd::utils::StageLayersToSave renderLayers;
+        provider->getRenderLayersToSave({}, stage, renderLayers);
+        for (const auto& layerInfo : renderLayers._anonLayers) {
+            candidateLayers.insert(layerInfo.layer);
+        }
+        for (const auto& layer : renderLayers._dirtyFileBackedLayers) {
+            candidateLayers.insert(layer);
+        }
+    }
+
     return candidateLayers;
 }
 
@@ -763,7 +779,7 @@ bool LayerDatabase::getProxiesToSave(bool isExport, bool* hasAnyProxy)
                 // so we can put them back in the same spot). So doesn't matter if its incoming or
                 // not, we need to save.
                 if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
-                    for (const auto& layer : getSaveCandidateLayers(*stage)) {
+                    for (const auto& layer : getSaveCandidateLayers(stage)) {
                         if (TF_VERIFY(layer) && layer->IsDirty()) {
                             StageSavingInfo info;
                             MDagPath::getAPathTo(mobj, info.dagPath);
@@ -1212,7 +1228,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
             }
             convertAnonymousLayers(pShape, mobj, info.stage);
             const auto& sessionLayer = info.stage->GetSessionLayer();
-            for (const auto& layer : getSaveCandidateLayers(*info.stage)) {
+            for (const auto& layer : getSaveCandidateLayers(info.stage)) {
                 if (TF_VERIFY(layer)) {
                     if (layer != sessionLayer && layer->PermissionToSave() && layer->IsDirty()) {
                         if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
