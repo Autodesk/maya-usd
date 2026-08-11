@@ -55,6 +55,21 @@ if(ADSK_USD_RENDER_SETUP_INCLUDE_DIR)
     endif()
 endif()
 
+###########################################################################
+#
+# ABI level
+#
+# ADSK_ABI tells the render setup headers which release's API surface to expose.
+# Part of that surface is not ABI-compatible across releases - StageRenderInventory
+# gains members, and CollectInventory returns it by value - so a consumer that
+# disagrees with the component about ADSK_ABI corrupts the stack rather than
+# failing to build. The component is published per Maya release, so the matching
+# value is the Maya year we are building against.
+
+if(ADSK_USD_RENDER_SETUP_INCLUDE_DIR AND MAYA_APP_VERSION)
+    set(ADSK_USD_RENDER_SETUP_ABI ${MAYA_APP_VERSION})
+endif()
+
 ############################################################################
 #
 # Render Setup package
@@ -78,4 +93,10 @@ if (AdskUsdRenderSetup_FOUND)
     message(STATUS "  Version: ${ADSK_USD_RENDER_SETUP_VERSION}")
     message(STATUS "  Include dir: ${ADSK_USD_RENDER_SETUP_INCLUDE_DIR}")
     message(STATUS "  Libraries: ${ADSK_USD_RENDER_SETUP_LIBRARY}")
+    if(ADSK_USD_RENDER_SETUP_ABI)
+        message(STATUS "  ABI: ${ADSK_USD_RENDER_SETUP_ABI}")
+    else()
+        message(WARNING "AdskUsdRenderSetup: ADSK_ABI unset (no MAYA_APP_VERSION); "
+                        "headers may disagree with the component about StageRenderInventory.")
+    endif()
 endif()

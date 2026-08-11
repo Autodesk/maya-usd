@@ -42,6 +42,9 @@ class DirtyLayersCountBadge;
 class LayerTreeView;
 class SessionState;
 class LayerContentsWidget;
+#if defined(ADSK_ABI) && ADSK_ABI >= 2027
+class RenderLayerTestDialog;
+#endif
 
 /**
  * @brief Widget that manages a menu, a combo box to select a USD stage, and  USD Layer Tree view
@@ -118,6 +121,11 @@ private:
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
     QPointer<UsdEditForwardConfig::EditForwardDialog> _editForwardDialog;
     void                                              openEditForwardDialog();
+#endif
+
+#if defined(ADSK_ABI) && ADSK_ABI >= 2027
+    QPointer<RenderLayerTestDialog> _renderLayerTestDialog;
+    void                            openRenderLayerTestDialog();
 #endif
     bool _updateButtonsOnIdle = false; // true if request to update on idle is pending
 };

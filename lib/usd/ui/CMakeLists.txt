@@ -55,6 +55,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${MAYA_HAS_USD_SETTINGS_NODES}>:MAYA_HAS_USD_SETTINGS_NODES>
+        $<$<BOOL:${ADSK_USD_RENDER_SETUP_ABI}>:ADSK_ABI=${ADSK_USD_RENDER_SETUP_ABI}>
         MAYAUSD_UI_EXPORT
 )
 

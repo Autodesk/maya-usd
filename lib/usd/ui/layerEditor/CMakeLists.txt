@@ -48,6 +48,8 @@ target_sources(${PROJECT_NAME}
         pathChecker.h
         qtUtils.cpp
         qtUtils.h
+        renderLayerTestDialog.cpp
+        renderLayerTestDialog.h
         resources.qrc
         saveLayersDialog.cpp
         saveLayersDialog.h

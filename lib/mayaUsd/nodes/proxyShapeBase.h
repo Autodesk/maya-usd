@@ -515,6 +515,7 @@ private:
 
 public:
     // Counter for the number of times compute is re-entered
+    MAYAUSD_CORE_PUBLIC
     static std::atomic<int> in_compute;
 };
 

@@ -30,6 +30,7 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
+#include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtGui/QFontMetrics>
 #include <QtWidgets/QApplication>
@@ -620,6 +621,8 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
             _saveLayerPathRows.push_back(saveLayerPathRow);
         }
 
+        ensureUniqueSuggestedPaths();
+
         _anonLayersWidget = new QWidget();
         _anonLayersWidget->setLayout(anonLayout);
 
@@ -951,6 +954,40 @@ void SaveLayersDialog::onSaveAll()
 }
 
 void SaveLayersDialog::onCancel() { reject(); }
+
+void SaveLayersDialog::ensureUniqueSuggestedPaths()
+{
+    // Each row derives its suggested file from its own layer's display-name number suffix,
+    // and only checks the result against files already on disk. Two layers from different
+    // naming domains - an anonymous root layer and a render layer, say - therefore land on
+    // the same not-yet-existing file. This is the only place that sees the whole batch, so
+    // disambiguate here rather than let okToSave reject the save outright.
+    QSet<QString> claimedPaths;
+
+    for (auto* widget : _saveLayerPathRows) {
+        auto* row = dynamic_cast<SaveLayerPathRow*>(widget);
+        if (!row || !row->_layerInfo.layer)
+            continue;
+
+        const QString suggestedPath = row->getAbsolutePath();
+        if (suggestedPath.isEmpty())
+            continue;
+
+        QString uniquePath = suggestedPath;
+        while (claimedPaths.contains(uniquePath)) {
+            const QFileInfo info(uniquePath);
+            const std::string nextBase = UsdMayaUtilFileSystem::increaseNumberSuffix(
+                info.completeBaseName().toStdString());
+            uniquePath
+                = info.dir().filePath(QString::fromStdString(nextBase) + "." + info.suffix());
+        }
+
+        if (uniquePath != suggestedPath)
+            row->setPathToSaveAs(uniquePath.toStdString(), row->needToSaveAsRelative());
+
+        claimedPaths.insert(uniquePath);
+    }
+}
 
 bool SaveLayersDialog::okToSave()
 {

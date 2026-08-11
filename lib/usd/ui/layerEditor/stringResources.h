@@ -67,6 +67,9 @@ const auto kEchoEditForwarding           { create("kEchoEditForwarding", "Echo E
 const auto kConfigureEditForwarding      { create("kConfigureEditForwarding", "Edit Forwarding Configuration") };
 const auto kConfigureEditForwardingTitle { create("kConfigureEditForwardingTitle", "USD Edit Forwarding Configuration") };
 #endif
+#if defined(ADSK_ABI) && ADSK_ABI >= 2027
+const auto kRenderLayerTest              { create("kRenderLayerTest", "Render Layer Test") };
+#endif
 const auto kDisplayLayerExpandAllValues  { create("kDisplayLayerExpandAllValues", "Expand All Values") };
 const auto kDisplayLayerExpandAllValuesTooltip { create("kDisplayLayerExpandAllValuesTooltip",
                                                         "Enable to display all array values and timeSamples in the layer content") };

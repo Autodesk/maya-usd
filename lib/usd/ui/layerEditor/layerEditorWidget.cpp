@@ -22,12 +22,14 @@
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 #include "qtUtils.h"
+#include "renderLayerTestDialog.h"
 #include "stageSelectorWidget.h"
 #include "stringResources.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsdUI/ui/editForwardDialog.h>
@@ -418,6 +420,17 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
             });
 #endif
 
+#if defined(ADSK_ABI) && ADSK_ABI >= 2027
+        optionMenu->addSeparator();
+        auto renderLayerTestAction
+            = optionMenu->addAction(StringResources::getAsQString(StringResources::kRenderLayerTest));
+        QObject::connect(renderLayerTestAction, &QAction::triggered, in_parent, [in_parent]() {
+            if (auto* editor = qobject_cast<LayerEditorWidget*>(in_parent->centralWidget())) {
+                editor->openRenderLayerTestDialog();
+            }
+        });
+#endif
+
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
         helpMenu->addAction(
             StringResources::getAsQString(StringResources::kHelpOnUSDLayerEditor),
@@ -508,6 +521,31 @@ void LayerEditorWidget::updateButtons()
                     count--;
                 }
             }
+
+#if defined(ADSK_ABI) && ADSK_ABI >= 2027
+            // Render layers are registered on the root layer, not composed into the tree,
+            // so the walk above cannot see them. Seed the provider with what the tree did
+            // find so its dedup keeps the active render layer - which *is* composed into
+            // the stack - from being counted twice.
+            if (auto* provider = MayaUsd::utils::getRenderLayerSaveProvider()) {
+                MayaUsd::utils::StageLayersToSave layersInfo;
+                for (auto layer : layers) {
+                    if (layer->layer()) {
+                        layersInfo._dirtyFileBackedLayers.push_back(layer->layer());
+                    }
+                }
+
+                const size_t seeded = layersInfo._dirtyFileBackedLayers.size();
+                provider->getRenderLayersToSave(
+                    _sessionState.stageEntry()._proxyShapePath,
+                    _sessionState.stage(),
+                    layersInfo);
+
+                count += static_cast<int>(
+                    layersInfo._anonLayers.size() + layersInfo._dirtyFileBackedLayers.size()
+                    - seeded);
+            }
+#endif
         }
         _buttons._dirtyCountBadge->updateCount(count);
         bool disable = count == 0;
@@ -732,6 +770,21 @@ void LayerEditorWidget::onSplitterMoved(int pos, int index)
         }
     }
 }
+
+#if defined(ADSK_ABI) && ADSK_ABI >= 2027
+
+void LayerEditorWidget::openRenderLayerTestDialog()
+{
+    if (!_renderLayerTestDialog) {
+        _renderLayerTestDialog = new RenderLayerTestDialog(MQtUtil::mainWindow());
+    }
+
+    _renderLayerTestDialog->show();
+    _renderLayerTestDialog->raise();
+    _renderLayerTestDialog->activateWindow();
+}
+
+#endif
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 

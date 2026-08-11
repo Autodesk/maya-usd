@@ -554,10 +554,22 @@ SdfLayerRefPtr saveAnonymousLayer(
         return nullptr;
     }
 
+    // A render layer is registry-owned, so its registry entry always has to be repointed
+    // at the file we just wrote. That is additive: the active render layer is also
+    // composed into the layer stack, so it still needs its sub-layer path updated. Only
+    // the proxy's root layer assignment is mutually exclusive with being a render layer.
+    const bool isRenderLayer = !parent._renderLayerName.empty();
+    if (isRenderLayer) {
+        if (auto* provider = getRenderLayerSaveProvider()) {
+            provider->onRenderLayerSaved(
+                stage, parent._renderLayerName, newLayer->GetIdentifier());
+        }
+    }
+
     // Now replace the layer in the parent, using a relative path if requested.
     if (isSubLayer) {
         updateSubLayer(parentLayer, anonLayer, filePath);
-    } else if (!parent._proxyPath.empty()) {
+    } else if (!isRenderLayer && !parent._proxyPath.empty()) {
         updateRootLayer(
             parent._proxyPath,
             filePath,
@@ -616,6 +628,17 @@ void ensureUSDFileExtension(std::string& filePath)
     }
 }
 
+namespace {
+RenderLayerSaveProvider* _renderLayerSaveProvider = nullptr;
+}
+
+void setRenderLayerSaveProvider(RenderLayerSaveProvider* provider)
+{
+    _renderLayerSaveProvider = provider;
+}
+
+RenderLayerSaveProvider* getRenderLayerSaveProvider() { return _renderLayerSaveProvider; }
+
 void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& layersInfo)
 {
     auto stage = UsdMayaUtil::GetStageByProxyName(proxyPath);
@@ -660,6 +683,12 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
         nullptr,
         layersInfo._anonLayers,
         layersInfo._dirtyFileBackedLayers);
+
+    // Render layers that are not active are not part of the layer stack, so the walk
+    // above cannot find them even though they may need saving.
+    if (auto* provider = getRenderLayerSaveProvider()) {
+        provider->getRenderLayersToSave(proxyPath, stage, layersInfo);
+    }
 }
 
 } // namespace utils

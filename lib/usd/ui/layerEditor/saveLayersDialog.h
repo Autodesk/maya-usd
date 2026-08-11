@@ -79,6 +79,9 @@ private:
         const std::string&    proxyPath,
         const std::string&    stageName);
 
+    //! Disambiguates suggested save paths that collide across rows.
+    void ensureUniqueSuggestedPaths();
+
 private:
     typedef std::unordered_set<SdfLayerRefPtr, TfHash> layerSet;
     using LayerInfos = MayaUsd::utils::LayerInfos;

@@ -110,6 +110,12 @@ struct LayerParent
     // anonymous root layer.
     SdfLayerRefPtr _layerParent;
     std::string    _proxyPath;
+
+    // Set when the layer is a render layer, in which case it is neither a sub-layer nor
+    // the stage's root layer: it is an entry in the render layer registry, and what has
+    // to be remapped after the save is that entry. Takes precedence over the two members
+    // above when deciding how to remap.
+    std::string _renderLayerName;
 };
 
 struct LayerInfo
@@ -133,6 +139,51 @@ struct StageLayersToSave
     LayerInfos                  _anonLayers;
     std::vector<SdfLayerRefPtr> _dirtyFileBackedLayers;
 };
+
+/*! \brief Seam letting the Render Setup integration take part in the save flow.
+
+    The render setup library is Qt-only and is linked by mayaUsdUI, never by this
+    library, so the implementation is registered at plugin initialization instead of
+    being called directly. When no provider is registered every entry point below is
+    skipped and the save flow behaves as if render layers did not exist.
+ */
+class RenderLayerSaveProvider
+{
+public:
+    virtual ~RenderLayerSaveProvider() = default;
+
+    /*! \brief Adds the render layers that the stage's layer stack does not reveal.
+
+        A render layer that is not active is absent from the layer stack, so the walk
+        done by getLayersToSaveFromProxy never sees it. Implementations must not re-add
+        layers already present in \p layersInfo: the active render layer is composed
+        into the stack and so is normally collected by that walk.
+     */
+    virtual void getRenderLayersToSave(
+        const std::string&            proxyPath,
+        const PXR_NS::UsdStageRefPtr& stage,
+        StageLayersToSave&            layersInfo)
+        = 0;
+
+    /*! \brief Repoints a render layer registry entry after the anonymous layer backing
+        it has been written to \p newIdentifier.
+     */
+    virtual void onRenderLayerSaved(
+        const PXR_NS::UsdStageRefPtr& stage,
+        const std::string&            renderLayerName,
+        const std::string&            newIdentifier)
+        = 0;
+};
+
+/*! \brief Registers the render layer save provider. Passing nullptr clears it.
+    The caller keeps ownership.
+ */
+MAYAUSD_CORE_PUBLIC
+void setRenderLayerSaveProvider(RenderLayerSaveProvider* provider);
+
+//! \return The registered provider, or nullptr when none is set.
+MAYAUSD_CORE_PUBLIC
+RenderLayerSaveProvider* getRenderLayerSaveProvider();
 
 /*! \brief Save an layer to disk to the given file path and using the given format.
     If the file path is empty then use the current file path of the layer.
