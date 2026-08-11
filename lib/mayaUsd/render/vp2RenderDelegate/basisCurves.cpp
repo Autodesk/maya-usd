@@ -39,6 +39,8 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -434,12 +436,19 @@ void HdVP2BasisCurves::Sync(
 #endif
 
     const SdfPath& id = GetId();
-    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
+    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)
+        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
         TfTokenVector requiredPrimvars;
         if (!_GetMaterialPrimvars(renderIndex, GetMaterialId(), requiredPrimvars)) {
             requiredPrimvars = sFallbackShaderPrimvars;
         }
+
+        // Points are always required. They are normally read straight from the scene
+        // delegate below, but they may instead be the output of an HdExtComputation
+        // (that is how UsdSkel supplies skinned points), which _UpdatePrimvarSources
+        // resolves into the primvar source map.
+        _RequirePrimvar(requiredPrimvars, HdTokens->points);
 
         _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
     }
@@ -455,50 +464,20 @@ void HdVP2BasisCurves::Sync(
     // Prepare position buffer. It is shared among all draw items so it should
     // be updated only once when it gets dirty.
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
-        const VtValue value = delegate->Get(id, HdTokens->points);
-        _curvesSharedData._points = value.Get<VtVec3fArray>();
-
-        const size_t numVertices = _curvesSharedData._points.size();
+        _curvesSharedData._points
+            = _ResolvePoints(delegate, id, _curvesSharedData._primvarSourceMap).Get<VtVec3fArray>();
 
         const HdBasisCurvesTopology& topology = _curvesSharedData._topology;
         const size_t numControlPoints = topology.CalculateNeededNumberOfControlPoints();
 
-        if (!topology.HasIndices() && numVertices != numControlPoints) {
+        if (!topology.HasIndices() && _curvesSharedData._points.size() != numControlPoints) {
             TF_WARN("Topology and vertices do not match for BasisCurve %s", id.GetName().c_str());
         }
 
-        void* bufferData = _curvesSharedData._positionsBuffer->acquire(numVertices, true);
-        if (bufferData) {
-            const size_t numBytes = sizeof(GfVec3f) * numVertices;
-            memcpy(bufferData, _curvesSharedData._points.cdata(), numBytes);
-
-            // Capture class member for lambda
-            MHWRender::MVertexBuffer* const positionsBuffer
-                = _curvesSharedData._positionsBuffer.get();
-            const MString& rprimId = _rprimId;
-
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [positionsBuffer, bufferData, rprimId]() {
-                    MProfilingScope profilingScope(
-                        HdVP2RenderDelegate::sProfilerCategory,
-                        MProfiler::kColorC_L2,
-                        rprimId.asChar(),
-                        "CommitPositions");
-
-                    positionsBuffer->commit(bufferData);
-                });
-        }
+        _CommitPositionsBuffer(_curvesSharedData._positionsBuffer.get(), _curvesSharedData._points);
     }
 
-#if PXR_VERSION > 2111
-    const TfToken& renderTag = GetRenderTag();
-#else
-    const TfToken& renderTag = delegate->GetRenderTag(id);
-#endif
-
-    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, *this, _reprs, renderTag);
-
-    *dirtyBits = HdChangeTracker::Clean;
+    _SyncEndCommon(*this, delegate, dirtyBits, reprToken, _sharedData, _reprs);
 
     // Draw item update is controlled by its own dirty bits.
     _UpdateRepr(delegate, reprToken);
@@ -1418,6 +1397,11 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
 
     _UpdatePrimvarSourcesGeneric(
         sceneDelegate, dirtyBits, requiredPrimvars, *this, updatePrimvarInfo, erasePrimvarInfo);
+
+    // At this point we've searched for the required primvars. Check to see if
+    // there are any HdExtComputation which should replace primvar data or fill in for a
+    // missing primvar. This is what makes UsdSkel-skinned curves deform.
+    _UpdateComputedPrimvarSourcesGeneric(sceneDelegate, requiredPrimvars, *this, updatePrimvarInfo);
 }
 
 /*! \brief  Create render item for smoothHull repr.
