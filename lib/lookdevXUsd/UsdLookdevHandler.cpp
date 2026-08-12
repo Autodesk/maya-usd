@@ -14,11 +14,8 @@
 
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
+#include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/Utils.h>
-
-#ifdef LDX_USD_USE_MAYAUSDAPI
-#include <mayaUsdAPI/utils.h>
-#endif
 
 namespace
 {
@@ -107,7 +104,6 @@ Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevContain
 Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevContainerCmdImpl(
     const Ufe::SceneItem::Ptr& parent, const Ufe::NodeDef::Ptr& nodeDef) const
 {
-#ifdef LDX_USD_USE_MAYAUSDAPI
     auto usdParent = UsdUfe::downcast(parent);
     auto prim = usdParent ? usdParent->prim() : PXR_NS::UsdPrim();
     if (!prim.IsValid())
@@ -120,16 +116,12 @@ Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevContain
         return nullptr;
     }
 
-    auto cmd =
-        std::dynamic_pointer_cast<Ufe::InsertChildCommand>(MayaUsdAPI::addNewMaterialCommand(parent, nodeDef->type()));
+    auto cmd = UsdUfe::UsdUndoAddNewMaterialCommand::create(usdParent, nodeDef->type());
     if (!cmd)
     {
         return nullptr;
     }
     return WrapInsertChildCommand::create(cmd);
-#else
-    return nullptr;
-#endif
 }
 
 Ufe::SceneItemResultUndoableCommand::Ptr UsdLookdevHandler::createLookdevEnvironmentCmdImpl(
