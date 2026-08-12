@@ -22,7 +22,7 @@ import mayaUsd.ufe
 import mayaUsdUtils
 import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmdWrapper
 
-from pxr import UsdShade
+from pxr import Sdf, Usd, UsdShade
 
 import maya.mel as mel
 import maya.cmds as cmds
@@ -55,15 +55,16 @@ class MaterialCustomControl(object):
     TextField = collections.namedtuple('TextField', ['layout', 'field', 'gotoButton', 'graphButton','graphMenu'])
 
     @staticmethod
-    def hasMaterial(prim):
+    def findMaterialRelationships(prim):
         if not UsdShade.MaterialBindingAPI.CanApply(prim):
-            return False
+            return []
+        relationships = []
         matAPI = UsdShade.MaterialBindingAPI(prim)
         for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
-            mat, _ = matAPI.ComputeBoundMaterial(purpose)
-            if mat:
-                return True
-        return False
+            mat, rel = matAPI.ComputeBoundMaterial(purpose)
+            if mat and rel:
+                relationships.append(rel)
+        return relationships
     
     def __init__(self, item, prim, useNiceName):
         super(MaterialCustomControl, self).__init__()
@@ -173,13 +174,27 @@ class MaterialCustomControl(object):
 
         return MaterialCustomControl.TextField(rowLayout, textField, gotoButton, graphButton, graphMenu)
 
+    def _makeBindCommand(self, ufePath, value, purpose):
+        '''
+        Create the command used to bind the given material path for the given purpose.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        return mayaUsd.ufe.BindMaterialCommand(ufePath, value, purpose)
+
+    def _makeUnbindCommand(self, ufePath, purpose):
+        '''
+        Create the command used to unbind the material for the given purpose.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        return mayaUsd.ufe.UnbindMaterialCommand(ufePath, purpose)
+
     def _setMaterialPurposeBinding(self, purpose, value):
         try:
             ufePath = ufe.PathString.string(self.item.path())
             if value:
-                cmd = mayaUsd.ufe.BindMaterialCommand(ufePath, value, purpose)
+                cmd = self._makeBindCommand(ufePath, value, purpose)
             else:
-                cmd = mayaUsd.ufe.UnbindMaterialCommand(ufePath, purpose)
+                cmd = self._makeUnbindCommand(ufePath, purpose)
             ufeCmdWrapper.execute(cmd)
         except Exception as e:
             cmds.warning(f'Error executing material command: {e}', noContext=True)
@@ -222,6 +237,13 @@ class MaterialCustomControl(object):
         
         return cmds.popupMenu(parent=graphButton, button=True)
     
+    def _makeStrengthCommand(self, ufePath, strength, affectAllPurposes):
+        '''
+        Create the command used to set the material binding strength.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        return mayaUsd.ufe.SetMaterialBindingStrengthCommand(ufePath, strength, affectAllPurposes)
+
     def _createDropDownField(self, longName, uiNameRes, elementsRes):
         '''
         Create a disabled drop-down menu with the given elements.
@@ -231,11 +253,11 @@ class MaterialCustomControl(object):
             try:
                 if value not in MaterialCustomControl.strengthTokens:
                     return
-                
+
                 ufePath = ufe.PathString.string(self.item.path())
                 strength = MaterialCustomControl.strengthTokens[value]
                 affectAllPurposes = True
-                cmd = mayaUsd.ufe.SetMaterialBindingStrengthCommand(ufePath, strength, affectAllPurposes)
+                cmd = self._makeStrengthCommand(ufePath, strength, affectAllPurposes)
                 ufeCmdWrapper.execute(cmd)
 
                 # Force update of all children in the VP2 delegate.
@@ -260,32 +282,55 @@ class MaterialCustomControl(object):
         # that case we don't need to update our controls since none will change.
         pass
 
+    def _getBoundMaterialInfo(self, purpose):
+        '''
+        Returns the (mat, matRel, directBinding) info used to fill the UI for the given
+        purpose. Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        # Note: ComputeBoundMaterial returns a UsdShade.Material and a UsdRelationship
+        #       even if none is bound. The UsdShade.Material and the UsdRelationship
+        #       will be empty instance. For example, UsdShade.Material.GetPath() would
+        #       return an empty path.
+        mat, matRel = matAPI.ComputeBoundMaterial(purpose)
+        directBinding = matAPI.GetDirectBinding(purpose)
+        return mat, matRel, directBinding
+
+    def _getStrengthBindingRel(self):
+        '''
+        Returns the relationship used to read/write the binding strength.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        directBinding = matAPI.GetDirectBinding(UsdShade.Tokens.allPurpose)
+        return directBinding.GetBindingRel() if directBinding else None
+
+    def _isInheritingMaterial(self):
+        '''
+        Verify if the default-purpose material is inherited from an ancestor prim.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        _, defaultMatRel = matAPI.ComputeBoundMaterial(UsdShade.Tokens.allPurpose)
+        return bool(defaultMatRel.GetPrim() != self.prim)
+
     def refresh(self):
         '''
         Fill the UI with the material data.
         '''
-        matAPI = UsdShade.MaterialBindingAPI(self.prim)
-
         for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
-            # Note: ComputeBoundMaterial returns a UsdShade.Material and a UsdRelationship
-            #       even if none is bound. The UsdShade.Material and the UsdRelationship 
-            #       will be empty instance. For example, UsdShade.Material.GetPath() would
-            #       return an empty path.
-            mat, matRel = matAPI.ComputeBoundMaterial(purpose)
-            directBinding = matAPI.GetDirectBinding(purpose)
+            mat, matRel, directBinding = self._getBoundMaterialInfo(purpose)
             self._fillUIForPurpose(purpose, mat, matRel, directBinding)
 
-        _, defaultMatRel = matAPI.ComputeBoundMaterial(UsdShade.Tokens.allPurpose)
-        isInheriting = bool(defaultMatRel.GetPrim() != self.prim)
+        bindingRel = self._getStrengthBindingRel()
+        isInheriting = self._isInheritingMaterial()
+        self._fillStrengthValue(bindingRel, isInheriting)
 
-        defaultDirectBinding = matAPI.GetDirectBinding(UsdShade.Tokens.allPurpose)
-        self._fillStrengthValue(defaultDirectBinding, isInheriting)
-
-    def _fillStrengthValue(self, directBinding, isInheriting):
+    def _fillStrengthValue(self, bindingRel, isInheriting):
 
         if isInheriting:
             strengthEnabled = False
-            strengthVisible = bool(directBinding)
+            strengthVisible = bool(bindingRel)
             strengthAnnotation = getMayaUsdLibString('kTooltipInheritedStrength')
         else:
             strengthEnabled = True
@@ -293,9 +338,8 @@ class MaterialCustomControl(object):
             strengthAnnotation = getMayaUsdLibString('kLabelMaterialStrength')
 
         # Note: USD TfToken are automatically represented as strings in Python by the USD Python API.
-        if directBinding:
-            directRel = directBinding.GetBindingRel()
-            bindingStrengthToken = UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(directRel)
+        if bindingRel:
+            bindingStrengthToken = UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel)
         else:
             bindingStrengthToken = 'weakerThanDescendants'
 
@@ -454,4 +498,100 @@ class MaterialCustomControl(object):
             self.item.path().segments[0],
             ufe.PathSegment(usdPath, mayaUsd.ufe.getUsdRunTimeId(), '/')])
         return ufe.PathString.string(ufePath)
+
+
+class _MaterialPathHolder:
+    '''
+    Minimal adapter exposing the subset of UsdShade.MaterialBindingAPI.DirectBinding's
+    interface used by MaterialCustomControl._fillUIForPurpose(), backed by a plain
+    material path instead of a resolved direct binding.
+    '''
+    def __init__(self, materialPath):
+        self._materialPath = materialPath
+
+    def __bool__(self):
+        return bool(self._materialPath)
+
+    def GetMaterialPath(self):
+        return self._materialPath
+
+
+class CollectionMaterialCustomControl(MaterialCustomControl):
+    '''
+    Custom control to display and edit a collection-based material binding, i.e.
+    a material bound to every member of a named collection on the prim, instead
+    of a material bound directly to the prim itself.
+    '''
+
+    def __init__(self, item, prim, bindingName, useNiceName):
+        super(CollectionMaterialCustomControl, self).__init__(item, prim, useNiceName)
+        self.bindingName = bindingName
+
+    @staticmethod
+    def hasCollectionMaterial(prim, bindingName):
+        '''
+        Verify if the prim has a collection-based material binding for the
+        given (collection instance) binding name, for any purpose.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(prim)
+        for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
+            if matAPI.GetCollectionBindingRel(bindingName, purpose):
+                return True
+        return False
+
+    @staticmethod
+    def findCollectionMaterials(prim):
+        '''
+        Find all collection-based material bindings on the given prim,
+        returning a dictionary of binding names to their corresponding binding relationship.
+        '''
+        collectionBindings = {}
+        matAPI = UsdShade.MaterialBindingAPI(prim)
+        for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
+            bindings = matAPI.GetCollectionBindings(purpose)
+            for binding in bindings:
+                if not binding:
+                    continue
+                collectionBindings[binding.GetCollection().GetName()] = binding.GetBindingRel()
+        return collectionBindings
+
+    def _getBoundMaterialInfo(self, purpose):
+        '''
+        A collection-based binding authored directly on this prim is never
+        "inherited" the way a direct binding can be, so we always report the
+        binding relationship as belonging to this prim -- editable, possibly
+        empty -- rather than trying to compute an ancestor-inherited value.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        bindingRel = matAPI.GetCollectionBindingRel(self.bindingName, purpose)
+
+        matPath = Sdf.Path.emptyPath
+        if bindingRel:
+            collectionPath = Usd.CollectionAPI.GetNamedCollectionPath(self.prim, self.bindingName)
+            for target in bindingRel.GetTargets():
+                if target != collectionPath:
+                    matPath = target
+                    break
+
+        mat = UsdShade.Material(self.prim.GetStage().GetPrimAtPath(matPath)) if matPath else UsdShade.Material()
+        directBinding = _MaterialPathHolder(matPath)
+        return mat, bindingRel, directBinding
+
+    def _getStrengthBindingRel(self):
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        return matAPI.GetCollectionBindingRel(self.bindingName, UsdShade.Tokens.allPurpose)
+
+    def _isInheritingMaterial(self):
+        # Collection-based bindings authored on this prim are never inherited.
+        return False
+
+    def _makeBindCommand(self, ufePath, value, purpose):
+        return mayaUsd.ufe.BindCollectionMaterialCommand(ufePath, value, self.bindingName, purpose)
+
+    def _makeUnbindCommand(self, ufePath, purpose):
+        return mayaUsd.ufe.UnbindCollectionMaterialCommand(ufePath, self.bindingName, purpose)
+
+    def _makeStrengthCommand(self, ufePath, strength, affectAllPurposes):
+        return mayaUsd.ufe.SetMaterialBindingStrengthCommand(
+            ufePath, strength, affectAllPurposes, self.bindingName)
 

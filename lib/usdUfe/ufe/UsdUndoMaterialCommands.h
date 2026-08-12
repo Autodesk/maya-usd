@@ -104,11 +104,13 @@ public:
     SetMaterialBindingStrengthCommand(
         Ufe::Path              primPath,
         const PXR_NS::TfToken& strength,
-        const PXR_NS::TfToken& purpose);
+        const PXR_NS::TfToken& purpose,
+        const PXR_NS::TfToken& bindingName = PXR_NS::TfToken());
     SetMaterialBindingStrengthCommand(
         Ufe::Path              primPath,
         const PXR_NS::TfToken& strength,
-        bool                   affectAllPurposes);
+        bool                   affectAllPurposes,
+        const PXR_NS::TfToken& bindingName = PXR_NS::TfToken());
     ~SetMaterialBindingStrengthCommand() override;
 
     USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(SetMaterialBindingStrengthCommand);
@@ -125,6 +127,94 @@ private:
     PXR_NS::TfToken         _purpose;
     PXR_NS::TfToken         _strength;
     bool                    _affectAllPurposes = false;
+    PXR_NS::TfToken         _bindingName;
+    UsdUfe::UsdUndoableItem _undoableItem;
+};
+
+//! \brief CreateCollectionMaterialBindingUndoableCommand
+//! Authors an (initially unbound) collection-based material binding relationship
+//! for the named collection so that it can subsequently be edited/bound.
+class USDUFE_PUBLIC CreateCollectionMaterialBindingUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    static const std::string commandName;
+
+    CreateCollectionMaterialBindingUndoableCommand(
+        Ufe::Path              primPath,
+        const PXR_NS::TfToken& bindingName);
+
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(CreateCollectionMaterialBindingUndoableCommand);
+
+    void execute() override;
+    void undo() override;
+    void redo() override;
+    UFE_V4(std::string commandString() const override { return "CreateCollectionMaterialBinding"; })
+
+private:
+    Ufe::Path               _primPath;
+    PXR_NS::TfToken         _bindingName;
+    UsdUfe::UsdUndoableItem _undoableItem;
+};
+
+//! \brief BindCollectionMaterialUndoableCommand
+class USDUFE_PUBLIC BindCollectionMaterialUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    static const std::string commandName;
+
+    BindCollectionMaterialUndoableCommand(
+        Ufe::Path              primPath,
+        const PXR_NS::SdfPath& materialPath,
+        const PXR_NS::TfToken& bindingName,
+        const PXR_NS::TfToken& purpose);
+
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(BindCollectionMaterialUndoableCommand);
+
+    void execute() override;
+    void undo() override;
+    void redo() override;
+    UFE_V4(std::string commandString() const override { return "BindCollectionMaterial"; })
+
+private:
+    Ufe::Path               _primPath;
+    PXR_NS::SdfPath         _materialPath;
+    PXR_NS::TfToken         _bindingName;
+    PXR_NS::TfToken         _purpose;
+    UsdUfe::UsdUndoableItem _undoableItem;
+};
+
+//! \brief UnbindCollectionMaterialUndoableCommand
+//! Removes one purpose, or all purposes, of a collection-based material binding
+//! for the named collection.
+class USDUFE_PUBLIC UnbindCollectionMaterialUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    static const std::string commandName;
+
+    UnbindCollectionMaterialUndoableCommand(
+        Ufe::Path              primPath,
+        const PXR_NS::TfToken& bindingName,
+        const PXR_NS::TfToken& purpose);
+    UnbindCollectionMaterialUndoableCommand(
+        Ufe::Path              primPath,
+        const PXR_NS::TfToken& bindingName,
+        bool                   unassignAll);
+    ~UnbindCollectionMaterialUndoableCommand() override;
+
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UnbindCollectionMaterialUndoableCommand);
+
+    void execute() override;
+    void undo() override;
+    void redo() override;
+    UFE_V4(std::string commandString() const override { return "UnbindCollectionMaterial"; })
+
+private:
+    void validatePrimPath() const;
+
+    Ufe::Path               _primPath;
+    PXR_NS::TfToken         _bindingName;
+    PXR_NS::TfToken         _purpose;
+    bool                    _unassignAll = false;
     UsdUfe::UsdUndoableItem _undoableItem;
 };
 
