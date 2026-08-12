@@ -26,7 +26,7 @@ import ufe
 import unittest
 import usdUtils
 
-from pxr import UsdShade
+from pxr import Usd, UsdShade
 
 #####################################################################
 #
@@ -38,6 +38,9 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
         - BindMaterialCommand
         - UnbindMaterialCommand
         - SetMaterialBindingStrengthCommand
+        - CreateCollectionMaterialBindingCommand
+        - BindCollectionMaterialCommand
+        - UnbindCollectionMaterialCommand
     '''
 
     pluginsLoaded = False
@@ -94,16 +97,38 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
         self.preview = UsdShade.Tokens.preview
         self.full = UsdShade.Tokens.full
 
+        self.collectionName = 'myColl'
+        Usd.CollectionAPI.Apply(self.aPrim, self.collectionName)
+
         cmds.select(clear=True)
 
     def _directBinding(self, prim, purpose=''):
         purpose = purpose if purpose else self.allPurpose
         return UsdShade.MaterialBindingAPI(prim).GetDirectBinding(purpose)
-    
+
     def verifyBinding(self, prim, purpose, expectedMaterialPathStr):
         purpose = purpose if purpose else self.allPurpose
         binding = self._directBinding(prim, purpose)
         self.assertEqual(binding.GetMaterialPath().pathString, expectedMaterialPathStr)
+
+    def _collectionBindingRel(self, prim, bindingName, purpose=''):
+        purpose = purpose if purpose else self.allPurpose
+        return UsdShade.MaterialBindingAPI(prim).GetCollectionBindingRel(bindingName, purpose)
+
+    def _collectionBindingMaterialPath(self, prim, bindingName, purpose=''):
+        rel = self._collectionBindingRel(prim, bindingName, purpose)
+        if not rel:
+            return ''
+        collectionPath = Usd.CollectionAPI.GetNamedCollectionPath(prim, bindingName)
+        for target in rel.GetTargets():
+            if target != collectionPath:
+                return target.pathString
+        return ''
+
+    def verifyCollectionBinding(self, prim, bindingName, purpose, expectedMaterialPathStr):
+        self.assertEqual(
+            self._collectionBindingMaterialPath(prim, bindingName, purpose),
+            expectedMaterialPathStr)
 
     #####################################################################
     # BindMaterialCommand
@@ -394,6 +419,260 @@ class MaterialBindingCommandsTestCase(unittest.TestCase):
             self.aPathStr, UsdShade.Tokens.strongerThanDescendants, '')
         with self.assertRaises(RuntimeError):
             cmd.execute()
+
+    #####################################################################
+    # CreateCollectionMaterialBindingCommand
+
+    def testCreateCollectionMaterialBindingCommand(self):
+        '''
+        Creating a collection material binding authors an (initially unbound)
+        allPurpose collection binding relationship targeting the collection.
+        '''
+        self.assertFalse(self._collectionBindingRel(self.aPrim, self.collectionName))
+
+        cmd = usdUfe.CreateCollectionMaterialBindingCommand(self.aPathStr, self.collectionName)
+        cmd.execute()
+        self.assertTrue(self._collectionBindingRel(self.aPrim, self.collectionName))
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, '')
+
+        cmd.undo()
+        self.assertFalse(self._collectionBindingRel(self.aPrim, self.collectionName))
+
+        cmd.redo()
+        self.assertTrue(self._collectionBindingRel(self.aPrim, self.collectionName))
+
+    def testCreateCollectionMaterialBindingCommandInvalidCollection(self):
+        '''
+        Constructing the command with a name that is not an existing collection
+        on the prim should raise.
+        '''
+        self.assertRaises(
+            RuntimeError,
+            usdUfe.CreateCollectionMaterialBindingCommand, self.aPathStr, 'noSuchCollection')
+
+    def testCreateCollectionMaterialBindingCommandInvalidPrim(self):
+        '''
+        Constructing the command with an invalid prim path should raise.
+        '''
+        badPathStr = self.aPathStr + '_NoSuchPrim'
+        self.assertRaises(
+            RuntimeError,
+            usdUfe.CreateCollectionMaterialBindingCommand, badPathStr, self.collectionName)
+
+    #####################################################################
+    # BindCollectionMaterialCommand
+
+    def testBindCollectionMaterialCommandAllPurpose(self):
+        '''
+        Bind a material to a named collection using the default (all purpose) binding.
+        '''
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, '')
+
+        cmd = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat1PathStr, self.collectionName, '')
+        cmd.execute()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat1PathStr)
+
+        cmd.undo()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, '')
+
+        cmd.redo()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat1PathStr)
+
+    def testBindCollectionMaterialCommandWithPurpose(self):
+        '''
+        Bind a material to a named collection under a specific purpose only.
+        '''
+        cmd = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat1PathStr, self.collectionName, self.preview)
+        cmd.execute()
+
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, '')
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.preview, self.mat1PathStr)
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.full, '')
+
+        cmd.undo()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.preview, '')
+
+        cmd.redo()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.preview, self.mat1PathStr)
+
+    def testBindCollectionMaterialCommandRebind(self):
+        '''
+        Binding a second material under a purpose that is already bound should
+        retarget the existing binding relationship instead of creating a new one.
+        '''
+        cmd1 = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat1PathStr, self.collectionName, '')
+        cmd1.execute()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat1PathStr)
+
+        cmd2 = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat2PathStr, self.collectionName, '')
+        cmd2.execute()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat2PathStr)
+
+        cmd2.undo()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat1PathStr)
+
+        cmd2.redo()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat2PathStr)
+
+    def testBindCollectionMaterialCommandInvalidPrim(self):
+        '''
+        Constructing a BindCollectionMaterialCommand with an invalid prim path should raise.
+        '''
+        badPathStr = self.aPathStr + '_NoSuchPrim'
+        self.assertRaises(
+            RuntimeError,
+            usdUfe.BindCollectionMaterialCommand,
+            badPathStr, self.mat1PathStr, self.collectionName, '')
+
+    def testBindCollectionMaterialCommandInvalidMaterial(self):
+        '''
+        Constructing a BindCollectionMaterialCommand with an invalid material path should raise.
+        '''
+        self.assertRaises(
+            RuntimeError,
+            usdUfe.BindCollectionMaterialCommand,
+            self.aPathStr, '/mtl/NoSuchMaterial', self.collectionName, '')
+
+    def testBindCollectionMaterialCommandInvalidCollection(self):
+        '''
+        Constructing a BindCollectionMaterialCommand with a name that is not an
+        existing collection on the prim should raise.
+        '''
+        self.assertRaises(
+            RuntimeError,
+            usdUfe.BindCollectionMaterialCommand,
+            self.aPathStr, self.mat1PathStr, 'noSuchCollection', '')
+
+    #####################################################################
+    # UnbindCollectionMaterialCommand
+
+    def testUnbindCollectionMaterialCommandOnePurpose(self):
+        '''
+        Unbind a collection material binding under a single purpose.
+        '''
+        bindCmd = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat1PathStr, self.collectionName, '')
+        bindCmd.execute()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat1PathStr)
+
+        unbindCmd = usdUfe.UnbindCollectionMaterialCommand(self.aPathStr, self.collectionName, '')
+        unbindCmd.execute()
+        self.assertFalse(self._collectionBindingRel(self.aPrim, self.collectionName, self.allPurpose))
+
+        unbindCmd.undo()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat1PathStr)
+
+        unbindCmd.redo()
+        self.assertFalse(self._collectionBindingRel(self.aPrim, self.collectionName, self.allPurpose))
+
+    def testUnbindCollectionMaterialCommandUnassignAll(self):
+        '''
+        Unbind all purposes of a collection material binding at once.
+        '''
+        bindAllCmd = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat1PathStr, self.collectionName, '')
+        bindAllCmd.execute()
+        bindPreviewCmd = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat2PathStr, self.collectionName, self.preview)
+        bindPreviewCmd.execute()
+
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat1PathStr)
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.preview, self.mat2PathStr)
+
+        unbindCmd = usdUfe.UnbindCollectionMaterialCommand(self.aPathStr, self.collectionName, True)
+        unbindCmd.execute()
+        self.assertFalse(self._collectionBindingRel(self.aPrim, self.collectionName, self.allPurpose))
+        self.assertFalse(self._collectionBindingRel(self.aPrim, self.collectionName, self.preview))
+
+        unbindCmd.undo()
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.allPurpose, self.mat1PathStr)
+        self.verifyCollectionBinding(self.aPrim, self.collectionName, self.preview, self.mat2PathStr)
+
+        unbindCmd.redo()
+        self.assertFalse(self._collectionBindingRel(self.aPrim, self.collectionName, self.allPurpose))
+        self.assertFalse(self._collectionBindingRel(self.aPrim, self.collectionName, self.preview))
+
+    def testUnbindCollectionMaterialCommandInvalidPrim(self):
+        '''
+        Constructing an UnbindCollectionMaterialCommand with an invalid prim path should raise.
+        '''
+        badPathStr = self.aPathStr + '_NoSuchPrim'
+        self.assertRaises(
+            RuntimeError,
+            usdUfe.UnbindCollectionMaterialCommand, badPathStr, self.collectionName, '')
+        self.assertRaises(
+            RuntimeError,
+            usdUfe.UnbindCollectionMaterialCommand, badPathStr, self.collectionName, True)
+
+    #####################################################################
+    # SetMaterialBindingStrengthCommand (collection binding)
+
+    def testSetMaterialBindingStrengthCollectionOnePurpose(self):
+        '''
+        Change the binding strength of a single purpose's collection binding.
+        '''
+        bindCmd = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat1PathStr, self.collectionName, '')
+        bindCmd.execute()
+
+        bindingRel = self._collectionBindingRel(self.aPrim, self.collectionName, self.allPurpose)
+        originalStrength = UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel)
+
+        strengthCmd = usdUfe.SetMaterialBindingStrengthCommand(
+            self.aPathStr, UsdShade.Tokens.strongerThanDescendants, '', self.collectionName)
+        strengthCmd.execute()
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel),
+            UsdShade.Tokens.strongerThanDescendants)
+
+        strengthCmd.undo()
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel),
+            originalStrength)
+
+        strengthCmd.redo()
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel),
+            UsdShade.Tokens.strongerThanDescendants)
+
+    def testSetMaterialBindingStrengthCollectionAllPurposes(self):
+        '''
+        Change the binding strength of all bound purposes of a collection
+        binding at once.
+        '''
+        bindAllCmd = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat1PathStr, self.collectionName, '')
+        bindAllCmd.execute()
+        bindPreviewCmd = usdUfe.BindCollectionMaterialCommand(
+            self.aPathStr, self.mat2PathStr, self.collectionName, self.preview)
+        bindPreviewCmd.execute()
+
+        allPurposeRel = self._collectionBindingRel(self.aPrim, self.collectionName, self.allPurpose)
+        previewRel = self._collectionBindingRel(self.aPrim, self.collectionName, self.preview)
+
+        strengthCmd = usdUfe.SetMaterialBindingStrengthCommand(
+            self.aPathStr, UsdShade.Tokens.strongerThanDescendants, True, self.collectionName)
+        strengthCmd.execute()
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(allPurposeRel),
+            UsdShade.Tokens.strongerThanDescendants)
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(previewRel),
+            UsdShade.Tokens.strongerThanDescendants)
+
+        strengthCmd.undo()
+
+        strengthCmd.redo()
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(allPurposeRel),
+            UsdShade.Tokens.strongerThanDescendants)
+        self.assertEqual(
+            UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(previewRel),
+            UsdShade.Tokens.strongerThanDescendants)
 
 
 if __name__ == '__main__':

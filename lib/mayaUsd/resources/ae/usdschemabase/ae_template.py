@@ -19,7 +19,7 @@ from .attributeCustomControl import getNiceAttributeName
 from .attributeCustomControl import cleanAndFormatTooltip
 from .connectionsCustomControl import ConnectionsCustomControl
 from .displayCustomControl import DisplayCustomControl
-from .materialCustomControl import MaterialCustomControl
+from .materialCustomControl import MaterialCustomControl, CollectionMaterialCustomControl
 from .metadataCustomControl import MetadataCustomControl
 from .assetInfoCustomControl import AssetInfoCustomControl
 from .relationshipCustomControl import RelationshipCustomControl
@@ -75,7 +75,7 @@ class AETemplate(object):
         # Get the UFE Attributes interface for this scene item.
         self.attrs = ufe.Attributes.attributes(self.item)
         self.addedAttrs = set()
-        self.suppressedAttrs = []
+        self.suppressedAttrs = set()
         self.hasConnectionObserver = False
 
         self.showArrayAttributes = False
@@ -177,9 +177,7 @@ class AETemplate(object):
             for controlCreator in AETemplate._controlCreators:
                 # Control can suppress attributes in the creator function
                 # so we check for supression at each loop
-                if attrName in self.suppressedAttrs:
-                    break
-                if attrName in self.addedAttrs:
+                if self.isAttrAlreadyHandled(attrName):
                     break
 
                 try:
@@ -194,7 +192,16 @@ class AETemplate(object):
 
     def suppress(self, attrName):
         cmds.editorTemplate(suppress=attrName)
-        self.suppressedAttrs.append(attrName)
+        self.suppressedAttrs.add(attrName)
+
+    def isSuppressedAttr(self, attrName):
+        return attrName in self.suppressedAttrs
+
+    def isAddedAttr(self, attrName):
+        return attrName in self.addedAttrs
+
+    def isAttrAlreadyHandled(self, attrName):
+        return self.isSuppressedAttr(attrName) or self.isAddedAttr(attrName)
 
     def defineCustom(self, customObj, attrs=[]):
         create = lambda *args : customObj.onCreate(args)
@@ -205,9 +212,7 @@ class AETemplate(object):
         # We create the section named "layoutName" if at least one
         # of the attributes from the input list exists.
         for attr in attrList:
-            if attr in self.suppressedAttrs:
-                continue
-            if attr in self.addedAttrs:
+            if self.isAttrAlreadyHandled(attr):
                 continue
             if self.attrs.hasAttribute(attr):
                 with ufeAeTemplate.Layout(self, layoutName, collapse):
@@ -387,7 +392,7 @@ class AETemplate(object):
         extraAttrs = []
         otherSchemaAttrs = {item for values in schemasAttributes.values() for item in values}
         for attr in self.attrs.attributeNames:
-            if attr in self.addedAttrs or attr in self.suppressedAttrs or attr in otherSchemaAttrs:
+            if self.isAttrAlreadyHandled(attr) or attr in otherSchemaAttrs:
                 continue
             extraAttrs.append(attr)
         sectionName = mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
@@ -402,6 +407,49 @@ class AETemplate(object):
             nameMap[attr] = name.title()
         with ufeAeTemplate.Layout(self, sectionName, collapse=collapse):
             self.addControls(attrs, nameMap=nameMap)
+
+    def createCollectionSection(self, sectionName, attrs, schemasAttributes, collapse, typeName):
+        '''
+        Create the section for a named CollectionAPI instance, then, if that
+        collection has a collection-based material binding authored on it, add
+        a sibling section right underneath to edit that binding.
+        '''
+        self.createSection(sectionName, attrs, schemasAttributes, collapse)
+
+        collectionApiSuffix = 'CollectionAPI'
+        if not typeName.endswith(collectionApiSuffix):
+            return
+        instanceName = typeName[:-len(collectionApiSuffix)]
+        if not instanceName:
+            return
+
+        self.createCollectionMaterialBindingSection(instanceName)
+
+    def createCollectionMaterialBindingSection(self, instanceName):
+        '''
+        If the named collection has a collection-based material binding
+        authored on the prim, create a section to edit it and suppress the
+        underlying attributes so they do not also appear in Extra Attributes.
+        '''
+        if not CollectionMaterialCustomControl.hasCollectionMaterial(self.prim, instanceName):
+            return
+
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        authoredRelNames = []
+        for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
+            bindingRel = matAPI.GetCollectionBindingRel(instanceName, purpose)
+            if bindingRel:
+                authoredRelNames.append(bindingRel.GetName())
+
+        layoutName = '%s Collection Material' % instanceName
+        with ufeAeTemplate.Layout(self, layoutName, collapse=False):
+            createdControl = CollectionMaterialCustomControl(self.item, self.prim, instanceName, self.useNiceName)
+            usdNoticeControl = UsdNoticeListener(self.prim, [createdControl])
+            self.defineCustom(createdControl)
+            self.defineCustom(usdNoticeControl)
+
+        for relName in authoredRelNames:
+            self.suppress(relName)
 
     def findAppliedSchemas(self):
         # loop on all applied schemas and store all those
@@ -604,6 +652,10 @@ class AETemplate(object):
         def addMatSection():
             if not self.addedMaterialSection:
                 self.addedMaterialSection = True
+                # Note: collection sections are handled first because if there are *only*
+                #       collection-based material bindings, we want to show those only 
+                #       and not the material section.
+                self.createAllCollectionMaterialBindingSections()
                 self.createMaterialAttributeSection()
 
         # Function that determines if a section should be expanded.
@@ -632,6 +684,7 @@ class AETemplate(object):
             'assetInfo': self.createAssetInfoSection,
             'metadata': self.createMetadataSection,
             ".*AccessibilityAPI": self.createAccessibilitySection,
+            ".*CollectionAPI": self.createCollectionSection,
         }
 
         # We only want the attributes appearing once so if the prim 
@@ -647,14 +700,18 @@ class AETemplate(object):
             attrs = schemasAttributes[typeName]
             sectionName = self.sectionNameFromSchema(typeName)
             collapse = not isSectionOpen(sectionName)
+            creator = self.createSection
+            isCollectionSchema = False
             for pattern, value in customAttributes.items():
                 if re.fullmatch(pattern, typeName):
                     creator = value
+                    isCollectionSchema = (pattern == ".*CollectionAPI")
                     break
-            else:
-                creator = self.createSection
 
-            creator(sectionName, attrs, schemasAttributes, collapse)
+            if isCollectionSchema:
+                creator(sectionName, attrs, schemasAttributes, collapse, typeName)
+            else:
+                creator(sectionName, attrs, schemasAttributes, collapse)
 
             if sectionName == primTypeName:
                 addMatSection()
@@ -663,7 +720,10 @@ class AETemplate(object):
         addMatSection()        
 
     def createMaterialAttributeSection(self):
-        if not MaterialCustomControl.hasMaterial(self.prim):
+        for rel in MaterialCustomControl.findMaterialRelationships(self.prim):
+            if not self.isAttrAlreadyHandled(rel.GetName()):
+                break
+        else:
             return
         layoutName = getMayaUsdLibString('kLabelMaterial')
         with ufeAeTemplate.Layout(self, layoutName, collapse=False):
@@ -671,6 +731,14 @@ class AETemplate(object):
             usdNoticeControl = UsdNoticeListener(self.prim, [createdControl])
             self.defineCustom(createdControl)
             self.defineCustom(usdNoticeControl)
+
+    def createAllCollectionMaterialBindingSections(self):
+        collectionBindings = CollectionMaterialCustomControl.findCollectionMaterials(self.prim)
+        for instanceName, rel in collectionBindings.items():
+            if self.isAttrAlreadyHandled(rel.GetName()):
+                continue
+            self.createCollectionMaterialBindingSection(instanceName)
+            self.addedAttrs.add(rel.GetName())
 
     def suppressArrayAttribute(self):
         # Suppress all array attributes.

@@ -340,6 +340,54 @@ class AttributeEditorTemplateTestCase(unittest.TestCase):
         strengthControl = self.searchForMayaControl(materialFormLayout, cmds.optionMenuGrp, 'Strength')
         self.assertIsNotNone(strengthControl, 'Could not find the "Strength" control')
 
+    def testAECustomCollectionMaterialControl(self):
+        '''Simple test for the CollectionMaterialCustomControl in AE template.'''
+
+        cmds.file(new=True, force=True)
+
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+
+        # Create an Xform prim and give it a named collection.
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Xform'])
+        fullPrimPath = proxyShape + ",/Xform1"
+        cmds.select(fullPrimPath, r=True)
+
+        from pxr import Usd, UsdShade
+        usdPrim = mayaUsd.ufe.ufePathToPrim(fullPrimPath)
+        stage = usdPrim.GetStage()
+        UsdShade.Material.Define(stage, '/mtl/Material1')
+
+        collectionName = 'myColl'
+        Usd.CollectionAPI.Apply(usdPrim, collectionName)
+
+        # Author the (initially unbound) collection material binding, which is
+        # what the "Assign Material" menu item does, so the AE section appears.
+        cmd = mayaUsd.ufe.CreateCollectionMaterialBindingCommand(fullPrimPath, collectionName)
+        cmd.execute()
+
+        # Make sure the AE is visible.
+        import maya.mel
+        maya.mel.eval('openAEWindow')
+
+        xformFormLayout = self.attrEdFormLayoutName('Xform')
+        self.assertTrue(cmds.formLayout(xformFormLayout, exists=True))
+        startLayout = cmds.formLayout(xformFormLayout, query=True, fullPathName=True)
+        self.assertIsNotNone(startLayout, 'Could not get full path for Xform formLayout')
+
+        collectionMaterialLayout = self.findExpandedFrameLayout(
+            startLayout, '%s Collection Material' % collectionName, fullPrimPath)
+        self.assertIsNotNone(
+            collectionMaterialLayout,
+            'Could not find "%s Collection Material" frameLayout' % collectionName)
+
+        assignedMaterialControl = self.searchForMayaControl(collectionMaterialLayout, cmds.text, 'Default')
+        self.assertIsNotNone(assignedMaterialControl, 'Could not find the "Default" control')
+        strengthControl = self.searchForMayaControl(collectionMaterialLayout, cmds.optionMenuGrp, 'Strength')
+        self.assertIsNotNone(strengthControl, 'Could not find the "Strength" control')
+
     def testAECustomImageControl(self):
         '''Simple test for the customImageControlCreator in AE template.'''
         cmds.file(new=True, force=True)
