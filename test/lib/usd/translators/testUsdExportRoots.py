@@ -245,6 +245,25 @@ class testUsdExportRoot(unittest.TestCase):
                 ('xformOp:rotateXYZ', (0., 45., 0.))])
         self.doExportImportTest(validator, root='Mid', worldspace=True)
 
+    def testExportRoot_rootMid_selCube_worldspace(self):
+        # The bake must land on /Mid, the root prim of the file, never on the selected /Mid/Cube:
+        # /Mid and its transform stay in the file, so baking the ancestors onto the deeper
+        # selection would apply Mid's transform twice.
+        def validator(stage):
+            self.assertPrim(stage, '/Mid/Cube', 'Mesh')
+            self.assertNotPrim(stage, '/Top')
+            self.assertNotPrim(stage, '/OtherTop')
+            self.assertNotPrim(stage, '/OtherMid')
+            transformUtils.assertStagePrimXforms(self, stage, '/Mid', [
+                ('xformOp:translate', (2., 0., 0.)),
+                ('xformOp:rotateXYZ', (45., 0., 0.)),
+                ('xformOp:translate:channel1', (0., 2., 0.)),
+                ('xformOp:rotateXYZ:channel1', (0., 0., 45.))])
+            transformUtils.assertStagePrimXforms(self, stage, '/Mid/Cube', [
+                ('xformOp:translate', (0., 0., 3.)),
+                ('xformOp:rotateXYZ', (0., 45., 0.))])
+        self.doExportImportTest(validator, root='Mid', selection='Cube', worldspace=True)
+
     def testExportRoot_rootMid_selTop(self):
         def validator(stage):
             self.assertPrim(stage, '/Mid/Cube', 'Mesh')
@@ -324,6 +343,25 @@ class testUsdExportRoot(unittest.TestCase):
                 ('xformOp:translate:channel2', (0., 0., 3.)),
                 ('xformOp:rotateXYZ:channel2', (0., 45., 0.))])
         self.doExportImportTest(validator, root='Cube', worldspace=True)
+
+    def testExportRoot_rootCube_selCube_worldspace(self):
+        # The selected node is itself the export root: it becomes the file's root prim, so it
+        # must keep the full worldspace bake of its (unexported) ancestors.
+        def validator(stage):
+            self.assertPrim(stage, '/Cube', 'Mesh')
+            self.assertNotPrim(stage, '/Top')
+            self.assertNotPrim(stage, '/Mid')
+            self.assertNotPrim(stage, '/OtherTop')
+            self.assertNotPrim(stage, '/OtherMid')
+            self.assertNotPrim(stage, '/OtherLowest')
+            transformUtils.assertStagePrimXforms(self, stage, '/Cube', [
+                ('xformOp:translate', (2., 0., 0.)),
+                ('xformOp:rotateXYZ', (45., 0., 0.)),
+                ('xformOp:translate:channel1', (0., 2., 0.)),
+                ('xformOp:rotateXYZ:channel1', (0., 0., 45.)),
+                ('xformOp:translate:channel2', (0., 0., 3.)),
+                ('xformOp:rotateXYZ:channel2', (0., 45., 0.))])
+        self.doExportImportTest(validator, root='Cube', selection='Cube', worldspace=True)
 
     def testExportRoot_rootCube_selTop(self):
         def validator(stage):
