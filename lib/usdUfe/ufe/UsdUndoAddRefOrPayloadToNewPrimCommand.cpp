@@ -55,8 +55,9 @@ void UsdUndoAddRefOrPayloadToNewPrimCommand::execute()
         return;
 
     // Build a scene item for the parent prim so we can reuse the existing create-prim command.
-    const Ufe::Path parentPath
-        = stagePath(_parentPrim.GetStage()) + usdPathToUfePathSegment(_parentPrim.GetPath());
+    const Ufe::Path parentPath = _parentPrim.IsPseudoRoot()
+        ? stagePath(_parentPrim.GetStage())
+        : stagePath(_parentPrim.GetStage()) + usdPathToUfePathSegment(_parentPrim.GetPath());
     auto parentItem = UsdSceneItem::create(parentPath, _parentPrim);
 
     // Create a typeless "def" (its type composes through the arc added next).

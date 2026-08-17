@@ -174,6 +174,40 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.assertEqual(str(newPrim.GetTypeName()), 'Xform')
 
 
+    def testAddReferenceToNewPrimCommandAtStageRoot(self):
+        '''
+        Test the "add reference to a new prim" command when the parent is the
+        stage's pseudo-root: the new prim should be created directly under the
+        stage root, not nested under some mis-derived parent path.
+        '''
+        parentPrim = self.stage.GetPseudoRoot()
+        originalRootContents = filterUsdStr(self.stage.GetRootLayer().ExportToString())
+
+        referencedFile = testUtils.getTestScene('twoSpheres', 'sphere.usda')
+
+        newPrimPathStr = "|stage1|stageShape1,/sphere1"
+
+        # Arguments: parentPrim, newPrimName, filePath, primPath, prepend, isPayload, preload
+        cmd = usdUfe.AddRefOrPayloadToNewPrimCommand(
+            parentPrim, 'sphere', referencedFile, '', True, False, False)
+
+        cmd.execute()
+        newPrim = mayaUsd.ufe.ufePathToPrim(newPrimPathStr)
+        self.assertTrue(newPrim.IsValid())
+        self.assertTrue(newPrim.HasAuthoredReferences())
+        self.assertEqual(str(newPrim.GetTypeName()), 'Xform')
+
+        cmd.undo()
+        self.assertFalse(mayaUsd.ufe.ufePathToPrim(newPrimPathStr).IsValid())
+        self.assertEqual(originalRootContents, filterUsdStr(self.stage.GetRootLayer().ExportToString()))
+
+        cmd.redo()
+        newPrim = mayaUsd.ufe.ufePathToPrim(newPrimPathStr)
+        self.assertTrue(newPrim.IsValid())
+        self.assertTrue(newPrim.HasAuthoredReferences())
+        self.assertEqual(str(newPrim.GetTypeName()), 'Xform')
+
+
     def testAddPayloadToNewPrimCommand(self):
         '''
         Test the "add payload to a new prim" variant of the command: it creates a
