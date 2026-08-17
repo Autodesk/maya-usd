@@ -195,8 +195,7 @@ void RenderSetupWindow::refreshStages()
     for (const auto& stage : MayaUsd::ufe::getAllStages()) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = stage;
-        auto displayName = MayaUsd::ufe::stagePath(stage).back().string();
-        hostStage.displayName = displayName;        
+        hostStage.displayName = MayaUsd::ufe::stagePath(stage).back().string();
         _hostStages.push_back(hostStage);
     }
     std::sort(_hostStages.begin(), _hostStages.end(), [](const auto& a, const auto& b) {
@@ -209,7 +208,7 @@ void RenderSetupWindow::refreshStages()
     if (defaultStage) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
-        hostStage.displayName = "Maya Settings";
+        hostStage.displayName = tr("Maya Settings").toStdString();
         _hostStages.insert(_hostStages.begin(), hostStage);
     }
 #endif
