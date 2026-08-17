@@ -105,12 +105,26 @@ void updateProxyShapeAttribute(const std::string proxyShapePath)
     }
 }
 
+// Derive the lock state of a layer from the lock registries.
+LayerLockType currentLockType(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    if (isLayerSystemLocked(layer)) {
+        return LayerLock_SystemLocked;
+    }
+    if (isLayerLocked(layer)) {
+        return LayerLock_Locked;
+    }
+    return LayerLock_Unlocked;
+}
+
 void lockLayer(
     std::string                   proxyShapePath,
     const PXR_NS::SdfLayerRefPtr& layer,
     LayerLockType                 locktype,
     bool                          updateProxyShapeAttr /*= true */)
 {
+    // Only fires on a real transition.
+    const LayerLockType previousLockType = currentLockType(layer);
 
     switch (locktype) {
     default:
@@ -144,6 +158,13 @@ void lockLayer(
         }
         break;
     }
+    }
+
+    // Compare against the registries rather than against `locktype` so an
+    // unrecognized value (which the switch treats as Unlocked) is handled the
+    // same way the switch handled it.
+    if (currentLockType(layer) != previousLockType) {
+        PXR_NS::UsdMayaLayerLockChangedNotice(layer).Send();
     }
 }
 

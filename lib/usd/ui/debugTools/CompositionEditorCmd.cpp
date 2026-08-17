@@ -15,12 +15,16 @@
 //
 #include "CompositionEditorCmd.h"
 
+#include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
 
 #include <usdUfe/undo/UsdUndoManager.h>
 
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/base/tf/weakPtr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
 
@@ -101,14 +105,34 @@ public:
     }
 };
 
-class MayaCompositionEditorHost : public Adsk::UsdDebug::ApplicationHost
+class MayaCompositionEditorHost;
+MayaCompositionEditorHost* g_compositionEditorHost = nullptr;
+
+// TfWeakBase is a secondary base so the Qt metaobject machinery still sees
+// QObject (through ApplicationHost) as the first base, which Qt requires.
+class MayaCompositionEditorHost
+    : public Adsk::UsdDebug::ApplicationHost
+    , public PXR_NS::TfWeakBase
 {
 public:
     static void ensureInstalled()
     {
-        static MayaCompositionEditorHost* s_instance = nullptr;
-        if (!s_instance) {
-            s_instance = new MayaCompositionEditorHost();
+        if (!g_compositionEditorHost) {
+            g_compositionEditorHost = new MayaCompositionEditorHost();
+        }
+        // The host outlives a plugin unload, so a previous finalize() may have
+        // revoked the listener. Re-arm it, otherwise the lock refresh would
+        // silently stop working after an unload/reload cycle.
+        g_compositionEditorHost->registerLayerLockListener();
+    }
+
+    // Stop feeding the widget lock notifications. Called from the command's
+    // finalize() so a plugin unload cannot leave TfNotice holding a callback
+    // into code that is about to be unloaded.
+    static void stopListening()
+    {
+        if (g_compositionEditorHost) {
+            g_compositionEditorHost->revokeLayerLockListener();
         }
     }
 
@@ -175,11 +199,38 @@ public:
 protected:
     MayaCompositionEditorHost() { injectInstance(this); }
 
+    // Locking a layer authors nothing. Relay Maya's lock notice as the host signal the
+    // widget listens on, which makes it re-read the composition.
+    void registerLayerLockListener()
+    {
+        if (_layerLockNoticeKey.IsValid()) {
+            return;
+        }
+        PXR_NS::TfWeakPtr<MayaCompositionEditorHost> me(this);
+        _layerLockNoticeKey
+            = PXR_NS::TfNotice::Register(me, &MayaCompositionEditorHost::onLayerLockChanged);
+    }
+
+    void onLayerLockChanged(const PXR_NS::UsdMayaLayerLockChangedNotice&)
+    {
+        Q_EMIT layerLockStateChanged();
+    }
+
+    void revokeLayerLockListener()
+    {
+        if (_layerLockNoticeKey.IsValid()) {
+            PXR_NS::TfNotice::Revoke(_layerLockNoticeKey);
+        }
+    }
+
     static MString optionVarName(const QString& group, const QString& key)
     {
         const QString name = QStringLiteral("mayaUsd_CompositionEditor_%1_%2").arg(group, key);
         return MString(name.toUtf8().constData());
     }
+
+private:
+    PXR_NS::TfNotice::Key _layerLockNoticeKey;
 };
 
 bool workspaceControlExists()
@@ -228,6 +279,8 @@ MStatus CompositionEditorCmd::initialize(MFnPlugin& plugin)
 /*static*/
 MStatus CompositionEditorCmd::finalize(MFnPlugin& plugin)
 {
+    MayaCompositionEditorHost::stopListening();
+
     if (g_selectionObserver) {
         if (auto sel = Ufe::GlobalSelection::get()) {
             sel->removeObserver(g_selectionObserver);
