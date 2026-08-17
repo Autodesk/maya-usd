@@ -33,10 +33,14 @@ void wrapSceneRenderSettings()
             "getDefaultRenderSettingsPrim",
             &MayaUsd::SceneRenderSettings::getDefaultRenderSettingsPrim)
         .staticmethod("getDefaultRenderSettingsPrim")
-        .def("getActiveRenderSettingsPath", &MayaUsd::SceneRenderSettings::getActiveSettingPath)
-        .staticmethod("getActiveRenderSettingsPath")
-        .def("setActiveRenderSettingsPath", &MayaUsd::SceneRenderSettings::setActiveSettingPath)
-        .staticmethod("setActiveRenderSettingsPath")
+        .def(
+            "getRenderDescriptionPrimPath",
+            &MayaUsd::SceneRenderSettings::getRenderDescriptionPrimPath)
+        .staticmethod("getRenderDescriptionPrimPath")
+        .def(
+            "setRenderDescriptionPrimPath",
+            &MayaUsd::SceneRenderSettings::setRenderDescriptionPrimPath)
+        .staticmethod("setRenderDescriptionPrimPath")
         .def("getCurrentRenderer", &MayaUsd::SceneRenderSettings::getCurrentRenderer)
         .staticmethod("getCurrentRenderer")
         .def("setCurrentRenderer", &MayaUsd::SceneRenderSettings::setCurrentRenderer)

@@ -112,6 +112,9 @@ private:
 RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     : PARENT_CLASS(parent)
 {
+    static MayaUsdRenderSetup::MayaRenderSetupHost s_renderSetupHost;
+    AdskUsdRenderSetup::Host::setHost(&s_renderSetupHost);
+
     // Create the render setup widget and set it as the central widget of the window.
     _tree = new AdskUsdRenderSetup::RenderSetupWidget(this);
     _editCommitter = new MayaUsdRenderSetup::MayaEditCommitter(nullptr);
@@ -119,10 +122,7 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     setCentralWidget(_tree);
     _tree->show();
 
-    static MayaUsdRenderSetup::MayaRenderSetupHost s_renderSetupHost;
-    AdskUsdRenderSetup::Host::setHost(&s_renderSetupHost);
-
-    auto* viewMenu = menuBar()->addMenu(tr("View"));
+    auto* viewMenu = menuBar()->addMenu(tr("Options"));
     auto* hierarchyAction = viewMenu->addAction(tr("Display USD Hierarchy"));
     hierarchyAction->setCheckable(true);
     hierarchyAction->setChecked(false);
@@ -195,7 +195,8 @@ void RenderSetupWindow::refreshStages()
     for (const auto& stage : MayaUsd::ufe::getAllStages()) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = stage;
-        hostStage.displayName = MayaUsd::ufe::stagePath(stage).back().string();
+        auto displayName = MayaUsd::ufe::stagePath(stage).back().string();
+        hostStage.displayName = displayName;        
         _hostStages.push_back(hostStage);
     }
     std::sort(_hostStages.begin(), _hostStages.end(), [](const auto& a, const auto& b) {
@@ -208,7 +209,7 @@ void RenderSetupWindow::refreshStages()
     if (defaultStage) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
-        hostStage.displayName = kUSDRenderSettingsNodeName;
+        hostStage.displayName = "Maya Settings";
         _hostStages.insert(_hostStages.begin(), hostStage);
     }
 #endif

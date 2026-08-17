@@ -60,7 +60,7 @@ public:
     // Attributes
     static MObject serializedRootLayerAttr;
     static MObject serializedSessionLayerAttr;
-    static MObject activeSettingsPathAttr;
+    static MObject renderDescriptionPrimPathAttr;
     static MObject currentRendererAttr;
 
     static void*   creator();
@@ -79,12 +79,14 @@ public:
     //! Unlike getUsdStage(), this does not trigger lazy creation.
     bool hasStage() const { return _stage != nullptr; }
 
-    //! UFE path string of the currently active settings prim.
-    std::string activeSettingsPath() const;
+    //! UFE path string of the active render description prim: either a
+    //! UsdRenderSettings or a UsdRenderPass prim.
+    std::string renderDescriptionPrimPath() const;
 
-    //! Author the UFE path string of the currently active settings prim. Returns
+    //! Author the UFE path string of the active render description prim,
+    //! expected to be a UsdRenderSettings or UsdRenderPass prim. Returns
     //! false on plug-write failure.
-    bool setActiveSettingsPath(const std::string& ufePath);
+    bool setRenderDescriptionPrimPath(const std::string& ufePath);
 
     //! Hydra renderer plugin name that drives USD Hydra rendering for the
     //! scene, or an empty string when no renderer has been chosen.

@@ -107,8 +107,8 @@ const bool kRenderSettingsRegistered = []() {
             stage->SetMetadata(kRenderSettingsPrimPathToken, renderSettingsPath.GetString());
 
             // Skip when non-empty so a pre-populator user value is preserved.
-            if (node.activeSettingsPath().empty()) {
-                node.setActiveSettingsPath(
+            if (node.renderDescriptionPrimPath().empty()) {
+                node.setRenderDescriptionPrimPath(
                     kRenderSettingsNodeName + "," + renderSettingsPath.GetString());
             }
         });
@@ -146,7 +146,7 @@ PXR_NS::UsdPrim getDefaultRenderSettingsPrim()
     return stage->GetPrimAtPath(PXR_NS::SdfPath(path));
 }
 
-std::string getActiveSettingPath()
+std::string getRenderDescriptionPrimPath()
 {
     MayaUsd::UsdSettingsNode* node
         = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
@@ -155,10 +155,10 @@ std::string getActiveSettingPath()
     }
     // Force the populator to seed the default before reading.
     node->getUsdStage();
-    return node->activeSettingsPath();
+    return node->renderDescriptionPrimPath();
 }
 
-bool setActiveSettingPath(const std::string& ufePath)
+bool setRenderDescriptionPrimPath(const std::string& ufePath)
 {
     MayaUsd::UsdSettingsNode* node
         = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
@@ -167,7 +167,7 @@ bool setActiveSettingPath(const std::string& ufePath)
     }
     // Run the populator first so a later replay cannot overwrite this write.
     node->getUsdStage();
-    return node->setActiveSettingsPath(ufePath);
+    return node->setRenderDescriptionPrimPath(ufePath);
 }
 
 std::string getCurrentRenderer()

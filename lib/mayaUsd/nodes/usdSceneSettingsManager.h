@@ -44,7 +44,7 @@ class MAYAUSD_CORE_PUBLIC UsdSceneSettingsManager
 {
 public:
     //! Seeds a managed node's USD stage and its node-level attributes (e.g.
-    //! the activeSettingsPath plug) with domain-specific content.
+    //! the renderDescriptionPrimPath plug) with domain-specific content.
     using Populator = std::function<void(PXR_NS::UsdStageRefPtr, UsdSettingsNode&)>;
 
     // -----------------------------------------------------------------------

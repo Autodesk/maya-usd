@@ -40,13 +40,14 @@ MAYAUSD_CORE_PUBLIC PXR_NS::UsdStageRefPtr getUsdStage();
 //! metadata, or an invalid prim if unavailable.
 MAYAUSD_CORE_PUBLIC PXR_NS::UsdPrim getDefaultRenderSettingsPrim();
 
-//! UFE path of the currently active settings prim, or an empty string if
-//! unavailable.
-MAYAUSD_CORE_PUBLIC std::string getActiveSettingPath();
+//! UFE path of the active render description prim (a UsdRenderSettings or
+//! UsdRenderPass prim), or an empty string if unavailable.
+MAYAUSD_CORE_PUBLIC std::string getRenderDescriptionPrimPath();
 
-//! Author the UFE path of the currently active settings prim. Returns false
-//! if the singleton node is unavailable or the plug write fails.
-MAYAUSD_CORE_PUBLIC bool setActiveSettingPath(const std::string& ufePath);
+//! Author the UFE path of the active render description prim, expected to be a
+//! UsdRenderSettings or UsdRenderPass prim. Returns false if the singleton node
+//! is unavailable or the plug write fails.
+MAYAUSD_CORE_PUBLIC bool setRenderDescriptionPrimPath(const std::string& ufePath);
 
 //! Hydra renderer plugin name that drives USD Hydra rendering for the scene,
 //! or an empty string when none has been chosen.

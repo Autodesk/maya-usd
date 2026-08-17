@@ -351,68 +351,68 @@ class testSceneRenderSettings(unittest.TestCase):
             shutil.rmtree(tmpDir, ignore_errors=True)
 
     # ------------------------------------------------------------------
-    # Active settings UFE path
+    # Render description prim UFE path
     # ------------------------------------------------------------------
 
-    def testActiveSettingsPathDefault(self):
-        '''Default activeSettingsPath references the singleton's default prim.'''
+    def testRenderDescriptionPrimPathDefault(self):
+        '''Default renderDescriptionPrimPath references the singleton's default prim.'''
         nodeName = UsdDefaultRenderSettings.find()
-        activePath = UsdDefaultRenderSettings.getActiveRenderSettingsPath()
+        activePath = UsdDefaultRenderSettings.getRenderDescriptionPrimPath()
         self.assertTrue(len(activePath) > 0)
         self.assertIn(nodeName, activePath)
         self.assertIn('/Render/SceneRenderSettings', activePath)
 
         self.assertEqual(
-            cmds.getAttr(nodeName + '.activeSettingsPath'), activePath)
+            cmds.getAttr(nodeName + '.renderDescriptionPrimPath'), activePath)
 
-    def testActiveSettingsPathSetter(self):
+    def testRenderDescriptionPrimPathSetter(self):
         '''Writing through the helper updates every read path.'''
         newPath = '|SomeOtherStage,/Foo/Bar'
         self.assertTrue(
-            UsdDefaultRenderSettings.setActiveRenderSettingsPath(newPath))
+            UsdDefaultRenderSettings.setRenderDescriptionPrimPath(newPath))
 
         self.assertEqual(
-            UsdDefaultRenderSettings.getActiveRenderSettingsPath(), newPath)
+            UsdDefaultRenderSettings.getRenderDescriptionPrimPath(), newPath)
         nodeName = UsdDefaultRenderSettings.find()
         self.assertEqual(
-            cmds.getAttr(nodeName + '.activeSettingsPath'), newPath)
+            cmds.getAttr(nodeName + '.renderDescriptionPrimPath'), newPath)
 
-    def testActiveSettingsPathRoundTrip(self):
-        '''A custom activeSettingsPath survives a save/open cycle.'''
+    def testRenderDescriptionPrimPathRoundTrip(self):
+        '''A custom renderDescriptionPrimPath survives a save/open cycle.'''
         customPath = '|RefStage,/Custom/RenderSettings'
         self.assertTrue(
-            UsdDefaultRenderSettings.setActiveRenderSettingsPath(customPath))
+            UsdDefaultRenderSettings.setRenderDescriptionPrimPath(customPath))
 
         tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
         try:
-            tmpFile = os.path.join(tmpDir, 'activeSettingsPathRoundTrip.ma')
+            tmpFile = os.path.join(tmpDir, 'renderDescriptionPrimPathRoundTrip.ma')
             cmds.file(rename=tmpFile)
             cmds.file(save=True, type='mayaAscii')
             cmds.file(new=True, force=True)
             cmds.file(tmpFile, open=True, force=True)
 
             self.assertEqual(
-                UsdDefaultRenderSettings.getActiveRenderSettingsPath(),
+                UsdDefaultRenderSettings.getRenderDescriptionPrimPath(),
                 customPath)
         finally:
             cmds.file(new=True, force=True)
             shutil.rmtree(tmpDir, ignore_errors=True)
 
-    def testActiveSettingsPathResetOnFileNew(self):
+    def testRenderDescriptionPrimPathResetOnFileNew(self):
         '''File > New restores the populator-authored default value.'''
-        defaultPath = UsdDefaultRenderSettings.getActiveRenderSettingsPath()
+        defaultPath = UsdDefaultRenderSettings.getRenderDescriptionPrimPath()
         self.assertTrue(len(defaultPath) > 0)
 
         customPath = '|Whatever,/Some/Override'
         self.assertTrue(
-            UsdDefaultRenderSettings.setActiveRenderSettingsPath(customPath))
+            UsdDefaultRenderSettings.setRenderDescriptionPrimPath(customPath))
         self.assertEqual(
-            UsdDefaultRenderSettings.getActiveRenderSettingsPath(), customPath)
+            UsdDefaultRenderSettings.getRenderDescriptionPrimPath(), customPath)
 
         cmds.file(new=True, force=True)
 
         self.assertEqual(
-            UsdDefaultRenderSettings.getActiveRenderSettingsPath(),
+            UsdDefaultRenderSettings.getRenderDescriptionPrimPath(),
             defaultPath)
 
     # ------------------------------------------------------------------
