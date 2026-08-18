@@ -48,10 +48,10 @@ set(HEADERS
 if(MAYA_HAS_USD_SETTINGS_NODES)
     target_sources(${PROJECT_NAME}
         PRIVATE
-            sceneRenderSettings.cpp
+            sceneRenderDescription.cpp
     )
     list(APPEND HEADERS
-        sceneRenderSettings.h
+        sceneRenderDescription.h
     )
 endif()
 

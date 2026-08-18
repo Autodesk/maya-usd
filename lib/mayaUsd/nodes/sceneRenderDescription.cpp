@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/nodes/sceneRenderSettings.h>
+#include <mayaUsd/nodes/sceneRenderDescription.h>
 #include <mayaUsd/nodes/usdSceneSettingsManager.h>
 #include <mayaUsd/nodes/usdSettingsNode.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -38,7 +38,7 @@
 
 namespace {
 
-const std::string     kRenderSettingsNodeName("UsdDefaultRenderSettings");
+const std::string     kRenderDescriptionNodeName("UsdDefaultRenderDescription");
 const PXR_NS::TfToken kRenderSettingsPrimPathToken("renderSettingsPrimPath");
 
 // UFE path to a camera that lives outside renderSettings's stage (Maya native
@@ -66,7 +66,8 @@ PXR_NS::UsdAttribute createExternalCameraAttr(const PXR_NS::UsdPrim& renderSetti
 // NOLINTNEXTLINE(cert-err58-cpp) -- intentional static initializer pattern
 const bool kRenderSettingsRegistered = []() {
     MayaUsd::UsdSceneSettingsManager::registerSettingNode(
-        kRenderSettingsNodeName, [](PXR_NS::UsdStageRefPtr stage, MayaUsd::UsdSettingsNode& node) {
+        kRenderDescriptionNodeName,
+        [](PXR_NS::UsdStageRefPtr stage, MayaUsd::UsdSettingsNode& node) {
             if (!stage) {
                 return;
             }
@@ -107,9 +108,9 @@ const bool kRenderSettingsRegistered = []() {
             stage->SetMetadata(kRenderSettingsPrimPathToken, renderSettingsPath.GetString());
 
             // Skip when non-empty so a pre-populator user value is preserved.
-            if (node.renderDescriptionPrimPath().empty()) {
-                node.setRenderDescriptionPrimPath(
-                    kRenderSettingsNodeName + "," + renderSettingsPath.GetString());
+            if (node.activeRenderDescriptionPath().empty()) {
+                node.setActiveRenderDescriptionPath(
+                    kRenderDescriptionNodeName + "," + renderSettingsPath.GetString());
             }
         });
     return true;
@@ -118,23 +119,23 @@ const bool kRenderSettingsRegistered = []() {
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
-namespace SceneRenderSettings {
+namespace SceneRenderDescription {
 
 std::string find()
 {
     MayaUsd::UsdSettingsNode* node
-        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderDescriptionNodeName);
     return node ? node->nodeName() : std::string();
 }
 
 PXR_NS::UsdStageRefPtr getUsdStage()
 {
-    return MayaUsd::UsdSceneSettingsManager::getStage(kRenderSettingsNodeName);
+    return MayaUsd::UsdSceneSettingsManager::getStage(kRenderDescriptionNodeName);
 }
 
 PXR_NS::UsdPrim getDefaultRenderSettingsPrim()
 {
-    auto stage = MayaUsd::UsdSceneSettingsManager::getStage(kRenderSettingsNodeName);
+    auto stage = MayaUsd::UsdSceneSettingsManager::getStage(kRenderDescriptionNodeName);
     if (!stage) {
         return {};
     }
@@ -146,34 +147,34 @@ PXR_NS::UsdPrim getDefaultRenderSettingsPrim()
     return stage->GetPrimAtPath(PXR_NS::SdfPath(path));
 }
 
-std::string getRenderDescriptionPrimPath()
+std::string getActiveRenderDescriptionPath()
 {
     MayaUsd::UsdSettingsNode* node
-        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderDescriptionNodeName);
     if (!node) {
         return {};
     }
     // Force the populator to seed the default before reading.
     node->getUsdStage();
-    return node->renderDescriptionPrimPath();
+    return node->activeRenderDescriptionPath();
 }
 
-bool setRenderDescriptionPrimPath(const std::string& ufePath)
+bool setActiveRenderDescriptionPath(const std::string& ufePath)
 {
     MayaUsd::UsdSettingsNode* node
-        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderDescriptionNodeName);
     if (!node) {
         return false;
     }
     // Run the populator first so a later replay cannot overwrite this write.
     node->getUsdStage();
-    return node->setRenderDescriptionPrimPath(ufePath);
+    return node->setActiveRenderDescriptionPath(ufePath);
 }
 
 std::string getCurrentRenderer()
 {
     MayaUsd::UsdSettingsNode* node
-        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderDescriptionNodeName);
     if (!node) {
         return {};
     }
@@ -183,7 +184,7 @@ std::string getCurrentRenderer()
 bool setCurrentRenderer(const std::string& rendererName)
 {
     MayaUsd::UsdSettingsNode* node
-        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderSettingsNodeName);
+        = MayaUsd::UsdSceneSettingsManager::getNodeForNodeName(kRenderDescriptionNodeName);
     if (!node) {
         return false;
     }
@@ -244,5 +245,5 @@ bool setRenderSettingsCamera(
     return externalCameraAttr && externalCameraAttr.Set(cameraUfePath);
 }
 
-} // namespace SceneRenderSettings
+} // namespace SceneRenderDescription
 } // namespace MAYAUSD_NS_DEF

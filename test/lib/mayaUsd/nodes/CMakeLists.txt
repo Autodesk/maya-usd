@@ -31,7 +31,7 @@ mayaUsd_add_test(testHdImagingShape
 set_property(TEST testHdImagingShape APPEND PROPERTY LABELS nodes)
 
 if(MAYA_HAS_USD_SETTINGS_NODES)
-    mayaUsd_get_unittest_target(target testSceneRenderSettings.py)
+    mayaUsd_get_unittest_target(target testSceneRenderDescription.py)
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

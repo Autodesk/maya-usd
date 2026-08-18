@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSDAPI_SCENE_RENDER_SETTINGS_H
-#define MAYAUSDAPI_SCENE_RENDER_SETTINGS_H
+#ifndef MAYAUSDAPI_SCENE_RENDER_DESCRIPTION_H
+#define MAYAUSDAPI_SCENE_RENDER_DESCRIPTION_H
 
 #include <mayaUsdAPI/api.h>
 
@@ -24,19 +24,19 @@
 
 namespace MAYAUSDAPI_NS_DEF {
 
-//! Public accessors for the process-wide render-settings singleton
-//! (UsdDefaultRenderSettings).
-namespace SceneRenderSettings {
+//! Public accessors for the process-wide render description singleton
+//! (UsdDefaultRenderDescription).
+namespace SceneRenderDescription {
 
-//! \return the USD stage backing the render-settings singleton.
+//! \return the USD stage backing the render description singleton.
 MAYAUSD_API_PUBLIC PXR_NS::UsdStageRefPtr getUsdStage();
 
 //! \return the name of the custom attribute holding the UFE path string of a
-//!         camera that lives outside the render-settings stage.
+//!         camera that lives outside the render description stage.
 MAYAUSD_API_PUBLIC const PXR_NS::TfToken& externalCameraAttrName();
 
-} // namespace SceneRenderSettings
+} // namespace SceneRenderDescription
 
 } // namespace MAYAUSDAPI_NS_DEF
 
-#endif // MAYAUSDAPI_SCENE_RENDER_SETTINGS_H
+#endif // MAYAUSDAPI_SCENE_RENDER_DESCRIPTION_H

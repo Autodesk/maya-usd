@@ -19,7 +19,7 @@ from maya import cmds
 from maya import standalone
 
 import mayaUsd.lib as mayaUsdLib
-from mayaUsd.lib import UsdDefaultRenderSettings
+from mayaUsd.lib import UsdDefaultRenderDescription
 
 from pxr import Sdf, Usd, UsdGeom, UsdRender
 
@@ -31,7 +31,7 @@ import tempfile
 import unittest
 
 
-class testSceneRenderSettings(unittest.TestCase):
+class testSceneRenderDescription(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -50,19 +50,19 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testNodeExistsOnStartup(self):
         '''The singleton node should exist after plugin load.'''
-        path = UsdDefaultRenderSettings.find()
-        self.assertTrue(len(path) > 0, "UsdDefaultRenderSettings node not found")
+        path = UsdDefaultRenderDescription.find()
+        self.assertTrue(len(path) > 0, "UsdDefaultRenderDescription node not found")
         self.assertTrue(cmds.objExists(path))
 
     def testSingleton(self):
         '''find called twice should return the same node; only one instance exists.'''
-        path1 = UsdDefaultRenderSettings.find()
-        path2 = UsdDefaultRenderSettings.find()
+        path1 = UsdDefaultRenderDescription.find()
+        path2 = UsdDefaultRenderDescription.find()
         self.assertEqual(path1, path2)
 
         nodes = cmds.ls(type='UsdDefaultSettings')
         self.assertEqual(len(nodes), 1,
-                         "Expected exactly one UsdDefaultRenderSettings node, "
+                         "Expected exactly one UsdDefaultRenderDescription node, "
                          "found %d" % len(nodes))
 
     # ------------------------------------------------------------------
@@ -71,7 +71,7 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testDefaultStageStructure(self):
         '''The default stage should have /Render scope and /Render/SceneRenderSettings prim.'''
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
         self.assertIsNotNone(stage)
 
         renderPrim = stage.GetPrimAtPath('/Render')
@@ -86,7 +86,7 @@ class testSceneRenderSettings(unittest.TestCase):
     def testDefaultRenderProductAndVar(self):
         '''The default stage should have /Render/BeautyProduct and /Render/color
         wired to /Render/SceneRenderSettings via the products relationship.'''
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
 
         varPrim = stage.GetPrimAtPath('/Render/color')
         self.assertTrue(varPrim.IsValid(), '/Render/color prim not found')
@@ -109,7 +109,7 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testRenderSettingsPrimPathMetadata(self):
         '''Stage metadata should point to the default render settings prim.'''
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
         metadata = stage.GetMetadata('renderSettingsPrimPath')
         self.assertEqual(metadata, '/Render/SceneRenderSettings')
 
@@ -119,13 +119,13 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testNodeIsLocked(self):
         '''The singleton node should be locked.'''
-        nodeName = UsdDefaultRenderSettings.find()
+        nodeName = UsdDefaultRenderDescription.find()
         self.assertTrue(cmds.lockNode(nodeName, query=True, lock=True)[0],
                         "Node should be locked")
 
     def testNodeIsDG(self):
         '''The singleton should be a DG node with no parent transform.'''
-        nodeName = UsdDefaultRenderSettings.find()
+        nodeName = UsdDefaultRenderDescription.find()
         parents = cmds.listRelatives(nodeName, parent=True, fullPath=True)
         self.assertIsNone(parents,
                           "DG node should have no parent transform")
@@ -136,15 +136,15 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testGetUsdStageConsistency(self):
         '''getUsdStage should return the same stage on repeated calls.'''
-        stage1 = UsdDefaultRenderSettings.getUsdStage()
-        stage2 = UsdDefaultRenderSettings.getUsdStage()
+        stage1 = UsdDefaultRenderDescription.getUsdStage()
+        stage2 = UsdDefaultRenderDescription.getUsdStage()
         self.assertIsNotNone(stage1)
         # Same stage object, not just same identifier.
         self.assertEqual(stage1, stage2)
 
     def testGetDefaultRenderSettingsPrim(self):
         '''getDefaultRenderSettingsPrim should return the /Render/SceneRenderSettings prim.'''
-        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        prim = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
         self.assertTrue(prim.IsValid())
         self.assertEqual(prim.GetPath().pathString,
                          '/Render/SceneRenderSettings')
@@ -156,13 +156,13 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testNodeRecreatedAfterFileNew(self):
         '''The singleton should be recreated (new MObject) after file new.'''
-        pathBefore = UsdDefaultRenderSettings.find()
+        pathBefore = UsdDefaultRenderDescription.find()
         self.assertTrue(len(pathBefore) > 0)
         uuidBefore = cmds.ls(pathBefore, uuid=True)[0]
 
         cmds.file(new=True, force=True)
 
-        pathAfter = UsdDefaultRenderSettings.find()
+        pathAfter = UsdDefaultRenderDescription.find()
         self.assertTrue(len(pathAfter) > 0,
                         "Node should be recreated after file new")
         uuidAfter = cmds.ls(pathAfter, uuid=True)[0]
@@ -171,7 +171,7 @@ class testSceneRenderSettings(unittest.TestCase):
                             "not the same node carried over")
 
         # The new stage should have the default structure.
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
         self.assertTrue(
             stage.GetPrimAtPath('/Render/SceneRenderSettings').IsValid())
 
@@ -181,13 +181,13 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testSerializationRoundTrip(self):
         '''Stage content should survive a save/open cycle.'''
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
 
         # Author a prim directly on the stage.
         UsdGeom.Xform.Define(stage, '/Render/TestContent')
 
         # Save.
-        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderDescription_')
         try:
             tmpFile = os.path.join(tmpDir, 'testScene.ma')
             cmds.file(rename=tmpFile)
@@ -197,7 +197,7 @@ class testSceneRenderSettings(unittest.TestCase):
             cmds.file(tmpFile, open=True, force=True)
 
             # Verify.
-            stage2 = UsdDefaultRenderSettings.getUsdStage()
+            stage2 = UsdDefaultRenderDescription.getUsdStage()
             self.assertIsNotNone(stage2)
 
             self.assertTrue(
@@ -215,15 +215,15 @@ class testSceneRenderSettings(unittest.TestCase):
     # ------------------------------------------------------------------
 
     def testReferencedSceneDoesNotBreakLocalSingleton(self):
-        '''Referencing a Maya file that contains a UsdDefaultRenderSettings node
+        '''Referencing a Maya file that contains a UsdDefaultRenderDescription node
         must not replace or break the current scene's singleton.'''
-        refDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        refDir = tempfile.mkdtemp(prefix='testSceneRenderDescription_')
         try:
             # Author a marker prim so we can distinguish local vs referenced stage.
-            localStage = UsdDefaultRenderSettings.getUsdStage()
+            localStage = UsdDefaultRenderDescription.getUsdStage()
             UsdGeom.Xform.Define(localStage, '/Render/LocalMarker')
 
-            localPath = UsdDefaultRenderSettings.find()
+            localPath = UsdDefaultRenderDescription.find()
             self.assertTrue(len(localPath) > 0)
 
             # Save the current scene so we can reference it later.
@@ -234,10 +234,10 @@ class testSceneRenderSettings(unittest.TestCase):
             # Start a fresh scene (creates a new local singleton).
             cmds.file(new=True, force=True)
 
-            localPathNew = UsdDefaultRenderSettings.find()
+            localPathNew = UsdDefaultRenderDescription.find()
             self.assertTrue(len(localPathNew) > 0)
 
-            localStageNew = UsdDefaultRenderSettings.getUsdStage()
+            localStageNew = UsdDefaultRenderDescription.getUsdStage()
             self.assertIsNotNone(localStageNew)
 
             # The fresh scene should NOT have the marker from the saved file.
@@ -249,14 +249,14 @@ class testSceneRenderSettings(unittest.TestCase):
             cmds.file(refFile, reference=True, namespace='ref')
 
             # The local singleton should still be the non-referenced node.
-            pathAfterRef = UsdDefaultRenderSettings.find()
+            pathAfterRef = UsdDefaultRenderDescription.find()
             self.assertTrue(len(pathAfterRef) > 0,
                             "Local singleton should still exist after referencing")
             self.assertFalse(
                 cmds.referenceQuery(pathAfterRef, isNodeReferenced=True),
                 "find() must return the local singleton, not the referenced one")
 
-            # The referenced file must bring its own UsdDefaultRenderSettings
+            # The referenced file must bring its own UsdDefaultRenderDescription
             # node into the scene; verify total count is exactly 2 (one local
             # + one referenced) so a regression where the reference fails to
             # carry the node still trips this test.
@@ -267,11 +267,11 @@ class testSceneRenderSettings(unittest.TestCase):
             localNodes = [n for n in allNodes
                           if not cmds.referenceQuery(n, isNodeReferenced=True)]
             self.assertEqual(len(localNodes), 1,
-                             "Expected exactly one local UsdDefaultRenderSettings, "
+                             "Expected exactly one local UsdDefaultRenderDescription, "
                              "found %d" % len(localNodes))
 
             # The local stage must still have the default render settings.
-            stageAfterRef = UsdDefaultRenderSettings.getUsdStage()
+            stageAfterRef = UsdDefaultRenderDescription.getUsdStage()
             self.assertIsNotNone(stageAfterRef)
             self.assertTrue(
                 stageAfterRef.GetPrimAtPath('/Render/SceneRenderSettings').IsValid(),
@@ -299,7 +299,7 @@ class testSceneRenderSettings(unittest.TestCase):
         Important: this test must NOT call find()/getUsdStage() before save,
         otherwise it short-circuits the very path it is exercising.
         '''
-        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderDescription_')
         try:
             tmpFile = os.path.join(tmpDir, 'savedWithoutMaterialize.ma')
             cmds.file(rename=tmpFile)
@@ -307,7 +307,7 @@ class testSceneRenderSettings(unittest.TestCase):
             cmds.file(new=True, force=True)
             cmds.file(tmpFile, open=True, force=True)
 
-            stage = UsdDefaultRenderSettings.getUsdStage()
+            stage = UsdDefaultRenderDescription.getUsdStage()
             self.assertIsNotNone(stage)
             self.assertTrue(
                 stage.GetPrimAtPath('/Render/SceneRenderSettings').IsValid(),
@@ -325,7 +325,7 @@ class testSceneRenderSettings(unittest.TestCase):
         '''Edits authored on the session layer must also survive save/open;
         serializeToAttributes writes both root and session layers but
         testSerializationRoundTrip only exercises the root path.'''
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
         with Usd.EditContext(stage, stage.GetSessionLayer()):
             UsdGeom.Xform.Define(stage, '/Render/SessionMarker')
         # Sanity: confirm the prim is present before save.
@@ -333,7 +333,7 @@ class testSceneRenderSettings(unittest.TestCase):
             stage.GetPrimAtPath('/Render/SessionMarker').IsValid(),
             "Session-layer prim should exist before save")
 
-        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderDescription_')
         try:
             tmpFile = os.path.join(tmpDir, 'sessionRoundTrip.ma')
             cmds.file(rename=tmpFile)
@@ -341,7 +341,7 @@ class testSceneRenderSettings(unittest.TestCase):
             cmds.file(new=True, force=True)
             cmds.file(tmpFile, open=True, force=True)
 
-            stage2 = UsdDefaultRenderSettings.getUsdStage()
+            stage2 = UsdDefaultRenderDescription.getUsdStage()
             self.assertIsNotNone(stage2)
             self.assertTrue(
                 stage2.GetPrimAtPath('/Render/SessionMarker').IsValid(),
@@ -354,65 +354,65 @@ class testSceneRenderSettings(unittest.TestCase):
     # Render description prim UFE path
     # ------------------------------------------------------------------
 
-    def testRenderDescriptionPrimPathDefault(self):
-        '''Default renderDescriptionPrimPath references the singleton's default prim.'''
-        nodeName = UsdDefaultRenderSettings.find()
-        activePath = UsdDefaultRenderSettings.getRenderDescriptionPrimPath()
+    def testActiveRenderDescriptionPathDefault(self):
+        '''Default activeRenderDescriptionPath references the singleton's default prim.'''
+        nodeName = UsdDefaultRenderDescription.find()
+        activePath = UsdDefaultRenderDescription.getActiveRenderDescriptionPath()
         self.assertTrue(len(activePath) > 0)
         self.assertIn(nodeName, activePath)
         self.assertIn('/Render/SceneRenderSettings', activePath)
 
         self.assertEqual(
-            cmds.getAttr(nodeName + '.renderDescriptionPrimPath'), activePath)
+            cmds.getAttr(nodeName + '.activeRenderDescriptionPath'), activePath)
 
-    def testRenderDescriptionPrimPathSetter(self):
+    def testActiveRenderDescriptionPathSetter(self):
         '''Writing through the helper updates every read path.'''
         newPath = '|SomeOtherStage,/Foo/Bar'
         self.assertTrue(
-            UsdDefaultRenderSettings.setRenderDescriptionPrimPath(newPath))
+            UsdDefaultRenderDescription.setActiveRenderDescriptionPath(newPath))
 
         self.assertEqual(
-            UsdDefaultRenderSettings.getRenderDescriptionPrimPath(), newPath)
-        nodeName = UsdDefaultRenderSettings.find()
+            UsdDefaultRenderDescription.getActiveRenderDescriptionPath(), newPath)
+        nodeName = UsdDefaultRenderDescription.find()
         self.assertEqual(
-            cmds.getAttr(nodeName + '.renderDescriptionPrimPath'), newPath)
+            cmds.getAttr(nodeName + '.activeRenderDescriptionPath'), newPath)
 
-    def testRenderDescriptionPrimPathRoundTrip(self):
-        '''A custom renderDescriptionPrimPath survives a save/open cycle.'''
+    def testActiveRenderDescriptionPathRoundTrip(self):
+        '''A custom activeRenderDescriptionPath survives a save/open cycle.'''
         customPath = '|RefStage,/Custom/RenderSettings'
         self.assertTrue(
-            UsdDefaultRenderSettings.setRenderDescriptionPrimPath(customPath))
+            UsdDefaultRenderDescription.setActiveRenderDescriptionPath(customPath))
 
-        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderDescription_')
         try:
-            tmpFile = os.path.join(tmpDir, 'renderDescriptionPrimPathRoundTrip.ma')
+            tmpFile = os.path.join(tmpDir, 'activeRenderDescriptionPathRoundTrip.ma')
             cmds.file(rename=tmpFile)
             cmds.file(save=True, type='mayaAscii')
             cmds.file(new=True, force=True)
             cmds.file(tmpFile, open=True, force=True)
 
             self.assertEqual(
-                UsdDefaultRenderSettings.getRenderDescriptionPrimPath(),
+                UsdDefaultRenderDescription.getActiveRenderDescriptionPath(),
                 customPath)
         finally:
             cmds.file(new=True, force=True)
             shutil.rmtree(tmpDir, ignore_errors=True)
 
-    def testRenderDescriptionPrimPathResetOnFileNew(self):
+    def testActiveRenderDescriptionPathResetOnFileNew(self):
         '''File > New restores the populator-authored default value.'''
-        defaultPath = UsdDefaultRenderSettings.getRenderDescriptionPrimPath()
+        defaultPath = UsdDefaultRenderDescription.getActiveRenderDescriptionPath()
         self.assertTrue(len(defaultPath) > 0)
 
         customPath = '|Whatever,/Some/Override'
         self.assertTrue(
-            UsdDefaultRenderSettings.setRenderDescriptionPrimPath(customPath))
+            UsdDefaultRenderDescription.setActiveRenderDescriptionPath(customPath))
         self.assertEqual(
-            UsdDefaultRenderSettings.getRenderDescriptionPrimPath(), customPath)
+            UsdDefaultRenderDescription.getActiveRenderDescriptionPath(), customPath)
 
         cmds.file(new=True, force=True)
 
         self.assertEqual(
-            UsdDefaultRenderSettings.getRenderDescriptionPrimPath(),
+            UsdDefaultRenderDescription.getActiveRenderDescriptionPath(),
             defaultPath)
 
     # ------------------------------------------------------------------
@@ -421,8 +421,8 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testCurrentRendererDefault(self):
         '''Default currentRenderer is empty; no Hydra renderer is chosen yet.'''
-        nodeName = UsdDefaultRenderSettings.find()
-        self.assertEqual(UsdDefaultRenderSettings.getCurrentRenderer(), '')
+        nodeName = UsdDefaultRenderDescription.find()
+        self.assertEqual(UsdDefaultRenderDescription.getCurrentRenderer(), '')
         self.assertEqual(
             cmds.getAttr(nodeName + '.currentRenderer'), '')
 
@@ -430,11 +430,11 @@ class testSceneRenderSettings(unittest.TestCase):
         '''Writing through the helper updates every read path.'''
         rendererName = 'HdStormRendererPlugin'
         self.assertTrue(
-            UsdDefaultRenderSettings.setCurrentRenderer(rendererName))
+            UsdDefaultRenderDescription.setCurrentRenderer(rendererName))
 
         self.assertEqual(
-            UsdDefaultRenderSettings.getCurrentRenderer(), rendererName)
-        nodeName = UsdDefaultRenderSettings.find()
+            UsdDefaultRenderDescription.getCurrentRenderer(), rendererName)
+        nodeName = UsdDefaultRenderDescription.find()
         self.assertEqual(
             cmds.getAttr(nodeName + '.currentRenderer'), rendererName)
 
@@ -442,9 +442,9 @@ class testSceneRenderSettings(unittest.TestCase):
         '''A custom currentRenderer survives a save/open cycle.'''
         rendererName = 'SomeCustomRenderer'
         self.assertTrue(
-            UsdDefaultRenderSettings.setCurrentRenderer(rendererName))
+            UsdDefaultRenderDescription.setCurrentRenderer(rendererName))
 
-        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderDescription_')
         try:
             tmpFile = os.path.join(tmpDir, 'currentRendererRoundTrip.ma')
             cmds.file(rename=tmpFile)
@@ -453,7 +453,7 @@ class testSceneRenderSettings(unittest.TestCase):
             cmds.file(tmpFile, open=True, force=True)
 
             self.assertEqual(
-                UsdDefaultRenderSettings.getCurrentRenderer(),
+                UsdDefaultRenderDescription.getCurrentRenderer(),
                 rendererName)
         finally:
             cmds.file(new=True, force=True)
@@ -461,17 +461,17 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testCurrentRendererResetOnFileNew(self):
         '''File > New restores the empty default value.'''
-        self.assertEqual(UsdDefaultRenderSettings.getCurrentRenderer(), '')
+        self.assertEqual(UsdDefaultRenderDescription.getCurrentRenderer(), '')
 
         rendererName = 'TemporaryRenderer'
         self.assertTrue(
-            UsdDefaultRenderSettings.setCurrentRenderer(rendererName))
+            UsdDefaultRenderDescription.setCurrentRenderer(rendererName))
         self.assertEqual(
-            UsdDefaultRenderSettings.getCurrentRenderer(), rendererName)
+            UsdDefaultRenderDescription.getCurrentRenderer(), rendererName)
 
         cmds.file(new=True, force=True)
 
-        self.assertEqual(UsdDefaultRenderSettings.getCurrentRenderer(), '')
+        self.assertEqual(UsdDefaultRenderDescription.getCurrentRenderer(), '')
 
     # ------------------------------------------------------------------
     # Locked-node invariant
@@ -481,7 +481,7 @@ class testSceneRenderSettings(unittest.TestCase):
         '''The locked singleton must not be deletable or renamable through
         cmds; its DG name is the manager's primary lookup key, so any drift
         would silently break find()/getStage() dispatch.'''
-        nodeName = UsdDefaultRenderSettings.find()
+        nodeName = UsdDefaultRenderDescription.find()
         uuidBefore = cmds.ls(nodeName, uuid=True)[0]
 
         # Tolerate either an exception (lock raises) or a silent no-op,
@@ -530,7 +530,7 @@ class testSceneRenderSettings(unittest.TestCase):
         '''The singleton's default render-settings prim is pre-populated with
         adskUsd:externalCamera = "|persp" and has no schema camera
         relationship targets.'''
-        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        prim = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
         self.assertTrue(prim.IsValid())
 
         attr = prim.GetAttribute(self.EXTERNAL_CAMERA_ATTR)
@@ -544,20 +544,20 @@ class testSceneRenderSettings(unittest.TestCase):
 
     def testExternalCameraAttrName(self):
         '''The Python binding exposes the canonical attribute name.'''
-        self.assertEqual(UsdDefaultRenderSettings.externalCameraAttrName(),
+        self.assertEqual(UsdDefaultRenderDescription.externalCameraAttrName(),
                          self.EXTERNAL_CAMERA_ATTR)
 
     def testSetCameraSameStage(self):
         '''Setting a camera on the same stage authors the schema relationship
         and removes any pre-existing external-camera attribute.'''
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
         cameraPrim = UsdGeom.Camera.Define(stage, '/Render/Cam1').GetPrim()
 
-        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        prim = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
         self.assertTrue(prim.HasAttribute(self.EXTERNAL_CAMERA_ATTR))
 
         self.assertTrue(
-            UsdDefaultRenderSettings.setCamera(prim, cameraPrim.GetPath().pathString))
+            UsdDefaultRenderDescription.setCamera(prim, cameraPrim.GetPath().pathString))
 
         self.assertFalse(
             prim.HasAttribute(self.EXTERNAL_CAMERA_ATTR),
@@ -570,19 +570,19 @@ class testSceneRenderSettings(unittest.TestCase):
     def testSetCameraMayaNative(self):
         '''Setting a Maya native camera UFE path authors the external
         attribute and clears the schema relationship targets.'''
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
         cameraPrim = UsdGeom.Camera.Define(stage, '/Render/Cam1').GetPrim()
-        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        prim = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
 
         # Seed the relationship so the assertion below confirms it is cleared
         # by the subsequent setCamera call to a Maya-native path.
-        UsdDefaultRenderSettings.setCamera(prim, cameraPrim.GetPath().pathString)
+        UsdDefaultRenderDescription.setCamera(prim, cameraPrim.GetPath().pathString)
         self.assertEqual(
             UsdRender.Settings(prim).GetCameraRel().GetTargets(),
             [Sdf.Path('/Render/Cam1')])
 
         self.assertTrue(
-            UsdDefaultRenderSettings.setCamera(prim, '|persp|perspShape'))
+            UsdDefaultRenderDescription.setCamera(prim, '|persp|perspShape'))
 
         self.assertEqual(
             UsdRender.Settings(prim).GetCameraRel().GetTargets(), [])
@@ -595,8 +595,8 @@ class testSceneRenderSettings(unittest.TestCase):
         attribute, not the schema relationship.'''
         proxyShape, _proxyStage, cameraUfePath = self._createUsdProxyWithCamera()
 
-        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
-        self.assertTrue(UsdDefaultRenderSettings.setCamera(prim, cameraUfePath))
+        prim = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
+        self.assertTrue(UsdDefaultRenderDescription.setCamera(prim, cameraUfePath))
 
         self.assertEqual(
             UsdRender.Settings(prim).GetCameraRel().GetTargets(), [])
@@ -608,21 +608,21 @@ class testSceneRenderSettings(unittest.TestCase):
         '''Invalid prim or non-RenderSettings prim returns False.'''
         invalidPrim = Usd.Prim()
         self.assertFalse(
-            UsdDefaultRenderSettings.setCamera(invalidPrim, '|persp|perspShape'))
+            UsdDefaultRenderDescription.setCamera(invalidPrim, '|persp|perspShape'))
 
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
         nonSettings = UsdGeom.Xform.Define(stage, '/Render/NotSettings').GetPrim()
         self.assertFalse(
-            UsdDefaultRenderSettings.setCamera(nonSettings, '|persp|perspShape'))
+            UsdDefaultRenderDescription.setCamera(nonSettings, '|persp|perspShape'))
 
     def testSetCameraRoundTrip(self):
         '''An external camera value survives a save/open cycle.'''
-        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        prim = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
         customCameraPath = '|some|custom|cameraShape'
         self.assertTrue(
-            UsdDefaultRenderSettings.setCamera(prim, customCameraPath))
+            UsdDefaultRenderDescription.setCamera(prim, customCameraPath))
 
-        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderSettings_')
+        tmpDir = tempfile.mkdtemp(prefix='testSceneRenderDescription_')
         try:
             tmpFile = os.path.join(tmpDir, 'externalCameraRoundTrip.ma')
             cmds.file(rename=tmpFile)
@@ -630,7 +630,7 @@ class testSceneRenderSettings(unittest.TestCase):
             cmds.file(new=True, force=True)
             cmds.file(tmpFile, open=True, force=True)
 
-            primAfter = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+            primAfter = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
             attr = primAfter.GetAttribute(self.EXTERNAL_CAMERA_ATTR)
             self.assertTrue(attr.IsValid())
             self.assertEqual(attr.Get(), customCameraPath)
@@ -641,16 +641,16 @@ class testSceneRenderSettings(unittest.TestCase):
     def testExternalCameraDefaultRestoredOnFileNew(self):
         '''File > New restores the populator-authored default value, even
         after a prior override on the singleton's prim.'''
-        prim = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        prim = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
         self.assertTrue(
-            UsdDefaultRenderSettings.setCamera(prim, '|some|other|cameraShape'))
+            UsdDefaultRenderDescription.setCamera(prim, '|some|other|cameraShape'))
         self.assertEqual(
             prim.GetAttribute(self.EXTERNAL_CAMERA_ATTR).Get(),
             '|some|other|cameraShape')
 
         cmds.file(new=True, force=True)
 
-        primAfter = UsdDefaultRenderSettings.getDefaultRenderSettingsPrim()
+        primAfter = UsdDefaultRenderDescription.getDefaultRenderSettingsPrim()
         self.assertEqual(
             primAfter.GetAttribute(self.EXTERNAL_CAMERA_ATTR).Get(),
             self.DEFAULT_EXTERNAL_CAMERA)
