@@ -798,6 +798,39 @@ class ContextOpsTestCase(unittest.TestCase):
         cmd.undo()
         self.assertFalse(sessionLayer.GetPrimAtPath(xformPath))
 
+    def testGatewayUSDMenu(self):
+        '''
+        Test that the stage/gateway context menu groups the USD-specific items
+        (USD Layer Editor, USD Path Editor, Add Reference...) under a single
+        top-level "USD" submenu, instead of listing them flat like a prim's
+        context menu does.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape (gateway item).
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        topLevelItems = [c.item for c in contextOps.getItems([])]
+
+        # The "USD" submenu replaces the flat top-level items on the gateway.
+        self.assertIn('USD', topLevelItems)
+        self.assertNotIn('USD Layer Editor', topLevelItems)
+        self.assertNotIn('Asset Resolver Dialog', topLevelItems)
+
+        # The "Reference" submenu (used on prims) is not shown on the stage root.
+        self.assertNotIn('Reference', topLevelItems)
+
+        # The "USD" submenu should contain the USD Layer Editor and the new
+        # single-click "Add Reference..." item.
+        usdMenuItems = [c.item for c in contextOps.getItems(['USD'])]
+        self.assertIn('USD Layer Editor', usdMenuItems)
+        self.assertIn('AddReference', usdMenuItems)
+
     def testAddNewPrimInWeakerLayer(self):
         cmds.file(new=True, force=True)
 
