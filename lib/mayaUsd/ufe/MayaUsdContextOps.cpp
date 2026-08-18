@@ -127,6 +127,7 @@ static constexpr char kAddReferenceLabel[] = "Add Reference...";
 
 // Copied from UsdUfe::UsdContextOps
 static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
+static constexpr char kUSDAddNewPrimLabel[] = "Add New Prim";
 static constexpr char kUSDClassPrimItem[] = "Class";
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -363,6 +364,16 @@ Ufe::UndoableCommand::Ptr _addReferenceToNewPrimCmd(const UsdPrim& parentPrim)
         parentPrim, newPrimName, path, refPrimPath, prepend, !asRef, preload);
 }
 
+void addMayaReferece(const UsdPrim& prim, const Ufe::Path& path)
+{
+    if (!_prepareUSDReferenceTargetLayer(prim))
+        return;
+
+    MString script;
+    script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path).c_str());
+    MGlobal::executeCommandStringResult(script, /* display = */ false, /* undoable = */ true);
+}
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
 void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::ContextOps::Items& items)
 {
@@ -581,10 +592,10 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             }
         }
-        if (!isMayaRef && !isClassPrim) {
+        if (!isMayaRef && !isClassPrim && !_isAGatewayType) {
             items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+            items.emplace_back(Ufe::ContextItem::kSeparator);
         }
-        items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
         // Add the items from our base class here
@@ -705,11 +716,15 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             }
         }
 #ifdef WANT_QT_BUILD
-        else if (itemPath[0] == kUSDMenuItem) {
+        else if (itemPath[0] == kUSDMenuItem && itemPath.size() == 1u) {
             items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
             items.emplace_back(kAssetResolverDialogItem, kAssetResolverDialogLabel);
 #endif
+            items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+            items.emplace_back(Ufe::ContextItem::kSeparator);
+            items.emplace_back(
+                kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
             items.emplace_back(kAddReferenceItem, kAddReferenceLabel);
         }
 #endif
@@ -791,7 +806,9 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         // EMSUSD-2499: Create Class Prim
         // Special case when adding a class prim via context menu make sure the Outliner
         // is displaying class prims.
-        if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
+        if (!itemPath.empty()
+            && (itemPath[0] == kUSDAddNewPrimItem
+                || itemPath.size() > 1u && itemPath[1] == kUSDAddNewPrimItem)) {
             // At this point we know the last item in the itemPath is the prim type to create
             auto primType = itemPath[itemPath.size() - 1];
             if (primType == kUSDClassPrimItem) {
@@ -839,6 +856,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 #endif
         else if (itemPath[1] == kAddReferenceItem) {
             return _addReferenceToNewPrimCmd(prim());
+        } else if (itemPath[1] == kAddMayaReferenceItem) {
+            addMayaReferece(prim(), path());
         }
         return nullptr;
     }
@@ -944,13 +963,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         UsdUfe::WaitCursor wait;
         MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
     } else if (itemPath[0] == kAddMayaReferenceItem) {
-        if (!_prepareUSDReferenceTargetLayer(prim()))
-            return nullptr;
-
-        MString script;
-        script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path()).c_str());
-        MString result = MGlobal::executeCommandStringResult(
-            script, /* display = */ false, /* undoable = */ true);
+        addMayaReferece(prim(), path());
     }
 #endif
     else if (itemPath[0] == UsdUfe::BindMaterialUndoableCommand::commandName) {
