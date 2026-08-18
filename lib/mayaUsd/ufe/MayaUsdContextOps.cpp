@@ -808,7 +808,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         // is displaying class prims.
         if (!itemPath.empty()
             && (itemPath[0] == kUSDAddNewPrimItem
-                || itemPath.size() > 1u && itemPath[1] == kUSDAddNewPrimItem)) {
+                || (itemPath.size() > 1u && itemPath[1] == kUSDAddNewPrimItem))) {
             // At this point we know the last item in the itemPath is the prim type to create
             auto primType = itemPath[itemPath.size() - 1];
             if (primType == kUSDClassPrimItem) {
