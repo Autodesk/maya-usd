@@ -16,8 +16,8 @@
 #include "renderSetupWindowCmd.h"
 
 #include "mayaEditCommitter.h"
-#include "mayaRendererProvider.h"
 #include "mayaRenderSetupHost.h"
+#include "mayaRendererProvider.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -60,7 +60,7 @@ class RenderSetupWindow;
 
 const MString RenderSetupWindowCmd::commandName("mayaUsdRenderSetupWindow");
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
-const std::string kUSDRenderSettingsNodeName("UsdDefaultRenderSettings");
+const std::string kUSDRenderDescriptionNodeName("UsdDefaultRenderDescription");
 #endif
 
 namespace {
@@ -122,33 +122,35 @@ private:
         void*                          clientData);
 
 private:
-    AdskUsdRenderSetup::RenderSetupWidget* _renderSetupWidget;
-    MayaUsdRenderSetup::MayaEditCommitter* _editCommitter { nullptr };
+    AdskUsdRenderSetup::RenderSetupWidget*                    _renderSetupWidget;
+    MayaUsdRenderSetup::MayaEditCommitter*                    _editCommitter { nullptr };
     std::shared_ptr<MayaUsdRenderSetup::MayaRendererProvider> _rendererProvider;
-    MCallbackId                                 _currentRendererCallbackId { 0 };
-    std::vector<AdskUsdRenderSetup::HostStage>  _hostStages;
-    std::vector<MCallbackId>                    _sceneCallbackIds;
+    MCallbackId                                               _currentRendererCallbackId { 0 };
+    std::vector<AdskUsdRenderSetup::HostStage>                _hostStages;
+    std::vector<MCallbackId>                                  _sceneCallbackIds;
 };
 
 RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     : PARENT_CLASS(parent)
 {
+    static MayaUsdRenderSetup::MayaRenderSetupHost s_renderSetupHost;
+    AdskUsdRenderSetup::Host::setHost(&s_renderSetupHost);
+
     // Create the render setup widget and set it as the central widget of the window.
     _renderSetupWidget = new AdskUsdRenderSetup::RenderSetupWidget(this);
     _editCommitter = new MayaUsdRenderSetup::MayaEditCommitter(nullptr);
-    _renderSetupWidget->setEditCommitter(std::unique_ptr<AdskUsdRenderSetup::IEditCommitter>(_editCommitter));
+    _renderSetupWidget->setEditCommitter(
+        std::unique_ptr<AdskUsdRenderSetup::IEditCommitter>(_editCommitter));
     setCentralWidget(_renderSetupWidget);
     _renderSetupWidget->show();
-
-    static MayaUsdRenderSetup::MayaRenderSetupHost s_renderSetupHost;
-    AdskUsdRenderSetup::Host::setHost(&s_renderSetupHost);
 
     _rendererProvider = std::make_shared<MayaUsdRenderSetup::MayaRendererProvider>();
     _renderSetupWidget->setRendererProvider(_rendererProvider);
     registerCurrentRendererCallback();
     resyncCurrentRenderer();
 
-    auto* viewMenu = menuBar()->addMenu(tr("View"));
+
+    auto* viewMenu = menuBar()->addMenu(tr("Options"));
     auto* hierarchyAction = viewMenu->addAction(tr("Display USD Hierarchy"));
     hierarchyAction->setCheckable(true);
     hierarchyAction->setChecked(false);
@@ -280,11 +282,11 @@ void RenderSetupWindow::refreshStages()
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
     // Add default setting stage (from DG node) but put it first in the vector.
-    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderSettingsNodeName);
+    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderDescriptionNodeName);
     if (defaultStage) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
-        hostStage.displayName = kUSDRenderSettingsNodeName;
+        hostStage.displayName = tr("Maya Settings").toStdString();
         _hostStages.insert(_hostStages.begin(), hostStage);
     }
 #endif
