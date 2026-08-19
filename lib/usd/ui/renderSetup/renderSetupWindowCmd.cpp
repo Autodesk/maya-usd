@@ -60,7 +60,7 @@ class RenderSetupWindow;
 
 const MString RenderSetupWindowCmd::commandName("mayaUsdRenderSetupWindow");
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
-const std::string kUSDRenderDescriptionNodeName("UsdDefaultRenderDescription");
+const std::string kUSDRenderSettingsNodeName("UsdDefaultRenderSettings");
 #endif
 
 namespace {
@@ -148,7 +148,6 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     _renderSetupWidget->setRendererProvider(_rendererProvider);
     registerCurrentRendererCallback();
     resyncCurrentRenderer();
-
 
     auto* viewMenu = menuBar()->addMenu(tr("Options"));
     auto* hierarchyAction = viewMenu->addAction(tr("Display USD Hierarchy"));
@@ -282,7 +281,7 @@ void RenderSetupWindow::refreshStages()
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
     // Add default setting stage (from DG node) but put it first in the vector.
-    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderDescriptionNodeName);
+    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderSettingsNodeName);
     if (defaultStage) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
