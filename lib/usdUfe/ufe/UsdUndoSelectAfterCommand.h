@@ -84,6 +84,8 @@ private:
 
 //! \brief Retrieve the desired selection after the command has executed.
 Ufe::Selection USDUFE_PUBLIC getNewSelectionFromCommand(const Ufe::InsertChildCommand& cmd);
+Ufe::Selection USDUFE_PUBLIC
+getNewSelectionFromCommand(const Ufe::SceneItemResultUndoableCommand& cmd);
 
 } // namespace USDUFE_NS_DEF
 
