@@ -55,7 +55,7 @@ class RenderSetupWindow;
 
 const MString RenderSetupWindowCmd::commandName("mayaUsdRenderSetupWindow");
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
-const std::string kUSDRenderDescriptionNodeName("UsdDefaultRenderDescription");
+const std::string kUSDRenderSettingsNodeName("UsdDefaultRenderSettings");
 #endif
 
 namespace {
@@ -112,9 +112,6 @@ private:
 RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     : PARENT_CLASS(parent)
 {
-    static MayaUsdRenderSetup::MayaRenderSetupHost s_renderSetupHost;
-    AdskUsdRenderSetup::Host::setHost(&s_renderSetupHost);
-
     // Create the render setup widget and set it as the central widget of the window.
     _tree = new AdskUsdRenderSetup::RenderSetupWidget(this);
     _editCommitter = new MayaUsdRenderSetup::MayaEditCommitter(nullptr);
@@ -122,7 +119,10 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     setCentralWidget(_tree);
     _tree->show();
 
-    auto* viewMenu = menuBar()->addMenu(tr("Options"));
+    static MayaUsdRenderSetup::MayaRenderSetupHost s_renderSetupHost;
+    AdskUsdRenderSetup::Host::setHost(&s_renderSetupHost);
+
+    auto* viewMenu = menuBar()->addMenu(tr("View"));
     auto* hierarchyAction = viewMenu->addAction(tr("Display USD Hierarchy"));
     hierarchyAction->setCheckable(true);
     hierarchyAction->setChecked(false);
@@ -204,11 +204,11 @@ void RenderSetupWindow::refreshStages()
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
     // Add default setting stage (from DG node) but put it first in the vector.
-    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderDescriptionNodeName);
+    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderSettingsNodeName);
     if (defaultStage) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
-        hostStage.displayName = tr("Maya Settings").toStdString();
+        hostStage.displayName = kUSDRenderSettingsNodeName;
         _hostStages.insert(_hostStages.begin(), hostStage);
     }
 #endif

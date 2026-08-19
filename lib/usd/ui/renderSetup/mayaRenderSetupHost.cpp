@@ -17,7 +17,6 @@
 #include "mayaRenderSetupHost.h"
 
 #include <maya/MAnimControl.h>
-#include <maya/MQtUtil.h>
 #include <maya/MTime.h>
 
 namespace MayaUsdRenderSetup {
@@ -32,11 +31,6 @@ AdskUsdRenderSetup::FrameRange MayaRenderSetupHost::timelineRange() const
     const double start = MAnimControl::minTime().as(MTime::uiUnit());
     const double end = MAnimControl::maxTime().as(MTime::uiUnit());
     return { start, end };
-}
-
-int MayaRenderSetupHost::dpiScaled(int logicalPixels) const
-{
-    return MQtUtil::dpiScale(logicalPixels);
 }
 
 } // namespace MayaUsdRenderSetup

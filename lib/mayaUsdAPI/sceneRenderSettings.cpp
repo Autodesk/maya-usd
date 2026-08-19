@@ -14,12 +14,12 @@
 // limitations under the License.
 //
 
-#include "sceneRenderDescription.h"
+#include "sceneRenderSettings.h"
 
 #include <mayaUsd/nodes/sceneRenderDescription.h>
 
 namespace MAYAUSDAPI_NS_DEF {
-namespace SceneRenderDescription {
+namespace SceneRenderSettings {
 
 PXR_NS::UsdStageRefPtr getUsdStage() { return MayaUsd::SceneRenderDescription::getUsdStage(); }
 
@@ -28,5 +28,5 @@ const PXR_NS::TfToken& externalCameraAttrName()
     return MayaUsd::SceneRenderDescription::externalCameraAttrName();
 }
 
-} // namespace SceneRenderDescription
+} // namespace SceneRenderSettings
 } // namespace MAYAUSDAPI_NS_DEF
