@@ -207,6 +207,10 @@ class ReferenceCommandsTestCase(unittest.TestCase):
         self.assertTrue(newPrim.HasAuthoredReferences())
         self.assertEqual(str(newPrim.GetTypeName()), 'Xform')
 
+        selection = ufe.GlobalSelection.get()
+        self.assertEqual(len(selection), 1)
+        self.assertTrue(selection.contains(ufe.PathString.path(newPrimPathStr)))
+
 
     def testAddPayloadToNewPrimCommand(self):
         '''

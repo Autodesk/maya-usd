@@ -829,6 +829,8 @@ class ContextOpsTestCase(unittest.TestCase):
         # single-click "Add Reference..." item.
         usdMenuItems = [c.item for c in contextOps.getItems(['USD'])]
         self.assertIn('USD Layer Editor', usdMenuItems)
+        self.assertIn('Add Maya Reference', usdMenuItems)
+        self.assertIn('Add New Prim', usdMenuItems)
         self.assertIn('AddReference', usdMenuItems)
 
     def testAddNewPrimInWeakerLayer(self):
