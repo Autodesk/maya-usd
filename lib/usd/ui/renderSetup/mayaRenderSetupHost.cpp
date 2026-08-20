@@ -20,6 +20,8 @@
 #include <maya/MQtUtil.h>
 #include <maya/MTime.h>
 
+#include <usdUfe/utils/Utils.h>
+
 namespace MayaUsdRenderSetup {
 
 double MayaRenderSetupHost::currentFrame() const
@@ -37,6 +39,11 @@ AdskUsdRenderSetup::FrameRange MayaRenderSetupHost::timelineRange() const
 int MayaRenderSetupHost::dpiScaled(int logicalPixels) const
 {
     return MQtUtil::dpiScale(logicalPixels);
+}
+
+std::string MayaRenderSetupHost::prettifyName(const std::string& name) const
+{
+    return UsdUfe::prettifyName(name);
 }
 
 } // namespace MayaUsdRenderSetup
