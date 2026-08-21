@@ -17,14 +17,28 @@
 #ifndef MAYAUSDUI_USD_RENDERSETUP_MAYARENDERERPROVIDER_H
 #define MAYAUSDUI_USD_RENDERSETUP_MAYARENDERERPROVIDER_H
 
+#include <mayaUsdUI/ui/api.h>
+
 #include <AdskUsdRenderSetup/IRendererProvider.h>
+
+#include <string>
+#include <vector>
 
 namespace MayaUsdRenderSetup {
 
 //! MayaUSD implementation of AdskUsdRenderSetup::IRendererProvider for the Render Setup UI.
-//! Lists every renderer Maya knows about and reads/writes Maya's global current renderer
-//! (defaultRenderGlobals.currentRenderer).
-class MayaRendererProvider : public AdskUsdRenderSetup::IRendererProvider
+//! Reports available renderers from Maya's legacy renderer registry (mayaSoftware, arnold, etc.,
+//! marked isHydra=false) and from Hydra's HdRendererPluginRegistry (marked isHydra=true).
+//! Reads and writes the current renderer from the appropriate store:
+//! - Hydra renderers: UsdSettingsNode::currentRenderer attribute
+//! - Legacy renderers: defaultRenderGlobals.currentRenderer attribute
+#if defined(_MSC_VER)
+// AdskUsdRenderSetup::IRendererProvider is a header-only interface (all its methods are
+// inline), so it needs no dll-interface of its own for MayaRendererProvider to export safely.
+#pragma warning(push)
+#pragma warning(disable : 4275)
+#endif
+class MAYAUSD_UI_PUBLIC MayaRendererProvider : public AdskUsdRenderSetup::IRendererProvider
 {
 public:
     //! \return every renderer Maya currently knows about, Hydra-capable or not.
@@ -34,13 +48,16 @@ public:
     std::string currentRenderer() const override;
 
 protected:
-    //! Switches Maya's current renderer via the setCurrentRenderer MEL proc.
+    //! Requests a switch to the named renderer. Leaves currentRenderer() unchanged
+    //! (and thus switchRenderer is implicitly declined) if the name is unknown.
+    //! For Hydra renderers: writes UsdSettingsNode::currentRenderer.
+    //! For legacy renderers: writes defaultRenderGlobals.currentRenderer and clears
+    //! UsdSettingsNode.
     void switchRenderer(const std::string& next) override;
-
-private:
-    //! \return true if `rendererName` reports the "isHydra" capability.
-    bool isHydraCapable(const std::string& rendererName) const;
 };
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 } // namespace MayaUsdRenderSetup
 
