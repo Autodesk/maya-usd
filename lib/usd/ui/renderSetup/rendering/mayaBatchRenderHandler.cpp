@@ -14,19 +14,19 @@
 // limitations under the License.
 //
 
-#include "sceneRenderSettings.h"
+#include "mayaBatchRenderHandler.h"
 
-#include <mayaUsd/nodes/sceneRenderDescription.h>
+#include "mayaBatchRenderResult.h"
 
-namespace MAYAUSDAPI_NS_DEF {
-namespace SceneRenderSettings {
+#include <maya/MGlobal.h>
 
-PXR_NS::UsdStageRefPtr getUsdStage() { return MayaUsd::SceneRenderDescription::getUsdStage(); }
+namespace MayaUsdRenderSetup {
 
-const PXR_NS::TfToken& externalCameraAttrName()
+std::shared_ptr<AdskUsdRenderSetup::IRenderResult> MayaBatchRenderHandler::render() const
 {
-    return MayaUsd::SceneRenderDescription::externalCameraAttrName();
+    MGlobal::displayInfo(MString("MayaBatchRenderHandler::render() called."));
+    MGlobal::executeCommand(MString("mayaBatchRender"));
+    return std::make_shared<MayaBatchRenderResult>();
 }
 
-} // namespace SceneRenderSettings
-} // namespace MAYAUSDAPI_NS_DEF
+} // namespace MayaUsdRenderSetup

@@ -19,6 +19,7 @@
 #include <mayaUsd/base/api.h>
 
 #include <pxr/base/tf/notice.h>
+#include <pxr/usd/sdf/layer.h>
 
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
@@ -88,6 +89,21 @@ public:
 
 private:
     static MCallbackId _beforeExitCallbackId;
+};
+
+/// Notice sent when the lock state of a layer changed during a Maya session.
+class UsdMayaLayerLockChangedNotice : public TfNotice
+{
+public:
+    MAYAUSD_CORE_PUBLIC
+    explicit UsdMayaLayerLockChangedNotice(const SdfLayerRefPtr& layer);
+
+    /// \return The layer whose lock state changed.
+    MAYAUSD_CORE_PUBLIC
+    const SdfLayerRefPtr& GetLayer() const;
+
+private:
+    SdfLayerRefPtr _layer;
 };
 
 class UsdMaya_AssemblyInstancerNoticeBase : public TfNotice

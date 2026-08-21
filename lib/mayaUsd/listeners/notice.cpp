@@ -171,6 +171,15 @@ void UsdMayaExitNotice::RemoveListener()
     }
 }
 
+TF_INSTANTIATE_TYPE(UsdMayaLayerLockChangedNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+
+UsdMayaLayerLockChangedNotice::UsdMayaLayerLockChangedNotice(const SdfLayerRefPtr& layer)
+    : _layer(layer)
+{
+}
+
+const SdfLayerRefPtr& UsdMayaLayerLockChangedNotice::GetLayer() const { return _layer; }
+
 UsdMaya_AssemblyInstancerNoticeBase::UsdMaya_AssemblyInstancerNoticeBase(
     const MObject& assembly,
     const MObject& instancer)

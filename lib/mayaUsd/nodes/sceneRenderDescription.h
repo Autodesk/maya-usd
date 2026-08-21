@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_NODES_SCENE_RENDER_SETTINGS_H
-#define MAYAUSD_NODES_SCENE_RENDER_SETTINGS_H
+#ifndef MAYAUSD_NODES_SCENE_RENDER_DESCRIPTION_H
+#define MAYAUSD_NODES_SCENE_RENDER_DESCRIPTION_H
 
 #include <mayaUsd/base/api.h>
 
@@ -26,9 +26,9 @@
 
 namespace MAYAUSD_NS_DEF {
 
-//! Public C++ surface for the UsdDefaultRenderSettings singleton, also bound
+//! Public C++ surface for the UsdDefaultRenderDescription singleton, also bound
 //! by the Python wrapper.
-namespace SceneRenderSettings {
+namespace SceneRenderDescription {
 
 //! DG name of the singleton, or an empty string if not yet created.
 MAYAUSD_CORE_PUBLIC std::string find();
@@ -40,19 +40,20 @@ MAYAUSD_CORE_PUBLIC PXR_NS::UsdStageRefPtr getUsdStage();
 //! metadata, or an invalid prim if unavailable.
 MAYAUSD_CORE_PUBLIC PXR_NS::UsdPrim getDefaultRenderSettingsPrim();
 
-//! UFE path of the currently active settings prim, or an empty string if
-//! unavailable.
-MAYAUSD_CORE_PUBLIC std::string getActiveSettingPath();
+//! UFE path of the active render description prim (a UsdRenderSettings or
+//! UsdRenderPass prim), or an empty string if unavailable.
+MAYAUSD_CORE_PUBLIC std::string getActiveRenderDescriptionPath();
 
-//! Author the UFE path of the currently active settings prim. Returns false
-//! if the singleton node is unavailable or the plug write fails.
-MAYAUSD_CORE_PUBLIC bool setActiveSettingPath(const std::string& ufePath);
+//! Author the UFE path of the active render description prim, expected to be a
+//! UsdRenderSettings or UsdRenderPass prim. Returns false if the singleton node
+//! is unavailable or the plug write fails.
+MAYAUSD_CORE_PUBLIC bool setActiveRenderDescriptionPath(const std::string& ufePath);
 
 //! Hydra renderer plugin name that drives USD Hydra rendering for the scene,
 //! or an empty string when none has been chosen.
 MAYAUSD_CORE_PUBLIC std::string getCurrentRenderer();
 
-//! Author the Hydra renderer plugin name on the render-settings singleton.
+//! Author the Hydra renderer plugin name on the render description singleton.
 //! Returns false if the singleton node is unavailable or the plug write fails.
 MAYAUSD_CORE_PUBLIC bool setCurrentRenderer(const std::string& rendererName);
 
@@ -81,8 +82,8 @@ MAYAUSD_CORE_PUBLIC const PXR_NS::TfToken& externalCameraAttrName();
 MAYAUSD_CORE_PUBLIC bool
 setRenderSettingsCamera(const PXR_NS::UsdPrim& renderSettings, const std::string& cameraUfePath);
 
-} // namespace SceneRenderSettings
+} // namespace SceneRenderDescription
 
 } // namespace MAYAUSD_NS_DEF
 
-#endif // MAYAUSD_NODES_SCENE_RENDER_SETTINGS_H
+#endif // MAYAUSD_NODES_SCENE_RENDER_DESCRIPTION_H

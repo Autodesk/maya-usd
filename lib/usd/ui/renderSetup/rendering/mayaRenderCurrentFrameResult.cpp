@@ -14,19 +14,13 @@
 // limitations under the License.
 //
 
-#include "sceneRenderSettings.h"
+#include "mayaRenderCurrentFrameResult.h"
 
-#include <mayaUsd/nodes/sceneRenderDescription.h>
+namespace MayaUsdRenderSetup {
 
-namespace MAYAUSDAPI_NS_DEF {
-namespace SceneRenderSettings {
-
-PXR_NS::UsdStageRefPtr getUsdStage() { return MayaUsd::SceneRenderDescription::getUsdStage(); }
-
-const PXR_NS::TfToken& externalCameraAttrName()
+MayaRenderCurrentFrameResult::MayaRenderCurrentFrameResult(const std::string& errorMsg)
+    : _errorMsg(errorMsg)
 {
-    return MayaUsd::SceneRenderDescription::externalCameraAttrName();
 }
 
-} // namespace SceneRenderSettings
-} // namespace MAYAUSDAPI_NS_DEF
+} // namespace MayaUsdRenderSetup

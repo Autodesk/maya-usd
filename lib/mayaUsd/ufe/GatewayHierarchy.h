@@ -32,7 +32,7 @@ namespace ufe {
 /*!
     This class defines a hierarchy interface for any Maya node that acts as a
     gateway to a USD stage (e.g. a proxy shape, or a DG node such as
-    UsdDefaultRenderSettings).  Such a node is special in that its parent is a
+    UsdDefaultRenderDescription).  Such a node is special in that its parent is a
     Maya node, but its children are children of the USD root prim.
  */
 class MAYAUSD_CORE_PUBLIC GatewayHierarchy : public Ufe::Hierarchy

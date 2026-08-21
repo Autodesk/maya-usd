@@ -35,7 +35,7 @@ const MString UsdSettingsNode::typeName("UsdDefaultSettings");
 
 MObject UsdSettingsNode::serializedRootLayerAttr;
 MObject UsdSettingsNode::serializedSessionLayerAttr;
-MObject UsdSettingsNode::activeSettingsPathAttr;
+MObject UsdSettingsNode::activeRenderDescriptionPathAttr;
 MObject UsdSettingsNode::currentRendererAttr;
 
 /* static */
@@ -74,15 +74,16 @@ MStatus UsdSettingsNode::initialize()
     status = addAttribute(serializedSessionLayerAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    // UFE path of the currently active settings prim, persisted with the
-    // scene. Hidden/internal: reads/writes go through the typed accessors.
-    activeSettingsPathAttr = typedAttrFn.create(
-        "activeSettingsPath", "asp", MFnData::kString, defaultStringDataObj, &status);
+    // UFE path of the active render description prim (a UsdRenderSettings or
+    // UsdRenderPass prim), persisted with the scene. Hidden/internal:
+    // reads/writes go through the typed accessors.
+    activeRenderDescriptionPathAttr = typedAttrFn.create(
+        "activeRenderDescriptionPath", "ard", MFnData::kString, defaultStringDataObj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     typedAttrFn.setStorable(true);
     typedAttrFn.setHidden(true);
     typedAttrFn.setInternal(true);
-    status = addAttribute(activeSettingsPathAttr);
+    status = addAttribute(activeRenderDescriptionPathAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Hydra renderer plugin name persisted on the node to select which Hydra
@@ -119,15 +120,15 @@ std::string UsdSettingsNode::nodeName() const
     return depFn.name().asChar();
 }
 
-std::string UsdSettingsNode::activeSettingsPath() const
+std::string UsdSettingsNode::activeRenderDescriptionPath() const
 {
-    MPlug plug(thisMObject(), activeSettingsPathAttr);
+    MPlug plug(thisMObject(), activeRenderDescriptionPathAttr);
     return plug.asString().asChar();
 }
 
-bool UsdSettingsNode::setActiveSettingsPath(const std::string& ufePath)
+bool UsdSettingsNode::setActiveRenderDescriptionPath(const std::string& ufePath)
 {
-    MPlug   plug(thisMObject(), activeSettingsPathAttr);
+    MPlug   plug(thisMObject(), activeRenderDescriptionPathAttr);
     MStatus status = plug.setString(MString(ufePath.c_str()));
     return status == MS::kSuccess;
 }

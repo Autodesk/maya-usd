@@ -37,6 +37,10 @@ MAYAUSD_API_PUBLIC const PXR_NS::TfToken& externalCameraAttrName();
 
 } // namespace SceneRenderSettings
 
+//! Renamed everywhere to "RenderDescription" but we cannot
+//! break the ABI of MayaUsdAPI so aliasing the new name to the old one.
+namespace SceneRenderDescription = SceneRenderSettings;
+
 } // namespace MAYAUSDAPI_NS_DEF
 
 #endif // MAYAUSDAPI_SCENE_RENDER_SETTINGS_H

@@ -63,7 +63,7 @@ target_sources(${PYTHON_TARGET_NAME}
 if(MAYA_HAS_USD_SETTINGS_NODES)
     target_sources(${PYTHON_TARGET_NAME}
         PRIVATE
-            wrapSceneRenderSettings.cpp
+            wrapSceneRenderDescription.cpp
     )
 endif()
 
