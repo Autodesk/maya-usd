@@ -14,37 +14,41 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/nodes/sceneRenderSettings.h>
+#include <mayaUsd/nodes/sceneRenderDescription.h>
 #include <mayaUsd/nodes/usdSettingsNode.h>
 
 #include <pxr_python.h>
 
 using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
-void wrapSceneRenderSettings()
+void wrapSceneRenderDescription()
 {
     class_<MayaUsd::UsdSettingsNode, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
-        "UsdDefaultRenderSettings", no_init)
-        .def("find", &MayaUsd::SceneRenderSettings::find)
+        "UsdDefaultRenderDescription", no_init)
+        .def("find", &MayaUsd::SceneRenderDescription::find)
         .staticmethod("find")
-        .def("getUsdStage", &MayaUsd::SceneRenderSettings::getUsdStage)
+        .def("getUsdStage", &MayaUsd::SceneRenderDescription::getUsdStage)
         .staticmethod("getUsdStage")
         .def(
             "getDefaultRenderSettingsPrim",
-            &MayaUsd::SceneRenderSettings::getDefaultRenderSettingsPrim)
+            &MayaUsd::SceneRenderDescription::getDefaultRenderSettingsPrim)
         .staticmethod("getDefaultRenderSettingsPrim")
-        .def("getActiveRenderSettingsPath", &MayaUsd::SceneRenderSettings::getActiveSettingPath)
-        .staticmethod("getActiveRenderSettingsPath")
-        .def("setActiveRenderSettingsPath", &MayaUsd::SceneRenderSettings::setActiveSettingPath)
-        .staticmethod("setActiveRenderSettingsPath")
-        .def("getCurrentRenderer", &MayaUsd::SceneRenderSettings::getCurrentRenderer)
+        .def(
+            "getActiveRenderDescriptionPath",
+            &MayaUsd::SceneRenderDescription::getActiveRenderDescriptionPath)
+        .staticmethod("getActiveRenderDescriptionPath")
+        .def(
+            "setActiveRenderDescriptionPath",
+            &MayaUsd::SceneRenderDescription::setActiveRenderDescriptionPath)
+        .staticmethod("setActiveRenderDescriptionPath")
+        .def("getCurrentRenderer", &MayaUsd::SceneRenderDescription::getCurrentRenderer)
         .staticmethod("getCurrentRenderer")
-        .def("setCurrentRenderer", &MayaUsd::SceneRenderSettings::setCurrentRenderer)
+        .def("setCurrentRenderer", &MayaUsd::SceneRenderDescription::setCurrentRenderer)
         .staticmethod("setCurrentRenderer")
         .def(
             "externalCameraAttrName",
-            +[]() { return MayaUsd::SceneRenderSettings::externalCameraAttrName().GetString(); })
+            +[]() { return MayaUsd::SceneRenderDescription::externalCameraAttrName().GetString(); })
         .staticmethod("externalCameraAttrName")
-        .def("setCamera", &MayaUsd::SceneRenderSettings::setRenderSettingsCamera)
+        .def("setCamera", &MayaUsd::SceneRenderDescription::setRenderSettingsCamera)
         .staticmethod("setCamera");
 }

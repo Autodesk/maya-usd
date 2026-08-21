@@ -21,7 +21,7 @@ import unittest
 import maya.cmds as cmds
 import maya.mel as mel
 
-from mayaUsd.lib import UsdDefaultRenderSettings
+from mayaUsd.lib import UsdDefaultRenderDescription
 
 class VerifyUsdRenderSetupTestCase(unittest.TestCase):
     """ Test the Usd Render Setup. """
@@ -46,7 +46,7 @@ class VerifyUsdRenderSetupTestCase(unittest.TestCase):
         self.assertEqual(rs.__name__, 'AdskUsdRenderSetup')
         self.assertTrue(rs.__version_info__ >= (0, 0, 1))
 
-        stage = UsdDefaultRenderSettings.getUsdStage()
+        stage = UsdDefaultRenderDescription.getUsdStage()
         self.assertIsNotNone(rs.GetAllRenderSettingsPaths(stage))
 
         prim = rs.GetActiveRenderSettings(stage)

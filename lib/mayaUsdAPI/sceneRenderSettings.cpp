@@ -16,16 +16,16 @@
 
 #include "sceneRenderSettings.h"
 
-#include <mayaUsd/nodes/sceneRenderSettings.h>
+#include <mayaUsd/nodes/sceneRenderDescription.h>
 
 namespace MAYAUSDAPI_NS_DEF {
 namespace SceneRenderSettings {
 
-PXR_NS::UsdStageRefPtr getUsdStage() { return MayaUsd::SceneRenderSettings::getUsdStage(); }
+PXR_NS::UsdStageRefPtr getUsdStage() { return MayaUsd::SceneRenderDescription::getUsdStage(); }
 
 const PXR_NS::TfToken& externalCameraAttrName()
 {
-    return MayaUsd::SceneRenderSettings::externalCameraAttrName();
+    return MayaUsd::SceneRenderDescription::externalCameraAttrName();
 }
 
 } // namespace SceneRenderSettings
