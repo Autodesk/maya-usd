@@ -16,11 +16,11 @@
 
 #include "mayaRenderSetupHost.h"
 
+#include <usdUfe/utils/Utils.h>
+
 #include <maya/MAnimControl.h>
 #include <maya/MQtUtil.h>
 #include <maya/MTime.h>
-
-#include <usdUfe/utils/Utils.h>
 
 namespace MayaUsdRenderSetup {
 
